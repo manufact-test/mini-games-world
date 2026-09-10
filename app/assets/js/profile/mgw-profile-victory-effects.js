@@ -7,12 +7,19 @@ import { selectWinnerVictoryEffect } from './mgw-victory-effect-selector.js?v=1'
 
 const VICTORY_EFFECT_SLOT = 'profile_victory_effect';
 const SPARK_BURST_ID = 'profile-victory-effect-01';
+const FIREWORK_SALVO_ID = 'profile-victory-effect-02';
 const VICTORY_PRESENTATION = Object.freeze({
   [SPARK_BURST_ID]:Object.freeze({
     variant:'spark-burst',
     duration:2200,
     fallbackName:'Искровой залп',
     tier:'Уровень I',
+  }),
+  [FIREWORK_SALVO_ID]:Object.freeze({
+    variant:'firework-salvo',
+    duration:2900,
+    fallbackName:'Салют победителя',
+    tier:'Уровень II',
   }),
 });
 
@@ -209,14 +216,52 @@ function starMarkup(){
   return `<span class="mgw-victory-spark-stars">${stars.map(([x,y,delay]) => `<i style="--x:${x}%;--y:${y}%;--delay:${delay}s"></i>`).join('')}</span>`;
 }
 
-function victoryStageMarkup(){
+function sparkBurstStageMarkup(){
   return `<span class="mgw-victory-spark-scene">${burstMarkup('burst-main',30,58,300,0)}${burstMarkup('burst-left',14,34,150,.18)}${burstMarkup('burst-right',14,34,150,.26)}${confettiMarkup(18)}${glitterMarkup(24)}${starMarkup()}</span>`;
+}
+
+function fireworkBurstMarkup(kind, count, previewDistance, liveDistance){
+  const rays = Array.from({ length:count }, (_, index) => {
+    const angle = Math.round((360 / count) * index + (kind === 'salvo-center' ? 0 : 360 / count / 2));
+    const scale = 0.74 + ((index * 5) % 7) * 0.055;
+    const pd = Math.round(previewDistance * scale);
+    const ld = Math.round(liveDistance * scale);
+    return `<i style="--a:${angle}deg;--pd:${pd}px;--ld:${ld}px"></i>`;
+  }).join('');
+  return `<span class="mgw-victory-firework-burst ${kind}"><i class="mgw-victory-firework-flash"></i><i class="mgw-victory-firework-ring ring-a"></i><i class="mgw-victory-firework-ring ring-b"></i><span class="mgw-victory-firework-rays">${rays}</span></span>`;
+}
+
+function fireworkStarfieldMarkup(count){
+  return `<span class="mgw-victory-firework-starfield">${Array.from({ length:count }, (_, index) => {
+    const x = 8 + ((index * 37) % 85);
+    const y = 12 + ((index * 53) % 74);
+    const delay = ((index % 7) * .11).toFixed(2);
+    return `<i style="--x:${x}%;--y:${y}%;--delay:${delay}s"></i>`;
+  }).join('')}</span>`;
+}
+
+function fireworkConfettiMarkup(count){
+  return `<span class="mgw-victory-firework-confetti">${Array.from({ length:count }, (_, index) => {
+    const x = 10 + ((index * 41) % 82);
+    const drift = ((index % 9) - 4) * 9;
+    const rot = ((index * 67) % 360) - 180;
+    const delay = (.72 + (index % 8) * .055).toFixed(3);
+    return `<b style="--x:${x}%;--drift:${drift}px;--r:${rot}deg;--delay:${delay}s"></b>`;
+  }).join('')}</span>`;
+}
+
+function fireworkSalvoStageMarkup(){
+  return `<span class="mgw-victory-firework-scene"><span class="mgw-victory-firework-trail trail-left"><i></i><b></b></span><span class="mgw-victory-firework-trail trail-right"><i></i><b></b></span>${fireworkBurstMarkup('salvo-left',22,42,210)}${fireworkBurstMarkup('salvo-right',22,42,210)}${fireworkBurstMarkup('salvo-center',30,55,285)}<i class="mgw-victory-firework-wave"></i>${fireworkStarfieldMarkup(18)}${fireworkConfettiMarkup(24)}</span>`;
+}
+
+function victoryStageMarkup(variant){
+  return variant === 'firework-salvo' ? fireworkSalvoStageMarkup() : sparkBurstStageMarkup();
 }
 
 function previewMarkup(itemId, selected = false, extraClass = ''){
   const spec = presentationFor(itemId);
   if (!spec) return '';
-  return `<span class="mgw-entry-effect-preview mgw-victory-effect-preview ${escapeAttr(extraClass)}" data-victory-effect-variant="${escapeAttr(spec.variant)}" aria-hidden="true">${victoryStageMarkup()}${selected ? '<em class="store-v2-selected-check">✓</em>' : ''}</span>`;
+  return `<span class="mgw-entry-effect-preview mgw-victory-effect-preview ${escapeAttr(extraClass)}" data-victory-effect-variant="${escapeAttr(spec.variant)}" aria-hidden="true">${victoryStageMarkup(spec.variant)}${selected ? '<em class="store-v2-selected-check">✓</em>' : ''}</span>`;
 }
 
 function renderStoreSection(catalog){
@@ -292,7 +337,7 @@ function openPurchase(itemId){
   const price = itemPrice(item);
   const balance = Number(state.user?.balance || 0);
   const missing = Math.max(0, price - balance);
-  openSheet(`<div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="store-v2-confirm"><div class="mgw-entry-effect-sheet-preview mgw-victory-effect-sheet-preview">${previewMarkup(itemId, false, 'mgw-victory-effect-sheet-card')}</div><div class="store-v2-confirm-copy"><strong>${escapeHtml(itemName(item))}</strong><small>Эффект победы · ${escapeHtml(itemTier(item))}</small></div><div class="store-v2-confirm-price"><span>К оплате</span><strong>${formatNumber(price)} коинов</strong></div><div class="store-v2-confirm-balance"><span>Останется</span><b>${formatNumber(Math.max(0, balance - price))}</b></div><button class="btn primary full" id="mgwVictoryEffectConfirmBuy" type="button"${missing > 0 ? ' disabled' : ''}>${missing > 0 ? `Не хватает ${formatNumber(missing)}` : `Купить за ${formatNumber(price)}`}</button></div>`);
+  openSheet(`<div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="store-v2-confirm"><div class="mgw-entry-effect-sheet-preview mgw-victory-effect-sheet-preview">${previewMarkup(itemId, false, 'mgw-victory-effect-sheet-card')}</div><div class="store-v2-confirm-copy"><strong>${escapeHtml(itemName(item))}</strong><small>Эффект победы</small></div><div class="store-v2-confirm-price"><span>К оплате</span><strong>${formatNumber(price)} коинов</strong></div><div class="store-v2-confirm-balance"><span>Останется</span><b>${formatNumber(Math.max(0, balance - price))}</b></div><button class="btn primary full" id="mgwVictoryEffectConfirmBuy" type="button"${missing > 0 ? ' disabled' : ''}>${missing > 0 ? `Не хватает ${formatNumber(missing)}` : `Купить за ${formatNumber(price)}`}</button></div>`);
   document.getElementById('mgwVictoryEffectConfirmBuy')?.addEventListener('click', () => void purchase(item));
 }
 
@@ -333,7 +378,7 @@ function openPreview(itemId){
   const item = victoryEffectCatalog().find(candidate => candidate.item_id === itemId && candidate.owned === true);
   if (!item) return;
   const active = itemId === currentVictoryEffectId();
-  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(itemName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="mgw-entry-effect-sheet-preview mgw-victory-effect-sheet-preview">${previewMarkup(itemId, false, 'mgw-victory-effect-sheet-card')}</div><div class="profile-v2-entry-effect-preview-meta"><strong>Эффект победы</strong><small>${escapeHtml(itemTier(item))}</small></div><div class="mgw-profile-cosmetic-sheet-status" data-mgw-profile-cosmetic-sheet-status>${active ? 'Выбрано' : 'В коллекции'}</div><button class="btn ${active ? 'ghost' : 'primary'} full mgw-profile-cosmetic-sheet-action" id="mgwVictoryEffectEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>`);
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(itemName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="mgw-entry-effect-sheet-preview mgw-victory-effect-sheet-preview">${previewMarkup(itemId, false, 'mgw-victory-effect-sheet-card')}</div><div class="profile-v2-entry-effect-preview-meta"><strong>Эффект победы</strong></div><div class="mgw-profile-cosmetic-sheet-status" data-mgw-profile-cosmetic-sheet-status>${active ? 'Выбрано' : 'В коллекции'}</div><button class="btn ${active ? 'ghost' : 'primary'} full mgw-profile-cosmetic-sheet-action" id="mgwVictoryEffectEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>`);
   document.getElementById('mgwVictoryEffectEquip')?.addEventListener('click', () => void saveSelection(itemId, active));
 }
 
@@ -400,7 +445,8 @@ function playVictoryEffectIfReady(){
   layer.className = `mgw-victory-effect-layer${reduced ? ' reduced-motion' : ''}`;
   layer.dataset.victoryEffectGameId = gameId;
   layer.dataset.victoryEffectItemId = selection.itemId;
-  layer.innerHTML = `<button class="mgw-victory-effect-skip" type="button" aria-label="Пропустить эффект победы">Пропустить</button><div class="mgw-victory-effect-live-stage" data-victory-effect-variant="${escapeAttr(spec.variant)}" aria-hidden="true">${victoryStageMarkup()}</div>`;
+  layer.dataset.victoryEffectVariant = spec.variant;
+  layer.innerHTML = `<button class="mgw-victory-effect-skip" type="button" aria-label="Пропустить эффект победы">Пропустить</button><div class="mgw-victory-effect-live-stage" data-victory-effect-variant="${escapeAttr(spec.variant)}" aria-hidden="true">${victoryStageMarkup(spec.variant)}</div>`;
   document.body.append(layer);
 
   layer.querySelector('.mgw-victory-effect-skip')?.addEventListener('click', removeLiveVictoryEffect, { once:true });

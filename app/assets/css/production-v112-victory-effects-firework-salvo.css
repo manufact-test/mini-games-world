@@ -1,0 +1,130 @@
+/* MVP-19.3 Victory Effect II — Firework Salvo.
+ * Presentation only. Extends the existing Victory Effect owner without changing
+ * Store/Profile card geometry or the accepted Spark Burst scene. */
+
+.mgw-victory-effect-preview[data-victory-effect-variant="firework-salvo"]{
+  background:
+    radial-gradient(circle at 50% 26%,rgba(255,239,180,.16),transparent 28%),
+    radial-gradient(circle at 24% 48%,rgba(86,191,255,.16),transparent 24%),
+    radial-gradient(circle at 76% 48%,rgba(255,106,208,.14),transparent 24%),
+    linear-gradient(180deg,#081224 0%,#0b1020 56%,#160c1f 100%)!important;
+  border-color:rgba(153,187,255,.42)!important;
+}
+
+.mgw-victory-firework-scene{position:absolute;inset:0;overflow:hidden;pointer-events:none;isolation:isolate}
+.mgw-victory-firework-scene::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 78%,rgba(120,84,255,.12),transparent 42%);opacity:.85}
+
+.mgw-victory-firework-trail{position:absolute;bottom:5%;width:3px;height:53%;transform-origin:50% 100%;opacity:1;z-index:2}
+.mgw-victory-firework-trail.trail-left{left:25%;transform:rotate(10deg)}
+.mgw-victory-firework-trail.trail-right{left:75%;transform:rotate(-10deg)}
+.mgw-victory-firework-trail>i{position:absolute;inset:0;border-radius:999px;background:linear-gradient(0deg,rgba(255,180,51,0),#ffc95c 38%,#fff8d2 74%,#fff 100%);filter:drop-shadow(0 0 4px rgba(255,190,63,.9));transform:scaleY(.04);transform-origin:50% 100%;opacity:0}
+.mgw-victory-firework-trail>b{position:absolute;left:50%;top:-3px;width:7px;height:7px;border-radius:50%;transform:translate(-50%,-50%) scale(.2);background:#fff7d0;box-shadow:0 0 7px #ffd15a,0 0 13px rgba(255,123,57,.8);opacity:0}
+.mgw-victory-firework-trail.trail-left>i{animation:mgwVictorySalvoTrailLeft 2.9s ease-out infinite}
+.mgw-victory-firework-trail.trail-left>b{animation:mgwVictorySalvoRocketLeft 2.9s ease-out infinite}
+.mgw-victory-firework-trail.trail-right>i{animation:mgwVictorySalvoTrailRight 2.9s ease-out infinite}
+.mgw-victory-firework-trail.trail-right>b{animation:mgwVictorySalvoRocketRight 2.9s ease-out infinite}
+
+.mgw-victory-firework-burst{position:absolute;width:0;height:0;z-index:4}
+.mgw-victory-firework-burst.salvo-left{left:25%;top:42%}
+.mgw-victory-firework-burst.salvo-right{left:75%;top:43%}
+.mgw-victory-firework-burst.salvo-center{left:50%;top:25%;z-index:5}
+.mgw-victory-firework-flash{position:absolute;left:0;top:0;width:23px;height:23px;border-radius:50%;transform:translate(-50%,-50%) scale(.05);background:radial-gradient(circle,#fff 0 7%,#fff9d9 13%,#ffd96b 31%,rgba(255,121,69,.48) 52%,transparent 73%);filter:drop-shadow(0 0 7px rgba(255,224,124,.95));opacity:0}
+.mgw-victory-firework-ring{position:absolute;left:0;top:0;border-radius:50%;border:1px solid rgba(255,230,151,.82);transform:translate(-50%,-50%) scale(.08);opacity:0;box-shadow:0 0 9px rgba(255,192,72,.42)}
+.mgw-victory-firework-ring.ring-a{width:27px;height:27px}
+.mgw-victory-firework-ring.ring-b{width:43px;height:43px;border-color:rgba(135,207,255,.52)}
+.mgw-victory-firework-rays{position:absolute;left:0;top:0;width:0;height:0}
+.mgw-victory-firework-rays>i{--distance:var(--pd);position:absolute;left:0;top:0;width:15px;height:1.7px;border-radius:999px;transform-origin:0 50%;opacity:0;background:linear-gradient(90deg,#fff 0%,#ffe98d 27%,#ffb348 62%,rgba(255,98,164,.08) 100%);filter:drop-shadow(0 0 3px rgba(255,203,95,.9))}
+.salvo-right .mgw-victory-firework-rays>i{background:linear-gradient(90deg,#fff 0%,#c9f0ff 27%,#6ccaff 62%,rgba(123,82,255,.08) 100%);filter:drop-shadow(0 0 3px rgba(101,201,255,.92))}
+.salvo-center .mgw-victory-firework-rays>i{width:18px;height:2px;background:linear-gradient(90deg,#fff 0%,#fff1a8 25%,#ffca58 52%,#ff6eca 76%,rgba(122,82,255,.08) 100%)}
+
+.salvo-left .mgw-victory-firework-flash{animation:mgwVictorySalvoFlashLeft 2.9s ease-out infinite}
+.salvo-right .mgw-victory-firework-flash{animation:mgwVictorySalvoFlashRight 2.9s ease-out infinite}
+.salvo-center .mgw-victory-firework-flash{animation:mgwVictorySalvoFlashCenter 2.9s ease-out infinite}
+.salvo-left .mgw-victory-firework-ring{animation:mgwVictorySalvoRingLeft 2.9s ease-out infinite}
+.salvo-right .mgw-victory-firework-ring{animation:mgwVictorySalvoRingRight 2.9s ease-out infinite}
+.salvo-center .mgw-victory-firework-ring{animation:mgwVictorySalvoRingCenter 2.9s ease-out infinite}
+.salvo-left .mgw-victory-firework-rays>i{animation:mgwVictorySalvoRayLeft 2.9s cubic-bezier(.16,.72,.17,1) infinite}
+.salvo-right .mgw-victory-firework-rays>i{animation:mgwVictorySalvoRayRight 2.9s cubic-bezier(.16,.72,.17,1) infinite}
+.salvo-center .mgw-victory-firework-rays>i{animation:mgwVictorySalvoRayCenter 2.9s cubic-bezier(.14,.74,.16,1) infinite}
+
+.mgw-victory-firework-wave{position:absolute;left:50%;top:55%;width:72%;aspect-ratio:1;border-radius:50%;border:1px solid rgba(174,211,255,.24);box-shadow:0 0 17px rgba(130,110,255,.13) inset;transform:translate(-50%,-50%) scale(.18);opacity:0;z-index:1;animation:mgwVictorySalvoWave 2.9s ease-out infinite}
+.mgw-victory-firework-starfield,.mgw-victory-firework-confetti{position:absolute;inset:0;pointer-events:none;z-index:6}
+.mgw-victory-firework-starfield>i{position:absolute;left:var(--x);top:var(--y);width:9px;height:9px;transform:translate(-50%,-50%) scale(.2) rotate(45deg);opacity:0;background:linear-gradient(90deg,transparent 42%,#fff 47% 53%,transparent 58%),linear-gradient(0deg,transparent 42%,#dff5ff 47% 53%,transparent 58%);filter:drop-shadow(0 0 4px rgba(143,214,255,.85));animation:mgwVictorySalvoStar 2.9s ease-out var(--delay) infinite}
+.mgw-victory-firework-confetti>b{position:absolute;left:var(--x);top:12%;width:3px;height:7px;border-radius:2px;background:#ffd663;opacity:0;animation:mgwVictorySalvoConfetti 2.9s cubic-bezier(.18,.55,.18,1) var(--delay) infinite}
+.mgw-victory-firework-confetti>b:nth-child(3n+2){background:#7fd9ff}.mgw-victory-firework-confetti>b:nth-child(3n){background:#ff77d2}
+
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-scene{overflow:visible}
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-trail{bottom:8%;width:5px;height:56vh}
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-trail>i,
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-trail>b,
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-flash,
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-ring,
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-rays>i,
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-wave,
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-starfield>i,
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-confetti>b{animation-iteration-count:1!important}
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-burst.salvo-left{left:23%;top:39%}
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-burst.salvo-right{left:77%;top:42%}
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-burst.salvo-center{left:50%;top:22%}
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-flash{width:92px;height:92px}
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .salvo-center .mgw-victory-firework-flash{width:122px;height:122px}
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-ring.ring-a{width:92px;height:92px;border-width:2px}
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-ring.ring-b{width:148px;height:148px}
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .salvo-center .ring-a{width:118px;height:118px}
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .salvo-center .ring-b{width:190px;height:190px}
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-rays>i{--distance:var(--ld);width:48px;height:3px;filter:drop-shadow(0 0 5px rgba(255,212,106,.95)) drop-shadow(0 0 10px rgba(117,183,255,.3))}
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .salvo-center .mgw-victory-firework-rays>i{width:64px;height:4px}
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-wave{width:min(88vw,650px)}
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-starfield>i{width:24px;height:24px}
+.mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-confetti>b{width:6px;height:12px}
+
+.mgw-victory-effect-layer[data-victory-effect-variant="firework-salvo"]::before{background:radial-gradient(circle at 50% 35%,rgba(93,162,255,.14),transparent 32%),radial-gradient(circle at 50% 62%,rgba(255,91,190,.11),transparent 38%);animation:mgwVictorySalvoBackdrop 2.9s ease-out both}
+.mgw-victory-effect-layer[data-victory-effect-variant="firework-salvo"]::after{border-color:rgba(163,208,255,.24);box-shadow:0 0 56px rgba(100,146,255,.13) inset;animation:mgwVictorySalvoOuterHalo 2.9s ease-out both}
+
+#screen-profile [data-victory-effect-preview="profile-victory-effect-02"] .profile-v2-victory-effect-copy>b::after{content:'Салют победителя'!important}
+
+@keyframes mgwVictorySalvoTrailLeft{0%,4%{opacity:0;transform:scaleY(.04)}8%{opacity:.95}24%{opacity:.9;transform:scaleY(1)}30%,100%{opacity:0;transform:scaleY(1)}}
+@keyframes mgwVictorySalvoRocketLeft{0%,5%{opacity:0;transform:translate(-50%,42px) scale(.2)}9%{opacity:1}24%{opacity:1;transform:translate(-50%,0) scale(1)}29%,100%{opacity:0;transform:translate(-50%,-3px) scale(.35)}}
+@keyframes mgwVictorySalvoTrailRight{0%,11%{opacity:0;transform:scaleY(.04)}15%{opacity:.95}31%{opacity:.9;transform:scaleY(1)}37%,100%{opacity:0;transform:scaleY(1)}}
+@keyframes mgwVictorySalvoRocketRight{0%,12%{opacity:0;transform:translate(-50%,42px) scale(.2)}16%{opacity:1}31%{opacity:1;transform:translate(-50%,0) scale(1)}36%,100%{opacity:0;transform:translate(-50%,-3px) scale(.35)}}
+@keyframes mgwVictorySalvoFlashLeft{0%,22%{opacity:0;transform:translate(-50%,-50%) scale(.05)}26%{opacity:1}34%{opacity:.95;transform:translate(-50%,-50%) scale(1)}46%{opacity:.28;transform:translate(-50%,-50%) scale(1.35)}52%,100%{opacity:0}}
+@keyframes mgwVictorySalvoFlashRight{0%,30%{opacity:0;transform:translate(-50%,-50%) scale(.05)}34%{opacity:1}42%{opacity:.95;transform:translate(-50%,-50%) scale(1)}54%{opacity:.28;transform:translate(-50%,-50%) scale(1.35)}60%,100%{opacity:0}}
+@keyframes mgwVictorySalvoFlashCenter{0%,48%{opacity:0;transform:translate(-50%,-50%) scale(.05)}52%{opacity:1}60%{opacity:1;transform:translate(-50%,-50%) scale(1)}72%{opacity:.32;transform:translate(-50%,-50%) scale(1.42)}79%,100%{opacity:0}}
+@keyframes mgwVictorySalvoRingLeft{0%,23%{opacity:0;transform:translate(-50%,-50%) scale(.08)}28%{opacity:.85}47%{opacity:.38}56%,100%{opacity:0;transform:translate(-50%,-50%) scale(2.15)}}
+@keyframes mgwVictorySalvoRingRight{0%,31%{opacity:0;transform:translate(-50%,-50%) scale(.08)}36%{opacity:.85}55%{opacity:.38}64%,100%{opacity:0;transform:translate(-50%,-50%) scale(2.15)}}
+@keyframes mgwVictorySalvoRingCenter{0%,49%{opacity:0;transform:translate(-50%,-50%) scale(.08)}54%{opacity:.9}75%{opacity:.42}86%,100%{opacity:0;transform:translate(-50%,-50%) scale(2.35)}}
+@keyframes mgwVictorySalvoRayLeft{0%,24%{opacity:0;transform:translate(-1px,-50%) rotate(var(--a)) translateX(0) scaleX(.1)}29%{opacity:1}47%{opacity:.92;transform:translate(-1px,-50%) rotate(var(--a)) translateX(var(--distance)) scaleX(1)}57%,100%{opacity:0;transform:translate(-1px,-50%) rotate(var(--a)) translateX(var(--distance)) scaleX(.2)}}
+@keyframes mgwVictorySalvoRayRight{0%,32%{opacity:0;transform:translate(-1px,-50%) rotate(var(--a)) translateX(0) scaleX(.1)}37%{opacity:1}55%{opacity:.92;transform:translate(-1px,-50%) rotate(var(--a)) translateX(var(--distance)) scaleX(1)}65%,100%{opacity:0;transform:translate(-1px,-50%) rotate(var(--a)) translateX(var(--distance)) scaleX(.2)}}
+@keyframes mgwVictorySalvoRayCenter{0%,50%{opacity:0;transform:translate(-1px,-50%) rotate(var(--a)) translateX(0) scaleX(.1)}55%{opacity:1}75%{opacity:1;transform:translate(-1px,-50%) rotate(var(--a)) translateX(var(--distance)) scaleX(1)}87%,100%{opacity:0;transform:translate(-1px,-50%) rotate(var(--a)) translateX(var(--distance)) scaleX(.18)}}
+@keyframes mgwVictorySalvoWave{0%,42%{opacity:0;transform:translate(-50%,-50%) scale(.18)}52%{opacity:.58}82%{opacity:.2}100%{opacity:0;transform:translate(-50%,-50%) scale(1.14)}}
+@keyframes mgwVictorySalvoStar{0%,36%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(45deg)}46%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(45deg)}66%{opacity:.72}86%,100%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(45deg)}}
+@keyframes mgwVictorySalvoConfetti{0%,48%{opacity:0;transform:translate3d(0,-8px,0) rotate(0deg)}57%{opacity:1}84%{opacity:.9}100%{opacity:0;transform:translate3d(var(--drift),72px,0) rotate(var(--r))}}
+@keyframes mgwVictorySalvoBackdrop{0%{opacity:0}8%{opacity:.55}36%{opacity:.42}55%{opacity:.72}82%{opacity:.28}100%{opacity:0}}
+@keyframes mgwVictorySalvoOuterHalo{0%,42%{opacity:0;transform:translate(-50%,-50%) scale(.16)}54%{opacity:.65}82%{opacity:.26}100%{opacity:0;transform:translate(-50%,-50%) scale(1.06)}}
+
+@media(max-width:520px){
+  .mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-burst.salvo-left{left:19%;top:42%}
+  .mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-burst.salvo-right{left:81%;top:44%}
+  .mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-rays>i{width:40px}
+  .mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .salvo-center .mgw-victory-firework-rays>i{width:54px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .mgw-victory-effect-preview[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-scene *{animation:none!important}
+  .mgw-victory-effect-preview[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-trail,
+  .mgw-victory-effect-preview[data-victory-effect-variant="firework-salvo"] .salvo-left,
+  .mgw-victory-effect-preview[data-victory-effect-variant="firework-salvo"] .salvo-right,
+  .mgw-victory-effect-preview[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-confetti{display:none!important}
+  .mgw-victory-effect-preview[data-victory-effect-variant="firework-salvo"] .salvo-center .mgw-victory-firework-flash{opacity:.72;transform:translate(-50%,-50%) scale(.9)}
+  .mgw-victory-effect-preview[data-victory-effect-variant="firework-salvo"] .salvo-center .ring-a{opacity:.42;transform:translate(-50%,-50%) scale(1.25)}
+  .mgw-victory-effect-preview[data-victory-effect-variant="firework-salvo"] .salvo-center .mgw-victory-firework-rays>i{opacity:.36;transform:translate(-1px,-50%) rotate(var(--a)) translateX(var(--pd)) scaleX(.65)}
+  .mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-scene *{animation:none!important}
+  .mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-trail,
+  .mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .salvo-left,
+  .mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .salvo-right,
+  .mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-confetti,
+  .mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-starfield{display:none!important}
+  .mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .salvo-center .mgw-victory-firework-flash{animation:mgwVictoryReducedFlash 2s ease-out both!important}
+  .mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .salvo-center .ring-a{animation:mgwVictoryReducedRing 2s ease-out both!important}
+  .mgw-victory-effect-live-stage[data-victory-effect-variant="firework-salvo"] .mgw-victory-firework-rays>i{display:none!important}
+}
