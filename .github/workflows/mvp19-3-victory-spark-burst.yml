@@ -14,6 +14,7 @@ on:
       - 'app/assets/css/production-v109-victory-effects-spark-burst.css'
       - 'app/assets/css/production-v110-victory-effects-card-parity.css'
       - 'app/assets/css/production-v110-profile-store-visual-repair-v2.css'
+      - 'app/assets/css/production-v111-profile-avatar-geometry.css'
       - 'app/assets/js/production-v110-readonly-game-sync.js'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php'
@@ -109,6 +110,8 @@ jobs:
           grep -F 'initBaseVictoryEffects()' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
           grep -F 'production-v110-victory-effects-card-parity.css?v=3' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
           grep -F 'production-v110-profile-store-visual-repair-v2.css?v=3' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
+          grep -F 'production-v111-profile-avatar-geometry.css?v=1' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
+          grep -F 'ensureAvatarGeometryStylesheet()' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
           grep -F '.store-v2-entry-effect-copy' app/assets/css/production-v110-profile-store-visual-repair-v2.css
           grep -F 'margin:5px 1px 4px!important' app/assets/css/production-v110-profile-store-visual-repair-v2.css
           grep -F 'font-size:9px!important' app/assets/css/production-v110-profile-store-visual-repair-v2.css
@@ -121,19 +124,19 @@ jobs:
           grep -F "content:'Искровой залп'!important" app/assets/css/production-v110-profile-store-visual-repair-v2.css
           grep -F "content:'Эффект победы'!important" app/assets/css/production-v110-profile-store-visual-repair-v2.css
           grep -F -- '-webkit-text-fill-color:#fff!important' app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F '#screen-profile .profile-v2-background-card,' app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F '#screen-profile .profile-v2-game-card{' app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F 'padding:5px!important;' app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F 'gap:3px!important;' app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F 'margin:auto 1px 0!important;' app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F 'top:3px!important;' app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          ! grep -Fq '.mgw-victory-effect-layer' app/assets/css/production-v110-profile-store-visual-repair-v2.css
+          grep -F '[data-profile-avatar-preview]::after' app/assets/css/production-v111-profile-avatar-geometry.css
+          grep -F 'content:none!important' app/assets/css/production-v111-profile-avatar-geometry.css
+          grep -F -- '--mgw-profile-avatar-visible-inset:3px' app/assets/css/production-v111-profile-avatar-geometry.css
+          grep -F 'width:calc(100% - (var(--mgw-profile-avatar-visible-inset) * 2))!important' app/assets/css/production-v111-profile-avatar-geometry.css
+          grep -F 'margin:auto var(--mgw-profile-copy-inset) 0!important' app/assets/css/production-v111-profile-avatar-geometry.css
+          ! grep -Fq '.store-v2-' app/assets/css/production-v111-profile-avatar-geometry.css
+          ! grep -Fq '.mgw-victory-effect-layer' app/assets/css/production-v111-profile-avatar-geometry.css
           ! grep -Eq '\.(webp|png|jpe?g)' app/assets/js/profile/mgw-profile-victory-effects.js
           ! grep -Fq 'gameAction(' app/assets/js/profile/mgw-profile-victory-effects.js
           grep -F "initMgwProfileVictoryEffects } from './profile/mgw-profile-victory-effects.js?v=1&mvp19_3=victory-effects'" app/assets/js/production-v110-readonly-game-sync.js
           grep -F "document.addEventListener('mgw:app-ready', initMgwProfileVictoryEffects" app/assets/js/production-v110-readonly-game-sync.js
-          grep -F 'mgw-profile-victory-effects-card-parity.js?v=4&mvp19_3=profile-card-spacing-unify&visual_repair=4' app/runtime/client/version-manifest.php
-          grep -F 'victory=spark-burst-profile-card-spacing-unify&visual_repair=4' app/runtime/client/version-manifest.php
+          grep -F 'mgw-profile-victory-effects-card-parity.js?v=5&mvp19_3=profile-avatar-visible-geometry&visual_repair=5' app/runtime/client/version-manifest.php
+          grep -F 'victory=spark-burst-profile-avatar-visible-geometry&visual_repair=5' app/runtime/client/version-manifest.php
           git diff --check
 
       - name: Guard frozen engines and bounded Victory slice
@@ -159,12 +162,13 @@ jobs:
               app/assets/js/profile/mgw-profile-victory-effects-card-parity.js|\
               app/assets/css/production-v110-victory-effects-card-parity.css|\
               app/assets/css/production-v110-profile-store-visual-repair-v2.css|\
+              app/assets/css/production-v111-profile-avatar-geometry.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php|\
               .github/workflows/mvp19-3-victory-spark-burst.yml)
                 ;;
               *)
-                echo "Unexpected path in Spark Burst Profile/Store visual repair: $path" >&2
+                echo "Unexpected path in Spark Burst/Profile visual repair: $path" >&2
                 bad=1
                 ;;
             esac
