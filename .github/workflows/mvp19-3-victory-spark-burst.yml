@@ -7,6 +7,7 @@ on:
     paths:
       - 'bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php'
       - 'bot/database/migrations/20260910_0027_add_profile_victory_effect_firework_salvo.php'
+      - 'bot/database/migrations/20260910_0028_swap_victory_effect_01_02_tiers.php'
       - 'bot/cosmetic-store.php'
       - 'bot/helpers/response.php'
       - 'app/assets/js/profile/mgw-victory-effect-selector.js'
@@ -14,6 +15,7 @@ on:
       - 'app/assets/js/profile/mgw-profile-victory-effects-card-parity.js'
       - 'app/assets/css/production-v109-victory-effects-spark-burst.css'
       - 'app/assets/css/production-v112-victory-effects-firework-salvo.css'
+      - 'app/assets/css/production-v113-victory-effects-tier-swap.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php'
       - '.github/workflows/mvp19-3-victory-spark-burst.yml'
@@ -52,6 +54,7 @@ jobs:
         run: |
           php -l bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
           php -l bot/database/migrations/20260910_0027_add_profile_victory_effect_firework_salvo.php
+          php -l bot/database/migrations/20260910_0028_swap_victory_effect_01_02_tiers.php
           php -l bot/cosmetic-store.php
           php -l bot/helpers/response.php
           php -l bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php
@@ -77,28 +80,27 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -F "private const ITEM_ID = 'profile-victory-effect-01'" bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
-          grep -F 'private const PRICE = 5000' bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
-          grep -F 'private const DURATION_MS = 2200' bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
-          grep -F "private const ITEM_ID = 'profile-victory-effect-02'" bot/database/migrations/20260910_0027_add_profile_victory_effect_firework_salvo.php
-          grep -F 'private const PRICE = 8500' bot/database/migrations/20260910_0027_add_profile_victory_effect_firework_salvo.php
-          grep -F 'private const DURATION_MS = 2900' bot/database/migrations/20260910_0027_add_profile_victory_effect_firework_salvo.php
-          grep -F "'display_name' => 'Салют победителя'" bot/database/migrations/20260910_0027_add_profile_victory_effect_firework_salvo.php
-          grep -F "'variant' => 'firework-salvo'" bot/database/migrations/20260910_0027_add_profile_victory_effect_firework_salvo.php
+          grep -F "'display_name' => 'Салют победителя'" bot/database/migrations/20260910_0028_swap_victory_effect_01_02_tiers.php
+          grep -F "'tier' => 'tier-1'" bot/database/migrations/20260910_0028_swap_victory_effect_01_02_tiers.php
+          grep -F "'price_coins' => 5000" bot/database/migrations/20260910_0028_swap_victory_effect_01_02_tiers.php
+          grep -F "'display_name' => 'Искровой залп'" bot/database/migrations/20260910_0028_swap_victory_effect_01_02_tiers.php
+          grep -F "'tier' => 'tier-2'" bot/database/migrations/20260910_0028_swap_victory_effect_01_02_tiers.php
+          grep -F "'price_coins' => 8500" bot/database/migrations/20260910_0028_swap_victory_effect_01_02_tiers.php
+          grep -F "'variant' => 'spark-burst'" bot/database/migrations/20260910_0028_swap_victory_effect_01_02_tiers.php
+          grep -F "'variant' => 'firework-salvo'" bot/database/migrations/20260910_0028_swap_victory_effect_01_02_tiers.php
           grep -F 'selectWinnerVictoryEffect(game)' app/assets/js/profile/mgw-profile-victory-effects.js
           grep -F '#resultSummary[data-result-game-id]' app/assets/js/profile/mgw-profile-victory-effects.js
           grep -F 'mgw-victory-effect-skip' app/assets/js/profile/mgw-profile-victory-effects.js
           grep -F "fireworkBurstMarkup('salvo-left',22" app/assets/js/profile/mgw-profile-victory-effects.js
           grep -F "fireworkBurstMarkup('salvo-right',22" app/assets/js/profile/mgw-profile-victory-effects.js
           grep -F "fireworkBurstMarkup('salvo-center',30" app/assets/js/profile/mgw-profile-victory-effects.js
-          grep -F 'fireworkConfettiMarkup(24)' app/assets/js/profile/mgw-profile-victory-effects.js
-          grep -F 'fireworkStarfieldMarkup(18)' app/assets/js/profile/mgw-profile-victory-effects.js
           grep -F 'mgwVictorySalvoTrailLeft' app/assets/css/production-v112-victory-effects-firework-salvo.css
-          grep -F 'mgwVictorySalvoRayCenter' app/assets/css/production-v112-victory-effects-firework-salvo.css
-          grep -F '@media(prefers-reduced-motion:reduce)' app/assets/css/production-v112-victory-effects-firework-salvo.css
-          grep -F 'production-v112-victory-effects-firework-salvo.css?v=1' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
-          grep -F 'mgw-profile-victory-effects-card-parity.js?v=9&mvp19_3=firework-salvo' app/runtime/client/version-manifest.php
-          grep -F 'victory=firework-salvo&visual_repair=9' app/runtime/client/version-manifest.php
+          grep -F 'mgwVictorySparkRay' app/assets/css/production-v109-victory-effects-spark-burst.css
+          grep -F 'firework-salvo"]){order:1}' app/assets/css/production-v113-victory-effects-tier-swap.css
+          grep -F 'spark-burst"]){order:2}' app/assets/css/production-v113-victory-effects-tier-swap.css
+          grep -F 'production-v113-victory-effects-tier-swap.css?v=1' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
+          grep -F 'mgw-profile-victory-effects-card-parity.js?v=10&mvp19_3=tier-swap-01-02' app/runtime/client/version-manifest.php
+          grep -F 'victory=tier-swap-01-02&visual_repair=10' app/runtime/client/version-manifest.php
           ! grep -Eq '\.(webp|png|jpe?g)' app/assets/js/profile/mgw-profile-victory-effects.js
           ! grep -Fq 'gameAction(' app/assets/js/profile/mgw-profile-victory-effects.js
           git diff --check
@@ -123,16 +125,15 @@ jobs:
           bad=0
           while IFS= read -r path; do
             case "$path" in
-              bot/database/migrations/20260910_0027_add_profile_victory_effect_firework_salvo.php|\
-              app/assets/js/profile/mgw-profile-victory-effects.js|\
+              bot/database/migrations/20260910_0028_swap_victory_effect_01_02_tiers.php|\
               app/assets/js/profile/mgw-profile-victory-effects-card-parity.js|\
-              app/assets/css/production-v112-victory-effects-firework-salvo.css|\
+              app/assets/css/production-v113-victory-effects-tier-swap.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php|\
               .github/workflows/mvp19-3-victory-spark-burst.yml)
                 ;;
               *)
-                echo "Unexpected path in Firework Salvo slice: $path" >&2
+                echo "Unexpected path in Victory tier-swap slice: $path" >&2
                 bad=1
                 ;;
             esac

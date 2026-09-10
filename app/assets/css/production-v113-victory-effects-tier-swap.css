@@ -1,0 +1,11 @@
+/* MVP-19.3 Victory Effects tier swap.
+ * Product decision: Firework Salvo is now the 5k entry tier and Spark Burst is the 8.5k middle tier.
+ * This file changes only ordering; accepted card geometry and live effect visuals remain untouched. */
+
+.store-v2-victory-effect-grid > .store-v2-victory-effect-card:has(.mgw-victory-effect-preview[data-victory-effect-variant="firework-salvo"]){order:1}
+.store-v2-victory-effect-grid > .store-v2-victory-effect-card:has(.mgw-victory-effect-preview[data-victory-effect-variant="spark-burst"]){order:2}
+.store-v2-victory-effect-grid > .store-v2-victory-effect-card:has(.mgw-victory-effect-preview[data-victory-effect-variant="victory-nova"]){order:3}
+
+.profile-v2-victory-effect-grid > [data-victory-effect-preview="profile-victory-effect-02"]{order:1}
+.profile-v2-victory-effect-grid > [data-victory-effect-preview="profile-victory-effect-01"]{order:2}
+.profile-v2-victory-effect-grid > [data-victory-effect-preview="profile-victory-effect-03"]{order:3}
