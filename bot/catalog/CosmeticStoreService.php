@@ -21,6 +21,10 @@ final class CosmeticStoreService
 
     private const OFFER_ID_PATTERN = '/^[a-z0-9][a-z0-9_.-]{0,63}$/';
     private const REQUEST_TOKEN_PATTERN = '/^[A-Za-z0-9][A-Za-z0-9_.:-]{7,95}$/';
+    private const GAME_TITLES = [
+        'tictactoe' => 'Крестики-нолики',
+        'chess' => 'Шахматы',
+    ];
 
     private ProductInventoryService $inventory;
 
@@ -80,13 +84,30 @@ final class CosmeticStoreService
             $avatarBundle['preview_kind'] = 'avatar_bundle_placeholder';
         }
 
-        $gameOffers = [];
+        $gameCatalogs = [];
         foreach ($offers as $offer) {
-            if (($offer['category'] ?? '') !== 'games' || ($offer['subcategory'] ?? '') !== 'tictactoe') continue;
+            if (($offer['category'] ?? '') !== 'games') continue;
+            $gameType = trim((string)($offer['metadata']['game_type'] ?? $offer['subcategory'] ?? ''));
             $layer = (string)($offer['metadata']['layer'] ?? '');
-            if (!in_array($layer, ['theme', 'elements', 'effect'], true)) continue;
-            $gameOffers[$layer][] = $offer;
+            if ($gameType === '' || !in_array($layer, ['theme', 'elements', 'effect'], true)) continue;
+            if (!isset($gameCatalogs[$gameType])) {
+                $gameCatalogs[$gameType] = [
+                    'game_type' => $gameType,
+                    'title' => self::GAME_TITLES[$gameType] ?? $gameType,
+                    'themes' => [],
+                    'elements' => [],
+                    'effects' => [],
+                ];
+            }
+            $group = $layer === 'theme' ? 'themes' : ($layer === 'elements' ? 'elements' : 'effects');
+            $gameCatalogs[$gameType][$group][] = $offer;
         }
+        foreach ($gameCatalogs as &$gameCatalog) {
+            $gameCatalog['themes'] = array_values($gameCatalog['themes']);
+            $gameCatalog['elements'] = array_values($gameCatalog['elements']);
+            $gameCatalog['effects'] = array_values($gameCatalog['effects']);
+        }
+        unset($gameCatalog);
 
         $tictactoeBundle = $offers[self::TICTACTOE_BUNDLE_OFFER_ID] ?? null;
         if (is_array($tictactoeBundle)) {
@@ -162,16 +183,8 @@ final class CosmeticStoreService
                 'name_colors' => array_values($profileNameColors),
             ],
             'games' => [
-                'available' => true,
-                'catalogs' => [
-                    'tictactoe' => [
-                        'game_type' => 'tictactoe',
-                        'title' => 'Крестики-нолики',
-                        'themes' => array_values($gameOffers['theme'] ?? []),
-                        'elements' => array_values($gameOffers['elements'] ?? []),
-                        'effects' => array_values($gameOffers['effect'] ?? []),
-                    ],
-                ],
+                'available' => $gameCatalogs !== [],
+                'catalogs' => $gameCatalogs,
             ],
             'bundles' => [
                 'avatar_bundle' => $avatarBundle,
