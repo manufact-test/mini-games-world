@@ -1,0 +1,142 @@
+/* MVP-19.3 Profile cosmetic geometry corrective — 2026-09-10.
+ * PROFILE ONLY. Store is manually accepted and intentionally untouched.
+ *
+ * The visible Profile avatar card is the reference. Previous passes matched only
+ * top-level padding, while family-specific preview padding/margins still changed
+ * the visible inset. This owner normalizes the immediate visual children instead.
+ */
+
+#screen-profile .profile-v2-collection-section{
+  --mgw-profile-avatar-visible-inset:3px;
+  --mgw-profile-copy-inset:1px;
+}
+
+/* Avatars are the accepted reference. Keep their current card/preview geometry
+ * and remove only the redundant family/tier subtitle requested in manual review. */
+#screen-profile [data-profile-avatar-preview]::after{
+  content:none!important;
+  display:none!important;
+  min-height:0!important;
+  height:0!important;
+  margin:0!important;
+  padding:0!important;
+}
+#screen-profile [data-profile-avatar-preview]::before{
+  margin-top:auto!important;
+  margin-right:var(--mgw-profile-copy-inset)!important;
+  margin-bottom:0!important;
+  margin-left:var(--mgw-profile-copy-inset)!important;
+}
+
+/* One outer card inset everywhere. Do not change grid widths, family artwork or
+ * card heights; only normalize the space between the border and visible content. */
+#screen-profile [data-profile-frame-preview],
+#screen-profile [data-profile-name-color],
+#screen-profile [data-profile-badge-preview],
+#screen-profile .profile-v2-reaction-card,
+#screen-profile .profile-v2-background-card,
+#screen-profile .profile-v2-entry-effect-card,
+#screen-profile .profile-v2-victory-effect-card,
+#screen-profile .profile-v2-game-card{
+  box-sizing:border-box!important;
+  padding:5px!important;
+}
+
+/* Family-specific nested preview rules were the reason equal card padding did
+ * not look equal. Give every non-avatar preview the same additional 3px visible
+ * inset inside the accepted 5px card edge. */
+#screen-profile [data-profile-name-color]>.profile-v2-name-color-sample,
+#screen-profile [data-profile-badge-preview]>.mgw-profile-badge-demo,
+#screen-profile .profile-v2-reaction-card>.profile-v2-reaction-card-preview,
+#screen-profile .profile-v2-background-card>.profile-v2-background-card-preview,
+#screen-profile .profile-v2-entry-effect-card>.mgw-entry-effect-preview,
+#screen-profile .profile-v2-victory-effect-card>.mgw-victory-effect-preview,
+#screen-profile .profile-v2-game-card>.store-v2-game-preview{
+  box-sizing:border-box!important;
+  width:calc(100% - (var(--mgw-profile-avatar-visible-inset) * 2))!important;
+  max-width:calc(100% - (var(--mgw-profile-avatar-visible-inset) * 2))!important;
+  margin:1px auto 2px!important;
+}
+
+/* Remove hidden family padding inside the first visual child. The visible edge
+ * is now owned by the card + shared 3px inset above, not by a second family box. */
+#screen-profile [data-profile-name-color]>.profile-v2-name-color-sample,
+#screen-profile [data-profile-badge-preview]>.mgw-profile-badge-demo,
+#screen-profile .profile-v2-reaction-card>.profile-v2-reaction-card-preview{
+  padding-left:0!important;
+  padding-right:0!important;
+}
+
+/* Frames already use the same 58px avatar portrait source. Preserve that exact
+ * accepted preview size/margins instead of stretching the frame to other cards. */
+#screen-profile [data-profile-frame-preview]>.profile-v2-collection-avatar{
+  flex:0 0 58px!important;
+  width:58px!important;
+  height:58px!important;
+  margin:1px auto 2px!important;
+}
+
+/* All real copy blocks use the same horizontal text inset and finish against the
+ * same card bottom edge. Remove old min-height spacers that made Entry/Victory
+ * look as if their text floated or disappeared. */
+#screen-profile .profile-v2-background-card-copy,
+#screen-profile .profile-v2-entry-effect-copy,
+#screen-profile .profile-v2-victory-effect-copy{
+  box-sizing:border-box!important;
+  width:auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  height:auto!important;
+  margin:auto var(--mgw-profile-copy-inset) 0!important;
+  padding:0!important;
+  gap:2px!important;
+  align-content:end!important;
+  overflow:hidden!important;
+}
+
+#screen-profile .profile-v2-entry-effect-copy>b,
+#screen-profile .profile-v2-entry-effect-copy>small,
+#screen-profile .profile-v2-victory-effect-copy>b,
+#screen-profile .profile-v2-victory-effect-copy>small{
+  min-height:0!important;
+  height:auto!important;
+  margin:0!important;
+  padding:0!important;
+}
+
+/* Reactions have no copy wrapper, so anchor their title/subtitle exactly where
+ * the avatar title block ends up: at the bottom, with a 1px text inset. */
+#screen-profile .profile-v2-reaction-card>strong{
+  margin:auto var(--mgw-profile-copy-inset) 0!important;
+  padding:0!important;
+}
+#screen-profile .profile-v2-reaction-card>small{
+  margin:2px var(--mgw-profile-copy-inset) 0!important;
+  padding:0!important;
+}
+
+/* Name-colour and badge cards render their identity in real <small> nodes while
+ * their decorative samples are separate. Remove family-only centering so the
+ * visual starts at the same top inset and copy rests at the same bottom inset. */
+#screen-profile [data-profile-name-color],
+#screen-profile [data-profile-badge-preview]{
+  align-content:start!important;
+}
+#screen-profile [data-profile-name-color]>small,
+#screen-profile [data-profile-badge-preview]>small{
+  margin:auto var(--mgw-profile-copy-inset) 0!important;
+  padding:0!important;
+}
+
+/* Selected checks use the avatar reference offset everywhere. */
+#screen-profile [data-profile-name-color]>.profile-v2-selected-check,
+#screen-profile [data-profile-badge-preview]>.profile-v2-selected-check,
+#screen-profile [data-profile-frame-preview]>.profile-v2-selected-check,
+#screen-profile .profile-v2-reaction-card>.profile-v2-selected-check,
+#screen-profile .profile-v2-background-card>.profile-v2-selected-check,
+#screen-profile .profile-v2-entry-effect-card>.profile-v2-selected-check,
+#screen-profile .profile-v2-victory-effect-card>.profile-v2-selected-check,
+#screen-profile .profile-v2-game-card>.profile-v2-selected-check{
+  top:3px!important;
+  right:3px!important;
+}
