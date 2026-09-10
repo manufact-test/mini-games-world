@@ -26,7 +26,7 @@ return [
         './assets/js/profile/mgw-profile-model.js?v=1' => './assets/js/profile/mgw-profile-model.js?v=5&mvp16=public-id-canonical-identity&mvp19_3_1=avatar-pass-through&c7=no-prehydrate-default',
         './assets/js/profile/mgw-profile-backgrounds.js?v=2&mvp19_3=profile-backgrounds-ux-corrective' => './assets/js/profile/mgw-profile-backgrounds.js?v=3&mvp19_3=full-profile-surface',
         './assets/js/profile/mgw-profile-entry-effects.js?v=1&mvp19_3=entry-effects' => './assets/js/profile/mgw-profile-entry-effects.js?v=6&mvp19_3=player-arbitration',
-        './assets/js/profile/mgw-profile-victory-effects.js?v=1&mvp19_3=victory-effects' => './assets/js/profile/mgw-profile-victory-effects-card-parity.js?v=3&mvp19_3=profile-store-parity-repair-v5&visual_repair=2',
+        './assets/js/profile/mgw-profile-victory-effects.js?v=1&mvp19_3=victory-effects' => './assets/js/profile/mgw-profile-victory-effects-card-parity.js?v=3&mvp19_3=profile-store-parity-repair-v5&visual_repair=3',
         './assets/js/profile/mgw-profile-reactions.js?v=1&mvp19_3=profile-reactions' => './assets/js/profile/mgw-profile-reactions-header.js?v=5&mvp19_3=header-square-smooth&mobile=stable-bubble-canonical-profile-nav&profile_nav=canonical-pointer-v2',
         './assets/js/profile/mgw-profile-reactions.js?v=2&mvp19_3=ingame-corrective-base' => './assets/js/profile/mgw-profile-reactions.js?v=6&mvp19_3=cumulative-owned-reactions&store=passive-owned&preview=bounded-packs-v2&route_work=game-only-v1',
         './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1156&mvp18=friend-request-lifecycle&store=post-boot-warm&profile=boot-prepared-direct-route-v1&profile_first=background-raster-prewarm-v1&tournaments=active-raster-prewarm-v1&store_first=sync-prerender-v2&store_warm=post-profile-safe-v2',
@@ -61,7 +61,7 @@ return [
         'consistency_css_previous' => './assets/css/production-v99-profile-reaction-polish.css?v=2&mvp19_3=cumulative-reaction-cards&layout=bounded-packs&owned=passive-status&profile_nav=direct-sync-v2&row_footer=stretch-v1&pack4=single-row-v1&profile_first=structural-route-guard-v1&shell_mobile=atomic-v1&profile_hidden=zero-v1&shell_motion=atomic-restored-v2&profile_motion=atomic-none-v1',
         'consistency_css_entry_base' => './assets/css/production-v100-entry-effects.css?v=2&mvp19_3=entry-effects&profile_preview=accepted-runtime-v1',
         'consistency_css_base' => './assets/css/production-v97-reactions.css?v=2&mvp19_3=ingame-corrective',
-        'bootstrap' => './assets/js/app-bootstrap-v2.js?v=10&mvp16=version-manifest&entry_v8=entry01-strike-entry02-royal-ascension-entry03-lord-entrance-v6&victory=spark-burst-profile-store-parity-repair-v5&visual_repair=2',
+        'bootstrap' => './assets/js/app-bootstrap-v2.js?v=10&mvp16=version-manifest&entry_v8=entry01-strike-entry02-royal-ascension-entry03-lord-entrance-v6&victory=spark-burst-profile-store-parity-repair-v5&visual_repair=3',
     ],
     'localization' => ['version'=>'keys-v1','default_locale'=>'ru','manifest'=>'./locales/manifest.json'],
 ];
