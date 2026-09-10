@@ -1,83 +1,69 @@
-/* Manual visual repair after staging review 2026-09-10.
- * Presentation-only. This layer owns only Store/Profile card geometry and copy.
- * It does not target the live game Victory Effect presentation. */
+/* Final Store/Profile cosmetic cascade repair after manual staging review 2026-09-10.
+ * Presentation-only. This file owns only Store/Profile card geometry and copy.
+ * It deliberately does not target the accepted live Spark Burst animation. */
 
-/* -------------------------------------------------------------------------- */
-/* STORE — Entry/Victory must visually follow the accepted avatar rhythm.      */
-/* -------------------------------------------------------------------------- */
+/* STORE — copy the real avatar-card geometry, not an approximation. */
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-grid,
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-victory-effect-grid{
   align-items:stretch!important;
 }
-
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-card,
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-victory-effect-card{
   box-sizing:border-box!important;
-  height:100%!important;
   min-height:0!important;
+  height:100%!important;
   align-self:stretch!important;
   display:flex!important;
   flex-direction:column!important;
   justify-content:flex-start!important;
-  gap:4px!important;
-  padding:6px!important;
+  gap:0!important;
+  padding:5px!important;
 }
-
-/* Keep a common title row so buttons stay aligned, but anchor a one-line title
- * at the BOTTOM of that row. The spare line therefore sits above the title,
- * never between the title and ownership/action row. */
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-copy,
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-victory-effect-copy{
   box-sizing:border-box!important;
-  display:flex!important;
-  flex-direction:column!important;
-  align-items:stretch!important;
-  justify-content:flex-end!important;
+  display:block!important;
   width:100%!important;
   min-width:0!important;
-  height:24px!important;
-  min-height:24px!important;
-  max-height:24px!important;
-  margin:0 1px!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  margin:5px 1px 4px!important;
   padding:0!important;
-  gap:0!important;
-  overflow:hidden!important;
+  overflow:visible!important;
 }
-
-/* The Entry catalogue metadata still contains old technical names. Hide that
- * raw text and publish only the accepted Store-facing names. */
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-copy>strong{
   display:block!important;
   width:100%!important;
+  min-width:0!important;
   margin:0!important;
   padding:0!important;
   font-size:0!important;
   line-height:1!important;
-  min-height:0!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
 }
-.store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-copy>strong::before{
-  content:none!important;
-  display:none!important;
-}
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-copy>strong::before{content:none!important;display:none!important}
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-copy>strong::after{
   display:block!important;
   width:100%!important;
+  min-width:0!important;
   margin:0!important;
   padding:0!important;
   color:var(--text)!important;
-  font-size:10.5px!important;
-  line-height:1.12!important;
+  font-size:9px!important;
+  line-height:1.1!important;
   font-weight:900!important;
   letter-spacing:0!important;
-  white-space:normal!important;
-  overflow:visible!important;
-  text-overflow:clip!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
 }
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-preview[data-entry-effect-variant="entry-01"]+.store-v2-entry-effect-copy>strong::after{content:'Небесные врата'!important}
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-preview[data-entry-effect-variant="entry-02"]+.store-v2-entry-effect-copy>strong::after{content:'Восхождение короля'!important}
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-preview[data-entry-effect-variant="entry-03"]+.store-v2-entry-effect-copy>strong::after{content:'Клинок владыки'!important}
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-copy>small{display:none!important}
-
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-victory-effect-copy>strong{
   display:block!important;
   width:100%!important;
@@ -85,22 +71,21 @@
   margin:0!important;
   padding:0!important;
   color:var(--text)!important;
-  font-size:10.5px!important;
-  line-height:1.12!important;
+  font-size:9px!important;
+  line-height:1.1!important;
   font-weight:900!important;
-  white-space:normal!important;
-  overflow:visible!important;
-  text-overflow:clip!important;
+  letter-spacing:0!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
 }
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-victory-effect-copy>small{display:none!important}
-
-/* Exact avatar footer geometry: 10px meta + 4px gap + 30px action. */
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-card>.mgw-profile-cosmetic-foot,
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-victory-effect-card>.mgw-profile-cosmetic-foot{
   box-sizing:border-box!important;
-  min-height:44px!important;
-  height:44px!important;
-  margin-top:0!important;
+  min-height:43px!important;
+  height:43px!important;
+  margin-top:auto!important;
   padding:0!important;
   display:flex!important;
   flex-direction:column!important;
@@ -117,34 +102,34 @@
   padding:0!important;
   color:var(--soft)!important;
   font-size:8.5px!important;
-  line-height:10px!important;
+  line-height:1!important;
   font-weight:800!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
 }
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-card>.mgw-profile-cosmetic-foot>button,
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-victory-effect-card>.mgw-profile-cosmetic-foot>button{
   box-sizing:border-box!important;
   width:100%!important;
-  height:30px!important;
-  min-height:30px!important;
+  height:27px!important;
+  min-height:27px!important;
   margin:0!important;
-  padding:0 5px!important;
+  padding:0 4px!important;
   border-radius:9px!important;
-  font-size:9px!important;
+  font-size:8.5px!important;
   line-height:1!important;
   font-weight:950!important;
 }
 
-/* -------------------------------------------------------------------------- */
-/* PROFILE — one readable title/subtitle system for every cosmetic family.     */
-/* -------------------------------------------------------------------------- */
+/* PROFILE — one readable title system. Card titles are exactly +2px over the
+ * accepted avatar source token (8.4 -> 10.4); subtitles keep avatar 7.3/650. */
 #screen-profile .profile-v2-collection-section{
-  --mgw-profile-card-title-size:10.5px;
-  --mgw-profile-card-subtitle-size:8.5px;
+  --mgw-profile-card-title-size:10.4px;
+  --mgw-profile-card-subtitle-size:7.3px;
   --mgw-profile-card-title-weight:900;
-  --mgw-profile-card-subtitle-weight:700;
+  --mgw-profile-card-subtitle-weight:650;
 }
-
-/* Section headings: +2px from the previous 11px pass. */
 #screen-profile .profile-v2-collection-title,
 #screen-profile .profile-v2-background-collection>.profile-v2-collection-title,
 #screen-profile [data-profile-reaction-collection]>.profile-v2-collection-title,
@@ -153,13 +138,13 @@
   margin:0!important;
   padding:0 1px!important;
   color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  opacity:1!important;
   font-size:13px!important;
   line-height:1.15!important;
   font-weight:900!important;
   letter-spacing:-.01em!important;
 }
-
-/* Every card title uses exactly one size, weight and white colour. */
 #screen-profile [data-profile-avatar-preview]::before,
 #screen-profile [data-profile-frame-preview]::before,
 #screen-profile [data-profile-name-color]::before,
@@ -167,16 +152,17 @@
 #screen-profile .profile-v2-reaction-card>strong,
 #screen-profile .profile-v2-background-card-copy>b,
 #screen-profile .profile-v2-entry-effect-copy>b::after,
-#screen-profile .profile-v2-victory-effect-copy>b{
+#screen-profile .profile-v2-victory-effect-copy>b::after{
   color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  opacity:1!important;
   font-size:var(--mgw-profile-card-title-size)!important;
-  line-height:1.10!important;
+  line-height:1.1!important;
   font-weight:var(--mgw-profile-card-title-weight)!important;
   letter-spacing:0!important;
   text-shadow:none!important;
+  filter:none!important;
 }
-
-/* Every subtitle uses one readable secondary token. */
 #screen-profile [data-profile-avatar-preview]::after,
 #screen-profile [data-profile-frame-preview]::after,
 #screen-profile [data-profile-name-color]::after,
@@ -186,38 +172,89 @@
 #screen-profile .profile-v2-entry-effect-copy>small::after,
 #screen-profile .profile-v2-victory-effect-copy>small::after{
   color:rgba(255,255,255,.68)!important;
+  -webkit-text-fill-color:rgba(255,255,255,.68)!important;
+  opacity:1!important;
   font-size:var(--mgw-profile-card-subtitle-size)!important;
-  line-height:1.10!important;
+  line-height:1.08!important;
   font-weight:var(--mgw-profile-card-subtitle-weight)!important;
+  text-shadow:none!important;
+  filter:none!important;
 }
 
-/* Background cards were inheriting a lighter family-specific declaration. */
+/* Background titles must have the exact same white/weight/opacity as avatars. */
 #screen-profile .profile-v2-background-card-copy>b{
   display:block!important;
   margin:0!important;
   padding:0!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  opacity:1!important;
+  font-size:var(--mgw-profile-card-title-size)!important;
+  line-height:1.1!important;
+  font-weight:900!important;
   overflow:hidden!important;
   text-overflow:ellipsis!important;
   white-space:nowrap!important;
 }
-#screen-profile .profile-v2-background-card-copy>small{
-  margin:2px 0 0!important;
-  padding:0!important;
-}
+#screen-profile .profile-v2-background-card-copy>small{margin:2px 0 0!important;padding:0!important;opacity:1!important}
 
-/* Entry cards: only the product name + family subtitle. Never technical levels. */
-#screen-profile .profile-v2-entry-effect-copy{
+/* Entry/Victory cards: same 5px inset and 3px vertical rhythm as avatar cards;
+ * no inherited square/min-height leaves an empty bottom tail. */
+#screen-profile .profile-v2-entry-effect-card,
+#screen-profile .profile-v2-victory-effect-card{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  justify-content:flex-start!important;
+  width:100%!important;
+  min-width:0!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:auto!important;
+  gap:3px!important;
+  padding:5px!important;
+  overflow:visible!important;
+}
+#screen-profile .profile-v2-entry-effect-card>.mgw-entry-effect-preview,
+#screen-profile .profile-v2-victory-effect-card>.mgw-victory-effect-preview{
+  flex:0 0 72px!important;
+  width:100%!important;
+  height:72px!important;
+  min-height:72px!important;
+  margin:0!important;
+}
+#screen-profile .profile-v2-entry-effect-copy,
+#screen-profile .profile-v2-victory-effect-copy{
+  box-sizing:border-box!important;
   display:grid!important;
   grid-template-rows:auto auto!important;
-  gap:2px!important;
+  align-content:start!important;
+  gap:1px!important;
+  width:100%!important;
+  min-width:0!important;
+  height:auto!important;
+  min-height:0!important;
   margin:0 1px!important;
   padding:0!important;
-  min-height:22px!important;
   visibility:visible!important;
   opacity:1!important;
+  overflow:visible!important;
 }
 #screen-profile .profile-v2-entry-effect-copy>b,
-#screen-profile .profile-v2-entry-effect-copy>small{font-size:0!important}
+#screen-profile .profile-v2-entry-effect-copy>small,
+#screen-profile .profile-v2-victory-effect-copy>b,
+#screen-profile .profile-v2-victory-effect-copy>small{
+  display:block!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+  font-size:0!important;
+  line-height:1!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
 #screen-profile [data-entry-effect-preview="profile-entry-effect-01"] .profile-v2-entry-effect-copy>b::after{content:'Небесные врата'!important}
 #screen-profile [data-entry-effect-preview="profile-entry-effect-02"] .profile-v2-entry-effect-copy>b::after{content:'Восхождение короля'!important}
 #screen-profile [data-entry-effect-preview="profile-entry-effect-03"] .profile-v2-entry-effect-copy>b::after{content:'Клинок владыки'!important}
@@ -227,71 +264,16 @@
   text-overflow:ellipsis!important;
   white-space:nowrap!important;
 }
-#screen-profile .profile-v2-entry-effect-copy>small::after{
-  content:'Эффект входа'!important;
+#screen-profile .profile-v2-entry-effect-copy>small::after{content:'Эффект входа'!important;display:block!important}
+#screen-profile .profile-v2-victory-effect-copy>b::after{
+  content:'Искровой залп'!important;
   display:block!important;
-}
-
-/* Victory card: explicitly reserve copy space under the square preview so the
- * product name cannot disappear behind an inherited square/aspect rule. */
-#screen-profile .profile-v2-victory-effect-card{
-  box-sizing:border-box!important;
-  display:flex!important;
-  flex-direction:column!important;
-  align-items:stretch!important;
-  justify-content:flex-start!important;
-  gap:4px!important;
-  aspect-ratio:auto!important;
-  height:auto!important;
-  min-height:0!important;
-  padding:6px!important;
-  overflow:visible!important;
-}
-#screen-profile .profile-v2-victory-effect-card>.mgw-victory-effect-preview{
-  flex:0 0 72px!important;
-  width:100%!important;
-  height:72px!important;
-  min-height:72px!important;
-  margin:0!important;
-}
-#screen-profile .profile-v2-victory-effect-copy{
-  box-sizing:border-box!important;
-  display:grid!important;
-  grid-template-rows:auto auto!important;
-  gap:2px!important;
-  width:100%!important;
-  min-width:0!important;
-  min-height:22px!important;
-  height:auto!important;
-  margin:0 1px!important;
-  padding:0!important;
-  visibility:visible!important;
-  opacity:1!important;
-  overflow:visible!important;
-}
-#screen-profile .profile-v2-victory-effect-copy>b{
-  display:block!important;
-  min-width:0!important;
-  margin:0!important;
-  padding:0!important;
   overflow:hidden!important;
   text-overflow:ellipsis!important;
   white-space:nowrap!important;
 }
-#screen-profile .profile-v2-victory-effect-copy>small{
-  display:block!important;
-  margin:0!important;
-  padding:0!important;
-  font-size:0!important;
-}
-#screen-profile .profile-v2-victory-effect-copy>small::after{
-  content:'Эффект победы'!important;
-  display:block!important;
-}
+#screen-profile .profile-v2-victory-effect-copy>small::after{content:'Эффект победы'!important;display:block!important}
 
-/* Reaction cards should not become lighter/smaller than avatars. */
+/* Reactions participate in the same title/subtitle contract, with no fade. */
 #screen-profile .profile-v2-reaction-card>strong,
-#screen-profile .profile-v2-reaction-card>small{
-  margin:0!important;
-  padding:0!important;
-}
+#screen-profile .profile-v2-reaction-card>small{margin:0!important;padding:0!important;opacity:1!important}
