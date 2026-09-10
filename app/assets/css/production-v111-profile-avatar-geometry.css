@@ -50,7 +50,7 @@
 #screen-profile .profile-v2-background-card>.profile-v2-background-card-preview,
 #screen-profile .profile-v2-entry-effect-card>.mgw-entry-effect-preview,
 #screen-profile .profile-v2-victory-effect-card>.mgw-victory-effect-preview,
-#screen-profile .profile-v2-game-card>.store-v2-game-preview{
+#screen-profile .profile-v2-game-card>[data-cosmetic-layer]{
   box-sizing:border-box!important;
   width:calc(100% - (var(--mgw-profile-avatar-visible-inset) * 2))!important;
   max-width:calc(100% - (var(--mgw-profile-avatar-visible-inset) * 2))!important;
