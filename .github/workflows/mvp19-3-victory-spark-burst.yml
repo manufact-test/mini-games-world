@@ -106,17 +106,21 @@ jobs:
           grep -F '@media(prefers-reduced-motion:reduce)' app/assets/css/production-v109-victory-effects-spark-burst.css
           grep -F 'mgwVictorySparkRay' app/assets/css/production-v109-victory-effects-spark-burst.css
           grep -F 'initBaseVictoryEffects()' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
-          grep -F 'production-v110-victory-effects-card-parity.css' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
+          grep -F 'production-v110-victory-effects-card-parity.css?v=2' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
+          grep -F '.store-v2-entry-effect-copy' app/assets/css/production-v110-victory-effects-card-parity.css
+          grep -F 'margin:5px 1px 0!important' app/assets/css/production-v110-victory-effects-card-parity.css
           grep -F '.store-v2-entry-effect-card>.mgw-profile-cosmetic-foot' app/assets/css/production-v110-victory-effects-card-parity.css
           grep -F 'margin-top:4px!important' app/assets/css/production-v110-victory-effects-card-parity.css
-          grep -F '#screen-profile .profile-v2-victory-effect-copy' app/assets/css/production-v110-victory-effects-card-parity.css
-          grep -F 'font-size:10.5px!important' app/assets/css/production-v110-victory-effects-card-parity.css
+          grep -F 'padding-top:0!important' app/assets/css/production-v110-victory-effects-card-parity.css
+          grep -F 'font-size:8.4px!important' app/assets/css/production-v110-victory-effects-card-parity.css
+          grep -F 'font-size:7.3px!important' app/assets/css/production-v110-victory-effects-card-parity.css
+          grep -F '[data-profile-victory-effect-collection]>.profile-v2-collection-title' app/assets/css/production-v110-victory-effects-card-parity.css
           ! grep -Eq '\.(webp|png|jpe?g)' app/assets/js/profile/mgw-profile-victory-effects.js
           ! grep -Fq 'gameAction(' app/assets/js/profile/mgw-profile-victory-effects.js
           grep -F "initMgwProfileVictoryEffects } from './profile/mgw-profile-victory-effects.js?v=1&mvp19_3=victory-effects'" app/assets/js/production-v110-readonly-game-sync.js
           grep -F "document.addEventListener('mgw:app-ready', initMgwProfileVictoryEffects" app/assets/js/production-v110-readonly-game-sync.js
-          grep -F 'mgw-profile-victory-effects-card-parity.js?v=1&mvp19_3=spark-burst-card-parity-v3' app/runtime/client/version-manifest.php
-          grep -F 'victory_effects=spark-burst-card-parity-v3' app/runtime/client/version-manifest.php
+          grep -F 'mgw-profile-victory-effects-card-parity.js?v=2&mvp19_3=exact-avatar-parity-v4' app/runtime/client/version-manifest.php
+          grep -F 'victory=spark-burst-exact-avatar-parity-v4' app/runtime/client/version-manifest.php
           git diff --check
 
       - name: Guard frozen engines and bounded Victory slice
@@ -146,7 +150,7 @@ jobs:
               .github/workflows/mvp19-3-victory-spark-burst.yml)
                 ;;
               *)
-                echo "Unexpected path in Spark Burst card parity corrective: $path" >&2
+                echo "Unexpected path in Spark Burst exact avatar parity corrective: $path" >&2
                 bad=1
                 ;;
             esac
