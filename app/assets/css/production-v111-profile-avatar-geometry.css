@@ -167,3 +167,18 @@
   top:3px!important;
   right:3px!important;
 }
+
+/* Manual screenshot acceptance 2026-09-10: every Profile collection card needs
+ * exactly +3px breathing room at the rounded bottom edge. Keep top/left/right at
+ * the accepted 5px and change only the bottom inset to 8px. */
+#screen-profile [data-profile-avatar-preview],
+#screen-profile [data-profile-frame-preview],
+#screen-profile [data-profile-name-color],
+#screen-profile [data-profile-badge-preview],
+#screen-profile .profile-v2-reaction-card,
+#screen-profile .profile-v2-background-card,
+#screen-profile .profile-v2-entry-effect-card,
+#screen-profile .profile-v2-victory-effect-card,
+#screen-profile .profile-v2-game-card{
+  padding:5px 5px 8px!important;
+}
