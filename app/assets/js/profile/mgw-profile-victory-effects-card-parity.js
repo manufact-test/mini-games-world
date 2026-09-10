@@ -1,7 +1,9 @@
 import { initMgwProfileVictoryEffects as initBaseVictoryEffects } from './mgw-profile-victory-effects.js?v=2&mvp19_3=spark-burst-visual-parity';
+import { initMgwProfilePreviewCopyCorrective } from './mgw-profile-preview-copy-corrective.js?v=1&mvp19_3=profile-sheet-copy-final';
 
 export function initMgwProfileVictoryEffects(){
   initBaseVictoryEffects();
+  initMgwProfilePreviewCopyCorrective();
   ensureCardParityStylesheet();
   ensureVisualRepairStylesheet();
   ensureAvatarGeometryStylesheet();
@@ -29,7 +31,7 @@ function ensureAvatarGeometryStylesheet(){
   if (document.querySelector('link[data-mgw-profile-avatar-geometry]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwProfileAvatarGeometry = '3';
-  link.href = new URL('../../css/production-v111-profile-avatar-geometry.css?v=3&mvp19_3=subtitle-hidden-namecolor-centered-bottom8', import.meta.url).href;
+  link.dataset.mgwProfileAvatarGeometry = '4';
+  link.href = new URL('../../css/production-v111-profile-avatar-geometry.css?v=4&mvp19_3=content-flow-sheet-copy-final', import.meta.url).href;
   document.head.append(link);
 }
