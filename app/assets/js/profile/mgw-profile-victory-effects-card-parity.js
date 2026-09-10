@@ -6,6 +6,7 @@ export function initMgwProfileVictoryEffects(){
   ensureVisualRepairStylesheet();
   ensureAvatarGeometryStylesheet();
   ensureFireworkSalvoStylesheet();
+  ensureVictoryTierSwapStylesheet();
 }
 
 function ensureCardParityStylesheet(){
@@ -41,5 +42,14 @@ function ensureFireworkSalvoStylesheet(){
   link.rel = 'stylesheet';
   link.dataset.mgwVictoryFireworkSalvoCss = 'v1';
   link.href = new URL('../../css/production-v112-victory-effects-firework-salvo.css?v=1&mvp19_3=firework-salvo', import.meta.url).href;
+  document.head.append(link);
+}
+
+function ensureVictoryTierSwapStylesheet(){
+  if (document.querySelector('link[data-mgw-victory-tier-swap-css]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwVictoryTierSwapCss = 'v1';
+  link.href = new URL('../../css/production-v113-victory-effects-tier-swap.css?v=1&mvp19_3=swap-01-02', import.meta.url).href;
   document.head.append(link);
 }
