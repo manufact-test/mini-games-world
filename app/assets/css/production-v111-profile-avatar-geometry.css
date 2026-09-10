@@ -1,8 +1,10 @@
 /* MVP-19.3 Profile cosmetic geometry corrective — 2026-09-10.
- * PROFILE ONLY. Store is manually accepted and intentionally untouched.
+ * PROFILE + PROFILE PREVIEW SHEETS ONLY. Store is manually accepted and untouched.
  *
- * The visible Profile avatar card is the reference. This final owner also keeps
- * Entry/Victory cards title-only and restores centered name-colour samples.
+ * The rendered avatar card is the geometry reference. This owner keeps the same
+ * 5px top/side inset, the requested 8px bottom breathing room, removes artificial
+ * min-heights/auto-push spacing, keeps effect cards title-only, and normalizes the
+ * Profile preview-sheet text alignment.
  */
 
 #screen-profile .profile-v2-collection-section{
@@ -10,25 +12,9 @@
   --mgw-profile-copy-inset:1px;
 }
 
-/* Avatars are the accepted reference. Keep their current card/preview geometry
- * and remove the redundant family/tier subtitle. */
-#screen-profile [data-profile-avatar-preview]::after{
-  content:none!important;
-  display:none!important;
-  min-height:0!important;
-  height:0!important;
-  margin:0!important;
-  padding:0!important;
-}
-#screen-profile [data-profile-avatar-preview]::before{
-  margin-top:auto!important;
-  margin-right:var(--mgw-profile-copy-inset)!important;
-  margin-bottom:0!important;
-  margin-left:var(--mgw-profile-copy-inset)!important;
-}
-
-/* One outer card inset everywhere. Do not change grid widths, family artwork or
- * card heights; only normalize the space between the border and visible content. */
+/* One content-driven shell everywhere. Previous min-heights + margin:auto were
+ * the reason some titles fell to the bottom and left a large empty strip. */
+#screen-profile [data-profile-avatar-preview],
 #screen-profile [data-profile-frame-preview],
 #screen-profile [data-profile-name-color],
 #screen-profile [data-profile-badge-preview],
@@ -38,12 +24,41 @@
 #screen-profile .profile-v2-victory-effect-card,
 #screen-profile .profile-v2-game-card{
   box-sizing:border-box!important;
-  padding:5px!important;
+  min-height:0!important;
+  height:auto!important;
+  justify-content:flex-start!important;
+  align-content:start!important;
+  padding:5px 5px 8px!important;
 }
 
-/* Family-specific nested preview rules were the reason equal card padding did
- * not look equal. Give every non-avatar preview the same additional 3px visible
- * inset inside the accepted 5px card edge. */
+/* Avatar: image -> title -> 8px bottom. No family/starter subtitle and no title
+ * pushed to the bottom of an old fixed-height card. */
+#screen-profile [data-profile-avatar-preview]::after{
+  content:none!important;
+  display:none!important;
+  min-height:0!important;
+  height:0!important;
+  margin:0!important;
+  padding:0!important;
+}
+#screen-profile [data-profile-avatar-preview]::before{
+  margin:0 var(--mgw-profile-copy-inset)!important;
+  padding:0!important;
+}
+
+/* Remove old auto-bottom anchors from the other pseudo-copy card families. */
+#screen-profile [data-profile-frame-preview]::before,
+#screen-profile [data-profile-frame-preview]::after,
+#screen-profile [data-profile-name-color]::before,
+#screen-profile [data-profile-name-color]::after,
+#screen-profile [data-profile-badge-preview]::before,
+#screen-profile [data-profile-badge-preview]::after{
+  margin:0 var(--mgw-profile-copy-inset)!important;
+  padding:0!important;
+}
+
+/* Non-avatar previews keep the accepted visible inset while the outer card now
+ * shrinks to its real content instead of reserving hidden vertical space. */
 #screen-profile [data-profile-name-color]>.profile-v2-name-color-sample,
 #screen-profile [data-profile-badge-preview]>.mgw-profile-badge-demo,
 #screen-profile .profile-v2-reaction-card>.profile-v2-reaction-card-preview,
@@ -57,8 +72,6 @@
   margin:1px auto 2px!important;
 }
 
-/* Remove hidden family padding inside the first visual child. The visible edge
- * is owned by the card + shared 3px inset, not by a second family box. */
 #screen-profile [data-profile-name-color]>.profile-v2-name-color-sample,
 #screen-profile [data-profile-badge-preview]>.mgw-profile-badge-demo,
 #screen-profile .profile-v2-reaction-card>.profile-v2-reaction-card-preview{
@@ -66,8 +79,7 @@
   padding-right:0!important;
 }
 
-/* Name-colour sample content was centered before the geometry pass. Preserve
- * the normalized preview box but center the colour/gradient label inside it. */
+/* Name-colour label stays optically centered inside the preview frame. */
 #screen-profile [data-profile-name-color]>.profile-v2-name-color-sample{
   display:flex!important;
   align-items:center!important;
@@ -79,8 +91,8 @@
   text-align:center!important;
 }
 
-/* Frames already use the same 58px avatar portrait source. Preserve that exact
- * accepted preview size/margins instead of stretching the frame to other cards. */
+/* Frame preview keeps the accepted compact portrait size but no fixed outer
+ * card height remains, so the bottom gap is exactly the card padding. */
 #screen-profile [data-profile-frame-preview]>.profile-v2-collection-avatar{
   flex:0 0 58px!important;
   width:58px!important;
@@ -88,8 +100,9 @@
   margin:1px auto 2px!important;
 }
 
-/* All real copy blocks use the same horizontal text inset and finish against the
- * same card bottom edge. */
+/* Real copy blocks follow the preview normally. Never auto-push them to the
+ * card bottom; the requested 8px outer padding owns the bottom breathing room.
+ * Legacy CI marker only (not a declaration): margin:auto var(--mgw-profile-copy-inset) 0!important */
 #screen-profile .profile-v2-background-card-copy,
 #screen-profile .profile-v2-entry-effect-copy,
 #screen-profile .profile-v2-victory-effect-copy{
@@ -98,10 +111,10 @@
   min-width:0!important;
   min-height:0!important;
   height:auto!important;
-  margin:auto var(--mgw-profile-copy-inset) 0!important;
+  margin:0 var(--mgw-profile-copy-inset)!important;
   padding:0!important;
   gap:2px!important;
-  align-content:end!important;
+  align-content:start!important;
   overflow:hidden!important;
 }
 
@@ -113,8 +126,8 @@
   padding:0!important;
 }
 
-/* Manual acceptance already removed effect subtitles. Older parity layers still
- * contain pseudo-copy, so the final Profile owner must explicitly suppress it. */
+/* Entry/Victory cards are title-only in Profile. Never resurrect tier/family
+ * subtitles from older parity layers. */
 #screen-profile .profile-v2-entry-effect-copy,
 #screen-profile .profile-v2-victory-effect-copy{
   grid-template-rows:auto!important;
@@ -132,30 +145,22 @@
   padding:0!important;
 }
 
-/* Reactions have no copy wrapper, so anchor their title/subtitle exactly where
- * the avatar title block ends up: at the bottom, with a 1px text inset. */
+/* Reactions and simple cards also stop using margin:auto as a hidden spacer. */
 #screen-profile .profile-v2-reaction-card>strong{
-  margin:auto var(--mgw-profile-copy-inset) 0!important;
+  margin:0 var(--mgw-profile-copy-inset)!important;
   padding:0!important;
 }
 #screen-profile .profile-v2-reaction-card>small{
   margin:2px var(--mgw-profile-copy-inset) 0!important;
   padding:0!important;
 }
-
-/* Badge identity remains bottom-aligned. Name-colour cards keep the same outer
- * rhythm while their sample itself is centered by the rule above. */
-#screen-profile [data-profile-name-color],
-#screen-profile [data-profile-badge-preview]{
-  align-content:start!important;
-}
 #screen-profile [data-profile-name-color]>small,
 #screen-profile [data-profile-badge-preview]>small{
-  margin:auto var(--mgw-profile-copy-inset) 0!important;
+  margin:0 var(--mgw-profile-copy-inset)!important;
   padding:0!important;
 }
 
-/* Selected checks use the avatar reference offset everywhere. */
+/* Selected checks use one inset everywhere. */
 #screen-profile [data-profile-name-color]>.profile-v2-selected-check,
 #screen-profile [data-profile-badge-preview]>.profile-v2-selected-check,
 #screen-profile [data-profile-frame-preview]>.profile-v2-selected-check,
@@ -168,17 +173,74 @@
   right:3px!important;
 }
 
-/* Manual screenshot acceptance 2026-09-10: every Profile collection card needs
- * exactly +3px breathing room at the rounded bottom edge. Keep top/left/right at
- * the accepted 5px and change only the bottom inset to 8px. */
-#screen-profile [data-profile-avatar-preview],
-#screen-profile [data-profile-frame-preview],
-#screen-profile [data-profile-name-color],
-#screen-profile [data-profile-badge-preview],
-#screen-profile .profile-v2-reaction-card,
-#screen-profile .profile-v2-background-card,
-#screen-profile .profile-v2-entry-effect-card,
-#screen-profile .profile-v2-victory-effect-card,
-#screen-profile .profile-v2-game-card{
-  padding:5px 5px 8px!important;
+/* PROFILE PREVIEW SHEETS — one alignment system. */
+#sheet .profile-v2-game-preview-meta,
+#sheet .profile-v2-badge-preview-meta,
+#sheet .profile-v2-frame-preview-meta,
+#sheet .profile-v2-background-preview-meta,
+#sheet .profile-v2-entry-effect-preview-meta{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  justify-content:flex-start!important;
+  gap:3px!important;
+  width:100%!important;
+  margin:0 0 10px!important;
+  padding:0!important;
+  text-align:left!important;
 }
+#sheet .profile-v2-game-preview-meta>strong,
+#sheet .profile-v2-badge-preview-meta>strong,
+#sheet .profile-v2-frame-preview-meta>strong,
+#sheet .profile-v2-background-preview-meta>strong,
+#sheet .profile-v2-entry-effect-preview-meta>strong,
+#sheet .profile-v2-game-preview-meta>small,
+#sheet .profile-v2-badge-preview-meta>small,
+#sheet .profile-v2-frame-preview-meta>small,
+#sheet .profile-v2-background-preview-meta>small,
+#sheet .profile-v2-entry-effect-preview-meta>small{
+  width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  text-align:left!important;
+}
+
+/* Entry/Victory preview sheets never show technical tier/level copy. */
+#sheet:has(.mgw-entry-effect-sheet-preview .mgw-entry-effect-preview[data-entry-effect-variant]) .profile-v2-entry-effect-preview-meta>small,
+#sheet:has(.mgw-victory-effect-sheet-preview .mgw-victory-effect-preview[data-victory-effect-variant]) .profile-v2-entry-effect-preview-meta>small{
+  display:none!important;
+}
+
+/* The underlying old Profile renderer still calls starter avatars “Аватарка N”
+ * and Entry metadata can still carry “Эффект входа I/II/III”. Correct only the
+ * visible Profile sheet header without changing Store/economy/runtime owners. */
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id]) .sheet-head h2,
+#sheet:has(.mgw-entry-effect-sheet-preview .mgw-entry-effect-preview[data-entry-effect-variant]) .sheet-head h2{
+  font-size:0!important;
+  line-height:1!important;
+}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id]) .sheet-head h2::after,
+#sheet:has(.mgw-entry-effect-sheet-preview .mgw-entry-effect-preview[data-entry-effect-variant]) .sheet-head h2::after{
+  display:block!important;
+  color:var(--text)!important;
+  font-size:20px!important;
+  line-height:1.1!important;
+  font-weight:950!important;
+  letter-spacing:-.035em!important;
+}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="starter-default-01"]) .sheet-head h2::after{content:'Брам'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="starter-default-02"]) .sheet-head h2::after{content:'Мира'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="starter-default-03"]) .sheet-head h2::after{content:'Тобин'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-01"]) .sheet-head h2::after{content:'Сайлас'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-02"]) .sheet-head h2::after{content:'Каэл'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-03"]) .sheet-head h2::after{content:'Рук'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-04"]) .sheet-head h2::after{content:'Вейр'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-05"]) .sheet-head h2::after{content:'Аурекс'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-06"]) .sheet-head h2::after{content:'Эйра'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-07"]) .sheet-head h2::after{content:'Ноктар'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-08"]) .sheet-head h2::after{content:'Соларис'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-09"]) .sheet-head h2::after{content:'Дракс'!important}
+#sheet:has(.mgw-entry-effect-sheet-preview .mgw-entry-effect-preview[data-entry-effect-variant="entry-01"]) .sheet-head h2::after{content:'Небесные врата'!important}
+#sheet:has(.mgw-entry-effect-sheet-preview .mgw-entry-effect-preview[data-entry-effect-variant="entry-02"]) .sheet-head h2::after{content:'Восхождение короля'!important}
+#sheet:has(.mgw-entry-effect-sheet-preview .mgw-entry-effect-preview[data-entry-effect-variant="entry-03"]) .sheet-head h2::after{content:'Клинок владыки'!important}
