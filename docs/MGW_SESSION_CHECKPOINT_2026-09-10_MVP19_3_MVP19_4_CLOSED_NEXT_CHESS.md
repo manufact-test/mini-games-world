@@ -1,0 +1,27 @@
+# MGW SESSION CHECKPOINT — 2026-09-10
+
+- Integration branch: `agent/mvp-13-2-staging`.
+- Audited staging base SHA: `2afaf7a0cdb7d453040175725d342496a1396dda`.
+- Audited staging base tree: `dd1b8558d3e063867208f301a7bb6125adc485e8`.
+- Closure working branch: `agent/mvp-19-3-19-4-reconcile-close`.
+- Current formal state: MVP-19.3 CLOSED; MVP-19.4 CLOSED; NEXT MVP-19.5 Chess cosmetics.
+- MVP-19.3 reconciliation confirms active v110 route from `WebAppLaunchUrl.php` through the version manifest.
+- Active profile graph contains avatars, name colors, badges, frames, backgrounds, reactions, profile-route transition polish, Entry Effects and Victory Effects.
+- Entry Effects remain accepted/frozen; no mechanics or route ownership changes were made in this closure.
+- Victory Effects are complete and manually accepted: Firework Salvo 5,000; Spark Burst 8,500; Victory Nova 12,500.
+- Victory Nova remains `profile-victory-effect-03`, ~3.5 s, explicit equip/unequip, winner-owned projection, draw = none.
+- Store remains discovery/purchase; Profile remains collection/equip.
+- `ProductInventoryService` remains the permanent ownership/equipment owner; purchases do not auto-equip.
+- MVP-19.4 factual foundation is present from merged PRs #1083, #1084 and #1085.
+- MVP-19.4 includes the generic game-cosmetics flow plus the Tic Tac Toe pilot: 4 fields, 4 mark sets, 3 effects and 34,000 premium bundle.
+- Tic Tac Toe cosmetics remain owner-specific and presentation-only; gameplay rules/timers/winner resolution are not cosmetic owners.
+- MVP-19.4 closure does NOT close future MVP-19.10; the later dedicated Tic Tac Toe cosmetics pass remains on the roadmap.
+- Current staging readiness/fingerprint gate matched the exact deployed staging revision during the latest E2E run.
+- Staging Playwright still reports an independent gate defect: `/bot/health.php` returns HTTP 503 and is counted as server 5xx.
+- That 503 is not masked or reclassified; its health owner predates these cosmetic slices and remains a separate staging-gate issue.
+- Manual Telegram acceptance of the exact Victory Effects runtime remains authoritative for the completed user-facing slice.
+- No changes in this closure to `bot/games/**`, `app/assets/js/screens/game-screen-v102.js`, accepted Profile/Store geometry, main, production, Cron or live DB.
+- Safe stop: MVP-19.3 and MVP-19.4 are reconciled and formally closed on their scoped contracts.
+- Next exact implementation: MVP-19.5 Chess cosmetics on the existing common framework.
+- Chess scope: boards (wood / dark tournament / marble / neon), pieces (wood / marble / metal / neon), effects (move / capture / check), common price grid, 34,000 premium bundle.
+- Chess safety: presentation/equip/projection only; do not alter chess rules, actions, timers or winner semantics.
