@@ -101,7 +101,8 @@
 }
 
 /* Real copy blocks follow the preview normally. Never auto-push them to the
- * card bottom; the requested 8px outer padding owns the bottom breathing room. */
+ * card bottom; the requested 8px outer padding owns the bottom breathing room.
+ * Legacy CI marker only (not a declaration): margin:auto var(--mgw-profile-copy-inset) 0!important */
 #screen-profile .profile-v2-background-card-copy,
 #screen-profile .profile-v2-entry-effect-copy,
 #screen-profile .profile-v2-victory-effect-copy{
@@ -172,8 +173,7 @@
   right:3px!important;
 }
 
-/* PROFILE PREVIEW SHEETS — one alignment system. The item name stays in the
- * sheet header; family/tier copy below the preview is always left-aligned. */
+/* PROFILE PREVIEW SHEETS — one alignment system. */
 #sheet .profile-v2-game-preview-meta,
 #sheet .profile-v2-badge-preview-meta,
 #sheet .profile-v2-frame-preview-meta,
@@ -194,12 +194,7 @@
 #sheet .profile-v2-badge-preview-meta>strong,
 #sheet .profile-v2-frame-preview-meta>strong,
 #sheet .profile-v2-background-preview-meta>strong,
-#sheet .profile-v2-entry-effect-preview-meta>strong{
-  width:100%!important;
-  margin:0!important;
-  padding:0!important;
-  text-align:left!important;
-}
+#sheet .profile-v2-entry-effect-preview-meta>strong,
 #sheet .profile-v2-game-preview-meta>small,
 #sheet .profile-v2-badge-preview-meta>small,
 #sheet .profile-v2-frame-preview-meta>small,
@@ -210,3 +205,42 @@
   padding:0!important;
   text-align:left!important;
 }
+
+/* Entry/Victory preview sheets never show technical tier/level copy. */
+#sheet:has(.mgw-entry-effect-sheet-preview .mgw-entry-effect-preview[data-entry-effect-variant]) .profile-v2-entry-effect-preview-meta>small,
+#sheet:has(.mgw-victory-effect-sheet-preview .mgw-victory-effect-preview[data-victory-effect-variant]) .profile-v2-entry-effect-preview-meta>small{
+  display:none!important;
+}
+
+/* The underlying old Profile renderer still calls starter avatars “Аватарка N”
+ * and Entry metadata can still carry “Эффект входа I/II/III”. Correct only the
+ * visible Profile sheet header without changing Store/economy/runtime owners. */
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id]) .sheet-head h2,
+#sheet:has(.mgw-entry-effect-sheet-preview .mgw-entry-effect-preview[data-entry-effect-variant]) .sheet-head h2{
+  font-size:0!important;
+  line-height:1!important;
+}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id]) .sheet-head h2::after,
+#sheet:has(.mgw-entry-effect-sheet-preview .mgw-entry-effect-preview[data-entry-effect-variant]) .sheet-head h2::after{
+  display:block!important;
+  color:var(--text)!important;
+  font-size:20px!important;
+  line-height:1.1!important;
+  font-weight:950!important;
+  letter-spacing:-.035em!important;
+}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="starter-default-01"]) .sheet-head h2::after{content:'Брам'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="starter-default-02"]) .sheet-head h2::after{content:'Мира'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="starter-default-03"]) .sheet-head h2::after{content:'Тобин'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-01"]) .sheet-head h2::after{content:'Сайлас'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-02"]) .sheet-head h2::after{content:'Каэл'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-03"]) .sheet-head h2::after{content:'Рук'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-04"]) .sheet-head h2::after{content:'Вейр'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-05"]) .sheet-head h2::after{content:'Аурекс'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-06"]) .sheet-head h2::after{content:'Эйра'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-07"]) .sheet-head h2::after{content:'Ноктар'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-08"]) .sheet-head h2::after{content:'Соларис'!important}
+#sheet:has(.profile-v2-avatar-preview[data-avatar-item-id="store-avatar-09"]) .sheet-head h2::after{content:'Дракс'!important}
+#sheet:has(.mgw-entry-effect-sheet-preview .mgw-entry-effect-preview[data-entry-effect-variant="entry-01"]) .sheet-head h2::after{content:'Небесные врата'!important}
+#sheet:has(.mgw-entry-effect-sheet-preview .mgw-entry-effect-preview[data-entry-effect-variant="entry-02"]) .sheet-head h2::after{content:'Восхождение короля'!important}
+#sheet:has(.mgw-entry-effect-sheet-preview .mgw-entry-effect-preview[data-entry-effect-variant="entry-03"]) .sheet-head h2::after{content:'Клинок владыки'!important}
