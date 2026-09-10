@@ -1,4 +1,4 @@
-import { initMgwProfileVictoryEffects as initBaseVictoryEffects } from './mgw-profile-victory-effects.js?v=3&mvp19_3=firework-salvo';
+import { initMgwProfileVictoryEffects as initBaseVictoryEffects } from './mgw-profile-victory-effects-v4.js?v=1&mvp19_3=victory-nova';
 
 export function initMgwProfileVictoryEffects(){
   initBaseVictoryEffects();
@@ -7,6 +7,7 @@ export function initMgwProfileVictoryEffects(){
   ensureAvatarGeometryStylesheet();
   ensureFireworkSalvoStylesheet();
   ensureVictoryTierSwapStylesheet();
+  ensureVictoryNovaStylesheet();
 }
 
 function ensureCardParityStylesheet(){
@@ -51,5 +52,14 @@ function ensureVictoryTierSwapStylesheet(){
   link.rel = 'stylesheet';
   link.dataset.mgwVictoryTierSwapCss = 'v1';
   link.href = new URL('../../css/production-v113-victory-effects-tier-swap.css?v=1&mvp19_3=swap-01-02', import.meta.url).href;
+  document.head.append(link);
+}
+
+function ensureVictoryNovaStylesheet(){
+  if (document.querySelector('link[data-mgw-victory-nova-css]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwVictoryNovaCss = 'v1';
+  link.href = new URL('../../css/production-v114-victory-effects-victory-nova.css?v=1&mvp19_3=victory-nova', import.meta.url).href;
   document.head.append(link);
 }
