@@ -118,6 +118,6 @@ $assertTrue(str_contains($cardParityCss, '.profile-v2-background-card-copy>b') &
 $assertTrue(str_contains($cardParityCss, '#screen-profile .profile-v2-victory-effect-copy') && str_contains($cardParityCss, 'visibility:visible!important'), 'Profile Victory card must keep the selected effect name below the preview');
 $assertTrue(str_contains($watcher, "document.addEventListener('mgw:app-ready', initMgwProfileVictoryEffects") && str_contains($watcher, 'mgw-profile-victory-effects.js?v=1&mvp19_3=victory-effects'), 'Shared runtime must initialize Victory Effects after app-ready');
 $assertTrue(!str_contains($gameScreen, 'victory_effect_item_id') && !str_contains($gameScreen, 'mgw-victory-effect'), 'Frozen result/game owner must not absorb Victory presentation logic');
-$assertTrue(str_contains($manifest, 'mgw-profile-victory-effects-card-parity.js?v=3&mvp19_3=profile-store-parity-repair-v5') && str_contains($manifest, 'victory=spark-burst-profile-store-parity-repair-v5'), 'Active v110 manifest must cache-publish the repaired Profile/Store parity layer');
+$assertTrue(str_contains($manifest, 'mgw-profile-victory-effects-card-parity.js?v=4&mvp19_3=profile-card-spacing-unify&visual_repair=4') && str_contains($manifest, 'victory=spark-burst-profile-card-spacing-unify&visual_repair=4'), 'Active v110 manifest must cache-publish the unified Profile cosmetic spacing layer');
 
 fwrite(STDOUT, "MVP-19.3 Victory Spark Burst passed ({$assertions} assertions).\n");
