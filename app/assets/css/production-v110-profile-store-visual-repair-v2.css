@@ -277,3 +277,48 @@
 /* Reactions participate in the same title/subtitle contract, with no fade. */
 #screen-profile .profile-v2-reaction-card>strong,
 #screen-profile .profile-v2-reaction-card>small{margin:0!important;padding:0!important;opacity:1!important}
+
+/* PROFILE FINAL GEOMETRY — Entry Effect is the reference card. Every cosmetic
+ * collection card now uses exactly the same 5px frame inset and 3px internal
+ * rhythm. Store is intentionally untouched by this block. */
+#screen-profile [data-profile-avatar-preview],
+#screen-profile [data-profile-frame-preview],
+#screen-profile [data-profile-name-color],
+#screen-profile [data-profile-badge-preview],
+#screen-profile .profile-v2-reaction-card,
+#screen-profile .profile-v2-background-card,
+#screen-profile .profile-v2-entry-effect-card,
+#screen-profile .profile-v2-victory-effect-card,
+#screen-profile .profile-v2-game-card{
+  box-sizing:border-box!important;
+  padding:5px!important;
+  gap:3px!important;
+}
+
+/* Entry/Victory copy follows the same bottom text rhythm as ordinary Profile
+ * cosmetic cards: content is kept inside the frame, anchored after the preview,
+ * and the card's own 5px bottom padding remains visible. */
+#screen-profile .profile-v2-entry-effect-copy,
+#screen-profile .profile-v2-victory-effect-copy{
+  display:grid!important;
+  grid-template-rows:auto auto!important;
+  align-content:end!important;
+  gap:2px!important;
+  min-height:18px!important;
+  margin:auto 1px 0!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+#screen-profile .profile-v2-entry-effect-copy>b::after,
+#screen-profile .profile-v2-entry-effect-copy>small::after,
+#screen-profile .profile-v2-victory-effect-copy>b::after,
+#screen-profile .profile-v2-victory-effect-copy>small::after{
+  margin:0!important;
+  padding:0!important;
+}
+
+/* Background cards had their selected check positioned for the old 8px inset. */
+#screen-profile .profile-v2-background-card>.profile-v2-selected-check{
+  top:3px!important;
+  right:3px!important;
+}

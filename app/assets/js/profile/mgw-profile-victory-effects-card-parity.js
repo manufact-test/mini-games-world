@@ -19,7 +19,7 @@ function ensureVisualRepairStylesheet(){
   if (document.querySelector('link[data-mgw-profile-store-visual-repair-v2]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwProfileStoreVisualRepairV2 = '2';
-  link.href = new URL('../../css/production-v110-profile-store-visual-repair-v2.css?v=2&mvp19_3=manual-review-cascade-fix', import.meta.url).href;
+  link.dataset.mgwProfileStoreVisualRepairV2 = '3';
+  link.href = new URL('../../css/production-v110-profile-store-visual-repair-v2.css?v=3&mvp19_3=profile-card-spacing-unify', import.meta.url).href;
   document.head.append(link);
 }

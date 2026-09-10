@@ -108,7 +108,7 @@ jobs:
           grep -F 'mgwVictorySparkRay' app/assets/css/production-v109-victory-effects-spark-burst.css
           grep -F 'initBaseVictoryEffects()' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
           grep -F 'production-v110-victory-effects-card-parity.css?v=3' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
-          grep -F 'production-v110-profile-store-visual-repair-v2.css?v=2' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
+          grep -F 'production-v110-profile-store-visual-repair-v2.css?v=3' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
           grep -F '.store-v2-entry-effect-copy' app/assets/css/production-v110-profile-store-visual-repair-v2.css
           grep -F 'margin:5px 1px 4px!important' app/assets/css/production-v110-profile-store-visual-repair-v2.css
           grep -F 'font-size:9px!important' app/assets/css/production-v110-profile-store-visual-repair-v2.css
@@ -121,13 +121,19 @@ jobs:
           grep -F "content:'Искровой залп'!important" app/assets/css/production-v110-profile-store-visual-repair-v2.css
           grep -F "content:'Эффект победы'!important" app/assets/css/production-v110-profile-store-visual-repair-v2.css
           grep -F -- '-webkit-text-fill-color:#fff!important' app/assets/css/production-v110-profile-store-visual-repair-v2.css
+          grep -F '#screen-profile .profile-v2-background-card,' app/assets/css/production-v110-profile-store-visual-repair-v2.css
+          grep -F '#screen-profile .profile-v2-game-card{' app/assets/css/production-v110-profile-store-visual-repair-v2.css
+          grep -F 'padding:5px!important;' app/assets/css/production-v110-profile-store-visual-repair-v2.css
+          grep -F 'gap:3px!important;' app/assets/css/production-v110-profile-store-visual-repair-v2.css
+          grep -F 'margin:auto 1px 0!important;' app/assets/css/production-v110-profile-store-visual-repair-v2.css
+          grep -F 'top:3px!important;' app/assets/css/production-v110-profile-store-visual-repair-v2.css
           ! grep -Fq '.mgw-victory-effect-layer' app/assets/css/production-v110-profile-store-visual-repair-v2.css
           ! grep -Eq '\.(webp|png|jpe?g)' app/assets/js/profile/mgw-profile-victory-effects.js
           ! grep -Fq 'gameAction(' app/assets/js/profile/mgw-profile-victory-effects.js
           grep -F "initMgwProfileVictoryEffects } from './profile/mgw-profile-victory-effects.js?v=1&mvp19_3=victory-effects'" app/assets/js/production-v110-readonly-game-sync.js
           grep -F "document.addEventListener('mgw:app-ready', initMgwProfileVictoryEffects" app/assets/js/production-v110-readonly-game-sync.js
-          grep -F 'mgw-profile-victory-effects-card-parity.js?v=3&mvp19_3=profile-store-parity-repair-v5&visual_repair=3' app/runtime/client/version-manifest.php
-          grep -F 'victory=spark-burst-profile-store-parity-repair-v5&visual_repair=3' app/runtime/client/version-manifest.php
+          grep -F 'mgw-profile-victory-effects-card-parity.js?v=4&mvp19_3=profile-card-spacing-unify&visual_repair=4' app/runtime/client/version-manifest.php
+          grep -F 'victory=spark-burst-profile-card-spacing-unify&visual_repair=4' app/runtime/client/version-manifest.php
           git diff --check
 
       - name: Guard frozen engines and bounded Victory slice
