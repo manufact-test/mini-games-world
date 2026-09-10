@@ -7,10 +7,19 @@ const GLYPHS = {
   wK:'♚',wQ:'♛',wR:'♜',wB:'♝',wN:'♞',wP:'♟',
   bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟',
 };
+const EFFECT_VARIANTS = Object.freeze({
+  'game-chess-effect-move':'move',
+  'game-chess-effect-capture':'capture',
+  'game-chess-effect-check':'check',
+});
 
 export function renderChessSurface({ game, me, container, onAction }){
   const gameId = String(game?.id || '');
   const myId = String(me?.id || '');
+  const players = Array.isArray(game?.players) ? game.players : [];
+  const viewer = players.find(player => String(player?.id || '') === myId) || null;
+  const opponent = players.find(player => String(player?.id || '') !== myId) || null;
+  const playerBySide = new Map(players.map(player => [String(player?.side || ''), player]));
   const mySide = String(game?.viewer_side || playerSide(game, myId) || 'white');
   const isMyTurn = game?.status === 'active' && String(game?.turn || '') === myId;
   const board = Array.isArray(game?.board) ? game.board : Array(64).fill('');
@@ -39,9 +48,16 @@ export function renderChessSurface({ game, me, container, onAction }){
   const animateDestination = Boolean(lastKey && animatedMoveByGame.get(gameId) !== lastKey);
   if (lastKey) animatedMoveByGame.set(gameId, lastKey);
   const motionByCell = animateDestination ? moveMotions(lastMove, mySide) : new Map();
+  const mover = lastMove ? playerBySide.get(String(lastMove?.side || '')) || players.find(player => String(player?.id || '') === String(lastMove?.player_id || '')) || null : null;
+  const moveEffect = animateDestination ? activeMoveEffect(game, lastMove, mover) : '';
+  const effectCell = moveEffect ? chessEffectCell(game, board, lastMove, moveEffect) : -1;
+  const cosmeticsVisible = players.some(player => Object.keys(equippedSlots(player)).some(slot => slot.startsWith('game_chess_')));
 
-  container.className = `board chess-board ${isMyTurn ? 'is-my-turn' : ''}`;
+  container.className = `board chess-board ${isMyTurn ? 'is-my-turn' : ''}${cosmeticsVisible ? ' chess-cosmetics' : ''}`;
+  container.dataset.gameType = 'chess';
   container.dataset.viewerSide = mySide;
+  container.dataset.chessTheme = variantFor(viewer, 'game_chess_theme', 'board');
+  container.dataset.chessOpponentTheme = variantFor(opponent, 'game_chess_theme', 'board');
   container.innerHTML = order.map(cell => {
     const piece = String(board[cell] || '');
     const row = Math.floor(cell / 8);
@@ -51,12 +67,15 @@ export function renderChessSurface({ game, me, container, onAction }){
     const checkedSide = String(game?.checked_side || '');
     const checkedKing = piece === `${checkedSide === 'white' ? 'w' : 'b'}K` && checkedSide !== '';
     const motion = motionByCell.get(cell) || null;
+    const owner = playerBySide.get(pieceSide(piece)) || null;
+    const pieceVariant = variantFor(owner, 'game_chess_elements', 'pieces');
     const classes = [
       'chess-cell',
       (row + col) % 2 ? 'dark' : 'light',
       selected === cell ? 'selected' : '',
       targets.length ? (capture ? 'capture-target' : 'legal-target') : '',
       checkedKing ? 'in-check' : '',
+      cell === effectCell ? `chess-effect-cell chess-effect-${moveEffect}` : '',
     ].filter(Boolean).join(' ');
     const pieceClasses = [
       'chess-piece',
@@ -69,7 +88,8 @@ export function renderChessSurface({ game, me, container, onAction }){
       : '';
 
     return `<button class="${classes}" data-chess-cell="${cell}" type="button" ${!isMyTurn ? 'disabled' : ''}>
-      ${piece ? `<span class="${pieceClasses}"${pieceStyle} aria-label="${pieceName(piece)}">${GLYPHS[piece] || ''}</span>` : ''}
+      ${cell === effectCell ? renderChessEffectLayer(moveEffect) : ''}
+      ${piece ? `<span class="${pieceClasses}" data-chess-piece-style="${pieceVariant}"${pieceStyle} aria-label="${pieceName(piece)}">${GLYPHS[piece] || ''}</span>` : ''}
       ${targets.length && !capture ? '<i class="chess-move-dot"></i>' : ''}
       ${targets.length && capture ? '<i class="chess-capture-ring"></i>' : ''}
     </button>`;
@@ -131,6 +151,51 @@ export function chessStatus(game, me){
   const isMine = String(game?.turn || '') === String(me?.id || '');
   if (game?.in_check) return isMine ? 'Шах вашему королю' : 'Шах сопернику';
   return isMine ? 'Ваш ход' : 'Ход соперника';
+}
+
+function renderChessEffectLayer(effect){
+  if (effect === 'move') {
+    return '<span class="chess-fx-layer chess-fx-move" aria-hidden="true"><i></i><i></i><b></b></span>';
+  }
+  if (effect === 'capture') {
+    return '<span class="chess-fx-layer chess-fx-capture" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><b></b></span>';
+  }
+  if (effect === 'check') {
+    return '<span class="chess-fx-layer chess-fx-check" aria-hidden="true"><i></i><i></i><b></b><em></em></span>';
+  }
+  return '';
+}
+
+function activeMoveEffect(game, lastMove, mover){
+  const itemId = String(equippedSlots(mover).game_chess_effect || '');
+  const variant = EFFECT_VARIANTS[itemId] || '';
+  if (variant === 'move') return 'move';
+  if (variant === 'capture' && Boolean(lastMove?.capture)) return 'capture';
+  if (variant === 'check' && Boolean(game?.in_check)) return 'check';
+  return '';
+}
+
+function chessEffectCell(game, board, lastMove, effect){
+  if (effect === 'check') {
+    const checkedSide = String(game?.checked_side || '');
+    const king = checkedSide === 'white' ? 'wK' : (checkedSide === 'black' ? 'bK' : '');
+    const kingCell = king ? board.findIndex(piece => String(piece || '') === king) : -1;
+    if (kingCell >= 0) return kingCell;
+  }
+  const to = Number(lastMove?.to);
+  return Number.isInteger(to) && to >= 0 && to < 64 ? to : -1;
+}
+
+function equippedSlots(player){
+  const slots = player?.game_cosmetics?.slots;
+  return slots && typeof slots === 'object' ? slots : {};
+}
+
+function variantFor(player, slot, family){
+  const itemId = String(equippedSlots(player)[slot] || '');
+  if (!itemId) return 'base';
+  const marker = `game-chess-${family}-`;
+  return itemId.startsWith(marker) ? itemId.slice(marker.length) : 'base';
 }
 
 function openPromotionChoice(game, from, to, side, promotions, onAction){
