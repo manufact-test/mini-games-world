@@ -1,20 +1,84 @@
 @import url('./production-v109-victory-effects-spark-burst.css?v=2&mvp19_3=spark-burst-visual-parity');
 
-/* Manual review corrective: reuse the compact avatar-card rhythm for Entry/Victory effects. */
+/* Store Entry/Victory cards mirror the accepted avatar title -> state/action rhythm exactly. */
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-card,
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-victory-effect-card{
   min-height:0!important;
+  height:auto!important;
+  align-self:start!important;
+  justify-content:flex-start!important;
+}
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-copy,
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-victory-effect-copy{
+  min-height:0!important;
+  height:auto!important;
+  max-height:none!important;
+  margin:5px 1px 0!important;
+  padding:0!important;
+  gap:0!important;
+  align-content:start!important;
+}
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-copy>strong,
+.store-v2-content[data-store-v2-panel="profile"] .store-v2-victory-effect-copy>strong{
+  min-height:0!important;
+  height:auto!important;
+  margin:0!important;
+  padding:0!important;
 }
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-entry-effect-card>.mgw-profile-cosmetic-foot,
 .store-v2-content[data-store-v2-panel="profile"] .store-v2-victory-effect-card>.mgw-profile-cosmetic-foot{
   min-height:0!important;
+  height:auto!important;
   margin-top:4px!important;
   padding-top:0!important;
   gap:5px!important;
   justify-content:flex-end!important;
 }
 
-/* Profile Victory Effect cards keep the accepted compact grid, with the product name visible below the preview. */
+/* Profile collection typography mirrors the accepted avatar cards: 8.4px title / 7.3px subtitle. */
+#screen-profile [data-profile-reaction-collection]>.profile-v2-collection-title,
+#screen-profile [data-profile-entry-effect-collection]>.profile-v2-collection-title,
+#screen-profile [data-profile-victory-effect-collection]>.profile-v2-collection-title{
+  margin:0!important;
+  padding:0 1px!important;
+  color:var(--soft)!important;
+  font-size:11px!important;
+  line-height:1.15!important;
+  font-weight:900!important;
+}
+#screen-profile .profile-v2-reaction-card>strong,
+#screen-profile .profile-v2-entry-effect-copy>b,
+#screen-profile .profile-v2-victory-effect-copy>b{
+  display:block!important;
+  min-width:0!important;
+  min-height:0!important;
+  margin:0 1px!important;
+  padding:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  color:var(--text)!important;
+  font-size:8.4px!important;
+  line-height:1.08!important;
+  font-weight:900!important;
+}
+#screen-profile .profile-v2-reaction-card>small,
+#screen-profile .profile-v2-entry-effect-copy>small,
+#screen-profile .profile-v2-victory-effect-copy>small{
+  display:block!important;
+  min-width:0!important;
+  min-height:0!important;
+  margin:0 1px!important;
+  padding:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  color:var(--muted)!important;
+  font-size:7.3px!important;
+  line-height:1.08!important;
+  font-weight:650!important;
+}
+
 #screen-profile .profile-v2-victory-effect-card{
   aspect-ratio:auto!important;
   height:auto!important;
@@ -27,22 +91,7 @@
   visibility:visible!important;
   opacity:1!important;
   min-width:0!important;
-  min-height:12px!important;
-  margin:0 1px!important;
-  gap:0!important;
-}
-#screen-profile .profile-v2-victory-effect-copy>b{
-  display:block!important;
-  visibility:visible!important;
-  opacity:1!important;
+  min-height:0!important;
   margin:0!important;
-  padding:0!important;
-  color:var(--text)!important;
-  font-size:10.5px!important;
-  line-height:1.12!important;
-  font-weight:800!important;
-  white-space:normal!important;
-  overflow:visible!important;
-  text-overflow:clip!important;
+  gap:2px!important;
 }
-#screen-profile .profile-v2-victory-effect-copy>small{display:none!important}
