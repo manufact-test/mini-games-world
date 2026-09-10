@@ -2,7 +2,7 @@ import {
   initStoreScreen as initBaseStoreScreen,
   openStoreTab as openBaseStoreTab,
   openStoreSheet,
-} from './store-screen.js?v=44&intent_base=1';
+} from './store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 
 let initialized = false;
