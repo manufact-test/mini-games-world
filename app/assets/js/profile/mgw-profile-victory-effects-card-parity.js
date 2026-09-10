@@ -29,7 +29,7 @@ function ensureAvatarGeometryStylesheet(){
   if (document.querySelector('link[data-mgw-profile-avatar-geometry]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwProfileAvatarGeometry = '1';
-  link.href = new URL('../../css/production-v111-profile-avatar-geometry.css?v=1&mvp19_3=avatar-visible-geometry-final', import.meta.url).href;
+  link.dataset.mgwProfileAvatarGeometry = '2';
+  link.href = new URL('../../css/production-v111-profile-avatar-geometry.css?v=2&mvp19_3=subtitle-hidden-namecolor-centered-final', import.meta.url).href;
   document.head.append(link);
 }

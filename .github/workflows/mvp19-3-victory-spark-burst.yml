@@ -110,7 +110,7 @@ jobs:
           grep -F 'initBaseVictoryEffects()' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
           grep -F 'production-v110-victory-effects-card-parity.css?v=3' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
           grep -F 'production-v110-profile-store-visual-repair-v2.css?v=3' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
-          grep -F 'production-v111-profile-avatar-geometry.css?v=1' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
+          grep -F 'production-v111-profile-avatar-geometry.css?v=2' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
           grep -F 'ensureAvatarGeometryStylesheet()' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
           grep -F '.store-v2-entry-effect-copy' app/assets/css/production-v110-profile-store-visual-repair-v2.css
           grep -F 'margin:5px 1px 4px!important' app/assets/css/production-v110-profile-store-visual-repair-v2.css
@@ -125,6 +125,8 @@ jobs:
           grep -F "content:'Эффект победы'!important" app/assets/css/production-v110-profile-store-visual-repair-v2.css
           grep -F -- '-webkit-text-fill-color:#fff!important' app/assets/css/production-v110-profile-store-visual-repair-v2.css
           grep -F '[data-profile-avatar-preview]::after' app/assets/css/production-v111-profile-avatar-geometry.css
+          grep -F 'grid-template-rows:auto!important' app/assets/css/production-v111-profile-avatar-geometry.css
+          grep -F 'justify-content:center!important' app/assets/css/production-v111-profile-avatar-geometry.css
           grep -F 'content:none!important' app/assets/css/production-v111-profile-avatar-geometry.css
           grep -F -- '--mgw-profile-avatar-visible-inset:3px' app/assets/css/production-v111-profile-avatar-geometry.css
           grep -F 'width:calc(100% - (var(--mgw-profile-avatar-visible-inset) * 2))!important' app/assets/css/production-v111-profile-avatar-geometry.css
@@ -135,8 +137,8 @@ jobs:
           ! grep -Fq 'gameAction(' app/assets/js/profile/mgw-profile-victory-effects.js
           grep -F "initMgwProfileVictoryEffects } from './profile/mgw-profile-victory-effects.js?v=1&mvp19_3=victory-effects'" app/assets/js/production-v110-readonly-game-sync.js
           grep -F "document.addEventListener('mgw:app-ready', initMgwProfileVictoryEffects" app/assets/js/production-v110-readonly-game-sync.js
-          grep -F 'mgw-profile-victory-effects-card-parity.js?v=5&mvp19_3=profile-avatar-visible-geometry&visual_repair=5' app/runtime/client/version-manifest.php
-          grep -F 'victory=spark-burst-profile-avatar-visible-geometry&visual_repair=5' app/runtime/client/version-manifest.php
+          grep -F 'mgw-profile-victory-effects-card-parity.js?v=6&mvp19_3=profile-final-subtitle-namecolor&visual_repair=6' app/runtime/client/version-manifest.php
+          grep -F 'victory=spark-burst-profile-final-subtitle-namecolor&visual_repair=6' app/runtime/client/version-manifest.php
           git diff --check
 
       - name: Guard frozen engines and bounded Victory slice
