@@ -1,4 +1,4 @@
-name: MVP-19.3 Victory Spark Burst
+name: MVP-19.3 Victory Effects 01-02
 
 on:
   pull_request:
@@ -6,31 +6,28 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php'
+      - 'bot/database/migrations/20260910_0027_add_profile_victory_effect_firework_salvo.php'
       - 'bot/cosmetic-store.php'
       - 'bot/helpers/response.php'
       - 'app/assets/js/profile/mgw-victory-effect-selector.js'
       - 'app/assets/js/profile/mgw-profile-victory-effects.js'
       - 'app/assets/js/profile/mgw-profile-victory-effects-card-parity.js'
       - 'app/assets/css/production-v109-victory-effects-spark-burst.css'
-      - 'app/assets/css/production-v110-victory-effects-card-parity.css'
-      - 'app/assets/css/production-v110-profile-store-visual-repair-v2.css'
-      - 'app/assets/css/production-v111-profile-avatar-geometry.css'
-      - 'app/assets/js/production-v110-readonly-game-sync.js'
+      - 'app/assets/css/production-v112-victory-effects-firework-salvo.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php'
-      - 'bot/tests/Mvp19_3ProfileEntryEffectsTest.php'
-      - '.github/workflows/mvp19-3-*.yml'
+      - '.github/workflows/mvp19-3-victory-spark-burst.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: mgw-mvp19-3-victory-spark-burst-${{ github.ref }}
+  group: mgw-mvp19-3-victory-effects-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  spark-burst:
+  victory-effects:
     name: Store Profile winner presentation
     runs-on: ubuntu-24.04
     timeout-minutes: 18
@@ -54,16 +51,16 @@ jobs:
       - name: Syntax
         run: |
           php -l bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
+          php -l bot/database/migrations/20260910_0027_add_profile_victory_effect_firework_salvo.php
           php -l bot/cosmetic-store.php
           php -l bot/helpers/response.php
           php -l bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php
           node --check app/assets/js/profile/mgw-victory-effect-selector.js
           node --check app/assets/js/profile/mgw-profile-victory-effects.js
           node --check app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
-          node --check app/assets/js/production-v110-readonly-game-sync.js
           php -l app/runtime/client/version-manifest.php
 
-      - name: Run Spark Burst vertical-slice contract
+      - name: Run Victory Effects 01-02 contract
         run: php bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php
 
       - name: Preserve winner selector contract
@@ -76,70 +73,34 @@ jobs:
           php bot/tests/Mvp19_3ProfileEntryEffectsTest.php
           node tests/mvp19-3-entry-effect-player-arbitration.mjs
 
-      - name: Guard approved Spark Burst product and visual contract
+      - name: Guard Victory Effect product and visual contract
         shell: bash
         run: |
           set -euo pipefail
-          grep -F "private const SLOT = 'profile_victory_effect'" bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
           grep -F "private const ITEM_ID = 'profile-victory-effect-01'" bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
           grep -F 'private const PRICE = 5000' bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
           grep -F 'private const DURATION_MS = 2200' bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
-          grep -F "'display_name' => 'Искровой залп'" bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
-          grep -F "'variant' => 'spark-burst'" bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php
-          grep -F 'function mgw_store_profile_victory_effect' bot/cosmetic-store.php
-          grep -F 'victory_effect_item_id' bot/helpers/response.php
+          grep -F "private const ITEM_ID = 'profile-victory-effect-02'" bot/database/migrations/20260910_0027_add_profile_victory_effect_firework_salvo.php
+          grep -F 'private const PRICE = 8500' bot/database/migrations/20260910_0027_add_profile_victory_effect_firework_salvo.php
+          grep -F 'private const DURATION_MS = 2900' bot/database/migrations/20260910_0027_add_profile_victory_effect_firework_salvo.php
+          grep -F "'display_name' => 'Салют победителя'" bot/database/migrations/20260910_0027_add_profile_victory_effect_firework_salvo.php
+          grep -F "'variant' => 'firework-salvo'" bot/database/migrations/20260910_0027_add_profile_victory_effect_firework_salvo.php
           grep -F 'selectWinnerVictoryEffect(game)' app/assets/js/profile/mgw-profile-victory-effects.js
           grep -F '#resultSummary[data-result-game-id]' app/assets/js/profile/mgw-profile-victory-effects.js
-          grep -F '#sheet [aria-busy="true"],#sheet button:disabled' app/assets/js/profile/mgw-profile-victory-effects.js
           grep -F 'mgw-victory-effect-skip' app/assets/js/profile/mgw-profile-victory-effects.js
-          grep -F 'playedGames' app/assets/js/profile/mgw-profile-victory-effects.js
-          grep -F "burstMarkup('burst-main',30" app/assets/js/profile/mgw-profile-victory-effects.js
-          grep -F "burstMarkup('burst-left',14" app/assets/js/profile/mgw-profile-victory-effects.js
-          grep -F "burstMarkup('burst-right',14" app/assets/js/profile/mgw-profile-victory-effects.js
-          grep -F 'confettiMarkup(18)' app/assets/js/profile/mgw-profile-victory-effects.js
-          grep -F 'glitterMarkup(24)' app/assets/js/profile/mgw-profile-victory-effects.js
-          grep -F 'store-v2-entry-effect-grid store-v2-victory-effect-grid' app/assets/js/profile/mgw-profile-victory-effects.js
-          grep -F 'profile-v2-entry-effect-grid profile-v2-victory-effect-grid' app/assets/js/profile/mgw-profile-victory-effects.js
-          grep -F 'mgw-entry-effect-sheet-preview mgw-victory-effect-sheet-preview' app/assets/js/profile/mgw-profile-victory-effects.js
-          grep -F 'grid-template-columns:repeat(3,minmax(0,1fr))' app/assets/css/production-v109-victory-effects-spark-burst.css
-          grep -F 'gap:6px' app/assets/css/production-v109-victory-effects-spark-burst.css
-          grep -F 'max-width:260px!important;height:112px!important;margin:0 auto!important' app/assets/css/production-v109-victory-effects-spark-burst.css
-          grep -F 'pointer-events:none' app/assets/css/production-v109-victory-effects-spark-burst.css
-          grep -F '@media(prefers-reduced-motion:reduce)' app/assets/css/production-v109-victory-effects-spark-burst.css
-          grep -F 'mgwVictorySparkRay' app/assets/css/production-v109-victory-effects-spark-burst.css
-          grep -F 'initBaseVictoryEffects()' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
-          grep -F 'production-v110-victory-effects-card-parity.css?v=3' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
-          grep -F 'production-v110-profile-store-visual-repair-v2.css?v=3' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
-          grep -F 'production-v111-profile-avatar-geometry.css?v=3' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
-          grep -F 'ensureAvatarGeometryStylesheet()' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
-          grep -F '.store-v2-entry-effect-copy' app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F 'margin:5px 1px 4px!important' app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F 'font-size:9px!important' app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F 'min-height:43px!important' app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F 'height:27px!important' app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F -- '--mgw-profile-card-title-size:10.4px' app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F -- '--mgw-profile-card-subtitle-size:7.3px' app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F "content:'Небесные врата'!important" app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F "content:'Эффект входа'!important" app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F "content:'Искровой залп'!important" app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F "content:'Эффект победы'!important" app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F -- '-webkit-text-fill-color:#fff!important' app/assets/css/production-v110-profile-store-visual-repair-v2.css
-          grep -F '[data-profile-avatar-preview]::after' app/assets/css/production-v111-profile-avatar-geometry.css
-          grep -F 'grid-template-rows:auto!important' app/assets/css/production-v111-profile-avatar-geometry.css
-          grep -F 'justify-content:center!important' app/assets/css/production-v111-profile-avatar-geometry.css
-          grep -F 'content:none!important' app/assets/css/production-v111-profile-avatar-geometry.css
-          grep -F -- '--mgw-profile-avatar-visible-inset:3px' app/assets/css/production-v111-profile-avatar-geometry.css
-          grep -F 'width:calc(100% - (var(--mgw-profile-avatar-visible-inset) * 2))!important' app/assets/css/production-v111-profile-avatar-geometry.css
-          grep -F 'margin:auto var(--mgw-profile-copy-inset) 0!important' app/assets/css/production-v111-profile-avatar-geometry.css
-          grep -F 'padding:5px 5px 8px!important' app/assets/css/production-v111-profile-avatar-geometry.css
-          ! grep -Fq '.store-v2-' app/assets/css/production-v111-profile-avatar-geometry.css
-          ! grep -Fq '.mgw-victory-effect-layer' app/assets/css/production-v111-profile-avatar-geometry.css
+          grep -F "fireworkBurstMarkup('salvo-left',22" app/assets/js/profile/mgw-profile-victory-effects.js
+          grep -F "fireworkBurstMarkup('salvo-right',22" app/assets/js/profile/mgw-profile-victory-effects.js
+          grep -F "fireworkBurstMarkup('salvo-center',30" app/assets/js/profile/mgw-profile-victory-effects.js
+          grep -F 'fireworkConfettiMarkup(24)' app/assets/js/profile/mgw-profile-victory-effects.js
+          grep -F 'fireworkStarfieldMarkup(18)' app/assets/js/profile/mgw-profile-victory-effects.js
+          grep -F 'mgwVictorySalvoTrailLeft' app/assets/css/production-v112-victory-effects-firework-salvo.css
+          grep -F 'mgwVictorySalvoRayCenter' app/assets/css/production-v112-victory-effects-firework-salvo.css
+          grep -F '@media(prefers-reduced-motion:reduce)' app/assets/css/production-v112-victory-effects-firework-salvo.css
+          grep -F 'production-v112-victory-effects-firework-salvo.css?v=1' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
+          grep -F 'mgw-profile-victory-effects-card-parity.js?v=9&mvp19_3=firework-salvo' app/runtime/client/version-manifest.php
+          grep -F 'victory=firework-salvo&visual_repair=9' app/runtime/client/version-manifest.php
           ! grep -Eq '\.(webp|png|jpe?g)' app/assets/js/profile/mgw-profile-victory-effects.js
           ! grep -Fq 'gameAction(' app/assets/js/profile/mgw-profile-victory-effects.js
-          grep -F "initMgwProfileVictoryEffects } from './profile/mgw-profile-victory-effects.js?v=1&mvp19_3=victory-effects'" app/assets/js/production-v110-readonly-game-sync.js
-          grep -F "document.addEventListener('mgw:app-ready', initMgwProfileVictoryEffects" app/assets/js/production-v110-readonly-game-sync.js
-          grep -F 'mgw-profile-victory-effects-card-parity.js?v=7&mvp19_3=profile-bottom-padding&visual_repair=7' app/runtime/client/version-manifest.php
-          grep -F 'victory=spark-burst-profile-bottom-padding&visual_repair=7' app/runtime/client/version-manifest.php
           git diff --check
 
       - name: Guard frozen engines and bounded Victory slice
@@ -162,16 +123,16 @@ jobs:
           bad=0
           while IFS= read -r path; do
             case "$path" in
+              bot/database/migrations/20260910_0027_add_profile_victory_effect_firework_salvo.php|\
+              app/assets/js/profile/mgw-profile-victory-effects.js|\
               app/assets/js/profile/mgw-profile-victory-effects-card-parity.js|\
-              app/assets/css/production-v110-victory-effects-card-parity.css|\
-              app/assets/css/production-v110-profile-store-visual-repair-v2.css|\
-              app/assets/css/production-v111-profile-avatar-geometry.css|\
+              app/assets/css/production-v112-victory-effects-firework-salvo.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php|\
               .github/workflows/mvp19-3-victory-spark-burst.yml)
                 ;;
               *)
-                echo "Unexpected path in Spark Burst/Profile visual repair: $path" >&2
+                echo "Unexpected path in Firework Salvo slice: $path" >&2
                 bad=1
                 ;;
             esac
