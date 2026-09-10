@@ -110,15 +110,20 @@ $assertTrue(!isset($inventory->snapshot($mgwId)['equipped']['game_chess_effect']
 
 $rendererSource = (string)file_get_contents($root . '/app/assets/js/games/chess/renderer.js');
 $storeSource = (string)file_get_contents($root . '/app/assets/js/screens/store-screen.js');
-$cssSource = (string)file_get_contents($root . '/app/assets/css/games/chess/game.css');
+$cssSource = (string)file_get_contents($root . '/app/assets/css/games/chess/cosmetics.css');
+$cssEntrySource = (string)file_get_contents($root . '/app/assets/css/main-mvp19-5-chess.css');
 $serviceSource = (string)file_get_contents($root . '/bot/catalog/CosmeticStoreService.php');
+$manifestSource = (string)file_get_contents($root . '/app/runtime/client/version-manifest.php');
 $assertTrue(str_contains($serviceSource, '$gameCatalogs') && str_contains($serviceSource, "'chess' => 'Шахматы'"), 'Store service must expose game catalogs generically instead of adding a parallel Chess store');
 $assertTrue(str_contains($storeSource, 'activeGameCatalog') && str_contains($storeSource, "gameType === 'chess'"), 'Store UI must use the shared Games tab with Chess selection');
 $assertTrue(str_contains($rendererSource, "game_chess_theme") && str_contains($rendererSource, "game_chess_elements") && str_contains($rendererSource, "game_chess_effect"), 'Chess renderer must consume the three canonical cosmetic slots');
 $assertTrue(str_contains($rendererSource, 'player?.game_cosmetics?.slots'), 'Chess renderer must consume public owner-specific projection');
 $assertTrue(!str_contains($rendererSource, 'api.gameAction') && !str_contains($rendererSource, 'time_left'), 'Chess cosmetics must not own game actions or timers');
 $assertTrue(str_contains($cssSource, 'data-chess-theme="wood"') && str_contains($cssSource, 'data-chess-theme="tournament-dark"') && str_contains($cssSource, 'data-chess-theme="marble"') && str_contains($cssSource, 'data-chess-theme="neon"'), 'All four Chess board themes need distinct presentation');
+$assertTrue(str_contains($cssSource, 'data-chess-piece-style="wood"') && str_contains($cssSource, 'data-chess-piece-style="marble"') && str_contains($cssSource, 'data-chess-piece-style="metal"') && str_contains($cssSource, 'data-chess-piece-style="neon"'), 'All four Chess piece sets need distinct presentation');
 $assertTrue(str_contains($cssSource, 'chessFxMoveRing') && str_contains($cssSource, 'chessFxCaptureFlash') && str_contains($cssSource, 'chessFxCheckRing'), 'All three Chess effects need distinct motion');
 $assertTrue(str_contains($cssSource, '@media(prefers-reduced-motion:reduce)'), 'Chess cosmetics must remain reduced-motion safe');
+$assertTrue(str_contains($cssEntrySource, "./main.css?v=191") && str_contains($cssEntrySource, "./games/chess/cosmetics.css?v=1"), 'Chess CSS entry must compose accepted global CSS with the isolated cosmetic module');
+$assertTrue(str_contains($manifestSource, "./assets/js/games/chess/renderer.js?v=69&mvp19_5=cosmetics") && str_contains($manifestSource, "main-mvp19-5-chess.css?v=1"), 'Active v110 manifest must select the Chess renderer and cosmetic stylesheet');
 
 echo "MVP-19.5 Chess cosmetics contract passed ({$assertions} assertions).\n";
