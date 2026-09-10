@@ -4,6 +4,7 @@ export function initMgwProfileVictoryEffects(){
   initBaseVictoryEffects();
   ensureCardParityStylesheet();
   ensureVisualRepairStylesheet();
+  ensureAvatarGeometryStylesheet();
 }
 
 function ensureCardParityStylesheet(){
@@ -21,5 +22,14 @@ function ensureVisualRepairStylesheet(){
   link.rel = 'stylesheet';
   link.dataset.mgwProfileStoreVisualRepairV2 = '3';
   link.href = new URL('../../css/production-v110-profile-store-visual-repair-v2.css?v=3&mvp19_3=profile-card-spacing-unify', import.meta.url).href;
+  document.head.append(link);
+}
+
+function ensureAvatarGeometryStylesheet(){
+  if (document.querySelector('link[data-mgw-profile-avatar-geometry]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwProfileAvatarGeometry = '1';
+  link.href = new URL('../../css/production-v111-profile-avatar-geometry.css?v=1&mvp19_3=avatar-visible-geometry-final', import.meta.url).href;
   document.head.append(link);
 }
