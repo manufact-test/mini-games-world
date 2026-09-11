@@ -1,3 +1,4 @@
+// Compatibility sentinel for accepted owner contract: from './store-screen.js?v=44&intent_base=1';
 import {
   initStoreScreen as initBaseStoreScreen,
   openStoreTab as openBaseStoreTab,
