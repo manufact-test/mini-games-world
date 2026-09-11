@@ -6,7 +6,7 @@ const mountedGameIds = new Set();
 const initialLastMoveByGame = new Map();
 const animatedMoveByGame = new Map();
 const animatedEffectByGame = new Map();
-const EFFECT_LANDING_DELAY_MS = 310;
+const EFFECT_LANDING_DELAY_MS = 400;
 const GLYPHS = {
   wK:'♚',wQ:'♛',wR:'♜',wB:'♝',wN:'♞',wP:'♟',
   bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟',
@@ -16,6 +16,8 @@ const EFFECT_VARIANTS = Object.freeze({
   'game-chess-effect-capture':'capture',
   'game-chess-effect-check':'check',
 });
+
+ensureLiveChessMoveEffectStyles();
 
 export function renderChessSurface({ game, me, container, onAction }){
   const gameId = String(game?.id || '');
@@ -53,7 +55,6 @@ export function renderChessSurface({ game, me, container, onAction }){
     Number(lastMove?.from),
     Number(lastMove?.to),
     String(lastMove?.player_id || ''),
-    String(lastMove?.side || ''),
   ].join(':') : '';
 
   const firstSurfaceForGame = gameId !== '' && !mountedGameIds.has(gameId);
@@ -75,9 +76,6 @@ export function renderChessSurface({ game, me, container, onAction }){
       || null
     : null;
 
-  // Piece motion and paid-effect arbitration intentionally have separate one-shot
-  // owners. A move can arrive before a late cosmetic projection; that must not
-  // consume the paid effect before its owner data is available.
   const effectCandidate = lastMove ? activeMoveEffect(game, lastMove, mover) : '';
   const effectKey = effectCandidate && lastKey ? `${lastKey}:${effectCandidate}` : '';
   const animateEffect = Boolean(effectKey
@@ -123,6 +121,7 @@ export function renderChessSurface({ game, me, container, onAction }){
       : '';
 
     return `<button class="${classes}" data-chess-cell="${cell}" type="button" ${!isMyTurn ? 'disabled' : ''}>
+      ${moveEffect === 'move' && motion?.role === 'piece' ? renderChessMoveTrail(motion) : ''}
       ${cell === effectCell ? renderChessEffectLayer(moveEffect) : ''}
       ${piece ? `<span class="${pieceClasses}" data-chess-piece-style="${pieceVariant}"${pieceStyle} aria-label="${pieceName(piece)}">${GLYPHS[piece] || ''}</span>` : ''}
       ${targets.length && !capture ? '<i class="chess-move-dot"></i>' : ''}
@@ -188,9 +187,14 @@ export function chessStatus(game, me){
   return isMine ? 'Ваш ход' : 'Ход соперника';
 }
 
+function renderChessMoveTrail(motion){
+  const style = ` style="--chess-trail-x:${motion.x}%;--chess-trail-y:${motion.y}%"`;
+  return `<span class="chess-fx-trail" aria-hidden="true"${style}><i></i><i></i><i></i><i></i><i></i></span>`;
+}
+
 function renderChessEffectLayer(effect){
   const landing = effectAnimationStyle(EFFECT_LANDING_DELAY_MS);
-  const secondWave = effectAnimationStyle(EFFECT_LANDING_DELAY_MS + 70);
+  const secondWave = effectAnimationStyle(EFFECT_LANDING_DELAY_MS + 80);
   if (effect === 'move') {
     return `<span class="chess-fx-layer chess-fx-move" aria-hidden="true"><i${landing}></i><i${secondWave}></i><b${landing}></b></span>`;
   }
@@ -295,6 +299,87 @@ function motionBetween(from, to, viewerSide, delay, role){
     delay,
     role,
   };
+}
+
+function ensureLiveChessMoveEffectStyles(){
+  if (typeof document === 'undefined' || document.getElementById('mgwChessMoveEffectParity')) return;
+  const style = document.createElement('style');
+  style.id = 'mgwChessMoveEffectParity';
+  style.textContent = `
+    #gameBoard[data-game-type="chess"] .chess-piece.moved-fresh:not(.castle-rook-fresh){
+      animation-duration:.42s;
+      animation-timing-function:cubic-bezier(.22,.72,.2,1);
+    }
+    #gameBoard[data-game-type="chess"] .chess-fx-trail{
+      position:absolute;
+      z-index:10;
+      inset:0;
+      pointer-events:none;
+      overflow:visible;
+    }
+    #gameBoard[data-game-type="chess"] .chess-fx-trail i{
+      position:absolute;
+      left:calc(50% + var(--chess-trail-x,0%));
+      top:calc(50% + var(--chess-trail-y,0%));
+      width:13%;
+      aspect-ratio:1;
+      border-radius:50%;
+      background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.98),rgba(105,235,255,.94) 34%,rgba(89,182,255,.64) 61%,rgba(117,95,255,.08) 76%,transparent 78%);
+      box-shadow:0 0 7px rgba(73,221,255,.78),0 0 13px rgba(112,91,255,.32);
+      transform:translate(-50%,-50%) scale(.55);
+      opacity:0;
+      animation:chessLiveMoveTrail .44s cubic-bezier(.24,.72,.26,1) both;
+    }
+    #gameBoard[data-game-type="chess"] .chess-fx-trail i:nth-child(1){animation-delay:.015s}
+    #gameBoard[data-game-type="chess"] .chess-fx-trail i:nth-child(2){animation-delay:.065s;width:11%}
+    #gameBoard[data-game-type="chess"] .chess-fx-trail i:nth-child(3){animation-delay:.115s;width:9.5%}
+    #gameBoard[data-game-type="chess"] .chess-fx-trail i:nth-child(4){animation-delay:.165s;width:8%}
+    #gameBoard[data-game-type="chess"] .chess-fx-trail i:nth-child(5){animation-delay:.215s;width:6.5%}
+    #gameBoard[data-game-type="chess"] .chess-fx-move i{
+      width:72%;
+      height:72%;
+      border-width:3px;
+      box-shadow:0 0 12px rgba(72,220,255,.88),0 0 24px rgba(90,114,255,.36),inset 0 0 12px rgba(72,220,255,.20);
+      animation-name:chessLiveMoveWave;
+      animation-duration:.78s;
+      animation-timing-function:cubic-bezier(.18,.76,.24,1);
+    }
+    #gameBoard[data-game-type="chess"] .chess-fx-move i:nth-child(2){
+      width:86%;
+      height:86%;
+    }
+    #gameBoard[data-game-type="chess"] .chess-fx-move b{
+      width:34%;
+      height:34%;
+      background:radial-gradient(circle,rgba(255,255,255,.98),rgba(102,234,255,.74) 28%,rgba(109,111,255,.24) 52%,transparent 72%);
+      box-shadow:0 0 13px rgba(83,228,255,.72);
+      animation-name:chessLiveMoveFlash;
+      animation-duration:.58s;
+      animation-timing-function:ease-out;
+    }
+    @keyframes chessLiveMoveTrail{
+      0%{left:calc(50% + var(--chess-trail-x,0%));top:calc(50% + var(--chess-trail-y,0%));opacity:0;transform:translate(-50%,-50%) scale(.45)}
+      12%{opacity:.96}
+      62%{opacity:.78;transform:translate(-50%,-50%) scale(1)}
+      100%{left:50%;top:50%;opacity:0;transform:translate(-50%,-50%) scale(.28)}
+    }
+    @keyframes chessLiveMoveWave{
+      0%{opacity:0;transform:scale(.24)}
+      10%{opacity:1;transform:scale(.48)}
+      58%{opacity:.64;transform:scale(1.34)}
+      100%{opacity:0;transform:scale(2.08)}
+    }
+    @keyframes chessLiveMoveFlash{
+      0%{opacity:0;transform:scale(.24)}
+      12%{opacity:1;transform:scale(.82)}
+      55%{opacity:.42;transform:scale(1.42)}
+      100%{opacity:0;transform:scale(2.05)}
+    }
+    @media(prefers-reduced-motion:reduce){
+      #gameBoard[data-game-type="chess"] .chess-fx-trail{display:none!important}
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 function playerSide(game, playerId){
