@@ -21,15 +21,17 @@ foreach ([
     }
 }
 
+if (preg_match('/#leaveGame\s*\{/u', $fitCss) === 1) {
+    throw new RuntimeException('Checkers Telegram height fit must not own the shared leave control.');
+}
 foreach ([
-    '#leaveGame',
     'position:fixed',
     'position:sticky',
     'overflow-y:auto!important',
     'transform:',
 ] as $rejectedToken) {
     if (str_contains($fitCss, $rejectedToken)) {
-        throw new RuntimeException('Checkers Telegram height fit must not own shared controls or DOM repair: ' . $rejectedToken);
+        throw new RuntimeException('Checkers Telegram height fit must not add DOM/layout repair ownership: ' . $rejectedToken);
     }
 }
 
