@@ -1,4 +1,4 @@
-/* MVP-19.5 corrective v3: exact board geometry and square-to-square Chess action previews. */
+/* MVP-19.5 corrective v4: Chess Store effect previews, with Move matching accepted live runtime. */
 .store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="effect"]{
   display:grid!important;
   place-items:center!important;
@@ -82,7 +82,7 @@
   font-style:normal;
 }
 
-/* MOVE: legal knight move from a4-style corner square to the exact landing cell. */
+/* MOVE: accepted live parity — readable cyan dot trail, tiny convergence, no landing rings/waves. */
 .store-v2-game-preview[data-cosmetic-variant="move"] .chess-effect-piece.mover{
   left:0;
   top:75%;
@@ -90,35 +90,58 @@
 }
 .store-v2-game-preview[data-cosmetic-variant="move"] .chess-effect-piece.static-a{left:75%;top:25%}
 .store-v2-game-preview[data-cosmetic-variant="move"] .chess-effect-piece.static-b{left:50%;top:75%}
-.store-v2-game-preview[data-cosmetic-variant="move"] .store-v2-mini-chess-field-effect > b{
-  left:calc(25% + 2px);
-  top:calc(25% + 2px);
-  width:calc(25% - 4px);
-  height:calc(25% - 4px);
-  box-sizing:border-box;
-  border:2px solid rgba(105,235,255,.96);
+.store-v2-game-preview[data-cosmetic-variant="move"] .store-v2-mini-chess-field-effect > u{
+  left:10px;
+  top:calc(87.5% - 2px);
+  width:4px;
+  height:4px;
+  z-index:4;
   border-radius:50%;
-  box-shadow:0 0 8px rgba(73,221,255,.74),inset 0 0 8px rgba(73,221,255,.18);
-  animation:chessStoreMoveRing 2.55s ease-out infinite;
+  background:radial-gradient(circle,#fff 0 18%,#8df4ff 38%,#45c6ff 68%,rgba(98,94,255,.22) 82%,transparent 86%);
+  box-shadow:
+    -3px 6px 0 -0.2px rgba(133,244,255,.94),
+    -6px 12px 0 -0.45px rgba(102,224,255,.90),
+    -9px 18px 0 -0.7px rgba(75,198,255,.84),
+    -12px 24px 0 -0.95px rgba(82,164,255,.76),
+    -15px 30px 0 -1.15px rgba(92,130,255,.65),
+    -18px 36px 0 -1.35px rgba(107,105,255,.52);
+  filter:drop-shadow(0 0 3px rgba(73,225,255,.8));
+  opacity:0;
+  animation:chessStoreMoveTrailV4 2.55s cubic-bezier(.22,.72,.22,1) infinite;
 }
 .store-v2-game-preview[data-cosmetic-variant="move"] .store-v2-mini-chess-field-effect > em{
-  left:calc(25% + 5px);
-  top:calc(25% + 5px);
-  width:calc(25% - 10px);
-  height:calc(25% - 10px);
+  left:calc(37.5% - 2px);
+  top:calc(37.5% - 2px);
+  width:4px;
+  height:4px;
+  z-index:6;
   border-radius:50%;
-  background:radial-gradient(circle,rgba(255,255,255,.94),rgba(101,234,255,.64) 34%,transparent 72%);
-  animation:chessStoreMoveFlash 2.55s ease-out infinite;
+  background:#d9fbff;
+  box-shadow:
+    -10px -2px 0 -0.4px rgba(128,243,255,.92),
+    -7px -9px 0 -0.5px rgba(82,209,255,.90),
+    1px -11px 0 -0.55px rgba(104,157,255,.82),
+    9px -7px 0 -0.45px rgba(89,226,255,.90),
+    11px 2px 0 -0.6px rgba(126,238,255,.88),
+    7px 9px 0 -0.65px rgba(74,191,255,.82),
+    -2px 11px 0 -0.7px rgba(111,129,255,.72),
+    -9px 7px 0 -0.55px rgba(84,220,255,.86);
+  opacity:0;
+  transform-origin:50% 50%;
+  animation:chessStoreMoveGatherV4 2.55s cubic-bezier(.2,.72,.22,1) infinite;
 }
-.store-v2-game-preview[data-cosmetic-variant="move"] .store-v2-mini-chess-field-effect > u{
-  left:8px;
-  top:calc(75% + 2px);
-  width:7px;
-  height:7px;
+.store-v2-game-preview[data-cosmetic-variant="move"] .store-v2-mini-chess-field-effect > b{
+  left:calc(37.5% - 7px);
+  top:calc(37.5% - 7px);
+  width:14px;
+  height:14px;
+  z-index:6;
+  border:0;
   border-radius:50%;
-  background:rgba(186,249,255,.94);
-  box-shadow:8px -15px 0 rgba(117,233,255,.76),16px -30px 0 rgba(139,118,255,.72);
-  animation:chessStoreMoveTrail 2.55s ease-out infinite;
+  background:radial-gradient(circle,#fff 0 12%,rgba(125,240,255,.96) 29%,rgba(75,186,255,.52) 53%,transparent 76%);
+  box-shadow:0 0 6px rgba(72,222,255,.54);
+  opacity:0;
+  animation:chessStoreMoveCoreV4 2.55s ease-out infinite;
 }
 
 /* CAPTURE: bishop lands exactly on the captured rook's square; the burst is centered there. */
@@ -210,26 +233,28 @@
 
 @keyframes chessStoreMovePiece{
   0%,20%{transform:translate(0,0) scale(1)}
-  28%{transform:translate(0,0) scale(.94)}
-  48%,82%{transform:translate(100%,-200%) scale(1)}
+  28%{transform:translate(0,0) scale(.96)}
+  47%,82%{transform:translate(100%,-200%) scale(1)}
   90%,100%{transform:translate(100%,-200%) scale(1);opacity:0}
 }
-@keyframes chessStoreMoveRing{
-  0%,42%{opacity:0;transform:scale(.32)}
-  50%{opacity:1;transform:scale(.78)}
-  67%{opacity:.56;transform:scale(1.38)}
-  80%,100%{opacity:0;transform:scale(1.72)}
+@keyframes chessStoreMoveTrailV4{
+  0%,22%,100%{opacity:0;transform:translate(0,0) scale(.7)}
+  28%{opacity:.96;transform:translate(2px,-4px) scale(.88)}
+  45%{opacity:.96;transform:translate(21px,-42px) scale(1)}
+  52%{opacity:.28;transform:translate(23px,-46px) scale(.78)}
+  58%,100%{opacity:0;transform:translate(23px,-46px) scale(.55)}
 }
-@keyframes chessStoreMoveFlash{
-  0%,44%{opacity:0;transform:scale(.2)}
-  51%{opacity:1;transform:scale(1)}
-  66%,100%{opacity:0;transform:scale(1.75)}
+@keyframes chessStoreMoveGatherV4{
+  0%,43%{opacity:0;transform:scale(1)}
+  48%{opacity:.94;transform:scale(1)}
+  54%{opacity:.82;transform:scale(.55)}
+  60%,100%{opacity:0;transform:scale(.12)}
 }
-@keyframes chessStoreMoveTrail{
-  0%,22%,100%{opacity:0;transform:translate(0,0) scale(.5)}
-  32%{opacity:.85}
-  48%{opacity:.15;transform:translate(16px,-30px) scale(1.08)}
-  58%{opacity:0;transform:translate(23px,-46px) scale(.7)}
+@keyframes chessStoreMoveCoreV4{
+  0%,50%{opacity:0;transform:scale(.34)}
+  54%{opacity:.88;transform:scale(.92)}
+  60%{opacity:.42;transform:scale(.58)}
+  66%,100%{opacity:0;transform:scale(.22)}
 }
 
 @keyframes chessStoreCapturePiece{
@@ -296,7 +321,9 @@
   .store-v2-mini-chess-field-effect > em,
   .store-v2-mini-chess-field-effect > u{animation:none!important}
   .store-v2-game-preview[data-cosmetic-variant="move"] .chess-effect-piece.mover{transform:translate(100%,-200%)}
-  .store-v2-game-preview[data-cosmetic-variant="move"] .store-v2-mini-chess-field-effect > b{opacity:.8;transform:scale(1)}
+  .store-v2-game-preview[data-cosmetic-variant="move"] .store-v2-mini-chess-field-effect > b{opacity:.72;transform:scale(.72)}
+  .store-v2-game-preview[data-cosmetic-variant="move"] .store-v2-mini-chess-field-effect > em,
+  .store-v2-game-preview[data-cosmetic-variant="move"] .store-v2-mini-chess-field-effect > u{opacity:0}
   .store-v2-game-preview[data-cosmetic-variant="capture"] .chess-effect-piece.mover{transform:translate(200%,-200%)}
   .store-v2-game-preview[data-cosmetic-variant="capture"] .chess-effect-piece.target{opacity:0}
   .store-v2-game-preview[data-cosmetic-variant="capture"] .store-v2-mini-chess-field-effect > u{opacity:.8;transform:scale(1)}

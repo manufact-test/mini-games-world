@@ -99,14 +99,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"store-screen-intent-wrapper.js?v=1") || !str_contains($s,"mvp19_5=chess-catalog") || !str_contains($s,"board_preview=native-static-v1")) exit(1); if(!str_contains($m["imports"]["./assets/js/games/chess/renderer.js?v=68"]??"","mvp19_5=cosmetics")) exit(2); $css=$m["assets"]["main_css"]??""; if(!str_contains($css,"main.css?v=190") || !str_contains($css,"mvp19_5=chess-cosmetics")) exit(3);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"store-screen-intent-wrapper.js?v=1") || !str_contains($s,"mvp19_5=chess-catalog") || !str_contains($s,"fx_preview=move-live-parity-v4") || !str_contains($s,"board_preview=native-static-v1")) exit(1); if(!str_contains($m["imports"]["./assets/js/games/chess/renderer.js?v=68"]??"","mvp19_5=cosmetics")) exit(2); $css=$m["assets"]["main_css"]??""; if(!str_contains($css,"main.css?v=190") || !str_contains($css,"mvp19_5=chess-cosmetics")) exit(3);'
           grep -F "from './store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog';" app/assets/js/screens/store-screen-intent-wrapper.js
           grep -F "from './store-screen.js?v=44&intent_base=1';" app/assets/js/screens/store-screen-intent-wrapper.js
-          grep -F "runtime-cosmetics.css?v=2&mvp19_5=native-board-preview&fx_preview=action-geometry-v3" app/assets/js/screens/store-screen-intent-wrapper.js
+          grep -F "runtime-cosmetics.css?v=3&mvp19_5=native-board-preview&fx_preview=move-live-parity-v4" app/assets/js/screens/store-screen-intent-wrapper.js
           grep -F "@import url('./games/chess/game.css?v=68');" app/assets/css/main.css
           grep -F "@import url('./cosmetics.css?v=1&mvp19_5=chess-cosmetics');" app/assets/css/games/chess/game.css
           grep -F "@import url('./profile-cosmetics.css?v=1&mvp19_5=chess-profile-polish');" app/assets/css/games/chess/game.css
           grep -F "@import url('./store-board-previews.css?v=5&mvp19_5=native-static-board-preview');" app/assets/css/games/chess/runtime-cosmetics.css
+          grep -F "@import url('./store-effect-previews.css?v=4&mvp19_5=move-live-parity-v4');" app/assets/css/games/chess/runtime-cosmetics.css
+          grep -F "MOVE: accepted live parity" app/assets/css/games/chess/store-effect-previews.css
+          grep -F "chessStoreMoveTrailV4" app/assets/css/games/chess/store-effect-previews.css
+          grep -F "chessStoreMoveGatherV4" app/assets/css/games/chess/store-effect-previews.css
+          grep -F "chessStoreMoveCoreV4" app/assets/css/games/chess/store-effect-previews.css
           grep -F "background-image:url('./board-previews/wood.svg')" app/assets/css/games/chess/store-board-previews.css
           grep -F "background-image:url('./board-previews/tournament-dark.svg')" app/assets/css/games/chess/store-board-previews.css
           grep -F "background-image:url('./board-previews/marble.svg')" app/assets/css/games/chess/store-board-previews.css
