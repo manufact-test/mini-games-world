@@ -178,7 +178,7 @@ function ensureMoveEffectV3Styles(){
   const style = document.createElement('style');
   style.id = 'mgwChessMoveEffectV3';
   style.textContent = `
-    /* Move v3 owns only paid Move presentation. Capture remains base-owned but is visually parity-corrected below. Check remains base-owned. */
+    /* Move v3 owns only paid Move presentation. Capture and Check remain base-owned. */
     #gameBoard[data-game-type="chess"][data-chess-move-fx-v3="1"] .chess-fx-layer.chess-fx-move,
     #gameBoard[data-game-type="chess"][data-chess-move-fx-v3="1"] .chess-fx-trail{display:none!important}
 
@@ -237,55 +237,6 @@ function ensureMoveEffectV3Styles(){
       animation:chessMoveV3Core .17s ease-out var(--core-delay,470ms) both;
     }
 
-    /* Capture parity v1: make live capture match Store preview — flash + radial burst + expanding ring. */
-    #gameBoard[data-game-type="chess"] .chess-fx-capture{
-      z-index:13;
-    }
-    #gameBoard[data-game-type="chess"] .chess-fx-capture b{
-      width:56%;
-      height:56%;
-      border-radius:50%;
-      background:radial-gradient(circle,rgba(255,250,207,.98) 0 12%,rgba(255,184,76,.78) 29%,rgba(255,112,56,.28) 55%,transparent 76%);
-      box-shadow:0 0 10px rgba(255,158,52,.42);
-      animation:chessCaptureParityFlash .66s ease-out both!important;
-    }
-    #gameBoard[data-game-type="chess"] .chess-fx-capture b::before,
-    #gameBoard[data-game-type="chess"] .chess-fx-capture b::after{
-      content:"";
-      position:absolute;
-      left:50%;
-      top:50%;
-      pointer-events:none;
-      transform:translate(-50%,-50%);
-    }
-    #gameBoard[data-game-type="chess"] .chess-fx-capture b::before{
-      width:126%;
-      height:126%;
-      border-radius:50%;
-      background:repeating-conic-gradient(from 4deg,rgba(255,222,119,.98) 0 5deg,transparent 5deg 30deg);
-      -webkit-mask:radial-gradient(circle,transparent 0 30%,#000 34% 46%,transparent 50%);
-      mask:radial-gradient(circle,transparent 0 30%,#000 34% 46%,transparent 50%);
-      animation:chessCaptureParityBurst .72s cubic-bezier(.18,.72,.24,1) both;
-    }
-    #gameBoard[data-game-type="chess"] .chess-fx-capture b::after{
-      width:52%;
-      height:52%;
-      box-sizing:border-box;
-      border:2px solid rgba(255,204,91,.94);
-      border-radius:50%;
-      box-shadow:0 0 10px rgba(255,158,52,.58);
-      animation:chessCaptureParityRing .72s ease-out both;
-    }
-    #gameBoard[data-game-type="chess"] .chess-fx-capture i{
-      width:6%;
-      height:34%;
-      border-radius:999px;
-      background:linear-gradient(to top,transparent 0 8%,rgba(255,180,66,.46) 28%,rgba(255,227,133,.98) 72%,rgba(255,248,211,.98) 100%);
-      transform-origin:50% 100%;
-      animation:chessCaptureParityShard .70s cubic-bezier(.14,.72,.22,1) both!important;
-      filter:drop-shadow(0 0 3px rgba(255,174,61,.45));
-    }
-
     @keyframes chessMoveV3Piece{
       0%{transform:translate(var(--chess-move-x,0),calc(var(--chess-move-y,0) - 1px)) scale(.96);filter:brightness(1.12)}
       100%{transform:translateY(-1px) scale(1);filter:brightness(1)}
@@ -307,37 +258,10 @@ function ensureMoveEffectV3Styles(){
       38%{opacity:.88;transform:translate(-50%,-50%) scale(.92)}
       100%{opacity:0;transform:translate(-50%,-50%) scale(.24)}
     }
-    @keyframes chessCaptureParityFlash{
-      0%{opacity:0;transform:scale(.18)}
-      16%{opacity:1;transform:scale(1)}
-      66%{opacity:.34;transform:scale(1.62)}
-      100%{opacity:0;transform:scale(1.92)}
-    }
-    @keyframes chessCaptureParityBurst{
-      0%{opacity:0;transform:translate(-50%,-50%) scale(.26) rotate(-10deg)}
-      18%{opacity:.98}
-      72%{opacity:.26;transform:translate(-50%,-50%) scale(1.28) rotate(10deg)}
-      100%{opacity:0;transform:translate(-50%,-50%) scale(1.5) rotate(16deg)}
-    }
-    @keyframes chessCaptureParityRing{
-      0%{opacity:0;transform:translate(-50%,-50%) scale(.44)}
-      22%{opacity:.96}
-      100%{opacity:0;transform:translate(-50%,-50%) scale(2.05)}
-    }
-    @keyframes chessCaptureParityShard{
-      0%{opacity:0;transform:rotate(var(--chess-fx-angle)) translateY(-4%) scaleY(.34)}
-      16%{opacity:1}
-      74%{opacity:.56;transform:rotate(var(--chess-fx-angle)) translateY(-26%) scaleY(1.18)}
-      100%{opacity:0;transform:rotate(var(--chess-fx-angle)) translateY(-46%) scaleY(.78)}
-    }
 
     @media(prefers-reduced-motion:reduce){
       #gameBoard[data-game-type="chess"] .chess-live-move-v3{display:none!important}
       #gameBoard[data-game-type="chess"][data-chess-move-fx-v3="1"] .chess-piece.moved-fresh:not(.castle-rook-fresh){animation:none!important}
-      #gameBoard[data-game-type="chess"] .chess-fx-capture b,
-      #gameBoard[data-game-type="chess"] .chess-fx-capture b::before,
-      #gameBoard[data-game-type="chess"] .chess-fx-capture b::after,
-      #gameBoard[data-game-type="chess"] .chess-fx-capture i{animation:none!important}
     }
   `;
   document.head.appendChild(style);
