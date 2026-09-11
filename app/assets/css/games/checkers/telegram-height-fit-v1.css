@@ -1,28 +1,36 @@
 /*
- * Telegram short-viewport corrective for the accepted pre-b94d Checkers skin.
+ * Telegram/desktop Mini App viewport corrective for the accepted pre-b94d
+ * Checkers skin.
  *
- * C12 owns the accepted board geometry: nearly full card width, centered, with
- * compact Checkers-only chrome. C13 restores only the proven content-scroll
- * mechanics from the earlier real-scroll corrective so the normal-flow
- * `#leaveGame` control can be fully revealed below Telegram chrome.
+ * C12 owns the accepted board geometry. C14 owns only the scroll container:
+ * the game content is always a bounded scroller, including desktop-height
+ * Telegram windows around 690px where the C13 <=680px rule never matched.
+ * Short-viewport board/chrome geometry remains scoped to <=680px.
  */
+.game-board-screen[data-game-type="checkers"]{
+  min-height:0!important;
+  overflow:hidden!important;
+}
+.game-board-screen[data-game-type="checkers"] .content{
+  box-sizing:border-box!important;
+  height:100%!important;
+  max-height:100%!important;
+  flex:1 1 0%!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  padding-bottom:calc(
+    56px + env(safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)
+  )!important;
+  scroll-padding-bottom:calc(
+    56px + env(safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)
+  );
+}
+
 @media (max-height:680px){
-  .game-board-screen[data-game-type="checkers"] .content{
-    height:auto!important;
-    flex:1 1 auto!important;
-    min-height:0!important;
-    overflow-y:auto!important;
-    overflow-x:hidden!important;
-    overscroll-behavior-y:contain;
-    -webkit-overflow-scrolling:touch;
-    touch-action:pan-y;
-    padding-bottom:calc(
-      56px + env(safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)
-    )!important;
-    scroll-padding-bottom:calc(
-      56px + env(safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)
-    );
-  }
   .game-board-screen[data-game-type="checkers"] .board-wrap{
     padding:4px;
     margin-top:2px;
