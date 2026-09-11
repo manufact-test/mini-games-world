@@ -70,7 +70,7 @@ expect(effectsV3.includes('scale(3.72)'), 'wave ring must expand far beyond the 
 expect(effectsV3.includes('.game-board-screen[data-game-type="tictactoe"] .board-wrap{overflow:visible}'), 'the real TTT board wrapper must not clip expanding FX');
 expect(effectsV3.includes('@media (prefers-reduced-motion:reduce)'), 'new FX must respect reduced-motion preferences');
 
-expect(store.includes('Анимации при каждом ходе'), 'Store must present human move-effect copy');
+expect(store.includes('Один выбранный эффект срабатывает при каждом ходе'), 'Store must explain single-effect move-time behavior');
 expect(store.includes('data-store-v2-unequip'), 'selected game cosmetic must expose a remove action');
 expect(store.includes('>Снять</button>'), 'selected game cosmetic button must say Снять');
 expect(store.includes('ttt-mark ttt-effect-mark ttt-fx-${safeVariant}'), 'Store preview must keep the canonical effect class identities');
@@ -111,10 +111,15 @@ expect(mainCss.includes('.has-shell-chrome .screen[data-screen="store"] .store-v
 expect(manifest.includes('c2_1=single-slot-parity'), 'active runtime manifest must publish C2.1 identity');
 expect(manifest.includes('store-screen-intent-wrapper.js?v=1') && manifest.includes('mobile=intent-only'), 'active runtime manifest must publish the mobile intent-only Store entry');
 expect(storeEntry.includes("./store-screen.js?v=44&intent_base=1"), 'Store entry must delegate to the accepted versioned Store owner');
-expect(store.includes('Анимации при каждом ходе') && store.includes('data-store-v2-unequip'), 'delegated Store owner must preserve C2.1 single-effect selection UI with human copy');
+expect(store.includes('Один выбранный эффект срабатывает при каждом ходе') && store.includes('data-store-v2-unequip'), 'delegated Store owner must preserve C2.1 single-effect selection UI');
 expect(manifest.includes('c2_1=effect-unequip'), 'active runtime manifest must cache-bust the API unequip client');
 expect(store.includes('if (!purchaseBusy && !equipBusy) applyStoreResponse(result);') && store.includes('if (!purchaseBusy && !equipBusy) {\n      renderStore();'), 'delegated Store owner must preserve C2.2 selection consistency under background refresh');
 expect(manifest.includes('c2_4=poll-persistent-effects'), 'active runtime manifest must preserve the poll-persistent Tic Tac Toe renderer');
 expect(manifest.includes('c2_5=visible-mark-layer'), 'active runtime manifest must preserve C2.5 visible mark layering');
 expect(manifest.includes('c2_6=cell-native-dom-fx'), 'active runtime manifest must publish C2.6 cell-native DOM FX');
 expect(manifest.includes("renderer.js?v=58"), 'active renderer identity must preserve C2.6');
+expect(/main\.css\?v=\d+/.test(manifest), 'active main CSS identity must remain versioned after later bounded UI work');
+expect(manifest.includes("'./assets/js/components/toast.js?v=27' => './assets/js/components/toast.js?v=29&store=quiet-cosmetic-equip-all'"), 'active runtime manifest must cache-bust all redundant cosmetic equip/unequip acknowledgements');
+expect(manifest.includes('store=compact-tail'), 'active runtime manifest must cache-bust compact Store bottom spacing');
+
+console.log('MVP-19.4 effects C2.6 cell-native DOM FX contract: OK');
