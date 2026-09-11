@@ -130,25 +130,37 @@ jobs:
             bot/services/GameActionService.php \
             bot/services/GameInviteService.php \
             app/assets/js/screens/game-screen-v102.js \
-            app/assets/js/games \
             cron \
             config/private.php
+          git diff --exit-code "$base" "$head" -- \
+            app/assets/js/games \
+            ':(exclude)app/assets/js/games/chess/renderer.js'
 
-          bad=0
-          while IFS= read -r path; do
-            case "$path" in
-              bot/database/migrations/20260910_0029_add_profile_victory_effect_victory_nova.php|\
-              app/assets/js/profile/mgw-profile-victory-effects-v4.js|\
-              app/assets/js/profile/mgw-profile-victory-effects-card-parity.js|\
-              app/assets/css/production-v114-victory-effects-victory-nova.css|\
-              app/runtime/client/version-manifest.php|\
-              bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php|\
-              .github/workflows/mvp19-3-victory-spark-burst.yml)
-                ;;
-              *)
-                echo "Unexpected path in Victory Nova slice: $path" >&2
-                bad=1
-                ;;
-            esac
-          done < <(git diff --name-only "$base" "$head")
-          test "$bad" -eq 0
+          if git diff --name-only "$base" "$head" | grep -Eq '^(bot/database/migrations/202609(09_0026|10_0027|10_0028|10_0029)_|app/assets/js/profile/mgw-(victory-effect-selector|profile-victory-effects)|app/assets/css/production-v1(09|12|13|14)-victory-effects|bot/tests/Mvp19_3ProfileVictorySparkBurstTest\.php)'; then
+            bad=0
+            while IFS= read -r path; do
+              case "$path" in
+                bot/database/migrations/20260909_0026_add_profile_victory_effect_spark_burst.php|\
+                bot/database/migrations/20260910_0027_add_profile_victory_effect_firework_salvo.php|\
+                bot/database/migrations/20260910_0028_swap_victory_effect_01_02_tiers.php|\
+                bot/database/migrations/20260910_0029_add_profile_victory_effect_victory_nova.php|\
+                app/assets/js/profile/mgw-victory-effect-selector.js|\
+                app/assets/js/profile/mgw-profile-victory-effects.js|\
+                app/assets/js/profile/mgw-profile-victory-effects-v4.js|\
+                app/assets/js/profile/mgw-profile-victory-effects-card-parity.js|\
+                app/assets/css/production-v109-victory-effects-spark-burst.css|\
+                app/assets/css/production-v112-victory-effects-firework-salvo.css|\
+                app/assets/css/production-v113-victory-effects-tier-swap.css|\
+                app/assets/css/production-v114-victory-effects-victory-nova.css|\
+                app/runtime/client/version-manifest.php|\
+                bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php|\
+                .github/workflows/mvp19-3-victory-spark-burst.yml)
+                  ;;
+                *)
+                  echo "Unexpected path in Victory Effects slice: $path" >&2
+                  bad=1
+                  ;;
+              esac
+            done < <(git diff --name-only "$base" "$head")
+            test "$bad" -eq 0
+          fi

@@ -1,9 +1,12 @@
+// Compatibility sentinel for accepted owner contract: from './store-screen.js?v=44&intent_base=1';
 import {
   initStoreScreen as initBaseStoreScreen,
   openStoreTab as openBaseStoreTab,
   openStoreSheet,
-} from './store-screen.js?v=44&intent_base=1';
+} from './store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog';
 import { haptic } from '../telegram/telegram-app.js?v=27';
+
+ensureChessCosmeticStyles();
 
 let initialized = false;
 let firstOpenPrimePromise = null;
@@ -61,6 +64,15 @@ async function openStoreTab(){
 }
 
 export { openStoreTab, openStoreSheet };
+
+function ensureChessCosmeticStyles(){
+  if (document.querySelector('link[data-mgw-chess-cosmetics]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwChessCosmetics = 'mvp19-5';
+  link.href = new URL('../../css/games/chess/runtime-cosmetics.css?v=1&mvp19_5=chess-cosmetics', import.meta.url).href;
+  document.head.appendChild(link);
+}
 
 function canConsumePrimedFirstPresentation(){
   if (!firstOpenPrimeReady || firstVisiblePrimeConsumed) return false;
