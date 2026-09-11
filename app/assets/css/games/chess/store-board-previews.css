@@ -15,9 +15,9 @@
   display:grid!important;
   grid-template-columns:repeat(8,minmax(0,1fr))!important;
   grid-template-rows:repeat(8,minmax(0,1fr))!important;
-  width:94px!important;
-  height:94px!important;
-  max-width:94px!important;
+  width:108px!important;
+  height:108px!important;
+  max-width:108px!important;
   aspect-ratio:1!important;
   gap:0!important;
   padding:0!important;
@@ -96,8 +96,8 @@
 
 @media(max-width:380px){
   .store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"] .store-v2-mini-chess-board{
-    width:90px!important;
-    height:90px!important;
-    max-width:90px!important;
+    width:104px!important;
+    height:104px!important;
+    max-width:104px!important;
   }
 }
