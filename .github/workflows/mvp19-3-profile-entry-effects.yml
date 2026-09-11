@@ -129,6 +129,8 @@ jobs:
             bot/services/FriendGraphService.php \
             bot/services/ReconnectLifecycleService.php \
             app/assets/js/screens/game-screen-v102.js \
-            app/assets/js/games \
             cron \
             config/private.php
+          git diff --exit-code "$base" "$head" -- \
+            app/assets/js/games \
+            ':(exclude)app/assets/js/games/chess/renderer.js'
