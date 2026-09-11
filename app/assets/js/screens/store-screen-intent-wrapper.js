@@ -41,7 +41,7 @@ const CHESS_EFFECT_PREVIEW_SCENES = Object.freeze({
     Object.freeze({className:'static-b white', glyph:'♟'}),
   ]),
 });
-const STORE_API_REPAIR_HOOK = Symbol.for('mgw.store.api-presentation-repair.v1');
+const STORE_API_REPAIR_HOOK = Symbol.for('mgw.store.api-presentation-repair.v2');
 
 ensureChessCosmeticStyles();
 installStoreApiPresentationRepairHooks();
@@ -51,7 +51,6 @@ let initialized = false;
 let firstOpenPrimePromise = null;
 let firstOpenPrimeReady = false;
 let firstVisiblePrimeConsumed = false;
-let presentationRepairTimers = [];
 
 export function initStoreScreen(){
   if (initialized) return firstOpenPrimePromise;
@@ -89,21 +88,21 @@ async function openStoreTab(){
   if (canConsumePrimedFirstPresentation()) {
     firstVisiblePrimeConsumed = true;
     upgradeStoreGamePresentation();
-    scheduleStoreGamePresentationRepair(true);
+    scheduleStoreGamePresentationRepair();
     haptic('light');
     return;
   }
 
   const result = await openBaseStoreTab();
   upgradeStoreGamePresentation();
-  scheduleStoreGamePresentationRepair(true);
+  scheduleStoreGamePresentationRepair();
   return result;
 }
 
 async function openStoreSheet(){
   const result = await openBaseStoreSheet();
   upgradeStoreGamePresentation();
-  scheduleStoreGamePresentationRepair(true);
+  scheduleStoreGamePresentationRepair();
   return result;
 }
 
@@ -119,7 +118,7 @@ function ensureChessCosmeticStyles(){
 }
 
 function installStoreApiPresentationRepairHooks(){
-  ['cosmeticStoreEquip','cosmeticStoreUnequip'].forEach(methodName => {
+  ['cosmeticStorePurchase','cosmeticStoreEquip','cosmeticStoreUnequip'].forEach(methodName => {
     const current = api?.[methodName];
     if (typeof current !== 'function' || current[STORE_API_REPAIR_HOOK]) return;
 
@@ -157,24 +156,18 @@ function installStoreGameClickCorrective(){
     const unequip = target.closest('[data-store-v2-unequip]');
     if (!gameTab && !gameSelector && !productBuy && !confirmBuy && !equip && !unequip) return;
 
-    scheduleStoreGamePresentationRepair(Boolean(confirmBuy || equip || unequip));
+    scheduleStoreGamePresentationRepair();
   });
 }
 
-function scheduleStoreGamePresentationRepair(extended = false){
-  presentationRepairTimers.forEach(timer => globalThis.clearTimeout(timer));
-  presentationRepairTimers = [];
-
+function scheduleStoreGamePresentationRepair(){
   const repair = () => upgradeStoreGamePresentation();
   queueMicrotask(repair);
   if (typeof globalThis.requestAnimationFrame === 'function') {
     globalThis.requestAnimationFrame(repair);
+  } else {
+    globalThis.setTimeout(repair, 0);
   }
-
-  const delays = extended
-    ? [80, 220, 500, 900, 1500, 2500, 4000, 6500, 10000]
-    : [80, 220, 500, 900, 1600];
-  presentationRepairTimers = delays.map(delay => globalThis.setTimeout(repair, delay));
 }
 
 function upgradeStoreGamePresentation(){
