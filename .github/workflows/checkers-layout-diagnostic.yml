@@ -55,6 +55,36 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Reset staging A/B players
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          node --input-type=module <<'NODE'
+          const audience = 'mini-games-world-staging-e2e';
+          const tokenUrl = new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL);
+          tokenUrl.searchParams.set('audience', audience);
+          const oidcResponse = await fetch(tokenUrl, {
+            headers: { Authorization: `bearer ${process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}`, Accept: 'application/json' },
+          });
+          if (!oidcResponse.ok) throw new Error(`OIDC request failed: ${oidcResponse.status}`);
+          const oidc = await oidcResponse.json();
+          const response = await fetch(`${process.env.MGW_STAGING_ORIGIN}/bot/staging-test-auth.php`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${oidc.value}`,
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action: 'reset_test_players' }),
+          });
+          const payload = await response.json().catch(() => null);
+          if (!response.ok || payload?.ok !== true || payload?.invite_parity !== true
+              || payload?.notification_parity !== true || payload?.economy_parity !== true) {
+            throw new Error(`A/B reset failed: ${response.status} ${payload?.stage || payload?.reason_code || payload?.error || ''}`);
+          }
+          console.log('CHECKERS_DIAGNOSTIC_RESET_OK');
+          NODE
+
       - name: Install pinned Playwright
         shell: bash
         run: |
