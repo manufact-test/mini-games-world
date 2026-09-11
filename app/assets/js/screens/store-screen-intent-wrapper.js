@@ -7,6 +7,7 @@ import {
 import { haptic } from '../telegram/telegram-app.js?v=27';
 
 ensureChessCosmeticStyles();
+installChessBoardPreviewParity();
 
 let initialized = false;
 let firstOpenPrimePromise = null;
@@ -39,6 +40,7 @@ export function initStoreScreen(){
   firstOpenPrimePromise = canPrimeStoreUnderPreloader()
     ? Promise.resolve(openBaseStoreTab())
       .then(() => {
+        upgradeChessBoardPreviews();
         firstOpenPrimeReady = hasCompletedStorePresentation();
       })
       .catch(() => {
@@ -56,11 +58,14 @@ async function openStoreTab(){
   // DOM twice before the first visible paint; later opens delegate normally.
   if (canConsumePrimedFirstPresentation()) {
     firstVisiblePrimeConsumed = true;
+    upgradeChessBoardPreviews();
     haptic('light');
     return;
   }
 
-  return openBaseStoreTab();
+  const result = await openBaseStoreTab();
+  upgradeChessBoardPreviews();
+  return result;
 }
 
 export { openStoreTab, openStoreSheet };
@@ -70,8 +75,43 @@ function ensureChessCosmeticStyles(){
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.dataset.mgwChessCosmetics = 'mvp19-5';
-  link.href = new URL('../../css/games/chess/runtime-cosmetics.css?v=1&mvp19_5=chess-cosmetics', import.meta.url).href;
+  link.href = new URL('../../css/games/chess/runtime-cosmetics.css?v=2&mvp19_5=chess-board-preview-parity', import.meta.url).href;
   document.head.appendChild(link);
+}
+
+function installChessBoardPreviewParity(){
+  const root = document.documentElement;
+  if (!(root instanceof HTMLElement)) return;
+
+  const observer = new MutationObserver(records => {
+    for (const record of records) {
+      if (record.addedNodes.length > 0) {
+        queueMicrotask(upgradeChessBoardPreviews);
+        break;
+      }
+    }
+  });
+  observer.observe(root, { childList:true, subtree:true });
+  queueMicrotask(upgradeChessBoardPreviews);
+}
+
+function upgradeChessBoardPreviews(){
+  document.querySelectorAll('.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"] .store-v2-mini-chess-board').forEach(board => {
+    if (!(board instanceof HTMLElement) || board.dataset.boardPreviewParity === '8x8') return;
+
+    const fragment = document.createDocumentFragment();
+    for (let index = 0; index < 64; index += 1) {
+      const row = Math.floor(index / 8);
+      const column = index % 8;
+      const square = document.createElement('span');
+      square.className = ((row + column) % 2 === 0) ? 'light' : 'dark';
+      square.setAttribute('aria-hidden', 'true');
+      fragment.appendChild(square);
+    }
+
+    board.replaceChildren(fragment);
+    board.dataset.boardPreviewParity = '8x8';
+  });
 }
 
 function canConsumePrimedFirstPresentation(){
