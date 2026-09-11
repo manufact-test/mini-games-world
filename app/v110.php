@@ -133,14 +133,6 @@ $html = str_replace(
     $html
 );
 
-$runtimeProbeHost = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
-$runtimeProbeHost = preg_replace('/:\\d+$/', '', $runtimeProbeHost) ?? $runtimeProbeHost;
-$isStagingRuntimeProbe = hash_equals('seashell-okapi-889488.hostingersite.com', $runtimeProbeHost);
-if ($isStagingRuntimeProbe) {
-    $runtimeProbeTag = '<div id="mgw-staging-runtime-probe" style="position:fixed;top:max(4px,env(safe-area-inset-top));left:4px;z-index:2147483647;padding:3px 6px;border-radius:6px;background:#ff2d55;color:#fff;font:700 10px/1.1 monospace;letter-spacing:.02em;pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.4)">STG A1 · v110 · C15</div>';
-    $html = str_replace('</body>', "  {$runtimeProbeTag}\n</body>", $html);
-}
-
 $requiredRenderedTargets = [
     'client_bootstrap_v2' => $bootstrapTarget,
     'clean_entry_v110' => $imports['@mgw/clean-entry'],
@@ -218,7 +210,4 @@ header('X-MGW-Battleship-Ready: authoritative-reset-after-edit');
 header('X-MGW-Battleship-Miss-Handoff: 900ms');
 header('X-MGW-Battleship-Shot-Feedback: hit-sunk-impact-miss-static');
 header('X-MGW-Battleship-Pending-Paint: none-legacy-owner-removed');
-if ($isStagingRuntimeProbe) {
-    header('X-MGW-Staging-Runtime-Probe: stg-a1-v110-c15');
-}
 echo $html;
