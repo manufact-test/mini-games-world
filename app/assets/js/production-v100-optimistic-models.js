@@ -18,6 +18,13 @@ export function buildV100OptimisticGame(game, action, viewerId, gameType){
       : buildBattleshipSetupOptimistic(game, action);
   }
 
+  // Chess owns a visible square-to-square travel animation. Rendering an
+  // optimistic destination first and then replacing it with the authoritative
+  // move causes the piece to snap forward, back to the source transform, and
+  // forward again. Keep the current board while the request is in flight so the
+  // authoritative response owns exactly one complete move + cosmetic effect.
+  if (type === 'chess') return null;
+
   const modelGame = normalizeSideSymbols(game, type);
   const optimistic = buildOptimisticGame(modelGame, action, id, type);
   if (!optimistic) return null;
