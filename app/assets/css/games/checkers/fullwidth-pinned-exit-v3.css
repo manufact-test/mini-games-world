@@ -1,0 +1,37 @@
+/* Checkers-only viewport fix: keep the board full-width, make the screen body a real flex scroll surface,
+   and keep the existing exit control physically inside the viewport. */
+.game-board-screen[data-game-type="checkers"] .content{
+  height:auto!important;
+  flex:1 1 auto!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  padding-bottom:82px!important;
+  scroll-padding-bottom:82px;
+}
+
+.game-board-screen[data-game-type="checkers"] .board.checkers-surface{
+  width:100%!important;
+  max-width:100%!important;
+  margin:0!important;
+}
+
+.game-board-screen[data-game-type="checkers"] #leaveGame{
+  position:absolute!important;
+  z-index:30!important;
+  left:8px!important;
+  right:8px!important;
+  bottom:max(8px,env(safe-area-inset-bottom))!important;
+  width:auto!important;
+  margin:0!important;
+}
+
+@media (max-width:380px){
+  .game-board-screen[data-game-type="checkers"] #leaveGame{
+    left:5px!important;
+    right:5px!important;
+  }
+}
