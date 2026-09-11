@@ -3,11 +3,11 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
 $fitCss = file_get_contents($root . '/app/assets/css/games/checkers/telegram-height-fit-v1.css');
-$legacyCss = file_get_contents($root . '/app/assets/js/games/checkers/renderer.js');
+$checkersCss = file_get_contents($root . '/app/assets/css/games/checkers/game.css');
 $renderer = file_get_contents($root . '/app/assets/js/games/checkers/renderer.js');
 $v110 = file_get_contents($root . '/app/v110.php');
 
-if (!is_string($fitCss) || !is_string($legacyCss) || !is_string($renderer) || !is_string($v110)) {
+if (!is_string($fitCss) || !is_string($checkersCss) || !is_string($renderer) || !is_string($v110)) {
     throw new RuntimeException('Checkers Telegram viewport corrective sources are unavailable.');
 }
 
@@ -56,10 +56,6 @@ foreach ([
     }
 }
 
-$checkersCss = file_get_contents($root . '/app/assets/css/games/checkers/game.css');
-if (!is_string($checkersCss)) {
-    throw new RuntimeException('Accepted Checkers skin is unavailable.');
-}
 $gitBlobSha = static fn(string $content): string => sha1('blob ' . strlen($content) . "\0" . $content);
 if ($gitBlobSha($checkersCss) !== '12d2f211c48c1f49793744315c004fd33afc5bcf') {
     throw new RuntimeException('Accepted pre-b94d Checkers skin must remain byte-identical.');
