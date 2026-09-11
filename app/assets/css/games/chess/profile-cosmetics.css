@@ -1,0 +1,35 @@
+/* MVP-19.5 Profile polish for the existing generic game-cosmetics owner. */
+.profile-v2-game-panel[data-profile-game-panel="chess"] .profile-v2-game-group:has([data-profile-game-cosmetic^="game-chess-board-"]) .profile-v2-game-group-title,
+.profile-v2-game-panel[data-profile-game-panel="chess"] .profile-v2-game-group:has([data-profile-game-cosmetic^="game-chess-pieces-"]) .profile-v2-game-group-title{font-size:0}
+.profile-v2-game-panel[data-profile-game-panel="chess"] .profile-v2-game-group:has([data-profile-game-cosmetic^="game-chess-board-"]) .profile-v2-game-group-title::after{content:"Доски";font-size:inherit;font-size:11px}
+.profile-v2-game-panel[data-profile-game-panel="chess"] .profile-v2-game-group:has([data-profile-game-cosmetic^="game-chess-pieces-"]) .profile-v2-game-group-title::after{content:"Фигуры";font-size:inherit;font-size:11px}
+
+/* The accepted Profile owner emits generic TTT preview primitives in its modal.
+   Re-skin those primitives by the canonical Chess display names without creating a second Profile renderer. */
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label$="доска"],
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label$="фигуры"],
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label^="Эффект хода"],
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label^="Эффект взятия"],
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label^="Эффект шаха"]{overflow:hidden;background:linear-gradient(145deg,rgba(18,24,37,.92),rgba(7,10,18,.98))}
+
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label$="доска"] .store-v2-mini-board{position:relative;background:#151a23!important}
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label$="доска"] .store-v2-mini-board b{font-size:0}
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label$="доска"] .store-v2-mini-board::after{content:"♞";position:absolute;inset:0;display:grid;place-items:center;color:#f5ead8;font:800 34px/1 "Segoe UI Symbol","Noto Sans Symbols 2","DejaVu Sans",sans-serif;text-shadow:0 3px 5px rgba(0,0,0,.48)}
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label="Деревянная доска"] .store-v2-mini-board{background:linear-gradient(145deg,#c99b65,#6b4127)!important}
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label="Тёмная турнирная доска"] .store-v2-mini-board{background:linear-gradient(145deg,#74849c,#202c40)!important}
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label="Мраморная доска"] .store-v2-mini-board{background:linear-gradient(145deg,#eceae5,#626a73)!important}
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label="Неоновая доска"] .store-v2-mini-board{background:linear-gradient(145deg,#16374e,#371e55)!important;box-shadow:0 0 18px rgba(138,71,255,.38)}
+
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label$="фигуры"] .store-v2-mini-marks span{font-size:0}
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label$="фигуры"] .store-v2-mini-marks::before{content:"♚ ♞ ♟";color:#f0e5d3;font:800 30px/1 "Segoe UI Symbol","Noto Sans Symbols 2","DejaVu Sans",sans-serif;letter-spacing:-2px}
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label="Деревянные фигуры"] .store-v2-mini-marks::before{color:#d49a5b;-webkit-text-stroke:1px #5a3217}
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label="Мраморные фигуры"] .store-v2-mini-marks::before{color:#eff0ee;-webkit-text-stroke:1px #74808a}
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label="Металлические фигуры"] .store-v2-mini-marks::before{color:#d4dde7;-webkit-text-stroke:1px #4a5866;text-shadow:0 1px 0 #fff,0 3px 5px rgba(0,0,0,.44)}
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label="Неоновые фигуры"] .store-v2-mini-marks::before{color:#68efff;-webkit-text-stroke:1px #176c82;text-shadow:0 0 5px #4ce4ff,0 0 12px rgba(172,76,255,.62)}
+
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label^="Эффект хода"] .ttt-effect-mark,
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label^="Эффект взятия"] .ttt-effect-mark,
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label^="Эффект шаха"] .ttt-effect-mark{font-size:0!important;animation:none!important}
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label^="Эффект хода"] .ttt-effect-mark::after,
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label^="Эффект взятия"] .ttt-effect-mark::after,
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label^="Эффект шаха"] .ttt-effect-mark::after{content:"♞";position:relative!important;display:grid;place-items:center;left:auto!important;top:auto!important;width:auto!important;height:auto!important;border:0!important;background:none!important;opacity:1!important;transform:none!important;color:#f2e7d5;font:800 36px/1 "Segoe UI Symbol","Noto Sans Symbols 2","DejaVu Sans",sans-serif;animation:none!important;box-shadow:none!important}
