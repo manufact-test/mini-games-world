@@ -6,7 +6,9 @@ const mountedGameIds = new Set();
 const initialLastMoveByGame = new Map();
 const animatedMoveByGame = new Map();
 const animatedEffectByGame = new Map();
+const moveEffectHoldByGame = new Map();
 const EFFECT_LANDING_DELAY_MS = 400;
+const MOVE_EFFECT_HOLD_MS = 1250;
 const GLYPHS = {
   wK:'♚',wQ:'♛',wR:'♜',wB:'♝',wN:'♞',wP:'♟',
   bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟',
@@ -78,11 +80,32 @@ export function renderChessSurface({ game, me, container, onAction }){
 
   const effectCandidate = lastMove ? activeMoveEffect(game, lastMove, mover) : '';
   const effectKey = effectCandidate && lastKey ? `${lastKey}:${effectCandidate}` : '';
+  const pendingOptimisticMove = Boolean(game?.__mgw_v100_pending_action);
+  const heldMoveEffect = gameId ? moveEffectHoldByGame.get(gameId) : null;
+
+  // The accepted runtime renders an optimistic Chess board first. Replacing that
+  // DOM immediately with the authoritative board used to cut the paid Move trail
+  // off halfway through. If the same move has just started its cosmetic animation,
+  // keep that exact surface alive until the trail + landing wave finish, then mount
+  // the latest authoritative snapshot once. Game status/clock/player chrome lives
+  // outside this surface and continues updating normally.
+  if (!pendingOptimisticMove
+    && effectCandidate === 'move'
+    && heldMoveEffect
+    && heldMoveEffect.effectKey === effectKey
+    && heldMoveEffect.until > Date.now()) {
+    holdAuthoritativeMoveSurface(heldMoveEffect, { game, me, container, onAction });
+    return;
+  }
+
   const animateEffect = Boolean(effectKey
     && !suppressInitialSnapshot
     && animatedEffectByGame.get(gameId) !== effectKey);
   if (animateEffect) animatedEffectByGame.set(gameId, effectKey);
   const moveEffect = animateEffect ? effectCandidate : '';
+  if (moveEffect === 'move' && pendingOptimisticMove && gameId) {
+    beginMoveEffectHold(gameId, effectKey);
+  }
   const effectCell = moveEffect ? chessEffectCell(game, board, lastMove, moveEffect) : -1;
   const cosmeticsVisible = players.some(player => Object.keys(equippedSlots(player)).some(slot => slot.startsWith('game_chess_')));
 
@@ -185,6 +208,33 @@ export function chessStatus(game, me){
   const isMine = String(game?.turn || '') === String(me?.id || '');
   if (game?.in_check) return isMine ? 'Шах вашему королю' : 'Шах сопернику';
   return isMine ? 'Ваш ход' : 'Ход соперника';
+}
+
+function beginMoveEffectHold(gameId, effectKey){
+  const previous = moveEffectHoldByGame.get(gameId);
+  if (previous?.timer) clearTimeout(previous.timer);
+  const hold = {
+    effectKey,
+    until:Date.now() + MOVE_EFFECT_HOLD_MS,
+    timer:null,
+    latest:null,
+  };
+  hold.timer = globalThis.setTimeout(() => {
+    if (moveEffectHoldByGame.get(gameId) === hold) moveEffectHoldByGame.delete(gameId);
+  }, MOVE_EFFECT_HOLD_MS + 250);
+  moveEffectHoldByGame.set(gameId, hold);
+}
+
+function holdAuthoritativeMoveSurface(hold, snapshot){
+  hold.latest = snapshot;
+  const remaining = Math.max(0, hold.until - Date.now());
+  if (hold.timer) clearTimeout(hold.timer);
+  hold.timer = globalThis.setTimeout(() => {
+    const gameId = String(hold.latest?.game?.id || '');
+    if (gameId && moveEffectHoldByGame.get(gameId) === hold) moveEffectHoldByGame.delete(gameId);
+    const latest = hold.latest;
+    if (latest?.game && latest?.me && latest?.container) renderChessSurface(latest);
+  }, remaining);
 }
 
 function renderChessMoveTrail(motion){
