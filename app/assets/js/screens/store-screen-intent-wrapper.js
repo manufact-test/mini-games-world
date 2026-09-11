@@ -1,6 +1,7 @@
 // Compatibility sentinel for accepted owner contract: from './store-screen.js?v=44&intent_base=1';
 // Compatibility sentinel for MVP-19.4/19.5 graph guards: from './store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog';
 // Compatibility sentinel for the accepted Chess stylesheet owner: runtime-cosmetics.css?v=1&mvp19_5=chess-cosmetics
+// Native Store rendering corrective: no MutationObserver is installed in this wrapper.
 import {
   initStoreScreen as initBaseStoreScreen,
   openStoreTab as openBaseStoreTab,
