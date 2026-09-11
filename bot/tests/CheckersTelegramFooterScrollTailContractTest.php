@@ -2,60 +2,62 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
-$spacing = file_get_contents($root . '/app/assets/css/games/checkers/historical-outer-spacing-v1.css');
+$css = file_get_contents($root . '/app/assets/css/games/checkers/game.css');
+$renderer = file_get_contents($root . '/app/assets/js/games/checkers/renderer.js');
 $wrapper = file_get_contents($root . '/app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit.css');
 $manifest = file_get_contents($root . '/app/runtime/client/version-manifest.php');
 
-if (!is_string($spacing) || !is_string($wrapper) || !is_string($manifest)) {
-    throw new RuntimeException('Checkers historical outer-spacing contract sources are unavailable.');
+if (!is_string($css) || !is_string($renderer) || !is_string($wrapper) || !is_string($manifest)) {
+    throw new RuntimeException('Checkers MVP-16.7 restore contract sources are unavailable.');
+}
+
+$gitBlobSha = static fn(string $content): string => sha1('blob ' . strlen($content) . "\0" . $content);
+
+if ($gitBlobSha($css) !== 'c25a30a386ce27c73030035b966f9a0907d9afcc') {
+    throw new RuntimeException('Checkers CSS must be byte-identical to accepted MVP-16.7 SHA 3f6277cb3abfe7dd11c58a90c783afa07b1f6839.');
+}
+if ($gitBlobSha($renderer) !== 'e362239b1388a1f752d2d0e67ae69a7cc9207926') {
+    throw new RuntimeException('Checkers renderer must remain byte-identical to accepted MVP-16.7.');
 }
 
 foreach ([
-    '.game-board-screen[data-game-type="checkers"] .content',
-    'padding:14px 14px 20px',
-    '.game-board-screen[data-game-type="checkers"] .board-wrap',
-    'padding:6px',
-    'margin-top:4px',
-    'border-radius:20px',
-    'overflow:hidden',
-    '@media (max-height:720px)',
-    'padding-top:10px',
-    'padding-bottom:14px',
-    '@media (max-height:700px)',
-    'padding-top:8px',
-    '@media (max-width:380px)',
-    'padding-left:10px',
-    'padding-right:10px',
+    '.checkers-surface{',
+    'width:100%;',
+    '.game-board-screen[data-game-type="checkers"] .board.checkers-surface{',
+    'max-width:100%;',
+    'margin:0;',
+    '.game-board-screen[data-game-type="checkers"] .content{padding:8px 8px 14px}',
+    '.game-board-screen[data-game-type="checkers"] .board-wrap{padding:3px;margin:4px auto 8px;border-radius:10px;overflow:visible}',
 ] as $token) {
-    if (!str_contains($spacing, $token)) {
-        throw new RuntimeException('Checkers historical outer-spacing owner is missing: ' . $token);
+    if (!str_contains($css, $token)) {
+        throw new RuntimeException('Accepted Checkers presentation token is missing: ' . $token);
     }
 }
 
-$rules = preg_replace('~/\*.*?\*/~s', '', $spacing);
-if (!is_string($rules)) {
-    throw new RuntimeException('Checkers historical outer-spacing CSS cannot be normalized.');
+if (!str_contains($wrapper, "./games/checkers/game.css?v=63&checkers=mvp16-7-accepted-restore-v1")) {
+    throw new RuntimeException('Accepted MVP-16.7 Checkers CSS is not the active Checkers presentation owner.');
 }
 foreach ([
-    '#leaveGame',
-    '.board.checkers-surface',
-    'position:absolute',
-    'position:sticky',
-    'overflow-y:auto!important',
-] as $forbidden) {
-    if (str_contains($rules, $forbidden)) {
-        throw new RuntimeException('Historical outer-spacing layer must not own exit/board/scroll mechanics: ' . $forbidden);
+    'historical-sizing-owner-v1.css',
+    'historical-outer-spacing-v1.css',
+    'telegram-footer-scroll-tail-v1.css',
+] as $rejectedOwner) {
+    if (str_contains($wrapper, $rejectedOwner)) {
+        throw new RuntimeException('Rejected recent Checkers corrective remains active: ' . $rejectedOwner);
     }
 }
 
-if (!str_contains($wrapper, "./games/checkers/historical-outer-spacing-v1.css?v=1&checkers=pre-b94d-outer-spacing-v1")) {
-    throw new RuntimeException('Historical outer-spacing owner is not published after the accepted historical sizing owner.');
-}
-if (str_contains($wrapper, 'telegram-footer-scroll-tail-v1.css')) {
-    throw new RuntimeException('Rejected Checkers footer-scroll layer must not remain in the active consistency chain.');
-}
-if (!str_contains($manifest, "production-v108-profile-entry-preview-live-owner-checkers-fit.css?v=8&checkers=pre-b94d-outer-spacing-v1")) {
-    throw new RuntimeException('Historical outer-spacing consistency asset is not cache-busted.');
+if (!str_contains($manifest, "production-v108-profile-entry-preview-live-owner-checkers-fit.css?v=9&checkers=mvp16-7-accepted-restore-v1")) {
+    throw new RuntimeException('Accepted MVP-16.7 Checkers restore is not cache-busted in the runtime manifest.');
 }
 
-echo "checkers-historical-outer-spacing=ok\n";
+foreach ([$css, $wrapper] as $presentationSource) {
+    if (preg_match('/#leaveGame\s*\{/u', $presentationSource) === 1) {
+        throw new RuntimeException('Checkers restore must not reposition the shared leave control.');
+    }
+    if (str_contains($presentationSource, 'overflow-y:auto!important') || str_contains($presentationSource, 'position:fixed')) {
+        throw new RuntimeException('Checkers restore must not add a new scroll/fixed-position repair owner.');
+    }
+}
+
+echo "checkers-mvp16-7-accepted-restore=ok\n";
