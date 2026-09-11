@@ -2,7 +2,11 @@ import { openSheet, closeSheet } from '../../components/sheet.js?v=27';
 import { toast } from '../../components/toast.js?v=41';
 
 const selectedByGame = new Map();
+const mountedGameIds = new Set();
+const initialLastMoveByGame = new Map();
 const animatedMoveByGame = new Map();
+const animatedEffectByGame = new Map();
+const EFFECT_LANDING_DELAY_MS = 310;
 const GLYPHS = {
   wK:'♚',wQ:'♛',wR:'♜',wB:'♝',wN:'♞',wP:'♟',
   bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟',
@@ -44,12 +48,43 @@ export function renderChessSurface({ game, me, container, onAction }){
     ? Array.from({ length:64 }, (_, index) => 63 - index)
     : Array.from({ length:64 }, (_, index) => index);
   const lastMove = game?.last_move || null;
-  const lastKey = lastMove ? `${lastMove.from}:${lastMove.to}:${game?.move_count || 0}` : '';
-  const animateDestination = Boolean(lastKey && animatedMoveByGame.get(gameId) !== lastKey);
-  if (lastKey) animatedMoveByGame.set(gameId, lastKey);
+  const lastKey = lastMove ? [
+    Number(game?.move_count || 0),
+    Number(lastMove?.from),
+    Number(lastMove?.to),
+    String(lastMove?.player_id || ''),
+    String(lastMove?.side || ''),
+  ].join(':') : '';
+
+  const firstSurfaceForGame = gameId !== '' && !mountedGameIds.has(gameId);
+  if (gameId !== '') mountedGameIds.add(gameId);
+  if (firstSurfaceForGame && lastKey) initialLastMoveByGame.set(gameId, lastKey);
+  const suppressInitialSnapshot = Boolean(lastKey && initialLastMoveByGame.get(gameId) === lastKey);
+  if (lastKey && initialLastMoveByGame.has(gameId) && !suppressInitialSnapshot) {
+    initialLastMoveByGame.delete(gameId);
+  }
+
+  const animateDestination = Boolean(lastKey
+    && !suppressInitialSnapshot
+    && animatedMoveByGame.get(gameId) !== lastKey);
+  if (animateDestination) animatedMoveByGame.set(gameId, lastKey);
   const motionByCell = animateDestination ? moveMotions(lastMove, mySide) : new Map();
-  const mover = lastMove ? playerBySide.get(String(lastMove?.side || '')) || players.find(player => String(player?.id || '') === String(lastMove?.player_id || '')) || null : null;
-  const moveEffect = animateDestination ? activeMoveEffect(game, lastMove, mover) : '';
+  const mover = lastMove
+    ? playerBySide.get(String(lastMove?.side || ''))
+      || players.find(player => String(player?.id || '') === String(lastMove?.player_id || ''))
+      || null
+    : null;
+
+  // Piece motion and paid-effect arbitration intentionally have separate one-shot
+  // owners. A move can arrive before a late cosmetic projection; that must not
+  // consume the paid effect before its owner data is available.
+  const effectCandidate = lastMove ? activeMoveEffect(game, lastMove, mover) : '';
+  const effectKey = effectCandidate && lastKey ? `${lastKey}:${effectCandidate}` : '';
+  const animateEffect = Boolean(effectKey
+    && !suppressInitialSnapshot
+    && animatedEffectByGame.get(gameId) !== effectKey);
+  if (animateEffect) animatedEffectByGame.set(gameId, effectKey);
+  const moveEffect = animateEffect ? effectCandidate : '';
   const effectCell = moveEffect ? chessEffectCell(game, board, lastMove, moveEffect) : -1;
   const cosmeticsVisible = players.some(player => Object.keys(equippedSlots(player)).some(slot => slot.startsWith('game_chess_')));
 
@@ -154,16 +189,25 @@ export function chessStatus(game, me){
 }
 
 function renderChessEffectLayer(effect){
+  const landing = effectAnimationStyle(EFFECT_LANDING_DELAY_MS);
+  const secondWave = effectAnimationStyle(EFFECT_LANDING_DELAY_MS + 70);
   if (effect === 'move') {
-    return '<span class="chess-fx-layer chess-fx-move" aria-hidden="true"><i></i><i></i><b></b></span>';
+    return `<span class="chess-fx-layer chess-fx-move" aria-hidden="true"><i${landing}></i><i${secondWave}></i><b${landing}></b></span>`;
   }
   if (effect === 'capture') {
-    return '<span class="chess-fx-layer chess-fx-capture" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><b></b></span>';
+    return `<span class="chess-fx-layer chess-fx-capture" aria-hidden="true"><i${landing}></i><i${landing}></i><i${landing}></i><i${landing}></i><i${landing}></i><i${landing}></i><b${landing}></b></span>`;
   }
   if (effect === 'check') {
-    return '<span class="chess-fx-layer chess-fx-check" aria-hidden="true"><i></i><i></i><b></b><em></em></span>';
+    return `<span class="chess-fx-layer chess-fx-check" aria-hidden="true"><i${landing}></i><i${secondWave}></i><b${landing}></b><em${landing}></em></span>`;
   }
   return '';
+}
+
+function effectAnimationStyle(delayMs){
+  const reducedMotion = typeof globalThis.matchMedia === 'function'
+    && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reducedMotion) return '';
+  return ` style="opacity:0;animation-delay:${Math.max(0, Number(delayMs) || 0)}ms;animation-fill-mode:forwards"`;
 }
 
 function activeMoveEffect(game, lastMove, mover){
@@ -171,7 +215,7 @@ function activeMoveEffect(game, lastMove, mover){
   const variant = EFFECT_VARIANTS[itemId] || '';
   if (variant === 'move') return 'move';
   if (variant === 'capture' && Boolean(lastMove?.capture)) return 'capture';
-  if (variant === 'check' && Boolean(game?.in_check)) return 'check';
+  if (variant === 'check' && Boolean(lastMove?.check || game?.in_check)) return 'check';
   return '';
 }
 
