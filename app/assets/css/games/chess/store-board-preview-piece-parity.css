@@ -1,0 +1,6 @@
+/* Manual visual corrective: board-theme previews use one neutral bright piece treatment on both sides. */
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"] .store-v2-mini-chess-piece.black{
+  color:#f6ead2;
+  -webkit-text-stroke:.35px #4b3928;
+  text-shadow:0 .35px 0 #fff9ec,0 1px 1.5px rgba(28,18,10,.58);
+}
