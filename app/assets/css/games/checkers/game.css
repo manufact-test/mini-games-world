@@ -6,9 +6,9 @@
 }
 .game-board-screen[data-game-type="checkers"] .board.checkers-surface{
   display:block;
-  width:100%;
+  width:min(100%,clamp(250px,calc(100dvh - 390px),340px));
   max-width:100%;
-  margin:0;
+  margin:0 auto;
   gap:0;
 }
 .checkers-panel{display:grid;gap:8px;width:100%;min-width:0}
@@ -143,6 +143,7 @@
 
 @media (max-height:700px){
   .game-board-screen[data-game-type="checkers"] .content{padding-top:6px}
+  .game-board-screen[data-game-type="checkers"] .board.checkers-surface{width:min(100%,clamp(240px,calc(100dvh - 385px),315px))}
   .checkers-event-banner{min-height:34px;padding:6px 8px;font-size:10px}
   .checkers-score-line{min-height:24px;padding:4px 7px}
   .checkers-legend{gap:7px}
