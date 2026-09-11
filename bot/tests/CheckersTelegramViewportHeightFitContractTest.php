@@ -13,10 +13,12 @@ if (!is_string($fitCss) || !is_string($checkersCss) || !is_string($renderer) || 
 
 foreach ([
     '.game-board-screen[data-game-type="checkers"]{',
+    'box-sizing:border-box!important;',
+    'height:100dvh!important;',
+    'max-height:100dvh!important;',
     'min-height:0!important;',
     'overflow:hidden!important;',
     '.game-board-screen[data-game-type="checkers"] .content{',
-    'box-sizing:border-box!important;',
     'height:100%!important;',
     'max-height:100%!important;',
     'flex:1 1 0%!important;',
@@ -33,14 +35,16 @@ foreach ([
     '.game-board-screen[data-game-type="checkers"] .checkers-panel{',
 ] as $token) {
     if (!str_contains($fitCss, $token)) {
-        throw new RuntimeException('Checkers Telegram C14 token is missing: ' . $token);
+        throw new RuntimeException('Checkers Telegram C15 token is missing: ' . $token);
     }
 }
 
 $mediaOffset = strpos($fitCss, '@media (max-height:680px)');
 $contentOffset = strpos($fitCss, '.game-board-screen[data-game-type="checkers"] .content{');
-if ($mediaOffset === false || $contentOffset === false || $contentOffset > $mediaOffset) {
-    throw new RuntimeException('C14 scroll ownership must apply above the <=680px geometry media query.');
+$screenOffset = strpos($fitCss, '.game-board-screen[data-game-type="checkers"]{');
+if ($mediaOffset === false || $contentOffset === false || $screenOffset === false
+    || $screenOffset > $mediaOffset || $contentOffset > $mediaOffset) {
+    throw new RuntimeException('C15 viewport/scroll ownership must apply above the <=680px geometry media query.');
 }
 
 if (preg_match('/#leaveGame\s*\{/u', $fitCss) === 1) {
@@ -65,13 +69,13 @@ if ($gitBlobSha($renderer) !== 'e362239b1388a1f752d2d0e67ae69a7cc9207926') {
 }
 
 foreach ([
-    './assets/css/games/checkers/telegram-height-fit-v1.css?v=4&checkers=telegram-scroll-c14',
+    './assets/css/games/checkers/telegram-height-fit-v1.css?v=5&checkers=bounded-screen-scroll-c15',
     "'checkers_telegram_height_fit' => \$checkersTelegramHeightFitTarget",
-    'STG A1 · v110 · C14',
-    'stg-a1-v110-c14',
+    'STG A1 · v110 · C15',
+    'stg-a1-v110-c15',
 ] as $runtimeToken) {
     if (!str_contains($v110, $runtimeToken)) {
-        throw new RuntimeException('v110 does not wire the Checkers Telegram C14 corrective: ' . $runtimeToken);
+        throw new RuntimeException('v110 does not wire the Checkers Telegram C15 corrective: ' . $runtimeToken);
     }
 }
 
@@ -79,4 +83,4 @@ if (!str_contains($v110, 'is_file($checkersTelegramHeightFitPath)')) {
     throw new RuntimeException('v110 must fail closed when the Telegram height-fit asset is missing.');
 }
 
-echo "checkers-telegram-viewport-scroll-c14=ok\n";
+echo "checkers-telegram-bounded-screen-scroll-c15=ok\n";
