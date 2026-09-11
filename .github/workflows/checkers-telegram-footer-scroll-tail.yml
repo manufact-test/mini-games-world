@@ -5,11 +5,14 @@ on:
     branches:
       - agent/mvp-13-2-staging
     paths:
+      - 'app/v110.php'
       - 'app/assets/css/games/checkers/game.css'
+      - 'app/assets/css/games/checkers/telegram-height-fit-v1.css'
       - 'app/assets/js/games/checkers/renderer.js'
       - 'app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/CheckersTelegramFooterScrollTailContractTest.php'
+      - 'bot/tests/CheckersTelegramViewportHeightFitContractTest.php'
       - '.github/workflows/checkers-telegram-footer-scroll-tail.yml'
 
 jobs:
@@ -22,4 +25,7 @@ jobs:
           php-version: '8.3'
       - run: php -l bot/tests/CheckersTelegramFooterScrollTailContractTest.php
       - run: php bot/tests/CheckersTelegramFooterScrollTailContractTest.php
+      - run: php -l bot/tests/CheckersTelegramViewportHeightFitContractTest.php
+      - run: php bot/tests/CheckersTelegramViewportHeightFitContractTest.php
+      - run: php -l app/v110.php
       - run: php -l app/runtime/client/version-manifest.php

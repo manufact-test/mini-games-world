@@ -62,6 +62,15 @@ foreach (['main_css', 'consistency_css', 'bootstrap'] as $requiredAsset) {
     }
 }
 
+$checkersTelegramHeightFitPath = __DIR__ . '/assets/css/games/checkers/telegram-height-fit-v1.css';
+if (!is_file($checkersTelegramHeightFitPath)) {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World Checkers Telegram height fit is unavailable.';
+    exit;
+}
+$checkersTelegramHeightFitTarget = './assets/css/games/checkers/telegram-height-fit-v1.css?v=1&checkers=telegram-height-fit-v1';
+
 $headClose = '</head>';
 $cssAnchor = './assets/css/main.css?v=93-wallet-15-3';
 $entryScriptsAnchor = <<<'HTML'
@@ -107,9 +116,11 @@ $cssTarget = $assets['main_css'];
 $consistencyCssTarget = $assets['consistency_css'];
 $bootstrapTarget = $assets['bootstrap'];
 $bootstrapTag = '  <script type="module" src="' . $bootstrapTarget . '"></script>';
+$checkersTelegramHeightFitTag = '  <link rel="stylesheet" href="' . $checkersTelegramHeightFitTarget . '" />';
 
 $html = str_replace($cssAnchor, $cssTarget, $html);
 $html = str_replace('./assets/css/production-v95-consistency.css?v=95', $consistencyCssTarget, $html);
+$html = str_replace($headClose, $checkersTelegramHeightFitTag . "\n" . $headClose, $html);
 $html = str_replace(
     '<p>Готовим игровую комнату</p>',
     '<p>Те самые игры. То самое чувство.</p>',
@@ -126,7 +137,7 @@ $runtimeProbeHost = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
 $runtimeProbeHost = preg_replace('/:\\d+$/', '', $runtimeProbeHost) ?? $runtimeProbeHost;
 $isStagingRuntimeProbe = hash_equals('seashell-okapi-889488.hostingersite.com', $runtimeProbeHost);
 if ($isStagingRuntimeProbe) {
-    $runtimeProbeTag = '<div id="mgw-staging-runtime-probe" style="position:fixed;top:max(4px,env(safe-area-inset-top));left:4px;z-index:2147483647;padding:3px 6px;border-radius:6px;background:#ff2d55;color:#fff;font:700 10px/1.1 monospace;letter-spacing:.02em;pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.4)">STG A1 · v110 · C10</div>';
+    $runtimeProbeTag = '<div id="mgw-staging-runtime-probe" style="position:fixed;top:max(4px,env(safe-area-inset-top));left:4px;z-index:2147483647;padding:3px 6px;border-radius:6px;background:#ff2d55;color:#fff;font:700 10px/1.1 monospace;letter-spacing:.02em;pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.4)">STG A1 · v110 · C11</div>';
     $html = str_replace('</body>', "  {$runtimeProbeTag}\n</body>", $html);
 }
 
@@ -136,6 +147,7 @@ $requiredRenderedTargets = [
     'main_v110' => $imports['@mgw/main'],
     'localization_i18n' => $imports['@mgw/i18n'],
     'shield_king_css' => $cssTarget,
+    'checkers_telegram_height_fit' => $checkersTelegramHeightFitTarget,
     'unified_ui_cache' => $imports['./assets/js/ui.js?v=89'] ?? '',
     'match_config_cache' => $imports['./assets/js/config.js?v=38'] ?? '',
     'app_state_v2_cache' => $imports['./assets/js/state.js?v=27'],
@@ -207,6 +219,6 @@ header('X-MGW-Battleship-Miss-Handoff: 900ms');
 header('X-MGW-Battleship-Shot-Feedback: hit-sunk-impact-miss-static');
 header('X-MGW-Battleship-Pending-Paint: none-legacy-owner-removed');
 if ($isStagingRuntimeProbe) {
-    header('X-MGW-Staging-Runtime-Probe: stg-a1-v110-c10');
+    header('X-MGW-Staging-Runtime-Probe: stg-a1-v110-c11');
 }
 echo $html;
