@@ -6,6 +6,21 @@ import {
 } from './store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 
+const CHESS_PREVIEW_GLYPHS = Object.freeze({
+  wK:'♚', wQ:'♛', wR:'♜', wB:'♝', wN:'♞', wP:'♟',
+  bK:'♚', bQ:'♛', bR:'♜', bB:'♝', bN:'♞', bP:'♟',
+});
+const CHESS_PREVIEW_START_POSITION = Object.freeze([
+  'bR','bN','bB','bQ','bK','bB','bN','bR',
+  'bP','bP','bP','bP','bP','bP','bP','bP',
+  '','','','','','','','',
+  '','','','','','','','',
+  '','','','','','','','',
+  '','','','','','','','',
+  'wP','wP','wP','wP','wP','wP','wP','wP',
+  'wR','wN','wB','wQ','wK','wB','wN','wR',
+]);
+
 ensureChessCosmeticStyles();
 installStoreGameClickCorrective();
 
@@ -72,7 +87,7 @@ function ensureChessCosmeticStyles(){
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.dataset.mgwChessCosmetics = 'mvp19-5-safe';
-  link.href = new URL('../../css/games/chess/runtime-cosmetics.css?v=4&mvp19_5=safe-board-preview', import.meta.url).href;
+  link.href = new URL('../../css/games/chess/runtime-cosmetics.css?v=5&mvp19_5=board-preview-pieces', import.meta.url).href;
   document.head.appendChild(link);
 }
 
@@ -102,20 +117,28 @@ function upgradeStoreGamePresentation(){
 
 function upgradeChessBoardPreviews(panel){
   panel.querySelectorAll('.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"] .store-v2-mini-chess-board').forEach(board => {
-    if (!(board instanceof HTMLElement) || board.dataset.boardPreviewParity === '8x8-safe-v1') return;
+    if (!(board instanceof HTMLElement) || board.dataset.boardPreviewParity === '8x8-game-start-v2') return;
 
     const fragment = document.createDocumentFragment();
-    for (let index = 0; index < 64; index += 1) {
+    CHESS_PREVIEW_START_POSITION.forEach((piece, index) => {
       const row = Math.floor(index / 8);
       const column = index % 8;
       const square = document.createElement('span');
       square.className = ((row + column) % 2 === 0) ? 'light' : 'dark';
       square.setAttribute('aria-hidden', 'true');
+
+      if (piece) {
+        const figure = document.createElement('b');
+        figure.className = `store-v2-mini-chess-piece ${piece.startsWith('w') ? 'white' : 'black'}`;
+        figure.textContent = CHESS_PREVIEW_GLYPHS[piece] || '';
+        square.appendChild(figure);
+      }
+
       fragment.appendChild(square);
-    }
+    });
 
     board.replaceChildren(fragment);
-    board.dataset.boardPreviewParity = '8x8-safe-v1';
+    board.dataset.boardPreviewParity = '8x8-game-start-v2';
   });
 }
 
