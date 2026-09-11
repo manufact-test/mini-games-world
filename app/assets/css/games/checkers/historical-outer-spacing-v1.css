@@ -1,0 +1,34 @@
+/* Historical Checkers outer geometry from the pre-b94d7606 layout contract.
+ * Keep modern board/cell visuals and the #1310 viewport-aware board sizing owner,
+ * but restore the older game-screen gutters and board-wrap padding that kept the
+ * footer naturally reachable inside the default shared .content scroller. */
+.game-board-screen[data-game-type="checkers"] .content{
+  padding:14px 14px 20px;
+}
+
+.game-board-screen[data-game-type="checkers"] .board-wrap{
+  padding:6px;
+  margin-top:4px;
+  border-radius:20px;
+  overflow:hidden;
+}
+
+@media (max-height:720px){
+  .game-board-screen[data-game-type="checkers"] .content{
+    padding-top:10px;
+    padding-bottom:14px;
+  }
+}
+
+@media (max-height:700px){
+  .game-board-screen[data-game-type="checkers"] .content{
+    padding-top:8px;
+  }
+}
+
+@media (max-width:380px){
+  .game-board-screen[data-game-type="checkers"] .content{
+    padding-left:10px;
+    padding-right:10px;
+  }
+}
