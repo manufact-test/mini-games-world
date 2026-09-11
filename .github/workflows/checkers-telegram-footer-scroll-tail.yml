@@ -1,0 +1,23 @@
+name: Checkers Telegram footer scroll tail
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/css/games/checkers/telegram-footer-scroll-tail-v1.css'
+      - 'app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/CheckersTelegramFooterScrollTailContractTest.php'
+      - '.github/workflows/checkers-telegram-footer-scroll-tail.yml'
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+      - run: php -l bot/tests/CheckersTelegramFooterScrollTailContractTest.php
+      - run: php bot/tests/CheckersTelegramFooterScrollTailContractTest.php
