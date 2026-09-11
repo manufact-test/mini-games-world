@@ -1,0 +1,103 @@
+/* MVP-19.5 corrective: Store chess-board previews mirror the real 8x8 game board. */
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"]{
+  display:grid!important;
+  place-items:center!important;
+  align-content:center!important;
+  justify-content:center!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"] .store-v2-mini-chess-board{
+  display:grid!important;
+  grid-template-columns:repeat(8,minmax(0,1fr))!important;
+  grid-template-rows:repeat(8,minmax(0,1fr))!important;
+  width:94px!important;
+  height:94px!important;
+  max-width:94px!important;
+  aspect-ratio:1!important;
+  gap:0!important;
+  padding:0!important;
+  margin:0!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+  border:1px solid rgba(12,18,25,.7)!important;
+  border-radius:8px!important;
+  background:#b98b5d!important;
+  box-shadow:0 10px 24px rgba(0,0,0,.32)!important;
+  font-style:normal;
+}
+
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"] .store-v2-mini-chess-board > span{
+  display:block!important;
+  min-width:0!important;
+  min-height:0!important;
+  width:auto!important;
+  height:auto!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none;
+  color:transparent!important;
+  font-size:0!important;
+}
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"] .store-v2-mini-chess-board > span > *{display:none!important}
+
+/* Wood — exact light/dark square presentation from the live chess board. */
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"][data-cosmetic-variant="wood"] .store-v2-mini-chess-board{
+  background:linear-gradient(145deg,#5d321b,#25150d)!important;
+}
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"][data-cosmetic-variant="wood"] .store-v2-mini-chess-board > span.light{
+  background:linear-gradient(135deg,rgba(255,229,184,.16),transparent 48%),repeating-linear-gradient(7deg,rgba(92,48,21,.07) 0 2px,transparent 2px 8px),#d7aa73!important;
+}
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"][data-cosmetic-variant="wood"] .store-v2-mini-chess-board > span.dark{
+  background:linear-gradient(135deg,rgba(255,197,121,.08),transparent 52%),repeating-linear-gradient(-8deg,rgba(38,20,10,.11) 0 2px,transparent 2px 9px),#80502f!important;
+}
+
+/* Tournament Dark — exact live-game square gradients. */
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"][data-cosmetic-variant="tournament-dark"] .store-v2-mini-chess-board{
+  background:#0b1019!important;
+}
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"][data-cosmetic-variant="tournament-dark"] .store-v2-mini-chess-board > span.light{
+  background:linear-gradient(145deg,#8090a8,#68778f)!important;
+}
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"][data-cosmetic-variant="tournament-dark"] .store-v2-mini-chess-board > span.dark{
+  background:linear-gradient(145deg,#273448,#1a2637)!important;
+}
+
+/* Marble — exact live-game vein treatment. */
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"][data-cosmetic-variant="marble"] .store-v2-mini-chess-board{
+  background:linear-gradient(145deg,#d9dde4,#787f89)!important;
+}
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"][data-cosmetic-variant="marble"] .store-v2-mini-chess-board > span.light{
+  background:linear-gradient(121deg,transparent 0 36%,rgba(113,126,140,.16) 38% 39%,transparent 41% 68%,rgba(255,255,255,.48) 70% 71%,transparent 73%),linear-gradient(145deg,#f2efe9,#d9d9d4)!important;
+}
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"][data-cosmetic-variant="marble"] .store-v2-mini-chess-board > span.dark{
+  background:linear-gradient(58deg,transparent 0 29%,rgba(235,239,243,.16) 31% 32%,transparent 34% 67%,rgba(48,57,68,.22) 69% 70%,transparent 72%),linear-gradient(145deg,#7d858c,#565e68)!important;
+}
+
+/* Neon — exact live-game light/dark gradients and glow. */
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"][data-cosmetic-variant="neon"] .store-v2-mini-chess-board{
+  background:#050711!important;
+  box-shadow:0 10px 24px rgba(0,0,0,.34),0 0 22px rgba(129,68,255,.23)!important;
+}
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"][data-cosmetic-variant="neon"] .store-v2-mini-chess-board > span.light{
+  background:linear-gradient(145deg,rgba(64,226,255,.16),rgba(21,44,71,.72))!important;
+  box-shadow:inset 0 0 0 1px rgba(80,222,255,.08)!important;
+}
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"][data-cosmetic-variant="neon"] .store-v2-mini-chess-board > span.dark{
+  background:linear-gradient(145deg,rgba(182,72,255,.18),rgba(35,20,65,.80))!important;
+  box-shadow:inset 0 0 0 1px rgba(202,82,255,.10)!important;
+}
+
+@media(max-width:380px){
+  .store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"] .store-v2-mini-chess-board{
+    width:90px!important;
+    height:90px!important;
+    max-width:90px!important;
+  }
+}
