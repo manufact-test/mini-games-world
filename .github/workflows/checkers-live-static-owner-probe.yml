@@ -31,7 +31,7 @@ jobs:
             if curl --fail-with-body --silent --show-error \
               --connect-timeout 10 --max-time 25 \
               --header 'Accept: application/json' \
-              "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php?probe=${GITHUB_SHA}-${attempt}" \
+              "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" \
               --output /tmp/mgw-readiness.json; then
               ok="$(jq -r '.ok // false' /tmp/mgw-readiness.json)"
               environment="$(jq -r '.environment // ""' /tmp/mgw-readiness.json)"
