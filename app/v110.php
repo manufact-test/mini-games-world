@@ -53,6 +53,21 @@ foreach (['@mgw/clean-entry', '@mgw/main', '@mgw/i18n', './assets/js/state.js?v=
         exit;
     }
 }
+
+// Temporary staging-only MVP-19.5 acceptance hook: while Effect 3 / Check is equipped,
+// the active Chess renderer shows the real Check presentation on every move so it can
+// be manually reviewed without playing until a natural check. Remove immediately after acceptance.
+$chessRendererImportKey = './assets/js/games/chess/renderer.js?v=68';
+if (!isset($imports[$chessRendererImportKey])
+    || !is_string($imports[$chessRendererImportKey])
+    || $imports[$chessRendererImportKey] === '') {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World Chess staging Check test renderer is unavailable.';
+    exit;
+}
+$imports[$chessRendererImportKey] .= '&staging_check_test=any-move-v1';
+
 foreach (['main_css', 'consistency_css', 'bootstrap'] as $requiredAsset) {
     if (!isset($assets[$requiredAsset]) || !is_string($assets[$requiredAsset]) || $assets[$requiredAsset] === '') {
         http_response_code(500);
@@ -151,6 +166,7 @@ $requiredRenderedTargets = [
     'shield_king_css' => $cssTarget,
     'checkers_telegram_height_fit' => $checkersTelegramHeightFitTarget,
     'chess_capture_store_parity' => $chessCaptureParityTarget,
+    'chess_check_test_hook' => $imports[$chessRendererImportKey],
     'unified_ui_cache' => $imports['./assets/js/ui.js?v=89'] ?? '',
     'match_config_cache' => $imports['./assets/js/config.js?v=38'] ?? '',
     'app_state_v2_cache' => $imports['./assets/js/state.js?v=27'],
@@ -221,4 +237,5 @@ header('X-MGW-Battleship-Ready: authoritative-reset-after-edit');
 header('X-MGW-Battleship-Miss-Handoff: 900ms');
 header('X-MGW-Battleship-Shot-Feedback: hit-sunk-impact-miss-static');
 header('X-MGW-Battleship-Pending-Paint: none-legacy-owner-removed');
+header('X-MGW-Chess-Check-Test: staging-any-move-v1');
 echo $html;
