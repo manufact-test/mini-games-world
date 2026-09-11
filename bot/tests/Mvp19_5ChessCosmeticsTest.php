@@ -120,12 +120,29 @@ $assertTrue(str_contains($storeSource, 'activeGameCatalog') && str_contains($sto
 $assertTrue(str_contains($rendererSource, "game_chess_theme") && str_contains($rendererSource, "game_chess_elements") && str_contains($rendererSource, "game_chess_effect"), 'Chess renderer must consume the three canonical cosmetic slots');
 $assertTrue(str_contains($rendererSource, 'player?.game_cosmetics?.slots'), 'Chess renderer must consume public owner-specific projection');
 $assertTrue(!str_contains($rendererSource, 'api.gameAction') && !str_contains($rendererSource, 'time_left'), 'Chess cosmetics must not own game actions or timers');
+$assertTrue(
+    str_contains($rendererSource, 'const animatedEffectByGame = new Map()')
+    && str_contains($rendererSource, 'const effectCandidate = lastMove ? activeMoveEffect')
+    && str_contains($rendererSource, 'if (animateEffect) animatedEffectByGame.set'),
+    'Paid Chess effects must have one-shot arbitration separate from piece motion so late cosmetic projection cannot consume the effect'
+);
+$assertTrue(
+    str_contains($rendererSource, 'initialLastMoveByGame')
+    && str_contains($rendererSource, 'suppressInitialSnapshot'),
+    'Reopening or reconnecting to an existing Chess position must not replay a stale paid effect'
+);
+$assertTrue(
+    str_contains($rendererSource, 'EFFECT_LANDING_DELAY_MS')
+    && str_contains($rendererSource, 'animation-fill-mode:forwards')
+    && str_contains($rendererSource, "prefers-reduced-motion: reduce"),
+    'Live Chess effects must fire on landing while preserving reduced-motion behavior'
+);
 $assertTrue(str_contains($cssSource, 'data-chess-theme="wood"') && str_contains($cssSource, 'data-chess-theme="tournament-dark"') && str_contains($cssSource, 'data-chess-theme="marble"') && str_contains($cssSource, 'data-chess-theme="neon"'), 'All four Chess board themes need distinct presentation');
 $assertTrue(str_contains($cssSource, 'data-chess-piece-style="wood"') && str_contains($cssSource, 'data-chess-piece-style="marble"') && str_contains($cssSource, 'data-chess-piece-style="metal"') && str_contains($cssSource, 'data-chess-piece-style="neon"'), 'All four Chess piece sets need distinct presentation');
 $assertTrue(str_contains($cssSource, 'chessFxMoveRing') && str_contains($cssSource, 'chessFxCaptureFlash') && str_contains($cssSource, 'chessFxCheckRing'), 'All three Chess effects need distinct motion');
 $assertTrue(str_contains($cssSource, '@media(prefers-reduced-motion:reduce)'), 'Chess cosmetics must remain reduced-motion safe');
 $assertTrue(str_contains($mainCssSource, "./games/chess/game.css?v=68"), 'Accepted main CSS must retain the Chess game stylesheet owner');
 $assertTrue(str_contains($chessCssEntrySource, "@import url('./cosmetics.css?v=1&mvp19_5=chess-cosmetics');"), 'Chess game stylesheet must compose the isolated cosmetic presentation without replacing global main CSS');
-$assertTrue(str_contains($manifestSource, "./assets/js/games/chess/renderer.js?v=69&mvp19_5=cosmetics") && str_contains($manifestSource, "main.css?v=190") && str_contains($manifestSource, "mvp19_5=chess-cosmetics"), 'Active v110 manifest must select the Chess renderer and cache-bust the accepted main stylesheet');
+$assertTrue(str_contains($manifestSource, "./assets/js/games/chess/renderer.js?v=70&mvp19_5=cosmetics&fx_runtime=landing-sync-v2") && str_contains($manifestSource, "main.css?v=190") && str_contains($manifestSource, "mvp19_5=chess-cosmetics"), 'Active v110 manifest must select the corrected Chess renderer and retain the accepted main stylesheet');
 
 echo "MVP-19.5 Chess cosmetics contract passed ({$assertions} assertions).\n";
