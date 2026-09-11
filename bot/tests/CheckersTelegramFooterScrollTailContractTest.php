@@ -8,34 +8,44 @@ $wrapper = file_get_contents($root . '/app/assets/css/production-v108-profile-en
 $manifest = file_get_contents($root . '/app/runtime/client/version-manifest.php');
 
 if (!is_string($css) || !is_string($renderer) || !is_string($wrapper) || !is_string($manifest)) {
-    throw new RuntimeException('Checkers MVP-16.7 restore contract sources are unavailable.');
+    throw new RuntimeException('Checkers exact pre-b94d restore contract sources are unavailable.');
 }
 
 $gitBlobSha = static fn(string $content): string => sha1('blob ' . strlen($content) . "\0" . $content);
 
-if ($gitBlobSha($css) !== 'c25a30a386ce27c73030035b966f9a0907d9afcc') {
-    throw new RuntimeException('Checkers CSS must be byte-identical to accepted MVP-16.7 SHA 3f6277cb3abfe7dd11c58a90c783afa07b1f6839.');
+if ($gitBlobSha($css) !== '12d2f211c48c1f49793744315c004fd33afc5bcf') {
+    throw new RuntimeException('Checkers CSS must be byte-identical to commit 7f6540a80b7c624f487dbc9b3a666ae062e70a39, immediately before b94d76060c0bfe8884270075516689272e928600.');
 }
 if ($gitBlobSha($renderer) !== 'e362239b1388a1f752d2d0e67ae69a7cc9207926') {
-    throw new RuntimeException('Checkers renderer must remain byte-identical to accepted MVP-16.7.');
+    throw new RuntimeException('Current Checkers renderer/game logic must remain untouched by this visual restore.');
 }
 
 foreach ([
     '.checkers-surface{',
     'width:100%;',
-    '.game-board-screen[data-game-type="checkers"] .board.checkers-surface{',
-    'max-width:100%;',
-    'margin:0;',
-    '.game-board-screen[data-game-type="checkers"] .content{padding:8px 8px 14px}',
-    '.game-board-screen[data-game-type="checkers"] .board-wrap{padding:3px;margin:4px auto 8px;border-radius:10px;overflow:visible}',
+    'max-width:440px;',
+    'margin:0 auto;',
+    'border-radius:18px;',
+    'background:linear-gradient(145deg,#d9c8a8,#bea884)',
+    'background:linear-gradient(145deg,#5d4b58,#3c3343)',
+    '.game-board-screen[data-game-type="checkers"] .board-wrap{padding:6px;margin-top:4px;border-radius:20px}',
 ] as $token) {
     if (!str_contains($css, $token)) {
-        throw new RuntimeException('Accepted Checkers presentation token is missing: ' . $token);
+        throw new RuntimeException('Exact pre-b94d Checkers presentation token is missing: ' . $token);
     }
 }
 
-if (!str_contains($wrapper, "./games/checkers/game.css?v=63&checkers=mvp16-7-accepted-restore-v1")) {
-    throw new RuntimeException('Accepted MVP-16.7 Checkers CSS is not the active Checkers presentation owner.');
+foreach ([
+    '.game-board-screen[data-game-type="checkers"] .board.checkers-surface',
+    '.game-board-screen[data-game-type="checkers"] .content{padding:8px 8px 14px}',
+] as $postB94dToken) {
+    if (str_contains($css, $postB94dToken)) {
+        throw new RuntimeException('Post-b94d Checkers layout token must not survive exact restore: ' . $postB94dToken);
+    }
+}
+
+if (!str_contains($wrapper, "./games/checkers/game.css?v=64&checkers=pre-b94d-exact-restore-v1")) {
+    throw new RuntimeException('Exact pre-b94d Checkers CSS is not the active Checkers presentation owner.');
 }
 foreach ([
     'historical-sizing-owner-v1.css',
@@ -47,8 +57,8 @@ foreach ([
     }
 }
 
-if (!str_contains($manifest, "production-v108-profile-entry-preview-live-owner-checkers-fit.css?v=9&checkers=mvp16-7-accepted-restore-v1")) {
-    throw new RuntimeException('Accepted MVP-16.7 Checkers restore is not cache-busted in the runtime manifest.');
+if (!str_contains($manifest, "production-v108-profile-entry-preview-live-owner-checkers-fit.css?v=10&checkers=pre-b94d-exact-restore-v1")) {
+    throw new RuntimeException('Exact pre-b94d Checkers restore is not cache-busted in the runtime manifest.');
 }
 
 foreach ([$css, $wrapper] as $presentationSource) {
@@ -60,4 +70,4 @@ foreach ([$css, $wrapper] as $presentationSource) {
     }
 }
 
-echo "checkers-mvp16-7-accepted-restore=ok\n";
+echo "checkers-pre-b94d-exact-restore=ok\n";

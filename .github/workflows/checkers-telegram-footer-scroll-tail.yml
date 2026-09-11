@@ -1,4 +1,4 @@
-name: Checkers accepted MVP-16.7 restore
+name: Checkers exact pre-b94d restore
 
 on:
   pull_request:
