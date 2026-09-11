@@ -1,0 +1,17 @@
+/*
+ * Telegram short-viewport corrective for the accepted pre-b94d Checkers skin.
+ *
+ * The late Checkers presentation owner intentionally restores the historical
+ * visual skin, including `.checkers-surface { width:100% }`. In a short
+ * Telegram WebView that late width wins after the shared game-screen owner and
+ * prevents the existing 100dvh board clamp from reserving enough vertical room
+ * for the shared `#leaveGame` control.
+ *
+ * Keep the historical skin and shared control untouched. Only cap the Checkers
+ * surface when the actual CSS viewport is short enough to need it.
+ */
+@media (max-height:680px){
+  .game-board-screen[data-game-type="checkers"] .board.checkers-surface{
+    width:min(100%,clamp(240px,calc(100dvh - 315px),330px));
+  }
+}
