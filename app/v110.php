@@ -78,7 +78,7 @@ if (!is_file($chessCaptureParityPath)) {
     echo 'Mini Games World Chess Capture parity stylesheet is unavailable.';
     exit;
 }
-$chessCaptureParityTarget = './assets/css/games/chess/capture-preview-parity-v1.css?v=1&mvp19_5=capture-store-parity-v1';
+$chessCaptureParityTarget = './assets/css/games/chess/capture-preview-parity-v1.css?v=2&mvp19_5=capture-store-parity-explosion-v2';
 
 $headClose = '</head>';
 $cssAnchor = './assets/css/main.css?v=93-wallet-15-3';
