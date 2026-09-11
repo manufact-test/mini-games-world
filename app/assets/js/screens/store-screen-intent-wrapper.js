@@ -4,6 +4,7 @@ import {
   openStoreTab as openBaseStoreTab,
   openStoreSheet as openBaseStoreSheet,
 } from './store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog';
+import { api } from '../api/client.js?v=34';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 
 const CHESS_PREVIEW_GLYPHS = Object.freeze({
@@ -40,8 +41,10 @@ const CHESS_EFFECT_PREVIEW_SCENES = Object.freeze({
     Object.freeze({className:'static-b white', glyph:'♟'}),
   ]),
 });
+const STORE_API_REPAIR_HOOK = Symbol.for('mgw.store.api-presentation-repair.v1');
 
 ensureChessCosmeticStyles();
+installStoreApiPresentationRepairHooks();
 installStoreGameClickCorrective();
 
 let initialized = false;
@@ -113,6 +116,32 @@ function ensureChessCosmeticStyles(){
   link.dataset.mgwChessCosmetics = 'mvp19-5-safe';
   link.href = new URL('../../css/games/chess/runtime-cosmetics.css?v=1&mvp19_5=chess-cosmetics&fx_preview=action-geometry-v3', import.meta.url).href;
   document.head.appendChild(link);
+}
+
+function installStoreApiPresentationRepairHooks(){
+  ['cosmeticStoreEquip','cosmeticStoreUnequip'].forEach(methodName => {
+    const current = api?.[methodName];
+    if (typeof current !== 'function' || current[STORE_API_REPAIR_HOOK]) return;
+
+    const wrapped = async (...args) => {
+      try {
+        return await current.apply(api, args);
+      } finally {
+        schedulePostApiPresentationRepair();
+      }
+    };
+    Object.defineProperty(wrapped, STORE_API_REPAIR_HOOK, { value:true });
+    api[methodName] = wrapped;
+  });
+}
+
+function schedulePostApiPresentationRepair(){
+  const repair = () => upgradeStoreGamePresentation();
+  if (typeof globalThis.requestAnimationFrame === 'function') {
+    globalThis.requestAnimationFrame(repair);
+  } else {
+    globalThis.setTimeout(repair, 0);
+  }
 }
 
 function installStoreGameClickCorrective(){
