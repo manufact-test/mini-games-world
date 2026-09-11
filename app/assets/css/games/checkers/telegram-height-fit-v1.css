@@ -2,12 +2,16 @@
  * Telegram/desktop Mini App viewport corrective for the accepted pre-b94d
  * Checkers skin.
  *
- * C12 owns the accepted board geometry. C14 owns only the scroll container:
- * the game content is always a bounded scroller, including desktop-height
- * Telegram windows around 690px where the C13 <=680px rule never matched.
+ * C12 owns the accepted board geometry. C15 owns only the viewport/scroll frame:
+ * the game screen itself must stay inside the WebView instead of growing to the
+ * intrinsic height of its children. Once the screen is bounded, .content can
+ * become a real vertical scroller and reveal the normal-flow leave control.
  * Short-viewport board/chrome geometry remains scoped to <=680px.
  */
 .game-board-screen[data-game-type="checkers"]{
+  box-sizing:border-box!important;
+  height:100dvh!important;
+  max-height:100dvh!important;
   min-height:0!important;
   overflow:hidden!important;
 }
