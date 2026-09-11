@@ -14,14 +14,12 @@ let initialized = false;
 let firstOpenPrimePromise = null;
 let firstOpenPrimeReady = false;
 let firstVisiblePrimeConsumed = false;
+let presentationUpgradeQueued = false;
 
 export function initStoreScreen(){
   if (initialized) return firstOpenPrimePromise;
   initialized = true;
 
-  // Desktop keeps the existing Store owner/listeners and idle refresh path.
-  // Mobile keeps the accepted intent-only listener so there is still no extra
-  // background Store refresh racing decorator-owned cosmetic DOM after reveal.
   if (!usesMobileIntentOnlyStore()) {
     initBaseStoreScreen();
   } else {
@@ -35,9 +33,6 @@ export function initStoreScreen(){
     }, true);
   }
 
-  // The accepted base Store owner still performs the actual render/load work.
-  // Prime it once under the intro preloader, then remember only whether that
-  // completed presentation is safe to publish on the first real Store tap.
   firstOpenPrimePromise = canPrimeStoreUnderPreloader()
     ? Promise.resolve(openBaseStoreTab())
       .then(() => {
@@ -54,9 +49,6 @@ export function initStoreScreen(){
 }
 
 async function openStoreTab(){
-  // This wrapper owns no Store state, catalogue, purchase or equipment logic.
-  // It only avoids asking the accepted base owner to open the exact same primed
-  // DOM twice before the first visible paint; later opens delegate normally.
   if (canConsumePrimedFirstPresentation()) {
     firstVisiblePrimeConsumed = true;
     upgradeStoreGamePresentation();
@@ -162,14 +154,31 @@ function installStoreGamePresentationCorrective(){
 
   const observer = new MutationObserver(records => {
     for (const record of records) {
-      if (record.addedNodes.length > 0) {
-        queueMicrotask(upgradeStoreGamePresentation);
-        break;
+      for (const node of record.addedNodes) {
+        if (!(node instanceof Element)) continue;
+        if (isRelevantStoreGameNode(node)) {
+          queueStoreGamePresentationUpgrade();
+          return;
+        }
       }
     }
   });
   observer.observe(root, { childList:true, subtree:true });
-  queueMicrotask(upgradeStoreGamePresentation);
+  queueStoreGamePresentationUpgrade();
+}
+
+function isRelevantStoreGameNode(node){
+  const selector = '[data-store-v2-panel="games"], .store-v2-game-head, .store-v2-game-title-row, .store-v2-mini-chess-board';
+  return node.matches(selector) || Boolean(node.querySelector?.(selector));
+}
+
+function queueStoreGamePresentationUpgrade(){
+  if (presentationUpgradeQueued) return;
+  presentationUpgradeQueued = true;
+  queueMicrotask(() => {
+    presentationUpgradeQueued = false;
+    upgradeStoreGamePresentation();
+  });
 }
 
 function upgradeStoreGamePresentation(){
@@ -181,6 +190,7 @@ function upgradeChessBoardPreviews(){
   document.querySelectorAll('.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"] .store-v2-mini-chess-board').forEach(board => {
     if (!(board instanceof HTMLElement) || board.dataset.boardPreviewParity === '8x8-v2') return;
 
+    board.dataset.boardPreviewParity = '8x8-v2';
     const fragment = document.createDocumentFragment();
     for (let index = 0; index < 64; index += 1) {
       const row = Math.floor(index / 8);
@@ -192,12 +202,11 @@ function upgradeChessBoardPreviews(){
     }
 
     board.replaceChildren(fragment);
-    board.dataset.boardPreviewParity = '8x8-v2';
   });
 }
 
 function humanizeGameGroupCopy(){
-  document.querySelectorAll('.store-v2-content[data-store-v2-panel="games"], [data-store-v2-panel="games"]').forEach(panel => {
+  document.querySelectorAll('[data-store-v2-panel="games"]').forEach(panel => {
     if (!(panel instanceof HTMLElement)) return;
     const gameType = String(panel.querySelector('.store-v2-game-head')?.getAttribute('data-store-game-type') || '');
     panel.querySelectorAll('.store-v2-game-title-row').forEach(row => {
@@ -205,17 +214,19 @@ function humanizeGameGroupCopy(){
       const subtitle = row.querySelector('p');
       if (!(subtitle instanceof HTMLElement)) return;
 
+      let nextText = '';
       if (gameType === 'chess') {
-        if (title === 'Доски') subtitle.textContent = 'Оформление шахматной доски';
-        if (title === 'Фигуры') subtitle.textContent = 'Внешний вид фигур';
-        if (title === 'Эффекты') subtitle.textContent = 'Анимации для ходов, взятий и шаха';
-        return;
+        if (title === 'Доски') nextText = 'Оформление шахматной доски';
+        if (title === 'Фигуры') nextText = 'Внешний вид фигур';
+        if (title === 'Эффекты') nextText = 'Анимации для ходов, взятий и шаха';
+      } else if (gameType === 'tictactoe') {
+        if (title === 'Поля') nextText = 'Фон и сетка игрового поля';
+        if (title === 'Знаки') nextText = 'Внешний вид крестиков и ноликов';
+        if (title === 'Эффекты') nextText = 'Анимации при каждом ходе';
       }
 
-      if (gameType === 'tictactoe') {
-        if (title === 'Поля') subtitle.textContent = 'Фон и сетка игрового поля';
-        if (title === 'Знаки') subtitle.textContent = 'Внешний вид крестиков и ноликов';
-        if (title === 'Эффекты') subtitle.textContent = 'Анимации при каждом ходе';
+      if (nextText && subtitle.textContent !== nextText) {
+        subtitle.textContent = nextText;
       }
     });
   });
