@@ -12,13 +12,19 @@ if (!is_string($tail) || !is_string($wrapper) || !is_string($manifest)) {
 
 foreach ([
     '.game-board-screen[data-game-type="checkers"] .content',
-    '42px',
+    'height:auto!important',
+    'flex:1 1 auto!important',
+    'min-height:0!important',
+    'overflow-y:auto!important',
+    'overflow-x:hidden!important',
+    'touch-action:pan-y',
+    '56px',
     'env(safe-area-inset-bottom, 0px)',
     'var(--tg-content-safe-area-inset-bottom, 0px)',
     'scroll-padding-bottom',
 ] as $token) {
     if (!str_contains($tail, $token)) {
-        throw new RuntimeException('Checkers footer-scroll tail is missing: ' . $token);
+        throw new RuntimeException('Checkers real content-scroll owner is missing: ' . $token);
     }
 }
 
@@ -27,13 +33,13 @@ if (!is_string($tailRules)) {
     throw new RuntimeException('Checkers footer-scroll CSS cannot be normalized.');
 }
 if (str_contains($tailRules, '.board.checkers-surface') || preg_match('/#leaveGame\s*\{/u', $tailRules) === 1) {
-    throw new RuntimeException('Footer-scroll corrective must not resize the board or reposition the leave control.');
+    throw new RuntimeException('Real content-scroll corrective must not resize the board or reposition the leave control.');
 }
-if (!str_contains($wrapper, "./games/checkers/telegram-footer-scroll-tail-v1.css?v=1&checkers=telegram-footer-scroll-tail-v1")) {
-    throw new RuntimeException('Checkers footer-scroll tail is not published after the accepted historical sizing owner.');
+if (!str_contains($wrapper, "./games/checkers/telegram-footer-scroll-tail-v1.css?v=2&checkers=real-content-scroll-v2")) {
+    throw new RuntimeException('Checkers real content-scroll owner is not published after the accepted historical sizing owner.');
 }
-if (!str_contains($manifest, "production-v108-profile-entry-preview-live-owner-checkers-fit.css?v=6&checkers=telegram-footer-scroll-tail-v1")) {
-    throw new RuntimeException('Checkers footer-scroll consistency asset is not cache-busted.');
+if (!str_contains($manifest, "production-v108-profile-entry-preview-live-owner-checkers-fit.css?v=7&checkers=real-content-scroll-v2")) {
+    throw new RuntimeException('Checkers real content-scroll consistency asset is not cache-busted.');
 }
 
-echo "checkers-telegram-footer-scroll-tail=ok\n";
+echo "checkers-real-content-scroll=ok\n";
