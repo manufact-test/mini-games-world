@@ -115,11 +115,14 @@ jobs:
           grep -F "chessStoreMoveTrailV4" app/assets/css/games/chess/store-effect-previews.css
           grep -F "chessStoreMoveGatherV4" app/assets/css/games/chess/store-effect-previews.css
           grep -F "chessStoreMoveCoreV4" app/assets/css/games/chess/store-effect-previews.css
-          grep -F "Capture live parity with accepted Store preview" app/assets/css/games/chess/capture-preview-parity-v1.css
+          grep -F "dominant central flash + compact radial burst + expanding ring" app/assets/css/games/chess/capture-preview-parity-v1.css
+          grep -F "width:104%;" app/assets/css/games/chess/capture-preview-parity-v1.css
+          grep -F "width:168%;" app/assets/css/games/chess/capture-preview-parity-v1.css
+          grep -F "height:18%;" app/assets/css/games/chess/capture-preview-parity-v1.css
           grep -F "chessCaptureParityFlash" app/assets/css/games/chess/capture-preview-parity-v1.css
           grep -F "chessCaptureParityBurst" app/assets/css/games/chess/capture-preview-parity-v1.css
           grep -F "chessCaptureParityRing" app/assets/css/games/chess/capture-preview-parity-v1.css
-          grep -F "capture-preview-parity-v1.css?v=1&mvp19_5=capture-store-parity-v1" app/v110.php
+          grep -F "capture-preview-parity-v1.css?v=2&mvp19_5=capture-store-parity-explosion-v2" app/v110.php
           grep -F "background-image:url('./board-previews/wood.svg')" app/assets/css/games/chess/store-board-previews.css
           grep -F "background-image:url('./board-previews/tournament-dark.svg')" app/assets/css/games/chess/store-board-previews.css
           grep -F "background-image:url('./board-previews/marble.svg')" app/assets/css/games/chess/store-board-previews.css
