@@ -1,0 +1,93 @@
+name: Checkers live static owner probe
+
+on:
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-live-checkers-css:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+    steps:
+      - name: Checkout exact staging commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Wait for exact staging runtime deployment
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          expected_fingerprint="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
+          ready=0
+          for attempt in $(seq 1 24); do
+            if curl --fail-with-body --silent --show-error \
+              --connect-timeout 10 --max-time 25 \
+              --header 'Accept: application/json' \
+              "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php?probe=${GITHUB_SHA}-${attempt}" \
+              --output /tmp/mgw-readiness.json; then
+              if python3 - /tmp/mgw-readiness.json "${expected_fingerprint}" <<'PY'
+import json
+import sys
+from pathlib import Path
+payload = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+expected = sys.argv[2]
+assert payload.get('ok') is True
+assert payload.get('environment') == 'staging'
+assert payload.get('base_host') == 'seashell-okapi-889488.hostingersite.com'
+assert payload.get('source_fingerprint_sha256') == expected
+PY
+              then
+                ready=1
+                break
+              fi
+            fi
+            sleep 10
+          done
+          test "$ready" = '1'
+
+      - name: Compare live consistency wrapper byte-for-byte
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          local_file='app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit.css'
+          live_file='/tmp/live-checkers-wrapper.css'
+          headers='/tmp/live-checkers-wrapper.headers'
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            --header 'Cache-Control: no-cache' \
+            --dump-header "$headers" \
+            "${MGW_STAGING_ORIGIN}/app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit.css?probe=${GITHUB_SHA}" \
+            --output "$live_file"
+          echo "local wrapper sha256: $(sha256sum "$local_file" | awk '{print $1}')"
+          echo "live  wrapper sha256: $(sha256sum "$live_file" | awk '{print $1}')"
+          cat "$headers"
+          cmp "$local_file" "$live_file"
+          grep -F "./games/checkers/game.css?v=64&checkers=pre-b94d-exact-restore-v1" "$live_file"
+
+      - name: Compare live Checkers stylesheet byte-for-byte
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          local_file='app/assets/css/games/checkers/game.css'
+          live_file='/tmp/live-checkers-game.css'
+          headers='/tmp/live-checkers-game.headers'
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            --header 'Cache-Control: no-cache' \
+            --dump-header "$headers" \
+            "${MGW_STAGING_ORIGIN}/app/assets/css/games/checkers/game.css?v=64&checkers=pre-b94d-exact-restore-v1&probe=${GITHUB_SHA}" \
+            --output "$live_file"
+          echo "local Checkers CSS sha256: $(sha256sum "$local_file" | awk '{print $1}')"
+          echo "live  Checkers CSS sha256: $(sha256sum "$live_file" | awk '{print $1}')"
+          cat "$headers"
+          cmp "$local_file" "$live_file"
+          grep -F 'max-width:440px;' "$live_file"
+          grep -F 'background:linear-gradient(145deg,#d9c8a8,#bea884)' "$live_file"
