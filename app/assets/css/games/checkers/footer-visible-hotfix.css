@@ -1,0 +1,11 @@
+/* Checkers viewport corrective cache-busted independently from the legacy game stylesheet. */
+.game-board-screen[data-game-type="checkers"] .board.checkers-surface{
+  width:min(100%,calc(100dvh - 420px));
+  max-width:100%;
+  margin:0 auto;
+}
+@media (max-height:700px){
+  .game-board-screen[data-game-type="checkers"] .board.checkers-surface{
+    width:min(100%,calc(100dvh - 390px));
+  }
+}
