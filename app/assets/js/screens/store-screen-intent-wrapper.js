@@ -96,7 +96,7 @@ function ensureChessCosmeticStyles(){
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.dataset.mgwChessCosmetics = 'mvp19-5-safe';
-  link.href = new URL('../../css/games/chess/runtime-cosmetics.css?v=2&mvp19_5=native-board-preview&fx_preview=action-geometry-v3', import.meta.url).href;
+  link.href = new URL('../../css/games/chess/runtime-cosmetics.css?v=3&mvp19_5=native-board-preview&fx_preview=move-live-parity-v4', import.meta.url).href;
   document.head.appendChild(link);
 }
 
