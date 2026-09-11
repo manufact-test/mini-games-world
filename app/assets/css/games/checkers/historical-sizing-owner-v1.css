@@ -1,0 +1,29 @@
+/* Historical Checkers sizing contract.
+ * Before the July full-width override, the shared game-board owner controlled the
+ * Checkers surface size. Preserve the later square-cell geometry, but restore the
+ * same viewport-aware board width so the normal game footer remains reachable. */
+.game-board-screen[data-game-type="checkers"] .board.checkers-surface{
+  display:block;
+  width:min(100%,clamp(236px,calc(100dvh - 315px),420px));
+  max-width:100%;
+  margin:0 auto;
+  gap:0;
+}
+
+@media (max-height:720px){
+  .game-board-screen[data-game-type="checkers"] .board.checkers-surface{
+    width:min(100%,clamp(220px,calc(100dvh - 285px),370px));
+  }
+}
+
+@media (max-height:620px){
+  .game-board-screen[data-game-type="checkers"] .board.checkers-surface{
+    width:min(100%,clamp(200px,calc(100dvh - 245px),330px));
+  }
+}
+
+@media (max-width:380px){
+  .game-board-screen[data-game-type="checkers"] .board.checkers-surface{
+    width:min(100%,clamp(210px,calc(100dvh - 300px),340px));
+  }
+}
