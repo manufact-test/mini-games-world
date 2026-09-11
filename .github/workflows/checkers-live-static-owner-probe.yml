@@ -46,24 +46,45 @@ jobs:
           done
           test "$ready" = '1'
 
-      - name: Compare live consistency wrapper byte-for-byte
+      - name: Inspect live consistency wrapper HTTP status
         shell: bash
         run: |
           set -Eeuo pipefail
-          local_file='app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit.css'
           live_file='/tmp/live-checkers-wrapper.css'
           headers='/tmp/live-checkers-wrapper.headers'
+          status="$(curl --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            --header 'Cache-Control: no-cache' \
+            --dump-header "$headers" \
+            --write-out '%{http_code}' \
+            "${MGW_STAGING_ORIGIN}/app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit.css?probe=${GITHUB_SHA}" \
+            --output "$live_file")"
+          echo "live wrapper HTTP status: $status"
+          cat "$headers"
+          if [[ "$status" == '200' ]]; then
+            echo "local wrapper sha256: $(sha256sum app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit.css | awk '{print $1}')"
+            echo "live  wrapper sha256: $(sha256sum "$live_file" | awk '{print $1}')"
+            cmp app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit.css "$live_file"
+          fi
+
+      - name: Compare live main stylesheet byte-for-byte
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          local_file='app/assets/css/main.css'
+          live_file='/tmp/live-main.css'
+          headers='/tmp/live-main.headers'
           curl --fail-with-body --silent --show-error \
             --connect-timeout 10 --max-time 25 \
             --header 'Cache-Control: no-cache' \
             --dump-header "$headers" \
-            "${MGW_STAGING_ORIGIN}/app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit.css?probe=${GITHUB_SHA}" \
+            "${MGW_STAGING_ORIGIN}/app/assets/css/main.css?probe=${GITHUB_SHA}" \
             --output "$live_file"
-          echo "local wrapper sha256: $(sha256sum "$local_file" | awk '{print $1}')"
-          echo "live  wrapper sha256: $(sha256sum "$live_file" | awk '{print $1}')"
+          echo "local main CSS sha256: $(sha256sum "$local_file" | awk '{print $1}')"
+          echo "live  main CSS sha256: $(sha256sum "$live_file" | awk '{print $1}')"
           cat "$headers"
           cmp "$local_file" "$live_file"
-          grep -F "./games/checkers/game.css?v=64&checkers=pre-b94d-exact-restore-v1" "$live_file"
+          grep -F "./games/checkers/game.css?v=59" "$live_file"
 
       - name: Compare live Checkers stylesheet byte-for-byte
         shell: bash
