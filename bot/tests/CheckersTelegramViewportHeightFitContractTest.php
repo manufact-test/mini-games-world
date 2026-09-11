@@ -42,8 +42,8 @@ if ($gitBlobSha($renderer) !== 'e362239b1388a1f752d2d0e67ae69a7cc9207926') {
 }
 
 foreach ([
-    "./assets/css/games/checkers/telegram-height-fit-v1.css?v=1&checkers=telegram-height-fit-v1",
-    "'checkers_telegram_height_fit' => $checkersTelegramHeightFitTarget",
+    './assets/css/games/checkers/telegram-height-fit-v1.css?v=1&checkers=telegram-height-fit-v1',
+    "'checkers_telegram_height_fit' => \$checkersTelegramHeightFitTarget",
     'STG A1 · v110 · C11',
     'stg-a1-v110-c11',
 ] as $runtimeToken) {
@@ -52,7 +52,7 @@ foreach ([
     }
 }
 
-if (!str_contains($v110, "is_file($checkersTelegramHeightFitPath)")) {
+if (!str_contains($v110, 'is_file($checkersTelegramHeightFitPath)')) {
     throw new RuntimeException('v110 must fail closed when the Telegram height-fit asset is missing.');
 }
 
