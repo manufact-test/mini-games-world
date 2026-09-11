@@ -13,6 +13,8 @@ on:
       - 'app/assets/js/games/chess/renderer.js'
       - 'app/assets/css/games/chess/game.css'
       - 'app/assets/css/games/chess/cosmetics.css'
+      - 'app/assets/css/games/chess/profile-cosmetics.css'
+      - 'app/assets/css/games/chess/runtime-cosmetics.css'
       - 'app/assets/css/main.css'
       - 'app/runtime/client/version-manifest.php'
       - '.github/workflows/mvp19-5-chess-cosmetics.yml'
@@ -95,8 +97,13 @@ jobs:
           php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"store-screen-intent-wrapper.js?v=1") || !str_contains($s,"mvp19_5=chess-catalog")) exit(1); if(!str_contains($m["imports"]["./assets/js/games/chess/renderer.js?v=68"]??"","mvp19_5=cosmetics")) exit(2); $css=$m["assets"]["main_css"]??""; if(!str_contains($css,"main.css?v=190") || !str_contains($css,"mvp19_5=chess-cosmetics")) exit(3);'
           grep -F "from './store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog';" app/assets/js/screens/store-screen-intent-wrapper.js
           grep -F "from './store-screen.js?v=44&intent_base=1';" app/assets/js/screens/store-screen-intent-wrapper.js
+          grep -F "runtime-cosmetics.css?v=1&mvp19_5=chess-cosmetics" app/assets/js/screens/store-screen-intent-wrapper.js
           grep -F "@import url('./games/chess/game.css?v=68');" app/assets/css/main.css
           grep -F "@import url('./cosmetics.css?v=1&mvp19_5=chess-cosmetics');" app/assets/css/games/chess/game.css
+          grep -F "@import url('./profile-cosmetics.css?v=1&mvp19_5=chess-profile-polish');" app/assets/css/games/chess/game.css
+          grep -F 'data-profile-game-panel="chess"' app/assets/css/games/chess/profile-cosmetics.css
+          grep -F 'content:"Доски"' app/assets/css/games/chess/profile-cosmetics.css
+          grep -F 'content:"Фигуры"' app/assets/css/games/chess/profile-cosmetics.css
 
       - name: Guard frozen game owners
         shell: bash
