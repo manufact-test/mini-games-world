@@ -117,10 +117,13 @@ async function resetTestPlayers(){
 
 export default async function stagingGlobalSetup(){
   // Read-only global diagnostics are useful evidence, but the executable A/B
-  // pre-suite owns only the two dedicated technical identities. Real-user
-  // residual recovery stays available as an explicit OIDC/admin operation and
-  // must never become a prerequisite for issuing or resetting A/B sessions.
-  await diagnoseInviteMismatch();
+  // pre-suite owns only the two dedicated technical identities. A failure of a
+  // read-only diagnostic must never block test-only recovery or A/B reset.
+  try {
+    await diagnoseInviteMismatch();
+  } catch (error) {
+    console.warn('[MGW_STAGING_INVITE_MISMATCH_DIAGNOSTIC_NON_BLOCKING]', error instanceof Error ? error.message : String(error));
+  }
   await recoverTestOnlyInviteOrphans();
   await resetTestPlayers();
 }
