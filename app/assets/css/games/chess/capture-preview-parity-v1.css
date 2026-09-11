@@ -1,18 +1,30 @@
 /* MVP-19.5 Chess Effect 2 / Capture live parity with accepted Store preview.
- * Presentation only: flash + radial burst + expanding ring at the capture square.
- * No rules, timers, hit targets, actions, Move, or Check changes.
+ * Presentation only: dominant central flash + compact radial burst + expanding ring.
+ * The accepted Move effect, Check effect, rules, timers, hit targets and actions stay untouched.
  */
 
 #gameBoard[data-game-type="chess"] .chess-fx-capture{
   z-index:13;
 }
 
+/* The live v1 owner was visually backwards: the six legacy rays dominated while
+ * the actual explosion core was only 56% of one square. Make the flash the hero,
+ * matching the Store preview proportions, and keep the rays short behind it. */
 #gameBoard[data-game-type="chess"] .chess-fx-capture b{
-  width:56%;
-  height:56%;
+  width:104%;
+  height:104%;
   border-radius:50%;
-  background:radial-gradient(circle,rgba(255,250,207,.98) 0 12%,rgba(255,184,76,.78) 29%,rgba(255,112,56,.28) 55%,transparent 76%);
-  box-shadow:0 0 10px rgba(255,158,52,.42);
+  background:radial-gradient(circle,
+    rgba(255,255,232,1) 0 11%,
+    rgba(255,241,160,.99) 18%,
+    rgba(255,183,69,.92) 36%,
+    rgba(255,104,45,.48) 58%,
+    rgba(255,87,39,.12) 72%,
+    transparent 78%);
+  box-shadow:
+    0 0 8px rgba(255,238,158,.86),
+    0 0 17px rgba(255,154,47,.62),
+    0 0 26px rgba(255,91,39,.24);
   animation:chessCaptureParityFlash .66s ease-out both!important;
 }
 
@@ -26,61 +38,73 @@
   transform:translate(-50%,-50%);
 }
 
+/* Short radial spokes behind the flash — this is the same visual language as
+ * the Store repeating-conic burst, rather than six long independent bars. */
 #gameBoard[data-game-type="chess"] .chess-fx-capture b::before{
-  width:126%;
-  height:126%;
+  width:168%;
+  height:168%;
   border-radius:50%;
-  background:repeating-conic-gradient(from 4deg,rgba(255,222,119,.98) 0 5deg,transparent 5deg 30deg);
-  -webkit-mask:radial-gradient(circle,transparent 0 30%,#000 34% 46%,transparent 50%);
-  mask:radial-gradient(circle,transparent 0 30%,#000 34% 46%,transparent 50%);
-  animation:chessCaptureParityBurst .72s cubic-bezier(.18,.72,.24,1) both;
+  background:repeating-conic-gradient(
+    from 4deg,
+    rgba(255,247,200,.98) 0 4deg,
+    rgba(255,198,82,.94) 4deg 7deg,
+    transparent 7deg 28deg);
+  -webkit-mask:radial-gradient(circle,transparent 0 28%,#000 32% 48%,transparent 52%);
+  mask:radial-gradient(circle,transparent 0 28%,#000 32% 48%,transparent 52%);
+  filter:drop-shadow(0 0 3px rgba(255,175,60,.52));
+  animation:chessCaptureParityBurst .70s cubic-bezier(.18,.72,.24,1) both;
 }
 
 #gameBoard[data-game-type="chess"] .chess-fx-capture b::after{
-  width:52%;
-  height:52%;
+  width:88%;
+  height:88%;
   box-sizing:border-box;
-  border:2px solid rgba(255,204,91,.94);
+  border:2px solid rgba(255,211,105,.96);
   border-radius:50%;
-  box-shadow:0 0 10px rgba(255,158,52,.58);
-  animation:chessCaptureParityRing .72s ease-out both;
+  box-shadow:0 0 8px rgba(255,202,91,.76),0 0 15px rgba(255,139,43,.42);
+  animation:chessCaptureParityRing .70s ease-out both;
 }
 
+/* Base renderer still supplies six <i> rays. Keep them only as tiny sparks so
+ * they support the burst instead of reading as six long lines. */
 #gameBoard[data-game-type="chess"] .chess-fx-capture i{
-  width:6%;
-  height:34%;
+  width:7%;
+  height:18%;
   border-radius:999px;
-  background:linear-gradient(to top,transparent 0 8%,rgba(255,180,66,.46) 28%,rgba(255,227,133,.98) 72%,rgba(255,248,211,.98) 100%);
+  background:linear-gradient(to top,transparent 0 12%,rgba(255,175,60,.32) 34%,rgba(255,231,145,.82) 70%,rgba(255,252,226,.96) 100%);
   transform-origin:50% 100%;
-  animation:chessCaptureParityShard .70s cubic-bezier(.14,.72,.22,1) both!important;
-  filter:drop-shadow(0 0 3px rgba(255,174,61,.45));
+  animation:chessCaptureParityShard .58s cubic-bezier(.14,.72,.22,1) both!important;
+  filter:drop-shadow(0 0 2px rgba(255,174,61,.32));
 }
 
 @keyframes chessCaptureParityFlash{
-  0%{opacity:0;transform:scale(.18)}
-  16%{opacity:1;transform:scale(1)}
-  66%{opacity:.34;transform:scale(1.62)}
-  100%{opacity:0;transform:scale(1.92)}
+  0%{opacity:0;transform:scale(.16)}
+  14%{opacity:1;transform:scale(.88)}
+  28%{opacity:1;transform:scale(1.04)}
+  56%{opacity:.78;transform:scale(1.22)}
+  100%{opacity:0;transform:scale(1.72)}
 }
 
 @keyframes chessCaptureParityBurst{
-  0%{opacity:0;transform:translate(-50%,-50%) scale(.26) rotate(-10deg)}
-  18%{opacity:.98}
-  72%{opacity:.26;transform:translate(-50%,-50%) scale(1.28) rotate(10deg)}
-  100%{opacity:0;transform:translate(-50%,-50%) scale(1.5) rotate(16deg)}
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.28) rotate(-9deg)}
+  17%{opacity:.96;transform:translate(-50%,-50%) scale(.72) rotate(-4deg)}
+  46%{opacity:.92;transform:translate(-50%,-50%) scale(1) rotate(5deg)}
+  76%{opacity:.26;transform:translate(-50%,-50%) scale(1.22) rotate(14deg)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.38) rotate(20deg)}
 }
 
 @keyframes chessCaptureParityRing{
-  0%{opacity:0;transform:translate(-50%,-50%) scale(.44)}
-  22%{opacity:.96}
-  100%{opacity:0;transform:translate(-50%,-50%) scale(2.05)}
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.34)}
+  20%{opacity:.98;transform:translate(-50%,-50%) scale(.78)}
+  46%{opacity:.80;transform:translate(-50%,-50%) scale(1.04)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.78)}
 }
 
 @keyframes chessCaptureParityShard{
-  0%{opacity:0;transform:rotate(var(--chess-fx-angle)) translateY(-4%) scaleY(.34)}
-  16%{opacity:1}
-  74%{opacity:.56;transform:rotate(var(--chess-fx-angle)) translateY(-26%) scaleY(1.18)}
-  100%{opacity:0;transform:rotate(var(--chess-fx-angle)) translateY(-46%) scaleY(.78)}
+  0%{opacity:0;transform:rotate(var(--chess-fx-angle)) translateY(-2%) scaleY(.28)}
+  18%{opacity:.54}
+  55%{opacity:.38;transform:rotate(var(--chess-fx-angle)) translateY(-10%) scaleY(.92)}
+  100%{opacity:0;transform:rotate(var(--chess-fx-angle)) translateY(-20%) scaleY(.54)}
 }
 
 @media(prefers-reduced-motion:reduce){
