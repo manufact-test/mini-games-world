@@ -1,0 +1,49 @@
+/* Checkers-only viewport layout: keep the board full width, scroll the board area,
+   and keep the existing leave button in normal flow at the bottom of the screen. */
+.game-board-screen[data-game-type="checkers"] .content{
+  display:flex!important;
+  flex-direction:column!important;
+  height:100%!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  padding-bottom:8px!important;
+}
+
+.game-board-screen[data-game-type="checkers"] .game-header{
+  flex:0 0 auto!important;
+}
+
+.game-board-screen[data-game-type="checkers"] .board-wrap{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  width:100%!important;
+  max-width:100%!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  scrollbar-width:none;
+}
+
+.game-board-screen[data-game-type="checkers"] .board-wrap::-webkit-scrollbar{
+  display:none;
+}
+
+.game-board-screen[data-game-type="checkers"] .board.checkers-surface{
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  margin:0!important;
+  flex:0 0 auto!important;
+}
+
+.game-board-screen[data-game-type="checkers"] #leaveGame{
+  position:static!important;
+  inset:auto!important;
+  z-index:auto!important;
+  display:block!important;
+  flex:0 0 auto!important;
+  width:100%!important;
+  margin:2px 0 0!important;
+}
