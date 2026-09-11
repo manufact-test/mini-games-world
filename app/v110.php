@@ -71,6 +71,15 @@ if (!is_file($checkersTelegramHeightFitPath)) {
 }
 $checkersTelegramHeightFitTarget = './assets/css/games/checkers/telegram-height-fit-v1.css?v=5&checkers=bounded-screen-scroll-c15';
 
+$chessCaptureParityPath = __DIR__ . '/assets/css/games/chess/capture-preview-parity-v1.css';
+if (!is_file($chessCaptureParityPath)) {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World Chess Capture parity stylesheet is unavailable.';
+    exit;
+}
+$chessCaptureParityTarget = './assets/css/games/chess/capture-preview-parity-v1.css?v=1&mvp19_5=capture-store-parity-v1';
+
 $headClose = '</head>';
 $cssAnchor = './assets/css/main.css?v=93-wallet-15-3';
 $entryScriptsAnchor = <<<'HTML'
@@ -117,10 +126,11 @@ $consistencyCssTarget = $assets['consistency_css'];
 $bootstrapTarget = $assets['bootstrap'];
 $bootstrapTag = '  <script type="module" src="' . $bootstrapTarget . '"></script>';
 $checkersTelegramHeightFitTag = '  <link rel="stylesheet" href="' . $checkersTelegramHeightFitTarget . '" />';
+$chessCaptureParityTag = '  <link rel="stylesheet" href="' . $chessCaptureParityTarget . '" />';
 
 $html = str_replace($cssAnchor, $cssTarget, $html);
 $html = str_replace('./assets/css/production-v95-consistency.css?v=95', $consistencyCssTarget, $html);
-$html = str_replace($headClose, $checkersTelegramHeightFitTag . "\n" . $headClose, $html);
+$html = str_replace($headClose, $checkersTelegramHeightFitTag . "\n" . $chessCaptureParityTag . "\n" . $headClose, $html);
 $html = str_replace(
     '<p>Готовим игровую комнату</p>',
     '<p>Те самые игры. То самое чувство.</p>',
@@ -140,6 +150,7 @@ $requiredRenderedTargets = [
     'localization_i18n' => $imports['@mgw/i18n'],
     'shield_king_css' => $cssTarget,
     'checkers_telegram_height_fit' => $checkersTelegramHeightFitTarget,
+    'chess_capture_store_parity' => $chessCaptureParityTarget,
     'unified_ui_cache' => $imports['./assets/js/ui.js?v=89'] ?? '',
     'match_config_cache' => $imports['./assets/js/config.js?v=38'] ?? '',
     'app_state_v2_cache' => $imports['./assets/js/state.js?v=27'],
