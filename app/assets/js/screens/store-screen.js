@@ -285,8 +285,8 @@ function gamePresentation(gameType){
       mark:'♞♜',
       groups:[
         ['Доски','Оформление шахматной доски','themes'],
-        ['Фигуры','Внешний вид фигур обоих игроков','elements'],
-        ['Эффекты','Один выбранный эффект срабатывает в соответствующий момент','effects'],
+        ['Фигуры','Внешний вид фигур','elements'],
+        ['Эффекты','Анимации для ходов, взятий и шаха','effects'],
       ],
       kinds:{ theme:'Шахматная доска', elements:'Комплект фигур', effect:'Эффект партии' },
     };
@@ -296,7 +296,7 @@ function gamePresentation(gameType){
     groups:[
       ['Поля','Фон и сетка игрового поля','themes'],
       ['Знаки','Внешний вид крестиков и ноликов','elements'],
-      ['Эффекты','Один выбранный эффект срабатывает при каждом ходе','effects'],
+      ['Эффекты','Анимации при каждом ходе','effects'],
     ],
     kinds:{ theme:'Игровое поле', elements:'Комплект знаков', effect:'Эффект хода' },
   };
@@ -402,8 +402,13 @@ function gameCosmeticPreview(gameType, layer, variant, label = ''){
   let content = '';
   if (gameType === 'chess') {
     if (safeLayer === 'theme') {
-      const pieces = ['♜','','','♚','','♟','', '', '', '', '♙','', '♔','','','♖'];
-      content = `<i class="store-v2-mini-chess-board">${pieces.map(piece => `<span>${piece ? `<b>${piece}</b>` : ''}</span>`).join('')}</i>`;
+      const squares = Array.from({ length:64 }, (_, index) => {
+        const row = Math.floor(index / 8);
+        const column = index % 8;
+        const squareClass = (row + column) % 2 === 0 ? 'light' : 'dark';
+        return `<span class="${squareClass}" aria-hidden="true"></span>`;
+      }).join('');
+      content = `<i class="store-v2-mini-chess-board">${squares}</i>`;
     } else if (safeLayer === 'elements') {
       content = '<i class="store-v2-mini-chess-pieces"><span>♚</span><span>♞</span><span>♟</span></i>';
     } else {
