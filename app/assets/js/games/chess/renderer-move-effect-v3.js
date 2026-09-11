@@ -6,10 +6,13 @@ import {
 } from './renderer.js?v=70&mvp19_5=cosmetics&fx_runtime=landing-sync-v2&move_parity=store-trail-v1';
 
 const MOVE_EFFECT_ITEM = 'game-chess-effect-move';
+const CHECK_EFFECT_ITEM = 'game-chess-effect-check';
 const MOVE_EFFECT_DURATION_MS = 700;
+const CHECK_TEST_DURATION_MS = 1450;
 const moveEffectByGamePlayer = new Map();
 const seenMoveByGame = new Map();
 const activeMoveFxByGame = new Map();
+const activeCheckTestFxByGame = new Map();
 
 ensureMoveEffectV3Styles();
 
@@ -25,39 +28,56 @@ export function renderChessSurface(args){
   const moveKey = chessMoveKey(game, lastMove);
   const moverId = moverPlayerId(players, lastMove);
   const moveEquipped = equippedMoveEffect(gameId, players, moverId);
+  const checkTestEquipped = equippedCheckEffect(gameId, players, moverId);
+  const naturalCheck = Boolean(lastMove?.check || game?.in_check);
   const pendingOptimisticMove = Boolean(game?.__mgw_v100_pending_action);
   const viewerSide = String(game?.viewer_side || playerSide(game, String(me?.id || '')) || 'white');
 
   const alreadyObserved = gameId !== '' && seenMoveByGame.has(gameId);
   const previousMoveKey = gameId ? String(seenMoveByGame.get(gameId) || '') : '';
+  const newObservedMove = Boolean(gameId && moveKey && alreadyObserved && previousMoveKey !== moveKey);
   if (gameId && !alreadyObserved) seenMoveByGame.set(gameId, moveKey);
 
-  if (gameId && moveKey && alreadyObserved && previousMoveKey !== moveKey) {
+  if (newObservedMove) {
     seenMoveByGame.set(gameId, moveKey);
     if (moveEquipped) startMoveEffect(gameId, moveKey, lastMove, viewerSide);
-  } else if (gameId && moveKey && moveEquipped && pendingOptimisticMove) {
-    const active = activeMoveFxByGame.get(gameId);
-    if (!active || active.key !== moveKey) startMoveEffect(gameId, moveKey, lastMove, viewerSide);
+    if (checkTestEquipped && !naturalCheck) startCheckTestEffect(gameId, moveKey, game, players, moverId, lastMove);
+  } else if (gameId && moveKey && pendingOptimisticMove) {
+    if (moveEquipped) {
+      const active = activeMoveFxByGame.get(gameId);
+      if (!active || active.key !== moveKey) startMoveEffect(gameId, moveKey, lastMove, viewerSide);
+    }
+    if (checkTestEquipped && !naturalCheck) {
+      const active = activeCheckTestFxByGame.get(gameId);
+      if (!active || active.key !== moveKey) startCheckTestEffect(gameId, moveKey, game, players, moverId, lastMove);
+    }
   }
 
   const baseGame = moveEquipped && lastMove
     ? withoutMoveEffectForMover(game, moverId)
     : game;
 
-  if (container?.dataset) container.dataset.chessMoveFxV3 = moveEquipped ? '1' : '0';
+  if (container?.dataset) {
+    container.dataset.chessMoveFxV3 = moveEquipped ? '1' : '0';
+    container.dataset.chessCheckTestHook = checkTestEquipped ? '1' : '0';
+  }
   renderBaseChessSurface({ ...args, game:baseGame });
 
   if (!gameId || !container) return;
-  const active = activeMoveFxByGame.get(gameId);
-  if (!active || active.key !== moveKey) return;
 
-  const elapsed = Date.now() - active.startedAt;
-  if (elapsed >= MOVE_EFFECT_DURATION_MS) {
-    activeMoveFxByGame.delete(gameId);
-    return;
+  const activeMove = activeMoveFxByGame.get(gameId);
+  if (activeMove?.key === moveKey) {
+    const elapsed = Date.now() - activeMove.startedAt;
+    if (elapsed >= MOVE_EFFECT_DURATION_MS) activeMoveFxByGame.delete(gameId);
+    else renderMoveEffect(container, activeMove, elapsed);
   }
 
-  renderMoveEffect(container, active, elapsed);
+  const activeCheckTest = activeCheckTestFxByGame.get(gameId);
+  if (activeCheckTest?.key === moveKey) {
+    const elapsed = Date.now() - activeCheckTest.startedAt;
+    if (elapsed >= CHECK_TEST_DURATION_MS) activeCheckTestFxByGame.delete(gameId);
+    else renderStagingCheckTest(container, activeCheckTest, elapsed);
+  }
 }
 
 function cachePlayerEffects(gameId, players){
@@ -71,10 +91,18 @@ function cachePlayerEffects(gameId, players){
 }
 
 function equippedMoveEffect(gameId, players, moverId){
-  if (!gameId || !moverId) return false;
+  return equippedEffect(gameId, players, moverId) === MOVE_EFFECT_ITEM;
+}
+
+function equippedCheckEffect(gameId, players, moverId){
+  return equippedEffect(gameId, players, moverId) === CHECK_EFFECT_ITEM;
+}
+
+function equippedEffect(gameId, players, moverId){
+  if (!gameId || !moverId) return '';
   const direct = String(players.find(player => String(player?.id || '') === moverId)?.game_cosmetics?.slots?.game_chess_effect || '');
   const cached = String(moveEffectByGamePlayer.get(`${gameId}:${moverId}`) || '');
-  return (direct || cached) === MOVE_EFFECT_ITEM;
+  return direct || cached;
 }
 
 function withoutMoveEffectForMover(game, moverId){
@@ -110,6 +138,21 @@ function startMoveEffect(gameId, key, lastMove, viewerSide){
   });
 }
 
+function startCheckTestEffect(gameId, key, game, players, moverId, lastMove){
+  const mover = players.find(player => String(player?.id || '') === moverId) || null;
+  const moverSide = String(lastMove?.side || mover?.side || '');
+  if (moverSide !== 'white' && moverSide !== 'black') return;
+  const opponentKing = moverSide === 'white' ? 'bK' : 'wK';
+  const board = Array.isArray(game?.board) ? game.board : [];
+  const kingCell = board.findIndex(piece => String(piece || '') === opponentKing);
+  if (kingCell < 0) return;
+  activeCheckTestFxByGame.set(gameId, {
+    key,
+    kingCell,
+    startedAt:Date.now(),
+  });
+}
+
 function renderMoveEffect(container, fx, elapsedMs){
   const target = container.querySelector?.(`[data-chess-cell="${fx.to}"]`);
   if (!target) return;
@@ -141,6 +184,27 @@ function renderMoveEffect(container, fx, elapsedMs){
       ${gatherDots}<b style="--core-delay:${coreDelay}ms"></b>
     </span>
   `);
+}
+
+function renderStagingCheckTest(container, fx, elapsedMs){
+  const target = container.querySelector?.(`[data-chess-cell="${fx.kingCell}"]`);
+  if (!target) return;
+
+  target.querySelectorAll('.mgw-staging-check-test').forEach(node => node.remove());
+  const elapsed = Math.max(0, Number(elapsedMs) || 0);
+  const landing = checkTestAnimationStyle(400, elapsed);
+  const secondWave = checkTestAnimationStyle(480, elapsed);
+
+  target.insertAdjacentHTML('beforeend', `
+    <span class="chess-fx-layer chess-fx-check mgw-staging-check-test" aria-hidden="true">
+      <i${landing}></i><i${secondWave}></i><b${landing}></b><em${landing}></em>
+    </span>
+  `);
+}
+
+function checkTestAnimationStyle(delayMs, elapsedMs){
+  const delay = Math.round(Number(delayMs) - Number(elapsedMs || 0));
+  return ` style="opacity:0;animation-delay:${delay}ms;animation-fill-mode:forwards"`;
 }
 
 function chessMoveKey(game, lastMove){
