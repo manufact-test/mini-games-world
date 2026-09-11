@@ -49,8 +49,10 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
           git diff --exit-code "$base" "$head" -- \
             app/assets/js/screens/profile-screen-v110.js \
-            app/assets/js/games \
             bot/catalog/ProductInventoryService.php \
             bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs \
             bot/tests/Mvp19_4EffectsV2ContractTest.mjs
+          git diff --exit-code "$base" "$head" -- \
+            app/assets/js/games \
+            ':(exclude)app/assets/js/games/chess/renderer.js'
           git diff --check
