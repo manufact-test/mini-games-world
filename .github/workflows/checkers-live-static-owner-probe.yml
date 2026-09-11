@@ -33,18 +33,11 @@ jobs:
               --header 'Accept: application/json' \
               "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php?probe=${GITHUB_SHA}-${attempt}" \
               --output /tmp/mgw-readiness.json; then
-              if python3 - /tmp/mgw-readiness.json "${expected_fingerprint}" <<'PY'
-import json
-import sys
-from pathlib import Path
-payload = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
-expected = sys.argv[2]
-assert payload.get('ok') is True
-assert payload.get('environment') == 'staging'
-assert payload.get('base_host') == 'seashell-okapi-889488.hostingersite.com'
-assert payload.get('source_fingerprint_sha256') == expected
-PY
-              then
+              ok="$(jq -r '.ok // false' /tmp/mgw-readiness.json)"
+              environment="$(jq -r '.environment // ""' /tmp/mgw-readiness.json)"
+              base_host="$(jq -r '.base_host // ""' /tmp/mgw-readiness.json)"
+              live_fingerprint="$(jq -r '.source_fingerprint_sha256 // ""' /tmp/mgw-readiness.json)"
+              if [[ "$ok" == 'true' && "$environment" == 'staging' && "$base_host" == 'seashell-okapi-889488.hostingersite.com' && "$live_fingerprint" == "$expected_fingerprint" ]]; then
                 ready=1
                 break
               fi
