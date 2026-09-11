@@ -11,6 +11,7 @@ on:
       - 'app/assets/js/screens/store-screen.js'
       - 'app/assets/js/screens/store-screen-intent-wrapper.js'
       - 'app/assets/js/games/chess/renderer.js'
+      - 'app/assets/js/games/chess/renderer-move-effect-v3.js'
       - 'app/assets/css/games/chess/game.css'
       - 'app/assets/css/games/chess/cosmetics.css'
       - 'app/assets/css/games/chess/profile-cosmetics.css'
@@ -61,6 +62,7 @@ jobs:
           node --check app/assets/js/screens/store-screen.js
           node --check app/assets/js/screens/store-screen-intent-wrapper.js
           node --check app/assets/js/games/chess/renderer.js
+          node --check app/assets/js/games/chess/renderer-move-effect-v3.js
 
       - name: Run Chess cosmetics contract
         run: php bot/tests/Mvp19_5ChessCosmeticsTest.php
