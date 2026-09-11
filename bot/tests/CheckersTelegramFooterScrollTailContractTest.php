@@ -22,7 +22,11 @@ foreach ([
     }
 }
 
-if (str_contains($tail, '.board.checkers-surface') || str_contains($tail, '#leaveGame')) {
+$tailRules = preg_replace('~/\*.*?\*/~s', '', $tail);
+if (!is_string($tailRules)) {
+    throw new RuntimeException('Checkers footer-scroll CSS cannot be normalized.');
+}
+if (str_contains($tailRules, '.board.checkers-surface') || preg_match('/#leaveGame\s*\{/u', $tailRules) === 1) {
     throw new RuntimeException('Footer-scroll corrective must not resize the board or reposition the leave control.');
 }
 if (!str_contains($wrapper, "./games/checkers/telegram-footer-scroll-tail-v1.css?v=1&checkers=telegram-footer-scroll-tail-v1")) {
