@@ -49,8 +49,6 @@ let firstOpenPrimePromise = null;
 let firstOpenPrimeReady = false;
 let firstVisiblePrimeConsumed = false;
 let presentationRepairTimers = [];
-let presentationRepairObserver = null;
-let presentationRepairObserverStopTimer = null;
 
 export function initStoreScreen(){
   if (initialized) return firstOpenPrimePromise;
@@ -138,8 +136,6 @@ function scheduleStoreGamePresentationRepair(extended = false){
   presentationRepairTimers.forEach(timer => globalThis.clearTimeout(timer));
   presentationRepairTimers = [];
 
-  armStorePresentationRepairObserver(extended ? 15000 : 3500);
-
   const repair = () => upgradeStoreGamePresentation();
   queueMicrotask(repair);
   if (typeof globalThis.requestAnimationFrame === 'function') {
@@ -150,37 +146,6 @@ function scheduleStoreGamePresentationRepair(extended = false){
     ? [80, 220, 500, 900, 1500, 2500, 4000, 6500, 10000]
     : [80, 220, 500, 900, 1600];
   presentationRepairTimers = delays.map(delay => globalThis.setTimeout(repair, delay));
-}
-
-function armStorePresentationRepairObserver(durationMs){
-  if (presentationRepairObserver) {
-    presentationRepairObserver.disconnect();
-    presentationRepairObserver = null;
-  }
-  if (presentationRepairObserverStopTimer) {
-    globalThis.clearTimeout(presentationRepairObserverStopTimer);
-    presentationRepairObserverStopTimer = null;
-  }
-  if (typeof globalThis.MutationObserver !== 'function') return;
-
-  const roots = [
-    document.getElementById('storeTabSurface'),
-    document.getElementById('sheet'),
-  ].filter((root, index, items) => root instanceof HTMLElement && items.indexOf(root) === index);
-  if (!roots.length) return;
-
-  const observer = new globalThis.MutationObserver(records => {
-    if (!records.some(record => record.type === 'childList')) return;
-    upgradeStoreGamePresentation();
-  });
-  roots.forEach(root => observer.observe(root, { childList:true, subtree:true }));
-  presentationRepairObserver = observer;
-  presentationRepairObserverStopTimer = globalThis.setTimeout(() => {
-    if (presentationRepairObserver !== observer) return;
-    observer.disconnect();
-    presentationRepairObserver = null;
-    presentationRepairObserverStopTimer = null;
-  }, Math.max(500, Number(durationMs || 0)));
 }
 
 function upgradeStoreGamePresentation(){
