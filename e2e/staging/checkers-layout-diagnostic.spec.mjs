@@ -25,6 +25,23 @@ async function requestOidcToken() {
   return payload.value;
 }
 
+async function resetTestPlayers() {
+  const response = await fetch(AUTH_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${await requestOidcToken()}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ action: 'reset_test_players' }),
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || payload?.ok !== true || payload?.invite_parity !== true
+      || payload?.notification_parity !== true || payload?.economy_parity !== true) {
+    throw new Error(`Checkers diagnostic A/B reset failed: ${response.status} ${payload?.stage || payload?.reason_code || payload?.error || ''}`);
+  }
+}
+
 async function authorize(context, slot) {
   const response = await context.request.post(AUTH_URL, {
     headers: {
@@ -200,6 +217,7 @@ async function captureLayout(page) {
 test('CHECKERS LAYOUT DIAGNOSTIC — live v110 mobile geometry', async ({ browser }) => {
   let A;
   let B;
+  await resetTestPlayers();
   try {
     A = await openPlayer(browser, 'A');
     B = await openPlayer(browser, 'B');
@@ -232,5 +250,6 @@ test('CHECKERS LAYOUT DIAGNOSTIC — live v110 mobile geometry', async ({ browse
     expect(diagnostic.leave.exists).toBe(true);
   } finally {
     await Promise.allSettled([A?.context?.close(), B?.context?.close()]);
+    await resetTestPlayers().catch(error => console.warn('[CHECKERS_LAYOUT_DIAGNOSTIC_CLEANUP_FAILED]', error instanceof Error ? error.message : String(error)));
   }
 });
