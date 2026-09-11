@@ -117,7 +117,6 @@ $account = $accounts->resolveProviderIdentity('development', 'mvp19-4-pilot-user
 $mgwId = (string)$account['mgw_id'];
 $inventory = new ProductInventoryService($database);
 $store = new CosmeticStoreService($database);
-
 $assertSame(3, count($inventory->snapshot($mgwId)['owned']), 'Game cosmetics must not be silently starter-granted');
 $snapshot = $store->snapshot($mgwId, 100000, []);
 $assertSame(['coins','profile','games','bundles'], array_column($snapshot['tabs'], 'id'), 'Store must keep only the four canonical buyable tabs');
@@ -190,7 +189,7 @@ $assertTrue(!str_contains($rendererSource, 'findWinningCells') && !str_contains(
 $assertTrue(!str_contains($rendererSource, 'api.gameAction') && !str_contains($rendererSource, 'time_left'), 'Cosmetic renderer must not become an action or timer owner');
 $assertTrue(str_contains($cosmeticsCss, 'tttFxImpact') && str_contains($cosmeticsCss, 'tttFxSparksBurst') && str_contains($cosmeticsCss, 'tttFxWaveRing'), 'All three move effects must have distinct shared animations');
 $assertTrue(!str_contains($cosmeticsCss, 'storeTttWinningLine') && !str_contains($cosmeticsCss, 'text-decoration:line-through'), 'Legacy Store-only winning/strike presentation must be retired');
-$assertTrue(str_contains($storeSource, 'Один выбранный эффект срабатывает при каждом ходе') && str_contains($storeSource, 'data-store-v2-unequip'), 'Store must explain exclusivity and provide a remove action');
+$assertTrue(str_contains($storeSource, 'Анимации при каждом ходе') && str_contains($storeSource, 'data-store-v2-unequip'), 'Store must present human effect copy and provide a remove action');
 $assertTrue(str_contains($storeSource, 'ttt-mark ttt-effect-mark ttt-fx-${safeVariant}') && str_contains($storeSource, '>Снять</button>'), 'Store preview and selection controls must use runtime effect classes and a real remove button');
 $assertTrue(str_contains($apiSource, 'cosmeticStoreUnequip') && str_contains($endpointSource, "if (\$action === 'unequip')"), 'Unequip must be wired from client through the Store endpoint');
 $assertTrue(str_contains($storeCss, 'grid-template-columns:116px minmax(0,1fr)') && str_contains($storeCss, 'min-height:39px'), 'Mobile game offers must retain readable card geometry and usable actions');
