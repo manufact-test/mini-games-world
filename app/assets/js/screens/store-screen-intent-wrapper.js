@@ -21,6 +21,25 @@ const CHESS_PREVIEW_START_POSITION = Object.freeze([
   'wR','wN','wB','wQ','wK','wB','wN','wR',
 ]);
 const CHESS_FIELD_EFFECT_VARIANTS = Object.freeze(new Set(['move','capture','check']));
+const CHESS_EFFECT_PREVIEW_SCENES = Object.freeze({
+  move:Object.freeze([
+    Object.freeze({className:'mover white', glyph:'♞'}),
+    Object.freeze({className:'static-a black', glyph:'♟'}),
+    Object.freeze({className:'static-b white', glyph:'♟'}),
+  ]),
+  capture:Object.freeze([
+    Object.freeze({className:'mover white', glyph:'♝'}),
+    Object.freeze({className:'target black', glyph:'♜'}),
+    Object.freeze({className:'static-a black', glyph:'♟'}),
+    Object.freeze({className:'static-b white', glyph:'♟'}),
+  ]),
+  check:Object.freeze([
+    Object.freeze({className:'mover white', glyph:'♜'}),
+    Object.freeze({className:'king black', glyph:'♚'}),
+    Object.freeze({className:'static-a black', glyph:'♟'}),
+    Object.freeze({className:'static-b white', glyph:'♟'}),
+  ]),
+});
 
 ensureChessCosmeticStyles();
 installStoreGameClickCorrective();
@@ -88,7 +107,7 @@ function ensureChessCosmeticStyles(){
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.dataset.mgwChessCosmetics = 'mvp19-5-safe';
-  link.href = new URL('../../css/games/chess/runtime-cosmetics.css?v=7&mvp19_5=field-effect-previews', import.meta.url).href;
+  link.href = new URL('../../css/games/chess/runtime-cosmetics.css?v=1&mvp19_5=chess-cosmetics&fx_preview=real-action-demo-v2', import.meta.url).href;
   document.head.appendChild(link);
 }
 
@@ -146,7 +165,7 @@ function upgradeChessBoardPreviews(panel){
 
 function upgradeChessEffectPreviews(panel){
   panel.querySelectorAll('.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="effect"]').forEach(preview => {
-    if (!(preview instanceof HTMLElement) || preview.dataset.fieldEffectPreview === 'v1') return;
+    if (!(preview instanceof HTMLElement) || preview.dataset.fieldEffectPreview === 'v2-action-demo') return;
 
     const variant = String(preview.dataset.cosmeticVariant || '');
     if (!CHESS_FIELD_EFFECT_VARIANTS.has(variant)) return;
@@ -163,12 +182,19 @@ function upgradeChessEffectPreviews(panel){
       field.appendChild(square);
     }
 
+    (CHESS_EFFECT_PREVIEW_SCENES[variant] || []).forEach(scenePiece => {
+      const piece = document.createElement('strong');
+      piece.className = `chess-effect-piece ${scenePiece.className}`;
+      piece.textContent = scenePiece.glyph;
+      field.appendChild(piece);
+    });
+
     field.appendChild(document.createElement('b'));
     field.appendChild(document.createElement('em'));
     field.appendChild(document.createElement('u'));
 
     preview.replaceChildren(field);
-    preview.dataset.fieldEffectPreview = 'v1';
+    preview.dataset.fieldEffectPreview = 'v2-action-demo';
   });
 }
 

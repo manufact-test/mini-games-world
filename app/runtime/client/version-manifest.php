@@ -21,7 +21,7 @@ return [
         './assets/js/components/toast.js?v=41' => './assets/js/components/toast.js?v=29&store=quiet-cosmetic-equip-all',
         './assets/js/components/account-shortcuts.js?v=48' => './assets/js/components/account-shortcuts.js?v=53&mvp18=instant-route&optimistic-relations',
         './assets/js/screens/home-screen.js?v=74' => './assets/js/screens/home-screen.js?v=80&mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3&ux=ready-only-history-sheet&perf=prefetched-history&startup=after-app-ready',
-        './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen-intent-wrapper.js?v=8&mobile=intent-only&mobile_scope=all&first_paint=preloader-primed-final-v1&first_refresh=single-render-v1&profile_first=settled-before-store-intent-v3&first_visible=consume-prime-no-refresh-v1&mvp19_5=field-effect-previews&copy=human-v2',
+        './assets/js/screens/store-screen.js?v=34' => './assets/js/screens/store-screen-intent-wrapper.js?v=1&mobile=intent-only&mobile_scope=all&first_paint=preloader-primed-final-v1&first_refresh=single-render-v1&profile_first=settled-before-store-intent-v3&first_visible=consume-prime-no-refresh-v1&mvp19_5=chess-catalog&fx_preview=real-action-demo-v2&copy=human-v2&rev=10',
         './assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/screens/profile-screen-v110.js?v=1126&mvp16=profile-pass-a&mvp17=result-history-economy&mvp19=avatar-collection&previsual=instant-equip&mvp19_3_1=avatar-sync&mvp19_3_2=game-cosmetics&mvp19_3_3=game-tabs-fresh&mvp19_3_4=name-colors&perf=stable-render-cache&active_refresh=deferred-remount-v1&entry=paint-cached-first-v1&mobile_lifecycle=yield-refresh-and-remount-v1',
         './assets/js/profile/mgw-profile-model.js?v=1' => './assets/js/profile/mgw-profile-model.js?v=5&mvp16=public-id-canonical-identity&mvp19_3_1=avatar-pass-through&c7=no-prehydrate-default',
         './assets/js/profile/mgw-profile-backgrounds.js?v=2&mvp19_3=profile-backgrounds-ux-corrective' => './assets/js/profile/mgw-profile-backgrounds.js?v=3&mvp19_3=full-profile-surface',
@@ -62,7 +62,7 @@ return [
         'consistency_css_previous' => './assets/css/production-v99-profile-reaction-polish.css?v=2&mvp19_3=cumulative-reaction-cards&layout=bounded-packs&owned=passive-status&profile_nav=direct-sync-v2&row_footer=stretch-v1&pack4=single-row-v1&profile_first=structural-route-guard-v1&shell_mobile=atomic-v1&profile_hidden=zero-v1&shell_motion=atomic-restored-v2&profile_motion=atomic-none-v1',
         'consistency_css_entry_base' => './assets/css/production-v100-entry-effects.css?v=2&mvp19_3=entry-effects&profile_preview=accepted-runtime-v1',
         'consistency_css_base' => './assets/css/production-v97-reactions.css?v=2&mvp19_3=ingame-corrective',
-        'bootstrap' => './assets/js/app-bootstrap-v2.js?v=10&mvp16=version-manifest&entry_v8=entry01-strike-entry02-royal-ascension-entry03-lord-entrance-v6&victory=victory-nova&visual_repair=11&profile_card_sheet_final=8&mvp19_5=field-effect-previews',
+        'bootstrap' => './assets/js/app-bootstrap-v2.js?v=10&mvp16=version-manifest&entry_v8=entry01-strike-entry02-royal-ascension-entry03-lord-entrance-v6&victory=victory-nova&visual_repair=11&profile_card_sheet_final=8&mvp19_5=real-action-demo-v2',
     ],
     'localization' => ['version'=>'keys-v1','default_locale'=>'ru','manifest'=>'./locales/manifest.json'],
 ];
