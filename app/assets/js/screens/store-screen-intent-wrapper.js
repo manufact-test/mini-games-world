@@ -7,20 +7,6 @@ import {
 import { api } from '../api/client.js?v=34';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 
-const CHESS_PREVIEW_GLYPHS = Object.freeze({
-  wK:'♚', wQ:'♛', wR:'♜', wB:'♝', wN:'♞', wP:'♟',
-  bK:'♚', bQ:'♛', bR:'♜', bB:'♝', bN:'♞', bP:'♟',
-});
-const CHESS_PREVIEW_START_POSITION = Object.freeze([
-  'bR','bN','bB','bQ','bK','bB','bN','bR',
-  'bP','bP','bP','bP','bP','bP','bP','bP',
-  '','','','','','','','',
-  '','','','','','','','',
-  '','','','','','','','',
-  '','','','','','','','',
-  'wP','wP','wP','wP','wP','wP','wP','wP',
-  'wR','wN','wB','wQ','wK','wB','wN','wR',
-]);
 const CHESS_FIELD_EFFECT_VARIANTS = Object.freeze(new Set(['move','capture','check']));
 const CHESS_EFFECT_PREVIEW_SCENES = Object.freeze({
   move:Object.freeze([
@@ -41,7 +27,7 @@ const CHESS_EFFECT_PREVIEW_SCENES = Object.freeze({
     Object.freeze({className:'static-b white', glyph:'♟'}),
   ]),
 });
-const STORE_API_REPAIR_HOOK = Symbol.for('mgw.store.api-presentation-repair.v2');
+const STORE_API_REPAIR_HOOK = Symbol.for('mgw.store.effect-presentation-repair.v1');
 
 ensureChessCosmeticStyles();
 installStoreApiPresentationRepairHooks();
@@ -88,21 +74,18 @@ async function openStoreTab(){
   if (canConsumePrimedFirstPresentation()) {
     firstVisiblePrimeConsumed = true;
     upgradeStoreGamePresentation();
-    scheduleStoreGamePresentationRepair();
     haptic('light');
     return;
   }
 
   const result = await openBaseStoreTab();
   upgradeStoreGamePresentation();
-  scheduleStoreGamePresentationRepair();
   return result;
 }
 
 async function openStoreSheet(){
   const result = await openBaseStoreSheet();
   upgradeStoreGamePresentation();
-  scheduleStoreGamePresentationRepair();
   return result;
 }
 
@@ -113,12 +96,15 @@ function ensureChessCosmeticStyles(){
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.dataset.mgwChessCosmetics = 'mvp19-5-safe';
-  link.href = new URL('../../css/games/chess/runtime-cosmetics.css?v=1&mvp19_5=chess-cosmetics&fx_preview=action-geometry-v3', import.meta.url).href;
+  link.href = new URL('../../css/games/chess/runtime-cosmetics.css?v=2&mvp19_5=native-board-preview&fx_preview=action-geometry-v3', import.meta.url).href;
   document.head.appendChild(link);
 }
 
+/* Base Store may rerender after status/purchase/equip responses. Board previews no longer
+   need repair at all; this hook only restores the richer animated effect demo/copy before
+   the next paint. No observers, polling, retry timers, or startup work are introduced. */
 function installStoreApiPresentationRepairHooks(){
-  ['cosmeticStorePurchase','cosmeticStoreEquip','cosmeticStoreUnequip'].forEach(methodName => {
+  ['cosmeticStoreStatus','cosmeticStorePurchase','cosmeticStoreEquip','cosmeticStoreUnequip'].forEach(methodName => {
     const current = api?.[methodName];
     if (typeof current !== 'function' || current[STORE_API_REPAIR_HOOK]) return;
 
@@ -173,43 +159,14 @@ function scheduleStoreGamePresentationRepair(){
 function upgradeStoreGamePresentation(){
   const panel = document.querySelector('[data-store-v2-panel="games"]');
   if (panel instanceof HTMLElement) {
-    upgradeChessBoardPreviews(panel);
     upgradeChessEffectPreviews(panel);
     humanizeGameGroupCopy(panel);
   }
 
   const sheet = document.getElementById('sheet');
   if (sheet instanceof HTMLElement) {
-    upgradeChessBoardPreviews(sheet);
     upgradeChessEffectPreviews(sheet);
   }
-}
-
-function upgradeChessBoardPreviews(root){
-  root.querySelectorAll('.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"] .store-v2-mini-chess-board').forEach(board => {
-    if (!(board instanceof HTMLElement) || board.dataset.boardPreviewParity === '8x8-game-start-v2') return;
-
-    const fragment = document.createDocumentFragment();
-    CHESS_PREVIEW_START_POSITION.forEach((piece, index) => {
-      const row = Math.floor(index / 8);
-      const column = index % 8;
-      const square = document.createElement('span');
-      square.className = ((row + column) % 2 === 0) ? 'light' : 'dark';
-      square.setAttribute('aria-hidden', 'true');
-
-      if (piece) {
-        const figure = document.createElement('b');
-        figure.className = `store-v2-mini-chess-piece ${piece.startsWith('w') ? 'white' : 'black'}`;
-        figure.textContent = CHESS_PREVIEW_GLYPHS[piece] || '';
-        square.appendChild(figure);
-      }
-
-      fragment.appendChild(square);
-    });
-
-    board.replaceChildren(fragment);
-    board.dataset.boardPreviewParity = '8x8-game-start-v2';
-  });
 }
 
 function upgradeChessEffectPreviews(root){
