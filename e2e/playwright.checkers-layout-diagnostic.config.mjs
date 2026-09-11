@@ -3,7 +3,6 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: './staging',
   testMatch: 'checkers-layout-diagnostic.spec.mjs',
-  globalSetup: './staging-global-setup.mjs',
   fullyParallel: false,
   workers: 1,
   retries: 0,
