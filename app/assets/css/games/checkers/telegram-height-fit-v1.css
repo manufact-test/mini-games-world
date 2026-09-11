@@ -1,12 +1,28 @@
 /*
  * Telegram short-viewport corrective for the accepted pre-b94d Checkers skin.
  *
- * Keep the historical board skin and shared leave control untouched. On short
- * Telegram WebViews, reclaim only a small amount of vertical chrome, center the
- * board explicitly, and let it use almost the full available card width while
- * still reserving room for the shared `#leaveGame` control below.
+ * C12 owns the accepted board geometry: nearly full card width, centered, with
+ * compact Checkers-only chrome. C13 restores only the proven content-scroll
+ * mechanics from the earlier real-scroll corrective so the normal-flow
+ * `#leaveGame` control can be fully revealed below Telegram chrome.
  */
 @media (max-height:680px){
+  .game-board-screen[data-game-type="checkers"] .content{
+    height:auto!important;
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    overscroll-behavior-y:contain;
+    -webkit-overflow-scrolling:touch;
+    touch-action:pan-y;
+    padding-bottom:calc(
+      56px + env(safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)
+    )!important;
+    scroll-padding-bottom:calc(
+      56px + env(safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)
+    );
+  }
   .game-board-screen[data-game-type="checkers"] .board-wrap{
     padding:4px;
     margin-top:2px;
