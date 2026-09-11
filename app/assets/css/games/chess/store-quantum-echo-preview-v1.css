@@ -1,0 +1,158 @@
+/* MVP-19.5 Effect 3: Quantum Echo Store preview parity. The accepted Move/Capture previews remain owned by store-effect-previews.css v4. */
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="effect"][data-cosmetic-variant="quantum-echo"] .chess-effect-piece.mover{
+  left:0;
+  top:75%;
+  z-index:8;
+  animation:chessStoreQuantumPiece 2.95s cubic-bezier(.22,.72,.2,1) infinite;
+}
+
+.store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.king,
+.store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.static-a,
+.store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.static-b{
+  left:0;
+  top:75%;
+  z-index:6;
+  color:transparent!important;
+  -webkit-text-stroke:0 transparent!important;
+  text-shadow:none!important;
+  opacity:0;
+}
+.store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.king::before,
+.store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.static-a::before,
+.store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.static-b::before{
+  content:'♜';
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+  color:rgba(174,242,255,.82);
+  -webkit-text-stroke:.55px rgba(79,75,170,.72);
+  text-shadow:0 0 5px rgba(108,232,255,.86),0 0 9px rgba(133,91,255,.58);
+  font-family:"Segoe UI Symbol","Noto Sans Symbols 2","DejaVu Sans",sans-serif;
+  font-size:20px;
+  font-weight:800;
+  line-height:1;
+}
+.store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.king{
+  filter:blur(.15px);
+  animation:chessStoreQuantumGhostA 2.95s cubic-bezier(.2,.72,.18,1) infinite;
+}
+.store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.static-a{
+  filter:blur(.35px);
+  animation:chessStoreQuantumGhostB 2.95s cubic-bezier(.2,.72,.18,1) infinite;
+}
+.store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.static-b{
+  filter:blur(.65px);
+  animation:chessStoreQuantumGhostC 2.95s cubic-bezier(.2,.72,.18,1) infinite;
+}
+
+.store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .store-v2-mini-chess-field-effect > b{
+  left:calc(50% + 2px);
+  top:calc(25% + 2px);
+  z-index:9;
+  width:calc(25% - 4px);
+  height:calc(25% - 4px);
+  border:0;
+  border-radius:50%;
+  background:conic-gradient(from 0deg,transparent 0 11%,rgba(132,246,255,.96) 18%,rgba(116,98,255,.98) 32%,transparent 42% 57%,rgba(210,148,255,.9) 66%,rgba(91,226,255,.84) 81%,transparent 91% 100%);
+  -webkit-mask:radial-gradient(circle,transparent 0 61%,#000 65% 76%,transparent 80%);
+  mask:radial-gradient(circle,transparent 0 61%,#000 65% 76%,transparent 80%);
+  filter:drop-shadow(0 0 4px rgba(100,227,255,.82)) drop-shadow(0 0 7px rgba(128,91,255,.52));
+  opacity:0;
+  animation:chessStoreQuantumHalo 2.95s cubic-bezier(.16,.72,.24,1) infinite;
+}
+.store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .store-v2-mini-chess-field-effect > em{
+  left:calc(62.5% - 2px);
+  top:calc(37.5% - 2px);
+  z-index:10;
+  width:4px;
+  height:4px;
+  border-radius:50%;
+  background:#e5fcff;
+  box-shadow:-15px -3px 0 -1px rgba(116,241,255,.94),-9px -14px 0 -1px rgba(168,143,255,.88),6px -15px 0 -1px rgba(109,228,255,.92),15px -5px 0 -1px rgba(208,151,255,.84),12px 11px 0 -1px rgba(99,223,255,.9),-6px 14px 0 -1px rgba(163,135,255,.82);
+  filter:drop-shadow(0 0 3px rgba(117,230,255,.78));
+  opacity:0;
+  animation:chessStoreQuantumSparks 2.95s ease-out infinite;
+}
+.store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .store-v2-mini-chess-field-effect > u{
+  left:calc(50% + 4px);
+  top:calc(25% + 4px);
+  z-index:7;
+  width:calc(25% - 8px);
+  height:calc(25% - 8px);
+  border:0;
+  border-radius:50%;
+  background:radial-gradient(circle,#fff 0 7%,rgba(146,245,255,.82) 20%,rgba(118,112,255,.34) 48%,transparent 76%);
+  box-shadow:0 0 8px rgba(99,218,255,.48),0 0 13px rgba(128,91,255,.3);
+  opacity:0;
+  animation:chessStoreQuantumShimmer 2.95s ease-out infinite;
+}
+
+@keyframes chessStoreQuantumPiece{
+  0%,18%{transform:translate(0,0) scale(1);opacity:1}
+  24%{transform:translate(0,0) scale(.96)}
+  45%,82%{transform:translate(200%,-200%) scale(1);opacity:1}
+  91%,100%{transform:translate(200%,-200%) scale(1);opacity:0}
+}
+@keyframes chessStoreQuantumGhostA{
+  0%,25%{opacity:0;transform:translate(0,0) scale(.94)}
+  29%{opacity:.42;transform:translate(0,0) scale(.96)}
+  47%{opacity:.38;transform:translate(145%,-145%) scale(.98)}
+  55%{opacity:.08;transform:translate(200%,-200%) scale(.98)}
+  59%,100%{opacity:0;transform:translate(200%,-200%) scale(.9)}
+}
+@keyframes chessStoreQuantumGhostB{
+  0%,28%{opacity:0;transform:translate(0,0) scale(.92)}
+  32%{opacity:.27;transform:translate(0,0) scale(.94)}
+  50%{opacity:.23;transform:translate(138%,-138%) scale(.96)}
+  58%{opacity:.06;transform:translate(200%,-200%) scale(.96)}
+  62%,100%{opacity:0;transform:translate(200%,-200%) scale(.88)}
+}
+@keyframes chessStoreQuantumGhostC{
+  0%,31%{opacity:0;transform:translate(0,0) scale(.9)}
+  35%{opacity:.15;transform:translate(0,0) scale(.92)}
+  53%{opacity:.13;transform:translate(130%,-130%) scale(.94)}
+  61%{opacity:.04;transform:translate(200%,-200%) scale(.94)}
+  65%,100%{opacity:0;transform:translate(200%,-200%) scale(.86)}
+}
+@keyframes chessStoreQuantumHalo{
+  0%,46%{opacity:0;transform:rotate(-90deg) scale(.56)}
+  51%{opacity:.96;transform:rotate(25deg) scale(.88)}
+  61%{opacity:.8;transform:rotate(220deg) scale(1.02)}
+  70%,100%{opacity:0;transform:rotate(330deg) scale(1.08)}
+}
+@keyframes chessStoreQuantumSparks{
+  0%,49%{opacity:0;transform:scale(.35) rotate(-12deg)}
+  54%{opacity:1;transform:scale(.88) rotate(0)}
+  63%{opacity:.72;transform:scale(1.22) rotate(10deg)}
+  70%,100%{opacity:0;transform:scale(1.48) rotate(18deg)}
+}
+@keyframes chessStoreQuantumShimmer{
+  0%,45%{opacity:0;transform:scale(.35)}
+  51%{opacity:.9;transform:scale(.9)}
+  63%{opacity:.3;transform:scale(1.1)}
+  69%,100%{opacity:0;transform:scale(1.22)}
+}
+
+@media(max-width:380px){
+  .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.king::before,
+  .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.static-a::before,
+  .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.static-b::before{font-size:19px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.mover,
+  .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.king,
+  .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.static-a,
+  .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.static-b,
+  .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .store-v2-mini-chess-field-effect > b,
+  .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .store-v2-mini-chess-field-effect > em,
+  .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .store-v2-mini-chess-field-effect > u{animation:none!important}
+  .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.mover{transform:translate(200%,-200%)}
+  .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.king,
+  .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.static-a,
+  .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.static-b{opacity:0}
+  .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .store-v2-mini-chess-field-effect > b{opacity:.86;transform:rotate(150deg) scale(1)}
+  .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .store-v2-mini-chess-field-effect > em{opacity:.62;transform:scale(1)}
+  .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .store-v2-mini-chess-field-effect > u{opacity:.38;transform:scale(1)}
+}

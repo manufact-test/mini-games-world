@@ -6,15 +6,15 @@ import {
 } from './renderer.js?v=70&mvp19_5=cosmetics&fx_runtime=landing-sync-v2&move_parity=store-trail-v1';
 
 const MOVE_EFFECT_ITEM = 'game-chess-effect-move';
-const CHECK_EFFECT_ITEM = 'game-chess-effect-check';
+const QUANTUM_EFFECT_ITEM = 'game-chess-effect-check';
 const MOVE_EFFECT_DURATION_MS = 700;
-const CHECK_TEST_DURATION_MS = 1450;
-const moveEffectByGamePlayer = new Map();
+const QUANTUM_EFFECT_DURATION_MS = 820;
+const effectByGamePlayer = new Map();
 const seenMoveByGame = new Map();
 const activeMoveFxByGame = new Map();
-const activeCheckTestFxByGame = new Map();
+const activeQuantumFxByGame = new Map();
 
-ensureMoveEffectV3Styles();
+ensurePremiumEffectStyles();
 
 export { chessMeta, chessPlayerMark, chessStatus };
 
@@ -27,9 +27,9 @@ export function renderChessSurface(args){
   const lastMove = game?.last_move || null;
   const moveKey = chessMoveKey(game, lastMove);
   const moverId = moverPlayerId(players, lastMove);
-  const moveEquipped = equippedMoveEffect(gameId, players, moverId);
-  const checkTestEquipped = equippedCheckEffect(gameId, players, moverId);
-  const naturalCheck = Boolean(lastMove?.check || game?.in_check);
+  const equipped = equippedEffect(gameId, players, moverId);
+  const moveEquipped = equipped === MOVE_EFFECT_ITEM;
+  const quantumEquipped = equipped === QUANTUM_EFFECT_ITEM;
   const pendingOptimisticMove = Boolean(game?.__mgw_v100_pending_action);
   const viewerSide = String(game?.viewer_side || playerSide(game, String(me?.id || '')) || 'white');
 
@@ -41,25 +41,27 @@ export function renderChessSurface(args){
   if (newObservedMove) {
     seenMoveByGame.set(gameId, moveKey);
     if (moveEquipped) startMoveEffect(gameId, moveKey, lastMove, viewerSide);
-    if (checkTestEquipped && !naturalCheck) startCheckTestEffect(gameId, moveKey, game, players, moverId, lastMove);
+    if (quantumEquipped) startQuantumEffect(gameId, moveKey, lastMove, viewerSide);
   } else if (gameId && moveKey && pendingOptimisticMove) {
     if (moveEquipped) {
       const active = activeMoveFxByGame.get(gameId);
       if (!active || active.key !== moveKey) startMoveEffect(gameId, moveKey, lastMove, viewerSide);
     }
-    if (checkTestEquipped && !naturalCheck) {
-      const active = activeCheckTestFxByGame.get(gameId);
-      if (!active || active.key !== moveKey) startCheckTestEffect(gameId, moveKey, game, players, moverId, lastMove);
+    if (quantumEquipped) {
+      const active = activeQuantumFxByGame.get(gameId);
+      if (!active || active.key !== moveKey) startQuantumEffect(gameId, moveKey, lastMove, viewerSide);
     }
   }
 
-  const baseGame = moveEquipped && lastMove
-    ? withoutMoveEffectForMover(game, moverId)
+  const customOwned = moveEquipped || quantumEquipped;
+  const baseGame = customOwned && lastMove
+    ? withoutCustomEffectForMover(game, moverId, equipped)
     : game;
 
   if (container?.dataset) {
     container.dataset.chessMoveFxV3 = moveEquipped ? '1' : '0';
-    container.dataset.chessCheckTestHook = checkTestEquipped ? '1' : '0';
+    container.dataset.chessQuantumEchoV1 = quantumEquipped ? '1' : '0';
+    delete container.dataset.chessCheckTestHook;
   }
   renderBaseChessSurface({ ...args, game:baseGame });
 
@@ -72,11 +74,11 @@ export function renderChessSurface(args){
     else renderMoveEffect(container, activeMove, elapsed);
   }
 
-  const activeCheckTest = activeCheckTestFxByGame.get(gameId);
-  if (activeCheckTest?.key === moveKey) {
-    const elapsed = Date.now() - activeCheckTest.startedAt;
-    if (elapsed >= CHECK_TEST_DURATION_MS) activeCheckTestFxByGame.delete(gameId);
-    else renderStagingCheckTest(container, activeCheckTest, elapsed);
+  const activeQuantum = activeQuantumFxByGame.get(gameId);
+  if (activeQuantum?.key === moveKey) {
+    const elapsed = Date.now() - activeQuantum.startedAt;
+    if (elapsed >= QUANTUM_EFFECT_DURATION_MS) activeQuantumFxByGame.delete(gameId);
+    else renderQuantumEffect(container, activeQuantum, elapsed);
   }
 }
 
@@ -86,34 +88,26 @@ function cachePlayerEffects(gameId, players){
     const playerId = String(player?.id || '');
     if (!playerId) return;
     const effect = String(player?.game_cosmetics?.slots?.game_chess_effect || '');
-    if (effect) moveEffectByGamePlayer.set(`${gameId}:${playerId}`, effect);
+    if (effect) effectByGamePlayer.set(`${gameId}:${playerId}`, effect);
   });
-}
-
-function equippedMoveEffect(gameId, players, moverId){
-  return equippedEffect(gameId, players, moverId) === MOVE_EFFECT_ITEM;
-}
-
-function equippedCheckEffect(gameId, players, moverId){
-  return equippedEffect(gameId, players, moverId) === CHECK_EFFECT_ITEM;
 }
 
 function equippedEffect(gameId, players, moverId){
   if (!gameId || !moverId) return '';
   const direct = String(players.find(player => String(player?.id || '') === moverId)?.game_cosmetics?.slots?.game_chess_effect || '');
-  const cached = String(moveEffectByGamePlayer.get(`${gameId}:${moverId}`) || '');
+  const cached = String(effectByGamePlayer.get(`${gameId}:${moverId}`) || '');
   return direct || cached;
 }
 
-function withoutMoveEffectForMover(game, moverId){
-  if (!game || !moverId) return game;
+function withoutCustomEffectForMover(game, moverId, itemId){
+  if (!game || !moverId || ![MOVE_EFFECT_ITEM, QUANTUM_EFFECT_ITEM].includes(itemId)) return game;
   const players = Array.isArray(game.players) ? game.players : [];
   let changed = false;
   const nextPlayers = players.map(player => {
     if (String(player?.id || '') !== moverId) return player;
     const cosmetics = player?.game_cosmetics;
     const slots = cosmetics?.slots;
-    if (!slots || String(slots.game_chess_effect || '') !== MOVE_EFFECT_ITEM) return player;
+    if (!slots || String(slots.game_chess_effect || '') !== itemId) return player;
     changed = true;
     const nextSlots = { ...slots };
     delete nextSlots.game_chess_effect;
@@ -129,28 +123,14 @@ function startMoveEffect(gameId, key, lastMove, viewerSide){
   const from = Number(lastMove?.from);
   const to = Number(lastMove?.to);
   if (!Number.isInteger(from) || !Number.isInteger(to)) return;
-  activeMoveFxByGame.set(gameId, {
-    key,
-    from,
-    to,
-    viewerSide,
-    startedAt:Date.now(),
-  });
+  activeMoveFxByGame.set(gameId, { key, from, to, viewerSide, startedAt:Date.now() });
 }
 
-function startCheckTestEffect(gameId, key, game, players, moverId, lastMove){
-  const mover = players.find(player => String(player?.id || '') === moverId) || null;
-  const moverSide = String(lastMove?.side || mover?.side || '');
-  if (moverSide !== 'white' && moverSide !== 'black') return;
-  const opponentKing = moverSide === 'white' ? 'bK' : 'wK';
-  const board = Array.isArray(game?.board) ? game.board : [];
-  const kingCell = board.findIndex(piece => String(piece || '') === opponentKing);
-  if (kingCell < 0) return;
-  activeCheckTestFxByGame.set(gameId, {
-    key,
-    kingCell,
-    startedAt:Date.now(),
-  });
+function startQuantumEffect(gameId, key, lastMove, viewerSide){
+  const from = Number(lastMove?.from);
+  const to = Number(lastMove?.to);
+  if (!Number.isInteger(from) || !Number.isInteger(to)) return;
+  activeQuantumFxByGame.set(gameId, { key, from, to, viewerSide, startedAt:Date.now() });
 }
 
 function renderMoveEffect(container, fx, elapsedMs){
@@ -186,25 +166,48 @@ function renderMoveEffect(container, fx, elapsedMs){
   `);
 }
 
-function renderStagingCheckTest(container, fx, elapsedMs){
-  const target = container.querySelector?.(`[data-chess-cell="${fx.kingCell}"]`);
-  if (!target) return;
+function renderQuantumEffect(container, fx, elapsedMs){
+  const target = container.querySelector?.(`[data-chess-cell="${fx.to}"]`);
+  const piece = target?.querySelector?.('.chess-piece');
+  if (!target || !piece) return;
 
-  target.querySelectorAll('.mgw-staging-check-test').forEach(node => node.remove());
+  target.querySelectorAll('.chess-live-quantum-v1').forEach(node => node.remove());
+
+  const motion = motionBetween(fx.from, fx.to, fx.viewerSide);
   const elapsed = Math.max(0, Number(elapsedMs) || 0);
-  const landing = checkTestAnimationStyle(400, elapsed);
-  const secondWave = checkTestAnimationStyle(480, elapsed);
+  const layer = document.createElement('span');
+  layer.className = 'chess-live-quantum-v1';
+  layer.setAttribute('aria-hidden', 'true');
+  layer.style.setProperty('--q-x', `${motion.x}%`);
+  layer.style.setProperty('--q-y', `${motion.y}%`);
 
-  target.insertAdjacentHTML('beforeend', `
-    <span class="chess-fx-layer chess-fx-check mgw-staging-check-test" aria-hidden="true">
-      <i${landing}></i><i${secondWave}></i><b${landing}></b><em${landing}></em>
-    </span>
+  [
+    { delay:55, alpha:.42, scale:.99, blur:.15 },
+    { delay:112, alpha:.25, scale:.965, blur:.4 },
+    { delay:168, alpha:.13, scale:.93, blur:.75 },
+  ].forEach(spec => {
+    const ghost = piece.cloneNode(true);
+    ghost.classList.remove('moved-fresh', 'castle-rook-fresh');
+    ghost.classList.add('chess-quantum-ghost');
+    ghost.removeAttribute('aria-label');
+    ghost.setAttribute('aria-hidden', 'true');
+    ghost.removeAttribute('style');
+    ghost.style.setProperty('--q-delay', `${spec.delay - elapsed}ms`);
+    ghost.style.setProperty('--q-alpha', String(spec.alpha));
+    ghost.style.setProperty('--q-scale', String(spec.scale));
+    ghost.style.setProperty('--q-blur', `${spec.blur}px`);
+    layer.appendChild(ghost);
+  });
+
+  const haloDelay = 430 - elapsed;
+  const sparkDelay = 455 - elapsed;
+  const shimmerDelay = 410 - elapsed;
+  layer.insertAdjacentHTML('beforeend', `
+    <b class="chess-quantum-halo" style="--q-halo-delay:${haloDelay}ms"></b>
+    <em class="chess-quantum-sparks" style="--q-spark-delay:${sparkDelay}ms"></em>
+    <u class="chess-quantum-shimmer" style="--q-shimmer-delay:${shimmerDelay}ms"></u>
   `);
-}
-
-function checkTestAnimationStyle(delayMs, elapsedMs){
-  const delay = Math.round(Number(delayMs) - Number(elapsedMs || 0));
-  return ` style="opacity:0;animation-delay:${delay}ms;animation-fill-mode:forwards"`;
+  target.appendChild(layer);
 }
 
 function chessMoveKey(game, lastMove){
@@ -237,12 +240,12 @@ function playerSide(game, playerId){
   return (game?.players || []).find(player => String(player?.id || '') === playerId)?.side || '';
 }
 
-function ensureMoveEffectV3Styles(){
-  if (typeof document === 'undefined' || document.getElementById('mgwChessMoveEffectV3')) return;
+function ensurePremiumEffectStyles(){
+  if (typeof document === 'undefined' || document.getElementById('mgwChessPremiumEffectsV1')) return;
   const style = document.createElement('style');
-  style.id = 'mgwChessMoveEffectV3';
+  style.id = 'mgwChessPremiumEffectsV1';
   style.textContent = `
-    /* Move v3 owns only paid Move presentation. Capture and Check remain base-owned. */
+    /* Accepted Move v3 and premium Quantum Echo are custom-owned here. Capture remains base-owned. */
     #gameBoard[data-game-type="chess"][data-chess-move-fx-v3="1"] .chess-fx-layer.chess-fx-move,
     #gameBoard[data-game-type="chess"][data-chess-move-fx-v3="1"] .chess-fx-trail{display:none!important}
 
@@ -301,6 +304,68 @@ function ensureMoveEffectV3Styles(){
       animation:chessMoveV3Core .17s ease-out var(--core-delay,470ms) both;
     }
 
+    #gameBoard[data-game-type="chess"] .chess-live-quantum-v1{
+      position:absolute;
+      inset:0;
+      z-index:13;
+      pointer-events:none;
+      overflow:visible;
+      isolation:isolate;
+    }
+    #gameBoard[data-game-type="chess"] .chess-live-quantum-v1 > .chess-quantum-ghost{
+      position:absolute!important;
+      inset:0!important;
+      z-index:13!important;
+      width:100%!important;
+      height:100%!important;
+      margin:0!important;
+      opacity:0;
+      transition:none!important;
+      animation:chessQuantumEchoGhost .56s cubic-bezier(.2,.72,.18,1) var(--q-delay,0ms) both!important;
+      filter:blur(var(--q-blur,0px)) drop-shadow(0 0 5px rgba(111,231,255,.5)) drop-shadow(0 0 9px rgba(122,90,255,.38));
+      mix-blend-mode:screen;
+    }
+    #gameBoard[data-game-type="chess"] .chess-quantum-halo,
+    #gameBoard[data-game-type="chess"] .chess-quantum-sparks,
+    #gameBoard[data-game-type="chess"] .chess-quantum-shimmer{
+      position:absolute;
+      left:50%;
+      top:50%;
+      display:block;
+      pointer-events:none;
+      opacity:0;
+    }
+    #gameBoard[data-game-type="chess"] .chess-quantum-halo{
+      z-index:14;
+      width:82%;
+      aspect-ratio:1;
+      border-radius:50%;
+      background:conic-gradient(from 0deg,transparent 0 12%,rgba(134,245,255,.92) 18%,rgba(113,101,255,.98) 32%,transparent 42% 56%,rgba(208,144,255,.88) 66%,rgba(91,226,255,.82) 80%,transparent 90% 100%);
+      -webkit-mask:radial-gradient(circle,transparent 0 63%,#000 66% 74%,transparent 77%);
+      mask:radial-gradient(circle,transparent 0 63%,#000 66% 74%,transparent 77%);
+      filter:drop-shadow(0 0 5px rgba(98,223,255,.72)) drop-shadow(0 0 8px rgba(122,91,255,.44));
+      animation:chessQuantumHalo .48s cubic-bezier(.16,.72,.24,1) var(--q-halo-delay,430ms) both;
+    }
+    #gameBoard[data-game-type="chess"] .chess-quantum-sparks{
+      z-index:15;
+      width:6%;
+      aspect-ratio:1;
+      border-radius:50%;
+      background:#dcfbff;
+      box-shadow:-18px -4px 0 -1px rgba(117,241,255,.94),-11px -17px 0 -1px rgba(169,145,255,.88),7px -18px 0 -1px rgba(111,226,255,.94),18px -7px 0 -1px rgba(205,151,255,.86),15px 12px 0 -1px rgba(97,221,255,.9),-6px 18px 0 -1px rgba(161,133,255,.82);
+      filter:drop-shadow(0 0 4px rgba(123,230,255,.78));
+      animation:chessQuantumSparks .34s ease-out var(--q-spark-delay,455ms) both;
+    }
+    #gameBoard[data-game-type="chess"] .chess-quantum-shimmer{
+      z-index:12;
+      width:62%;
+      aspect-ratio:1;
+      border-radius:50%;
+      background:radial-gradient(circle,#fff 0 5%,rgba(146,245,255,.78) 15%,rgba(118,112,255,.34) 38%,transparent 70%);
+      box-shadow:0 0 12px rgba(99,218,255,.42),0 0 20px rgba(128,91,255,.26);
+      animation:chessQuantumShimmer .44s ease-out var(--q-shimmer-delay,410ms) both;
+    }
+
     @keyframes chessMoveV3Piece{
       0%{transform:translate(var(--chess-move-x,0),calc(var(--chess-move-y,0) - 1px)) scale(.96);filter:brightness(1.12)}
       100%{transform:translateY(-1px) scale(1);filter:brightness(1)}
@@ -322,9 +387,34 @@ function ensureMoveEffectV3Styles(){
       38%{opacity:.88;transform:translate(-50%,-50%) scale(.92)}
       100%{opacity:0;transform:translate(-50%,-50%) scale(.24)}
     }
+    @keyframes chessQuantumEchoGhost{
+      0%{opacity:0;transform:translate(var(--q-x,0),var(--q-y,0)) translateY(-1px) scale(.94)}
+      14%{opacity:var(--q-alpha,.3)}
+      68%{opacity:var(--q-alpha,.3);filter:blur(var(--q-blur,0px)) drop-shadow(0 0 7px rgba(111,231,255,.62)) drop-shadow(0 0 11px rgba(122,90,255,.44))}
+      91%{opacity:.08;transform:translate(0,0) translateY(-1px) scale(var(--q-scale,1))}
+      100%{opacity:0;transform:translate(0,0) translateY(-1px) scale(.88)}
+    }
+    @keyframes chessQuantumHalo{
+      0%{opacity:0;transform:translate(-50%,-50%) rotate(-90deg) scale(.52)}
+      26%{opacity:.96;transform:translate(-50%,-50%) rotate(28deg) scale(.9)}
+      70%{opacity:.78;transform:translate(-50%,-50%) rotate(230deg) scale(1.04)}
+      100%{opacity:0;transform:translate(-50%,-50%) rotate(330deg) scale(1.12)}
+    }
+    @keyframes chessQuantumSparks{
+      0%{opacity:0;transform:translate(-50%,-50%) scale(.35) rotate(-12deg)}
+      24%{opacity:1;transform:translate(-50%,-50%) scale(.85) rotate(2deg)}
+      74%{opacity:.78;transform:translate(-50%,-50%) scale(1.22) rotate(10deg)}
+      100%{opacity:0;transform:translate(-50%,-50%) scale(1.5) rotate(18deg)}
+    }
+    @keyframes chessQuantumShimmer{
+      0%{opacity:0;transform:translate(-50%,-50%) scale(.35)}
+      34%{opacity:.9;transform:translate(-50%,-50%) scale(.92)}
+      100%{opacity:0;transform:translate(-50%,-50%) scale(1.2)}
+    }
 
     @media(prefers-reduced-motion:reduce){
-      #gameBoard[data-game-type="chess"] .chess-live-move-v3{display:none!important}
+      #gameBoard[data-game-type="chess"] .chess-live-move-v3,
+      #gameBoard[data-game-type="chess"] .chess-live-quantum-v1{display:none!important}
       #gameBoard[data-game-type="chess"][data-chess-move-fx-v3="1"] .chess-piece.moved-fresh:not(.castle-rook-fresh){animation:none!important}
     }
   `;

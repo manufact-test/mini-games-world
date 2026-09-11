@@ -30,6 +30,7 @@ const CHESS_EFFECT_PREVIEW_SCENES = Object.freeze({
 const STORE_API_REPAIR_HOOK = Symbol.for('mgw.store.effect-presentation-repair.v1');
 
 ensureChessCosmeticStyles();
+ensureQuantumEchoPreviewStyles();
 installStoreApiPresentationRepairHooks();
 installStoreGameClickCorrective();
 
@@ -100,6 +101,15 @@ function ensureChessCosmeticStyles(){
   document.head.appendChild(link);
 }
 
+function ensureQuantumEchoPreviewStyles(){
+  if (document.querySelector('link[data-mgw-chess-quantum-echo]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwChessQuantumEcho = 'mvp19-5-v1';
+  link.href = new URL('../../css/games/chess/store-quantum-echo-preview-v1.css?v=1&mvp19_5=quantum-echo-preview-parity-v1', import.meta.url).href;
+  document.head.appendChild(link);
+}
+
 /* Base Store may rerender after status/purchase/equip responses. Board previews no longer
    need repair at all; this hook only restores the richer animated effect demo/copy before
    the next paint. No observers, polling, retry timers, or startup work are introduced. */
@@ -160,12 +170,14 @@ function upgradeStoreGamePresentation(){
   const panel = document.querySelector('[data-store-v2-panel="games"]');
   if (panel instanceof HTMLElement) {
     upgradeChessEffectPreviews(panel);
+    upgradeQuantumEchoPresentation(panel);
     humanizeGameGroupCopy(panel);
   }
 
   const sheet = document.getElementById('sheet');
   if (sheet instanceof HTMLElement) {
     upgradeChessEffectPreviews(sheet);
+    upgradeQuantumEchoPresentation(sheet);
   }
 }
 
@@ -204,6 +216,24 @@ function upgradeChessEffectPreviews(root){
   });
 }
 
+function upgradeQuantumEchoPresentation(root){
+  root.querySelectorAll('.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="effect"][data-cosmetic-variant="check"], .store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="effect"][data-cosmetic-variant="quantum-echo"]').forEach(preview => {
+    if (!(preview instanceof HTMLElement)) return;
+    preview.dataset.cosmeticVariant = 'quantum-echo';
+    preview.setAttribute('aria-label', 'Квантовый след');
+
+    const product = preview.closest('.store-v2-game-product');
+    const name = product?.querySelector('.store-v2-game-product-copy > strong');
+    const description = product?.querySelector('.store-v2-game-product-copy > p');
+    if (name instanceof HTMLElement) name.textContent = 'Квантовый след';
+    if (description instanceof HTMLElement) description.textContent = 'Призрачные эхо сопровождают каждый ход и схлопываются в энергетический ореол';
+
+    const confirm = preview.closest('.store-v2-confirm');
+    const confirmName = confirm?.querySelector('.store-v2-confirm-copy > strong');
+    if (confirmName instanceof HTMLElement) confirmName.textContent = 'Квантовый след';
+  });
+}
+
 function humanizeGameGroupCopy(panel){
   const gameType = String(panel.querySelector('.store-v2-game-head')?.getAttribute('data-store-game-type') || '');
   panel.querySelectorAll('.store-v2-game-title-row').forEach(row => {
@@ -215,7 +245,7 @@ function humanizeGameGroupCopy(panel){
     if (gameType === 'chess') {
       if (title === 'Доски') nextText = 'Оформление шахматной доски';
       if (title === 'Фигуры') nextText = 'Внешний вид фигур';
-      if (title === 'Эффекты') nextText = 'Анимации для ходов, взятий и шаха';
+      if (title === 'Эффекты') nextText = 'Премиальные анимации шахматных ходов';
     } else if (gameType === 'tictactoe') {
       if (title === 'Поля') nextText = 'Фон и сетка игрового поля';
       if (title === 'Знаки') nextText = 'Внешний вид крестиков и ноликов';
