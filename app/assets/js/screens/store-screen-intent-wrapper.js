@@ -20,6 +20,7 @@ const CHESS_PREVIEW_START_POSITION = Object.freeze([
   'wP','wP','wP','wP','wP','wP','wP','wP',
   'wR','wN','wB','wQ','wK','wB','wN','wR',
 ]);
+const CHESS_FIELD_EFFECT_VARIANTS = Object.freeze(new Set(['move','capture','check']));
 
 ensureChessCosmeticStyles();
 installStoreGameClickCorrective();
@@ -87,7 +88,7 @@ function ensureChessCosmeticStyles(){
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.dataset.mgwChessCosmetics = 'mvp19-5-safe';
-  link.href = new URL('../../css/games/chess/runtime-cosmetics.css?v=6&mvp19_5=piece-brightness-parity', import.meta.url).href;
+  link.href = new URL('../../css/games/chess/runtime-cosmetics.css?v=7&mvp19_5=field-effect-previews', import.meta.url).href;
   document.head.appendChild(link);
 }
 
@@ -112,6 +113,7 @@ function upgradeStoreGamePresentation(){
   if (!(panel instanceof HTMLElement)) return;
 
   upgradeChessBoardPreviews(panel);
+  upgradeChessEffectPreviews(panel);
   humanizeGameGroupCopy(panel);
 }
 
@@ -139,6 +141,34 @@ function upgradeChessBoardPreviews(panel){
 
     board.replaceChildren(fragment);
     board.dataset.boardPreviewParity = '8x8-game-start-v2';
+  });
+}
+
+function upgradeChessEffectPreviews(panel){
+  panel.querySelectorAll('.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="effect"]').forEach(preview => {
+    if (!(preview instanceof HTMLElement) || preview.dataset.fieldEffectPreview === 'v1') return;
+
+    const variant = String(preview.dataset.cosmeticVariant || '');
+    if (!CHESS_FIELD_EFFECT_VARIANTS.has(variant)) return;
+
+    const field = document.createElement('i');
+    field.className = 'store-v2-mini-chess-field-effect';
+    field.setAttribute('aria-hidden', 'true');
+
+    for (let index = 0; index < 16; index += 1) {
+      const row = Math.floor(index / 4);
+      const column = index % 4;
+      const square = document.createElement('span');
+      square.className = ((row + column) % 2 === 0) ? 'light' : 'dark';
+      field.appendChild(square);
+    }
+
+    field.appendChild(document.createElement('b'));
+    field.appendChild(document.createElement('em'));
+    field.appendChild(document.createElement('u'));
+
+    preview.replaceChildren(field);
+    preview.dataset.fieldEffectPreview = 'v1';
   });
 }
 
