@@ -18,9 +18,11 @@ on:
       - 'app/assets/css/games/chess/runtime-cosmetics.css'
       - 'app/assets/css/games/chess/store-board-previews.css'
       - 'app/assets/css/games/chess/store-effect-previews.css'
+      - 'app/assets/css/games/chess/capture-preview-parity-v1.css'
       - 'app/assets/css/games/chess/board-previews/**'
       - 'app/assets/css/main.css'
       - 'app/runtime/client/version-manifest.php'
+      - 'app/v110.php'
       - '.github/workflows/mvp19-5-chess-cosmetics.yml'
   workflow_dispatch:
 
@@ -59,6 +61,7 @@ jobs:
           php -l bot/catalog/CosmeticStoreService.php
           php -l bot/tests/Mvp19_5ChessCosmeticsTest.php
           php -l app/runtime/client/version-manifest.php
+          php -l app/v110.php
           node --check app/assets/js/screens/store-screen.js
           node --check app/assets/js/screens/store-screen-intent-wrapper.js
           node --check app/assets/js/games/chess/renderer.js
@@ -112,6 +115,11 @@ jobs:
           grep -F "chessStoreMoveTrailV4" app/assets/css/games/chess/store-effect-previews.css
           grep -F "chessStoreMoveGatherV4" app/assets/css/games/chess/store-effect-previews.css
           grep -F "chessStoreMoveCoreV4" app/assets/css/games/chess/store-effect-previews.css
+          grep -F "Capture live parity with accepted Store preview" app/assets/css/games/chess/capture-preview-parity-v1.css
+          grep -F "chessCaptureParityFlash" app/assets/css/games/chess/capture-preview-parity-v1.css
+          grep -F "chessCaptureParityBurst" app/assets/css/games/chess/capture-preview-parity-v1.css
+          grep -F "chessCaptureParityRing" app/assets/css/games/chess/capture-preview-parity-v1.css
+          grep -F "capture-preview-parity-v1.css?v=1&mvp19_5=capture-store-parity-v1" app/v110.php
           grep -F "background-image:url('./board-previews/wood.svg')" app/assets/css/games/chess/store-board-previews.css
           grep -F "background-image:url('./board-previews/tournament-dark.svg')" app/assets/css/games/chess/store-board-previews.css
           grep -F "background-image:url('./board-previews/marble.svg')" app/assets/css/games/chess/store-board-previews.css
