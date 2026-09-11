@@ -48,6 +48,7 @@ let initialized = false;
 let firstOpenPrimePromise = null;
 let firstOpenPrimeReady = false;
 let firstVisiblePrimeConsumed = false;
+let presentationRepairTimers = [];
 
 export function initStoreScreen(){
   if (initialized) return firstOpenPrimePromise;
@@ -85,18 +86,21 @@ async function openStoreTab(){
   if (canConsumePrimedFirstPresentation()) {
     firstVisiblePrimeConsumed = true;
     upgradeStoreGamePresentation();
+    scheduleStoreGamePresentationRepair(true);
     haptic('light');
     return;
   }
 
   const result = await openBaseStoreTab();
   upgradeStoreGamePresentation();
+  scheduleStoreGamePresentationRepair(true);
   return result;
 }
 
 async function openStoreSheet(){
   const result = await openBaseStoreSheet();
   upgradeStoreGamePresentation();
+  scheduleStoreGamePresentationRepair(true);
   return result;
 }
 
@@ -118,26 +122,49 @@ function installStoreGameClickCorrective(){
 
     const gameTab = target.closest('[data-store-v2-tab="games"]');
     const gameSelector = target.closest('[data-store-v2-game]');
-    if (!gameTab && !gameSelector) return;
+    const productBuy = target.closest('[data-store-v2-buy]');
+    const confirmBuy = target.closest('#storeV2ConfirmBuy');
+    const equip = target.closest('[data-store-v2-equip]');
+    const unequip = target.closest('[data-store-v2-unequip]');
+    if (!gameTab && !gameSelector && !productBuy && !confirmBuy && !equip && !unequip) return;
 
-    queueMicrotask(upgradeStoreGamePresentation);
-    if (typeof globalThis.requestAnimationFrame === 'function') {
-      globalThis.requestAnimationFrame(upgradeStoreGamePresentation);
-    }
+    scheduleStoreGamePresentationRepair(Boolean(confirmBuy || equip || unequip));
   });
+}
+
+function scheduleStoreGamePresentationRepair(extended = false){
+  presentationRepairTimers.forEach(timer => globalThis.clearTimeout(timer));
+  presentationRepairTimers = [];
+
+  const repair = () => upgradeStoreGamePresentation();
+  queueMicrotask(repair);
+  if (typeof globalThis.requestAnimationFrame === 'function') {
+    globalThis.requestAnimationFrame(repair);
+  }
+
+  const delays = extended
+    ? [80, 220, 500, 900, 1500, 2500, 4000, 6500, 10000]
+    : [80, 220, 500, 900, 1600];
+  presentationRepairTimers = delays.map(delay => globalThis.setTimeout(repair, delay));
 }
 
 function upgradeStoreGamePresentation(){
   const panel = document.querySelector('[data-store-v2-panel="games"]');
-  if (!(panel instanceof HTMLElement)) return;
+  if (panel instanceof HTMLElement) {
+    upgradeChessBoardPreviews(panel);
+    upgradeChessEffectPreviews(panel);
+    humanizeGameGroupCopy(panel);
+  }
 
-  upgradeChessBoardPreviews(panel);
-  upgradeChessEffectPreviews(panel);
-  humanizeGameGroupCopy(panel);
+  const sheet = document.getElementById('sheet');
+  if (sheet instanceof HTMLElement) {
+    upgradeChessBoardPreviews(sheet);
+    upgradeChessEffectPreviews(sheet);
+  }
 }
 
-function upgradeChessBoardPreviews(panel){
-  panel.querySelectorAll('.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"] .store-v2-mini-chess-board').forEach(board => {
+function upgradeChessBoardPreviews(root){
+  root.querySelectorAll('.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"] .store-v2-mini-chess-board').forEach(board => {
     if (!(board instanceof HTMLElement) || board.dataset.boardPreviewParity === '8x8-game-start-v2') return;
 
     const fragment = document.createDocumentFragment();
@@ -163,8 +190,8 @@ function upgradeChessBoardPreviews(panel){
   });
 }
 
-function upgradeChessEffectPreviews(panel){
-  panel.querySelectorAll('.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="effect"]').forEach(preview => {
+function upgradeChessEffectPreviews(root){
+  root.querySelectorAll('.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="effect"]').forEach(preview => {
     if (!(preview instanceof HTMLElement) || preview.dataset.fieldEffectPreview === 'v2-action-demo') return;
 
     const variant = String(preview.dataset.cosmeticVariant || '');
