@@ -109,7 +109,6 @@ $inventory->unequip($mgwId, 'game_chess_effect');
 $assertTrue(!isset($inventory->snapshot($mgwId)['equipped']['game_chess_effect']), 'Chess effect must support explicit remove');
 
 $rendererSource = (string)file_get_contents($root . '/app/assets/js/games/chess/renderer.js');
-$moveFxWrapperSource = (string)file_get_contents($root . '/app/assets/js/games/chess/renderer-move-effect-v2.js');
 $storeSource = (string)file_get_contents($root . '/app/assets/js/screens/store-screen.js');
 $cssSource = (string)file_get_contents($root . '/app/assets/css/games/chess/cosmetics.css');
 $chessCssEntrySource = (string)file_get_contents($root . '/app/assets/css/games/chess/game.css');
@@ -136,21 +135,7 @@ $assertTrue(
     str_contains($rendererSource, 'EFFECT_LANDING_DELAY_MS')
     && str_contains($rendererSource, 'animation-fill-mode:forwards')
     && str_contains($rendererSource, "prefers-reduced-motion: reduce"),
-    'Base live Chess effects must preserve landing timing and reduced-motion behavior'
-);
-$assertTrue(
-    str_contains($moveFxWrapperSource, "pending?.type || '') === 'chess_move'")
-    && str_contains($moveFxWrapperSource, 'effectByGamePlayer')
-    && str_contains($moveFxWrapperSource, 'activeMoveFxByGame')
-    && str_contains($moveFxWrapperSource, 'Array.from({ length:9 }')
-    && str_contains($moveFxWrapperSource, 'chessMoveV2Gather'),
-    'Move effect v2 must suppress optimistic board repaint, cache equipped ownership, and render a repeatable small-particle trail plus gather landing'
-);
-$assertTrue(
-    !str_contains($moveFxWrapperSource, 'MutationObserver')
-    && !str_contains($moveFxWrapperSource, 'setTimeout(')
-    && !str_contains($moveFxWrapperSource, 'setInterval('),
-    'Move effect v2 must not reintroduce observer, polling, or delayed forced-rerender regressions'
+    'Live Chess effects must fire on landing while preserving reduced-motion behavior'
 );
 $assertTrue(str_contains($cssSource, 'data-chess-theme="wood"') && str_contains($cssSource, 'data-chess-theme="tournament-dark"') && str_contains($cssSource, 'data-chess-theme="marble"') && str_contains($cssSource, 'data-chess-theme="neon"'), 'All four Chess board themes need distinct presentation');
 $assertTrue(str_contains($cssSource, 'data-chess-piece-style="wood"') && str_contains($cssSource, 'data-chess-piece-style="marble"') && str_contains($cssSource, 'data-chess-piece-style="metal"') && str_contains($cssSource, 'data-chess-piece-style="neon"'), 'All four Chess piece sets need distinct presentation');
@@ -158,6 +143,6 @@ $assertTrue(str_contains($cssSource, 'chessFxMoveRing') && str_contains($cssSour
 $assertTrue(str_contains($cssSource, '@media(prefers-reduced-motion:reduce)'), 'Chess cosmetics must remain reduced-motion safe');
 $assertTrue(str_contains($mainCssSource, "./games/chess/game.css?v=68"), 'Accepted main CSS must retain the Chess game stylesheet owner');
 $assertTrue(str_contains($chessCssEntrySource, "@import url('./cosmetics.css?v=1&mvp19_5=chess-cosmetics');"), 'Chess game stylesheet must compose the isolated cosmetic presentation without replacing global main CSS');
-$assertTrue(str_contains($manifestSource, "./assets/js/games/chess/renderer-move-effect-v2.js?v=1&mvp19_5=cosmetics&fx_runtime=move-particles-v2") && str_contains($manifestSource, "main.css?v=190") && str_contains($manifestSource, "mvp19_5=chess-cosmetics"), 'Active v110 manifest must select the stable Chess move-effect wrapper and retain the accepted main stylesheet');
+$assertTrue(str_contains($manifestSource, "./assets/js/games/chess/renderer.js?v=70&mvp19_5=cosmetics&fx_runtime=landing-sync-v2") && str_contains($manifestSource, "main.css?v=190") && str_contains($manifestSource, "mvp19_5=chess-cosmetics"), 'Active v110 manifest must select the corrected Chess renderer and retain the accepted main stylesheet');
 
 echo "MVP-19.5 Chess cosmetics contract passed ({$assertions} assertions).\n";
