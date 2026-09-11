@@ -1,16 +1,20 @@
-/* Checkers footer scroll allowance for Telegram Mini App viewports.
- * Keep the accepted historical board size from #1310. The only purpose of this
- * layer is to leave enough scroll tail after #leaveGame so Telegram chrome / safe
- * areas cannot stop the scroller while the bottom of the button is still hidden. */
+/* Checkers footer scrolling for Telegram Mini App viewports.
+ * #1310 owns the accepted board geometry. This layer restores only the proven
+ * #1308 content-scroll mechanics so the normal-flow #leaveGame can be revealed
+ * below Telegram chrome without resizing the board or pinning the button. */
 .game-board-screen[data-game-type="checkers"] .content{
-  padding-bottom:max(
-    42px,
-    calc(14px + env(safe-area-inset-bottom, 0px)),
-    calc(14px + var(--tg-content-safe-area-inset-bottom, 0px))
-  );
-  scroll-padding-bottom:max(
-    42px,
-    calc(14px + env(safe-area-inset-bottom, 0px)),
-    calc(14px + var(--tg-content-safe-area-inset-bottom, 0px))
+  height:auto!important;
+  flex:1 1 auto!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  padding-bottom:calc(
+    56px + env(safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)
+  )!important;
+  scroll-padding-bottom:calc(
+    56px + env(safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)
   );
 }
