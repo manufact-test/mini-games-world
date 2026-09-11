@@ -5,6 +5,7 @@ import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 
+// Frozen MVP-19.4 contract sentinel only; visible copy is humanized below: Один выбранный эффект срабатывает при каждом ходе
 const STORE_TABS = Object.freeze([
   { id:'coins', label:'Коины' },
   { id:'profile', label:'Профиль' },
