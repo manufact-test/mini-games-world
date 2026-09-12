@@ -109,6 +109,8 @@ foreach (['wood','dark','marble','neon'] as $variant) {
 }
 $assertTrue(!str_contains($cosmeticsCss, '@keyframes'), 'Static Checkers board themes must not add perpetual animation');
 $assertTrue(str_contains($storeWrapper, 'store-v2-mini-checkers-board') && str_contains($storeWrapper, "group.hidden = true"), 'Store wrapper must render 8x8 Checkers previews and hide unimplemented empty families');
+$assertTrue(str_contains($storeWrapper, 'checkers-store-head-piece') && !str_contains($storeWrapper, "textContent = '●'") && !str_contains($storeWrapper, "textContent = '○'"), 'Checkers Store header must use recognisable checker pieces, not generic dot glyphs');
+$assertTrue(str_contains($cosmeticsCss, 'width:min(100%,96px)') && str_contains($cosmeticsCss, 'height:142px') && str_contains($cosmeticsCss, 'width:120px'), 'Checkers Store card and purchase previews must use bounded square-safe board geometry');
 $assertTrue(!str_contains($storeWrapper, 'MutationObserver') && !str_contains($storeWrapper, 'setInterval'), 'Store Checkers parity must stay bounded without permanent observers or polling');
 $assertTrue(str_contains($profileWrapper, 'store-v2-mini-checkers-board') && str_contains($profileWrapper, "textContent = 'Доски'"), 'Profile must mirror the Checkers board preview and family name');
 $assertTrue(!str_contains($profileWrapper, 'MutationObserver') && !str_contains($profileWrapper, 'setInterval'), 'Profile Checkers parity must stay bounded without permanent observers or polling');
@@ -116,7 +118,7 @@ $assertTrue(!str_contains($profileWrapper, 'MutationObserver') && !str_contains(
 $storeTarget = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $profileTarget = (string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? '');
 $checkersTarget = (string)($manifest['imports']['./assets/js/games/checkers/renderer.js?v=57'] ?? '');
-$assertTrue(str_contains($storeTarget, 'store-screen-checkers-wrapper.js') && str_contains($storeTarget, 'mvp19_6=checkers-boards'), 'Active Store graph must select the Checkers board wrapper');
+$assertTrue(str_contains($storeTarget, 'store-screen-checkers-wrapper.js') && str_contains($storeTarget, 'mvp19_6=store-corrective'), 'Active Store graph must select the corrected Checkers Store wrapper');
 $assertTrue(str_contains($profileTarget, 'mvp19_6=checkers-board-parity-v1'), 'Active Profile graph must select Checkers board parity');
 $assertTrue(str_contains($checkersTarget, 'checkers-cosmetics/renderer-board-themes.js') && str_contains($checkersTarget, 'mvp19_6=board-themes'), 'Active Checkers graph must select the board-theme wrapper');
 

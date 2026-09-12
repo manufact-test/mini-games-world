@@ -57,19 +57,66 @@
   box-shadow:inset 0 0 0 1px rgba(166,108,255,.12);
 }
 
-/* Shared Store/Profile 8x8 board preview. */
-.store-v2-game-preview[data-game-type="checkers"]{
+/* Store header: use actual checker pieces instead of TTT-style coloured dots. */
+.store-v2-game-head[data-store-game-type="checkers"] .store-v2-game-head-marks{
+  gap:10px;
+}
+.store-v2-game-head[data-store-game-type="checkers"] .checkers-store-head-piece{
+  position:relative;
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  border:0;
+  background:none;
+  font-size:0;
+  box-shadow:none;
+}
+.store-v2-game-head[data-store-game-type="checkers"] .checkers-store-head-piece::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  box-shadow:0 5px 12px rgba(0,0,0,.34),inset 0 0 0 2px rgba(255,255,255,.16),inset 0 -5px 8px rgba(0,0,0,.18);
+}
+.store-v2-game-head[data-store-game-type="checkers"] .checkers-store-head-piece::after{
+  content:"";
+  position:absolute;
+  inset:16%;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.2);
+}
+.store-v2-game-head[data-store-game-type="checkers"] .checkers-store-head-piece.black::before{
+  background:linear-gradient(145deg,#313a51,#111827);
+  box-shadow:0 5px 12px rgba(0,0,0,.45),inset 0 0 0 2px rgba(146,159,205,.28),inset 0 -5px 8px rgba(0,0,0,.34);
+}
+.store-v2-game-head[data-store-game-type="checkers"] .checkers-store-head-piece.white::before{
+  background:linear-gradient(145deg,#f7f5ee,#c8c5bd);
+  box-shadow:0 5px 12px rgba(0,0,0,.32),inset 0 0 0 2px rgba(255,255,255,.72),inset 0 -5px 8px rgba(85,85,85,.18);
+}
+
+/* Shared Store/Profile 8x8 board preview. The preview owns a square viewport so no board can be cropped. */
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{
+  box-sizing:border-box;
   overflow:hidden;
+  display:grid;
+  place-items:center;
+  padding:6px;
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:14px;
+  background:linear-gradient(145deg,rgba(25,29,45,.72),rgba(12,15,25,.88));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
 }
 .store-v2-mini-checkers-board{
+  box-sizing:border-box;
   display:grid;
   grid-template-columns:repeat(8,minmax(0,1fr));
-  width:min(88%,168px);
+  width:min(100%,96px);
+  max-width:96px;
   aspect-ratio:1;
   overflow:hidden;
-  border-radius:16px;
+  border-radius:10px;
   border:1px solid rgba(255,255,255,.14);
-  box-shadow:0 12px 26px rgba(0,0,0,.26);
+  box-shadow:0 8px 18px rgba(0,0,0,.24);
   background:#111827;
 }
 .store-v2-mini-checkers-board > span{
@@ -82,11 +129,19 @@
 .store-v2-mini-checkers-board > span.light{background:linear-gradient(145deg,#d9c8a8,#bea884)}
 .store-v2-mini-checkers-board > span.dark{background:linear-gradient(145deg,#5d4b58,#3c3343)}
 .store-v2-mini-checkers-board > span > i{
+  position:relative;
   display:block;
-  width:68%;
+  width:62%;
   aspect-ratio:1;
   border-radius:50%;
-  box-shadow:0 2px 6px rgba(0,0,0,.36),inset 0 0 0 1px rgba(255,255,255,.18),inset 0 -2px 4px rgba(0,0,0,.18);
+  box-shadow:0 1px 3px rgba(0,0,0,.36),inset 0 0 0 1px rgba(255,255,255,.18),inset 0 -1px 2px rgba(0,0,0,.18);
+}
+.store-v2-mini-checkers-board > span > i::after{
+  content:"";
+  position:absolute;
+  inset:18%;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.14);
 }
 .store-v2-mini-checkers-board > span > i.white{
   background:linear-gradient(145deg,#faf8f0,#c9c5bb);
@@ -97,7 +152,7 @@
 
 .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board{
   border-color:rgba(215,162,96,.34);
-  box-shadow:0 12px 26px rgba(0,0,0,.28),0 0 18px rgba(157,92,38,.12);
+  box-shadow:0 8px 18px rgba(0,0,0,.28),0 0 14px rgba(157,92,38,.1);
 }
 .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board > span.light{
   background:linear-gradient(102deg,rgba(255,255,255,.08),transparent 28%,rgba(87,42,19,.08) 61%,transparent 78%),linear-gradient(145deg,#d7ad72,#b97b42);
@@ -118,7 +173,7 @@
 
 .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-board{
   border-color:rgba(226,232,240,.42);
-  box-shadow:0 12px 26px rgba(0,0,0,.24),0 0 18px rgba(194,206,224,.12);
+  box-shadow:0 8px 18px rgba(0,0,0,.24),0 0 14px rgba(194,206,224,.1);
 }
 .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-board > span.light{
   background:linear-gradient(118deg,transparent 0 34%,rgba(112,122,139,.16) 35% 36%,transparent 37% 62%,rgba(148,157,173,.11) 63% 64%,transparent 65%),linear-gradient(145deg,#eef1f4,#cfd4da);
@@ -129,7 +184,7 @@
 
 .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="neon"] .store-v2-mini-checkers-board{
   border-color:rgba(81,221,255,.5);
-  box-shadow:0 12px 26px rgba(0,0,0,.3),0 0 18px rgba(82,204,255,.2),0 0 28px rgba(142,91,255,.12);
+  box-shadow:0 8px 18px rgba(0,0,0,.3),0 0 14px rgba(82,204,255,.18),0 0 22px rgba(142,91,255,.1);
 }
 .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="neon"] .store-v2-mini-checkers-board > span.light{
   background:linear-gradient(145deg,#24324a,#152038);
@@ -140,6 +195,22 @@
   box-shadow:inset 0 0 0 1px rgba(166,108,255,.14);
 }
 
+/* Purchase sheet gets its own square-safe sizing instead of inheriting the generic 1.55 ratio. */
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{
+  width:190px;
+  height:142px;
+  min-height:142px;
+  aspect-ratio:auto;
+  margin:0 auto;
+  padding:10px;
+}
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"] .store-v2-mini-checkers-board{
+  width:120px;
+  max-width:120px;
+  border-radius:12px;
+}
+
 @media(max-width:380px){
-  .store-v2-mini-checkers-board{width:min(92%,154px);border-radius:14px}
+  .store-v2-mini-checkers-board{width:min(100%,92px);max-width:92px;border-radius:9px}
+  .store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"] .store-v2-mini-checkers-board{width:116px;max-width:116px;border-radius:11px}
 }
