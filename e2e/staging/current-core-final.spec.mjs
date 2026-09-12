@@ -366,6 +366,18 @@ test('CURRENT FINAL CORE: canonical Telegram v110 two-player TTT lifecycle', asy
     expect(started.game?.status).toBe('active');
     expect(Number(started.game?.bet || 0)).toBe(entryCost);
 
+    // The setup starts the invite through raw API calls, bypassing the real client
+    // handoff that immediately writes Phase-B readiness. Register both players
+    // before the synthetic hard reload so this scenario validates reconnect rather
+    // than racing the 10-second preparation deadline against staging boot latency.
+    for (const [player, slot] of [[A, 'A'], [B, 'B']]) {
+      const readiness = await testProbePost(player, '/bot/api.php', { action: 'game_state', gameId });
+      expect(readiness.status, `Phase-B readiness player ${slot}`).toBe(200);
+      expect(readiness.payload?.ok, `Phase-B readiness player ${slot}`).toBe(true);
+      expect(readiness.payload?.game?.status).toBe('active');
+      expect(['preparing', 'countdown', 'active']).toContain(readiness.payload?.game?.launch_phase);
+    }
+
     await Promise.all([reload(A), reload(B)]);
     await expect(A.page.locator('#screen-game')).toHaveClass(/active/, { timeout:25_000 });
     await expect(B.page.locator('#screen-game')).toHaveClass(/active/, { timeout:25_000 });

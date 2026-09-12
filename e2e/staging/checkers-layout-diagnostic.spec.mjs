@@ -238,6 +238,17 @@ test('CHECKERS LAYOUT DIAGNOSTIC — live v110 mobile geometry', async ({ browse
     const gameId = String(started.game?.id || started.invite?.game_id || '');
     expect(gameId).toMatch(/^[A-Za-z0-9_-]{8,120}$/);
 
+    // This diagnostic starts the game with raw API setup rather than the real
+    // invite UI, so explicitly perform the readiness writes that the two clients
+    // normally send before testing a hard reload/reconnect of the active match.
+    for (const [page, slot] of [[A.page, 'A'], [B.page, 'B']]) {
+      const readiness = await browserPost(page, '/bot/api.php', { action: 'game_state', gameId });
+      expect(readiness.status, `Checkers Phase-B readiness player ${slot}`).toBe(200);
+      expect(readiness.payload?.ok, `Checkers Phase-B readiness player ${slot}`).toBe(true);
+      expect(readiness.payload?.game?.status).toBe('active');
+      expect(['preparing', 'countdown', 'active']).toContain(readiness.payload?.game?.launch_phase);
+    }
+
     await Promise.all([reload(A), reload(B)]);
     await expect(A.page.locator('#screen-game')).toHaveClass(/active/, { timeout: 25_000 });
     await waitLaunch(A.page, gameId);
