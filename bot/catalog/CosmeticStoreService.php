@@ -15,6 +15,7 @@ final class CosmeticStoreService
 {
     public const AVATAR_BUNDLE_OFFER_ID = 'avatar-bundle-5';
     public const TICTACTOE_BUNDLE_OFFER_ID = 'ttt-premium-bundle';
+    public const CHECKERS_BUNDLE_OFFER_ID = 'checkers-premium-bundle';
     public const PURCHASE_TRANSACTION_TYPE = 'cosmetic_purchase';
     public const PURCHASE_PENDING_STATUS = 'debited';
     public const PURCHASE_COMPLETED_STATUS = 'completed';
@@ -24,6 +25,7 @@ final class CosmeticStoreService
     private const GAME_TITLES = [
         'tictactoe' => 'Крестики-нолики',
         'chess' => 'Шахматы',
+        'checkers' => 'Шашки',
     ];
 
     private ProductInventoryService $inventory;
@@ -115,6 +117,13 @@ final class CosmeticStoreService
             $tictactoeBundle['preview_kind'] = 'tictactoe_premium_bundle';
             $tictactoeBundle['game_type'] = 'tictactoe';
         }
+        $checkersBundle = $offers[self::CHECKERS_BUNDLE_OFFER_ID] ?? null;
+        if (is_array($checkersBundle)) {
+            $checkersBundle['display_name'] = 'Неоновый комплект шашек';
+            $checkersBundle['preview_kind'] = 'checkers_premium_bundle';
+            $checkersBundle['game_type'] = 'checkers';
+        }
+        $gameBundles = array_values(array_filter([$tictactoeBundle, $checkersBundle], 'is_array'));
 
         $ownedItems = [];
         foreach ((array)($inventory['owned'] ?? []) as $ownedRow) {
@@ -189,7 +198,8 @@ final class CosmeticStoreService
             'bundles' => [
                 'avatar_bundle' => $avatarBundle,
                 'tictactoe_bundle' => $tictactoeBundle,
-                'game_bundles' => is_array($tictactoeBundle) ? [$tictactoeBundle] : [],
+                'checkers_bundle' => $checkersBundle,
+                'game_bundles' => $gameBundles,
             ],
             'inventory' => [
                 'items' => $ownedItems,
