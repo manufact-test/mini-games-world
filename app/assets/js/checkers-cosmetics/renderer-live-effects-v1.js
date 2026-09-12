@@ -7,6 +7,7 @@ import {
 
 const LIVE_EFFECT_DURATION_MS = 1880;
 const liveEffectStates = new Map();
+const lastSeenMoveSignatures = new Map();
 
 ensureLiveEffectStyles();
 
@@ -22,8 +23,13 @@ function syncLiveEffect({ game, me, container }){
   if (!(board instanceof HTMLElement)) return;
 
   const gameKey = String(game?.id || 'local-checkers');
+  const moveSignature = lastMoveSignature(game);
+  const previousMoveSignature = lastSeenMoveSignatures.get(gameKey) || '';
+  const isNewMove = Boolean(moveSignature && moveSignature !== previousMoveSignature);
+  if (moveSignature) lastSeenMoveSignatures.set(gameKey, moveSignature);
+
   const plan = effectPlan(game, me);
-  const signature = plan ? `${lastMoveSignature(game)}:${plan.effectId}:${plan.kind}` : '';
+  const signature = plan ? `${moveSignature}:${plan.effectId}:${plan.kind}` : '';
   const now = performance.now();
   const current = liveEffectStates.get(gameKey) || null;
 
@@ -35,19 +41,12 @@ function syncLiveEffect({ game, me, container }){
   }
 
   let state = current;
-  if (!state || state.signature !== signature) {
+  if (isNewMove) {
     if (state?.timer) clearTimeout(state.timer);
-    state = {
-      signature,
-      startedAt: now,
-      timer: window.setTimeout(() => {
-        const active = liveEffectStates.get(gameKey);
-        if (!active || active.signature !== signature) return;
-        liveEffectStates.delete(gameKey);
-        clearLiveEffect(container);
-      }, LIVE_EFFECT_DURATION_MS + 40),
-    };
-    liveEffectStates.set(gameKey, state);
+    state = startEffectState({ gameKey, signature, container, now });
+  } else if (!state || state.signature !== signature) {
+    clearLiveEffect(container);
+    return;
   }
 
   const elapsed = Math.max(0, now - state.startedAt);
@@ -58,6 +57,21 @@ function syncLiveEffect({ game, me, container }){
   }
 
   renderLiveEffect(board, container, plan, elapsed);
+}
+
+function startEffectState({ gameKey, signature, container, now }){
+  const state = {
+    signature,
+    startedAt: now,
+    timer: window.setTimeout(() => {
+      const active = liveEffectStates.get(gameKey);
+      if (!active || active.signature !== signature) return;
+      liveEffectStates.delete(gameKey);
+      clearLiveEffect(container);
+    }, LIVE_EFFECT_DURATION_MS + 40),
+  };
+  liveEffectStates.set(gameKey, state);
+  return state;
 }
 
 function effectPlan(game, me){
@@ -170,7 +184,7 @@ function capturedCellFor(game, from, to){
   if (direct !== null) return direct;
 
   const captured = Array.isArray(game?.last_captured_cells)
-    ? game.last_captured_cells.map(integerOrNull).filter(value => value !== null)
+    ? game.last_captured_cells.map(value => integerOrNull(value)).filter(value => value !== null)
     : [];
   if (captured.length > 0) return captured[captured.length - 1];
 
