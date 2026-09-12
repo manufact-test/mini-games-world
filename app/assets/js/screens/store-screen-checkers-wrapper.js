@@ -12,6 +12,7 @@ let checkersEffectObserver = null;
 
 ensureCheckersCosmeticStyles();
 ensureCheckersEffectPreviewStyles();
+ensureCheckersBoardPiecePolishStyles();
 installStoreApiRepairHooks();
 
 export function initStoreScreen(){
@@ -75,6 +76,20 @@ function ensureCheckersEffectPreviewStyles(){
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.dataset.mgwCheckersStoreEffectsLiveBoard = 'mvp19-6-effects-live-board-v1';
+  link.href = href;
+  document.head.appendChild(link);
+}
+
+function ensureCheckersBoardPiecePolishStyles(){
+  const href = new URL('../../css/games/checkers/store-boards-pieces-polish-v1.css?v=1&mvp19_6=boards-pieces-polish', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-checkers-store-boards-pieces-polish]');
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    return;
+  }
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwCheckersStoreBoardsPiecesPolish = 'mvp19-6-boards-pieces-polish-v1';
   link.href = href;
   document.head.appendChild(link);
 }
@@ -145,8 +160,9 @@ function upgradeCheckersStorePresentation(){
     renameCheckersSelector(root);
     upgradeCheckersHeader(root);
     upgradeCheckersCopy(root);
+    upgradeCheckersPieceBranding(root);
+    removeInlineCheckersBundle(root);
     makeCheckersEffectsPassive(root);
-    injectCheckersBundleIntoGame(root);
     upgradeCheckersBundleVisuals(root);
   });
 }
@@ -178,11 +194,37 @@ function upgradeCheckersCopy(root){
     if (!(product instanceof HTMLElement)) return;
     const preview = product.querySelector('.store-v2-game-preview[data-game-type="checkers"]');
     const copy = product.querySelector('.store-v2-game-product-copy p');
-    if (!(preview instanceof HTMLElement) || !(copy instanceof HTMLElement)) return;
+    const name = product.querySelector('.store-v2-game-product-copy strong');
+    if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || '');
     const variant = String(preview.dataset.cosmeticVariant || '');
-    if (layer === 'elements' && variant === 'marble') copy.textContent = 'Натуральный мраморный рисунок с тонкими серыми прожилками';
+    if (layer === 'elements' && variant === 'marble') {
+      if (copy instanceof HTMLElement) copy.textContent = 'Полированный гранит с мелкой минеральной крошкой';
+      if (name instanceof HTMLElement) name.textContent = 'Гранитные шашки';
+      preview.setAttribute('aria-label', 'Гранитные шашки');
+    }
   });
+
+  root.querySelectorAll('.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="marble"]').forEach(preview => {
+    if (!(preview instanceof HTMLElement)) return;
+    preview.setAttribute('aria-label', 'Гранитные шашки');
+    const confirm = preview.closest('.store-v2-confirm');
+    const title = confirm?.querySelector('.store-v2-confirm-copy strong');
+    if (title instanceof HTMLElement) title.textContent = 'Гранитные шашки';
+  });
+}
+
+function upgradeCheckersPieceBranding(root){
+  root.querySelectorAll('.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces>.king b').forEach(brand => {
+    if (!(brand instanceof HTMLElement) || brand.dataset.mgwCheckersPieceBrand === '1') return;
+    brand.dataset.mgwCheckersPieceBrand = '1';
+    brand.classList.add('mgw-checkers-piece-brand');
+    brand.innerHTML = '<span class="mgw-checkers-piece-crown">♛</span><span class="mgw-checkers-piece-mark">MG</span>';
+  });
+}
+
+function removeInlineCheckersBundle(root){
+  root.querySelectorAll('[data-mgw-checkers-inline-bundle]').forEach(section => section.remove());
 }
 
 function makeCheckersEffectsPassive(root){
