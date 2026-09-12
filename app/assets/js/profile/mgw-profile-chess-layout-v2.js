@@ -1,10 +1,10 @@
-import { initProfileScreen as initChessParityProfileScreen } from './mgw-profile-chess-parity.js?v=1&mvp19_5=chess-profile-store-parity-v1';
+import { initProfileScreen as initCheckersParityProfileScreen } from './mgw-profile-checkers-parity.js?v=1&mvp19_6=checkers-board-parity';
 
 ensureProfileChessLayoutStyles();
 
 export function initProfileScreen(){
   ensureProfileChessLayoutStyles();
-  initChessParityProfileScreen();
+  initCheckersParityProfileScreen();
 }
 
 function ensureProfileChessLayoutStyles(){
