@@ -103,13 +103,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; $b=$m["imports"]["./assets/js/screens/store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog"]??""; $c=$m["imports"]["./assets/js/games/checkers/renderer.js?v=57"]??""; if(!str_contains($s,"store-screen-checkers-wrapper.js?v=3") || !str_contains($s,"mvp19_6=visual-corrective-v2")) exit(1); if(!str_contains($b,"mvp19_6=full-checkers-store")) exit(2); if(!str_contains($c,"renderer-board-themes.js") || !str_contains($c,"mvp19_6=board-themes")) exit(3);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; $b=$m["imports"]["./assets/js/screens/store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog"]??""; $c=$m["imports"]["./assets/js/games/checkers/renderer.js?v=57"]??""; if(!str_contains($s,"store-screen-checkers-wrapper.js?v=4") || !str_contains($s,"mvp19_6=visual-corrective-v3")) exit(1); if(!str_contains($b,"mvp19_6=full-checkers-store")) exit(2); if(!str_contains($c,"renderer-board-themes.js") || !str_contains($c,"mvp19_6=board-themes")) exit(3);'
           grep -F "gameType === 'checkers'" app/assets/js/screens/store-screen.js
           grep -F 'checkersMiniBoardMarkup' app/assets/js/screens/store-screen.js
           grep -F 'gameBundlesFromSnapshot' app/assets/js/screens/store-screen.js
           grep -F 'makeCheckersEffectsPassive' app/assets/js/screens/store-screen-checkers-wrapper.js
+          grep -F 'startPassiveEffectPreview' app/assets/js/screens/store-screen-checkers-wrapper.js
           grep -F 'injectCheckersBundleIntoGame' app/assets/js/screens/store-screen-checkers-wrapper.js
-          grep -F 'store-visual-corrective-v2.css' app/assets/js/screens/store-screen-checkers-wrapper.js
+          grep -F 'upgradeCheckersBundleVisuals' app/assets/js/screens/store-screen-checkers-wrapper.js
+          grep -F 'manual-review-pass-2' app/assets/js/screens/store-screen-checkers-wrapper.js
+          grep -F 'width:min(100%,132px)' app/assets/css/games/checkers/store-visual-corrective-v2.css
+          grep -F 'max-width:220px' app/assets/css/games/checkers/store-visual-corrective-v2.css
+          grep -F 'mgw-checkers-store-v3-move-piece' app/assets/css/games/checkers/store-visual-corrective-v2.css
+          grep -F 'mgw-checkers-store-v3-capture-burst' app/assets/css/games/checkers/store-visual-corrective-v2.css
+          grep -F 'mgw-checkers-store-v3-promotion-crown' app/assets/css/games/checkers/store-visual-corrective-v2.css
+          grep -F 'mgw-checkers-bundle-complete' app/assets/css/games/checkers/store-visual-corrective-v2.css
           grep -F '@media(prefers-reduced-motion:reduce)' app/assets/css/games/checkers/store-visual-corrective-v2.css
           ! grep -Fq 'MutationObserver' app/assets/js/screens/store-screen-checkers-wrapper.js
           ! grep -Fq 'setInterval' app/assets/js/screens/store-screen-checkers-wrapper.js

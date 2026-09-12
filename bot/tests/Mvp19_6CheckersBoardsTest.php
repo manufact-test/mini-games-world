@@ -15,12 +15,16 @@ require_once $root . '/bot/catalog/ProductInventoryService.php';
 require_once $root . '/bot/accounts/AccountIdentityService.php';
 require_once $root . '/bot/catalog/CosmeticStoreService.php';
 
-if (!extension_loaded('pdo_sqlite')) throw new RuntimeException('MVP-19.6 Checkers Store test requires pdo_sqlite.');
+if (!extension_loaded('pdo_sqlite')) {
+    throw new RuntimeException('MVP-19.6 Checkers Store test requires pdo_sqlite.');
+}
 
 $assertions = 0;
 $assertSame = static function (mixed $expected, mixed $actual, string $message) use (&$assertions): void {
     $assertions++;
-    if ($expected !== $actual) throw new RuntimeException($message . ': expected ' . var_export($expected, true) . ', got ' . var_export($actual, true));
+    if ($expected !== $actual) {
+        throw new RuntimeException($message . ': expected ' . var_export($expected, true) . ', got ' . var_export($actual, true));
+    }
 };
 $assertTrue = static function (bool $condition, string $message) use (&$assertions): void {
     $assertions++;
@@ -78,7 +82,9 @@ foreach ($rows as $row) {
     $layer = (string)($metadata['layer'] ?? '');
     $assertTrue(isset($byLayer[$layer]), 'Checkers item must use an approved cosmetic layer');
     $byLayer[$layer][] = (string)$row['equip_slot'];
-    if ($layer === 'effect') $events[(string)($metadata['variant'] ?? '')] = (string)($metadata['event'] ?? '');
+    if ($layer === 'effect') {
+        $events[(string)($metadata['variant'] ?? '')] = (string)($metadata['event'] ?? '');
+    }
 }
 $assertSame(4, count($byLayer['theme']), 'Checkers Store must contain four boards');
 $assertSame(4, count($byLayer['elements']), 'Checkers Store must contain four piece sets');
@@ -97,7 +103,7 @@ $assertSame([
     'game-checkers-effect-move',
     'game-checkers-effect-capture',
     'game-checkers-effect-promotion',
-], json_decode((string)$bundleRows[0]['members_json'], true, 32, JSON_THROW_ON_ERROR), 'Checkers bundle must use the established premium pattern: top board, top pieces, all three effects');
+], json_decode((string)$bundleRows[0]['members_json'], true, 32, JSON_THROW_ON_ERROR), 'Checkers bundle must contain neon board, neon pieces, and all three effects');
 
 $accounts = new AccountIdentityService($database, 3600);
 $account = $accounts->resolveProviderIdentity('development', 'mvp19-6-checkers-user', 'browser_dev', ['username'=>'checkers-store'], 'mvp19-6-session');
@@ -195,19 +201,24 @@ foreach (['move','capture','promotion'] as $variant) {
     $assertTrue(str_contains($storeScreen, 'checkers-store-fx-${variant}') || str_contains($storeScreen, 'checkers-store-fx-' . $variant) || str_contains($storeScreen, 'checkers-store-fx-${safeVariant}'), 'Store preview renderer must own Checkers effect scenes');
     $assertTrue(str_contains($correctiveCss, 'checkers-store-fx-' . $variant), 'Corrective CSS must style Checkers effect ' . $variant);
 }
+
 $assertTrue(str_contains($storeScreen, 'checkersMiniBoardMarkup') && str_contains($storeScreen, 'Array.from({ length:64 }'), 'Store boards must remain full 8x8 previews');
-$assertTrue(str_contains($correctiveCss, 'max-width:122px') && str_contains($correctiveCss, 'transform:none') && str_contains($correctiveCss, 'width:100%'), 'Corrective board preview must fit the card without decorative crop');
-$assertTrue(str_contains($correctiveCss, 'max-width:116px') && str_contains($correctiveCss, 'width:50px'), 'Corrective piece preview must fit all discs inside the card');
-$assertTrue(str_contains($correctiveCss, 'mgw-checkers-store-auto-move-piece') && str_contains($correctiveCss, '@media(prefers-reduced-motion:reduce)') && !str_contains($correctiveCss, 'infinite'), 'Store effects must autoplay once with reduced-motion safety and no infinite animation');
+$assertTrue(str_contains($correctiveCss, 'width:min(100%,132px)') && str_contains($correctiveCss, 'max-width:220px') && str_contains($correctiveCss, 'transform:none'), 'Board cards and purchase sheets must show complete large 8x8 boards without decorative crop');
+$assertTrue(str_contains($correctiveCss, '::before,') && str_contains($correctiveCss, '::after{display:none!important}'), 'Checkers media frames must remove the decorative top strip from the manual review');
+$assertTrue(str_contains($correctiveCss, 'max-width:116px') && str_contains($correctiveCss, 'width:50px'), 'Accepted piece preview geometry must remain fully inside the card');
+$assertTrue(str_contains($storeWrapper, 'startPassiveEffectPreview') && str_contains($storeWrapper, "preview.classList.add('is-previewing')"), 'Every rendered Checkers effect preview must explicitly start its passive one-shot presentation');
+$assertTrue(str_contains($correctiveCss, 'mgw-checkers-store-v3-move-piece') && str_contains($correctiveCss, 'mgw-checkers-store-v3-capture-burst') && str_contains($correctiveCss, 'mgw-checkers-store-v3-promotion-crown'), 'Move, capture and promotion must each own a visible finite Store animation');
+$assertTrue(str_contains($correctiveCss, '@media(prefers-reduced-motion:reduce)') && !str_contains($correctiveCss, 'infinite'), 'Store effects must respect reduced motion and never loop infinitely');
 $assertTrue(str_contains($correctiveCss, '.checkers-fx-play{display:none!important}'), 'Store effects must not show a manual Profile-style play button');
-$assertTrue(!str_contains($storeWrapper, 'installCheckersEffectPreviewIntents') && !str_contains($storeWrapper, 'playCheckersEffectPreview') && !str_contains($storeWrapper, 'setInterval') && !str_contains($storeWrapper, 'MutationObserver'), 'Store effect preview must be passive and bounded without click playback, observers, or polling');
-$assertTrue(str_contains($storeWrapper, 'injectCheckersBundleIntoGame') && str_contains($storeWrapper, 'data-mgw-checkers-inline-bundle') && str_contains($storeWrapper, 'bridgeInlineBundlePurchase'), 'Checkers 34k bundle must be visible inside Games -> Checkers and bridge to the canonical purchase owner');
+$assertTrue(!str_contains($storeWrapper, 'installCheckersEffectPreviewIntents') && !str_contains($storeWrapper, 'playCheckersEffectPreview') && !str_contains($storeWrapper, 'setInterval') && !str_contains($storeWrapper, 'MutationObserver'), 'Store effect preview must stay passive and bounded without click playback, observers, or polling');
+$assertTrue(str_contains($storeWrapper, 'injectCheckersBundleIntoGame') && str_contains($storeWrapper, 'upgradeCheckersBundleVisuals') && str_contains($storeWrapper, 'checkersBundleVisualContents') && str_contains($storeWrapper, 'bridgeInlineBundlePurchase'), 'Checkers 34k bundle must be visible inside Games -> Checkers and use the canonical purchase owner');
+$assertTrue(str_contains($correctiveCss, 'mgw-checkers-bundle-complete') && str_contains($correctiveCss, 'mgw-checkers-bundle-board') && str_contains($correctiveCss, 'mgw-checkers-bundle-pieces') && str_contains($correctiveCss, 'mgw-checkers-bundle-effects'), 'Bundle art must visibly contain the neon board, neon pieces and all three effects');
 $assertTrue(str_contains($storeScreen, "bundleGameType === 'checkers'") && str_contains($storeScreen, 'store-v2-confirm-game'), 'Purchase confirmation must preserve Checkers-specific previews');
 
 $storeTarget = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $storeBaseTarget = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog'] ?? '');
 $checkersTarget = (string)($manifest['imports']['./assets/js/games/checkers/renderer.js?v=57'] ?? '');
-$assertTrue(str_contains($storeTarget, 'store-screen-checkers-wrapper.js') && str_contains($storeTarget, 'mvp19_6=visual-corrective-v2'), 'Active Store graph must select the Checkers visual corrective wrapper');
+$assertTrue(str_contains($storeTarget, 'store-screen-checkers-wrapper.js?v=4') && str_contains($storeTarget, 'mvp19_6=visual-corrective-v3'), 'Active Store graph must select the second Checkers manual-review corrective');
 $assertTrue(str_contains($storeBaseTarget, 'mvp19_6=full-checkers-store'), 'Active import graph must preserve the native Store owner under the corrective wrapper');
 $assertTrue(str_contains($checkersTarget, 'renderer-board-themes.js') && str_contains($checkersTarget, 'mvp19_6=board-themes'), 'Phase A must keep live Checkers on the existing board-only wrapper');
 
