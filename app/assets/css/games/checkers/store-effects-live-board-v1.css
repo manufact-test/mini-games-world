@@ -1,0 +1,114 @@
+/* MVP-19.6 — effects-only Store corrective.
+   Scope: Checkers effect cards + purchase-confirm effect preview only.
+   Uses the accepted live Checkers board/piece geometry from games/checkers/game.css. */
+
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"],
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]{
+  box-sizing:border-box;position:relative;display:grid;place-items:center;min-height:0!important;aspect-ratio:1;
+  padding:0!important;overflow:hidden;border:0!important;border-radius:18px;background:transparent!important;
+  box-shadow:none!important;cursor:default!important;
+}
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]{width:100%}
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]{width:min(100%,250px)!important;height:auto!important;margin:0 auto}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]::before,
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]::after{display:none!important}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .store-v2-mini-checkers-effect{
+  box-sizing:border-box;position:relative;display:block;width:100%!important;max-width:none!important;height:auto!important;
+  aspect-ratio:1;overflow:hidden;border-radius:18px;transform:none!important;isolation:isolate;font-style:normal;
+}
+
+/* Full real Checkers board look, not the old dark preview board. */
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-fx-board{
+  position:absolute;inset:0!important;z-index:1;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));
+  width:100%!important;height:100%!important;aspect-ratio:1;overflow:hidden;border-radius:18px!important;
+  border:2px solid rgba(255,255,255,.1)!important;box-shadow:0 16px 38px rgba(0,0,0,.2)!important;background:#121828!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-fx-board>span{position:relative;display:grid;place-items:center;min-width:0;min-height:0}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-fx-board>span.light{background:linear-gradient(145deg,#d9c8a8,#bea884)!important}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-fx-board>span.dark{background:linear-gradient(145deg,#5d4b58,#3c3343)!important}
+
+/* Exact live checker proportions/material: 72% of one 12.5% board cell. */
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-fx-piece{
+  position:absolute;z-index:6;width:9%!important;height:auto!important;aspect-ratio:1;border-radius:50%;
+  transform:translate(-50%,-50%);background:linear-gradient(145deg,#f7f5ee,#c8c5bd)!important;
+  box-shadow:0 5px 12px rgba(0,0,0,.32),inset 0 0 0 2px rgba(255,255,255,.72),inset 0 -5px 8px rgba(85,85,85,.18)!important;
+  will-change:left,top,transform,opacity,filter,box-shadow;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-fx-piece::before{
+  content:"";position:absolute;inset:15%;border-radius:50%;border:1px solid rgba(255,255,255,.16);
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-fx-piece::after{display:none!important}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-fx-piece.target{
+  background:linear-gradient(145deg,#313a51,#111827)!important;
+  box-shadow:0 5px 12px rgba(0,0,0,.45),inset 0 0 0 2px rgba(146,159,205,.28),inset 0 -5px 8px rgba(0,0,0,.34)!important;
+}
+
+/* Effect accents sit on top of the real board and never replace it. */
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-fx-path{
+  position:absolute;z-index:4;height:3px;border-radius:99px;transform-origin:0 50%;opacity:0;
+  background:linear-gradient(90deg,rgba(102,239,188,0),rgba(102,239,188,.96),rgba(102,239,188,.06));
+  box-shadow:0 0 13px rgba(102,239,188,.62);
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-fx-impact{
+  position:absolute;z-index:5;width:10%;height:auto;aspect-ratio:1;border-radius:50%;
+  transform:translate(-50%,-50%) scale(.2);border:2px solid rgba(102,239,188,.86);opacity:0;
+  box-shadow:0 0 18px rgba(102,239,188,.54);
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-fx-crown{
+  position:absolute;z-index:8;width:9%;aspect-ratio:1;display:grid;place-items:center;border-radius:50%;
+  transform:translate(-50%,-50%) scale(.55);border:2px solid rgba(255,208,87,.72);color:#ffd86f;
+  font-style:normal;text-decoration:none;font-size:clamp(9px,4vw,22px);line-height:1;font-weight:900;opacity:0;
+  text-shadow:0 1px 8px rgba(255,195,46,.65);box-shadow:0 0 10px rgba(255,196,52,.25);
+}
+
+/* Legal moves on the same 8×8 coordinate system as the live game. */
+.checkers-store-fx-move .from{left:31.25%!important;top:68.75%!important}
+.checkers-store-fx-move .target,.checkers-store-fx-move .checkers-fx-crown{display:none!important}
+.checkers-store-fx-move .checkers-fx-path{left:31.25%;top:68.75%;width:17.68%;transform:rotate(-45deg)}
+.checkers-store-fx-move .checkers-fx-impact{left:43.75%!important;top:56.25%!important}
+
+.checkers-store-fx-capture .from{left:18.75%!important;top:81.25%!important}
+.checkers-store-fx-capture .target{left:31.25%!important;top:68.75%!important}
+.checkers-store-fx-capture .checkers-fx-path{left:18.75%;top:81.25%;width:35.36%;transform:rotate(-45deg);background:linear-gradient(90deg,rgba(255,190,77,0),#ffc15d 52%,rgba(255,84,84,.05));box-shadow:0 0 13px rgba(255,174,73,.68)}
+.checkers-store-fx-capture .checkers-fx-impact{left:31.25%!important;top:68.75%!important;border-color:#ffd26b;box-shadow:0 0 18px rgba(255,186,74,.58)}
+.checkers-store-fx-capture .checkers-fx-crown{display:none!important}
+
+.checkers-store-fx-promotion .from{left:56.25%!important;top:31.25%!important}
+.checkers-store-fx-promotion .target{display:none!important}
+.checkers-store-fx-promotion .checkers-fx-path{left:56.25%;top:31.25%;width:17.68%;transform:rotate(-45deg);background:linear-gradient(90deg,rgba(255,225,119,0),#ffe177 55%,rgba(255,190,55,.05));box-shadow:0 0 13px rgba(255,214,90,.6)}
+.checkers-store-fx-promotion .checkers-fx-impact{left:68.75%!important;top:18.75%!important;border-color:#ffe177;box-shadow:0 0 20px rgba(255,214,90,.65)}
+.checkers-store-fx-promotion .checkers-fx-crown{left:68.75%!important;top:18.75%!important}
+
+/* One readable finite demo per wrapper cycle (wrapper resets at 1.9s). */
+.store-v2-game-preview.is-previewing .checkers-store-fx-move .from{animation:mgw-live-board-move 1.78s cubic-bezier(.22,.72,.2,1) both}
+.store-v2-game-preview.is-previewing .checkers-store-fx-move .checkers-fx-path{animation:mgw-live-board-trail 1.78s ease both}
+.store-v2-game-preview.is-previewing .checkers-store-fx-move .checkers-fx-impact{animation:mgw-live-board-move-ring 1.78s ease-out both}
+
+.store-v2-game-preview.is-previewing .checkers-store-fx-capture .from{animation:mgw-live-board-capture 1.82s cubic-bezier(.22,.72,.2,1) both}
+.store-v2-game-preview.is-previewing .checkers-store-fx-capture .target{animation:mgw-live-board-captured 1.82s ease-out both}
+.store-v2-game-preview.is-previewing .checkers-store-fx-capture .checkers-fx-path{animation:mgw-live-board-trail 1.82s ease both}
+.store-v2-game-preview.is-previewing .checkers-store-fx-capture .checkers-fx-impact{animation:mgw-live-board-capture-burst 1.82s ease-out both}
+
+.store-v2-game-preview.is-previewing .checkers-store-fx-promotion .from{animation:mgw-live-board-promotion 1.82s cubic-bezier(.22,.72,.2,1) both}
+.store-v2-game-preview.is-previewing .checkers-store-fx-promotion .checkers-fx-path{animation:mgw-live-board-trail 1.82s ease both}
+.store-v2-game-preview.is-previewing .checkers-store-fx-promotion .checkers-fx-impact{animation:mgw-live-board-promotion-ring 1.82s ease-out both}
+.store-v2-game-preview.is-previewing .checkers-store-fx-promotion .checkers-fx-crown{animation:mgw-live-board-crown 1.82s ease-out both}
+
+@keyframes mgw-live-board-trail{0%,16%{opacity:0}32%,58%{opacity:1;filter:brightness(1.25)}78%,100%{opacity:0}}
+@keyframes mgw-live-board-move{0%,18%{left:31.25%;top:68.75%}58%,100%{left:43.75%;top:56.25%}}
+@keyframes mgw-live-board-move-ring{0%,48%{opacity:0;transform:translate(-50%,-50%) scale(.2)}63%{opacity:1;transform:translate(-50%,-50%) scale(.9)}88%,100%{opacity:0;transform:translate(-50%,-50%) scale(1.75)}}
+@keyframes mgw-live-board-capture{0%,16%{left:18.75%;top:81.25%}60%,100%{left:43.75%;top:56.25%}}
+@keyframes mgw-live-board-captured{0%,38%{opacity:1;transform:translate(-50%,-50%) scale(1)}54%{opacity:1;transform:translate(-50%,-50%) scale(1.08);filter:brightness(1.4)}72%,100%{opacity:0;transform:translate(-50%,-50%) scale(.1);filter:brightness(1.8)}}
+@keyframes mgw-live-board-capture-burst{0%,40%{opacity:0;transform:translate(-50%,-50%) scale(.18)}56%{opacity:1;transform:translate(-50%,-50%) scale(1);background:radial-gradient(circle,rgba(255,232,143,.95),rgba(255,153,66,.45) 42%,transparent 70%)}80%,100%{opacity:0;transform:translate(-50%,-50%) scale(2.15)}}
+@keyframes mgw-live-board-promotion{0%,16%{left:56.25%;top:31.25%}56%,100%{left:68.75%;top:18.75%}}
+@keyframes mgw-live-board-promotion-ring{0%,52%{opacity:0;transform:translate(-50%,-50%) scale(.2)}68%{opacity:1;transform:translate(-50%,-50%) scale(.94)}92%,100%{opacity:0;transform:translate(-50%,-50%) scale(1.9)}}
+@keyframes mgw-live-board-crown{0%,58%{opacity:0;transform:translate(-50%,-50%) scale(.45)}72%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+
+@media (prefers-reduced-motion:reduce){
+  .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] *{animation:none!important}
+  .store-v2-game-preview.is-reduced-preview .checkers-store-fx-move .from{left:43.75%!important;top:56.25%!important}
+  .store-v2-game-preview.is-reduced-preview .checkers-store-fx-capture .from{left:43.75%!important;top:56.25%!important}
+  .store-v2-game-preview.is-reduced-preview .checkers-store-fx-capture .target{opacity:0!important}
+  .store-v2-game-preview.is-reduced-preview .checkers-store-fx-promotion .from{left:68.75%!important;top:18.75%!important}
+  .store-v2-game-preview.is-reduced-preview .checkers-store-fx-promotion .checkers-fx-crown{opacity:1!important;transform:translate(-50%,-50%) scale(1)!important}
+}

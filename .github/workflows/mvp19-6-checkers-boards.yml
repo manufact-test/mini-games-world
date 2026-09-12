@@ -9,9 +9,11 @@ on:
       - 'bot/database/migrations/20260912_0032_complete_checkers_store_cosmetics.php'
       - 'bot/catalog/CosmeticStoreService.php'
       - 'bot/tests/Mvp19_6CheckersBoardsTest.php'
+      - 'bot/tests/Mvp19_6CheckersEffectPreviewContractTest.mjs'
       - 'app/assets/css/games/checkers/cosmetics.css'
       - 'app/assets/css/games/checkers/store-visual-corrective-v2.css'
       - 'app/assets/css/games/checkers/store-visual-corrective-v3.css'
+      - 'app/assets/css/games/checkers/store-effects-live-board-v1.css'
       - 'app/assets/js/checkers-cosmetics/renderer-board-themes.js'
       - 'app/assets/js/screens/store-screen.js'
       - 'app/assets/js/screens/store-screen-checkers-wrapper.js'
@@ -59,6 +61,7 @@ jobs:
           php -l bot/catalog/CosmeticStoreService.php
           php -l bot/tests/Mvp19_6CheckersBoardsTest.php
           php -l app/runtime/client/version-manifest.php
+          node --check bot/tests/Mvp19_6CheckersEffectPreviewContractTest.mjs
           node --check app/assets/js/screens/store-screen.js
           node --check app/assets/js/screens/store-screen-checkers-wrapper.js
           node --check app/assets/js/checkers-cosmetics/renderer-board-themes.js
@@ -66,7 +69,9 @@ jobs:
           node --check app/assets/js/profile/mgw-profile-chess-layout-v2.js
 
       - name: Run complete Checkers Store contract
-        run: php bot/tests/Mvp19_6CheckersBoardsTest.php
+        run: |
+          php bot/tests/Mvp19_6CheckersBoardsTest.php
+          node bot/tests/Mvp19_6CheckersEffectPreviewContractTest.mjs
 
       - name: Re-run shared cosmetics contracts
         run: |
@@ -104,7 +109,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; $b=$m["imports"]["./assets/js/screens/store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog"]??""; $c=$m["imports"]["./assets/js/games/checkers/renderer.js?v=57"]??""; if(!str_contains($s,"store-screen-checkers-wrapper.js?v=4") || !str_contains($s,"mvp19_6=visual-corrective-v3") || !str_contains($s,"visual_rev=4")) exit(1); if(!str_contains($b,"mvp19_6=full-checkers-store")) exit(2); if(!str_contains($c,"renderer-board-themes.js") || !str_contains($c,"mvp19_6=board-themes")) exit(3);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; $b=$m["imports"]["./assets/js/screens/store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog"]??""; $c=$m["imports"]["./assets/js/games/checkers/renderer.js?v=57"]??""; if(!str_contains($s,"store-screen-checkers-wrapper.js?v=4") || !str_contains($s,"mvp19_6=visual-corrective-v3") || !str_contains($s,"visual_rev=4") || !str_contains($s,"effects_live_board=v1")) exit(1); if(!str_contains($b,"mvp19_6=full-checkers-store")) exit(2); if(!str_contains($c,"renderer-board-themes.js") || !str_contains($c,"mvp19_6=board-themes")) exit(3);'
           grep -F "gameType === 'checkers'" app/assets/js/screens/store-screen.js
           grep -F 'checkersMiniBoardMarkup' app/assets/js/screens/store-screen.js
           grep -F 'gameBundlesFromSnapshot' app/assets/js/screens/store-screen.js
@@ -112,6 +117,7 @@ jobs:
           grep -F 'startPassiveEffectPreview' app/assets/js/screens/store-screen-checkers-wrapper.js
           grep -F 'IntersectionObserver' app/assets/js/screens/store-screen-checkers-wrapper.js
           grep -F 'runBoundedEffectPreview' app/assets/js/screens/store-screen-checkers-wrapper.js
+          grep -F 'store-effects-live-board-v1.css?v=2&mvp19_6=effects-live-board-only' app/assets/js/screens/store-screen-checkers-wrapper.js
           grep -F 'injectCheckersBundleIntoGame' app/assets/js/screens/store-screen-checkers-wrapper.js
           grep -F 'upgradeCheckersBundleVisuals' app/assets/js/screens/store-screen-checkers-wrapper.js
           grep -F 'manual-review-pass-3' app/assets/js/screens/store-screen-checkers-wrapper.js
@@ -123,9 +129,14 @@ jobs:
           grep -F 'mgw-checkers-bundle-complete' app/assets/css/games/checkers/store-visual-corrective-v3.css
           grep -F 'mgw-checkers-bundle-effect-board' app/assets/css/games/checkers/store-visual-corrective-v3.css
           grep -F '@media(prefers-reduced-motion:reduce)' app/assets/css/games/checkers/store-visual-corrective-v3.css
+          grep -F 'linear-gradient(145deg,#d9c8a8,#bea884)' app/assets/css/games/checkers/store-effects-live-board-v1.css
+          grep -F 'linear-gradient(145deg,#5d4b58,#3c3343)' app/assets/css/games/checkers/store-effects-live-board-v1.css
+          grep -F '@keyframes mgw-live-board-move' app/assets/css/games/checkers/store-effects-live-board-v1.css
+          grep -F '@keyframes mgw-live-board-capture' app/assets/css/games/checkers/store-effects-live-board-v1.css
+          grep -F '@keyframes mgw-live-board-promotion' app/assets/css/games/checkers/store-effects-live-board-v1.css
           ! grep -Fq 'MutationObserver' app/assets/js/screens/store-screen-checkers-wrapper.js
           ! grep -Fq 'setInterval' app/assets/js/screens/store-screen-checkers-wrapper.js
-          ! grep -Fq 'infinite' app/assets/css/games/checkers/store-visual-corrective-v3.css
+          ! grep -Fq 'infinite' app/assets/css/games/checkers/store-effects-live-board-v1.css
 
       - name: Guard accepted Checkers owners and mechanics
         if: ${{ github.event_name == 'pull_request' }}
