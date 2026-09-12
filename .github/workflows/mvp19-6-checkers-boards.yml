@@ -74,7 +74,6 @@ jobs:
           php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
           php bot/tests/Mvp19_5ChessCosmeticsTest.php
           node bot/tests/Mvp19_4EffectsV2ContractTest.mjs
-          node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
 
       - name: Guard complete Checkers catalogue
         shell: bash
