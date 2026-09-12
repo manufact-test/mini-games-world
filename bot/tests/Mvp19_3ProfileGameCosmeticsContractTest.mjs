@@ -33,6 +33,23 @@ expect(profile.includes("'winning-line':'sparks'"), 'Profile preview must tolera
 expect(profile.includes("'move-pulse':'wave'"), 'Profile preview must tolerate rollout-era Wave metadata');
 expect(!profile.includes('Игровая косметика'), 'unclear game-cosmetics wording must not be visible in Profile');
 
+// Game collection tabs are a bounded panel switch, never a full Profile remount.
+// Replacing #profileV2Root destroys the focused tab and lets mobile WebView move
+// the document to recover focus. Keep the surrounding Profile DOM/scroll owner
+// stable and replace only the game panel contents.
+const gameTabBranchStart = profile.indexOf("const gameTab = event.target.closest('[data-profile-game-tab]');");
+const gameTabBranchEnd = profile.indexOf("const gameCosmeticCard = event.target.closest('[data-profile-game-cosmetic]');", gameTabBranchStart);
+const gameTabBranch = gameTabBranchStart >= 0 && gameTabBranchEnd > gameTabBranchStart
+  ? profile.slice(gameTabBranchStart, gameTabBranchEnd)
+  : '';
+expect(gameTabBranch.includes('switchProfileGameCollection(nextGame)'), 'Profile game-tab click must delegate to the bounded panel switch owner');
+expect(!gameTabBranch.includes('renderProfileV2()'), 'Profile game-tab click must not rebuild the full Profile DOM');
+expect(profile.includes('function switchProfileGameCollection(nextGame)'), 'Profile must own a bounded game-panel switch helper');
+expect(profile.includes("const panel = collection?.querySelector('.profile-v2-game-panel');"), 'bounded game switch must target the existing game panel');
+expect(profile.includes("button.setAttribute('aria-selected', active ? 'true' : 'false');"), 'bounded game switch must keep tab accessibility state in sync');
+expect(profile.includes('panel.innerHTML = renderGameCosmeticGroups(activeGame);'), 'bounded game switch must replace only the active game panel contents');
+expect(!profile.includes('active_collection_game'), 'game-tab selection must not participate in the full Profile render signature');
+
 const openProfileStart = profile.indexOf('export function openProfile()');
 const visibleProfile = profile.indexOf('showProfileImmediately();', openProfileStart);
 const scheduledRefresh = profile.indexOf('scheduleProfileRefreshAfterEntry();', visibleProfile);
@@ -50,7 +67,7 @@ expect(profileCss.includes('.profile-v2-game-card.active'), 'equipped game item 
 expect(profileCss.includes('.profile-v2-game-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))'), 'mobile Profile game items must remain compact');
 expect(profileCss.includes('.store-v2-game-preview'), 'Profile layout may size but must not duplicate Store cosmetic artwork');
 expect(mainCss.includes('profile-corrective.css?v=7&mvp19=profile-collection&mvp19_3=game-tabs-fresh&fresh-selection&ttt-mark=css'), 'active CSS graph must publish compact game tabs and stable Tic Tac Toe mark geometry');
-expect(manifest.includes('mvp19_3_3=game-tabs-fresh'), 'active Profile runtime identity must publish fresh game-tab collection');
+expect(manifest.includes('mvp19_3_3=game-tabs-panel-only-v1'), 'active Profile runtime identity must publish bounded game-panel switching');
 expect(manifest.includes('perf=stable-render-cache'), 'active Profile runtime must publish stable render-cache behavior while preserving immediate open/background refresh');
 expect(manifest.includes('mvp19_3=profile-game-tabs-fresh'), 'active main CSS identity must publish Profile game-tab polish');
 
