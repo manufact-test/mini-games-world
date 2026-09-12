@@ -723,6 +723,7 @@ function isGameCosmeticEquipped(item){
 }
 
 function gameCosmeticName(item){
+  if (String(item?.item_id || '') === 'game-chess-effect-check') return 'Квантовый след';
   const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata : {};
   const displayName = String(metadata.display_name || '').trim();
   if (displayName) return displayName;
@@ -731,11 +732,45 @@ function gameCosmeticName(item){
 
 function gameCosmeticPreviewMarkup(item){
   const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata : {};
+  const gameType = gameCosmeticGameType(item);
   const layer = gameCosmeticLayer(item) || 'theme';
+  const rawVariant = String(metadata.variant || 'base');
   const variant = layer === 'effect'
-    ? normalizeEffectVariant(String(metadata.variant || 'base'))
-    : String(metadata.variant || 'base');
+    ? normalizeEffectVariant(rawVariant)
+    : rawVariant;
   const safeVariant = variant.replace(/[^a-z0-9-]/g, '');
+
+  if (gameType === 'chess') {
+    let chessVariant = safeVariant;
+    let content = '';
+    let fieldPreviewAttr = '';
+
+    if (layer === 'theme') {
+      const pieces = ['♜','','','♚','','♟','','','','','♙','','♔','','','♖'];
+      content = `<i class="store-v2-mini-chess-board">${pieces.map(piece => `<span>${piece ? `<b>${piece}</b>` : ''}</span>`).join('')}</i>`;
+    } else if (layer === 'elements') {
+      content = '<i class="store-v2-mini-chess-pieces"><span>♚</span><span>♞</span><span>♟</span></i>';
+    } else {
+      const sceneVariant = rawVariant === 'check' ? 'check' : safeVariant;
+      const scenes = {
+        move:[['mover white','♞'],['static-a black','♟'],['static-b white','♟']],
+        capture:[['mover white','♝'],['target black','♜'],['static-a black','♟'],['static-b white','♟']],
+        check:[['mover white','♜'],['king black','♚'],['static-a black','♟'],['static-b white','♟']],
+      };
+      const squares = Array.from({ length:16 }, (_, index) => {
+        const row = Math.floor(index / 4);
+        const column = index % 4;
+        return `<span class="${(row + column) % 2 === 0 ? 'light' : 'dark'}"></span>`;
+      }).join('');
+      const pieces = (scenes[sceneVariant] || []).map(([className, glyph]) => `<strong class="chess-effect-piece ${className}">${glyph}</strong>`).join('');
+      content = `<i class="store-v2-mini-chess-field-effect" aria-hidden="true">${squares}${pieces}<b></b><em></em><u></u></i>`;
+      fieldPreviewAttr = ' data-field-effect-preview="v2-action-demo"';
+      if (rawVariant === 'check') chessVariant = 'quantum-echo';
+    }
+
+    return `<div class="store-v2-game-preview" data-game-type="chess" data-cosmetic-layer="${layer}" data-cosmetic-variant="${chessVariant}"${fieldPreviewAttr} role="img" aria-label="${escapeHtml(gameCosmeticName(item))}">${content}</div>`;
+  }
+
   let content = '';
   if (layer === 'theme') {
     const marks = ['✕','','○','','○','','✕','','✕'];
