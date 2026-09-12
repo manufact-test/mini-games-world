@@ -1,27 +1,35 @@
 @import url('./production-v108-profile-entry-preview-live-owner.css?v=1&mvp19_3=profile-entry-preview-live-owner-v1&four=ios-grid-owned-v1');
 @import url('./games/checkers/game.css?v=64&checkers=pre-b94d-exact-restore-v1');
 
-/* Mobile Profile lifecycle corrective.
- * The accepted shell already prepaints Profile and switches shell routes atomically,
- * but later cosmetics added several continuously animated preview surfaces. Once
- * Profile had been visited those animations kept advancing while the whole route
- * was opacity-hidden, so Telegram WebView could keep paying compositor/GPU work on
- * subsequent Home/Tournament/Store taps. Pause all Profile animation timelines
- * while hidden and during the existing short route-settle guard; active/settled
- * Profile keeps the exact accepted cosmetic animations unchanged. */
+/* Mobile Profile lifecycle corrective v2.
+ *
+ * PR #1345 correctly stopped hidden Profile animations, but its universal
+ * ancestor-dependent selectors made every #screen-profile.active flip invalidate
+ * style for the entire long Profile subtree. That residual style walk is visible
+ * on Android Telegram WebView as a short hitch on Profile enter/leave.
+ *
+ * Keep only the screen-level safety here. Descendant animation lifecycles are now
+ * paused/resumed through the bounded Animation-object guard, so normal mobile
+ * route taps never rematch/recalculate every Profile descendant. */
 @media (max-width: 640px), (pointer: coarse) {
   #screen-profile.screen:not(.active),
-  #screen-profile.screen:not(.active) *,
   #screen-profile.screen:not(.active)::before,
   #screen-profile.screen:not(.active)::after,
-  #screen-profile.screen:not(.active) *::before,
-  #screen-profile.screen:not(.active) *::after,
   html.mgw-profile-route-settling #screen-profile.screen,
-  html.mgw-profile-route-settling #screen-profile.screen *,
   html.mgw-profile-route-settling #screen-profile.screen::before,
-  html.mgw-profile-route-settling #screen-profile.screen::after,
-  html.mgw-profile-route-settling #screen-profile.screen *::before,
-  html.mgw-profile-route-settling #screen-profile.screen *::after {
+  html.mgw-profile-route-settling #screen-profile.screen::after {
+    animation-play-state: paused !important;
+  }
+
+  /* Very old WebViews without Element.getAnimations keep the previous CSS-only
+     safety as a compatibility fallback. Modern Telegram/WebView clients never
+     receive these expensive universal descendant selectors. */
+  html.mgw-profile-animation-css-fallback #screen-profile.screen:not(.active) *,
+  html.mgw-profile-animation-css-fallback #screen-profile.screen:not(.active) *::before,
+  html.mgw-profile-animation-css-fallback #screen-profile.screen:not(.active) *::after,
+  html.mgw-profile-animation-css-fallback.mgw-profile-route-settling #screen-profile.screen *,
+  html.mgw-profile-animation-css-fallback.mgw-profile-route-settling #screen-profile.screen *::before,
+  html.mgw-profile-animation-css-fallback.mgw-profile-route-settling #screen-profile.screen *::after {
     animation-play-state: paused !important;
   }
 }
