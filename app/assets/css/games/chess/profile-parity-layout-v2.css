@@ -116,6 +116,18 @@
   font-size:27px!important;
 }
 
+/* Desktop: the base Profile rebuild is synchronous. Give pointer users immediate
+   visual feedback and remove the old 150ms control transition so the tab never
+   looks like it accepted the click late. Touch/mobile behavior stays unchanged. */
+@media(hover:hover) and (pointer:fine){
+  #screen-profile .profile-v2-game-tab{
+    transition:none!important;
+  }
+  #screen-profile .profile-v2-game-tab:active{
+    transform:none!important;
+  }
+}
+
 @media(max-width:340px){
   #screen-profile .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-"] .store-v2-game-preview[data-game-type="chess"]{
     height:118px!important;
