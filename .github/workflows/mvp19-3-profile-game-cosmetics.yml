@@ -53,8 +53,8 @@ jobs:
           # accepted Store wrapper is composed around the same inner behavior owner.
           git diff --exit-code "$base" "$head" -- \
             bot/catalog/ProductInventoryService.php
-          grep -F "store-screen-checkers-wrapper.js?v=3" bot/tests/Mvp19_4EffectsV2ContractTest.mjs
-          grep -F "mvp19_6=visual-corrective-v2" bot/tests/Mvp19_4EffectsV2ContractTest.mjs
+          grep -F "store-screen-checkers-wrapper.js?v=4" bot/tests/Mvp19_4EffectsV2ContractTest.mjs
+          grep -F "mvp19_6=visual-corrective-v3" bot/tests/Mvp19_4EffectsV2ContractTest.mjs
           grep -F "from './store-screen-intent-wrapper.js?v=19&mvp19_6=accepted-base-preserved';" app/assets/js/screens/store-screen-checkers-wrapper.js
 
           if ! git diff --quiet "$base" "$head" -- app/assets/js/screens/profile-screen-v110.js; then
