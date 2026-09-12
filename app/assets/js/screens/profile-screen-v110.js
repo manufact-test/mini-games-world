@@ -212,10 +212,7 @@ function bindProfileActions(){
     const gameTab = event.target.closest('[data-profile-game-tab]');
     if (gameTab) {
       const nextGame = String(gameTab.dataset.profileGameTab || '').trim();
-      if (nextGame && nextGame !== activeCollectionGame && ownedGameCosmeticGames().some(game => game.game_type === nextGame)) {
-        activeCollectionGame = nextGame;
-        renderProfileV2();
-      }
+      if (nextGame && nextGame !== activeCollectionGame) switchProfileGameCollection(nextGame);
       return;
     }
     const gameCosmeticCard = event.target.closest('[data-profile-game-cosmetic]');
@@ -557,10 +554,6 @@ function renderGameCosmeticsCollection(){
   }
   if (!games.some(game => game.game_type === activeCollectionGame)) activeCollectionGame = games[0].game_type;
   const activeGame = games.find(game => game.game_type === activeCollectionGame) || games[0];
-  const groups = GAME_COSMETIC_GROUPS.map(group => ({
-    ...group,
-    items:activeGame.items.filter(item => gameCosmeticLayer(item) === group.layer),
-  })).filter(group => group.items.length > 0);
 
   return `
     <div class="profile-v2-game-collection" aria-label="Оформление игр">
@@ -572,12 +565,41 @@ function renderGameCosmeticsCollection(){
         }).join('')}
       </div>
       <div class="profile-v2-game-panel" role="tabpanel" data-profile-game-panel="${escapeHtml(activeGame.game_type)}">
-        ${groups.length
-          ? groups.map(group => `<div class="profile-v2-game-group"><div class="profile-v2-game-group-title">${escapeHtml(group.title)}</div><div class="profile-v2-game-grid">${group.items.map(gameCosmeticCardMarkup).join('')}</div></div>`).join('')
-          : '<div class="profile-v2-game-empty">Купленные предметы для этой игры появятся здесь.</div>'}
+        ${renderGameCosmeticGroups(activeGame)}
       </div>
     </div>
   `;
+}
+
+function switchProfileGameCollection(nextGame){
+  const games = ownedGameCosmeticGames();
+  const activeGame = games.find(game => game.game_type === nextGame);
+  if (!activeGame) return;
+
+  const collection = document.querySelector('#screen-profile .profile-v2-game-collection');
+  const panel = collection?.querySelector('.profile-v2-game-panel');
+  if (!(collection instanceof HTMLElement) || !(panel instanceof HTMLElement)) return;
+
+  activeCollectionGame = activeGame.game_type;
+  collection.querySelectorAll('[data-profile-game-tab]').forEach(button => {
+    const active = String(button.dataset.profileGameTab || '') === activeCollectionGame;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+
+  panel.dataset.profileGamePanel = activeCollectionGame;
+  panel.innerHTML = renderGameCosmeticGroups(activeGame);
+}
+
+function renderGameCosmeticGroups(activeGame){
+  const groups = GAME_COSMETIC_GROUPS.map(group => ({
+    ...group,
+    items:activeGame.items.filter(item => gameCosmeticLayer(item) === group.layer),
+  })).filter(group => group.items.length > 0);
+
+  return groups.length
+    ? groups.map(group => `<div class="profile-v2-game-group"><div class="profile-v2-game-group-title">${escapeHtml(group.title)}</div><div class="profile-v2-game-grid">${group.items.map(gameCosmeticCardMarkup).join('')}</div></div>`).join('')
+    : '<div class="profile-v2-game-empty">Купленные предметы для этой игры появятся здесь.</div>';
 }
 
 function ownedGameCosmeticGames(){
@@ -778,7 +800,6 @@ function profileRenderSignature(profile, user, stats, history){
     history:history || null,
     auth:state.profileAuth || null,
     selected_avatar:String(state.selectedAvatarId || ''),
-    active_collection_game:activeCollectionGame,
   });
 }
 function ensureProfileRoot(){

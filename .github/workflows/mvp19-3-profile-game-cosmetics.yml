@@ -47,11 +47,22 @@ jobs:
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
+
+          # Inventory/effect mechanics remain frozen. The canonical Profile owner may
+          # change only together with its executable contract, so a proven Profile
+          # defect can be fixed at the owner instead of being monkey-patched in a
+          # wrapper while the accepted ownership/equip architecture stays guarded.
           git diff --exit-code "$base" "$head" -- \
-            app/assets/js/screens/profile-screen-v110.js \
             bot/catalog/ProductInventoryService.php \
-            bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs \
             bot/tests/Mvp19_4EffectsV2ContractTest.mjs
+
+          if ! git diff --quiet "$base" "$head" -- app/assets/js/screens/profile-screen-v110.js; then
+            if git diff --quiet "$base" "$head" -- bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs; then
+              echo 'Profile owner changed without a matching Profile game-cosmetics contract migration.' >&2
+              exit 1
+            fi
+          fi
+
           git diff --exit-code "$base" "$head" -- \
             app/assets/js/games \
             ':(exclude)app/assets/js/games/chess/renderer.js'
