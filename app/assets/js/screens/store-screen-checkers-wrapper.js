@@ -5,7 +5,7 @@ import {
 } from './store-screen-intent-wrapper.js?v=19&mvp19_6=accepted-base-preserved';
 import { api } from '../api/client.js?v=34';
 
-const STORE_API_REPAIR_HOOK = Symbol.for('mgw.store.checkers-full-store-parity.v2');
+const STORE_API_REPAIR_HOOK = Symbol.for('mgw.store.checkers-full-store-parity.v3');
 let initialized = false;
 let latestStoreSnapshot = null;
 
@@ -49,15 +49,16 @@ function ensureCheckersCosmeticStyles(){
     document.head.appendChild(link);
   }
 
-  const correctiveHref = new URL('../../css/games/checkers/store-visual-corrective-v2.css?v=1&mvp19_6=manual-review-pass-1', import.meta.url).href;
+  const correctiveHref = new URL('../../css/games/checkers/store-visual-corrective-v2.css?v=2&mvp19_6=manual-review-pass-2', import.meta.url).href;
   const corrective = document.querySelector('link[data-mgw-checkers-store-corrective]');
   if (corrective instanceof HTMLLinkElement) {
     if (corrective.href !== correctiveHref) corrective.href = correctiveHref;
+    corrective.dataset.mgwCheckersStoreCorrective = 'mvp19-6-manual-review-pass-2';
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwCheckersStoreCorrective = 'mvp19-6-manual-review-pass-1';
+  link.dataset.mgwCheckersStoreCorrective = 'mvp19-6-manual-review-pass-2';
   link.href = correctiveHref;
   document.head.appendChild(link);
 }
@@ -129,6 +130,7 @@ function upgradeCheckersStorePresentation(){
     upgradeCheckersHeader(root);
     makeCheckersEffectsPassive(root);
     injectCheckersBundleIntoGame(root);
+    upgradeCheckersBundleVisuals(root);
   });
 }
 
@@ -157,11 +159,22 @@ function upgradeCheckersHeader(root){
 function makeCheckersEffectsPassive(root){
   root.querySelectorAll('.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]').forEach(preview => {
     if (!(preview instanceof HTMLElement)) return;
-    preview.removeAttribute('role');
     preview.removeAttribute('tabindex');
     preview.removeAttribute('title');
     preview.classList.remove('is-playing','is-reduced-preview');
+    startPassiveEffectPreview(preview);
   });
+}
+
+function startPassiveEffectPreview(preview){
+  if (preview.dataset.mgwCheckersFxStarted === '1') return;
+  preview.dataset.mgwCheckersFxStarted = '1';
+  const play = () => preview.classList.add('is-previewing');
+  if (typeof globalThis.requestAnimationFrame === 'function') {
+    globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(play));
+  } else {
+    queueMicrotask(play);
+  }
 }
 
 function findCheckersBundle(){
@@ -207,7 +220,7 @@ function inlineBundleMarkup(bundle){
     </div>
     <div class="store-v2-game-bundles mgw-checkers-inline-bundle-wrap">
       <article class="store-v2-bundle ${allOwned ? 'owned' : ''}" data-store-bundle-game="checkers">
-        ${checkersBundleVisualMarkup()}
+        <div class="store-v2-bundle-visual checkers-bundle-visual mgw-checkers-bundle-complete" aria-hidden="true">${checkersBundleVisualContents()}</div>
         <div class="store-v2-bundle-copy">
           <h2>${title}</h2>
           <p>5 премиальных предметов для шашек.</p>
@@ -222,19 +235,34 @@ function inlineBundleMarkup(bundle){
   `;
 }
 
-function checkersBundleVisualMarkup(){
+function upgradeCheckersBundleVisuals(root){
+  root.querySelectorAll('.checkers-bundle-visual').forEach(visual => {
+    if (!(visual instanceof HTMLElement)) return;
+    if (visual.classList.contains('mgw-checkers-bundle-complete')) return;
+    visual.classList.add('mgw-checkers-bundle-complete');
+    visual.innerHTML = checkersBundleVisualContents();
+    visual.setAttribute('aria-hidden', 'true');
+  });
+}
+
+function checkersBundleVisualContents(){
+  return `
+    <span class="mgw-checkers-bundle-board">${checkersMiniBoardMarkup(true)}</span>
+    <i class="mgw-checkers-bundle-pieces"><span class="black"></span><span class="white"></span><span class="king">♛</span></i>
+    <span class="mgw-checkers-bundle-effects"><i class="move"></i><i class="capture"></i><i class="promotion"></i></span>
+  `;
+}
+
+function checkersMiniBoardMarkup(withStartingPieces){
   const cells = Array.from({ length:64 }, (_, cell) => {
     const row = Math.floor(cell / 8);
     const col = cell % 8;
-    return `<span class="${(row + col) % 2 === 1 ? 'dark' : 'light'}"></span>`;
+    const dark = (row + col) % 2 === 1;
+    const hasPiece = Boolean(withStartingPieces) && dark && (row < 3 || row > 4);
+    const pieceClass = row < 3 ? 'black' : 'white';
+    return `<span class="${dark ? 'dark' : 'light'}">${hasPiece ? `<i class="${pieceClass}"></i>` : ''}</span>`;
   }).join('');
-  return `
-    <div class="store-v2-bundle-visual checkers-bundle-visual" aria-hidden="true">
-      <i class="store-v2-mini-checkers-board">${cells}</i>
-      <i class="store-v2-mini-checkers-pieces"><span class="black"></span><span class="white"></span></i>
-      <b>＋3</b>
-    </div>
-  `;
+  return `<i class="store-v2-mini-checkers-board" aria-hidden="true">${cells}</i>`;
 }
 
 function bridgeInlineBundlePurchase(button){
