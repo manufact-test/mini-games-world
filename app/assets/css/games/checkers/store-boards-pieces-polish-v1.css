@@ -1,0 +1,105 @@
+/* MVP-19.6 — Store-only boards + piece-set polish.
+   Scope: Games -> Checkers board previews and piece-set previews/purchase sheets.
+   Effects remain owned by store-effects-live-board-v1.css. Live Checkers stays untouched. */
+
+/* Inline game-page bundle is intentionally retired. Bundles belong to the top-level "Наборы" tab. */
+.mgw-checkers-inline-bundle-group{display:none!important}
+
+/* ---------- BOARDS: use the same full-card 8x8 geometry as accepted effect previews ---------- */
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"],
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{
+  box-sizing:border-box;position:relative;display:grid;place-items:center;min-height:0!important;height:auto!important;
+  aspect-ratio:1;padding:0!important;overflow:hidden;border:0!important;border-radius:18px;background:transparent!important;
+  box-shadow:none!important;
+}
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{width:100%!important}
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{width:min(100%,250px)!important;margin:0 auto}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]::before,
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]::after{display:none!important}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board{
+  box-sizing:border-box;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));width:100%!important;max-width:none!important;
+  height:100%!important;aspect-ratio:1;overflow:hidden;border-radius:18px!important;border:2px solid rgba(255,255,255,.1)!important;
+  transform:none!important;box-shadow:0 16px 38px rgba(0,0,0,.2)!important;background:#121828!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board>span{
+  position:relative;display:grid;place-items:center;min-width:0;min-height:0;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board>span>i{
+  position:relative;display:block;width:72%!important;height:auto!important;aspect-ratio:1;border-radius:50%;
+  box-shadow:0 5px 12px rgba(0,0,0,.35),inset 0 0 0 2px rgba(255,255,255,.16),inset 0 -5px 8px rgba(0,0,0,.18)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board>span>i::after{
+  content:"";position:absolute;inset:15%!important;border-radius:50%;border:1px solid rgba(255,255,255,.16)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board>span>i.white{
+  background:linear-gradient(145deg,#f7f5ee,#c8c5bd)!important;
+  box-shadow:0 5px 12px rgba(0,0,0,.32),inset 0 0 0 2px rgba(255,255,255,.72),inset 0 -5px 8px rgba(85,85,85,.18)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board>span>i.black{
+  background:linear-gradient(145deg,#313a51,#111827)!important;
+  box-shadow:0 5px 12px rgba(0,0,0,.45),inset 0 0 0 2px rgba(146,159,205,.28),inset 0 -5px 8px rgba(0,0,0,.34)!important;
+}
+
+/* Preserve each purchasable board's actual material while keeping full-field geometry. */
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board{border-color:rgba(215,162,96,.34)!important}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board>span.light{background:linear-gradient(102deg,rgba(255,255,255,.08),transparent 28%,rgba(87,42,19,.08) 61%,transparent 78%),linear-gradient(145deg,#d7ad72,#b97b42)!important}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board>span.dark{background:linear-gradient(96deg,rgba(255,255,255,.035),transparent 31%,rgba(0,0,0,.12) 66%,transparent 82%),linear-gradient(145deg,#71462e,#472b25)!important}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="dark"] .store-v2-mini-checkers-board{border-color:rgba(148,163,184,.2)!important;background:#070b12!important}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="dark"] .store-v2-mini-checkers-board>span.light{background:linear-gradient(145deg,#6f7787,#4d5563)!important}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="dark"] .store-v2-mini-checkers-board>span.dark{background:linear-gradient(145deg,#202736,#0c111c)!important}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-board{border-color:rgba(226,232,240,.4)!important}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-board>span.light{background:linear-gradient(118deg,transparent 0 34%,rgba(112,122,139,.16) 35% 36%,transparent 37% 62%,rgba(148,157,173,.11) 63% 64%,transparent 65%),linear-gradient(145deg,#eef1f4,#cfd4da)!important}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-board>span.dark{background:linear-gradient(122deg,transparent 0 41%,rgba(210,218,230,.11) 42% 43%,transparent 44% 70%,rgba(255,255,255,.08) 71% 72%,transparent 73%),linear-gradient(145deg,#5c6573,#343b47)!important}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="neon"] .store-v2-mini-checkers-board{border-color:rgba(81,221,255,.46)!important;background:#050817!important;box-shadow:0 16px 38px rgba(0,0,0,.28),0 0 24px rgba(82,204,255,.18),0 0 34px rgba(142,91,255,.1)!important}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="neon"] .store-v2-mini-checkers-board>span.light{background:linear-gradient(145deg,#24324a,#152038)!important;box-shadow:inset 0 0 0 1px rgba(92,214,255,.08)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="neon"] .store-v2-mini-checkers-board>span.dark{background:linear-gradient(145deg,#171124,#090812)!important;box-shadow:inset 0 0 0 1px rgba(166,108,255,.12)}
+
+/* ---------- PIECES: branded king badge across every set ---------- */
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces>.king b.mgw-checkers-piece-brand{
+  position:relative;z-index:3;display:grid;grid-template-rows:auto auto;place-items:center;align-content:center;gap:0;
+  width:58%;height:58%;padding:0;border-radius:50%;font-style:normal;text-decoration:none;line-height:1;
+  color:#f8dc86;text-shadow:0 1px 6px rgba(245,201,79,.28);
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .mgw-checkers-piece-crown{
+  display:block;margin:0 0 -1px;font-size:9px;line-height:.8;font-weight:900;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .mgw-checkers-piece-mark{
+  display:block;font-size:12px;line-height:1;font-weight:950;letter-spacing:-.8px;
+}
+.store-v2-confirm-game .store-v2-game-preview[data-cosmetic-layer="elements"] .mgw-checkers-piece-crown{font-size:10px}
+.store-v2-confirm-game .store-v2-game-preview[data-cosmetic-layer="elements"] .mgw-checkers-piece-mark{font-size:13px}
+
+/* The old striped "marble" look is replaced with polished granite/mineral aggregate: no veins, no slashes. */
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-pieces>span{
+  filter:none!important;
+  background:
+    radial-gradient(circle at 19% 22%,rgba(65,74,88,.28) 0 1.4px,transparent 1.8px),
+    radial-gradient(circle at 72% 25%,rgba(255,255,255,.5) 0 1.2px,transparent 1.7px),
+    radial-gradient(circle at 34% 68%,rgba(83,94,110,.24) 0 1.7px,transparent 2.1px),
+    radial-gradient(circle at 78% 72%,rgba(255,255,255,.36) 0 1.3px,transparent 1.8px),
+    radial-gradient(circle at 52% 44%,rgba(108,119,136,.22) 0 1px,transparent 1.5px),
+    linear-gradient(145deg,#f0f2f4,#aeb5bf)!important;
+  box-shadow:0 11px 21px rgba(0,0,0,.3),inset 0 0 0 2px rgba(255,255,255,.48),inset 0 -8px 13px rgba(64,72,84,.16)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-pieces>.black{
+  background:
+    radial-gradient(circle at 19% 22%,rgba(225,231,239,.32) 0 1.3px,transparent 1.8px),
+    radial-gradient(circle at 72% 25%,rgba(255,255,255,.16) 0 1.1px,transparent 1.6px),
+    radial-gradient(circle at 34% 68%,rgba(196,205,218,.22) 0 1.6px,transparent 2px),
+    radial-gradient(circle at 78% 72%,rgba(255,255,255,.18) 0 1.2px,transparent 1.7px),
+    radial-gradient(circle at 52% 44%,rgba(221,227,236,.16) 0 1px,transparent 1.5px),
+    linear-gradient(145deg,#697382,#2b313c)!important;
+  box-shadow:0 11px 21px rgba(0,0,0,.38),inset 0 0 0 2px rgba(255,255,255,.18),inset 0 -8px 13px rgba(0,0,0,.24)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-pieces>.king{
+  background:
+    radial-gradient(circle at 22% 28%,rgba(54,64,78,.28) 0 1.3px,transparent 1.8px),
+    radial-gradient(circle at 70% 23%,rgba(255,255,255,.44) 0 1.1px,transparent 1.6px),
+    radial-gradient(circle at 39% 72%,rgba(75,87,104,.24) 0 1.5px,transparent 2px),
+    radial-gradient(circle at 76% 66%,rgba(255,255,255,.3) 0 1.2px,transparent 1.7px),
+    linear-gradient(145deg,#d8dde3,#7d8795)!important;
+}
+
+@media(max-width:430px){
+  .store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{width:min(100%,236px)!important}
+}
