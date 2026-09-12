@@ -6,6 +6,7 @@ const effectsV3 = fs.readFileSync('app/assets/css/games/tictactoe/effects-v3.css
 const migration = fs.readFileSync('bot/database/migrations/20260901_0018_tictactoe_single_effect_slot.php', 'utf8');
 const store = fs.readFileSync('app/assets/js/screens/store-screen.js', 'utf8');
 const storeEntry = fs.readFileSync('app/assets/js/screens/store-screen-intent-wrapper.js', 'utf8');
+const storeOuterEntry = fs.readFileSync('app/assets/js/screens/store-screen-checkers-wrapper.js', 'utf8');
 const toast = fs.readFileSync('app/assets/js/components/toast.js', 'utf8');
 const api = fs.readFileSync('app/assets/js/api/client.js', 'utf8');
 const endpoint = fs.readFileSync('bot/cosmetic-store.php', 'utf8');
@@ -109,7 +110,8 @@ expect(mainCss.includes('c2_5=visible-mark-layer'), 'active CSS graph must prese
 expect(mainCss.includes("./games/tictactoe/effects-v3.css?v=1&c2_6=cell-native-dom-fx"), 'active CSS graph must load C2.6 cell-native FX after cosmetics');
 expect(mainCss.includes('.has-shell-chrome .screen[data-screen="store"] .store-v2-shell{padding-bottom:18px}'), 'Store primary screen must not stack the old 78px tail on top of shell navigation spacing');
 expect(manifest.includes('c2_1=single-slot-parity'), 'active runtime manifest must publish C2.1 identity');
-expect(manifest.includes('store-screen-intent-wrapper.js?v=1') && manifest.includes('mobile=intent-only'), 'active runtime manifest must publish the mobile intent-only Store entry');
+expect(manifest.includes('store-screen-checkers-wrapper.js?v=1') && manifest.includes('mvp19_6=checkers-boards'), 'active runtime manifest must compose Store through the bounded Checkers wrapper');
+expect(storeOuterEntry.includes("from './store-screen-intent-wrapper.js?v=19&mvp19_6=accepted-base-preserved';"), 'Checkers Store wrapper must delegate to the accepted mobile intent-only Store entry');
 expect(storeEntry.includes("./store-screen.js?v=44&intent_base=1"), 'Store entry must delegate to the accepted versioned Store owner');
 expect(store.includes('Один выбранный эффект срабатывает при каждом ходе') && store.includes('data-store-v2-unequip'), 'delegated Store owner must preserve C2.1 single-effect selection UI');
 expect(manifest.includes('c2_1=effect-unequip'), 'active runtime manifest must cache-bust the API unequip client');
