@@ -13,6 +13,6 @@ function ensureProfileChessLayoutStyles(){
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.dataset.mgwProfileChessLayoutV2 = '1';
-  link.href = new URL('../../css/games/chess/profile-parity-layout-v2.css?v=1&mvp19_5=profile-card-sheet-fit-v2', import.meta.url).href;
+  link.href = new URL('../../css/games/chess/profile-parity-layout-v2.css?v=2&mvp19_5=profile-card-sheet-fit-v2&secondary=clean-v1', import.meta.url).href;
   document.head.appendChild(link);
 }

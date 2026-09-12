@@ -24,6 +24,27 @@
   line-height:1.2!important;
 }
 
+/* Chess cards already sit inside explicit section headings (Boards / Pieces / Effects).
+   Secondary labels such as "Оформление" / "Эффект" only duplicate that information. */
+#screen-profile .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-"] > small,
+#screen-profile .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-"] > p,
+#screen-profile .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-"] > .profile-v2-game-card-subtitle,
+#screen-profile .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-"] > .profile-v2-game-card-kind,
+#screen-profile .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-"] > [data-profile-game-cosmetic-label]{
+  display:none!important;
+}
+#screen-profile .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-"]::after,
+#screen-profile .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-"] .profile-v2-game-card-name::after{
+  content:none!important;
+  display:none!important;
+}
+
+/* The change/equip sheet already has the cosmetic name as its title and the preview
+   itself is unambiguous, so remove the redundant "Шахматы / Поля|Знаки|Эффекты" block. */
+#sheet:has(.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="chess"]) .profile-v2-game-preview-meta{
+  display:none!important;
+}
+
 /* Board cards: fill the preview comfortably without crowding the card edge. */
 #screen-profile .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-board-"] .store-v2-mini-chess-board{
   --mgw-profile-chess-card-board:clamp(110px,31vw,116px);
