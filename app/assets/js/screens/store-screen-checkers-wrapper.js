@@ -5,9 +5,10 @@ import {
 } from './store-screen-intent-wrapper.js?v=19&mvp19_6=accepted-base-preserved';
 import { api } from '../api/client.js?v=34';
 
-const STORE_API_REPAIR_HOOK = Symbol.for('mgw.store.checkers-full-store-parity.v3');
+const STORE_API_REPAIR_HOOK = Symbol.for('mgw.store.checkers-full-store-parity.v4');
 let initialized = false;
 let latestStoreSnapshot = null;
+let checkersEffectObserver = null;
 
 ensureCheckersCosmeticStyles();
 installStoreApiRepairHooks();
@@ -49,16 +50,16 @@ function ensureCheckersCosmeticStyles(){
     document.head.appendChild(link);
   }
 
-  const correctiveHref = new URL('../../css/games/checkers/store-visual-corrective-v2.css?v=2&mvp19_6=manual-review-pass-2', import.meta.url).href;
+  const correctiveHref = new URL('../../css/games/checkers/store-visual-corrective-v3.css?v=1&mvp19_6=manual-review-pass-3', import.meta.url).href;
   const corrective = document.querySelector('link[data-mgw-checkers-store-corrective]');
   if (corrective instanceof HTMLLinkElement) {
     if (corrective.href !== correctiveHref) corrective.href = correctiveHref;
-    corrective.dataset.mgwCheckersStoreCorrective = 'mvp19-6-manual-review-pass-2';
+    corrective.dataset.mgwCheckersStoreCorrective = 'mvp19-6-manual-review-pass-3';
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwCheckersStoreCorrective = 'mvp19-6-manual-review-pass-2';
+  link.dataset.mgwCheckersStoreCorrective = 'mvp19-6-manual-review-pass-3';
   link.href = correctiveHref;
   document.head.appendChild(link);
 }
@@ -128,6 +129,7 @@ function upgradeCheckersStorePresentation(){
     if (!(root instanceof HTMLElement)) return;
     renameCheckersSelector(root);
     upgradeCheckersHeader(root);
+    upgradeCheckersCopy(root);
     makeCheckersEffectsPassive(root);
     injectCheckersBundleIntoGame(root);
     upgradeCheckersBundleVisuals(root);
@@ -156,25 +158,99 @@ function upgradeCheckersHeader(root){
   });
 }
 
+function upgradeCheckersCopy(root){
+  root.querySelectorAll('.store-v2-game-product[data-store-game-product="checkers"]').forEach(product => {
+    if (!(product instanceof HTMLElement)) return;
+    const preview = product.querySelector('.store-v2-game-preview[data-game-type="checkers"]');
+    const copy = product.querySelector('.store-v2-game-product-copy p');
+    if (!(preview instanceof HTMLElement) || !(copy instanceof HTMLElement)) return;
+    const layer = String(preview.dataset.cosmeticLayer || '');
+    const variant = String(preview.dataset.cosmeticVariant || '');
+    if (layer === 'elements' && variant === 'marble') copy.textContent = 'Натуральный мраморный рисунок с тонкими серыми прожилками';
+  });
+}
+
 function makeCheckersEffectsPassive(root){
   root.querySelectorAll('.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]').forEach(preview => {
     if (!(preview instanceof HTMLElement)) return;
     preview.removeAttribute('tabindex');
     preview.removeAttribute('title');
-    preview.classList.remove('is-playing','is-reduced-preview');
+    preview.classList.remove('is-playing');
+    upgradeCheckersEffectMarkup(preview);
     startPassiveEffectPreview(preview);
   });
 }
 
+function upgradeCheckersEffectMarkup(preview){
+  const variant = String(preview.dataset.cosmeticVariant || 'move');
+  const effect = preview.querySelector('.store-v2-mini-checkers-effect');
+  if (!(effect instanceof HTMLElement)) return;
+  if (effect.dataset.mgwCheckersFxMarkup === '4') return;
+  effect.dataset.mgwCheckersFxMarkup = '4';
+  effect.className = `store-v2-mini-checkers-effect checkers-store-fx-${variant}`;
+  effect.setAttribute('data-checkers-effect-preview', '');
+  effect.setAttribute('aria-hidden', 'true');
+  effect.innerHTML = `${checkersEffectBoardMarkup()}<i class="checkers-fx-path"></i><b class="checkers-fx-piece from"></b><b class="checkers-fx-piece target"></b><em class="checkers-fx-impact"></em><u class="checkers-fx-crown">♛</u>`;
+}
+
+function checkersEffectBoardMarkup(){
+  const cells = Array.from({ length:64 }, (_, cell) => {
+    const row = Math.floor(cell / 8);
+    const col = cell % 8;
+    return `<span class="${(row + col) % 2 ? 'dark' : 'light'}"></span>`;
+  }).join('');
+  return `<span class="checkers-fx-board">${cells}</span>`;
+}
+
+function ensureCheckersEffectObserver(){
+  if (checkersEffectObserver || typeof globalThis.IntersectionObserver !== 'function') return checkersEffectObserver;
+  checkersEffectObserver = new globalThis.IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      const preview = entry.target;
+      if (!(preview instanceof HTMLElement) || !entry.isIntersecting || entry.intersectionRatio < 0.35) return;
+      runBoundedEffectPreview(preview);
+    });
+  }, { threshold:[0.35,0.7] });
+  return checkersEffectObserver;
+}
+
 function startPassiveEffectPreview(preview){
-  if (preview.dataset.mgwCheckersFxStarted === '1') return;
-  preview.dataset.mgwCheckersFxStarted = '1';
-  const play = () => preview.classList.add('is-previewing');
-  if (typeof globalThis.requestAnimationFrame === 'function') {
-    globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(play));
-  } else {
-    queueMicrotask(play);
+  if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    preview.classList.add('is-reduced-preview');
+    return;
   }
+  const observer = ensureCheckersEffectObserver();
+  if (observer) {
+    if (preview.dataset.mgwCheckersFxObserved !== '1') {
+      preview.dataset.mgwCheckersFxObserved = '1';
+      observer.observe(preview);
+    }
+    return;
+  }
+  runBoundedEffectPreview(preview);
+}
+
+function runBoundedEffectPreview(preview){
+  if (!(preview instanceof HTMLElement) || preview.dataset.mgwCheckersFxBusy === '1') return;
+  preview.dataset.mgwCheckersFxBusy = '1';
+  const replay = cycle => {
+    if (!preview.isConnected) {
+      preview.dataset.mgwCheckersFxBusy = '0';
+      return;
+    }
+    preview.classList.remove('is-previewing');
+    void preview.offsetWidth;
+    preview.classList.add('is-previewing');
+    globalThis.setTimeout(() => {
+      preview.classList.remove('is-previewing');
+      if (cycle < 2) {
+        globalThis.setTimeout(() => replay(cycle + 1), 360);
+      } else {
+        preview.dataset.mgwCheckersFxBusy = '0';
+      }
+    }, 1900);
+  };
+  replay(1);
 }
 
 function findCheckersBundle(){
@@ -223,7 +299,7 @@ function inlineBundleMarkup(bundle){
         <div class="store-v2-bundle-visual checkers-bundle-visual mgw-checkers-bundle-complete" aria-hidden="true">${checkersBundleVisualContents()}</div>
         <div class="store-v2-bundle-copy">
           <h2>${title}</h2>
-          <p>5 премиальных предметов для шашек.</p>
+          <p>Неоновая доска + неоновые шашки + ход + взятие + дамка.</p>
           ${allOwned ? '<p>Комплект уже собран.</p>' : (owned ? `<p>Осталось ${missing} из 5.</p>` : '')}
           ${!allOwned ? `<div class="store-v2-bundle-price"><strong>${formatNumber(price)} коинов</strong>${saving > 0 ? `<span>−${formatNumber(saving)}</span>` : ''}</div>` : ''}
         </div>
@@ -238,7 +314,8 @@ function inlineBundleMarkup(bundle){
 function upgradeCheckersBundleVisuals(root){
   root.querySelectorAll('.checkers-bundle-visual').forEach(visual => {
     if (!(visual instanceof HTMLElement)) return;
-    if (visual.classList.contains('mgw-checkers-bundle-complete')) return;
+    if (visual.dataset.mgwCheckersBundleVisual === '4') return;
+    visual.dataset.mgwCheckersBundleVisual = '4';
     visual.classList.add('mgw-checkers-bundle-complete');
     visual.innerHTML = checkersBundleVisualContents();
     visual.setAttribute('aria-hidden', 'true');
@@ -247,10 +324,19 @@ function upgradeCheckersBundleVisuals(root){
 
 function checkersBundleVisualContents(){
   return `
-    <span class="mgw-checkers-bundle-board">${checkersMiniBoardMarkup(true)}</span>
-    <i class="mgw-checkers-bundle-pieces"><span class="black"></span><span class="white"></span><span class="king">♛</span></i>
-    <span class="mgw-checkers-bundle-effects"><i class="move"></i><i class="capture"></i><i class="promotion"></i></span>
+    <span class="mgw-checkers-bundle-board"><small class="mgw-checkers-bundle-label">Доска</small>${checkersMiniBoardMarkup(false)}</span>
+    <span class="mgw-checkers-bundle-pieces"><small class="mgw-checkers-bundle-label">Шашки</small><i class="store-v2-mini-checkers-pieces"><span class="black"></span><span class="white"></span><span class="king"><b>♛</b></span></i></span>
+    <span class="mgw-checkers-bundle-effects">
+      ${bundleEffectMarkup('move','Ход')}
+      ${bundleEffectMarkup('capture','Взятие')}
+      ${bundleEffectMarkup('promotion','Дамка')}
+    </span>
   `;
+}
+
+function bundleEffectMarkup(variant, label){
+  const cells = Array.from({ length:16 }, (_, index) => '<i></i>').join('');
+  return `<i class="mgw-checkers-bundle-effect ${variant}"><small class="mgw-checkers-bundle-label">${label}</small><span class="mgw-checkers-bundle-effect-board">${cells}</span></i>`;
 }
 
 function checkersMiniBoardMarkup(withStartingPieces){
