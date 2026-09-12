@@ -11,7 +11,7 @@ const CHECKERS_BOARD_COPY = Object.freeze({
   marble:'Светлый камень с холодными прожилками',
   neon:'Тёмная доска с цианово-фиолетовым свечением',
 });
-const STORE_API_REPAIR_HOOK = Symbol.for('mgw.store.checkers-board-parity.v1');
+const STORE_API_REPAIR_HOOK = Symbol.for('mgw.store.checkers-board-parity.v2');
 let initialized = false;
 
 ensureCheckersCosmeticStyles();
@@ -40,11 +40,16 @@ export async function openStoreSheet(){
 }
 
 function ensureCheckersCosmeticStyles(){
-  if (document.querySelector('link[data-mgw-checkers-cosmetics]')) return;
+  const existing = document.querySelector('link[data-mgw-checkers-cosmetics]');
+  if (existing instanceof HTMLLinkElement) {
+    const nextHref = new URL('../../css/games/checkers/cosmetics.css?v=2&mvp19_6=store-corrective', import.meta.url).href;
+    if (existing.href !== nextHref) existing.href = nextHref;
+    return;
+  }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwCheckersCosmetics = 'mvp19-6-store-boards';
-  link.href = new URL('../../css/games/checkers/cosmetics.css?v=1&mvp19_6=board-themes', import.meta.url).href;
+  link.dataset.mgwCheckersCosmetics = 'mvp19-6-store-corrective';
+  link.href = new URL('../../css/games/checkers/cosmetics.css?v=2&mvp19_6=store-corrective', import.meta.url).href;
   document.head.appendChild(link);
 }
 
@@ -103,9 +108,16 @@ function renameCheckersSelector(root){
 function upgradeCheckersCatalog(root, head){
   const title = head.querySelector('h2');
   if (title instanceof HTMLElement) title.textContent = 'Шашки';
+
   const marks = head.querySelectorAll('.store-v2-game-head-marks b');
-  if (marks[0] instanceof HTMLElement) marks[0].textContent = '●';
-  if (marks[1] instanceof HTMLElement) marks[1].textContent = '○';
+  marks.forEach((mark, index) => {
+    if (!(mark instanceof HTMLElement)) return;
+    mark.textContent = '';
+    mark.classList.add('checkers-store-head-piece');
+    mark.classList.toggle('black', index === 0);
+    mark.classList.toggle('white', index === 1);
+    mark.setAttribute('aria-hidden', 'true');
+  });
 
   const groups = [...root.querySelectorAll('.store-v2-game-group')];
   groups.forEach((group, index) => {
@@ -131,10 +143,8 @@ function upgradeCheckersBoardCards(root){
     const variant = String(preview.dataset.cosmeticVariant || '');
     if (!Object.prototype.hasOwnProperty.call(CHECKERS_BOARD_COPY, variant)) return;
 
-    if (!(preview.querySelector('.store-v2-mini-checkers-board') instanceof HTMLElement)) {
-      preview.replaceChildren(checkersBoardPreview());
-    }
     preview.dataset.gameType = 'checkers';
+    preview.replaceChildren(checkersBoardPreview());
 
     const kind = product.querySelector('.store-v2-game-product-copy > span');
     const description = product.querySelector('.store-v2-game-product-copy > p');
@@ -144,9 +154,7 @@ function upgradeCheckersBoardCards(root){
 
   root.querySelectorAll('.store-v2-confirm .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]').forEach(preview => {
     if (!(preview instanceof HTMLElement)) return;
-    if (!(preview.querySelector('.store-v2-mini-checkers-board') instanceof HTMLElement)) {
-      preview.replaceChildren(checkersBoardPreview());
-    }
+    preview.replaceChildren(checkersBoardPreview());
   });
 }
 
