@@ -222,18 +222,23 @@ function ensureCheckersEffectObserver(){
   checkersEffectObserver = new globalThis.IntersectionObserver(entries => {
     entries.forEach(entry => {
       const preview = entry.target;
-      if (!(preview instanceof HTMLElement) || !entry.isIntersecting || entry.intersectionRatio < 0.35) return;
-      runBoundedEffectPreview(preview);
+      if (!(preview instanceof HTMLElement)) return;
+      const visible = entry.isIntersecting && entry.intersectionRatio >= 0.05;
+      preview.dataset.mgwCheckersFxVisible = visible ? '1' : '0';
+      if (visible) runBoundedEffectPreview(preview);
+      else stopPassiveEffectPreview(preview);
     });
-  }, { threshold:[0.35,0.7] });
+  }, { threshold:[0,0.05,0.35,0.7] });
   return checkersEffectObserver;
 }
 
 function startPassiveEffectPreview(preview){
   if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    stopPassiveEffectPreview(preview);
     preview.classList.add('is-reduced-preview');
     return;
   }
+  preview.classList.remove('is-reduced-preview');
   const observer = ensureCheckersEffectObserver();
   if (observer) {
     if (preview.dataset.mgwCheckersFxObserved !== '1') {
@@ -242,30 +247,54 @@ function startPassiveEffectPreview(preview){
     }
     return;
   }
+  preview.dataset.mgwCheckersFxVisible = '1';
   runBoundedEffectPreview(preview);
+}
+
+function nextCheckersEffectRunToken(preview){
+  const token = Number(preview.dataset.mgwCheckersFxRunToken || 0) + 1;
+  preview.dataset.mgwCheckersFxRunToken = String(token);
+  return token;
+}
+
+function stopPassiveEffectPreview(preview){
+  if (!(preview instanceof HTMLElement)) return;
+  nextCheckersEffectRunToken(preview);
+  preview.classList.remove('is-previewing');
+  preview.dataset.mgwCheckersFxBusy = '0';
 }
 
 function runBoundedEffectPreview(preview){
   if (!(preview instanceof HTMLElement) || preview.dataset.mgwCheckersFxBusy === '1') return;
   preview.dataset.mgwCheckersFxBusy = '1';
-  const replay = cycle => {
-    if (!preview.isConnected) {
-      preview.dataset.mgwCheckersFxBusy = '0';
+  const runToken = nextCheckersEffectRunToken(preview);
+  const isActive = () => preview.isConnected
+    && preview.dataset.mgwCheckersFxVisible !== '0'
+    && preview.dataset.mgwCheckersFxRunToken === String(runToken)
+    && !globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const finish = () => {
+    if (preview.dataset.mgwCheckersFxRunToken !== String(runToken)) return;
+    preview.classList.remove('is-previewing');
+    preview.dataset.mgwCheckersFxBusy = '0';
+  };
+  const replay = () => {
+    if (!isActive()) {
+      finish();
       return;
     }
     preview.classList.remove('is-previewing');
     void preview.offsetWidth;
     preview.classList.add('is-previewing');
     globalThis.setTimeout(() => {
-      preview.classList.remove('is-previewing');
-      if (cycle < 2) {
-        globalThis.setTimeout(() => replay(cycle + 1), 360);
-      } else {
-        preview.dataset.mgwCheckersFxBusy = '0';
+      if (!isActive()) {
+        finish();
+        return;
       }
+      preview.classList.remove('is-previewing');
+      globalThis.setTimeout(() => replay(), 260);
     }, 1900);
   };
-  replay(1);
+  replay();
 }
 
 function findCheckersBundle(){
