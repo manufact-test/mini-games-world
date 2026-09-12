@@ -1,0 +1,13 @@
+/* MVP-19.6 — Store card-only board radius corrective.
+   Keep purchase-confirm geometry unchanged; reduce only the small Store-card rounding
+   so starting pieces at the extreme board corners are not visually clipped. */
+.store-v2-game-product[data-store-game-product="checkers"]
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{
+  border-radius:8px!important;
+}
+
+.store-v2-game-product[data-store-game-product="checkers"]
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]
+.store-v2-mini-checkers-board{
+  border-radius:8px!important;
+}
