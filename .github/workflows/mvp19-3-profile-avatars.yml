@@ -8,6 +8,7 @@ on:
       - 'bot/helpers/response.php'
       - 'app/runtime/client/version-manifest.php'
       - 'app/assets/js/profile/**'
+      - 'app/assets/js/screens/store-screen-checkers-wrapper.js'
       - 'app/assets/css/**'
       - 'bot/tests/Mvp19_3ProfileAvatarsTest.php'
       - '.github/workflows/mvp19-3-profile-avatars.yml'
@@ -40,5 +41,9 @@ jobs:
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
-          git diff --exit-code "$base" "$head" -- bot/database/migrations/20260831_0020_add_profile_avatars.php app/assets/js/profile/mgw-profile-avatars.js bot/tests/Mvp19_3ProfileAvatarsTest.php
+          git diff --exit-code "$base" "$head" -- \
+            bot/database/migrations/20260831_0020_add_profile_avatars.php \
+            app/assets/js/profile/mgw-profile-avatars.js
+          grep -F "store-screen-checkers-wrapper.js?v=1" bot/tests/Mvp19_3ProfileAvatarsTest.php
+          grep -F "from './store-screen-intent-wrapper.js?v=19&mvp19_6=accepted-base-preserved';" app/assets/js/screens/store-screen-checkers-wrapper.js
           git diff --check
