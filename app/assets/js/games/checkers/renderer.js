@@ -4,10 +4,16 @@ let activeGameId = '';
 let selectedFrom = null;
 let lastAnimatedMoveKey = '';
 
+ensureCheckersCosmeticStyles();
+
 export function renderCheckersSurface({ game, me, container, onAction }){
   resetForGame(game);
-  container.className = 'board checkers-surface';
+  const players = Array.isArray(game?.players) ? game.players : [];
+  const viewer = players.find(player => String(player?.id || '') === String(me?.id || '')) || null;
+  const boardTheme = checkersBoardVariant(viewer);
+  container.className = `board checkers-surface${boardTheme !== 'base' ? ' checkers-cosmetics' : ''}`;
   container.dataset.gameType = 'checkers';
+  container.dataset.checkersTheme = boardTheme;
 
   const myTurn = game?.status === 'active' && String(game?.turn || '') === String(me?.id || '');
   const viewerSide = String(game?.viewer_side || sideForPlayer(game, me?.id));
@@ -218,6 +224,26 @@ function cellLabel(cell, piece, isTarget, isCaptureTarget){
 function sideForPlayer(game, playerId){
   const player = (game?.players || []).find(item => String(item?.id || '') === String(playerId || ''));
   return String(player?.side || 'white');
+}
+
+function equippedSlots(player){
+  const slots = player?.game_cosmetics?.slots;
+  return slots && typeof slots === 'object' ? slots : {};
+}
+
+function checkersBoardVariant(player){
+  const itemId = String(equippedSlots(player).game_checkers_theme || '');
+  const marker = 'game-checkers-board-';
+  return itemId.startsWith(marker) ? itemId.slice(marker.length) : 'base';
+}
+
+function ensureCheckersCosmeticStyles(){
+  if (document.querySelector('link[data-mgw-checkers-cosmetics]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwCheckersCosmetics = 'mvp19-6-boards';
+  link.href = new URL('../../../css/games/checkers/cosmetics.css?v=1&mvp19_6=board-themes', import.meta.url).href;
+  document.head.appendChild(link);
 }
 
 function lastMoveSignature(game){
