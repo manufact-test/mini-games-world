@@ -86,6 +86,9 @@ $assert(str_contains($serialized, 'Leo'), 'Neutral opponent display name remains
 
 $resultClient = file_get_contents($repoRoot . '/app/assets/js/screens/game-screen-v102.js');
 $profileClient = file_get_contents($repoRoot . '/app/assets/js/screens/profile-screen-v110.js');
+$profileChessParity = file_get_contents($repoRoot . '/app/assets/js/profile/mgw-profile-chess-parity.js');
+$profileCheckersParity = file_get_contents($repoRoot . '/app/assets/js/profile/mgw-profile-checkers-parity.js');
+$profileLayout = file_get_contents($repoRoot . '/app/assets/js/profile/mgw-profile-chess-layout-v2.js');
 $manifest = require $repoRoot . '/app/runtime/client/version-manifest.php';
 $launch = file_get_contents($root . '/helpers/WebAppLaunchUrl.php');
 
@@ -109,11 +112,16 @@ $assert(
 );
 $profileTarget = (string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? '');
 $assert(
-    preg_match('/profile-screen-v110\.js\?v=(\d+)/', $profileTarget, $profileTargetMatch) === 1
-        && (int)$profileTargetMatch[1] >= 1119
+    str_contains($profileTarget, 'mgw-profile-chess-layout-v2.js')
         && str_contains($profileTarget, 'mvp16=profile-pass-a')
-        && str_contains($profileTarget, 'mvp17=result-history-economy'),
-    'Active v110 manifest must preserve the accepted Profile pass A and Result/History economy lineage while allowing later bounded Profile work.'
+        && str_contains($profileTarget, 'mvp17=result-history-economy')
+        && is_string($profileLayout)
+        && str_contains($profileLayout, 'mgw-profile-checkers-parity.js')
+        && is_string($profileCheckersParity)
+        && str_contains($profileCheckersParity, 'mgw-profile-chess-parity.js')
+        && is_string($profileChessParity)
+        && str_contains($profileChessParity, "../screens/profile-screen-v110.js?v=1126&profile_base=accepted-game-cosmetics"),
+    'Active v110 manifest must preserve the accepted Profile pass A and Result/History economy lineage through bounded Profile composition.'
 );
 $assert(
     str_contains((string)($manifest['imports']['./assets/js/games/game-invites-v110.js?v=1137&ux=1'] ?? ''), 'game-invites-v110-rematch-policy-v175.js?v=1&fp=2'),
