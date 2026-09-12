@@ -40,5 +40,8 @@ jobs:
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
-          git diff --exit-code "$base" "$head" -- app/assets/js/profile/mgw-profile-reactions.js app/assets/js/profile/mgw-profile-reactions-header.js bot/tests/Mvp19_3ProfileReactionsTest.php
+          git diff --exit-code "$base" "$head" -- \
+            app/assets/js/profile/mgw-profile-reactions.js \
+            app/assets/js/profile/mgw-profile-reactions-header.js
+          grep -F 'production-v99-profile-reaction-polish.css?v=2&mvp19_3=cumulative-owned-reactions' bot/tests/Mvp19_3ProfileReactionsTest.php
           git diff --check
