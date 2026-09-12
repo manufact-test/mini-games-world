@@ -225,14 +225,24 @@
 }
 
 /* Mobile Profile route: stop asking the expensive full-screen Profile surface to
-   own the navigation frame. The shell still changes route synchronously; during
-   the 360ms intent window only Profile's screen-level opacity transition is
-   removed, while the existing content translate remains the lightweight motion.
-   Premium background atmosphere is paused while hidden and fully suppressed only
-   during enter/leave, then resumes after the route has settled. */
+   own the navigation frame. The shell still changes route synchronously. The old
+   guard only paused two premium background pseudo-elements; Profile now owns many
+   continuously animated cosmetic previews as well. Keep every Profile animation
+   paused while the route is hidden, and during the short accepted route-settle
+   window, so entering/leaving Profile never leaves hidden compositor work running. */
 @media (max-width: 640px), (pointer: coarse) {
-  #screen-profile.screen:not(.active)[data-profile-background-item-id="profile-background-03"]::before,
-  #screen-profile.screen:not(.active)[data-profile-background-item-id="profile-background-04"]::before {
+  #screen-profile.screen:not(.active),
+  #screen-profile.screen:not(.active) *,
+  #screen-profile.screen:not(.active)::before,
+  #screen-profile.screen:not(.active)::after,
+  #screen-profile.screen:not(.active) *::before,
+  #screen-profile.screen:not(.active) *::after,
+  html.mgw-profile-route-settling #screen-profile.screen,
+  html.mgw-profile-route-settling #screen-profile.screen *,
+  html.mgw-profile-route-settling #screen-profile.screen::before,
+  html.mgw-profile-route-settling #screen-profile.screen::after,
+  html.mgw-profile-route-settling #screen-profile.screen *::before,
+  html.mgw-profile-route-settling #screen-profile.screen *::after {
     animation-play-state: paused !important;
   }
 
@@ -242,13 +252,7 @@
   }
 
   html.mgw-profile-route-settling #app #screen-profile.screen > .content {
-    transition: transform .24s var(--sk-ease-standard) !important;
-  }
-
-  html.mgw-profile-route-settling #screen-profile[data-profile-background-item-id="profile-background-03"]::before,
-  html.mgw-profile-route-settling #screen-profile[data-profile-background-item-id="profile-background-04"]::before {
-    animation: none !important;
-    will-change: auto !important;
+    transition: none !important;
   }
 
   /* The old persistent 0.001-opacity Profile warm layer remained in the compositor
