@@ -1,0 +1,119 @@
+name: MVP-19.6 Checkers boards
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260912_0031_add_checkers_board_cosmetics.php'
+      - 'bot/tests/Mvp19_6CheckersBoardsTest.php'
+      - 'app/assets/css/games/checkers/cosmetics.css'
+      - 'app/assets/js/checkers-cosmetics/renderer-board-themes.js'
+      - 'app/assets/js/screens/store-screen-checkers-wrapper.js'
+      - 'app/assets/js/profile/mgw-profile-checkers-parity.js'
+      - 'app/assets/js/profile/mgw-profile-chess-layout-v2.js'
+      - 'app/runtime/client/version-manifest.php'
+      - '.github/workflows/mvp19-4-game-cosmetics-pilot.yml'
+      - '.github/workflows/mvp19-5-chess-cosmetics.yml'
+      - '.github/workflows/mvp19-6-checkers-boards.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp19-6-checkers-boards-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checkers-boards:
+    name: Catalogue Store Profile and live Checkers boards
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint bounded slice
+        run: |
+          php -l bot/database/migrations/20260912_0031_add_checkers_board_cosmetics.php
+          php -l bot/tests/Mvp19_6CheckersBoardsTest.php
+          php -l app/runtime/client/version-manifest.php
+          node --check app/assets/js/checkers-cosmetics/renderer-board-themes.js
+          node --check app/assets/js/screens/store-screen-checkers-wrapper.js
+          node --check app/assets/js/profile/mgw-profile-checkers-parity.js
+          node --check app/assets/js/profile/mgw-profile-chess-layout-v2.js
+
+      - name: Run Checkers boards contract
+        run: php bot/tests/Mvp19_6CheckersBoardsTest.php
+
+      - name: Re-run shared cosmetics contracts
+        run: |
+          php bot/tests/Mvp19_1ProductInventoryTest.php
+          php bot/tests/Mvp19_2CosmeticStoreTest.php
+          php bot/tests/Mvp19_3ProfileAvatarsTest.php
+          php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
+          php bot/tests/Mvp19_5ChessCosmeticsTest.php
+          node bot/tests/Mvp19_4EffectsV2ContractTest.mjs
+          node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
+
+      - name: Guard bounded catalogue
+        shell: bash
+        run: |
+          set -euo pipefail
+          migration='bot/database/migrations/20260912_0031_add_checkers_board_cosmetics.php'
+          grep -F "'game-checkers-board-wood'" "$migration"
+          grep -F "'game-checkers-board-dark'" "$migration"
+          grep -F "'game-checkers-board-marble'" "$migration"
+          grep -F "'game-checkers-board-neon'" "$migration"
+          grep -F "'game_checkers_theme'" "$migration"
+          ! grep -Fq "'layer'=>'elements'" "$migration"
+          ! grep -Fq "'layer'=>'effect'" "$migration"
+          ! grep -Fq "offer_type' => 'bundle'" "$migration"
+
+      - name: Guard active presentation graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; $p=$m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??""; $c=$m["imports"]["./assets/js/games/checkers/renderer.js?v=57"]??""; if(!str_contains($s,"store-screen-checkers-wrapper.js") || !str_contains($s,"mvp19_6=checkers-boards")) exit(1); if(!str_contains($p,"mvp19_6=checkers-board-parity-v1")) exit(2); if(!str_contains($c,"checkers-cosmetics/renderer-board-themes.js") || !str_contains($c,"mvp19_6=board-themes")) exit(3);'
+          grep -F "renderer.js?v=57&base=mvp16-accepted" app/assets/js/checkers-cosmetics/renderer-board-themes.js
+          grep -F 'game_checkers_theme' app/assets/js/checkers-cosmetics/renderer-board-themes.js
+          grep -F 'store-v2-mini-checkers-board' app/assets/js/screens/store-screen-checkers-wrapper.js
+          grep -F 'store-v2-mini-checkers-board' app/assets/js/profile/mgw-profile-checkers-parity.js
+          ! grep -Fq 'MutationObserver' app/assets/js/screens/store-screen-checkers-wrapper.js
+          ! grep -Fq 'MutationObserver' app/assets/js/profile/mgw-profile-checkers-parity.js
+          ! grep -Fq '@keyframes' app/assets/css/games/checkers/cosmetics.css
+
+      - name: Guard accepted Checkers owners and mechanics
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- \
+            app/assets/js/games/checkers/renderer.js \
+            app/assets/css/games/checkers/game.css \
+            app/assets/js/games/checkers/rules.js \
+            app/assets/js/games/checkers/entry.js \
+            bot/games \
+            bot/services/GameService.php \
+            bot/services/GameActionService.php \
+            bot/services/GameInviteService.php \
+            bot/services/ReconnectLifecycleService.php \
+            app/assets/js/screens/game-screen-v102.js \
+            cron \
+            config/private.php
+          git diff --check
