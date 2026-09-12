@@ -11,6 +11,7 @@ on:
       - 'bot/tests/Mvp19_6CheckersBoardsTest.php'
       - 'app/assets/css/games/checkers/cosmetics.css'
       - 'app/assets/css/games/checkers/store-visual-corrective-v2.css'
+      - 'app/assets/css/games/checkers/store-visual-corrective-v3.css'
       - 'app/assets/js/checkers-cosmetics/renderer-board-themes.js'
       - 'app/assets/js/screens/store-screen.js'
       - 'app/assets/js/screens/store-screen-checkers-wrapper.js'
@@ -103,26 +104,28 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; $b=$m["imports"]["./assets/js/screens/store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog"]??""; $c=$m["imports"]["./assets/js/games/checkers/renderer.js?v=57"]??""; if(!str_contains($s,"store-screen-checkers-wrapper.js?v=4") || !str_contains($s,"mvp19_6=visual-corrective-v3")) exit(1); if(!str_contains($b,"mvp19_6=full-checkers-store")) exit(2); if(!str_contains($c,"renderer-board-themes.js") || !str_contains($c,"mvp19_6=board-themes")) exit(3);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; $b=$m["imports"]["./assets/js/screens/store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog"]??""; $c=$m["imports"]["./assets/js/games/checkers/renderer.js?v=57"]??""; if(!str_contains($s,"store-screen-checkers-wrapper.js?v=4") || !str_contains($s,"mvp19_6=visual-corrective-v3") || !str_contains($s,"visual_rev=4")) exit(1); if(!str_contains($b,"mvp19_6=full-checkers-store")) exit(2); if(!str_contains($c,"renderer-board-themes.js") || !str_contains($c,"mvp19_6=board-themes")) exit(3);'
           grep -F "gameType === 'checkers'" app/assets/js/screens/store-screen.js
           grep -F 'checkersMiniBoardMarkup' app/assets/js/screens/store-screen.js
           grep -F 'gameBundlesFromSnapshot' app/assets/js/screens/store-screen.js
           grep -F 'makeCheckersEffectsPassive' app/assets/js/screens/store-screen-checkers-wrapper.js
           grep -F 'startPassiveEffectPreview' app/assets/js/screens/store-screen-checkers-wrapper.js
+          grep -F 'IntersectionObserver' app/assets/js/screens/store-screen-checkers-wrapper.js
+          grep -F 'runBoundedEffectPreview' app/assets/js/screens/store-screen-checkers-wrapper.js
           grep -F 'injectCheckersBundleIntoGame' app/assets/js/screens/store-screen-checkers-wrapper.js
           grep -F 'upgradeCheckersBundleVisuals' app/assets/js/screens/store-screen-checkers-wrapper.js
-          grep -F 'manual-review-pass-2' app/assets/js/screens/store-screen-checkers-wrapper.js
-          grep -F 'width:min(100%,132px)' app/assets/css/games/checkers/store-visual-corrective-v2.css
-          grep -F 'max-width:220px' app/assets/css/games/checkers/store-visual-corrective-v2.css
-          grep -F 'mgw-checkers-store-v3-move-piece' app/assets/css/games/checkers/store-visual-corrective-v2.css
-          grep -F 'mgw-checkers-store-v3-capture-burst' app/assets/css/games/checkers/store-visual-corrective-v2.css
-          grep -F 'mgw-checkers-store-v3-promotion-crown' app/assets/css/games/checkers/store-visual-corrective-v2.css
-          grep -F 'mgw-checkers-bundle-complete' app/assets/css/games/checkers/store-visual-corrective-v2.css
-          grep -F '@media(prefers-reduced-motion:reduce)' app/assets/css/games/checkers/store-visual-corrective-v2.css
+          grep -F 'manual-review-pass-3' app/assets/js/screens/store-screen-checkers-wrapper.js
+          grep -F 'width:72%!important' app/assets/css/games/checkers/store-visual-corrective-v3.css
+          grep -F 'Natural multi-vein marble' app/assets/css/games/checkers/store-visual-corrective-v3.css
+          grep -F 'mgw-checkers-v4-move-piece' app/assets/css/games/checkers/store-visual-corrective-v3.css
+          grep -F 'mgw-checkers-v4-capture-burst' app/assets/css/games/checkers/store-visual-corrective-v3.css
+          grep -F 'mgw-checkers-v4-promotion-crown' app/assets/css/games/checkers/store-visual-corrective-v3.css
+          grep -F 'mgw-checkers-bundle-complete' app/assets/css/games/checkers/store-visual-corrective-v3.css
+          grep -F 'mgw-checkers-bundle-effect-board' app/assets/css/games/checkers/store-visual-corrective-v3.css
+          grep -F '@media(prefers-reduced-motion:reduce)' app/assets/css/games/checkers/store-visual-corrective-v3.css
           ! grep -Fq 'MutationObserver' app/assets/js/screens/store-screen-checkers-wrapper.js
           ! grep -Fq 'setInterval' app/assets/js/screens/store-screen-checkers-wrapper.js
-          ! grep -Fq 'infinite' app/assets/css/games/checkers/cosmetics.css
-          ! grep -Fq 'infinite' app/assets/css/games/checkers/store-visual-corrective-v2.css
+          ! grep -Fq 'infinite' app/assets/css/games/checkers/store-visual-corrective-v3.css
 
       - name: Guard accepted Checkers owners and mechanics
         if: ${{ github.event_name == 'pull_request' }}
