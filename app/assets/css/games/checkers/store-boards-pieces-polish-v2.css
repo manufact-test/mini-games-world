@@ -1,0 +1,191 @@
+/* MVP-19.6 — Checkers Store board-source parity + piece-brand hierarchy.
+   Store-only corrective after manual review of PR #1357.
+   Effects are intentionally untouched and remain owned by store-effects-live-board-v1.css. */
+
+/* ---------- BOARDS ----------
+   Reuse the accepted live/effect-board geometry directly: one real 8x8 grid,
+   equal rows/columns, live-size checker proportions, no compressed middle ranks. */
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"],
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{
+  box-sizing:border-box;
+  position:relative;
+  display:grid;
+  place-items:center;
+  min-height:0!important;
+  height:auto!important;
+  aspect-ratio:1;
+  padding:0!important;
+  overflow:hidden;
+  border:0!important;
+  border-radius:18px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{
+  width:100%!important;
+}
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{
+  width:min(100%,250px)!important;
+  margin:0 auto!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]::before,
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]::after{
+  display:none!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board{
+  box-sizing:border-box!important;
+  display:grid!important;
+  grid-template-columns:repeat(8,minmax(0,1fr))!important;
+  grid-template-rows:repeat(8,minmax(0,1fr))!important;
+  width:100%!important;
+  max-width:none!important;
+  height:auto!important;
+  aspect-ratio:1!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border-radius:18px!important;
+  border:2px solid rgba(255,255,255,.1)!important;
+  transform:none!important;
+  font-size:0!important;
+  line-height:0!important;
+  box-shadow:0 16px 38px rgba(0,0,0,.2)!important;
+  background:#121828!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board>span{
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  width:auto!important;
+  height:auto!important;
+  min-width:0!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  overflow:visible!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board>span>i{
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:block!important;
+  width:72%!important;
+  max-width:none!important;
+  height:auto!important;
+  aspect-ratio:1!important;
+  margin:0!important;
+  padding:0!important;
+  border-radius:50%!important;
+  transform:none!important;
+  background:linear-gradient(145deg,#313a51,#111827)!important;
+  box-shadow:0 5px 12px rgba(0,0,0,.35),inset 0 0 0 2px rgba(255,255,255,.16),inset 0 -5px 8px rgba(0,0,0,.18)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board>span>i::before{
+  display:none!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board>span>i::after{
+  content:""!important;
+  position:absolute!important;
+  inset:15%!important;
+  display:block!important;
+  border-radius:50%!important;
+  border:1px solid rgba(255,255,255,.16)!important;
+  box-shadow:none!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board>span>i.white{
+  background:linear-gradient(145deg,#f7f5ee,#c8c5bd)!important;
+  box-shadow:0 5px 12px rgba(0,0,0,.32),inset 0 0 0 2px rgba(255,255,255,.72),inset 0 -5px 8px rgba(85,85,85,.18)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board>span>i.black{
+  background:linear-gradient(145deg,#313a51,#111827)!important;
+  box-shadow:0 5px 12px rgba(0,0,0,.45),inset 0 0 0 2px rgba(146,159,205,.28),inset 0 -5px 8px rgba(0,0,0,.34)!important;
+}
+
+/* The four Store products use the exact material values already accepted by live Checkers. */
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board{
+  border-color:rgba(215,162,96,.34)!important;
+  box-shadow:0 16px 38px rgba(0,0,0,.24),0 0 24px rgba(157,92,38,.12)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board>span.light{
+  background:linear-gradient(102deg,rgba(255,255,255,.08),transparent 28%,rgba(87,42,19,.08) 61%,transparent 78%),linear-gradient(145deg,#d7ad72,#b97b42)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board>span.dark{
+  background:linear-gradient(96deg,rgba(255,255,255,.035),transparent 31%,rgba(0,0,0,.12) 66%,transparent 82%),linear-gradient(145deg,#71462e,#472b25)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="dark"] .store-v2-mini-checkers-board{
+  border-color:rgba(148,163,184,.2)!important;
+  box-shadow:0 16px 38px rgba(0,0,0,.34),0 0 22px rgba(75,85,99,.12)!important;
+  background:#070b12!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="dark"] .store-v2-mini-checkers-board>span.light{
+  background:linear-gradient(145deg,#6f7787,#4d5563)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="dark"] .store-v2-mini-checkers-board>span.dark{
+  background:linear-gradient(145deg,#202736,#0c111c)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-board{
+  border-color:rgba(226,232,240,.4)!important;
+  box-shadow:0 16px 38px rgba(0,0,0,.24),0 0 26px rgba(194,206,224,.12)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-board>span.light{
+  background:linear-gradient(118deg,transparent 0 34%,rgba(112,122,139,.16) 35% 36%,transparent 37% 62%,rgba(148,157,173,.11) 63% 64%,transparent 65%),linear-gradient(145deg,#eef1f4,#cfd4da)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-board>span.dark{
+  background:linear-gradient(122deg,transparent 0 41%,rgba(210,218,230,.11) 42% 43%,transparent 44% 70%,rgba(255,255,255,.08) 71% 72%,transparent 73%),linear-gradient(145deg,#5c6573,#343b47)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="neon"] .store-v2-mini-checkers-board{
+  border-color:rgba(81,221,255,.46)!important;
+  box-shadow:0 16px 38px rgba(0,0,0,.32),0 0 26px rgba(82,204,255,.18),0 0 40px rgba(142,91,255,.1)!important;
+  background:#050817!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="neon"] .store-v2-mini-checkers-board>span.light{
+  background:linear-gradient(145deg,#24324a,#152038)!important;
+  box-shadow:inset 0 0 0 1px rgba(92,214,255,.08)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="neon"] .store-v2-mini-checkers-board>span.dark{
+  background:linear-gradient(145deg,#171124,#090812)!important;
+  box-shadow:inset 0 0 0 1px rgba(166,108,255,.12)!important;
+}
+
+/* ---------- PIECE SET BRAND ----------
+   Manual-review hierarchy: the king crown must remain readable at game scale;
+   MG is a small secondary brand mark. */
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces>.king b.mgw-checkers-piece-brand{
+  width:68%!important;
+  height:68%!important;
+  display:grid!important;
+  grid-template-rows:auto auto!important;
+  place-items:center!important;
+  align-content:center!important;
+  gap:0!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .mgw-checkers-piece-crown{
+  display:block!important;
+  margin:0 0 -1px!important;
+  font-size:15px!important;
+  line-height:.78!important;
+  font-weight:950!important;
+  letter-spacing:0!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .mgw-checkers-piece-mark{
+  display:block!important;
+  margin:1px 0 0!important;
+  font-size:7px!important;
+  line-height:1!important;
+  font-weight:950!important;
+  letter-spacing:-.35px!important;
+}
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .mgw-checkers-piece-crown{
+  font-size:18px!important;
+}
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .mgw-checkers-piece-mark{
+  font-size:8px!important;
+}
+
+@media(max-width:430px){
+  .store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{
+    width:min(100%,236px)!important;
+  }
+}
