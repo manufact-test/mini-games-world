@@ -104,7 +104,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"store-screen-checkers-wrapper.js?v=2") || !str_contains($s,"mvp19_6=full-store-v1")) exit(1); if(!str_contains($m["imports"]["./assets/js/games/chess/renderer.js?v=68"]??"","mvp19_5=cosmetics")) exit(2); $css=$m["assets"]["main_css"]??""; if(!str_contains($css,"main.css?v=190") || !str_contains($css,"mvp19_5=chess-cosmetics")) exit(3);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"store-screen-checkers-wrapper.js?v=3") || !str_contains($s,"mvp19_6=visual-corrective-v2")) exit(1); if(!str_contains($m["imports"]["./assets/js/games/chess/renderer.js?v=68"]??"","mvp19_5=cosmetics")) exit(2); $css=$m["assets"]["main_css"]??""; if(!str_contains($css,"main.css?v=190") || !str_contains($css,"mvp19_5=chess-cosmetics")) exit(3);'
           grep -F "from './store-screen-intent-wrapper.js?v=19&mvp19_6=accepted-base-preserved';" app/assets/js/screens/store-screen-checkers-wrapper.js
           grep -F "from './store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog';" app/assets/js/screens/store-screen-intent-wrapper.js
           grep -F "from './store-screen.js?v=44&intent_base=1';" app/assets/js/screens/store-screen-intent-wrapper.js

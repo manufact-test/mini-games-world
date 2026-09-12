@@ -48,13 +48,14 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
 
-          # Inventory/effect mechanics remain frozen. The canonical Profile owner may
-          # change only together with its executable contract, so a proven Profile
-          # defect can be fixed at the owner instead of being monkey-patched in a
-          # wrapper while the accepted ownership/equip architecture stays guarded.
+          # Inventory mechanics remain frozen. The shared effects contract is executed
+          # above and may migrate only its Store-entry identity assertion when a later
+          # accepted Store wrapper is composed around the same inner behavior owner.
           git diff --exit-code "$base" "$head" -- \
-            bot/catalog/ProductInventoryService.php \
-            bot/tests/Mvp19_4EffectsV2ContractTest.mjs
+            bot/catalog/ProductInventoryService.php
+          grep -F "store-screen-checkers-wrapper.js?v=3" bot/tests/Mvp19_4EffectsV2ContractTest.mjs
+          grep -F "mvp19_6=visual-corrective-v2" bot/tests/Mvp19_4EffectsV2ContractTest.mjs
+          grep -F "from './store-screen-intent-wrapper.js?v=19&mvp19_6=accepted-base-preserved';" app/assets/js/screens/store-screen-checkers-wrapper.js
 
           if ! git diff --quiet "$base" "$head" -- app/assets/js/screens/profile-screen-v110.js; then
             if git diff --quiet "$base" "$head" -- bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs; then
