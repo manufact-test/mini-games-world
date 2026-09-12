@@ -1,0 +1,110 @@
+/* MVP-19.5 Profile Chess parity layout v2.
+   Profile-only sizing correction: keep Chess previews inside their cards,
+   separate labels from previews, and use the available sheet space better.
+   Store preview owners remain untouched. */
+
+/* Collection cards: the shared Profile slot was only 76px tall while accepted
+   Chess boards/effect fields are larger. Give Chess its own bounded preview row
+   so the preview can never paint through the title underneath. */
+#screen-profile .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-"] .store-v2-game-preview[data-game-type="chess"]{
+  box-sizing:border-box!important;
+  width:100%!important;
+  height:124px!important;
+  min-height:124px!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+  margin:0!important;
+}
+
+#screen-profile .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-"] .profile-v2-game-card-name{
+  position:relative;
+  z-index:2;
+  margin:7px 2px 1px!important;
+  line-height:1.2!important;
+}
+
+/* Board cards: fill the preview comfortably without crowding the card edge. */
+#screen-profile .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-board-"] .store-v2-mini-chess-board{
+  --mgw-profile-chess-card-board:clamp(110px,31vw,116px);
+  width:var(--mgw-profile-chess-card-board)!important;
+  height:var(--mgw-profile-chess-card-board)!important;
+  max-width:var(--mgw-profile-chess-card-board)!important;
+}
+
+/* Effect cards use the same visual weight as the boards, while leaving a small
+   safety gutter for animated particles. */
+#screen-profile .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-effect-"] .store-v2-mini-chess-field-effect{
+  --mgw-profile-chess-card-effect:clamp(104px,29.5vw,110px);
+  width:var(--mgw-profile-chess-card-effect)!important;
+  height:var(--mgw-profile-chess-card-effect)!important;
+  border-radius:13px!important;
+}
+
+/* Piece cards should not look visually under-scaled next to the board cards. */
+#screen-profile .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-pieces-"] .store-v2-mini-chess-pieces{
+  gap:6px!important;
+}
+#screen-profile .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-pieces-"] .store-v2-mini-chess-pieces span{
+  font-size:40px!important;
+}
+
+/* Change/equip sheet: the generic Profile preview was 170x144 with a 108px
+   board, which left a large dead area. Use a larger bounded canvas and scale
+   each Chess primitive specifically inside it. */
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="chess"]{
+  box-sizing:border-box!important;
+  width:min(228px,100%)!important;
+  height:184px!important;
+  min-height:184px!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+  margin:0 auto!important;
+}
+
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"] .store-v2-mini-chess-board{
+  --mgw-profile-chess-sheet-board:clamp(154px,44vw,168px);
+  width:var(--mgw-profile-chess-sheet-board)!important;
+  height:var(--mgw-profile-chess-sheet-board)!important;
+  max-width:var(--mgw-profile-chess-sheet-board)!important;
+  border-radius:10px!important;
+}
+
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="effect"] .store-v2-mini-chess-field-effect{
+  --mgw-profile-chess-sheet-effect:clamp(146px,41vw,158px);
+  width:var(--mgw-profile-chess-sheet-effect)!important;
+  height:var(--mgw-profile-chess-sheet-effect)!important;
+  border-radius:16px!important;
+}
+
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="elements"] .store-v2-mini-chess-pieces{
+  gap:9px!important;
+}
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="elements"] .store-v2-mini-chess-pieces span{
+  font-size:56px!important;
+}
+
+/* Scale effect glyphs with the larger Profile field without touching Store. */
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="effect"] .chess-effect-piece{
+  font-size:27px!important;
+}
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.king::before,
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.static-a::before,
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-cosmetic-variant="quantum-echo"] .chess-effect-piece.static-b::before{
+  font-size:27px!important;
+}
+
+@media(max-width:340px){
+  #screen-profile .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-"] .store-v2-game-preview[data-game-type="chess"]{
+    height:118px!important;
+    min-height:118px!important;
+  }
+  #screen-profile .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-pieces-"] .store-v2-mini-chess-pieces span{
+    font-size:36px!important;
+  }
+  .profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="chess"]{
+    height:174px!important;
+    min-height:174px!important;
+  }
+}
