@@ -3,6 +3,9 @@ import fs from 'node:fs';
 const profile = fs.readFileSync('app/assets/js/screens/profile-screen-v110.js', 'utf8');
 const profileCss = fs.readFileSync('app/assets/css/screens/profile-corrective.css', 'utf8');
 const mainCss = fs.readFileSync('app/assets/css/main.css', 'utf8');
+const mobileProfileCss = fs.readFileSync('app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit.css', 'utf8');
+const cleanEntryWrapper = fs.readFileSync('app/assets/js/production-clean-entry-v110-mvp19-3-final-polish-mobile-nav-v2.js', 'utf8');
+const mobileAnimationGuard = fs.readFileSync('app/assets/js/profile/mgw-mobile-profile-animation-guard-v2.js', 'utf8');
 const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 const inventory = fs.readFileSync('bot/catalog/ProductInventoryService.php', 'utf8');
 const storeService = fs.readFileSync('bot/catalog/CosmeticStoreService.php', 'utf8');
@@ -59,6 +62,19 @@ expect(openProfileStart >= 0 && visibleProfile > openProfileStart && scheduledRe
 expect(profile.includes('function warmProfileSnapshot()') && profile.includes('requestIdleCallback(warm, { timeout:700 })'), 'Profile must warm its authoritative snapshot before likely navigation');
 expect(profile.includes('lastProfileRenderSignature') && profile.includes('renderSignature === lastProfileRenderSignature'), 'Profile must skip redundant full DOM rebuilds when authoritative state is unchanged');
 
+// Mobile route performance: never key a universal descendant selector directly
+// off #screen-profile.active/not(.active). That makes every Profile route flip
+// invalidate style across the complete long collection. Modern clients use the
+// bounded Web Animations lifecycle guard; only unsupported WebViews get CSS fallback.
+expect(!mobileProfileCss.includes('\n  #screen-profile.screen:not(.active) *,'), 'mobile Profile route CSS must not invalidate the whole descendant tree on normal active flips');
+expect(mobileProfileCss.includes('html.mgw-profile-animation-css-fallback #screen-profile.screen:not(.active) *'), 'legacy WebViews must retain a CSS-only hidden-animation fallback');
+expect(cleanEntryWrapper.includes("import './profile/mgw-mobile-profile-animation-guard-v2.js?v=1';"), 'active clean-entry wrapper must load the bounded mobile Profile animation guard');
+expect(mobileAnimationGuard.includes("root.getAnimations({ subtree:true })"), 'mobile Profile animation guard must pause actual descendant Animation objects instead of rematching all descendants in CSS');
+expect(mobileAnimationGuard.includes("document.addEventListener('pointerdown', handleRouteIntent, true)"), 'mobile Profile animation guard must pause before the canonical click route task');
+expect(mobileAnimationGuard.includes("profileObserver.observe(screen, { childList:true, subtree:true })"), 'new hidden Profile animations must be paused without observing route class changes on the Profile subtree');
+expect(manifest.includes('profile_route_guard=animation-runtime-v2'), 'active clean-entry identity must publish the bounded mobile Profile route guard');
+expect(manifest.includes('profile_mobile=animation-runtime-guard-v2'), 'active consistency CSS identity must publish the non-universal mobile Profile animation guard');
+
 expect(profileCss.includes('.profile-v2-game-collection'), 'Profile game collection layout must exist');
 expect(profileCss.includes('.profile-v2-game-tabs{display:flex'), 'Profile must keep games in one horizontal selector row');
 expect(profileCss.includes('overflow-x:auto'), 'future game tabs must scroll horizontally instead of stacking vertically');
@@ -72,7 +88,7 @@ expect(manifest.includes('perf=stable-render-cache'), 'active Profile runtime mu
 expect(manifest.includes('mvp19_3=profile-game-tabs-fresh'), 'active main CSS identity must publish Profile game-tab polish');
 
 expect(inventory.includes('public function equip(string $mgwId, string $itemId): array'), 'ProductInventoryService must remain the equip owner');
-expect(inventory.includes('public function unequip(string $mgwId, string $equipSlot): array'), 'ProductInventoryService must remain the unequip owner');
+expect(inventory.includes('public function unequip(string $mgwId, string $equipSlot): array'), 'ProductInventoryService must remain the equip owner');
 expect(endpoint.includes('$store->equipGameItem($mgwId'), 'existing game cosmetic endpoint must retain its bounded game-item validation path');
 expect(storeService.includes('return $this->inventory->equip($mgwId, $itemId);'), 'game-item validation path must delegate equip to ProductInventoryService');
 expect(endpoint.includes('$inventory->unequip($mgwId, $equipSlot)'), 'existing game cosmetic endpoint must delegate unequip to ProductInventoryService');
