@@ -1,0 +1,187 @@
+/* MVP-19.6 manual review pass 1 — Store-only visual corrective.
+   Live Checkers rules, renderer, layout and board-theme owner stay untouched. */
+
+/* Cards: keep every preview inside its real media column instead of clipping a fixed-width child. */
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-game-type="checkers"]{
+  box-sizing:border-box;
+  min-width:0;
+  min-height:138px;
+  padding:8px;
+  overflow:hidden;
+  border-radius:15px;
+  background:linear-gradient(155deg,rgba(20,24,38,.88),rgba(7,10,18,.98));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+}
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-game-type="checkers"]::after{display:none!important}
+
+/* Boards: exact 8×8 geometry, scaled from the accepted live Checkers board instead of a cropped decorative tile. */
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-cosmetic-layer="theme"] .store-v2-mini-checkers-board{
+  width:100%;
+  max-width:122px;
+  aspect-ratio:1;
+  border-radius:11px;
+  border-width:2px;
+  transform:none;
+  box-shadow:0 10px 22px rgba(0,0,0,.25);
+}
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-mini-checkers-board > span > i{
+  width:72%;
+  box-shadow:0 3px 7px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.16),inset 0 -3px 5px rgba(0,0,0,.18);
+}
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-mini-checkers-board > span > i::after{
+  inset:15%;
+  border-color:rgba(255,255,255,.16);
+}
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-mini-checkers-board > span > i.white{
+  background:linear-gradient(145deg,#f7f5ee,#c8c5bd);
+  box-shadow:0 3px 7px rgba(0,0,0,.32),inset 0 0 0 1px rgba(255,255,255,.72),inset 0 -3px 5px rgba(85,85,85,.18);
+}
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-mini-checkers-board > span > i.black{
+  background:linear-gradient(145deg,#313a51,#111827);
+  box-shadow:0 3px 7px rgba(0,0,0,.45),inset 0 0 0 1px rgba(146,159,205,.28),inset 0 -3px 5px rgba(0,0,0,.34);
+}
+
+/* Purchase sheet: same complete board, simply larger. Remove the extra perspective/decorative treatment. */
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"]{
+  box-sizing:border-box;
+  width:min(100%,210px);
+  min-height:0;
+  height:auto;
+  aspect-ratio:1;
+  padding:12px;
+  overflow:hidden;
+  border-radius:16px;
+  background:linear-gradient(155deg,rgba(20,24,38,.9),rgba(7,10,18,.98));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+}
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"]::after{display:none!important}
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board{
+  width:100%;
+  max-width:166px;
+  border-radius:14px;
+  border-width:2px;
+  transform:none;
+  box-shadow:0 12px 26px rgba(0,0,0,.28);
+}
+.store-v2-confirm-game .store-v2-mini-checkers-board > span > i{width:72%}
+.store-v2-confirm-game .store-v2-mini-checkers-board > span > i::after{inset:15%}
+
+/* Piece cards: compact triangular composition that stays fully inside the media frame.
+   Purchase-sheet composition is intentionally left large because it was manually accepted. */
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces{
+  position:relative;
+  width:100%;
+  max-width:116px;
+  height:104px;
+  transform:none!important;
+}
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces > span{
+  width:50px;
+  box-shadow:0 8px 16px rgba(0,0,0,.32),inset 0 0 0 2px rgba(255,255,255,.18),inset 0 -6px 10px rgba(0,0,0,.2);
+}
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces > span::after{inset:15%}
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces > .black{left:0;top:34px;transform:none}
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces > .white{right:0;top:5px;transform:none}
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces > .king{left:50%;bottom:0;transform:translateX(-50%)}
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces > .king b{font-size:23px}
+
+/* Effects: passive Store previews. No profile-style play affordance and no click target. */
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]{
+  cursor:default!important;
+  outline:none!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]:focus-visible{box-shadow:inset 0 1px 0 rgba(255,255,255,.035)!important}
+.checkers-fx-play{display:none!important}
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-mini-checkers-effect{
+  position:relative;
+  width:100%;
+  max-width:118px;
+  height:auto;
+  aspect-ratio:1;
+  transform:none!important;
+  overflow:visible;
+}
+.store-v2-game-product[data-store-game-product="checkers"] .checkers-fx-board,
+.store-v2-confirm-game .checkers-fx-board{
+  left:4%;
+  top:4%;
+  width:92%;
+  border-radius:10px;
+}
+.store-v2-game-product[data-store-game-product="checkers"] .checkers-fx-piece,
+.store-v2-confirm-game .checkers-fx-piece{
+  width:17%;
+  max-width:22px;
+  height:auto;
+  aspect-ratio:1;
+}
+.store-v2-game-product[data-store-game-product="checkers"] .checkers-fx-piece.from,
+.store-v2-confirm-game .checkers-fx-piece.from{left:36%;top:72%}
+.store-v2-game-product[data-store-game-product="checkers"] .checkers-fx-piece.target,
+.store-v2-confirm-game .checkers-fx-piece.target{left:68%;top:36%}
+.store-v2-game-product[data-store-game-product="checkers"] .checkers-fx-impact,
+.store-v2-confirm-game .checkers-fx-impact{left:68%;top:36%}
+.store-v2-game-product[data-store-game-product="checkers"] .checkers-fx-crown,
+.store-v2-confirm-game .checkers-fx-crown{left:68%;top:20%}
+
+/* One finite presentation run starts as soon as the Store card/modal is rendered. */
+.checkers-store-fx-move .from{animation:mgw-checkers-store-auto-move-piece 1.05s cubic-bezier(.2,.76,.2,1) both}
+.checkers-store-fx-move .checkers-fx-impact{animation:mgw-checkers-store-auto-move-ring 1.05s ease-out both}
+.checkers-store-fx-capture .from{animation:mgw-checkers-store-auto-capture-piece 1.05s cubic-bezier(.2,.76,.2,1) both}
+.checkers-store-fx-capture .target{animation:mgw-checkers-store-auto-capture-target 1.05s ease-out both}
+.checkers-store-fx-capture .checkers-fx-impact{animation:mgw-checkers-store-auto-capture-burst 1.05s ease-out both}
+.checkers-store-fx-promotion .from{animation:mgw-checkers-store-auto-promotion-piece 1.05s cubic-bezier(.2,.76,.2,1) both}
+.checkers-store-fx-promotion .checkers-fx-crown{animation:mgw-checkers-store-auto-promotion-crown 1.12s cubic-bezier(.15,.8,.2,1) both}
+.checkers-store-fx-promotion .checkers-fx-impact{animation:mgw-checkers-store-auto-promotion-ring 1.12s ease-out both}
+
+@keyframes mgw-checkers-store-auto-move-piece{0%{left:36%;top:72%;transform:translate(-50%,-50%) scale(1)}58%,100%{left:68%;top:36%;transform:translate(-50%,-50%) scale(1)}}
+@keyframes mgw-checkers-store-auto-move-ring{0%,35%{opacity:0;transform:translate(-50%,-50%) scale(.2)}64%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(2.35)}}
+@keyframes mgw-checkers-store-auto-capture-piece{0%{left:36%;top:72%;transform:translate(-50%,-50%) scale(1)}58%,100%{left:68%;top:36%;transform:translate(-50%,-50%) scale(1.08)}}
+@keyframes mgw-checkers-store-auto-capture-target{0%,42%{opacity:1;transform:translate(-50%,-50%) scale(1)}76%,100%{opacity:0;transform:translate(-50%,-50%) scale(.18)}}
+@keyframes mgw-checkers-store-auto-capture-burst{0%,40%{opacity:0;transform:translate(-50%,-50%) scale(.2);box-shadow:0 0 0 rgba(101,225,255,0)}65%{opacity:1;box-shadow:0 0 22px rgba(101,225,255,.9),0 0 34px rgba(176,106,255,.5)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.7)}}
+@keyframes mgw-checkers-store-auto-promotion-piece{0%{left:36%;top:72%;transform:translate(-50%,-50%) scale(1)}52%,100%{left:68%;top:36%;transform:translate(-50%,-50%) scale(1.08)}}
+@keyframes mgw-checkers-store-auto-promotion-crown{0%,45%{opacity:0;transform:translate(-50%,-50%) translateY(10px) scale(.35) rotate(-12deg)}72%{opacity:1;transform:translate(-50%,-50%) translateY(-2px) scale(1.16) rotate(3deg)}100%{opacity:.94;transform:translate(-50%,-50%) scale(1)}}
+@keyframes mgw-checkers-store-auto-promotion-ring{0%,45%{opacity:0;transform:translate(-50%,-50%) scale(.2)}72%{opacity:.95}100%{opacity:0;transform:translate(-50%,-50%) scale(2.55);border-color:#ffe177}}
+
+/* Inline 34k bundle: visible inside Games → Checkers immediately after Effects. */
+.mgw-checkers-inline-bundle-group{margin-top:16px}
+.mgw-checkers-bundle-title{margin-bottom:10px}
+.mgw-checkers-inline-bundle-wrap{display:grid;gap:12px}
+.mgw-checkers-inline-bundle-wrap .store-v2-bundle{
+  border-color:rgba(111,86,255,.32);
+  background:linear-gradient(150deg,rgba(33,27,52,.98),rgba(10,12,21,.98));
+  box-shadow:0 14px 30px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.04);
+}
+.mgw-checkers-inline-bundle-wrap .checkers-bundle-visual{min-height:164px}
+.mgw-checkers-inline-bundle-wrap .btn{min-height:48px}
+
+@media(max-width:430px){
+  .store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-game-type="checkers"]{min-height:132px;padding:7px}
+  .store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-cosmetic-layer="theme"] .store-v2-mini-checkers-board{max-width:116px}
+  .store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces{max-width:108px;height:98px}
+  .store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces > span{width:47px}
+  .store-v2-game-product[data-store-game-product="checkers"] .store-v2-mini-checkers-effect{max-width:112px}
+  .store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"]{width:min(100%,204px);padding:11px}
+  .store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board{max-width:160px}
+}
+
+@media(max-width:360px){
+  .store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-game-type="checkers"]{min-height:124px;padding:6px}
+  .store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-cosmetic-layer="theme"] .store-v2-mini-checkers-board{max-width:108px}
+  .store-v2-game-product[data-store-game-product="checkers"] .store-v2-mini-checkers-effect{max-width:104px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .checkers-store-fx-move .from,
+  .checkers-store-fx-move .checkers-fx-impact,
+  .checkers-store-fx-capture .from,
+  .checkers-store-fx-capture .target,
+  .checkers-store-fx-capture .checkers-fx-impact,
+  .checkers-store-fx-promotion .from,
+  .checkers-store-fx-promotion .checkers-fx-crown,
+  .checkers-store-fx-promotion .checkers-fx-impact{animation:none!important}
+  .checkers-store-fx-move .from,.checkers-store-fx-capture .from,.checkers-store-fx-promotion .from{left:68%;top:36%}
+  .checkers-store-fx-capture .target{opacity:0}
+  .checkers-store-fx-promotion .checkers-fx-crown{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .checkers-store-fx-move .checkers-fx-impact,.checkers-store-fx-capture .checkers-fx-impact{opacity:.7;transform:translate(-50%,-50%) scale(1.5)}
+}
