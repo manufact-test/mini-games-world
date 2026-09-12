@@ -32,12 +32,13 @@ const VICTORY_PRESENTATION = Object.freeze({
 });
 
 let initialized = false;
-let observer = null;
 let scheduled = false;
 let refreshPromise = null;
 let snapshotAttempted = false;
 let equipBusy = false;
 let liveHideTimer = 0;
+let catalogPreviewTimer = 0;
+let activeCatalogPreview = null;
 const purchasePending = new Set();
 const playedGames = new Set();
 
@@ -45,37 +46,48 @@ export function initMgwProfileVictoryEffects(){
   if (initialized) return;
   initialized = true;
   ensureStylesheet();
+  ensureOnDemandPreviewStyles();
 
   const start = () => {
-    observer?.disconnect();
-    observer = new MutationObserver(() => {
-      scheduleDecorate();
-      scheduleResultProbe();
-    });
-    observeRoots();
-
     document.addEventListener('mgw:cosmetic-inventory-changed', event => {
       scheduleDecorate();
-      if (String(event?.detail?.slot || '').trim() === VICTORY_EFFECT_SLOT) scheduleResultProbe();
+      if (String(event?.detail?.slot || '').trim() === VICTORY_EFFECT_SLOT) scheduleResultProbeAfterPaint();
     });
 
     document.addEventListener('mgw:screen-changed', event => {
       const next = String(event?.detail?.to || '').trim();
+      stopCatalogPreview();
       if (next === 'profile' || next === 'store') {
         scheduleDecorate();
         void ensureSnapshot();
       }
       if (next !== 'game') removeLiveVictoryEffect();
-      else scheduleResultProbe();
+      else scheduleResultProbeAfterPaint();
     });
 
-    document.addEventListener('mgw:game-finished', scheduleResultProbe);
-    document.addEventListener('mgw:game-dismissed', removeLiveVictoryEffect);
+    document.addEventListener('click', event => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target) return;
+
+      if (target.closest('[data-close-sheet]')) stopCatalogPreview();
+
+      // These accepted Profile actions can synchronously rebuild the Profile root.
+      // Re-decorate once after the originating event instead of watching the whole DOM.
+      if (target.closest('#screen-profile [data-profile-game-tab],#mgwNicknameSave,#mgwAvatarEquip,#mgwNameColorEquip,#mgwGameCosmeticEquip')) {
+        scheduleDecorate();
+      }
+    });
+
+    document.addEventListener('mgw:game-finished', scheduleResultProbeAfterPaint);
+    document.addEventListener('mgw:game-dismissed', () => {
+      removeLiveVictoryEffect();
+      stopCatalogPreview();
+    });
 
     const active = String(document.querySelector('.screen.active')?.dataset.screen || '').trim();
     if (active === 'profile' || active === 'store') void ensureSnapshot();
     scheduleDecorate();
-    scheduleResultProbe();
+    scheduleResultProbeAfterPaint();
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once:true });
@@ -88,23 +100,108 @@ function ensureStylesheet(){
   link.rel = 'stylesheet';
   link.dataset.mgwVictoryEffectsCss = 'spark-burst-v2';
   link.href = new URL('../../css/production-v109-victory-effects-spark-burst.css?v=2&mvp19_3=spark-burst-visual-parity', import.meta.url).href;
-  document.head.append(link);
+  document.head.appendChild(link);
 }
 
-function observeRoots(){
-  if (!observer) return;
-  observer.disconnect();
-  const profile = document.getElementById('screen-profile');
-  const store = document.getElementById('storeTabSurface');
-  const sheet = document.getElementById('sheet');
-  if (profile) observer.observe(profile, { childList:true, subtree:true });
-  if (store) observer.observe(store, { childList:true, subtree:true });
-  if (sheet) observer.observe(sheet, {
-    childList:true,
-    subtree:true,
-    attributes:true,
-    attributeFilter:['disabled','aria-busy','class'],
-  });
+function ensureOnDemandPreviewStyles(){
+  if (document.getElementById('mgwVictoryPreviewOnDemandV1')) return;
+  const style = document.createElement('style');
+  style.id = 'mgwVictoryPreviewOnDemandV1';
+  style.textContent = `
+    .mgw-victory-effect-preview[data-victory-effect-play]{
+      cursor:pointer;
+      touch-action:manipulation;
+      contain:layout paint style;
+    }
+    .mgw-victory-preview-poster{
+      position:absolute;
+      inset:0;
+      z-index:6;
+      display:grid;
+      place-items:center;
+      pointer-events:none;
+      opacity:1;
+      transition:opacity .12s ease;
+    }
+    .mgw-victory-preview-poster>i{
+      position:absolute;
+      left:50%;
+      top:50%;
+      width:42px;
+      height:42px;
+      transform:translate(-50%,-50%);
+      border-radius:50%;
+      background:radial-gradient(circle,#fff7c9 0 5%,#ffd45d 8% 16%,rgba(255,171,43,.38) 28%,transparent 58%);
+      box-shadow:0 0 13px rgba(255,188,65,.35);
+    }
+    .mgw-victory-effect-preview[data-victory-effect-variant="spark-burst"] .mgw-victory-preview-poster>i::before{
+      content:"";
+      position:absolute;
+      inset:-8px;
+      background:repeating-conic-gradient(from 0deg,rgba(255,225,130,.92) 0 3deg,transparent 3deg 28deg);
+      -webkit-mask:radial-gradient(circle,transparent 0 40%,#000 43% 53%,transparent 56%);
+      mask:radial-gradient(circle,transparent 0 40%,#000 43% 53%,transparent 56%);
+      opacity:.82;
+    }
+    .mgw-victory-effect-preview[data-victory-effect-variant="firework-salvo"] .mgw-victory-preview-poster>i{
+      width:9px;
+      height:9px;
+      background:#fff8d8;
+      box-shadow:-22px 10px 0 1px #75d4ff,22px 10px 0 1px #ff78cf,0 -18px 0 2px #ffd55e,0 0 12px rgba(129,190,255,.72),-22px 10px 12px rgba(86,191,255,.5),22px 10px 12px rgba(255,106,208,.45);
+    }
+    .mgw-victory-effect-preview[data-victory-effect-variant="victory-nova"] .mgw-victory-preview-poster>i{
+      width:48px;
+      height:48px;
+      background:radial-gradient(circle,#fff 0 5%,#bff8ff 8% 14%,#9c7dff 22%,rgba(123,82,255,.3) 42%,transparent 68%);
+      box-shadow:0 0 12px rgba(100,226,255,.58),0 0 24px rgba(148,87,255,.46);
+    }
+    .mgw-victory-effect-preview[data-victory-effect-variant="victory-nova"] .mgw-victory-preview-poster>i::before{
+      content:"";
+      position:absolute;
+      inset:-8px;
+      border:1px solid rgba(133,239,255,.62);
+      border-radius:50%;
+      box-shadow:0 0 10px rgba(135,99,255,.42);
+    }
+    .mgw-victory-preview-play{
+      position:absolute;
+      right:7px;
+      bottom:7px;
+      width:24px;
+      height:24px;
+      display:grid;
+      place-items:center;
+      border-radius:50%;
+      border:1px solid rgba(255,255,255,.34);
+      background:rgba(8,11,21,.82);
+      color:#fff;
+      box-shadow:0 4px 12px rgba(0,0,0,.32);
+      font:900 10px/1 system-ui,sans-serif;
+      padding-left:1px;
+    }
+    .mgw-victory-catalog-stage{
+      position:absolute;
+      inset:0;
+      z-index:7;
+      overflow:hidden;
+      pointer-events:none;
+      contain:strict;
+    }
+    .mgw-victory-effect-preview.is-playing .mgw-victory-preview-poster{opacity:0}
+    .mgw-victory-effect-preview.is-playing .mgw-victory-catalog-stage *{
+      animation-iteration-count:1!important;
+    }
+    .mgw-victory-effect-preview.is-playing .mgw-victory-catalog-stage .mgw-victory-spark-scene,
+    .mgw-victory-effect-preview.is-playing .mgw-victory-catalog-stage .mgw-victory-firework-scene,
+    .mgw-victory-effect-preview.is-playing .mgw-victory-catalog-stage .mgw-victory-nova-scene{
+      animation-iteration-count:1!important;
+    }
+    @media(prefers-reduced-motion:reduce){
+      .mgw-victory-preview-play{display:none!important}
+      .mgw-victory-effect-preview[data-victory-effect-play]{cursor:default}
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 function scheduleDecorate(){
@@ -112,9 +209,7 @@ function scheduleDecorate(){
   scheduled = true;
   queueMicrotask(() => {
     scheduled = false;
-    observer?.disconnect();
-    try { decorateCollectionSurfaces(); }
-    finally { observeRoots(); }
+    decorateCollectionSurfaces();
   });
 }
 
@@ -330,7 +425,52 @@ function victoryStageMarkup(variant){
 function previewMarkup(itemId, selected = false, extraClass = ''){
   const spec = presentationFor(itemId);
   if (!spec) return '';
-  return `<span class="mgw-entry-effect-preview mgw-victory-effect-preview ${escapeAttr(extraClass)}" data-victory-effect-variant="${escapeAttr(spec.variant)}" aria-hidden="true">${victoryStageMarkup(spec.variant)}${selected ? '<em class="store-v2-selected-check">✓</em>' : ''}</span>`;
+  return `<span class="mgw-entry-effect-preview mgw-victory-effect-preview ${escapeAttr(extraClass)}" data-victory-effect-item-id="${escapeAttr(itemId)}" data-victory-effect-variant="${escapeAttr(spec.variant)}" data-victory-effect-play aria-label="Показать анимацию"><span class="mgw-victory-preview-poster" aria-hidden="true"><i></i><b class="mgw-victory-preview-play">▶</b></span>${selected ? '<em class="store-v2-selected-check">✓</em>' : ''}</span>`;
+}
+
+function bindPreviewPlayback(root){
+  if (!(root instanceof Element)) return;
+  root.querySelectorAll('[data-victory-effect-play]').forEach(preview => {
+    if (!(preview instanceof HTMLElement) || preview.dataset.victoryEffectPlayBound === '1') return;
+    preview.dataset.victoryEffectPlayBound = '1';
+    preview.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      playCatalogPreview(preview);
+    });
+  });
+}
+
+function playCatalogPreview(preview){
+  if (!(preview instanceof HTMLElement) || window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true) return;
+  const itemId = String(preview.dataset.victoryEffectItemId || '');
+  const spec = presentationFor(itemId);
+  if (!spec) return;
+
+  stopCatalogPreview();
+  preview.querySelectorAll('.mgw-victory-catalog-stage').forEach(node => node.remove());
+  preview.insertAdjacentHTML('beforeend', `<span class="mgw-victory-catalog-stage" data-victory-effect-variant="${escapeAttr(spec.variant)}" aria-hidden="true">${victoryStageMarkup(spec.variant)}</span>`);
+  preview.classList.add('is-playing');
+  activeCatalogPreview = preview;
+
+  window.clearTimeout(catalogPreviewTimer);
+  catalogPreviewTimer = window.setTimeout(() => stopCatalogPreview(preview), Math.max(900, Number(spec.duration || 2200)) + 120);
+}
+
+function stopCatalogPreview(preview = activeCatalogPreview){
+  if (!(preview instanceof HTMLElement)) {
+    window.clearTimeout(catalogPreviewTimer);
+    catalogPreviewTimer = 0;
+    activeCatalogPreview = null;
+    return;
+  }
+  preview.querySelectorAll('.mgw-victory-catalog-stage').forEach(node => node.remove());
+  preview.classList.remove('is-playing');
+  if (activeCatalogPreview === preview) {
+    window.clearTimeout(catalogPreviewTimer);
+    catalogPreviewTimer = 0;
+    activeCatalogPreview = null;
+  }
 }
 
 function renderStoreSection(catalog){
@@ -344,8 +484,12 @@ function renderStoreSection(catalog){
     || panel.querySelector('[data-profile-background-store-section]');
 
   if (section instanceof HTMLElement && anchor instanceof HTMLElement && section.previousElementSibling !== anchor) anchor.insertAdjacentElement('afterend', section);
-  if (section instanceof HTMLElement && section.dataset.profileVictoryEffectSignature === signature) return;
+  if (section instanceof HTMLElement && section.dataset.profileVictoryEffectSignature === signature) {
+    bindStoreActions(section);
+    return;
+  }
 
+  if (section instanceof HTMLElement && activeCatalogPreview && section.contains(activeCatalogPreview)) stopCatalogPreview();
   const markup = `<section class="store-v2-entry-effect-section store-v2-victory-effect-section" data-profile-victory-effect-store-section data-profile-victory-effect-signature="${escapeAttr(signature)}"><div class="store-v2-title-row"><h2>Эффекты победы</h2></div><div class="store-v2-entry-effect-grid store-v2-victory-effect-grid">${catalog.map(item => storeCard(item, active)).join('')}</div></section>`;
 
   if (section instanceof HTMLElement) section.outerHTML = markup;
@@ -365,9 +509,22 @@ function storeCard(item, activeId){
 
 function bindStoreActions(section){
   if (!(section instanceof HTMLElement)) return;
-  section.querySelectorAll('[data-victory-effect-buy]').forEach(button => button.addEventListener('click', () => openPurchase(String(button.dataset.victoryEffectBuy || ''))));
-  section.querySelectorAll('[data-victory-effect-equip]').forEach(button => button.addEventListener('click', () => void saveSelection(String(button.dataset.victoryEffectEquip || ''), false)));
-  section.querySelectorAll('[data-victory-effect-unequip]').forEach(button => button.addEventListener('click', () => void saveSelection(currentVictoryEffectId(), true)));
+  bindPreviewPlayback(section);
+  section.querySelectorAll('[data-victory-effect-buy]').forEach(button => {
+    if (button.dataset.victoryActionBound === '1') return;
+    button.dataset.victoryActionBound = '1';
+    button.addEventListener('click', () => openPurchase(String(button.dataset.victoryEffectBuy || '')));
+  });
+  section.querySelectorAll('[data-victory-effect-equip]').forEach(button => {
+    if (button.dataset.victoryActionBound === '1') return;
+    button.dataset.victoryActionBound = '1';
+    button.addEventListener('click', () => void saveSelection(String(button.dataset.victoryEffectEquip || ''), false));
+  });
+  section.querySelectorAll('[data-victory-effect-unequip]').forEach(button => {
+    if (button.dataset.victoryActionBound === '1') return;
+    button.dataset.victoryActionBound = '1';
+    button.addEventListener('click', () => void saveSelection(currentVictoryEffectId(), true));
+  });
 }
 
 function renderProfileCollection(catalog){
@@ -384,14 +541,28 @@ function renderProfileCollection(catalog){
 
   const active = currentVictoryEffectId();
   const signature = owned.map(item => item.item_id).join('|') + `|${active}`;
-  if (section instanceof HTMLElement && section.dataset.profileVictoryEffectSignature === signature) return;
+  if (section instanceof HTMLElement && section.dataset.profileVictoryEffectSignature === signature) {
+    bindProfileActions(section);
+    return;
+  }
+  if (section instanceof HTMLElement && activeCatalogPreview && section.contains(activeCatalogPreview)) stopCatalogPreview();
   const markup = `<div class="profile-v2-entry-effect-collection profile-v2-victory-effect-collection" data-profile-victory-effect-collection data-profile-victory-effect-signature="${escapeAttr(signature)}" aria-label="Эффекты победы"><div class="profile-v2-collection-title">Эффекты победы</div><div class="profile-v2-entry-effect-grid profile-v2-victory-effect-grid">${owned.map(item => profileCard(item, active)).join('')}</div></div>`;
 
   if (section instanceof HTMLElement) section.outerHTML = markup;
   else if (anchor instanceof HTMLElement) anchor.insertAdjacentHTML('afterend', markup);
   else collection.insertAdjacentHTML('beforeend', markup);
   section = collection.querySelector('[data-profile-victory-effect-collection]');
-  section?.querySelectorAll('[data-victory-effect-preview]').forEach(button => button.addEventListener('click', () => openPreview(String(button.dataset.victoryEffectPreview || ''))));
+  bindProfileActions(section);
+}
+
+function bindProfileActions(section){
+  if (!(section instanceof HTMLElement)) return;
+  bindPreviewPlayback(section);
+  section.querySelectorAll('[data-victory-effect-preview]').forEach(button => {
+    if (button.dataset.victoryProfileBound === '1') return;
+    button.dataset.victoryProfileBound = '1';
+    button.addEventListener('click', () => openPreview(String(button.dataset.victoryEffectPreview || '')));
+  });
 }
 
 function profileCard(item, activeId){
@@ -403,10 +574,12 @@ function profileCard(item, activeId){
 function openPurchase(itemId){
   const item = victoryEffectCatalog().find(candidate => candidate.item_id === itemId && candidate.owned !== true);
   if (!item || purchasePending.has(itemId)) return;
+  stopCatalogPreview();
   const price = itemPrice(item);
   const balance = Number(state.user?.balance || 0);
   const missing = Math.max(0, price - balance);
   openSheet(`<div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="store-v2-confirm"><div class="mgw-entry-effect-sheet-preview mgw-victory-effect-sheet-preview">${previewMarkup(itemId, false, 'mgw-victory-effect-sheet-card')}</div><div class="store-v2-confirm-copy"><strong>${escapeHtml(itemName(item))}</strong><small>Эффект победы</small></div><div class="store-v2-confirm-price"><span>К оплате</span><strong>${formatNumber(price)} коинов</strong></div><div class="store-v2-confirm-balance"><span>Останется</span><b>${formatNumber(Math.max(0, balance - price))}</b></div><button class="btn primary full" id="mgwVictoryEffectConfirmBuy" type="button"${missing > 0 ? ' disabled' : ''}>${missing > 0 ? `Не хватает ${formatNumber(missing)}` : `Купить за ${formatNumber(price)}`}</button></div>`);
+  bindPreviewPlayback(document.getElementById('sheet'));
   document.getElementById('mgwVictoryEffectConfirmBuy')?.addEventListener('click', () => void purchase(item));
 }
 
@@ -416,6 +589,7 @@ async function purchase(item){
   const previous = cloneObject(state.profileInventory);
   purchasePending.add(itemId);
   applyOptimisticPurchase(itemId);
+  stopCatalogPreview();
   closeSheet();
   scheduleDecorate();
   try {
@@ -446,8 +620,10 @@ function applyOptimisticPurchase(itemId){
 function openPreview(itemId){
   const item = victoryEffectCatalog().find(candidate => candidate.item_id === itemId && candidate.owned === true);
   if (!item) return;
+  stopCatalogPreview();
   const active = itemId === currentVictoryEffectId();
   openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(itemName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="mgw-entry-effect-sheet-preview mgw-victory-effect-sheet-preview">${previewMarkup(itemId, false, 'mgw-victory-effect-sheet-card')}</div><div class="profile-v2-entry-effect-preview-meta"><strong>Эффект победы</strong></div><div class="mgw-profile-cosmetic-sheet-status" data-mgw-profile-cosmetic-sheet-status>${active ? 'Выбрано' : 'В коллекции'}</div><button class="btn ${active ? 'ghost' : 'primary'} full mgw-profile-cosmetic-sheet-action" id="mgwVictoryEffectEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>`);
+  bindPreviewPlayback(document.getElementById('sheet'));
   document.getElementById('mgwVictoryEffectEquip')?.addEventListener('click', () => void saveSelection(itemId, active));
 }
 
@@ -460,6 +636,7 @@ async function saveSelection(itemId, remove){
   const previous = cloneObject(state.profileInventory);
   equipBusy = true;
   applyOptimisticSelection(itemId, !remove);
+  stopCatalogPreview();
   closeSheet();
   scheduleDecorate();
   try {
@@ -486,6 +663,11 @@ function applyOptimisticSelection(itemId, equipped){
 }
 
 function scheduleResultProbe(){ queueMicrotask(playVictoryEffectIfReady); }
+
+function scheduleResultProbeAfterPaint(){
+  scheduleResultProbe();
+  if (typeof globalThis.requestAnimationFrame === 'function') globalThis.requestAnimationFrame(playVictoryEffectIfReady);
+}
 
 function playVictoryEffectIfReady(){
   const summary = document.querySelector('#resultSummary[data-result-game-id]');

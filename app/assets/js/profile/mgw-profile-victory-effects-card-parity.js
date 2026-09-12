@@ -1,4 +1,6 @@
-import { initMgwProfileVictoryEffects as initBaseVictoryEffects } from './mgw-profile-victory-effects-v4.js?v=1&mvp19_3=victory-nova';
+import { initMgwProfileVictoryEffects as initBaseVictoryEffects } from './mgw-profile-victory-effects-v4.js?v=1&mvp19_3=victory-nova&preview=on-demand-v1';
+
+let profileTabPreserverInstalled = false;
 
 export function initMgwProfileVictoryEffects(){
   initBaseVictoryEffects();
@@ -8,6 +10,33 @@ export function initMgwProfileVictoryEffects(){
   ensureFireworkSalvoStylesheet();
   ensureVictoryTierSwapStylesheet();
   ensureVictoryNovaStylesheet();
+  preserveVictoryCollectionAcrossProfileGameTabs();
+}
+
+function preserveVictoryCollectionAcrossProfileGameTabs(){
+  if (profileTabPreserverInstalled) return;
+  profileTabPreserverInstalled = true;
+
+  document.addEventListener('click', event => {
+    const target = event.target instanceof Element ? event.target : null;
+    const tab = target?.closest('#screen-profile [data-profile-game-tab]');
+    if (!(tab instanceof HTMLElement)) return;
+
+    const section = document.querySelector('#screen-profile [data-profile-victory-effect-collection]');
+    if (!(section instanceof HTMLElement)) return;
+
+    queueMicrotask(() => {
+      if (section.isConnected) return;
+      const collection = document.querySelector('#screen-profile .profile-v2-collection-section');
+      if (!(collection instanceof HTMLElement)) return;
+
+      const anchor = collection.querySelector('[data-profile-entry-effect-collection]')
+        || collection.querySelector('[data-profile-reaction-collection]')
+        || collection.querySelector('[data-profile-background-collection]');
+      if (anchor instanceof HTMLElement) anchor.insertAdjacentElement('afterend', section);
+      else collection.appendChild(section);
+    });
+  }, { capture:true });
 }
 
 function ensureCardParityStylesheet(){
