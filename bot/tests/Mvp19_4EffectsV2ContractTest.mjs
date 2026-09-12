@@ -110,7 +110,7 @@ expect(mainCss.includes('c2_5=visible-mark-layer'), 'active CSS graph must prese
 expect(mainCss.includes("./games/tictactoe/effects-v3.css?v=1&c2_6=cell-native-dom-fx"), 'active CSS graph must load C2.6 cell-native FX after cosmetics');
 expect(mainCss.includes('.has-shell-chrome .screen[data-screen="store"] .store-v2-shell{padding-bottom:18px}'), 'Store primary screen must not stack the old 78px tail on top of shell navigation spacing');
 expect(manifest.includes('c2_1=single-slot-parity'), 'active runtime manifest must publish C2.1 identity');
-expect(manifest.includes('store-screen-checkers-wrapper.js?v=1') && manifest.includes('mvp19_6=checkers-boards'), 'active runtime manifest must compose Store through the bounded Checkers wrapper');
+expect(manifest.includes('store-screen-checkers-wrapper.js?v=2') && manifest.includes('mvp19_6=full-store-v1'), 'active runtime manifest must compose Store through the complete Checkers wrapper');
 expect(storeOuterEntry.includes("from './store-screen-intent-wrapper.js?v=19&mvp19_6=accepted-base-preserved';"), 'Checkers Store wrapper must delegate to the accepted mobile intent-only Store entry');
 expect(storeEntry.includes("./store-screen.js?v=44&intent_base=1"), 'Store entry must delegate to the accepted versioned Store owner');
 expect(store.includes('Один выбранный эффект срабатывает при каждом ходе') && store.includes('data-store-v2-unequip'), 'delegated Store owner must preserve C2.1 single-effect selection UI');

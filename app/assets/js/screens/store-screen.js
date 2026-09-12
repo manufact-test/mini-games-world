@@ -11,7 +11,7 @@ const STORE_TABS = Object.freeze([
   { id:'games', label:'Игры' },
   { id:'bundles', label:'Наборы' },
 ]);
-const GAME_CATALOG_ORDER = Object.freeze(['tictactoe','chess']);
+const GAME_CATALOG_ORDER = Object.freeze(['tictactoe','chess','checkers']);
 
 let storeState = null;
 let storeSurface = 'tab';
@@ -291,6 +291,17 @@ function gamePresentation(gameType){
       kinds:{ theme:'Шахматная доска', elements:'Комплект фигур', effect:'Эффект партии' },
     };
   }
+  if (gameType === 'checkers') {
+    return {
+      mark:'●○',
+      groups:[
+        ['Доски','Оформление шашечной доски','themes'],
+        ['Шашки','Внешний вид шашек обоих игроков','elements'],
+        ['Эффекты','Один выбранный эффект срабатывает на нужном событии','effects'],
+      ],
+      kinds:{ theme:'Шашечная доска', elements:'Комплект шашек', effect:'Эффект партии' },
+    };
+  }
   return {
     mark:'✕○',
     groups:[
@@ -377,6 +388,11 @@ function gameCosmeticDescription(gameType, layer, variant){
     if (layer === 'elements') return ({ wood:'Резные деревянные фигуры', marble:'Светлые мраморные фигуры', metal:'Полированные металлические фигуры', neon:'Фигуры с ярким неоновым контуром' })[variant] || 'Меняет внешний вид шахматных фигур';
     return ({ move:'Световой импульс отмечает завершённый ход', capture:'Вспышка подчёркивает взятие фигуры', check:'Энергетический ореол появляется при шахе' })[variant] || 'Добавляет визуальный эффект партии';
   }
+  if (gameType === 'checkers') {
+    if (layer === 'theme') return ({ wood:'Тёплое дерево с мягкой фактурой', dark:'Строгая тёмная доска с высоким контрастом', marble:'Светлый камень с холодными прожилками', neon:'Тёмная доска с цианово-фиолетовым свечением' })[variant] || 'Меняет оформление шашечной доски';
+    if (layer === 'elements') return ({ wood:'Тёплые резные шашки с древесной фактурой', marble:'Гладкие каменные шашки с прожилками', metal:'Полированные металлические шашки', neon:'Шашки с ярким неоновым контуром' })[variant] || 'Меняет внешний вид шашек';
+    return ({ move:'Световой след подчёркивает обычный ход', capture:'Короткий ударный всплеск отмечает взятие', promotion:'Коронная вспышка появляется при превращении в дамку' })[variant] || 'Добавляет визуальный эффект партии';
+  }
   if (layer === 'theme') {
     return ({ classic:'Тёплая классическая доска', dark:'Строгое тёмное оформление', glass:'Объёмное стеклянное поле', neon:'Неоновая сетка и свечение' })[variant] || 'Меняет фон и сетку поля';
   }
@@ -395,6 +411,22 @@ function normalizeEffectVariant(variant){
   return ({ sign:'impact', 'winning-line':'sparks', 'move-pulse':'wave', 'strike-through':'wave' })[variant] || variant;
 }
 
+function checkersMiniBoardMarkup(withStartingPieces = true){
+  return `<i class="store-v2-mini-checkers-board" aria-hidden="true">${Array.from({ length:64 }, (_, cell) => {
+    const row = Math.floor(cell / 8);
+    const col = cell % 8;
+    const dark = (row + col) % 2 === 1;
+    const hasPiece = withStartingPieces && dark && (row < 3 || row > 4);
+    const pieceClass = row < 3 ? 'black' : 'white';
+    return `<span class="${dark ? 'dark' : 'light'}">${hasPiece ? `<i class="${pieceClass}"></i>` : ''}</span>`;
+  }).join('')}</i>`;
+}
+
+function checkersEffectPreviewMarkup(variant){
+  const cells = Array.from({ length:64 }, (_, cell) => `<span class="${(Math.floor(cell / 8) + cell % 8) % 2 ? 'dark' : 'light'}"></span>`).join('');
+  return `<i class="store-v2-mini-checkers-effect checkers-store-fx-${variant}" data-checkers-effect-preview aria-hidden="true"><span class="checkers-fx-board">${cells}</span><b class="checkers-fx-piece from"></b><b class="checkers-fx-piece target"></b><em class="checkers-fx-impact"></em><u class="checkers-fx-crown">♛</u><small class="checkers-fx-play">▶</small></i>`;
+}
+
 function gameCosmeticPreview(gameType, layer, variant, label = ''){
   const safeLayer = ['theme','elements','effect'].includes(String(layer)) ? String(layer) : 'theme';
   const normalizedVariant = gameType === 'tictactoe' && safeLayer === 'effect' ? normalizeEffectVariant(String(variant || 'base')) : String(variant || 'base');
@@ -409,6 +441,14 @@ function gameCosmeticPreview(gameType, layer, variant, label = ''){
     } else {
       content = `<i class="store-v2-mini-chess-effect chess-store-fx-${safeVariant}" aria-hidden="true"><span>♞</span><b></b><em></em></i>`;
     }
+  } else if (gameType === 'checkers') {
+    if (safeLayer === 'theme') {
+      content = checkersMiniBoardMarkup(true);
+    } else if (safeLayer === 'elements') {
+      content = '<i class="store-v2-mini-checkers-pieces" aria-hidden="true"><span class="black"></span><span class="white"></span><span class="king"><b>♛</b></span></i>';
+    } else {
+      content = checkersEffectPreviewMarkup(safeVariant);
+    }
   } else if (safeLayer === 'theme') {
     const marks = ['✕','','○','','○','','✕','','✕'];
     content = `<i class="store-v2-mini-board">${marks.map(mark => `<span>${mark ? `<b>${mark}</b>` : ''}</span>`).join('')}</i>`;
@@ -420,28 +460,44 @@ function gameCosmeticPreview(gameType, layer, variant, label = ''){
   return `<div class="store-v2-game-preview" data-game-type="${escapeAttr(gameType)}" data-cosmetic-layer="${safeLayer}" data-cosmetic-variant="${safeVariant}" role="img" aria-label="${escapeAttr(label)}">${content}</div>`;
 }
 
+function gameBundlesFromSnapshot(snapshot = storeState){
+  const gameBundles = Array.isArray(snapshot?.bundles?.game_bundles) ? snapshot.bundles.game_bundles.filter(Boolean) : [];
+  if (gameBundles.length) return gameBundles;
+  return [snapshot?.bundles?.tictactoe_bundle, snapshot?.bundles?.checkers_bundle].filter(Boolean);
+}
+
 function renderBundlesTab(){
-  const bundle = storeState?.bundles?.tictactoe_bundle;
-  if (!bundle) return emptyState('Наборы пока недоступны');
-  const missing = Number(bundle.missing_count || 0);
-  const owned = Number(bundle.owned_count || 0);
-  const allOwned = Boolean(bundle.already_owned);
+  const bundles = gameBundlesFromSnapshot();
+  if (!bundles.length) return emptyState('Наборы пока недоступны');
+  return `<div class="store-v2-game-bundles">${bundles.map(renderGameBundle).join('')}</div>`;
+}
+
+function renderGameBundle(bundle){
+  const gameType = String(bundle?.game_type || bundle?.subcategory || 'tictactoe');
+  const missing = Number(bundle?.missing_count || 0);
+  const owned = Number(bundle?.owned_count || 0);
+  const allOwned = Boolean(bundle?.already_owned);
   const regularMissingPrice = regularBundlePrice(bundle);
-  const saving = Math.max(0, regularMissingPrice - Number(bundle.price_coins || 0));
+  const saving = Math.max(0, regularMissingPrice - Number(bundle?.price_coins || 0));
+  const title = String(bundle?.display_name || (gameType === 'checkers' ? 'Неоновый комплект шашек' : 'Неоновый комплект'));
+  const description = gameType === 'checkers'
+    ? 'Неоновая доска, неоновые шашки и все три эффекта.'
+    : 'Поле, знаки и три эффекта для крестиков-ноликов.';
+  const visual = gameType === 'checkers'
+    ? `<div class="store-v2-bundle-visual checkers-bundle-visual" aria-hidden="true">${checkersMiniBoardMarkup(false)}<i class="store-v2-mini-checkers-pieces"><span class="black"></span><span class="white"></span></i><b>＋3</b></div>`
+    : '<div class="store-v2-bundle-visual" aria-hidden="true"><span>✕</span><span>○</span><span>＋</span><span>／</span><span>×</span></div>';
   return `
-    <article class="store-v2-bundle ${allOwned ? 'owned' : ''}">
-      <div class="store-v2-bundle-visual" aria-hidden="true">
-        <span>✕</span><span>○</span><span>＋</span><span>／</span><span>×</span>
-      </div>
+    <article class="store-v2-bundle ${allOwned ? 'owned' : ''}" data-store-bundle-game="${escapeAttr(gameType)}">
+      ${visual}
       <div class="store-v2-bundle-copy">
-        <h2>Неоновый комплект</h2>
-        <p>Поле, знаки и три эффекта для крестиков-ноликов.</p>
+        <h2>${escapeHtml(title)}</h2>
+        <p>${escapeHtml(description)}</p>
         ${allOwned
           ? '<p>Комплект уже собран.</p>'
           : (owned ? `<p>Осталось ${missing} из 5.</p>` : '')}
-        ${!allOwned ? `<div class="store-v2-bundle-price"><strong>${formatNumber(bundle.price_coins || 0)} коинов</strong>${saving > 0 ? `<span>−${formatNumber(saving)}</span>` : ''}</div>` : ''}
+        ${!allOwned ? `<div class="store-v2-bundle-price"><strong>${formatNumber(bundle?.price_coins || 0)} коинов</strong>${saving > 0 ? `<span>−${formatNumber(saving)}</span>` : ''}</div>` : ''}
       </div>
-      <button class="btn primary full" data-store-v2-buy="${escapeAttr(bundle.offer_id || '')}" type="button" ${allOwned ? 'disabled' : ''}>
+      <button class="btn primary full" data-store-v2-buy="${escapeAttr(bundle?.offer_id || '')}" type="button" ${allOwned ? 'disabled' : ''}>
         ${allOwned ? 'Комплект собран' : 'Купить комплект'}
       </button>
     </article>
@@ -536,9 +592,10 @@ function offersFromSnapshot(snapshot){
     ...gameOffers,
   ];
   const avatarBundle = snapshot?.bundles?.avatar_bundle;
-  const tictactoeBundle = snapshot?.bundles?.tictactoe_bundle;
   if (avatarBundle) offers.push(avatarBundle);
-  if (tictactoeBundle) offers.push(tictactoeBundle);
+  gameBundlesFromSnapshot(snapshot).forEach(bundle => {
+    if (!offers.some(candidate => String(candidate?.offer_id || '') === String(bundle?.offer_id || ''))) offers.push(bundle);
+  });
   return offers;
 }
 
@@ -581,7 +638,7 @@ function applyOptimisticPurchase(offer){
     candidate.purchasable = remaining.length > 0;
   });
 
-  const bundles = [next?.bundles?.avatar_bundle, next?.bundles?.tictactoe_bundle].filter(Boolean);
+  const bundles = [next?.bundles?.avatar_bundle, ...gameBundlesFromSnapshot(next)].filter(Boolean);
   const individualByItem = new Map();
   offers.filter(candidate => String(candidate?.offer_type || '') === 'item').forEach(candidate => {
     const itemId = String(candidate?.item_ids?.[0] || '');
@@ -639,12 +696,15 @@ function openPurchaseConfirm(offer){
   const balance = Number(storeState?.balance || 0);
   const price = Number(offer.price_coins || 0);
   const missing = Math.max(0, price - balance);
+  const bundleGameType = String(offer?.game_type || offer?.subcategory || '');
   const title = isBundle
-    ? String(offer.display_name || 'Неоновый комплект')
+    ? String(offer.display_name || (bundleGameType === 'checkers' ? 'Неоновый комплект шашек' : 'Неоновый комплект'))
     : (isAvatar ? `Аватарка ${number}` : String(offer.display_name || (isNameColor ? 'Цвет имени' : 'Игровой предмет')));
   let visual;
   if (isBundle) {
-    visual = '<div class="store-v2-confirm-game-bundle"><span>✕</span><span>○</span><b>＋3</b></div>';
+    visual = bundleGameType === 'checkers'
+      ? `<div class="store-v2-confirm-game-bundle checkers-bundle-visual">${checkersMiniBoardMarkup(false)}<i class="store-v2-mini-checkers-pieces"><span class="black"></span><span class="white"></span></i><b>＋3</b></div>`
+      : '<div class="store-v2-confirm-game-bundle"><span>✕</span><span>○</span><b>＋3</b></div>';
   } else if (isAvatar) {
     visual = `<div class="store-v2-confirm-avatar store-v2-avatar-preview" data-avatar-item-id="${escapeAttr(itemId)}" data-avatar-preview="${number}" role="img" aria-label="${escapeAttr(`Аватарка ${number}`)}"><span>${String(number).padStart(2,'0')}</span></div>`;
   } else if (isNameColor) {

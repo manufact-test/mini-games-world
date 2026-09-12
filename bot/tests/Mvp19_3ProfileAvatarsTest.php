@@ -172,7 +172,7 @@ $cleanTarget = (string)($manifest['imports']['@mgw/clean-entry'] ?? '');
 $cssTarget = (string)($manifest['assets']['main_css'] ?? '');
 $assertTrue(str_contains($profileTarget, 'mvp19=avatar-collection'), 'Active manifest must publish MVP-19.3 Profile client');
 $assertTrue(str_contains($profileTarget, 'mvp19_3_1=avatar-sync'), 'Active manifest must publish MVP-19.3.1 Profile avatar sync target');
-$assertTrue(str_contains($storeTarget, 'store-screen-checkers-wrapper.js?v=1') && str_contains($storeTarget, 'mvp19_6=checkers-boards'), 'Active manifest may compose the mobile intent-only Store owner through the bounded Checkers wrapper');
+$assertTrue(str_contains($storeTarget, 'store-screen-checkers-wrapper.js?v=2') && str_contains($storeTarget, 'mvp19_6=full-store-v1'), 'Active manifest may compose the mobile intent-only Store owner through the complete Checkers wrapper');
 $assertTrue(str_contains($storeOuterEntry, "from './store-screen-intent-wrapper.js?v=19&mvp19_6=accepted-base-preserved';"), 'Checkers Store wrapper must delegate to the accepted mobile intent-only Store entry');
 $assertTrue(str_contains($storeEntry, "./store-screen.js?v=44&intent_base=1"), 'Intent-only Store entry must retain the accepted MVP-19.3.1 optimistic Store implementation as its behavior owner');
 $assertTrue(str_contains($storeClient, 'applyOptimisticPurchase(offer);'), 'Accepted Store owner must retain MVP-19.3.1 optimistic purchase behavior');

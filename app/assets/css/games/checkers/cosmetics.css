@@ -1,48 +1,33 @@
-/* MVP-19.6 Checkers cosmetics — bounded board-theme family only. */
+/* MVP-19.6 Checkers cosmetics — Store-complete presentation; live board family remains bounded. */
 
-/* Live board projection. Base Checkers remains byte-for-byte untouched when no theme is equipped. */
+/* Live board projection. Base Checkers remains untouched when no board cosmetic is equipped. */
 .checkers-surface[data-checkers-theme="wood"] .checkers-board{
   border-color:rgba(215,162,96,.34);
   box-shadow:0 16px 38px rgba(0,0,0,.24),0 0 24px rgba(157,92,38,.12);
 }
 .checkers-surface[data-checkers-theme="wood"] .checkers-cell.light{
-  background:
-    linear-gradient(102deg,rgba(255,255,255,.08),transparent 28%,rgba(87,42,19,.08) 61%,transparent 78%),
-    linear-gradient(145deg,#d7ad72,#b97b42);
+  background:linear-gradient(102deg,rgba(255,255,255,.08),transparent 28%,rgba(87,42,19,.08) 61%,transparent 78%),linear-gradient(145deg,#d7ad72,#b97b42);
 }
 .checkers-surface[data-checkers-theme="wood"] .checkers-cell.dark{
-  background:
-    linear-gradient(96deg,rgba(255,255,255,.035),transparent 31%,rgba(0,0,0,.12) 66%,transparent 82%),
-    linear-gradient(145deg,#71462e,#472b25);
+  background:linear-gradient(96deg,rgba(255,255,255,.035),transparent 31%,rgba(0,0,0,.12) 66%,transparent 82%),linear-gradient(145deg,#71462e,#472b25);
 }
-
 .checkers-surface[data-checkers-theme="dark"] .checkers-board{
   border-color:rgba(148,163,184,.2);
   box-shadow:0 16px 38px rgba(0,0,0,.34),0 0 22px rgba(75,85,99,.12);
   background:#070b12;
 }
-.checkers-surface[data-checkers-theme="dark"] .checkers-cell.light{
-  background:linear-gradient(145deg,#6f7787,#4d5563);
-}
-.checkers-surface[data-checkers-theme="dark"] .checkers-cell.dark{
-  background:linear-gradient(145deg,#202736,#0c111c);
-}
-
+.checkers-surface[data-checkers-theme="dark"] .checkers-cell.light{background:linear-gradient(145deg,#6f7787,#4d5563)}
+.checkers-surface[data-checkers-theme="dark"] .checkers-cell.dark{background:linear-gradient(145deg,#202736,#0c111c)}
 .checkers-surface[data-checkers-theme="marble"] .checkers-board{
   border-color:rgba(226,232,240,.4);
   box-shadow:0 16px 38px rgba(0,0,0,.24),0 0 26px rgba(194,206,224,.12);
 }
 .checkers-surface[data-checkers-theme="marble"] .checkers-cell.light{
-  background:
-    linear-gradient(118deg,transparent 0 34%,rgba(112,122,139,.16) 35% 36%,transparent 37% 62%,rgba(148,157,173,.11) 63% 64%,transparent 65%),
-    linear-gradient(145deg,#eef1f4,#cfd4da);
+  background:linear-gradient(118deg,transparent 0 34%,rgba(112,122,139,.16) 35% 36%,transparent 37% 62%,rgba(148,157,173,.11) 63% 64%,transparent 65%),linear-gradient(145deg,#eef1f4,#cfd4da);
 }
 .checkers-surface[data-checkers-theme="marble"] .checkers-cell.dark{
-  background:
-    linear-gradient(122deg,transparent 0 41%,rgba(210,218,230,.11) 42% 43%,transparent 44% 70%,rgba(255,255,255,.08) 71% 72%,transparent 73%),
-    linear-gradient(145deg,#5c6573,#343b47);
+  background:linear-gradient(122deg,transparent 0 41%,rgba(210,218,230,.11) 42% 43%,transparent 44% 70%,rgba(255,255,255,.08) 71% 72%,transparent 73%),linear-gradient(145deg,#5c6573,#343b47);
 }
-
 .checkers-surface[data-checkers-theme="neon"] .checkers-board{
   border-color:rgba(81,221,255,.46);
   box-shadow:0 16px 38px rgba(0,0,0,.32),0 0 26px rgba(82,204,255,.18),0 0 40px rgba(142,91,255,.1);
@@ -57,160 +42,160 @@
   box-shadow:inset 0 0 0 1px rgba(166,108,255,.12);
 }
 
-/* Store header: use actual checker pieces instead of TTT-style coloured dots. */
-.store-v2-game-head[data-store-game-type="checkers"] .store-v2-game-head-marks{
-  gap:10px;
-}
+/* Checkers identity in the Store header. */
+.store-v2-game-head[data-store-game-type="checkers"] .store-v2-game-head-marks{gap:10px}
 .store-v2-game-head[data-store-game-type="checkers"] .checkers-store-head-piece{
-  position:relative;
-  width:38px;
-  height:38px;
-  border-radius:50%;
-  border:0;
-  background:none;
-  font-size:0;
-  box-shadow:none;
+  position:relative;width:38px;height:38px;border-radius:50%;border:0;background:none;font-size:0;box-shadow:none;
 }
 .store-v2-game-head[data-store-game-type="checkers"] .checkers-store-head-piece::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  border-radius:50%;
-  box-shadow:0 5px 12px rgba(0,0,0,.34),inset 0 0 0 2px rgba(255,255,255,.16),inset 0 -5px 8px rgba(0,0,0,.18);
+  content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 6px 14px rgba(0,0,0,.4),inset 0 0 0 2px rgba(255,255,255,.16),inset 0 -6px 9px rgba(0,0,0,.22);
 }
 .store-v2-game-head[data-store-game-type="checkers"] .checkers-store-head-piece::after{
-  content:"";
-  position:absolute;
-  inset:16%;
-  border-radius:50%;
-  border:1px solid rgba(255,255,255,.2);
+  content:"";position:absolute;inset:16%;border-radius:50%;border:1px solid rgba(255,255,255,.24);box-shadow:inset 0 0 0 1px rgba(0,0,0,.1);
 }
-.store-v2-game-head[data-store-game-type="checkers"] .checkers-store-head-piece.black::before{
-  background:linear-gradient(145deg,#313a51,#111827);
-  box-shadow:0 5px 12px rgba(0,0,0,.45),inset 0 0 0 2px rgba(146,159,205,.28),inset 0 -5px 8px rgba(0,0,0,.34);
+.store-v2-game-head[data-store-game-type="checkers"] .checkers-store-head-piece.black::before{background:linear-gradient(145deg,#3c4964,#111827)}
+.store-v2-game-head[data-store-game-type="checkers"] .checkers-store-head-piece.white::before{background:linear-gradient(145deg,#fffdf6,#c9c5bb)}
+
+/* One visual frame for all Checkers Store cards. */
+.store-v2-game-preview[data-game-type="checkers"]{
+  box-sizing:border-box;position:relative;overflow:hidden;display:grid;place-items:center;min-height:154px;padding:14px;border:1px solid rgba(255,255,255,.09);border-radius:16px;
+  background:radial-gradient(circle at 50% 28%,rgba(99,102,241,.12),transparent 46%),linear-gradient(150deg,rgba(25,29,45,.78),rgba(8,11,20,.94));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045),inset 0 -24px 50px rgba(0,0,0,.14);
 }
-.store-v2-game-head[data-store-game-type="checkers"] .checkers-store-head-piece.white::before{
-  background:linear-gradient(145deg,#f7f5ee,#c8c5bd);
-  box-shadow:0 5px 12px rgba(0,0,0,.32),inset 0 0 0 2px rgba(255,255,255,.72),inset 0 -5px 8px rgba(85,85,85,.18);
+.store-v2-game-preview[data-game-type="checkers"]::after{
+  content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(120deg,rgba(255,255,255,.045),transparent 27% 73%,rgba(255,255,255,.02));
 }
 
-/* Shared Store/Profile 8x8 board preview. The preview owns a square viewport so no board can be cropped. */
-.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{
-  box-sizing:border-box;
-  overflow:hidden;
-  display:grid;
-  place-items:center;
-  padding:6px;
-  border:1px solid rgba(255,255,255,.09);
-  border-radius:14px;
-  background:linear-gradient(145deg,rgba(25,29,45,.72),rgba(12,15,25,.88));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
-}
+/* 8×8 board — large enough to read as a real board, never cropped. */
 .store-v2-mini-checkers-board{
-  box-sizing:border-box;
-  display:grid;
-  grid-template-columns:repeat(8,minmax(0,1fr));
-  width:min(100%,96px);
-  max-width:96px;
-  aspect-ratio:1;
-  overflow:hidden;
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,.14);
-  box-shadow:0 8px 18px rgba(0,0,0,.24);
-  background:#111827;
+  box-sizing:border-box;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));width:120px;max-width:100%;aspect-ratio:1;overflow:hidden;border-radius:12px;border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 12px 28px rgba(0,0,0,.34),0 1px 0 rgba(255,255,255,.08);background:#111827;transform:rotateX(1.5deg);
 }
-.store-v2-mini-checkers-board > span{
-  position:relative;
-  display:grid;
-  place-items:center;
-  min-width:0;
-  min-height:0;
-}
+.store-v2-mini-checkers-board > span{position:relative;display:grid;place-items:center;min-width:0;min-height:0}
 .store-v2-mini-checkers-board > span.light{background:linear-gradient(145deg,#d9c8a8,#bea884)}
 .store-v2-mini-checkers-board > span.dark{background:linear-gradient(145deg,#5d4b58,#3c3343)}
 .store-v2-mini-checkers-board > span > i{
-  position:relative;
-  display:block;
-  width:62%;
-  aspect-ratio:1;
-  border-radius:50%;
-  box-shadow:0 1px 3px rgba(0,0,0,.36),inset 0 0 0 1px rgba(255,255,255,.18),inset 0 -1px 2px rgba(0,0,0,.18);
+  position:relative;display:block;width:66%;aspect-ratio:1;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.2),inset 0 -2px 3px rgba(0,0,0,.22);
 }
-.store-v2-mini-checkers-board > span > i::after{
-  content:"";
-  position:absolute;
-  inset:18%;
-  border-radius:50%;
-  border:1px solid rgba(255,255,255,.14);
+.store-v2-mini-checkers-board > span > i::after{content:"";position:absolute;inset:19%;border-radius:50%;border:1px solid rgba(255,255,255,.16)}
+.store-v2-mini-checkers-board > span > i.white{background:linear-gradient(145deg,#fffdf7,#c9c5bb)}
+.store-v2-mini-checkers-board > span > i.black{background:linear-gradient(145deg,#3d4963,#101722)}
+
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board{border-color:rgba(215,162,96,.42);box-shadow:0 12px 28px rgba(0,0,0,.34),0 0 18px rgba(157,92,38,.12)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board > span.light{background:linear-gradient(102deg,rgba(255,255,255,.08),transparent 28%,rgba(87,42,19,.08) 61%,transparent 78%),linear-gradient(145deg,#d7ad72,#b97b42)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board > span.dark{background:linear-gradient(96deg,rgba(255,255,255,.035),transparent 31%,rgba(0,0,0,.12) 66%,transparent 82%),linear-gradient(145deg,#71462e,#472b25)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="dark"] .store-v2-mini-checkers-board{border-color:rgba(148,163,184,.25)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="dark"] .store-v2-mini-checkers-board > span.light{background:linear-gradient(145deg,#6f7787,#4d5563)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="dark"] .store-v2-mini-checkers-board > span.dark{background:linear-gradient(145deg,#202736,#0c111c)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-board{border-color:rgba(226,232,240,.46);box-shadow:0 12px 28px rgba(0,0,0,.3),0 0 18px rgba(194,206,224,.12)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-board > span.light{background:linear-gradient(118deg,transparent 0 34%,rgba(112,122,139,.16) 35% 36%,transparent 37% 62%,rgba(148,157,173,.11) 63% 64%,transparent 65%),linear-gradient(145deg,#eef1f4,#cfd4da)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-board > span.dark{background:linear-gradient(122deg,transparent 0 41%,rgba(210,218,230,.11) 42% 43%,transparent 44% 70%,rgba(255,255,255,.08) 71% 72%,transparent 73%),linear-gradient(145deg,#5c6573,#343b47)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="neon"] .store-v2-mini-checkers-board{border-color:rgba(81,221,255,.55);box-shadow:0 12px 28px rgba(0,0,0,.34),0 0 18px rgba(82,204,255,.22),0 0 30px rgba(142,91,255,.12)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="neon"] .store-v2-mini-checkers-board > span.light{background:linear-gradient(145deg,#24324a,#152038);box-shadow:inset 0 0 0 1px rgba(92,214,255,.1)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="neon"] .store-v2-mini-checkers-board > span.dark{background:linear-gradient(145deg,#171124,#090812);box-shadow:inset 0 0 0 1px rgba(166,108,255,.16)}
+
+/* Piece-set previews: actual checker discs, including an unmistakable king. */
+.store-v2-mini-checkers-pieces{position:relative;display:block;width:142px;height:104px;isolation:isolate}
+.store-v2-mini-checkers-pieces > span{
+  position:absolute;display:grid;place-items:center;width:62px;aspect-ratio:1;border-radius:50%;box-sizing:border-box;box-shadow:0 13px 22px rgba(0,0,0,.34),inset 0 0 0 2px rgba(255,255,255,.18),inset 0 -8px 13px rgba(0,0,0,.2);
 }
-.store-v2-mini-checkers-board > span > i.white{
-  background:linear-gradient(145deg,#faf8f0,#c9c5bb);
-}
-.store-v2-mini-checkers-board > span > i.black{
-  background:linear-gradient(145deg,#364158,#101722);
+.store-v2-mini-checkers-pieces > span::after{content:"";position:absolute;inset:17%;border-radius:50%;border:2px solid rgba(255,255,255,.18);box-shadow:inset 0 0 0 1px rgba(0,0,0,.1)}
+.store-v2-mini-checkers-pieces > .black{left:9px;top:26px;background:linear-gradient(145deg,#46536e,#101722);transform:rotate(-8deg)}
+.store-v2-mini-checkers-pieces > .white{right:8px;top:7px;background:linear-gradient(145deg,#fffdf7,#cbc6bb);transform:rotate(8deg)}
+.store-v2-mini-checkers-pieces > .king{left:50%;bottom:0;z-index:2;transform:translateX(-50%);background:linear-gradient(145deg,#6d7890,#1b2435)}
+.store-v2-mini-checkers-pieces > .king b{position:relative;z-index:2;font-style:normal;text-decoration:none;font-size:29px;line-height:1;color:#f9d878;text-shadow:0 1px 7px rgba(245,201,79,.38)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-pieces > .black{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.12),transparent 28%),linear-gradient(145deg,#80513b,#40271f)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-pieces > .white{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.28),transparent 30%),linear-gradient(145deg,#e1b97d,#a56b3d)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-pieces > .king{background:linear-gradient(145deg,#c08a50,#654029)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-pieces > span{background:linear-gradient(122deg,transparent 0 44%,rgba(119,129,146,.23) 45% 47%,transparent 48%),linear-gradient(145deg,#eef1f4,#aeb6c2);box-shadow:0 13px 22px rgba(0,0,0,.3),inset 0 0 0 2px rgba(255,255,255,.5),inset 0 -8px 13px rgba(75,83,96,.18)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-pieces > .black{filter:brightness(.58)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="metal"] .store-v2-mini-checkers-pieces > .black{background:linear-gradient(145deg,#d2d8e2 0%,#4a5363 42%,#151b25 100%);border:1px solid rgba(230,236,246,.4)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="metal"] .store-v2-mini-checkers-pieces > .white{background:linear-gradient(145deg,#fff3bb 0%,#c69a37 46%,#735018 100%);border:1px solid rgba(255,229,143,.52)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="metal"] .store-v2-mini-checkers-pieces > .king{background:linear-gradient(145deg,#d9e2ef,#38465b)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="neon"] .store-v2-mini-checkers-pieces > span{background:#101426;border:2px solid #60e7ff;box-shadow:0 13px 22px rgba(0,0,0,.34),0 0 18px rgba(68,221,255,.5),inset 0 0 18px rgba(68,221,255,.14)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="neon"] .store-v2-mini-checkers-pieces > .white{border-color:#c286ff;box-shadow:0 13px 22px rgba(0,0,0,.34),0 0 18px rgba(174,112,255,.5),inset 0 0 18px rgba(174,112,255,.14)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="neon"] .store-v2-mini-checkers-pieces > .king{border-color:#ffe67b;box-shadow:0 13px 22px rgba(0,0,0,.34),0 0 20px rgba(255,213,77,.46)}
+
+/* Event previews are static by default. Playback is explicit, one-shot, and wrapper-owned. */
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]{cursor:pointer;outline:none}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]:focus-visible{border-color:rgba(99,203,255,.58);box-shadow:0 0 0 3px rgba(76,183,255,.14),inset 0 1px 0 rgba(255,255,255,.05)}
+.store-v2-mini-checkers-effect{position:relative;display:block;width:144px;height:118px;isolation:isolate}
+.checkers-fx-board{position:absolute;left:17px;top:4px;display:grid;grid-template-columns:repeat(8,1fr);width:110px;aspect-ratio:1;overflow:hidden;border-radius:10px;border:1px solid rgba(255,255,255,.12);box-shadow:0 10px 24px rgba(0,0,0,.3)}
+.checkers-fx-board > span.light{background:#596579}
+.checkers-fx-board > span.dark{background:#171e2d}
+.checkers-fx-piece{position:absolute;z-index:4;width:19px;height:19px;border-radius:50%;background:linear-gradient(145deg,#e9edf4,#8c96a8);box-shadow:0 3px 7px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.45);transform:translate(-50%,-50%)}
+.checkers-fx-piece.from{left:54px;top:79px}
+.checkers-fx-piece.target{left:91px;top:42px;background:linear-gradient(145deg,#45506b,#111827)}
+.checkers-fx-impact{position:absolute;z-index:3;left:91px;top:42px;width:12px;height:12px;border-radius:50%;transform:translate(-50%,-50%);border:2px solid rgba(101,225,255,.78);opacity:.35;box-shadow:0 0 14px rgba(101,225,255,.4)}
+.checkers-fx-crown{position:absolute;z-index:6;left:91px;top:25px;transform:translate(-50%,-50%) scale(.72);font-style:normal;text-decoration:none;color:#ffe177;font-size:27px;line-height:1;opacity:.45;text-shadow:0 0 13px rgba(255,215,76,.48)}
+.checkers-fx-play{position:absolute;z-index:8;right:1px;bottom:0;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;font-style:normal;font-size:11px;color:#f5f8ff;background:rgba(19,26,43,.88);border:1px solid rgba(255,255,255,.16);box-shadow:0 6px 14px rgba(0,0,0,.28)}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"].is-playing .checkers-fx-play{opacity:0}
+.checkers-store-fx-move .target,.checkers-store-fx-move .checkers-fx-crown{display:none}
+.checkers-store-fx-capture .checkers-fx-crown{display:none}
+.checkers-store-fx-promotion .target{display:none}
+.checkers-store-fx-promotion .checkers-fx-crown{opacity:.62}
+
+.store-v2-game-preview.is-playing .checkers-store-fx-move .from{animation:mgw-checkers-fx-move-piece .82s cubic-bezier(.2,.76,.2,1) both}
+.store-v2-game-preview.is-playing .checkers-store-fx-move .checkers-fx-impact{animation:mgw-checkers-fx-move-ring .82s ease-out both}
+.store-v2-game-preview.is-playing .checkers-store-fx-capture .from{animation:mgw-checkers-fx-capture-piece .82s cubic-bezier(.2,.76,.2,1) both}
+.store-v2-game-preview.is-playing .checkers-store-fx-capture .target{animation:mgw-checkers-fx-capture-target .82s ease-out both}
+.store-v2-game-preview.is-playing .checkers-store-fx-capture .checkers-fx-impact{animation:mgw-checkers-fx-capture-burst .82s ease-out both}
+.store-v2-game-preview.is-playing .checkers-store-fx-promotion .from{animation:mgw-checkers-fx-promotion-piece .82s cubic-bezier(.2,.76,.2,1) both}
+.store-v2-game-preview.is-playing .checkers-store-fx-promotion .checkers-fx-crown{animation:mgw-checkers-fx-promotion-crown .9s cubic-bezier(.15,.8,.2,1) both}
+.store-v2-game-preview.is-playing .checkers-store-fx-promotion .checkers-fx-impact{animation:mgw-checkers-fx-promotion-ring .9s ease-out both}
+
+@keyframes mgw-checkers-fx-move-piece{0%{transform:translate(-50%,-50%) scale(1)}58%,100%{left:91px;top:42px;transform:translate(-50%,-50%) scale(1)}}
+@keyframes mgw-checkers-fx-move-ring{0%,35%{opacity:0;transform:translate(-50%,-50%) scale(.2)}64%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(2.5)}}
+@keyframes mgw-checkers-fx-capture-piece{0%{transform:translate(-50%,-50%) scale(1)}58%,100%{left:91px;top:42px;transform:translate(-50%,-50%) scale(1.08)}}
+@keyframes mgw-checkers-fx-capture-target{0%,42%{opacity:1;transform:translate(-50%,-50%) scale(1)}76%,100%{opacity:0;transform:translate(-50%,-50%) scale(.18)}}
+@keyframes mgw-checkers-fx-capture-burst{0%,40%{opacity:0;transform:translate(-50%,-50%) scale(.2);box-shadow:0 0 0 rgba(101,225,255,0)}65%{opacity:1;box-shadow:0 0 24px rgba(101,225,255,.9),0 0 38px rgba(176,106,255,.5)}100%{opacity:0;transform:translate(-50%,-50%) scale(3)}}
+@keyframes mgw-checkers-fx-promotion-piece{0%{transform:translate(-50%,-50%) scale(1)}52%,100%{left:91px;top:42px;transform:translate(-50%,-50%) scale(1.08)}}
+@keyframes mgw-checkers-fx-promotion-crown{0%,45%{opacity:0;transform:translate(-50%,-50%) translateY(11px) scale(.35) rotate(-12deg)}72%{opacity:1;transform:translate(-50%,-50%) translateY(-2px) scale(1.18) rotate(3deg)}100%{opacity:.92;transform:translate(-50%,-50%) scale(1) rotate(0)}}
+@keyframes mgw-checkers-fx-promotion-ring{0%,45%{opacity:0;transform:translate(-50%,-50%) scale(.2)}72%{opacity:.95}100%{opacity:0;transform:translate(-50%,-50%) scale(2.8);border-color:#ffe177}}
+
+/* Checkers premium bundle. */
+.store-v2-game-bundles{display:grid;gap:14px}
+.checkers-bundle-visual{position:relative;overflow:hidden;min-height:150px;background:radial-gradient(circle at 38% 42%,rgba(62,225,255,.18),transparent 34%),radial-gradient(circle at 70% 48%,rgba(170,101,255,.2),transparent 37%),linear-gradient(145deg,#0b1021,#080912)!important}
+.checkers-bundle-visual .store-v2-mini-checkers-board{position:absolute;width:104px;left:12%;top:50%;transform:translateY(-50%) rotate(-7deg);border-color:rgba(81,221,255,.48);box-shadow:0 12px 28px rgba(0,0,0,.38),0 0 22px rgba(82,204,255,.18)}
+.checkers-bundle-visual .store-v2-mini-checkers-board > span.light{background:linear-gradient(145deg,#24324a,#152038)}
+.checkers-bundle-visual .store-v2-mini-checkers-board > span.dark{background:linear-gradient(145deg,#171124,#090812)}
+.checkers-bundle-visual .store-v2-mini-checkers-pieces{position:absolute;width:108px;height:80px;right:10%;bottom:18px}
+.checkers-bundle-visual .store-v2-mini-checkers-pieces > span{width:48px;background:#101426;border:2px solid #60e7ff;box-shadow:0 9px 18px rgba(0,0,0,.36),0 0 16px rgba(68,221,255,.42)}
+.checkers-bundle-visual .store-v2-mini-checkers-pieces > .white{border-color:#c286ff;box-shadow:0 9px 18px rgba(0,0,0,.36),0 0 16px rgba(174,112,255,.44)}
+.checkers-bundle-visual > b{position:absolute;right:12%;top:18px;z-index:5;padding:5px 9px;border-radius:999px;font-size:13px;line-height:1;color:#fff;background:rgba(22,28,46,.82);border:1px solid rgba(255,255,255,.14);box-shadow:0 6px 14px rgba(0,0,0,.26)}
+
+/* Purchase sheet: representative previews get room and remain square/field-safe on phones. */
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"]{width:min(100%,220px);height:190px;min-height:190px;margin:0 auto;padding:16px}
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board{width:156px;border-radius:14px}
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces{transform:scale(1.12)}
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .store-v2-mini-checkers-effect{transform:scale(1.08)}
+.store-v2-confirm-game-bundle.checkers-bundle-visual{width:min(100%,220px);height:176px;margin:0 auto;border-radius:18px;border:1px solid rgba(255,255,255,.1)}
+
+@media(max-width:430px){
+  .store-v2-game-preview[data-game-type="checkers"]{min-height:146px;padding:12px}
+  .store-v2-mini-checkers-board{width:114px}
+  .store-v2-mini-checkers-pieces{transform:scale(.94)}
+  .store-v2-mini-checkers-effect{transform:scale(.95)}
+  .store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"]{width:min(100%,208px);height:180px;min-height:180px}
+  .store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board{width:146px}
 }
 
-.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board{
-  border-color:rgba(215,162,96,.34);
-  box-shadow:0 8px 18px rgba(0,0,0,.28),0 0 14px rgba(157,92,38,.1);
-}
-.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board > span.light{
-  background:linear-gradient(102deg,rgba(255,255,255,.08),transparent 28%,rgba(87,42,19,.08) 61%,transparent 78%),linear-gradient(145deg,#d7ad72,#b97b42);
-}
-.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board > span.dark{
-  background:linear-gradient(96deg,rgba(255,255,255,.035),transparent 31%,rgba(0,0,0,.12) 66%,transparent 82%),linear-gradient(145deg,#71462e,#472b25);
+@media(max-width:360px){
+  .store-v2-game-preview[data-game-type="checkers"]{min-height:138px;padding:10px}
+  .store-v2-mini-checkers-board{width:106px;border-radius:10px}
+  .store-v2-mini-checkers-pieces{transform:scale(.88)}
+  .store-v2-mini-checkers-effect{transform:scale(.88)}
 }
 
-.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="dark"] .store-v2-mini-checkers-board{
-  border-color:rgba(148,163,184,.2);
-}
-.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="dark"] .store-v2-mini-checkers-board > span.light{
-  background:linear-gradient(145deg,#6f7787,#4d5563);
-}
-.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="dark"] .store-v2-mini-checkers-board > span.dark{
-  background:linear-gradient(145deg,#202736,#0c111c);
-}
-
-.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-board{
-  border-color:rgba(226,232,240,.42);
-  box-shadow:0 8px 18px rgba(0,0,0,.24),0 0 14px rgba(194,206,224,.1);
-}
-.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-board > span.light{
-  background:linear-gradient(118deg,transparent 0 34%,rgba(112,122,139,.16) 35% 36%,transparent 37% 62%,rgba(148,157,173,.11) 63% 64%,transparent 65%),linear-gradient(145deg,#eef1f4,#cfd4da);
-}
-.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="marble"] .store-v2-mini-checkers-board > span.dark{
-  background:linear-gradient(122deg,transparent 0 41%,rgba(210,218,230,.11) 42% 43%,transparent 44% 70%,rgba(255,255,255,.08) 71% 72%,transparent 73%),linear-gradient(145deg,#5c6573,#343b47);
-}
-
-.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="neon"] .store-v2-mini-checkers-board{
-  border-color:rgba(81,221,255,.5);
-  box-shadow:0 8px 18px rgba(0,0,0,.3),0 0 14px rgba(82,204,255,.18),0 0 22px rgba(142,91,255,.1);
-}
-.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="neon"] .store-v2-mini-checkers-board > span.light{
-  background:linear-gradient(145deg,#24324a,#152038);
-  box-shadow:inset 0 0 0 1px rgba(92,214,255,.09);
-}
-.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-variant="neon"] .store-v2-mini-checkers-board > span.dark{
-  background:linear-gradient(145deg,#171124,#090812);
-  box-shadow:inset 0 0 0 1px rgba(166,108,255,.14);
-}
-
-/* Purchase sheet gets its own square-safe sizing instead of inheriting the generic 1.55 ratio. */
-.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{
-  width:190px;
-  height:142px;
-  min-height:142px;
-  aspect-ratio:auto;
-  margin:0 auto;
-  padding:10px;
-}
-.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"] .store-v2-mini-checkers-board{
-  width:120px;
-  max-width:120px;
-  border-radius:12px;
-}
-
-@media(max-width:380px){
-  .store-v2-mini-checkers-board{width:min(100%,92px);max-width:92px;border-radius:9px}
-  .store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"] .store-v2-mini-checkers-board{width:116px;max-width:116px;border-radius:11px}
+@media(prefers-reduced-motion:reduce){
+  .store-v2-game-preview.is-playing .checkers-store-fx-move .from,
+  .store-v2-game-preview.is-playing .checkers-store-fx-move .checkers-fx-impact,
+  .store-v2-game-preview.is-playing .checkers-store-fx-capture .from,
+  .store-v2-game-preview.is-playing .checkers-store-fx-capture .target,
+  .store-v2-game-preview.is-playing .checkers-store-fx-capture .checkers-fx-impact,
+  .store-v2-game-preview.is-playing .checkers-store-fx-promotion .from,
+  .store-v2-game-preview.is-playing .checkers-store-fx-promotion .checkers-fx-crown,
+  .store-v2-game-preview.is-playing .checkers-store-fx-promotion .checkers-fx-impact{animation:none!important}
+  .store-v2-game-preview.is-reduced-preview .checkers-fx-impact{opacity:.95;transform:translate(-50%,-50%) scale(1.8)}
+  .store-v2-game-preview.is-reduced-preview .checkers-store-fx-promotion .checkers-fx-crown{opacity:1;transform:translate(-50%,-50%) scale(1)}
 }

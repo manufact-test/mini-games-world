@@ -44,6 +44,7 @@ jobs:
           git diff --exit-code "$base" "$head" -- \
             bot/database/migrations/20260831_0020_add_profile_avatars.php \
             app/assets/js/profile/mgw-profile-avatars.js
-          grep -F "store-screen-checkers-wrapper.js?v=1" bot/tests/Mvp19_3ProfileAvatarsTest.php
+          grep -F "store-screen-checkers-wrapper.js?v=2" bot/tests/Mvp19_3ProfileAvatarsTest.php
+          grep -F "mvp19_6=full-store-v1" bot/tests/Mvp19_3ProfileAvatarsTest.php
           grep -F "from './store-screen-intent-wrapper.js?v=19&mvp19_6=accepted-base-preserved';" app/assets/js/screens/store-screen-checkers-wrapper.js
           git diff --check
