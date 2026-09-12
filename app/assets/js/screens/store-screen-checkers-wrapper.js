@@ -11,6 +11,7 @@ let latestStoreSnapshot = null;
 let checkersEffectObserver = null;
 
 ensureCheckersCosmeticStyles();
+ensureCheckersEffectPreviewStyles();
 installStoreApiRepairHooks();
 
 export function initStoreScreen(){
@@ -61,6 +62,20 @@ function ensureCheckersCosmeticStyles(){
   link.rel = 'stylesheet';
   link.dataset.mgwCheckersStoreCorrective = 'mvp19-6-manual-review-pass-3';
   link.href = correctiveHref;
+  document.head.appendChild(link);
+}
+
+function ensureCheckersEffectPreviewStyles(){
+  const href = new URL('../../css/games/checkers/store-effects-live-board-v1.css?v=2&mvp19_6=effects-live-board-only', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-checkers-store-effects-live-board]');
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    return;
+  }
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwCheckersStoreEffectsLiveBoard = 'mvp19-6-effects-live-board-v1';
+  link.href = href;
   document.head.appendChild(link);
 }
 
