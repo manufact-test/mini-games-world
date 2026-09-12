@@ -49,7 +49,7 @@ return [
         './assets/js/games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1' => './assets/js/games/game-invites-v110.js?v=1145&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native&waiting=draft-safe',
         './assets/js/games/game-invites-v110.js?v=1144&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native' => './assets/js/games/game-invites-v110.js?v=1145&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native&waiting=draft-safe',
         './assets/js/games/tictactoe/renderer.js?v=53' => './assets/js/games/tictactoe/renderer.js?v=58&mark=full-size-nought&mvp19_4=game-cosmetics-pilot&c2=effects-v2&c2_1=single-slot-parity&c2_4=poll-persistent-effects&c2_5=visible-mark-layer&c2_6=cell-native-dom-fx',
-        './assets/js/games/checkers/renderer.js?v=57' => './assets/js/checkers-cosmetics/renderer-board-themes.js?v=1&mvp19_6=board-themes&base=accepted-v57',
+        './assets/js/games/checkers/renderer.js?v=57' => './assets/js/checkers-cosmetics/renderer-live-effects-v1.js?v=1&mvp19_6=live-effects-store-parity-v1&parent=renderer-board-themes.js?v=1&mvp19_6=board-themes&base=accepted-v57',
         './assets/js/games/chess/renderer.js?v=68' => './assets/js/games/chess/renderer-move-effect-v3.js?v=2&mvp19_5=cosmetics&move=trail-gather-no-hold-v1&quantum_echo=every-move-ghost-halo-v1&base=./assets/js/games/chess/renderer.js?v=70&mvp19_5=cosmetics&fx_runtime=landing-sync-v2',
         './assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer.js?v=60&shot=miss-no-impact',
         './assets/js/production-v110-acceptance-runtime.js?v=110' => './assets/js/production-v110-acceptance-runtime.js?v=130&clock=battleship-setup-single-writer&launch=ready-gated-v2&terminal=clock-stable&input=first-tap-v1',
@@ -65,7 +65,7 @@ return [
         'consistency_css_previous' => './assets/css/production-v99-profile-reaction-polish.css?v=2&mvp19_3=cumulative-owned-reactions&layout=bounded-packs&owned=passive-status&profile_nav=direct-sync-v2&row_footer=stretch-v1&pack4=single-row-v1&profile_first=structural-route-guard-v1&shell_mobile=atomic-v1&profile_hidden=zero-v1&shell_motion=atomic-restored-v2&profile_motion=atomic-none-v1',
         'consistency_css_entry_base' => './assets/css/production-v100-entry-effects.css?v=2&mvp19_3=entry-effects&profile_preview=accepted-runtime-v1',
         'consistency_css_base' => './assets/css/production-v97-reactions.css?v=2&mvp19_3=ingame-corrective',
-        'bootstrap' => './assets/js/app-bootstrap-v2.js?v=10&mvp16=version-manifest&entry_v8=entry01-strike-entry02-royal-ascension-entry03-lord-entrance-v6&victory=victory-nova&visual_repair=11&profile_card_sheet_final=8&mvp19_5=native-board-preview-v1&mvp19_6=checkers-store-card-radius-v1',
+        'bootstrap' => './assets/js/app-bootstrap-v2.js?v=10&mvp16=version-manifest&entry_v8=entry01-strike-entry02-royal-ascension-entry03-lord-entrance-v6&victory=victory-nova&visual_repair=11&profile_card_sheet_final=8&mvp19_5=native-board-preview-v1&mvp19_6=checkers-live-effects-store-parity-v1',
     ],
     'localization' => ['version'=>'keys-v1','default_locale'=>'ru','manifest'=>'./locales/manifest.json'],
 ];
