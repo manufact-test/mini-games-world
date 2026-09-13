@@ -71,7 +71,7 @@ jobs:
           grep -F 'stableLegend' "$live_file"
           grep -F 'container.dataset.mgwCheckersPaidEffect' "$live_file"
           grep -F 'runtime-handoff-mobile-v1.css?v=4' "$live_file"
-          grep -F 'landing=exact-live-centers-v2' "$live_file"
+          grep -F 'mvp19_6=exact-live-centers' "$live_file"
           grep -F 'legend=stable-paint-v1' "$live_file"
 
       - name: Compare live Checkers handoff corrective byte-for-byte
