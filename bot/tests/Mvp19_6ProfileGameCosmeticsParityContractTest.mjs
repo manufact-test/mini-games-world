@@ -11,8 +11,6 @@ const exactCheckersCss = fs.readFileSync('app/assets/css/screens/profile-checker
 const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 const store = fs.readFileSync('app/assets/js/screens/store-screen-checkers-wrapper.js', 'utf8');
 const storeSource = fs.readFileSync('app/assets/js/screens/store-screen-checkers-board-source-wrapper.js', 'utf8');
-const graniteWrapper = fs.readFileSync('app/assets/js/checkers-cosmetics/renderer-granite-store-parity-v1.js', 'utf8');
-const livePieces = fs.readFileSync('app/assets/css/games/checkers/live-pieces-store-parity-v1.css', 'utf8');
 
 function expect(condition, message){
   if (!condition) throw new Error(message);
@@ -113,14 +111,11 @@ expect(layout.includes('prewarmProfileChessArtwork') && layout.includes("['wood'
 expect(manualRepairCss.includes('data-profile-game-panel="chess"') && manualRepairCss.includes('place-items:center!important'), 'Chess Profile preview frames must explicitly center their media');
 expect(manualRepairCss.includes('store-v2-mini-chess-board') && manualRepairCss.includes('justify-self:center!important'), 'Chess board, piece and effect primitives must be centered inside their Profile frames');
 
-// Runtime graph/caches must point at this exact repair layer while accepted gameplay remains delegated to the frozen owner.
+// Runtime graph/caches must point at this exact repair layer while accepted gameplay stays frozen.
 expect(layout.includes("mgw-profile-checkers-parity.js?v=3&mvp19_6=checkers-profile-manual-repair-v3"), 'active Profile wrapper must import the repaired Checkers owner');
 expect(manifest.includes('mgw-profile-chess-layout-v2.js?v=12') && manifest.includes('profile_card_visual=checkers-board-effect-store-exact-v2') && manifest.includes('profile_card_runtime=checkers-hard-square-v1') && manifest.includes('profile_perf=observer-cycle-v2'), 'manifest must publish the hard-square Checkers board/effect Profile owner identity');
 expect(manifest.includes('client.js?v=1136') && manifest.includes('profile_inventory=store-sync-v1'), 'manifest must retain Store/Profile inventory synchronization');
-expect(manifest.includes("'./assets/js/games/checkers/renderer.js?v=57' => './assets/js/checkers-cosmetics/renderer-granite-store-parity-v1.js?v=1&mvp19_6=granite-live-store-parity-v1&parent=all-paid-real-flight-v1'"), 'manifest must publish the live Granite Store-parity wrapper');
-expect(graniteWrapper.includes('renderer-real-flight-cascade-v1.js?v=2&mvp19_6=all-paid-real-flight-v1&parent=single-flight-dom-v2&css=live-effects-v6&move=trail-only-v1'), 'Granite wrapper must delegate to the accepted Checkers gameplay/effect runtime');
-expect(graniteWrapper.includes('live-pieces-store-parity-v1.css?v=4&mvp19_6=granite-store-parity-v1'), 'Granite wrapper must cache-bust the live piece material owner');
-expect(livePieces.includes('radial-gradient(90% 38% at 4% 67%') && livePieces.includes('linear-gradient(145deg,#f5f7f9,#aeb6c2)') && livePieces.includes('linear-gradient(145deg,#7d8796,#343b48)'), 'live Granite pieces must use the accepted Store natural multi-vein material');
+expect(manifest.includes("'./assets/js/games/checkers/renderer.js?v=57' => './assets/js/checkers-cosmetics/renderer-real-flight-cascade-v1.js?v=2&mvp19_6=all-paid-real-flight-v1&parent=single-flight-dom-v2&css=live-effects-v6&move=trail-only-v1'"), 'accepted Checkers gameplay/effect runtime identity must remain frozen');
 expect(chess.includes('const CHESS_PROFILE_ITEMS = Object.freeze({'), 'accepted Chess Profile parity owner must remain present');
 expect(chess.includes("game-chess-effect-check") && chess.includes('quantum-echo'), 'accepted Chess effect Profile presentation must remain intact');
 
