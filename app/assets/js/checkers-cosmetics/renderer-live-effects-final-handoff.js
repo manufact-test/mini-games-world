@@ -5,6 +5,8 @@ import {
   checkersStatus,
 } from './renderer-live-effects-v1.js?v=11&mvp19_6=runtime-smoothing-v11&pieces=king-brand-v3&events=move-through-capture-v4&landing=direct-box-flight-v4&grid_rows=equal-v1&selection=geometry-neutral-v1&last_from=flat-v1&legend=stable-paint-v1&mobile=insets-v1&promotion=authoritative-only-v1';
 
+ensureFinalHandoffStyles();
+
 export { checkersMeta, checkersPlayerMark, checkersStatus };
 
 /* Final live Checkers handoff owner.
@@ -23,6 +25,7 @@ export { checkersMeta, checkersPlayerMark, checkersStatus };
  * hidden checker DOM box, not an inferred cell center.
  */
 export function renderCheckersSurface({ game, me, container, onAction }){
+  ensureFinalHandoffStyles();
   renderLiveEffectsSurface({ game, me, container, onAction });
   syncOverlayEndpointBeforePaint(container);
 }
@@ -117,4 +120,19 @@ function layerPoint(layer, xName, yName){
   const x = Number.parseFloat(layer.style.getPropertyValue(xName));
   const y = Number.parseFloat(layer.style.getPropertyValue(yName));
   return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
+}
+
+function ensureFinalHandoffStyles(){
+  const href = new URL('../../css/games/checkers/runtime-handoff-mobile-v1.css?v=6&mvp19_6=destination-anchor-v2&legend=stable-paint-v1&grid_rows=equal-v1&mobile=insets-v1', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-checkers-final-handoff]');
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    document.head.appendChild(existing);
+    return;
+  }
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwCheckersFinalHandoff = 'destination-anchor-v2';
+  link.href = href;
+  document.head.appendChild(link);
 }
