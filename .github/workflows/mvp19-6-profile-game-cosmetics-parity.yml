@@ -9,6 +9,7 @@ on:
       - 'app/assets/js/profile/mgw-profile-checkers-parity.js'
       - 'app/assets/js/profile/mgw-profile-chess-layout-v2.js'
       - 'app/assets/css/screens/profile-game-cosmetics-parity-v1.css'
+      - 'app/assets/css/screens/profile-game-cosmetics-manual-repair-v3.css'
       - 'bot/tests/Mvp19_6ProfileGameCosmeticsParityContractTest.mjs'
       - '.github/workflows/mvp19-6-profile-game-cosmetics-parity.yml'
   workflow_dispatch:

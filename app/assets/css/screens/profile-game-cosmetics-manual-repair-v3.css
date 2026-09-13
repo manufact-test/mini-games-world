@@ -1,0 +1,97 @@
+/* Manual device QA repair: Profile game tabs, Checkers preview lifecycle and Chess centering. */
+
+/* Keep the already accepted Tic-Tac-Toe tab artwork as the only X/O owner.
+   The parity layer had left its original gradient X / ring O in place and then
+   painted text X/O on the same pseudo-elements, producing the small duplicate marks. */
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="tictactoe"] .profile-v2-game-tab-mark{
+  position:relative!important;
+  display:inline-block!important;
+  flex:0 0 27px!important;
+  width:27px!important;
+  height:15px!important;
+  margin:0!important;
+  color:transparent!important;
+  font-size:0!important;
+  line-height:1!important;
+  letter-spacing:0!important;
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="tictactoe"] .profile-v2-game-tab-mark::before{
+  content:""!important;
+  position:absolute!important;
+  left:0!important;
+  right:auto!important;
+  top:2px!important;
+  width:11px!important;
+  height:11px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:linear-gradient(45deg,transparent 42%,#c79cff 43% 57%,transparent 58%),linear-gradient(-45deg,transparent 42%,#c79cff 43% 57%,transparent 58%)!important;
+  filter:drop-shadow(0 0 4px rgba(199,156,255,.28))!important;
+  color:transparent!important;
+  font-size:0!important;
+  transform:none!important;
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="tictactoe"] .profile-v2-game-tab-mark::after{
+  content:""!important;
+  position:absolute!important;
+  left:auto!important;
+  right:0!important;
+  top:2px!important;
+  width:11px!important;
+  height:11px!important;
+  box-sizing:border-box!important;
+  border:2px solid #7ee7ff!important;
+  border-radius:50%!important;
+  background:none!important;
+  filter:drop-shadow(0 0 4px rgba(126,231,255,.24))!important;
+  color:transparent!important;
+  font-size:0!important;
+  transform:none!important;
+}
+
+/* Tab selection itself must be immediate; only the user's horizontal swipe should move the rail. */
+#screen-profile .profile-v2-game-tabs{scroll-behavior:auto!important}
+
+/* Checkers card effects are compositor-active only while the IntersectionObserver
+   says the preview is actually visible. This prevents detached/offscreen cards
+   from continuing infinite GPU work while the user switches between games. */
+#screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]:not(.is-previewing) .checkers-store-fx-move .from,
+#screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]:not(.is-previewing) .checkers-store-fx-move .checkers-fx-path,
+#screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]:not(.is-previewing) .checkers-store-fx-move .checkers-fx-impact,
+#screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]:not(.is-previewing) .checkers-store-fx-capture .from,
+#screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]:not(.is-previewing) .checkers-store-fx-capture .target,
+#screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]:not(.is-previewing) .checkers-store-fx-capture .checkers-fx-path,
+#screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]:not(.is-previewing) .checkers-store-fx-capture .checkers-fx-impact,
+#screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]:not(.is-previewing) .checkers-store-fx-promotion .from,
+#screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]:not(.is-previewing) .checkers-store-fx-promotion .checkers-fx-path,
+#screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]:not(.is-previewing) .checkers-store-fx-promotion .checkers-fx-impact,
+#screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]:not(.is-previewing) .checkers-store-fx-promotion .checkers-fx-crown{
+  animation:none!important;
+}
+
+/* Chess Profile cards: center the media box and the actual board/piece/effect primitive
+   independently so Store-specific sizing cannot leave the artwork several pixels off-axis. */
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="chess"] .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-"] .store-v2-game-preview[data-game-type="chess"]{
+  box-sizing:border-box!important;
+  display:grid!important;
+  place-items:center!important;
+  align-content:center!important;
+  justify-content:center!important;
+  padding-left:0!important;
+  padding-right:0!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="chess"] .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-board-"] .store-v2-mini-chess-board,
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="chess"] .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-effect-"] .store-v2-mini-chess-field-effect,
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="chess"] .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-pieces-"] .store-v2-mini-chess-pieces{
+  justify-self:center!important;
+  align-self:center!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  transform:none!important;
+}
+
+@media (prefers-reduced-motion:reduce){
+  #screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] *{animation:none!important}
+}

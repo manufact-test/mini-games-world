@@ -9,6 +9,7 @@ let checkersEffectObserver = null;
 let inventoryRefreshTask = null;
 let dragState = null;
 let suppressNextTabClick = false;
+const observedCheckersEffects = new Set();
 
 ensureCheckersPreviewStyles();
 installProfileApiRepairHook();
@@ -37,8 +38,14 @@ export function initProfileScreen(){
 
     const gameTab = target.closest('[data-profile-game-tab]');
     if (gameTab instanceof HTMLElement) {
+      const selectedGame = String(gameTab.dataset.profileGameTab || '');
+      if (selectedGame !== 'checkers') {
+        const panel = screen.querySelector('.profile-v2-game-panel');
+        if (panel instanceof HTMLElement) panel.removeAttribute('data-mgw-checkers-profile-signature');
+        pruneDisconnectedCheckersEffectPreviews();
+      }
       upgradeProfileCheckersPresentation();
-      keepProfileGameTabVisible(gameTab, true);
+      keepProfileGameTabVisible(gameTab, false);
     }
   });
 
@@ -122,6 +129,8 @@ function upgradeProfileCheckersPresentation(){
   const screen = document.getElementById('screen-profile');
   if (!(screen instanceof HTMLElement)) return;
 
+  pruneDisconnectedCheckersEffectPreviews();
+
   const checkersTab = screen.querySelector('[data-profile-game-tab="checkers"]');
   if (checkersTab instanceof HTMLElement && checkersTab.textContent?.trim() === 'checkers') {
     const label = checkersTab.querySelector('span:last-child');
@@ -136,7 +145,8 @@ function upgradeProfileCheckersPresentation(){
   if (!(panel instanceof HTMLElement)) return;
   const items = ownedCheckersItems();
   const signature = checkersPanelSignature(items);
-  if (panel.dataset.mgwCheckersProfileSignature !== signature) {
+  const hasCanonicalCheckersMarkup = panel.querySelector('[data-mgw-checkers-profile-group], [data-mgw-checkers-profile-empty]') instanceof HTMLElement;
+  if (panel.dataset.mgwCheckersProfileSignature !== signature || !hasCanonicalCheckersMarkup) {
     panel.innerHTML = renderCheckersGroups(items);
     panel.dataset.mgwCheckersProfileSignature = signature;
     panel.dataset.profileGamePanel = 'checkers';
@@ -149,7 +159,7 @@ function renderCheckersGroups(items){
   const groups = layers
     .map(layer => ({ layer, items:items.filter(item => checkersLayer(item) === layer) }))
     .filter(group => group.items.length > 0);
-  if (!groups.length) return '<div class="profile-v2-game-empty">Купленные предметы для этой игры появятся здесь.</div>';
+  if (!groups.length) return '<div class="profile-v2-game-empty" data-mgw-checkers-profile-empty="1">Купленные предметы для этой игры появятся здесь.</div>';
 
   return groups.map(group => `
     <div class="profile-v2-game-group" data-mgw-checkers-profile-group="${group.layer}">
@@ -292,6 +302,7 @@ function checkersEffectBoardMarkup(){
 }
 
 function decorateCheckersPreviews(root){
+  pruneDisconnectedCheckersEffectPreviews();
   root.querySelectorAll('.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]').forEach(preview => {
     if (!(preview instanceof HTMLElement)) return;
     preview.removeAttribute('tabindex');
@@ -309,8 +320,7 @@ function ensureCheckersEffectObserver(){
       if (!(preview instanceof HTMLElement)) return;
       const visible = entry.isIntersecting && entry.intersectionRatio >= 0.05;
       preview.dataset.mgwCheckersFxVisible = visible ? '1' : '0';
-      if (visible) runBoundedEffectPreview(preview);
-      else stopPassiveEffectPreview(preview);
+      preview.classList.toggle('is-previewing', visible);
     });
   }, { threshold:[0,0.05,0.35,0.7] });
   return checkersEffectObserver;
@@ -327,58 +337,28 @@ function startPassiveEffectPreview(preview){
   if (observer) {
     if (preview.dataset.mgwCheckersFxObserved !== '1') {
       preview.dataset.mgwCheckersFxObserved = '1';
+      observedCheckersEffects.add(preview);
       observer.observe(preview);
     }
     return;
   }
   preview.dataset.mgwCheckersFxVisible = '1';
-  runBoundedEffectPreview(preview);
-}
-
-function nextCheckersEffectRunToken(preview){
-  const token = Number(preview.dataset.mgwCheckersFxRunToken || 0) + 1;
-  preview.dataset.mgwCheckersFxRunToken = String(token);
-  return token;
+  preview.classList.add('is-previewing');
 }
 
 function stopPassiveEffectPreview(preview){
   if (!(preview instanceof HTMLElement)) return;
-  nextCheckersEffectRunToken(preview);
   preview.classList.remove('is-previewing');
-  preview.dataset.mgwCheckersFxBusy = '0';
+  preview.dataset.mgwCheckersFxVisible = '0';
 }
 
-function runBoundedEffectPreview(preview){
-  if (!(preview instanceof HTMLElement) || preview.dataset.mgwCheckersFxBusy === '1') return;
-  preview.dataset.mgwCheckersFxBusy = '1';
-  const runToken = nextCheckersEffectRunToken(preview);
-  const isActive = () => preview.isConnected
-    && preview.dataset.mgwCheckersFxVisible !== '0'
-    && preview.dataset.mgwCheckersFxRunToken === String(runToken)
-    && !globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const finish = () => {
-    if (preview.dataset.mgwCheckersFxRunToken !== String(runToken)) return;
-    preview.classList.remove('is-previewing');
-    preview.dataset.mgwCheckersFxBusy = '0';
-  };
-  const replay = () => {
-    if (!isActive()) {
-      finish();
-      return;
-    }
-    preview.classList.remove('is-previewing');
-    void preview.offsetWidth;
-    preview.classList.add('is-previewing');
-    globalThis.setTimeout(() => {
-      if (!isActive()) {
-        finish();
-        return;
-      }
-      preview.classList.remove('is-previewing');
-      globalThis.setTimeout(replay, 260);
-    }, 1900);
-  };
-  replay();
+function pruneDisconnectedCheckersEffectPreviews(){
+  if (!observedCheckersEffects.size) return;
+  observedCheckersEffects.forEach(preview => {
+    if (preview instanceof HTMLElement && preview.isConnected) return;
+    checkersEffectObserver?.unobserve?.(preview);
+    observedCheckersEffects.delete(preview);
+  });
 }
 
 function installGameTabScroller(screen){
