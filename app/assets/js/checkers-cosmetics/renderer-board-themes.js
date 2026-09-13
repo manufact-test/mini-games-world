@@ -223,17 +223,17 @@ function ensureCheckersCosmeticStyles(){
 }
 
 function ensureCheckersRuntimeCorrectiveStyles(){
-  const href = new URL('../../css/games/checkers/runtime-handoff-mobile-v1.css?v=4&mvp19_6=exact-live-centers&legend=stable-paint-v1&grid_rows=equal-v1&mobile=insets-v1', import.meta.url).href;
+  const href = new URL('../../css/games/checkers/runtime-handoff-mobile-v1.css?v=5&mvp19_6=direct-box-flight-v1&legend=stable-paint-v1&grid_rows=equal-v1&mobile=insets-v1', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-checkers-runtime-corrective]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwCheckersRuntimeCorrective = 'mvp19-6-exact-live-centers-v4';
+    existing.dataset.mgwCheckersRuntimeCorrective = 'mvp19-6-direct-box-flight-v5';
     document.head.appendChild(existing);
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwCheckersRuntimeCorrective = 'mvp19-6-exact-live-centers-v4';
+  link.dataset.mgwCheckersRuntimeCorrective = 'mvp19-6-direct-box-flight-v5';
   link.href = href;
   document.head.appendChild(link);
 }
