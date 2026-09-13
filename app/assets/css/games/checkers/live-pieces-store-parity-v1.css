@@ -93,7 +93,46 @@
   box-shadow:0 5px 12px rgba(0,0,0,.34),0 0 20px rgba(190,125,255,.64),inset 0 0 18px rgba(255,240,255,.18);
 }
 
-/* Kings keep the accepted gold crown/ring above every material. */
+/* Live king branding follows the accepted Store hierarchy from PR #1358:
+   crown is the primary mark; MG is a smaller secondary mark. The frozen base
+   renderer still emits its original ♛ text, which is visually replaced here. */
+.checkers-piece.king > b{
+  position:relative!important;
+  z-index:3!important;
+  display:grid!important;
+  grid-template-rows:auto auto!important;
+  place-items:center!important;
+  align-content:center!important;
+  gap:0!important;
+  width:68%!important;
+  height:68%!important;
+  padding:0!important;
+  margin:0!important;
+  font-size:0!important;
+  line-height:1!important;
+  color:#f8dc86!important;
+  text-shadow:0 1px 6px rgba(245,201,79,.28)!important;
+}
+.checkers-piece.king > b::before{
+  content:"♛";
+  display:block;
+  margin:0 0 -1px;
+  font-size:clamp(13px,3.7vw,18px);
+  line-height:.78;
+  font-weight:950;
+  letter-spacing:0;
+}
+.checkers-piece.king > b::after{
+  content:"MG";
+  display:block;
+  margin:1px 0 0;
+  font-size:clamp(6px,1.75vw,8px);
+  line-height:1;
+  font-weight:950;
+  letter-spacing:-.35px;
+}
+
+/* Kings keep the accepted gold ring above every material. */
 .checkers-piece.king[data-checkers-piece-style="wood"]::after,
 .checkers-piece.king[data-checkers-piece-style="marble"]::after,
 .checkers-piece.king[data-checkers-piece-style="metal"]::after,
