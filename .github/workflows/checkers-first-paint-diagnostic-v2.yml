@@ -1,0 +1,27 @@
+name: Checkers first-paint FLIP diagnostic v2
+
+on:
+  push:
+    branches:
+      - agent/mvp19-6-checkers-flight-firstpaint-diagnostic-v1
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Probe real first-paint movement
+        env:
+          ORIGIN: https://seashell-okapi-889488.hostingersite.com
+        run: node scripts/ci/checkers-first-paint-diag.cjs
