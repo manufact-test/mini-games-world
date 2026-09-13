@@ -122,6 +122,10 @@ function syncLiveEffect({ game, me, container }){
         state.source = 'authoritative-confirmed';
         state.moveSignature = moveSignature;
       }
+      // The frozen base renderer paints its own short move/capture/promotion flourish
+      // on the authoritative snapshot. A paid overlay has already represented this
+      // event, so consume those transient classes before our landing handoff.
+      stripBaseTransientAnimations(container);
     } else {
       const plan = effectPlan(game, me);
       if (!plan) {
@@ -184,6 +188,7 @@ function finishEffectState(gameKey, signature){
   if (!active || active.signature !== signature) return;
   if (active.timer) clearTimeout(active.timer);
   if (active.layer?.isConnected) active.layer.remove();
+  stripBaseTransientAnimations(active.container);
   clearEffectPresentation(active.container);
   liveEffectStates.delete(gameKey);
 }
@@ -224,11 +229,22 @@ function effectPlan(game, me){
   const capturedCell = capturedCellFor(game, from, to);
   const promoted = move?.promoted === true || promotionCell === to;
   const captured = move?.capture === true || capturedCell !== null;
-  const kind = promoted ? 'promotion' : (captured ? 'capture' : 'move');
+  const kind = liveEffectKind(effectId, { captured, promoted });
+  if (!kind) return null;
 
-  if (effectId !== `game-checkers-effect-${kind}`) return null;
-
-  return buildPlan({ players, mover, moverId:movePlayerId, side, effectId, kind, from, to, capturedCell });
+  return buildPlan({
+    players,
+    mover,
+    moverId:movePlayerId,
+    side,
+    effectId,
+    kind,
+    from,
+    to,
+    capturedCell,
+    captured,
+    promoted,
+  });
 }
 
 function pendingEffectPlan(game, me, previousBoard, action){
@@ -250,9 +266,8 @@ function pendingEffectPlan(game, me, previousBoard, action){
   const capturedCell = capturedCellFor(game, from, to);
   const captured = game?.last_move?.capture === true || capturedCell !== null;
   const promoted = isFreshPromotion(beforePiece, afterPiece);
-  const kind = promoted ? 'promotion' : (captured ? 'capture' : 'move');
-
-  if (effectId !== `game-checkers-effect-${kind}`) return null;
+  const kind = liveEffectKind(effectId, { captured, promoted });
+  if (!kind) return null;
 
   return buildPlan({
     players,
@@ -264,10 +279,19 @@ function pendingEffectPlan(game, me, previousBoard, action){
     from,
     to,
     capturedCell,
+    captured,
+    promoted,
   });
 }
 
-function buildPlan({ players, mover, moverId, side, effectId, kind, from, to, capturedCell }){
+function liveEffectKind(effectId, { captured, promoted }){
+  if (effectId === 'game-checkers-effect-move') return 'move';
+  if (effectId === 'game-checkers-effect-capture' && captured) return 'capture';
+  if (effectId === 'game-checkers-effect-promotion' && promoted) return 'promotion';
+  return '';
+}
+
+function buildPlan({ players, mover, moverId, side, effectId, kind, from, to, capturedCell, captured, promoted }){
   const safeSide = side === 'black' ? 'black' : 'white';
   const opponentSide = safeSide === 'black' ? 'white' : 'black';
   const targetPlayer = players.find(player => String(player?.side || '') === opponentSide) || null;
@@ -278,6 +302,8 @@ function buildPlan({ players, mover, moverId, side, effectId, kind, from, to, ca
     from,
     to,
     capturedCell,
+    captured:Boolean(captured),
+    promoted:Boolean(promoted),
     moverId:String(moverId || mover?.id || ''),
     pieceSide:safeSide,
     targetSide:opponentSide,
@@ -317,7 +343,11 @@ function createEffectLayer(board, plan){
   const pathAngle = Math.atan2(pathDy, pathDx) * 180 / Math.PI;
 
   const layer = document.createElement('span');
-  layer.className = `mgw-checkers-live-fx mgw-checkers-live-fx-${plan.kind}`;
+  const eventClasses = [
+    plan.captured ? 'mgw-checkers-live-fx-event-capture' : '',
+    plan.promoted ? 'mgw-checkers-live-fx-event-promotion' : '',
+  ].filter(Boolean).join(' ');
+  layer.className = `mgw-checkers-live-fx mgw-checkers-live-fx-${plan.kind}${eventClasses ? ` ${eventClasses}` : ''}`;
   layer.setAttribute('aria-hidden', 'true');
   layer.style.setProperty('--mgw-fx-from-x', `${fromPoint.x}px`);
   layer.style.setProperty('--mgw-fx-from-y', `${fromPoint.y}px`);
@@ -365,6 +395,13 @@ function applyEffectMask(board, container, plan){
     const capturedCell = board.querySelector(`[data-checkers-cell="${plan.capturedCell}"]`);
     if (capturedCell instanceof HTMLElement) capturedCell.classList.add('mgw-checkers-live-fx-hide-piece');
   }
+}
+
+function stripBaseTransientAnimations(container){
+  if (!(container instanceof HTMLElement)) return;
+  container.querySelectorAll('.move-impact').forEach(node => node.classList.remove('move-impact'));
+  container.querySelectorAll('.captured-flash').forEach(node => node.classList.remove('captured-flash'));
+  container.querySelectorAll('.promotion-flash').forEach(node => node.classList.remove('promotion-flash'));
 }
 
 function clearEffectPresentation(container){
@@ -418,10 +455,13 @@ function consumeMatchingPendingClaim(gameKey, game){
   const from = integerOrNull(move?.from);
   const to = integerOrNull(move?.to);
   const moverId = String(move?.player_id || '');
-  const kind = authoritativeMoveKind(game, from, to);
+  const flags = authoritativeMoveFlags(game, from, to);
+  const kindMatches = claim.kind === 'move'
+    || (claim.kind === 'capture' && flags.captured)
+    || (claim.kind === 'promotion' && flags.promoted);
   const matches = from === claim.from
     && to === claim.to
-    && kind === claim.kind
+    && kindMatches
     && (!claim.moverId || !moverId || moverId === claim.moverId);
 
   if (!matches) return null;
@@ -429,13 +469,14 @@ function consumeMatchingPendingClaim(gameKey, game){
   return claim;
 }
 
-function authoritativeMoveKind(game, from, to){
-  if (from === null || to === null) return '';
+function authoritativeMoveFlags(game, from, to){
+  if (from === null || to === null) return { captured:false, promoted:false };
   const move = game?.last_move;
   const promotionCell = integerOrNull(game?.last_promotion);
-  if (move?.promoted === true || promotionCell === to) return 'promotion';
-  if (move?.capture === true || capturedCellFor(game, from, to) !== null) return 'capture';
-  return 'move';
+  return {
+    captured:move?.capture === true || capturedCellFor(game, from, to) !== null,
+    promoted:move?.promoted === true || promotionCell === to,
+  };
 }
 
 function pendingActionSignature(gameKey, plan){
@@ -511,16 +552,16 @@ function ensureLiveCosmeticStyles(){
   if (!document.querySelector('link[data-mgw-checkers-live-pieces]')) {
     const pieceLink = document.createElement('link');
     pieceLink.rel = 'stylesheet';
-    pieceLink.dataset.mgwCheckersLivePieces = 'mvp19-6-store-parity-v2';
-    pieceLink.href = new URL('../../css/games/checkers/live-pieces-store-parity-v1.css?v=2&mvp19_6=runtime-stable-neon', import.meta.url).href;
+    pieceLink.dataset.mgwCheckersLivePieces = 'mvp19-6-store-parity-v3';
+    pieceLink.href = new URL('../../css/games/checkers/live-pieces-store-parity-v1.css?v=3&mvp19_6=king-brand-live', import.meta.url).href;
     document.head.appendChild(pieceLink);
   }
 
   if (!document.querySelector('link[data-mgw-checkers-live-effects]')) {
     const effectLink = document.createElement('link');
     effectLink.rel = 'stylesheet';
-    effectLink.dataset.mgwCheckersLiveEffects = 'mvp19-6-store-parity-v3';
-    effectLink.href = new URL('../../css/games/checkers/live-effects-store-parity-v1.css?v=3&mvp19_6=optimistic-single-flight', import.meta.url).href;
+    effectLink.dataset.mgwCheckersLiveEffects = 'mvp19-6-store-parity-v4';
+    effectLink.href = new URL('../../css/games/checkers/live-effects-store-parity-v1.css?v=4&mvp19_6=landing-handoff-v1', import.meta.url).href;
     document.head.appendChild(effectLink);
   }
 }
