@@ -1,7 +1,20 @@
 /* MVP-19.6 corrective — stable checker geometry from selection through landing,
-   plus non-distorting last-move cell presentation and balanced mobile insets.
+   fixed 8x8 row geometry, plus non-distorting last-move cell presentation and
+   balanced mobile insets.
 
    Presentation only: no rules, hit targets, timers, settlement or board mechanics. */
+
+/* Root cause proven by the live board source: the accepted board declares eight
+   explicit columns but no explicit rows. CSS Grid therefore creates content-sized
+   implicit rows. Rows containing a 72%-wide checker can become taller than empty
+   rows; when a move changes which row owns a checker, the cell center moves too.
+   That is the same compressed-rank failure already fixed in Store board previews,
+   and it also explains the paid overlay arriving at one center before the settled
+   authoritative checker is revealed at another. Own both defects with one real
+   8x8 geometry invariant: eight equal columns AND eight equal rows. */
+.checkers-surface .checkers-board{
+  grid-template-rows:repeat(8,minmax(0,1fr))!important;
+}
 
 /* The accepted base renderer scales a selected checker to 1.08. That is useful
    without paid movement, but with a paid Checkers effect it makes one move use
@@ -42,8 +55,7 @@
   box-shadow:inset 0 0 0 1px rgba(166,108,255,.12)!important;
 }
 
-/* Preserve the previously deployed symmetric phone inset. Internal board/cell
-   geometry remains untouched. */
+/* Preserve the previously deployed symmetric phone inset. */
 .game-board-screen[data-game-type="checkers"] .content{
   padding-left:max(12px,env(safe-area-inset-left))!important;
   padding-right:max(12px,env(safe-area-inset-right))!important;
