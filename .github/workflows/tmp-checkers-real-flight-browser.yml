@@ -87,7 +87,7 @@ jobs:
             });
             console.log(JSON.stringify(proof,null,2));
             assert.match(proof.sync.animationName,/mgw-checkers-live-real-piece-flip/,'FLIP animation must win cascade');
-            assert.notEqual(proof.sync.transform,'none','first rendered checker frame must be transformed from destination');
+            assert.notEqual(proof.raf.transform,'none','first painted checker frame must be transformed from destination');
             const src=center(proof.sourceRect), first=center(proof.raf.rect), mid=center(proof.mid.rect), end=center(proof.landed.rect), dest={x:proof.destinationCell.left+proof.destinationCell.width/2,y:proof.destinationCell.top+proof.destinationCell.height/2};
             assert.ok(dist(first,src)<6,`first painted checker must start near source; distance=${dist(first,src)}`);
             assert.ok(dist(mid,dest)<dist(first,dest), 'checker must progress toward destination');
