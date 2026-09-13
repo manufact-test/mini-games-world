@@ -113,6 +113,7 @@ function captureRealMoveOrigin({ game, me, container }){
     startedAt:performance.now(),
     container,
     timer:0,
+    renderRevision:0,
   };
   state.timer = window.setTimeout(() => {
     const active = realMoveStates.get(gameKey);
@@ -188,6 +189,9 @@ function syncRealMoveDestination({ game, container }){
   // CSS-Grid-owned border box that must remain after the effect has finished.
   const destinationRect = destinationPiece.getBoundingClientRect();
   if (!(destinationRect.width > 0) || !(destinationRect.height > 0)) return;
+  const finalDestinationRect = rectSnapshot(destinationRect);
+  state.renderRevision = Number(state.renderRevision || 0) + 1;
+  const renderRevision = state.renderRevision;
 
   const sourceCenterX = state.sourceRect.left + state.sourceRect.width / 2;
   const sourceCenterY = state.sourceRect.top + state.sourceRect.height / 2;
@@ -212,15 +216,15 @@ function syncRealMoveDestination({ game, container }){
   // The accepted live-effects module runs immediately after this wrapper. Let it
   // keep its trail/ring, then remove only its duplicate flying checker and unmask
   // our real destination checker before the browser gets a paint opportunity.
-  queueRealMoveOverlayTakeover({ container, board, state, destinationPiece });
+  queueRealMoveOverlayTakeover({ container, state, finalDestinationRect, renderRevision });
 }
 
-function queueRealMoveOverlayTakeover({ container, board, state, destinationPiece }){
+function queueRealMoveOverlayTakeover({ container, state, finalDestinationRect, renderRevision }){
   const run = () => {
     if (!(container instanceof HTMLElement) || !container.isConnected) return;
     const gameKey = gameKeyForState(state);
     const active = gameKey ? realMoveStates.get(gameKey) : state;
-    if (active !== state || realMoveExpired(state)) return;
+    if (active !== state || realMoveExpired(state) || state.renderRevision !== renderRevision) return;
 
     const liveBoard = container.querySelector('.checkers-board');
     if (!(liveBoard instanceof HTMLElement)) return;
@@ -236,8 +240,8 @@ function queueRealMoveOverlayTakeover({ container, board, state, destinationPiec
     const duplicatePiece = layer.querySelector('.mgw-checkers-live-fx-piece');
     if (duplicatePiece instanceof HTMLElement) duplicatePiece.remove();
 
-    alignMoveDecorations(layer, liveBoard, state, destinationPiece);
-    layer.dataset.mgwMovePieceOwner = 'real-board-piece-flip-v1';
+    alignMoveDecorations(layer, liveBoard, state, finalDestinationRect);
+    layer.dataset.mgwMovePieceOwner = 'real-board-piece-flip-v2';
   };
 
   if (typeof globalThis.queueMicrotask === 'function') globalThis.queueMicrotask(run);
@@ -245,21 +249,21 @@ function queueRealMoveOverlayTakeover({ container, board, state, destinationPiec
   if (typeof globalThis.requestAnimationFrame === 'function') globalThis.requestAnimationFrame(run);
 }
 
-function alignMoveDecorations(layer, board, state, destinationPiece){
+function alignMoveDecorations(layer, board, state, finalDestinationRect){
   if (!(layer instanceof HTMLElement) || !(board instanceof HTMLElement)) return;
+  if (!finalDestinationRect || !(finalDestinationRect.width > 0) || !(finalDestinationRect.height > 0)) return;
   const boardRect = board.getBoundingClientRect();
 
-  const currentPiece = destinationPiece?.isConnected
-    ? destinationPiece
-    : board.querySelector(`[data-checkers-cell="${state.to}"] .checkers-piece`);
-  if (!(currentPiece instanceof HTMLElement)) return;
-  const destinationRect = currentPiece.getBoundingClientRect();
-  if (!(destinationRect.width > 0) || !(destinationRect.height > 0)) return;
-
+  // IMPORTANT: never re-read the destination piece here. By the time this
+  // microtask runs the real checker already carries the FLIP transform, so its
+  // getBoundingClientRect() describes the in-flight visual box near the source.
+  // Use the final untransformed layout box captured synchronously before the
+  // animation class was applied. This keeps trail/ring geometry independent from
+  // compositor progress and from optimistic -> authoritative rerenders.
   const fromX = state.sourceRect.left - boardRect.left + state.sourceRect.width / 2;
   const fromY = state.sourceRect.top - boardRect.top + state.sourceRect.height / 2;
-  const toX = destinationRect.left - boardRect.left + destinationRect.width / 2;
-  const toY = destinationRect.top - boardRect.top + destinationRect.height / 2;
+  const toX = finalDestinationRect.left - boardRect.left + finalDestinationRect.width / 2;
+  const toY = finalDestinationRect.top - boardRect.top + finalDestinationRect.height / 2;
   const dx = toX - fromX;
   const dy = toY - fromY;
   const distance = Math.hypot(dx, dy);
