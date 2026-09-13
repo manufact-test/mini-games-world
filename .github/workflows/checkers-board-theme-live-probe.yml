@@ -12,7 +12,7 @@ permissions:
 jobs:
   verify-live-board-theme-owner:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     env:
       MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
     steps:
@@ -27,11 +27,11 @@ jobs:
           set -Eeuo pipefail
           expected_fingerprint="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
           ready=0
-          for attempt in $(seq 1 24); do
+          for attempt in $(seq 1 30); do
             if curl --fail-with-body --silent --show-error \
               --connect-timeout 10 --max-time 25 \
               --header 'Accept: application/json' \
-              "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" \
+              "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php?probe=${GITHUB_SHA}-${attempt}" \
               --output /tmp/mgw-readiness.json; then
               ok="$(jq -r '.ok // false' /tmp/mgw-readiness.json)"
               environment="$(jq -r '.environment // ""' /tmp/mgw-readiness.json)"
@@ -52,49 +52,103 @@ jobs:
           set -Eeuo pipefail
           local_file='app/assets/js/checkers-cosmetics/renderer-board-themes.js'
           live_file='/tmp/live-checkers-board-theme.js'
-          curl --fail-with-body --silent --show-error \
-            --connect-timeout 10 --max-time 25 \
-            --header 'Cache-Control: no-cache' \
-            "${MGW_STAGING_ORIGIN}/app/assets/js/checkers-cosmetics/renderer-board-themes.js?probe=${GITHUB_SHA}" \
-            --output "$live_file"
+          matched=0
+          for attempt in $(seq 1 24); do
+            curl --fail-with-body --silent --show-error \
+              --connect-timeout 10 --max-time 25 \
+              --header 'Cache-Control: no-cache' \
+              "${MGW_STAGING_ORIGIN}/app/assets/js/checkers-cosmetics/renderer-board-themes.js?probe=${GITHUB_SHA}-${attempt}" \
+              --output "$live_file"
+            if cmp -s "$local_file" "$live_file"; then matched=1; break; fi
+            sleep 5
+          done
           echo "local board-theme owner sha256: $(sha256sum "$local_file" | awk '{print $1}')"
           echo "live  board-theme owner sha256: $(sha256sum "$live_file" | awk '{print $1}')"
-          cmp "$local_file" "$live_file"
-          grep -F 'real 8x8 cell rects' "$live_file"
+          test "$matched" = '1'
+          grep -F 'eight equal' "$live_file"
+          grep -F 'optimistic arrival' "$live_file"
+          grep -F 'authoritative handoff' "$live_file"
           ! grep -F 'syncExactLiveLanding' "$live_file"
           ! grep -F 'getBoundingClientRect' "$live_file"
           grep -F 'container.dataset.mgwCheckersPaidEffect' "$live_file"
-          grep -F 'runtime-handoff-mobile-v1.css?v=2' "$live_file"
+          grep -F 'runtime-handoff-mobile-v1.css?v=3' "$live_file"
+          grep -F 'landing=stable-row-centers-v1' "$live_file"
 
-      - name: Compare live Checkers handoff/mobile corrective byte-for-byte
+      - name: Compare live Checkers handoff corrective byte-for-byte
         shell: bash
         run: |
           set -Eeuo pipefail
           local_file='app/assets/css/games/checkers/runtime-handoff-mobile-v1.css'
           live_file='/tmp/live-checkers-runtime-corrective.css'
-          curl --fail-with-body --silent --show-error \
-            --connect-timeout 10 --max-time 25 \
-            --header 'Cache-Control: no-cache' \
-            "${MGW_STAGING_ORIGIN}/app/assets/css/games/checkers/runtime-handoff-mobile-v1.css?probe=${GITHUB_SHA}" \
-            --output "$live_file"
+          matched=0
+          for attempt in $(seq 1 24); do
+            curl --fail-with-body --silent --show-error \
+              --connect-timeout 10 --max-time 25 \
+              --header 'Cache-Control: no-cache' \
+              "${MGW_STAGING_ORIGIN}/app/assets/css/games/checkers/runtime-handoff-mobile-v1.css?probe=${GITHUB_SHA}-${attempt}" \
+              --output "$live_file"
+            if cmp -s "$local_file" "$live_file"; then matched=1; break; fi
+            sleep 5
+          done
           echo "local runtime corrective sha256: $(sha256sum "$local_file" | awk '{print $1}')"
           echo "live  runtime corrective sha256: $(sha256sum "$live_file" | awk '{print $1}')"
-          cmp "$local_file" "$live_file"
+          test "$matched" = '1'
+          grep -F 'grid-template-rows:repeat(8,minmax(0,1fr))!important;' "$live_file"
           grep -F 'data-mgw-checkers-paid-effect="1"' "$live_file"
           grep -F '.checkers-surface .checkers-cell.last-from' "$live_file"
           grep -F 'box-shadow:none!important;' "$live_file"
           grep -F 'padding-left:max(12px,env(safe-area-inset-left))!important;' "$live_file"
           grep -F 'padding-right:max(12px,env(safe-area-inset-right))!important;' "$live_file"
 
+      - name: Compare live Store Promotion preview owners byte-for-byte
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          compare_live() {
+            local local_file="$1"
+            local live_path="$2"
+            local live_file="$3"
+            local matched=0
+            for attempt in $(seq 1 24); do
+              curl --fail-with-body --silent --show-error \
+                --connect-timeout 10 --max-time 25 \
+                --header 'Cache-Control: no-cache' \
+                "${MGW_STAGING_ORIGIN}/${live_path}?probe=${GITHUB_SHA}-${attempt}" \
+                --output "$live_file"
+              if cmp -s "$local_file" "$live_file"; then matched=1; break; fi
+              sleep 5
+            done
+            echo "local $(basename "$local_file") sha256: $(sha256sum "$local_file" | awk '{print $1}')"
+            echo "live  $(basename "$live_file") sha256: $(sha256sum "$live_file" | awk '{print $1}')"
+            test "$matched" = '1'
+          }
+          compare_live \
+            'app/assets/js/screens/store-screen-checkers-board-source-wrapper.js' \
+            'app/assets/js/screens/store-screen-checkers-board-source-wrapper.js' \
+            '/tmp/live-checkers-store-source-wrapper.js'
+          compare_live \
+            'app/assets/css/games/checkers/store-effects-live-board-v1.css' \
+            'app/assets/css/games/checkers/store-effects-live-board-v1.css' \
+            '/tmp/live-checkers-store-effects.css'
+          grep -F 'store-effects-live-board-v1.css?v=3&mvp19_6=promotion-destination-parity-v1' /tmp/live-checkers-store-source-wrapper.js
+          grep -F '.checkers-store-fx-promotion .from{left:56.25%;top:31.25%}' /tmp/live-checkers-store-effects.css
+          ! grep -F '.checkers-store-fx-promotion .from{left:56.25%!important' /tmp/live-checkers-store-effects.css
+          grep -F '.checkers-store-fx-promotion .checkers-fx-impact{left:68.75%!important;top:18.75%!important;width:12.5%' /tmp/live-checkers-store-effects.css
+          grep -F '.checkers-store-fx-promotion .checkers-fx-crown{left:68.75%!important;top:18.75%!important;width:12.5%' /tmp/live-checkers-store-effects.css
+
       - name: Guard active Checkers cache-bust
         shell: bash
         run: |
           set -Eeuo pipefail
-          grep -F 'renderer-board-themes.js?v=5&mvp19_6=cell-center-handoff-v1' app/runtime/client/version-manifest.php
-          grep -F 'renderer-live-effects-v1.js?v=8&mvp19_6=runtime-smoothing-v8' app/runtime/client/version-manifest.php
-          grep -F 'landing=cell-center-handoff-v1' app/runtime/client/version-manifest.php
-          grep -F 'selection=geometry-neutral-v1' app/runtime/client/version-manifest.php
-          grep -F 'last_from=flat-v1' app/runtime/client/version-manifest.php
-          grep -F 'mobile=insets-v1' app/runtime/client/version-manifest.php
-          grep -F 'promotion=authoritative-only-v1' app/runtime/client/version-manifest.php
-          grep -F 'mvp19_6=checkers-cell-center-handoff-v4' app/runtime/client/version-manifest.php
+          manifest='app/runtime/client/version-manifest.php'
+          grep -F 'store-screen-checkers-board-source-wrapper.js?v=3' "$manifest"
+          grep -F 'promotion_preview=destination-parity-v1' "$manifest"
+          grep -F 'renderer-board-themes.js?v=6&mvp19_6=equal-grid-rows-v1' "$manifest"
+          grep -F 'renderer-live-effects-v1.js?v=9&mvp19_6=runtime-smoothing-v9' "$manifest"
+          grep -F 'landing=stable-row-centers-v1' "$manifest"
+          grep -F 'grid_rows=equal-v1' "$manifest"
+          grep -F 'selection=geometry-neutral-v1' "$manifest"
+          grep -F 'last_from=flat-v1' "$manifest"
+          grep -F 'mobile=insets-v1' "$manifest"
+          grep -F 'promotion=authoritative-only-v1' "$manifest"
+          grep -F 'mvp19_6=checkers-equal-grid-handoff-promo-v5' "$manifest"
