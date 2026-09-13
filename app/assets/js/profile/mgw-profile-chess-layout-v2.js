@@ -5,12 +5,14 @@ const profileChessArtworkPrewarm = [];
 ensureProfileChessLayoutStyles();
 ensureProfileGameCosmeticsRepairStyles();
 ensureProfileGameCosmeticsManualRepairStyles();
+ensureProfileCheckersStoreExactStyles();
 prewarmProfileChessArtwork();
 
 export function initProfileScreen(){
   ensureProfileChessLayoutStyles();
   ensureProfileGameCosmeticsRepairStyles();
   ensureProfileGameCosmeticsManualRepairStyles();
+  ensureProfileCheckersStoreExactStyles();
   prewarmProfileChessArtwork();
   initCheckersParityProfileScreen();
 }
@@ -51,6 +53,22 @@ function ensureProfileGameCosmeticsManualRepairStyles(){
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.setAttribute('data-mgw-profile-game-cosmetics-manual-repair-v3', '1');
+  link.href = href;
+  document.head.appendChild(link);
+}
+
+function ensureProfileCheckersStoreExactStyles(){
+  const href = new URL('../../css/screens/profile-checkers-store-exact-v2.css?v=1&mvp19_6=board-effect-full-square-v1', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-profile-checkers-store-exact-v2]');
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    document.head.appendChild(existing);
+    return;
+  }
+
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.setAttribute('data-mgw-profile-checkers-store-exact-v2', '1');
   link.href = href;
   document.head.appendChild(link);
 }
