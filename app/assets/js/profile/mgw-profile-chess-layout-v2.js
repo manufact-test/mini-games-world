@@ -1,4 +1,5 @@
 import { initProfileScreen as initCheckersParityProfileScreen } from './mgw-profile-checkers-parity.js?v=3&mvp19_6=checkers-profile-manual-repair-v3';
+import { initProfileCheckersHardSquare } from './mgw-profile-checkers-hard-square-v1.js?v=1&mvp19_6=profile-board-effect-hard-square-v1';
 
 const profileChessArtworkPrewarm = [];
 
@@ -15,6 +16,7 @@ export function initProfileScreen(){
   ensureProfileCheckersStoreExactStyles();
   prewarmProfileChessArtwork();
   initCheckersParityProfileScreen();
+  initProfileCheckersHardSquare();
 }
 
 function ensureProfileChessLayoutStyles(){
