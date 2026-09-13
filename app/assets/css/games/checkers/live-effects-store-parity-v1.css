@@ -10,10 +10,10 @@
 }
 
 /* Paid effects suppress the frozen renderer's short destination flourish so it
-   cannot stack with the cosmetic layer. The real Move FLIP checker is the one
-   exception: it owns the actual flight and must keep its animation. */
+   cannot stack with the cosmetic layer. Any real-board-piece FLIP checker is the
+   exception: that physical checker owns the actual flight and must keep animation. */
 .checkers-surface.mgw-checkers-live-fx-running .checkers-cell.move-impact .checkers-piece:not(.mgw-checkers-live-real-move-piece),
-.checkers-surface.mgw-checkers-live-fx-running .checkers-cell.promotion-flash .checkers-piece{
+.checkers-surface.mgw-checkers-live-fx-running .checkers-cell.promotion-flash .checkers-piece:not(.mgw-checkers-live-real-move-piece){
   animation:none!important;
 }
 .checkers-surface.mgw-checkers-live-fx-running .checkers-cell.captured-flash::after{
@@ -144,13 +144,10 @@
   animation:mgw-checkers-live-field-move-trail 1.78s ease both;
   animation-delay:var(--mgw-fx-delay);
 }
+/* The cheapest Move effect is trail + real checker flight only. The circular
+   landing wave was not part of the accepted runtime look and became visible once
+   the duplicate overlay checker was correctly removed. */
 .mgw-checkers-live-fx-move .mgw-checkers-live-fx-impact{
-  animation:mgw-checkers-live-field-move-ring 1.78s ease-out both;
-  animation-delay:var(--mgw-fx-delay);
-}
-/* Move effect now represents movement even when that movement is also a capture.
-   In that case the user asked for the streak only — no capture-style burst. */
-.mgw-checkers-live-fx-move.mgw-checkers-live-fx-event-capture .mgw-checkers-live-fx-impact{
   display:none;
 }
 
@@ -194,6 +191,18 @@
 .mgw-checkers-live-fx-promotion .mgw-checkers-live-fx-crown{
   animation:mgw-checkers-live-field-crown 1.82s ease-out both;
   animation-delay:var(--mgw-fx-delay);
+}
+
+/* Capture and Promotion now use the actual destination checker, just like Move.
+   Keep their original accepted travel timing so burst/crown choreography stays in
+   sync while removing the detached-checker -> board-checker handoff entirely. */
+.checkers-piece.mgw-checkers-live-real-move-piece[data-mgw-real-move-kind="capture"]{
+  animation:mgw-checkers-live-real-piece-capture 1.82s cubic-bezier(.22,.72,.2,1) both!important;
+  animation-delay:var(--mgw-real-move-delay,0ms)!important;
+}
+.checkers-piece.mgw-checkers-live-real-move-piece[data-mgw-real-move-kind="promotion"]{
+  animation:mgw-checkers-live-real-piece-promotion 1.82s cubic-bezier(.22,.72,.2,1) both!important;
+  animation-delay:var(--mgw-real-move-delay,0ms)!important;
 }
 
 @keyframes mgw-checkers-live-field-trail{
@@ -244,6 +253,26 @@
   0%,58%{opacity:0;transform:translate(-50%,-50%) scale(.42)}
   72%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}
   100%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+}
+@keyframes mgw-checkers-live-real-piece-capture{
+  0%,16%{
+    transform:translate3d(
+      var(--mgw-real-move-dx,0px),
+      var(--mgw-real-move-dy,0px),
+      0
+    ) scale(var(--mgw-real-move-scale,1));
+  }
+  60%,100%{transform:translate3d(0,0,0) scale(1)}
+}
+@keyframes mgw-checkers-live-real-piece-promotion{
+  0%,16%{
+    transform:translate3d(
+      var(--mgw-real-move-dx,0px),
+      var(--mgw-real-move-dy,0px),
+      0
+    ) scale(var(--mgw-real-move-scale,1));
+  }
+  56%,100%{transform:translate3d(0,0,0) scale(1)}
 }
 
 @media (prefers-reduced-motion:reduce){
