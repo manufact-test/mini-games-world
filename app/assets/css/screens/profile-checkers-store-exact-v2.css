@@ -1,8 +1,8 @@
 /* Final Profile-only Checkers preview owner.
    The Store is the visual source of truth. This layer exists only to neutralize
    the old generic Profile 76/69px preview strip for Checkers board/effect cards.
-   It deliberately does not depend on data-profile-game-panel because that
-   attribute is rewritten while the game tabs switch. */
+   It targets the Checkers cards directly, independently of the transient panel
+   metadata that is rewritten while the game tabs switch. */
 
 #screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"],
 #screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]{
