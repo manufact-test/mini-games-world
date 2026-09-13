@@ -1,0 +1,148 @@
+name: Checkers all-effects deployed probe
+
+on:
+  push:
+    branches:
+      - agent/mvp19-6-checkers-all-effects-deployed-probe
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Probe deployed Move Capture Promotion
+        env:
+          ORIGIN: https://seashell-okapi-889488.hostingersite.com
+        run: |
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch({ headless:true });
+            const page = await browser.newPage({ viewport:{ width:390, height:844 }, reducedMotion:'no-preference' });
+            const staticUrl = process.env.ORIGIN + '/app/assets/js/checkers-cosmetics/renderer-real-flight-cascade-v1.js?v=2&probe=' + Date.now();
+            await page.goto(staticUrl, { waitUntil:'commit', timeout:30000 });
+            await page.waitForTimeout(200);
+
+            const results = await page.evaluate(async () => {
+              document.head.innerHTML = '';
+              document.body.innerHTML = '';
+              const origin = location.origin;
+
+              // Mirror the active v110 import-map redirect needed by the live-effects chain.
+              const legacyBoardThemes = origin + '/app/assets/js/checkers-cosmetics/renderer-board-themes.js?v=1&mvp19_6=board-themes&base=accepted-v57';
+              const activeBoardThemes = origin + '/app/assets/js/checkers-cosmetics/renderer-board-themes.js?v=12&mvp19_6=equal-grid-rows-v1&landing=real-piece-flip-final-rect-v2&legend=stable-paint-v1&mobile=insets-v1&base=accepted-v57';
+              const importMap = document.createElement('script');
+              importMap.type = 'importmap';
+              importMap.textContent = JSON.stringify({ imports:{ [legacyBoardThemes]:activeBoardThemes } });
+              document.head.appendChild(importMap);
+
+              const baseCss = document.createElement('link');
+              baseCss.rel = 'stylesheet';
+              baseCss.href = '/app/assets/css/games/checkers/game.css?v=64&checkers=pre-b94d-exact-restore-v1&diag=' + Date.now();
+              document.head.appendChild(baseCss);
+              await new Promise(resolve => {
+                baseCss.addEventListener('load', resolve, { once:true });
+                baseCss.addEventListener('error', resolve, { once:true });
+                setTimeout(resolve, 2500);
+              });
+
+              const mod = await import('/app/assets/js/checkers-cosmetics/renderer-real-flight-cascade-v1.js?v=2&mvp19_6=all-paid-real-flight-v1&diag=' + Date.now());
+              const optimisticMod = await import('/app/assets/js/production-v100-optimistic-models.js?v=104&diag=' + Date.now());
+              await new Promise(resolve => setTimeout(resolve, 150));
+
+              const host = document.createElement('div');
+              host.style.cssText = 'position:fixed;left:0;top:0;width:390px;height:844px;padding:16px;box-sizing:border-box;background:#090d16';
+              document.body.appendChild(host);
+
+              const makePlayer = effect => ({
+                id:'p1', name:'A', side:'white',
+                game_cosmetics:{ slots:{ game_checkers_effect:effect, game_checkers_elements:'game-checkers-pieces-neon' } },
+              });
+              const opponent = { id:'p2', name:'B', side:'black', game_cosmetics:{ slots:{} } };
+
+              async function runScenario({ id, effect, board, legal, from, to }) {
+                document.querySelectorAll('.mgw-checkers-live-fx').forEach(node => node.remove());
+                host.innerHTML = '';
+                const container = document.createElement('div');
+                host.appendChild(container);
+                let active = {
+                  id, status:'active', turn:'p1', viewer_side:'white', board,
+                  players:[makePlayer(effect), opponent], legal_moves:[legal],
+                  capture_required:Boolean(legal.capture), forced_piece:null,
+                  pending_captures:[], last_captured_cells:[], last_promotion:null,
+                  white_pieces:board.filter(p => String(p).toLowerCase() === 'w').length,
+                  black_pieces:board.filter(p => String(p).toLowerCase() === 'b').length,
+                  white_kings:0, black_kings:0, move_timeout_sec:60,
+                };
+                const me = { id:'p1' };
+                const onAction = action => {
+                  const optimistic = optimisticMod.buildV100OptimisticGame(active, action, 'p1', 'checkers');
+                  if (!optimistic) throw new Error(id + ': optimistic build failed');
+                  active = optimistic;
+                  mod.renderCheckersSurface({ game:optimistic, me, container, onAction });
+                };
+
+                mod.renderCheckersSurface({ game:active, me, container, onAction });
+                await new Promise(resolve => setTimeout(resolve, 80));
+                const source = container.querySelector(`[data-checkers-cell="${from}"][data-checkers-piece]`);
+                if (!source) throw new Error(id + ': source missing');
+                source.click();
+                const target = container.querySelector(`[data-checkers-cell="${to}"][data-checkers-target]`);
+                if (!target) throw new Error(id + ': target missing');
+                target.click();
+                await new Promise(requestAnimationFrame);
+                await new Promise(requestAnimationFrame);
+                await new Promise(resolve => setTimeout(resolve, 40));
+
+                const piece = container.querySelector(`[data-checkers-cell="${to}"] .checkers-piece`);
+                if (!piece) throw new Error(id + ': destination missing');
+                const layer = document.querySelector('.mgw-checkers-live-fx');
+                const impact = layer?.querySelector('.mgw-checkers-live-fx-impact') || null;
+                const liveCss = document.querySelector('link[data-mgw-checkers-live-effects]');
+                const cs = getComputedStyle(piece);
+                return {
+                  animationName:cs.animationName,
+                  realMove:container.dataset.mgwCheckersRealMove || '',
+                  kind:piece.dataset.mgwRealMoveKind || 'move',
+                  overlayPiece:Boolean(layer?.querySelector('.mgw-checkers-live-fx-piece')),
+                  impactDisplay:impact ? getComputedStyle(impact).display : 'missing',
+                  impactAnimation:impact ? getComputedStyle(impact).animationName : 'missing',
+                  path:Boolean(layer?.querySelector('.mgw-checkers-live-fx-path')),
+                  targetFx:Boolean(layer?.querySelector('.mgw-checkers-live-fx-target')),
+                  crown:Boolean(layer?.querySelector('.mgw-checkers-live-fx-crown')),
+                  cssHref:liveCss?.href || '',
+                  animations:piece.getAnimations().map(a => ({ name:a.animationName, playState:a.playState })),
+                };
+              }
+
+              const moveBoard = Array(64).fill(''); moveBoard[40]='w'; moveBoard[17]='b';
+              const move = await runScenario({ id:'deploy-move', effect:'game-checkers-effect-move', board:moveBoard, legal:{from:40,to:33,capture:false}, from:40, to:33 });
+
+              const captureBoard = Array(64).fill(''); captureBoard[42]='w'; captureBoard[33]='b';
+              const capture = await runScenario({ id:'deploy-capture', effect:'game-checkers-effect-capture', board:captureBoard, legal:{from:42,to:24,capture:true,captured:33}, from:42, to:24 });
+
+              const promotionBoard = Array(64).fill(''); promotionBoard[10]='w'; promotionBoard[55]='b';
+              const promotion = await runScenario({ id:'deploy-promotion', effect:'game-checkers-effect-promotion', board:promotionBoard, legal:{from:10,to:1,capture:false,promotes:true}, from:10, to:1 });
+              return { move, capture, promotion };
+            });
+
+            console.log('MGW_DEPLOYED_ALL_EFFECTS=' + JSON.stringify(results));
+            const { move, capture, promotion } = results;
+            if (!move.cssHref.includes('v=6')) throw new Error('fresh CSS v6 missing: ' + move.cssHref);
+            if (move.animationName !== 'mgw-checkers-live-real-piece-flip' || move.overlayPiece || move.impactDisplay !== 'none') throw new Error('Move invariant failed: ' + JSON.stringify(move));
+            if (capture.animationName !== 'mgw-checkers-live-real-piece-capture' || capture.realMove !== '1' || capture.overlayPiece || capture.impactAnimation !== 'mgw-checkers-live-field-capture-burst' || !capture.targetFx) throw new Error('Capture invariant failed: ' + JSON.stringify(capture));
+            if (promotion.animationName !== 'mgw-checkers-live-real-piece-promotion' || promotion.realMove !== '1' || promotion.overlayPiece || !promotion.crown) throw new Error('Promotion invariant failed: ' + JSON.stringify(promotion));
+            await browser.close();
+          })().catch(error => { console.error(error); process.exit(1); });
+          NODE
