@@ -41,6 +41,39 @@
   transition:none!important;
 }
 
+/* Final live move handoff: the remaining real-device nudge is no longer treated as
+   a coordinate problem. The flying checker used a translated compositor surface
+   all the way through its final hold, while the revealed board checker is painted
+   untransformed by CSS Grid. On fractional device pixels those two raster paths can
+   differ by a pixel or two even when their DOM centres are identical.
+
+   For the ordinary paid move effect, animate the overlay's physical top-left box
+   directly from source to the exact hidden-piece destination captured by
+   renderer-board-themes. The final hold therefore has transform:none and the same
+   border-box geometry as the checker that will be revealed. This deliberately does
+   not change capture/promotion timing or gameplay state. */
+.mgw-checkers-live-fx-move .mgw-checkers-live-fx-piece{
+  left:calc(var(--mgw-fx-from-x) - (var(--mgw-fx-piece-size) / 2))!important;
+  top:calc(var(--mgw-fx-from-y) - (var(--mgw-fx-piece-size) / 2))!important;
+  transform:none!important;
+  will-change:left,top,opacity,filter,box-shadow!important;
+  animation:mgw-checkers-live-direct-box-move 1.78s cubic-bezier(.18,.72,.2,1) both!important;
+  animation-delay:var(--mgw-fx-delay)!important;
+}
+
+@keyframes mgw-checkers-live-direct-box-move{
+  0%{
+    left:calc(var(--mgw-fx-from-x) - (var(--mgw-fx-piece-size) / 2));
+    top:calc(var(--mgw-fx-from-y) - (var(--mgw-fx-piece-size) / 2));
+    transform:none;
+  }
+  46%,100%{
+    left:calc(var(--mgw-fx-to-x) - (var(--mgw-fx-piece-size) / 2));
+    top:calc(var(--mgw-fx-to-y) - (var(--mgw-fx-piece-size) / 2));
+    transform:none;
+  }
+}
+
 /* The four tiny legend labels are static UI, yet the base renderer recreates them
    on every optimistic/authoritative snapshot. Force one paint contract while the
    wrapper preserves the existing DOM node, so there is no muted-text fade exactly
