@@ -37,25 +37,27 @@ ok(css.includes('@keyframes mgw-live-board-crown'), 'promotion crown exists');
 ok(css.includes('@media (prefers-reduced-motion:reduce)'), 'reduced motion fallback exists');
 ok(!css.includes('animation:infinite'), 'effect corrective has no infinite animation declaration');
 
-// Live parity regression guards. The accepted Checkers engine remains frozen while
-// this presentation wrapper owns Store -> live projection and authoritative events.
 const syntax = spawnSync(process.execPath, ['--check', liveWrapperPath], { encoding:'utf8' });
 ok(syntax.status === 0, `live Checkers cosmetics owner has valid JavaScript syntax${syntax.stderr ? `: ${syntax.stderr.trim()}` : ''}`);
 ok(liveWrapper.includes('game_checkers_elements'), 'live renderer reads the factual Checkers piece-set slot');
 ok(liveWrapper.includes('dataset.checkersPieceStyle'), 'live renderer projects piece-set identity onto rendered checkers');
+ok(liveWrapper.includes('dataset.checkersWhitePieceStyle') && liveWrapper.includes('dataset.checkersBlackPieceStyle'), 'surface keeps piece identity across frozen base selection rerenders');
 for (const variant of ['wood','marble','metal','neon']) {
   ok(livePieceCss.includes(`data-checkers-piece-style="${variant}"`), `live piece CSS preserves ${variant} Store identity`);
 }
+ok(livePieceCss.includes('data-checkers-white-piece-style="neon"') && livePieceCss.includes('data-checkers-black-piece-style="neon"'), 'neon material survives internal selection rerenders through surface selectors');
+ok(livePieceCss.includes('#69efff') && livePieceCss.includes('#e5cbff'), 'neon live material is visibly cyan/violet instead of black-on-dark');
 ok(liveWrapper.includes("if (value === null || value === undefined || value === '') return null;"), 'nullable Checkers event cells can never coerce null into board cell zero');
-ok(liveWrapper.includes('game?.__mgw_v100_pending_action'), 'paid Checkers effects wait for authoritative completion instead of optimistic promotion flags');
-ok(liveWrapper.includes('move?.promoted === true'), 'promotion classification uses authoritative last_move.promoted');
-ok(liveWrapper.includes('move?.capture === true'), 'capture classification uses authoritative last_move.capture');
-ok(liveWrapper.includes('move?.player_id'), 'live effect ownership uses authoritative mover id');
-ok(liveWrapper.includes('move?.side'), 'live effect ownership retains authoritative mover side fallback');
-ok(liveWrapper.includes('!lastSeenMoveSignatures.has(gameKey)'), 'first/reconnected snapshot is consumed as baseline instead of replaying stale effects');
-ok(liveWrapper.includes('state.plan'), 'poll rerenders reconstruct the same one-shot effect instead of restarting event detection');
+ok(liveWrapper.includes('authoritativeBoards'), 'optimistic effect classification retains the previous authoritative board');
+ok(liveWrapper.includes('isFreshPromotion(beforePiece, afterPiece)'), 'pending king moves cannot be misclassified as fresh promotion');
+ok(liveWrapper.includes('pendingEffectClaims'), 'optimistic one-shot is claimed and cannot replay on server confirmation');
+ok(liveWrapper.includes('consumeMatchingPendingClaim'), 'authoritative confirmation consumes matching optimistic animation');
+ok(liveWrapper.includes('document.body.appendChild(state.layer)'), 'effect layer survives board innerHTML rerenders');
+ok(liveWrapper.includes('state.layer?.isConnected'), 'poll rerenders reuse the same live effect node instead of restarting it');
+ok(liveEffectCss.includes('position:fixed'), 'single-flight live effect layer is detached from the rerendered board subtree');
+ok(liveEffectCss.includes('var(--mgw-fx-dx)') && liveEffectCss.includes('var(--mgw-fx-dy)'), 'piece motion uses compositor transforms instead of left/top correction jumps');
 ok(liveEffectCss.includes('pointer-events:none'), 'live effect layer leaves board hit targets untouched');
 ok(liveEffectCss.includes('@media (prefers-reduced-motion:reduce)'), 'live effects preserve reduced-motion handling');
-ok(manifest.includes('mvp19_6=live-parity-repair-v2') && manifest.includes('pieces=owner-slot-v1') && manifest.includes('events=authoritative-v2'), 'active Checkers import map cache-busts the repaired live parity owner');
+ok(manifest.includes('mvp19_6=runtime-smoothing-v3') && manifest.includes('pieces=stable-surface-v2') && manifest.includes('events=optimistic-single-flight-v3'), 'active Checkers import map cache-busts the smoothed live runtime');
 
 console.log('MVP-19.6 Checkers effect preview + live parity contract passed.');
