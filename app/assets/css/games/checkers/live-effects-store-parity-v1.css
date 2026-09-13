@@ -9,7 +9,10 @@
   isolation:isolate;
 }
 
-.checkers-surface.mgw-checkers-live-fx-running .checkers-cell.move-impact .checkers-piece,
+/* Paid effects suppress the frozen renderer's short destination flourish so it
+   cannot stack with the cosmetic layer. The real Move FLIP checker is the one
+   exception: it owns the actual flight and must keep its animation. */
+.checkers-surface.mgw-checkers-live-fx-running .checkers-cell.move-impact .checkers-piece:not(.mgw-checkers-live-real-move-piece),
 .checkers-surface.mgw-checkers-live-fx-running .checkers-cell.promotion-flash .checkers-piece{
   animation:none!important;
 }
