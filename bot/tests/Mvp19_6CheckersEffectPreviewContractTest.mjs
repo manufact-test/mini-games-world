@@ -67,10 +67,13 @@ ok(livePieceCss.includes('.checkers-piece.king > b::after') && livePieceCss.incl
 
 ok(boardThemeWrapper.includes('captureRealMoveOrigin'), 'ordinary paid Move captures the real source checker before the frozen renderer replaces the board');
 ok(boardThemeWrapper.includes('syncRealMoveDestination'), 'ordinary paid Move binds animation to the real destination checker after render');
-ok(boardThemeWrapper.includes('sourcePiece.getBoundingClientRect()') && boardThemeWrapper.includes('destinationPiece.getBoundingClientRect()'), 'real-piece FLIP measures actual source and destination DOM boxes');
+ok(boardThemeWrapper.includes('sourcePiece.getBoundingClientRect()') && boardThemeWrapper.includes('destinationPiece.getBoundingClientRect()'), 'real-piece FLIP measures actual source and final destination DOM boxes before animation');
+ok(boardThemeWrapper.includes('finalDestinationRect = rectSnapshot(destinationRect)'), 'final untransformed destination box is frozen before the checker receives the FLIP transform');
+ok(boardThemeWrapper.includes('renderRevision') && boardThemeWrapper.includes('state.renderRevision !== renderRevision'), 'stale microtask/rAF decoration callbacks cannot retarget a newer board render');
+ok(boardThemeWrapper.includes('alignMoveDecorations(layer, liveBoard, state, finalDestinationRect)'), 'trail and ring target the captured final box rather than the transformed in-flight checker box');
 ok(boardThemeWrapper.includes("destinationPiece.classList.add('mgw-checkers-live-real-move-piece')"), 'real destination checker becomes the moving checker itself');
 ok(boardThemeWrapper.includes('duplicatePiece.remove()'), 'detached live layer removes its duplicate moving checker before paint');
-ok(boardThemeWrapper.includes("mgwMovePieceOwner = 'real-board-piece-flip-v1'"), 'trail layer records real-board-piece ownership for the moving checker');
+ok(boardThemeWrapper.includes("mgwMovePieceOwner = 'real-board-piece-flip-v2'"), 'trail layer records final-rect real-board-piece ownership for the moving checker');
 ok(boardThemeWrapper.includes('stableLegend'), 'accepted stable legend DOM owner remains intact');
 ok(boardThemeWrapper.includes('runtime-handoff-mobile-v1.css?v=7') && boardThemeWrapper.includes('mvp19_6=real-piece-flip-v1'), 'board-theme owner loads the real-piece FLIP corrective stylesheet');
 
@@ -107,9 +110,9 @@ ok(liveEffectCss.includes('.mgw-checkers-live-fx-crown::after') && liveEffectCss
 ok(liveEffectCss.includes('pointer-events:none'), 'live effect layer leaves board hit targets untouched');
 ok(liveEffectCss.includes('@media (prefers-reduced-motion:reduce)'), 'live effects preserve reduced-motion handling');
 
-ok(manifest.includes('renderer-board-themes.js?v=11&mvp19_6=equal-grid-rows-v1') && manifest.includes('renderer-live-effects-v1.js?v=12&mvp19_6=runtime-smoothing-v12') && manifest.includes('landing=real-piece-flip-v1') && manifest.includes('grid_rows=equal-v1') && manifest.includes('legend=stable-paint-v1') && manifest.includes('mobile=insets-v1'), 'active Checkers import map routes directly through the real-piece FLIP owner');
+ok(manifest.includes('renderer-board-themes.js?v=12&mvp19_6=equal-grid-rows-v1') && manifest.includes('renderer-live-effects-v1.js?v=13&mvp19_6=runtime-smoothing-v13') && manifest.includes('landing=real-piece-flip-final-rect-v2') && manifest.includes('grid_rows=equal-v1') && manifest.includes('legend=stable-paint-v1') && manifest.includes('mobile=insets-v1'), 'active Checkers import map routes through final-rect real-piece FLIP owner');
 ok(manifest.includes('promotion=authoritative-only-v1'), 'Promotion remains authoritative-only after the move-owner replacement');
-ok(manifest.includes('mvp19_6=checkers-real-piece-flip-v10'), 'bootstrap cache-bust activates the real-piece FLIP graph');
+ok(manifest.includes('mvp19_6=checkers-real-piece-flip-v11'), 'bootstrap cache-bust activates the final-rect real-piece FLIP graph');
 ok(!manifest.includes('renderer-live-effects-final-handoff.js') && !fs.existsSync(failedFinalHandoffPath), 'failed detached final-handoff wrapper is fully retired');
 
-console.log('MVP-19.6 Checkers effect preview + live real-piece FLIP contract passed.');
+console.log('MVP-19.6 Checkers effect preview + live final-rect real-piece FLIP contract passed.');
