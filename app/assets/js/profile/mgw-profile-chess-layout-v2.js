@@ -1,4 +1,4 @@
-import { initProfileScreen as initCheckersParityProfileScreen } from './mgw-profile-checkers-parity.js?v=1&mvp19_6=checkers-board-parity';
+import { initProfileScreen as initCheckersParityProfileScreen } from './mgw-profile-checkers-parity.js?v=2&mvp19_6=checkers-full-profile-store-parity-v1';
 
 ensureProfileChessLayoutStyles();
 

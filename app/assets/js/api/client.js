@@ -28,11 +28,45 @@ async function requestUrl(url, payload = {}){
 async function request(action, payload = {}){ return requestUrl(APP_CONFIG.apiBase, { action, ...payload }); }
 
 function publishCosmeticInventory(result){
-  const equipped = result?.store?.inventory?.equipped;
-  if (equipped && typeof equipped === 'object') {
-    const current = state.profileInventory && typeof state.profileInventory === 'object' ? state.profileInventory : {};
-    state.profileInventory = { ...current, equipped:{ ...equipped } };
-    document.dispatchEvent(new CustomEvent('mgw:cosmetic-inventory-changed', { detail:{ equipped:{ ...equipped } } }));
+  const inventory = result?.store?.inventory;
+  const equipped = inventory?.equipped;
+  if (!inventory || typeof inventory !== 'object' || !equipped || typeof equipped !== 'object') return result;
+
+  const current = state.profileInventory && typeof state.profileInventory === 'object' ? state.profileInventory : {};
+  const items = Array.isArray(inventory.items) ? inventory.items : null;
+  const next = { ...current, equipped:{ ...equipped } };
+
+  if (items) {
+    const ownedIds = new Set(items.map(item => String(item?.item_id || '')).filter(Boolean));
+    if (Array.isArray(current.catalog)) {
+      next.catalog = current.catalog.map(item => {
+        if (!item || typeof item !== 'object') return item;
+        const itemId = String(item.item_id || '');
+        const slot = String(item.equip_slot || '');
+        return {
+          ...item,
+          owned:ownedIds.has(itemId),
+          equipped:slot !== '' && String(equipped[slot] || '') === itemId,
+        };
+      });
+    }
+    next.owned = items.map(item => ({
+      item_id:String(item?.item_id || ''),
+      acquired_source:String(item?.acquired_source || ''),
+      acquired_at:item?.acquired_at || null,
+    })).filter(item => item.item_id !== '');
+  }
+
+  state.profileInventory = next;
+  document.dispatchEvent(new CustomEvent('mgw:cosmetic-inventory-changed', {
+    detail:{ inventory:next, equipped:{ ...equipped }, ownershipChanged:Boolean(items) },
+  }));
+  return result;
+}
+
+function publishProfileV2(result){
+  if (result?.inventory && typeof result.inventory === 'object') {
+    state.profileInventory = result.inventory;
   }
   return result;
 }
@@ -64,10 +98,11 @@ async function requestMgwProfile(){
 
 function requestProfileV2(profileUpdate = null){
   if (profileUpdate) {
-    return requestUrl(PROFILE_V2_URL, { profile_update:profileUpdate });
+    return requestUrl(PROFILE_V2_URL, { profile_update:profileUpdate }).then(publishProfileV2);
   }
   if (profileV2ReadPromise) return profileV2ReadPromise;
   profileV2ReadPromise = requestUrl(PROFILE_V2_URL)
+    .then(publishProfileV2)
     .finally(() => { profileV2ReadPromise = null; });
   return profileV2ReadPromise;
 }

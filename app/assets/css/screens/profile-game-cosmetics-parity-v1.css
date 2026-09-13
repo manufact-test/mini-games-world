@@ -1,0 +1,192 @@
+/* Profile game-cosmetics parity: bounded Checkers previews + mobile game-tab rail. */
+
+.profile-v2-game-collection{
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+}
+.profile-v2-game-tabs{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  gap:6px;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  touch-action:pan-x;
+  cursor:grab;
+  scroll-behavior:smooth;
+  padding:2px 1px 4px!important;
+}
+.profile-v2-game-tabs::-webkit-scrollbar{display:none;width:0;height:0}
+.profile-v2-game-tabs.is-dragging{cursor:grabbing;scroll-behavior:auto;user-select:none}
+.profile-v2-game-tab{
+  flex:0 0 auto!important;
+  min-width:max-content;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.profile-v2-game-tab-mark{
+  position:relative;
+  display:inline-grid!important;
+  place-items:center;
+  flex:0 0 24px!important;
+  width:24px!important;
+  height:20px!important;
+  margin:0!important;
+  line-height:1!important;
+  text-align:center;
+}
+
+.profile-v2-game-tab[data-profile-game-tab="tictactoe"] .profile-v2-game-tab-mark,
+.profile-v2-game-tab[data-profile-game-tab="checkers"] .profile-v2-game-tab-mark,
+.profile-v2-game-tab[data-profile-game-tab="chess"] .profile-v2-game-tab-mark{
+  color:transparent!important;
+  font-size:0!important;
+}
+.profile-v2-game-tab[data-profile-game-tab="tictactoe"] .profile-v2-game-tab-mark::before,
+.profile-v2-game-tab[data-profile-game-tab="tictactoe"] .profile-v2-game-tab-mark::after{
+  position:absolute;
+  top:50%;
+  transform:translateY(-51%);
+  color:currentColor;
+  color:#dfe8ff;
+  font-weight:900;
+  line-height:1;
+}
+.profile-v2-game-tab[data-profile-game-tab="tictactoe"] .profile-v2-game-tab-mark::before{
+  content:"×";
+  left:1px;
+  font-size:17px;
+}
+.profile-v2-game-tab[data-profile-game-tab="tictactoe"] .profile-v2-game-tab-mark::after{
+  content:"○";
+  right:0;
+  font-size:16px;
+}
+.profile-v2-game-tab[data-profile-game-tab="checkers"] .profile-v2-game-tab-mark::before{
+  content:"";
+  width:17px;
+  height:17px;
+  border-radius:50%;
+  background:linear-gradient(145deg,#edf2ff,#7e8aa8 70%,#35405a);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.38),0 2px 5px rgba(0,0,0,.32);
+}
+.profile-v2-game-tab[data-profile-game-tab="checkers"] .profile-v2-game-tab-mark::after{
+  content:"";
+  position:absolute;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  border:1px solid rgba(35,43,64,.42);
+}
+.profile-v2-game-tab[data-profile-game-tab="chess"] .profile-v2-game-tab-mark::before{
+  content:"♞";
+  color:#dfe8ff;
+  font-family:"Times New Roman",serif;
+  font-size:21px;
+  font-weight:700;
+  line-height:1;
+  transform:translateY(-1px);
+}
+.profile-v2-game-tab.active[data-profile-game-tab="tictactoe"] .profile-v2-game-tab-mark::before,
+.profile-v2-game-tab.active[data-profile-game-tab="tictactoe"] .profile-v2-game-tab-mark::after,
+.profile-v2-game-tab.active[data-profile-game-tab="chess"] .profile-v2-game-tab-mark::before{color:#fff}
+
+.profile-v2-game-panel,
+.profile-v2-game-group,
+.profile-v2-game-grid,
+.profile-v2-game-card{
+  min-width:0;
+  max-width:100%;
+}
+.profile-v2-game-card{
+  overflow:hidden;
+}
+.profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"]{
+  box-sizing:border-box;
+  position:relative;
+  display:grid;
+  place-items:center;
+  width:100%!important;
+  max-width:100%!important;
+  min-height:0!important;
+  aspect-ratio:1;
+  overflow:hidden!important;
+  margin:0!important;
+  border-radius:14px;
+}
+.profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+}
+.profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"]{
+  padding:10px!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  background:linear-gradient(155deg,rgba(18,22,34,.92),rgba(7,10,18,.98))!important;
+}
+.profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces{
+  position:relative;
+  width:min(82%,116px)!important;
+  height:auto!important;
+  aspect-ratio:1.12;
+  transform:none!important;
+}
+.profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]{
+  padding:6px!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  background:#090d16!important;
+  cursor:default!important;
+}
+.profile-v2-game-card .profile-v2-game-card-name{
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.profile-v2-game-preview-wrap{
+  min-width:0;
+  overflow:hidden;
+}
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="checkers"]{
+  box-sizing:border-box;
+  position:relative;
+  display:grid;
+  place-items:center;
+  width:min(100%,236px)!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1;
+  margin:0 auto!important;
+  overflow:hidden!important;
+  border-radius:18px;
+}
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+}
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"]{
+  padding:18px!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  background:linear-gradient(155deg,rgba(18,22,34,.92),rgba(7,10,18,.98))!important;
+}
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces{
+  transform:scale(1.12)!important;
+}
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]{
+  padding:7px!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  background:#090d16!important;
+}
+
+@media (max-width:390px){
+  .profile-v2-game-tabs{margin-right:0!important;padding-right:8px!important}
+  .profile-v2-game-tab{padding-left:10px!important;padding-right:10px!important}
+  .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"]{border-radius:12px}
+}
