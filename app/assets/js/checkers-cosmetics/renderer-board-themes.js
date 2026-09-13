@@ -11,17 +11,32 @@ ensureCheckersRuntimeCorrectiveStyles();
 export { checkersMeta, checkersPlayerMark, checkersStatus };
 
 export function renderCheckersSurface({ game, me, container, onAction }){
+  /* The legend is immutable UI copy. Keep one physical DOM node across optimistic
+   * and authoritative board snapshots so Chromium never has to re-rasterize the
+   * tiny muted labels during the paid-effect handoff. */
+  const stableLegend = container.querySelector('.checkers-legend');
+
   renderBaseCheckersSurface({ game, me, container, onAction });
+
+  const renderedLegend = container.querySelector('.checkers-legend');
+  if (stableLegend instanceof HTMLElement && renderedLegend instanceof HTMLElement && stableLegend !== renderedLegend) {
+    renderedLegend.replaceWith(stableLegend);
+  }
+
   container.dataset.checkersTheme = checkersBoardVariant(game, me);
   container.dataset.mgwCheckersPaidEffect = viewerHasPaidCheckersEffect(game, me) ? '1' : '0';
 
-  /*
-   * Do not retarget the paid checker to a temporary destination-piece rect here.
-   * The live effect owner computes from/to from real 8x8 cell rects. The runtime
-   * corrective now makes those rects structurally stable by defining eight equal
-   * grid rows as well as the accepted eight columns, so checker content can no
-   * longer resize a row between optimistic arrival and authoritative handoff.
-   */
+  /* Eight equal rows fixed the content-sized rank collapse, but the paid layer is
+   * detached from the board. Its original owner snapshots from/to coordinates once
+   * while continuing to reposition the outer layer on later renders. On mobile a
+   * sub-pixel board reflow between optimistic and authoritative snapshots can then
+   * leave those inner coordinates stale by a few pixels: the flying checker lands
+   * above the live cell and visibly drops when the overlay disappears.
+   *
+   * Re-read the current physical cell centers after the full live-effect wrapper has
+   * finished this render, then retarget only presentation geometry. Rules, hit
+   * targets, optimistic state, timers and settlement remain untouched. */
+  queueExactLiveLanding(container);
 }
 
 function checkersBoardVariant(game, me){
@@ -45,6 +60,142 @@ function viewerHasPaidCheckersEffect(game, me){
   ].includes(effectId);
 }
 
+function queueExactLiveLanding(container){
+  const run = () => {
+    if (container instanceof HTMLElement && container.isConnected) syncExactLiveLanding(container);
+  };
+  if (typeof globalThis.queueMicrotask === 'function') globalThis.queueMicrotask(run);
+  else Promise.resolve().then(run);
+  if (typeof globalThis.requestAnimationFrame === 'function') globalThis.requestAnimationFrame(run);
+}
+
+function syncExactLiveLanding(container){
+  if (!(container instanceof HTMLElement) || container.dataset.mgwCheckersPaidEffect !== '1') return;
+  const board = container.querySelector('.checkers-board');
+  if (!(board instanceof HTMLElement)) return;
+  const layer = nearestLiveEffectLayer(board);
+  if (!(layer instanceof HTMLElement)) return;
+
+  const cells = Array.from(board.querySelectorAll('[data-checkers-cell]')).filter(cell => cell instanceof HTMLElement);
+  if (cells.length !== 64) return;
+
+  const oldFrom = layerPoint(layer, '--mgw-fx-from-x', '--mgw-fx-from-y');
+  const oldTo = layerPoint(layer, '--mgw-fx-to-x', '--mgw-fx-to-y');
+  if (!oldFrom || !oldTo) return;
+
+  const sourceCell = nearestCell(board, cells, oldFrom);
+  const hiddenCells = cells.filter(cell => cell.classList.contains('mgw-checkers-live-fx-hide-piece'));
+  const destinationCell = nearestCell(board, hiddenCells.length ? hiddenCells : cells, oldTo);
+  if (!(sourceCell instanceof HTMLElement) || !(destinationCell instanceof HTMLElement)) return;
+
+  const fromPoint = cellCenter(board, sourceCell);
+  const toPoint = cellCenter(board, destinationCell);
+  if (!fromPoint || !toPoint) return;
+
+  const dx = toPoint.x - fromPoint.x;
+  const dy = toPoint.y - fromPoint.y;
+  const distance = Math.hypot(dx, dy);
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+  const cellSize = Math.min(fromPoint.size, toPoint.size);
+
+  layer.style.setProperty('--mgw-fx-from-x', `${fromPoint.x}px`);
+  layer.style.setProperty('--mgw-fx-from-y', `${fromPoint.y}px`);
+  layer.style.setProperty('--mgw-fx-to-x', `${toPoint.x}px`);
+  layer.style.setProperty('--mgw-fx-to-y', `${toPoint.y}px`);
+  layer.style.setProperty('--mgw-fx-dx', `${dx}px`);
+  layer.style.setProperty('--mgw-fx-dy', `${dy}px`);
+  layer.style.setProperty('--mgw-fx-piece-size', `${Math.max(20, cellSize * .72)}px`);
+
+  const path = layer.querySelector('.mgw-checkers-live-fx-path');
+  if (path instanceof HTMLElement) {
+    path.style.left = `${fromPoint.x}px`;
+    path.style.top = `${fromPoint.y}px`;
+    path.style.width = `${distance}px`;
+    path.style.transform = `translateY(-50%) rotate(${angle}deg)`;
+  }
+
+  const crown = layer.querySelector('.mgw-checkers-live-fx-crown');
+  if (crown instanceof HTMLElement) {
+    crown.style.left = `${toPoint.x}px`;
+    crown.style.top = `${toPoint.y}px`;
+  }
+
+  const impact = layer.querySelector('.mgw-checkers-live-fx-impact');
+  const captureTarget = layer.querySelector('.mgw-checkers-live-fx-target');
+  if (captureTarget instanceof HTMLElement) {
+    const targetPoint = nearestPointFromInlinePosition(board, cells, captureTarget);
+    if (targetPoint) {
+      captureTarget.style.left = `${targetPoint.x}px`;
+      captureTarget.style.top = `${targetPoint.y}px`;
+      impact?.style.setProperty('left', `${targetPoint.x}px`);
+      impact?.style.setProperty('top', `${targetPoint.y}px`);
+    }
+  } else if (impact instanceof HTMLElement) {
+    impact.style.left = `${toPoint.x}px`;
+    impact.style.top = `${toPoint.y}px`;
+  }
+}
+
+function nearestLiveEffectLayer(board){
+  const boardRect = board.getBoundingClientRect();
+  let best = null;
+  let bestScore = Infinity;
+  document.querySelectorAll('.mgw-checkers-live-fx').forEach(candidate => {
+    if (!(candidate instanceof HTMLElement) || !candidate.isConnected) return;
+    const rect = candidate.getBoundingClientRect();
+    const score = Math.abs(rect.left - boardRect.left)
+      + Math.abs(rect.top - boardRect.top)
+      + Math.abs(rect.width - boardRect.width)
+      + Math.abs(rect.height - boardRect.height);
+    if (score < bestScore) {
+      best = candidate;
+      bestScore = score;
+    }
+  });
+  return bestScore <= 8 ? best : null;
+}
+
+function layerPoint(layer, xName, yName){
+  const x = Number.parseFloat(layer.style.getPropertyValue(xName));
+  const y = Number.parseFloat(layer.style.getPropertyValue(yName));
+  return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
+}
+
+function nearestCell(board, cells, point){
+  if (!Array.isArray(cells) || cells.length === 0 || !point) return null;
+  let best = null;
+  let bestDistance = Infinity;
+  cells.forEach(cell => {
+    const center = cellCenter(board, cell);
+    if (!center) return;
+    const distance = Math.hypot(center.x - point.x, center.y - point.y);
+    if (distance < bestDistance) {
+      best = cell;
+      bestDistance = distance;
+    }
+  });
+  return best;
+}
+
+function nearestPointFromInlinePosition(board, cells, element){
+  const x = Number.parseFloat(element.style.left);
+  const y = Number.parseFloat(element.style.top);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  const cell = nearestCell(board, cells, { x, y });
+  return cell instanceof HTMLElement ? cellCenter(board, cell) : null;
+}
+
+function cellCenter(board, cell){
+  if (!(board instanceof HTMLElement) || !(cell instanceof HTMLElement)) return null;
+  const boardRect = board.getBoundingClientRect();
+  const cellRect = cell.getBoundingClientRect();
+  return {
+    x:cellRect.left - boardRect.left + cellRect.width / 2,
+    y:cellRect.top - boardRect.top + cellRect.height / 2,
+    size:Math.min(cellRect.width, cellRect.height),
+  };
+}
+
 function ensureCheckersCosmeticStyles(){
   if (document.querySelector('link[data-mgw-checkers-cosmetics]')) return;
   const link = document.createElement('link');
@@ -55,16 +206,17 @@ function ensureCheckersCosmeticStyles(){
 }
 
 function ensureCheckersRuntimeCorrectiveStyles(){
-  const href = new URL('../../css/games/checkers/runtime-handoff-mobile-v1.css?v=3&mvp19_6=equal-grid-rows&landing=stable-row-centers-v1&last_from=flat-v1&mobile=insets-v1', import.meta.url).href;
+  const href = new URL('../../css/games/checkers/runtime-handoff-mobile-v1.css?v=4&mvp19_6=exact-live-centers&legend=stable-paint-v1&grid_rows=equal-v1&mobile=insets-v1', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-checkers-runtime-corrective]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwCheckersRuntimeCorrective = 'mvp19-6-equal-grid-rows-v3';
+    existing.dataset.mgwCheckersRuntimeCorrective = 'mvp19-6-exact-live-centers-v4';
+    document.head.appendChild(existing);
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwCheckersRuntimeCorrective = 'mvp19-6-equal-grid-rows-v3';
+  link.dataset.mgwCheckersRuntimeCorrective = 'mvp19-6-exact-live-centers-v4';
   link.href = href;
   document.head.appendChild(link);
 }
