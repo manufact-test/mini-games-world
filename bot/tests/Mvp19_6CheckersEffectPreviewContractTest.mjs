@@ -57,19 +57,19 @@ ok(!livePieceCss.includes('0 0 20px rgba(68,221,255,.64)') && !livePieceCss.incl
 ok(livePieceCss.includes('.checkers-piece.king > b::before') && livePieceCss.includes('content:"♛"'), 'live king keeps accepted primary crown branding');
 ok(livePieceCss.includes('.checkers-piece.king > b::after') && livePieceCss.includes('content:"MG"'), 'live king restores accepted secondary MG monogram');
 
-ok(boardThemeWrapper.includes("layer.dataset.mgwCheckersLandingLocked === '1'"), 'exact landing geometry is never retargeted after first successful lock');
-ok(boardThemeWrapper.includes("layer.dataset.mgwCheckersLandingLocked = '1'"), 'successful DOM landing measurement marks the compositor endpoint immutable');
-ok(boardThemeWrapper.includes('mgwCheckersLandingX') && boardThemeWrapper.includes('mgwCheckersLandingY') && boardThemeWrapper.includes('mgwCheckersLandingSize'), 'locked landing records deterministic geometry diagnostics');
-ok(boardThemeWrapper.includes('stableLayoutPieceSize(destinationPiece)'), 'landing size reads the untransformed checker layout box instead of a transformed rect');
-ok(boardThemeWrapper.includes("mgwCheckersLandingSizeSource = 'layout-box'"), 'landing diagnostics prove layout-box size ownership');
+ok(!boardThemeWrapper.includes('syncExactLiveLanding'), 'board-theme wrapper no longer retargets the paid checker from transient destination-piece geometry');
+ok(!boardThemeWrapper.includes('getBoundingClientRect'), 'board-theme wrapper cannot introduce a second DOM geometry owner for landing');
+ok(boardThemeWrapper.includes('real 8x8 cell rects') && boardThemeWrapper.includes('stable across optimistic -> authoritative rerenders'), 'landing contract explicitly keeps cell centers as the single geometry owner');
 ok(boardThemeWrapper.includes('container.dataset.mgwCheckersPaidEffect'), 'viewer paid-effect state survives frozen selection rerenders on the surface');
-ok(boardThemeWrapper.includes('runtime-handoff-mobile-v1.css?v=1'), 'board-theme owner loads the dedicated handoff/mobile corrective stylesheet');
+ok(boardThemeWrapper.includes('runtime-handoff-mobile-v1.css?v=2'), 'board-theme owner loads the cache-busted cell/landing corrective stylesheet');
 
 ok(runtimeCorrectiveCss.includes('data-mgw-checkers-paid-effect="1"') && runtimeCorrectiveCss.includes('.checkers-cell.selected .checkers-piece'), 'paid Checkers selection no longer changes the checker physical diameter');
 ok(runtimeCorrectiveCss.includes('transform:none!important;'), 'corrective neutralizes selected/hidden transform geometry at handoff');
 ok(runtimeCorrectiveCss.includes('transition:none!important;'), 'hidden authoritative checker cannot run its own transform transition during reveal');
 ok(runtimeCorrectiveCss.includes('transform-box:border-box') && runtimeCorrectiveCss.includes('transform-origin:50% 50%'), 'detached live checker uses symmetric border-box transform geometry');
-ok(runtimeCorrectiveCss.includes('padding-left:max(12px,env(safe-area-inset-left))!important;') && runtimeCorrectiveCss.includes('padding-right:max(12px,env(safe-area-inset-right))!important;'), 'Checkers mobile content has symmetric minimum 12px side insets');
+ok(runtimeCorrectiveCss.includes('.checkers-surface .checkers-cell.last-from') && runtimeCorrectiveCss.includes('box-shadow:none!important;'), 'last-from marker cannot visually shrink an emptied board square');
+ok(runtimeCorrectiveCss.includes('data-checkers-theme="neon"') && runtimeCorrectiveCss.includes('inset 0 0 0 1px'), 'neon last-from keeps only its normal material seam');
+ok(runtimeCorrectiveCss.includes('padding-left:max(12px,env(safe-area-inset-left))!important;') && runtimeCorrectiveCss.includes('padding-right:max(12px,env(safe-area-inset-right))!important;'), 'Checkers mobile content keeps symmetric minimum 12px side insets');
 
 ok(liveWrapper.includes("if (value === null || value === undefined || value === '') return null;"), 'nullable Checkers event cells can never coerce null into board cell zero');
 ok(liveWrapper.includes('authoritativeBoards'), 'optimistic effect classification retains the previous authoritative board');
@@ -82,6 +82,7 @@ ok(liveWrapper.includes('stripBaseTransientAnimations'), 'paid-effect handoff co
 ok(liveWrapper.includes("node.classList.remove('move-impact')") && liveWrapper.includes("node.classList.remove('promotion-flash')"), 'post-landing base move/promotion twitch is explicitly removed');
 ok(liveWrapper.includes('document.body.appendChild(state.layer)'), 'effect layer survives board innerHTML rerenders');
 ok(liveWrapper.includes('state.layer?.isConnected'), 'poll rerenders reuse the same live effect node instead of restarting it');
+ok(liveWrapper.includes('function cellPoint') && liveWrapper.includes('cellRect.left - boardRect.left + cellRect.width / 2') && liveWrapper.includes('cellRect.top - boardRect.top + cellRect.height / 2'), 'paid checker from/to positions are owned by actual cell centers');
 
 ok(liveEffectCss.includes('position:fixed'), 'single-flight live effect layer is detached from the rerendered board subtree');
 ok(liveEffectCss.includes('box-sizing:border-box'), 'live overlay piece uses the same border-box geometry as the real checker');
@@ -92,7 +93,7 @@ ok(liveEffectCss.includes('.mgw-checkers-live-fx-move.mgw-checkers-live-fx-event
 ok(liveEffectCss.includes('.mgw-checkers-live-fx-crown::after') && liveEffectCss.includes('content:"MG"'), 'promotion overlay uses the same crown plus MG identity');
 ok(liveEffectCss.includes('pointer-events:none'), 'live effect layer leaves board hit targets untouched');
 ok(liveEffectCss.includes('@media (prefers-reduced-motion:reduce)'), 'live effects preserve reduced-motion handling');
-ok(manifest.includes('renderer-board-themes.js?v=4&mvp19_6=selection-geometry-v1') && manifest.includes('renderer-live-effects-v1.js?v=7&mvp19_6=runtime-smoothing-v7') && manifest.includes('landing=layout-box-handoff-v3') && manifest.includes('selection=geometry-neutral-v1') && manifest.includes('mobile=insets-v1'), 'active Checkers import map cache-busts layout-box landing and symmetric mobile inset runtime');
+ok(manifest.includes('renderer-board-themes.js?v=5&mvp19_6=cell-center-handoff-v1') && manifest.includes('renderer-live-effects-v1.js?v=8&mvp19_6=runtime-smoothing-v8') && manifest.includes('landing=cell-center-handoff-v1') && manifest.includes('selection=geometry-neutral-v1') && manifest.includes('last_from=flat-v1') && manifest.includes('mobile=insets-v1'), 'active Checkers import map cache-busts stable cell-center landing and flat last-from runtime');
 ok(manifest.includes('promotion=authoritative-only-v1'), 'Promotion remains authoritative-only after the temporary QA shortcut removal');
 
 console.log('MVP-19.6 Checkers effect preview + live parity contract passed.');
