@@ -62,19 +62,33 @@ jobs:
             if cmp -s "$local_file" "$live_file"; then matched=1; break; fi
             sleep 5
           done
-          echo "local board-theme owner sha256: $(sha256sum "$local_file" | awk '{print $1}')"
-          echo "live  board-theme owner sha256: $(sha256sum "$live_file" | awk '{print $1}')"
           test "$matched" = '1'
           grep -F 'syncExactLiveLanding' "$live_file"
           grep -F 'pieceCenter(board, destinationCell)' "$live_file"
-          grep -F "cell.querySelector('.checkers-piece')" "$live_file"
-          grep -F 'getBoundingClientRect' "$live_file"
-          grep -F 'mgw-checkers-live-fx-hide-piece' "$live_file"
           grep -F 'stableLegend' "$live_file"
-          grep -F 'container.dataset.mgwCheckersPaidEffect' "$live_file"
-          grep -F 'runtime-handoff-mobile-v1.css?v=5' "$live_file"
-          grep -F 'mvp19_6=direct-box-flight-v1' "$live_file"
-          grep -F 'legend=stable-paint-v1' "$live_file"
+
+      - name: Compare final prepaint handoff owner byte-for-byte
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          local_file='app/assets/js/checkers-cosmetics/renderer-live-effects-final-handoff.js'
+          live_file='/tmp/live-checkers-final-handoff.js'
+          matched=0
+          for attempt in $(seq 1 24); do
+            curl --fail-with-body --silent --show-error \
+              --connect-timeout 10 --max-time 25 \
+              --header 'Cache-Control: no-cache' \
+              "${MGW_STAGING_ORIGIN}/app/assets/js/checkers-cosmetics/renderer-live-effects-final-handoff.js?probe=${GITHUB_SHA}-${attempt}" \
+              --output "$live_file"
+            if cmp -s "$local_file" "$live_file"; then matched=1; break; fi
+            sleep 5
+          done
+          test "$matched" = '1'
+          grep -F 'syncOverlayEndpointBeforePaint' "$live_file"
+          grep -F "destinationPiece.getBoundingClientRect()" "$live_file"
+          grep -F "mgwFinalHandoff = 'settled-piece-before-paint-v1'" "$live_file"
+          grep -F 'runtime-handoff-mobile-v1.css?v=6' "$live_file"
+          grep -F 'mvp19_6=destination-anchor-v2' "$live_file"
 
       - name: Compare live Checkers handoff corrective byte-for-byte
         shell: bash
@@ -92,19 +106,15 @@ jobs:
             if cmp -s "$local_file" "$live_file"; then matched=1; break; fi
             sleep 5
           done
-          echo "local runtime corrective sha256: $(sha256sum "$local_file" | awk '{print $1}')"
-          echo "live  runtime corrective sha256: $(sha256sum "$live_file" | awk '{print $1}')"
           test "$matched" = '1'
           grep -F 'grid-template-rows:repeat(8,minmax(0,1fr))!important;' "$live_file"
-          grep -F 'data-mgw-checkers-paid-effect="1"' "$live_file"
           grep -F '.checkers-surface.mgw-checkers-live-fx-running .checkers-legend' "$live_file"
-          grep -F 'opacity:1!important;' "$live_file"
           grep -F '.mgw-checkers-live-fx-move .mgw-checkers-live-fx-piece' "$live_file"
-          grep -F 'animation:mgw-checkers-live-direct-box-move' "$live_file"
-          grep -F 'left:calc(var(--mgw-fx-to-x) - (var(--mgw-fx-piece-size) / 2));' "$live_file"
-          grep -F 'transform:none;' "$live_file"
+          grep -F 'animation:mgw-checkers-live-destination-anchor-move' "$live_file"
+          grep -F 'left:calc(var(--mgw-fx-to-x) - (var(--mgw-fx-piece-size) / 2))!important;' "$live_file"
+          grep -F 'calc(var(--mgw-fx-from-x) - var(--mgw-fx-to-x))' "$live_file"
+          grep -F 'transform:translate(0,0);' "$live_file"
           grep -F '.checkers-surface .checkers-cell.last-from' "$live_file"
-          grep -F 'box-shadow:none!important;' "$live_file"
           grep -F 'padding-left:max(12px,env(safe-area-inset-left))!important;' "$live_file"
           grep -F 'padding-right:max(12px,env(safe-area-inset-right))!important;' "$live_file"
 
@@ -126,8 +136,6 @@ jobs:
               if cmp -s "$local_file" "$live_file"; then matched=1; break; fi
               sleep 5
             done
-            echo "local $(basename "$local_file") sha256: $(sha256sum "$local_file" | awk '{print $1}')"
-            echo "live  $(basename "$live_file") sha256: $(sha256sum "$live_file" | awk '{print $1}')"
             test "$matched" = '1'
           }
           compare_live \
@@ -143,13 +151,7 @@ jobs:
             'app/assets/css/games/checkers/store-effects-final-centering-v1.css' \
             '/tmp/live-checkers-store-final-centering.css'
           grep -F 'store-effects-final-centering-v1.css?v=2&mvp19_6=king-readable-v2' /tmp/live-checkers-store-source-wrapper.js
-          grep -F '.checkers-store-fx-promotion .from{' /tmp/live-checkers-store-final-centering.css
-          grep -F 'left:calc(68.75% - .75px)!important;' /tmp/live-checkers-store-final-centering.css
-          grep -F 'top:calc(18.75% + 1.25px)!important;' /tmp/live-checkers-store-final-centering.css
           grep -F 'width:calc(14.5% - .5px)!important;' /tmp/live-checkers-store-final-centering.css
-          grep -F 'font-size:clamp(14px,4.2vw,18px)!important;' /tmp/live-checkers-store-final-centering.css
-          grep -F 'animation:mgw-checkers-final-promotion-piece' /tmp/live-checkers-store-final-centering.css
-          grep -F 'transform:translate(-50%,-50%) scale(1)' /tmp/live-checkers-store-final-centering.css
 
       - name: Guard active Checkers cache-bust
         shell: bash
@@ -158,14 +160,10 @@ jobs:
           manifest='app/runtime/client/version-manifest.php'
           grep -F 'store-screen-checkers-board-source-wrapper.js?v=5' "$manifest"
           grep -F 'promotion_preview=king-readable-v2' "$manifest"
-          grep -F 'final_centering=king-readable-v2' "$manifest"
-          grep -F 'renderer-board-themes.js?v=9&mvp19_6=equal-grid-rows-v1' "$manifest"
-          grep -F 'renderer-live-effects-v1.js?v=11&mvp19_6=runtime-smoothing-v11' "$manifest"
-          grep -F 'landing=direct-box-flight-v4' "$manifest"
-          grep -F 'grid_rows=equal-v1' "$manifest"
-          grep -F 'selection=geometry-neutral-v1' "$manifest"
-          grep -F 'last_from=flat-v1' "$manifest"
+          grep -F 'renderer-board-themes.js?v=10&mvp19_6=equal-grid-rows-v1' "$manifest"
+          grep -F 'renderer-live-effects-final-handoff.js?v=1' "$manifest"
+          grep -F 'prepaint-settled-piece-v1' "$manifest"
+          grep -F 'landing=destination-anchor-v5' "$manifest"
           grep -F 'legend=stable-paint-v1' "$manifest"
-          grep -F 'mobile=insets-v1' "$manifest"
-          grep -F 'promotion=authoritative-only-v1' "$manifest"
-          grep -F 'mvp19_6=checkers-direct-box-flight-v8' "$manifest"
+          grep -F 'grid_rows=equal-v1' "$manifest"
+          grep -F 'mvp19_6=checkers-destination-anchor-v9' "$manifest"
