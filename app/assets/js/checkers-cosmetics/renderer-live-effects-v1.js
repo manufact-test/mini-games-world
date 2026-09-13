@@ -560,8 +560,8 @@ function ensureLiveCosmeticStyles(){
   if (!document.querySelector('link[data-mgw-checkers-live-effects]')) {
     const effectLink = document.createElement('link');
     effectLink.rel = 'stylesheet';
-    effectLink.dataset.mgwCheckersLiveEffects = 'mvp19-6-store-parity-v4';
-    effectLink.href = new URL('../../css/games/checkers/live-effects-store-parity-v1.css?v=4&mvp19_6=landing-handoff-v1', import.meta.url).href;
+    effectLink.dataset.mgwCheckersLiveEffects = 'mvp19-6-store-parity-v5-real-flight';
+    effectLink.href = new URL('../../css/games/checkers/live-effects-store-parity-v1.css?v=5&mvp19_6=real-piece-flip-exempt-v1', import.meta.url).href;
     document.head.appendChild(effectLink);
   }
 }

@@ -9,7 +9,7 @@
   isolation:isolate;
 }
 
-.checkers-surface.mgw-checkers-live-fx-running .checkers-cell.move-impact .checkers-piece,
+.checkers-surface.mgw-checkers-live-fx-running .checkers-cell.move-impact .checkers-piece:not(.mgw-checkers-live-real-move-piece),
 .checkers-surface.mgw-checkers-live-fx-running .checkers-cell.promotion-flash .checkers-piece{
   animation:none!important;
 }
