@@ -84,13 +84,16 @@
 .checkers-cell:not(.selectable):not(.capture-source):not(.pending-captured) .checkers-piece.white[data-checkers-piece-style="neon"]{
   box-shadow:0 5px 12px rgba(0,0,0,.34),0 0 16px rgba(190,125,255,.58),inset 0 0 16px rgba(255,240,255,.16);
 }
+/* The animated clone must be optically identical to the settled board checker.
+   A larger overlay glow makes the final handoff look like a size snap even when
+   the DOM rect itself is exact, so keep the same 16px outer/inset glow values. */
 .mgw-checkers-live-fx-piece.black[data-checkers-piece-style="neon"],
 .mgw-checkers-live-fx-target.black[data-checkers-piece-style="neon"]{
-  box-shadow:0 5px 12px rgba(0,0,0,.4),0 0 20px rgba(68,221,255,.64),inset 0 0 18px rgba(224,253,255,.18);
+  box-shadow:0 5px 12px rgba(0,0,0,.4),0 0 16px rgba(68,221,255,.58),inset 0 0 16px rgba(224,253,255,.16);
 }
 .mgw-checkers-live-fx-piece.white[data-checkers-piece-style="neon"],
 .mgw-checkers-live-fx-target.white[data-checkers-piece-style="neon"]{
-  box-shadow:0 5px 12px rgba(0,0,0,.34),0 0 20px rgba(190,125,255,.64),inset 0 0 18px rgba(255,240,255,.18);
+  box-shadow:0 5px 12px rgba(0,0,0,.34),0 0 16px rgba(190,125,255,.58),inset 0 0 16px rgba(255,240,255,.16);
 }
 
 /* Live king branding follows the accepted Store hierarchy from PR #1358:
