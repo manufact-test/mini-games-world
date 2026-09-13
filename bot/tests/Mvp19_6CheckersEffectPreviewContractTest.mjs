@@ -4,6 +4,9 @@ const css = fs.readFileSync('app/assets/css/games/checkers/store-effects-live-bo
 const wrapper = fs.readFileSync('app/assets/js/screens/store-screen-checkers-wrapper.js', 'utf8');
 const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 const gameCss = fs.readFileSync('app/assets/css/games/checkers/game.css', 'utf8');
+const liveWrapper = fs.readFileSync('app/assets/js/checkers-cosmetics/renderer-live-effects-v1.js', 'utf8');
+const liveEffectCss = fs.readFileSync('app/assets/css/games/checkers/live-effects-store-parity-v1.css', 'utf8');
+const livePieceCss = fs.readFileSync('app/assets/css/games/checkers/live-pieces-store-parity-v1.css', 'utf8');
 
 function ok(value, label){
   if (!value) throw new Error(label);
@@ -32,4 +35,23 @@ ok(css.includes('@keyframes mgw-live-board-crown'), 'promotion crown exists');
 ok(css.includes('@media (prefers-reduced-motion:reduce)'), 'reduced motion fallback exists');
 ok(!css.includes('animation:infinite'), 'effect corrective has no infinite animation declaration');
 
-console.log('MVP-19.6 Checkers effect preview contract passed.');
+// Live parity regression guards. These are deliberately source-contract checks:
+// the accepted Checkers engine remains frozen while this presentation wrapper owns
+// Store -> live projection and authoritative one-shot event classification.
+ok(liveWrapper.includes('game_checkers_elements'), 'live renderer reads the factual Checkers piece-set slot');
+ok(liveWrapper.includes('data.checkersPieceStyle') || liveWrapper.includes('dataset.checkersPieceStyle'), 'live renderer projects piece-set identity onto rendered checkers');
+for (const variant of ['wood','marble','metal','neon']) {
+  ok(livePieceCss.includes(`data-checkers-piece-style="${variant}"`), `live piece CSS preserves ${variant} Store identity`);
+}
+ok(liveWrapper.includes("if (value === null || value === undefined || value === '') return null;"), 'nullable Checkers event cells can never coerce null into board cell zero');
+ok(liveWrapper.includes('move?.promoted === true'), 'promotion classification uses authoritative last_move.promoted');
+ok(liveWrapper.includes('move?.capture === true'), 'capture classification uses authoritative last_move.capture');
+ok(liveWrapper.includes('move?.player_id'), 'live effect ownership uses authoritative mover id');
+ok(liveWrapper.includes('move?.side'), 'live effect ownership retains authoritative mover side fallback');
+ok(liveWrapper.includes('!lastSeenMoveSignatures.has(gameKey)'), 'first/reconnected snapshot is consumed as baseline instead of replaying stale effects');
+ok(liveWrapper.includes('state.plan'), 'poll rerenders reconstruct the same one-shot effect instead of restarting event detection');
+ok(liveWrapper.includes('pointer') === false || liveEffectCss.includes('pointer-events:none'), 'live cosmetic overlay cannot intercept Checkers hit targets');
+ok(liveEffectCss.includes('pointer-events:none'), 'live effect layer leaves board hit targets untouched');
+ok(liveEffectCss.includes('@media (prefers-reduced-motion:reduce)'), 'live effects preserve reduced-motion handling');
+
+console.log('MVP-19.6 Checkers effect preview + live parity contract passed.');
