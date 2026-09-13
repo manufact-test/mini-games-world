@@ -32,8 +32,8 @@ jobs:
           grep -F "container.dataset.mgwCheckersRealMove !== '1'" "$owner"
           grep -F '.checkers-piece.mgw-checkers-live-real-move-piece' "$owner"
           grep -F 'activeMove.from !== incomingMove.from || activeMove.to !== incomingMove.to' "$owner"
-          grep -F "renderer-single-flight-v1.js?v=1&mvp19_6=single-flight-dom-v1" "$manifest"
-          grep -F 'single_flight=dom-v1' "$manifest"
+          grep -F "renderer-single-flight-v1.js?v=2&mvp19_6=single-flight-dom-v1&real_flight=css-cascade-v1" "$manifest"
+          grep -F 'single_flight=dom-v1&real_flight=css-cascade-v1' "$manifest"
 
       - name: Wait for exact staging deployment
         shell: bash
