@@ -36,16 +36,21 @@
 }
 
 /* Promotion: source 56.25/31.25 -> destination 68.75/18.75. Checker, ring and
-   crown all share the exact same border-corrected destination center. */
+   crown all share the exact same border-corrected destination center. The final
+   crown badge is intentionally a little larger than gameplay scale in Store only,
+   so the king symbol reads clearly inside the compact catalogue preview. */
 .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-promotion .from,
 .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-promotion .checkers-fx-impact,
 .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-promotion .checkers-fx-crown{
   left:calc(68.75% - .75px)!important;
   top:calc(18.75% + 1.25px)!important;
 }
-.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-promotion .checkers-fx-impact,
-.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-promotion .checkers-fx-crown{
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-promotion .checkers-fx-impact{
   width:calc(12.5% - .5px)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-promotion .checkers-fx-crown{
+  width:calc(14.5% - .5px)!important;
+  font-size:clamp(14px,4.2vw,18px)!important;
 }
 
 .store-v2-game-preview.is-previewing .checkers-store-fx-move .from{
