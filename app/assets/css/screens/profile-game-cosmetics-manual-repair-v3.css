@@ -1,4 +1,4 @@
-/* Manual device QA repair: Profile game tabs, Checkers preview lifecycle and Chess centering. */
+/* Manual device QA repair: Profile game tabs, Checkers Store-source previews and Chess centering. */
 
 /* Keep the already accepted Tic-Tac-Toe tab artwork as the only X/O owner.
    The parity layer had left its original gradient X / ring O in place and then
@@ -53,8 +53,7 @@
 #screen-profile .profile-v2-game-tabs{scroll-behavior:auto!important}
 
 /* Checkers card effects are compositor-active only while the IntersectionObserver
-   says the preview is actually visible. This prevents detached/offscreen cards
-   from continuing infinite GPU work while the user switches between games. */
+   says the preview is actually visible. Detached/offscreen cards stay paused. */
 #screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]:not(.is-previewing) .checkers-store-fx-move .from,
 #screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]:not(.is-previewing) .checkers-store-fx-move .checkers-fx-path,
 #screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]:not(.is-previewing) .checkers-store-fx-move .checkers-fx-impact,
@@ -69,45 +68,118 @@
   animation:none!important;
 }
 
-/* Device QA follow-up: Profile cards intentionally use a compact landscape media strip.
-   Keep that accepted card height, but fit the square Checkers primitive by HEIGHT instead
-   of stretching it to the card width. This shows all 8 rows and the full effect board
-   while leaving the larger sheet/modal preview untouched. */
-#screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"]{
-  width:100%!important;
-  max-width:100%!important;
-  height:76px!important;
-  min-height:76px!important;
-  aspect-ratio:auto!important;
+/* Checkers Profile cards now use the SAME media geometry as the accepted Store.
+   No compact 76/69px crop, no Profile-only scaling. Store board/effect primitives,
+   materials, coordinates and animation keyframes already load above and remain the
+   source of truth; this final layer only gives the Profile card the same outer box. */
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{
+  box-sizing:border-box!important;
+  position:relative!important;
   display:grid!important;
   place-items:center!important;
-  overflow:hidden!important;
-}
-#screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board,
-#screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .store-v2-mini-checkers-effect{
-  width:auto!important;
+  width:100%!important;
   max-width:100%!important;
-  height:100%!important;
-  max-height:100%!important;
+  height:auto!important;
   min-height:0!important;
-  aspect-ratio:1 / 1!important;
-  align-self:center!important;
-  justify-self:center!important;
+  aspect-ratio:1!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border:0!important;
+  border-radius:8px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board{
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:none!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1!important;
+  margin:0!important;
+  border-radius:8px!important;
   transform:none!important;
 }
+
+/* Exact Store checker-set card composition. */
 #screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"]{
-  padding:4px!important;
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:auto!important;
+  min-height:138px!important;
+  aspect-ratio:auto!important;
+  padding:10px!important;
+  overflow:hidden!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  border-radius:15px!important;
+  background:linear-gradient(155deg,rgba(18,22,34,.92),rgba(7,10,18,.98))!important;
 }
 #screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces{
-  width:142px!important;
-  max-width:none!important;
+  position:relative!important;
+  display:block!important;
+  width:100%!important;
+  max-width:116px!important;
   height:104px!important;
   aspect-ratio:auto!important;
-  align-self:center!important;
-  justify-self:center!important;
-  margin:auto!important;
-  transform:scale(.62)!important;
-  transform-origin:center center!important;
+  margin:0 auto!important;
+  transform:none!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces>span{
+  width:50px!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces>.black{
+  left:0!important;
+  top:34px!important;
+  transform:none!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces>.white{
+  right:0!important;
+  top:5px!important;
+  transform:none!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces>.king{
+  left:50%!important;
+  bottom:0!important;
+  transform:translateX(-50%)!important;
+}
+
+/* Exact Store effect card size. The loaded Store CSS owns all board cells,
+   checker coordinates, trails, impacts, crown and final centering. */
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]{
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border:0!important;
+  border-radius:18px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  cursor:default!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .store-v2-mini-checkers-effect{
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:block!important;
+  width:100%!important;
+  max-width:none!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1!important;
+  overflow:hidden!important;
+  border-radius:18px!important;
+  transform:none!important;
+  isolation:isolate!important;
 }
 
 /* Chess Profile cards: center the media box and the actual board/piece/effect primitive
@@ -131,16 +203,6 @@
   margin-left:auto!important;
   margin-right:auto!important;
   transform:none!important;
-}
-
-@media (max-width:360px){
-  #screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"]{
-    height:69px!important;
-    min-height:69px!important;
-  }
-  #screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces{
-    transform:scale(.56)!important;
-  }
 }
 
 @media (prefers-reduced-motion:reduce){
