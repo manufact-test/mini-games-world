@@ -69,6 +69,37 @@
   animation:none!important;
 }
 
+/* Device QA: the old generic Profile rule still owns a fixed 76px card height.
+   On Checkers this wins during first paint in Telegram WebView and stretches the
+   8x8 Store primitives into a wide strip. Reassert one square Profile-card media
+   box as the final owner. Sheet previews are intentionally untouched. */
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"]{
+  width:100%!important;
+  max-width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1 / 1!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board,
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .store-v2-mini-checkers-effect{
+  width:100%!important;
+  max-width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1 / 1!important;
+  align-self:center!important;
+  justify-self:center!important;
+  transform:none!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces{
+  align-self:center!important;
+  justify-self:center!important;
+  margin:auto!important;
+}
+
 /* Chess Profile cards: center the media box and the actual board/piece/effect primitive
    independently so Store-specific sizing cannot leave the artwork several pixels off-axis. */
 #screen-profile .profile-v2-game-panel[data-profile-game-panel="chess"] .profile-v2-game-card[data-profile-game-cosmetic^="game-chess-"] .store-v2-game-preview[data-game-type="chess"]{
