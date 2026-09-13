@@ -36,9 +36,28 @@ jobs:
                 cssResponses.push({ status:response.status(), url:response.url(), type:response.headers()['content-type'] || '' });
               }
             });
-            await page.goto(process.env.ORIGIN + '/app/v110.php?v=1127&diag=real-flight-c9e83d54', { waitUntil:'domcontentloaded', timeout:60000 });
-            await page.waitForTimeout(900);
+
+            /* Use a tiny static same-origin asset instead of the full Telegram app
+               bootstrap. The official staging E2E has already verified deployment;
+               this probe only needs the deployed Checkers module/CSS chain. */
+            const staticUrl = process.env.ORIGIN + '/app/assets/js/checkers-cosmetics/renderer-real-flight-cascade-v1.js?v=1&probe=' + Date.now();
+            await page.goto(staticUrl, { waitUntil:'commit', timeout:30000 });
+            await page.waitForTimeout(250);
+
             const result = await page.evaluate(async () => {
+              document.head.innerHTML = '';
+              document.body.innerHTML = '';
+
+              const baseCss = document.createElement('link');
+              baseCss.rel = 'stylesheet';
+              baseCss.href = '/app/assets/css/games/checkers/game.css?v=64&checkers=pre-b94d-exact-restore-v1&diag=' + Date.now();
+              document.head.appendChild(baseCss);
+              await new Promise(resolve => {
+                baseCss.addEventListener('load', resolve, { once:true });
+                baseCss.addEventListener('error', resolve, { once:true });
+                setTimeout(resolve, 3000);
+              });
+
               const mod = await import('/app/assets/js/checkers-cosmetics/renderer-real-flight-cascade-v1.js?v=1&mvp19_6=real-piece-flight-cascade-v1&diag=' + Date.now());
               const host = document.createElement('div');
               host.style.cssText = 'position:fixed;left:0;top:0;width:390px;height:844px;z-index:99999;padding:16px;box-sizing:border-box;background:#090d16';
