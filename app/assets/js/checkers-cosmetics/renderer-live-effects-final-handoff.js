@@ -3,7 +3,7 @@ import {
   checkersMeta,
   checkersPlayerMark,
   checkersStatus,
-} from './renderer-live-effects-v1.js?v=9&mvp19_6=runtime-smoothing-v9&pieces=king-brand-v3&events=move-through-capture-v4&landing=exact-live-centers-v2&grid_rows=equal-v1&selection=geometry-neutral-v1&last_from=flat-v1&legend=stable-paint-v1&mobile=insets-v1&promotion=authoritative-only-v1';
+} from './renderer-live-effects-v1.js?v=11&mvp19_6=runtime-smoothing-v11&pieces=king-brand-v3&events=move-through-capture-v4&landing=direct-box-flight-v4&grid_rows=equal-v1&selection=geometry-neutral-v1&last_from=flat-v1&legend=stable-paint-v1&mobile=insets-v1&promotion=authoritative-only-v1';
 
 export { checkersMeta, checkersPlayerMark, checkersStatus };
 
