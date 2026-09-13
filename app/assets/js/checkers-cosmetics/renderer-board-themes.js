@@ -5,10 +5,6 @@ import {
   checkersStatus,
 } from '../games/checkers/renderer.js?v=57&base=mvp16-accepted';
 
-const PROMOTION_QA_EVERY_MOVE = true;
-const PROMOTION_QA_CONFIRM_MS = 2800;
-const promotionQaWindows = new Map();
-
 ensureCheckersCosmeticStyles();
 
 export { checkersMeta, checkersPlayerMark, checkersStatus };
@@ -17,23 +13,12 @@ export function renderCheckersSurface({ game, me, container, onAction }){
   renderBaseCheckersSurface({ game, me, container, onAction });
   container.dataset.checkersTheme = checkersBoardVariant(game, me);
 
-  // Temporary staging-only manual-QA aid: when Promotion is equipped, let the
-  // next ordinary move exercise the promotion presentation without changing
-  // the real game state. The mutation lives only for this synchronous render
-  // handoff and is restored in the following microtask.
-  const restorePromotionQa = armPromotionQaPresentation(game, me);
-
   queueMicrotask(() => {
-    try {
-      // The paid mover is a detached fixed overlay while the authoritative
-      // checker already exists (hidden) in the destination cell. Measure that
-      // real destination checker after the live owner has rendered and bind the
-      // overlay endpoint + size to its exact DOM geometry. This removes the last
-      // sub-pixel/percentage handoff snap instead of guessing from cell geometry.
-      syncExactLiveLanding(container);
-    } finally {
-      restorePromotionQa?.();
-    }
+    // The paid mover is a detached fixed overlay while the authoritative
+    // checker already exists (hidden) in the destination cell. Measure that
+    // real destination checker after the live owner has rendered and bind the
+    // overlay endpoint + size to its exact DOM geometry.
+    syncExactLiveLanding(container);
   });
 }
 
@@ -44,68 +29,6 @@ function checkersBoardVariant(game, me){
   const itemId = slots && typeof slots === 'object' ? String(slots.game_checkers_theme || '') : '';
   const marker = 'game-checkers-board-';
   return itemId.startsWith(marker) ? itemId.slice(marker.length) : 'base';
-}
-
-function armPromotionQaPresentation(game, me){
-  if (!PROMOTION_QA_EVERY_MOVE || !game || typeof game !== 'object') return null;
-
-  const players = Array.isArray(game?.players) ? game.players : [];
-  const viewer = players.find(player => String(player?.id || '') === String(me?.id || '')) || null;
-  const slots = viewer?.game_cosmetics?.slots;
-  const effectSlot = 'game_checkers_' + 'effect';
-  const effectId = slots && typeof slots === 'object' ? String(slots[effectSlot] || '') : '';
-  const gameKey = String(game?.id || 'local-checkers');
-
-  if (effectId !== 'game-checkers-effect-promotion') {
-    promotionQaWindows.delete(gameKey);
-    return null;
-  }
-
-  const pending = game?.__mgw_v100_pending_action || null;
-  const pendingTo = boardCell(pending?.to);
-  const lastTo = boardCell(game?.last_move?.to);
-  const now = Date.now();
-  let to = null;
-
-  if (pendingTo !== null) {
-    to = pendingTo;
-    promotionQaWindows.set(gameKey, { to, until:now + PROMOTION_QA_CONFIRM_MS });
-  } else {
-    const windowState = promotionQaWindows.get(gameKey) || null;
-    if (!windowState || now > Number(windowState.until || 0) || lastTo !== windowState.to) {
-      if (windowState && now > Number(windowState.until || 0)) promotionQaWindows.delete(gameKey);
-      return null;
-    }
-    to = lastTo;
-  }
-
-  if (to === null || !Array.isArray(game.board)) return null;
-
-  const originalBoard = game.board;
-  const originalLastMove = game.last_move;
-  const originalLastPromotion = game.last_promotion;
-  const qaBoard = [...originalBoard];
-  const piece = String(qaBoard[to] || '');
-
-  if (piece === 'w') qaBoard[to] = 'W';
-  else if (piece === 'b') qaBoard[to] = 'B';
-  else if (!['W','B'].includes(piece)) return null;
-
-  const qaMove = {
-    ...(originalLastMove && typeof originalLastMove === 'object' ? originalLastMove : {}),
-    to,
-    promoted:true,
-  };
-
-  game.board = qaBoard;
-  game.last_move = qaMove;
-  game.last_promotion = to;
-
-  return () => {
-    if (game.board === qaBoard) game.board = originalBoard;
-    if (game.last_move === qaMove) game.last_move = originalLastMove;
-    if (game.last_promotion === to) game.last_promotion = originalLastPromotion;
-  };
 }
 
 function syncExactLiveLanding(container){
@@ -156,12 +79,6 @@ function syncExactLiveLanding(container){
 function numericCssPx(element, property){
   const numeric = Number.parseFloat(element.style.getPropertyValue(property));
   return Number.isFinite(numeric) ? numeric : null;
-}
-
-function boardCell(value){
-  if (value === null || value === undefined || value === '') return null;
-  const numeric = Number(value);
-  return Number.isInteger(numeric) && numeric >= 0 && numeric < 64 ? numeric : null;
 }
 
 function ensureCheckersCosmeticStyles(){
