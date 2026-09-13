@@ -1,3 +1,4 @@
+# branch-only proof; remove before PR
 name: TEMP Checkers real-flight browser proof
 
 on:
