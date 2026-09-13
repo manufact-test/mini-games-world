@@ -6,8 +6,11 @@ import {
 } from './renderer-board-themes.js?v=1&mvp19_6=board-themes&base=accepted-v57';
 
 const LIVE_EFFECT_DURATION_MS = 1880;
+const PENDING_CLAIM_TTL_MS = 12000;
 const liveEffectStates = new Map();
+const pendingEffectClaims = new Map();
 const lastSeenMoveSignatures = new Map();
+const authoritativeBoards = new Map();
 
 ensureLiveCosmeticStyles();
 
@@ -40,23 +43,65 @@ function syncLiveEffect({ game, me, container }){
   const board = container.querySelector('.checkers-board');
   if (!(board instanceof HTMLElement)) return;
 
-  // Checkers has a shared optimistic board model. Its promotion flag treats an
-  // already-crowned king as "promoted", so paid event classification must wait
-  // for the authoritative server snapshot. The board still paints immediately;
-  // only the paid one-shot visual is deferred until the completed move is real.
-  if (game?.__mgw_v100_pending_action) {
-    clearLiveEffect(container);
+  const gameKey = String(game?.id || 'local-checkers');
+  const pendingAction = game?.__mgw_v100_pending_action || null;
+  const now = performance.now();
+
+  if (prefersReducedMotion()) {
+    cancelEffectState(gameKey, container);
+    pendingEffectClaims.delete(gameKey);
+    if (!pendingAction) rememberAuthoritativeBoard(gameKey, game);
     return;
   }
 
-  const gameKey = String(game?.id || 'local-checkers');
+  // Start the visual movement on the optimistic frame so the checker never jumps
+  // to the destination and then replays backwards after the server response.
+  // Event classification still compares against the last authoritative board, so
+  // an already-crowned king can never masquerade as a new promotion.
+  if (pendingAction) {
+    const plan = pendingEffectPlan(game, me, authoritativeBoards.get(gameKey) || null, pendingAction);
+    if (!plan) {
+      cancelEffectState(gameKey, container);
+      return;
+    }
+
+    const pendingSignature = pendingActionSignature(gameKey, plan);
+    let state = liveEffectStates.get(gameKey) || null;
+    if (!state || state.pendingSignature !== pendingSignature) {
+      cancelEffectState(gameKey, container);
+      state = startEffectState({
+        gameKey,
+        signature:`pending:${pendingSignature}`,
+        pendingSignature,
+        moveSignature:'',
+        plan,
+        container,
+        now,
+        source:'pending',
+      });
+      pendingEffectClaims.set(gameKey, {
+        signature:pendingSignature,
+        from:plan.from,
+        to:plan.to,
+        kind:plan.kind,
+        moverId:plan.moverId,
+        expiresAt:Date.now() + PENDING_CLAIM_TTL_MS,
+      });
+    }
+
+    renderLiveEffect(board, container, state);
+    return;
+  }
+
   const moveSignature = lastMoveSignature(game);
 
   // The first snapshot for a mounted/reconnected game is baseline state, not a new
   // event. Recording it here prevents stale paid effects from replaying on reload.
   if (!lastSeenMoveSignatures.has(gameKey)) {
     lastSeenMoveSignatures.set(gameKey, moveSignature);
-    clearLiveEffect(container);
+    cancelEffectState(gameKey, container);
+    pendingEffectClaims.delete(gameKey);
+    rememberAuthoritativeBoard(gameKey, game);
     return;
   }
 
@@ -66,58 +111,89 @@ function syncLiveEffect({ game, me, container }){
     lastSeenMoveSignatures.set(gameKey, moveSignature);
   }
 
-  const now = performance.now();
   let state = liveEffectStates.get(gameKey) || null;
 
-  if (prefersReducedMotion()) {
-    if (state?.timer) clearTimeout(state.timer);
-    liveEffectStates.delete(gameKey);
-    clearLiveEffect(container);
-    return;
-  }
-
   if (isNewMove) {
-    const plan = effectPlan(game, me);
-    if (!plan) {
-      if (state?.timer) clearTimeout(state.timer);
-      liveEffectStates.delete(gameKey);
-      clearLiveEffect(container);
-      return;
+    const claim = consumeMatchingPendingClaim(gameKey, game);
+    if (claim) {
+      // The optimistic animation already represented this exact completed move.
+      // Keep it alive if it is still running, but never restart it on confirmation.
+      if (state?.pendingSignature === claim.signature) {
+        state.source = 'authoritative-confirmed';
+        state.moveSignature = moveSignature;
+      }
+    } else {
+      const plan = effectPlan(game, me);
+      if (!plan) {
+        cancelEffectState(gameKey, container);
+        rememberAuthoritativeBoard(gameKey, game);
+        return;
+      }
+
+      cancelEffectState(gameKey, container);
+      state = startEffectState({
+        gameKey,
+        signature:`authoritative:${moveSignature}:${plan.effectId}:${plan.kind}`,
+        pendingSignature:'',
+        moveSignature,
+        plan,
+        container,
+        now,
+        source:'authoritative',
+      });
     }
-
-    const signature = `${moveSignature}:${plan.effectId}:${plan.kind}`;
-    if (state?.timer) clearTimeout(state.timer);
-    state = startEffectState({ gameKey, signature, moveSignature, plan, container, now });
-  } else if (!state || state.moveSignature !== moveSignature) {
-    clearLiveEffect(container);
+  } else if (!state || (state.moveSignature && state.moveSignature !== moveSignature)) {
+    clearEffectPresentation(container);
+    rememberAuthoritativeBoard(gameKey, game);
     return;
   }
 
-  const elapsed = Math.max(0, now - state.startedAt);
-  if (elapsed >= LIVE_EFFECT_DURATION_MS) {
-    liveEffectStates.delete(gameKey);
-    clearLiveEffect(container);
-    return;
+  state = liveEffectStates.get(gameKey) || state;
+  if (state) {
+    const elapsed = Math.max(0, now - state.startedAt);
+    if (elapsed >= LIVE_EFFECT_DURATION_MS) {
+      finishEffectState(gameKey, state.signature);
+    } else {
+      renderLiveEffect(board, container, state);
+    }
+  } else {
+    clearEffectPresentation(container);
   }
 
-  renderLiveEffect(board, container, state.plan, elapsed);
+  rememberAuthoritativeBoard(gameKey, game);
 }
 
-function startEffectState({ gameKey, signature, moveSignature, plan, container, now }){
+function startEffectState({ gameKey, signature, pendingSignature, moveSignature, plan, container, now, source }){
   const state = {
     signature,
+    pendingSignature,
     moveSignature,
     plan,
-    startedAt: now,
-    timer: window.setTimeout(() => {
-      const active = liveEffectStates.get(gameKey);
-      if (!active || active.signature !== signature) return;
-      liveEffectStates.delete(gameKey);
-      clearLiveEffect(container);
-    }, LIVE_EFFECT_DURATION_MS + 40),
+    source,
+    container,
+    layer:null,
+    startedAt:now,
+    timer:window.setTimeout(() => finishEffectState(gameKey, signature), LIVE_EFFECT_DURATION_MS + 40),
   };
   liveEffectStates.set(gameKey, state);
   return state;
+}
+
+function finishEffectState(gameKey, signature){
+  const active = liveEffectStates.get(gameKey);
+  if (!active || active.signature !== signature) return;
+  if (active.timer) clearTimeout(active.timer);
+  if (active.layer?.isConnected) active.layer.remove();
+  clearEffectPresentation(active.container);
+  liveEffectStates.delete(gameKey);
+}
+
+function cancelEffectState(gameKey, container){
+  const state = liveEffectStates.get(gameKey) || null;
+  if (state?.timer) clearTimeout(state.timer);
+  if (state?.layer?.isConnected) state.layer.remove();
+  liveEffectStates.delete(gameKey);
+  clearEffectPresentation(container || state?.container || null);
 }
 
 function effectPlan(game, me){
@@ -129,11 +205,9 @@ function effectPlan(game, me){
   const players = Array.isArray(game?.players) ? game.players : [];
   const movePlayerId = String(move?.player_id || '');
   const moveSide = normalizedSide(move?.side);
-  const board = Array.from({ length:64 }, (_, index) => String(game?.board?.[index] || ''));
+  const board = boardArray(game);
   const movedPiece = String(board[to] || '');
-  const boardSide = movedPiece.toLowerCase() === 'w'
-    ? 'white'
-    : (movedPiece.toLowerCase() === 'b' ? 'black' : '');
+  const boardSide = sideForPiece(movedPiece);
   const side = moveSide || boardSide;
   const mover = (movePlayerId ? players.find(player => String(player?.id || '') === movePlayerId) : null)
     || (side ? players.find(player => String(player?.side || '') === side) : null)
@@ -154,7 +228,48 @@ function effectPlan(game, me){
 
   if (effectId !== `game-checkers-effect-${kind}`) return null;
 
-  const opponentSide = side === 'black' ? 'white' : 'black';
+  return buildPlan({ players, mover, moverId:movePlayerId, side, effectId, kind, from, to, capturedCell });
+}
+
+function pendingEffectPlan(game, me, previousBoard, action){
+  const from = integerOrNull(action?.from);
+  const to = integerOrNull(action?.to);
+  if (from === null || to === null) return null;
+
+  const players = Array.isArray(game?.players) ? game.players : [];
+  const mover = players.find(player => String(player?.id || '') === String(me?.id || '')) || null;
+  if (!mover) return null;
+
+  const effectId = String(equippedSlots(mover).game_checkers_effect || '');
+  if (!effectId) return null;
+
+  const board = boardArray(game);
+  const beforePiece = String(previousBoard?.[from] || '');
+  const afterPiece = String(board[to] || '');
+  const side = normalizedSide(mover?.side) || sideForPiece(beforePiece) || sideForPiece(afterPiece);
+  const capturedCell = capturedCellFor(game, from, to);
+  const captured = game?.last_move?.capture === true || capturedCell !== null;
+  const promoted = isFreshPromotion(beforePiece, afterPiece);
+  const kind = promoted ? 'promotion' : (captured ? 'capture' : 'move');
+
+  if (effectId !== `game-checkers-effect-${kind}`) return null;
+
+  return buildPlan({
+    players,
+    mover,
+    moverId:String(mover?.id || me?.id || ''),
+    side,
+    effectId,
+    kind,
+    from,
+    to,
+    capturedCell,
+  });
+}
+
+function buildPlan({ players, mover, moverId, side, effectId, kind, from, to, capturedCell }){
+  const safeSide = side === 'black' ? 'black' : 'white';
+  const opponentSide = safeSide === 'black' ? 'white' : 'black';
   const targetPlayer = players.find(player => String(player?.side || '') === opponentSide) || null;
 
   return {
@@ -163,19 +278,30 @@ function effectPlan(game, me){
     from,
     to,
     capturedCell,
-    pieceSide: side === 'black' ? 'black' : 'white',
-    targetSide: opponentSide,
-    pieceStyle: pieceVariantFor(mover),
-    targetStyle: pieceVariantFor(targetPlayer),
+    moverId:String(moverId || mover?.id || ''),
+    pieceSide:safeSide,
+    targetSide:opponentSide,
+    pieceStyle:pieceVariantFor(mover),
+    targetStyle:pieceVariantFor(targetPlayer),
   };
 }
 
-function renderLiveEffect(board, container, plan, elapsed){
-  clearLiveEffect(container);
+function renderLiveEffect(board, container, state){
+  applyEffectMask(board, container, state.plan);
 
+  if (!state.layer?.isConnected) {
+    state.layer = createEffectLayer(board, state.plan);
+    if (!state.layer) return;
+    document.body.appendChild(state.layer);
+  }
+
+  positionEffectLayer(state.layer, board);
+}
+
+function createEffectLayer(board, plan){
   const fromPoint = cellPoint(board, plan.from);
   const toPoint = cellPoint(board, plan.to);
-  if (!fromPoint || !toPoint) return;
+  if (!fromPoint || !toPoint) return null;
 
   const capturePoint = plan.capturedCell === null ? null : cellPoint(board, plan.capturedCell);
   const cellSize = Math.min(fromPoint.size, toPoint.size);
@@ -197,12 +323,14 @@ function renderLiveEffect(board, container, plan, elapsed){
   layer.style.setProperty('--mgw-fx-from-y', `${fromPoint.y}px`);
   layer.style.setProperty('--mgw-fx-to-x', `${toPoint.x}px`);
   layer.style.setProperty('--mgw-fx-to-y', `${toPoint.y}px`);
+  layer.style.setProperty('--mgw-fx-dx', `${pathDx}px`);
+  layer.style.setProperty('--mgw-fx-dy', `${pathDy}px`);
   layer.style.setProperty('--mgw-fx-piece-size', `${pieceSize}px`);
   layer.style.setProperty('--mgw-fx-impact-size', `${impactSize}px`);
   layer.style.setProperty('--mgw-fx-crown-size', `${crownSize}px`);
   layer.style.setProperty('--mgw-fx-crown-font', `${Math.max(24, cellSize * .82)}px`);
   layer.style.setProperty('--mgw-fx-path-height', `${Math.max(6, cellSize * .13)}px`);
-  layer.style.setProperty('--mgw-fx-delay', `-${Math.round(elapsed)}ms`);
+  layer.style.setProperty('--mgw-fx-delay', '0ms');
 
   layer.innerHTML = `
     <span class="mgw-checkers-live-fx-path" style="left:${fromPoint.x}px;top:${fromPoint.y}px;width:${pathDistance}px;transform:translateY(-50%) rotate(${pathAngle}deg)"></span>
@@ -212,18 +340,37 @@ function renderLiveEffect(board, container, plan, elapsed){
     ${plan.kind === 'promotion' ? `<span class="mgw-checkers-live-fx-crown" style="left:${toPoint.x}px;top:${toPoint.y}px">♛</span>` : ''}
   `;
 
+  return layer;
+}
+
+function positionEffectLayer(layer, board){
+  if (!(layer instanceof HTMLElement) || !(board instanceof HTMLElement)) return;
+  const rect = board.getBoundingClientRect();
+  layer.style.left = `${rect.left}px`;
+  layer.style.top = `${rect.top}px`;
+  layer.style.width = `${rect.width}px`;
+  layer.style.height = `${rect.height}px`;
+  layer.style.borderRadius = getComputedStyle(board).borderRadius;
+}
+
+function applyEffectMask(board, container, plan){
+  clearEffectPresentation(container);
+  container.classList.add('mgw-checkers-live-fx-running');
+  container.dataset.mgwCheckersLiveEffect = plan.kind;
+
   const toCell = board.querySelector(`[data-checkers-cell="${plan.to}"]`);
   if (toCell instanceof HTMLElement) toCell.classList.add('mgw-checkers-live-fx-hide-piece');
 
-  container.classList.add('mgw-checkers-live-fx-running');
-  container.dataset.mgwCheckersLiveEffect = plan.kind;
-  board.appendChild(layer);
+  if (plan.kind === 'capture' && plan.capturedCell !== null) {
+    const capturedCell = board.querySelector(`[data-checkers-cell="${plan.capturedCell}"]`);
+    if (capturedCell instanceof HTMLElement) capturedCell.classList.add('mgw-checkers-live-fx-hide-piece');
+  }
 }
 
-function clearLiveEffect(container){
+function clearEffectPresentation(container){
+  if (!(container instanceof HTMLElement)) return;
   container.classList.remove('mgw-checkers-live-fx-running');
   delete container.dataset.mgwCheckersLiveEffect;
-  container.querySelectorAll('.mgw-checkers-live-fx').forEach(node => node.remove());
   container.querySelectorAll('.mgw-checkers-live-fx-hide-piece').forEach(node => node.classList.remove('mgw-checkers-live-fx-hide-piece'));
 }
 
@@ -233,9 +380,9 @@ function cellPoint(board, cellIndex){
   const boardRect = board.getBoundingClientRect();
   const cellRect = cell.getBoundingClientRect();
   return {
-    x: cellRect.left - boardRect.left + cellRect.width / 2,
-    y: cellRect.top - boardRect.top + cellRect.height / 2,
-    size: Math.min(cellRect.width, cellRect.height),
+    x:cellRect.left - boardRect.left + cellRect.width / 2,
+    y:cellRect.top - boardRect.top + cellRect.height / 2,
+    size:Math.min(cellRect.width, cellRect.height),
   };
 }
 
@@ -257,6 +404,62 @@ function capturedCellFor(game, from, to){
   const midRow = Math.round((fromRow + toRow) / 2);
   const midCol = Math.round((fromCol + toCol) / 2);
   return midRow * 8 + midCol;
+}
+
+function consumeMatchingPendingClaim(gameKey, game){
+  const claim = pendingEffectClaims.get(gameKey) || null;
+  if (!claim) return null;
+  if (Date.now() > Number(claim.expiresAt || 0)) {
+    pendingEffectClaims.delete(gameKey);
+    return null;
+  }
+
+  const move = game?.last_move;
+  const from = integerOrNull(move?.from);
+  const to = integerOrNull(move?.to);
+  const moverId = String(move?.player_id || '');
+  const kind = authoritativeMoveKind(game, from, to);
+  const matches = from === claim.from
+    && to === claim.to
+    && kind === claim.kind
+    && (!claim.moverId || !moverId || moverId === claim.moverId);
+
+  if (!matches) return null;
+  pendingEffectClaims.delete(gameKey);
+  return claim;
+}
+
+function authoritativeMoveKind(game, from, to){
+  if (from === null || to === null) return '';
+  const move = game?.last_move;
+  const promotionCell = integerOrNull(game?.last_promotion);
+  if (move?.promoted === true || promotionCell === to) return 'promotion';
+  if (move?.capture === true || capturedCellFor(game, from, to) !== null) return 'capture';
+  return 'move';
+}
+
+function pendingActionSignature(gameKey, plan){
+  return [gameKey, plan.moverId, plan.from, plan.to, plan.kind, plan.effectId].join(':');
+}
+
+function rememberAuthoritativeBoard(gameKey, game){
+  authoritativeBoards.set(gameKey, boardArray(game));
+}
+
+function boardArray(game){
+  return Array.from({ length:64 }, (_, index) => String(game?.board?.[index] || ''));
+}
+
+function isFreshPromotion(beforePiece, afterPiece){
+  return (beforePiece === 'w' && afterPiece === 'W')
+    || (beforePiece === 'b' && afterPiece === 'B');
+}
+
+function sideForPiece(piece){
+  const normalized = String(piece || '').toLowerCase();
+  if (normalized === 'w') return 'white';
+  if (normalized === 'b') return 'black';
+  return '';
 }
 
 function pieceVariantFor(player){
@@ -308,16 +511,16 @@ function ensureLiveCosmeticStyles(){
   if (!document.querySelector('link[data-mgw-checkers-live-pieces]')) {
     const pieceLink = document.createElement('link');
     pieceLink.rel = 'stylesheet';
-    pieceLink.dataset.mgwCheckersLivePieces = 'mvp19-6-store-parity-v1';
-    pieceLink.href = new URL('../../css/games/checkers/live-pieces-store-parity-v1.css?v=1&mvp19_6=store-parity', import.meta.url).href;
+    pieceLink.dataset.mgwCheckersLivePieces = 'mvp19-6-store-parity-v2';
+    pieceLink.href = new URL('../../css/games/checkers/live-pieces-store-parity-v1.css?v=2&mvp19_6=runtime-stable-neon', import.meta.url).href;
     document.head.appendChild(pieceLink);
   }
 
   if (!document.querySelector('link[data-mgw-checkers-live-effects]')) {
     const effectLink = document.createElement('link');
     effectLink.rel = 'stylesheet';
-    effectLink.dataset.mgwCheckersLiveEffects = 'mvp19-6-store-parity-v2';
-    effectLink.href = new URL('../../css/games/checkers/live-effects-store-parity-v1.css?v=2&mvp19_6=store-parity', import.meta.url).href;
+    effectLink.dataset.mgwCheckersLiveEffects = 'mvp19-6-store-parity-v3';
+    effectLink.href = new URL('../../css/games/checkers/live-effects-store-parity-v1.css?v=3&mvp19_6=optimistic-single-flight', import.meta.url).href;
     document.head.appendChild(effectLink);
   }
 }
