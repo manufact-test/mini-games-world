@@ -2,6 +2,7 @@ import fs from 'node:fs';
 
 const checkers = fs.readFileSync('app/assets/js/profile/mgw-profile-checkers-parity.js', 'utf8');
 const layout = fs.readFileSync('app/assets/js/profile/mgw-profile-chess-layout-v2.js', 'utf8');
+const hardSquare = fs.readFileSync('app/assets/js/profile/mgw-profile-checkers-hard-square-v1.js', 'utf8');
 const chess = fs.readFileSync('app/assets/js/profile/mgw-profile-chess-parity.js', 'utf8');
 const api = fs.readFileSync('app/assets/js/api/client.js', 'utf8');
 const css = fs.readFileSync('app/assets/css/screens/profile-game-cosmetics-parity-v1.css', 'utf8');
@@ -69,6 +70,13 @@ expect(layout.includes('profile-game-cosmetics-manual-repair-v3.css?v=4&mvp19_6=
 expect(layout.includes('profile-checkers-store-exact-v2.css?v=1&mvp19_6=board-effect-full-square-v1'), 'Profile wrapper must load the final direct Checkers Store-square owner');
 expect(layout.indexOf('ensureProfileCheckersStoreExactStyles();') > layout.indexOf('ensureProfileGameCosmeticsManualRepairStyles();'), 'final direct Checkers Store-square owner must be appended after older Profile repair styles');
 
+// Device-proof fallback: the active Profile runtime must measure the actual card width and write that exact square size inline with !important.
+expect(layout.includes('mgw-profile-checkers-hard-square-v1.js?v=1&mvp19_6=profile-board-effect-hard-square-v1') && layout.includes('initProfileCheckersHardSquare();'), 'Profile wrapper must load and run the hard-square Checkers fallback');
+expect(hardSquare.includes('getBoundingClientRect().width') && hardSquare.includes("setImportant(preview, 'height', px)") && hardSquare.includes("setImportant(preview, 'min-height', px)"), 'hard-square runtime must measure the rendered card width and force the same pixel height');
+expect(hardSquare.includes('data-cosmetic-layer="theme"') && hardSquare.includes('data-cosmetic-layer="effect"'), 'hard-square runtime must target only Checkers boards and effects');
+expect(hardSquare.includes("setImportant(primitive, 'grid-template-rows', 'repeat(8,minmax(0,1fr))')") && hardSquare.includes("setImportant(board, 'height', '100%')"), 'hard-square runtime must preserve complete 8x8 board/effect geometry inside the forced square');
+expect(!hardSquare.includes('MutationObserver') && hardSquare.includes("addEventListener?.('resize'"), 'hard-square runtime must remain bounded without a permanent DOM observer');
+
 // Store mutations must immediately publish inventory state and then converge through profileV2.
 expect(api.includes('function publishCosmeticInventory(result)'), 'Store API must publish authoritative inventory changes');
 expect(api.includes('Array.isArray(inventory.items)'), 'Store API must project authoritative owned item IDs when the response supplies them');
@@ -105,7 +113,7 @@ expect(manualRepairCss.includes('store-v2-mini-chess-board') && manualRepairCss.
 
 // Runtime graph/caches must point at this exact repair layer while accepted gameplay stays frozen.
 expect(layout.includes("mgw-profile-checkers-parity.js?v=3&mvp19_6=checkers-profile-manual-repair-v3"), 'active Profile wrapper must import the repaired Checkers owner');
-expect(manifest.includes('mgw-profile-chess-layout-v2.js?v=11') && manifest.includes('profile_card_visual=checkers-board-effect-store-exact-v2') && manifest.includes('profile_perf=observer-cycle-v2'), 'manifest must publish the final Checkers board/effect Store-square Profile owner identity');
+expect(manifest.includes('mgw-profile-chess-layout-v2.js?v=12') && manifest.includes('profile_card_visual=checkers-board-effect-store-exact-v2') && manifest.includes('profile_card_runtime=checkers-hard-square-v1') && manifest.includes('profile_perf=observer-cycle-v2'), 'manifest must publish the hard-square Checkers board/effect Profile owner identity');
 expect(manifest.includes('client.js?v=1136') && manifest.includes('profile_inventory=store-sync-v1'), 'manifest must retain Store/Profile inventory synchronization');
 expect(manifest.includes("'./assets/js/games/checkers/renderer.js?v=57' => './assets/js/checkers-cosmetics/renderer-real-flight-cascade-v1.js?v=2&mvp19_6=all-paid-real-flight-v1&parent=single-flight-dom-v2&css=live-effects-v6&move=trail-only-v1'"), 'accepted Checkers gameplay/effect runtime identity must remain frozen');
 expect(chess.includes('const CHESS_PROFILE_ITEMS = Object.freeze({'), 'accepted Chess Profile parity owner must remain present');

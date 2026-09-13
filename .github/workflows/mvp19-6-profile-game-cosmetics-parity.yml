@@ -7,6 +7,7 @@ on:
       - 'app/runtime/client/version-manifest.php'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/profile/mgw-profile-checkers-parity.js'
+      - 'app/assets/js/profile/mgw-profile-checkers-hard-square-v1.js'
       - 'app/assets/js/profile/mgw-profile-chess-layout-v2.js'
       - 'app/assets/css/screens/profile-game-cosmetics-parity-v1.css'
       - 'app/assets/css/screens/profile-game-cosmetics-manual-repair-v3.css'
@@ -41,6 +42,7 @@ jobs:
         run: |
           node --check app/assets/js/api/client.js
           node --check app/assets/js/profile/mgw-profile-checkers-parity.js
+          node --check app/assets/js/profile/mgw-profile-checkers-hard-square-v1.js
           node --check app/assets/js/profile/mgw-profile-chess-layout-v2.js
           php -l app/runtime/client/version-manifest.php
 
