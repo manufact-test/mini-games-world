@@ -96,6 +96,7 @@ jobs:
           grep -F 'applyEffectMask(board, container, state.plan)' "$live_file"
           grep -F 'document.body.appendChild(state.layer)' "$live_file"
           grep -F 'stripBaseTransientAnimations' "$live_file"
+          grep -F 'live-effects-store-parity-v1.css?v=5&mvp19_6=real-piece-flip-exempt-v1' "$live_file"
 
       - name: Compare live Checkers real-piece corrective byte-for-byte
         shell: bash
@@ -125,6 +126,25 @@ jobs:
           grep -F '.checkers-surface .checkers-cell.last-from' "$live_file"
           grep -F 'padding-left:max(12px,env(safe-area-inset-left))!important;' "$live_file"
           grep -F 'padding-right:max(12px,env(safe-area-inset-right))!important;' "$live_file"
+
+      - name: Compare live Checkers effect suppression byte-for-byte
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          local_file='app/assets/css/games/checkers/live-effects-store-parity-v1.css'
+          live_file='/tmp/live-checkers-effects.css'
+          matched=0
+          for attempt in $(seq 1 24); do
+            curl --fail-with-body --silent --show-error \
+              --connect-timeout 10 --max-time 25 \
+              --header 'Cache-Control: no-cache' \
+              "${MGW_STAGING_ORIGIN}/app/assets/css/games/checkers/live-effects-store-parity-v1.css?probe=${GITHUB_SHA}-${attempt}" \
+              --output "$live_file"
+            if cmp -s "$local_file" "$live_file"; then matched=1; break; fi
+            sleep 5
+          done
+          test "$matched" = '1'
+          grep -F '.checkers-cell.move-impact .checkers-piece:not(.mgw-checkers-live-real-move-piece)' "$live_file"
 
       - name: Compare live Store effect preview owners byte-for-byte
         shell: bash
@@ -169,9 +189,11 @@ jobs:
           grep -F 'store-screen-checkers-board-source-wrapper.js?v=5' "$manifest"
           grep -F 'promotion_preview=king-readable-v2' "$manifest"
           grep -F 'renderer-board-themes.js?v=12&mvp19_6=equal-grid-rows-v1' "$manifest"
-          grep -F 'renderer-live-effects-v1.js?v=13&mvp19_6=runtime-smoothing-v13' "$manifest"
+          grep -F 'renderer-live-effects-v1.js?v=14&mvp19_6=runtime-smoothing-v13&cascade=real-flight-v1' "$manifest"
+          grep -F 'renderer-single-flight-v1.js?v=2&mvp19_6=single-flight-dom-v1&real_flight=css-cascade-v1' "$manifest"
           grep -F 'landing=real-piece-flip-final-rect-v2' "$manifest"
           grep -F 'legend=stable-paint-v1' "$manifest"
           grep -F 'grid_rows=equal-v1' "$manifest"
           grep -F 'mvp19_6=checkers-real-piece-flip-v11' "$manifest"
+          grep -F 'real_flight=css-cascade-v1' "$manifest"
           ! grep -F 'renderer-live-effects-final-handoff.js' "$manifest"
