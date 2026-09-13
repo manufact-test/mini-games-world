@@ -1,0 +1,77 @@
+/* Final Profile-only Checkers preview owner.
+   The Store is the visual source of truth. This layer exists only to neutralize
+   the old generic Profile 76/69px preview strip for Checkers board/effect cards.
+   It deliberately does not depend on data-profile-game-panel because that
+   attribute is rewritten while the game tabs switch. */
+
+#screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"],
+#screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]{
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1 / 1!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+#screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{
+  border-radius:8px!important;
+}
+#screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] > .store-v2-mini-checkers-board{
+  box-sizing:border-box!important;
+  display:grid!important;
+  grid-template-columns:repeat(8,minmax(0,1fr))!important;
+  grid-template-rows:repeat(8,minmax(0,1fr))!important;
+  width:100%!important;
+  max-width:none!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1 / 1!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border-radius:8px!important;
+  transform:none!important;
+}
+
+#screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]{
+  border-radius:18px!important;
+  cursor:default!important;
+}
+#screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] > .store-v2-mini-checkers-effect{
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:block!important;
+  width:100%!important;
+  max-width:none!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1 / 1!important;
+  overflow:hidden!important;
+  border-radius:18px!important;
+  transform:none!important;
+  isolation:isolate!important;
+}
+#screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-fx-board{
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  aspect-ratio:1 / 1!important;
+  grid-template-columns:repeat(8,minmax(0,1fr))!important;
+  grid-template-rows:repeat(8,minmax(0,1fr))!important;
+}
+
+/* Keep the checker-set card on the already accepted Store composition. */
+#screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"]{
+  height:auto!important;
+  min-height:138px!important;
+  aspect-ratio:auto!important;
+}
