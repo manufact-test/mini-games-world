@@ -105,3 +105,56 @@ jobs:
           cmp "$local_file" "$live_file"
           grep -F 'max-width:440px;' "$live_file"
           grep -F 'background:linear-gradient(145deg,#d9c8a8,#bea884)' "$live_file"
+
+      - name: Compare live Checkers cosmetics owner byte-for-byte
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          local_file='app/assets/js/checkers-cosmetics/renderer-live-effects-v1.js'
+          live_file='/tmp/live-checkers-cosmetics-owner.js'
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            --header 'Cache-Control: no-cache' \
+            "${MGW_STAGING_ORIGIN}/app/assets/js/checkers-cosmetics/renderer-live-effects-v1.js?probe=${GITHUB_SHA}" \
+            --output "$live_file"
+          echo "local cosmetics owner sha256: $(sha256sum "$local_file" | awk '{print $1}')"
+          echo "live  cosmetics owner sha256: $(sha256sum "$live_file" | awk '{print $1}')"
+          cmp "$local_file" "$live_file"
+          grep -F 'pendingEffectClaims' "$live_file"
+          grep -F 'document.body.appendChild(state.layer)' "$live_file"
+
+      - name: Compare live Checkers piece materials byte-for-byte
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          local_file='app/assets/css/games/checkers/live-pieces-store-parity-v1.css'
+          live_file='/tmp/live-checkers-pieces.css'
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            --header 'Cache-Control: no-cache' \
+            "${MGW_STAGING_ORIGIN}/app/assets/css/games/checkers/live-pieces-store-parity-v1.css?probe=${GITHUB_SHA}" \
+            --output "$live_file"
+          echo "local piece CSS sha256: $(sha256sum "$local_file" | awk '{print $1}')"
+          echo "live  piece CSS sha256: $(sha256sum "$live_file" | awk '{print $1}')"
+          cmp "$local_file" "$live_file"
+          grep -F 'data-checkers-black-piece-style="neon"' "$live_file"
+          grep -F '#69efff' "$live_file"
+          grep -F '#e5cbff' "$live_file"
+
+      - name: Compare live Checkers effect presentation byte-for-byte
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          local_file='app/assets/css/games/checkers/live-effects-store-parity-v1.css'
+          live_file='/tmp/live-checkers-effects.css'
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            --header 'Cache-Control: no-cache' \
+            "${MGW_STAGING_ORIGIN}/app/assets/css/games/checkers/live-effects-store-parity-v1.css?probe=${GITHUB_SHA}" \
+            --output "$live_file"
+          echo "local effect CSS sha256: $(sha256sum "$local_file" | awk '{print $1}')"
+          echo "live  effect CSS sha256: $(sha256sum "$live_file" | awk '{print $1}')"
+          cmp "$local_file" "$live_file"
+          grep -F 'position:fixed;' "$live_file"
+          grep -F 'var(--mgw-fx-dx)' "$live_file"
+          grep -F 'var(--mgw-fx-dy)' "$live_file"
