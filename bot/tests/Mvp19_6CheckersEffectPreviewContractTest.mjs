@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 
 const css = fs.readFileSync('app/assets/css/games/checkers/store-effects-live-board-v1.css', 'utf8');
 const wrapper = fs.readFileSync('app/assets/js/screens/store-screen-checkers-wrapper.js', 'utf8');
+const sourceWrapper = fs.readFileSync('app/assets/js/screens/store-screen-checkers-board-source-wrapper.js', 'utf8');
 const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 const gameCss = fs.readFileSync('app/assets/css/games/checkers/game.css', 'utf8');
 const liveWrapperPath = 'app/assets/js/checkers-cosmetics/renderer-live-effects-v1.js';
@@ -18,8 +19,9 @@ function ok(value, label){
   console.log(`PASS ${label}`);
 }
 
-ok(manifest.includes('store-screen-checkers-wrapper.js?v=4') && manifest.includes('mvp19_6=visual-corrective-v3') && manifest.includes('effects_live_board=v1'), 'active Store route keeps accepted Checkers wrapper and cache-busts effect corrective');
-ok(wrapper.includes('store-effects-live-board-v1.css?v=2&mvp19_6=effects-live-board-only'), 'accepted Checkers wrapper loads cache-busted effects stylesheet');
+ok(manifest.includes('store-screen-checkers-board-source-wrapper.js?v=3') && manifest.includes('promotion_preview=destination-parity-v1'), 'active Store route cache-busts the Promotion destination-parity corrective');
+ok(wrapper.includes('store-effects-live-board-v1.css?v=2&mvp19_6=effects-live-board-only'), 'accepted Checkers wrapper remains intact beneath the outer cache-bust owner');
+ok(sourceWrapper.includes('store-effects-live-board-v1.css?v=3&mvp19_6=promotion-destination-parity-v1'), 'outer Checkers Store owner forces the fresh effect stylesheet after accepted wrapper setup');
 ok(wrapper.includes('runBoundedEffectPreview'), 'existing bounded finite replay owner preserved');
 ok(wrapper.includes("preview.classList.add('is-previewing')"), 'existing effect replay trigger preserved');
 ok(wrapper.includes("from './store-screen-intent-wrapper.js?v=19&mvp19_6=accepted-base-preserved';"), 'accepted Store owner chain remains intact');
@@ -28,9 +30,14 @@ ok(css.includes('linear-gradient(145deg,#d9c8a8,#bea884)'), 'effect preview uses
 ok(css.includes('linear-gradient(145deg,#5d4b58,#3c3343)'), 'effect preview uses live dark-square material');
 ok(gameCss.includes('linear-gradient(145deg,#d9c8a8,#bea884)'), 'live Checkers light-square source matches');
 ok(gameCss.includes('linear-gradient(145deg,#5d4b58,#3c3343)'), 'live Checkers dark-square source matches');
+ok(css.includes('grid-template-rows:repeat(8,minmax(0,1fr))'), 'Store effect preview owns a true equal-row 8x8 grid');
 ok(css.includes('width:9%!important'), 'effect checker uses live 72%-of-cell geometry');
 ok(css.includes('linear-gradient(145deg,#f7f5ee,#c8c5bd)'), 'effect white checker uses live material');
 ok(css.includes('linear-gradient(145deg,#313a51,#111827)'), 'capture target uses live black checker material');
+ok(css.includes('.checkers-store-fx-promotion .from{left:56.25%;top:31.25%}'), 'Promotion moving checker starts on the intended source square');
+ok(!css.includes('.checkers-store-fx-promotion .from{left:56.25%!important') && !css.includes('.checkers-store-fx-move .from{left:31.25%!important') && !css.includes('.checkers-store-fx-capture .from{left:18.75%!important'), 'animated source coordinates are not pinned by important declarations that outrank CSS animations');
+ok(css.includes('.checkers-store-fx-promotion .checkers-fx-impact{left:68.75%!important;top:18.75%!important;width:12.5%') && css.includes('.checkers-store-fx-promotion .checkers-fx-crown{left:68.75%!important;top:18.75%!important;width:12.5%'), 'Promotion crown and ring share one exact destination center and one-cell outer geometry');
+ok(css.includes('font-size:11px') && css.includes('font-size:clamp(14px,4vw,22px)'), 'Promotion crown stays readable without viewport-sized overflow in small Store cards');
 
 ok(css.includes('@keyframes mgw-live-board-move'), 'move animation exists');
 ok(css.includes('@keyframes mgw-live-board-capture'), 'capture animation exists');
@@ -59,10 +66,11 @@ ok(livePieceCss.includes('.checkers-piece.king > b::after') && livePieceCss.incl
 
 ok(!boardThemeWrapper.includes('syncExactLiveLanding'), 'board-theme wrapper no longer retargets the paid checker from transient destination-piece geometry');
 ok(!boardThemeWrapper.includes('getBoundingClientRect'), 'board-theme wrapper cannot introduce a second DOM geometry owner for landing');
-ok(boardThemeWrapper.includes('real 8x8 cell rects') && boardThemeWrapper.includes('stable across optimistic -> authoritative rerenders'), 'landing contract explicitly keeps cell centers as the single geometry owner');
+ok(boardThemeWrapper.includes('eight equal') && boardThemeWrapper.includes('optimistic arrival') && boardThemeWrapper.includes('authoritative handoff'), 'landing contract now identifies equal grid rows as the stable geometry owner');
 ok(boardThemeWrapper.includes('container.dataset.mgwCheckersPaidEffect'), 'viewer paid-effect state survives frozen selection rerenders on the surface');
-ok(boardThemeWrapper.includes('runtime-handoff-mobile-v1.css?v=2'), 'board-theme owner loads the cache-busted cell/landing corrective stylesheet');
+ok(boardThemeWrapper.includes('runtime-handoff-mobile-v1.css?v=3') && boardThemeWrapper.includes('landing=stable-row-centers-v1'), 'board-theme owner loads the fresh equal-row handoff corrective stylesheet');
 
+ok(runtimeCorrectiveCss.includes('.checkers-surface .checkers-board') && runtimeCorrectiveCss.includes('grid-template-rows:repeat(8,minmax(0,1fr))!important;'), 'live Checkers board has eight explicit equal rows so piece occupancy cannot move cell centers');
 ok(runtimeCorrectiveCss.includes('data-mgw-checkers-paid-effect="1"') && runtimeCorrectiveCss.includes('.checkers-cell.selected .checkers-piece'), 'paid Checkers selection no longer changes the checker physical diameter');
 ok(runtimeCorrectiveCss.includes('transform:none!important;'), 'corrective neutralizes selected/hidden transform geometry at handoff');
 ok(runtimeCorrectiveCss.includes('transition:none!important;'), 'hidden authoritative checker cannot run its own transform transition during reveal');
@@ -82,7 +90,7 @@ ok(liveWrapper.includes('stripBaseTransientAnimations'), 'paid-effect handoff co
 ok(liveWrapper.includes("node.classList.remove('move-impact')") && liveWrapper.includes("node.classList.remove('promotion-flash')"), 'post-landing base move/promotion twitch is explicitly removed');
 ok(liveWrapper.includes('document.body.appendChild(state.layer)'), 'effect layer survives board innerHTML rerenders');
 ok(liveWrapper.includes('state.layer?.isConnected'), 'poll rerenders reuse the same live effect node instead of restarting it');
-ok(liveWrapper.includes('function cellPoint') && liveWrapper.includes('cellRect.left - boardRect.left + cellRect.width / 2') && liveWrapper.includes('cellRect.top - boardRect.top + cellRect.height / 2'), 'paid checker from/to positions are owned by actual cell centers');
+ok(liveWrapper.includes('function cellPoint') && liveWrapper.includes('cellRect.left - boardRect.left + cellRect.width / 2') && liveWrapper.includes('cellRect.top - boardRect.top + cellRect.height / 2'), 'paid checker from/to positions remain owned by actual cell centers');
 
 ok(liveEffectCss.includes('position:fixed'), 'single-flight live effect layer is detached from the rerendered board subtree');
 ok(liveEffectCss.includes('box-sizing:border-box'), 'live overlay piece uses the same border-box geometry as the real checker');
@@ -93,7 +101,7 @@ ok(liveEffectCss.includes('.mgw-checkers-live-fx-move.mgw-checkers-live-fx-event
 ok(liveEffectCss.includes('.mgw-checkers-live-fx-crown::after') && liveEffectCss.includes('content:"MG"'), 'promotion overlay uses the same crown plus MG identity');
 ok(liveEffectCss.includes('pointer-events:none'), 'live effect layer leaves board hit targets untouched');
 ok(liveEffectCss.includes('@media (prefers-reduced-motion:reduce)'), 'live effects preserve reduced-motion handling');
-ok(manifest.includes('renderer-board-themes.js?v=5&mvp19_6=cell-center-handoff-v1') && manifest.includes('renderer-live-effects-v1.js?v=8&mvp19_6=runtime-smoothing-v8') && manifest.includes('landing=cell-center-handoff-v1') && manifest.includes('selection=geometry-neutral-v1') && manifest.includes('last_from=flat-v1') && manifest.includes('mobile=insets-v1'), 'active Checkers import map cache-busts stable cell-center landing and flat last-from runtime');
+ok(manifest.includes('renderer-board-themes.js?v=6&mvp19_6=equal-grid-rows-v1') && manifest.includes('renderer-live-effects-v1.js?v=9&mvp19_6=runtime-smoothing-v9') && manifest.includes('landing=stable-row-centers-v1') && manifest.includes('grid_rows=equal-v1') && manifest.includes('selection=geometry-neutral-v1') && manifest.includes('last_from=flat-v1') && manifest.includes('mobile=insets-v1'), 'active Checkers import map cache-busts equal-row landing geometry and the preserved handoff correctives');
 ok(manifest.includes('promotion=authoritative-only-v1'), 'Promotion remains authoritative-only after the temporary QA shortcut removal');
 
 console.log('MVP-19.6 Checkers effect preview + live parity contract passed.');

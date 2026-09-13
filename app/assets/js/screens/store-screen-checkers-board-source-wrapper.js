@@ -6,23 +6,33 @@ import {
 
 ensureBoardSourceParityStyles();
 ensureBoardCardRadiusStyles();
+ensureEffectPreviewStyles();
 
 export function initStoreScreen(){
   ensureBoardSourceParityStyles();
   ensureBoardCardRadiusStyles();
-  return initAcceptedCheckersStore();
+  ensureEffectPreviewStyles();
+  const result = initAcceptedCheckersStore();
+  ensureEffectPreviewStyles();
+  return result;
 }
 
 export async function openStoreTab(){
   ensureBoardSourceParityStyles();
   ensureBoardCardRadiusStyles();
-  return openAcceptedCheckersStoreTab();
+  ensureEffectPreviewStyles();
+  const result = await openAcceptedCheckersStoreTab();
+  ensureEffectPreviewStyles();
+  return result;
 }
 
 export async function openStoreSheet(){
   ensureBoardSourceParityStyles();
   ensureBoardCardRadiusStyles();
-  return openAcceptedCheckersStoreSheet();
+  ensureEffectPreviewStyles();
+  const result = await openAcceptedCheckersStoreSheet();
+  ensureEffectPreviewStyles();
+  return result;
 }
 
 function ensureBoardSourceParityStyles(){
@@ -49,6 +59,21 @@ function ensureBoardCardRadiusStyles(){
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.dataset.mgwCheckersStoreBoardCardRadius = 'mvp19-6-store-card-radius-v1';
+  link.href = href;
+  document.head.appendChild(link);
+}
+
+function ensureEffectPreviewStyles(){
+  const href = new URL('../../css/games/checkers/store-effects-live-board-v1.css?v=3&mvp19_6=promotion-destination-parity-v1', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-checkers-store-effects-live-board]');
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    existing.dataset.mgwCheckersStoreEffectsLiveBoard = 'mvp19-6-promotion-destination-parity-v1';
+    return;
+  }
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwCheckersStoreEffectsLiveBoard = 'mvp19-6-promotion-destination-parity-v1';
   link.href = href;
   document.head.appendChild(link);
 }

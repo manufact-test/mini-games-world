@@ -20,6 +20,7 @@
 /* Full real Checkers board look, not the old dark preview board. */
 .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-fx-board{
   position:absolute;inset:0!important;z-index:1;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));
+  grid-template-rows:repeat(8,minmax(0,1fr));
   width:100%!important;height:100%!important;aspect-ratio:1;overflow:hidden;border-radius:18px!important;
   border:2px solid rgba(255,255,255,.1)!important;box-shadow:0 16px 38px rgba(0,0,0,.2)!important;background:#121828!important;
 }
@@ -50,34 +51,40 @@
   box-shadow:0 0 13px rgba(102,239,188,.62);
 }
 .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-fx-impact{
-  position:absolute;z-index:5;width:10%;height:auto;aspect-ratio:1;border-radius:50%;
+  box-sizing:border-box;position:absolute;z-index:5;width:10%;height:auto;aspect-ratio:1;border-radius:50%;
   transform:translate(-50%,-50%) scale(.2);border:2px solid rgba(102,239,188,.86);opacity:0;
   box-shadow:0 0 18px rgba(102,239,188,.54);
 }
 .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-fx-crown{
-  position:absolute;z-index:8;width:9%;aspect-ratio:1;display:grid;place-items:center;border-radius:50%;
+  box-sizing:border-box;position:absolute;z-index:8;width:9%;aspect-ratio:1;display:grid;place-items:center;border-radius:50%;
   transform:translate(-50%,-50%) scale(.55);border:2px solid rgba(255,208,87,.72);color:#ffd86f;
-  font-style:normal;text-decoration:none;font-size:clamp(9px,4vw,22px);line-height:1;font-weight:900;opacity:0;
+  font-style:normal;text-decoration:none;font-size:11px;line-height:1;font-weight:900;opacity:0;
   text-shadow:0 1px 8px rgba(255,195,46,.65);box-shadow:0 0 10px rgba(255,196,52,.25);
 }
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-fx-crown{
+  font-size:clamp(14px,4vw,22px);
+}
 
-/* Legal moves on the same 8×8 coordinate system as the live game. */
-.checkers-store-fx-move .from{left:31.25%!important;top:68.75%!important}
+/* Legal moves on the same 8×8 coordinate system as the live game.
+   Animated source coordinates must stay normal declarations: an !important left/top
+   declaration outranks CSS Animations and was pinning the moving checker at its
+   source while the Promotion crown/ring appeared at the destination. */
+.checkers-store-fx-move .from{left:31.25%;top:68.75%}
 .checkers-store-fx-move .target,.checkers-store-fx-move .checkers-fx-crown{display:none!important}
 .checkers-store-fx-move .checkers-fx-path{left:31.25%;top:68.75%;width:17.68%;transform:rotate(-45deg)}
 .checkers-store-fx-move .checkers-fx-impact{left:43.75%!important;top:56.25%!important}
 
-.checkers-store-fx-capture .from{left:18.75%!important;top:81.25%!important}
+.checkers-store-fx-capture .from{left:18.75%;top:81.25%}
 .checkers-store-fx-capture .target{left:31.25%!important;top:68.75%!important}
 .checkers-store-fx-capture .checkers-fx-path{left:18.75%;top:81.25%;width:35.36%;transform:rotate(-45deg);background:linear-gradient(90deg,rgba(255,190,77,0),#ffc15d 52%,rgba(255,84,84,.05));box-shadow:0 0 13px rgba(255,174,73,.68)}
 .checkers-store-fx-capture .checkers-fx-impact{left:31.25%!important;top:68.75%!important;border-color:#ffd26b;box-shadow:0 0 18px rgba(255,186,74,.58)}
 .checkers-store-fx-capture .checkers-fx-crown{display:none!important}
 
-.checkers-store-fx-promotion .from{left:56.25%!important;top:31.25%!important}
+.checkers-store-fx-promotion .from{left:56.25%;top:31.25%}
 .checkers-store-fx-promotion .target{display:none!important}
 .checkers-store-fx-promotion .checkers-fx-path{left:56.25%;top:31.25%;width:17.68%;transform:rotate(-45deg);background:linear-gradient(90deg,rgba(255,225,119,0),#ffe177 55%,rgba(255,190,55,.05));box-shadow:0 0 13px rgba(255,214,90,.6)}
-.checkers-store-fx-promotion .checkers-fx-impact{left:68.75%!important;top:18.75%!important;border-color:#ffe177;box-shadow:0 0 20px rgba(255,214,90,.65)}
-.checkers-store-fx-promotion .checkers-fx-crown{left:68.75%!important;top:18.75%!important}
+.checkers-store-fx-promotion .checkers-fx-impact{left:68.75%!important;top:18.75%!important;width:12.5%;border-color:#ffe177;box-shadow:0 0 20px rgba(255,214,90,.65)}
+.checkers-store-fx-promotion .checkers-fx-crown{left:68.75%!important;top:18.75%!important;width:12.5%}
 
 /* One readable finite demo per wrapper cycle (wrapper resets at 1.9s). */
 .store-v2-game-preview.is-previewing .checkers-store-fx-move .from{animation:mgw-live-board-move 1.78s cubic-bezier(.22,.72,.2,1) both}
