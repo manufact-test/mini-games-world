@@ -41,36 +41,36 @@
   transition:none!important;
 }
 
-/* Final live move handoff: the remaining real-device nudge is no longer treated as
-   a coordinate problem. The flying checker used a translated compositor surface
-   all the way through its final hold, while the revealed board checker is painted
-   untransformed by CSS Grid. On fractional device pixels those two raster paths can
-   differ by a pixel or two even when their DOM centres are identical.
+/* Final live move handoff, v2.
+   Previous fixes retargeted --mgw-fx-to-x/y after the overlay animation had already
+   been created. Chromium/WebView may snapshot custom properties used by animated
+   left/top keyframes, so the running flight could keep the old cell-centre endpoint
+   even though the variables were corrected before reveal.
 
-   For the ordinary paid move effect, animate the overlay's physical top-left box
-   directly from source to the exact hidden-piece destination captured by
-   renderer-board-themes. The final hold therefore has transform:none and the same
-   border-box geometry as the checker that will be revealed. This deliberately does
-   not change capture/promotion timing or gameplay state. */
+   Do not animate the destination coordinates at all. The overlay's physical box is
+   now ALWAYS anchored to the current --mgw-fx-to-x/y, which renderer-board-themes
+   continuously retargets to the hidden settled checker's real DOM box. Only the
+   transform is animated from the source delta to zero. Therefore the 46%-100% hold
+   is literally the same destination box that will be revealed, and late variable
+   correction cannot leave a stale final left/top baked into the animation. */
 .mgw-checkers-live-fx-move .mgw-checkers-live-fx-piece{
-  left:calc(var(--mgw-fx-from-x) - (var(--mgw-fx-piece-size) / 2))!important;
-  top:calc(var(--mgw-fx-from-y) - (var(--mgw-fx-piece-size) / 2))!important;
+  left:calc(var(--mgw-fx-to-x) - (var(--mgw-fx-piece-size) / 2))!important;
+  top:calc(var(--mgw-fx-to-y) - (var(--mgw-fx-piece-size) / 2))!important;
   transform:none!important;
-  will-change:left,top,opacity,filter,box-shadow!important;
-  animation:mgw-checkers-live-direct-box-move 1.78s cubic-bezier(.18,.72,.2,1) both!important;
+  will-change:transform,opacity,filter,box-shadow!important;
+  animation:mgw-checkers-live-destination-anchor-move 1.78s cubic-bezier(.18,.72,.2,1) both!important;
   animation-delay:var(--mgw-fx-delay)!important;
 }
 
-@keyframes mgw-checkers-live-direct-box-move{
+@keyframes mgw-checkers-live-destination-anchor-move{
   0%{
-    left:calc(var(--mgw-fx-from-x) - (var(--mgw-fx-piece-size) / 2));
-    top:calc(var(--mgw-fx-from-y) - (var(--mgw-fx-piece-size) / 2));
-    transform:none;
+    transform:translate(
+      calc(var(--mgw-fx-from-x) - var(--mgw-fx-to-x)),
+      calc(var(--mgw-fx-from-y) - var(--mgw-fx-to-y))
+    );
   }
   46%,100%{
-    left:calc(var(--mgw-fx-to-x) - (var(--mgw-fx-piece-size) / 2));
-    top:calc(var(--mgw-fx-to-y) - (var(--mgw-fx-piece-size) / 2));
-    transform:none;
+    transform:translate(0,0);
   }
 }
 
