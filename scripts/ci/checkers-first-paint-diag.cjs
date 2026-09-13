@@ -4,6 +4,12 @@ const { chromium } = require('playwright');
   const browser = await chromium.launch({ headless:true });
   const page = await browser.newPage({ viewport:{ width:390, height:844 }, reducedMotion:'no-preference' });
   page.on('console', msg => console.log('[browser]', msg.type(), msg.text()));
+  page.on('response', response => {
+    const url = response.url();
+    if (url.includes('runtime-handoff-mobile-v1.css')) {
+      console.log('[css-response]', response.status(), response.headers()['content-type'] || '', url);
+    }
+  });
   await page.goto(process.env.ORIGIN + '/app/v110.php?v=1127&diag=checkers-first-paint', { waitUntil:'domcontentloaded', timeout:60000 });
   await page.waitForTimeout(1000);
 
@@ -47,6 +53,50 @@ const { chromium } = require('playwright');
 
     mod.renderCheckersSurface({ game:base, me, container, onAction });
     await new Promise(resolve => setTimeout(resolve, 600));
+
+    function collectRules(ruleList, bucket, ownerHref, depth = 0){
+      if (!ruleList || depth > 5) return;
+      for (const rule of Array.from(ruleList)) {
+        const text = String(rule.cssText || '');
+        if (text.includes('mgw-checkers-live-real-move-piece') || text.includes('mgw-checkers-live-real-piece-flip')) {
+          bucket.push({ ownerHref, type:rule.type, text:text.slice(0, 1200) });
+        }
+        if (rule.cssRules) {
+          try { collectRules(rule.cssRules, bucket, ownerHref, depth + 1); } catch (_) {}
+        }
+      }
+    }
+
+    const correctiveLink = document.querySelector('link[data-mgw-checkers-runtime-corrective]');
+    const styleSheets = [];
+    const matchedRules = [];
+    for (const sheet of Array.from(document.styleSheets)) {
+      const item = { href:sheet.href || 'inline', disabled:Boolean(sheet.disabled), rules:null, error:'' };
+      try {
+        item.rules = sheet.cssRules.length;
+        collectRules(sheet.cssRules, matchedRules, item.href);
+      } catch (error) {
+        item.error = String(error?.name || error);
+      }
+      if ((item.href || '').includes('checkers') || matchedRules.some(rule => rule.ownerHref === item.href)) {
+        styleSheets.push(item);
+      }
+    }
+
+    const cssProbe = {
+      reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,
+      correctiveLink: correctiveLink ? {
+        href:correctiveLink.href,
+        rel:correctiveLink.rel,
+        media:correctiveLink.media,
+        disabled:Boolean(correctiveLink.disabled),
+        sheetPresent:Boolean(correctiveLink.sheet),
+        dataset:{ ...correctiveLink.dataset },
+      } : null,
+      styleSheets,
+      matchedRules,
+    };
+
     const sourceButton = container.querySelector('[data-checkers-cell="40"][data-checkers-piece]');
     if (!sourceButton) throw new Error('source button missing');
     sourceButton.click();
@@ -88,12 +138,11 @@ const { chromium } = require('playwright');
     await new Promise(requestAnimationFrame); samples.push(snap('raf1'));
     await new Promise(requestAnimationFrame); samples.push(snap('raf2'));
     await new Promise(resolve => setTimeout(resolve, 80)); samples.push(snap('80ms'));
-    await new Promise(resolve => setTimeout(resolve, 220)); samples.push(snap('300ms'));
-    await new Promise(resolve => setTimeout(resolve, 400)); samples.push(snap('700ms'));
-    return samples;
+    return { cssProbe, samples };
   });
 
-  console.log('MGW_CHECKERS_FIRST_PAINT=' + JSON.stringify(result));
+  console.log('MGW_CHECKERS_CSS_PROBE=' + JSON.stringify(result.cssProbe));
+  console.log('MGW_CHECKERS_FIRST_PAINT=' + JSON.stringify(result.samples));
   await browser.close();
 })().catch(error => {
   console.error(error);
