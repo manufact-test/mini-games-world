@@ -41,7 +41,7 @@ function ensureProfileGameCosmeticsRepairStyles(){
 }
 
 function ensureProfileGameCosmeticsManualRepairStyles(){
-  const href = new URL('../../css/screens/profile-game-cosmetics-manual-repair-v3.css?v=1&mvp19_6=device-qa-v3', import.meta.url).href;
+  const href = new URL('../../css/screens/profile-game-cosmetics-manual-repair-v3.css?v=2&mvp19_6=checkers-card-square-v1', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-profile-game-cosmetics-manual-repair-v3]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
