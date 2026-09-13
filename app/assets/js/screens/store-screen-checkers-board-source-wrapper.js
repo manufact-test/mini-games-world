@@ -7,13 +7,16 @@ import {
 ensureBoardSourceParityStyles();
 ensureBoardCardRadiusStyles();
 ensureEffectPreviewStyles();
+ensureEffectFinalCenteringStyles();
 
 export function initStoreScreen(){
   ensureBoardSourceParityStyles();
   ensureBoardCardRadiusStyles();
   ensureEffectPreviewStyles();
+  ensureEffectFinalCenteringStyles();
   const result = initAcceptedCheckersStore();
   ensureEffectPreviewStyles();
+  ensureEffectFinalCenteringStyles();
   return result;
 }
 
@@ -21,8 +24,10 @@ export async function openStoreTab(){
   ensureBoardSourceParityStyles();
   ensureBoardCardRadiusStyles();
   ensureEffectPreviewStyles();
+  ensureEffectFinalCenteringStyles();
   const result = await openAcceptedCheckersStoreTab();
   ensureEffectPreviewStyles();
+  ensureEffectFinalCenteringStyles();
   return result;
 }
 
@@ -30,8 +35,10 @@ export async function openStoreSheet(){
   ensureBoardSourceParityStyles();
   ensureBoardCardRadiusStyles();
   ensureEffectPreviewStyles();
+  ensureEffectFinalCenteringStyles();
   const result = await openAcceptedCheckersStoreSheet();
   ensureEffectPreviewStyles();
+  ensureEffectFinalCenteringStyles();
   return result;
 }
 
@@ -74,6 +81,22 @@ function ensureEffectPreviewStyles(){
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.dataset.mgwCheckersStoreEffectsLiveBoard = 'mvp19-6-promotion-destination-parity-v1';
+  link.href = href;
+  document.head.appendChild(link);
+}
+
+function ensureEffectFinalCenteringStyles(){
+  const href = new URL('../../css/games/checkers/store-effects-final-centering-v1.css?v=1&mvp19_6=legacy-important-immune-v1', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-checkers-store-effect-final-centering]');
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    existing.dataset.mgwCheckersStoreEffectFinalCentering = 'mvp19-6-legacy-important-immune-v1';
+    document.head.appendChild(existing);
+    return;
+  }
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwCheckersStoreEffectFinalCentering = 'mvp19-6-legacy-important-immune-v1';
   link.href = href;
   document.head.appendChild(link);
 }

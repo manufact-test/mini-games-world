@@ -1,0 +1,94 @@
+/* MVP-19.6 final Store effect centering.
+   The older Store corrective still owns source left/top with !important. CSS
+   animations cannot outrank an !important declaration, so the animated checker
+   stayed on its source cell while the crown/impact rendered on the destination.
+
+   Keep those legacy owners untouched and make this final layer structurally immune
+   to them: every moving checker is anchored on its destination with !important,
+   then travels from the source by transform only. Transform percentages are based
+   on the checker itself; one board cell is exactly 1 / .72 = 138.8889% of a 72%
+   checker diameter. Board-border compensation keeps the destination on the real
+   8x8 cell center instead of the outer border box percentage. */
+
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-fx-piece{
+  width:calc(9% - .36px)!important;
+}
+
+/* One-cell move: source 31.25/68.75 -> destination 43.75/56.25. */
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-move .from{
+  left:calc(43.75% + .25px)!important;
+  top:calc(56.25% - .25px)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-move .checkers-fx-impact{
+  left:calc(43.75% + .25px)!important;
+  top:calc(56.25% - .25px)!important;
+}
+
+/* Two-cell capture: source 18.75/81.25 -> destination 43.75/56.25. */
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-capture .from{
+  left:calc(43.75% + .25px)!important;
+  top:calc(56.25% - .25px)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-capture .target,
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-capture .checkers-fx-impact{
+  left:calc(31.25% + .75px)!important;
+  top:calc(68.75% - .75px)!important;
+}
+
+/* Promotion: source 56.25/31.25 -> destination 68.75/18.75. Checker, ring and
+   crown all share the exact same border-corrected destination center. */
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-promotion .from,
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-promotion .checkers-fx-impact,
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-promotion .checkers-fx-crown{
+  left:calc(68.75% - .75px)!important;
+  top:calc(18.75% + 1.25px)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-promotion .checkers-fx-impact,
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-promotion .checkers-fx-crown{
+  width:calc(12.5% - .5px)!important;
+}
+
+.store-v2-game-preview.is-previewing .checkers-store-fx-move .from{
+  animation:mgw-checkers-final-one-cell 1.78s cubic-bezier(.18,.72,.2,1) both!important;
+}
+.store-v2-game-preview.is-previewing .checkers-store-fx-capture .from{
+  animation:mgw-checkers-final-two-cell 1.82s cubic-bezier(.22,.72,.2,1) both!important;
+}
+.store-v2-game-preview.is-previewing .checkers-store-fx-promotion .from{
+  animation:mgw-checkers-final-promotion-piece 1.82s cubic-bezier(.22,.72,.2,1) both!important;
+}
+.store-v2-game-preview.is-previewing .checkers-store-fx-promotion .checkers-fx-crown{
+  animation:mgw-checkers-final-promotion-crown 1.82s ease-out both!important;
+}
+
+@keyframes mgw-checkers-final-one-cell{
+  0%{transform:translate(-188.8889%,88.8889%) scale(1)}
+  46%,100%{transform:translate(-50%,-50%) scale(1)}
+}
+@keyframes mgw-checkers-final-two-cell{
+  0%,16%{transform:translate(-327.7778%,227.7778%) scale(1)}
+  60%,100%{transform:translate(-50%,-50%) scale(1)}
+}
+@keyframes mgw-checkers-final-promotion-piece{
+  0%,16%{transform:translate(-188.8889%,88.8889%) scale(1)}
+  56%,100%{transform:translate(-50%,-50%) scale(1)}
+}
+@keyframes mgw-checkers-final-promotion-crown{
+  0%,58%{opacity:0;transform:translate(-50%,-50%) scale(.42)}
+  72%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}
+  100%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-move .from,
+  .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-capture .from,
+  .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-promotion .from{
+    animation:none!important;
+    transform:translate(-50%,-50%)!important;
+  }
+  .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .checkers-store-fx-promotion .checkers-fx-crown{
+    animation:none!important;
+    opacity:1!important;
+    transform:translate(-50%,-50%) scale(1)!important;
+  }
+}
