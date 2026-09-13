@@ -69,35 +69,45 @@
   animation:none!important;
 }
 
-/* Device QA: the old generic Profile rule still owns a fixed 76px card height.
-   On Checkers this wins during first paint in Telegram WebView and stretches the
-   8x8 Store primitives into a wide strip. Reassert one square Profile-card media
-   box as the final owner. Sheet previews are intentionally untouched. */
+/* Device QA follow-up: Profile cards intentionally use a compact landscape media strip.
+   Keep that accepted card height, but fit the square Checkers primitive by HEIGHT instead
+   of stretching it to the card width. This shows all 8 rows and the full effect board
+   while leaving the larger sheet/modal preview untouched. */
 #screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"]{
   width:100%!important;
   max-width:100%!important;
-  height:auto!important;
-  min-height:0!important;
-  aspect-ratio:1 / 1!important;
+  height:76px!important;
+  min-height:76px!important;
+  aspect-ratio:auto!important;
   display:grid!important;
   place-items:center!important;
   overflow:hidden!important;
 }
 #screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board,
 #screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .store-v2-mini-checkers-effect{
-  width:100%!important;
+  width:auto!important;
   max-width:100%!important;
-  height:auto!important;
+  height:100%!important;
+  max-height:100%!important;
   min-height:0!important;
   aspect-ratio:1 / 1!important;
   align-self:center!important;
   justify-self:center!important;
   transform:none!important;
 }
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"]{
+  padding:4px!important;
+}
 #screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces{
+  width:142px!important;
+  max-width:none!important;
+  height:104px!important;
+  aspect-ratio:auto!important;
   align-self:center!important;
   justify-self:center!important;
   margin:auto!important;
+  transform:scale(.62)!important;
+  transform-origin:center center!important;
 }
 
 /* Chess Profile cards: center the media box and the actual board/piece/effect primitive
@@ -121,6 +131,16 @@
   margin-left:auto!important;
   margin-right:auto!important;
   transform:none!important;
+}
+
+@media (max-width:360px){
+  #screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"]{
+    height:69px!important;
+    min-height:69px!important;
+  }
+  #screen-profile .profile-v2-game-panel[data-profile-game-panel="checkers"] .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces{
+    transform:scale(.56)!important;
+  }
 }
 
 @media (prefers-reduced-motion:reduce){
