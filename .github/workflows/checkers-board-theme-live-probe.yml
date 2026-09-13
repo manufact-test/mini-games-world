@@ -1,0 +1,74 @@
+name: Checkers board-theme live owner probe
+
+on:
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-live-board-theme-owner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+    steps:
+      - name: Checkout exact staging commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Wait for exact staging runtime deployment
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          expected_fingerprint="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
+          ready=0
+          for attempt in $(seq 1 24); do
+            if curl --fail-with-body --silent --show-error \
+              --connect-timeout 10 --max-time 25 \
+              --header 'Accept: application/json' \
+              "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" \
+              --output /tmp/mgw-readiness.json; then
+              ok="$(jq -r '.ok // false' /tmp/mgw-readiness.json)"
+              environment="$(jq -r '.environment // ""' /tmp/mgw-readiness.json)"
+              base_host="$(jq -r '.base_host // ""' /tmp/mgw-readiness.json)"
+              live_fingerprint="$(jq -r '.source_fingerprint_sha256 // ""' /tmp/mgw-readiness.json)"
+              if [[ "$ok" == 'true' && "$environment" == 'staging' && "$base_host" == 'seashell-okapi-889488.hostingersite.com' && "$live_fingerprint" == "$expected_fingerprint" ]]; then
+                ready=1
+                break
+              fi
+            fi
+            sleep 10
+          done
+          test "$ready" = '1'
+
+      - name: Compare live board-theme owner byte-for-byte
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          local_file='app/assets/js/checkers-cosmetics/renderer-board-themes.js'
+          live_file='/tmp/live-checkers-board-theme.js'
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            --header 'Cache-Control: no-cache' \
+            "${MGW_STAGING_ORIGIN}/app/assets/js/checkers-cosmetics/renderer-board-themes.js?probe=${GITHUB_SHA}" \
+            --output "$live_file"
+          echo "local board-theme owner sha256: $(sha256sum "$local_file" | awk '{print $1}')"
+          echo "live  board-theme owner sha256: $(sha256sum "$live_file" | awk '{print $1}')"
+          cmp "$local_file" "$live_file"
+          grep -F "layer.dataset.mgwCheckersLandingLocked === '1'" "$live_file"
+          grep -F "layer.dataset.mgwCheckersLandingLocked = '1'" "$live_file"
+
+      - name: Guard active Checkers cache-bust
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          grep -F 'renderer-board-themes.js?v=3&mvp19_6=landing-lock-v1' app/runtime/client/version-manifest.php
+          grep -F 'renderer-live-effects-v1.js?v=6&mvp19_6=runtime-smoothing-v6' app/runtime/client/version-manifest.php
+          grep -F 'landing=locked-handoff-v2' app/runtime/client/version-manifest.php
+          grep -F 'promotion=authoritative-only-v1' app/runtime/client/version-manifest.php
+          grep -F 'mvp19_6=checkers-handoff-lock-v2' app/runtime/client/version-manifest.php
