@@ -40,6 +40,15 @@ function syncLiveEffect({ game, me, container }){
   const board = container.querySelector('.checkers-board');
   if (!(board instanceof HTMLElement)) return;
 
+  // Checkers has a shared optimistic board model. Its promotion flag treats an
+  // already-crowned king as "promoted", so paid event classification must wait
+  // for the authoritative server snapshot. The board still paints immediately;
+  // only the paid one-shot visual is deferred until the completed move is real.
+  if (game?.__mgw_v100_pending_action) {
+    clearLiveEffect(container);
+    return;
+  }
+
   const gameKey = String(game?.id || 'local-checkers');
   const moveSignature = lastMoveSignature(game);
 
