@@ -37,9 +37,6 @@ jobs:
               }
             });
 
-            /* Use a tiny static same-origin asset instead of the full Telegram app
-               bootstrap. The official staging E2E has already verified deployment;
-               this probe only needs the deployed Checkers module/CSS chain. */
             const staticUrl = process.env.ORIGIN + '/app/assets/js/checkers-cosmetics/renderer-real-flight-cascade-v1.js?v=1&probe=' + Date.now();
             await page.goto(staticUrl, { waitUntil:'commit', timeout:30000 });
             await page.waitForTimeout(250);
@@ -47,6 +44,17 @@ jobs:
             const result = await page.evaluate(async () => {
               document.head.innerHTML = '';
               document.body.innerHTML = '';
+
+              /* Mirror the one import-map redirect that matters for the real-piece
+                 owner. Without this, Hostinger/CDN serves the historical v1 query
+                 object instead of the v12 module used by /app/v110.php. */
+              const origin = location.origin;
+              const legacyBoardThemes = origin + '/app/assets/js/checkers-cosmetics/renderer-board-themes.js?v=1&mvp19_6=board-themes&base=accepted-v57';
+              const activeBoardThemes = origin + '/app/assets/js/checkers-cosmetics/renderer-board-themes.js?v=12&mvp19_6=equal-grid-rows-v1&landing=real-piece-flip-final-rect-v2&legend=stable-paint-v1&mobile=insets-v1&base=accepted-v57';
+              const importMap = document.createElement('script');
+              importMap.type = 'importmap';
+              importMap.textContent = JSON.stringify({ imports:{ [legacyBoardThemes]:activeBoardThemes } });
+              document.head.appendChild(importMap);
 
               const baseCss = document.createElement('link');
               baseCss.rel = 'stylesheet';
