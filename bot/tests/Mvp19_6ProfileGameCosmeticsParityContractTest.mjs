@@ -47,18 +47,19 @@ expect(checkers.includes("checkersDisplayName(item)") && checkers.includes("retu
 expect(store.includes('startPassiveEffectPreview(preview)') && store.includes('runBoundedEffectPreview(preview)'), 'accepted Store passive effect owner must remain intact');
 expect(storeSource.includes('store-effects-live-board-v1.css?v=3&mvp19_6=promotion-destination-parity-v1'), 'Profile parity must target the current accepted Store effect CSS identity');
 
-// Profile cards keep the compact landscape shell, but every Checkers primitive must be fully contained by height.
+// Profile cards must use Store geometry rather than a separate compact Profile rendering.
 expect(css.includes('.profile-v2-game-card{overflow:visible}'), 'Profile card shell must not clip accepted non-Checkers artwork');
 expect(css.includes('store-v2-mini-checkers-board') && css.includes('height:100%!important'), 'base parity must preserve complete Checkers board geometry');
 expect(css.includes('store-v2-mini-checkers-effect') && css.includes('background:transparent!important'), 'Checkers effect card media must use the full board without the old black inset frame');
-expect(css.includes('mgw-checkers-final-one-cell') && css.includes('infinite both!important'), 'visible Profile effect cards must preserve continuous animation without class teardown');
-expect(manualRepairCss.includes(':not(.is-previewing)') && manualRepairCss.includes('animation:none!important'), 'non-visible Profile Checkers effect cards must pause their infinite animations');
-expect(manualRepairCss.includes('height:76px!important') && manualRepairCss.includes('aspect-ratio:auto!important'), 'final Profile owner must keep the accepted compact landscape card media height');
-expect(manualRepairCss.includes('width:auto!important') && manualRepairCss.includes('height:100%!important') && manualRepairCss.includes('aspect-ratio:1 / 1!important'), 'board and effect primitives must fit the card by height and remain square');
-expect(manualRepairCss.includes('store-v2-mini-checkers-pieces') && manualRepairCss.includes('transform:scale(.62)!important'), 'checker-set primitive must be scaled to fit completely inside the compact card preview');
-expect(manualRepairCss.includes('@media (max-width:360px)') && manualRepairCss.includes('height:69px!important'), 'small mobile Profile cards must retain the accepted compact height');
-expect(layout.includes('profile-game-cosmetics-parity-v1.css?v=3&mvp19_6=profile-card-visual-repair-v3'), 'Profile wrapper must cache-bust the repaired parity stylesheet');
-expect(layout.includes('profile-game-cosmetics-manual-repair-v3.css?v=3&mvp19_6=checkers-card-contain-v1'), 'Profile wrapper must load the full-containment Checkers card corrective stylesheet last');
+expect(css.includes('mgw-checkers-final-one-cell') && css.includes('infinite both!important'), 'visible Profile effect cards must preserve the accepted final Store motion without black teardown flashes');
+expect(manualRepairCss.includes(':not(.is-previewing)') && manualRepairCss.includes('animation:none!important'), 'non-visible Profile Checkers effect cards must pause their animations');
+expect(!manualRepairCss.includes('height:76px!important') && !manualRepairCss.includes('height:69px!important'), 'Profile must not reintroduce compact height crops for Checkers previews');
+expect(manualRepairCss.includes('data-cosmetic-layer="theme"') && manualRepairCss.includes('aspect-ratio:1!important') && manualRepairCss.includes('border-radius:8px!important'), 'board cards must use the accepted Store square geometry and Store card radius');
+expect(manualRepairCss.includes('data-cosmetic-layer="effect"') && manualRepairCss.includes('border-radius:18px!important') && manualRepairCss.includes('width:100%!important'), 'effect cards must use the accepted Store full-square geometry');
+expect(manualRepairCss.includes('min-height:138px!important') && manualRepairCss.includes('max-width:116px!important') && manualRepairCss.includes('height:104px!important'), 'checker-set cards must use the accepted Store media and piece composition dimensions');
+expect(manualRepairCss.includes('left:0!important') && manualRepairCss.includes('top:34px!important') && manualRepairCss.includes('right:0!important') && manualRepairCss.includes('top:5px!important'), 'checker-set pieces must reuse accepted Store positions');
+expect(layout.includes('profile-game-cosmetics-parity-v1.css?v=3&mvp19_6=profile-card-visual-repair-v3'), 'Profile wrapper must retain the shared parity stylesheet');
+expect(layout.includes('profile-game-cosmetics-manual-repair-v3.css?v=4&mvp19_6=checkers-store-parity-exact-v1'), 'Profile wrapper must load the exact Store-parity Checkers corrective stylesheet last');
 
 // Store mutations must immediately publish inventory state and then converge through profileV2.
 expect(api.includes('function publishCosmeticInventory(result)'), 'Store API must publish authoritative inventory changes');
@@ -96,7 +97,7 @@ expect(manualRepairCss.includes('store-v2-mini-chess-board') && manualRepairCss.
 
 // Runtime graph/caches must point at this exact repair layer while accepted gameplay stays frozen.
 expect(layout.includes("mgw-profile-checkers-parity.js?v=3&mvp19_6=checkers-profile-manual-repair-v3"), 'active Profile wrapper must import the repaired Checkers owner');
-expect(manifest.includes('mgw-profile-chess-layout-v2.js?v=9') && manifest.includes('profile_card_visual=checkers-contain-preview-v1') && manifest.includes('profile_perf=observer-cycle-v2'), 'manifest must publish the Checkers contained-preview Profile owner identity');
+expect(manifest.includes('mgw-profile-chess-layout-v2.js?v=10') && manifest.includes('profile_card_visual=checkers-store-parity-exact-v1') && manifest.includes('profile_perf=observer-cycle-v2'), 'manifest must publish the exact Store-parity Checkers Profile owner identity');
 expect(manifest.includes('client.js?v=1136') && manifest.includes('profile_inventory=store-sync-v1'), 'manifest must retain Store/Profile inventory synchronization');
 expect(manifest.includes("'./assets/js/games/checkers/renderer.js?v=57' => './assets/js/checkers-cosmetics/renderer-real-flight-cascade-v1.js?v=2&mvp19_6=all-paid-real-flight-v1&parent=single-flight-dom-v2&css=live-effects-v6&move=trail-only-v1'"), 'accepted Checkers gameplay/effect runtime identity must remain frozen');
 expect(chess.includes('const CHESS_PROFILE_ITEMS = Object.freeze({'), 'accepted Chess Profile parity owner must remain present');
