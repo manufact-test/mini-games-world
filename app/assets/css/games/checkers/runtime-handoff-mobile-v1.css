@@ -41,6 +41,27 @@
   transition:none!important;
 }
 
+/* The four tiny legend labels are static UI, yet the base renderer recreates them
+   on every optimistic/authoritative snapshot. Force one paint contract while the
+   wrapper preserves the existing DOM node, so there is no muted-text fade exactly
+   when the paid checker hands off to the real destination piece. */
+.checkers-surface .checkers-legend,
+.checkers-surface.mgw-checkers-live-fx-running .checkers-legend{
+  opacity:1!important;
+  filter:none!important;
+  transform:none!important;
+  transition:none!important;
+  color:var(--muted)!important;
+  isolation:isolate;
+}
+.checkers-surface .checkers-legend span,
+.checkers-surface .checkers-legend b,
+.checkers-surface .checkers-legend i{
+  opacity:1!important;
+  filter:none!important;
+  transition:none!important;
+}
+
 /* The frozen renderer marks the previous origin with a 3px inset shadow. On a
    textured board that reads as if the square itself became smaller and remains
    "broken" after the checker leaves. Keep last-move state semantic-only: never
