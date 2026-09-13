@@ -1,4 +1,4 @@
-/* Profile game-cosmetics parity: bounded Checkers previews + mobile game-tab rail. */
+/* Profile game-cosmetics parity: full Checkers card previews + mobile game-tab rail. */
 
 .profile-v2-game-collection{
   min-width:0;
@@ -53,7 +53,6 @@
   position:absolute;
   top:50%;
   transform:translateY(-51%);
-  color:currentColor;
   color:#dfe8ff;
   font-weight:900;
   line-height:1;
@@ -104,9 +103,11 @@
   min-width:0;
   max-width:100%;
 }
-.profile-v2-game-card{
-  overflow:hidden;
-}
+
+/* Do not clip the already accepted Tic-Tac-Toe / Chess card artwork at the card edge. */
+.profile-v2-game-card{overflow:visible}
+
+/* Checkers Profile cards must show the whole square media, not the old 76px TTT crop. */
 .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"]{
   box-sizing:border-box;
   position:relative;
@@ -114,16 +115,28 @@
   place-items:center;
   width:100%!important;
   max-width:100%!important;
+  height:auto!important;
   min-height:0!important;
-  aspect-ratio:1;
+  aspect-ratio:1!important;
   overflow:hidden!important;
   margin:0!important;
   border-radius:14px;
 }
+.profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"]::before,
+.profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"]::after,
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="checkers"]::before,
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="checkers"]::after{display:none!important}
+
 .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"]{
   padding:0!important;
   border:0!important;
   background:transparent!important;
+}
+.profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"] .store-v2-mini-checkers-board{
+  width:100%!important;
+  max-width:none!important;
+  height:100%!important;
+  transform:none!important;
 }
 .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"]{
   padding:10px!important;
@@ -133,20 +146,65 @@
 .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces{
   position:relative;
   width:min(82%,116px)!important;
+  max-width:116px!important;
   height:auto!important;
   aspect-ratio:1.12;
   transform:none!important;
 }
 .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]{
-  padding:6px!important;
-  border:1px solid rgba(255,255,255,.08)!important;
-  background:#090d16!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
   cursor:default!important;
+}
+.profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .store-v2-mini-checkers-effect{
+  width:100%!important;
+  max-width:none!important;
+  height:auto!important;
+  aspect-ratio:1!important;
+  border-radius:14px;
+  transform:none!important;
 }
 .profile-v2-game-card .profile-v2-game-card-name{
   max-width:100%;
   overflow:hidden;
   text-overflow:ellipsis;
+}
+
+/* Profile effect cards loop continuously without removing/re-adding the animation class.
+   This prevents the Android/WebView black compositor flash between one-shot cycles. */
+#screen-profile .profile-v2-game-card .checkers-store-fx-move .from{
+  animation:mgw-checkers-final-one-cell 1.78s cubic-bezier(.18,.72,.2,1) infinite both!important;
+}
+#screen-profile .profile-v2-game-card .checkers-store-fx-move .checkers-fx-path{
+  animation:mgw-live-board-trail 1.78s ease infinite both!important;
+}
+#screen-profile .profile-v2-game-card .checkers-store-fx-move .checkers-fx-impact{
+  animation:mgw-live-board-move-ring 1.78s ease-out infinite both!important;
+}
+#screen-profile .profile-v2-game-card .checkers-store-fx-capture .from{
+  animation:mgw-checkers-final-two-cell 1.82s cubic-bezier(.22,.72,.2,1) infinite both!important;
+}
+#screen-profile .profile-v2-game-card .checkers-store-fx-capture .target{
+  animation:mgw-live-board-captured 1.82s ease-out infinite both!important;
+}
+#screen-profile .profile-v2-game-card .checkers-store-fx-capture .checkers-fx-path{
+  animation:mgw-live-board-trail 1.82s ease infinite both!important;
+}
+#screen-profile .profile-v2-game-card .checkers-store-fx-capture .checkers-fx-impact{
+  animation:mgw-live-board-capture-burst 1.82s ease-out infinite both!important;
+}
+#screen-profile .profile-v2-game-card .checkers-store-fx-promotion .from{
+  animation:mgw-checkers-final-promotion-piece 1.82s cubic-bezier(.22,.72,.2,1) infinite both!important;
+}
+#screen-profile .profile-v2-game-card .checkers-store-fx-promotion .checkers-fx-path{
+  animation:mgw-live-board-trail 1.82s ease infinite both!important;
+}
+#screen-profile .profile-v2-game-card .checkers-store-fx-promotion .checkers-fx-impact{
+  animation:mgw-live-board-promotion-ring 1.82s ease-out infinite both!important;
+}
+#screen-profile .profile-v2-game-card .checkers-store-fx-promotion .checkers-fx-crown{
+  animation:mgw-checkers-final-promotion-crown 1.82s ease-out infinite both!important;
 }
 
 .profile-v2-game-preview-wrap{
@@ -185,8 +243,13 @@
   background:#090d16!important;
 }
 
+@media (prefers-reduced-motion:reduce){
+  #screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] *{animation:none!important}
+}
+
 @media (max-width:390px){
   .profile-v2-game-tabs{margin-right:0!important;padding-right:8px!important}
   .profile-v2-game-tab{padding-left:10px!important;padding-right:10px!important}
   .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"]{border-radius:12px}
+  .profile-v2-game-card .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"] .store-v2-mini-checkers-effect{border-radius:12px}
 }

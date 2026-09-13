@@ -34,10 +34,18 @@ expect(checkers.includes('store-v2-mini-checkers-board'), 'Profile board cards m
 expect(checkers.includes('store-v2-mini-checkers-pieces'), 'Profile checker-set cards must use Store piece preview structure');
 expect(checkers.includes('store-v2-mini-checkers-effect'), 'Profile effect cards must use Store effect preview structure');
 expect(checkers.includes('mgw-checkers-piece-crown') && checkers.includes('mgw-checkers-piece-mark'), 'Profile king/damka preview must retain accepted crown + MG branding');
-expect(checkers.includes('IntersectionObserver') && checkers.includes('1900') && checkers.includes('260'), 'Profile Checkers effects must use bounded passive Store-style animation');
+expect(checkers.includes('IntersectionObserver') && checkers.includes('1900') && checkers.includes('260'), 'Profile Checkers effects must keep the bounded visibility owner');
 expect(checkers.includes("checkersDisplayName(item)") && checkers.includes("return 'Гранитные шашки'"), 'accepted granite checker presentation must carry into Profile');
 expect(store.includes('startPassiveEffectPreview(preview)') && store.includes('runBoundedEffectPreview(preview)'), 'accepted Store passive effect owner must remain intact');
 expect(storeSource.includes('store-effects-live-board-v1.css?v=3&mvp19_6=promotion-destination-parity-v1'), 'Profile parity must target the current accepted Store effect CSS identity');
+
+// Manual-review corrective: Profile cards must show complete media and must not clip accepted TTT/Chess artwork.
+expect(css.includes('.profile-v2-game-card{overflow:visible}'), 'Profile card shell must not clip accepted non-Checkers artwork');
+expect(css.includes('height:auto!important') && css.includes('aspect-ratio:1!important'), 'Checkers Profile card media must override the old fixed 76px crop with a complete square');
+expect(css.includes('store-v2-mini-checkers-board') && css.includes('height:100%!important'), 'Checkers board cards must render the complete 8x8 board');
+expect(css.includes('store-v2-mini-checkers-effect') && css.includes('background:transparent!important'), 'Checkers effect card media must use the full board without the old black inset frame');
+expect(css.includes('mgw-checkers-final-one-cell') && css.includes('infinite both!important'), 'Profile effect cards must loop without class teardown/compositor black flashes');
+expect(layout.includes('profile-game-cosmetics-parity-v1.css?v=2&mvp19_6=profile-card-visual-repair-v2'), 'Profile wrapper must cache-bust the manual-review card repair stylesheet');
 
 // Store mutations must immediately publish inventory state and then converge through profileV2.
 expect(api.includes('function publishCosmeticInventory(result)'), 'Store API must publish authoritative inventory changes');
@@ -66,7 +74,7 @@ expect(css.includes('content:"♞"'), 'Chess tab must use a readable chess ident
 
 // Runtime graph/caches must point at this exact parity layer while accepted games stay frozen.
 expect(layout.includes("mgw-profile-checkers-parity.js?v=2&mvp19_6=checkers-full-profile-store-parity-v1"), 'active Profile wrapper must import full Checkers parity owner');
-expect(manifest.includes('mgw-profile-chess-layout-v2.js?v=5') && manifest.includes('mvp19_6=checkers-full-profile-store-parity-v1'), 'manifest must publish the new Profile owner identity');
+expect(manifest.includes('mgw-profile-chess-layout-v2.js?v=6') && manifest.includes('profile_card_visual=repair-v2'), 'manifest must publish the repaired Profile owner identity');
 expect(manifest.includes('client.js?v=1136') && manifest.includes('profile_inventory=store-sync-v1'), 'manifest must cache-bust Store/Profile inventory synchronization');
 expect(manifest.includes("'./assets/js/games/checkers/renderer.js?v=57' => './assets/js/checkers-cosmetics/renderer-real-flight-cascade-v1.js?v=2&mvp19_6=all-paid-real-flight-v1&parent=single-flight-dom-v2&css=live-effects-v6&move=trail-only-v1'"), 'accepted Checkers gameplay/effect runtime identity must remain frozen');
 expect(chess.includes('const CHESS_PROFILE_ITEMS = Object.freeze({'), 'accepted Chess Profile parity owner must remain present');
