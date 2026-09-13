@@ -60,11 +60,11 @@ jobs:
           echo "local board-theme owner sha256: $(sha256sum "$local_file" | awk '{print $1}')"
           echo "live  board-theme owner sha256: $(sha256sum "$live_file" | awk '{print $1}')"
           cmp "$local_file" "$live_file"
-          grep -F "layer.dataset.mgwCheckersLandingLocked === '1'" "$live_file"
-          grep -F "layer.dataset.mgwCheckersLandingLocked = '1'" "$live_file"
-          grep -F "layer.dataset.mgwCheckersLandingSizeSource = 'layout-box'" "$live_file"
-          grep -F "container.dataset.mgwCheckersPaidEffect" "$live_file"
-          grep -F "runtime-handoff-mobile-v1.css?v=1" "$live_file"
+          grep -F 'real 8x8 cell rects' "$live_file"
+          ! grep -F 'syncExactLiveLanding' "$live_file"
+          ! grep -F 'getBoundingClientRect' "$live_file"
+          grep -F 'container.dataset.mgwCheckersPaidEffect' "$live_file"
+          grep -F 'runtime-handoff-mobile-v1.css?v=2' "$live_file"
 
       - name: Compare live Checkers handoff/mobile corrective byte-for-byte
         shell: bash
@@ -81,7 +81,8 @@ jobs:
           echo "live  runtime corrective sha256: $(sha256sum "$live_file" | awk '{print $1}')"
           cmp "$local_file" "$live_file"
           grep -F 'data-mgw-checkers-paid-effect="1"' "$live_file"
-          grep -F 'transform:none!important;' "$live_file"
+          grep -F '.checkers-surface .checkers-cell.last-from' "$live_file"
+          grep -F 'box-shadow:none!important;' "$live_file"
           grep -F 'padding-left:max(12px,env(safe-area-inset-left))!important;' "$live_file"
           grep -F 'padding-right:max(12px,env(safe-area-inset-right))!important;' "$live_file"
 
@@ -89,10 +90,11 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          grep -F 'renderer-board-themes.js?v=4&mvp19_6=selection-geometry-v1' app/runtime/client/version-manifest.php
-          grep -F 'renderer-live-effects-v1.js?v=7&mvp19_6=runtime-smoothing-v7' app/runtime/client/version-manifest.php
-          grep -F 'landing=layout-box-handoff-v3' app/runtime/client/version-manifest.php
+          grep -F 'renderer-board-themes.js?v=5&mvp19_6=cell-center-handoff-v1' app/runtime/client/version-manifest.php
+          grep -F 'renderer-live-effects-v1.js?v=8&mvp19_6=runtime-smoothing-v8' app/runtime/client/version-manifest.php
+          grep -F 'landing=cell-center-handoff-v1' app/runtime/client/version-manifest.php
           grep -F 'selection=geometry-neutral-v1' app/runtime/client/version-manifest.php
+          grep -F 'last_from=flat-v1' app/runtime/client/version-manifest.php
           grep -F 'mobile=insets-v1' app/runtime/client/version-manifest.php
           grep -F 'promotion=authoritative-only-v1' app/runtime/client/version-manifest.php
-          grep -F 'mvp19_6=checkers-geometry-neutral-v3' app/runtime/client/version-manifest.php
+          grep -F 'mvp19_6=checkers-cell-center-handoff-v4' app/runtime/client/version-manifest.php
