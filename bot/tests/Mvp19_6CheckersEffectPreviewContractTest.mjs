@@ -7,6 +7,7 @@ const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf
 const gameCss = fs.readFileSync('app/assets/css/games/checkers/game.css', 'utf8');
 const liveWrapperPath = 'app/assets/js/checkers-cosmetics/renderer-live-effects-v1.js';
 const liveWrapper = fs.readFileSync(liveWrapperPath, 'utf8');
+const boardThemeWrapper = fs.readFileSync('app/assets/js/checkers-cosmetics/renderer-board-themes.js', 'utf8');
 const liveEffectCss = fs.readFileSync('app/assets/css/games/checkers/live-effects-store-parity-v1.css', 'utf8');
 const livePieceCss = fs.readFileSync('app/assets/css/games/checkers/live-pieces-store-parity-v1.css', 'utf8');
 
@@ -47,8 +48,14 @@ for (const variant of ['wood','marble','metal','neon']) {
 }
 ok(livePieceCss.includes('data-checkers-white-piece-style="neon"') && livePieceCss.includes('data-checkers-black-piece-style="neon"'), 'neon material survives internal selection rerenders through surface selectors');
 ok(livePieceCss.includes('#69efff') && livePieceCss.includes('#e5cbff'), 'neon live material is visibly cyan/violet instead of black-on-dark');
+ok(livePieceCss.includes('0 0 16px rgba(68,221,255,.58)') && livePieceCss.includes('0 0 16px rgba(190,125,255,.58)'), 'animated Neon clone uses settled checker glow instead of a larger handoff halo');
+ok(!livePieceCss.includes('0 0 20px rgba(68,221,255,.64)') && !livePieceCss.includes('0 0 20px rgba(190,125,255,.64)'), 'legacy oversized Neon overlay glow is removed');
 ok(livePieceCss.includes('.checkers-piece.king > b::before') && livePieceCss.includes('content:"♛"'), 'live king keeps accepted primary crown branding');
 ok(livePieceCss.includes('.checkers-piece.king > b::after') && livePieceCss.includes('content:"MG"'), 'live king restores accepted secondary MG monogram');
+
+ok(boardThemeWrapper.includes("layer.dataset.mgwCheckersLandingLocked === '1'"), 'exact landing geometry is never retargeted after first successful lock');
+ok(boardThemeWrapper.includes("layer.dataset.mgwCheckersLandingLocked = '1'"), 'successful DOM landing measurement marks the compositor endpoint immutable');
+ok(boardThemeWrapper.includes('mgwCheckersLandingX') && boardThemeWrapper.includes('mgwCheckersLandingY') && boardThemeWrapper.includes('mgwCheckersLandingSize'), 'locked landing records deterministic geometry diagnostics');
 
 ok(liveWrapper.includes("if (value === null || value === undefined || value === '') return null;"), 'nullable Checkers event cells can never coerce null into board cell zero');
 ok(liveWrapper.includes('authoritativeBoards'), 'optimistic effect classification retains the previous authoritative board');

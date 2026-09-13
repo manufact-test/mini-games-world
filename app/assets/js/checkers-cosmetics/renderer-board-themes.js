@@ -18,6 +18,10 @@ export function renderCheckersSurface({ game, me, container, onAction }){
     // checker already exists (hidden) in the destination cell. Measure that
     // real destination checker after the live owner has rendered and bind the
     // overlay endpoint + size to its exact DOM geometry.
+    //
+    // IMPORTANT: lock this geometry exactly once per live overlay. Recomputing
+    // the CSS custom properties on every poll/render can move an animation that
+    // has already reached 100%, creating the visible final "hop-hop" correction.
     syncExactLiveLanding(container);
   });
 }
@@ -36,9 +40,10 @@ function syncExactLiveLanding(container){
 
   const layer = [...document.querySelectorAll('.mgw-checkers-live-fx')].at(-1) || null;
   if (!(layer instanceof HTMLElement)) return;
+  if (layer.dataset.mgwCheckersLandingLocked === '1') return;
 
   const destinationPiece = container.querySelector(
-    '.checkers-cell.last-to.mgw-checkers-live-fx-hide-piece .checkers-piece',
+    '.checkers-cell.mgw-checkers-live-fx-hide-piece .checkers-piece',
   );
   const movingPiece = layer.querySelector('.mgw-checkers-live-fx-piece');
   if (!(destinationPiece instanceof HTMLElement) || !(movingPiece instanceof HTMLElement)) return;
@@ -74,6 +79,14 @@ function syncExactLiveLanding(container){
     crown.style.left = `${exactX}px`;
     crown.style.top = `${exactY}px`;
   }
+
+  // Freeze the compositor endpoint after the first successful DOM measurement.
+  // Later polling may rebuild the board, but it must never retarget an animation
+  // that is already sitting on its destination.
+  layer.dataset.mgwCheckersLandingLocked = '1';
+  layer.dataset.mgwCheckersLandingX = exactX.toFixed(3);
+  layer.dataset.mgwCheckersLandingY = exactY.toFixed(3);
+  layer.dataset.mgwCheckersLandingSize = exactSize.toFixed(3);
 }
 
 function numericCssPx(element, property){
