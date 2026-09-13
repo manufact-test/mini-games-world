@@ -86,17 +86,17 @@ function ensureEffectPreviewStyles(){
 }
 
 function ensureEffectFinalCenteringStyles(){
-  const href = new URL('../../css/games/checkers/store-effects-final-centering-v1.css?v=1&mvp19_6=legacy-important-immune-v1', import.meta.url).href;
+  const href = new URL('../../css/games/checkers/store-effects-final-centering-v1.css?v=2&mvp19_6=king-readable-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-checkers-store-effect-final-centering]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwCheckersStoreEffectFinalCentering = 'mvp19-6-legacy-important-immune-v1';
+    existing.dataset.mgwCheckersStoreEffectFinalCentering = 'mvp19-6-king-readable-v2';
     document.head.appendChild(existing);
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwCheckersStoreEffectFinalCentering = 'mvp19-6-legacy-important-immune-v1';
+  link.dataset.mgwCheckersStoreEffectFinalCentering = 'mvp19-6-king-readable-v2';
   link.href = href;
   document.head.appendChild(link);
 }
