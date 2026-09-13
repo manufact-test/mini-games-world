@@ -1,0 +1,117 @@
+name: Checkers deployed real-flight probe
+
+on:
+  push:
+    branches:
+      - agent/mvp19-6-checkers-real-flight-deployed-probe
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Probe deployed Hostinger Checkers flight
+        env:
+          ORIGIN: https://seashell-okapi-889488.hostingersite.com
+        run: |
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch({ headless:true });
+            const page = await browser.newPage({ viewport:{ width:390, height:844 }, reducedMotion:'no-preference' });
+            const cssResponses = [];
+            page.on('response', response => {
+              if (response.url().includes('live-effects-store-parity-v1.css')) {
+                cssResponses.push({ status:response.status(), url:response.url(), type:response.headers()['content-type'] || '' });
+              }
+            });
+            await page.goto(process.env.ORIGIN + '/app/v110.php?v=1127&diag=real-flight-c9e83d54', { waitUntil:'domcontentloaded', timeout:60000 });
+            await page.waitForTimeout(900);
+            const result = await page.evaluate(async () => {
+              const mod = await import('/app/assets/js/checkers-cosmetics/renderer-real-flight-cascade-v1.js?v=1&mvp19_6=real-piece-flight-cascade-v1&diag=' + Date.now());
+              const host = document.createElement('div');
+              host.style.cssText = 'position:fixed;left:0;top:0;width:390px;height:844px;z-index:99999;padding:16px;box-sizing:border-box;background:#090d16';
+              document.body.appendChild(host);
+              const container = document.createElement('div');
+              host.appendChild(container);
+
+              const board = Array(64).fill('');
+              board[40] = 'w';
+              board[17] = 'b';
+              const p1 = { id:'p1', name:'A', side:'white', game_cosmetics:{ slots:{ game_checkers_effect:'game-checkers-effect-move', game_checkers_elements:'game-checkers-pieces-neon' } } };
+              const p2 = { id:'p2', name:'B', side:'black', game_cosmetics:{ slots:{} } };
+              const base = {
+                id:'diag-deployed-real-flight', status:'active', turn:'p1', viewer_side:'white',
+                board, players:[p1,p2], legal_moves:[{ from:40, to:33, capture:false }],
+                capture_required:false, forced_piece:null, pending_captures:[], last_captured_cells:[], last_promotion:null,
+                white_pieces:1, black_pieces:1, white_kings:0, black_kings:0, move_timeout_sec:60,
+              };
+              let active = structuredClone(base);
+              const me = { id:'p1' };
+              const onAction = action => {
+                const optimistic = structuredClone(active);
+                optimistic.board[action.to] = optimistic.board[action.from];
+                optimistic.board[action.from] = '';
+                optimistic.last_move = { from:action.from, to:action.to, capture:false, captured:null, player_id:'p1', promoted:false, chain_continues:false };
+                optimistic.last_promotion = null;
+                optimistic.turn = 'p2';
+                optimistic.legal_moves = [];
+                optimistic.__mgw_v100_pending_action = structuredClone(action);
+                active = optimistic;
+                mod.renderCheckersSurface({ game:optimistic, me, container, onAction });
+              };
+
+              mod.renderCheckersSurface({ game:base, me, container, onAction });
+              await new Promise(resolve => setTimeout(resolve, 500));
+              const source = container.querySelector('[data-checkers-cell="40"][data-checkers-piece]');
+              if (!source) throw new Error('source checker missing');
+              source.click();
+              const target = container.querySelector('[data-checkers-cell="33"][data-checkers-target]');
+              if (!target) throw new Error('target cell missing');
+              target.click();
+              await new Promise(requestAnimationFrame);
+
+              const piece = container.querySelector('[data-checkers-cell="33"] .checkers-piece');
+              if (!piece) throw new Error('destination checker missing');
+              const cs = getComputedStyle(piece);
+              const link = document.querySelector('link[data-mgw-checkers-live-effects]');
+              const rect = piece.getBoundingClientRect();
+              return {
+                animationName:cs.animationName,
+                animationDelay:cs.animationDelay,
+                transform:cs.transform,
+                rect:{ left:rect.left, top:rect.top, width:rect.width, height:rect.height },
+                dx:piece.style.getPropertyValue('--mgw-real-move-dx'),
+                dy:piece.style.getPropertyValue('--mgw-real-move-dy'),
+                animations:piece.getAnimations().map(a => ({ name:a.animationName, playState:a.playState, currentTime:a.currentTime })),
+                cssHref:link?.href || '',
+                cssOwner:link?.dataset?.mgwCheckersLiveEffects || '',
+                realMove:container.dataset.mgwCheckersRealMove || '',
+                overlayPiece:Boolean(document.querySelector('.mgw-checkers-live-fx-piece')),
+              };
+            });
+            console.log('MGW_DEPLOYED_REAL_FLIGHT=' + JSON.stringify({ result, cssResponses }));
+            if (!result.cssHref.includes('v=5') || !result.cssHref.includes('real-piece-flight-cascade-v1')) {
+              throw new Error('deployed live-effects stylesheet is not fresh v5: ' + result.cssHref);
+            }
+            if (result.animationName !== 'mgw-checkers-live-real-piece-flip') {
+              throw new Error('deployed real checker flight is suppressed: ' + result.animationName);
+            }
+            if (!result.animations.some(a => a.name === 'mgw-checkers-live-real-piece-flip' && a.playState === 'running')) {
+              throw new Error('deployed checker has no running FLIP Animation object');
+            }
+            if (!result.dx || !result.dy) throw new Error('deployed checker lost FLIP geometry');
+            await browser.close();
+          })().catch(error => { console.error(error); process.exit(1); });
+          NODE
