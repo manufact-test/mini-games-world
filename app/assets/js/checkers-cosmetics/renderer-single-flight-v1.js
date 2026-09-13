@@ -5,6 +5,8 @@ import {
   checkersStatus,
 } from './renderer-live-effects-v1.js?v=13&mvp19_6=runtime-smoothing-v13&pieces=king-brand-v3&events=move-through-capture-v4&landing=real-piece-flip-final-rect-v2&grid_rows=equal-v1&selection=geometry-neutral-v1&last_from=flat-v1&legend=stable-paint-v1&mobile=insets-v1&promotion=authoritative-only-v1';
 
+ensureRealFlightCascadeStyles();
+
 export { checkersMeta, checkersPlayerMark, checkersStatus };
 
 /*
@@ -35,6 +37,23 @@ export function renderCheckersSurface(args){
     delete container.dataset.mgwCheckersSingleFlight;
   }
   renderLiveCheckersSurface(args);
+}
+
+/* Keep the accepted single-flight renderer as the top-level owner. We only replace
+ * the already-injected live-effects stylesheet URL so Telegram cannot retain the
+ * pre-fix v4 cascade rule that suppressed the real checker FLIP animation. */
+function ensureRealFlightCascadeStyles(){
+  const href = new URL('../../css/games/checkers/live-effects-store-parity-v1.css?v=5&mvp19_6=real-piece-flight-cascade-v1', import.meta.url).href;
+  const apply = () => {
+    const existing = document.querySelector('link[data-mgw-checkers-live-effects]');
+    if (!(existing instanceof HTMLLinkElement)) return false;
+    if (existing.href !== href) existing.href = href;
+    existing.dataset.mgwCheckersLiveEffects = 'mvp19-6-real-piece-flight-cascade-v5';
+    return true;
+  };
+
+  if (apply()) return;
+  queueMicrotask(apply);
 }
 
 function shouldPreserveSingleFlight(game, container){
