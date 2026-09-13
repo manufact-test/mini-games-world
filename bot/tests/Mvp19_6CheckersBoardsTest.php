@@ -188,7 +188,7 @@ $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $gitBlobSha = static fn(string $content): string => sha1('blob ' . strlen($content) . "\0" . $content);
 $assertSame('e362239b1388a1f752d2d0e67ae69a7cc9207926', $gitBlobSha($baseRenderer), 'Accepted Checkers renderer must remain byte-identical');
 $assertSame('12d2f211c48c1f49793744315c004fd33afc5bcf', $gitBlobSha($baseCss), 'Accepted Checkers layout CSS must remain byte-identical');
-$assertTrue(str_contains($liveWrapper, 'game_checkers_theme') && !str_contains($liveWrapper, 'game_checkers_elements') && !str_contains($liveWrapper, 'game_checkers_effect'), 'Phase A must leave live Checkers bounded to the existing board projection');
+$assertTrue(str_contains($liveWrapper, 'game_checkers_theme') && !str_contains($liveWrapper, 'game_checkers_elements'), 'Live Checkers board wrapper must remain bounded to board projection plus presentation-only paid-effect geometry state');
 $assertTrue(!str_contains($liveWrapper, 'gameAction(') && !str_contains($liveWrapper, 'time_left') && !str_contains($liveWrapper, 'turn_started_at'), 'Checkers cosmetics wrapper must never own mechanics or timers');
 
 foreach (['wood','dark','marble','neon'] as $variant) {

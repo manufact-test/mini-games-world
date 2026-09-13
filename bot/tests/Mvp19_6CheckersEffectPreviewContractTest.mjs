@@ -7,9 +7,11 @@ const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf
 const gameCss = fs.readFileSync('app/assets/css/games/checkers/game.css', 'utf8');
 const liveWrapperPath = 'app/assets/js/checkers-cosmetics/renderer-live-effects-v1.js';
 const liveWrapper = fs.readFileSync(liveWrapperPath, 'utf8');
-const boardThemeWrapper = fs.readFileSync('app/assets/js/checkers-cosmetics/renderer-board-themes.js', 'utf8');
+const boardThemeWrapperPath = 'app/assets/js/checkers-cosmetics/renderer-board-themes.js';
+const boardThemeWrapper = fs.readFileSync(boardThemeWrapperPath, 'utf8');
 const liveEffectCss = fs.readFileSync('app/assets/css/games/checkers/live-effects-store-parity-v1.css', 'utf8');
 const livePieceCss = fs.readFileSync('app/assets/css/games/checkers/live-pieces-store-parity-v1.css', 'utf8');
+const runtimeCorrectiveCss = fs.readFileSync('app/assets/css/games/checkers/runtime-handoff-mobile-v1.css', 'utf8');
 
 function ok(value, label){
   if (!value) throw new Error(label);
@@ -40,6 +42,8 @@ ok(!css.includes('animation:infinite'), 'effect corrective has no infinite anima
 
 const syntax = spawnSync(process.execPath, ['--check', liveWrapperPath], { encoding:'utf8' });
 ok(syntax.status === 0, `live Checkers cosmetics owner has valid JavaScript syntax${syntax.stderr ? `: ${syntax.stderr.trim()}` : ''}`);
+const boardThemeSyntax = spawnSync(process.execPath, ['--check', boardThemeWrapperPath], { encoding:'utf8' });
+ok(boardThemeSyntax.status === 0, `Checkers board-theme wrapper has valid JavaScript syntax${boardThemeSyntax.stderr ? `: ${boardThemeSyntax.stderr.trim()}` : ''}`);
 ok(liveWrapper.includes('game_checkers_elements'), 'live renderer reads the factual Checkers piece-set slot');
 ok(liveWrapper.includes('dataset.checkersPieceStyle'), 'live renderer projects piece-set identity onto rendered checkers');
 ok(liveWrapper.includes('dataset.checkersWhitePieceStyle') && liveWrapper.includes('dataset.checkersBlackPieceStyle'), 'surface keeps piece identity across frozen base selection rerenders');
@@ -56,6 +60,16 @@ ok(livePieceCss.includes('.checkers-piece.king > b::after') && livePieceCss.incl
 ok(boardThemeWrapper.includes("layer.dataset.mgwCheckersLandingLocked === '1'"), 'exact landing geometry is never retargeted after first successful lock');
 ok(boardThemeWrapper.includes("layer.dataset.mgwCheckersLandingLocked = '1'"), 'successful DOM landing measurement marks the compositor endpoint immutable');
 ok(boardThemeWrapper.includes('mgwCheckersLandingX') && boardThemeWrapper.includes('mgwCheckersLandingY') && boardThemeWrapper.includes('mgwCheckersLandingSize'), 'locked landing records deterministic geometry diagnostics');
+ok(boardThemeWrapper.includes('stableLayoutPieceSize(destinationPiece)'), 'landing size reads the untransformed checker layout box instead of a transformed rect');
+ok(boardThemeWrapper.includes("mgwCheckersLandingSizeSource = 'layout-box'"), 'landing diagnostics prove layout-box size ownership');
+ok(boardThemeWrapper.includes('container.dataset.mgwCheckersPaidEffect'), 'viewer paid-effect state survives frozen selection rerenders on the surface');
+ok(boardThemeWrapper.includes('runtime-handoff-mobile-v1.css?v=1'), 'board-theme owner loads the dedicated handoff/mobile corrective stylesheet');
+
+ok(runtimeCorrectiveCss.includes('data-mgw-checkers-paid-effect="1"') && runtimeCorrectiveCss.includes('.checkers-cell.selected .checkers-piece'), 'paid Checkers selection no longer changes the checker physical diameter');
+ok(runtimeCorrectiveCss.includes('transform:none!important;'), 'corrective neutralizes selected/hidden transform geometry at handoff');
+ok(runtimeCorrectiveCss.includes('transition:none!important;'), 'hidden authoritative checker cannot run its own transform transition during reveal');
+ok(runtimeCorrectiveCss.includes('transform-box:border-box') && runtimeCorrectiveCss.includes('transform-origin:50% 50%'), 'detached live checker uses symmetric border-box transform geometry');
+ok(runtimeCorrectiveCss.includes('padding-left:max(12px,env(safe-area-inset-left))!important;') && runtimeCorrectiveCss.includes('padding-right:max(12px,env(safe-area-inset-right))!important;'), 'Checkers mobile content has symmetric minimum 12px side insets');
 
 ok(liveWrapper.includes("if (value === null || value === undefined || value === '') return null;"), 'nullable Checkers event cells can never coerce null into board cell zero');
 ok(liveWrapper.includes('authoritativeBoards'), 'optimistic effect classification retains the previous authoritative board');
@@ -78,6 +92,7 @@ ok(liveEffectCss.includes('.mgw-checkers-live-fx-move.mgw-checkers-live-fx-event
 ok(liveEffectCss.includes('.mgw-checkers-live-fx-crown::after') && liveEffectCss.includes('content:"MG"'), 'promotion overlay uses the same crown plus MG identity');
 ok(liveEffectCss.includes('pointer-events:none'), 'live effect layer leaves board hit targets untouched');
 ok(liveEffectCss.includes('@media (prefers-reduced-motion:reduce)'), 'live effects preserve reduced-motion handling');
-ok(manifest.includes('mvp19_6=runtime-smoothing-v4') && manifest.includes('pieces=king-brand-v3') && manifest.includes('events=move-through-capture-v4') && manifest.includes('landing=stable-handoff-v1'), 'active Checkers import map cache-busts branded stable-landing runtime');
+ok(manifest.includes('renderer-board-themes.js?v=4&mvp19_6=selection-geometry-v1') && manifest.includes('renderer-live-effects-v1.js?v=7&mvp19_6=runtime-smoothing-v7') && manifest.includes('landing=layout-box-handoff-v3') && manifest.includes('selection=geometry-neutral-v1') && manifest.includes('mobile=insets-v1'), 'active Checkers import map cache-busts layout-box landing and symmetric mobile inset runtime');
+ok(manifest.includes('promotion=authoritative-only-v1'), 'Promotion remains authoritative-only after the temporary QA shortcut removal');
 
 console.log('MVP-19.6 Checkers effect preview + live parity contract passed.');

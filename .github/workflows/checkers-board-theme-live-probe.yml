@@ -62,13 +62,37 @@ jobs:
           cmp "$local_file" "$live_file"
           grep -F "layer.dataset.mgwCheckersLandingLocked === '1'" "$live_file"
           grep -F "layer.dataset.mgwCheckersLandingLocked = '1'" "$live_file"
+          grep -F "layer.dataset.mgwCheckersLandingSizeSource = 'layout-box'" "$live_file"
+          grep -F "container.dataset.mgwCheckersPaidEffect" "$live_file"
+          grep -F "runtime-handoff-mobile-v1.css?v=1" "$live_file"
+
+      - name: Compare live Checkers handoff/mobile corrective byte-for-byte
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          local_file='app/assets/css/games/checkers/runtime-handoff-mobile-v1.css'
+          live_file='/tmp/live-checkers-runtime-corrective.css'
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            --header 'Cache-Control: no-cache' \
+            "${MGW_STAGING_ORIGIN}/app/assets/css/games/checkers/runtime-handoff-mobile-v1.css?probe=${GITHUB_SHA}" \
+            --output "$live_file"
+          echo "local runtime corrective sha256: $(sha256sum "$local_file" | awk '{print $1}')"
+          echo "live  runtime corrective sha256: $(sha256sum "$live_file" | awk '{print $1}')"
+          cmp "$local_file" "$live_file"
+          grep -F 'data-mgw-checkers-paid-effect="1"' "$live_file"
+          grep -F 'transform:none!important;' "$live_file"
+          grep -F 'padding-left:max(12px,env(safe-area-inset-left))!important;' "$live_file"
+          grep -F 'padding-right:max(12px,env(safe-area-inset-right))!important;' "$live_file"
 
       - name: Guard active Checkers cache-bust
         shell: bash
         run: |
           set -Eeuo pipefail
-          grep -F 'renderer-board-themes.js?v=3&mvp19_6=landing-lock-v1' app/runtime/client/version-manifest.php
-          grep -F 'renderer-live-effects-v1.js?v=6&mvp19_6=runtime-smoothing-v6' app/runtime/client/version-manifest.php
-          grep -F 'landing=locked-handoff-v2' app/runtime/client/version-manifest.php
+          grep -F 'renderer-board-themes.js?v=4&mvp19_6=selection-geometry-v1' app/runtime/client/version-manifest.php
+          grep -F 'renderer-live-effects-v1.js?v=7&mvp19_6=runtime-smoothing-v7' app/runtime/client/version-manifest.php
+          grep -F 'landing=layout-box-handoff-v3' app/runtime/client/version-manifest.php
+          grep -F 'selection=geometry-neutral-v1' app/runtime/client/version-manifest.php
+          grep -F 'mobile=insets-v1' app/runtime/client/version-manifest.php
           grep -F 'promotion=authoritative-only-v1' app/runtime/client/version-manifest.php
-          grep -F 'mvp19_6=checkers-handoff-lock-v2' app/runtime/client/version-manifest.php
+          grep -F 'mvp19_6=checkers-geometry-neutral-v3' app/runtime/client/version-manifest.php
