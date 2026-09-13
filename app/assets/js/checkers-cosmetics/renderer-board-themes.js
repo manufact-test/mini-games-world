@@ -5,15 +5,35 @@ import {
   checkersStatus,
 } from '../games/checkers/renderer.js?v=57&base=mvp16-accepted';
 
+const REAL_MOVE_DURATION_MS = 1780;
+const REAL_MOVE_STATE_TTL_MS = 1940;
+const realMoveStates = new Map();
+
 ensureCheckersCosmeticStyles();
 ensureCheckersRuntimeCorrectiveStyles();
 
 export { checkersMeta, checkersPlayerMark, checkersStatus };
 
 export function renderCheckersSurface({ game, me, container, onAction }){
-  /* The legend is immutable UI copy. Keep one physical DOM node across optimistic
-   * and authoritative board snapshots so Chromium never has to re-rasterize the
-   * tiny muted labels during the paid-effect handoff. */
+  /*
+   * New landing owner for the ordinary paid Move effect.
+   *
+   * The failed chain (#1375 -> #1377) kept animating a detached checker and then
+   * tried increasingly precise ways to hand it off to the real board checker.
+   * That architecture is the bug surface: two different DOM elements/compositor
+   * paths must agree on the same final raster pixel.
+   *
+   * Capture the source checker BEFORE the frozen renderer replaces the board.
+   * After render, animate the REAL destination checker itself from that captured
+   * source rect back to its own layout-owned final position (FLIP). The detached
+   * live-effects owner still supplies the accepted trail/ring, but its duplicate
+   * moving checker is removed before paint. There is therefore no checker-to-checker
+   * handoff at all: the final animation frame and the settled checker are one node.
+   */
+  captureRealMoveOrigin({ game, me, container });
+
+  /* Immutable legend: preserve one physical node across optimistic/authoritative
+   * snapshots so the already-accepted muted-label paint fix stays closed. */
   const stableLegend = container.querySelector('.checkers-legend');
 
   renderBaseCheckersSurface({ game, me, container, onAction });
@@ -26,17 +46,7 @@ export function renderCheckersSurface({ game, me, container, onAction }){
   container.dataset.checkersTheme = checkersBoardVariant(game, me);
   container.dataset.mgwCheckersPaidEffect = viewerHasPaidCheckersEffect(game, me) ? '1' : '0';
 
-  /* The paid checker is a detached overlay, while the settled checker is a real
-   * 72%-wide child centered by CSS Grid. At fractional cell widths Chromium may
-   * round that percentage-sized child by a device pixel differently from the
-   * mathematical cell midpoint. That is why the last handoff could still move down
-   * on one phone but sideways on desktop even though both used the same cell center.
-   *
-   * Re-read the hidden authoritative checker's own physical border box after the
-   * outer live-effect wrapper has masked it. The overlay now finishes on the exact
-   * pixels occupied by the checker that will be revealed, not an inferred square
-   * center. Rules, hit targets, optimistic state, timers and settlement stay frozen. */
-  queueExactLiveLanding(container);
+  syncRealMoveDestination({ game, container });
 }
 
 function checkersBoardVariant(game, me){
@@ -49,97 +59,229 @@ function checkersBoardVariant(game, me){
 }
 
 function viewerHasPaidCheckersEffect(game, me){
-  const players = Array.isArray(game?.players) ? game.players : [];
-  const viewer = players.find(player => String(player?.id || '') === String(me?.id || '')) || null;
-  const slots = viewer?.game_cosmetics?.slots;
-  const effectId = slots && typeof slots === 'object' ? String(slots.game_checkers_effect || '') : '';
   return [
     'game-checkers-effect-move',
     'game-checkers-effect-capture',
     'game-checkers-effect-promotion',
-  ].includes(effectId);
+  ].includes(checkersEffectIdForPlayer(game, me?.id));
 }
 
-function queueExactLiveLanding(container){
-  const run = () => {
-    if (container instanceof HTMLElement && container.isConnected) syncExactLiveLanding(container);
+function checkersEffectIdForPlayer(game, playerId, fallbackSide = ''){
+  const players = Array.isArray(game?.players) ? game.players : [];
+  const byId = playerId
+    ? players.find(player => String(player?.id || '') === String(playerId || ''))
+    : null;
+  const bySide = !byId && fallbackSide
+    ? players.find(player => String(player?.side || '') === String(fallbackSide))
+    : null;
+  const player = byId || bySide || null;
+  const slots = player?.game_cosmetics?.slots;
+  return slots && typeof slots === 'object' ? String(slots.game_checkers_effect || '') : '';
+}
+
+function captureRealMoveOrigin({ game, me, container }){
+  if (!(container instanceof HTMLElement)) return;
+
+  const candidate = realMoveCandidate(game, me);
+  if (!candidate || candidate.effectId !== 'game-checkers-effect-move') return;
+
+  const gameKey = String(game?.id || 'local-checkers');
+  const existing = realMoveStates.get(gameKey) || null;
+  if (existing && existing.signature === candidate.signature && !realMoveExpired(existing)) return;
+
+  const board = container.querySelector('.checkers-board');
+  if (!(board instanceof HTMLElement)) return;
+
+  const sourceCell = board.querySelector(`[data-checkers-cell="${candidate.from}"]`);
+  const sourcePiece = sourceCell?.querySelector('.checkers-piece');
+  if (!(sourcePiece instanceof HTMLElement)) {
+    // Authoritative confirmation of our own optimistic move sees the source cell
+    // already empty. Keep the existing FLIP state rather than starting a second one.
+    return;
+  }
+
+  const sourceRect = sourcePiece.getBoundingClientRect();
+  if (!(sourceRect.width > 0) || !(sourceRect.height > 0)) return;
+
+  if (existing) clearRealMoveState(gameKey, existing);
+
+  const state = {
+    signature:candidate.signature,
+    from:candidate.from,
+    to:candidate.to,
+    sourceRect:rectSnapshot(sourceRect),
+    startedAt:performance.now(),
+    container,
+    timer:0,
   };
+  state.timer = window.setTimeout(() => {
+    const active = realMoveStates.get(gameKey);
+    if (active !== state) return;
+    clearRealMoveState(gameKey, active);
+  }, REAL_MOVE_STATE_TTL_MS);
+
+  realMoveStates.set(gameKey, state);
+}
+
+function realMoveCandidate(game, me){
+  const gameKey = String(game?.id || 'local-checkers');
+  const pending = game?.__mgw_v100_pending_action || null;
+  const pendingFrom = integerOrNull(pending?.from);
+  const pendingTo = integerOrNull(pending?.to);
+
+  if (pendingFrom !== null && pendingTo !== null) {
+    const moverId = String(me?.id || '');
+    return {
+      from:pendingFrom,
+      to:pendingTo,
+      effectId:checkersEffectIdForPlayer(game, moverId),
+      signature:`pending:${gameKey}:${moverId}:${pendingFrom}:${pendingTo}`,
+    };
+  }
+
+  const move = game?.last_move || null;
+  const from = integerOrNull(move?.from);
+  const to = integerOrNull(move?.to);
+  if (from === null || to === null) return null;
+
+  const moverId = String(move?.player_id || '');
+  const side = String(move?.side || '');
+  const moveSignature = [
+    gameKey,
+    moverId,
+    side,
+    from,
+    to,
+    move?.capture === true ? 'capture' : 'move',
+    String(move?.captured ?? ''),
+    move?.promoted === true ? 'promoted' : '',
+    move?.chain_continues === true ? 'chain' : '',
+  ].join(':');
+
+  return {
+    from,
+    to,
+    effectId:checkersEffectIdForPlayer(game, moverId, side),
+    signature:`authoritative:${moveSignature}`,
+  };
+}
+
+function syncRealMoveDestination({ game, container }){
+  if (!(container instanceof HTMLElement)) return;
+  const gameKey = String(game?.id || 'local-checkers');
+  const state = realMoveStates.get(gameKey) || null;
+
+  clearStaleRealMovePieces(container);
+
+  if (!state || realMoveExpired(state)) {
+    if (state) clearRealMoveState(gameKey, state);
+    return;
+  }
+
+  const board = container.querySelector('.checkers-board');
+  if (!(board instanceof HTMLElement)) return;
+  const destinationCell = board.querySelector(`[data-checkers-cell="${state.to}"]`);
+  const destinationPiece = destinationCell?.querySelector('.checkers-piece');
+  if (!(destinationPiece instanceof HTMLElement)) return;
+
+  // Read the destination BEFORE applying our animation class. This is the final
+  // CSS-Grid-owned border box that must remain after the effect has finished.
+  const destinationRect = destinationPiece.getBoundingClientRect();
+  if (!(destinationRect.width > 0) || !(destinationRect.height > 0)) return;
+
+  const sourceCenterX = state.sourceRect.left + state.sourceRect.width / 2;
+  const sourceCenterY = state.sourceRect.top + state.sourceRect.height / 2;
+  const destinationCenterX = destinationRect.left + destinationRect.width / 2;
+  const destinationCenterY = destinationRect.top + destinationRect.height / 2;
+  const dx = sourceCenterX - destinationCenterX;
+  const dy = sourceCenterY - destinationCenterY;
+  const scale = destinationRect.width > 0
+    ? Math.max(.85, Math.min(1.15, state.sourceRect.width / destinationRect.width))
+    : 1;
+  const elapsed = Math.max(0, Math.min(REAL_MOVE_DURATION_MS, performance.now() - state.startedAt));
+
+  destinationPiece.classList.add('mgw-checkers-live-real-move-piece');
+  destinationPiece.style.setProperty('--mgw-real-move-dx', `${dx}px`);
+  destinationPiece.style.setProperty('--mgw-real-move-dy', `${dy}px`);
+  destinationPiece.style.setProperty('--mgw-real-move-scale', String(scale));
+  destinationPiece.style.setProperty('--mgw-real-move-delay', `${-elapsed}ms`);
+  destinationPiece.dataset.mgwRealMove = state.signature;
+
+  container.dataset.mgwCheckersRealMove = '1';
+
+  // The accepted live-effects module runs immediately after this wrapper. Let it
+  // keep its trail/ring, then remove only its duplicate flying checker and unmask
+  // our real destination checker before the browser gets a paint opportunity.
+  queueRealMoveOverlayTakeover({ container, board, state, destinationPiece });
+}
+
+function queueRealMoveOverlayTakeover({ container, board, state, destinationPiece }){
+  const run = () => {
+    if (!(container instanceof HTMLElement) || !container.isConnected) return;
+    const gameKey = gameKeyForState(state);
+    const active = gameKey ? realMoveStates.get(gameKey) : state;
+    if (active !== state || realMoveExpired(state)) return;
+
+    const liveBoard = container.querySelector('.checkers-board');
+    if (!(liveBoard instanceof HTMLElement)) return;
+
+    const destinationCell = liveBoard.querySelector(`[data-checkers-cell="${state.to}"]`);
+    if (destinationCell instanceof HTMLElement) {
+      destinationCell.classList.remove('mgw-checkers-live-fx-hide-piece');
+    }
+
+    const layer = nearestLiveEffectLayer(liveBoard);
+    if (!(layer instanceof HTMLElement) || !layer.classList.contains('mgw-checkers-live-fx-move')) return;
+
+    const duplicatePiece = layer.querySelector('.mgw-checkers-live-fx-piece');
+    if (duplicatePiece instanceof HTMLElement) duplicatePiece.remove();
+
+    alignMoveDecorations(layer, liveBoard, state, destinationPiece);
+    layer.dataset.mgwMovePieceOwner = 'real-board-piece-flip-v1';
+  };
+
   if (typeof globalThis.queueMicrotask === 'function') globalThis.queueMicrotask(run);
   else Promise.resolve().then(run);
   if (typeof globalThis.requestAnimationFrame === 'function') globalThis.requestAnimationFrame(run);
 }
 
-function syncExactLiveLanding(container){
-  if (!(container instanceof HTMLElement) || container.dataset.mgwCheckersPaidEffect !== '1') return;
-  const board = container.querySelector('.checkers-board');
-  if (!(board instanceof HTMLElement)) return;
-  const layer = nearestLiveEffectLayer(board);
-  if (!(layer instanceof HTMLElement)) return;
+function alignMoveDecorations(layer, board, state, destinationPiece){
+  if (!(layer instanceof HTMLElement) || !(board instanceof HTMLElement)) return;
+  const boardRect = board.getBoundingClientRect();
 
-  const cells = Array.from(board.querySelectorAll('[data-checkers-cell]')).filter(cell => cell instanceof HTMLElement);
-  if (cells.length !== 64) return;
+  const currentPiece = destinationPiece?.isConnected
+    ? destinationPiece
+    : board.querySelector(`[data-checkers-cell="${state.to}"] .checkers-piece`);
+  if (!(currentPiece instanceof HTMLElement)) return;
+  const destinationRect = currentPiece.getBoundingClientRect();
+  if (!(destinationRect.width > 0) || !(destinationRect.height > 0)) return;
 
-  const oldFrom = layerPoint(layer, '--mgw-fx-from-x', '--mgw-fx-from-y');
-  const oldTo = layerPoint(layer, '--mgw-fx-to-x', '--mgw-fx-to-y');
-  if (!oldFrom || !oldTo) return;
-
-  const sourceCell = nearestCell(board, cells, oldFrom);
-  const hiddenCells = cells.filter(cell => cell.classList.contains('mgw-checkers-live-fx-hide-piece'));
-  const destinationCell = nearestCell(board, hiddenCells.length ? hiddenCells : cells, oldTo);
-  if (!(sourceCell instanceof HTMLElement) || !(destinationCell instanceof HTMLElement)) return;
-
-  const fromPoint = cellCenter(board, sourceCell);
-  const destinationCellPoint = cellCenter(board, destinationCell);
-  const settledPiecePoint = pieceCenter(board, destinationCell);
-  const toPoint = settledPiecePoint || destinationCellPoint;
-  if (!fromPoint || !destinationCellPoint || !toPoint) return;
-
-  const dx = toPoint.x - fromPoint.x;
-  const dy = toPoint.y - fromPoint.y;
+  const fromX = state.sourceRect.left - boardRect.left + state.sourceRect.width / 2;
+  const fromY = state.sourceRect.top - boardRect.top + state.sourceRect.height / 2;
+  const toX = destinationRect.left - boardRect.left + destinationRect.width / 2;
+  const toY = destinationRect.top - boardRect.top + destinationRect.height / 2;
+  const dx = toX - fromX;
+  const dy = toY - fromY;
   const distance = Math.hypot(dx, dy);
   const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-  const cellSize = Math.min(fromPoint.size, destinationCellPoint.size);
-  const exactPieceSize = settledPiecePoint?.size || Math.max(20, cellSize * .72);
-
-  layer.style.setProperty('--mgw-fx-from-x', `${fromPoint.x}px`);
-  layer.style.setProperty('--mgw-fx-from-y', `${fromPoint.y}px`);
-  layer.style.setProperty('--mgw-fx-to-x', `${toPoint.x}px`);
-  layer.style.setProperty('--mgw-fx-to-y', `${toPoint.y}px`);
-  layer.style.setProperty('--mgw-fx-dx', `${dx}px`);
-  layer.style.setProperty('--mgw-fx-dy', `${dy}px`);
-  layer.style.setProperty('--mgw-fx-piece-size', `${exactPieceSize}px`);
 
   const path = layer.querySelector('.mgw-checkers-live-fx-path');
   if (path instanceof HTMLElement) {
-    path.style.left = `${fromPoint.x}px`;
-    path.style.top = `${fromPoint.y}px`;
+    path.style.left = `${fromX}px`;
+    path.style.top = `${fromY}px`;
     path.style.width = `${distance}px`;
     path.style.transform = `translateY(-50%) rotate(${angle}deg)`;
   }
 
-  const crown = layer.querySelector('.mgw-checkers-live-fx-crown');
-  if (crown instanceof HTMLElement) {
-    crown.style.left = `${toPoint.x}px`;
-    crown.style.top = `${toPoint.y}px`;
-  }
-
   const impact = layer.querySelector('.mgw-checkers-live-fx-impact');
-  const captureTarget = layer.querySelector('.mgw-checkers-live-fx-target');
-  if (captureTarget instanceof HTMLElement) {
-    const targetPoint = nearestPointFromInlinePosition(board, cells, captureTarget);
-    if (targetPoint) {
-      captureTarget.style.left = `${targetPoint.x}px`;
-      captureTarget.style.top = `${targetPoint.y}px`;
-      impact?.style.setProperty('left', `${targetPoint.x}px`);
-      impact?.style.setProperty('top', `${targetPoint.y}px`);
-    }
-  } else if (impact instanceof HTMLElement) {
-    impact.style.left = `${toPoint.x}px`;
-    impact.style.top = `${toPoint.y}px`;
+  if (impact instanceof HTMLElement) {
+    impact.style.left = `${toX}px`;
+    impact.style.top = `${toY}px`;
   }
 }
 
 function nearestLiveEffectLayer(board){
+  if (!(board instanceof HTMLElement)) return null;
   const boardRect = board.getBoundingClientRect();
   let best = null;
   let bestScore = Infinity;
@@ -158,59 +300,53 @@ function nearestLiveEffectLayer(board){
   return bestScore <= 8 ? best : null;
 }
 
-function layerPoint(layer, xName, yName){
-  const x = Number.parseFloat(layer.style.getPropertyValue(xName));
-  const y = Number.parseFloat(layer.style.getPropertyValue(yName));
-  return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
+function rectSnapshot(rect){
+  return {
+    left:Number(rect.left),
+    top:Number(rect.top),
+    width:Number(rect.width),
+    height:Number(rect.height),
+  };
 }
 
-function nearestCell(board, cells, point){
-  if (!Array.isArray(cells) || cells.length === 0 || !point) return null;
-  let best = null;
-  let bestDistance = Infinity;
-  cells.forEach(cell => {
-    const center = cellCenter(board, cell);
-    if (!center) return;
-    const distance = Math.hypot(center.x - point.x, center.y - point.y);
-    if (distance < bestDistance) {
-      best = cell;
-      bestDistance = distance;
-    }
+function realMoveExpired(state){
+  return !state || performance.now() - Number(state.startedAt || 0) > REAL_MOVE_STATE_TTL_MS;
+}
+
+function gameKeyForState(state){
+  for (const [key, value] of realMoveStates.entries()) {
+    if (value === state) return key;
+  }
+  return '';
+}
+
+function clearRealMoveState(gameKey, state){
+  if (state?.timer) clearTimeout(state.timer);
+  const container = state?.container;
+  if (container instanceof HTMLElement) {
+    delete container.dataset.mgwCheckersRealMove;
+    clearStaleRealMovePieces(container);
+  }
+  if (realMoveStates.get(gameKey) === state) realMoveStates.delete(gameKey);
+}
+
+function clearStaleRealMovePieces(container){
+  if (!(container instanceof HTMLElement)) return;
+  container.querySelectorAll('.mgw-checkers-live-real-move-piece').forEach(piece => {
+    if (!(piece instanceof HTMLElement)) return;
+    piece.classList.remove('mgw-checkers-live-real-move-piece');
+    piece.style.removeProperty('--mgw-real-move-dx');
+    piece.style.removeProperty('--mgw-real-move-dy');
+    piece.style.removeProperty('--mgw-real-move-scale');
+    piece.style.removeProperty('--mgw-real-move-delay');
+    delete piece.dataset.mgwRealMove;
   });
-  return best;
 }
 
-function nearestPointFromInlinePosition(board, cells, element){
-  const x = Number.parseFloat(element.style.left);
-  const y = Number.parseFloat(element.style.top);
-  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
-  const cell = nearestCell(board, cells, { x, y });
-  return cell instanceof HTMLElement ? cellCenter(board, cell) : null;
-}
-
-function cellCenter(board, cell){
-  if (!(board instanceof HTMLElement) || !(cell instanceof HTMLElement)) return null;
-  const boardRect = board.getBoundingClientRect();
-  const cellRect = cell.getBoundingClientRect();
-  return {
-    x:cellRect.left - boardRect.left + cellRect.width / 2,
-    y:cellRect.top - boardRect.top + cellRect.height / 2,
-    size:Math.min(cellRect.width, cellRect.height),
-  };
-}
-
-function pieceCenter(board, cell){
-  if (!(board instanceof HTMLElement) || !(cell instanceof HTMLElement)) return null;
-  const piece = cell.querySelector('.checkers-piece');
-  if (!(piece instanceof HTMLElement)) return null;
-  const boardRect = board.getBoundingClientRect();
-  const pieceRect = piece.getBoundingClientRect();
-  if (!(pieceRect.width > 0) || !(pieceRect.height > 0)) return null;
-  return {
-    x:pieceRect.left - boardRect.left + pieceRect.width / 2,
-    y:pieceRect.top - boardRect.top + pieceRect.height / 2,
-    size:Math.min(pieceRect.width, pieceRect.height),
-  };
+function integerOrNull(value){
+  if (value === null || value === undefined || value === '') return null;
+  const numeric = Number(value);
+  return Number.isInteger(numeric) && numeric >= 0 && numeric < 64 ? numeric : null;
 }
 
 function ensureCheckersCosmeticStyles(){
@@ -223,17 +359,17 @@ function ensureCheckersCosmeticStyles(){
 }
 
 function ensureCheckersRuntimeCorrectiveStyles(){
-  const href = new URL('../../css/games/checkers/runtime-handoff-mobile-v1.css?v=5&mvp19_6=direct-box-flight-v1&legend=stable-paint-v1&grid_rows=equal-v1&mobile=insets-v1', import.meta.url).href;
+  const href = new URL('../../css/games/checkers/runtime-handoff-mobile-v1.css?v=7&mvp19_6=real-piece-flip-v1&legend=stable-paint-v1&grid_rows=equal-v1&mobile=insets-v1', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-checkers-runtime-corrective]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwCheckersRuntimeCorrective = 'mvp19-6-direct-box-flight-v5';
+    existing.dataset.mgwCheckersRuntimeCorrective = 'mvp19-6-real-piece-flip-v7';
     document.head.appendChild(existing);
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwCheckersRuntimeCorrective = 'mvp19-6-direct-box-flight-v5';
+  link.dataset.mgwCheckersRuntimeCorrective = 'mvp19-6-real-piece-flip-v7';
   link.href = href;
   document.head.appendChild(link);
 }
