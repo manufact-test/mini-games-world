@@ -1,17 +1,23 @@
 /* MVP-19.6 — live Checkers piece sets projected from the same Store identities.
-   Presentation only: no board geometry, hit targets, move legality, timers or settlement. */
+   Presentation only: no board geometry, hit targets, move legality, timers or settlement.
+
+   The surface-level data selectors are deliberate. The frozen base Checkers renderer
+   performs an internal selection rerender without re-entering this cosmetic wrapper;
+   surface data survives that rerender, so equipped materials never flash back to base. */
 
 .checkers-piece[data-checkers-piece-style]{
   box-sizing:border-box;
 }
 
 /* Wood — warm brown/tan material from the accepted Store piece preview. */
+.checkers-surface[data-checkers-black-piece-style="wood"] .checkers-piece.black,
 .checkers-piece.black[data-checkers-piece-style="wood"],
 .mgw-checkers-live-fx-piece.black[data-checkers-piece-style="wood"],
 .mgw-checkers-live-fx-target.black[data-checkers-piece-style="wood"]{
   background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.12),transparent 28%),linear-gradient(145deg,#80513b,#40271f);
   border:1px solid rgba(226,180,126,.18);
 }
+.checkers-surface[data-checkers-white-piece-style="wood"] .checkers-piece.white,
 .checkers-piece.white[data-checkers-piece-style="wood"],
 .mgw-checkers-live-fx-piece.white[data-checkers-piece-style="wood"],
 .mgw-checkers-live-fx-target.white[data-checkers-piece-style="wood"]{
@@ -20,12 +26,14 @@
 }
 
 /* Marble catalogue id, accepted Store direction: polished granite/mineral. */
+.checkers-surface[data-checkers-white-piece-style="marble"] .checkers-piece.white,
 .checkers-piece.white[data-checkers-piece-style="marble"],
 .mgw-checkers-live-fx-piece.white[data-checkers-piece-style="marble"],
 .mgw-checkers-live-fx-target.white[data-checkers-piece-style="marble"]{
   background:radial-gradient(circle at 28% 24%,rgba(255,255,255,.62) 0 5%,transparent 6%),radial-gradient(circle at 68% 64%,rgba(94,106,124,.22) 0 4%,transparent 5%),linear-gradient(118deg,transparent 0 37%,rgba(107,119,137,.26) 38% 40%,transparent 41% 64%,rgba(145,154,169,.18) 65% 67%,transparent 68%),linear-gradient(145deg,#eef1f4,#aeb6c2);
   border:1px solid rgba(255,255,255,.44);
 }
+.checkers-surface[data-checkers-black-piece-style="marble"] .checkers-piece.black,
 .checkers-piece.black[data-checkers-piece-style="marble"],
 .mgw-checkers-live-fx-piece.black[data-checkers-piece-style="marble"],
 .mgw-checkers-live-fx-target.black[data-checkers-piece-style="marble"]{
@@ -34,12 +42,14 @@
 }
 
 /* Metal — steel for black, brass/gold for white, matching Store. */
+.checkers-surface[data-checkers-black-piece-style="metal"] .checkers-piece.black,
 .checkers-piece.black[data-checkers-piece-style="metal"],
 .mgw-checkers-live-fx-piece.black[data-checkers-piece-style="metal"],
 .mgw-checkers-live-fx-target.black[data-checkers-piece-style="metal"]{
   background:linear-gradient(145deg,#d2d8e2 0%,#4a5363 42%,#151b25 100%);
   border:1px solid rgba(230,236,246,.4);
 }
+.checkers-surface[data-checkers-white-piece-style="metal"] .checkers-piece.white,
 .checkers-piece.white[data-checkers-piece-style="metal"],
 .mgw-checkers-live-fx-piece.white[data-checkers-piece-style="metal"],
 .mgw-checkers-live-fx-target.white[data-checkers-piece-style="metal"]{
@@ -47,42 +57,55 @@
   border:1px solid rgba(255,229,143,.52);
 }
 
-/* Neon — cyan black-side / violet white-side identity from Store. */
+/* Neon — visibly luminous material, not a black disc on a dark square.
+   Black-side identity is cyan/teal; white-side identity is violet/lilac. */
+.checkers-surface[data-checkers-black-piece-style="neon"] .checkers-piece.black,
 .checkers-piece.black[data-checkers-piece-style="neon"],
 .mgw-checkers-live-fx-piece.black[data-checkers-piece-style="neon"],
 .mgw-checkers-live-fx-target.black[data-checkers-piece-style="neon"]{
-  background:#101426;
-  border:2px solid #60e7ff;
+  background:radial-gradient(circle at 32% 24%,rgba(224,253,255,.92) 0 7%,rgba(125,240,255,.46) 8% 18%,transparent 19%),linear-gradient(145deg,#69efff 0%,#1597b3 42%,#073a50 100%);
+  border:2px solid #8df4ff;
 }
+.checkers-surface[data-checkers-white-piece-style="neon"] .checkers-piece.white,
 .checkers-piece.white[data-checkers-piece-style="neon"],
 .mgw-checkers-live-fx-piece.white[data-checkers-piece-style="neon"],
 .mgw-checkers-live-fx-target.white[data-checkers-piece-style="neon"]{
-  background:#101426;
-  border:2px solid #c286ff;
+  background:radial-gradient(circle at 32% 24%,rgba(255,245,255,.94) 0 7%,rgba(226,194,255,.5) 8% 18%,transparent 19%),linear-gradient(145deg,#e5cbff 0%,#9d68ef 42%,#4b267f 100%);
+  border:2px solid #d7a9ff;
 }
 
 /* Preserve gameplay-owned selectable/capture/pending shadows. Add glow only when
    those states are not currently communicating gameplay information. */
+.checkers-surface[data-checkers-black-piece-style="neon"] .checkers-cell:not(.selectable):not(.capture-source):not(.pending-captured) .checkers-piece.black,
 .checkers-cell:not(.selectable):not(.capture-source):not(.pending-captured) .checkers-piece.black[data-checkers-piece-style="neon"]{
-  box-shadow:0 5px 12px rgba(0,0,0,.45),0 0 14px rgba(68,221,255,.44),inset 0 0 16px rgba(68,221,255,.12);
+  box-shadow:0 5px 12px rgba(0,0,0,.4),0 0 16px rgba(68,221,255,.58),inset 0 0 16px rgba(224,253,255,.16);
 }
+.checkers-surface[data-checkers-white-piece-style="neon"] .checkers-cell:not(.selectable):not(.capture-source):not(.pending-captured) .checkers-piece.white,
 .checkers-cell:not(.selectable):not(.capture-source):not(.pending-captured) .checkers-piece.white[data-checkers-piece-style="neon"]{
-  box-shadow:0 5px 12px rgba(0,0,0,.38),0 0 14px rgba(174,112,255,.44),inset 0 0 16px rgba(174,112,255,.12);
+  box-shadow:0 5px 12px rgba(0,0,0,.34),0 0 16px rgba(190,125,255,.58),inset 0 0 16px rgba(255,240,255,.16);
 }
 .mgw-checkers-live-fx-piece.black[data-checkers-piece-style="neon"],
 .mgw-checkers-live-fx-target.black[data-checkers-piece-style="neon"]{
-  box-shadow:0 5px 12px rgba(0,0,0,.45),0 0 18px rgba(68,221,255,.52),inset 0 0 18px rgba(68,221,255,.14);
+  box-shadow:0 5px 12px rgba(0,0,0,.4),0 0 20px rgba(68,221,255,.64),inset 0 0 18px rgba(224,253,255,.18);
 }
 .mgw-checkers-live-fx-piece.white[data-checkers-piece-style="neon"],
 .mgw-checkers-live-fx-target.white[data-checkers-piece-style="neon"]{
-  box-shadow:0 5px 12px rgba(0,0,0,.4),0 0 18px rgba(174,112,255,.52),inset 0 0 18px rgba(174,112,255,.14);
+  box-shadow:0 5px 12px rgba(0,0,0,.34),0 0 20px rgba(190,125,255,.64),inset 0 0 18px rgba(255,240,255,.18);
 }
 
 /* Kings keep the accepted gold crown/ring above every material. */
 .checkers-piece.king[data-checkers-piece-style="wood"]::after,
 .checkers-piece.king[data-checkers-piece-style="marble"]::after,
 .checkers-piece.king[data-checkers-piece-style="metal"]::after,
-.checkers-piece.king[data-checkers-piece-style="neon"]::after{
+.checkers-piece.king[data-checkers-piece-style="neon"]::after,
+.checkers-surface[data-checkers-white-piece-style="wood"] .checkers-piece.white.king::after,
+.checkers-surface[data-checkers-black-piece-style="wood"] .checkers-piece.black.king::after,
+.checkers-surface[data-checkers-white-piece-style="marble"] .checkers-piece.white.king::after,
+.checkers-surface[data-checkers-black-piece-style="marble"] .checkers-piece.black.king::after,
+.checkers-surface[data-checkers-white-piece-style="metal"] .checkers-piece.white.king::after,
+.checkers-surface[data-checkers-black-piece-style="metal"] .checkers-piece.black.king::after,
+.checkers-surface[data-checkers-white-piece-style="neon"] .checkers-piece.white.king::after,
+.checkers-surface[data-checkers-black-piece-style="neon"] .checkers-piece.black.king::after{
   border-color:rgba(255,208,87,.82);
   box-shadow:0 0 12px rgba(255,196,52,.3);
 }
