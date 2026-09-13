@@ -66,6 +66,8 @@ jobs:
           echo "live  board-theme owner sha256: $(sha256sum "$live_file" | awk '{print $1}')"
           test "$matched" = '1'
           grep -F 'syncExactLiveLanding' "$live_file"
+          grep -F 'pieceCenter(board, destinationCell)' "$live_file"
+          grep -F "cell.querySelector('.checkers-piece')" "$live_file"
           grep -F 'getBoundingClientRect' "$live_file"
           grep -F 'mgw-checkers-live-fx-hide-piece' "$live_file"
           grep -F 'stableLegend' "$live_file"
@@ -136,10 +138,12 @@ jobs:
             'app/assets/css/games/checkers/store-effects-final-centering-v1.css' \
             'app/assets/css/games/checkers/store-effects-final-centering-v1.css' \
             '/tmp/live-checkers-store-final-centering.css'
-          grep -F 'store-effects-final-centering-v1.css?v=1&mvp19_6=legacy-important-immune-v1' /tmp/live-checkers-store-source-wrapper.js
+          grep -F 'store-effects-final-centering-v1.css?v=2&mvp19_6=king-readable-v2' /tmp/live-checkers-store-source-wrapper.js
           grep -F '.checkers-store-fx-promotion .from{' /tmp/live-checkers-store-final-centering.css
           grep -F 'left:calc(68.75% - .75px)!important;' /tmp/live-checkers-store-final-centering.css
           grep -F 'top:calc(18.75% + 1.25px)!important;' /tmp/live-checkers-store-final-centering.css
+          grep -F 'width:calc(14.5% - .5px)!important;' /tmp/live-checkers-store-final-centering.css
+          grep -F 'font-size:clamp(14px,4.2vw,18px)!important;' /tmp/live-checkers-store-final-centering.css
           grep -F 'animation:mgw-checkers-final-promotion-piece' /tmp/live-checkers-store-final-centering.css
           grep -F 'transform:translate(-50%,-50%) scale(1)' /tmp/live-checkers-store-final-centering.css
 
@@ -148,16 +152,16 @@ jobs:
         run: |
           set -Eeuo pipefail
           manifest='app/runtime/client/version-manifest.php'
-          grep -F 'store-screen-checkers-board-source-wrapper.js?v=4' "$manifest"
-          grep -F 'promotion_preview=legacy-important-immune-v1' "$manifest"
-          grep -F 'final_centering=cell-border-parity-v1' "$manifest"
-          grep -F 'renderer-board-themes.js?v=7&mvp19_6=equal-grid-rows-v1' "$manifest"
-          grep -F 'renderer-live-effects-v1.js?v=9&mvp19_6=runtime-smoothing-v9' "$manifest"
-          grep -F 'landing=exact-live-centers-v2' "$manifest"
+          grep -F 'store-screen-checkers-board-source-wrapper.js?v=5' "$manifest"
+          grep -F 'promotion_preview=king-readable-v2' "$manifest"
+          grep -F 'final_centering=king-readable-v2' "$manifest"
+          grep -F 'renderer-board-themes.js?v=8&mvp19_6=equal-grid-rows-v1' "$manifest"
+          grep -F 'renderer-live-effects-v1.js?v=10&mvp19_6=runtime-smoothing-v10' "$manifest"
+          grep -F 'landing=piece-box-centers-v3' "$manifest"
           grep -F 'grid_rows=equal-v1' "$manifest"
           grep -F 'selection=geometry-neutral-v1' "$manifest"
           grep -F 'last_from=flat-v1' "$manifest"
           grep -F 'legend=stable-paint-v1' "$manifest"
           grep -F 'mobile=insets-v1' "$manifest"
           grep -F 'promotion=authoritative-only-v1' "$manifest"
-          grep -F 'mvp19_6=checkers-exact-live-centers-store-final-v6' "$manifest"
+          grep -F 'mvp19_6=checkers-piece-box-handoff-preview-v7' "$manifest"
