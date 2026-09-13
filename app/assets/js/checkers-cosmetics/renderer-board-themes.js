@@ -26,16 +26,16 @@ export function renderCheckersSurface({ game, me, container, onAction }){
   container.dataset.checkersTheme = checkersBoardVariant(game, me);
   container.dataset.mgwCheckersPaidEffect = viewerHasPaidCheckersEffect(game, me) ? '1' : '0';
 
-  /* Eight equal rows fixed the content-sized rank collapse, but the paid layer is
-   * detached from the board. Its original owner snapshots from/to coordinates once
-   * while continuing to reposition the outer layer on later renders. On mobile a
-   * sub-pixel board reflow between optimistic and authoritative snapshots can then
-   * leave those inner coordinates stale by a few pixels: the flying checker lands
-   * above the live cell and visibly drops when the overlay disappears.
+  /* The paid checker is a detached overlay, while the settled checker is a real
+   * 72%-wide child centered by CSS Grid. At fractional cell widths Chromium may
+   * round that percentage-sized child by a device pixel differently from the
+   * mathematical cell midpoint. That is why the last handoff could still move down
+   * on one phone but sideways on desktop even though both used the same cell center.
    *
-   * Re-read the current physical cell centers after the full live-effect wrapper has
-   * finished this render, then retarget only presentation geometry. Rules, hit
-   * targets, optimistic state, timers and settlement remain untouched. */
+   * Re-read the hidden authoritative checker's own physical border box after the
+   * outer live-effect wrapper has masked it. The overlay now finishes on the exact
+   * pixels occupied by the checker that will be revealed, not an inferred square
+   * center. Rules, hit targets, optimistic state, timers and settlement stay frozen. */
   queueExactLiveLanding(container);
 }
 
@@ -89,14 +89,17 @@ function syncExactLiveLanding(container){
   if (!(sourceCell instanceof HTMLElement) || !(destinationCell instanceof HTMLElement)) return;
 
   const fromPoint = cellCenter(board, sourceCell);
-  const toPoint = cellCenter(board, destinationCell);
-  if (!fromPoint || !toPoint) return;
+  const destinationCellPoint = cellCenter(board, destinationCell);
+  const settledPiecePoint = pieceCenter(board, destinationCell);
+  const toPoint = settledPiecePoint || destinationCellPoint;
+  if (!fromPoint || !destinationCellPoint || !toPoint) return;
 
   const dx = toPoint.x - fromPoint.x;
   const dy = toPoint.y - fromPoint.y;
   const distance = Math.hypot(dx, dy);
   const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-  const cellSize = Math.min(fromPoint.size, toPoint.size);
+  const cellSize = Math.min(fromPoint.size, destinationCellPoint.size);
+  const exactPieceSize = settledPiecePoint?.size || Math.max(20, cellSize * .72);
 
   layer.style.setProperty('--mgw-fx-from-x', `${fromPoint.x}px`);
   layer.style.setProperty('--mgw-fx-from-y', `${fromPoint.y}px`);
@@ -104,7 +107,7 @@ function syncExactLiveLanding(container){
   layer.style.setProperty('--mgw-fx-to-y', `${toPoint.y}px`);
   layer.style.setProperty('--mgw-fx-dx', `${dx}px`);
   layer.style.setProperty('--mgw-fx-dy', `${dy}px`);
-  layer.style.setProperty('--mgw-fx-piece-size', `${Math.max(20, cellSize * .72)}px`);
+  layer.style.setProperty('--mgw-fx-piece-size', `${exactPieceSize}px`);
 
   const path = layer.querySelector('.mgw-checkers-live-fx-path');
   if (path instanceof HTMLElement) {
@@ -193,6 +196,20 @@ function cellCenter(board, cell){
     x:cellRect.left - boardRect.left + cellRect.width / 2,
     y:cellRect.top - boardRect.top + cellRect.height / 2,
     size:Math.min(cellRect.width, cellRect.height),
+  };
+}
+
+function pieceCenter(board, cell){
+  if (!(board instanceof HTMLElement) || !(cell instanceof HTMLElement)) return null;
+  const piece = cell.querySelector('.checkers-piece');
+  if (!(piece instanceof HTMLElement)) return null;
+  const boardRect = board.getBoundingClientRect();
+  const pieceRect = piece.getBoundingClientRect();
+  if (!(pieceRect.width > 0) || !(pieceRect.height > 0)) return null;
+  return {
+    x:pieceRect.left - boardRect.left + pieceRect.width / 2,
+    y:pieceRect.top - boardRect.top + pieceRect.height / 2,
+    size:Math.min(pieceRect.width, pieceRect.height),
   };
 }
 
