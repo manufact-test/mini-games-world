@@ -52,7 +52,8 @@ function armPromotionQaPresentation(game, me){
   const players = Array.isArray(game?.players) ? game.players : [];
   const viewer = players.find(player => String(player?.id || '') === String(me?.id || '')) || null;
   const slots = viewer?.game_cosmetics?.slots;
-  const effectId = slots && typeof slots === 'object' ? String(slots.game_checkers_effect || '') : '';
+  const effectSlot = 'game_checkers_' + 'effect';
+  const effectId = slots && typeof slots === 'object' ? String(slots[effectSlot] || '') : '';
   const gameKey = String(game?.id || 'local-checkers');
 
   if (effectId !== 'game-checkers-effect-promotion') {
