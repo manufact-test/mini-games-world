@@ -6,12 +6,14 @@ import {
 } from '../games/checkers/renderer.js?v=57&base=mvp16-accepted';
 
 ensureCheckersCosmeticStyles();
+ensureCheckersRuntimeCorrectiveStyles();
 
 export { checkersMeta, checkersPlayerMark, checkersStatus };
 
 export function renderCheckersSurface({ game, me, container, onAction }){
   renderBaseCheckersSurface({ game, me, container, onAction });
   container.dataset.checkersTheme = checkersBoardVariant(game, me);
+  container.dataset.mgwCheckersPaidEffect = viewerHasPaidCheckersEffect(game, me) ? '1' : '0';
 
   queueMicrotask(() => {
     // The paid mover is a detached fixed overlay while the authoritative
@@ -35,6 +37,18 @@ function checkersBoardVariant(game, me){
   return itemId.startsWith(marker) ? itemId.slice(marker.length) : 'base';
 }
 
+function viewerHasPaidCheckersEffect(game, me){
+  const players = Array.isArray(game?.players) ? game.players : [];
+  const viewer = players.find(player => String(player?.id || '') === String(me?.id || '')) || null;
+  const slots = viewer?.game_cosmetics?.slots;
+  const effectId = slots && typeof slots === 'object' ? String(slots.game_checkers_effect || '') : '';
+  return [
+    'game-checkers-effect-move',
+    'game-checkers-effect-capture',
+    'game-checkers-effect-promotion',
+  ].includes(effectId);
+}
+
 function syncExactLiveLanding(container){
   if (!(container instanceof HTMLElement)) return;
 
@@ -50,15 +64,20 @@ function syncExactLiveLanding(container){
 
   const layerRect = layer.getBoundingClientRect();
   const pieceRect = destinationPiece.getBoundingClientRect();
-  if (layerRect.width <= 0 || layerRect.height <= 0 || pieceRect.width <= 0 || pieceRect.height <= 0) return;
+  const exactSize = stableLayoutPieceSize(destinationPiece);
+  if (layerRect.width <= 0 || layerRect.height <= 0 || pieceRect.width <= 0 || pieceRect.height <= 0 || exactSize === null) return;
 
   const fromX = numericCssPx(layer, '--mgw-fx-from-x');
   const fromY = numericCssPx(layer, '--mgw-fx-from-y');
   if (fromX === null || fromY === null) return;
 
+  // getBoundingClientRect() intentionally remains the center owner because every
+  // accepted Checkers scale animation is center-origin. Size is different: rect
+  // width/height INCLUDE transform scale (selected 1.08, move-impact, promotion),
+  // which can make the detached paid piece physically oversized and then appear
+  // to shrink from one edge at handoff. Read the untransformed layout box instead.
   const exactX = pieceRect.left - layerRect.left + pieceRect.width / 2;
   const exactY = pieceRect.top - layerRect.top + pieceRect.height / 2;
-  const exactSize = Math.min(pieceRect.width, pieceRect.height);
 
   layer.style.setProperty('--mgw-fx-dx', `${exactX - fromX}px`);
   layer.style.setProperty('--mgw-fx-dy', `${exactY - fromY}px`);
@@ -87,6 +106,19 @@ function syncExactLiveLanding(container){
   layer.dataset.mgwCheckersLandingX = exactX.toFixed(3);
   layer.dataset.mgwCheckersLandingY = exactY.toFixed(3);
   layer.dataset.mgwCheckersLandingSize = exactSize.toFixed(3);
+  layer.dataset.mgwCheckersLandingSizeSource = 'layout-box';
+}
+
+function stableLayoutPieceSize(piece){
+  if (!(piece instanceof HTMLElement)) return null;
+  const style = getComputedStyle(piece);
+  const width = Number.parseFloat(style.width);
+  const height = Number.parseFloat(style.height);
+  if (Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0) {
+    return Math.min(width, height);
+  }
+  const fallback = Math.min(piece.offsetWidth, piece.offsetHeight);
+  return Number.isFinite(fallback) && fallback > 0 ? fallback : null;
 }
 
 function numericCssPx(element, property){
@@ -100,5 +132,14 @@ function ensureCheckersCosmeticStyles(){
   link.rel = 'stylesheet';
   link.dataset.mgwCheckersCosmetics = 'mvp19-6-live-boards';
   link.href = new URL('../../css/games/checkers/cosmetics.css?v=1&mvp19_6=board-themes', import.meta.url).href;
+  document.head.appendChild(link);
+}
+
+function ensureCheckersRuntimeCorrectiveStyles(){
+  if (document.querySelector('link[data-mgw-checkers-runtime-corrective]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwCheckersRuntimeCorrective = 'mvp19-6-selection-geometry-mobile-v1';
+  link.href = new URL('../../css/games/checkers/runtime-handoff-mobile-v1.css?v=1&mvp19_6=selection-geometry-neutral&mobile=insets-v1', import.meta.url).href;
   document.head.appendChild(link);
 }
