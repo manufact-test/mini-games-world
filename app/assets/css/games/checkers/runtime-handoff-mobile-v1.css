@@ -1,0 +1,46 @@
+/* MVP-19.6 corrective — one physical checker size from selection through landing,
+   plus balanced mobile page insets for the Checkers board screen.
+
+   Presentation only: no rules, hit targets, timers, settlement or board mechanics. */
+
+/* The accepted base renderer scales a selected checker to 1.08. That is useful
+   without paid movement, but with a paid Checkers effect it makes one move use
+   two physical checker diameters: selected = 108%, flying/settled = 100%.
+   Keep the selection cell/brightness cue but hold the checker geometry at 1:1. */
+.checkers-surface[data-mgw-checkers-paid-effect="1"] .checkers-cell.selected .checkers-piece{
+  transform:none!important;
+}
+
+/* During paid presentation the authoritative destination checker is hidden under
+   the detached overlay. It must not carry a transform transition of its own into
+   the reveal frame, especially on capture-chain auto-selection. */
+.checkers-surface.mgw-checkers-live-fx-running .checkers-cell.mgw-checkers-live-fx-hide-piece .checkers-piece{
+  transform:none!important;
+  transform-origin:50% 50%!important;
+  transition:none!important;
+}
+
+/* Make the compositor use the physical border box around the exact same center.
+   This avoids one-edge optical compression when the transformed clone hands off
+   to the normal layout-owned checker. */
+.mgw-checkers-live-fx-piece,
+.mgw-checkers-live-fx-target{
+  transform-box:border-box;
+  transform-origin:50% 50%;
+  transition:none!important;
+}
+
+/* The live 390px diagnostic currently leaves only 8px at each page edge. On a
+   real Telegram phone this reads as the board card being pressed against the
+   viewport. Give Checkers a stable symmetric 12px content inset, respecting any
+   larger device safe-area inset. Internal board geometry stays untouched. */
+.game-board-screen[data-game-type="checkers"] .content{
+  padding-left:max(12px,env(safe-area-inset-left))!important;
+  padding-right:max(12px,env(safe-area-inset-right))!important;
+}
+.game-board-screen[data-game-type="checkers"] .board-wrap{
+  width:100%;
+  max-width:100%;
+  margin-left:auto;
+  margin-right:auto;
+}
