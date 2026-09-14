@@ -1,4 +1,4 @@
-/* MVP-19.8 Go Store visual owner. */
+/* MVP-19.8 Go Store visual owner — premium effects v2. */
 
 .store-v2-game-head[data-store-game-type="go"] .store-v2-game-head-marks{display:flex;gap:8px;align-items:center}
 .store-v2-game-head[data-store-game-type="go"] .mgw-go-head-stone{display:block;width:24px;height:24px;border-radius:50%;padding:0;font-size:0}
@@ -57,28 +57,164 @@
 .mgw-go-preview.stones-neon .mgw-go-stone.black{background:#070a0d;border:2px solid #00eaff;box-shadow:0 0 8px #00eaff,0 0 17px #00eaff66,inset 0 0 8px #00eaff44}
 .mgw-go-preview.stones-neon .mgw-go-stone.white{background:#f9f7ff;border:2px solid #cf63ff;box-shadow:0 0 8px #c85cff,0 0 17px #c85cff66,inset 0 0 7px #9b47ff55}
 
-.mgw-go-preview.effect-placement .fx-placement-target{animation:mgw-go-placement-stone 1.9s ease-in-out infinite}
-.mgw-go-preview.effect-placement .fx-placement-target::after{content:"";position:absolute;inset:-48%;border:2px solid #5ef0ff;border-radius:50%;opacity:0;box-shadow:0 0 8px #43e8ff,0 0 20px #43e8ff88;animation:mgw-go-placement-ring 1.9s ease-out infinite}
-.mgw-go-preview.effect-group-capture .fx-capture-target{animation:mgw-go-capture-stone 2.35s cubic-bezier(.22,.76,.2,1) infinite;animation-delay:calc(var(--fx-step) * .12s)}
-.mgw-go-preview.effect-group-capture .fx-capture-target::after{content:"";position:absolute;inset:-30%;border-radius:50%;border:1.5px solid #7ceaff;opacity:0;box-shadow:0 0 9px #53e7ff,0 0 18px #8a59ff80;animation:mgw-go-capture-halo 2.35s ease-out infinite;animation-delay:calc(var(--fx-step) * .12s)}
+/* Effect 1 — STONEFALL. A new stone drops from above, compresses on impact and
+   flashes a segmented seal instead of reusing the old generic pulse/ring. */
+.mgw-go-preview.effect-placement .fx-placement-target{
+  animation:mgw-go-v2-stonefall 2.35s cubic-bezier(.2,.78,.18,1) infinite both;
+  transform-origin:50% 50%;
+}
+.mgw-go-preview.effect-placement .fx-placement-target::before{
+  content:"";
+  position:absolute;
+  inset:-62%;
+  border-radius:50%;
+  background:conic-gradient(from 20deg,transparent 0 9%,#78f3ff 10% 13%,transparent 14% 34%,#ffd978 35% 38%,transparent 39% 60%,#c66cff 61% 64%,transparent 65% 84%,#78f3ff 85% 88%,transparent 89% 100%);
+  -webkit-mask:radial-gradient(circle,transparent 0 48%,#000 51% 59%,transparent 62%);
+  mask:radial-gradient(circle,transparent 0 48%,#000 51% 59%,transparent 62%);
+  opacity:0;
+  animation:mgw-go-v2-placement-seal 2.35s ease-out infinite both;
+}
+.mgw-go-preview.effect-placement .fx-placement-target::after{
+  content:"";
+  position:absolute;
+  left:50%;top:50%;
+  width:24%;height:24%;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 0 0 5px #5ef0ff55,0 0 18px 8px #52eaff66,0 0 34px 14px #b861ff33;
+  opacity:0;
+  transform:translate(-50%,-50%) scale(.2);
+  animation:mgw-go-v2-placement-flash 2.35s ease-out infinite both;
+}
+
+/* Effect 2 — VOID CAPTURE. Captured stones implode into the board with a
+   rotating segmented corona and four-particle burst; they no longer float up. */
+.mgw-go-preview.effect-group-capture .fx-capture-target{
+  animation:mgw-go-v2-capture-implode 2.8s cubic-bezier(.18,.7,.16,1) infinite both;
+  animation-delay:calc(var(--fx-step) * .14s);
+}
+.mgw-go-preview.effect-group-capture .fx-capture-target::before{
+  content:"";
+  position:absolute;
+  inset:-52%;
+  border-radius:50%;
+  background:conic-gradient(from 0deg,#66efff 0 8%,transparent 9% 27%,#d36cff 28% 36%,transparent 37% 57%,#7fffd4 58% 66%,transparent 67% 86%,#fff 87% 93%,transparent 94% 100%);
+  -webkit-mask:radial-gradient(circle,transparent 0 48%,#000 51% 58%,transparent 61%);
+  mask:radial-gradient(circle,transparent 0 48%,#000 51% 58%,transparent 61%);
+  opacity:0;
+  animation:mgw-go-v2-capture-corona 2.8s ease-in-out infinite both;
+  animation-delay:calc(var(--fx-step) * .14s);
+}
+.mgw-go-preview.effect-group-capture .fx-capture-target::after{
+  content:"";
+  position:absolute;
+  left:50%;top:50%;
+  width:4px;height:4px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:13px 0 #67efff,-13px 0 #d06dff,0 13px #7fffd4,0 -13px #fff3a0;
+  opacity:0;
+  transform:translate(-50%,-50%) scale(.2);
+  animation:mgw-go-v2-capture-particles 2.8s ease-out infinite both;
+  animation-delay:calc(var(--fx-step) * .14s);
+}
+
+/* Effect 3 — TERRITORY BLOOM. Territory stamps appear in a rotating sequence
+   while a soft radial wash blooms from the centre of the board. */
 .mgw-go-territory{z-index:3;width:7.6%;aspect-ratio:1;border-radius:26%;opacity:0}
-.mgw-go-territory.black{background:rgba(73,231,255,.34);border:1px solid #54ecff;box-shadow:0 0 8px #2ce5ff88;animation:mgw-go-territory-reveal 2.65s ease-in-out infinite;animation-delay:calc(var(--fx-step) * .11s)}
-.mgw-go-territory.white{background:rgba(202,100,255,.27);border:1px solid #d66cff;box-shadow:0 0 8px #c45dff88;animation:mgw-go-territory-reveal 2.65s ease-in-out infinite;animation-delay:calc(var(--fx-step) * .11s)}
-.mgw-go-preview.effect-territory-finish .mgw-go-board::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 20%,rgba(84,233,255,.12) 46%,rgba(204,97,255,.14) 55%,transparent 78%);transform:translateX(-120%);animation:mgw-go-territory-sweep 2.65s ease-in-out infinite;pointer-events:none}
+.mgw-go-territory.black{background:rgba(73,231,255,.34);border:1px solid #54ecff;box-shadow:0 0 8px #2ce5ff88;animation:mgw-go-v2-territory-stamp 3.1s cubic-bezier(.18,.72,.2,1) infinite both;animation-delay:calc(var(--fx-step) * .12s)}
+.mgw-go-territory.white{background:rgba(202,100,255,.27);border:1px solid #d66cff;box-shadow:0 0 8px #c45dff88;animation:mgw-go-v2-territory-stamp 3.1s cubic-bezier(.18,.72,.2,1) infinite both;animation-delay:calc(var(--fx-step) * .12s)}
+.mgw-go-preview.effect-territory-finish .mgw-go-board::before{
+  content:"";
+  position:absolute;
+  inset:-14%;
+  z-index:2;
+  pointer-events:none;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(95,239,255,.20) 0 16%,rgba(180,105,255,.13) 31%,rgba(255,214,117,.07) 45%,transparent 68%);
+  opacity:0;
+  transform:scale(.08);
+  animation:mgw-go-v2-territory-bloom 3.1s cubic-bezier(.22,.7,.2,1) infinite both;
+}
+.mgw-go-preview.effect-territory-finish .mgw-go-board::after{
+  content:"";
+  position:absolute;
+  inset:4%;
+  z-index:5;
+  pointer-events:none;
+  border-radius:8px;
+  border:1px solid transparent;
+  box-shadow:inset 0 0 0 0 rgba(91,236,255,0),0 0 0 0 rgba(197,101,255,0);
+  opacity:0;
+  animation:mgw-go-v2-territory-frame 3.1s ease-in-out infinite both;
+}
 
 .store-v2-confirm-game .store-v2-game-preview[data-game-type="go"]{box-sizing:border-box!important;width:100%!important;height:auto!important;min-height:190px!important;aspect-ratio:1!important;overflow:hidden!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:16px!important;background:linear-gradient(145deg,#15120e,#090807)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)!important}
 .store-v2-confirm-game .store-v2-game-preview[data-game-type="go"] .mgw-go-board{width:84%;max-width:none}
 
-@keyframes mgw-go-placement-stone{0%,18%,100%{transform:translate(-50%,-50%) scale(1)}28%{transform:translate(-50%,-50%) scale(.72)}42%{transform:translate(-50%,-50%) scale(1.11)}56%{transform:translate(-50%,-50%) scale(1)}}
-@keyframes mgw-go-placement-ring{0%,20%{opacity:0;transform:scale(.45)}34%{opacity:1}68%,100%{opacity:0;transform:scale(1.42)}}
-@keyframes mgw-go-capture-stone{0%,22%,100%{opacity:1;transform:translate(-50%,-50%) scale(1)}38%{opacity:1;transform:translate(-50%,-72%) scale(1.08)}55%{opacity:0;transform:translate(-50%,-94%) scale(.72)}72%,88%{opacity:0;transform:translate(-50%,-50%) scale(.55)}91%{opacity:1;transform:translate(-50%,-50%) scale(.9)}}
-@keyframes mgw-go-capture-halo{0%,20%{opacity:0;transform:scale(.45)}35%{opacity:1}58%,100%{opacity:0;transform:scale(1.5)}}
-@keyframes mgw-go-territory-reveal{0%,20%,100%{opacity:0;transform:translate(-50%,-50%) scale(.55)}38%,68%{opacity:1;transform:translate(-50%,-50%) scale(1)}82%{opacity:0;transform:translate(-50%,-50%) scale(1.18)}}
-@keyframes mgw-go-territory-sweep{0%,18%,100%{transform:translateX(-120%);opacity:0}35%{opacity:1}62%{transform:translateX(120%);opacity:.9}76%{opacity:0}}
+@keyframes mgw-go-v2-stonefall{
+  0%,12%,100%{opacity:0;transform:translate(-50%,-170%) scale(.68)}
+  20%{opacity:1}
+  34%{transform:translate(-50%,-50%) scale(1.04,.86)}
+  41%{transform:translate(-50%,-50%) scale(.92,1.08)}
+  50%,82%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  92%{opacity:0;transform:translate(-50%,-50%) scale(.96)}
+}
+@keyframes mgw-go-v2-placement-seal{
+  0%,26%,100%{opacity:0;transform:rotate(-55deg) scale(.45)}
+  35%{opacity:.95}
+  52%{opacity:.72;transform:rotate(120deg) scale(1.08)}
+  68%{opacity:0;transform:rotate(210deg) scale(1.38)}
+}
+@keyframes mgw-go-v2-placement-flash{
+  0%,30%,100%{opacity:0;transform:translate(-50%,-50%) scale(.2)}
+  36%{opacity:1}
+  48%{opacity:.72;transform:translate(-50%,-50%) scale(1)}
+  64%{opacity:0;transform:translate(-50%,-50%) scale(2.6)}
+}
+@keyframes mgw-go-v2-capture-implode{
+  0%,24%,100%{opacity:1;filter:none;transform:translate(-50%,-50%) scale(1) rotate(0)}
+  37%{filter:brightness(1.45) saturate(1.2);transform:translate(-50%,-50%) scale(1.1) rotate(-7deg)}
+  50%{opacity:1;filter:brightness(.72) saturate(1.8);transform:translate(-50%,-50%) scale(.78) rotate(12deg)}
+  63%{opacity:0;filter:blur(3px) brightness(.35);transform:translate(-50%,-50%) scale(.08) rotate(44deg)}
+  82%{opacity:0;filter:blur(0);transform:translate(-50%,-50%) scale(.08)}
+  91%{opacity:1;transform:translate(-50%,-50%) scale(.9)}
+}
+@keyframes mgw-go-v2-capture-corona{
+  0%,26%,100%{opacity:0;transform:rotate(0) scale(1.35)}
+  36%{opacity:.95}
+  55%{opacity:.85;transform:rotate(220deg) scale(.74)}
+  66%{opacity:0;transform:rotate(360deg) scale(.2)}
+}
+@keyframes mgw-go-v2-capture-particles{
+  0%,42%,100%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(0)}
+  52%{opacity:1}
+  67%{opacity:0;transform:translate(-50%,-50%) scale(1.45) rotate(42deg)}
+}
+@keyframes mgw-go-v2-territory-stamp{
+  0%,18%,100%{opacity:0;transform:translate(-50%,-50%) scale(.18) rotate(-35deg)}
+  34%{opacity:1;transform:translate(-50%,-50%) scale(1.2) rotate(6deg)}
+  43%,72%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0)}
+  84%{opacity:0;transform:translate(-50%,-50%) scale(.78) rotate(12deg)}
+}
+@keyframes mgw-go-v2-territory-bloom{
+  0%,20%,100%{opacity:0;transform:scale(.08)}
+  36%{opacity:.9}
+  63%{opacity:.48;transform:scale(1.05)}
+  78%{opacity:0;transform:scale(1.28)}
+}
+@keyframes mgw-go-v2-territory-frame{
+  0%,32%,100%{opacity:0;box-shadow:inset 0 0 0 0 rgba(91,236,255,0),0 0 0 0 rgba(197,101,255,0)}
+  48%{opacity:1;border-color:rgba(111,239,255,.54);box-shadow:inset 0 0 18px rgba(91,236,255,.16),0 0 12px rgba(197,101,255,.20)}
+  70%{opacity:.72;border-color:rgba(218,117,255,.46);box-shadow:inset 0 0 26px rgba(197,101,255,.10),0 0 18px rgba(91,236,255,.12)}
+  84%{opacity:0}
+}
 
 @media (prefers-reduced-motion:reduce){
   .store-v2-game-preview[data-game-type="go"] *{animation:none!important;transition:none!important}
-  .mgw-go-preview.effect-placement .fx-placement-target::after{opacity:.7;transform:scale(1)}
-  .mgw-go-preview.effect-group-capture .fx-capture-target{opacity:.62}
-  .mgw-go-preview.effect-territory-finish .mgw-go-territory{opacity:.85;transform:translate(-50%,-50%) scale(1)}
+  .mgw-go-preview.effect-placement .fx-placement-target{opacity:1!important;transform:translate(-50%,-50%) scale(1)!important}
+  .mgw-go-preview.effect-placement .fx-placement-target::before{opacity:.8!important;transform:rotate(30deg) scale(1)!important}
+  .mgw-go-preview.effect-group-capture .fx-capture-target{opacity:.58!important;filter:none!important;transform:translate(-50%,-50%) scale(.86)!important}
+  .mgw-go-preview.effect-territory-finish .mgw-go-territory{opacity:.85!important;transform:translate(-50%,-50%) scale(1)!important}
+  .mgw-go-preview.effect-territory-finish .mgw-go-board::before{opacity:.38!important;transform:scale(1)!important}
 }
