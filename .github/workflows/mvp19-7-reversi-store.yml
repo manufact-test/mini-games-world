@@ -9,7 +9,9 @@ on:
       - 'bot/tests/Mvp19_7ReversiStoreTest.php'
       - 'app/assets/js/screens/store-screen-reversi-store-v1.js'
       - 'app/assets/js/screens/store-screen-checkers-board-source-wrapper.js'
+      - 'app/assets/js/screens/store-game-selector-swipe-v1.js'
       - 'app/assets/css/games/reversi/store-cosmetics-v1.css'
+      - 'app/assets/css/screens/store-game-selector-swipe-v1.css'
       - 'app/runtime/client/version-manifest.php'
       - '.github/workflows/mvp19-7-reversi-store.yml'
   workflow_dispatch:
@@ -42,6 +44,7 @@ jobs:
           php -l app/runtime/client/version-manifest.php
           node --check app/assets/js/screens/store-screen-reversi-store-v1.js
           node --check app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+          node --check app/assets/js/screens/store-game-selector-swipe-v1.js
       - name: Run Reversi Store contract
         run: php bot/tests/Mvp19_7ReversiStoreTest.php
       - name: Re-run current shared Store contracts
@@ -65,6 +68,17 @@ jobs:
           grep -F "'game_reversi_effect'" "$migration"
           ! grep -Fq "offer_type' => 'bundle'" "$migration"
           ! grep -Fq "premium-bundle" "$migration"
+      - name: Guard game selector swipe corrective
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "store-game-selector-swipe-v1.js?v=1&mvp19_7=touch-drag" app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+          grep -F "touchmove" app/assets/js/screens/store-game-selector-swipe-v1.js
+          grep -F "event.preventDefault()" app/assets/js/screens/store-game-selector-swipe-v1.js
+          grep -F "mgwSuppressGameClickUntil" app/assets/js/screens/store-game-selector-swipe-v1.js
+          grep -F "user-select:none!important" app/assets/css/screens/store-game-selector-swipe-v1.css
+          grep -F "touch-action:pan-y pinch-zoom!important" app/assets/css/screens/store-game-selector-swipe-v1.css
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"selector_swipe=v1")) exit(1);'
       - name: Guard active Store graph
         shell: bash
         run: |
