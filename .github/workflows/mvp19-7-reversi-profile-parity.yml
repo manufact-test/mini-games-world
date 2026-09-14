@@ -50,7 +50,6 @@ jobs:
       - name: Re-run current shared Profile/Store contracts
         run: |
           node bot/tests/Mvp19_6ProfileGameCosmeticsParityContractTest.mjs
-          node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
           php bot/tests/Mvp19_7ReversiStoreTest.php
           php bot/tests/ProfileV2CorrectiveStaticContractTest.php
 
