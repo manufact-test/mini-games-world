@@ -127,12 +127,16 @@ $css = (string)file_get_contents($root . '/app/assets/css/games/go/store-cosmeti
 $topWrapper = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-checkers-board-source-wrapper.js');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
-$assertTrue(str_contains($topWrapper, 'store-screen-go-store-v1.js?v=1'), 'Active Store entrypoint must install the Go presentation layer');
-$assertTrue(str_contains((string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? ''), 'mvp19_8=go-store-v1'), 'Active Store URL must be cache-busted for MVP-19.8');
-$assertTrue(str_contains($launch, '/app/v110.php?v=1138'), 'Telegram launch must refresh the active Go Store graph');
+$assertTrue(str_contains($topWrapper, 'store-screen-go-store-v1.js?v=2&mvp19_8=effects-premium-v2'), 'Active Store entrypoint must install the fresh Go presentation layer');
+$assertTrue(str_contains((string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? ''), 'store-screen-checkers-board-source-wrapper.js?v=7'), 'Active Store outer wrapper must use the fresh corrective cache identity');
+$assertTrue(str_contains((string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? ''), 'go_effects=premium-v2'), 'Active Store URL must publish premium Go effects');
+$assertTrue(str_contains($launch, '/app/v110.php?v=1139'), 'Telegram launch must refresh the Go corrective graph');
 foreach (['wood','dark','stone','neon'] as $variant) $assertTrue(str_contains($css, 'theme-' . $variant), 'Go Store CSS must style board ' . $variant);
 foreach (['classic','marble','glass','neon'] as $variant) $assertTrue(str_contains($css, 'stones-' . $variant), 'Go Store CSS must style stone set ' . $variant);
 foreach (['placement','group-capture','territory-finish'] as $variant) $assertTrue(str_contains($wrapper, $variant), 'Go Store wrapper must own effect preview ' . $variant);
+$assertTrue(str_contains($css, 'mgw-go-v2-stonefall'), 'Go placement preview must use stonefall rather than the old generic pulse');
+$assertTrue(str_contains($css, 'mgw-go-v2-capture-implode'), 'Go capture preview must use implosion rather than the old lift');
+$assertTrue(str_contains($css, 'mgw-go-v2-territory-bloom'), 'Go territory preview must use radial bloom rather than the old sweep');
 $assertTrue(str_contains($css, '@media (prefers-reduced-motion:reduce)'), 'Go Store effects must include reduced-motion fallback');
 $assertTrue(!str_contains($wrapper, 'renderGoSurface(') && !str_contains($wrapper, 'last_captured_cells'), 'Store-only Go wrapper must not own gameplay mechanics');
 
