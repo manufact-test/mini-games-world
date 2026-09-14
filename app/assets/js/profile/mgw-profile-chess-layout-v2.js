@@ -8,6 +8,7 @@ ensureProfileChessLayoutStyles();
 ensureProfileGameCosmeticsRepairStyles();
 ensureProfileGameCosmeticsManualRepairStyles();
 ensureProfileCheckersStoreExactStyles();
+ensureProfileReversiTabsTouchFixStyles();
 prewarmProfileChessArtwork();
 
 export function initProfileScreen(){
@@ -15,10 +16,27 @@ export function initProfileScreen(){
   ensureProfileGameCosmeticsRepairStyles();
   ensureProfileGameCosmeticsManualRepairStyles();
   ensureProfileCheckersStoreExactStyles();
+  ensureProfileReversiTabsTouchFixStyles();
   prewarmProfileChessArtwork();
+  prepareProfileGameTabInputMode();
   initCheckersParityProfileScreen();
   initProfileCheckersHardSquare();
   initProfileReversiParity();
+}
+
+function prepareProfileGameTabInputMode(){
+  const screen = document.getElementById('screen-profile');
+  if (!(screen instanceof HTMLElement)) return;
+  const coarsePointer = globalThis.matchMedia?.('(pointer: coarse)').matches === true;
+  const noHover = globalThis.matchMedia?.('(hover: none)').matches === true;
+  if (!coarsePointer && !noHover) return;
+
+  // Telegram WebView can report a finger as pointerType="mouse". The legacy
+  // desktop drag helper then interprets tiny finger jitter as a drag and consumes
+  // the following click. Mark the rail as natively handled before that helper is
+  // installed; native overflow scrolling still works and taps remain real taps.
+  screen.dataset.mgwGameTabsScroller = '1';
+  screen.dataset.mgwGameTabsScrollerMode = 'native-touch';
 }
 
 function ensureProfileChessLayoutStyles(){
@@ -73,6 +91,22 @@ function ensureProfileCheckersStoreExactStyles(){
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.setAttribute('data-mgw-profile-checkers-store-exact-v2', '1');
+  link.href = href;
+  document.head.appendChild(link);
+}
+
+function ensureProfileReversiTabsTouchFixStyles(){
+  const href = new URL('../../css/screens/profile-reversi-tabs-touch-fix-v1.css?v=1&mvp19_7=tappable-tabs-and-separated-mark-v1', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-profile-reversi-tabs-touch-fix]');
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    document.head.appendChild(existing);
+    return;
+  }
+
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.setAttribute('data-mgw-profile-reversi-tabs-touch-fix', '1');
   link.href = href;
   document.head.appendChild(link);
 }
