@@ -34,8 +34,6 @@ export async function openStoreTab(){
   ensureEffectFinalCenteringStyles();
   installReversiStorePresentation();
   const result = await openAcceptedCheckersStoreTab();
-  ensureBoardSourceParityStyles();
-  ensureBoardCardRadiusStyles();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
   upgradeReversiStorePresentation();
@@ -49,8 +47,6 @@ export async function openStoreSheet(){
   ensureEffectFinalCenteringStyles();
   installReversiStorePresentation();
   const result = await openAcceptedCheckersStoreSheet();
-  ensureBoardSourceParityStyles();
-  ensureBoardCardRadiusStyles();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
   upgradeReversiStorePresentation();
