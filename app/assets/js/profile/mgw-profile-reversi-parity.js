@@ -1,4 +1,3 @@
-import { initProfileScreen as initAcceptedProfileScreen } from './mgw-profile-chess-layout-v2.js?v=12&mvp19_6=checkers-profile-manual-repair-v3&mvp19_7=reversi-parent';
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
 
@@ -22,8 +21,7 @@ let initialized = false;
 ensureReversiProfileStyles();
 installProfileApiRepairHook();
 
-export function initProfileScreen(){
-  initAcceptedProfileScreen();
+export function initProfileReversiParity(){
   upgradeProfileReversiPresentation();
 
   if (initialized) return;
