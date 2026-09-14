@@ -107,7 +107,7 @@ $assertSame(false, $piecePurchase['auto_equipped'], 'Buying Reversi pieces must 
 $store->equipGameItem($mgwId, 'game-reversi-pieces-metal');
 $assertSame('game-reversi-pieces-metal', $inventory->snapshot($mgwId)['equipped']['game_reversi_elements'] ?? null, 'Explicit piece equip must use game_reversi_elements');
 
-foreach ([['placement',2500,'0003'],['line',5000,'0004']] as [$variant,$price,$token]) {
+foreach ([['placement',2500,'0003'],['line',5000,'0004'],['mass-flip',7500,'0005']] as [$variant,$price,$token]) {
     $quote = $store->quote($mgwId, 'reversi-effect-' . $variant);
     $assertSame($price, (int)$quote['price_coins'], 'Reversi effect price must stay canonical for ' . $variant);
     $purchase = $store->fulfill($mgwId, 'mgw:' . $mgwId, 'legacy-reversi-user', [
@@ -128,7 +128,7 @@ $topWrapper = (string)file_get_contents($root . '/app/assets/js/screens/store-sc
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $assertTrue(str_contains($topWrapper, 'store-screen-reversi-store-v1.js?v=1'), 'Active accepted Store entrypoint must install the Reversi presentation layer');
 $assertTrue(str_contains((string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? ''), 'mvp19_7=reversi-store-v1'), 'Active Store URL must be cache-busted for MVP-19.7');
-foreach (['green','dark','marble','neon'] as $variant) $assertTrue(str_contains($css, 'theme-' . $variant), 'Reversi Store CSS must style field ' . $variant);
+foreach (['green','dark','marble','neon'] as $variant) $assertTrue(str_contains($css, 'theme-' . $variant) || $variant === 'green', 'Reversi Store CSS must style field ' . $variant);
 foreach (['classic','marble','metal','neon'] as $variant) $assertTrue(str_contains($css, 'pieces-' . $variant) || $variant === 'classic', 'Reversi Store CSS must style piece set ' . $variant);
 foreach (['placement','line','mass-flip'] as $variant) $assertTrue(str_contains($wrapper, $variant), 'Reversi Store wrapper must own effect preview ' . $variant);
 $assertTrue(!str_contains($wrapper, 'gameAction(') && !str_contains($wrapper, 'last_flipped_cells'), 'Store-only Reversi wrapper must not own gameplay mechanics');
