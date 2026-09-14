@@ -78,5 +78,5 @@ jobs:
           grep -F "mgw-go-v2-stonefall" app/assets/css/games/go/store-cosmetics-v1.css
           grep -F "mgw-go-v2-capture-implode" app/assets/css/games/go/store-cosmetics-v1.css
           grep -F "mgw-go-v2-territory-bloom" app/assets/css/games/go/store-cosmetics-v1.css
-          grep -F "/app/v110.php?v=1139" bot/helpers/WebAppLaunchUrl.php
+          php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1139) exit(1);'
           git diff --check

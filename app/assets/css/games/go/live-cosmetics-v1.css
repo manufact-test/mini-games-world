@@ -1,0 +1,74 @@
+/* MVP-19.8 Go live presentation owner. Gameplay geometry and rules remain in game.css/renderer.js. */
+
+.go-surface[data-mgw-go-live-cosmetics="1"] .go-board{isolation:isolate;transition:background .18s ease,box-shadow .18s ease,border-color .18s ease}
+
+/* Board themes */
+.go-surface[data-go-theme="wood"] .go-board{background:
+  repeating-linear-gradient(3deg,rgba(112,62,20,.075) 0 1px,transparent 1px 8px),
+  repeating-linear-gradient(91deg,rgba(255,245,205,.055) 0 2px,transparent 2px 15px),
+  radial-gradient(circle at 30% 22%,rgba(255,225,162,.18),transparent 36%),
+  linear-gradient(135deg,#e2b66e,#b77936);border-color:#69431f;box-shadow:0 16px 38px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,238,194,.2)}
+.go-surface[data-go-theme="dark"] .go-board{background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.055),transparent 36%),linear-gradient(145deg,#3d4142,#171a1c);border-color:#0d1011;box-shadow:0 16px 40px #0009,inset 0 0 0 1px #fff1}
+.go-surface[data-go-theme="dark"] .go-grid-svg line{stroke:#b9b1a7;opacity:.38}
+.go-surface[data-go-theme="dark"] .go-star{background:#d7d0c6;opacity:.62}
+.go-surface[data-go-theme="stone"] .go-board{background:
+  radial-gradient(circle at 18% 24%,rgba(65,68,72,.18) 0 1px,transparent 1.7px),
+  radial-gradient(circle at 78% 31%,rgba(77,80,83,.13) 0 1.2px,transparent 1.8px),
+  radial-gradient(circle at 43% 72%,rgba(45,48,52,.12) 0 1px,transparent 1.7px),
+  radial-gradient(ellipse at 24% 18%,rgba(255,255,255,.42),transparent 45%),
+  linear-gradient(145deg,#e5e2d9,#bfc0bc);border-color:#8e918f;box-shadow:0 16px 38px #0007,inset 0 0 0 1px #fff7}
+.go-surface[data-go-theme="stone"] .go-grid-svg line{stroke:#41464a;opacity:.42}
+.go-surface[data-go-theme="stone"] .go-star{background:#474b4e}
+.go-surface[data-go-theme="neon"] .go-board{background:radial-gradient(circle at 50% 46%,rgba(15,63,79,.5),transparent 62%),#07151b;border-color:#20e6ff;box-shadow:0 0 22px #00dfff5e,0 0 48px #9d54ff26,inset 0 0 0 1px #1eeaff87}
+.go-surface[data-go-theme="neon"] .go-grid-svg line{stroke:#35eaff;opacity:.6;filter:drop-shadow(0 0 2px #11ddff)}
+.go-surface[data-go-theme="neon"] .go-star{background:#d25dff;box-shadow:0 0 8px #c856ff}
+
+/* Stone sets */
+.go-surface[data-go-stones="classic"] .go-stone.black{background:radial-gradient(circle at 34% 27%,#595e63 0 7%,#1e2225 28%,#050607 72%);box-shadow:inset 0 0 0 1px #000,0 4px 7px #0009}
+.go-surface[data-go-stones="classic"] .go-stone.white{background:radial-gradient(circle at 32% 25%,#fffdf7 0 9%,#eee8db 37%,#bfb7a8 100%);box-shadow:inset 0 0 0 1px #9e9688,0 4px 7px #0005}
+.go-surface[data-go-stones="marble"] .go-stone.black{background:
+  radial-gradient(circle at 26% 24%,rgba(234,239,243,.17) 0 1px,transparent 1.5px),
+  radial-gradient(circle at 71% 67%,rgba(255,255,255,.12) 0 1px,transparent 1.6px),
+  linear-gradient(145deg,#5a6065,#171b1f 68%);box-shadow:inset 0 0 0 1px #090b0c,0 4px 7px #0009}
+.go-surface[data-go-stones="marble"] .go-stone.white{background:
+  radial-gradient(circle at 22% 25%,rgba(75,78,82,.18) 0 1px,transparent 1.5px),
+  radial-gradient(circle at 72% 70%,rgba(94,98,101,.14) 0 1px,transparent 1.6px),
+  linear-gradient(145deg,#f0eee8,#c6c5c0 70%);box-shadow:inset 0 0 0 1px #a7a6a1,0 4px 7px #0006}
+.go-surface[data-go-stones="glass"] .go-stone.black{background:radial-gradient(circle at 30% 22%,rgba(255,255,255,.42) 0 5%,rgba(60,78,91,.78) 20%,rgba(7,16,22,.88) 73%);border:1px solid #88bdd655;box-shadow:inset -2px -3px 8px #0008,inset 2px 2px 7px #b8efff35,0 4px 7px #0008}
+.go-surface[data-go-stones="glass"] .go-stone.white{background:radial-gradient(circle at 29% 22%,#fff9 0 6%,rgba(235,248,255,.78) 23%,rgba(172,203,218,.72) 73%);border:1px solid #e9fbff99;box-shadow:inset -2px -3px 8px #667c8850,inset 2px 2px 8px #fff9,0 4px 7px #0005}
+.go-surface[data-go-stones="neon"] .go-stone.black{background:#070a0d;border:2px solid #00eaff;box-shadow:0 0 8px #00eaff,0 0 17px #00eaff66,inset 0 0 8px #00eaff44}
+.go-surface[data-go-stones="neon"] .go-stone.white{background:#f9f7ff;border:2px solid #cf63ff;box-shadow:0 0 8px #c85cff,0 0 17px #c85cff66,inset 0 0 7px #9b47ff55}
+
+/* Placement — stonefall + segmented seal. */
+.go-point[data-mgw-go-fx="placement"]{overflow:visible}
+.go-point[data-mgw-go-fx="placement"]::before{content:"";position:absolute;inset:-38%;z-index:6;border-radius:50%;pointer-events:none;background:conic-gradient(from 20deg,transparent 0 9%,#78f3ff 10% 13%,transparent 14% 34%,#ffd978 35% 38%,transparent 39% 60%,#c66cff 61% 64%,transparent 65% 84%,#78f3ff 85% 88%,transparent 89% 100%);-webkit-mask:radial-gradient(circle,transparent 0 48%,#000 51% 59%,transparent 62%);mask:radial-gradient(circle,transparent 0 48%,#000 51% 59%,transparent 62%);opacity:0;animation:mgw-go-live-placement-seal .72s cubic-bezier(.18,.78,.22,1) both}
+.go-point[data-mgw-go-fx="placement"]::after{content:"";position:absolute;left:50%;top:50%;z-index:7;width:22%;height:22%;border-radius:50%;pointer-events:none;background:#fff;box-shadow:0 0 0 5px #5ef0ff55,0 0 18px 8px #52eaff66,0 0 34px 14px #b861ff33;opacity:0;transform:translate(-50%,-50%) scale(.2);animation:mgw-go-live-placement-flash .62s ease-out .17s both}
+.go-point[data-mgw-go-fx="placement"].placed-fresh .go-stone{animation:mgw-go-live-stonefall .58s cubic-bezier(.16,.82,.18,1.18) both!important;transform-origin:50% 50%}
+
+/* Group capture — implosion + rotating corona + particle burst. */
+.go-point[data-mgw-go-fx="group-capture"]{overflow:visible}
+.go-point[data-mgw-go-fx="group-capture"]::before{content:"";position:absolute;inset:-34%;z-index:7;border-radius:50%;pointer-events:none;background:conic-gradient(from 0deg,#66efff 0 8%,transparent 9% 27%,#d36cff 28% 36%,transparent 37% 57%,#7fffd4 58% 66%,transparent 67% 86%,#fff 87% 93%,transparent 94% 100%);-webkit-mask:radial-gradient(circle,transparent 0 47%,#000 50% 58%,transparent 61%);mask:radial-gradient(circle,transparent 0 47%,#000 50% 58%,transparent 61%);opacity:0;animation:mgw-go-live-capture-corona .76s ease-in-out calc(var(--mgw-go-fx-step,0) * .055s + .17s) both}
+.go-point[data-mgw-go-fx="group-capture"]::after{content:"";position:absolute;left:50%;top:50%;z-index:8;width:4px;height:4px;border-radius:50%;pointer-events:none;background:#fff;box-shadow:18px 0 #67efff,-18px 0 #d06dff,0 18px #7fffd4,0 -18px #fff3a0,13px 13px #8beaff,-13px -13px #d98cff;opacity:0;transform:translate(-50%,-50%) scale(.2);animation:mgw-go-live-capture-particles .7s ease-out calc(var(--mgw-go-fx-step,0) * .055s + .24s) both}
+.go-point[data-mgw-go-fx="group-capture"].capture-out .go-stone{animation:mgw-go-live-capture-implode .34s cubic-bezier(.2,.72,.16,1) both!important;animation-delay:calc(var(--mgw-go-fx-step,0) * .045s)!important}
+
+/* Territory finish — sequential territory stamps + board bloom + MGW seal. */
+.go-board[data-mgw-go-fx="territory-finish"]::before{content:"";position:absolute;inset:-10%;z-index:2;pointer-events:none;border-radius:50%;background:radial-gradient(circle,rgba(95,239,255,.26) 0 12%,rgba(180,105,255,.17) 28%,rgba(255,214,117,.09) 44%,transparent 68%);opacity:0;transform:scale(.08);animation:mgw-go-live-territory-bloom 1.9s cubic-bezier(.18,.72,.18,1) both}
+.go-board[data-mgw-go-fx="territory-finish"]::after{content:attr(data-mgw-go-seal);position:absolute;left:50%;top:50%;z-index:8;display:grid;place-items:center;width:23%;aspect-ratio:1;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%) scale(.34) rotate(-10deg);font-size:clamp(13px,4.2vw,26px);line-height:1;font-weight:1000;letter-spacing:.08em;color:#f7fdff;text-shadow:0 0 8px #6eefff,0 0 18px #b66fff;opacity:0;border:1px solid rgba(120,242,255,.78);background:radial-gradient(circle,rgba(18,38,54,.7),rgba(17,12,31,.5) 58%,transparent 72%);box-shadow:0 0 0 5px rgba(100,235,255,.07),0 0 26px rgba(103,232,255,.28),0 0 48px rgba(185,94,255,.17);animation:mgw-go-live-mgw-seal 1.65s cubic-bezier(.2,.78,.2,1) .22s both}
+.go-point[data-mgw-go-territory-fx="1"] .go-territory-marker{animation:mgw-go-live-territory-stamp .72s cubic-bezier(.18,.82,.2,1.12) calc(var(--mgw-go-territory-step,0) * .045s + .12s) both}
+
+@keyframes mgw-go-live-stonefall{0%{transform:translateY(-190%) scale(.68);opacity:0;filter:brightness(1.3) blur(.5px)}58%{transform:translateY(10%) scale(1.08,.92);opacity:1;filter:brightness(1.18) blur(0)}76%{transform:translateY(-4%) scale(.97,1.03)}100%{transform:translateY(0) scale(1);opacity:1;filter:brightness(1)}}
+@keyframes mgw-go-live-placement-seal{0%,12%{opacity:0;transform:scale(.35) rotate(-46deg)}45%{opacity:1;transform:scale(1.18) rotate(18deg)}100%{opacity:0;transform:scale(1.58) rotate(78deg)}}
+@keyframes mgw-go-live-placement-flash{0%{opacity:0;transform:translate(-50%,-50%) scale(.15)}28%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(2.7)}}
+@keyframes mgw-go-live-capture-implode{0%{transform:scale(1);opacity:1;filter:brightness(1)}48%{transform:scale(1.16);opacity:1;filter:brightness(1.55)}100%{transform:scale(.05) rotate(42deg);opacity:0;filter:brightness(2)}}
+@keyframes mgw-go-live-capture-corona{0%{opacity:0;transform:scale(.38) rotate(-30deg)}24%{opacity:1}70%{opacity:.9;transform:scale(1.18) rotate(126deg)}100%{opacity:0;transform:scale(.55) rotate(220deg)}}
+@keyframes mgw-go-live-capture-particles{0%,20%{opacity:0;transform:translate(-50%,-50%) scale(.1)}44%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.9) rotate(24deg)}}
+@keyframes mgw-go-live-territory-bloom{0%{opacity:0;transform:scale(.08)}32%{opacity:.86}72%{opacity:.42;transform:scale(1.06)}100%{opacity:0;transform:scale(1.32)}}
+@keyframes mgw-go-live-territory-stamp{0%{opacity:0;transform:scale(.2) rotate(-35deg)}58%{opacity:1;transform:scale(1.3) rotate(8deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes mgw-go-live-mgw-seal{0%{opacity:0;transform:translate(-50%,-50%) scale(.28) rotate(-16deg);filter:blur(2px)}36%{opacity:1;transform:translate(-50%,-50%) scale(1.08) rotate(2deg);filter:blur(0)}70%{opacity:.96;transform:translate(-50%,-50%) scale(.98) rotate(0)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.24) rotate(4deg);filter:blur(.4px)}}
+
+@media (prefers-reduced-motion:reduce){
+  .go-point[data-mgw-go-fx="placement"]::before,.go-point[data-mgw-go-fx="placement"]::after,.go-point[data-mgw-go-fx="placement"].placed-fresh .go-stone,
+  .go-point[data-mgw-go-fx="group-capture"]::before,.go-point[data-mgw-go-fx="group-capture"]::after,.go-point[data-mgw-go-fx="group-capture"].capture-out .go-stone,
+  .go-board[data-mgw-go-fx="territory-finish"]::before,.go-board[data-mgw-go-fx="territory-finish"]::after,.go-point[data-mgw-go-territory-fx="1"] .go-territory-marker{animation:none!important}
+  .go-board[data-mgw-go-fx="territory-finish"]::after{opacity:.35;transform:translate(-50%,-50%) scale(1)}
+}

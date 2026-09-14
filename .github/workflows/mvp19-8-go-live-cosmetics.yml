@@ -1,0 +1,67 @@
+name: MVP-19.8 Go Live cosmetics
+
+on:
+  pull_request:
+    branches: [agent/mvp-13-2-staging]
+    paths:
+      - 'app/assets/js/games/go/renderer-cosmetics-v1.js'
+      - 'app/assets/css/games/go/live-cosmetics-v1.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'bot/tests/Mvp19_8GoLiveCosmeticsContractTest.mjs'
+      - '.github/workflows/mvp19-8-go-live-cosmetics.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  go-live-cosmetics:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax checks
+        run: |
+          node --check app/assets/js/games/go/renderer-cosmetics-v1.js
+          node --check bot/tests/Mvp19_8GoLiveCosmeticsContractTest.mjs
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/helpers/WebAppLaunchUrl.php
+
+      - name: Run Go Live cosmetics contract
+        run: node bot/tests/Mvp19_8GoLiveCosmeticsContractTest.mjs
+
+      - name: Re-run current Go Store and Profile contracts
+        run: |
+          php bot/tests/Mvp19_8GoStoreTest.php
+          node bot/tests/Mvp19_8GoProfileParityContractTest.mjs
+          php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
+
+      - name: Guard frozen Go gameplay and shared ownership
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- \
+            app/assets/js/games/go/renderer.js \
+            app/assets/js/games/go/entry.js \
+            app/assets/js/games/go/rules.js \
+            bot/games/go \
+            bot/catalog/ProductInventoryService.php
+          git diff --check
