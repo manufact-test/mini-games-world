@@ -1,4 +1,4 @@
-/* MVP-19.7 Reversi Telegram height fit. Mirrors the accepted Checkers screen/scroll owner. */
+/* MVP-19.7 Reversi Telegram viewport owner. Mirrors the accepted Checkers full-width/scroll layout. */
 
 .game-board-screen[data-game-type="reversi"]{
   height:calc(var(--tg-viewport-stable-height,100dvh));
@@ -9,31 +9,65 @@
 
 .game-board-screen[data-game-type="reversi"] > .game-board-safe-content{
   min-height:0;
-  padding-bottom:max(56px,calc(30px + var(--tg-content-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))));
+  padding-bottom:max(8px,var(--tg-content-safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));
 }
 
 .game-board-screen[data-game-type="reversi"] .content{
-  min-height:0;
-  overflow-y:auto;
+  display:flex!important;
+  flex-direction:column!important;
+  height:100%!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  padding-bottom:8px!important;
+}
+
+.game-board-screen[data-game-type="reversi"] .game-header{
+  flex:0 0 auto!important;
+}
+
+.game-board-screen[data-game-type="reversi"] .board-wrap{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  width:100%!important;
+  max-width:100%!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
   overscroll-behavior-y:contain;
   -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
   scrollbar-width:none;
 }
-.game-board-screen[data-game-type="reversi"] .content::-webkit-scrollbar{display:none}
+.game-board-screen[data-game-type="reversi"] .board-wrap::-webkit-scrollbar{display:none}
 
-@media(max-height:760px){
-  .game-board-screen[data-game-type="reversi"] .reversi-board{
-    width:min(100%,clamp(300px,calc(100dvh - 285px),360px));
-    margin-inline:auto;
-  }
+.game-board-screen[data-game-type="reversi"] .board.reversi-surface,
+.game-board-screen[data-game-type="reversi"] .reversi-panel,
+.game-board-screen[data-game-type="reversi"] .reversi-board{
+  width:100%!important;
+  max-width:100%!important;
+}
+
+.game-board-screen[data-game-type="reversi"] .board.reversi-surface{
+  display:block!important;
+  margin:0!important;
+  flex:0 0 auto!important;
+}
+
+.game-board-screen[data-game-type="reversi"] .reversi-board{
+  margin-inline:0!important;
+}
+
+.game-board-screen[data-game-type="reversi"] #leaveGame{
+  position:static!important;
+  inset:auto!important;
+  z-index:auto!important;
+  display:block!important;
+  flex:0 0 auto!important;
+  width:100%!important;
+  margin:2px 0 0!important;
 }
 
 @media(max-height:700px){
   .game-board-screen[data-game-type="reversi"] .content{
-    padding-top:6px;
-    padding-bottom:max(72px,calc(36px + var(--tg-content-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))));
-  }
-  .game-board-screen[data-game-type="reversi"] .reversi-board{
-    width:min(100%,clamp(278px,calc(100dvh - 275px),336px));
+    padding-top:6px!important;
   }
 }
