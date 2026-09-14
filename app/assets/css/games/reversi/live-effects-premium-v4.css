@@ -1,0 +1,219 @@
+/* MVP-19.7 Reversi premium live-effect corrective.
+   Store remains the visual source of truth. Real Reversi flip cadence remains authoritative. */
+
+/* LINE — a travelling cyan light pass with a true half-turn, not a pulse clone of Placement. */
+#gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="line"]{
+  overflow:visible!important;
+  isolation:isolate;
+  z-index:7!important;
+}
+#gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="line"] .reversi-disc{
+  z-index:10!important;
+  backface-visibility:visible!important;
+  transform-style:preserve-3d!important;
+  will-change:transform,filter;
+  animation:mgwRvPremiumLineFlip .62s cubic-bezier(.18,.78,.18,1) calc(var(--mgw-rv-fx-delay,320ms) - 100ms) both!important;
+}
+#gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="line"] .reversi-disc::before{
+  content:""!important;
+  position:absolute!important;
+  z-index:12!important;
+  inset:-2%!important;
+  border-radius:50%!important;
+  opacity:0;
+  pointer-events:none!important;
+  background:
+    linear-gradient(180deg,rgba(226,253,255,.82) 0%,rgba(110,241,255,.44) 19%,rgba(55,211,236,.12) 38%,transparent 55%),
+    radial-gradient(ellipse at 50% 92%,rgba(0,4,10,.70) 0%,rgba(0,4,10,.30) 42%,transparent 72%)!important;
+  box-shadow:
+    inset 0 8px 12px rgba(180,250,255,.28),
+    inset 0 -9px 14px rgba(0,0,0,.40)!important;
+  animation:mgwRvPremiumLineSurface .62s ease-in-out calc(var(--mgw-rv-fx-delay,320ms) - 100ms) both!important;
+}
+#gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="line"]::before{
+  content:"";
+  position:absolute;
+  z-index:8;
+  left:50%;
+  top:-58%;
+  width:56%;
+  height:168%;
+  border-radius:50%;
+  pointer-events:none;
+  opacity:0;
+  background:linear-gradient(180deg,transparent 0%,rgba(176,250,255,.10) 18%,rgba(87,235,255,.72) 47%,rgba(72,218,247,.16) 69%,transparent 100%);
+  filter:blur(2.2px) drop-shadow(0 0 7px rgba(66,229,255,.52));
+  transform:translateX(-50%) translateY(-28%) scaleY(.55);
+  transform-origin:50% 45%;
+  animation:mgwRvPremiumLineBeam .62s cubic-bezier(.18,.75,.2,1) calc(var(--mgw-rv-fx-delay,320ms) - 100ms) both;
+}
+#gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="line"]::after{
+  content:""!important;
+  position:absolute!important;
+  z-index:9!important;
+  left:50%!important;
+  top:auto!important;
+  bottom:2%!important;
+  width:118%!important;
+  height:42%!important;
+  aspect-ratio:auto!important;
+  border:0!important;
+  border-radius:50%!important;
+  pointer-events:none!important;
+  opacity:0;
+  background:radial-gradient(ellipse at center,rgba(79,232,255,.58) 0%,rgba(67,218,246,.26) 34%,rgba(32,165,198,.08) 55%,transparent 76%)!important;
+  box-shadow:none!important;
+  filter:blur(4px);
+  transform:translateX(-50%) scale(.62)!important;
+  animation:mgwRvPremiumLineFloor .62s ease-out calc(var(--mgw-rv-fx-delay,320ms) - 100ms) both!important;
+}
+
+/* MASS FLIP — a coordinated violet/cyan lift-wave across all actually flipped discs.
+   It deliberately avoids Placement's expanding target ring. */
+#gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"]{
+  overflow:visible!important;
+  isolation:isolate;
+  z-index:8!important;
+}
+#gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"] .reversi-disc{
+  z-index:12!important;
+  backface-visibility:visible!important;
+  transform-style:preserve-3d!important;
+  will-change:transform,filter;
+  animation:mgwRvPremiumMassFlip .84s cubic-bezier(.16,.82,.18,1) calc(var(--mgw-rv-fx-delay,320ms) - 135ms) both!important;
+}
+#gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"] .reversi-disc::before{
+  content:""!important;
+  position:absolute!important;
+  z-index:13!important;
+  inset:-5%!important;
+  border-radius:50%!important;
+  opacity:0;
+  pointer-events:none!important;
+  background:
+    radial-gradient(circle at 34% 18%,rgba(238,206,255,.88) 0%,rgba(202,126,255,.52) 17%,rgba(172,77,255,.16) 38%,transparent 58%),
+    radial-gradient(ellipse at 58% 90%,rgba(29,0,52,.72) 0%,rgba(39,0,70,.30) 44%,transparent 73%)!important;
+  box-shadow:
+    inset 0 9px 14px rgba(226,185,255,.28),
+    inset 0 -10px 15px rgba(52,0,84,.36)!important;
+  animation:mgwRvPremiumMassSurface .84s ease-in-out calc(var(--mgw-rv-fx-delay,320ms) - 135ms) both!important;
+}
+#gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"]::before{
+  content:"";
+  position:absolute;
+  z-index:9;
+  left:50%;
+  bottom:-24%;
+  width:145%;
+  height:150%;
+  border-radius:48% 52% 46% 54%;
+  pointer-events:none;
+  opacity:0;
+  background:
+    radial-gradient(ellipse at 50% 76%,rgba(177,83,255,.58) 0%,rgba(139,61,245,.34) 25%,rgba(80,214,255,.20) 43%,rgba(38,15,79,.07) 60%,transparent 74%),
+    linear-gradient(180deg,transparent 9%,rgba(194,105,255,.15) 35%,rgba(104,217,255,.10) 58%,transparent 88%);
+  filter:blur(3.5px) drop-shadow(0 -5px 11px rgba(174,73,255,.44));
+  transform:translateX(-50%) translateY(24%) scale(.66,.48);
+  transform-origin:50% 78%;
+  animation:mgwRvPremiumMassPlume .84s cubic-bezier(.17,.76,.18,1) calc(var(--mgw-rv-fx-delay,320ms) - 135ms) both;
+}
+#gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"]::after{
+  content:""!important;
+  position:absolute!important;
+  z-index:11!important;
+  left:50%!important;
+  top:50%!important;
+  width:122%!important;
+  height:auto!important;
+  aspect-ratio:1!important;
+  border:0!important;
+  border-radius:50%!important;
+  pointer-events:none!important;
+  opacity:0;
+  background:conic-gradient(from 218deg,
+    transparent 0deg 30deg,
+    rgba(202,116,255,.18) 48deg,
+    rgba(197,91,255,.92) 74deg,
+    rgba(91,231,255,.76) 103deg,
+    transparent 132deg 218deg,
+    rgba(141,69,255,.14) 236deg,
+    rgba(189,92,255,.72) 262deg,
+    transparent 298deg 360deg)!important;
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3px));
+  mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3px));
+  box-shadow:none!important;
+  filter:drop-shadow(0 0 5px rgba(189,87,255,.78)) drop-shadow(0 0 10px rgba(83,225,255,.38));
+  transform:translate(-50%,-50%) rotate(-28deg) scale(.48)!important;
+  animation:mgwRvPremiumMassOrbit .84s cubic-bezier(.14,.76,.16,1) calc(var(--mgw-rv-fx-delay,320ms) - 135ms) both!important;
+}
+
+@keyframes mgwRvPremiumLineFlip{
+  0%,10%{transform:perspective(240px) rotateY(0deg) scale(1);filter:none}
+  23%{transform:perspective(240px) rotateY(58deg) scale(.975);filter:drop-shadow(0 -1px 3px rgba(83,235,255,.58))}
+  34%{transform:perspective(240px) rotateY(92deg) scale(.95);filter:drop-shadow(0 -2px 5px rgba(83,235,255,.82))}
+  55%{transform:perspective(240px) rotateY(180deg) scale(1.045);filter:drop-shadow(0 -4px 8px rgba(83,235,255,.92))}
+  73%{transform:perspective(240px) rotateY(180deg) scale(1.025);filter:drop-shadow(0 -2px 6px rgba(83,235,255,.58))}
+  100%{transform:perspective(240px) rotateY(180deg) scale(1);filter:none}
+}
+@keyframes mgwRvPremiumLineSurface{
+  0%,12%{opacity:0;transform:translateY(-18%) scale(.92)}
+  28%{opacity:.62}
+  48%{opacity:1;transform:translateY(0) scale(1.01)}
+  72%{opacity:.38;transform:translateY(10%) scale(1)}
+  100%{opacity:0;transform:translateY(18%) scale(.97)}
+}
+@keyframes mgwRvPremiumLineBeam{
+  0%,9%{opacity:0;transform:translateX(-50%) translateY(-32%) scaleY(.48)}
+  24%{opacity:.46}
+  43%{opacity:.96;transform:translateX(-50%) translateY(-2%) scaleY(.88)}
+  64%{opacity:.40;transform:translateX(-50%) translateY(18%) scaleY(1.02)}
+  100%{opacity:0;transform:translateX(-50%) translateY(40%) scaleY(.78)}
+}
+@keyframes mgwRvPremiumLineFloor{
+  0%,15%{opacity:0;transform:translateX(-50%) scale(.55)}
+  39%{opacity:.76;transform:translateX(-50%) scale(.92)}
+  64%{opacity:.40;transform:translateX(-50%) scale(1.12)}
+  100%{opacity:0;transform:translateX(-50%) scale(1.30)}
+}
+
+@keyframes mgwRvPremiumMassFlip{
+  0%,10%{transform:perspective(250px) translateY(0) rotateY(0deg) scale(1);filter:none}
+  20%{transform:perspective(250px) translateY(-5%) rotateY(48deg) scale(.98);filter:drop-shadow(0 -2px 4px rgba(174,82,255,.46))}
+  30%{transform:perspective(250px) translateY(-11%) rotateY(92deg) scale(.93);filter:drop-shadow(0 -4px 7px rgba(174,82,255,.76))}
+  49%{transform:perspective(250px) translateY(-19%) rotateY(180deg) scale(1.14);filter:drop-shadow(0 -7px 11px rgba(185,89,255,.94))}
+  65%{transform:perspective(250px) translateY(-13%) rotateY(180deg) scale(1.09);filter:drop-shadow(0 -5px 10px rgba(105,219,255,.50))}
+  82%{transform:perspective(250px) translateY(-4%) rotateY(180deg) scale(1.035);filter:drop-shadow(0 -2px 6px rgba(173,82,255,.40))}
+  100%{transform:perspective(250px) translateY(0) rotateY(180deg) scale(1);filter:none}
+}
+@keyframes mgwRvPremiumMassSurface{
+  0%,10%{opacity:0;transform:translateY(-20%) scale(.90)}
+  26%{opacity:.58}
+  48%{opacity:1;transform:translateY(-2%) scale(1.06)}
+  68%{opacity:.72;transform:translateY(8%) scale(1.03)}
+  100%{opacity:0;transform:translateY(18%) scale(.96)}
+}
+@keyframes mgwRvPremiumMassPlume{
+  0%,9%{opacity:0;transform:translateX(-50%) translateY(27%) scale(.58,.40)}
+  27%{opacity:.52}
+  48%{opacity:.96;transform:translateX(-50%) translateY(-4%) scale(1.02,1.08)}
+  67%{opacity:.58;transform:translateX(-50%) translateY(-13%) scale(1.13,1.18)}
+  100%{opacity:0;transform:translateX(-50%) translateY(-28%) scale(1.24,1.26)}
+}
+@keyframes mgwRvPremiumMassOrbit{
+  0%,10%{opacity:0;transform:translate(-50%,-50%) rotate(-30deg) scale(.46)}
+  29%{opacity:.72}
+  50%{opacity:1;transform:translate(-50%,-50%) rotate(104deg) scale(1.00)}
+  70%{opacity:.58;transform:translate(-50%,-50%) rotate(194deg) scale(1.20)}
+  100%{opacity:0;transform:translate(-50%,-50%) rotate(286deg) scale(1.42)}
+}
+
+@media(prefers-reduced-motion:reduce){
+  #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="line"]::before,
+  #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="line"]::after,
+  #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"]::before,
+  #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"]::after,
+  #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="line"] .reversi-disc::before,
+  #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"] .reversi-disc::before{animation:none!important;display:none!important}
+  #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="line"] .reversi-disc,
+  #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"] .reversi-disc{animation:none!important;transform:none!important;filter:none!important}
+}
