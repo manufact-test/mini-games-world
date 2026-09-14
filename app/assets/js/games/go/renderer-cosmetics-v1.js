@@ -80,10 +80,11 @@ function decorateLiveGo({ game, me, container }){
     }
   }
 
+  const finishEffectId = effectForPlayer(gameId, presentationOwner);
   if (
     String(game?.status || '') === 'finished'
     && game?.final_score
-    && effectId === 'game-go-effect-territory-finish'
+    && (effectId === 'game-go-effect-territory-finish' || finishEffectId === 'game-go-effect-territory-finish')
   ) {
     board.dataset.mgwGoFx = 'territory-finish';
     board.dataset.mgwGoSeal = 'MGW';
