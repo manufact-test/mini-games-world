@@ -64,7 +64,7 @@ assert.ok(profile.includes('activateGoTab(screen, gameTab);'), 'Go click must ac
 assert.ok(profile.includes("panel.dataset.profileGamePanel = 'go'"), 'Corrective must hand the panel to Go before rendering');
 assert.ok(profile.includes('globalThis.setTimeout(repair, 260)'), 'Go tab must receive a late repair after deferred Profile refresh');
 
-assert.ok(layout.includes("mgw-profile-go-parity.js?v=1&mvp19_8=go-profile-parity-v1"), 'Active Profile owner must import Go parity');
+assert.ok(layout.includes("mgw-profile-go-parity.js?v=2&mvp19_8=go-profile-corrective-v2"), 'Active Profile owner must import the fresh Go corrective module');
 assert.ok(layout.includes("mgw-profile-go-hard-square-v1.js?v=1&mvp19_8=go-profile-hard-square-v1"), 'Active Profile owner must import Go hard-square runtime');
 assert.ok(layout.includes('initProfileGoParity();'), 'Active Profile owner must initialize Go parity');
 assert.ok(layout.includes('initProfileGoHardSquare();'), 'Active Profile owner must initialize Go hard-square runtime');
@@ -110,9 +110,12 @@ assert.ok(!storeCss.includes('animation:mgw-go-territory-sweep'), 'Old linear te
 assert.ok(storeWrapper.includes('store-cosmetics-v1.css?v=2&mvp19_8=effects-premium-v2'), 'Store presentation must request the fresh premium effect CSS identity');
 assert.ok(storeWrapper.includes('const signature = `${layer}:${variant}:v2`'), 'Store previews must repaint under a fresh v2 signature');
 
-assert.ok(manifest.includes('mgw-profile-chess-layout-v2.js?v=18'), 'Active Profile owner must retain the accepted Go Profile cache identity');
-assert.ok(manifest.includes('mvp19_8=go-profile-parity-v1'), 'Active Profile URL must publish Go Profile parity');
-assert.ok(manifest.includes('go_card_runtime=hard-square-v1'), 'Active Profile URL must publish Go hard-square runtime');
+assert.ok(manifest.includes('mgw-profile-chess-layout-v2.js?v=19'), 'Active Profile owner must use the fresh corrective cache identity');
+assert.ok(manifest.includes('mvp19_8=go-profile-corrective-v2'), 'Active Profile URL must publish Go Profile corrective v2');
+assert.ok(manifest.includes('game_tab_icons=normalized-v3'), 'Active Profile URL must publish normalized game-tab marks');
+assert.ok(manifest.includes('go_card_runtime=hard-square-v1'), 'Active Profile URL must retain Go hard-square runtime');
+assert.ok(manifest.includes('store-screen-checkers-board-source-wrapper.js?v=7'), 'Active Store outer wrapper must have a fresh cache identity');
+assert.ok(manifest.includes('go_effects=premium-v2'), 'Active Store URL must publish premium Go effect previews');
 
 assert.ok(!profile.includes('gameAction('), 'Profile parity must not own Go gameplay actions');
 assert.ok(!profile.includes('liberties'), 'Profile parity must not implement Go rules');
