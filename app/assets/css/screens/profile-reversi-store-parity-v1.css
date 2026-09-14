@@ -1,0 +1,102 @@
+/* MVP-19.7 Reversi Profile parity: reuse accepted Store artwork inside Profile. */
+
+.profile-v2-game-tab[data-profile-game-tab="reversi"] .profile-v2-game-tab-mark{
+  color:transparent!important;
+  font-size:0!important;
+}
+.profile-v2-game-tab[data-profile-game-tab="reversi"] .profile-v2-game-tab-mark::before,
+.profile-v2-game-tab[data-profile-game-tab="reversi"] .profile-v2-game-tab-mark::after{
+  content:"";
+  position:absolute;
+  top:50%;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  transform:translateY(-50%);
+}
+.profile-v2-game-tab[data-profile-game-tab="reversi"] .profile-v2-game-tab-mark::before{
+  left:1px;
+  background:radial-gradient(circle at 34% 30%,#5c6168 0 8%,#20242a 28%,#050608 72%);
+  box-shadow:inset 0 0 0 1px #000,0 2px 4px #0007;
+}
+.profile-v2-game-tab[data-profile-game-tab="reversi"] .profile-v2-game-tab-mark::after{
+  right:1px;
+  background:radial-gradient(circle at 34% 28%,#fff 0 10%,#f1f3f5 34%,#bec4ca 100%);
+  box-shadow:inset 0 0 0 1px #8f979f,0 2px 4px #0005;
+}
+.profile-v2-game-tab.active[data-profile-game-tab="reversi"] .profile-v2-game-tab-mark::before{
+  box-shadow:inset 0 0 0 1px #000,0 0 0 1px rgba(255,255,255,.12),0 0 8px rgba(124,92,255,.36);
+}
+.profile-v2-game-tab.active[data-profile-game-tab="reversi"] .profile-v2-game-tab-mark::after{
+  box-shadow:inset 0 0 0 1px #8f979f,0 0 0 1px rgba(255,255,255,.28),0 0 8px rgba(178,116,255,.30);
+}
+
+.profile-v2-game-card .store-v2-game-preview[data-game-type="reversi"]{
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1!important;
+  overflow:hidden!important;
+  margin:0!important;
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.09)!important;
+  border-radius:14px!important;
+  background:linear-gradient(145deg,#111820,#070b10)!important;
+}
+.profile-v2-game-card .store-v2-game-preview[data-game-type="reversi"] .mgw-reversi-preview{
+  position:absolute!important;
+  inset:0!important;
+}
+.profile-v2-game-card .store-v2-game-preview[data-game-type="reversi"] .mgw-rv-board{
+  width:84%!important;
+  max-width:none!important;
+}
+
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="reversi"]{
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  width:min(100%,236px)!important;
+  max-width:236px!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1!important;
+  overflow:hidden!important;
+  margin:0 auto!important;
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.11)!important;
+  border-radius:18px!important;
+  background:linear-gradient(145deg,#111820,#070b10)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04)!important;
+}
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="reversi"] .mgw-reversi-preview{
+  position:absolute!important;
+  inset:0!important;
+}
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="reversi"] .mgw-rv-board{
+  width:84%!important;
+  max-width:none!important;
+}
+
+#screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="reversi"][data-cosmetic-layer="effect"]{
+  cursor:default!important;
+}
+#screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="reversi"] *,
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="reversi"] *{
+  pointer-events:none!important;
+}
+
+@media(max-width:390px){
+  .profile-v2-game-card .store-v2-game-preview[data-game-type="reversi"]{border-radius:12px!important}
+  .profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="reversi"]{border-radius:16px!important}
+}
+
+@media(prefers-reduced-motion:reduce){
+  #screen-profile .store-v2-game-preview[data-game-type="reversi"] *{animation:none!important}
+}
