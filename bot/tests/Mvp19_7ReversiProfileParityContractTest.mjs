@@ -51,16 +51,22 @@ assert.ok(profile.includes("store-cosmetics-v1.css"), 'Profile must reuse accept
 
 assert.ok(layout.includes("mgw-profile-reversi-parity.js?v=1&mvp19_7=reversi-profile-parity-v1"), 'Accepted Profile wrapper must import the Reversi parity module');
 assert.ok(layout.includes('initProfileReversiParity();'), 'Accepted Profile wrapper must initialize Reversi parity');
-assert.ok(layout.includes('prepareProfileGameTabInputMode();'), 'Active Profile wrapper must choose the game-tab input mode before shared parity initialization');
-assert.ok(layout.includes("(pointer: coarse)"), 'Touch devices must be detected as coarse pointers');
-assert.ok(layout.includes("(hover: none)"), 'Telegram-style no-hover WebViews must use native tab scrolling');
-assert.ok(layout.includes("screen.dataset.mgwGameTabsScroller = '1'"), 'Native touch mode must prevent the legacy mouse drag helper from installing');
-assert.ok(layout.includes("screen.dataset.mgwGameTabsScrollerMode = 'native-touch'"), 'Native touch mode must publish an explicit runtime marker');
+assert.ok(layout.includes('prepareProfileGameTabInputMode();'), 'Active Profile wrapper must own game-tab input before shared parity initialization');
+assert.ok(layout.includes("screen.dataset.mgwGameTabsScroller = '1'"), 'Active wrapper must prevent the legacy eager-capture drag helper from installing');
+assert.ok(layout.includes("screen.dataset.mgwGameTabsScrollerMode = 'delayed-capture-v2'"), 'Active wrapper must publish the delayed-capture input owner');
+assert.ok(layout.includes('PROFILE_GAME_TAB_DRAG_THRESHOLD = 5'), 'Profile tab drag must keep an explicit movement threshold');
+assert.ok(layout.includes("event.pointerType !== 'mouse'"), 'Touch pointers must remain on native overflow scrolling');
+assert.ok(layout.includes('Math.abs(delta) < PROFILE_GAME_TAB_DRAG_THRESHOLD'), 'Pointer movement below the threshold must remain a click candidate');
+assert.ok(layout.includes('drag.moved = true;'), 'Desktop drag must only activate after the threshold is crossed');
+assert.ok(layout.includes('drag.strip.setPointerCapture?.(event.pointerId);'), 'Pointer capture must still protect an actual desktop drag');
+assert.ok(layout.indexOf('drag.moved = true;') < layout.indexOf('drag.strip.setPointerCapture?.(event.pointerId);'), 'Pointer capture must happen only after drag activation, never on pointerdown');
+assert.ok(layout.includes('suppressProfileGameTabClick = drag.moved;'), 'Only a real drag may suppress its trailing tab click');
+assert.ok(layout.includes('suppressProfileGameTabClick = false;'), 'Suppression must clear so the next genuine tab tap cannot stay blocked');
 assert.ok(layout.includes('profile-reversi-tabs-touch-fix-v1.css'), 'Active Profile wrapper must load the Reversi tab/touch corrective CSS');
-assert.ok(manifest.includes('mgw-profile-chess-layout-v2.js?v=13'), 'Active Profile owner must remain the accepted Chess/Checkers layout wrapper with a fresh cache identity');
+assert.ok(manifest.includes('mgw-profile-chess-layout-v2.js?v=14'), 'Active Profile owner must publish a fresh cache identity for the real-click corrective');
 assert.ok(manifest.includes('mvp19_7=reversi-profile-parity-v1'), 'Active profile URL must retain Reversi Profile parity');
-assert.ok(manifest.includes('profile_tabs=touch-native-v1'), 'Active profile URL must publish the touch-safe tab corrective');
-assert.ok(manifest.includes('reversi_tab_mark=separated-v1'), 'Active profile URL must publish the separated Reversi tab mark');
+assert.ok(manifest.includes('profile_tabs=delayed-capture-v2'), 'Active profile URL must publish the delayed-capture tab owner');
+assert.ok(manifest.includes('reversi_tab_mark=separated-v1'), 'Active profile URL must retain the separated Reversi tab mark');
 
 assert.ok(css.includes('data-profile-game-tab="reversi"'), 'Reversi Profile tab needs dedicated mark styling');
 assert.ok(css.includes('aspect-ratio:1!important'), 'Reversi Profile cards/sheets must keep square preview geometry');
