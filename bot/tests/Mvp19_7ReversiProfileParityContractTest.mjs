@@ -10,6 +10,7 @@ const tabFixCssPath = path.join(root, 'app/assets/css/screens/profile-reversi-ta
 const storeCssPath = path.join(root, 'app/assets/css/games/reversi/store-cosmetics-v1.css');
 const manifestPath = path.join(root, 'app/runtime/client/version-manifest.php');
 const liveRendererPath = path.join(root, 'app/assets/js/games/reversi/renderer.js');
+const launchPath = path.join(root, 'bot/helpers/WebAppLaunchUrl.php');
 
 const profile = fs.readFileSync(profilePath, 'utf8');
 const layout = fs.readFileSync(layoutPath, 'utf8');
@@ -18,6 +19,7 @@ const tabFixCss = fs.readFileSync(tabFixCssPath, 'utf8');
 const storeCss = fs.readFileSync(storeCssPath, 'utf8');
 const manifest = fs.readFileSync(manifestPath, 'utf8');
 const liveRenderer = fs.readFileSync(liveRendererPath, 'utf8');
+const launch = fs.readFileSync(launchPath, 'utf8');
 
 const itemIds = [
   'game-reversi-field-green',
@@ -49,7 +51,7 @@ assert.ok(profile.includes("api.profileV2"), 'Profile parity must converge after
 assert.ok(profile.includes("data-game-type=\"reversi\""), 'Profile previews must identify themselves as Reversi previews');
 assert.ok(profile.includes("store-cosmetics-v1.css"), 'Profile must reuse accepted Reversi Store cosmetic artwork CSS');
 
-assert.ok(layout.includes("mgw-profile-reversi-parity.js?v=1&mvp19_7=reversi-profile-parity-v1"), 'Accepted Profile wrapper must import the Reversi parity module');
+assert.ok(layout.includes("mgw-profile-reversi-parity.js?v=2&mvp19_7=reversi-profile-parity-v1&card_geometry=full-square-v2"), 'Accepted Profile wrapper must cache-bust the Reversi parity child module');
 assert.ok(layout.includes('initProfileReversiParity();'), 'Accepted Profile wrapper must initialize Reversi parity');
 assert.ok(layout.includes('prepareProfileGameTabInputMode();'), 'Active Profile wrapper must own game-tab input before shared parity initialization');
 assert.ok(layout.includes("screen.dataset.mgwGameTabsScroller = '1'"), 'Active wrapper must prevent the legacy eager-capture drag helper from installing');
@@ -63,19 +65,20 @@ assert.ok(layout.indexOf('drag.moved = true;') < layout.indexOf('drag.strip.setP
 assert.ok(layout.includes('suppressProfileGameTabClick = drag.moved;'), 'Only a real drag may suppress its trailing tab click');
 assert.ok(layout.includes('suppressProfileGameTabClick = false;'), 'Suppression must clear so the next genuine tab tap cannot stay blocked');
 assert.ok(layout.includes('profile-reversi-tabs-touch-fix-v1.css'), 'Active Profile wrapper must load the Reversi tab/touch corrective CSS');
-assert.ok(layout.includes('profile-reversi-store-parity-v1.css?v=2&mvp19_7=full-card-store-square-v2'), 'Active Profile wrapper must publish the fresh Reversi card geometry stylesheet');
-assert.ok(manifest.includes('mgw-profile-chess-layout-v2.js?v=15'), 'Active Profile owner must publish a fresh cache identity for full Reversi card geometry');
+assert.ok(layout.includes('profile-reversi-store-parity-v1.css?v=2&mvp19_7=full-card-store-square-v2'), 'Active Profile wrapper must force the accepted full-square Reversi Profile stylesheet');
+assert.ok(manifest.includes('mgw-profile-chess-layout-v2.js?v=15'), 'Active Profile owner must remain the accepted cache-busted layout wrapper');
 assert.ok(manifest.includes('mvp19_7=reversi-profile-parity-v1'), 'Active profile URL must retain Reversi Profile parity');
-assert.ok(manifest.includes('profile_tabs=delayed-capture-v2'), 'Active profile URL must retain the delayed-capture tab owner');
+assert.ok(manifest.includes('profile_tabs=delayed-capture-v2'), 'Active profile URL must publish the delayed-capture tab owner');
 assert.ok(manifest.includes('reversi_tab_mark=separated-v1'), 'Active profile URL must retain the separated Reversi tab mark');
-assert.ok(manifest.includes('reversi_cards=store-square-v2'), 'Active profile URL must publish the full Reversi card geometry corrective');
+assert.ok(manifest.includes('reversi_cards=store-square-v2'), 'Active profile URL must retain the full-square card identity');
+assert.ok(launch.includes('/app/v110.php?v=1128'), 'Telegram launch URL must force a fresh v110 document for the Reversi Profile cache-chain corrective');
 
 assert.ok(css.includes('data-profile-game-tab="reversi"'), 'Reversi Profile tab needs dedicated mark styling');
-assert.ok(css.includes('data-profile-game-panel="reversi"'), 'Reversi card geometry must be scoped to the active Reversi panel');
-assert.ok(css.includes('height:auto!important'), 'Reversi card media must not inherit the legacy compact fixed height');
-assert.ok(css.includes('max-height:none!important'), 'Reversi card media must not be vertically clipped');
-assert.ok(css.includes('aspect-ratio:1 / 1!important'), 'Reversi Profile cards must keep the full Store square canvas');
-assert.ok(css.includes('overflow:visible!important'), 'Reversi Profile card shell must not crop the complete square preview');
+assert.ok(css.includes('data-profile-game-panel="reversi"'), 'Reversi Profile card geometry must be scoped to the active Reversi panel');
+assert.ok(css.includes('aspect-ratio:1 / 1!important'), 'Reversi Profile card previews must keep a strict square media canvas');
+assert.ok(css.includes('height:auto!important'), 'Reversi Profile cards must override the legacy fixed preview height');
+assert.ok(css.includes('max-height:none!important'), 'Reversi Profile cards must not inherit a compact max-height');
+assert.ok(css.includes('flex-direction:column!important'), 'Reversi Profile card shell must stack full preview and label vertically');
 assert.ok(css.includes('data-game-type="reversi"'), 'Reversi Profile CSS must scope to Reversi previews');
 assert.ok(tabFixCss.includes('width:11px!important'), 'Reversi tab discs must be smaller than the shared 24px mark lane so they do not overlap');
 assert.ok(tabFixCss.includes('left:0!important'), 'Black Reversi tab disc must anchor to the left edge');
