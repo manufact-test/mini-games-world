@@ -7,6 +7,7 @@ on:
       - 'app/assets/js/profile/mgw-profile-reversi-parity.js'
       - 'app/assets/js/profile/mgw-profile-chess-layout-v2.js'
       - 'app/assets/css/screens/profile-reversi-store-parity-v1.css'
+      - 'app/assets/css/screens/profile-reversi-tabs-touch-fix-v1.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_7ReversiProfileParityContractTest.mjs'
       - '.github/workflows/mvp19-7-reversi-profile-parity.yml'

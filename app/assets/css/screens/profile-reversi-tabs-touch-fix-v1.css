@@ -1,0 +1,21 @@
+/* MVP-19.7 Profile tab corrective: tappable native touch rail + separated Reversi mark. */
+
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="reversi"] .profile-v2-game-tab-mark::before,
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="reversi"] .profile-v2-game-tab-mark::after{
+  width:11px!important;
+  height:11px!important;
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="reversi"] .profile-v2-game-tab-mark::before{
+  left:0!important;
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="reversi"] .profile-v2-game-tab-mark::after{
+  right:0!important;
+}
+
+@media (pointer:coarse), (hover:none){
+  #screen-profile .profile-v2-game-tabs{
+    touch-action:pan-x pan-y!important;
+    cursor:default!important;
+    scroll-behavior:auto!important;
+  }
+}
