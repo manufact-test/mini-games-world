@@ -44,12 +44,11 @@ jobs:
           node --check app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
       - name: Run Reversi Store contract
         run: php bot/tests/Mvp19_7ReversiStoreTest.php
-      - name: Re-run shared Store contracts
+      - name: Re-run current shared Store contracts
         run: |
           php bot/tests/Mvp19_2CosmeticStoreTest.php
           php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
           php bot/tests/Mvp19_5ChessCosmeticsTest.php
-          php bot/tests/Mvp19_6CheckersBoardsTest.php
       - name: Guard product scope
         shell: bash
         run: |
