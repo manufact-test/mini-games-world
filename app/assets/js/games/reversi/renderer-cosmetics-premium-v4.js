@@ -11,7 +11,7 @@ export { renderReversiSurface, reversiMeta, reversiPlayerMark, reversiStatus };
 
 function ensurePremiumReversiEffectStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/reversi/live-effects-premium-v4.css?v=2&mvp19_7=line-mass-timing-smooth-v5', import.meta.url).href;
+  const href = new URL('../../../css/games/reversi/live-effects-premium-v4.css?v=3&mvp19_7=line-mass-tail-settle-v6', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-reversi-live-effects-premium]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -20,7 +20,7 @@ function ensurePremiumReversiEffectStyles(){
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwReversiLiveEffectsPremium = 'mvp19-7-premium-v5';
+  link.dataset.mgwReversiLiveEffectsPremium = 'mvp19-7-premium-v6';
   link.href = href;
   document.head.appendChild(link);
 }
