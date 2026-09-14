@@ -1,0 +1,128 @@
+/* MVP-19.8 Go live effects corrective v2. Presentation-only overrides. */
+
+/* Effect 1: make the live impact visibly match the Store preview with a real outward burst. */
+.go-point[data-mgw-go-fx="placement"]::before{
+  inset:-62%!important;
+  z-index:7!important;
+  animation:mgw-go-live-placement-seal-v2 .86s cubic-bezier(.16,.78,.18,1) both!important;
+}
+.go-point[data-mgw-go-fx="placement"]::after{
+  content:""!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  z-index:8!important;
+  width:4px!important;
+  height:4px!important;
+  border-radius:50%!important;
+  pointer-events:none!important;
+  background:#fff!important;
+  box-shadow:
+    26px 0 #67efff,
+    -26px 0 #d06dff,
+    0 26px #7fffd4,
+    0 -26px #fff3a0,
+    18px 18px #8beaff,
+    -18px -18px #d98cff,
+    18px -18px #ffd978,
+    -18px 18px #ffffff!important;
+  filter:drop-shadow(0 0 5px #75ecff) drop-shadow(0 0 10px #b667ff88);
+  opacity:0;
+  transform:translate(-50%,-50%) scale(.14) rotate(-8deg);
+  animation:mgw-go-live-placement-burst-v2 .82s cubic-bezier(.16,.76,.2,1) .13s both!important;
+}
+.go-point[data-mgw-go-fx="placement"].placed-fresh .go-stone{
+  animation:mgw-go-live-stonefall-v2 .64s cubic-bezier(.16,.82,.18,1.16) both!important;
+}
+
+/* Effect 2: only authoritative captures receive the paid capture effect.
+   Ordinary stone placement keeps only the accepted base Go move animation. */
+.go-point[data-mgw-go-fx="group-capture"]::before{
+  inset:-52%!important;
+  animation-duration:.82s!important;
+}
+.go-point[data-mgw-go-fx="group-capture"]::after{
+  box-shadow:22px 0 #67efff,-22px 0 #d06dff,0 22px #7fffd4,0 -22px #fff3a0,16px 16px #8beaff,-16px -16px #d98cff!important;
+  animation-duration:.76s!important;
+}
+
+/* Temporary QA hook for effect 3: while equipped, an ordinary placement can preview
+   the finish animation. This marker is intentionally isolated for easy removal after approval. */
+.go-board[data-mgw-go-territory-qa="placement"]::before{
+  animation:mgw-go-live-territory-bloom-qa 1.9s cubic-bezier(.18,.72,.18,1) both!important;
+}
+.go-board[data-mgw-go-territory-qa="placement"]::after{
+  animation:mgw-go-live-mgw-seal-qa 1.72s cubic-bezier(.18,.78,.2,1) .18s both!important;
+}
+.go-point[data-mgw-go-territory-fx="qa"]{overflow:visible}
+.go-point[data-mgw-go-territory-fx="qa"]::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  z-index:7;
+  width:34%;
+  aspect-ratio:1;
+  border-radius:24%;
+  pointer-events:none;
+  opacity:0;
+  transform:translate(-50%,-50%) scale(.18) rotate(-32deg);
+  animation:mgw-go-live-territory-qa-stamp .76s cubic-bezier(.18,.82,.2,1.12) calc(var(--mgw-go-territory-step,0) * .075s + .12s) both;
+}
+.go-point[data-mgw-go-territory-tone="black"]::after{
+  background:rgba(73,231,255,.34);
+  border:1px solid #54ecff;
+  box-shadow:0 0 9px #2ce5ff99,0 0 18px #2ce5ff44;
+}
+.go-point[data-mgw-go-territory-tone="white"]::after{
+  background:rgba(202,100,255,.28);
+  border:1px solid #d66cff;
+  box-shadow:0 0 9px #c45dff99,0 0 18px #c45dff44;
+}
+
+@keyframes mgw-go-live-stonefall-v2{
+  0%{transform:translateY(-185%) scale(.66);opacity:0;filter:brightness(1.35) blur(.7px)}
+  54%{transform:translateY(12%) scale(1.1,.88);opacity:1;filter:brightness(1.24) blur(0)}
+  72%{transform:translateY(-5%) scale(.96,1.04)}
+  100%{transform:translateY(0) scale(1);opacity:1;filter:brightness(1)}
+}
+@keyframes mgw-go-live-placement-seal-v2{
+  0%,10%{opacity:0;transform:scale(.32) rotate(-52deg)}
+  38%{opacity:1;transform:scale(.92) rotate(8deg)}
+  64%{opacity:.92;transform:scale(1.2) rotate(88deg)}
+  100%{opacity:0;transform:scale(1.62) rotate(168deg)}
+}
+@keyframes mgw-go-live-placement-burst-v2{
+  0%,14%{opacity:0;transform:translate(-50%,-50%) scale(.12) rotate(-10deg)}
+  34%{opacity:1}
+  58%{opacity:.92;transform:translate(-50%,-50%) scale(1.02) rotate(16deg)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.58) rotate(42deg)}
+}
+@keyframes mgw-go-live-territory-qa-stamp{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.16) rotate(-34deg)}
+  55%{opacity:1;transform:translate(-50%,-50%) scale(1.24) rotate(7deg)}
+  100%{opacity:.9;transform:translate(-50%,-50%) scale(1) rotate(0)}
+}
+@keyframes mgw-go-live-territory-bloom-qa{
+  0%{opacity:0;transform:scale(.08)}
+  30%{opacity:.9}
+  70%{opacity:.48;transform:scale(1.05)}
+  100%{opacity:0;transform:scale(1.3)}
+}
+@keyframes mgw-go-live-mgw-seal-qa{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.24) rotate(-16deg);filter:blur(2px)}
+  34%{opacity:1;transform:translate(-50%,-50%) scale(1.1) rotate(2deg);filter:blur(0)}
+  72%{opacity:.96;transform:translate(-50%,-50%) scale(.98) rotate(0)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.28) rotate(4deg);filter:blur(.4px)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .go-point[data-mgw-go-fx="placement"]::before,
+  .go-point[data-mgw-go-fx="placement"]::after,
+  .go-point[data-mgw-go-fx="placement"].placed-fresh .go-stone,
+  .go-board[data-mgw-go-territory-qa="placement"]::before,
+  .go-board[data-mgw-go-territory-qa="placement"]::after,
+  .go-point[data-mgw-go-territory-fx="qa"]::after{animation:none!important}
+  .go-point[data-mgw-go-territory-fx="qa"]::after{opacity:.78;transform:translate(-50%,-50%) scale(1)}
+  .go-board[data-mgw-go-territory-qa="placement"]::after{opacity:.35;transform:translate(-50%,-50%) scale(1)}
+}
