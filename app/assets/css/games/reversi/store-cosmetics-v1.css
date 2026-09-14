@@ -1,1 +1,146 @@
-.store-v2-game-head[data-store-game-type="reversi"] .store-v2-game-head-marks{display:flex;gap:8px;align-items:center}.store-v2-game-head[data-store-game-type="reversi"] .mgw-reversi-head-disc{display:block;width:24px;height:24px;border-radius:50%;padding:0;font-size:0}.store-v2-game-head[data-store-game-type="reversi"] .mgw-reversi-head-disc.black{background:radial-gradient(circle at 34% 30%,#565a61 0 8%,#20242a 28%,#050608 72%);box-shadow:inset 0 0 0 1px #000,0 5px 10px #0006}.store-v2-game-head[data-store-game-type="reversi"] .mgw-reversi-head-disc.white{background:radial-gradient(circle at 34% 28%,#fff 0 10%,#f1f3f5 34%,#bec4ca 100%);box-shadow:inset 0 0 0 1px #8f979f,0 5px 10px #0004}.store-v2-game-preview[data-game-type="reversi"]{overflow:hidden;isolation:isolate}.mgw-reversi-preview{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;background:linear-gradient(145deg,#111820,#070b10)}.mgw-rv-board{position:relative;width:min(78%,210px);aspect-ratio:1;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);border-radius:8px;overflow:hidden;background:#267457;box-shadow:0 15px 35px #0008,inset 0 0 0 2px #ffffff14}.mgw-rv-board>span{position:relative;min-width:0;min-height:0;border-right:1px solid #102f2477;border-bottom:1px solid #102f2477;display:grid;place-items:center}.mgw-rv-board>span:nth-child(8n){border-right:0}.mgw-rv-board>span:nth-last-child(-n+8){border-bottom:0}.mgw-rv-disc{display:block;width:76%;aspect-ratio:1;border-radius:50%;transform:translateZ(0);box-sizing:border-box}.mgw-rv-disc.black{background:radial-gradient(circle at 32% 26%,#64686f 0 6%,#24282d 26%,#07090b 72%);box-shadow:inset 0 0 0 1px #000,0 2px 3px #0008}.mgw-rv-disc.white{background:radial-gradient(circle at 32% 24%,#fff 0 8%,#f4f5f6 34%,#c1c7cd 100%);box-shadow:inset 0 0 0 1px #929aa2,0 2px 3px #0005}.mgw-reversi-preview.theme-dark .mgw-rv-board{background:linear-gradient(145deg,#252c35,#11161d);box-shadow:0 15px 35px #0009,inset 0 0 0 2px #fff1}.mgw-reversi-preview.theme-dark .mgw-rv-board>span{border-color:#8ca0b128}.mgw-reversi-preview.theme-marble .mgw-rv-board{background:repeating-linear-gradient(118deg,#dedbd1 0 14px,#c8c5bd 15px 16px,#ece9df 17px 30px),linear-gradient(#d7d3c9,#eeeae0);box-shadow:0 15px 35px #0007,inset 0 0 0 2px #ffffff88}.mgw-reversi-preview.theme-marble .mgw-rv-board>span{border-color:#66675f45}.mgw-reversi-preview.theme-neon{background:radial-gradient(circle at 50% 45%,#15364b,#050810 66%)}.mgw-reversi-preview.theme-neon .mgw-rv-board{background:#071820;box-shadow:0 0 22px #00e7ff4d,0 0 44px #9d4dff22,inset 0 0 0 2px #22e6ff7a}.mgw-reversi-preview.theme-neon .mgw-rv-board>span{border-color:#23dfff59;box-shadow:inset 0 0 9px #763dff12}.mgw-reversi-preview.pieces-marble .mgw-rv-disc.black{background:repeating-radial-gradient(circle at 25% 20%,#74777a 0 2px,#36393c 3px 7px,#111315 8px 12px);box-shadow:inset 0 0 0 1px #050607,0 2px 4px #0008}.mgw-reversi-preview.pieces-marble .mgw-rv-disc.white{background:repeating-linear-gradient(125deg,#fff 0 6px,#d5d2cb 7px 8px,#f0eee9 9px 15px);box-shadow:inset 0 0 0 1px #a8a49c,0 2px 4px #0005}.mgw-reversi-preview.pieces-metal .mgw-rv-disc.black{background:linear-gradient(145deg,#9aa1a7 0 8%,#383e43 26%,#0b0e11 52%,#6b737a 77%,#15191d);box-shadow:inset 0 0 0 1px #bec5ca66,0 3px 5px #0009}.mgw-reversi-preview.pieces-metal .mgw-rv-disc.white{background:linear-gradient(145deg,#fff 0 8%,#aeb6bc 28%,#f3f5f6 52%,#8c959c 78%,#dce0e3);box-shadow:inset 0 0 0 1px #fff8,0 3px 5px #0007}.mgw-reversi-preview.pieces-neon{background:radial-gradient(circle at 50% 45%,#122537,#05070d 70%)}.mgw-reversi-preview.pieces-neon .mgw-rv-board{background:#0b2530}.mgw-reversi-preview.pieces-neon .mgw-rv-disc.black{background:#080b10;border:2px solid #00eaff;box-shadow:0 0 8px #00eaff,0 0 16px #00eaff66,inset 0 0 8px #00eaff44}.mgw-reversi-preview.pieces-neon .mgw-rv-disc.white{background:#f8f6ff;border:2px solid #c45cff;box-shadow:0 0 8px #c45cff,0 0 16px #c45cff66,inset 0 0 6px #8f42ff55}.mgw-rv-fx-line,.mgw-rv-fx-pulse,.mgw-rv-fx-burst{display:none;position:absolute;pointer-events:none}.mgw-reversi-preview.effect-placement .mgw-rv-fx-pulse{display:block;width:12%;aspect-ratio:1;border:2px solid #65f1ff;border-radius:50%;left:37%;top:25.5%;box-shadow:0 0 12px #38e8ff,0 0 28px #38e8ff88;animation:mgw-rv-placement 1.8s ease-out infinite}.mgw-reversi-preview.effect-line .mgw-rv-fx-line{display:block;width:4px;height:43%;left:42.5%;top:25%;border-radius:999px;background:linear-gradient(#ffffff00,#70f6ff,#ffffff00);box-shadow:0 0 9px #38eaff,0 0 18px #38eaffaa;transform:rotate(0deg);transform-origin:center;animation:mgw-rv-line 1.8s ease-in-out infinite}.mgw-reversi-preview.effect-line .mgw-rv-disc.flipping{animation:mgw-rv-flip 1.8s ease-in-out infinite}.mgw-reversi-preview.effect-mass-flip .mgw-rv-fx-burst{display:block;width:52%;aspect-ratio:1;border-radius:50%;border:2px solid #c96dff;box-shadow:0 0 16px #a34eff,0 0 38px #31eaff88,inset 0 0 28px #7649ff33;animation:mgw-rv-mass 1.9s ease-out infinite}.mgw-reversi-preview.effect-mass-flip .mgw-rv-disc{animation:mgw-rv-disc-mass 1.9s ease-in-out infinite}.store-v2-confirm-game .store-v2-game-preview[data-game-type="reversi"] .mgw-rv-board{width:min(72%,170px)}@keyframes mgw-rv-placement{0%,18%{opacity:0;transform:scale(.35)}35%{opacity:1}70%,100%{opacity:0;transform:scale(2.35)}}@keyframes mgw-rv-line{0%,18%{opacity:0;transform:scaleY(.12)}38%,68%{opacity:1;transform:scaleY(1)}100%{opacity:0}}@keyframes mgw-rv-flip{0%,30%{transform:rotateY(0)}48%{transform:rotateY(90deg)}66%,100%{transform:rotateY(180deg)}}@keyframes mgw-rv-mass{0%,18%{opacity:0;transform:scale(.25)}42%{opacity:1}75%,100%{opacity:0;transform:scale(1.18)}}@keyframes mgw-rv-disc-mass{0%,30%,100%{filter:none;transform:scale(1)}48%{filter:drop-shadow(0 0 6px #9f5bff);transform:scale(1.08)}}@media(max-width:640px){.store-v2-game-head[data-store-game-type="reversi"] .mgw-reversi-head-disc{width:21px;height:21px}.mgw-rv-board{width:min(82%,190px)}}@media(prefers-reduced-motion:reduce){.mgw-reversi-preview *{animation:none!important}}
+/* MVP-19.7 manual-review corrective v2: Reversi Store only. */
+
+.store-v2-content[data-store-v2-panel="games"] .store-v2-game-selector{
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:8px!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  padding:3px 3px 5px!important;
+  margin:0!important;
+  scroll-snap-type:x proximity;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+  touch-action:pan-x;
+}
+.store-v2-content[data-store-v2-panel="games"] .store-v2-game-selector::-webkit-scrollbar{display:none}
+.store-v2-content[data-store-v2-panel="games"] .store-v2-game-select{
+  flex:0 0 auto!important;
+  min-width:max-content!important;
+  min-height:36px!important;
+  padding:0 15px!important;
+  border:1px solid rgba(215,219,232,.18)!important;
+  border-radius:11px!important;
+  background:rgba(255,255,255,.025)!important;
+  color:var(--muted)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important;
+  scroll-snap-align:center;
+  white-space:nowrap!important;
+}
+.store-v2-content[data-store-v2-panel="games"] .store-v2-game-select.active{
+  border-color:rgba(124,92,255,.62)!important;
+  background:linear-gradient(135deg,rgba(124,92,255,.26),rgba(178,116,255,.09))!important;
+  color:var(--text)!important;
+  box-shadow:inset 0 0 0 1px rgba(124,92,255,.08)!important;
+}
+
+.store-v2-game-head[data-store-game-type="reversi"] .store-v2-game-head-marks{display:flex;gap:8px;align-items:center}
+.store-v2-game-head[data-store-game-type="reversi"] .mgw-reversi-head-disc{display:block;width:24px;height:24px;border-radius:50%;padding:0;font-size:0}
+.store-v2-game-head[data-store-game-type="reversi"] .mgw-reversi-head-disc.black{background:radial-gradient(circle at 34% 30%,#565a61 0 8%,#20242a 28%,#050608 72%);box-shadow:inset 0 0 0 1px #000,0 5px 10px #0006}
+.store-v2-game-head[data-store-game-type="reversi"] .mgw-reversi-head-disc.white{background:radial-gradient(circle at 34% 28%,#fff 0 10%,#f1f3f5 34%,#bec4ca 100%);box-shadow:inset 0 0 0 1px #8f979f,0 5px 10px #0004}
+
+.store-v2-game-preview[data-game-type="reversi"]{overflow:hidden;isolation:isolate}
+.mgw-reversi-preview{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;background:linear-gradient(145deg,#111820,#070b10)}
+.mgw-rv-board{position:relative;box-sizing:border-box;width:min(82%,210px);aspect-ratio:1;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);border-radius:8px;overflow:hidden;background:#267457;box-shadow:0 12px 28px #0007,inset 0 0 0 2px #ffffff14}
+.mgw-rv-board>span{position:relative;min-width:0;min-height:0;border-right:1px solid #102f2477;border-bottom:1px solid #102f2477;display:grid;place-items:center}
+.mgw-rv-board>span:nth-child(8n){border-right:0}
+.mgw-rv-board>span:nth-last-child(-n+8){border-bottom:0}
+.mgw-rv-disc{position:relative;display:block;box-sizing:border-box;width:76%;aspect-ratio:1;border-radius:50%;transform:translateZ(0);transform-style:preserve-3d}
+.mgw-rv-disc.black{background:radial-gradient(circle at 32% 26%,#64686f 0 6%,#24282d 26%,#07090b 72%);box-shadow:inset 0 0 0 1px #000,0 2px 3px #0008}
+.mgw-rv-disc.white{background:radial-gradient(circle at 32% 24%,#fff 0 8%,#f4f5f6 34%,#c1c7cd 100%);box-shadow:inset 0 0 0 1px #929aa2,0 2px 3px #0005}
+
+.mgw-reversi-preview.theme-dark .mgw-rv-board{background:linear-gradient(145deg,#252c35,#11161d);box-shadow:0 15px 35px #0009,inset 0 0 0 2px #fff1}
+.mgw-reversi-preview.theme-dark .mgw-rv-board>span{border-color:#8ca0b128}
+.mgw-reversi-preview.theme-marble{background:linear-gradient(145deg,#171b20,#0c0f13)}
+.mgw-reversi-preview.theme-marble .mgw-rv-board{
+  background:
+    radial-gradient(circle at 18% 22%,rgba(89,92,96,.16) 0 1px,transparent 1.6px),
+    radial-gradient(circle at 72% 28%,rgba(92,95,99,.12) 0 1.2px,transparent 1.8px),
+    radial-gradient(circle at 38% 68%,rgba(72,76,81,.12) 0 1.1px,transparent 1.7px),
+    radial-gradient(circle at 82% 76%,rgba(255,255,255,.30) 0 1px,transparent 1.6px),
+    radial-gradient(ellipse at 24% 18%,rgba(255,255,255,.40),transparent 43%),
+    radial-gradient(ellipse at 76% 62%,rgba(112,116,121,.10),transparent 46%),
+    linear-gradient(145deg,#e7e5df,#cacbc6);
+  box-shadow:0 13px 30px #0007,inset 0 0 0 2px #ffffff5c;
+}
+.mgw-reversi-preview.theme-marble .mgw-rv-board>span{border-color:rgba(65,70,75,.20)}
+.mgw-reversi-preview.theme-neon{background:radial-gradient(circle at 50% 45%,#15364b,#050810 66%)}
+.mgw-reversi-preview.theme-neon .mgw-rv-board{background:#071820;box-shadow:0 0 22px #00e7ff4d,0 0 44px #9d4dff22,inset 0 0 0 2px #22e6ff7a}
+.mgw-reversi-preview.theme-neon .mgw-rv-board>span{border-color:#23dfff59;box-shadow:inset 0 0 9px #763dff12}
+
+.mgw-reversi-preview.pieces-classic .mgw-rv-disc.black{
+  background:radial-gradient(circle at 50% 46%,#1b1e22 0 54%,#080a0d 55% 70%,#434950 71% 77%,#111419 78% 100%);
+  box-shadow:inset 0 0 0 1px #5f666e,0 3px 5px #0009;
+}
+.mgw-reversi-preview.pieces-classic .mgw-rv-disc.white{
+  background:radial-gradient(circle at 50% 46%,#f4efdf 0 54%,#d9d1bd 55% 70%,#fffaf0 71% 77%,#c4baa5 78% 100%);
+  box-shadow:inset 0 0 0 1px #a9a08f,0 3px 5px #0006;
+}
+.mgw-reversi-preview.pieces-classic .mgw-rv-disc::before{content:"";position:absolute;inset:21%;border-radius:50%;border:1px solid rgba(255,255,255,.17);box-shadow:inset 0 0 0 1px rgba(0,0,0,.16)}
+.mgw-reversi-preview.pieces-classic .mgw-rv-disc.white::before{border-color:rgba(86,75,57,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.45)}
+
+.mgw-reversi-preview.pieces-marble .mgw-rv-disc.black{
+  background:
+    radial-gradient(circle at 22% 28%,rgba(225,231,238,.16) 0 1px,transparent 1.6px),
+    radial-gradient(circle at 70% 24%,rgba(255,255,255,.12) 0 1.2px,transparent 1.8px),
+    radial-gradient(circle at 42% 74%,rgba(190,198,207,.14) 0 1.1px,transparent 1.7px),
+    radial-gradient(ellipse at 28% 20%,#626970 0 5%,transparent 34%),
+    radial-gradient(ellipse at 72% 68%,#252a30 0 7%,transparent 38%),
+    linear-gradient(145deg,#4a5057,#171b20 68%);
+  box-shadow:inset 0 0 0 1px #090b0e,0 2px 4px #0008;
+}
+.mgw-reversi-preview.pieces-marble .mgw-rv-disc.white{
+  background:
+    radial-gradient(circle at 20% 26%,rgba(86,89,94,.18) 0 1px,transparent 1.6px),
+    radial-gradient(circle at 72% 25%,rgba(122,126,131,.13) 0 1.1px,transparent 1.7px),
+    radial-gradient(circle at 38% 72%,rgba(82,85,90,.14) 0 1px,transparent 1.6px),
+    radial-gradient(ellipse at 26% 18%,#ffffff 0 5%,transparent 34%),
+    radial-gradient(ellipse at 74% 70%,#c8c9c6 0 7%,transparent 38%),
+    linear-gradient(145deg,#f1f0ec,#c7c8c5 70%);
+  box-shadow:inset 0 0 0 1px #a5a6a3,0 2px 4px #0005;
+}
+.mgw-reversi-preview.pieces-metal .mgw-rv-disc.black{background:linear-gradient(145deg,#9aa1a7 0 8%,#383e43 26%,#0b0e11 52%,#6b737a 77%,#15191d);box-shadow:inset 0 0 0 1px #bec5ca66,0 3px 5px #0009}
+.mgw-reversi-preview.pieces-metal .mgw-rv-disc.white{background:linear-gradient(145deg,#fff 0 8%,#aeb6bc 28%,#f3f5f6 52%,#8c959c 78%,#dce0e3);box-shadow:inset 0 0 0 1px #fff8,0 3px 5px #0007}
+.mgw-reversi-preview.pieces-neon{background:radial-gradient(circle at 50% 45%,#122537,#05070d 70%)}
+.mgw-reversi-preview.pieces-neon .mgw-rv-board{background:#0b2530}
+.mgw-reversi-preview.pieces-neon .mgw-rv-disc.black{background:#080b10;border:2px solid #00eaff;box-shadow:0 0 8px #00eaff,0 0 16px #00eaff66,inset 0 0 8px #00eaff44}
+.mgw-reversi-preview.pieces-neon .mgw-rv-disc.white{background:#f8f6ff;border:2px solid #c45cff;box-shadow:0 0 8px #c45cff,0 0 16px #c45cff66,inset 0 0 6px #8f42ff55}
+
+.mgw-reversi-preview.effect-placement .fx-placement-target{animation:mgw-rv-placement-disc 1.9s ease-in-out infinite}
+.mgw-reversi-preview.effect-placement .fx-placement-target::after{content:"";position:absolute;inset:-38%;border:2px solid rgba(94,238,255,.95);border-radius:50%;opacity:0;box-shadow:0 0 8px #4be9ff,0 0 18px rgba(75,233,255,.55);animation:mgw-rv-placement-ring 1.9s ease-out infinite}
+
+.mgw-reversi-preview.effect-line .fx-line-target{animation:mgw-rv-line-disc 2.25s ease-in-out infinite;animation-delay:calc(var(--fx-step) * .16s)}
+.mgw-reversi-preview.effect-line .fx-line-target::before{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 32% 26%,#5a5f66 0 6%,#20252b 28%,#07090b 72%);opacity:0;backface-visibility:hidden;animation:mgw-rv-line-color 2.25s ease-in-out infinite;animation-delay:calc(var(--fx-step) * .16s)}
+.mgw-reversi-preview.effect-line .fx-line-target::after{content:"";position:absolute;inset:-22%;border-radius:50%;border:1.5px solid #63efff;opacity:0;box-shadow:0 0 8px #44e8ff,0 0 16px rgba(68,232,255,.42);animation:mgw-rv-line-halo 2.25s ease-out infinite;animation-delay:calc(var(--fx-step) * .16s)}
+
+.mgw-reversi-preview.effect-mass-flip .fx-mass-target{animation:mgw-rv-mass-disc 2.5s cubic-bezier(.2,.8,.2,1) infinite;animation-delay:calc(var(--fx-step) * .12s)}
+.mgw-reversi-preview.effect-mass-flip .fx-mass-target::before{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 32% 26%,#555a62 0 6%,#20242a 28%,#07090b 72%);opacity:0;animation:mgw-rv-mass-color 2.5s ease-in-out infinite;animation-delay:calc(var(--fx-step) * .12s)}
+.mgw-reversi-preview.effect-mass-flip .fx-mass-target::after{content:"";position:absolute;inset:-32%;border-radius:50%;border:1.5px solid #b66cff;opacity:0;box-shadow:0 0 7px #a553ff,0 0 15px rgba(64,229,255,.46);animation:mgw-rv-mass-halo 2.5s ease-out infinite;animation-delay:calc(var(--fx-step) * .12s)}
+
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="reversi"]{box-sizing:border-box!important;width:100%!important;height:auto!important;min-height:190px!important;aspect-ratio:1!important;overflow:hidden!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:16px!important;background:linear-gradient(145deg,#111820,#070b10)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)!important}
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="reversi"] .mgw-rv-board{width:84%;max-width:none}
+
+@keyframes mgw-rv-placement-disc{0%,18%,100%{transform:scale(1)}30%{transform:scale(.91)}43%{transform:scale(1.08)}58%{transform:scale(1)}}
+@keyframes mgw-rv-placement-ring{0%,20%{opacity:0;transform:scale(.58)}34%{opacity:1}68%,100%{opacity:0;transform:scale(1.38)}}
+@keyframes mgw-rv-line-disc{0%,24%,100%{transform:rotateY(0) scale(1);filter:none}38%{transform:rotateY(78deg) scale(.96);filter:drop-shadow(0 0 3px #43e9ff)}52%,72%{transform:rotateY(180deg) scale(1.05);filter:drop-shadow(0 0 5px #43e9ff)}86%{transform:rotateY(180deg) scale(1);filter:none}}
+@keyframes mgw-rv-line-color{0%,39%{opacity:0}51%,86%{opacity:1}100%{opacity:0}}
+@keyframes mgw-rv-line-halo{0%,23%{opacity:0;transform:scale(.65)}40%{opacity:.95}68%,100%{opacity:0;transform:scale(1.32)}}
+@keyframes mgw-rv-mass-disc{0%,20%,100%{transform:translateY(0) rotateY(0) scale(1);filter:none}35%{transform:translateY(-8%) rotateY(72deg) scale(.94);filter:drop-shadow(0 0 4px #a85cff)}50%,66%{transform:translateY(-13%) rotateY(180deg) scale(1.10);filter:drop-shadow(0 0 6px #a85cff)}82%{transform:translateY(0) rotateY(180deg) scale(1);filter:none}}
+@keyframes mgw-rv-mass-color{0%,36%{opacity:0}49%,84%{opacity:1}100%{opacity:0}}
+@keyframes mgw-rv-mass-halo{0%,20%{opacity:0;transform:scale(.55)}38%{opacity:1}70%,100%{opacity:0;transform:scale(1.38)}}
+
+@media(max-width:640px){
+  .store-v2-game-head[data-store-game-type="reversi"] .mgw-reversi-head-disc{width:21px;height:21px}
+  .mgw-rv-board{width:min(84%,190px)}
+  .store-v2-content[data-store-v2-panel="games"] .store-v2-game-select{min-height:35px!important;padding:0 13px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .mgw-reversi-preview *{animation:none!important}
+  .store-v2-content[data-store-v2-panel="games"] .store-v2-game-select{scroll-behavior:auto!important}
+}
