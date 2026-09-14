@@ -49,9 +49,9 @@ function decorateLiveReversi({ game, me, container }){
   const blackPlayer = players.find(player => String(player?.side || '') === 'black') || null;
   const whitePlayer = players.find(player => String(player?.side || '') === 'white') || null;
 
-  // Match the already accepted Checkers convention: the shared board theme belongs
-  // to the viewer. Individual black/white disc materials still belong to their
-  // actual players, so both players' purchased piece cosmetics remain visible.
+  // Match the accepted Checkers convention: the shared field theme belongs to
+  // the current viewer. Black/white disc materials remain owned by the actual
+  // black/white players, so both players' purchased piece cosmetics are visible.
   const theme = fieldVariant(gameId, viewer);
   const blackPieces = piecesVariant(gameId, blackPlayer);
   const whitePieces = piecesVariant(gameId, whitePlayer);
@@ -60,7 +60,6 @@ function decorateLiveReversi({ game, me, container }){
   container.dataset.reversiTheme = theme;
   container.dataset.reversiBlackPieces = blackPieces;
   container.dataset.reversiWhitePieces = whitePieces;
-  container.classList.toggle('reversi-cosmetics', [theme, blackPieces, whitePieces].some(value => value !== 'base'));
 
   clearPaidEffectMarks(container);
   if (!container.classList.contains('is-animating')) return;
