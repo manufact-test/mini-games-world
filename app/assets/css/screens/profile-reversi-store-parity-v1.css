@@ -31,16 +31,33 @@
   box-shadow:inset 0 0 0 1px #8f979f,0 0 0 1px rgba(255,255,255,.28),0 0 8px rgba(178,116,255,.30);
 }
 
-.profile-v2-game-card .store-v2-game-preview[data-game-type="reversi"]{
+/* Manual Profile QA v2: the generic Profile card used a compact 76px media slot.
+   Reversi cards must show the same complete square canvas as the accepted Store. */
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="reversi"] .profile-v2-game-card{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  justify-content:flex-start!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:visible!important;
+  padding:6px!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="reversi"] .profile-v2-game-card .store-v2-game-preview[data-game-type="reversi"]{
   box-sizing:border-box!important;
   position:relative!important;
   display:grid!important;
   place-items:center!important;
+  flex:0 0 auto!important;
   width:100%!important;
   max-width:100%!important;
   height:auto!important;
   min-height:0!important;
-  aspect-ratio:1!important;
+  max-height:none!important;
+  aspect-ratio:1 / 1!important;
   overflow:hidden!important;
   margin:0!important;
   padding:0!important;
@@ -48,13 +65,28 @@
   border-radius:14px!important;
   background:linear-gradient(145deg,#111820,#070b10)!important;
 }
-.profile-v2-game-card .store-v2-game-preview[data-game-type="reversi"] .mgw-reversi-preview{
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="reversi"] .profile-v2-game-card .store-v2-game-preview[data-game-type="reversi"] .mgw-reversi-preview{
   position:absolute!important;
   inset:0!important;
+  width:100%!important;
+  height:100%!important;
 }
-.profile-v2-game-card .store-v2-game-preview[data-game-type="reversi"] .mgw-rv-board{
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="reversi"] .profile-v2-game-card .store-v2-game-preview[data-game-type="reversi"] .mgw-rv-board{
   width:84%!important;
   max-width:none!important;
+  height:auto!important;
+  aspect-ratio:1 / 1!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="reversi"] .profile-v2-game-card .profile-v2-game-card-name{
+  position:relative!important;
+  z-index:2!important;
+  display:block!important;
+  flex:0 0 auto!important;
+  margin:6px 2px 1px!important;
+  line-height:1.2!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
 }
 
 .profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="reversi"]{
@@ -93,7 +125,7 @@
 }
 
 @media(max-width:390px){
-  .profile-v2-game-card .store-v2-game-preview[data-game-type="reversi"]{border-radius:12px!important}
+  #screen-profile .profile-v2-game-panel[data-profile-game-panel="reversi"] .profile-v2-game-card .store-v2-game-preview[data-game-type="reversi"]{border-radius:12px!important}
   .profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="reversi"]{border-radius:16px!important}
 }
 
