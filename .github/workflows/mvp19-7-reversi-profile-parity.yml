@@ -1,0 +1,63 @@
+name: MVP-19.7 Reversi Profile parity
+
+on:
+  pull_request:
+    branches: [agent/mvp-13-2-staging]
+    paths:
+      - 'app/assets/js/profile/mgw-profile-reversi-parity.js'
+      - 'app/assets/js/profile/mgw-profile-chess-layout-v2.js'
+      - 'app/assets/css/screens/profile-reversi-store-parity-v1.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp19_7ReversiProfileParityContractTest.mjs'
+      - '.github/workflows/mvp19-7-reversi-profile-parity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reversi-profile-parity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax checks
+        run: |
+          node --check app/assets/js/profile/mgw-profile-reversi-parity.js
+          node --check app/assets/js/profile/mgw-profile-chess-layout-v2.js
+          node --check bot/tests/Mvp19_7ReversiProfileParityContractTest.mjs
+          php -l app/runtime/client/version-manifest.php
+
+      - name: Run Reversi Profile parity contract
+        run: node bot/tests/Mvp19_7ReversiProfileParityContractTest.mjs
+
+      - name: Re-run current shared Profile/Store contracts
+        run: |
+          node bot/tests/Mvp19_6ProfileGameCosmeticsParityContractTest.mjs
+          php bot/tests/Mvp19_7ReversiStoreTest.php
+          php bot/tests/ProfileV2CorrectiveStaticContractTest.php
+
+      - name: Guard frozen gameplay and bounded diff
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- app/assets/js/games/reversi app/assets/js/games/chess app/assets/js/games/checkers app/assets/js/checkers-cosmetics bot/catalog/ProductInventoryService.php bot/database/migrations
+          git diff --check
