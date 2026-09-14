@@ -3,20 +3,27 @@ import {
   openStoreTab as openAcceptedCheckersStoreTab,
   openStoreSheet as openAcceptedCheckersStoreSheet,
 } from './store-screen-checkers-wrapper.js?v=4&mvp19_6=visual-corrective-v3&base_rev=19&visual_rev=4&effects_live_board=v1&effects_loop=v1&boards_pieces=v1';
+import {
+  installReversiStorePresentation,
+  upgradeReversiStorePresentation,
+} from './store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only';
 
 ensureBoardSourceParityStyles();
 ensureBoardCardRadiusStyles();
 ensureEffectPreviewStyles();
 ensureEffectFinalCenteringStyles();
+installReversiStorePresentation();
 
 export function initStoreScreen(){
   ensureBoardSourceParityStyles();
   ensureBoardCardRadiusStyles();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
+  installReversiStorePresentation();
   const result = initAcceptedCheckersStore();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
+  upgradeReversiStorePresentation();
   return result;
 }
 
@@ -25,9 +32,11 @@ export async function openStoreTab(){
   ensureBoardCardRadiusStyles();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
+  installReversiStorePresentation();
   const result = await openAcceptedCheckersStoreTab();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
+  upgradeReversiStorePresentation();
   return result;
 }
 
@@ -36,9 +45,11 @@ export async function openStoreSheet(){
   ensureBoardCardRadiusStyles();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
+  installReversiStorePresentation();
   const result = await openAcceptedCheckersStoreSheet();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
+  upgradeReversiStorePresentation();
   return result;
 }
 
