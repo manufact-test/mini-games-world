@@ -1,0 +1,22 @@
+/* MVP-19.7: native-feeling horizontal game selector drag without text selection. */
+.store-v2-content[data-store-v2-panel="games"] .store-v2-game-selector{
+  -webkit-user-select:none!important;
+  user-select:none!important;
+  -webkit-touch-callout:none!important;
+  touch-action:pan-y pinch-zoom!important;
+  cursor:grab;
+}
+.store-v2-content[data-store-v2-panel="games"] .store-v2-game-selector *,
+.store-v2-content[data-store-v2-panel="games"] .store-v2-game-select{
+  -webkit-user-select:none!important;
+  user-select:none!important;
+  -webkit-user-drag:none!important;
+  -webkit-touch-callout:none!important;
+}
+.store-v2-content[data-store-v2-panel="games"] .store-v2-game-selector.mgw-store-game-selector-dragging{
+  scroll-snap-type:none!important;
+  cursor:grabbing;
+}
+.store-v2-content[data-store-v2-panel="games"] .store-v2-game-selector.mgw-store-game-selector-dragging .store-v2-game-select{
+  pointer-events:none!important;
+}
