@@ -12,6 +12,7 @@ ensureProfileGameCosmeticsRepairStyles();
 ensureProfileGameCosmeticsManualRepairStyles();
 ensureProfileCheckersStoreExactStyles();
 ensureProfileReversiTabsTouchFixStyles();
+ensureProfileReversiStoreExactStyles();
 prewarmProfileChessArtwork();
 
 export function initProfileScreen(){
@@ -20,6 +21,7 @@ export function initProfileScreen(){
   ensureProfileGameCosmeticsManualRepairStyles();
   ensureProfileCheckersStoreExactStyles();
   ensureProfileReversiTabsTouchFixStyles();
+  ensureProfileReversiStoreExactStyles();
   prewarmProfileChessArtwork();
   prepareProfileGameTabInputMode();
   initCheckersParityProfileScreen();
@@ -167,12 +169,25 @@ function ensureProfileReversiTabsTouchFixStyles(){
     document.head.appendChild(link);
   }
 
-  // Reversi Profile module is an accepted child owner. Refresh only its Profile
-  // geometry stylesheet here so the artwork itself still comes from Store CSS,
-  // while cards get the full square media box accepted during manual QA.
   const parityHref = new URL('../../css/screens/profile-reversi-store-parity-v1.css?v=2&mvp19_7=full-card-store-square-v2', import.meta.url).href;
   const parity = document.querySelector('link[data-mgw-profile-reversi-parity]');
   if (parity instanceof HTMLLinkElement && parity.href !== parityHref) parity.href = parityHref;
+}
+
+function ensureProfileReversiStoreExactStyles(){
+  const href = new URL('../../css/screens/profile-reversi-store-exact-v2.css?v=1&mvp19_7=direct-card-full-square-v1', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-profile-reversi-store-exact-v2]');
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    document.head.appendChild(existing);
+    return;
+  }
+
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.setAttribute('data-mgw-profile-reversi-store-exact-v2', '1');
+  link.href = href;
+  document.head.appendChild(link);
 }
 
 function prewarmProfileChessArtwork(){
