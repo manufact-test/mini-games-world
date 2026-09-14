@@ -1,4 +1,4 @@
-/* MVP-19.8 Go Profile parity: Store artwork, stable game rail and full-square cards. */
+/* MVP-19.8 Go Profile corrective v2: stable rail, normalized marks and full-square cards. */
 
 #screen-profile .profile-v2-game-tabs{
   display:flex!important;
@@ -17,14 +17,35 @@
   flex:0 0 auto!important;
   min-width:max-content!important;
 }
+
+/* Keep every game mark in one fixed visual lane. The first Go pass accidentally
+   changed this globally to 27x15 inline-block, which enlarged Chess and broke
+   the centered Checkers pseudo-element. */
 #screen-profile .profile-v2-game-tab-mark{
   position:relative!important;
-  display:inline-block!important;
-  flex:0 0 27px!important;
-  width:27px!important;
-  height:15px!important;
+  display:inline-grid!important;
+  place-items:center!important;
+  flex:0 0 24px!important;
+  width:24px!important;
+  height:20px!important;
   margin:0!important;
-  line-height:15px!important;
+  padding:0!important;
+  line-height:20px!important;
+  text-align:center!important;
+  overflow:visible!important;
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="checkers"] .profile-v2-game-tab-mark::before{
+  width:16px!important;
+  height:16px!important;
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="checkers"] .profile-v2-game-tab-mark::after{
+  width:9px!important;
+  height:9px!important;
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="chess"] .profile-v2-game-tab-mark::before{
+  font-size:19px!important;
+  line-height:20px!important;
+  transform:translateY(0)!important;
 }
 
 #screen-profile .profile-v2-game-tab[data-profile-game-tab="go"] .profile-v2-game-tab-mark{
@@ -35,11 +56,11 @@
 #screen-profile .profile-v2-game-tab[data-profile-game-tab="go"] .profile-v2-game-tab-mark::after{
   content:""!important;
   position:absolute!important;
-  top:2px!important;
-  width:11px!important;
-  height:11px!important;
+  top:50%!important;
+  width:10px!important;
+  height:10px!important;
   border-radius:50%!important;
-  transform:none!important;
+  transform:translateY(-50%)!important;
 }
 #screen-profile .profile-v2-game-tab[data-profile-game-tab="go"] .profile-v2-game-tab-mark::before{
   left:0!important;

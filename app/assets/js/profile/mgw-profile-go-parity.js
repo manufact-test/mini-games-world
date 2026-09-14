@@ -15,7 +15,7 @@ const ITEM_ORDER = Object.freeze([
   'game-go-effect-group-capture',
   'game-go-effect-territory-finish',
 ]);
-const PROFILE_API_REPAIR_HOOK = Symbol.for('mgw.profile.go-store-parity.profile-v2.v1');
+const PROFILE_API_REPAIR_HOOK = Symbol.for('mgw.profile.go-store-parity.profile-v2.v2');
 let initialized = false;
 
 ensureGoProfileStyles();
@@ -45,7 +45,9 @@ export function initProfileGoParity(){
     if (gameTab instanceof HTMLElement) {
       const selectedGame = String(gameTab.dataset.profileGameTab || '');
       const panel = screen.querySelector('.profile-v2-game-panel');
-      if (selectedGame !== 'go' && panel instanceof HTMLElement) {
+      if (selectedGame === 'go') {
+        activateGoTab(screen, gameTab);
+      } else if (panel instanceof HTMLElement) {
         panel.removeAttribute('data-mgw-go-profile-signature');
       }
       scheduleProfileGoParityRepair();
@@ -64,8 +66,8 @@ export function initProfileGoParity(){
 }
 
 function ensureGoProfileStyles(){
-  ensureStyle('data-mgw-go-store', '../../css/games/go/store-cosmetics-v1.css?v=1&mvp19_8=store-v1');
-  ensureStyle('data-mgw-profile-go-parity', '../../css/screens/profile-go-store-parity-v1.css?v=1&mvp19_8=go-profile-parity-v1');
+  ensureStyle('data-mgw-go-store', '../../css/games/go/store-cosmetics-v1.css?v=2&mvp19_8=effects-premium-v2');
+  ensureStyle('data-mgw-profile-go-parity', '../../css/screens/profile-go-store-parity-v1.css?v=2&mvp19_8=go-profile-corrective-v2');
 }
 
 function ensureStyle(marker, relativeHref){
@@ -74,6 +76,7 @@ function ensureStyle(marker, relativeHref){
   const existing = document.querySelector(selector);
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
+    document.head.appendChild(existing);
     return;
   }
   const link = document.createElement('link');
@@ -103,6 +106,44 @@ function scheduleProfileGoParityRepair(){
   if (typeof globalThis.requestAnimationFrame === 'function') globalThis.requestAnimationFrame(repair);
   globalThis.setTimeout(repair, 0);
   globalThis.setTimeout(repair, 80);
+  globalThis.setTimeout(repair, 260);
+}
+
+function ensureGoTab(screen){
+  const tabs = screen.querySelector('.profile-v2-game-tabs');
+  if (!(tabs instanceof HTMLElement)) return null;
+
+  let goTab = tabs.querySelector('[data-profile-game-tab="go"]');
+  if (!(goTab instanceof HTMLButtonElement)) {
+    goTab = document.createElement('button');
+    goTab.className = 'profile-v2-game-tab';
+    goTab.type = 'button';
+    goTab.setAttribute('role', 'tab');
+    goTab.dataset.profileGameTab = 'go';
+    goTab.setAttribute('aria-selected', 'false');
+    goTab.innerHTML = '<span class="profile-v2-game-tab-mark" aria-hidden="true">●○</span><span>Го</span>';
+
+    const dominoTab = tabs.querySelector('[data-profile-game-tab="domino"]');
+    tabs.insertBefore(goTab, dominoTab instanceof HTMLElement ? dominoTab : null);
+  }
+
+  const label = goTab.querySelector('span:last-child');
+  if (label instanceof HTMLElement) label.textContent = 'Го';
+  return goTab;
+}
+
+function activateGoTab(screen, goTab){
+  screen.querySelectorAll('[data-profile-game-tab]').forEach(button => {
+    const active = button === goTab;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+
+  const panel = screen.querySelector('.profile-v2-game-panel');
+  if (!(panel instanceof HTMLElement)) return;
+  panel.dataset.profileGamePanel = 'go';
+  panel.removeAttribute('data-mgw-checkers-profile-signature');
+  panel.removeAttribute('data-mgw-reversi-profile-signature');
 }
 
 function upgradeProfileGoPresentation(){
@@ -110,12 +151,7 @@ function upgradeProfileGoPresentation(){
   const screen = document.getElementById('screen-profile');
   if (!(screen instanceof HTMLElement)) return;
 
-  const goTab = screen.querySelector('[data-profile-game-tab="go"]');
-  if (goTab instanceof HTMLElement) {
-    const label = goTab.querySelector('span:last-child');
-    if (label instanceof HTMLElement) label.textContent = 'Го';
-  }
-
+  const goTab = ensureGoTab(screen);
   const activeGo = goTab instanceof HTMLElement
     && (goTab.classList.contains('active') || goTab.getAttribute('aria-selected') === 'true');
   if (!activeGo) return;
