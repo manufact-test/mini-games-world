@@ -103,8 +103,13 @@ test('GO STORE LIVE CATALOG: automatic staging update publishes the full Go cata
     expect(entry?.ok(), 'fresh Telegram entry').toBe(true);
     await page.waitForFunction(() => window.__MGW_APP_BOOTSTRAP_V2__?.ready === true, null, { timeout: 25_000 });
     await expect(page.locator('#screen-home')).toHaveClass(/active/, { timeout: 25_000 });
+    await page.waitForFunction(() => Boolean(
+      localStorage.getItem('mgw_device_session_id') && localStorage.getItem('mgw_device_id')
+    ), null, { timeout: 20_000 });
 
-    await page.locator('[data-shell-nav="store"]').click({ timeout: 8_000 });
+    const storeNav = page.locator('[data-shell-nav="store"]');
+    await expect(storeNav).toBeVisible({ timeout: 8_000 });
+    await storeNav.click({ timeout: 8_000 });
     await expect(page.locator('#screen-store')).toHaveClass(/active/, { timeout: 10_000 });
     await expect(page.locator('#storeTabSurface .store-v2-shell:not(.is-pending)')).toBeVisible({ timeout: 25_000 });
     await page.locator('[data-store-v2-tab="games"]').click({ timeout: 8_000 });
