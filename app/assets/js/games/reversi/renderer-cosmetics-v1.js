@@ -12,6 +12,8 @@ const EFFECT_IDS = new Set([
   'game-reversi-effect-line',
   'game-reversi-effect-mass-flip',
 ]);
+const REAL_FIRST_FLIP_DELAY_MS = 320;
+const REAL_FLIP_STEP_MS = 150;
 const cosmeticsByGamePlayer = new Map();
 
 ensureLiveCosmeticStyles();
@@ -57,7 +59,7 @@ function decorateLiveReversi({ game, me, container }){
   const theme = fieldVariant(gameId, presentationOwner);
   const pieces = piecesVariant(gameId, presentationOwner);
 
-  container.dataset.mgwReversiLiveCosmetics = '2';
+  container.dataset.mgwReversiLiveCosmetics = '3';
   container.dataset.reversiTheme = theme;
   container.dataset.reversiBlackPieces = pieces;
   container.dataset.reversiWhitePieces = pieces;
@@ -87,6 +89,7 @@ function decorateLiveReversi({ game, me, container }){
       if (!cell) return;
       cell.dataset.mgwReversiFx = variant;
       cell.style.setProperty('--mgw-rv-fx-step', String(index));
+      cell.style.setProperty('--mgw-rv-fx-delay', `${REAL_FIRST_FLIP_DELAY_MS + index * REAL_FLIP_STEP_MS}ms`);
     });
 }
 
@@ -95,6 +98,7 @@ function clearPaidEffectMarks(container){
     if (!(cell instanceof HTMLElement)) return;
     delete cell.dataset.mgwReversiFx;
     cell.style.removeProperty('--mgw-rv-fx-step');
+    cell.style.removeProperty('--mgw-rv-fx-delay');
   });
 }
 
@@ -185,7 +189,7 @@ function distanceFrom(cell, origin, size){
 
 function ensureLiveCosmeticStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/reversi/live-cosmetics-v1.css?v=2&mvp19_7=store-exact-real-events-v2', import.meta.url).href;
+  const href = new URL('../../../css/games/reversi/live-cosmetics-v1.css?v=3&mvp19_7=store-motion-parity-v3', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-reversi-live-cosmetics]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -193,14 +197,14 @@ function ensureLiveCosmeticStyles(){
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwReversiLiveCosmetics = 'mvp19-7-live-v2';
+  link.dataset.mgwReversiLiveCosmetics = 'mvp19-7-live-v3';
   link.href = href;
   document.head.appendChild(link);
 }
 
 function ensureTelegramHeightFitStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/reversi/telegram-height-fit-v1.css?v=1&mvp19_7=footer-menu-height-fit-v1', import.meta.url).href;
+  const href = new URL('../../../css/games/reversi/telegram-height-fit-v1.css?v=2&mvp19_7=fullwidth-scroll-footer-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-reversi-height-fit]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -208,7 +212,7 @@ function ensureTelegramHeightFitStyles(){
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwReversiHeightFit = 'mvp19-7-height-fit-v1';
+  link.dataset.mgwReversiHeightFit = 'mvp19-7-height-fit-v2';
   link.href = href;
   document.head.appendChild(link);
 }
