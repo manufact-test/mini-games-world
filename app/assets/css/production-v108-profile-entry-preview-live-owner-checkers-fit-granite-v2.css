@@ -1,0 +1,32 @@
+@import url('./production-v108-profile-entry-preview-live-owner-checkers-fit.css?v=12&checkers=pre-b94d-exact-restore-v1&profile_mobile=animation-runtime-guard-v2');
+
+/* MVP-19.6 corrective: live Granite must use the accepted Store material exactly.
+   Store source of truth: store-boards-pieces-polish-v1.css.
+   No veins/slashes: only mineral speckle + the accepted base gradient.
+   Geometry, state shadows, selection/capture paint and gameplay remain untouched. */
+.checkers-surface.checkers-surface[data-checkers-white-piece-style="marble"] .checkers-piece.white,
+.checkers-piece.checkers-piece.white[data-checkers-piece-style="marble"],
+.mgw-checkers-live-fx-piece.mgw-checkers-live-fx-piece.white[data-checkers-piece-style="marble"],
+.mgw-checkers-live-fx-target.mgw-checkers-live-fx-target.white[data-checkers-piece-style="marble"]{
+  filter:none!important;
+  background:
+    radial-gradient(circle at 19% 22%,rgba(65,74,88,.28) 0 1.4px,transparent 1.8px),
+    radial-gradient(circle at 72% 25%,rgba(255,255,255,.5) 0 1.2px,transparent 1.7px),
+    radial-gradient(circle at 34% 68%,rgba(83,94,110,.24) 0 1.7px,transparent 2.1px),
+    radial-gradient(circle at 78% 72%,rgba(255,255,255,.36) 0 1.3px,transparent 1.8px),
+    radial-gradient(circle at 52% 44%,rgba(108,119,136,.22) 0 1px,transparent 1.5px),
+    linear-gradient(145deg,#f0f2f4,#aeb5bf)!important;
+}
+.checkers-surface.checkers-surface[data-checkers-black-piece-style="marble"] .checkers-piece.black,
+.checkers-piece.checkers-piece.black[data-checkers-piece-style="marble"],
+.mgw-checkers-live-fx-piece.mgw-checkers-live-fx-piece.black[data-checkers-piece-style="marble"],
+.mgw-checkers-live-fx-target.mgw-checkers-live-fx-target.black[data-checkers-piece-style="marble"]{
+  filter:none!important;
+  background:
+    radial-gradient(circle at 19% 22%,rgba(225,231,239,.32) 0 1.3px,transparent 1.8px),
+    radial-gradient(circle at 72% 25%,rgba(255,255,255,.16) 0 1.1px,transparent 1.6px),
+    radial-gradient(circle at 34% 68%,rgba(196,205,218,.22) 0 1.6px,transparent 2px),
+    radial-gradient(circle at 78% 72%,rgba(255,255,255,.18) 0 1.2px,transparent 1.7px),
+    radial-gradient(circle at 52% 44%,rgba(221,227,236,.16) 0 1px,transparent 1.5px),
+    linear-gradient(145deg,#697382,#2b313c)!important;
+}
