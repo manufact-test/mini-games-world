@@ -48,22 +48,19 @@ function decorateLiveReversi({ game, me, container }){
   const viewer = players.find(player => String(player?.id || '') === myId) || null;
   const blackPlayer = players.find(player => String(player?.side || '') === 'black') || null;
   const whitePlayer = players.find(player => String(player?.side || '') === 'white') || null;
-  const primaryThemeOwner = viewer || blackPlayer || players[0] || null;
-  const secondaryThemeOwner = viewer
-    ? players.find(player => String(player?.id || '') !== String(viewer?.id || '')) || null
-    : whitePlayer || players[1] || null;
 
-  const theme = fieldVariant(gameId, primaryThemeOwner);
-  const opponentTheme = fieldVariant(gameId, secondaryThemeOwner);
+  // Match the already accepted Checkers convention: the shared board theme belongs
+  // to the viewer. Individual black/white disc materials still belong to their
+  // actual players, so both players' purchased piece cosmetics remain visible.
+  const theme = fieldVariant(gameId, viewer);
   const blackPieces = piecesVariant(gameId, blackPlayer);
   const whitePieces = piecesVariant(gameId, whitePlayer);
 
   container.dataset.mgwReversiLiveCosmetics = '1';
   container.dataset.reversiTheme = theme;
-  container.dataset.reversiOpponentTheme = opponentTheme;
   container.dataset.reversiBlackPieces = blackPieces;
   container.dataset.reversiWhitePieces = whitePieces;
-  container.classList.toggle('reversi-cosmetics', [theme, opponentTheme, blackPieces, whitePieces].some(value => value !== 'base'));
+  container.classList.toggle('reversi-cosmetics', [theme, blackPieces, whitePieces].some(value => value !== 'base'));
 
   clearPaidEffectMarks(container);
   if (!container.classList.contains('is-animating')) return;
@@ -72,8 +69,9 @@ function decorateLiveReversi({ game, me, container }){
   const effectId = effectForPlayer(gameId, mover);
   if (!EFFECT_IDS.has(effectId)) return;
 
-  const placedCell = integerCell(game?.last_move?.cell, Number(game?.board_size || 8));
-  const flipped = uniqueCells(game?.last_flipped_cells, Number(game?.board_size || 8));
+  const size = Number(game?.board_size || 8);
+  const placedCell = integerCell(game?.last_move?.cell, size);
+  const flipped = uniqueCells(game?.last_flipped_cells, size);
 
   if (effectId === 'game-reversi-effect-placement') {
     const cell = cellElement(container, placedCell);
@@ -83,7 +81,7 @@ function decorateLiveReversi({ game, me, container }){
 
   const variant = effectId === 'game-reversi-effect-line' ? 'line' : 'mass-flip';
   flipped
-    .sort((a, b) => distanceFrom(a, placedCell, Number(game?.board_size || 8)) - distanceFrom(b, placedCell, Number(game?.board_size || 8)))
+    .sort((a, b) => distanceFrom(a, placedCell, size) - distanceFrom(b, placedCell, size))
     .forEach((cellIndex, index) => {
       const cell = cellElement(container, cellIndex);
       if (!cell) return;
