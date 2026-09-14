@@ -1,0 +1,79 @@
+name: MVP-19.8 Go Store
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260914_0034_add_go_store_cosmetics.php'
+      - 'bot/tests/Mvp19_8GoStoreTest.php'
+      - 'app/assets/js/screens/store-screen-go-store-v1.js'
+      - 'app/assets/js/screens/store-screen-checkers-board-source-wrapper.js'
+      - 'app/assets/css/games/go/store-cosmetics-v1.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - '.github/workflows/mvp19-8-go-store.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp19-8-go-store-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go-store:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Lint bounded Store slice
+        run: |
+          php -l bot/database/migrations/20260914_0034_add_go_store_cosmetics.php
+          php -l bot/tests/Mvp19_8GoStoreTest.php
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/helpers/WebAppLaunchUrl.php
+          node --check app/assets/js/screens/store-screen-go-store-v1.js
+          node --check app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+      - name: Run Go Store contract
+        run: php bot/tests/Mvp19_8GoStoreTest.php
+      - name: Re-run current shared Store contracts
+        run: |
+          php bot/tests/Mvp19_2CosmeticStoreTest.php
+          php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
+          php bot/tests/Mvp19_5ChessCosmeticsTest.php
+          php bot/tests/Mvp19_7ReversiStoreTest.php
+      - name: Guard product scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          migration='bot/database/migrations/20260914_0034_add_go_store_cosmetics.php'
+          for id in \
+            game-go-board-wood game-go-board-dark game-go-board-stone game-go-board-neon \
+            game-go-stones-classic game-go-stones-marble game-go-stones-glass game-go-stones-neon \
+            game-go-effect-placement game-go-effect-group-capture game-go-effect-territory-finish; do
+            grep -F "'$id'" "$migration"
+          done
+          grep -F "'game_go_theme'" "$migration"
+          grep -F "'game_go_elements'" "$migration"
+          grep -F "'game_go_effect'" "$migration"
+          ! grep -Fq "offer_type' => 'bundle'" "$migration"
+          ! grep -Fq "premium-bundle" "$migration"
+      - name: Guard active Store graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "store-screen-go-store-v1.js?v=1&mvp19_8=store-v1" app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"store-screen-checkers-board-source-wrapper.js?v=6") || !str_contains($s,"mvp19_7=reversi-store-v1") || !str_contains($s,"mvp19_8=go-store-v1")) exit(1);'
+          grep -F 'data-game-type="go"' app/assets/css/games/go/store-cosmetics-v1.css
+          grep -F "/app/v110.php?v=1138" bot/helpers/WebAppLaunchUrl.php
+          git diff --check

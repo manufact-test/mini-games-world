@@ -1,0 +1,84 @@
+/* MVP-19.8 Go Store visual owner. */
+
+.store-v2-game-head[data-store-game-type="go"] .store-v2-game-head-marks{display:flex;gap:8px;align-items:center}
+.store-v2-game-head[data-store-game-type="go"] .mgw-go-head-stone{display:block;width:24px;height:24px;border-radius:50%;padding:0;font-size:0}
+.store-v2-game-head[data-store-game-type="go"] .mgw-go-head-stone.black{background:radial-gradient(circle at 32% 26%,#666b70 0 7%,#25292d 27%,#050607 74%);box-shadow:inset 0 0 0 1px #000,0 5px 10px #0007}
+.store-v2-game-head[data-store-game-type="go"] .mgw-go-head-stone.white{background:radial-gradient(circle at 32% 24%,#fff 0 9%,#f3f0e7 34%,#c7c3b8 100%);box-shadow:inset 0 0 0 1px #9f9a90,0 5px 10px #0004}
+
+.store-v2-game-preview[data-game-type="go"]{overflow:hidden;isolation:isolate}
+.mgw-go-preview{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;background:linear-gradient(145deg,#15120e,#090807)}
+.mgw-go-board{position:relative;box-sizing:border-box;width:min(84%,214px);aspect-ratio:1;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#d6a85f,#b77a38);box-shadow:0 15px 34px #0008,inset 0 0 0 2px #ffe4b63d}
+.mgw-go-grid{position:absolute;inset:0;width:100%;height:100%}
+.mgw-go-grid line{stroke:#3a2518;stroke-width:.72;vector-effect:non-scaling-stroke;opacity:.84}
+.mgw-go-star,.mgw-go-stone,.mgw-go-territory{position:absolute;left:var(--go-x);top:var(--go-y);transform:translate(-50%,-50%);pointer-events:none}
+.mgw-go-star{width:4px;height:4px;border-radius:50%;background:#352113;box-shadow:0 0 0 1px #0002}
+.mgw-go-stone{z-index:4;width:9.7%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%) translateZ(0)}
+.mgw-go-stone.black{background:radial-gradient(circle at 31% 25%,#6a7075 0 6%,#25292d 25%,#070809 74%);box-shadow:inset 0 0 0 1px #000,0 3px 5px #0009}
+.mgw-go-stone.white{background:radial-gradient(circle at 30% 23%,#fff 0 8%,#f6f2e8 34%,#c5c0b4 100%);box-shadow:inset 0 0 0 1px #9f998d,0 3px 5px #0005}
+
+.mgw-go-preview.theme-wood .mgw-go-board{background:
+  repeating-linear-gradient(3deg,rgba(112,62,20,.075) 0 1px,transparent 1px 8px),
+  repeating-linear-gradient(91deg,rgba(255,245,205,.055) 0 2px,transparent 2px 15px),
+  linear-gradient(135deg,#e2b66e,#b77936)}
+.mgw-go-preview.theme-dark{background:radial-gradient(circle at 50% 42%,#242a2d,#090b0c 72%)}
+.mgw-go-preview.theme-dark .mgw-go-board{background:linear-gradient(145deg,#3d4142,#171a1c);box-shadow:0 15px 35px #0009,inset 0 0 0 2px #fff1}
+.mgw-go-preview.theme-dark .mgw-go-grid line{stroke:#b2aaa0;opacity:.36}
+.mgw-go-preview.theme-dark .mgw-go-star{background:#d2cbc0;opacity:.62}
+.mgw-go-preview.theme-stone{background:linear-gradient(145deg,#16191b,#0b0d0e)}
+.mgw-go-preview.theme-stone .mgw-go-board{background:
+  radial-gradient(circle at 18% 24%,rgba(65,68,72,.18) 0 1px,transparent 1.7px),
+  radial-gradient(circle at 78% 31%,rgba(77,80,83,.13) 0 1.2px,transparent 1.8px),
+  radial-gradient(circle at 43% 72%,rgba(45,48,52,.12) 0 1px,transparent 1.7px),
+  radial-gradient(ellipse at 24% 18%,rgba(255,255,255,.42),transparent 45%),
+  linear-gradient(145deg,#e5e2d9,#bfc0bc);box-shadow:0 14px 32px #0007,inset 0 0 0 2px #fff5}
+.mgw-go-preview.theme-stone .mgw-go-grid line{stroke:#41464a;opacity:.4}
+.mgw-go-preview.theme-stone .mgw-go-star{background:#474b4e}
+.mgw-go-preview.theme-neon{background:radial-gradient(circle at 50% 44%,#102d3c,#05070d 70%)}
+.mgw-go-preview.theme-neon .mgw-go-board{background:#07151b;box-shadow:0 0 22px #00dfff5e,0 0 48px #9d54ff26,inset 0 0 0 2px #1eeaff87}
+.mgw-go-preview.theme-neon .mgw-go-grid line{stroke:#35eaff;opacity:.57;filter:drop-shadow(0 0 2px #11ddff)}
+.mgw-go-preview.theme-neon .mgw-go-star{background:#d25dff;box-shadow:0 0 8px #c856ff}
+
+.mgw-go-preview.stones-classic .mgw-go-stone.black{background:radial-gradient(circle at 34% 27%,#595e63 0 7%,#1e2225 28%,#050607 72%);box-shadow:inset 0 0 0 1px #000,0 3px 5px #0009}
+.mgw-go-preview.stones-classic .mgw-go-stone.white{background:radial-gradient(circle at 32% 25%,#fffdf7 0 9%,#eee8db 37%,#bfb7a8 100%);box-shadow:inset 0 0 0 1px #9e9688,0 3px 5px #0005}
+.mgw-go-preview.stones-marble .mgw-go-stone.black{background:
+  radial-gradient(circle at 26% 24%,rgba(234,239,243,.17) 0 1px,transparent 1.5px),
+  radial-gradient(circle at 71% 67%,rgba(255,255,255,.12) 0 1px,transparent 1.6px),
+  linear-gradient(145deg,#5a6065,#171b1f 68%);box-shadow:inset 0 0 0 1px #090b0c,0 3px 5px #0009}
+.mgw-go-preview.stones-marble .mgw-go-stone.white{background:
+  radial-gradient(circle at 22% 25%,rgba(75,78,82,.18) 0 1px,transparent 1.5px),
+  radial-gradient(circle at 72% 70%,rgba(94,98,101,.14) 0 1px,transparent 1.6px),
+  linear-gradient(145deg,#f0eee8,#c6c5c0 70%);box-shadow:inset 0 0 0 1px #a7a6a1,0 3px 5px #0006}
+.mgw-go-preview.stones-glass{background:radial-gradient(circle at 50% 44%,#1a2832,#090d11 72%)}
+.mgw-go-preview.stones-glass .mgw-go-board{background:linear-gradient(145deg,#b98c4d,#8c5f2c)}
+.mgw-go-preview.stones-glass .mgw-go-stone.black{background:radial-gradient(circle at 30% 22%,rgba(255,255,255,.42) 0 5%,rgba(60,78,91,.78) 20%,rgba(7,16,22,.88) 73%);border:1px solid #88bdd655;box-shadow:inset -2px -3px 8px #0008,inset 2px 2px 7px #b8efff35,0 4px 7px #0008}
+.mgw-go-preview.stones-glass .mgw-go-stone.white{background:radial-gradient(circle at 29% 22%,#fff9 0 6%,rgba(235,248,255,.78) 23%,rgba(172,203,218,.72) 73%);border:1px solid #e9fbff99;box-shadow:inset -2px -3px 8px #667c8850,inset 2px 2px 8px #fff9,0 4px 7px #0005}
+.mgw-go-preview.stones-neon{background:radial-gradient(circle at 50% 45%,#102737,#05070d 70%)}
+.mgw-go-preview.stones-neon .mgw-go-board{background:#0a1a21}
+.mgw-go-preview.stones-neon .mgw-go-stone.black{background:#070a0d;border:2px solid #00eaff;box-shadow:0 0 8px #00eaff,0 0 17px #00eaff66,inset 0 0 8px #00eaff44}
+.mgw-go-preview.stones-neon .mgw-go-stone.white{background:#f9f7ff;border:2px solid #cf63ff;box-shadow:0 0 8px #c85cff,0 0 17px #c85cff66,inset 0 0 7px #9b47ff55}
+
+.mgw-go-preview.effect-placement .fx-placement-target{animation:mgw-go-placement-stone 1.9s ease-in-out infinite}
+.mgw-go-preview.effect-placement .fx-placement-target::after{content:"";position:absolute;inset:-48%;border:2px solid #5ef0ff;border-radius:50%;opacity:0;box-shadow:0 0 8px #43e8ff,0 0 20px #43e8ff88;animation:mgw-go-placement-ring 1.9s ease-out infinite}
+.mgw-go-preview.effect-group-capture .fx-capture-target{animation:mgw-go-capture-stone 2.35s cubic-bezier(.22,.76,.2,1) infinite;animation-delay:calc(var(--fx-step) * .12s)}
+.mgw-go-preview.effect-group-capture .fx-capture-target::after{content:"";position:absolute;inset:-30%;border-radius:50%;border:1.5px solid #7ceaff;opacity:0;box-shadow:0 0 9px #53e7ff,0 0 18px #8a59ff80;animation:mgw-go-capture-halo 2.35s ease-out infinite;animation-delay:calc(var(--fx-step) * .12s)}
+.mgw-go-territory{z-index:3;width:7.6%;aspect-ratio:1;border-radius:26%;opacity:0}
+.mgw-go-territory.black{background:rgba(73,231,255,.34);border:1px solid #54ecff;box-shadow:0 0 8px #2ce5ff88;animation:mgw-go-territory-reveal 2.65s ease-in-out infinite;animation-delay:calc(var(--fx-step) * .11s)}
+.mgw-go-territory.white{background:rgba(202,100,255,.27);border:1px solid #d66cff;box-shadow:0 0 8px #c45dff88;animation:mgw-go-territory-reveal 2.65s ease-in-out infinite;animation-delay:calc(var(--fx-step) * .11s)}
+.mgw-go-preview.effect-territory-finish .mgw-go-board::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 20%,rgba(84,233,255,.12) 46%,rgba(204,97,255,.14) 55%,transparent 78%);transform:translateX(-120%);animation:mgw-go-territory-sweep 2.65s ease-in-out infinite;pointer-events:none}
+
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="go"]{box-sizing:border-box!important;width:100%!important;height:auto!important;min-height:190px!important;aspect-ratio:1!important;overflow:hidden!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:16px!important;background:linear-gradient(145deg,#15120e,#090807)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)!important}
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="go"] .mgw-go-board{width:84%;max-width:none}
+
+@keyframes mgw-go-placement-stone{0%,18%,100%{transform:translate(-50%,-50%) scale(1)}28%{transform:translate(-50%,-50%) scale(.72)}42%{transform:translate(-50%,-50%) scale(1.11)}56%{transform:translate(-50%,-50%) scale(1)}}
+@keyframes mgw-go-placement-ring{0%,20%{opacity:0;transform:scale(.45)}34%{opacity:1}68%,100%{opacity:0;transform:scale(1.42)}}
+@keyframes mgw-go-capture-stone{0%,22%,100%{opacity:1;transform:translate(-50%,-50%) scale(1)}38%{opacity:1;transform:translate(-50%,-72%) scale(1.08)}55%{opacity:0;transform:translate(-50%,-94%) scale(.72)}72%,88%{opacity:0;transform:translate(-50%,-50%) scale(.55)}91%{opacity:1;transform:translate(-50%,-50%) scale(.9)}}
+@keyframes mgw-go-capture-halo{0%,20%{opacity:0;transform:scale(.45)}35%{opacity:1}58%,100%{opacity:0;transform:scale(1.5)}}
+@keyframes mgw-go-territory-reveal{0%,20%,100%{opacity:0;transform:translate(-50%,-50%) scale(.55)}38%,68%{opacity:1;transform:translate(-50%,-50%) scale(1)}82%{opacity:0;transform:translate(-50%,-50%) scale(1.18)}}
+@keyframes mgw-go-territory-sweep{0%,18%,100%{transform:translateX(-120%);opacity:0}35%{opacity:1}62%{transform:translateX(120%);opacity:.9}76%{opacity:0}}
+
+@media (prefers-reduced-motion:reduce){
+  .store-v2-game-preview[data-game-type="go"] *{animation:none!important;transition:none!important}
+  .mgw-go-preview.effect-placement .fx-placement-target::after{opacity:.7;transform:scale(1)}
+  .mgw-go-preview.effect-group-capture .fx-capture-target{opacity:.62}
+  .mgw-go-preview.effect-territory-finish .mgw-go-territory{opacity:.85;transform:translate(-50%,-50%) scale(1)}
+}
