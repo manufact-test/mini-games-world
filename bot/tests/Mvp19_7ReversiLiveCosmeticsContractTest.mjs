@@ -59,10 +59,10 @@ assert.ok(premiumCss.includes('conic-gradient(from 218deg'), 'Mass Flip must rem
 assert.ok(!premiumCss.includes('data-mgw-reversi-fx="placement"'), 'Premium Line/Mass layer must not recolor Placement');
 
 assert.ok(baseRenderer.includes('animateSingleFlip(container, cell, finalBoard[cell]'), 'Base renderer must remain the sole real-disc flip owner');
-assert.ok(baseRenderer.includes('cellElement.classList.add(\'flip-out\')'), 'Base renderer must keep flip-out phase');
-assert.ok(baseRenderer.includes('cellElement.classList.add(\'flip-in\')'), 'Base renderer must keep flip-in phase');
+assert.ok(baseRenderer.includes("cellElement.classList.add('flip-out')"), 'Base renderer must keep flip-out phase');
+assert.ok(baseRenderer.includes("cellElement.classList.add('flip-in')"), 'Base renderer must keep flip-in phase');
 assert.ok(baseRenderer.includes('}, 105);'), 'Base real-disc midpoint timing must remain 105ms');
-assert.ok(baseRenderer.includes('}, 255);'), 'Base real-disc completion timing must remain 255ms');
+assert.ok(baseRenderer.includes("schedule(() => cellElement.classList.remove('flip-in'), 255);"), 'Base real-disc completion timing must remain 255ms');
 assert.ok(baseCss.includes('.reversi-cell.flip-out .reversi-disc{animation:reversi-flip-out .11s ease-in forwards}'), 'Base CSS must own flip-out transform');
 assert.ok(baseCss.includes('.reversi-cell.flip-in .reversi-disc{animation:reversi-flip-in .15s ease-out forwards}'), 'Base CSS must own flip-in transform');
 
