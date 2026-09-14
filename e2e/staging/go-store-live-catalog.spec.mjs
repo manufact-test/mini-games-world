@@ -42,6 +42,29 @@ async function authorize(context) {
   const payload = await response.json();
   expect(payload?.ok).toBe(true);
   expect(payload?.player_slot).toBe('A');
+  const cookie = (await context.cookies(ORIGIN)).find(item => item.name === 'mgw_staging_test_session');
+  expect(cookie, 'staging player A auth cookie').toBeTruthy();
+}
+
+function requestAction(request) {
+  try { return String(request.postDataJSON()?.action || ''); } catch { return ''; }
+}
+
+async function browserPost(page, path, data) {
+  return page.evaluate(async ({ path, data }) => {
+    const response = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        ...data,
+        initData: '',
+        sessionId: localStorage.getItem('mgw_device_session_id'),
+        deviceId: localStorage.getItem('mgw_device_id'),
+      }),
+      cache: 'no-store',
+    });
+    return { status: response.status, payload: await response.json().catch(() => null) };
+  }, { path, data });
 }
 
 async function readStore(context) {
@@ -65,18 +88,13 @@ function goCatalog(result) {
 
 test('GO STORE LIVE CATALOG: automatic staging update publishes the full Go catalog and Store tab', async ({ browser }) => {
   test.setTimeout(390_000);
-  const context = await browser.newContext({
-    locale: 'ru-RU',
-    viewport: { width: 390, height: 844 },
-    isMobile: true,
-    hasTouch: true,
-  });
-  try {
-    await authorize(context);
 
-    let latest = null;
+  const apiContext = await browser.newContext();
+  let latest = null;
+  try {
+    await authorize(apiContext);
     await expect.poll(async () => {
-      latest = await readStore(context);
+      latest = await readStore(apiContext);
       if (latest.status !== 200 || latest.payload?.ok !== true) return `http:${latest.status}`;
       const catalog = goCatalog(latest);
       if (!catalog) {
@@ -97,15 +115,45 @@ test('GO STORE LIVE CATALOG: automatic staging update publishes the full Go cata
     expect(catalog?.themes?.map(item => item.metadata?.variant)).toEqual(['wood', 'dark', 'stone', 'neon']);
     expect(catalog?.elements?.map(item => item.metadata?.variant)).toEqual(['classic', 'marble', 'glass', 'neon']);
     expect(catalog?.effects?.map(item => item.metadata?.variant)).toEqual(['placement', 'group-capture', 'territory-finish']);
+  } finally {
+    await apiContext.close().catch(() => null);
+  }
 
-    const page = await context.newPage();
+  const uiContext = await browser.newContext({
+    locale: 'ru-RU',
+    timezoneId: 'Europe/Vilnius',
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  });
+  try {
+    await authorize(uiContext);
+    const page = await uiContext.newPage();
+
+    const bootstrapPromise = page.waitForResponse(response => (
+      response.url() === `${ORIGIN}/bot/api.php`
+      && response.request().method() === 'POST'
+      && requestAction(response.request()) === 'bootstrap'
+    ), { timeout: 35_000 });
+
     const entry = await page.goto(ENTRY_URL, { waitUntil: 'domcontentloaded' });
     expect(entry?.ok(), 'fresh Telegram entry').toBe(true);
-    await page.waitForFunction(() => window.__MGW_APP_BOOTSTRAP_V2__?.ready === true, null, { timeout: 25_000 });
+    const bootstrapResponse = await bootstrapPromise;
+    expect(bootstrapResponse.status(), 'fresh Telegram bootstrap').toBe(200);
+    const bootstrap = await bootstrapResponse.json();
+    expect(bootstrap?.ok).toBe(true);
+    expect(bootstrap?.user?.id).toBe('stg_test_player_a');
+
+    await page.waitForFunction(() => window.__MGW_APP_BOOTSTRAP_V2__?.ready === true, null, { timeout: 20_000 });
     await expect(page.locator('#screen-home')).toHaveClass(/active/, { timeout: 25_000 });
     await page.waitForFunction(() => Boolean(
       localStorage.getItem('mgw_device_session_id') && localStorage.getItem('mgw_device_id')
     ), null, { timeout: 20_000 });
+
+    const profile = await browserPost(page, '/bot/api.php', { action: 'profile' });
+    expect(profile.status, 'fresh Telegram profile status').toBe(200);
+    expect(profile.payload?.ok).toBe(true);
+    expect(profile.payload?.user?.id).toBe('stg_test_player_a');
 
     const storeNav = page.locator('[data-shell-nav="store"]');
     await expect(storeNav).toBeVisible({ timeout: 8_000 });
@@ -125,6 +173,6 @@ test('GO STORE LIVE CATALOG: automatic staging update publishes the full Go cata
     const gameTypes = await selector.locator('[data-store-v2-game]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-store-v2-game')));
     expect(gameTypes).toEqual(['tictactoe', 'chess', 'checkers', 'reversi', 'go']);
   } finally {
-    await context.close().catch(() => null);
+    await uiContext.close().catch(() => null);
   }
 });
