@@ -1,0 +1,75 @@
+name: MVP-19.7 Reversi live cosmetics
+
+on:
+  pull_request:
+    branches: [agent/mvp-13-2-staging]
+    paths:
+      - 'app/assets/js/games/reversi/renderer-cosmetics-v1.js'
+      - 'app/assets/css/games/reversi/live-cosmetics-v1.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'bot/tests/Mvp19_7ReversiLiveCosmeticsContractTest.mjs'
+      - '.github/workflows/mvp19-7-reversi-live-cosmetics.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reversi-live-cosmetics:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Syntax checks
+        run: |
+          node --check app/assets/js/games/reversi/renderer-cosmetics-v1.js
+          node --check bot/tests/Mvp19_7ReversiLiveCosmeticsContractTest.mjs
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/helpers/WebAppLaunchUrl.php
+
+      - name: Run Reversi live cosmetics contract
+        run: node bot/tests/Mvp19_7ReversiLiveCosmeticsContractTest.mjs
+
+      - name: Re-run accepted Reversi Store and Profile contracts
+        run: |
+          php bot/tests/Mvp19_7ReversiStoreTest.php
+          node bot/tests/Mvp19_7ReversiProfileParityContractTest.mjs
+
+      - name: Guard frozen owners and bounded diff
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- \
+            app/assets/js/games/reversi/renderer.js \
+            app/assets/css/games/reversi/game.css \
+            app/assets/js/games/chess \
+            app/assets/js/games/checkers \
+            app/assets/js/checkers-cosmetics \
+            app/assets/js/screens/store-screen-reversi-store-v1.js \
+            app/assets/css/games/reversi/store-cosmetics-v1.css \
+            app/assets/js/profile/mgw-profile-reversi-parity.js \
+            app/assets/js/profile/mgw-profile-reversi-hard-square-v1.js \
+            app/assets/css/screens/profile-reversi-store-parity-v1.css \
+            app/assets/css/screens/profile-reversi-store-exact-v2.css \
+            bot/catalog \
+            bot/database/migrations
+          git diff --check
