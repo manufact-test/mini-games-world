@@ -1,0 +1,65 @@
+/* Final Profile-only Reversi preview owner.
+   Mirrors the accepted Checkers exact-owner pattern: target the Reversi card
+   directly and do not depend on transient profile panel metadata. */
+
+#screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="reversi"]{
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  aspect-ratio:1 / 1!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border:1px solid rgba(255,255,255,.09)!important;
+  border-radius:14px!important;
+  background:linear-gradient(145deg,#111820,#070b10)!important;
+  box-shadow:none!important;
+}
+
+#screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="reversi"] > .mgw-reversi-preview{
+  position:absolute!important;
+  inset:0!important;
+  display:grid!important;
+  place-items:center!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+}
+
+#screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="reversi"] .mgw-rv-board{
+  box-sizing:border-box!important;
+  width:84%!important;
+  max-width:none!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1 / 1!important;
+  margin:0!important;
+  transform:none!important;
+}
+
+#screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="reversi"][data-cosmetic-layer="effect"]{
+  cursor:default!important;
+}
+
+#screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="reversi"] *{
+  pointer-events:none!important;
+}
+
+@media(max-width:390px){
+  #screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="reversi"]{
+    border-radius:12px!important;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  #screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="reversi"] *{
+    animation:none!important;
+  }
+}
