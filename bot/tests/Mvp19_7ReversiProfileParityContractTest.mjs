@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const profilePath = path.join(root, 'app/assets/js/profile/mgw-profile-reversi-parity.js');
+const hardSquarePath = path.join(root, 'app/assets/js/profile/mgw-profile-reversi-hard-square-v1.js');
 const layoutPath = path.join(root, 'app/assets/js/profile/mgw-profile-chess-layout-v2.js');
 const cssPath = path.join(root, 'app/assets/css/screens/profile-reversi-store-parity-v1.css');
 const exactCssPath = path.join(root, 'app/assets/css/screens/profile-reversi-store-exact-v2.css');
@@ -14,6 +15,7 @@ const liveRendererPath = path.join(root, 'app/assets/js/games/reversi/renderer.j
 const launchPath = path.join(root, 'bot/helpers/WebAppLaunchUrl.php');
 
 const profile = fs.readFileSync(profilePath, 'utf8');
+const hardSquare = fs.readFileSync(hardSquarePath, 'utf8');
 const layout = fs.readFileSync(layoutPath, 'utf8');
 const css = fs.readFileSync(cssPath, 'utf8');
 const exactCss = fs.readFileSync(exactCssPath, 'utf8');
@@ -54,7 +56,10 @@ assert.ok(profile.includes("data-game-type=\"reversi\""), 'Profile previews must
 assert.ok(profile.includes("store-cosmetics-v1.css"), 'Profile must reuse accepted Reversi Store cosmetic artwork CSS');
 
 assert.ok(layout.includes("mgw-profile-reversi-parity.js?v=2&mvp19_7=reversi-profile-parity-v1&card_geometry=full-square-v2"), 'Accepted Profile wrapper must cache-bust the Reversi parity child module');
+assert.ok(layout.includes("mgw-profile-reversi-hard-square-v1.js?v=1&mvp19_7=profile-hard-square-v1"), 'Accepted Profile wrapper must import the Reversi hard-square runtime');
 assert.ok(layout.includes('initProfileReversiParity();'), 'Accepted Profile wrapper must initialize Reversi parity');
+assert.ok(layout.includes('initProfileReversiHardSquare();'), 'Accepted Profile wrapper must initialize the Reversi hard-square runtime');
+assert.ok(layout.indexOf('initProfileReversiParity();') < layout.indexOf('initProfileReversiHardSquare();'), 'Reversi parity markup must exist before hard-square repair initializes');
 assert.ok(layout.includes('prepareProfileGameTabInputMode();'), 'Active Profile wrapper must own game-tab input before shared parity initialization');
 assert.ok(layout.includes("screen.dataset.mgwGameTabsScroller = '1'"), 'Active wrapper must prevent the legacy eager-capture drag helper from installing');
 assert.ok(layout.includes("screen.dataset.mgwGameTabsScrollerMode = 'delayed-capture-v2'"), 'Active wrapper must publish the delayed-capture input owner');
@@ -70,12 +75,26 @@ assert.ok(layout.includes('profile-reversi-tabs-touch-fix-v1.css'), 'Active Prof
 assert.ok(layout.includes('profile-reversi-store-exact-v2.css?v=1&mvp19_7=direct-card-full-square-v1'), 'Active Profile wrapper must load the final direct Reversi card owner');
 assert.ok(layout.includes('ensureProfileReversiStoreExactStyles();'), 'Direct Reversi card owner must be installed by the active wrapper');
 assert.ok(layout.indexOf('ensureProfileCheckersStoreExactStyles();') < layout.indexOf('ensureProfileReversiStoreExactStyles();'), 'Reversi exact owner must be loaded after shared/checkers repair layers');
-assert.ok(manifest.includes('mgw-profile-chess-layout-v2.js?v=16'), 'Active Profile owner must use a fresh cache identity for the direct Reversi card owner');
+
+assert.ok(hardSquare.includes('getBoundingClientRect().width'), 'Hard-square runtime must measure the live rendered Reversi card width');
+assert.ok(hardSquare.includes("preview.dataset.mgwProfileReversiHardSquare = '1'"), 'Hard-square runtime must mark repaired Reversi previews');
+assert.ok(hardSquare.includes("data-game-type=\"reversi\""), 'Hard-square runtime must target Reversi previews only');
+assert.ok(hardSquare.includes("setImportant(preview, 'height', px)"), 'Hard-square runtime must force preview height to the measured width');
+assert.ok(hardSquare.includes("setImportant(preview, 'min-height', px)"), 'Hard-square runtime must defeat the legacy 76/69px minimum height');
+assert.ok(hardSquare.includes("setImportant(preview, 'aspect-ratio', '1 / 1')"), 'Hard-square runtime must force a square card canvas');
+assert.ok(hardSquare.includes("element.style.setProperty(property, value, 'important')"), 'Hard-square runtime must use inline important dimensions like accepted Checkers');
+assert.ok(hardSquare.includes("querySelector(':scope > .mgw-reversi-preview')"), 'Hard-square runtime must size the Store Reversi artwork primitive');
+assert.ok(hardSquare.includes("querySelector(':scope > .mgw-rv-board')"), 'Hard-square runtime must preserve the complete Reversi board');
+assert.ok(hardSquare.includes("document.addEventListener('mgw:open-profile'"), 'Hard-square runtime must repair after Profile opens');
+assert.ok(hardSquare.includes("document.addEventListener('mgw:cosmetic-inventory-changed'"), 'Hard-square runtime must repair after inventory changes');
+
+assert.ok(manifest.includes('mgw-profile-chess-layout-v2.js?v=17'), 'Active Profile owner must use a fresh cache identity for the Reversi hard-square runtime');
 assert.ok(manifest.includes('mvp19_7=reversi-profile-parity-v1'), 'Active profile URL must retain Reversi Profile parity');
 assert.ok(manifest.includes('profile_tabs=delayed-capture-v2'), 'Active profile URL must publish the delayed-capture tab owner');
 assert.ok(manifest.includes('reversi_tab_mark=separated-v1'), 'Active profile URL must retain the separated Reversi tab mark');
-assert.ok(manifest.includes('reversi_cards=direct-exact-v1'), 'Active profile URL must publish the direct exact card owner');
-assert.ok(launch.includes('/app/v110.php?v=1129'), 'Telegram launch URL must force the fresh direct-card Profile chain');
+assert.ok(manifest.includes('reversi_cards=direct-exact-v1'), 'Active profile URL must retain the direct exact card owner');
+assert.ok(manifest.includes('reversi_card_runtime=hard-square-v1'), 'Active profile URL must publish the Reversi hard-square runtime');
+assert.ok(launch.includes('/app/v110.php?v=1130'), 'Telegram launch URL must force a fresh hard-square Profile chain');
 
 assert.ok(css.includes('data-profile-game-tab="reversi"'), 'Reversi Profile tab needs dedicated mark styling');
 assert.ok(exactCss.includes('#screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="reversi"]'), 'Final Reversi owner must target the card directly like accepted Checkers');
@@ -97,4 +116,4 @@ assert.ok(!profile.includes('gameAction('), 'Profile parity must not own gamepla
 assert.ok(!profile.includes('last_flipped_cells'), 'Profile parity must not own live Reversi flip state');
 assert.ok(liveRenderer.includes('last_flipped_cells'), 'Live Reversi renderer stays the gameplay owner');
 
-console.log(`MVP-19.7 Reversi Profile parity contract passed (${itemIds.length} catalogue items).`);
+console.log(`MVP-19.7 Reversi Profile parity contract passed (${itemIds.length} catalogue items, hard-square runtime active).`);
