@@ -7,6 +7,7 @@ const wrapperPath = path.join(root, 'app/assets/js/games/reversi/renderer-cosmet
 const premiumWrapperPath = path.join(root, 'app/assets/js/games/reversi/renderer-cosmetics-premium-v4.js');
 const liveCssPath = path.join(root, 'app/assets/css/games/reversi/live-cosmetics-v1.css');
 const premiumCssPath = path.join(root, 'app/assets/css/games/reversi/live-effects-premium-v4.css');
+const tailCssPath = path.join(root, 'app/assets/css/games/reversi/live-effects-tail-settle-v6.css');
 const heightFitPath = path.join(root, 'app/assets/css/games/reversi/telegram-height-fit-v1.css');
 const baseRendererPath = path.join(root, 'app/assets/js/games/reversi/renderer.js');
 const baseCssPath = path.join(root, 'app/assets/css/games/reversi/game.css');
@@ -18,6 +19,7 @@ const wrapper = fs.readFileSync(wrapperPath, 'utf8');
 const premiumWrapper = fs.readFileSync(premiumWrapperPath, 'utf8');
 const liveCss = fs.readFileSync(liveCssPath, 'utf8');
 const premiumCss = fs.readFileSync(premiumCssPath, 'utf8');
+const tailCss = fs.readFileSync(tailCssPath, 'utf8');
 const heightFit = fs.readFileSync(heightFitPath, 'utf8');
 const baseRenderer = fs.readFileSync(baseRendererPath, 'utf8');
 const baseCss = fs.readFileSync(baseCssPath, 'utf8');
@@ -66,8 +68,10 @@ assert.ok(wrapper.includes('live-cosmetics-v1.css?v=3&mvp19_7=store-motion-parit
 assert.ok(wrapper.includes('telegram-height-fit-v1.css?v=2&mvp19_7=fullwidth-scroll-footer-v2'), 'Full-width Telegram layout CSS must remain cache-addressed from the accepted v3 wrapper');
 
 assert.ok(premiumWrapper.includes("from './renderer-cosmetics-v1.js?v=3&mvp19_7=live-parity-store-motion-v3"), 'Premium wrapper must reuse the accepted live parity v3 owner');
-assert.ok(premiumWrapper.includes('ensurePremiumReversiEffectStyles();'), 'Premium wrapper must add only the final Line/Mass visual owner');
-assert.ok(premiumWrapper.includes('live-effects-premium-v4.css?v=2&mvp19_7=line-mass-timing-smooth-v5'), 'Premium effect CSS must have a fresh v5 timing cache identity');
+assert.ok(premiumWrapper.includes('ensurePremiumReversiEffectStyles();'), 'Premium wrapper must retain the accepted Line/Mass visual owner');
+assert.ok(premiumWrapper.includes('ensureTailSettleStyles();'), 'Premium wrapper must load the final early-settle corrective after the accepted visuals');
+assert.ok(premiumWrapper.includes('live-effects-premium-v4.css?v=3&mvp19_7=line-mass-tail-settle-v6'), 'Premium effect CSS must have a fresh v6 cache identity');
+assert.ok(premiumWrapper.includes('live-effects-tail-settle-v6.css?v=1&mvp19_7=tail-finish-early-v1'), 'Tail-settle override must be cache-addressed independently');
 assert.ok(!premiumWrapper.includes('setTimeout('), 'Premium wrapper must not create gameplay timers');
 assert.ok(!premiumWrapper.includes('setInterval('), 'Premium wrapper must not create gameplay timers');
 assert.ok(!premiumWrapper.includes('requestAnimationFrame('), 'Premium wrapper must not create gameplay loops');
@@ -112,6 +116,14 @@ assert.ok(!premiumCss.includes('will-change:transform,filter'), 'Premium live di
 assert.ok(!premiumCss.includes('rotateY(360deg)'), 'Premium effects must not use the rejected full-spin motion');
 assert.ok(!premiumCss.includes('position:fixed'), 'Premium Reversi effects must remain on real board cells/discs');
 
+assert.ok(tailCss.includes('@keyframes mgwRvPremiumLineFlip'), 'Tail owner must override the accepted Line keyframes only at the final-settle stage');
+assert.ok(tailCss.includes('60%,100%{transform:perspective(240px) rotateY(180deg) scale(1)}'), 'Line must finish scale recovery by 60% and hold its final size');
+assert.ok(tailCss.includes('54%{transform:perspective(240px) rotateY(180deg) scale(1.012)}'), 'Line overshoot must collapse quickly before the hold');
+assert.ok(tailCss.includes('@keyframes mgwRvPremiumMassFlip'), 'Tail owner must override the accepted Mass Flip keyframes only at the final-settle stage');
+assert.ok(tailCss.includes('64%,100%{transform:perspective(250px) translateY(0) rotateY(180deg) scale(1)}'), 'Mass Flip must finish lift/scale recovery by 64% and hold its final state');
+assert.ok(tailCss.includes('54%{transform:perspective(250px) translateY(-7%) rotateY(180deg) scale(1.04)}'), 'Mass Flip must collapse the overshoot quickly before the final hold');
+assert.ok(!tailCss.includes('setTimeout('), 'Tail corrective must remain pure CSS and not add gameplay timing');
+
 for (const token of [
   'radial-gradient(circle at 50% 46%,#1b1e22 0 54%,#080a0d 55% 70%,#434950 71% 77%,#111419 78% 100%)',
   'linear-gradient(145deg,#9aa1a7 0 8%,#383e43 26%,#0b0e11 52%,#6b737a 77%,#15191d)',
@@ -145,7 +157,7 @@ assert.ok(baseRenderer.includes('flipStep = 150'), 'Accepted real flip cadence m
 assert.ok(baseCss.includes('.reversi-cell.flip-out .reversi-disc'), 'Accepted base flip-out primitive must remain available');
 assert.ok(baseCss.includes('.reversi-cell.flip-in .reversi-disc'), 'Accepted base flip-in primitive must remain available');
 
-assert.ok(manifest.includes("'./assets/js/games/reversi/renderer.js?v=66' => './assets/js/games/reversi/renderer-cosmetics-premium-v4.js?v=2&mvp19_7=line-mass-premium-v5&timing=smooth-transform-only-v1&parent=live-parity-v3&footer=fullwidth-scroll-v2'"), 'Active import map must publish the smoother Reversi premium v5 owner');
-assert.ok(launch.includes('/app/v110.php?v=1135'), 'Telegram launch must force the fresh smoother Reversi premium asset chain');
+assert.ok(manifest.includes("'./assets/js/games/reversi/renderer.js?v=66' => './assets/js/games/reversi/renderer-cosmetics-premium-v4.js?v=3&mvp19_7=line-mass-premium-v6&timing=early-tail-settle-v1&parent=live-parity-v3&footer=fullwidth-scroll-v2'"), 'Active import map must publish the Reversi premium v6 early-settle owner');
+assert.ok(launch.includes('/app/v110.php?v=1136'), 'Telegram launch must force the fresh Reversi premium v6 asset chain');
 
-console.log('MVP-19.7 Reversi premium v5 contract passed: Line and Mass Flip start earlier, finish tighter, and keep transform-only disc motion on authoritative real flips.');
+console.log('MVP-19.7 Reversi premium v6 contract passed: accepted Line/Mass visuals keep their fast motion while scale/position recovery finishes early instead of lagging in the final frame.');

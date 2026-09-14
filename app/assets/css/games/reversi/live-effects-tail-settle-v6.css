@@ -1,0 +1,62 @@
+/* MVP-19.7 Reversi live tail-settle corrective.
+   Keep accepted Line/Mass visuals and timing; finish scale/position recovery early,
+   then hold the final-size disc while decorative light fades. */
+
+@keyframes mgwRvPremiumLineFlip{
+  0%{transform:perspective(240px) rotateY(0deg) scale(1)}
+  14%{transform:perspective(240px) rotateY(58deg) scale(.975)}
+  24%{transform:perspective(240px) rotateY(92deg) scale(.95)}
+  44%{transform:perspective(240px) rotateY(180deg) scale(1.045)}
+  54%{transform:perspective(240px) rotateY(180deg) scale(1.012)}
+  60%,100%{transform:perspective(240px) rotateY(180deg) scale(1)}
+}
+@keyframes mgwRvPremiumLineSurface{
+  0%{opacity:0;transform:translateY(-18%) scale(.92)}
+  18%{opacity:.62}
+  40%{opacity:1;transform:translateY(0) scale(1.01)}
+  54%{opacity:.38;transform:translateY(7%) scale(1)}
+  66%,100%{opacity:0;transform:translateY(14%) scale(.98)}
+}
+@keyframes mgwRvPremiumLineBeam{
+  0%{opacity:0;transform:translateX(-50%) translateY(-32%) scaleY(.48)}
+  14%{opacity:.46}
+  32%{opacity:.96;transform:translateX(-50%) translateY(-2%) scaleY(.88)}
+  52%{opacity:.40;transform:translateX(-50%) translateY(16%) scaleY(1)}
+  66%,100%{opacity:0;transform:translateX(-50%) translateY(34%) scaleY(.82)}
+}
+@keyframes mgwRvPremiumLineFloor{
+  0%{opacity:0;transform:translateX(-50%) scale(.55)}
+  28%{opacity:.76;transform:translateX(-50%) scale(.92)}
+  50%{opacity:.36;transform:translateX(-50%) scale(1.08)}
+  64%,100%{opacity:0;transform:translateX(-50%) scale(1.20)}
+}
+
+@keyframes mgwRvPremiumMassFlip{
+  0%{transform:perspective(250px) translateY(0) rotateY(0deg) scale(1)}
+  12%{transform:perspective(250px) translateY(-5%) rotateY(48deg) scale(.98)}
+  23%{transform:perspective(250px) translateY(-11%) rotateY(92deg) scale(.93)}
+  43%{transform:perspective(250px) translateY(-19%) rotateY(180deg) scale(1.14)}
+  54%{transform:perspective(250px) translateY(-7%) rotateY(180deg) scale(1.04)}
+  64%,100%{transform:perspective(250px) translateY(0) rotateY(180deg) scale(1)}
+}
+@keyframes mgwRvPremiumMassSurface{
+  0%{opacity:0;transform:translateY(-20%) scale(.90)}
+  18%{opacity:.58}
+  40%{opacity:1;transform:translateY(-2%) scale(1.06)}
+  58%{opacity:.55;transform:translateY(7%) scale(1.02)}
+  72%,100%{opacity:0;transform:translateY(15%) scale(.97)}
+}
+@keyframes mgwRvPremiumMassPlume{
+  0%{opacity:0;transform:translateX(-50%) translateY(27%) scale(.58,.40)}
+  18%{opacity:.52}
+  40%{opacity:.96;transform:translateX(-50%) translateY(-4%) scale(1.02,1.08)}
+  58%{opacity:.48;transform:translateX(-50%) translateY(-12%) scale(1.10,1.14)}
+  74%,100%{opacity:0;transform:translateX(-50%) translateY(-24%) scale(1.18,1.20)}
+}
+@keyframes mgwRvPremiumMassOrbit{
+  0%{opacity:0;transform:translate(-50%,-50%) rotate(-30deg) scale(.46)}
+  20%{opacity:.72}
+  42%{opacity:1;transform:translate(-50%,-50%) rotate(104deg) scale(1)}
+  60%{opacity:.50;transform:translate(-50%,-50%) rotate(182deg) scale(1.15)}
+  76%,100%{opacity:0;transform:translate(-50%,-50%) rotate(252deg) scale(1.30)}
+}
