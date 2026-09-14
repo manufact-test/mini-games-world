@@ -65,9 +65,9 @@ assert.ok(wrapper.includes('ensureTelegramHeightFitStyles();'), 'Reversi live wr
 assert.ok(wrapper.includes('live-cosmetics-v1.css?v=3&mvp19_7=store-motion-parity-v3'), 'Live Store-motion CSS must remain cache-addressed from the accepted v3 wrapper');
 assert.ok(wrapper.includes('telegram-height-fit-v1.css?v=2&mvp19_7=fullwidth-scroll-footer-v2'), 'Full-width Telegram layout CSS must remain cache-addressed from the accepted v3 wrapper');
 
-assert.ok(premiumWrapper.includes("from './renderer-cosmetics-v1.js?v=3&mvp19_7=live-parity-store-motion-v3"), 'Premium v4 wrapper must reuse the accepted live parity v3 owner');
-assert.ok(premiumWrapper.includes('ensurePremiumReversiEffectStyles();'), 'Premium v4 wrapper must add only the final Line/Mass visual owner');
-assert.ok(premiumWrapper.includes('live-effects-premium-v4.css?v=1&mvp19_7=line-mass-premium-store-parity-v4'), 'Premium effect CSS must have a fresh cache identity');
+assert.ok(premiumWrapper.includes("from './renderer-cosmetics-v1.js?v=3&mvp19_7=live-parity-store-motion-v3"), 'Premium wrapper must reuse the accepted live parity v3 owner');
+assert.ok(premiumWrapper.includes('ensurePremiumReversiEffectStyles();'), 'Premium wrapper must add only the final Line/Mass visual owner');
+assert.ok(premiumWrapper.includes('live-effects-premium-v4.css?v=2&mvp19_7=line-mass-timing-smooth-v5'), 'Premium effect CSS must have a fresh v5 timing cache identity');
 assert.ok(!premiumWrapper.includes('setTimeout('), 'Premium wrapper must not create gameplay timers');
 assert.ok(!premiumWrapper.includes('setInterval('), 'Premium wrapper must not create gameplay timers');
 assert.ok(!premiumWrapper.includes('requestAnimationFrame('), 'Premium wrapper must not create gameplay loops');
@@ -93,21 +93,22 @@ assert.ok(liveCss.includes('border:2px solid rgba(94,238,255,.95)'), 'Placement 
 
 assert.ok(!premiumCss.includes('data-mgw-reversi-fx="placement"'), 'Premium corrective must not turn Mass Flip into a recolored Placement pulse');
 assert.ok(premiumCss.includes('.reversi-cell[data-mgw-reversi-fx="line"]'), 'Premium Line owner must target actual line-flipped cells');
-assert.ok(premiumCss.includes('mgwRvPremiumLineFlip .62s'), 'Line must use a longer uninterrupted one-shot flip instead of the rejected short technical phase');
+assert.ok(premiumCss.includes('mgwRvPremiumLineFlip .48s'), 'Line must use the accepted premium half-turn with tightened timing');
 assert.ok(premiumCss.includes('rotateY(92deg) scale(.95)'), 'Line must pass cleanly through the edge-on phase');
 assert.ok(premiumCss.includes('rotateY(180deg) scale(1.045)'), 'Line must complete one visual half-turn, not spin 360 degrees');
-assert.ok(!premiumCss.includes('mgwRvPremiumLineFlip .62s cubic-bezier(.18,.78,.18,1) var(--mgw-rv-fx-delay'), 'Line premium light should pre-roll before the real edge transition');
-assert.ok(premiumCss.includes('calc(var(--mgw-rv-fx-delay,320ms) - 100ms)'), 'Line light must begin shortly before each authoritative real flip');
+assert.ok(premiumCss.includes('calc(var(--mgw-rv-fx-delay,320ms) - 170ms)'), 'Line must pre-roll enough to remove the perceived start lag against the real flip');
 assert.ok(premiumCss.includes('mgwRvPremiumLineBeam'), 'Line must include the accepted top-down light pass');
 assert.ok(premiumCss.includes('mgwRvPremiumLineFloor'), 'Line must include a soft cyan shadow/glow under the disc rather than a Placement-style ring');
 
 assert.ok(premiumCss.includes('.reversi-cell[data-mgw-reversi-fx="mass-flip"]'), 'Premium Mass Flip owner must target actual flipped cells');
-assert.ok(premiumCss.includes('mgwRvPremiumMassFlip .84s'), 'Mass Flip must have a visibly richer, longer premium phase than Placement');
-assert.ok(premiumCss.includes('translateY(-19%) rotateY(180deg) scale(1.14)'), 'Mass Flip must use a stronger lift/overshoot than Line');
+assert.ok(premiumCss.includes('mgwRvPremiumMassFlip .62s'), 'Mass Flip must keep its richer premium phase while finishing closer to the real flip cadence');
+assert.ok(premiumCss.includes('translateY(-19%) rotateY(180deg) scale(1.14)'), 'Mass Flip must keep the accepted stronger lift/overshoot');
 assert.ok(premiumCss.includes('mgwRvPremiumMassPlume'), 'Mass Flip must have a coordinated violet/cyan energy plume');
 assert.ok(premiumCss.includes('mgwRvPremiumMassOrbit'), 'Mass Flip must have a segmented orbital energy sweep distinct from Placement');
 assert.ok(premiumCss.includes('conic-gradient(from 218deg'), 'Mass Flip premium orbit must use segmented Store-language energy rather than a plain expanding circle');
-assert.ok(premiumCss.includes('calc(var(--mgw-rv-fx-delay,320ms) - 135ms)'), 'Mass Flip energy must pre-roll before each authoritative real flip');
+assert.ok(premiumCss.includes('calc(var(--mgw-rv-fx-delay,320ms) - 210ms)'), 'Mass Flip must pre-roll enough to remove the perceived delay before the real disc transition');
+assert.ok(premiumCss.includes('will-change:transform;'), 'Premium live discs must stay on transform-only compositing for smoother Telegram motion');
+assert.ok(!premiumCss.includes('will-change:transform,filter'), 'Premium live discs must not force animated filter compositing on every flipped disc');
 assert.ok(!premiumCss.includes('rotateY(360deg)'), 'Premium effects must not use the rejected full-spin motion');
 assert.ok(!premiumCss.includes('position:fixed'), 'Premium Reversi effects must remain on real board cells/discs');
 
@@ -144,7 +145,7 @@ assert.ok(baseRenderer.includes('flipStep = 150'), 'Accepted real flip cadence m
 assert.ok(baseCss.includes('.reversi-cell.flip-out .reversi-disc'), 'Accepted base flip-out primitive must remain available');
 assert.ok(baseCss.includes('.reversi-cell.flip-in .reversi-disc'), 'Accepted base flip-in primitive must remain available');
 
-assert.ok(manifest.includes("'./assets/js/games/reversi/renderer.js?v=66' => './assets/js/games/reversi/renderer-cosmetics-premium-v4.js?v=1&mvp19_7=line-mass-premium-v4&parent=live-parity-v3&footer=fullwidth-scroll-v2'"), 'Active import map must publish Reversi premium v4 over accepted live parity v3');
-assert.ok(launch.includes('/app/v110.php?v=1134'), 'Telegram launch must force the fresh Reversi premium v4 asset chain');
+assert.ok(manifest.includes("'./assets/js/games/reversi/renderer.js?v=66' => './assets/js/games/reversi/renderer-cosmetics-premium-v4.js?v=2&mvp19_7=line-mass-premium-v5&timing=smooth-transform-only-v1&parent=live-parity-v3&footer=fullwidth-scroll-v2'"), 'Active import map must publish the smoother Reversi premium v5 owner');
+assert.ok(launch.includes('/app/v110.php?v=1135'), 'Telegram launch must force the fresh smoother Reversi premium asset chain');
 
-console.log('MVP-19.7 Reversi premium v4 contract passed: Line is a light-pass half-turn and Mass Flip is a distinct violet/cyan lift-wave on authoritative real flips.');
+console.log('MVP-19.7 Reversi premium v5 contract passed: Line and Mass Flip start earlier, finish tighter, and keep transform-only disc motion on authoritative real flips.');

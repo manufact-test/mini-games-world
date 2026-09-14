@@ -11,8 +11,8 @@
   z-index:10!important;
   backface-visibility:visible!important;
   transform-style:preserve-3d!important;
-  will-change:transform,filter;
-  animation:mgwRvPremiumLineFlip .62s cubic-bezier(.18,.78,.18,1) calc(var(--mgw-rv-fx-delay,320ms) - 100ms) both!important;
+  will-change:transform;
+  animation:mgwRvPremiumLineFlip .48s cubic-bezier(.18,.78,.18,1) calc(var(--mgw-rv-fx-delay,320ms) - 170ms) both!important;
 }
 #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="line"] .reversi-disc::before{
   content:""!important;
@@ -28,7 +28,7 @@
   box-shadow:
     inset 0 8px 12px rgba(180,250,255,.28),
     inset 0 -9px 14px rgba(0,0,0,.40)!important;
-  animation:mgwRvPremiumLineSurface .62s ease-in-out calc(var(--mgw-rv-fx-delay,320ms) - 100ms) both!important;
+  animation:mgwRvPremiumLineSurface .48s ease-in-out calc(var(--mgw-rv-fx-delay,320ms) - 170ms) both!important;
 }
 #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="line"]::before{
   content:"";
@@ -45,7 +45,7 @@
   filter:blur(2.2px) drop-shadow(0 0 7px rgba(66,229,255,.52));
   transform:translateX(-50%) translateY(-28%) scaleY(.55);
   transform-origin:50% 45%;
-  animation:mgwRvPremiumLineBeam .62s cubic-bezier(.18,.75,.2,1) calc(var(--mgw-rv-fx-delay,320ms) - 100ms) both;
+  animation:mgwRvPremiumLineBeam .48s cubic-bezier(.18,.75,.2,1) calc(var(--mgw-rv-fx-delay,320ms) - 170ms) both;
 }
 #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="line"]::after{
   content:""!important;
@@ -65,7 +65,7 @@
   box-shadow:none!important;
   filter:blur(4px);
   transform:translateX(-50%) scale(.62)!important;
-  animation:mgwRvPremiumLineFloor .62s ease-out calc(var(--mgw-rv-fx-delay,320ms) - 100ms) both!important;
+  animation:mgwRvPremiumLineFloor .48s ease-out calc(var(--mgw-rv-fx-delay,320ms) - 170ms) both!important;
 }
 
 /* MASS FLIP — a coordinated violet/cyan lift-wave across all actually flipped discs.
@@ -79,8 +79,8 @@
   z-index:12!important;
   backface-visibility:visible!important;
   transform-style:preserve-3d!important;
-  will-change:transform,filter;
-  animation:mgwRvPremiumMassFlip .84s cubic-bezier(.16,.82,.18,1) calc(var(--mgw-rv-fx-delay,320ms) - 135ms) both!important;
+  will-change:transform;
+  animation:mgwRvPremiumMassFlip .62s cubic-bezier(.16,.82,.18,1) calc(var(--mgw-rv-fx-delay,320ms) - 210ms) both!important;
 }
 #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"] .reversi-disc::before{
   content:""!important;
@@ -96,7 +96,7 @@
   box-shadow:
     inset 0 9px 14px rgba(226,185,255,.28),
     inset 0 -10px 15px rgba(52,0,84,.36)!important;
-  animation:mgwRvPremiumMassSurface .84s ease-in-out calc(var(--mgw-rv-fx-delay,320ms) - 135ms) both!important;
+  animation:mgwRvPremiumMassSurface .62s ease-in-out calc(var(--mgw-rv-fx-delay,320ms) - 210ms) both!important;
 }
 #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"]::before{
   content:"";
@@ -115,7 +115,7 @@
   filter:blur(3.5px) drop-shadow(0 -5px 11px rgba(174,73,255,.44));
   transform:translateX(-50%) translateY(24%) scale(.66,.48);
   transform-origin:50% 78%;
-  animation:mgwRvPremiumMassPlume .84s cubic-bezier(.17,.76,.18,1) calc(var(--mgw-rv-fx-delay,320ms) - 135ms) both;
+  animation:mgwRvPremiumMassPlume .62s cubic-bezier(.17,.76,.18,1) calc(var(--mgw-rv-fx-delay,320ms) - 210ms) both;
 }
 #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"]::after{
   content:""!important;
@@ -144,66 +144,66 @@
   box-shadow:none!important;
   filter:drop-shadow(0 0 5px rgba(189,87,255,.78)) drop-shadow(0 0 10px rgba(83,225,255,.38));
   transform:translate(-50%,-50%) rotate(-28deg) scale(.48)!important;
-  animation:mgwRvPremiumMassOrbit .84s cubic-bezier(.14,.76,.16,1) calc(var(--mgw-rv-fx-delay,320ms) - 135ms) both!important;
+  animation:mgwRvPremiumMassOrbit .62s cubic-bezier(.14,.76,.16,1) calc(var(--mgw-rv-fx-delay,320ms) - 210ms) both!important;
 }
 
 @keyframes mgwRvPremiumLineFlip{
-  0%,10%{transform:perspective(240px) rotateY(0deg) scale(1);filter:none}
-  23%{transform:perspective(240px) rotateY(58deg) scale(.975);filter:drop-shadow(0 -1px 3px rgba(83,235,255,.58))}
-  34%{transform:perspective(240px) rotateY(92deg) scale(.95);filter:drop-shadow(0 -2px 5px rgba(83,235,255,.82))}
-  55%{transform:perspective(240px) rotateY(180deg) scale(1.045);filter:drop-shadow(0 -4px 8px rgba(83,235,255,.92))}
-  73%{transform:perspective(240px) rotateY(180deg) scale(1.025);filter:drop-shadow(0 -2px 6px rgba(83,235,255,.58))}
-  100%{transform:perspective(240px) rotateY(180deg) scale(1);filter:none}
+  0%{transform:perspective(240px) rotateY(0deg) scale(1)}
+  14%{transform:perspective(240px) rotateY(58deg) scale(.975)}
+  24%{transform:perspective(240px) rotateY(92deg) scale(.95)}
+  46%{transform:perspective(240px) rotateY(180deg) scale(1.045)}
+  68%{transform:perspective(240px) rotateY(180deg) scale(1.025)}
+  100%{transform:perspective(240px) rotateY(180deg) scale(1)}
 }
 @keyframes mgwRvPremiumLineSurface{
-  0%,12%{opacity:0;transform:translateY(-18%) scale(.92)}
-  28%{opacity:.62}
-  48%{opacity:1;transform:translateY(0) scale(1.01)}
-  72%{opacity:.38;transform:translateY(10%) scale(1)}
+  0%{opacity:0;transform:translateY(-18%) scale(.92)}
+  18%{opacity:.62}
+  42%{opacity:1;transform:translateY(0) scale(1.01)}
+  68%{opacity:.38;transform:translateY(10%) scale(1)}
   100%{opacity:0;transform:translateY(18%) scale(.97)}
 }
 @keyframes mgwRvPremiumLineBeam{
-  0%,9%{opacity:0;transform:translateX(-50%) translateY(-32%) scaleY(.48)}
-  24%{opacity:.46}
-  43%{opacity:.96;transform:translateX(-50%) translateY(-2%) scaleY(.88)}
-  64%{opacity:.40;transform:translateX(-50%) translateY(18%) scaleY(1.02)}
+  0%{opacity:0;transform:translateX(-50%) translateY(-32%) scaleY(.48)}
+  14%{opacity:.46}
+  34%{opacity:.96;transform:translateX(-50%) translateY(-2%) scaleY(.88)}
+  60%{opacity:.40;transform:translateX(-50%) translateY(18%) scaleY(1.02)}
   100%{opacity:0;transform:translateX(-50%) translateY(40%) scaleY(.78)}
 }
 @keyframes mgwRvPremiumLineFloor{
-  0%,15%{opacity:0;transform:translateX(-50%) scale(.55)}
-  39%{opacity:.76;transform:translateX(-50%) scale(.92)}
-  64%{opacity:.40;transform:translateX(-50%) scale(1.12)}
+  0%{opacity:0;transform:translateX(-50%) scale(.55)}
+  30%{opacity:.76;transform:translateX(-50%) scale(.92)}
+  58%{opacity:.40;transform:translateX(-50%) scale(1.12)}
   100%{opacity:0;transform:translateX(-50%) scale(1.30)}
 }
 
 @keyframes mgwRvPremiumMassFlip{
-  0%,10%{transform:perspective(250px) translateY(0) rotateY(0deg) scale(1);filter:none}
-  20%{transform:perspective(250px) translateY(-5%) rotateY(48deg) scale(.98);filter:drop-shadow(0 -2px 4px rgba(174,82,255,.46))}
-  30%{transform:perspective(250px) translateY(-11%) rotateY(92deg) scale(.93);filter:drop-shadow(0 -4px 7px rgba(174,82,255,.76))}
-  49%{transform:perspective(250px) translateY(-19%) rotateY(180deg) scale(1.14);filter:drop-shadow(0 -7px 11px rgba(185,89,255,.94))}
-  65%{transform:perspective(250px) translateY(-13%) rotateY(180deg) scale(1.09);filter:drop-shadow(0 -5px 10px rgba(105,219,255,.50))}
-  82%{transform:perspective(250px) translateY(-4%) rotateY(180deg) scale(1.035);filter:drop-shadow(0 -2px 6px rgba(173,82,255,.40))}
-  100%{transform:perspective(250px) translateY(0) rotateY(180deg) scale(1);filter:none}
+  0%{transform:perspective(250px) translateY(0) rotateY(0deg) scale(1)}
+  12%{transform:perspective(250px) translateY(-5%) rotateY(48deg) scale(.98)}
+  23%{transform:perspective(250px) translateY(-11%) rotateY(92deg) scale(.93)}
+  45%{transform:perspective(250px) translateY(-19%) rotateY(180deg) scale(1.14)}
+  62%{transform:perspective(250px) translateY(-13%) rotateY(180deg) scale(1.09)}
+  80%{transform:perspective(250px) translateY(-4%) rotateY(180deg) scale(1.035)}
+  100%{transform:perspective(250px) translateY(0) rotateY(180deg) scale(1)}
 }
 @keyframes mgwRvPremiumMassSurface{
-  0%,10%{opacity:0;transform:translateY(-20%) scale(.90)}
-  26%{opacity:.58}
-  48%{opacity:1;transform:translateY(-2%) scale(1.06)}
-  68%{opacity:.72;transform:translateY(8%) scale(1.03)}
+  0%{opacity:0;transform:translateY(-20%) scale(.90)}
+  18%{opacity:.58}
+  42%{opacity:1;transform:translateY(-2%) scale(1.06)}
+  65%{opacity:.72;transform:translateY(8%) scale(1.03)}
   100%{opacity:0;transform:translateY(18%) scale(.96)}
 }
 @keyframes mgwRvPremiumMassPlume{
-  0%,9%{opacity:0;transform:translateX(-50%) translateY(27%) scale(.58,.40)}
-  27%{opacity:.52}
-  48%{opacity:.96;transform:translateX(-50%) translateY(-4%) scale(1.02,1.08)}
-  67%{opacity:.58;transform:translateX(-50%) translateY(-13%) scale(1.13,1.18)}
+  0%{opacity:0;transform:translateX(-50%) translateY(27%) scale(.58,.40)}
+  18%{opacity:.52}
+  42%{opacity:.96;transform:translateX(-50%) translateY(-4%) scale(1.02,1.08)}
+  64%{opacity:.58;transform:translateX(-50%) translateY(-13%) scale(1.13,1.18)}
   100%{opacity:0;transform:translateX(-50%) translateY(-28%) scale(1.24,1.26)}
 }
 @keyframes mgwRvPremiumMassOrbit{
-  0%,10%{opacity:0;transform:translate(-50%,-50%) rotate(-30deg) scale(.46)}
-  29%{opacity:.72}
-  50%{opacity:1;transform:translate(-50%,-50%) rotate(104deg) scale(1.00)}
-  70%{opacity:.58;transform:translate(-50%,-50%) rotate(194deg) scale(1.20)}
+  0%{opacity:0;transform:translate(-50%,-50%) rotate(-30deg) scale(.46)}
+  20%{opacity:.72}
+  44%{opacity:1;transform:translate(-50%,-50%) rotate(104deg) scale(1.00)}
+  68%{opacity:.58;transform:translate(-50%,-50%) rotate(194deg) scale(1.20)}
   100%{opacity:0;transform:translate(-50%,-50%) rotate(286deg) scale(1.42)}
 }
 
