@@ -52,11 +52,17 @@ assert.ok(wrapper.includes('container.dataset.reversiWhitePieces = pieces;'), 'V
 assert.ok(wrapper.includes('const theme = fieldVariant(gameId, presentationOwner);'), 'Shared Reversi field must follow viewer-owned presentation');
 assert.ok(!wrapper.includes('reversiOpponentTheme'), 'Live Reversi must not invent an opponent-theme overlay on the shared field');
 
-assert.ok(wrapper.includes('ensureTelegramHeightFitStyles();'), 'Reversi live wrapper must install its Telegram footer/menu height-fit owner');
-assert.ok(wrapper.includes('telegram-height-fit-v1.css?v=1&mvp19_7=footer-menu-height-fit-v1'), 'Height-fit asset must be cache-addressed from the active live wrapper');
+assert.ok(wrapper.includes('const REAL_FIRST_FLIP_DELAY_MS = 320;'), 'Live cosmetic phase must start on the accepted real first-flip delay');
+assert.ok(wrapper.includes('const REAL_FLIP_STEP_MS = 150;'), 'Live cosmetic phase must follow the accepted real per-disc cadence');
+assert.ok(wrapper.includes("cell.style.setProperty('--mgw-rv-fx-delay'"), 'Each real flipped disc must receive its authoritative visual delay');
+assert.ok(wrapper.includes("cell.style.removeProperty('--mgw-rv-fx-delay')"), 'Per-move visual delay must be cleaned after the authoritative animation window');
+
+assert.ok(wrapper.includes('ensureTelegramHeightFitStyles();'), 'Reversi live wrapper must install its Telegram viewport owner');
+assert.ok(wrapper.includes('live-cosmetics-v1.css?v=3&mvp19_7=store-motion-parity-v3'), 'Live Store-motion CSS must be cache-addressed from the active wrapper');
+assert.ok(wrapper.includes('telegram-height-fit-v1.css?v=2&mvp19_7=fullwidth-scroll-footer-v2'), 'Full-width Telegram layout CSS must be cache-addressed from the active wrapper');
 
 for (const forbiddenTimer of ['setTimeout(', 'setInterval(', 'requestAnimationFrame(']) {
-  assert.ok(!wrapper.includes(forbiddenTimer), `Cosmetic wrapper must not create fake effect timing with ${forbiddenTimer}`);
+  assert.ok(!wrapper.includes(forbiddenTimer), `Cosmetic wrapper must not create a second gameplay timer with ${forbiddenTimer}`);
 }
 assert.ok(!wrapper.includes('innerHTML ='), 'Cosmetic wrapper must not rebuild the authoritative Reversi board');
 assert.ok(!wrapper.includes('onAction?.'), 'Cosmetic wrapper must not own gameplay actions');
@@ -73,12 +79,19 @@ assert.ok(liveCss.includes('radial-gradient(circle at 18% 22%'), 'Live marble fi
 assert.ok(liveCss.includes('.reversi-cell[data-mgw-reversi-fx="placement"].placed-fresh .reversi-disc::before'), 'Placement Store ring must live on the actual newly placed disc');
 assert.ok(liveCss.includes('inset:-38%'), 'Placement live ring must use Store exact ring geometry');
 assert.ok(liveCss.includes('border:2px solid rgba(94,238,255,.95)'), 'Placement live ring must use Store exact cyan visual language');
-assert.ok(liveCss.includes('.reversi-cell[data-mgw-reversi-fx="line"].flip-out .reversi-disc::before'), 'Line halo must attach to the actual real flip-out disc');
-assert.ok(liveCss.includes('.reversi-cell[data-mgw-reversi-fx="line"].flip-in .reversi-disc::before'), 'Line halo must stay on the actual real flip-in disc');
-assert.ok(liveCss.includes('inset:-22%'), 'Line effect must retain Store halo geometry');
-assert.ok(liveCss.includes('.reversi-cell[data-mgw-reversi-fx="mass-flip"].flip-out .reversi-disc'), 'Mass Flip must animate the actual flipping disc, not a detached clone');
-assert.ok(liveCss.includes('.reversi-cell[data-mgw-reversi-fx="mass-flip"].flip-in .reversi-disc'), 'Mass Flip must finish on the same actual disc node');
-assert.ok(liveCss.includes('inset:-32%'), 'Mass Flip must retain Store halo geometry');
+
+assert.ok(liveCss.includes('.reversi-cell[data-mgw-reversi-fx="line"]{\n  overflow:visible;'), 'Line glow must not be clipped to the square cell like the rejected manual-review build');
+assert.ok(liveCss.includes('animation:mgwRvLiveLineDisc .39s'), 'Line must use one continuous 3D Store-style disc turn');
+assert.ok(liveCss.includes('animation:mgwRvLiveLineShade .39s'), 'Line must include Store-like top light and lower shadow volume');
+assert.ok(liveCss.includes('animation:mgwRvLiveLineHalo .39s'), 'Line must include the cyan Store halo through the same real flip');
+assert.ok(liveCss.includes('rotateY(78deg) scale(.96)'), 'Line live motion must retain the accepted Store edge-on phase');
+assert.ok(liveCss.includes('rotateY(180deg) scale(1.05)'), 'Line live motion must retain the accepted Store flip emphasis');
+
+assert.ok(liveCss.includes('.reversi-cell[data-mgw-reversi-fx="mass-flip"]{\n  overflow:visible;'), 'Mass Flip glow must not be clipped to the square cell');
+assert.ok(liveCss.includes('animation:mgwRvLiveMassDisc .40s'), 'Mass Flip must use one continuous Store-style lifted turn');
+assert.ok(liveCss.includes('animation:mgwRvLiveMassShade .40s'), 'Mass Flip must carry the Store violet color-volume layer');
+assert.ok(liveCss.includes('animation:mgwRvLiveMassHalo .40s'), 'Mass Flip must carry the Store violet/cyan halo');
+assert.ok(liveCss.includes('translateY(-13%) rotateY(180deg) scale(1.10)'), 'Mass Flip must preserve the Store lift and overshoot peak');
 assert.ok(!liveCss.includes('position:fixed'), 'Reversi live cosmetics must not create detached viewport overlays');
 
 for (const token of [
@@ -90,14 +103,19 @@ for (const token of [
   assert.ok(storeCss.includes(token), `Accepted Store must contain visual token: ${token}`);
   assert.ok(liveCss.includes(token), `Live Reversi must reuse Store visual token: ${token}`);
 }
+assert.ok(storeCss.includes('rotateY(78deg) scale(.96)'), 'Accepted Store Line preview must retain its edge-on motion phase');
+assert.ok(storeCss.includes('translateY(-13%) rotateY(180deg) scale(1.10)'), 'Accepted Store Mass Flip preview must retain its lift/overshoot phase');
 
 assert.ok(heightFit.includes('height:calc(var(--tg-viewport-stable-height,100dvh))'), 'Reversi screen must use Telegram stable viewport height like accepted Checkers');
 assert.ok(heightFit.includes('max-height:calc(var(--tg-viewport-stable-height,100dvh))'), 'Reversi screen must be bounded to Telegram stable viewport height');
-assert.ok(heightFit.includes('overflow:hidden'), 'Outer Reversi game screen must not push bottom navigation below the viewport');
-assert.ok(heightFit.includes('overflow-y:auto'), 'Reversi content must scroll internally when board plus chrome exceed the Telegram viewport');
-assert.ok(heightFit.includes('padding-bottom:max(56px'), 'Reversi safe content must reserve bottom-menu space');
-assert.ok(heightFit.includes('var(--tg-content-safe-area-inset-bottom'), 'Reversi height owner must respect Telegram bottom safe area');
-assert.ok(heightFit.includes('calc(100dvh - 285px)'), 'Short Telegram viewports must shrink the board instead of hiding the menu');
+assert.ok(heightFit.includes('.board-wrap{'), 'Reversi must use the board-wrap as its internal scroll owner');
+assert.ok(heightFit.includes('overflow-y:auto!important'), 'Reversi board area must scroll internally when vertical space is short');
+assert.ok(heightFit.includes('.board.reversi-surface,\n.game-board-screen[data-game-type="reversi"] .reversi-panel,\n.game-board-screen[data-game-type="reversi"] .reversi-board{\n  width:100%!important;'), 'Reversi live board must stay full width like accepted Checkers');
+assert.ok(heightFit.includes('#leaveGame{'), 'Reversi viewport owner must explicitly own the leave/menu button placement');
+assert.ok(heightFit.includes('position:static!important'), 'Leave/menu button must remain in the accepted visible flex flow');
+assert.ok(!heightFit.includes('calc(100dvh - 285px)'), 'Short Telegram viewports must scroll instead of narrowing the Reversi board');
+assert.ok(!heightFit.includes('calc(100dvh - 275px)'), 'Very short Telegram viewports must not narrow the Reversi board');
+assert.ok(heightFit.includes('var(--tg-content-safe-area-inset-bottom'), 'Reversi viewport owner must respect Telegram bottom safe area');
 
 for (const size of ['6','8','10']) {
   assert.ok(baseRenderer.includes(size), `Accepted base renderer must retain ${size}x${size} support`);
@@ -109,7 +127,7 @@ assert.ok(baseRenderer.includes('flipStep = 150'), 'Accepted real flip cadence m
 assert.ok(baseCss.includes('.reversi-cell.flip-out .reversi-disc'), 'Accepted base flip-out primitive must remain available');
 assert.ok(baseCss.includes('.reversi-cell.flip-in .reversi-disc'), 'Accepted base flip-in primitive must remain available');
 
-assert.ok(manifest.includes("'./assets/js/games/reversi/renderer.js?v=66' => './assets/js/games/reversi/renderer-cosmetics-v1.js?v=2&mvp19_7=live-corrective-store-exact-v2&pieces=viewer-complete-set-v1&effects=real-disc-store-language-v2&footer=telegram-height-fit-v1'"), 'Active import map must publish the Reversi corrective v2 wrapper');
-assert.ok(launch.includes('/app/v110.php?v=1132'), 'Telegram launch must force the fresh Reversi corrective asset chain');
+assert.ok(manifest.includes("'./assets/js/games/reversi/renderer.js?v=66' => './assets/js/games/reversi/renderer-cosmetics-v1.js?v=3&mvp19_7=live-parity-store-motion-v3&pieces=viewer-complete-set-v1&effects=store-phased-real-cadence-v3&footer=fullwidth-scroll-v2'"), 'Active import map must publish Reversi live parity v3');
+assert.ok(launch.includes('/app/v110.php?v=1133'), 'Telegram launch must force the fresh Reversi live parity v3 asset chain');
 
-console.log('MVP-19.7 Reversi live corrective contract passed: complete Store piece set, real-disc effects and Telegram footer height fit are active.');
+console.log('MVP-19.7 Reversi live parity v3 contract passed: full-width board and Store-motion Line/Mass Flip stay bound to authoritative real flips.');
