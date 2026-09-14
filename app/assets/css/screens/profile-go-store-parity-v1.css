@@ -1,0 +1,162 @@
+/* MVP-19.8 Go Profile parity: Store artwork, stable game rail and full-square cards. */
+
+#screen-profile .profile-v2-game-tabs{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  gap:8px!important;
+  width:100%!important;
+  max-width:100%!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+#screen-profile .profile-v2-game-tabs::-webkit-scrollbar{display:none}
+#screen-profile .profile-v2-game-tab{
+  flex:0 0 auto!important;
+  min-width:max-content!important;
+}
+#screen-profile .profile-v2-game-tab-mark{
+  position:relative!important;
+  display:inline-block!important;
+  flex:0 0 27px!important;
+  width:27px!important;
+  height:15px!important;
+  margin:0!important;
+  line-height:15px!important;
+}
+
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="go"] .profile-v2-game-tab-mark{
+  color:transparent!important;
+  font-size:0!important;
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="go"] .profile-v2-game-tab-mark::before,
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="go"] .profile-v2-game-tab-mark::after{
+  content:""!important;
+  position:absolute!important;
+  top:2px!important;
+  width:11px!important;
+  height:11px!important;
+  border-radius:50%!important;
+  transform:none!important;
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="go"] .profile-v2-game-tab-mark::before{
+  left:0!important;
+  background:radial-gradient(circle at 31% 25%,#6a7075 0 6%,#25292d 25%,#070809 74%)!important;
+  box-shadow:inset 0 0 0 1px #000,0 2px 4px #0008!important;
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="go"] .profile-v2-game-tab-mark::after{
+  right:0!important;
+  background:radial-gradient(circle at 30% 23%,#fff 0 8%,#f6f2e8 34%,#c5c0b4 100%)!important;
+  box-shadow:inset 0 0 0 1px #9f998d,0 2px 4px #0005!important;
+}
+#screen-profile .profile-v2-game-tab.active[data-profile-game-tab="go"] .profile-v2-game-tab-mark::before{
+  box-shadow:inset 0 0 0 1px #000,0 0 0 1px rgba(255,255,255,.12),0 0 8px rgba(65,230,255,.34)!important;
+}
+#screen-profile .profile-v2-game-tab.active[data-profile-game-tab="go"] .profile-v2-game-tab-mark::after{
+  box-shadow:inset 0 0 0 1px #9f998d,0 0 0 1px rgba(255,255,255,.28),0 0 8px rgba(183,116,255,.28)!important;
+}
+
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="go"] .profile-v2-game-card{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  justify-content:flex-start!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:visible!important;
+  padding:6px!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="go"] .profile-v2-game-card .store-v2-game-preview[data-game-type="go"]{
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  flex:0 0 auto!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  aspect-ratio:1 / 1!important;
+  overflow:hidden!important;
+  margin:0!important;
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.09)!important;
+  border-radius:14px!important;
+  background:linear-gradient(145deg,#15120e,#090807)!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="go"] .profile-v2-game-card .store-v2-game-preview[data-game-type="go"] .mgw-go-preview{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="go"] .profile-v2-game-card .store-v2-game-preview[data-game-type="go"] .mgw-go-board{
+  width:84%!important;
+  max-width:none!important;
+  height:auto!important;
+  aspect-ratio:1 / 1!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="go"] .profile-v2-game-card .profile-v2-game-card-name{
+  position:relative!important;
+  z-index:2!important;
+  display:block!important;
+  flex:0 0 auto!important;
+  margin:6px 2px 1px!important;
+  line-height:1.2!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="go"]{
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  width:min(100%,236px)!important;
+  max-width:236px!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1 / 1!important;
+  overflow:hidden!important;
+  margin:0 auto!important;
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.11)!important;
+  border-radius:18px!important;
+  background:linear-gradient(145deg,#15120e,#090807)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04)!important;
+}
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="go"] .mgw-go-preview{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+}
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="go"] .mgw-go-board{
+  width:84%!important;
+  max-width:none!important;
+}
+
+#screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="go"] *,
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="go"] *{pointer-events:none!important}
+
+@media (pointer:coarse), (hover:none){
+  #screen-profile .profile-v2-game-tabs{
+    touch-action:pan-x pan-y!important;
+    cursor:default!important;
+    scroll-behavior:auto!important;
+  }
+}
+@media(max-width:390px){
+  #screen-profile .profile-v2-game-panel[data-profile-game-panel="go"] .profile-v2-game-card .store-v2-game-preview[data-game-type="go"]{border-radius:12px!important}
+  .profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="go"]{border-radius:16px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #screen-profile .store-v2-game-preview[data-game-type="go"] *{animation:none!important}
+}

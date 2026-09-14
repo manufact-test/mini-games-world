@@ -2,6 +2,8 @@ import { initProfileScreen as initCheckersParityProfileScreen } from './mgw-prof
 import { initProfileCheckersHardSquare } from './mgw-profile-checkers-hard-square-v1.js?v=1&mvp19_6=profile-board-effect-hard-square-v1';
 import { initProfileReversiParity } from './mgw-profile-reversi-parity.js?v=2&mvp19_7=reversi-profile-parity-v1&card_geometry=full-square-v2';
 import { initProfileReversiHardSquare } from './mgw-profile-reversi-hard-square-v1.js?v=1&mvp19_7=profile-hard-square-v1';
+import { initProfileGoParity } from './mgw-profile-go-parity.js?v=1&mvp19_8=go-profile-parity-v1';
+import { initProfileGoHardSquare } from './mgw-profile-go-hard-square-v1.js?v=1&mvp19_8=go-profile-hard-square-v1';
 
 const profileChessArtworkPrewarm = [];
 const PROFILE_GAME_TAB_DRAG_THRESHOLD = 5;
@@ -29,6 +31,8 @@ export function initProfileScreen(){
   initProfileCheckersHardSquare();
   initProfileReversiParity();
   initProfileReversiHardSquare();
+  initProfileGoParity();
+  initProfileGoHardSquare();
 }
 
 function prepareProfileGameTabInputMode(){

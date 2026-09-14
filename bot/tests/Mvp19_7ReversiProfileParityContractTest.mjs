@@ -88,7 +88,8 @@ assert.ok(hardSquare.includes("querySelector(':scope > .mgw-rv-board')"), 'Hard-
 assert.ok(hardSquare.includes("document.addEventListener('mgw:open-profile'"), 'Hard-square runtime must repair after Profile opens');
 assert.ok(hardSquare.includes("document.addEventListener('mgw:cosmetic-inventory-changed'"), 'Hard-square runtime must repair after inventory changes');
 
-assert.ok(manifest.includes('mgw-profile-chess-layout-v2.js?v=17'), 'Active Profile owner must use a fresh cache identity for the Reversi hard-square runtime');
+const profileOwnerMatch = manifest.match(/mgw-profile-chess-layout-v2\.js\?v=(\d+)/);
+assert.ok(profileOwnerMatch && Number(profileOwnerMatch[1]) >= 17, 'Active Profile owner must stay at or beyond the accepted Reversi hard-square cache identity');
 assert.ok(manifest.includes('mvp19_7=reversi-profile-parity-v1'), 'Active profile URL must retain Reversi Profile parity');
 assert.ok(manifest.includes('profile_tabs=delayed-capture-v2'), 'Active profile URL must publish the delayed-capture tab owner');
 assert.ok(manifest.includes('reversi_tab_mark=separated-v1'), 'Active profile URL must retain the separated Reversi tab mark');
