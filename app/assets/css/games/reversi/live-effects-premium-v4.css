@@ -1,7 +1,9 @@
 /* MVP-19.7 Reversi premium live-effect corrective.
-   Store remains the visual source of truth. Real Reversi flip cadence remains authoritative. */
+   Store remains the visual source of truth.
+   IMPORTANT: the accepted base renderer is the only owner of the real disc transform/flip.
+   Premium Line/Mass layers decorate that real flip and never animate the disc transform themselves. */
 
-/* LINE — a travelling cyan light pass with a true half-turn, not a pulse clone of Placement. */
+/* LINE — travelling cyan light pass around the authoritative real flip. */
 #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="line"]{
   overflow:visible!important;
   isolation:isolate;
@@ -9,10 +11,7 @@
 }
 #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="line"] .reversi-disc{
   z-index:10!important;
-  backface-visibility:visible!important;
-  transform-style:preserve-3d!important;
   will-change:transform;
-  animation:mgwRvPremiumLineFlip .48s cubic-bezier(.18,.78,.18,1) calc(var(--mgw-rv-fx-delay,320ms) - 170ms) both!important;
 }
 #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="line"] .reversi-disc::before{
   content:""!important;
@@ -68,7 +67,7 @@
   animation:mgwRvPremiumLineFloor .48s ease-out calc(var(--mgw-rv-fx-delay,320ms) - 170ms) both!important;
 }
 
-/* MASS FLIP — a coordinated violet/cyan lift-wave across all actually flipped discs.
+/* MASS FLIP — coordinated violet/cyan wave around all authoritative real flips.
    It deliberately avoids Placement's expanding target ring. */
 #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"]{
   overflow:visible!important;
@@ -77,10 +76,7 @@
 }
 #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"] .reversi-disc{
   z-index:12!important;
-  backface-visibility:visible!important;
-  transform-style:preserve-3d!important;
   will-change:transform;
-  animation:mgwRvPremiumMassFlip .62s cubic-bezier(.16,.82,.18,1) calc(var(--mgw-rv-fx-delay,320ms) - 210ms) both!important;
 }
 #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"] .reversi-disc::before{
   content:""!important;
@@ -147,14 +143,6 @@
   animation:mgwRvPremiumMassOrbit .62s cubic-bezier(.14,.76,.16,1) calc(var(--mgw-rv-fx-delay,320ms) - 210ms) both!important;
 }
 
-@keyframes mgwRvPremiumLineFlip{
-  0%{transform:perspective(240px) rotateY(0deg) scale(1)}
-  14%{transform:perspective(240px) rotateY(58deg) scale(.975)}
-  24%{transform:perspective(240px) rotateY(92deg) scale(.95)}
-  46%{transform:perspective(240px) rotateY(180deg) scale(1.045)}
-  68%{transform:perspective(240px) rotateY(180deg) scale(1.025)}
-  100%{transform:perspective(240px) rotateY(180deg) scale(1)}
-}
 @keyframes mgwRvPremiumLineSurface{
   0%{opacity:0;transform:translateY(-18%) scale(.92)}
   18%{opacity:.62}
@@ -176,15 +164,6 @@
   100%{opacity:0;transform:translateX(-50%) scale(1.30)}
 }
 
-@keyframes mgwRvPremiumMassFlip{
-  0%{transform:perspective(250px) translateY(0) rotateY(0deg) scale(1)}
-  12%{transform:perspective(250px) translateY(-5%) rotateY(48deg) scale(.98)}
-  23%{transform:perspective(250px) translateY(-11%) rotateY(92deg) scale(.93)}
-  45%{transform:perspective(250px) translateY(-19%) rotateY(180deg) scale(1.14)}
-  62%{transform:perspective(250px) translateY(-13%) rotateY(180deg) scale(1.09)}
-  80%{transform:perspective(250px) translateY(-4%) rotateY(180deg) scale(1.035)}
-  100%{transform:perspective(250px) translateY(0) rotateY(180deg) scale(1)}
-}
 @keyframes mgwRvPremiumMassSurface{
   0%{opacity:0;transform:translateY(-20%) scale(.90)}
   18%{opacity:.58}
@@ -214,6 +193,4 @@
   #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"]::after,
   #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="line"] .reversi-disc::before,
   #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"] .reversi-disc::before{animation:none!important;display:none!important}
-  #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="line"] .reversi-disc,
-  #gameBoard[data-game-type="reversi"] .reversi-cell[data-mgw-reversi-fx="mass-flip"] .reversi-disc{animation:none!important;transform:none!important;filter:none!important}
 }
