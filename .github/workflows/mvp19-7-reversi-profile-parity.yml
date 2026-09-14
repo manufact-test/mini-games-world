@@ -65,5 +65,14 @@ jobs:
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
-          git diff --exit-code "$base" "$head" -- app/assets/js/games/reversi app/assets/js/games/chess app/assets/js/games/checkers app/assets/js/checkers-cosmetics bot/catalog/ProductInventoryService.php bot/database/migrations
+          git diff --exit-code "$base" "$head" -- \
+            app/assets/js/games/reversi/entry.js \
+            app/assets/js/games/reversi/meta.js \
+            app/assets/js/games/reversi/renderer.js \
+            app/assets/js/games/reversi/rules.js \
+            app/assets/js/games/chess \
+            app/assets/js/games/checkers \
+            app/assets/js/checkers-cosmetics \
+            bot/catalog/ProductInventoryService.php \
+            bot/database/migrations
           git diff --check
