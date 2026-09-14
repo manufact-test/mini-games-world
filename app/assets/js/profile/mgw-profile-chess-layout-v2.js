@@ -3,6 +3,9 @@ import { initProfileCheckersHardSquare } from './mgw-profile-checkers-hard-squar
 import { initProfileReversiParity } from './mgw-profile-reversi-parity.js?v=1&mvp19_7=reversi-profile-parity-v1';
 
 const profileChessArtworkPrewarm = [];
+const PROFILE_GAME_TAB_DRAG_THRESHOLD = 5;
+let profileGameTabDrag = null;
+let suppressProfileGameTabClick = false;
 
 ensureProfileChessLayoutStyles();
 ensureProfileGameCosmeticsRepairStyles();
@@ -26,17 +29,72 @@ export function initProfileScreen(){
 
 function prepareProfileGameTabInputMode(){
   const screen = document.getElementById('screen-profile');
-  if (!(screen instanceof HTMLElement)) return;
-  const coarsePointer = globalThis.matchMedia?.('(pointer: coarse)').matches === true;
-  const noHover = globalThis.matchMedia?.('(hover: none)').matches === true;
-  if (!coarsePointer && !noHover) return;
+  if (!(screen instanceof HTMLElement) || screen.dataset.mgwGameTabsInputV2 === '1') return;
 
-  // Telegram WebView can report a finger as pointerType="mouse". The legacy
-  // desktop drag helper then interprets tiny finger jitter as a drag and consumes
-  // the following click. Mark the rail as natively handled before that helper is
-  // installed; native overflow scrolling still works and taps remain real taps.
+  screen.dataset.mgwGameTabsInputV2 = '1';
   screen.dataset.mgwGameTabsScroller = '1';
-  screen.dataset.mgwGameTabsScrollerMode = 'native-touch';
+  screen.dataset.mgwGameTabsScrollerMode = 'delayed-capture-v2';
+
+  // The old Profile rail captured the pointer on pointerdown. In Telegram/WebView
+  // that retargeted pointerup/click to the whole rail, so the nested game button
+  // never received a real click. Keep pointerdown passive; capture only after an
+  // actual horizontal drag crosses the threshold. Touch pointers remain native.
+  screen.addEventListener('pointerdown', event => {
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
+    const target = event.target instanceof Element ? event.target : null;
+    const strip = target?.closest('.profile-v2-game-tabs');
+    if (!(strip instanceof HTMLElement) || strip.scrollWidth <= strip.clientWidth) return;
+
+    profileGameTabDrag = {
+      strip,
+      pointerId:event.pointerId,
+      startX:event.clientX,
+      startScrollLeft:strip.scrollLeft,
+      moved:false,
+      captured:false,
+    };
+    suppressProfileGameTabClick = false;
+  });
+
+  screen.addEventListener('pointermove', event => {
+    const drag = profileGameTabDrag;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    const delta = event.clientX - drag.startX;
+    if (!drag.moved && Math.abs(delta) < PROFILE_GAME_TAB_DRAG_THRESHOLD) return;
+
+    if (!drag.moved) {
+      drag.moved = true;
+      drag.strip.classList.add('is-dragging');
+      drag.strip.setPointerCapture?.(event.pointerId);
+      drag.captured = true;
+    }
+
+    drag.strip.scrollLeft = drag.startScrollLeft - delta;
+    event.preventDefault();
+  });
+
+  const finishDrag = event => {
+    const drag = profileGameTabDrag;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    suppressProfileGameTabClick = drag.moved;
+    drag.strip.classList.remove('is-dragging');
+    if (drag.captured) drag.strip.releasePointerCapture?.(event.pointerId);
+    profileGameTabDrag = null;
+  };
+
+  screen.addEventListener('pointerup', finishDrag);
+  screen.addEventListener('pointercancel', finishDrag);
+
+  screen.addEventListener('click', event => {
+    if (!suppressProfileGameTabClick) return;
+    const target = event.target instanceof Element ? event.target : null;
+    suppressProfileGameTabClick = false;
+    if (!target?.closest('[data-profile-game-tab]')) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
 }
 
 function ensureProfileChessLayoutStyles(){
