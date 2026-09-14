@@ -1,0 +1,39 @@
+/* MVP-19.7 Reversi Telegram height fit. Mirrors the accepted Checkers screen/scroll owner. */
+
+.game-board-screen[data-game-type="reversi"]{
+  height:calc(var(--tg-viewport-stable-height,100dvh));
+  max-height:calc(var(--tg-viewport-stable-height,100dvh));
+  min-height:0;
+  overflow:hidden;
+}
+
+.game-board-screen[data-game-type="reversi"] > .game-board-safe-content{
+  min-height:0;
+  padding-bottom:max(56px,calc(30px + var(--tg-content-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))));
+}
+
+.game-board-screen[data-game-type="reversi"] .content{
+  min-height:0;
+  overflow-y:auto;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.game-board-screen[data-game-type="reversi"] .content::-webkit-scrollbar{display:none}
+
+@media(max-height:760px){
+  .game-board-screen[data-game-type="reversi"] .reversi-board{
+    width:min(100%,clamp(300px,calc(100dvh - 285px),360px));
+    margin-inline:auto;
+  }
+}
+
+@media(max-height:700px){
+  .game-board-screen[data-game-type="reversi"] .content{
+    padding-top:6px;
+    padding-bottom:max(72px,calc(36px + var(--tg-content-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))));
+  }
+  .game-board-screen[data-game-type="reversi"] .reversi-board{
+    width:min(100%,clamp(278px,calc(100dvh - 275px),336px));
+  }
+}

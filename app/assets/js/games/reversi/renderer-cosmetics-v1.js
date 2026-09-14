@@ -15,6 +15,7 @@ const EFFECT_IDS = new Set([
 const cosmeticsByGamePlayer = new Map();
 
 ensureLiveCosmeticStyles();
+ensureTelegramHeightFitStyles();
 
 export { reversiMeta, reversiPlayerMark, reversiStatus };
 
@@ -46,20 +47,20 @@ function decorateLiveReversi({ game, me, container }){
   const players = Array.isArray(game?.players) ? game.players : [];
   const myId = String(me?.id || '');
   const viewer = players.find(player => String(player?.id || '') === myId) || null;
-  const blackPlayer = players.find(player => String(player?.side || '') === 'black') || null;
-  const whitePlayer = players.find(player => String(player?.side || '') === 'white') || null;
+  const blackPlayer = players.find(player => normalizeSide(player?.side) === 'black') || null;
+  const whitePlayer = players.find(player => normalizeSide(player?.side) === 'white') || null;
+  const presentationOwner = viewer || blackPlayer || whitePlayer || players[0] || null;
 
-  // Match the accepted Checkers convention: the shared field theme belongs to
-  // the current viewer. Black/white disc materials remain owned by the actual
-  // black/white players, so both players' purchased piece cosmetics are visible.
-  const theme = fieldVariant(gameId, viewer);
-  const blackPieces = piecesVariant(gameId, blackPlayer);
-  const whitePieces = piecesVariant(gameId, whitePlayer);
+  // Store defines one Reversi piece SKU as a complete black+white material set.
+  // Project the viewer's selected SKU onto both colors so live gameplay is the
+  // same product the player bought and saw in Store/Profile.
+  const theme = fieldVariant(gameId, presentationOwner);
+  const pieces = piecesVariant(gameId, presentationOwner);
 
-  container.dataset.mgwReversiLiveCosmetics = '1';
+  container.dataset.mgwReversiLiveCosmetics = '2';
   container.dataset.reversiTheme = theme;
-  container.dataset.reversiBlackPieces = blackPieces;
-  container.dataset.reversiWhitePieces = whitePieces;
+  container.dataset.reversiBlackPieces = pieces;
+  container.dataset.reversiWhitePieces = pieces;
 
   clearPaidEffectMarks(container);
   if (!container.classList.contains('is-animating')) return;
@@ -103,8 +104,29 @@ function moverPlayer(game, players){
     const byId = players.find(player => String(player?.id || '') === playerId);
     if (byId) return byId;
   }
-  const side = String(game?.last_move?.side || '');
-  return players.find(player => String(player?.side || '') === side) || null;
+
+  const side = normalizeSide(game?.last_move?.side);
+  if (side) {
+    const bySide = players.find(player => normalizeSide(player?.side) === side);
+    if (bySide) return bySide;
+  }
+
+  // Some authoritative snapshots expose the next turn but omit mover id/side.
+  // With exactly two players, the mover is the other player after a completed move.
+  const turnId = String(game?.turn || '');
+  if (turnId && players.length === 2) {
+    const other = players.find(player => String(player?.id || '') !== turnId);
+    if (other) return other;
+  }
+
+  return null;
+}
+
+function normalizeSide(value){
+  const side = String(value || '').trim().toLowerCase();
+  if (side === 'black' || side === 'b') return 'black';
+  if (side === 'white' || side === 'w') return 'white';
+  return '';
 }
 
 function slotsFor(gameId, player){
@@ -163,7 +185,7 @@ function distanceFrom(cell, origin, size){
 
 function ensureLiveCosmeticStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/reversi/live-cosmetics-v1.css?v=1&mvp19_7=store-parity-real-events-v1', import.meta.url).href;
+  const href = new URL('../../../css/games/reversi/live-cosmetics-v1.css?v=2&mvp19_7=store-exact-real-events-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-reversi-live-cosmetics]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -171,7 +193,22 @@ function ensureLiveCosmeticStyles(){
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwReversiLiveCosmetics = 'mvp19-7-live-v1';
+  link.dataset.mgwReversiLiveCosmetics = 'mvp19-7-live-v2';
+  link.href = href;
+  document.head.appendChild(link);
+}
+
+function ensureTelegramHeightFitStyles(){
+  if (typeof document === 'undefined') return;
+  const href = new URL('../../../css/games/reversi/telegram-height-fit-v1.css?v=1&mvp19_7=footer-menu-height-fit-v1', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-reversi-height-fit]');
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    return;
+  }
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwReversiHeightFit = 'mvp19-7-height-fit-v1';
   link.href = href;
   document.head.appendChild(link);
 }
