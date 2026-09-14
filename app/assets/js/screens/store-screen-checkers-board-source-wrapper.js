@@ -7,11 +7,13 @@ import {
   installReversiStorePresentation,
   upgradeReversiStorePresentation,
 } from './store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only&review=manual-corrective-v2';
+import { installStoreGameSelectorSwipe } from './store-game-selector-swipe-v1.js?v=1&mvp19_7=touch-drag';
 
 ensureBoardSourceParityStyles();
 ensureBoardCardRadiusStyles();
 ensureEffectPreviewStyles();
 ensureEffectFinalCenteringStyles();
+installStoreGameSelectorSwipe();
 installReversiStorePresentation();
 
 export function initStoreScreen(){
@@ -19,6 +21,7 @@ export function initStoreScreen(){
   ensureBoardCardRadiusStyles();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
+  installStoreGameSelectorSwipe();
   installReversiStorePresentation();
   const result = initAcceptedCheckersStore();
   ensureEffectPreviewStyles();
@@ -32,6 +35,7 @@ export async function openStoreTab(){
   ensureBoardCardRadiusStyles();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
+  installStoreGameSelectorSwipe();
   installReversiStorePresentation();
   const result = await openAcceptedCheckersStoreTab();
   ensureEffectPreviewStyles();
@@ -45,6 +49,7 @@ export async function openStoreSheet(){
   ensureBoardCardRadiusStyles();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
+  installStoreGameSelectorSwipe();
   installReversiStorePresentation();
   const result = await openAcceptedCheckersStoreSheet();
   ensureEffectPreviewStyles();
