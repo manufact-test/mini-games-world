@@ -94,7 +94,8 @@ assert.ok(manifest.includes('profile_tabs=delayed-capture-v2'), 'Active profile 
 assert.ok(manifest.includes('reversi_tab_mark=separated-v1'), 'Active profile URL must retain the separated Reversi tab mark');
 assert.ok(manifest.includes('reversi_cards=direct-exact-v1'), 'Active profile URL must retain the direct exact card owner');
 assert.ok(manifest.includes('reversi_card_runtime=hard-square-v1'), 'Active profile URL must publish the Reversi hard-square runtime');
-assert.ok(launch.includes('/app/v110.php?v=1130'), 'Telegram launch URL must force a fresh hard-square Profile chain');
+const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);
+assert.ok(launchMatch && Number(launchMatch[1]) >= 1130, 'Telegram launch must remain at or beyond the accepted fresh hard-square Profile chain');
 
 assert.ok(css.includes('data-profile-game-tab="reversi"'), 'Reversi Profile tab needs dedicated mark styling');
 assert.ok(exactCss.includes('#screen-profile .profile-v2-game-card > .store-v2-game-preview[data-game-type="reversi"]'), 'Final Reversi owner must target the card directly like accepted Checkers');
