@@ -1,0 +1,76 @@
+name: MVP-19.7 Reversi Store
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260914_0033_add_reversi_store_cosmetics.php'
+      - 'bot/tests/Mvp19_7ReversiStoreTest.php'
+      - 'app/assets/js/screens/store-screen-reversi-store-v1.js'
+      - 'app/assets/js/screens/store-screen-checkers-board-source-wrapper.js'
+      - 'app/assets/css/games/reversi/store-cosmetics-v1.css'
+      - 'app/runtime/client/version-manifest.php'
+      - '.github/workflows/mvp19-7-reversi-store.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp19-7-reversi-store-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reversi-store:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Lint bounded Store slice
+        run: |
+          php -l bot/database/migrations/20260914_0033_add_reversi_store_cosmetics.php
+          php -l bot/tests/Mvp19_7ReversiStoreTest.php
+          php -l app/runtime/client/version-manifest.php
+          node --check app/assets/js/screens/store-screen-reversi-store-v1.js
+          node --check app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+      - name: Run Reversi Store contract
+        run: php bot/tests/Mvp19_7ReversiStoreTest.php
+      - name: Re-run shared Store contracts
+        run: |
+          php bot/tests/Mvp19_2CosmeticStoreTest.php
+          php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
+          php bot/tests/Mvp19_5ChessCosmeticsTest.php
+          php bot/tests/Mvp19_6CheckersBoardsTest.php
+      - name: Guard product scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          migration='bot/database/migrations/20260914_0033_add_reversi_store_cosmetics.php'
+          for id in \
+            game-reversi-field-green game-reversi-field-dark game-reversi-field-marble game-reversi-field-neon \
+            game-reversi-pieces-classic game-reversi-pieces-marble game-reversi-pieces-metal game-reversi-pieces-neon \
+            game-reversi-effect-placement game-reversi-effect-line game-reversi-effect-mass-flip; do
+            grep -F "'$id'" "$migration"
+          done
+          grep -F "'game_reversi_theme'" "$migration"
+          grep -F "'game_reversi_elements'" "$migration"
+          grep -F "'game_reversi_effect'" "$migration"
+          ! grep -Fq "offer_type' => 'bundle'" "$migration"
+          ! grep -Fq "premium-bundle" "$migration"
+      - name: Guard active Store graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only" app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"store-screen-checkers-board-source-wrapper.js?v=5") || !str_contains($s,"mvp19_6=board-source-parity-v1") || !str_contains($s,"mvp19_7=reversi-store-v1")) exit(1);'
+          grep -F 'data-game-type="reversi"' app/assets/css/games/reversi/store-cosmetics-v1.css
+          git diff --check
