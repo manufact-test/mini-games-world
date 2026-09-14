@@ -8,7 +8,6 @@ on:
       - 'app/assets/js/games/reversi/renderer-cosmetics-premium-v4.js'
       - 'app/assets/css/games/reversi/live-cosmetics-v1.css'
       - 'app/assets/css/games/reversi/live-effects-premium-v4.css'
-      - 'app/assets/css/games/reversi/live-effects-tail-settle-v6.css'
       - 'app/assets/css/games/reversi/telegram-height-fit-v1.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
