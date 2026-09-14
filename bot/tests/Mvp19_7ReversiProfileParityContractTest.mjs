@@ -4,12 +4,14 @@ import assert from 'node:assert/strict';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const profilePath = path.join(root, 'app/assets/js/profile/mgw-profile-reversi-parity.js');
+const layoutPath = path.join(root, 'app/assets/js/profile/mgw-profile-chess-layout-v2.js');
 const cssPath = path.join(root, 'app/assets/css/screens/profile-reversi-store-parity-v1.css');
 const storeCssPath = path.join(root, 'app/assets/css/games/reversi/store-cosmetics-v1.css');
 const manifestPath = path.join(root, 'app/runtime/client/version-manifest.php');
 const liveRendererPath = path.join(root, 'app/assets/js/games/reversi/renderer.js');
 
 const profile = fs.readFileSync(profilePath, 'utf8');
+const layout = fs.readFileSync(layoutPath, 'utf8');
 const css = fs.readFileSync(cssPath, 'utf8');
 const storeCss = fs.readFileSync(storeCssPath, 'utf8');
 const manifest = fs.readFileSync(manifestPath, 'utf8');
@@ -44,7 +46,11 @@ assert.ok(profile.includes("mgwGameCosmeticEquip"), 'Profile parity must repair 
 assert.ok(profile.includes("api.profileV2"), 'Profile parity must converge after authoritative profile refresh');
 assert.ok(profile.includes("data-game-type=\"reversi\""), 'Profile previews must identify themselves as Reversi previews');
 assert.ok(profile.includes("store-cosmetics-v1.css"), 'Profile must reuse accepted Reversi Store cosmetic artwork CSS');
-assert.ok(profile.includes("mgw-profile-chess-layout-v2.js"), 'Reversi Profile wrapper must preserve the accepted Chess/Checkers/Profile parent');
+
+assert.ok(layout.includes("mgw-profile-reversi-parity.js?v=1&mvp19_7=reversi-profile-parity-v1"), 'Accepted Profile wrapper must import the Reversi parity module');
+assert.ok(layout.includes('initProfileReversiParity();'), 'Accepted Profile wrapper must initialize Reversi parity');
+assert.ok(manifest.includes('mgw-profile-chess-layout-v2.js?v=12'), 'Active Profile owner must remain the accepted Chess/Checkers layout wrapper');
+assert.ok(manifest.includes('mvp19_7=reversi-profile-parity-v1'), 'Active profile URL must be cache-busted for Reversi Profile parity');
 
 assert.ok(css.includes('data-profile-game-tab="reversi"'), 'Reversi Profile tab needs dedicated mark styling');
 assert.ok(css.includes('aspect-ratio:1!important'), 'Reversi Profile cards/sheets must keep square preview geometry');
@@ -52,9 +58,6 @@ assert.ok(css.includes('data-game-type="reversi"'), 'Reversi Profile CSS must sc
 assert.ok(storeCss.includes('.mgw-reversi-preview.theme-marble'), 'Accepted Store marble artwork must remain available to Profile');
 assert.ok(storeCss.includes('.mgw-reversi-preview.pieces-classic'), 'Accepted Store Classic piece artwork must remain available to Profile');
 assert.ok(storeCss.includes('.mgw-reversi-preview.effect-mass-flip'), 'Accepted Store effects must remain available to Profile');
-
-assert.ok(manifest.includes('mgw-profile-reversi-parity.js'), 'Active profile import must route through Reversi parity wrapper');
-assert.ok(manifest.includes('mvp19_7=reversi-profile-parity-v1'), 'Active profile URL must be cache-busted for Reversi Profile parity');
 
 assert.ok(!profile.includes('gameAction('), 'Profile parity must not own gameplay actions');
 assert.ok(!profile.includes('last_flipped_cells'), 'Profile parity must not own live Reversi flip state');
