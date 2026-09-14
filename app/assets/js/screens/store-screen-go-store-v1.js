@@ -1,8 +1,8 @@
 import { api } from '../api/client.js?v=34';
 
-const API_HOOK = Symbol.for('mgw.store.go.mvp19-8.v1');
-const INSTALL_KEY = '__mgwGoStoreV1Installed';
-const STYLE_MARK = 'mvp19-8-go-store-v1';
+const API_HOOK = Symbol.for('mgw.store.go.mvp19-8.v2');
+const INSTALL_KEY = '__mgwGoStoreV2Installed';
+const STYLE_MARK = 'mvp19-8-go-effects-premium-v2';
 
 export function installGoStorePresentation(){
   ensureStyles();
@@ -34,11 +34,12 @@ export function upgradeGoStorePresentation(){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/go/store-cosmetics-v1.css?v=1&mvp19_8=store-v1', import.meta.url).href;
+  const href = new URL('../../css/games/go/store-cosmetics-v1.css?v=2&mvp19_8=effects-premium-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-go-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
     existing.dataset.mgwGoStore = STYLE_MARK;
+    document.head.appendChild(existing);
     return;
   }
   const link = document.createElement('link');
@@ -132,7 +133,7 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = String(preview.dataset.cosmeticVariant || 'wood');
-    const signature = `${layer}:${variant}:v1`;
+    const signature = `${layer}:${variant}:v2`;
     if (preview.dataset.mgwGoPreview === signature) return;
     preview.dataset.mgwGoPreview = signature;
     preview.innerHTML = previewMarkup(layer, variant);
@@ -157,9 +158,9 @@ function descriptionFor(layer, variant){
     })[variant] || 'Меняет внешний вид камней Го';
   }
   return ({
-    placement:'Кольцо энергии собирается в точке и подчёркивает новый камень',
-    'group-capture':'Захваченная группа растворяется последовательной световой волной',
-    'territory-finish':'После завершения партии территория проявляется светящимся контуром',
+    placement:'Камень падает на пересечение и вспыхивает сегментированной энергетической печатью',
+    'group-capture':'Захваченная группа схлопывается в доску с вращающейся короной и россыпью частиц',
+    'territory-finish':'После партии территория проявляется каскадом меток и радиальным свечением поля',
   })[variant] || 'Добавляет визуальный эффект партии';
 }
 
