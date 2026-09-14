@@ -57,11 +57,13 @@ function decorateLiveGo({ game, me, container }){
 
   const mover = moverPlayer(game, players);
   const effectId = effectForPlayer(gameId, mover);
+  const isAnimatedPlacement = container.classList.contains('is-animating') && String(game?.last_move?.type || '') === 'place';
 
-  if (container.classList.contains('is-animating') && String(game?.last_move?.type || '') === 'place') {
+  if (isAnimatedPlacement) {
     const size = Number(game?.board_size || 9);
     const placedCell = integerCell(game?.last_move?.cell, size);
     const captured = uniqueCells(game?.last_captured_cells, size);
+    const capturedCount = Math.max(0, Number(game?.last_move?.captured || 0));
 
     if (effectId === 'game-go-effect-placement') {
       const point = pointElement(container, placedCell);
@@ -69,13 +71,19 @@ function decorateLiveGo({ game, me, container }){
       return;
     }
 
-    if (effectId === 'game-go-effect-group-capture' && captured.length > 0) {
+    if (effectId === 'game-go-effect-group-capture') {
+      if (capturedCount <= 0 || captured.length <= 0) return;
       captured.forEach((cell, index) => {
         const point = pointElement(container, cell);
         if (!point) return;
         point.dataset.mgwGoFx = 'group-capture';
         point.style.setProperty('--mgw-go-fx-step', String(index));
       });
+      return;
+    }
+
+    if (effectId === 'game-go-effect-territory-finish') {
+      applyTerritoryQaPreview({ board, container, size, placedCell });
       return;
     }
   }
@@ -97,6 +105,41 @@ function decorateLiveGo({ game, me, container }){
   }
 }
 
+function applyTerritoryQaPreview({ board, container, size, placedCell }){
+  board.dataset.mgwGoFx = 'territory-finish';
+  board.dataset.mgwGoSeal = 'MGW';
+  board.dataset.mgwGoTerritoryQa = 'placement';
+
+  qaTerritoryCells(size, placedCell).forEach((cell, index) => {
+    const point = pointElement(container, cell);
+    if (!point) return;
+    point.dataset.mgwGoTerritoryFx = 'qa';
+    point.dataset.mgwGoTerritoryTone = index % 2 === 0 ? 'black' : 'white';
+    point.style.setProperty('--mgw-go-territory-step', String(index));
+  });
+}
+
+function qaTerritoryCells(size, placedCell){
+  const centerRow = Math.floor(size / 2);
+  const centerCol = Math.floor(size / 2);
+  const center = centerRow * size + centerCol;
+  const anchor = placedCell >= 0 ? placedCell : center;
+  const anchorRow = Math.floor(anchor / size);
+  const anchorCol = anchor % size;
+  const candidates = [
+    [anchorRow - 1, anchorCol - 1], [anchorRow - 1, anchorCol], [anchorRow - 1, anchorCol + 1],
+    [anchorRow + 1, anchorCol - 1], [anchorRow + 1, anchorCol], [anchorRow + 1, anchorCol + 1],
+    [centerRow, centerCol - 1], [centerRow, centerCol], [centerRow, centerCol + 1],
+  ];
+  const cells = [];
+  candidates.forEach(([row, col]) => {
+    if (row < 0 || col < 0 || row >= size || col >= size) return;
+    const cell = row * size + col;
+    if (!cells.includes(cell)) cells.push(cell);
+  });
+  return cells.slice(0, 8);
+}
+
 function clearPaidEffectMarks(container){
   container.querySelectorAll('[data-mgw-go-fx]').forEach(element => {
     if (!(element instanceof HTMLElement)) return;
@@ -106,12 +149,14 @@ function clearPaidEffectMarks(container){
   container.querySelectorAll('[data-mgw-go-territory-fx]').forEach(element => {
     if (!(element instanceof HTMLElement)) return;
     delete element.dataset.mgwGoTerritoryFx;
+    delete element.dataset.mgwGoTerritoryTone;
     element.style.removeProperty('--mgw-go-territory-step');
   });
   const board = container.querySelector('.go-board');
   if (board instanceof HTMLElement) {
     delete board.dataset.mgwGoFx;
     delete board.dataset.mgwGoSeal;
+    delete board.dataset.mgwGoTerritoryQa;
   }
 }
 
@@ -191,15 +236,30 @@ function pointElement(container, cell){
 
 function ensureLiveCosmeticStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/go/live-cosmetics-v1.css?v=1&mvp19_8=live-cosmetics-v1', import.meta.url).href;
-  const existing = document.querySelector('link[data-mgw-go-live-cosmetics]');
+  ensureStylesheet({
+    selector:'link[data-mgw-go-live-cosmetics]',
+    marker:'mgwGoLiveCosmetics',
+    markerValue:'mvp19-8-live-v1',
+    href:new URL('../../../css/games/go/live-cosmetics-v1.css?v=1&mvp19_8=live-cosmetics-v1', import.meta.url).href,
+  });
+  ensureStylesheet({
+    selector:'link[data-mgw-go-live-effects-corrective]',
+    marker:'mgwGoLiveEffectsCorrective',
+    markerValue:'mvp19-8-live-effects-corrective-v2',
+    href:new URL('../../../css/games/go/live-effects-corrective-v2.css?v=2&mvp19_8=live-effects-corrective-v2', import.meta.url).href,
+  });
+}
+
+function ensureStylesheet({ selector, marker, markerValue, href }){
+  const existing = document.querySelector(selector);
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
+    existing.dataset[marker] = markerValue;
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwGoLiveCosmetics = 'mvp19-8-live-v1';
+  link.dataset[marker] = markerValue;
   link.href = href;
   document.head.appendChild(link);
 }
