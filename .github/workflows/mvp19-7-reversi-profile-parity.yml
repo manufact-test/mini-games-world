@@ -5,6 +5,7 @@ on:
     branches: [agent/mvp-13-2-staging]
     paths:
       - 'app/assets/js/profile/mgw-profile-reversi-parity.js'
+      - 'app/assets/js/profile/mgw-profile-chess-layout-v2.js'
       - 'app/assets/css/screens/profile-reversi-store-parity-v1.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp19_7ReversiProfileParityContractTest.mjs'
@@ -39,6 +40,7 @@ jobs:
       - name: Syntax checks
         run: |
           node --check app/assets/js/profile/mgw-profile-reversi-parity.js
+          node --check app/assets/js/profile/mgw-profile-chess-layout-v2.js
           node --check bot/tests/Mvp19_7ReversiProfileParityContractTest.mjs
           php -l app/runtime/client/version-manifest.php
 
@@ -47,6 +49,7 @@ jobs:
 
       - name: Re-run current shared Profile/Store contracts
         run: |
+          node bot/tests/Mvp19_6ProfileGameCosmeticsParityContractTest.mjs
           node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
           php bot/tests/Mvp19_7ReversiStoreTest.php
           php bot/tests/ProfileV2CorrectiveStaticContractTest.php
