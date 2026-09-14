@@ -7,6 +7,10 @@ import {
   installReversiStorePresentation,
   upgradeReversiStorePresentation,
 } from './store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only&review=manual-corrective-v2';
+import {
+  installGoStorePresentation,
+  upgradeGoStorePresentation,
+} from './store-screen-go-store-v1.js?v=1&mvp19_8=store-v1';
 import { installStoreGameSelectorSwipe } from './store-game-selector-swipe-v1.js?v=1&mvp19_7=touch-drag';
 
 ensureBoardSourceParityStyles();
@@ -15,6 +19,7 @@ ensureEffectPreviewStyles();
 ensureEffectFinalCenteringStyles();
 installStoreGameSelectorSwipe();
 installReversiStorePresentation();
+installGoStorePresentation();
 
 export function initStoreScreen(){
   ensureBoardSourceParityStyles();
@@ -23,10 +28,12 @@ export function initStoreScreen(){
   ensureEffectFinalCenteringStyles();
   installStoreGameSelectorSwipe();
   installReversiStorePresentation();
+  installGoStorePresentation();
   const result = initAcceptedCheckersStore();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
   upgradeReversiStorePresentation();
+  upgradeGoStorePresentation();
   return result;
 }
 
@@ -37,10 +44,12 @@ export async function openStoreTab(){
   ensureEffectFinalCenteringStyles();
   installStoreGameSelectorSwipe();
   installReversiStorePresentation();
+  installGoStorePresentation();
   const result = await openAcceptedCheckersStoreTab();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
   upgradeReversiStorePresentation();
+  upgradeGoStorePresentation();
   return result;
 }
 
@@ -51,10 +60,12 @@ export async function openStoreSheet(){
   ensureEffectFinalCenteringStyles();
   installStoreGameSelectorSwipe();
   installReversiStorePresentation();
+  installGoStorePresentation();
   const result = await openAcceptedCheckersStoreSheet();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
   upgradeReversiStorePresentation();
+  upgradeGoStorePresentation();
   return result;
 }
 
