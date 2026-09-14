@@ -1,8 +1,8 @@
 import { api } from '../api/client.js?v=34';
 
-const API_HOOK = Symbol.for('mgw.store.reversi.mvp19-7.v1');
-const INSTALL_KEY = '__mgwReversiStoreV1Installed';
-const STYLE_MARK = 'mvp19-7-reversi-store-v1';
+const API_HOOK = Symbol.for('mgw.store.reversi.mvp19-7.v2');
+const INSTALL_KEY = '__mgwReversiStoreV2Installed';
+const STYLE_MARK = 'mvp19-7-reversi-store-v2';
 
 export function installReversiStorePresentation(){
   ensureStyles();
@@ -25,6 +25,7 @@ export function upgradeReversiStorePresentation(){
   ];
   roots.forEach(root => {
     if (!(root instanceof HTMLElement)) return;
+    upgradeGameSelector(root);
     renameSelector(root);
     upgradeHeader(root);
     upgradeGroups(root);
@@ -34,7 +35,7 @@ export function upgradeReversiStorePresentation(){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/reversi/store-cosmetics-v1.css?v=1&mvp19_7=store-only', import.meta.url).href;
+  const href = new URL('../../css/games/reversi/store-cosmetics-v1.css?v=2&mvp19_7=manual-review-corrective-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-reversi-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -72,6 +73,28 @@ function scheduleUpgrade(){
   globalThis.setTimeout(run, 80);
 }
 
+function upgradeGameSelector(root){
+  const selector = root.querySelector('.store-v2-game-selector');
+  if (!(selector instanceof HTMLElement)) return;
+  selector.dataset.mgwScrollableGames = '1';
+  const active = selector.querySelector('.store-v2-game-select.active');
+  if (!(active instanceof HTMLElement)) return;
+  const gameType = String(active.dataset.storeV2Game || '');
+  if (selector.dataset.mgwCenteredGame === gameType) return;
+  selector.dataset.mgwCenteredGame = gameType;
+  const centerActive = () => {
+    if (!selector.isConnected || !active.isConnected) return;
+    const max = Math.max(0, selector.scrollWidth - selector.clientWidth);
+    const wanted = active.offsetLeft - (selector.clientWidth - active.offsetWidth) / 2;
+    const left = Math.max(0, Math.min(max, wanted));
+    if (Math.abs(selector.scrollLeft - left) < 2) return;
+    if (typeof selector.scrollTo === 'function') selector.scrollTo({ left, behavior:'smooth' });
+    else selector.scrollLeft = left;
+  };
+  if (typeof globalThis.requestAnimationFrame === 'function') globalThis.requestAnimationFrame(centerActive);
+  else globalThis.setTimeout(centerActive, 0);
+}
+
 function renameSelector(root){
   root.querySelectorAll('[data-store-v2-game="reversi"]').forEach(button => {
     if (button instanceof HTMLElement) button.textContent = 'Реверси';
@@ -103,10 +126,13 @@ function upgradeGroups(root){
     const copy = {
       theme:['Поля','Оформление игрового поля Реверси'],
       elements:['Фишки','Внешний вид чёрных и белых фишек'],
-      effect:['Эффекты','Один выбранный эффект подчёркивает соответствующее событие хода'],
+      effect:['Эффекты',''],
     }[layer] || ['Реверси','Игровая косметика'];
     if (title instanceof HTMLElement) title.textContent = copy[0];
-    if (subtitle instanceof HTMLElement) subtitle.textContent = copy[1];
+    if (subtitle instanceof HTMLElement) {
+      if (layer === 'effect') subtitle.remove();
+      else subtitle.textContent = copy[1];
+    }
   });
 }
 
@@ -129,7 +155,7 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = String(preview.dataset.cosmeticVariant || 'green');
-    const signature = `${layer}:${variant}:v1`;
+    const signature = `${layer}:${variant}:v2`;
     if (preview.dataset.mgwReversiPreview === signature) return;
     preview.dataset.mgwReversiPreview = signature;
     preview.innerHTML = previewMarkup(layer, variant);
@@ -139,42 +165,83 @@ function upgradePreviews(root){
 function descriptionFor(layer, variant){
   if (layer === 'theme') {
     return ({
-      green:'Классическое зелёное поле с чистой контрастной сеткой',
+      green:'Спокойное зелёное поле с чёткой контрастной сеткой',
       dark:'Глубокое тёмное поле для спокойной контрастной партии',
-      marble:'Светлый мрамор с тонкими каменными прожилками',
+      marble:'Светлый камень с мягкой облачной фактурой и спокойной сеткой',
       neon:'Тёмная сетка с ярким неоновым свечением',
     })[variant] || 'Меняет оформление поля Реверси';
   }
   if (layer === 'elements') {
     return ({
-      classic:'Классические чёрные и белые фишки с объёмной поверхностью',
-      marble:'Каменные фишки с мраморной фактурой',
+      classic:'Турнирные фишки с матовой поверхностью и двойным кантом',
+      marble:'Каменные фишки с мягкой минеральной фактурой',
       metal:'Холодный полированный металл с выразительными бликами',
       neon:'Тёмные фишки с яркими неоновыми контурами',
     })[variant] || 'Меняет внешний вид фишек Реверси';
   }
   return ({
-    placement:'Импульс расходится от реально установленной фишки',
-    line:'Световая линия подчёркивает переворот фишек по направлению хода',
-    'mass-flip':'Каскадное свечение охватывает все перевёрнутые фишки хода',
+    placement:'Световое кольцо появляется вокруг фишки сразу после хода',
+    line:'Подсветка последовательно проходит по фишкам, которые переворачиваются по одной линии',
+    'mass-flip':'Перевёрнутые фишки по очереди вспыхивают и мягко поднимаются волной',
   })[variant] || 'Добавляет визуальный эффект хода';
 }
 
 function previewMarkup(layer, variant){
-  if (layer === 'theme') return boardMarkup(`theme-${safeVariant(variant)}`, true);
-  if (layer === 'elements') return boardMarkup(`pieces-${safeVariant(variant)}`, true, 'pieces');
-  return boardMarkup(`effect-${safeVariant(variant)}`, true, 'effect');
+  if (layer === 'theme') return boardMarkup(`theme-${safeVariant(variant)}`, baseDiscScenario(), 'theme');
+  if (layer === 'elements') return boardMarkup(`pieces-${safeVariant(variant)}`, baseDiscScenario(), 'pieces');
+  return boardMarkup(`effect-${safeVariant(variant)}`, effectScenario(variant), 'effect');
 }
 
-function boardMarkup(variantClass, withDiscs, mode = 'theme'){
-  const center = new Map([[27,'white'],[28,'black'],[35,'black'],[36,'white']]);
-  const effectLine = mode === 'effect' ? new Set([19,27,35,43]) : new Set();
+function baseDiscScenario(){
+  return new Map([
+    [27,{ color:'white' }],
+    [28,{ color:'black' }],
+    [35,{ color:'black' }],
+    [36,{ color:'white' }],
+  ]);
+}
+
+function effectScenario(variant){
+  if (variant === 'placement') {
+    return new Map([
+      [20,{ color:'black', classes:['placed','fx-placement-target'] }],
+      [27,{ color:'white' }],
+      [28,{ color:'black' }],
+      [35,{ color:'black' }],
+      [36,{ color:'white' }],
+    ]);
+  }
+  if (variant === 'line') {
+    return new Map([
+      [19,{ color:'black', classes:['placed'] }],
+      [27,{ color:'white', classes:['fx-line-target'], step:0 }],
+      [35,{ color:'white', classes:['fx-line-target'], step:1 }],
+      [43,{ color:'white', classes:['fx-line-target'], step:2 }],
+      [28,{ color:'black' }],
+      [36,{ color:'white' }],
+    ]);
+  }
+  return new Map([
+    [28,{ color:'black', classes:['placed'] }],
+    [27,{ color:'white', classes:['fx-mass-target'], step:0 }],
+    [35,{ color:'white', classes:['fx-mass-target'], step:1 }],
+    [36,{ color:'white', classes:['fx-mass-target'], step:2 }],
+    [37,{ color:'white', classes:['fx-mass-target'], step:3 }],
+    [44,{ color:'white', classes:['fx-mass-target'], step:4 }],
+    [20,{ color:'black' }],
+    [45,{ color:'black' }],
+  ]);
+}
+
+function boardMarkup(variantClass, discs, mode){
   const cells = Array.from({ length:64 }, (_, index) => {
-    let disc = center.get(index) || '';
-    if (effectLine.has(index)) disc = index === 19 ? 'black placed' : 'white flipping';
-    return `<span>${withDiscs && disc ? `<i class="mgw-rv-disc ${disc}"></i>` : ''}</span>`;
+    const disc = discs.get(index);
+    if (!disc) return '<span></span>';
+    const classes = ['mgw-rv-disc', disc.color, ...(disc.classes || [])].join(' ');
+    const style = Number.isInteger(disc.step) ? ` style="--fx-step:${disc.step}"` : '';
+    return `<span><i class="${classes}"${style}></i></span>`;
   }).join('');
-  return `<i class="mgw-reversi-preview ${variantClass} ${mode}" aria-hidden="true"><span class="mgw-rv-board">${cells}</span><b class="mgw-rv-fx-line"></b><em class="mgw-rv-fx-pulse"></em><u class="mgw-rv-fx-burst"></u></i>`;
+  return `<i class="mgw-reversi-preview ${variantClass} ${mode}" aria-hidden="true"><span class="mgw-rv-board">${cells}</span></i>`;
 }
 
 function safeVariant(value){

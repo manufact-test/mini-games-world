@@ -6,7 +6,7 @@ import {
 import {
   installReversiStorePresentation,
   upgradeReversiStorePresentation,
-} from './store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only';
+} from './store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only&review=manual-corrective-v2';
 
 ensureBoardSourceParityStyles();
 ensureBoardCardRadiusStyles();
