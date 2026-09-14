@@ -6,6 +6,7 @@ on:
     paths:
       - 'app/assets/js/games/reversi/renderer-cosmetics-v1.js'
       - 'app/assets/css/games/reversi/live-cosmetics-v1.css'
+      - 'app/assets/css/games/reversi/telegram-height-fit-v1.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/Mvp19_7ReversiLiveCosmeticsContractTest.mjs'
