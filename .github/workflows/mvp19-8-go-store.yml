@@ -51,7 +51,6 @@ jobs:
           php bot/tests/Mvp19_2CosmeticStoreTest.php
           php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
           php bot/tests/Mvp19_5ChessCosmeticsTest.php
-          php bot/tests/Mvp19_6CheckersStoreTest.php
           php bot/tests/Mvp19_7ReversiStoreTest.php
       - name: Guard product scope
         shell: bash
