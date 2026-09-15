@@ -1,14 +1,21 @@
 const INSTALL_KEY = '__mgwDominoStoreV1Installed';
-const STYLE_MARK = 'mvp19-9-domino-store-v7';
+const STYLE_MARK = 'mvp19-9-domino-store-v8';
+const EFFECT_STYLE_ATTR = 'data-mgw-domino-store-effects-v9';
+const EFFECT_STYLE_VALUE = 'mvp19-9-domino-premium-effects-v14-visible';
+
+ensureStyles();
+ensureEffectStyles();
 
 export function installDominoStorePresentation(){
   ensureStyles();
+  ensureEffectStyles();
   if (globalThis[INSTALL_KEY]) return;
   globalThis[INSTALL_KEY] = true;
 }
 
 export function upgradeDominoStorePresentation(){
   ensureStyles();
+  ensureEffectStyles();
   const roots = [
     document.querySelector('[data-store-v2-panel="games"]'),
     document.getElementById('sheet'),
@@ -49,6 +56,22 @@ function ensureStyles(){
   link.rel = 'stylesheet';
   link.dataset.mgwDominoStore = STYLE_MARK;
   link.href = href;
+  document.head.appendChild(link);
+}
+
+function ensureEffectStyles(){
+  const href = new URL('../../css/games/domino/store-effects-scene-v9.css?v=6&mvp19_9=domino-premium-effects-v14-visible', import.meta.url).href;
+  const existing = document.querySelector(`link[${EFFECT_STYLE_ATTR}]`);
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    existing.setAttribute(EFFECT_STYLE_ATTR, EFFECT_STYLE_VALUE);
+    document.head.appendChild(existing);
+    return;
+  }
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = href;
+  link.setAttribute(EFFECT_STYLE_ATTR, EFFECT_STYLE_VALUE);
   document.head.appendChild(link);
 }
 
@@ -109,12 +132,13 @@ function upgradePreviews(root){
     const variant = String(preview.dataset.cosmeticVariant || 'felt');
     const expectedClass = modeClass(layer, variant);
     const visual = preview.querySelector(':scope > .mgw-domino-preview');
-    if (visual instanceof HTMLElement && visual.classList.contains(expectedClass)) {
-      preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v7`;
+    const sceneReady = layer !== 'effect' || visual?.querySelector(`.mgw-domino-fx-stage[data-mgw-domino-fx-v14="${safeVariant(variant)}"]`);
+    if (visual instanceof HTMLElement && visual.classList.contains(expectedClass) && sceneReady) {
+      preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v8`;
       return;
     }
     preview.innerHTML = dominoPreviewMarkup(layer, variant);
-    preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v7`;
+    preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v8`;
   });
 }
 
@@ -136,9 +160,9 @@ function descriptionFor(layer, variant){
     })[variant] || 'Меняет внешний вид костяшек';
   }
   return ({
-    'precision-drop':'Костяшка точно защёлкивается в цепь — в точке удара расходится короткая волна',
-    'stock-pulse':'Костяшка поднимается из запаса, переворачивается лицом вверх и уходит на поле',
-    'chain-finale':'В конце партии костяшки одна за другой падают настоящим домино-каскадом',
+    'precision-drop':'Яркий акцент в момент точного хода',
+    'stock-pulse':'Эффектный выход костяшки из запаса',
+    'chain-finale':'Финал с каскадом падающих костяшек',
   })[variant] || 'Добавляет визуальный эффект партии';
 }
 
@@ -151,12 +175,12 @@ function tableMarkup(layer, variant){
 
 function effectSceneMarkup(variant){
   if (variant === 'stock-pulse') {
-    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-draw"><span class="mgw-domino-v13-stock"><i></i><i></i><i></i></span><span class="mgw-domino-v13-draw-piece"><i class="back"></i><i class="face"></i></span><span class="mgw-domino-v13-draw-shadow"></span></span></span>`;
+    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-draw" data-mgw-domino-fx-v14="stock-pulse"><span class="mgw-domino-v13-stock"><i></i><i></i><i></i></span><span class="mgw-domino-v13-draw-piece"><i class="back"></i><i class="face"></i></span><span class="mgw-domino-v13-draw-shadow"></span></span></span>`;
   }
   if (variant === 'chain-finale') {
-    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-cascade"><span class="mgw-domino-v13-floor"></span><span class="mgw-domino-v13-cascade-row"><i></i><i></i><i></i><i></i><i></i></span><span class="mgw-domino-v13-finish-dust"></span></span></span>`;
+    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-cascade" data-mgw-domino-fx-v14="chain-finale"><span class="mgw-domino-v13-floor"></span><span class="mgw-domino-v13-cascade-row"><i></i><i></i><i></i><i></i><i></i></span><span class="mgw-domino-v13-finish-dust"></span></span></span>`;
   }
-  return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-impact"><span class="mgw-domino-v13-chain"><i></i><i></i></span><span class="mgw-domino-v13-impact-piece"></span><span class="mgw-domino-v13-impact-ring"></span><span class="mgw-domino-v13-impact-sparks"><i></i><i></i><i></i></span></span></span>`;
+  return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-impact" data-mgw-domino-fx-v14="precision-drop"><span class="mgw-domino-v13-chain"><i></i><i></i></span><span class="mgw-domino-v13-impact-piece"></span><span class="mgw-domino-v13-impact-ring"></span><span class="mgw-domino-v13-impact-sparks"><i></i><i></i><i></i></span></span></span>`;
 }
 
 function modeClass(layer, variant){
