@@ -1,10 +1,33 @@
-/* MVP-19.8 Go short-viewport exit-button restore. Presentation only. */
-
+/* MVP-19.8 Go viewport corrective v2.
+ * Mirror the accepted Checkers viewport strategy: the screen is bounded to the
+ * WebView, the normal content flow scrolls, and the board is only gently capped
+ * on genuinely short viewports. Do not crush the board just to keep every
+ * control simultaneously above the fold.
+ */
+.game-board-screen[data-game-type="go"]{
+  box-sizing:border-box!important;
+  height:100dvh!important;
+  max-height:100dvh!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
 .game-board-screen[data-game-type="go"] .content{
+  box-sizing:border-box!important;
+  height:100%!important;
+  max-height:100%!important;
+  flex:1 1 0%!important;
+  min-height:0!important;
   overflow-y:auto!important;
   overflow-x:hidden!important;
   overscroll-behavior-y:contain;
   -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  padding-bottom:calc(
+    56px + env(safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)
+  )!important;
+  scroll-padding-bottom:calc(
+    56px + env(safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)
+  );
 }
 .game-board-screen[data-game-type="go"] #leaveGame{
   display:flex!important;
@@ -13,40 +36,34 @@
   visibility:visible!important;
   opacity:1!important;
   min-height:42px;
-  flex:0 0 auto;
 }
 
-/* On short Telegram/Desktop WebApp windows the accepted Go board was forcing 100% width,
-   which pushed the existing #leaveGame control below the visible viewport. Keep the full
-   board on normal-height devices and only height-bound it where the control would be lost. */
-@media (max-height:780px){
+@media (max-height:680px){
   .game-board-screen[data-game-type="go"] .board-wrap{
-    display:flex!important;
-    justify-content:center!important;
-    margin-top:3px!important;
-    margin-bottom:6px!important;
+    padding:4px!important;
+    margin-top:2px!important;
+    margin-bottom:8px!important;
+  }
+  .game-board-screen[data-game-type="go"] .go-panel{
+    gap:5px!important;
+  }
+  .game-board-screen[data-game-type="go"] .go-event-banner{
+    min-height:30px!important;
+    padding:4px 8px!important;
   }
   .game-board-screen[data-game-type="go"] .board.go-surface{
-    width:clamp(240px,calc(100dvh - 380px),320px)!important;
+    width:min(100%,clamp(300px,calc(100dvh - 245px),360px))!important;
     max-width:100%!important;
-    margin:0 auto!important;
-  }
-  .game-board-screen[data-game-type="go"] .go-panel{gap:5px!important}
-  .game-board-screen[data-game-type="go"] .go-event-banner{
-    min-height:32px!important;
-    padding:5px 8px!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
   }
   .game-board-screen[data-game-type="go"] .go-pass-button{
-    min-height:38px!important;
-  }
-  .game-board-screen[data-game-type="go"] #leaveGame{
-    min-height:38px!important;
-    margin-top:6px!important;
+    min-height:40px!important;
   }
 }
 
-@media (max-height:650px){
+@media (max-width:380px) and (max-height:680px){
   .game-board-screen[data-game-type="go"] .board.go-surface{
-    width:clamp(220px,calc(100dvh - 360px),280px)!important;
+    width:min(100%,clamp(286px,calc(100dvh - 245px),350px))!important;
   }
 }
