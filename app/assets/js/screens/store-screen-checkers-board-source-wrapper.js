@@ -11,6 +11,10 @@ import {
   installGoStorePresentation,
   upgradeGoStorePresentation,
 } from './store-screen-go-store-v1.js?v=2&mvp19_8=effects-premium-v2';
+import {
+  installDominoStorePresentation,
+  upgradeDominoStorePresentation,
+} from './store-screen-domino-store-v1.js?v=1&mvp19_9=store-profile-preview-8x5-v1';
 import { installStoreGameSelectorSwipe } from './store-game-selector-swipe-v1.js?v=1&mvp19_7=touch-drag';
 
 ensureBoardSourceParityStyles();
@@ -20,6 +24,7 @@ ensureEffectFinalCenteringStyles();
 installStoreGameSelectorSwipe();
 installReversiStorePresentation();
 installGoStorePresentation();
+installDominoStorePresentation();
 
 export function initStoreScreen(){
   ensureBoardSourceParityStyles();
@@ -29,11 +34,13 @@ export function initStoreScreen(){
   installStoreGameSelectorSwipe();
   installReversiStorePresentation();
   installGoStorePresentation();
+  installDominoStorePresentation();
   const result = initAcceptedCheckersStore();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
   upgradeReversiStorePresentation();
   upgradeGoStorePresentation();
+  upgradeDominoStorePresentation();
   return result;
 }
 
@@ -45,11 +52,13 @@ export async function openStoreTab(){
   installStoreGameSelectorSwipe();
   installReversiStorePresentation();
   installGoStorePresentation();
+  installDominoStorePresentation();
   const result = await openAcceptedCheckersStoreTab();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
   upgradeReversiStorePresentation();
   upgradeGoStorePresentation();
+  upgradeDominoStorePresentation();
   return result;
 }
 
@@ -61,11 +70,13 @@ export async function openStoreSheet(){
   installStoreGameSelectorSwipe();
   installReversiStorePresentation();
   installGoStorePresentation();
+  installDominoStorePresentation();
   const result = await openAcceptedCheckersStoreSheet();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
   upgradeReversiStorePresentation();
   upgradeGoStorePresentation();
+  upgradeDominoStorePresentation();
   return result;
 }
 
