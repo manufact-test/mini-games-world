@@ -98,6 +98,7 @@ jobs:
           store='app/assets/js/screens/store-screen-domino-store-v1.js'
           wrapper='app/assets/js/screens/store-screen-checkers-board-source-wrapper.js'
           selector_owner='app/assets/js/screens/store-screen-reversi-store-v1.js'
+          manifest='app/runtime/client/version-manifest.php'
 
           for id in \
             game-domino-table-felt game-domino-table-midnight game-domino-table-walnut game-domino-table-neon \
@@ -125,9 +126,10 @@ jobs:
           ! grep -Fq 'requestAnimationFrame' "$store"
           ! grep -Fq 'setTimeout' "$store"
           grep -F "store-screen-domino-store-v1.js?v=6&mvp19_9=domino-native-render-v6" "$wrapper"
-          grep -F "store-screen-reversi-store-v1.js?v=2&mvp19_7=store-only&selector=instant-active-v1" "$wrapper"
+          grep -F "store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only&review=manual-corrective-v2" "$wrapper"
           grep -F 'selector.scrollLeft = left;' "$selector_owner"
           ! grep -Fq "behavior:'smooth'" "$selector_owner"
+          grep -F "'./assets/js/screens/store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only&review=manual-corrective-v2' => './assets/js/screens/store-screen-reversi-store-v1.js?v=2&mvp19_7=store-only&selector=instant-active-v1'" "$manifest"
           ! grep -Fq 'installDominoStoreRerenderStabilityV1' "$wrapper"
 
       - name: Guard Profile and premium effect parity
@@ -168,7 +170,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; $b=$m["imports"]["./assets/js/screens/store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog"]??""; $p=$m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??""; $ds=$m["imports"]["./assets/js/screens/store-screen-domino-store-v1.js?v=1&mvp19_9=store-profile-preview-8x5-v1"]??""; $dp=$m["imports"]["./assets/js/profile/mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1"]??""; $dr=$m["imports"]["./assets/js/profile/mgw-profile-domino-hard-ratio-v1.js?v=1&mvp19_9=hard-8x5-v1"]??""; if(!str_contains($s,"store-screen-checkers-board-source-wrapper.js?v=7") || !str_contains($s,"domino_preview=native-v10") || !str_contains($s,"domino_effects=premium-v11") || !str_contains($s,"selector_center=instant-v1") || !str_contains($s,"domino_base=native-render-v1") || !str_contains($b,"store-screen.js?v=47") || !str_contains($p,"mgw-profile-chess-layout-v2.js?v=19") || !str_contains($p,"mvp19_9=domino-profile-parity-v3") || !str_contains($p,"domino_preview=shared-store-v10") || !str_contains($p,"domino_effects=premium-v11") || !str_contains($p,"domino_icon=single-back-v1") || !str_contains($ds,"store-screen-domino-store-v1.js?v=6") || !str_contains($dp,"domino-premium-effects-v11") || !str_contains($dr,"css-ratio-owner-v2")) exit(1);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; $r=$m["imports"]["./assets/js/screens/store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only&review=manual-corrective-v2"]??""; $b=$m["imports"]["./assets/js/screens/store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog"]??""; $p=$m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??""; $ds=$m["imports"]["./assets/js/screens/store-screen-domino-store-v1.js?v=1&mvp19_9=store-profile-preview-8x5-v1"]??""; $dp=$m["imports"]["./assets/js/profile/mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1"]??""; $dr=$m["imports"]["./assets/js/profile/mgw-profile-domino-hard-ratio-v1.js?v=1&mvp19_9=hard-8x5-v1"]??""; if(!str_contains($s,"store-screen-checkers-board-source-wrapper.js?v=7") || !str_contains($s,"domino_preview=native-v10") || !str_contains($s,"domino_effects=premium-v11") || !str_contains($s,"selector_center=instant-v1") || !str_contains($s,"domino_base=native-render-v1") || !str_contains($r,"store-screen-reversi-store-v1.js?v=2") || !str_contains($r,"selector=instant-active-v1") || !str_contains($b,"store-screen.js?v=47") || !str_contains($p,"mgw-profile-chess-layout-v2.js?v=19") || !str_contains($p,"mvp19_9=domino-profile-parity-v3") || !str_contains($p,"domino_preview=shared-store-v10") || !str_contains($p,"domino_effects=premium-v11") || !str_contains($p,"domino_icon=single-back-v1") || !str_contains($ds,"store-screen-domino-store-v1.js?v=6") || !str_contains($dp,"domino-premium-effects-v11") || !str_contains($dr,"css-ratio-owner-v2")) exit(1);'
           grep -F 'ux=ready-only-history-sheet' app/runtime/client/version-manifest.php
           php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1166) exit(1);'
 
