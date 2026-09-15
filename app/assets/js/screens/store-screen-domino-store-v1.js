@@ -2,7 +2,7 @@ import { api } from '../api/client.js?v=34';
 
 const API_HOOK = Symbol.for('mgw.store.domino.mvp19-9.v1');
 const INSTALL_KEY = '__mgwDominoStoreV1Installed';
-const STYLE_MARK = 'mvp19-9-domino-store-v3';
+const STYLE_MARK = 'mvp19-9-domino-store-v4';
 
 export function installDominoStorePresentation(){
   ensureStyles();
@@ -43,7 +43,7 @@ export function dominoPreviewMarkup(layer, variant){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/domino/store-cosmetics-v1.css?v=3&mvp19_9=domino-expanded-readable-v3', import.meta.url).href;
+  const href = new URL('../../css/games/domino/store-cosmetics-v1.css?v=4&mvp19_9=domino-uniform-fullfield-v4', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-domino-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -143,7 +143,7 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = String(preview.dataset.cosmeticVariant || 'felt');
-    const signature = `${layer}:${variant}:8x5:v3`;
+    const signature = `${layer}:${variant}:8x5:v4`;
     if (preview.dataset.mgwDominoPreview === signature) return;
     preview.dataset.mgwDominoPreview = signature;
     preview.innerHTML = dominoPreviewMarkup(layer, variant);

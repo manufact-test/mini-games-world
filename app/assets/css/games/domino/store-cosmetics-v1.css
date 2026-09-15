@@ -8,8 +8,7 @@
 .store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-back>i{position:relative;display:block;width:50%;height:100%;box-sizing:border-box}
 .store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-back>i:first-child{border-right:1px solid rgba(24,28,34,.42)}
 .store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-back.dark>i:first-child{border-right-color:rgba(255,255,255,.34)}
-.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-back>i::after{content:"";position:absolute;inset:3px;border:1px solid rgba(42,48,57,.26);border-radius:2px;background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(0,0,0,.04))}
-.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-back.dark>i::after{border-color:rgba(255,255,255,.18);background:linear-gradient(145deg,rgba(255,255,255,.06),rgba(0,0,0,.18))}
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-back>i::after{display:none!important;content:none!important}
 
 .store-v2-game-preview[data-game-type="domino"]{
   box-sizing:border-box!important;
@@ -28,44 +27,51 @@
   background:#0b1110!important;
 }
 .mgw-domino-preview{position:absolute;inset:0;display:block;width:100%;height:100%;overflow:hidden;background:linear-gradient(145deg,#10251b,#07110d);color:#fff}
-.mgw-domino-preview-table{position:absolute;inset:3px;display:block;overflow:hidden;border-radius:11px;border:1px solid rgba(173,217,179,.3);background:radial-gradient(circle at 50% 47%,rgba(78,157,94,.4),transparent 54%),linear-gradient(145deg,#1b4934,#10281e);box-shadow:inset 0 0 28px rgba(0,0,0,.24),0 8px 18px rgba(0,0,0,.28);perspective:460px}
-.mgw-domino-preview-top{position:absolute;z-index:4;left:5.5%;right:5.5%;top:5.5%;display:flex;align-items:center;justify-content:flex-start;height:18%}
-.mgw-domino-stock{position:relative;display:flex;align-items:center;width:34px;height:16px;padding-left:12px;transform-origin:center}
-.mgw-domino-stock i{position:relative;display:block;width:22px;height:11px;margin-left:-10px;border-radius:3px;border:1px solid rgba(255,255,255,.28);background:repeating-linear-gradient(135deg,#29364b 0 3px,#111a2b 3px 6px);box-shadow:0 2px 4px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.04);transform-origin:center}
-.mgw-domino-preview-chain{position:absolute;z-index:5;left:4.5%;right:4.5%;top:24%;bottom:10%;display:flex;align-items:center;justify-content:center;gap:1.5%}
+.mgw-domino-preview-table{position:absolute;inset:1px;display:block;overflow:hidden;border-radius:13px;border:1px solid rgba(173,217,179,.3);background:radial-gradient(circle at 50% 47%,rgba(78,157,94,.4),transparent 58%),linear-gradient(145deg,#1b4934,#10281e);box-shadow:inset 0 0 28px rgba(0,0,0,.24);perspective:460px}
+.mgw-domino-preview-top{position:absolute;z-index:4;left:3%;right:3%;top:5%;display:flex;align-items:flex-start;justify-content:flex-start;height:25%}
+.mgw-domino-stock{position:relative;display:block;width:31.5%;height:auto;aspect-ratio:47 / 24;padding:0;transform-origin:center}
+.mgw-domino-stock i{position:absolute;left:0;top:0;display:block;width:100%;height:100%;margin:0;box-sizing:border-box;border-radius:3px;border:1px solid rgba(255,255,255,.28);background:repeating-linear-gradient(135deg,#29364b 0 4px,#111a2b 4px 8px);box-shadow:0 3px 6px rgba(0,0,0,.38),inset 0 0 0 1px rgba(255,255,255,.05);transform-origin:center}
+.mgw-domino-stock i:nth-child(1){transform:translate(0,0)}
+.mgw-domino-stock i:nth-child(2){transform:translate(12%,-10%)}
+.mgw-domino-stock i:nth-child(3){transform:translate(24%,-20%)}
+.mgw-domino-stock i::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,.2);transform:translateX(-.5px)}
+.mgw-domino-preview-chain{position:absolute;z-index:5;left:3%;right:3%;top:29%;bottom:9%;display:flex;align-items:center;justify-content:center;gap:1.5%}
+.mgw-domino-preview:not([class*="effect-"]) .mgw-domino-preview-chain{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;align-items:center}
 .mgw-domino-preview-slot{position:relative;display:block;flex:0 0 31.5%;width:31.5%;max-width:31.5%;transform-origin:center center;filter:drop-shadow(0 4px 4px rgba(0,0,0,.3))}
+.mgw-domino-preview:not([class*="effect-"]) .mgw-domino-preview-slot{width:100%;max-width:none;min-width:0;flex:none;margin:0}
 .mgw-domino-preview[class*="effect-"] .mgw-domino-preview-slot{flex-basis:21.2%;width:21.2%;max-width:21.2%;margin-left:-.25%}
+.mgw-domino-preview[class*="effect-"] .mgw-domino-stock{width:21.2%}
 .mgw-domino-preview-slot.turn{margin-left:2.2%!important;margin-right:2.2%;transform:rotate(90deg)}
 .mgw-domino-preview-tile{position:relative;display:flex;flex-direction:row;width:100%;height:auto;min-width:0;max-width:none;aspect-ratio:47 / 24;box-sizing:border-box;overflow:hidden;border-radius:3px;border:1px solid rgba(54,59,70,.66);background:linear-gradient(155deg,#fff,#dfe3e8);box-shadow:inset 0 0 0 1px rgba(255,255,255,.72),0 4px 8px rgba(0,0,0,.3);color:#151923;transform-origin:center}
 .mgw-domino-preview-half{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);align-items:center;justify-items:center;width:50%;height:100%;padding:7%;box-sizing:border-box}
 .mgw-domino-preview-half+.mgw-domino-preview-half{border-left:1px solid currentColor}
-.mgw-domino-preview-half i{width:40%;min-width:1.9px;max-width:4.6px;height:auto;aspect-ratio:1 / 1;border-radius:50%;background:transparent}
+.mgw-domino-preview-half i{width:38%;min-width:2px;max-width:4.8px;height:auto;aspect-ratio:1 / 1;border-radius:50%;background:transparent}
 .mgw-domino-preview-half i.active{background:currentColor;box-shadow:none}
-.mgw-domino-table-glow{position:absolute;z-index:1;inset:auto 8% 1% 8%;height:24%;border-radius:50%;background:radial-gradient(ellipse,#47d08d18,transparent 72%);filter:blur(5px);pointer-events:none}
+.mgw-domino-table-glow{position:absolute;z-index:1;inset:auto 6% 0 6%;height:24%;border-radius:50%;background:radial-gradient(ellipse,#47d08d18,transparent 72%);filter:blur(5px);pointer-events:none}
 
 /* Table themes. All tables use the same full-field geometry; only the material changes. */
 .mgw-domino-preview.theme-felt{background:linear-gradient(145deg,#15251c,#080f0b)}
-.mgw-domino-preview.theme-felt .mgw-domino-preview-table{background:radial-gradient(circle at 50% 47%,rgba(76,158,95,.4),transparent 54%),linear-gradient(145deg,#1a4b34,#0f291d)}
+.mgw-domino-preview.theme-felt .mgw-domino-preview-table{background:radial-gradient(circle at 50% 47%,rgba(76,158,95,.4),transparent 58%),linear-gradient(145deg,#1a4b34,#0f291d)}
 .mgw-domino-preview.theme-midnight{background:radial-gradient(circle at 50% 38%,#1b263d,#060911 74%)}
-.mgw-domino-preview.theme-midnight .mgw-domino-preview-table{border-color:#728cce66;background:radial-gradient(circle at 50% 46%,#253d6664,transparent 56%),linear-gradient(145deg,#17233b,#0b1120);box-shadow:inset 0 0 30px #0007,0 0 22px #597ce12c}
+.mgw-domino-preview.theme-midnight .mgw-domino-preview-table{border-color:#728cce66;background:radial-gradient(circle at 50% 46%,#253d6664,transparent 60%),linear-gradient(145deg,#17233b,#0b1120);box-shadow:inset 0 0 30px #0007}
 .mgw-domino-preview.theme-midnight .mgw-domino-table-glow{background:radial-gradient(ellipse,#6489ff24,transparent 72%)}
 .mgw-domino-preview.theme-walnut{background:repeating-linear-gradient(94deg,rgba(46,20,8,.2) 0 2px,transparent 2px 14px),linear-gradient(145deg,#5f351f,#24130c)}
-.mgw-domino-preview.theme-walnut .mgw-domino-preview-table{border-color:#a76e45;background:repeating-linear-gradient(92deg,rgba(53,24,10,.22) 0 2px,rgba(120,73,42,.08) 2px 13px),radial-gradient(circle at 44% 36%,rgba(188,122,75,.2),transparent 46%),linear-gradient(145deg,#75472d,#3c2115);box-shadow:inset 0 0 28px rgba(28,11,4,.44),0 8px 18px #0007}
+.mgw-domino-preview.theme-walnut .mgw-domino-preview-table{border-color:#a76e45;background:repeating-linear-gradient(92deg,rgba(53,24,10,.22) 0 2px,rgba(120,73,42,.08) 2px 13px),radial-gradient(circle at 44% 36%,rgba(188,122,75,.2),transparent 50%),linear-gradient(145deg,#75472d,#3c2115);box-shadow:inset 0 0 28px rgba(28,11,4,.44)}
 .mgw-domino-preview.theme-walnut .mgw-domino-table-glow{background:radial-gradient(ellipse,rgba(230,157,99,.16),transparent 72%)}
 .mgw-domino-preview.theme-neon{background:radial-gradient(circle at 48% 45%,#0a2b36,#03060c 72%)}
-.mgw-domino-preview.theme-neon .mgw-domino-preview-table{border-color:#2deaffc7;background:radial-gradient(circle at 49% 45%,rgba(15,102,116,.3),transparent 52%),linear-gradient(145deg,#071a22,#050a10);box-shadow:0 0 14px #00dfff62,0 0 26px #a855ff2c,inset 0 0 24px #00eaff14}
-.mgw-domino-preview.theme-neon .mgw-domino-preview-table::after{content:"";position:absolute;inset:2px;border-radius:8px;border:1px solid #c65dff75;pointer-events:none}
+.mgw-domino-preview.theme-neon .mgw-domino-preview-table{border-color:#2deaffc7;background:radial-gradient(circle at 49% 45%,rgba(15,102,116,.3),transparent 56%),linear-gradient(145deg,#071a22,#050a10);box-shadow:0 0 12px #00dfff62,0 0 22px #a855ff2c,inset 0 0 24px #00eaff14}
+.mgw-domino-preview.theme-neon .mgw-domino-preview-table::after{content:"";position:absolute;inset:2px;border-radius:10px;border:1px solid #c65dff75;pointer-events:none}
 .mgw-domino-preview.theme-neon .mgw-domino-table-glow{background:radial-gradient(ellipse,#20eaff2b,#aa50ff12 46%,transparent 72%)}
 
 /* Tile sets. Neutral tables keep attention on the larger readable tiles. */
 .mgw-domino-preview.tiles-ivory,.mgw-domino-preview.tiles-ebony,.mgw-domino-preview.tiles-marble{background:linear-gradient(145deg,#151a19,#090d0c)}
-.mgw-domino-preview.tiles-ivory .mgw-domino-preview-table,.mgw-domino-preview.tiles-ebony .mgw-domino-preview-table,.mgw-domino-preview.tiles-marble .mgw-domino-preview-table{border-color:#5e716b66;background:radial-gradient(circle at 50% 46%,rgba(60,92,82,.22),transparent 56%),linear-gradient(145deg,#1b2924,#101713)}
+.mgw-domino-preview.tiles-ivory .mgw-domino-preview-table,.mgw-domino-preview.tiles-ebony .mgw-domino-preview-table,.mgw-domino-preview.tiles-marble .mgw-domino-preview-table{border-color:#5e716b66;background:radial-gradient(circle at 50% 46%,rgba(60,92,82,.22),transparent 60%),linear-gradient(145deg,#1b2924,#101713)}
 .mgw-domino-preview.tiles-ivory .mgw-domino-preview-tile{color:#171a20;background:linear-gradient(155deg,#fffdf3,#d8d2c3);border-color:#7d796f80;box-shadow:inset 0 0 0 1px #fff9,0 4px 8px #0005}
 .mgw-domino-preview.tiles-ebony .mgw-domino-preview-tile{color:#f8f4e9;background:linear-gradient(155deg,#30343c,#090b0f 72%);border-color:#77808d9c;box-shadow:inset 0 0 0 1px #fff1,0 5px 10px #0008}
 .mgw-domino-preview.tiles-ebony .mgw-domino-preview-half i.active{box-shadow:0 0 2px rgba(255,255,255,.35)}
 .mgw-domino-preview.tiles-marble .mgw-domino-preview-tile{color:#24282c;background:radial-gradient(circle at 18% 22%,#6c707530 0 1px,transparent 1.6px),radial-gradient(circle at 72% 68%,#85898d24 0 1.2px,transparent 1.8px),linear-gradient(145deg,#f1efea,#bfc0bc);border-color:#95989b99;box-shadow:inset 0 0 0 1px #fff8,0 5px 10px #0006}
 .mgw-domino-preview.tiles-neon{background:radial-gradient(circle at 48% 45%,#0b2834,#04070d 72%)}
-.mgw-domino-preview.tiles-neon .mgw-domino-preview-table{border-color:#2ceaff72;background:linear-gradient(145deg,#071b22,#071016);box-shadow:0 0 22px #00dfff35,inset 0 0 28px #00eaff10}
+.mgw-domino-preview.tiles-neon .mgw-domino-preview-table{border-color:#2ceaff72;background:linear-gradient(145deg,#071b22,#071016);box-shadow:0 0 18px #00dfff35,inset 0 0 28px #00eaff10}
 .mgw-domino-preview.tiles-neon .mgw-domino-preview-tile{color:#5ff2ff;background:#070b10;border:1px solid #28e9ff;box-shadow:0 0 6px #00ddff,0 0 11px #9c4fff3d,inset 0 0 7px #00dfff25}
 .mgw-domino-preview.tiles-neon .mgw-domino-preview-half+.mgw-domino-preview-half{border-color:#be5cff}
 .mgw-domino-preview.tiles-neon .mgw-domino-preview-slot:nth-child(even) .mgw-domino-preview-tile{color:#df75ff;border-color:#c45cff;box-shadow:0 0 6px #c45cff,0 0 11px #00dfff34,inset 0 0 7px #ae50ff25}
@@ -118,14 +124,14 @@
   34%{transform:translate(2px,0) rotate(3deg)}
 }
 @keyframes mgw-domino-stock-riffle-b{
-  0%,21%,66%,100%{transform:translate(0,0) rotate(0)}
-  28%{transform:translate(4px,-2px) rotate(7deg)}
-  39%{transform:translate(-2px,0) rotate(-3deg)}
+  0%,21%,66%,100%{transform:translate(12%,-10%) rotate(0)}
+  28%{transform:translate(calc(12% + 4px),calc(-10% - 2px)) rotate(7deg)}
+  39%{transform:translate(calc(12% - 2px),-10%) rotate(-3deg)}
 }
 @keyframes mgw-domino-stock-riffle-c{
-  0%,24%,69%,100%{transform:translate(0,0) rotate(0)}
-  31%{transform:translate(-3px,1px) rotate(-5deg)}
-  42%{transform:translate(3px,0) rotate(4deg)}
+  0%,24%,69%,100%{transform:translate(24%,-20%) rotate(0)}
+  31%{transform:translate(calc(24% - 3px),calc(-20% + 1px)) rotate(-5deg)}
+  42%{transform:translate(calc(24% + 3px),-20%) rotate(4deg)}
 }
 @keyframes mgw-domino-stock-peel{
   0%,31%{opacity:0;transform:translate(0,0) rotate(-12deg) perspective(100px) rotateY(0deg) scale(.76)}
@@ -152,8 +158,8 @@
 
 @media(max-width:390px){
   .store-v2-game-preview[data-game-type="domino"]{border-radius:12px!important}
-  .mgw-domino-preview-table{inset:2px;border-radius:10px}
-  .mgw-domino-preview-chain{left:4%;right:4%}
+  .mgw-domino-preview-table{inset:1px;border-radius:11px}
+  .mgw-domino-preview-top,.mgw-domino-preview-chain{left:2.5%;right:2.5%}
   .mgw-domino-preview-half i{min-width:2px}
 }
 @media(prefers-reduced-motion:reduce){
