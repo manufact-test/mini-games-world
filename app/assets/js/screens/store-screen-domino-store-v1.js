@@ -2,7 +2,7 @@ import { api } from '../api/client.js?v=34';
 
 const API_HOOK = Symbol.for('mgw.store.domino.mvp19-9.v1');
 const INSTALL_KEY = '__mgwDominoStoreV1Installed';
-const STYLE_MARK = 'mvp19-9-domino-store-v2';
+const STYLE_MARK = 'mvp19-9-domino-store-v3';
 
 export function installDominoStorePresentation(){
   ensureStyles();
@@ -43,7 +43,7 @@ export function dominoPreviewMarkup(layer, variant){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/domino/store-cosmetics-v1.css?v=2&mvp19_9=domino-authentic-tiles-effects-v2', import.meta.url).href;
+  const href = new URL('../../css/games/domino/store-cosmetics-v1.css?v=3&mvp19_9=domino-expanded-readable-v3', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-domino-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -97,11 +97,9 @@ function upgradeHeader(root){
   marks.forEach((mark, index) => {
     if (!(mark instanceof HTMLElement)) return;
     mark.textContent = '';
-    mark.classList.add('mgw-domino-head-tile', index === 0 ? 'six' : 'three');
+    mark.classList.add('mgw-domino-head-tile', index === 0 ? 'light' : 'dark');
     mark.setAttribute('aria-hidden', 'true');
-    mark.innerHTML = index === 0
-      ? tileMarkup(2, 4, 'mgw-domino-head-art')
-      : tileMarkup(1, 3, 'mgw-domino-head-art');
+    mark.innerHTML = headBackMarkup(index === 0 ? 'light' : 'dark');
   });
 }
 
@@ -145,7 +143,7 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = String(preview.dataset.cosmeticVariant || 'felt');
-    const signature = `${layer}:${variant}:8x5:v2`;
+    const signature = `${layer}:${variant}:8x5:v3`;
     if (preview.dataset.mgwDominoPreview === signature) return;
     preview.dataset.mgwDominoPreview = signature;
     preview.innerHTML = dominoPreviewMarkup(layer, variant);
@@ -157,7 +155,7 @@ function descriptionFor(layer, variant){
     return ({
       felt:'Классический зелёный суконный стол с мягкой глубиной и тёплой кромкой',
       midnight:'Тёмно-синий стол с холодной подсветкой и спокойным клубным настроением',
-      walnut:'Тёплый орех с живой древесной фактурой и зелёной игровой вставкой',
+      walnut:'Тёплый ореховый стол с цельной древесной игровой поверхностью и живой фактурой',
       neon:'Глубокий тёмный стол с цианово-фиолетовой неоновой кромкой',
     })[variant] || 'Меняет оформление игрового стола';
   }
@@ -178,8 +176,11 @@ function descriptionFor(layer, variant){
 
 function tableMarkup(layer, variant){
   const chain = effectChain(layer, variant);
-  const stockClass = layer === 'effect' && variant === 'stock-pulse' ? ' fx-stock' : '';
-  const drawGhost = layer === 'effect' && variant === 'stock-pulse'
+  const showStock = layer === 'effect' && variant === 'stock-pulse';
+  const stock = showStock
+    ? '<span class="mgw-domino-preview-top"><span class="mgw-domino-stock fx-stock"><i></i><i></i><i></i></span></span>'
+    : '<span class="mgw-domino-preview-top"><span class="mgw-domino-stock"><i></i><i></i></span></span>';
+  const drawGhost = showStock
     ? `<span class="mgw-domino-draw-ghost">${tileMarkup(2,5,'ghost')}</span>`
     : '';
   const snapMarks = layer === 'effect' && variant === 'precision-drop'
@@ -188,19 +189,25 @@ function tableMarkup(layer, variant){
   const finaleBars = layer === 'effect' && variant === 'chain-finale'
     ? '<span class="mgw-domino-finale-bars"><i></i><i></i><i></i><i></i></span>'
     : '';
-  return `<span class="mgw-domino-preview-table"><span class="mgw-domino-preview-top"><span class="mgw-domino-stock${stockClass}"><i></i><i></i><i></i></span></span><span class="mgw-domino-preview-chain">${chain}</span>${drawGhost}${snapMarks}${finaleBars}<span class="mgw-domino-table-glow"></span></span>`;
+  return `<span class="mgw-domino-preview-table">${stock}<span class="mgw-domino-preview-chain">${chain}</span>${drawGhost}${snapMarks}${finaleBars}<span class="mgw-domino-table-glow"></span></span>`;
 }
 
 function effectChain(layer, variant){
-  const values = [[6,3],[3,4],[4,4],[4,1]];
+  const values = layer === 'effect'
+    ? [[6,3],[3,4],[4,4],[4,1]]
+    : [[6,3],[3,5],[5,2]];
   return values.map((pair, index) => {
     const classes = [];
-    if (pair[0] === pair[1]) classes.push('turn', 'is-double');
+    if (layer === 'effect' && pair[0] === pair[1]) classes.push('turn', 'is-double');
     if (layer === 'effect' && variant === 'precision-drop' && index === values.length - 1) classes.push('fx-precision-target');
     if (layer === 'effect' && variant === 'chain-finale') classes.push('fx-finale');
     const step = layer === 'effect' && variant === 'chain-finale' ? ` style="--fx-step:${index}"` : '';
     return `<span class="mgw-domino-preview-slot ${classes.join(' ')}"${step}>${tileMarkup(pair[0], pair[1])}</span>`;
   }).join('');
+}
+
+function headBackMarkup(tone){
+  return `<span class="mgw-domino-head-back ${safeVariant(tone)}"><i></i><i></i></span>`;
 }
 
 function tileMarkup(a, b, extraClass = ''){
