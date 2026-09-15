@@ -86,25 +86,26 @@ $assertSame(4, count($domino['elements'] ?? []), 'Store snapshot must expose fou
 $assertSame(3, count($domino['effects'] ?? []), 'Store snapshot must expose three Domino effects');
 $assertSame(false, $snapshot['purchase_rules']['auto_equip'] ?? true, 'Domino purchases must never auto-equip');
 
-$tableQuote = $store->quote($mgwId, 'domino-table-neon');
-$assertSame(12000, (int)$tableQuote['price_coins'], 'Neon Domino table must cost 12,000 coins');
+$neonTableQuote = $store->quote($mgwId, 'domino-table-neon');
+$assertSame(12000, (int)$neonTableQuote['price_coins'], 'Neon Domino table must cost 12,000 coins');
+$tableQuote = $store->quote($mgwId, 'domino-table-felt');
 $tablePurchase = $store->fulfill($mgwId, 'mgw:' . $mgwId, 'legacy-domino-user', [
-    'request_token'=>'store:mvp19-9-domino-table-0001', 'offer_id'=>'domino-table-neon',
+    'request_token'=>'store:mvp19-9-domino-table-felt-0001', 'offer_id'=>'domino-table-felt',
     'price_coins'=>$tableQuote['price_coins'], 'item_ids'=>$tableQuote['item_ids'],
 ]);
 $assertSame(false, $tablePurchase['auto_equipped'], 'Buying a Domino table must not auto-equip');
 $assertSame(null, $inventory->snapshot($mgwId)['equipped']['game_domino_theme'] ?? null, 'Bought table must remain inactive before explicit equip');
-$store->equipGameItem($mgwId, 'game-domino-table-neon');
-$assertSame('game-domino-table-neon', $inventory->snapshot($mgwId)['equipped']['game_domino_theme'] ?? null, 'Explicit table equip must use game_domino_theme');
+$store->equipGameItem($mgwId, 'game-domino-table-felt');
+$assertSame('game-domino-table-felt', $inventory->snapshot($mgwId)['equipped']['game_domino_theme'] ?? null, 'Explicit table equip must use game_domino_theme');
 
-$tilesQuote = $store->quote($mgwId, 'domino-tiles-marble');
+$tilesQuote = $store->quote($mgwId, 'domino-tiles-ivory');
 $tilesPurchase = $store->fulfill($mgwId, 'mgw:' . $mgwId, 'legacy-domino-user', [
-    'request_token'=>'store:mvp19-9-domino-tiles-0002', 'offer_id'=>'domino-tiles-marble',
+    'request_token'=>'store:mvp19-9-domino-tiles-ivory-0002', 'offer_id'=>'domino-tiles-ivory',
     'price_coins'=>$tilesQuote['price_coins'], 'item_ids'=>$tilesQuote['item_ids'],
 ]);
 $assertSame(false, $tilesPurchase['auto_equipped'], 'Buying Domino tiles must not auto-equip');
-$store->equipGameItem($mgwId, 'game-domino-tiles-marble');
-$assertSame('game-domino-tiles-marble', $inventory->snapshot($mgwId)['equipped']['game_domino_elements'] ?? null, 'Explicit tile equip must use game_domino_elements');
+$store->equipGameItem($mgwId, 'game-domino-tiles-ivory');
+$assertSame('game-domino-tiles-ivory', $inventory->snapshot($mgwId)['equipped']['game_domino_elements'] ?? null, 'Explicit tile equip must use game_domino_elements');
 
 foreach ([['precision-drop',2500,'0003'],['stock-pulse',5000,'0004'],['chain-finale',7500,'0005']] as [$variant,$price,$token]) {
     $quote = $store->quote($mgwId, 'domino-effect-' . $variant);
@@ -135,8 +136,8 @@ $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
 
 $activeStore = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $activeProfile = (string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? '');
-$assertTrue(str_contains($activeStore, 'store-screen-checkers-board-source-wrapper.js?v=8') && str_contains($activeStore, 'domino_preview=deterministic-v9') && str_contains($activeStore, 'domino_effects=scene-v9'), 'Active Store import must preserve the accepted owner and publish deterministic Domino v9');
-$assertTrue(str_contains($activeProfile, 'mgw-profile-chess-layout-v2.js?v=20') && str_contains($activeProfile, 'mvp19_9=domino-profile-parity-v2') && str_contains($activeProfile, 'domino_card_runtime=css-8x5-v2'), 'Active Profile import must preserve the accepted owner and publish CSS-owned Domino parity');
+$assertTrue(str_contains($activeStore, 'store-screen-checkers-board-source-wrapper.js?v=7') && str_contains($activeStore, 'domino_preview=deterministic-v9') && str_contains($activeStore, 'domino_effects=scene-v9'), 'Active Store import must preserve the accepted owner and publish deterministic Domino v9');
+$assertTrue(str_contains($activeProfile, 'mgw-profile-chess-layout-v2.js?v=19') && str_contains($activeProfile, 'mvp19_9=domino-profile-parity-v2') && str_contains($activeProfile, 'domino_card_runtime=css-8x5-v2'), 'Active Profile import must preserve the accepted owner and publish CSS-owned Domino parity');
 $assertTrue(str_contains($storeOwner, "from './store-screen-domino-store-v1.js?v=5&mvp19_9=domino-deterministic-rerender-v5'") && str_contains($storeOwner, 'installDominoStorePresentation();') && str_contains($storeOwner, 'upgradeDominoStorePresentation();'), 'Accepted Store owner must install and refresh deterministic Domino presentation');
 $assertTrue(!str_contains($storeOwner, 'installDominoStoreRerenderStabilityV1') && !file_exists($root . '/app/assets/js/screens/store-screen-domino-rerender-stability-v1.js'), 'Obsolete Domino MutationObserver repair must be removed from the active graph');
 $assertTrue(str_contains($profileOwner, "from './mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1'") && str_contains($profileOwner, 'initProfileDominoParity();') && str_contains($profileOwner, 'initProfileDominoHardRatio();'), 'Accepted Profile owner must keep its existing extension points');
