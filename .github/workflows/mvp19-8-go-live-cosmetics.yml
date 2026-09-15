@@ -14,6 +14,7 @@ on:
       - 'app/assets/css/games/go/live-effects-corrective-v7.css'
       - 'app/assets/css/games/go/live-capture-overlay-v8.css'
       - 'app/assets/css/games/go/live-capture-overlay-v9.css'
+      - 'app/assets/css/games/go/live-capture-direct-v10.css'
       - 'app/assets/css/games/go/rules-alignment-v1.css'
       - 'app/assets/css/games/go/live-exit-fit-v1.css'
       - 'app/runtime/client/version-manifest.php'
