@@ -1,0 +1,52 @@
+/* MVP-19.8 Go short-viewport exit-button restore. Presentation only. */
+
+.game-board-screen[data-game-type="go"] .content{
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.game-board-screen[data-game-type="go"] #leaveGame{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  visibility:visible!important;
+  opacity:1!important;
+  min-height:42px;
+  flex:0 0 auto;
+}
+
+/* On short Telegram/Desktop WebApp windows the accepted Go board was forcing 100% width,
+   which pushed the existing #leaveGame control below the visible viewport. Keep the full
+   board on normal-height devices and only height-bound it where the control would be lost. */
+@media (max-height:780px){
+  .game-board-screen[data-game-type="go"] .board-wrap{
+    display:flex!important;
+    justify-content:center!important;
+    margin-top:3px!important;
+    margin-bottom:6px!important;
+  }
+  .game-board-screen[data-game-type="go"] .board.go-surface{
+    width:clamp(240px,calc(100dvh - 380px),320px)!important;
+    max-width:100%!important;
+    margin:0 auto!important;
+  }
+  .game-board-screen[data-game-type="go"] .go-panel{gap:5px!important}
+  .game-board-screen[data-game-type="go"] .go-event-banner{
+    min-height:32px!important;
+    padding:5px 8px!important;
+  }
+  .game-board-screen[data-game-type="go"] .go-pass-button{
+    min-height:38px!important;
+  }
+  .game-board-screen[data-game-type="go"] #leaveGame{
+    min-height:38px!important;
+    margin-top:6px!important;
+  }
+}
+
+@media (max-height:650px){
+  .game-board-screen[data-game-type="go"] .board.go-surface{
+    width:clamp(220px,calc(100dvh - 360px),280px)!important;
+  }
+}
