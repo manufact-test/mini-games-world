@@ -1,6 +1,6 @@
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
-import { dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=1&mvp19_9=shared-preview-8x5-v1';
+import { dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=2&mvp19_9=domino-authentic-tiles-effects-v2';
 
 const GROUP_TITLES = Object.freeze({ theme:'Столы', elements:'Костяшки', effect:'Эффекты' });
 const ITEM_ORDER = Object.freeze([
@@ -67,7 +67,7 @@ export function initProfileDominoParity(){
 }
 
 function ensureDominoProfileStyles(){
-  ensureStyle('data-mgw-domino-store', '../../css/games/domino/store-cosmetics-v1.css?v=1&mvp19_9=store-profile-preview-8x5-v1');
+  ensureStyle('data-mgw-domino-store', '../../css/games/domino/store-cosmetics-v1.css?v=2&mvp19_9=domino-authentic-tiles-effects-v2');
   ensureStyle('data-mgw-profile-domino-parity', '../../css/screens/profile-domino-store-parity-v1.css?v=1&mvp19_9=domino-profile-8x5-v1');
 }
 
