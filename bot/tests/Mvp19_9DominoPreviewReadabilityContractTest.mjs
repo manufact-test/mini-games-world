@@ -64,7 +64,8 @@ expect(!effectCss.includes('transform-style:preserve-3d'), 'Premium v11 must not
 
 expect(selectorOwner.includes('selector.scrollLeft = left;'), 'Fresh Store game selector must center its active game instantly.');
 expect(!selectorOwner.includes("behavior:'smooth'"), 'Store selector must never visibly smooth-scroll through an intermediate position after rerender.');
-expect(wrapper.includes("store-screen-reversi-store-v1.js?v=2&mvp19_7=store-only&selector=instant-active-v1"), 'Store owner must load the instant selector centering corrective.');
+expect(wrapper.includes("store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only&review=manual-corrective-v2"), 'Store owner must preserve the accepted Reversi import identity.');
+expect(manifest.includes("'./assets/js/screens/store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only&review=manual-corrective-v2' => './assets/js/screens/store-screen-reversi-store-v1.js?v=2&mvp19_7=store-only&selector=instant-active-v1'"), 'Import map must cache-bust the no-jump selector corrective behind the accepted import identity.');
 
 expect(correctiveLoader.includes('store-card-fill-live-pips-v5.css?v=2&mvp19_9=domino-card-fill-live-pips-v6'), 'Accepted static pip corrective must remain active.');
 expect(effectLoader.includes('store-effects-scene-v9.css?v=3&mvp19_9=domino-premium-effects-v11'), 'Effect loader must publish premium scene v11.');
