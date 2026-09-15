@@ -10,7 +10,7 @@ export function initProfileScreen(){
 }
 
 function ensureDominoScaleStyles(){
-  const href = new URL('../css/games/domino/store-cosmetics-scale-v2.css?v=1&mvp19_9=container-relative-v2', import.meta.url).href;
+  const href = new URL('../../css/games/domino/store-cosmetics-scale-v2.css?v=1&mvp19_9=container-relative-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-domino-scale]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
