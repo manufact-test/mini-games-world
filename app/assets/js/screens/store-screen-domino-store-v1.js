@@ -1,5 +1,5 @@
 const INSTALL_KEY = '__mgwDominoStoreV1Installed';
-const STYLE_MARK = 'mvp19-9-domino-store-v6';
+const STYLE_MARK = 'mvp19-9-domino-store-v7';
 
 export function installDominoStorePresentation(){
   ensureStyles();
@@ -110,11 +110,11 @@ function upgradePreviews(root){
     const expectedClass = modeClass(layer, variant);
     const visual = preview.querySelector(':scope > .mgw-domino-preview');
     if (visual instanceof HTMLElement && visual.classList.contains(expectedClass)) {
-      preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v6`;
+      preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v7`;
       return;
     }
     preview.innerHTML = dominoPreviewMarkup(layer, variant);
-    preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v6`;
+    preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v7`;
   });
 }
 
@@ -136,9 +136,9 @@ function descriptionFor(layer, variant){
     })[variant] || 'Меняет внешний вид костяшек';
   }
   return ({
-    'precision-drop':'Световой шлейф сопровождает ход и ярко вспыхивает в момент стыковки',
-    'stock-pulse':'При взятии из запаса появляется холодное свечение и короткая россыпь искр',
-    'chain-finale':'Последний ход запускает золотую вспышку и праздничный поток искр вокруг цепи',
+    'precision-drop':'Костяшка точно защёлкивается в цепь — в точке удара расходится короткая волна',
+    'stock-pulse':'Костяшка поднимается из запаса, переворачивается лицом вверх и уходит на поле',
+    'chain-finale':'В конце партии костяшки одна за другой падают настоящим домино-каскадом',
   })[variant] || 'Добавляет визуальный эффект партии';
 }
 
@@ -151,12 +151,12 @@ function tableMarkup(layer, variant){
 
 function effectSceneMarkup(variant){
   if (variant === 'stock-pulse') {
-    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-scene mgw-domino-fx-stock"><span class="mgw-domino-fx-stock-halo"></span><span class="mgw-domino-fx-stock-particles"></span><span class="mgw-domino-fx-stock-stack"><i></i><i></i><i></i></span><span class="mgw-domino-fx-piece stable face dots-21"></span><span class="mgw-domino-fx-flip"><i class="back"></i><i class="face dots-12"></i></span></span><span class="mgw-domino-table-glow"></span></span>`;
+    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-draw"><span class="mgw-domino-v13-stock"><i></i><i></i><i></i></span><span class="mgw-domino-v13-draw-piece"><i class="back"></i><i class="face"></i></span><span class="mgw-domino-v13-draw-shadow"></span></span></span>`;
   }
   if (variant === 'chain-finale') {
-    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-scene mgw-domino-fx-finale"><span class="mgw-domino-fx-burst"></span><span class="mgw-domino-fx-halo"></span><span class="mgw-domino-fx-chain"><i class="mgw-domino-fx-piece face dots-12" style="--i:0"></i><i class="mgw-domino-fx-piece face dots-21" style="--i:1"></i><i class="mgw-domino-fx-piece face dots-11" style="--i:2"></i></span><span class="mgw-domino-fx-sparks"></span></span><span class="mgw-domino-table-glow"></span></span>`;
+    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-cascade"><span class="mgw-domino-v13-floor"></span><span class="mgw-domino-v13-cascade-row"><i></i><i></i><i></i><i></i><i></i></span><span class="mgw-domino-v13-finish-dust"></span></span></span>`;
   }
-  return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-scene mgw-domino-fx-precision"><span class="mgw-domino-fx-piece stable one face dots-21"></span><span class="mgw-domino-fx-piece stable two face dots-12"></span><span class="mgw-domino-fx-trail"></span><span class="mgw-domino-fx-piece mover face dots-11"></span><span class="mgw-domino-fx-snap-line"></span></span><span class="mgw-domino-table-glow"></span></span>`;
+  return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-impact"><span class="mgw-domino-v13-chain"><i></i><i></i></span><span class="mgw-domino-v13-impact-piece"></span><span class="mgw-domino-v13-impact-ring"></span><span class="mgw-domino-v13-impact-sparks"><i></i><i></i><i></i></span></span></span>`;
 }
 
 function modeClass(layer, variant){
