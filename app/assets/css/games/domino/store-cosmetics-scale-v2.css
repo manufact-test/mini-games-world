@@ -32,3 +32,15 @@
   width:100%!important;
   height:auto!important;
 }
+
+/* Keep the rotated chain slot as the sole geometry owner; animate its tile child. */
+.store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview.effect-chain-finale .mgw-domino-preview-slot.fx-finale{
+  animation:none!important;
+}
+.store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview.effect-chain-finale .mgw-domino-preview-slot.fx-finale .mgw-domino-preview-tile{
+  animation:mgw-domino-finale-tile 2.75s ease-in-out infinite!important;
+  animation-delay:calc(var(--fx-step) * .1s)!important;
+}
+@media(prefers-reduced-motion:reduce){
+  .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview.effect-chain-finale .mgw-domino-preview-slot.fx-finale .mgw-domino-preview-tile{animation:none!important}
+}
