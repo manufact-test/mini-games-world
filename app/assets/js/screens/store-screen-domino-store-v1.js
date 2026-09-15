@@ -136,9 +136,9 @@ function descriptionFor(layer, variant){
     })[variant] || 'Меняет внешний вид костяшек';
   }
   return ({
-    'precision-drop':'Костяшка мягко входит в сцену по дуге и точно стыкуется с цепью',
-    'stock-pulse':'Костяшка выходит из запаса, переворачивается в воздухе и спокойно ложится на стол',
-    'chain-finale':'По цепочке проходит плавная волна завершения — костяшки последовательно приподнимаются и возвращаются на место',
+    'precision-drop':'Костяшка влетает в цепь со световым шлейфом и яркой вспышкой в момент стыковки',
+    'stock-pulse':'Костяшка поднимается из запаса в холодном свечении и плавно выходит на игровое поле',
+    'chain-finale':'После последнего хода цепь вспыхивает золотым светом, а вокруг костяшек рассыпаются искры',
   })[variant] || 'Добавляет визуальный эффект партии';
 }
 
@@ -151,12 +151,12 @@ function tableMarkup(layer, variant){
 
 function effectSceneMarkup(variant){
   if (variant === 'stock-pulse') {
-    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-scene mgw-domino-fx-stock"><span class="mgw-domino-fx-stock-stack"><i></i><i></i><i></i></span><span class="mgw-domino-fx-piece stable face dots-21"></span><span class="mgw-domino-fx-flip"><i class="back"></i><i class="face dots-12"></i></span><span class="mgw-domino-fx-floor-line"></span></span><span class="mgw-domino-table-glow"></span></span>`;
+    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-scene mgw-domino-fx-stock"><span class="mgw-domino-fx-stock-halo"></span><span class="mgw-domino-fx-stock-particles"></span><span class="mgw-domino-fx-stock-stack"><i></i><i></i><i></i></span><span class="mgw-domino-fx-piece stable face dots-21"></span><span class="mgw-domino-fx-flip"><i class="back"></i><i class="face dots-12"></i></span></span><span class="mgw-domino-table-glow"></span></span>`;
   }
   if (variant === 'chain-finale') {
-    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-scene mgw-domino-fx-finale"><span class="mgw-domino-fx-chain"><i class="mgw-domino-fx-piece face dots-12" style="--i:0"></i><i class="mgw-domino-fx-piece face dots-21" style="--i:1"></i><i class="mgw-domino-fx-piece face dots-11" style="--i:2"></i></span><span class="mgw-domino-fx-rail"></span></span><span class="mgw-domino-table-glow"></span></span>`;
+    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-scene mgw-domino-fx-finale"><span class="mgw-domino-fx-burst"></span><span class="mgw-domino-fx-halo"></span><span class="mgw-domino-fx-chain"><i class="mgw-domino-fx-piece face dots-12" style="--i:0"></i><i class="mgw-domino-fx-piece face dots-21" style="--i:1"></i><i class="mgw-domino-fx-piece face dots-11" style="--i:2"></i></span><span class="mgw-domino-fx-sparks"></span></span><span class="mgw-domino-table-glow"></span></span>`;
   }
-  return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-scene mgw-domino-fx-precision"><span class="mgw-domino-fx-piece stable one face dots-21"></span><span class="mgw-domino-fx-piece stable two face dots-12"></span><span class="mgw-domino-fx-piece mover face dots-11"></span><span class="mgw-domino-fx-snap-line"></span></span><span class="mgw-domino-table-glow"></span></span>`;
+  return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-scene mgw-domino-fx-precision"><span class="mgw-domino-fx-piece stable one face dots-21"></span><span class="mgw-domino-fx-piece stable two face dots-12"></span><span class="mgw-domino-fx-trail"></span><span class="mgw-domino-fx-piece mover face dots-11"></span><span class="mgw-domino-fx-snap-line"></span></span><span class="mgw-domino-table-glow"></span></span>`;
 }
 
 function modeClass(layer, variant){
