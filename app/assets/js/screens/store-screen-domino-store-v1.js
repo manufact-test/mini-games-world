@@ -2,7 +2,7 @@ import { api } from '../api/client.js?v=34';
 
 const API_HOOK = Symbol.for('mgw.store.domino.mvp19-9.v1');
 const INSTALL_KEY = '__mgwDominoStoreV1Installed';
-const STYLE_MARK = 'mvp19-9-domino-store-v1';
+const STYLE_MARK = 'mvp19-9-domino-store-v2';
 
 export function installDominoStorePresentation(){
   ensureStyles();
@@ -43,7 +43,7 @@ export function dominoPreviewMarkup(layer, variant){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/domino/store-cosmetics-v1.css?v=1&mvp19_9=store-profile-preview-8x5-v1', import.meta.url).href;
+  const href = new URL('../../css/games/domino/store-cosmetics-v1.css?v=2&mvp19_9=domino-authentic-tiles-effects-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-domino-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -99,6 +99,9 @@ function upgradeHeader(root){
     mark.textContent = '';
     mark.classList.add('mgw-domino-head-tile', index === 0 ? 'six' : 'three');
     mark.setAttribute('aria-hidden', 'true');
+    mark.innerHTML = index === 0
+      ? tileMarkup(2, 4, 'mgw-domino-head-art')
+      : tileMarkup(1, 3, 'mgw-domino-head-art');
   });
 }
 
@@ -142,7 +145,7 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = String(preview.dataset.cosmeticVariant || 'felt');
-    const signature = `${layer}:${variant}:8x5:v1`;
+    const signature = `${layer}:${variant}:8x5:v2`;
     if (preview.dataset.mgwDominoPreview === signature) return;
     preview.dataset.mgwDominoPreview = signature;
     preview.innerHTML = dominoPreviewMarkup(layer, variant);
@@ -160,34 +163,39 @@ function descriptionFor(layer, variant){
   }
   if (layer === 'elements') {
     return ({
-      ivory:'Светлые костяшки с классическим тёплым оттенком и глубокими точками',
-      ebony:'Чёрные костяшки с матовой поверхностью и светлыми точками',
-      marble:'Мраморные костяшки с натуральной минеральной фактурой',
-      neon:'Тёмные костяшки с яркими неоновыми точками и контуром',
+      ivory:'Светлые костяшки классической игровой формы с глубокими контрастными точками',
+      ebony:'Чёрные матовые костяшки классической формы со светлыми точками',
+      marble:'Мраморные костяшки с натуральной минеральной фактурой и чёткими точками',
+      neon:'Тёмные костяшки с яркими неоновыми точками и тонким контуром',
     })[variant] || 'Меняет внешний вид костяшек';
   }
   return ({
-    'precision-drop':'Новая костяшка точно падает в цепочку, оставляя ударную волну и короткий световой след',
-    'stock-pulse':'Добор из запаса сопровождается импульсом колоды и летящей костяшкой',
-    'chain-finale':'Финальная цепочка поочерёдно вспыхивает и замыкается световым проходом по столу',
+    'precision-drop':'Костяшка переворачивается в полёте и точно защёлкивается к подходящему концу цепи коротким световым щелчком',
+    'stock-pulse':'Запас быстро перетасовывается, после чего одна костяшка выскальзывает из стопки и переворачивается к столу',
+    'chain-finale':'По всей цепочке проходит последовательная волна падения: костяшки одна за другой наклоняются и вспыхивают точками',
   })[variant] || 'Добавляет визуальный эффект партии';
 }
 
 function tableMarkup(layer, variant){
   const chain = effectChain(layer, variant);
   const stockClass = layer === 'effect' && variant === 'stock-pulse' ? ' fx-stock' : '';
-  const finaleLine = layer === 'effect' && variant === 'chain-finale' ? '<em class="mgw-domino-finale-line"></em>' : '';
   const drawGhost = layer === 'effect' && variant === 'stock-pulse'
     ? `<span class="mgw-domino-draw-ghost">${tileMarkup(2,5,'ghost')}</span>`
     : '';
-  return `<span class="mgw-domino-preview-table"><span class="mgw-domino-preview-top"><span class="mgw-domino-stock${stockClass}"><i></i><i></i><i></i></span><b>DOMINO</b></span><span class="mgw-domino-preview-chain">${chain}${finaleLine}</span>${drawGhost}<span class="mgw-domino-table-glow"></span></span>`;
+  const snapMarks = layer === 'effect' && variant === 'precision-drop'
+    ? '<span class="mgw-domino-snap-marks"><i></i><i></i><i></i></span>'
+    : '';
+  const finaleBars = layer === 'effect' && variant === 'chain-finale'
+    ? '<span class="mgw-domino-finale-bars"><i></i><i></i><i></i><i></i></span>'
+    : '';
+  return `<span class="mgw-domino-preview-table"><span class="mgw-domino-preview-top"><span class="mgw-domino-stock${stockClass}"><i></i><i></i><i></i></span></span><span class="mgw-domino-preview-chain">${chain}</span>${drawGhost}${snapMarks}${finaleBars}<span class="mgw-domino-table-glow"></span></span>`;
 }
 
 function effectChain(layer, variant){
-  const values = [[6,6],[6,3],[3,4],[4,1],[1,5]];
+  const values = [[6,3],[3,4],[4,4],[4,1]];
   return values.map((pair, index) => {
     const classes = [];
-    if (index === 2) classes.push('turn');
+    if (pair[0] === pair[1]) classes.push('turn', 'is-double');
     if (layer === 'effect' && variant === 'precision-drop' && index === values.length - 1) classes.push('fx-precision-target');
     if (layer === 'effect' && variant === 'chain-finale') classes.push('fx-finale');
     const step = layer === 'effect' && variant === 'chain-finale' ? ` style="--fx-step:${index}"` : '';
