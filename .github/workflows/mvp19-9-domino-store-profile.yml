@@ -1,0 +1,115 @@
+name: MVP-19.9 Domino Store Profile
+
+on:
+  pull_request:
+    branches: [agent/mvp-13-2-staging]
+    paths:
+      - 'bot/database/migrations/20260915_0035_add_domino_store_cosmetics.php'
+      - 'bot/tests/Mvp19_9DominoStoreProfileTest.php'
+      - 'app/assets/js/screens/store-screen-domino-store-v1.js'
+      - 'app/assets/js/screens/store-screen-domino-wrapper-v1.js'
+      - 'app/assets/css/games/domino/store-cosmetics-v1.css'
+      - 'app/assets/js/profile/mgw-profile-domino-parity.js'
+      - 'app/assets/js/profile/mgw-profile-domino-hard-ratio-v1.js'
+      - 'app/assets/js/profile/mgw-profile-domino-layout-v1.js'
+      - 'app/assets/css/screens/profile-domino-store-parity-v1.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - '.github/workflows/mvp19-9-domino-store-profile.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp19-9-domino-store-profile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  domino-store-profile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax checks
+        run: |
+          php -l bot/database/migrations/20260915_0035_add_domino_store_cosmetics.php
+          php -l bot/tests/Mvp19_9DominoStoreProfileTest.php
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/helpers/WebAppLaunchUrl.php
+          node --check app/assets/js/screens/store-screen-domino-store-v1.js
+          node --check app/assets/js/screens/store-screen-domino-wrapper-v1.js
+          node --check app/assets/js/profile/mgw-profile-domino-parity.js
+          node --check app/assets/js/profile/mgw-profile-domino-hard-ratio-v1.js
+          node --check app/assets/js/profile/mgw-profile-domino-layout-v1.js
+
+      - name: Run Domino Store Profile contract
+        run: php bot/tests/Mvp19_9DominoStoreProfileTest.php
+
+      - name: Re-run current shared Store and Profile contracts
+        run: |
+          php bot/tests/Mvp19_8GoStoreTest.php
+          node bot/tests/Mvp19_8GoProfileParityContractTest.mjs
+          node bot/tests/Mvp19_7ReversiProfileParityContractTest.mjs
+          node bot/tests/Mvp19_6ProfileGameCosmeticsParityContractTest.mjs
+          php bot/tests/ProfileV2CorrectiveStaticContractTest.php
+
+      - name: Guard catalogue and geometry
+        shell: bash
+        run: |
+          set -euo pipefail
+          migration='bot/database/migrations/20260915_0035_add_domino_store_cosmetics.php'
+          for id in \
+            game-domino-table-felt game-domino-table-midnight game-domino-table-walnut game-domino-table-neon \
+            game-domino-tiles-ivory game-domino-tiles-ebony game-domino-tiles-marble game-domino-tiles-neon \
+            game-domino-effect-precision-drop game-domino-effect-stock-pulse game-domino-effect-chain-finale; do
+            grep -F "'$id'" "$migration"
+          done
+          grep -F "'game_domino_theme'" "$migration"
+          grep -F "'game_domino_elements'" "$migration"
+          grep -F "'game_domino_effect'" "$migration"
+          grep -F 'aspect-ratio:8 / 5!important' app/assets/css/games/domino/store-cosmetics-v1.css
+          grep -F 'aspect-ratio:8 / 5!important' app/assets/css/screens/profile-domino-store-parity-v1.css
+          grep -F 'const HEIGHT_RATIO = 5 / 8' app/assets/js/profile/mgw-profile-domino-hard-ratio-v1.js
+          ! grep -Fq "offer_type' => 'bundle'" "$migration"
+
+      - name: Guard active graph and frozen gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; $p=$m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??""; if(!str_contains($s,"store-screen-domino-wrapper-v1.js?v=1") || !str_contains($p,"mgw-profile-domino-layout-v1.js?v=1")) exit(1);'
+          php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1153) exit(1);'
+          if [ '${{ github.event_name }}' = 'pull_request' ]; then
+            base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
+            git diff --exit-code "$base" "$head" -- \
+              app/assets/js/games/domino/entry.js \
+              app/assets/js/games/domino/meta.js \
+              app/assets/js/games/domino/renderer.js \
+              app/assets/js/games/domino/rules.js \
+              app/assets/js/games/domino/chain-layout.js \
+              app/assets/css/games/domino/game.css \
+              app/assets/css/games/domino/rules.css \
+              app/assets/js/games/go \
+              app/assets/js/games/reversi \
+              app/assets/js/games/chess \
+              app/assets/js/games/checkers \
+              app/assets/js/checkers-cosmetics \
+              bot/catalog/ProductInventoryService.php
+          fi
+          git diff --check
