@@ -110,9 +110,6 @@ function decorateLiveGo({ game, me, container, size, removedCells }){
 }
 
 function applyGroupCaptureOverlay({ game, mover, container, captureCells, removedCells, animatedByBase }){
-  const board = container.querySelector('.go-board');
-  if (!(board instanceof HTMLElement)) return;
-
   const moveKey = [
     String(game?.id || ''),
     Number(game?.move_count || 0),
@@ -120,22 +117,26 @@ function applyGroupCaptureOverlay({ game, mover, container, captureCells, remove
     captureCells.join(','),
   ].join(':');
   if (activeCaptureOverlayKeys.has(moveKey)) return;
-  activeCaptureOverlayKeys.add(moveKey);
 
   const removedByCell = new Map(removedCells.map(entry => [entry.cell, entry]));
   const moverSide = normalizeSide(mover?.side || game?.last_move?.side);
   const fallbackColor = moverSide === 'black' ? 'white' : 'black';
+  const stoneVariant = String(container.dataset.goStones || 'base');
+  const snapshots = [];
 
   captureCells.forEach((cell, index) => {
     const point = pointElement(container, cell);
     if (!(point instanceof HTMLElement)) return;
 
-    const x = point.style.getPropertyValue('--go-x').trim();
-    const y = point.style.getPropertyValue('--go-y').trim();
-    const pointSize = point.style.getPropertyValue('--go-point-size').trim();
-    if (!x || !y || !pointSize) return;
-
     const sourceStone = point.querySelector('.go-stone');
+    const pointRect = point.getBoundingClientRect();
+    const stoneRect = sourceStone instanceof HTMLElement ? sourceStone.getBoundingClientRect() : null;
+    const width = Math.max(12, Number(stoneRect?.width || pointRect.width * .9 || 28));
+    const height = Math.max(12, Number(stoneRect?.height || width));
+    const centerX = Number(stoneRect ? stoneRect.left + stoneRect.width / 2 : pointRect.left + pointRect.width / 2);
+    const centerY = Number(stoneRect ? stoneRect.top + stoneRect.height / 2 : pointRect.top + pointRect.height / 2);
+    if (!Number.isFinite(centerX) || !Number.isFinite(centerY)) return;
+
     const color = sourceStone?.classList.contains('white')
       ? 'white'
       : (sourceStone?.classList.contains('black')
@@ -143,21 +144,62 @@ function applyGroupCaptureOverlay({ game, mover, container, captureCells, remove
         : (removedByCell.get(cell)?.color || fallbackColor));
 
     if (sourceStone instanceof HTMLElement) {
-      point.dataset.mgwGoPaidCaptureSource = '1';
+      point.dataset.mgwGoPaidCaptureSourceV9 = '1';
     }
 
-    const overlay = document.createElement('span');
-    overlay.className = 'mgw-go-capture-overlay-v8';
-    overlay.dataset.mgwGoCaptureOverlay = '1';
-    overlay.style.setProperty('--go-x', x);
-    overlay.style.setProperty('--go-y', y);
-    overlay.style.setProperty('--go-point-size', pointSize);
-    overlay.style.setProperty('--mgw-go-capture-delay', animatedByBase ? `${330 + Math.min(index, 10) * 38}ms` : `${Math.min(index, 10) * 38}ms`);
-    overlay.innerHTML = `<span class="go-stone ${color} mgw-go-capture-overlay-stone" aria-hidden="true"></span>`;
-    board.appendChild(overlay);
+    snapshots.push({
+      index,
+      color,
+      stoneVariant,
+      centerX,
+      centerY,
+      width,
+      height,
+    });
   });
 
-  globalThis.setTimeout(() => activeCaptureOverlayKeys.delete(moveKey), 1800);
+  if (snapshots.length === 0) return;
+  activeCaptureOverlayKeys.add(moveKey);
+
+  snapshots.forEach(snapshot => {
+    const delay = animatedByBase
+      ? 315 + Math.min(snapshot.index, 10) * 38
+      : Math.min(snapshot.index, 10) * 42;
+
+    globalThis.setTimeout(() => {
+      if (!isGameScreenActive(container)) return;
+      mountStableCaptureOverlay(snapshot);
+    }, delay);
+  });
+
+  globalThis.setTimeout(() => activeCaptureOverlayKeys.delete(moveKey), 2200);
+}
+
+function mountStableCaptureOverlay({ color, stoneVariant, centerX, centerY, width, height }){
+  if (!(document.body instanceof HTMLElement)) return;
+
+  const overlay = document.createElement('span');
+  overlay.className = 'mgw-go-capture-overlay-v9 go-surface';
+  overlay.dataset.mgwGoCaptureOverlayV9 = '1';
+  overlay.dataset.goStones = stoneVariant;
+  overlay.style.setProperty('--mgw-go-capture-x', `${centerX}px`);
+  overlay.style.setProperty('--mgw-go-capture-y', `${centerY}px`);
+  overlay.style.setProperty('--mgw-go-capture-w', `${width}px`);
+  overlay.style.setProperty('--mgw-go-capture-h', `${height}px`);
+  overlay.innerHTML = `<span class="go-stone ${color} mgw-go-capture-overlay-stone-v9" aria-hidden="true"></span>`;
+  document.body.appendChild(overlay);
+
+  const remove = () => overlay.remove();
+  overlay.addEventListener('animationend', event => {
+    if (event.target === overlay) remove();
+  }, { once:true });
+  globalThis.setTimeout(remove, 1100);
+}
+
+function isGameScreenActive(container){
+  if (!(container instanceof HTMLElement) || !container.isConnected) return false;
+  const screen = document.getElementById('screen-game');
+  return !(screen instanceof HTMLElement) || screen.classList.contains('active');
 }
 
 function clearTransientTerritoryMarks(container){
@@ -293,10 +335,10 @@ function ensureLiveCosmeticStyles(){
     href:new URL('../../../css/games/go/live-effects-corrective-v7.css?v=1&mvp19_8=effect2-single-pass-territory-final-v7', import.meta.url).href,
   });
   ensureStylesheet({
-    selector:'link[data-mgw-go-live-capture-overlay-v8-runtime]',
-    marker:'mgwGoLiveCaptureOverlayV8Runtime',
-    markerValue:'mvp19-8-capture-overlay-v8',
-    href:new URL('../../../css/games/go/live-capture-overlay-v8.css?v=1&mvp19_8=capture-overlay-v8', import.meta.url).href,
+    selector:'link[data-mgw-go-live-capture-overlay-v9-runtime]',
+    marker:'mgwGoLiveCaptureOverlayV9Runtime',
+    markerValue:'mvp19-8-stable-capture-overlay-v9',
+    href:new URL('../../../css/games/go/live-capture-overlay-v9.css?v=1&mvp19_8=stable-capture-overlay-v9', import.meta.url).href,
   });
 }
 
