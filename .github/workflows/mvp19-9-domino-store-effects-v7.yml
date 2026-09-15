@@ -1,0 +1,109 @@
+name: MVP-19.9 Domino Store effects v7
+
+on:
+  pull_request:
+    branches: [agent/mvp-13-2-staging]
+    paths:
+      - 'app/assets/css/games/domino/store-effects-readable-v7.css'
+      - 'app/assets/js/screens/store-screen-domino-effects-v7.js'
+      - 'app/assets/js/screens/store-screen-checkers-board-source-wrapper.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - '.github/workflows/mvp19-9-domino-store-effects-v7.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp19-9-domino-store-effects-v7-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  domino-store-effects-v7:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax and current Domino contracts
+        run: |
+          set -euo pipefail
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/helpers/WebAppLaunchUrl.php
+          node --check app/assets/js/screens/store-screen-domino-effects-v7.js
+          node --check app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+          php bot/tests/Mvp19_9DominoStoreProfileTest.php
+          node bot/tests/Mvp19_9DominoPreviewReadabilityContractTest.mjs
+
+      - name: Guard readable effect choreography
+        shell: bash
+        run: |
+          set -euo pipefail
+          css='app/assets/css/games/domino/store-effects-readable-v7.css'
+          loader='app/assets/js/screens/store-screen-domino-effects-v7.js'
+          wrapper='app/assets/js/screens/store-screen-checkers-board-source-wrapper.js'
+          manifest='app/runtime/client/version-manifest.php'
+
+          grep -F 'mgw-domino-v7-precision-drop' "$css"
+          grep -F 'mgw-domino-v7-stock-draw' "$css"
+          grep -F 'mgw-domino-v7-chain-hit' "$css"
+          grep -F 'width:22.5%!important' "$css"
+          grep -F 'aspect-ratio:47 / 24!important' "$css"
+          grep -F '.mgw-domino-preview.effect-stock-pulse .mgw-domino-draw-ghost::before' "$css"
+          grep -F '.mgw-domino-preview.effect-stock-pulse .mgw-domino-preview-slot:nth-child(n+2)' "$css"
+          grep -F '.mgw-domino-preview.effect-chain-finale .mgw-domino-preview-top' "$css"
+          grep -F '@media(prefers-reduced-motion:reduce)' "$css"
+          ! grep -Fq 'impact-ring' "$css"
+          ! grep -Fq 'radial-burst' "$css"
+          ! grep -Fq 'particle' "$css"
+
+          grep -F 'store-effects-readable-v7.css?v=1&mvp19_9=domino-store-effects-readable-v7' "$loader"
+          grep -F "store-screen-domino-effects-v7.js?v=1&mvp19_9=domino-store-effects-readable-v7" "$wrapper"
+          grep -F 'installDominoStoreEffectsV7();' "$wrapper"
+          grep -F 'domino_effects=readable-v7' "$manifest"
+          grep -F 'domino_preview=pips-centered-v6' "$manifest"
+          php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1162) exit(1);'
+
+      - name: Guard accepted Store geometry and frozen live gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'height:100%!important' app/assets/css/games/domino/store-card-fill-live-pips-v5.css
+          grep -F 'aspect-ratio:8 / 5!important' app/assets/css/games/domino/store-card-fill-live-pips-v5.css
+          grep -F 'width:3px' app/assets/css/games/domino/store-card-fill-live-pips-v5.css
+          grep -F 'border-radius:50%' app/assets/css/games/domino/store-card-fill-live-pips-v5.css
+
+          if [ '${{ github.event_name }}' = 'pull_request' ]; then
+            base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
+            git diff --exit-code "$base" "$head" -- \
+              app/assets/js/games/domino/entry.js \
+              app/assets/js/games/domino/meta.js \
+              app/assets/js/games/domino/renderer.js \
+              app/assets/js/games/domino/rules.js \
+              app/assets/js/games/domino/chain-layout.js \
+              app/assets/css/games/domino/game.css \
+              app/assets/css/games/domino/rules.css \
+              app/assets/js/games/go \
+              app/assets/js/games/reversi \
+              app/assets/js/games/chess \
+              app/assets/js/games/checkers \
+              app/assets/js/checkers-cosmetics \
+              bot/catalog/ProductInventoryService.php
+          fi
+          git diff --check
