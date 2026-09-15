@@ -3,10 +3,13 @@ import { api } from '../api/client.js?v=34';
 const API_HOOK = Symbol.for('mgw.store.domino.mvp19-9.v1');
 const INSTALL_KEY = '__mgwDominoStoreV1Installed';
 const STYLE_MARK = 'mvp19-9-domino-store-v4';
+let storeRenderObserver = null;
+let storeRenderRepairQueued = false;
 
 export function installDominoStorePresentation(){
   ensureStyles();
   installApiHooks();
+  installStoreRenderObserver();
   if (globalThis[INSTALL_KEY]) return;
   globalThis[INSTALL_KEY] = true;
   document.addEventListener('click', event => {
@@ -19,12 +22,9 @@ export function installDominoStorePresentation(){
 
 export function upgradeDominoStorePresentation(){
   ensureStyles();
-  const roots = [
-    document.querySelector('[data-store-v2-panel="games"]'),
-    document.getElementById('sheet'),
-  ];
+  installStoreRenderObserver();
+  const roots = storeRoots();
   roots.forEach(root => {
-    if (!(root instanceof HTMLElement)) return;
     renameSelector(root);
     upgradeHeader(root);
     upgradeGroups(root);
@@ -36,9 +36,7 @@ export function upgradeDominoStorePresentation(){
 export function dominoPreviewMarkup(layer, variant){
   const normalizedLayer = String(layer || 'theme');
   const normalizedVariant = safeVariant(variant || (normalizedLayer === 'elements' ? 'ivory' : (normalizedLayer === 'effect' ? 'precision-drop' : 'felt')));
-  const modeClass = normalizedLayer === 'theme'
-    ? `theme-${normalizedVariant}`
-    : (normalizedLayer === 'elements' ? `tiles-${normalizedVariant}` : `effect-${normalizedVariant}`);
+  const modeClass = dominoModeClass(normalizedLayer, normalizedVariant);
   return `<i class="mgw-domino-preview ${modeClass}" aria-hidden="true">${tableMarkup(normalizedLayer, normalizedVariant)}</i>`;
 }
 
@@ -74,12 +72,63 @@ function installApiHooks(){
   });
 }
 
+function storeRoots(){
+  return [
+    document.querySelector('[data-store-v2-panel="games"]'),
+    document.getElementById('sheet'),
+  ].filter(root => root instanceof HTMLElement);
+}
+
+function observerHosts(){
+  return [
+    document.getElementById('storeTabSurface'),
+    document.getElementById('sheet'),
+  ].filter(root => root instanceof HTMLElement);
+}
+
+function installStoreRenderObserver(){
+  if (typeof globalThis.MutationObserver !== 'function') return;
+  if (!storeRenderObserver) {
+    storeRenderObserver = new globalThis.MutationObserver(() => {
+      queueObservedRepair();
+    });
+  }
+  observerHosts().forEach(host => {
+    if (host.dataset.mgwDominoStoreObserved === '1') return;
+    host.dataset.mgwDominoStoreObserved = '1';
+    storeRenderObserver.observe(host, { childList:true, subtree:true });
+  });
+}
+
+function queueObservedRepair(){
+  if (storeRenderRepairQueued || !hasDominoRepairNeed()) return;
+  storeRenderRepairQueued = true;
+  queueMicrotask(() => {
+    storeRenderRepairQueued = false;
+    if (hasDominoRepairNeed()) upgradeDominoStorePresentation();
+  });
+}
+
+function hasDominoRepairNeed(){
+  for (const root of storeRoots()) {
+    const previews = root.querySelectorAll('.store-v2-game-preview[data-game-type="domino"]');
+    for (const preview of previews) {
+      if (!(preview instanceof HTMLElement)) continue;
+      const layer = String(preview.dataset.cosmeticLayer || 'theme');
+      const variant = String(preview.dataset.cosmeticVariant || 'felt');
+      const signature = dominoPreviewSignature(layer, variant);
+      const visual = preview.querySelector(':scope > .mgw-domino-preview');
+      if (preview.dataset.mgwDominoPreview !== signature) return true;
+      if (!(visual instanceof HTMLElement) || !visual.classList.contains(dominoModeClass(layer, variant))) return true;
+    }
+  }
+  return false;
+}
+
 function scheduleUpgrade(){
   const run = () => upgradeDominoStorePresentation();
   queueMicrotask(run);
   if (typeof globalThis.requestAnimationFrame === 'function') globalThis.requestAnimationFrame(run);
-  globalThis.setTimeout(run, 0);
-  globalThis.setTimeout(run, 80);
 }
 
 function renameSelector(root){
@@ -143,11 +192,25 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = String(preview.dataset.cosmeticVariant || 'felt');
-    const signature = `${layer}:${variant}:8x5:v4`;
-    if (preview.dataset.mgwDominoPreview === signature) return;
+    const signature = dominoPreviewSignature(layer, variant);
+    const visual = preview.querySelector(':scope > .mgw-domino-preview');
+    const visualMatches = visual instanceof HTMLElement && visual.classList.contains(dominoModeClass(layer, variant));
+    if (preview.dataset.mgwDominoPreview === signature && visualMatches) return;
     preview.dataset.mgwDominoPreview = signature;
     preview.innerHTML = dominoPreviewMarkup(layer, variant);
   });
+}
+
+function dominoPreviewSignature(layer, variant){
+  return `${String(layer || 'theme')}:${safeVariant(variant || 'felt')}:8x5:v5-stable-rerender`;
+}
+
+function dominoModeClass(layer, variant){
+  const normalizedLayer = String(layer || 'theme');
+  const normalizedVariant = safeVariant(variant || (normalizedLayer === 'elements' ? 'ivory' : (normalizedLayer === 'effect' ? 'precision-drop' : 'felt')));
+  return normalizedLayer === 'theme'
+    ? `theme-${normalizedVariant}`
+    : (normalizedLayer === 'elements' ? `tiles-${normalizedVariant}` : `effect-${normalizedVariant}`);
 }
 
 function descriptionFor(layer, variant){
