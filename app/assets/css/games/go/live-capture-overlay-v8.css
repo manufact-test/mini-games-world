@@ -1,0 +1,102 @@
+/* MVP-19.8 Go Effect 2 corrective v8.
+ * The paid capture visual is rendered as an independent overlay on the exact
+ * captured intersection, so it no longer depends on the base stone node
+ * surviving long enough for the WebView to animate it.
+ */
+
+/* The real stone stays still until the authoritative capture moment. Once the
+ * base renderer adds capture-out, hide that source immediately; the overlay is
+ * already animating above it at the same timestamp. */
+.go-point[data-mgw-go-paid-capture-source="1"].capture-out .go-stone{
+  animation:none!important;
+  opacity:0!important;
+  transform:none!important;
+}
+
+.mgw-go-capture-overlay-v8{
+  position:absolute!important;
+  left:var(--go-x)!important;
+  top:var(--go-y)!important;
+  z-index:12!important;
+  display:grid!important;
+  place-items:center!important;
+  width:var(--go-point-size)!important;
+  aspect-ratio:1!important;
+  border-radius:50%!important;
+  transform:translate(-50%,-50%)!important;
+  pointer-events:none!important;
+  overflow:visible!important;
+  opacity:1!important;
+}
+
+.mgw-go-capture-overlay-v8::before{
+  content:""!important;
+  position:absolute!important;
+  inset:-52%!important;
+  z-index:1!important;
+  display:block!important;
+  border-radius:50%!important;
+  pointer-events:none!important;
+  background:conic-gradient(from 0deg,#66efff 0 8%,transparent 9% 27%,#d36cff 28% 36%,transparent 37% 57%,#7fffd4 58% 66%,transparent 67% 86%,#fff 87% 93%,transparent 94% 100%)!important;
+  -webkit-mask:radial-gradient(circle,transparent 0 48%,#000 51% 58%,transparent 61%)!important;
+  mask:radial-gradient(circle,transparent 0 48%,#000 51% 58%,transparent 61%)!important;
+  opacity:0;
+  transform:rotate(0) scale(1.35);
+  animation:mgw-go-v8-capture-corona .28s ease-in-out var(--mgw-go-capture-delay,0ms) both!important;
+}
+
+.mgw-go-capture-overlay-v8::after{
+  content:""!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  z-index:3!important;
+  display:block!important;
+  width:4px!important;
+  height:4px!important;
+  border-radius:50%!important;
+  pointer-events:none!important;
+  background:#fff!important;
+  box-shadow:13px 0 #67efff,-13px 0 #d06dff,0 13px #7fffd4,0 -13px #fff3a0!important;
+  opacity:0;
+  transform:translate(-50%,-50%) scale(.2) rotate(0);
+  animation:mgw-go-v8-capture-particles .28s ease-out var(--mgw-go-capture-delay,0ms) both!important;
+}
+
+.mgw-go-capture-overlay-v8 .mgw-go-capture-overlay-stone{
+  position:relative!important;
+  z-index:2!important;
+  display:block!important;
+  width:90%!important;
+  opacity:0;
+  animation:mgw-go-v8-capture-implode .28s cubic-bezier(.18,.7,.16,1) var(--mgw-go-capture-delay,0ms) both!important;
+}
+
+@keyframes mgw-go-v8-capture-implode{
+  0%{opacity:1;filter:none;transform:scale(1) rotate(0)}
+  33%{opacity:1;filter:brightness(1.45) saturate(1.2);transform:scale(1.1) rotate(-7deg)}
+  58%{opacity:1;filter:brightness(.72) saturate(1.8);transform:scale(.78) rotate(12deg)}
+  100%{opacity:0;filter:blur(3px) brightness(.35);transform:scale(.08) rotate(44deg)}
+}
+
+@keyframes mgw-go-v8-capture-corona{
+  0%{opacity:0;transform:rotate(0) scale(1.35)}
+  28%{opacity:.95}
+  72%{opacity:.85;transform:rotate(220deg) scale(.74)}
+  100%{opacity:0;transform:rotate(360deg) scale(.2)}
+}
+
+@keyframes mgw-go-v8-capture-particles{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(0)}
+  38%{opacity:1}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.45) rotate(42deg)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .mgw-go-capture-overlay-v8::before,
+  .mgw-go-capture-overlay-v8::after,
+  .mgw-go-capture-overlay-v8 .mgw-go-capture-overlay-stone{
+    animation:none!important;
+    opacity:0!important;
+  }
+}
