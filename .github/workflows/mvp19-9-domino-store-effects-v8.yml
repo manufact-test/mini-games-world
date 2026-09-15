@@ -93,9 +93,9 @@ jobs:
           grep -F 'mgw-domino-fx-burst' "$store"
           grep -F 'mgw-domino-fx-sparks' "$store"
           ! grep -Fq 'mgw-domino-fx-rail' "$store"
-          grep -F 'Костяшка влетает в цепь со световым шлейфом' "$store"
-          grep -F 'Костяшка поднимается из запаса в холодном свечении' "$store"
-          grep -F 'После последнего хода цепь вспыхивает золотым светом' "$store"
+          grep -F 'Световой шлейф сопровождает ход и ярко вспыхивает в момент стыковки' "$store"
+          grep -F 'При взятии из запаса появляется холодное свечение и короткая россыпь искр' "$store"
+          grep -F 'Последний ход запускает золотую вспышку и праздничный поток искр вокруг цепи' "$store"
 
           grep -F 'mgw-domino-v12-precision-flight' "$effects"
           grep -F 'mgw-domino-v12-precision-trail' "$effects"
