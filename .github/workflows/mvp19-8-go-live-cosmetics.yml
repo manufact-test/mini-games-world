@@ -7,7 +7,9 @@ on:
       - 'app/assets/js/games/go/renderer-cosmetics-v1.js'
       - 'app/assets/css/games/go/live-cosmetics-v1.css'
       - 'app/assets/css/games/go/live-effects-corrective-v2.css'
+      - 'app/assets/css/games/go/live-exit-fit-v1.css'
       - 'app/runtime/client/version-manifest.php'
+      - 'app/v110.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/Mvp19_8GoLiveCosmeticsContractTest.mjs'
       - '.github/workflows/mvp19-8-go-live-cosmetics.yml'
@@ -42,6 +44,7 @@ jobs:
           node --check app/assets/js/games/go/renderer-cosmetics-v1.js
           node --check bot/tests/Mvp19_8GoLiveCosmeticsContractTest.mjs
           php -l app/runtime/client/version-manifest.php
+          php -l app/v110.php
           php -l bot/helpers/WebAppLaunchUrl.php
 
       - name: Run Go Live cosmetics contract
