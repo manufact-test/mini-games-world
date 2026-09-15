@@ -82,17 +82,15 @@ function upgradeGameSelector(root){
   const gameType = String(active.dataset.storeV2Game || '');
   if (selector.dataset.mgwCenteredGame === gameType) return;
   selector.dataset.mgwCenteredGame = gameType;
-  const centerActive = () => {
-    if (!selector.isConnected || !active.isConnected) return;
-    const max = Math.max(0, selector.scrollWidth - selector.clientWidth);
-    const wanted = active.offsetLeft - (selector.clientWidth - active.offsetWidth) / 2;
-    const left = Math.max(0, Math.min(max, wanted));
-    if (Math.abs(selector.scrollLeft - left) < 2) return;
-    if (typeof selector.scrollTo === 'function') selector.scrollTo({ left, behavior:'smooth' });
-    else selector.scrollLeft = left;
-  };
-  if (typeof globalThis.requestAnimationFrame === 'function') globalThis.requestAnimationFrame(centerActive);
-  else globalThis.setTimeout(centerActive, 0);
+
+  const max = Math.max(0, selector.scrollWidth - selector.clientWidth);
+  const wanted = active.offsetLeft - (selector.clientWidth - active.offsetWidth) / 2;
+  const left = Math.max(0, Math.min(max, wanted));
+  if (Math.abs(selector.scrollLeft - left) < 2) return;
+
+  // A freshly rendered Store selector must land at its remembered active game before paint.
+  // Smooth centering here caused the visible center -> side -> center jump after Store refreshes.
+  selector.scrollLeft = left;
 }
 
 function renameSelector(root){
