@@ -122,10 +122,10 @@ $inventory->unequip($mgwId, 'game_domino_effect');
 $assertSame(null, $inventory->snapshot($mgwId)['equipped']['game_domino_effect'] ?? null, 'Domino effect slot must support explicit unequip');
 
 $storeModule = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-domino-store-v1.js');
-$storeWrapper = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-domino-wrapper-v1.js');
+$storeOwner = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-checkers-board-source-wrapper.js');
 $storeCss = (string)file_get_contents($root . '/app/assets/css/games/domino/store-cosmetics-v1.css');
 $profileModule = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-domino-parity.js');
-$profileLayout = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-domino-layout-v1.js');
+$profileOwner = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-chess-layout-v2.js');
 $profileHardRatio = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-domino-hard-ratio-v1.js');
 $profileCss = (string)file_get_contents($root . '/app/assets/css/screens/profile-domino-store-parity-v1.css');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
@@ -133,10 +133,10 @@ $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
 
 $activeStore = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $activeProfile = (string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? '');
-$assertTrue(str_contains($activeStore, 'store-screen-domino-wrapper-v1.js?v=1'), 'Active Store import must route through the Domino wrapper');
-$assertTrue(str_contains($activeProfile, 'mgw-profile-domino-layout-v1.js?v=1'), 'Active Profile import must route through the Domino wrapper');
-$assertTrue(str_contains($storeWrapper, 'store-screen-checkers-board-source-wrapper.js?v=7') && str_contains($storeWrapper, 'go_effects=premium-v2'), 'Domino Store wrapper must preserve the accepted Store owner chain');
-$assertTrue(str_contains($profileLayout, 'mgw-profile-chess-layout-v2.js?v=19') && str_contains($profileLayout, 'mvp19_8=go-profile-corrective-v2'), 'Domino Profile wrapper must preserve the accepted Profile owner chain');
+$assertTrue(str_contains($activeStore, 'store-screen-checkers-board-source-wrapper.js?v=7') && str_contains($activeStore, 'mvp19_9=domino-store-profile-v1'), 'Active Store import must preserve the accepted owner and publish Domino');
+$assertTrue(str_contains($activeProfile, 'mgw-profile-chess-layout-v2.js?v=19') && str_contains($activeProfile, 'mvp19_9=domino-profile-parity-v1'), 'Active Profile import must preserve the accepted owner and publish Domino');
+$assertTrue(str_contains($storeOwner, "from './store-screen-domino-store-v1.js?v=1&mvp19_9=store-profile-preview-8x5-v1'") && str_contains($storeOwner, 'installDominoStorePresentation();') && str_contains($storeOwner, 'upgradeDominoStorePresentation();'), 'Accepted Store owner must install and refresh the Domino presentation');
+$assertTrue(str_contains($profileOwner, "from './mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1'") && str_contains($profileOwner, 'initProfileDominoParity();') && str_contains($profileOwner, 'initProfileDominoHardRatio();'), 'Accepted Profile owner must append Domino parity and hard ratio repair');
 $assertTrue(str_contains($profileModule, "dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js"), 'Profile must reuse the exact Store Domino preview primitive');
 $assertTrue(str_contains($storeCss, 'aspect-ratio:8 / 5!important') && str_contains($profileCss, 'aspect-ratio:8 / 5!important'), 'Store and Profile must explicitly share the 8:5 Domino geometry');
 $assertTrue(str_contains($profileHardRatio, 'const HEIGHT_RATIO = 5 / 8') && str_contains($profileHardRatio, "setImportant(preview, 'height', px)"), 'Profile must have hard runtime repair for the 8:5 geometry');
