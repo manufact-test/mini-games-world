@@ -1,0 +1,171 @@
+/* MVP-19.8 Go live effects corrective v5.
+ * Exact Store visual language for Effects 2/3, adapted only to one-shot live timing.
+ * Effect 1 is intentionally untouched after manual acceptance.
+ */
+
+/* EFFECT 2 — Store VOID CAPTURE, synchronized to the actual capture-out moment. */
+.go-point[data-mgw-go-fx="group-capture"]::before,
+.go-point[data-mgw-go-fx="group-capture"]::after{
+  animation:none!important;
+  opacity:0!important;
+}
+.go-point[data-mgw-go-fx="group-capture"].capture-out::before{
+  content:""!important;
+  position:absolute!important;
+  inset:-52%!important;
+  z-index:7!important;
+  border-radius:50%!important;
+  pointer-events:none!important;
+  background:conic-gradient(from 0deg,#66efff 0 8%,transparent 9% 27%,#d36cff 28% 36%,transparent 37% 57%,#7fffd4 58% 66%,transparent 67% 86%,#fff 87% 93%,transparent 94% 100%)!important;
+  -webkit-mask:radial-gradient(circle,transparent 0 48%,#000 51% 58%,transparent 61%)!important;
+  mask:radial-gradient(circle,transparent 0 48%,#000 51% 58%,transparent 61%)!important;
+  animation:mgw-go-v5-store-capture-corona .26s ease-in-out both!important;
+}
+.go-point[data-mgw-go-fx="group-capture"].capture-out::after{
+  content:""!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  z-index:8!important;
+  width:4px!important;
+  height:4px!important;
+  border-radius:50%!important;
+  pointer-events:none!important;
+  background:#fff!important;
+  box-shadow:13px 0 #67efff,-13px 0 #d06dff,0 13px #7fffd4,0 -13px #fff3a0!important;
+  transform:translate(-50%,-50%) scale(.2)!important;
+  animation:mgw-go-v5-store-capture-particles .26s ease-out both!important;
+}
+.go-point[data-mgw-go-fx="group-capture"].capture-out .go-stone{
+  animation:mgw-go-v5-store-capture-implode .27s cubic-bezier(.18,.7,.16,1) both!important;
+  animation-delay:0s!important;
+}
+
+/* EFFECT 3 — Store TERRITORY BLOOM. Same squares, same colors, same visual order.
+ * Only total duration is compressed so the one-shot preview finishes before the
+ * accepted base renderer completes its normal move handoff. */
+.go-board[data-mgw-go-territory-qa="placement"]::before,
+.go-board[data-mgw-go-fx="territory-finish"]::before{
+  content:""!important;
+  display:block!important;
+  position:absolute!important;
+  inset:-14%!important;
+  z-index:2!important;
+  pointer-events:none!important;
+  border-radius:50%!important;
+  background:radial-gradient(circle,rgba(95,239,255,.20) 0 16%,rgba(180,105,255,.13) 31%,rgba(255,214,117,.07) 45%,transparent 68%)!important;
+  opacity:0;
+  transform:scale(.08);
+  animation:mgw-go-v5-store-territory-bloom .50s cubic-bezier(.22,.7,.2,1) both!important;
+}
+.go-board[data-mgw-go-territory-qa="placement"]::after,
+.go-board[data-mgw-go-fx="territory-finish"]::after{
+  content:""!important;
+  display:block!important;
+  position:absolute!important;
+  inset:4%!important;
+  z-index:5!important;
+  pointer-events:none!important;
+  border-radius:8px!important;
+  border:1px solid transparent!important;
+  box-shadow:inset 0 0 0 0 rgba(91,236,255,0),0 0 0 0 rgba(197,101,255,0)!important;
+  opacity:0;
+  animation:mgw-go-v5-store-territory-frame .50s ease-in-out both!important;
+}
+
+.mgw-go-live-territory{
+  position:absolute!important;
+  left:var(--go-x)!important;
+  top:var(--go-y)!important;
+  z-index:7!important;
+  width:7.6%!important;
+  aspect-ratio:1!important;
+  border-radius:26%!important;
+  opacity:0;
+  pointer-events:none!important;
+  transform:translate(-50%,-50%) scale(.18) rotate(-35deg);
+  animation:mgw-go-v5-store-territory-stamp .46s cubic-bezier(.18,.72,.2,1) calc(var(--fx-step,0) * .008s) both!important;
+}
+.mgw-go-live-territory.black{
+  background:rgba(73,231,255,.34)!important;
+  border:1px solid #54ecff!important;
+  box-shadow:0 0 8px #2ce5ff88!important;
+}
+.mgw-go-live-territory.white{
+  background:rgba(202,100,255,.27)!important;
+  border:1px solid #d66cff!important;
+  box-shadow:0 0 8px #c45dff88!important;
+}
+
+/* Real finished-game territory markers use the same approved Store stamp motion. */
+.go-point[data-mgw-go-territory-fx="1"] .go-territory-marker{
+  width:74%!important;
+  border-radius:26%!important;
+  transform:translate(0,0) scale(.18) rotate(-35deg);
+  animation:mgw-go-v5-store-territory-marker .46s cubic-bezier(.18,.72,.2,1) calc(var(--mgw-go-territory-step,0) * .008s) both!important;
+}
+.go-point.territory-black[data-mgw-go-territory-fx="1"] .go-territory-marker{
+  background:rgba(73,231,255,.34)!important;
+  border:1px solid #54ecff!important;
+  box-shadow:0 0 8px #2ce5ff88!important;
+}
+.go-point.territory-white[data-mgw-go-territory-fx="1"] .go-territory-marker{
+  background:rgba(202,100,255,.27)!important;
+  border:1px solid #d66cff!important;
+  box-shadow:0 0 8px #c45dff88!important;
+}
+
+@keyframes mgw-go-v5-store-capture-implode{
+  0%{opacity:1;filter:none;transform:scale(1) rotate(0)}
+  33%{filter:brightness(1.45) saturate(1.2);transform:scale(1.1) rotate(-7deg)}
+  58%{opacity:1;filter:brightness(.72) saturate(1.8);transform:scale(.78) rotate(12deg)}
+  100%{opacity:0;filter:blur(3px) brightness(.35);transform:scale(.08) rotate(44deg)}
+}
+@keyframes mgw-go-v5-store-capture-corona{
+  0%{opacity:0;transform:rotate(0) scale(1.35)}
+  28%{opacity:.95}
+  72%{opacity:.85;transform:rotate(220deg) scale(.74)}
+  100%{opacity:0;transform:rotate(360deg) scale(.2)}
+}
+@keyframes mgw-go-v5-store-capture-particles{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(0)}
+  38%{opacity:1}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.45) rotate(42deg)}
+}
+@keyframes mgw-go-v5-store-territory-stamp{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.18) rotate(-35deg)}
+  34%{opacity:1;transform:translate(-50%,-50%) scale(1.2) rotate(6deg)}
+  43%,72%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(.78) rotate(12deg)}
+}
+@keyframes mgw-go-v5-store-territory-marker{
+  0%{opacity:0;transform:scale(.18) rotate(-35deg)}
+  34%{opacity:1;transform:scale(1.2) rotate(6deg)}
+  43%,72%{opacity:1;transform:scale(1) rotate(0)}
+  100%{opacity:1;transform:scale(1) rotate(0)}
+}
+@keyframes mgw-go-v5-store-territory-bloom{
+  0%,20%{opacity:0;transform:scale(.08)}
+  36%{opacity:.9}
+  63%{opacity:.48;transform:scale(1.05)}
+  78%,100%{opacity:0;transform:scale(1.28)}
+}
+@keyframes mgw-go-v5-store-territory-frame{
+  0%,32%,100%{opacity:0;box-shadow:inset 0 0 0 0 rgba(91,236,255,0),0 0 0 0 rgba(197,101,255,0)}
+  48%{opacity:1;border-color:rgba(111,239,255,.54);box-shadow:inset 0 0 18px rgba(91,236,255,.16),0 0 12px rgba(197,101,255,.20)}
+  70%{opacity:.72;border-color:rgba(218,117,255,.46);box-shadow:inset 0 0 26px rgba(197,101,255,.10),0 0 18px rgba(91,236,255,.12)}
+  84%{opacity:0}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .go-point[data-mgw-go-fx="group-capture"].capture-out::before,
+  .go-point[data-mgw-go-fx="group-capture"].capture-out::after,
+  .go-point[data-mgw-go-fx="group-capture"].capture-out .go-stone,
+  .go-board[data-mgw-go-territory-qa="placement"]::before,
+  .go-board[data-mgw-go-territory-qa="placement"]::after,
+  .mgw-go-live-territory,
+  .go-point[data-mgw-go-territory-fx="1"] .go-territory-marker{
+    animation:none!important;
+  }
+  .mgw-go-live-territory{opacity:.85!important;transform:translate(-50%,-50%) scale(1)!important}
+}

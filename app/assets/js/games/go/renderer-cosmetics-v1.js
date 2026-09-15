@@ -13,11 +13,6 @@ const EFFECT_IDS = new Set([
   'game-go-effect-territory-finish',
 ]);
 const cosmeticsByGamePlayer = new Map();
-const TERRITORY_QA_OFFSETS = [
-  [-24, -18], [0, -26], [24, -18],
-  [-28, 0], [28, 0],
-  [-24, 18], [0, 26], [24, 18],
-];
 
 ensureLiveCosmeticStyles();
 
@@ -68,7 +63,6 @@ function decorateLiveGo({ game, me, container }){
     const size = Number(game?.board_size || 9);
     const placedCell = integerCell(game?.last_move?.cell, size);
     const captured = uniqueCells(game?.last_captured_cells, size);
-    const capturedCount = Math.max(0, Number(game?.last_move?.captured || 0));
 
     if (effectId === 'game-go-effect-placement') {
       const point = pointElement(container, placedCell);
@@ -77,7 +71,7 @@ function decorateLiveGo({ game, me, container }){
     }
 
     if (effectId === 'game-go-effect-group-capture') {
-      if (capturedCount <= 0 || captured.length <= 0) return;
+      if (captured.length <= 0) return;
       captured.forEach((cell, index) => {
         const point = pointElement(container, cell);
         if (!point) return;
@@ -119,12 +113,18 @@ function applyTerritoryQaPreview({ board, container }){
     if (!(point instanceof HTMLElement)) return;
     const stone = point.querySelector('.go-stone');
     if (!(stone instanceof HTMLElement)) return;
-    const [offsetX, offsetY] = TERRITORY_QA_OFFSETS[index % TERRITORY_QA_OFFSETS.length];
-    point.dataset.mgwGoTerritoryFx = 'qa';
-    point.dataset.mgwGoTerritoryTone = stone.classList.contains('black') ? 'black' : 'white';
-    point.style.setProperty('--mgw-go-territory-step', String(index));
-    point.style.setProperty('--mgw-go-cube-x', `${offsetX}px`);
-    point.style.setProperty('--mgw-go-cube-y', `${offsetY}px`);
+
+    const x = point.style.getPropertyValue('--go-x').trim();
+    const y = point.style.getPropertyValue('--go-y').trim();
+    if (!x || !y) return;
+
+    const marker = document.createElement('i');
+    marker.className = `mgw-go-live-territory ${stone.classList.contains('black') ? 'black' : 'white'}`;
+    marker.dataset.mgwGoTerritoryQaMarker = '1';
+    marker.style.setProperty('--go-x', x);
+    marker.style.setProperty('--go-y', y);
+    marker.style.setProperty('--fx-step', String(index));
+    board.appendChild(marker);
   });
 }
 
@@ -137,11 +137,9 @@ function clearPaidEffectMarks(container){
   container.querySelectorAll('[data-mgw-go-territory-fx]').forEach(element => {
     if (!(element instanceof HTMLElement)) return;
     delete element.dataset.mgwGoTerritoryFx;
-    delete element.dataset.mgwGoTerritoryTone;
     element.style.removeProperty('--mgw-go-territory-step');
-    element.style.removeProperty('--mgw-go-cube-x');
-    element.style.removeProperty('--mgw-go-cube-y');
   });
+  container.querySelectorAll('[data-mgw-go-territory-qa-marker]').forEach(element => element.remove());
   const board = container.querySelector('.go-board');
   if (board instanceof HTMLElement) {
     delete board.dataset.mgwGoFx;
