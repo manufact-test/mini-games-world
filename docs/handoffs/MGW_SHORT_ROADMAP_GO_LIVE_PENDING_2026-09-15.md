@@ -2,8 +2,8 @@
 
 Date: 2026-09-15  
 Integration branch: `agent/mvp-13-2-staging`  
-Corrective PR: #1425  
-Launch cache: `v1146`
+Current corrective PR: #1426  
+Launch cache: `v1147`
 
 ## Where we are now
 
@@ -14,43 +14,44 @@ Already accepted and not part of the current visual gate:
 - Go Profile parity/equip flow.
 - Go live field geometry/full-width layout, `Пас`, `В меню`.
 - Go Effect 1 — Placement.
+- Go Effect 3 — Territory visual. Its temporary ordinary-placement QA trigger is removed; it is returned to the canonical finished-game territory event using authoritative `final_score` cells.
 
 Current corrective is limited to:
-- Effect 2 — Group Capture visibility/timing.
-- Effect 3 — approved Store square visual in live QA, without centre wave/logo/random spread.
-- Go rules `×` / `↺` marker centering.
+- Effect 2 — Group Capture single-pass timing.
+- Go rules `×` / `↺` marker centering, unless user explicitly confirms it visually.
 
-**These three current corrective items are NOT YET ACCEPTED.**
+**Effect 2 and rules alignment are NOT YET ACCEPTED.**
 
 ## Current gate
 
-After PR #1425 is merged and Hostinger staging is redeployed:
+After PR #1426 is merged and Hostinger staging is redeployed:
 
 1. Equip Effect 2 and perform a real capture.
-   - Captured stone must visibly implode/disappear.
-   - Store-style corona + particles must be visible.
+   - Captured stone must run one continuous Store-style implode/disappearance.
+   - Corona + particles must start at the same actual `capture-out` moment.
+   - No preliminary twitch.
+   - No return/reset.
+   - No second replay.
    - No Effect 2 on ordinary placement.
-2. Equip Effect 3 and make an ordinary move while the temporary QA trigger is active.
-   - Maximum three cyan/purple Store-style square stamps.
-   - Squares appear on nearby empty real intersections around the new stone.
-   - No squares on stones.
-   - No centre wave, no `MG/MGW`, no random board-wide spread.
-3. Open Go rules.
-   - Suicide `×` marker centered exactly on its intersection.
-   - Ko `↺` marker centered exactly on its intersection.
+2. Effect 3 no longer needs the temporary ordinary-move test.
+   - It is accepted visually.
+   - It now belongs only to the canonical finished territory event.
+3. Open Go rules if marker alignment has not yet been explicitly accepted.
+   - Suicide `×` centered exactly on its intersection.
+   - Ko `↺` centered exactly on its intersection.
 
 ## Immediately after manual acceptance
 
-- Remove the temporary Effect 3 ordinary-placement QA trigger.
-- Leave Effect 3 only on the canonical finished-territory event driven by authoritative `final_score` territory cells.
-- Re-run focused Go Live + Go Store + Go Profile regression contracts.
-- One final manual Go Live confirmation.
-- Update the large canonical with the accepted final state.
+- Mark Effect 2 accepted if the capture is a single smooth animation.
+- Mark rules marker alignment accepted only after explicit confirmation.
+- Re-run/confirm focused Go Live + Go Store + Go Profile regression state.
+- Update the large canonical with the final accepted Go Live state.
+- Close MVP-19.8 Go cosmetics and proceed to the next planned scope only after the remaining manual gate is closed.
 
 ## Do not do
 
 - Do not redesign or resize the already accepted Go field.
 - Do not alter accepted Effect 1.
-- Do not invent a new Effect 3 visual; Store preview is the visual reference.
+- Do not change the accepted Effect 3 visual or re-add its ordinary-placement QA trigger.
+- Do not reintroduce centre waves, `MG/MGW`, or random territory markers.
 - Do not modify Go rules/gameplay, server Go engine, bot logic, timer, economy or inventory ownership for this presentation corrective.
-- Do not move to the next game/scope before this manual Go Live gate is closed.

@@ -1,0 +1,129 @@
+/* MVP-19.8 Go live effects corrective v7.
+ * Effect 1 stays manually accepted and untouched.
+ * Effect 2 runs exactly once at capture-out (or once on a skipped-poll fallback ghost).
+ * Effect 3 is no longer QA-triggered on ordinary placement; only final territory cells animate.
+ */
+
+/* Suppress the legacy immediate group-capture animations from live-cosmetics-v1.
+ * They were firing as soon as data-mgw-go-fx was attached, before the real stone left. */
+.go-point[data-mgw-go-fx="group-capture"]::before,
+.go-point[data-mgw-go-fx="group-capture"]::after{
+  animation:none!important;
+  opacity:0!important;
+}
+.go-point[data-mgw-go-fx="group-capture"] .go-stone{
+  animation:none!important;
+}
+
+/* One authoritative trigger: the base renderer's real capture-out class.
+ * Fallback is only used when polling skipped that frame and a visual-only ghost was rebuilt. */
+.go-point[data-mgw-go-fx="group-capture"].capture-out::before,
+.go-point[data-mgw-go-fx="group-capture"].mgw-go-capture-fallback::before{
+  content:""!important;
+  position:absolute!important;
+  inset:-52%!important;
+  z-index:7!important;
+  display:block!important;
+  border-radius:50%!important;
+  pointer-events:none!important;
+  background:conic-gradient(from 0deg,#66efff 0 8%,transparent 9% 27%,#d36cff 28% 36%,transparent 37% 57%,#7fffd4 58% 66%,transparent 67% 86%,#fff 87% 93%,transparent 94% 100%)!important;
+  -webkit-mask:radial-gradient(circle,transparent 0 48%,#000 51% 58%,transparent 61%)!important;
+  mask:radial-gradient(circle,transparent 0 48%,#000 51% 58%,transparent 61%)!important;
+  opacity:1!important;
+  transform:rotate(0) scale(1.35);
+  animation:mgw-go-v7-store-capture-corona .34s ease-in-out both!important;
+}
+.go-point[data-mgw-go-fx="group-capture"].capture-out::after,
+.go-point[data-mgw-go-fx="group-capture"].mgw-go-capture-fallback::after{
+  content:""!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  z-index:8!important;
+  display:block!important;
+  width:4px!important;
+  height:4px!important;
+  border-radius:50%!important;
+  pointer-events:none!important;
+  background:#fff!important;
+  box-shadow:13px 0 #67efff,-13px 0 #d06dff,0 13px #7fffd4,0 -13px #fff3a0!important;
+  opacity:1!important;
+  transform:translate(-50%,-50%) scale(.2) rotate(0);
+  animation:mgw-go-v7-store-capture-particles .34s ease-out both!important;
+}
+.go-point[data-mgw-go-fx="group-capture"].capture-out .go-stone,
+.go-point[data-mgw-go-fx="group-capture"].mgw-go-capture-fallback .go-stone{
+  animation:mgw-go-v7-store-capture-implode .34s cubic-bezier(.18,.7,.16,1) both!important;
+  animation-delay:0s!important;
+}
+.go-point[data-mgw-go-fx="group-capture"].mgw-go-capture-fallback .mgw-go-capture-ghost{
+  display:block!important;
+  position:relative!important;
+  z-index:6!important;
+  width:90%!important;
+}
+
+/* Effect 3 is accepted visually. Keep only the final-score territory stamps.
+ * Explicitly kill any old centre bloom/seal if a stale dataset ever survives. */
+.go-board[data-mgw-go-fx="territory-finish"]::before,
+.go-board[data-mgw-go-fx="territory-finish"]::after,
+.go-board[data-mgw-go-territory-qa="placement"]::before,
+.go-board[data-mgw-go-territory-qa="placement"]::after{
+  content:none!important;
+  display:none!important;
+  animation:none!important;
+  opacity:0!important;
+}
+.go-point[data-mgw-go-territory-fx="1"] .go-territory-marker{
+  width:74%!important;
+  aspect-ratio:1!important;
+  border-radius:26%!important;
+  transform:scale(.18) rotate(-35deg);
+  animation:mgw-go-v7-store-territory-marker .58s cubic-bezier(.18,.72,.2,1) calc(var(--mgw-go-territory-step,0) * .035s) both!important;
+}
+.go-point.territory-black[data-mgw-go-territory-fx="1"] .go-territory-marker{
+  background:rgba(73,231,255,.34)!important;
+  border:1px solid #54ecff!important;
+  box-shadow:0 0 8px #2ce5ff88!important;
+}
+.go-point.territory-white[data-mgw-go-territory-fx="1"] .go-territory-marker{
+  background:rgba(202,100,255,.27)!important;
+  border:1px solid #d66cff!important;
+  box-shadow:0 0 8px #c45dff88!important;
+}
+
+@keyframes mgw-go-v7-store-capture-implode{
+  0%{opacity:1;filter:none;transform:scale(1) rotate(0)}
+  33%{opacity:1;filter:brightness(1.45) saturate(1.2);transform:scale(1.1) rotate(-7deg)}
+  58%{opacity:1;filter:brightness(.72) saturate(1.8);transform:scale(.78) rotate(12deg)}
+  100%{opacity:0;filter:blur(3px) brightness(.35);transform:scale(.08) rotate(44deg)}
+}
+@keyframes mgw-go-v7-store-capture-corona{
+  0%{filter:opacity(0);transform:rotate(0) scale(1.35)}
+  28%{filter:opacity(.95)}
+  72%{filter:opacity(.85);transform:rotate(220deg) scale(.74)}
+  100%{filter:opacity(0);transform:rotate(360deg) scale(.2)}
+}
+@keyframes mgw-go-v7-store-capture-particles{
+  0%{filter:opacity(0);transform:translate(-50%,-50%) scale(.2) rotate(0)}
+  38%{filter:opacity(1)}
+  100%{filter:opacity(0);transform:translate(-50%,-50%) scale(1.45) rotate(42deg)}
+}
+@keyframes mgw-go-v7-store-territory-marker{
+  0%{opacity:0;transform:scale(.18) rotate(-35deg)}
+  34%{opacity:1;transform:scale(1.2) rotate(6deg)}
+  43%,72%{opacity:1;transform:scale(1) rotate(0)}
+  100%{opacity:1;transform:scale(1) rotate(0)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .go-point[data-mgw-go-fx="group-capture"].capture-out::before,
+  .go-point[data-mgw-go-fx="group-capture"].capture-out::after,
+  .go-point[data-mgw-go-fx="group-capture"].capture-out .go-stone,
+  .go-point[data-mgw-go-fx="group-capture"].mgw-go-capture-fallback::before,
+  .go-point[data-mgw-go-fx="group-capture"].mgw-go-capture-fallback::after,
+  .go-point[data-mgw-go-fx="group-capture"].mgw-go-capture-fallback .go-stone,
+  .go-point[data-mgw-go-territory-fx="1"] .go-territory-marker{
+    animation:none!important;
+  }
+}
