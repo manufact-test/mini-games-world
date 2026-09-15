@@ -1,0 +1,129 @@
+/* MVP-19.9 Domino Store/Profile shared visual owner. Store is the source of truth. */
+
+.store-v2-game-head[data-store-game-type="domino"] .store-v2-game-head-marks{display:flex;align-items:center;gap:7px}
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-tile{position:relative;display:block;width:23px;height:13px;padding:0;border-radius:3px;border:1px solid #606675;background:linear-gradient(155deg,#fffdf5,#d9d7cf);box-shadow:0 3px 7px #0007;font-size:0;transform:rotate(-8deg)}
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-tile.three{background:linear-gradient(155deg,#252a32,#0d1015);border-color:#626c79;transform:rotate(7deg)}
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-tile::before,
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-tile::after{content:"";position:absolute;top:2px;width:3px;height:3px;border-radius:50%;background:#151923;box-shadow:0 6px 0 #151923}
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-tile::before{left:4px}
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-tile::after{right:4px}
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-tile.three::before{background:#f7f2e8;box-shadow:6px 3px 0 #f7f2e8,12px 6px 0 #f7f2e8}
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-tile.three::after{display:none}
+
+.store-v2-game-preview[data-game-type="domino"]{
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  aspect-ratio:8 / 5!important;
+  padding:0!important;
+  overflow:hidden!important;
+  isolation:isolate!important;
+  border-radius:14px!important;
+  background:#0c1712!important;
+}
+.mgw-domino-preview{position:absolute;inset:0;display:block;width:100%;height:100%;overflow:hidden;background:linear-gradient(145deg,#142f24,#07130e);color:#fff}
+.mgw-domino-preview-table{position:absolute;inset:7.5% 5.5%;display:block;overflow:hidden;border-radius:16px;border:1px solid rgba(173,217,179,.28);background:radial-gradient(circle at 49% 45%,rgba(78,157,94,.36),transparent 48%),linear-gradient(145deg,#1b4934,#10281e);box-shadow:inset 0 0 34px rgba(0,0,0,.28),0 11px 26px rgba(0,0,0,.34)}
+.mgw-domino-preview-top{position:absolute;z-index:4;left:6%;right:6%;top:8%;display:flex;align-items:center;justify-content:space-between;height:16%;color:rgba(255,255,255,.6);font:800 clamp(5px,1.65vw,8px)/1 system-ui,sans-serif;letter-spacing:.12em}
+.mgw-domino-stock{position:relative;display:flex;align-items:center;width:31px;height:15px;padding-left:11px}
+.mgw-domino-stock i{position:relative;display:block;width:18px;height:10px;margin-left:-10px;border-radius:3px;border:1px solid rgba(255,255,255,.25);background:repeating-linear-gradient(135deg,#28354a 0 3px,#121b2d 3px 6px);box-shadow:0 2px 4px rgba(0,0,0,.35)}
+.mgw-domino-preview-chain{position:absolute;z-index:5;left:5%;right:5%;top:32%;bottom:20%;display:flex;align-items:center;justify-content:center;gap:0}
+.mgw-domino-preview-slot{position:relative;display:block;flex:0 0 auto;margin-left:-1px;transform-origin:center center;filter:drop-shadow(0 4px 4px rgba(0,0,0,.28))}
+.mgw-domino-preview-slot.turn{margin:0 5%;transform:rotate(90deg)}
+.mgw-domino-preview-tile{position:relative;display:flex;flex-direction:row;width:clamp(31px,14vw,55px);height:clamp(17px,7.5vw,30px);box-sizing:border-box;overflow:hidden;border-radius:5px;border:1px solid rgba(54,59,70,.58);background:linear-gradient(155deg,#fffdf6,#d9d9d4);box-shadow:inset 0 0 0 1px rgba(255,255,255,.76);color:#151923}
+.mgw-domino-preview-half{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);align-items:center;justify-items:center;width:50%;height:100%;padding:2px;box-sizing:border-box}
+.mgw-domino-preview-half+.mgw-domino-preview-half{border-left:1px solid currentColor;opacity:1}
+.mgw-domino-preview-half i{width:clamp(2px,.9vw,4px);height:clamp(2px,.9vw,4px);border-radius:50%;background:transparent}
+.mgw-domino-preview-half i.active{background:currentColor;box-shadow:inset 0 0 0 1px rgba(0,0,0,.1)}
+.mgw-domino-table-glow{position:absolute;z-index:1;inset:auto 12% 3% 12%;height:28%;border-radius:50%;background:radial-gradient(ellipse,#47d08d18,transparent 70%);filter:blur(5px);pointer-events:none}
+
+/* Table themes. */
+.mgw-domino-preview.theme-felt{background:linear-gradient(145deg,#15251c,#080f0b)}
+.mgw-domino-preview.theme-felt .mgw-domino-preview-table{background:radial-gradient(circle at 49% 45%,rgba(76,158,95,.38),transparent 48%),linear-gradient(145deg,#1a4b34,#0f291d)}
+.mgw-domino-preview.theme-midnight{background:radial-gradient(circle at 50% 38%,#1b263d,#060911 74%)}
+.mgw-domino-preview.theme-midnight .mgw-domino-preview-table{border-color:#728cce55;background:radial-gradient(circle at 48% 43%,#253d6659,transparent 52%),linear-gradient(145deg,#17233b,#0b1120);box-shadow:inset 0 0 34px #0007,0 0 24px #597ce12b}
+.mgw-domino-preview.theme-midnight .mgw-domino-table-glow{background:radial-gradient(ellipse,#6489ff25,transparent 70%)}
+.mgw-domino-preview.theme-walnut{background:repeating-linear-gradient(93deg,rgba(74,33,12,.35) 0 2px,transparent 2px 18px),linear-gradient(145deg,#6e3d20,#211109)}
+.mgw-domino-preview.theme-walnut .mgw-domino-preview-table{inset:6%;border:5px solid #754021;background:radial-gradient(circle at 49% 45%,rgba(62,148,87,.34),transparent 48%),linear-gradient(145deg,#25533b,#142c20);box-shadow:inset 0 0 30px #0005,0 12px 25px #0007}
+.mgw-domino-preview.theme-neon{background:radial-gradient(circle at 48% 45%,#0a2b36,#03060c 72%)}
+.mgw-domino-preview.theme-neon .mgw-domino-preview-table{border-color:#2deaffb8;background:radial-gradient(circle at 49% 45%,rgba(15,102,116,.28),transparent 48%),linear-gradient(145deg,#071a22,#050a10);box-shadow:0 0 16px #00dfff62,0 0 32px #a855ff2c,inset 0 0 26px #00eaff14}
+.mgw-domino-preview.theme-neon .mgw-domino-preview-table::after{content:"";position:absolute;inset:2px;border-radius:13px;border:1px solid #c65dff75;pointer-events:none}
+.mgw-domino-preview.theme-neon .mgw-domino-table-glow{background:radial-gradient(ellipse,#20eaff38,#aa50ff18 46%,transparent 72%)}
+
+/* Tile sets. */
+.mgw-domino-preview.tiles-ivory .mgw-domino-preview-tile{color:#171a20;background:linear-gradient(155deg,#fffdf3,#d8d2c3);border-color:#7d796f80;box-shadow:inset 0 0 0 1px #fff9,0 5px 9px #0005}
+.mgw-domino-preview.tiles-ebony .mgw-domino-preview-tile{color:#f6f1e8;background:linear-gradient(155deg,#30343c,#090b0f 72%);border-color:#77808d8c;box-shadow:inset 0 0 0 1px #fff1,0 5px 10px #0008}
+.mgw-domino-preview.tiles-marble .mgw-domino-preview-tile{color:#24282c;background:radial-gradient(circle at 18% 22%,#6c707530 0 1px,transparent 1.6px),radial-gradient(circle at 72% 68%,#85898d24 0 1.2px,transparent 1.8px),linear-gradient(145deg,#f1efea,#bfc0bc);border-color:#95989b99;box-shadow:inset 0 0 0 1px #fff8,0 5px 10px #0006}
+.mgw-domino-preview.tiles-neon{background:radial-gradient(circle at 48% 45%,#0b2834,#04070d 72%)}
+.mgw-domino-preview.tiles-neon .mgw-domino-preview-table{border-color:#2ceaff72;background:linear-gradient(145deg,#071b22,#071016);box-shadow:0 0 22px #00dfff35,inset 0 0 28px #00eaff10}
+.mgw-domino-preview.tiles-neon .mgw-domino-preview-tile{color:#5ff2ff;background:#070b10;border:1px solid #28e9ff;box-shadow:0 0 7px #00ddff,0 0 14px #9c4fff4a,inset 0 0 8px #00dfff25}
+.mgw-domino-preview.tiles-neon .mgw-domino-preview-half+.mgw-domino-preview-half{border-color:#be5cff}
+.mgw-domino-preview.tiles-neon .mgw-domino-preview-slot:nth-child(even) .mgw-domino-preview-tile{color:#df75ff;border-color:#c45cff;box-shadow:0 0 7px #c45cff,0 0 14px #00dfff42,inset 0 0 8px #ae50ff25}
+
+/* Effect 1: authoritative preview concept for a played tile. */
+.mgw-domino-preview.effect-precision-drop .mgw-domino-preview-slot.fx-precision-target{z-index:9;animation:mgw-domino-precision-drop 2.15s cubic-bezier(.18,.82,.22,1) infinite}
+.mgw-domino-preview.effect-precision-drop .mgw-domino-preview-slot.fx-precision-target::before,
+.mgw-domino-preview.effect-precision-drop .mgw-domino-preview-slot.fx-precision-target::after{content:"";position:absolute;z-index:-1;left:50%;top:50%;width:130%;height:185%;border-radius:50%;transform:translate(-50%,-50%) scale(.2);opacity:0;border:2px solid #5eeeff;box-shadow:0 0 9px #45eaff,0 0 19px #8e56ff75;animation:mgw-domino-impact-ring 2.15s ease-out infinite}
+.mgw-domino-preview.effect-precision-drop .mgw-domino-preview-slot.fx-precision-target::after{width:180%;height:260%;border-color:#b95eff;animation-delay:.08s}
+
+/* Effect 2: authoritative preview concept for draw. */
+.mgw-domino-preview.effect-stock-pulse .mgw-domino-stock.fx-stock{animation:mgw-domino-stock-pulse 2.4s ease-in-out infinite}
+.mgw-domino-draw-ghost{position:absolute;z-index:10;right:10%;top:14%;opacity:0;transform:translate(0,0) rotate(-18deg) scale(.72);filter:drop-shadow(0 0 8px #ffd85b88);animation:mgw-domino-stock-flight 2.4s cubic-bezier(.18,.8,.2,1) infinite}
+.mgw-domino-draw-ghost .mgw-domino-preview-tile{width:43px;height:23px;box-shadow:0 0 0 1px #ffd85b99,0 0 12px #ffd85b70,0 6px 10px #0008}
+
+/* Effect 3: authoritative preview concept for final chain. */
+.mgw-domino-preview.effect-chain-finale .mgw-domino-preview-slot.fx-finale{animation:mgw-domino-finale-tile 2.75s ease-in-out infinite;animation-delay:calc(var(--fx-step) * .1s)}
+.mgw-domino-finale-line{position:absolute;z-index:7;left:8%;right:8%;top:50%;height:2px;transform:translateY(-50%) scaleX(.04);transform-origin:left center;opacity:0;background:linear-gradient(90deg,transparent,#48eaff 15%,#d75cff 78%,transparent);box-shadow:0 0 8px #4beaff,0 0 16px #bb56ff80;animation:mgw-domino-finale-line 2.75s ease-in-out infinite}
+
+@keyframes mgw-domino-precision-drop{
+  0%,18%{opacity:.15;transform:translateY(-58%) rotate(-7deg) scale(.7)}
+  34%{opacity:1;transform:translateY(5%) rotate(1deg) scale(1.08)}
+  43%,78%{opacity:1;transform:translateY(0) rotate(0) scale(1)}
+  100%{opacity:.98;transform:translateY(0) rotate(0) scale(1)}
+}
+@keyframes mgw-domino-impact-ring{
+  0%,29%{opacity:0;transform:translate(-50%,-50%) scale(.18)}
+  36%{opacity:.95}
+  55%{opacity:0;transform:translate(-50%,-50%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1)}
+}
+@keyframes mgw-domino-stock-pulse{
+  0%,18%,75%,100%{filter:brightness(1);transform:scale(1)}
+  28%{filter:brightness(1.75);transform:scale(1.12)}
+  42%{filter:brightness(1.08);transform:scale(1)}
+}
+@keyframes mgw-domino-stock-flight{
+  0%,24%{opacity:0;transform:translate(0,0) rotate(-18deg) scale(.68)}
+  31%{opacity:1}
+  56%{opacity:1;transform:translate(-145% ,118%) rotate(7deg) scale(.96)}
+  67%{opacity:0;transform:translate(-178%,146%) rotate(0deg) scale(.9)}
+  100%{opacity:0;transform:translate(-178%,146%) rotate(0deg) scale(.9)}
+}
+@keyframes mgw-domino-finale-tile{
+  0%,18%,76%,100%{filter:drop-shadow(0 4px 4px #0005);transform:translateY(0) scale(1)}
+  34%{filter:drop-shadow(0 0 8px #47eaff) drop-shadow(0 0 13px #a858ff80);transform:translateY(-5%) scale(1.08)}
+  48%{filter:drop-shadow(0 0 4px #ffd85b88);transform:translateY(0) scale(1)}
+}
+@keyframes mgw-domino-finale-line{
+  0%,24%{opacity:0;transform:translateY(-50%) scaleX(.04)}
+  36%{opacity:.9}
+  60%{opacity:.75;transform:translateY(-50%) scaleX(1)}
+  72%,100%{opacity:0;transform:translateY(-50%) scaleX(1)}
+}
+
+@media(max-width:390px){
+  .store-v2-game-preview[data-game-type="domino"]{border-radius:12px!important}
+  .mgw-domino-preview-table{border-radius:13px}
+  .mgw-domino-preview-slot.turn{margin-left:4%;margin-right:4%}
+}
+@media(prefers-reduced-motion:reduce){
+  .store-v2-game-preview[data-game-type="domino"] *{animation:none!important}
+  .mgw-domino-preview.effect-precision-drop .fx-precision-target{filter:drop-shadow(0 0 6px #4deaff)}
+  .mgw-domino-preview.effect-stock-pulse .mgw-domino-stock{filter:brightness(1.35)}
+  .mgw-domino-preview.effect-chain-finale .mgw-domino-preview-slot{filter:drop-shadow(0 0 5px #8b68ff)}
+  .mgw-domino-draw-ghost,.mgw-domino-finale-line{display:none!important}
+}
