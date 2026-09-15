@@ -1,7 +1,7 @@
 const INSTALL_KEY = '__mgwDominoStoreV1Installed';
-const STYLE_MARK = 'mvp19-9-domino-store-v8';
+const STYLE_MARK = 'mvp19-9-domino-store-v9';
 const EFFECT_STYLE_ATTR = 'data-mgw-domino-store-effects-v9';
-const EFFECT_STYLE_VALUE = 'mvp19-9-domino-premium-effects-v14-visible';
+const EFFECT_STYLE_VALUE = 'mvp19-9-domino-premium-effects-v15-proportions';
 
 ensureStyles();
 ensureEffectStyles();
@@ -60,7 +60,7 @@ function ensureStyles(){
 }
 
 function ensureEffectStyles(){
-  const href = new URL('../../css/games/domino/store-effects-scene-v9.css?v=6&mvp19_9=domino-premium-effects-v14-visible', import.meta.url).href;
+  const href = new URL('../../css/games/domino/store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions', import.meta.url).href;
   const existing = document.querySelector(`link[${EFFECT_STYLE_ATTR}]`);
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -134,11 +134,11 @@ function upgradePreviews(root){
     const visual = preview.querySelector(':scope > .mgw-domino-preview');
     const sceneReady = layer !== 'effect' || visual?.querySelector(`.mgw-domino-fx-stage[data-mgw-domino-fx-v14="${safeVariant(variant)}"]`);
     if (visual instanceof HTMLElement && visual.classList.contains(expectedClass) && sceneReady) {
-      preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v8`;
+      preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v9`;
       return;
     }
     preview.innerHTML = dominoPreviewMarkup(layer, variant);
-    preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v8`;
+    preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v9`;
   });
 }
 
