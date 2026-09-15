@@ -4,6 +4,7 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
 import { haptic } from '../telegram/telegram-app.js?v=27';
+import { dominoPreviewMarkup, dominoHeaderMarksMarkup } from './store-screen-domino-store-v1.js?v=6&mvp19_9=domino-native-render-v6';
 
 const STORE_TABS = Object.freeze([
   { id:'coins', label:'Коины' },
@@ -11,7 +12,7 @@ const STORE_TABS = Object.freeze([
   { id:'games', label:'Игры' },
   { id:'bundles', label:'Наборы' },
 ]);
-const GAME_CATALOG_ORDER = Object.freeze(['tictactoe','chess','checkers']);
+const GAME_CATALOG_ORDER = Object.freeze(['tictactoe','chess','checkers','domino']);
 
 let storeState = null;
 let storeSurface = 'tab';
@@ -302,6 +303,17 @@ function gamePresentation(gameType){
       kinds:{ theme:'Шашечная доска', elements:'Комплект шашек', effect:'Эффект партии' },
     };
   }
+  if (gameType === 'domino') {
+    return {
+      mark:'',
+      groups:[
+        ['Столы','Оформление игрового стола','themes'],
+        ['Костяшки','Комплект костяшек домино','elements'],
+        ['Эффекты','','effects'],
+      ],
+      kinds:{ theme:'Игровой стол', elements:'Комплект костяшек', effect:'Эффект партии' },
+    };
+  }
   return {
     mark:'✕○',
     groups:[
@@ -324,19 +336,24 @@ function renderGamesTab(){
       ${catalogs.map(item => {
         const gameType = String(item?.game_type || '');
         const active = gameType === activeGameCatalog;
-        return `<button type="button" role="tab" class="store-v2-game-select${active ? ' active' : ''}" data-store-v2-game="${escapeAttr(gameType)}" aria-selected="${active ? 'true' : 'false'}">${escapeHtml(item?.title || gameType)}</button>`;
+        const label = gameType === 'domino' ? 'Домино' : String(item?.title || gameType);
+        return `<button type="button" role="tab" class="store-v2-game-select${active ? ' active' : ''}" data-store-v2-game="${escapeAttr(gameType)}" aria-selected="${active ? 'true' : 'false'}">${escapeHtml(label)}</button>`;
       }).join('')}
     </div>` : '';
+  const title = activeGameCatalog === 'domino' ? 'Домино' : String(catalog.title || activeGameCatalog);
+  const marks = activeGameCatalog === 'domino'
+    ? dominoHeaderMarksMarkup()
+    : `<b>${escapeHtml(presentation.mark.slice(0,1))}</b><b>${escapeHtml(presentation.mark.slice(1))}</b>`;
   return `
     ${selector}
     <div class="store-v2-game-head" data-store-game-type="${escapeAttr(activeGameCatalog)}">
       <div>
         <span>Оформление игры</span>
-        <h2>${escapeHtml(catalog.title || activeGameCatalog)}</h2>
+        <h2>${escapeHtml(title)}</h2>
       </div>
-      <div class="store-v2-game-head-marks" aria-hidden="true"><b>${escapeHtml(presentation.mark.slice(0,1))}</b><b>${escapeHtml(presentation.mark.slice(1))}</b></div>
+      <div class="store-v2-game-head-marks" aria-hidden="true">${marks}</div>
     </div>
-    ${presentation.groups.map(([title, subtitle, key]) => renderGameCosmeticGroup(title, subtitle, catalog[key], activeGameCatalog)).join('')}
+    ${presentation.groups.map(([groupTitle, subtitle, key]) => renderGameCosmeticGroup(groupTitle, subtitle, catalog[key], activeGameCatalog)).join('')}
   `;
 }
 
@@ -345,7 +362,7 @@ function renderGameCosmeticGroup(title, subtitle, offers, gameType){
   return `
     <section class="store-v2-game-group">
       <div class="store-v2-title-row store-v2-game-title-row">
-        <div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(subtitle)}</p></div>
+        <div><h2>${escapeHtml(title)}</h2>${subtitle ? `<p>${escapeHtml(subtitle)}</p>` : ''}</div>
       </div>
       <div class="store-v2-game-grid">${items.map(offer => renderGameOffer(offer, gameType)).join('')}</div>
     </section>
@@ -392,6 +409,11 @@ function gameCosmeticDescription(gameType, layer, variant){
     if (layer === 'theme') return ({ wood:'Тёплое дерево с мягкой фактурой', dark:'Строгая тёмная доска с высоким контрастом', marble:'Светлый камень с холодными прожилками', neon:'Тёмная доска с цианово-фиолетовым свечением' })[variant] || 'Меняет оформление шашечной доски';
     if (layer === 'elements') return ({ wood:'Тёплые резные шашки с древесной фактурой', marble:'Гладкие каменные шашки с прожилками', metal:'Полированные металлические шашки', neon:'Шашки с ярким неоновым контуром' })[variant] || 'Меняет внешний вид шашек';
     return ({ move:'Световой след подчёркивает обычный ход', capture:'Короткий ударный всплеск отмечает взятие', promotion:'Коронная вспышка появляется при превращении в дамку' })[variant] || 'Добавляет визуальный эффект партии';
+  }
+  if (gameType === 'domino') {
+    if (layer === 'theme') return ({ felt:'Классический зелёный суконный стол с мягкой глубиной и тёплой кромкой', midnight:'Тёмно-синий стол с холодной подсветкой и спокойным клубным настроением', walnut:'Тёплый ореховый стол с цельной древесной игровой поверхностью и живой фактурой', neon:'Глубокий тёмный стол с цианово-фиолетовой неоновой кромкой' })[variant] || 'Меняет оформление игрового стола';
+    if (layer === 'elements') return ({ ivory:'Светлые костяшки классической игровой формы с глубокими контрастными точками', ebony:'Чёрные матовые костяшки классической формы со светлыми точками', marble:'Мраморные костяшки с натуральной минеральной фактурой и чёткими точками', neon:'Тёмные костяшки с яркими неоновыми точками и тонким контуром' })[variant] || 'Меняет внешний вид костяшек';
+    return ({ 'precision-drop':'Костяшка мягко входит в сцену по дуге и точно стыкуется с цепью', 'stock-pulse':'Костяшка выходит из запаса, переворачивается в воздухе и спокойно ложится на стол', 'chain-finale':'По цепочке проходит плавная волна завершения партии' })[variant] || 'Добавляет визуальный эффект партии';
   }
   if (layer === 'theme') {
     return ({ classic:'Тёплая классическая доска', dark:'Строгое тёмное оформление', glass:'Объёмное стеклянное поле', neon:'Неоновая сетка и свечение' })[variant] || 'Меняет фон и сетку поля';
@@ -449,6 +471,8 @@ function gameCosmeticPreview(gameType, layer, variant, label = ''){
     } else {
       content = checkersEffectPreviewMarkup(safeVariant);
     }
+  } else if (gameType === 'domino') {
+    content = dominoPreviewMarkup(safeLayer, safeVariant);
   } else if (safeLayer === 'theme') {
     const marks = ['✕','','○','','○','','✕','','✕'];
     content = `<i class="store-v2-mini-board">${marks.map(mark => `<span>${mark ? `<b>${mark}</b>` : ''}</span>`).join('')}</i>`;
