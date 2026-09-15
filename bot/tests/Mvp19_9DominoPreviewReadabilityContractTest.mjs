@@ -40,6 +40,13 @@ expect(!store.includes('setTimeout'), 'Native Domino rendering must not use time
 expect(store.includes('mgw-domino-fx-precision'), 'Precision effect must use its dedicated scene primitive.');
 expect(store.includes('mgw-domino-fx-stock'), 'Stock effect must use its dedicated scene primitive.');
 expect(store.includes('mgw-domino-fx-finale'), 'Finale effect must use its dedicated scene primitive.');
+expect(store.includes('mgw-domino-fx-trail'), 'Precision must render a dedicated travelling light wake.');
+expect(store.includes('mgw-domino-fx-stock-halo') && store.includes('mgw-domino-fx-stock-particles'), 'Stock must have a local lift halo/particle language distinct from Precision.');
+expect(store.includes('mgw-domino-fx-burst') && store.includes('mgw-domino-fx-halo') && store.includes('mgw-domino-fx-sparks'), 'Finale must use the new burst/halo/sparks finish scene.');
+expect(!store.includes('mgw-domino-fx-rail'), 'Rejected Finale bottom rail must be removed from markup.');
+expect(store.includes('Костяшка влетает в цепь со световым шлейфом и яркой вспышкой в момент стыковки'), 'Precision customer copy must describe the visible effect in normal language.');
+expect(store.includes('Костяшка поднимается из запаса в холодном свечении и плавно выходит на игровое поле'), 'Stock customer copy must be simple and human-facing.');
+expect(store.includes('После последнего хода цепь вспыхивает золотым светом, а вокруг костяшек рассыпаются искры'), 'Finale customer copy must describe the celebratory finish in normal language.');
 
 expect(css.includes('aspect-ratio:8 / 5!important'), 'Base Domino preview primitive must retain accepted 8:5 geometry where explicitly used.');
 expect(css.includes('aspect-ratio:47 / 24'), 'Static Domino tiles must keep authentic live proportions.');
@@ -52,15 +59,19 @@ expect(correctiveCss.includes('border-radius:50%!important'), 'Static visible Do
 
 expect(effectCss.includes('.mgw-domino-fx-piece'), 'Effects must use dedicated whole-piece scene geometry.');
 expect(effectCss.includes('aspect-ratio:47 / 24!important'), 'Effect pieces must preserve Domino proportions.');
-expect(effectCss.includes('mgw-domino-v11-magnetic-glide'), 'Precision Drop must use the new continuous magnetic glide.');
-expect(effectCss.includes('mgw-domino-v11-spectral-draw'), 'Stock Pulse must use the new continuous spectral draw.');
-expect(effectCss.includes('mgw-domino-v11-lux-sheen'), 'Chain Finale must use the new continuous jewellery-like light sweep.');
-expect(effectCss.includes('mix-blend-mode:screen!important'), 'Premium finale must keep its luminous screen-blended sheen.');
+expect(effectCss.includes('mgw-domino-v12-precision-flight'), 'Precision must use the faster v12 flight.');
+expect(effectCss.includes('mgw-domino-v12-precision-trail'), 'Precision must use the travelling v12 light wake.');
+expect(effectCss.includes('mgw-domino-v12-dock-flash'), 'Precision must finish with a short docking flash.');
+expect(effectCss.includes('mgw-domino-v12-stock-lift'), 'Stock must use a distinct lift-and-release choreography.');
+expect(effectCss.includes('mgw-domino-v12-stock-halo') && effectCss.includes('mgw-domino-v12-stock-particles'), 'Stock must localize its light effect around the stock rather than use a generic background show.');
+expect(effectCss.includes('mgw-domino-v12-finale-burst') && effectCss.includes('mgw-domino-v12-finale-halo') && effectCss.includes('mgw-domino-v12-finale-sparks'), 'Finale must use the new centered celebratory finish.');
+expect(effectCss.includes('mix-blend-mode:screen!important'), 'Precision light wake must keep luminous screen blending.');
 expect(effectCss.includes('@media(prefers-reduced-motion:reduce)'), 'Effect scenes must keep a stable reduced-motion fallback.');
-expect(!effectCss.includes('mgw-domino-v10-precision-glide'), 'Rejected v10 precision choreography must be removed.');
-expect(!effectCss.includes('mgw-domino-v10-stock-flight'), 'Rejected v10 stock choreography must be removed.');
-expect(!effectCss.includes('mgw-domino-v10-finale-wave'), 'Rejected v10 finale choreography must be removed.');
-expect(!effectCss.includes('transform-style:preserve-3d'), 'Premium v11 must not depend on the old staged 3D flip.');
+expect(!effectCss.includes('.mgw-domino-fx-finale .mgw-domino-fx-rail'), 'Rejected Finale bottom stripe must be absent from CSS.');
+expect(!effectCss.includes('mgw-domino-v11-magnetic-glide'), 'Superseded v11 Precision choreography must be removed.');
+expect(!effectCss.includes('mgw-domino-v11-spectral-draw'), 'Superseded v11 Stock choreography must be removed.');
+expect(!effectCss.includes('mgw-domino-v11-lux-sheen'), 'Superseded v11 Finale choreography must be removed.');
+expect(!effectCss.includes('transform-style:preserve-3d'), 'Premium v12 must not depend on staged 3D flips.');
 
 expect(selectorOwner.includes('selector.scrollLeft = left;'), 'Fresh Store game selector must center its active game instantly.');
 expect(!selectorOwner.includes("behavior:'smooth'"), 'Store selector must never visibly smooth-scroll through an intermediate position after rerender.');
@@ -68,13 +79,13 @@ expect(wrapper.includes("store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only
 expect(manifest.includes("'./assets/js/screens/store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only&review=manual-corrective-v2' => './assets/js/screens/store-screen-reversi-store-v1.js?v=2&mvp19_7=store-only&selector=instant-active-v1'"), 'Import map must cache-bust the no-jump selector corrective behind the accepted import identity.');
 
 expect(correctiveLoader.includes('store-card-fill-live-pips-v5.css?v=2&mvp19_9=domino-card-fill-live-pips-v6'), 'Accepted static pip corrective must remain active.');
-expect(effectLoader.includes('store-effects-scene-v9.css?v=3&mvp19_9=domino-premium-effects-v11'), 'Effect loader must publish premium scene v11.');
+expect(effectLoader.includes('store-effects-scene-v9.css?v=4&mvp19_9=domino-premium-effects-v12'), 'Effect loader must publish premium scene v12.');
 expect(wrapper.includes("from './store-screen-domino-store-v1.js?v=6&mvp19_9=domino-native-render-v6'"), 'Accepted Store wrapper must use the native Domino module.');
-expect(wrapper.includes("store-screen-domino-effects-v9.js?v=3&mvp19_9=domino-premium-effects-v11"), 'Accepted Store wrapper must load premium v11 effects.');
+expect(wrapper.includes("store-screen-domino-effects-v9.js?v=4&mvp19_9=domino-premium-effects-v12"), 'Accepted Store wrapper must load premium v12 effects.');
 expect(!wrapper.includes('installDominoStoreRerenderStabilityV1'), 'Accepted Store owner must not retain observer repair.');
 
 expect(profile.includes("dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=6&mvp19_9=domino-native-render-v6'"), 'Profile must reuse the exact native Store primitive.');
-expect(profile.includes('store-effects-scene-v9.css?v=3&mvp19_9=domino-premium-effects-v11'), 'Profile must share Store premium v11 effect styling.');
+expect(profile.includes('store-effects-scene-v9.css?v=4&mvp19_9=domino-premium-effects-v12'), 'Profile must share Store premium v12 effect styling.');
 expect(profile.includes('profile-domino-store-parity-v1.css?v=3&mvp19_9=domino-profile-single-back-v3'), 'Profile must load the simplified Domino tab corrective.');
 expect(profile.includes('mgw-domino-profile-tab-mark'), 'Profile must normalize the Domino tab mark every repair.');
 expect(profileCss.includes('mgw-domino-profile-tab-mark::before'), 'Profile Domino tab must use the dedicated single-back icon.');
@@ -84,15 +95,16 @@ expect(!hardRatio.includes('getBoundingClientRect'), 'Profile must not have an i
 expect(!hardRatio.includes('setTimeout'), 'Profile geometry must not depend on retry timers.');
 
 expect(manifest.includes('domino_preview=native-v10'), 'Active Store owner URL must retain the accepted native Domino preview identity.');
-expect(manifest.includes('domino_effects=premium-v11'), 'Active Store owner URL must publish premium v11 effects.');
+expect(manifest.includes('domino_effects=premium-v12'), 'Active Store owner URL must publish premium v12 effects.');
 expect(manifest.includes('selector_center=instant-v1'), 'Active Store owner URL must publish the no-jump selector corrective.');
 expect(manifest.includes('domino_base=native-render-v1'), 'Active Store graph must identify the native base-render fix.');
 expect(manifest.includes("'./assets/js/screens/store-screen-domino-store-v1.js?v=1&mvp19_9=store-profile-preview-8x5-v1' => './assets/js/screens/store-screen-domino-store-v1.js?v=6&mvp19_9=domino-native-render-v6'"), 'Import map must keep the accepted native Domino source mapping.');
 expect(manifest.includes('domino_preview=shared-store-v10'), 'Active Profile owner must retain shared Store v10 primitive identity.');
-expect(manifest.includes('domino_effects=premium-v11'), 'Active Profile owner must publish premium v11 effect parity.');
+expect(manifest.includes("'./assets/js/profile/mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1' => './assets/js/profile/mgw-profile-domino-parity.js?v=6&mvp19_9=domino-premium-effects-v12'"), 'Profile import map must publish the v12 shared effect owner.');
+expect(manifest.includes('domino_effects=premium-v12'), 'Active Profile owner must publish premium v12 effect parity.');
 expect(manifest.includes('domino_icon=single-back-v1'), 'Active Profile owner must publish the simplified Domino icon.');
 expect(manifest.includes('ux=ready-only-history-sheet'), 'Unrelated accepted Home cache marker must remain untouched.');
 const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);
-expect(launchMatch && Number(launchMatch[1]) >= 1166, 'Telegram entry must publish the premium Domino v11 graph.');
+expect(launchMatch && Number(launchMatch[1]) >= 1167, 'Telegram entry must publish the Domino v12 polish graph.');
 
-console.log('MVP-19.9 Domino premium Store/Profile visual v11 contract passed.');
+console.log('MVP-19.9 Domino premium Store/Profile visual v12 contract passed.');
