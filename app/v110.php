@@ -95,6 +95,15 @@ if (!is_file($chessCaptureParityPath)) {
 }
 $chessCaptureParityTarget = './assets/css/games/chess/capture-preview-parity-v1.css?v=2&mvp19_5=capture-store-parity-explosion-v2';
 
+$goExitFitPath = __DIR__ . '/assets/css/games/go/live-exit-fit-v1.css';
+if (!is_file($goExitFitPath)) {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World Go exit fit stylesheet is unavailable.';
+    exit;
+}
+$goExitFitTarget = './assets/css/games/go/live-exit-fit-v1.css?v=1&mvp19_8=go-exit-fit-v1';
+
 $headClose = '</head>';
 $cssAnchor = './assets/css/main.css?v=93-wallet-15-3';
 $entryScriptsAnchor = <<<'HTML'
@@ -142,10 +151,11 @@ $bootstrapTarget = $assets['bootstrap'];
 $bootstrapTag = '  <script type="module" src="' . $bootstrapTarget . '"></script>';
 $checkersTelegramHeightFitTag = '  <link rel="stylesheet" href="' . $checkersTelegramHeightFitTarget . '" />';
 $chessCaptureParityTag = '  <link rel="stylesheet" href="' . $chessCaptureParityTarget . '" />';
+$goExitFitTag = '  <link rel="stylesheet" data-mgw-go-live-exit-fit="mvp19-8-go-exit-fit-v1" href="' . $goExitFitTarget . '" />';
 
 $html = str_replace($cssAnchor, $cssTarget, $html);
 $html = str_replace('./assets/css/production-v95-consistency.css?v=95', $consistencyCssTarget, $html);
-$html = str_replace($headClose, $checkersTelegramHeightFitTag . "\n" . $chessCaptureParityTag . "\n" . $headClose, $html);
+$html = str_replace($headClose, $checkersTelegramHeightFitTag . "\n" . $chessCaptureParityTag . "\n" . $goExitFitTag . "\n" . $headClose, $html);
 $html = str_replace(
     '<p>Готовим игровую комнату</p>',
     '<p>Те самые игры. То самое чувство.</p>',
@@ -166,6 +176,7 @@ $requiredRenderedTargets = [
     'shield_king_css' => $cssTarget,
     'checkers_telegram_height_fit' => $checkersTelegramHeightFitTarget,
     'chess_capture_store_parity' => $chessCaptureParityTarget,
+    'go_exit_fit' => $goExitFitTarget,
     'chess_check_test_hook' => $imports[$chessRendererImportKey],
     'unified_ui_cache' => $imports['./assets/js/ui.js?v=89'] ?? '',
     'match_config_cache' => $imports['./assets/js/config.js?v=38'] ?? '',
@@ -238,4 +249,5 @@ header('X-MGW-Battleship-Miss-Handoff: 900ms');
 header('X-MGW-Battleship-Shot-Feedback: hit-sunk-impact-miss-static');
 header('X-MGW-Battleship-Pending-Paint: none-legacy-owner-removed');
 header('X-MGW-Chess-Check-Test: staging-any-move-v1');
+header('X-MGW-Go-Exit-Fit: short-viewport-v1');
 echo $html;

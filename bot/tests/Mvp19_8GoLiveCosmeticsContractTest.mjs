@@ -4,7 +4,9 @@ import assert from 'node:assert/strict';
 const live = fs.readFileSync('app/assets/js/games/go/renderer-cosmetics-v1.js', 'utf8');
 const css = fs.readFileSync('app/assets/css/games/go/live-cosmetics-v1.css', 'utf8');
 const correctiveCss = fs.readFileSync('app/assets/css/games/go/live-effects-corrective-v2.css', 'utf8');
+const exitFitCss = fs.readFileSync('app/assets/css/games/go/live-exit-fit-v1.css', 'utf8');
 const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
+const v110 = fs.readFileSync('app/v110.php', 'utf8');
 const launch = fs.readFileSync('bot/helpers/WebAppLaunchUrl.php', 'utf8');
 const base = fs.readFileSync('app/assets/js/games/go/renderer.js', 'utf8');
 
@@ -62,15 +64,23 @@ assert.ok(correctiveCss.includes('[data-mgw-go-territory-fx="qa"]'), 'Temporary 
 assert.ok(css.includes('content:attr(data-mgw-go-seal)'), 'Central live seal must be rendered from the MGW marker');
 assert.ok(correctiveCss.includes('@media (prefers-reduced-motion:reduce)'), 'Go live corrective effects must retain reduced-motion handling');
 
+assert.ok(exitFitCss.includes('.game-board-screen[data-game-type="go"] #leaveGame'), 'Go exit-fit must explicitly preserve the existing leave control');
+assert.ok(exitFitCss.includes('display:flex!important'), 'Go exit-fit must never hide the existing leave control');
+assert.ok(exitFitCss.includes('width:clamp(240px,calc(100dvh - 380px),320px)!important'), 'Short Go viewport must height-bound the board so the leave control stays visible');
+assert.ok(exitFitCss.includes('overflow-y:auto!important'), 'Go screen must retain vertical fallback scrolling on constrained viewports');
+assert.ok(v110.includes("$goExitFitTarget = './assets/css/games/go/live-exit-fit-v1.css?v=1&mvp19_8=go-exit-fit-v1';"), 'v110 must publish the Go exit-fit stylesheet directly');
+assert.ok(v110.includes('data-mgw-go-live-exit-fit="mvp19-8-go-exit-fit-v1"'), 'v110 must expose a unique Go exit-fit stylesheet marker');
+assert.ok(v110.includes("'go_exit_fit' => $goExitFitTarget"), 'v110 rendered-target guard must require the Go exit-fit stylesheet');
+
 assert.ok(
   manifest.includes("'./assets/js/games/go/renderer.js?v=70' => './assets/js/games/go/renderer-cosmetics-v1.js?v=2&mvp19_8=live-effects-corrective-v2&fx=placement-burst-capture-guard-territory-qa-v2'"),
-  'Active v110 import graph must route Go through the fresh corrective cache identity',
+  'Active v110 import graph must keep the accepted Go corrective renderer identity',
 );
 const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);
-assert.ok(launchMatch && Number(launchMatch[1]) >= 1141, 'Telegram launch must publish the fresh Go live corrective cache identity');
+assert.ok(launchMatch && Number(launchMatch[1]) >= 1142, 'Telegram launch must publish the fresh Go exit-button restore cache identity');
 
 assert.ok(base.includes('function shouldAnimateMove('), 'Accepted Go move animation sequencing must remain in the frozen base renderer');
 assert.ok(base.includes("onAction?.({ type:'cell', cell });"), 'Accepted Go move action owner must remain in the frozen base renderer');
 assert.ok(base.includes("onAction?.({ type:'pass' });"), 'Accepted Go pass action owner must remain in the frozen base renderer');
 
-console.log('MVP-19.8 Go Live corrective contract passed: placement burst parity, capture-only trigger, temporary territory QA preview.');
+console.log('MVP-19.8 Go Live corrective contract passed: effects preserved and short-viewport exit control restored.');
