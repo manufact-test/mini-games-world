@@ -19,7 +19,7 @@
   mask:radial-gradient(circle,transparent 0 48%,#000 51% 58%,transparent 61%)!important;
   opacity:1!important;
   transform:rotate(0) scale(1.35);
-  animation:mgw-go-v6-store-capture-corona .34s ease-in-out both!important;
+  animation:mgw-go-v6-store-capture-corona .28s ease-in-out both!important;
 }
 .go-point[data-mgw-go-fx="group-capture"].mgw-go-capture-paid-active::after{
   content:""!important;
@@ -36,10 +36,10 @@
   box-shadow:13px 0 #67efff,-13px 0 #d06dff,0 13px #7fffd4,0 -13px #fff3a0!important;
   opacity:1!important;
   transform:translate(-50%,-50%) scale(.2) rotate(0);
-  animation:mgw-go-v6-store-capture-particles .34s ease-out both!important;
+  animation:mgw-go-v6-store-capture-particles .28s ease-out both!important;
 }
 .go-point[data-mgw-go-fx="group-capture"].mgw-go-capture-paid-active .go-stone{
-  animation:mgw-go-v6-store-capture-implode .34s cubic-bezier(.18,.7,.16,1) both!important;
+  animation:mgw-go-v6-store-capture-implode .28s cubic-bezier(.18,.7,.16,1) both!important;
   animation-delay:0s!important;
 }
 .go-point[data-mgw-go-fx="group-capture"].mgw-go-capture-fallback .mgw-go-capture-ghost{
@@ -72,7 +72,7 @@
   pointer-events:none!important;
   opacity:0;
   transform:translate(-50%,-50%) scale(.18) rotate(-35deg);
-  animation:mgw-go-v6-store-territory-stamp .48s cubic-bezier(.18,.72,.2,1) calc(var(--fx-step,0) * .035s) both!important;
+  animation:mgw-go-v6-store-territory-stamp .42s cubic-bezier(.18,.72,.2,1) calc(var(--fx-step,0) * .025s) both!important;
 }
 .mgw-go-live-territory.black{
   background:rgba(73,231,255,.34)!important;
