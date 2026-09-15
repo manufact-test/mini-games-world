@@ -1,6 +1,6 @@
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
-import { dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=2&mvp19_9=domino-authentic-tiles-effects-v2';
+import { dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=5&mvp19_9=domino-deterministic-rerender-v5';
 
 const GROUP_TITLES = Object.freeze({ theme:'Столы', elements:'Костяшки', effect:'Эффекты' });
 const ITEM_ORDER = Object.freeze([
@@ -16,8 +16,9 @@ const ITEM_ORDER = Object.freeze([
   'game-domino-effect-stock-pulse',
   'game-domino-effect-chain-finale',
 ]);
-const PROFILE_API_REPAIR_HOOK = Symbol.for('mgw.profile.domino-store-parity.profile-v2.v1');
+const PROFILE_API_REPAIR_HOOK = Symbol.for('mgw.profile.domino-store-parity.profile-v2.v3');
 let initialized = false;
+let repairQueued = false;
 
 ensureDominoProfileStyles();
 installProfileApiRepairHook();
@@ -35,10 +36,7 @@ export function initProfileDominoParity(){
     const card = target.closest('[data-profile-game-cosmetic]');
     if (card instanceof HTMLElement) {
       const itemId = String(card.dataset.profileGameCosmetic || '');
-      if (dominoItemById(itemId)) {
-        scheduleDominoSheetUpgrade(itemId);
-        scheduleProfileDominoRepair();
-      }
+      if (dominoItemById(itemId)) queueMicrotask(() => upgradeDominoSheet(itemId));
       return;
     }
 
@@ -51,24 +49,26 @@ export function initProfileDominoParity(){
       } else if (panel instanceof HTMLElement) {
         panel.removeAttribute('data-mgw-domino-profile-signature');
       }
-      scheduleProfileDominoRepair();
+      queueProfileDominoRepair();
     }
   });
 
   document.addEventListener('click', event => {
     const target = event.target instanceof Element ? event.target : null;
-    if (target?.closest('#mgwGameCosmeticEquip')) scheduleProfileDominoRepair();
+    if (target?.closest('#mgwGameCosmeticEquip')) queueProfileDominoRepair();
   });
-  document.addEventListener('mgw:cosmetic-inventory-changed', scheduleProfileDominoRepair);
-  document.addEventListener('mgw:open-profile', scheduleProfileDominoRepair);
+  document.addEventListener('mgw:cosmetic-inventory-changed', queueProfileDominoRepair);
+  document.addEventListener('mgw:open-profile', queueProfileDominoRepair);
   document.addEventListener('mgw:screen-changed', event => {
-    if (event?.detail?.to === 'profile') scheduleProfileDominoRepair();
+    if (event?.detail?.to === 'profile') queueProfileDominoRepair();
   });
 }
 
 function ensureDominoProfileStyles(){
-  ensureStyle('data-mgw-domino-store', '../../css/games/domino/store-cosmetics-v1.css?v=2&mvp19_9=domino-authentic-tiles-effects-v2');
-  ensureStyle('data-mgw-profile-domino-parity', '../../css/screens/profile-domino-store-parity-v1.css?v=1&mvp19_9=domino-profile-8x5-v1');
+  ensureStyle('data-mgw-domino-store', '../../css/games/domino/store-cosmetics-v1.css?v=4&mvp19_9=domino-uniform-fullfield-v4');
+  ensureStyle('data-mgw-domino-store-card-fill-v5', '../../css/games/domino/store-card-fill-live-pips-v5.css?v=2&mvp19_9=domino-card-fill-live-pips-v6');
+  ensureStyle('data-mgw-domino-store-effects-v9', '../../css/games/domino/store-effects-scene-v9.css?v=1&mvp19_9=domino-store-effects-scene-v9');
+  ensureStyle('data-mgw-profile-domino-parity', '../../css/screens/profile-domino-store-parity-v1.css?v=2&mvp19_9=domino-profile-store-exact-v2');
 }
 
 function ensureStyle(marker, relativeHref){
@@ -90,32 +90,28 @@ function ensureStyle(marker, relativeHref){
 function installProfileApiRepairHook(){
   const current = api?.profileV2;
   if (typeof current !== 'function' || current[PROFILE_API_REPAIR_HOOK]) return;
-  const wrapped = async (...args) => {
-    try {
-      return await current.apply(api, args);
-    } finally {
-      scheduleProfileDominoRepair();
-    }
-  };
+  const wrapped = (...args) => new Promise((resolve, reject) => {
+    Promise.resolve()
+      .then(() => current.apply(api, args))
+      .then(result => {
+        resolve(result);
+        queueProfileDominoRepair();
+      }, error => {
+        reject(error);
+        queueProfileDominoRepair();
+      });
+  });
   Object.defineProperty(wrapped, PROFILE_API_REPAIR_HOOK, { value:true });
   api.profileV2 = wrapped;
 }
 
-function scheduleProfileDominoRepair(){
-  const repair = () => upgradeProfileDominoPresentation();
-  queueMicrotask(repair);
-  if (typeof globalThis.requestAnimationFrame === 'function') globalThis.requestAnimationFrame(repair);
-  globalThis.setTimeout(repair, 0);
-  globalThis.setTimeout(repair, 80);
-  globalThis.setTimeout(repair, 260);
-}
-
-function scheduleDominoSheetUpgrade(itemId){
-  const run = () => upgradeDominoSheet(itemId);
-  queueMicrotask(run);
-  if (typeof globalThis.requestAnimationFrame === 'function') globalThis.requestAnimationFrame(run);
-  globalThis.setTimeout(run, 0);
-  globalThis.setTimeout(run, 80);
+function queueProfileDominoRepair(){
+  if (repairQueued) return;
+  repairQueued = true;
+  queueMicrotask(() => {
+    repairQueued = false;
+    upgradeProfileDominoPresentation();
+  });
 }
 
 function ensureDominoTab(screen){
