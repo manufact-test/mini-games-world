@@ -1,0 +1,27 @@
+/* Go rules diagram marker alignment corrective.
+ * Keeps the accepted diagrams and moves only the forbidden/ko markers onto the
+ * exact board intersection centre.
+ */
+.go-rule-point em.forbidden,
+.go-rule-point em.ko{
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  margin:0!important;
+  transform:translate(-50%,-50%)!important;
+  transform-origin:50% 50%!important;
+  box-sizing:border-box!important;
+}
+.go-rule-point em.forbidden::after,
+.go-rule-point em.ko::after{
+  position:absolute!important;
+  inset:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  margin:0!important;
+  padding:0!important;
+  line-height:1!important;
+  text-align:center!important;
+  transform:none!important;
+}
