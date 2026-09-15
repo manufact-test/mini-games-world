@@ -1,0 +1,120 @@
+name: MVP-19.9 Domino Store effects v8
+
+on:
+  pull_request:
+    branches: [agent/mvp-13-2-staging]
+    paths:
+      - 'app/assets/css/games/domino/store-effects-smooth-v8.css'
+      - 'app/assets/js/screens/store-screen-domino-effects-v8.js'
+      - 'app/assets/js/screens/store-screen-domino-rerender-stability-v1.js'
+      - 'app/assets/js/screens/store-screen-checkers-board-source-wrapper.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - '.github/workflows/mvp19-9-domino-store-effects-v8.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp19-9-domino-store-effects-v8-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  domino-store-effects-v8:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax and current Domino contracts
+        run: |
+          set -euo pipefail
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/helpers/WebAppLaunchUrl.php
+          node --check app/assets/js/screens/store-screen-domino-effects-v8.js
+          node --check app/assets/js/screens/store-screen-domino-rerender-stability-v1.js
+          node --check app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+          php bot/tests/Mvp19_9DominoStoreProfileTest.php
+          node bot/tests/Mvp19_9DominoPreviewReadabilityContractTest.mjs
+
+      - name: Guard stable tile geometry and smooth choreography
+        shell: bash
+        run: |
+          set -euo pipefail
+          css='app/assets/css/games/domino/store-effects-smooth-v8.css'
+          loader='app/assets/js/screens/store-screen-domino-effects-v8.js'
+          stability='app/assets/js/screens/store-screen-domino-rerender-stability-v1.js'
+          wrapper='app/assets/js/screens/store-screen-checkers-board-source-wrapper.js'
+          manifest='app/runtime/client/version-manifest.php'
+
+          grep -F 'width:18%!important' "$css"
+          grep -F 'aspect-ratio:47 / 24!important' "$css"
+          grep -F '.mgw-domino-preview-slot.turn' "$css"
+          grep -F 'transform:none!important' "$css"
+          grep -F 'mgw-domino-v8-precision-flight' "$css"
+          grep -F 'mgw-domino-v8-stock-flight' "$css"
+          grep -F 'mgw-domino-v8-chain-wave' "$css"
+          grep -F 'mgw-domino-v8-chain-rail' "$css"
+          grep -F 'store-effects-smooth-v8.css?v=1&mvp19_9=domino-store-effects-smooth-v8' "$loader"
+          grep -F 'data-mgw-domino-store-effects-v7' "$loader"
+
+          grep -F 'MutationObserver' "$stability"
+          grep -F 'childList:true, subtree:true' "$stability"
+          grep -F 'dominoPreviewMarkup(layer, variant)' "$stability"
+          grep -F 'visual.classList.contains(expectedClass)' "$stability"
+          grep -F 'queueMicrotask' "$stability"
+          ! grep -Fq 'setInterval' "$stability"
+          ! grep -Fq 'setTimeout' "$stability"
+
+          grep -F "store-screen-domino-effects-v8.js?v=1&mvp19_9=domino-store-effects-smooth-v8" "$wrapper"
+          grep -F 'installDominoStoreEffectsV8();' "$wrapper"
+          grep -F "store-screen-domino-rerender-stability-v1.js?v=1&mvp19_9=domino-rerender-stability-v1" "$wrapper"
+          grep -F 'installDominoStoreRerenderStabilityV1();' "$wrapper"
+          ! grep -Fq 'installDominoStoreEffectsV7();' "$wrapper"
+          grep -F 'domino_effects=smooth-v8' "$manifest"
+          ! grep -Fq 'domino_effects=readable-v7' "$manifest"
+          php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1163) exit(1);'
+
+      - name: Guard accepted Store geometry and frozen live gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'height:100%!important' app/assets/css/games/domino/store-card-fill-live-pips-v5.css
+          grep -F 'aspect-ratio:8 / 5!important' app/assets/css/games/domino/store-card-fill-live-pips-v5.css
+          grep -F 'width:3px' app/assets/css/games/domino/store-card-fill-live-pips-v5.css
+          grep -F 'border-radius:50%' app/assets/css/games/domino/store-card-fill-live-pips-v5.css
+
+          if [ '${{ github.event_name }}' = 'pull_request' ]; then
+            base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
+            git diff --exit-code "$base" "$head" -- \
+              app/assets/js/games/domino/entry.js \
+              app/assets/js/games/domino/meta.js \
+              app/assets/js/games/domino/renderer.js \
+              app/assets/js/games/domino/rules.js \
+              app/assets/js/games/domino/chain-layout.js \
+              app/assets/css/games/domino/game.css \
+              app/assets/css/games/domino/rules.css \
+              app/assets/js/games/go \
+              app/assets/js/games/reversi \
+              app/assets/js/games/chess \
+              app/assets/js/games/checkers \
+              app/assets/js/checkers-cosmetics \
+              bot/catalog/ProductInventoryService.php
+          fi
+          git diff --check

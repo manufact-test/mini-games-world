@@ -1,0 +1,279 @@
+/* MVP-19.9 Domino Store effects v8.
+   Smooth, card-safe choreography. The accepted tile/pip primitive remains untouched:
+   every visible tile keeps one 47:24 geometry owner and all motion happens on wrappers. */
+
+/* Reset legacy effect motion without changing the accepted table/card/pip styling. */
+body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] .mgw-domino-preview-table{
+  overflow:hidden!important;
+}
+body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] .mgw-domino-preview-chain,
+body .store-v2-confirm-game .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] .mgw-domino-preview-chain{
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  top:0!important;
+  bottom:0!important;
+  width:auto!important;
+  height:auto!important;
+  display:block!important;
+  margin:0!important;
+  padding:0!important;
+}
+body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] .mgw-domino-preview-slot{
+  position:absolute!important;
+  display:block!important;
+  flex:none!important;
+  width:18%!important;
+  max-width:18%!important;
+  min-width:0!important;
+  height:auto!important;
+  aspect-ratio:47 / 24!important;
+  margin:0!important;
+  transform:none!important;
+  rotate:0deg!important;
+  scale:1!important;
+  filter:drop-shadow(0 3px 3px rgba(0,0,0,.30));
+  will-change:transform,opacity;
+}
+body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] .mgw-domino-preview-slot.turn,
+body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] .mgw-domino-preview-slot.is-double{
+  transform:none!important;
+}
+body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] .mgw-domino-preview-tile{
+  width:100%!important;
+  max-width:100%!important;
+  height:auto!important;
+  aspect-ratio:47 / 24!important;
+  transform:none!important;
+  rotate:0deg!important;
+  scale:1!important;
+  animation:none!important;
+  transform-origin:center!important;
+}
+body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] .mgw-domino-preview-half i,
+body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] .mgw-domino-preview-half i.active,
+body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] .mgw-domino-preview-half i.active::after,
+body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] .mgw-domino-stock i,
+body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] .mgw-domino-draw-ghost,
+body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] .mgw-domino-snap-marks i,
+body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] .mgw-domino-finale-bars i{
+  animation:none!important;
+}
+
+/* 01 — Precision Drop: three fixed tiles, one identical tile follows one smooth flight and locks. */
+body .mgw-domino-preview.effect-precision-drop .mgw-domino-preview-top{display:none!important;}
+body .mgw-domino-preview.effect-precision-drop .mgw-domino-preview-slot:nth-child(1){left:10%!important;top:56%!important;transform:translateY(-50%)!important;}
+body .mgw-domino-preview.effect-precision-drop .mgw-domino-preview-slot:nth-child(2){left:31%!important;top:56%!important;transform:translateY(-50%)!important;}
+body .mgw-domino-preview.effect-precision-drop .mgw-domino-preview-slot:nth-child(3){left:52%!important;top:56%!important;transform:translateY(-50%)!important;}
+body .mgw-domino-preview.effect-precision-drop .mgw-domino-preview-slot:nth-child(4){left:73%!important;top:56%!important;z-index:9;}
+body .mgw-domino-preview.effect-precision-drop .mgw-domino-preview-slot.fx-precision-target{
+  animation:mgw-domino-v8-precision-flight 3.2s cubic-bezier(.28,.72,.26,1) infinite!important;
+  transform-origin:center!important;
+}
+body .mgw-domino-preview.effect-precision-drop .mgw-domino-snap-marks{
+  position:absolute!important;
+  z-index:12!important;
+  right:5%!important;
+  top:51%!important;
+  width:10%!important;
+  height:16%!important;
+  pointer-events:none!important;
+}
+body .mgw-domino-preview.effect-precision-drop .mgw-domino-snap-marks i{
+  position:absolute!important;
+  right:0!important;
+  top:50%!important;
+  width:46%!important;
+  height:1.5px!important;
+  border-radius:1px!important;
+  background:linear-gradient(90deg,#73e8c8,#d7fff4)!important;
+  box-shadow:0 0 4px rgba(91,232,196,.65)!important;
+  opacity:0;
+  transform-origin:right center!important;
+  animation:mgw-domino-v8-snap-line 3.2s ease-out infinite!important;
+}
+body .mgw-domino-preview.effect-precision-drop .mgw-domino-snap-marks i:nth-child(1){transform:translateY(-5px) rotate(-22deg)!important;}
+body .mgw-domino-preview.effect-precision-drop .mgw-domino-snap-marks i:nth-child(2){transform:translateY(0) rotate(0)!important;}
+body .mgw-domino-preview.effect-precision-drop .mgw-domino-snap-marks i:nth-child(3){transform:translateY(5px) rotate(22deg)!important;}
+
+/* 02 — Stock Pull: compact stock, one wrapper travels continuously, flips once, then lands. */
+body .mgw-domino-preview.effect-stock-pulse .mgw-domino-preview-top{
+  position:absolute!important;
+  display:block!important;
+  left:8%!important;
+  right:auto!important;
+  top:10%!important;
+  width:24%!important;
+  height:auto!important;
+}
+body .mgw-domino-preview.effect-stock-pulse .mgw-domino-stock.fx-stock{
+  width:100%!important;
+  max-width:none!important;
+  aspect-ratio:47 / 24!important;
+}
+body .mgw-domino-preview.effect-stock-pulse .mgw-domino-stock.fx-stock i:nth-child(1){transform:translate(0,0) rotate(-2deg)!important;}
+body .mgw-domino-preview.effect-stock-pulse .mgw-domino-stock.fx-stock i:nth-child(2){transform:translate(12%,-9%) rotate(1deg)!important;}
+body .mgw-domino-preview.effect-stock-pulse .mgw-domino-stock.fx-stock i:nth-child(3){transform:translate(24%,-18%) rotate(3deg)!important;}
+body .mgw-domino-preview.effect-stock-pulse .mgw-domino-preview-slot:nth-child(1){left:34%!important;top:66%!important;transform:translateY(-50%)!important;}
+body .mgw-domino-preview.effect-stock-pulse .mgw-domino-preview-slot:nth-child(n+2){display:none!important;}
+body .mgw-domino-preview.effect-stock-pulse .mgw-domino-draw-ghost{
+  position:absolute!important;
+  z-index:13!important;
+  left:61%!important;
+  top:57%!important;
+  width:18%!important;
+  max-width:18%!important;
+  height:auto!important;
+  aspect-ratio:47 / 24!important;
+  opacity:0;
+  filter:drop-shadow(0 4px 5px rgba(0,0,0,.38));
+  transform-origin:center!important;
+  animation:mgw-domino-v8-stock-flight 3.4s cubic-bezier(.32,.68,.26,1) infinite!important;
+  will-change:transform,opacity;
+}
+body .mgw-domino-preview.effect-stock-pulse .mgw-domino-draw-ghost .mgw-domino-preview-tile{
+  width:100%!important;
+  height:auto!important;
+  aspect-ratio:47 / 24!important;
+  opacity:0;
+  animation:mgw-domino-v8-stock-face 3.4s ease-in-out infinite!important;
+}
+body .mgw-domino-preview.effect-stock-pulse .mgw-domino-draw-ghost::before{
+  content:"";
+  position:absolute!important;
+  z-index:4!important;
+  inset:0!important;
+  border:1px solid rgba(255,255,255,.24)!important;
+  border-radius:3px!important;
+  background:repeating-linear-gradient(135deg,#2b3850 0 4px,#111a2b 4px 8px)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)!important;
+  opacity:1;
+  animation:mgw-domino-v8-stock-back 3.4s ease-in-out infinite!important;
+  pointer-events:none!important;
+}
+body .mgw-domino-preview.effect-stock-pulse .mgw-domino-draw-ghost::after{
+  content:"";
+  position:absolute!important;
+  z-index:5!important;
+  left:50%!important;
+  top:0!important;
+  bottom:0!important;
+  width:1px!important;
+  background:rgba(255,255,255,.20)!important;
+  transform:translateX(-.5px)!important;
+  opacity:1;
+  animation:mgw-domino-v8-stock-back 3.4s ease-in-out infinite!important;
+  pointer-events:none!important;
+}
+
+/* 03 — Chain Finale: four identical horizontal tiles, one continuous travelling reaction. */
+body .mgw-domino-preview.effect-chain-finale .mgw-domino-preview-top{display:none!important;}
+body .mgw-domino-preview.effect-chain-finale .mgw-domino-preview-slot:nth-child(1){left:10%!important;top:55%!important;}
+body .mgw-domino-preview.effect-chain-finale .mgw-domino-preview-slot:nth-child(2){left:31%!important;top:55%!important;}
+body .mgw-domino-preview.effect-chain-finale .mgw-domino-preview-slot:nth-child(3){left:52%!important;top:55%!important;}
+body .mgw-domino-preview.effect-chain-finale .mgw-domino-preview-slot:nth-child(4){left:73%!important;top:55%!important;}
+body .mgw-domino-preview.effect-chain-finale .mgw-domino-preview-slot.fx-finale{
+  animation:mgw-domino-v8-chain-wave 2.85s cubic-bezier(.42,0,.22,1) infinite!important;
+  animation-delay:calc(var(--fx-step) * .14s)!important;
+  transform-origin:center bottom!important;
+}
+body .mgw-domino-preview.effect-chain-finale .mgw-domino-finale-bars{
+  position:absolute!important;
+  z-index:4!important;
+  left:10%!important;
+  right:9%!important;
+  bottom:21%!important;
+  height:2px!important;
+  overflow:hidden!important;
+  display:block!important;
+  border-radius:2px!important;
+  background:rgba(255,181,83,.10)!important;
+}
+body .mgw-domino-preview.effect-chain-finale .mgw-domino-finale-bars i{display:none!important;}
+body .mgw-domino-preview.effect-chain-finale .mgw-domino-finale-bars::after{
+  content:"";
+  position:absolute!important;
+  left:0!important;
+  top:0!important;
+  width:24%!important;
+  height:100%!important;
+  border-radius:2px!important;
+  background:linear-gradient(90deg,rgba(255,165,66,0),#ffb45a 48%,#ffe0a0 70%,rgba(255,224,160,0))!important;
+  box-shadow:0 0 5px rgba(255,178,82,.52)!important;
+  transform:translateX(-115%);
+  animation:mgw-domino-v8-chain-rail 2.85s ease-in-out infinite!important;
+}
+
+@keyframes mgw-domino-v8-precision-flight{
+  0%{opacity:0;transform:translate3d(-72%,-340%,0) rotate(-10deg) scale(.96);}
+  7%{opacity:1;transform:translate3d(-70%,-330%,0) rotate(-10deg) scale(.96);}
+  28%{opacity:1;transform:translate3d(-50%,-235%,0) rotate(-7deg) scale(.98);}
+  49%{opacity:1;transform:translate3d(-25%,-135%,0) rotate(-4deg) scale(1);}
+  66%{opacity:1;transform:translate3d(-6%,-68%,0) rotate(-1deg) scale(1.01);}
+  73%{opacity:1;transform:translate3d(2%,-47%,0) rotate(.6deg) scale(1.015);}
+  79%,91%{opacity:1;transform:translate3d(0,-50%,0) rotate(0) scale(1);}
+  100%{opacity:0;transform:translate3d(0,-50%,0) rotate(0) scale(1);}
+}
+@keyframes mgw-domino-v8-snap-line{
+  0%,70%{opacity:0;}
+  76%{opacity:.95;}
+  84%,100%{opacity:0;}
+}
+
+@keyframes mgw-domino-v8-stock-flight{
+  0%{opacity:0;transform:translate3d(-255%,-225%,0) rotate(-8deg) scale(.90,1);}
+  8%{opacity:1;transform:translate3d(-250%,-220%,0) rotate(-8deg) scale(.90,1);}
+  30%{opacity:1;transform:translate3d(-180%,-165%,0) rotate(-5deg) scale(.95,1);}
+  48%{opacity:1;transform:translate3d(-110%,-105%,0) rotate(-2deg) scale(.55,1);}
+  55%{opacity:1;transform:translate3d(-82%,-78%,0) rotate(0deg) scale(.18,1);}
+  62%{opacity:1;transform:translate3d(-58%,-56%,0) rotate(1deg) scale(.55,1);}
+  78%{opacity:1;transform:translate3d(-14%,-16%,0) rotate(.5deg) scale(.96,1);}
+  84%,93%{opacity:1;transform:translate3d(0,0,0) rotate(0deg) scale(1,1);}
+  100%{opacity:0;transform:translate3d(0,0,0) rotate(0deg) scale(1,1);}
+}
+@keyframes mgw-domino-v8-stock-back{
+  0%,48%{opacity:1;}
+  55%{opacity:.45;}
+  61%,100%{opacity:0;}
+}
+@keyframes mgw-domino-v8-stock-face{
+  0%,49%{opacity:0;}
+  56%{opacity:.45;}
+  62%,94%{opacity:1;}
+  100%{opacity:0;}
+}
+
+@keyframes mgw-domino-v8-chain-wave{
+  0%,16%{transform:translate3d(0,-50%,0) rotate(0deg);filter:drop-shadow(0 3px 3px rgba(0,0,0,.30));}
+  27%{transform:translate3d(0,-66%,0) rotate(-2deg);filter:drop-shadow(2px 6px 5px rgba(0,0,0,.34));}
+  38%{transform:translate3d(0,-47%,0) rotate(1deg);filter:drop-shadow(0 2px 2px rgba(0,0,0,.34));}
+  50%,100%{transform:translate3d(0,-50%,0) rotate(0deg);filter:drop-shadow(0 3px 3px rgba(0,0,0,.30));}
+}
+@keyframes mgw-domino-v8-chain-rail{
+  0%{opacity:0;transform:translateX(-115%);}
+  8%{opacity:.9;}
+  82%{opacity:.9;}
+  94%,100%{opacity:0;transform:translateX(420%);}
+}
+
+@media (max-width:390px){
+  body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] .mgw-domino-preview-slot,
+  body .mgw-domino-preview.effect-stock-pulse .mgw-domino-draw-ghost{
+    width:17.5%!important;
+    max-width:17.5%!important;
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] *,
+  body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] *::before,
+  body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"] *::after{
+    animation:none!important;
+  }
+  body .mgw-domino-preview.effect-precision-drop .mgw-domino-preview-slot.fx-precision-target{opacity:1!important;transform:translate3d(0,-50%,0)!important;}
+  body .mgw-domino-preview.effect-stock-pulse .mgw-domino-draw-ghost{opacity:1!important;transform:none!important;}
+  body .mgw-domino-preview.effect-stock-pulse .mgw-domino-draw-ghost::before,
+  body .mgw-domino-preview.effect-stock-pulse .mgw-domino-draw-ghost::after{opacity:0!important;}
+  body .mgw-domino-preview.effect-stock-pulse .mgw-domino-draw-ghost .mgw-domino-preview-tile{opacity:1!important;}
+  body .mgw-domino-preview.effect-chain-finale .mgw-domino-preview-slot.fx-finale{transform:translate3d(0,-50%,0)!important;}
+}
