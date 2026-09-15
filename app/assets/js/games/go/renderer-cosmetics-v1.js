@@ -63,7 +63,7 @@ function decorateLiveGo({ game, me, container, size, removedCells }){
   container.dataset.mgwGoLiveCosmetics = '1';
   container.dataset.goTheme = boardVariant(gameId, presentationOwner);
   container.dataset.goStones = stonesVariant(gameId, presentationOwner);
-  clearPaidEffectMarks(container);
+  clearTransientTerritoryMarks(container);
 
   const mover = moverPlayer(game, players);
   const effectId = effectForPlayer(gameId, mover);
@@ -156,7 +156,16 @@ function applyGroupCaptureEffect({ game, mover, container, captureCells, removed
     return;
   }
 
-  if (scheduledCaptureFx.has(moveKey)) return;
+  if (scheduledCaptureFx.has(moveKey)) {
+    captureCells.forEach(cell => {
+      const point = pointElement(container, cell);
+      if (point instanceof HTMLElement && point.classList.contains('capture-out')) {
+        point.classList.add('mgw-go-capture-paid-active');
+      }
+    });
+    return;
+  }
+
   scheduledCaptureFx.add(moveKey);
   const captureStart = 300;
   captureCells.forEach((cell, index) => {
@@ -166,6 +175,7 @@ function applyGroupCaptureEffect({ game, mover, container, captureCells, removed
       livePoint.classList.add('mgw-go-capture-paid-active');
     }, captureStart + Math.min(index, 10) * 38);
   });
+  globalThis.setTimeout(() => scheduledCaptureFx.delete(moveKey), 1800);
 }
 
 function applyTerritoryQaPreview({ board, container, size, placedCell, side }){
@@ -223,14 +233,7 @@ function nearbyTerritoryPreviewCells(container, size, placedCell, tone){
   return cells;
 }
 
-function clearPaidEffectMarks(container){
-  container.querySelectorAll('[data-mgw-go-fx]').forEach(element => {
-    if (!(element instanceof HTMLElement)) return;
-    delete element.dataset.mgwGoFx;
-    element.style.removeProperty('--mgw-go-fx-step');
-    element.classList.remove('mgw-go-capture-fallback','mgw-go-capture-paid-active');
-  });
-  container.querySelectorAll('.mgw-go-capture-ghost').forEach(element => element.remove());
+function clearTransientTerritoryMarks(container){
   container.querySelectorAll('[data-mgw-go-territory-fx]').forEach(element => {
     if (!(element instanceof HTMLElement)) return;
     delete element.dataset.mgwGoTerritoryFx;
