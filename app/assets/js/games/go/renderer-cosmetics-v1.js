@@ -248,6 +248,12 @@ function ensureLiveCosmeticStyles(){
     markerValue:'mvp19-8-live-effects-corrective-v2',
     href:new URL('../../../css/games/go/live-effects-corrective-v2.css?v=2&mvp19_8=live-effects-corrective-v2', import.meta.url).href,
   });
+  ensureStylesheet({
+    selector:'link[data-mgw-go-live-exit-fit]',
+    marker:'mgwGoLiveExitFit',
+    markerValue:'mvp19-8-go-exit-fit-v1',
+    href:new URL('../../../css/games/go/live-exit-fit-v1.css?v=1&mvp19_8=go-exit-fit-v1', import.meta.url).href,
+  });
 }
 
 function ensureStylesheet({ selector, marker, markerValue, href }){
