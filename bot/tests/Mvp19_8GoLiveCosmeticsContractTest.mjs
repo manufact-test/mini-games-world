@@ -54,7 +54,10 @@ assert.ok(correctiveV3Css.includes('.go-board[data-mgw-go-territory-qa="placemen
 assert.ok(correctiveV3Css.includes('content:none!important'), 'Territory corrective must remove the giant central MG/MGW seal');
 assert.ok(correctiveV3Css.includes('mgw-go-live-territory-lock-v3'), 'Temporary territory squares must reconstruct in place instead of travelling across the board');
 assert.ok(correctiveV3Css.includes('mgw-go-live-territory-lock-marker-v3'), 'Canonical final territory markers must also resolve in place');
-assert.ok(!correctiveV3Css.includes('translate(-50%,-50%) scale(1.78)'), 'Territory corrective must not reuse a travelling marker transform');
+const territoryQaKeyframes = correctiveV3Css.match(/@keyframes mgw-go-live-territory-lock-v3\{([\s\S]*?)\n\}/);
+const territoryFinalKeyframes = correctiveV3Css.match(/@keyframes mgw-go-live-territory-lock-marker-v3\{([\s\S]*?)\n\}/);
+assert.ok(territoryQaKeyframes && !territoryQaKeyframes[1].includes('translate('), 'Temporary territory squares must scale in place and never travel');
+assert.ok(territoryFinalKeyframes && !territoryFinalKeyframes[1].includes('translate('), 'Canonical territory markers must scale in place and never travel');
 
 /* Go must use the same viewport ownership strategy already accepted for Checkers. */
 for (const rule of [
