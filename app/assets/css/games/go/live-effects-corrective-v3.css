@@ -1,0 +1,92 @@
+/* MVP-19.8 Go live effects corrective v3.
+ * Manual review corrections only: no gameplay ownership.
+ */
+
+/* Effect 1: keep the burst readable for longer and visibly outside the stone. */
+.go-point[data-mgw-go-fx="placement"]::after{
+  box-shadow:
+    32px 0 #67efff,
+    -32px 0 #d06dff,
+    0 32px #7fffd4,
+    0 -32px #fff3a0,
+    23px 23px #8beaff,
+    -23px -23px #d98cff,
+    23px -23px #ffd978,
+    -23px 23px #ffffff!important;
+  animation:mgw-go-live-placement-burst-v3 1.04s cubic-bezier(.16,.76,.2,1) .1s both!important;
+}
+
+/* Effect 3 QA: remove the random temporary territory stamps from v2. */
+.go-board[data-mgw-go-territory-qa="placement"] .go-point[data-mgw-go-territory-fx="qa"]::after{
+  content:none!important;
+  display:none!important;
+  animation:none!important;
+}
+
+/* No giant MG/MGW seal. Keep only the board-wide bloom. */
+.go-board[data-mgw-go-fx="territory-finish"]::after,
+.go-board[data-mgw-go-territory-qa="placement"]::after{
+  content:none!important;
+  display:none!important;
+  animation:none!important;
+}
+
+/* The temporary QA preview now reconstructs squares exactly on occupied Go
+ * intersections. The square never travels across the board: it only scales and
+ * fades in place around the real stone position. */
+.go-board[data-mgw-go-territory-qa="placement"] .go-stone::before{
+  content:""!important;
+  position:absolute!important;
+  inset:-13%!important;
+  z-index:7!important;
+  border-radius:23%!important;
+  background:transparent!important;
+  pointer-events:none!important;
+  opacity:0;
+  transform:scale(.28)!important;
+  animation:mgw-go-live-territory-lock-v3 .82s cubic-bezier(.18,.82,.2,1.08) both!important;
+}
+.go-board[data-mgw-go-territory-qa="placement"] .go-stone.black::before{
+  border:2px solid #54ecff!important;
+  box-shadow:0 0 8px #2ce5ff88,0 0 18px #2ce5ff44!important;
+}
+.go-board[data-mgw-go-territory-qa="placement"] .go-stone.white::before{
+  border:2px solid #d66cff!important;
+  box-shadow:0 0 8px #c45dff88,0 0 18px #c45dff44!important;
+}
+.go-board[data-mgw-go-territory-qa="placement"] .go-point:nth-of-type(3n+2) .go-stone::before{animation-delay:.07s!important}
+.go-board[data-mgw-go-territory-qa="placement"] .go-point:nth-of-type(3n) .go-stone::before{animation-delay:.14s!important}
+
+/* Canonical finished-game territory markers also rebuild in place on the exact
+ * calculated intersections; no rotation or travelling motion. */
+.go-point[data-mgw-go-territory-fx="1"] .go-territory-marker{
+  transform:none!important;
+  animation:mgw-go-live-territory-lock-marker-v3 .68s cubic-bezier(.18,.82,.2,1.08) calc(var(--mgw-go-territory-step,0) * .04s + .08s) both!important;
+}
+
+@keyframes mgw-go-live-placement-burst-v3{
+  0%,10%{opacity:0;transform:translate(-50%,-50%) scale(.1) rotate(-8deg)}
+  30%{opacity:1}
+  56%{opacity:.96;transform:translate(-50%,-50%) scale(1.08) rotate(12deg)}
+  78%{opacity:.56;transform:translate(-50%,-50%) scale(1.5) rotate(24deg)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.78) rotate(34deg)}
+}
+@keyframes mgw-go-live-territory-lock-v3{
+  0%{opacity:0;transform:scale(.28)}
+  56%{opacity:1;transform:scale(1.12)}
+  76%{opacity:1;transform:scale(.96)}
+  100%{opacity:.9;transform:scale(1)}
+}
+@keyframes mgw-go-live-territory-lock-marker-v3{
+  0%{opacity:0;transform:scale(.24)}
+  58%{opacity:1;transform:scale(1.16)}
+  78%{opacity:1;transform:scale(.96)}
+  100%{opacity:1;transform:scale(1)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .go-point[data-mgw-go-fx="placement"]::after,
+  .go-board[data-mgw-go-territory-qa="placement"] .go-stone::before,
+  .go-point[data-mgw-go-territory-fx="1"] .go-territory-marker{animation:none!important}
+  .go-board[data-mgw-go-territory-qa="placement"] .go-stone::before{opacity:.9!important;transform:scale(1)!important}
+}
