@@ -76,7 +76,7 @@ $assertSame(false, $snapshot['purchase_rules']['auto_equip'] ?? true, 'Domino pu
 
 $effectQuote = $storeService->quote($mgwId, 'domino-effect-precision-drop');
 $effectPurchase = $storeService->fulfill($mgwId, 'mgw:' . $mgwId, 'legacy-domino-user', [
-    'request_token'=>'store:mvp19-9-domino-effect-v13-0001',
+    'request_token'=>'store:mvp19-9-domino-effect-v14-0001',
     'offer_id'=>'domino-effect-precision-drop',
     'price_coins'=>$effectQuote['price_coins'],
     'item_ids'=>$effectQuote['item_ids'],
@@ -101,27 +101,32 @@ $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
 
 $activeStore = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $activeProfile = (string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? '');
+$baseStoreTarget = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog'] ?? '');
 $dominoSource = (string)($manifest['imports']['./assets/js/screens/store-screen-domino-store-v1.js?v=1&mvp19_9=store-profile-preview-8x5-v1'] ?? '');
 $dominoProfile = (string)($manifest['imports']['./assets/js/profile/mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1'] ?? '');
 
 $assertTrue(str_contains($baseStore, "if (gameType === 'domino')") && str_contains($baseStore, 'dominoPreviewMarkup(safeLayer, safeVariant)'), 'Base Store must keep native Domino rendering');
-$assertTrue(str_contains($storeModule, 'native:v7') && str_contains($storeModule, 'mgw-domino-v13-impact') && str_contains($storeModule, 'mgw-domino-v13-draw') && str_contains($storeModule, 'mgw-domino-v13-cascade'), 'Store must publish the three v13 scenes');
-$assertTrue(str_contains($storeModule, 'Костяшка точно защёлкивается в цепь') && str_contains($storeModule, 'переворачивается лицом вверх') && str_contains($storeModule, 'домино-каскадом'), 'Effect copy must describe visible player-facing behavior');
-$assertTrue(!str_contains($storeModule, 'mgw-domino-fx-trail') && !str_contains($storeModule, 'mgw-domino-fx-burst') && !str_contains($storeModule, 'mgw-domino-fx-halo'), 'Rejected v12 effect markup must be removed');
-$assertTrue(str_contains($effectCss, '.mgw-domino-fx-stage') && str_contains($effectCss, 'aspect-ratio:8 / 5!important'), 'Cards and purchase sheets must share one fixed 8:5 effect stage');
-$assertTrue(str_contains($effectCss, 'mgw-domino-v13-impact-flight') && str_contains($effectCss, 'mgw-domino-v13-draw-flight') && str_contains($effectCss, 'mgw-domino-v13-cascade-tile'), 'v13 CSS must contain three distinct motion systems');
-$assertTrue(!str_contains($effectCss, 'mgw-domino-v12-') && !str_contains($effectCss, 'repeating-conic-gradient') && !str_contains($effectCss, 'mix-blend-mode:screen'), 'Rejected v12/rainbow/light-show language must be absent');
-$assertTrue(str_contains($storeOwner, "store-screen-domino-store-v1.js?v=7&mvp19_9=domino-native-render-v7") && str_contains($storeOwner, "store-screen-domino-effects-v9.js?v=5&mvp19_9=domino-premium-effects-v13"), 'Store owner must wire native v7 and premium v13');
+$assertTrue(str_contains($baseStore, 'store-screen-domino-store-v1.js?v=8') && str_contains($baseStore, 'Яркий акцент в момент точного хода') && str_contains($baseStore, 'Эффектный выход костяшки из запаса') && str_contains($baseStore, 'Финал с каскадом падающих костяшек'), 'Base Store must own the v14 source identity and short player-facing copy');
+$assertTrue(str_contains($storeModule, 'native:v8') && str_contains($storeModule, 'data-mgw-domino-fx-v14') && str_contains($storeModule, 'sceneReady'), 'Store must publish an inner v14 scene signature and replace stale scene markup');
+$assertTrue(str_contains($storeModule, 'ensureEffectStyles();') && str_contains($storeModule, 'domino-premium-effects-v14-visible'), 'Domino scene markup owner must load its own effect stylesheet');
+$assertTrue(str_contains($storeModule, 'mgw-domino-v13-impact') && str_contains($storeModule, 'mgw-domino-v13-draw') && str_contains($storeModule, 'mgw-domino-v13-cascade'), 'v14 visibility fix must retain the three v13 concepts');
+$assertTrue(!str_contains($storeModule, 'mgw-domino-fx-trail') && !str_contains($storeModule, 'mgw-domino-fx-burst') && !str_contains($storeModule, 'mgw-domino-fx-halo'), 'Rejected v12 effect markup must remain removed');
+$assertTrue(str_contains($effectCss, '[data-cosmetic-layer="effect"]') && str_contains($effectCss, 'aspect-ratio:8 / 5!important'), 'Effect cards and purchase sheets must share one 8:5 surface');
+$assertTrue(str_contains($effectCss, '.mgw-domino-fx-stage') && str_contains($effectCss, 'inset:0!important') && str_contains($effectCss, 'height:100%!important'), 'v14 scene stage must have explicit non-zero WebView geometry');
+$assertTrue(str_contains($effectCss, 'mgw-domino-v13-impact-flight') && str_contains($effectCss, 'mgw-domino-v13-draw-flight') && str_contains($effectCss, 'mgw-domino-v13-cascade-tile'), 'v14 must retain three distinct motion systems');
+$assertTrue(!str_contains($effectCss, 'mgw-domino-v12-') && !str_contains($effectCss, 'repeating-conic-gradient') && !str_contains($effectCss, 'mix-blend-mode:screen'), 'Rejected v12/rainbow/light-show language must remain absent');
+$assertTrue(str_contains($storeOwner, "store-screen-domino-store-v1.js?v=8&mvp19_9=domino-native-render-v8") && str_contains($storeOwner, "store-screen-domino-effects-v9.js?v=6&mvp19_9=domino-premium-effects-v14-visible"), 'Store owner must wire native v8 and visible v14 effects');
 $assertTrue(str_contains($selectorOwner, 'selector.scrollLeft = left;') && !str_contains($selectorOwner, "behavior:'smooth'"), 'Accepted no-jump Store selector must remain intact');
-$assertTrue(str_contains($profileModule, "dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=7&mvp19_9=domino-native-render-v7'") && str_contains($profileModule, 'store-effects-scene-v9.css?v=5&mvp19_9=domino-premium-effects-v13'), 'Profile must reuse the exact Store v13 source and CSS');
+$assertTrue(str_contains($profileModule, "dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=8&mvp19_9=domino-native-render-v8'") && str_contains($profileModule, 'store-effects-scene-v9.css?v=6&mvp19_9=domino-premium-effects-v14-visible'), 'Profile must reuse the exact Store v14 source and CSS');
 $assertTrue(!str_contains($profileHardRatio, 'getBoundingClientRect') && !str_contains($profileHardRatio, 'setTimeout'), 'Profile must remain free of imperative geometry retries');
 $assertTrue(str_contains($storeCss, 'aspect-ratio:8 / 5!important') && str_contains($cardCss, 'width:3px!important'), 'Accepted static Domino geometry/pips must remain frozen');
-$assertTrue(str_contains($activeStore, 'domino_preview=native-v11') && str_contains($activeStore, 'domino_effects=premium-v13'), 'Active Store graph must publish v13');
-$assertTrue(str_contains($activeProfile, 'domino_preview=shared-store-v11') && str_contains($activeProfile, 'domino_effects=premium-v13'), 'Active Profile graph must publish v13 parity');
-$assertTrue(str_contains($dominoSource, 'store-screen-domino-store-v1.js?v=7') && str_contains($dominoProfile, 'mgw-profile-domino-parity.js?v=7'), 'Import map must cache-bust Store and Profile v13 sources');
+$assertTrue(str_contains($activeStore, 'domino_effects=premium-v14-visible') && str_contains($activeStore, 'domino_base=native-render-v2'), 'Active Store graph must publish visible v14 and the cache-safe native base');
+$assertTrue(str_contains($baseStoreTarget, 'store-screen.js?v=48'), 'Base Store target must be cache-busted so silent refresh cannot restore stale markup/copy');
+$assertTrue(str_contains($activeProfile, 'domino_effects=premium-v14-visible'), 'Active Profile graph must publish visible v14 parity');
+$assertTrue(str_contains($dominoSource, 'store-screen-domino-store-v1.js?v=8') && str_contains($dominoProfile, 'mgw-profile-domino-parity.js?v=8'), 'Import map must cache-bust Store and Profile v14 sources');
 $launchMatch = [];
-$assertTrue(preg_match('~/app/v110\.php\?v=(\d+)~', $launch, $launchMatch) === 1 && (int)$launchMatch[1] >= 1168, 'Telegram entry must publish the v13 graph');
+$assertTrue(preg_match('~/app/v110\.php\?v=(\d+)~', $launch, $launchMatch) === 1 && (int)$launchMatch[1] >= 1169, 'Telegram entry must publish the visible v14 graph');
 
 $assertTrue(!str_contains($storeModule, 'renderDominoSurface(') && !str_contains($profileModule, 'renderDominoSurface('), 'Store/Profile work must not wire live Domino before preview acceptance');
 
-echo "MVP-19.9 Domino Store/Profile v13 redesign contract passed ({$assertions} assertions).\n";
+echo "MVP-19.9 Domino Store/Profile visible v14 contract passed ({$assertions} assertions).\n";

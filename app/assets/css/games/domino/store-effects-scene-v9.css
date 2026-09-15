@@ -1,7 +1,5 @@
-/* MVP-19.9 Domino premium effect previews v13.
-   Full redesign after manual rejection of v12.
-   One fixed 8:5 stage is shared by Store cards, purchase sheets and Profile so motion, color and geometry stay identical.
-   Three concepts are intentionally unrelated: impact snap, stock draw/reveal, and a real domino cascade finale. */
+/* MVP-19.9 Domino premium effect previews v14 visibility corrective.
+   The v13 concepts stay intact. The fix makes the scene itself the authoritative 8:5 surface in Store cards, purchase sheets and Profile, avoiding the zero-height / stale-card geometry seen in Telegram WebView. */
 
 body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*="effect-"]{
   background:#07110f!important;
@@ -12,24 +10,36 @@ body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview[class*=
   background:linear-gradient(145deg,#17372b,#091814 72%)!important;
   box-shadow:inset 0 0 30px rgba(0,0,0,.30)!important;
 }
+
+/* Effect cards must use the same 8:5 surface as the purchase sheet instead of inheriting
+   the tall mobile static-card fill rule. This is the single geometry owner for effects. */
+body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]{
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  aspect-ratio:8 / 5!important;
+  align-self:center!important;
+}
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] > .mgw-domino-preview,
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] > .mgw-domino-preview > .mgw-domino-preview-table{
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+}
 body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-fx-stage{
   position:absolute!important;
   z-index:6!important;
-  left:0!important;
-  top:50%!important;
+  inset:0!important;
   width:100%!important;
-  height:auto!important;
-  aspect-ratio:8 / 5!important;
-  transform:translateY(-50%)!important;
+  height:100%!important;
+  max-width:none!important;
+  aspect-ratio:auto!important;
+  transform:none!important;
   transform-origin:center!important;
   display:block!important;
   overflow:hidden!important;
   pointer-events:none!important;
   box-sizing:border-box!important;
-}
-body .store-v2-confirm-game .store-v2-game-preview[data-game-type="domino"] .mgw-domino-fx-stage{
-  width:100%!important;
-  max-width:100%!important;
 }
 
 /* Shared clean Domino face for effect previews: one centered pip per half, no tiny dot clutter. */
@@ -75,8 +85,7 @@ body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-v13-draw-piece 
     radial-gradient(circle at 75% 50%,#181b20 0 2.25px,transparent 2.65px)!important;
 }
 
-/* EFFECT 1 — IMPACT SNAP.
-   One tile makes a single uninterrupted approach. Nothing flashes until contact; then one compact shock ring and three impact sparks fire from the joint. */
+/* EFFECT 1 — IMPACT SNAP. */
 body .mgw-domino-preview.effect-precision-drop .mgw-domino-preview-table{
   background:
     radial-gradient(circle at 65% 61%,rgba(97,228,181,.09),transparent 28%),
@@ -131,8 +140,7 @@ body .mgw-domino-v13-impact .mgw-domino-v13-impact-sparks > i:nth-child(1){trans
 body .mgw-domino-v13-impact .mgw-domino-v13-impact-sparks > i:nth-child(2){transform:rotate(0deg)!important}
 body .mgw-domino-v13-impact .mgw-domino-v13-impact-sparks > i:nth-child(3){transform:rotate(48deg)!important}
 
-/* EFFECT 2 — STOCK DRAW / REVEAL.
-   A face-down tile physically leaves the stock, flips through its thin edge and lands face-up. No impact ring and no generic ambient light language. */
+/* EFFECT 2 — STOCK DRAW / REVEAL. */
 body .mgw-domino-preview.effect-stock-pulse .mgw-domino-preview-table{
   background:
     radial-gradient(circle at 19% 28%,rgba(96,163,190,.10),transparent 24%),
@@ -214,8 +222,7 @@ body .mgw-domino-v13-draw .mgw-domino-v13-draw-shadow{
   animation:mgw-domino-v13-draw-shadow 3.25s ease-out infinite!important;
 }
 
-/* EFFECT 3 — DOMINO CASCADE FINALE.
-   The expensive effect is unmistakably Domino: five upright tiles topple one after another, then a restrained warm dust puff marks the finish. */
+/* EFFECT 3 — DOMINO CASCADE FINALE. */
 body .mgw-domino-preview.effect-chain-finale .mgw-domino-preview-table{
   background:
     radial-gradient(ellipse at 52% 79%,rgba(209,156,73,.10),transparent 38%),
@@ -302,10 +309,10 @@ body .mgw-domino-v13-cascade .mgw-domino-v13-finish-dust{
   84%,100%{opacity:0;transform:translate(-50%,-50%) scale(1.46)}
 }
 @keyframes mgw-domino-v13-impact-spark{
-  0%,62%{opacity:0;translate:0 0}
-  66%{opacity:1;translate:0 0}
-  76%{opacity:0;translate:35% 0}
-  100%{opacity:0;translate:35% 0}
+  0%,62%{opacity:0;transform:translateX(0)}
+  66%{opacity:1;transform:translateX(0)}
+  76%{opacity:0;transform:translateX(35%)}
+  100%{opacity:0;transform:translateX(35%)}
 }
 
 @keyframes mgw-domino-v13-draw-flight{
