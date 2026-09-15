@@ -8,9 +8,11 @@ import {
   upgradeDominoStorePresentation,
 } from './store-screen-domino-store-v1.js?v=1&mvp19_9=store-profile-preview-8x5-v1';
 
+ensureDominoScaleStyles();
 installDominoStorePresentation();
 
 export function initStoreScreen(){
+  ensureDominoScaleStyles();
   installDominoStorePresentation();
   const result = initAcceptedStoreScreen();
   upgradeDominoStorePresentation();
@@ -18,6 +20,7 @@ export function initStoreScreen(){
 }
 
 export async function openStoreTab(){
+  ensureDominoScaleStyles();
   installDominoStorePresentation();
   const result = await openAcceptedStoreTab();
   upgradeDominoStorePresentation();
@@ -25,8 +28,24 @@ export async function openStoreTab(){
 }
 
 export async function openStoreSheet(){
+  ensureDominoScaleStyles();
   installDominoStorePresentation();
   const result = await openAcceptedStoreSheet();
   upgradeDominoStorePresentation();
   return result;
+}
+
+function ensureDominoScaleStyles(){
+  const href = new URL('../../css/games/domino/store-cosmetics-scale-v2.css?v=1&mvp19_9=container-relative-v2', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-domino-scale]');
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    document.head.appendChild(existing);
+    return;
+  }
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwDominoScale = 'container-relative-v2';
+  link.href = href;
+  document.head.appendChild(link);
 }
