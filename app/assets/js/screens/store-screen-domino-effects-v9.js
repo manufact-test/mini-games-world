@@ -1,9 +1,9 @@
 const STYLE_ATTR = 'data-mgw-domino-store-effects-v9';
-const STYLE_VALUE = 'mvp19-9-domino-premium-effects-v14-visible';
+const STYLE_VALUE = 'mvp19-9-domino-premium-effects-v15-proportions';
 
 export function installDominoStoreEffectsV9(){
   document.querySelectorAll('link[data-mgw-domino-store-effects-v7], link[data-mgw-domino-store-effects-v8]').forEach(node => node.remove());
-  const href = new URL('../../css/games/domino/store-effects-scene-v9.css?v=6&mvp19_9=domino-premium-effects-v14-visible', import.meta.url).href;
+  const href = new URL('../../css/games/domino/store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions', import.meta.url).href;
   const existing = document.querySelector(`link[${STYLE_ATTR}]`);
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
