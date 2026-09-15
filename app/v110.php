@@ -79,7 +79,7 @@ if (!isset($imports[$goRendererImportKey])
     echo 'Mini Games World Go staging corrective renderer is unavailable.';
     exit;
 }
-$imports[$goRendererImportKey] .= '&manual_review=effect2-overlay-v8';
+$imports[$goRendererImportKey] .= '&manual_review=effect2-stable-overlay-v9';
 
 foreach (['main_css', 'consistency_css', 'bootstrap'] as $requiredAsset) {
     if (!isset($assets[$requiredAsset]) || !is_string($assets[$requiredAsset]) || $assets[$requiredAsset] === '') {
@@ -134,6 +134,15 @@ if (!is_file($goCaptureOverlayV8Path)) {
     exit;
 }
 $goCaptureOverlayV8Target = './assets/css/games/go/live-capture-overlay-v8.css?v=1&mvp19_8=capture-overlay-v8';
+
+$goCaptureOverlayV9Path = __DIR__ . '/assets/css/games/go/live-capture-overlay-v9.css';
+if (!is_file($goCaptureOverlayV9Path)) {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World Go stable capture overlay v9 is unavailable.';
+    exit;
+}
+$goCaptureOverlayV9Target = './assets/css/games/go/live-capture-overlay-v9.css?v=1&mvp19_8=stable-capture-overlay-v9';
 
 $goRulesAlignmentPath = __DIR__ . '/assets/css/games/go/rules-alignment-v1.css';
 if (!is_file($goRulesAlignmentPath)) {
@@ -194,11 +203,12 @@ $chessCaptureParityTag = '  <link rel="stylesheet" href="' . $chessCaptureParity
 $goExitFitTag = '  <link rel="stylesheet" data-mgw-go-live-exit-fit="mvp19-8-full-width-scroll-v3" href="' . $goExitFitTarget . '" />';
 $goEffectsV7Tag = '  <link rel="stylesheet" data-mgw-go-live-effects-v7="mvp19-8-effect2-single-pass-territory-final-v7" href="' . $goEffectsV7Target . '" />';
 $goCaptureOverlayV8Tag = '  <link rel="stylesheet" data-mgw-go-live-capture-overlay-v8="mvp19-8-capture-overlay-v8" href="' . $goCaptureOverlayV8Target . '" />';
+$goCaptureOverlayV9Tag = '  <link rel="stylesheet" data-mgw-go-live-capture-overlay-v9="mvp19-8-stable-capture-overlay-v9" href="' . $goCaptureOverlayV9Target . '" />';
 $goRulesAlignmentTag = '  <link rel="stylesheet" data-mgw-go-rules-alignment="mvp19-8-rule-marker-center-v1" href="' . $goRulesAlignmentTarget . '" />';
 
 $html = str_replace($cssAnchor, $cssTarget, $html);
 $html = str_replace('./assets/css/production-v95-consistency.css?v=95', $consistencyCssTarget, $html);
-$html = str_replace($headClose, $checkersTelegramHeightFitTag . "\n" . $chessCaptureParityTag . "\n" . $goExitFitTag . "\n" . $goEffectsV7Tag . "\n" . $goCaptureOverlayV8Tag . "\n" . $goRulesAlignmentTag . "\n" . $headClose, $html);
+$html = str_replace($headClose, $checkersTelegramHeightFitTag . "\n" . $chessCaptureParityTag . "\n" . $goExitFitTag . "\n" . $goEffectsV7Tag . "\n" . $goCaptureOverlayV8Tag . "\n" . $goCaptureOverlayV9Tag . "\n" . $goRulesAlignmentTag . "\n" . $headClose, $html);
 $html = str_replace(
     '<p>Готовим игровую комнату</p>',
     '<p>Те самые игры. То самое чувство.</p>',
@@ -222,6 +232,7 @@ $requiredRenderedTargets = [
     'go_full_width_scroll' => $goExitFitTarget,
     'go_effect2_single_pass_territory_final' => $goEffectsV7Target,
     'go_capture_overlay_v8' => $goCaptureOverlayV8Target,
+    'go_capture_overlay_v9' => $goCaptureOverlayV9Target,
     'go_rules_marker_alignment' => $goRulesAlignmentTarget,
     'go_manual_review_renderer' => $imports[$goRendererImportKey],
     'chess_check_test_hook' => $imports[$chessRendererImportKey],
@@ -297,6 +308,6 @@ header('X-MGW-Battleship-Shot-Feedback: hit-sunk-impact-miss-static');
 header('X-MGW-Battleship-Pending-Paint: none-legacy-owner-removed');
 header('X-MGW-Chess-Check-Test: staging-any-move-v1');
 header('X-MGW-Go-Viewport: full-width-scroll-v3');
-header('X-MGW-Go-Live-Effects: effect2-overlay-v8-territory-final-v7');
+header('X-MGW-Go-Live-Effects: effect2-stable-overlay-v9-territory-final-v7');
 header('X-MGW-Go-Rules-Markers: centered-v1');
 echo $html;
