@@ -7,7 +7,7 @@ import { battleshipRules } from './battleship/rules.js?v=54';
 import { checkersRules } from './checkers/rules.js?v=58';
 import { reversiRules } from './reversi/rules.js?v=67';
 import { chessRules } from './chess/rules.js?v=69';
-import { goRules } from './go/rules.js?v=72';
+import { goRules } from './go/rules.js?v=73&marker-polish=v2';
 import { dominoRules } from './domino/rules.js?v=75';
 
 const RULE_RENDERERS = {
