@@ -16,7 +16,9 @@ export function goRules({ variant } = {}){
       <button class="close" data-close-sheet type="button" aria-label="${escapeHtml(t('common.close'))}">×</button>
     </div>
 
-    <div class="game-rules-content go-rules" data-rule-variant="${size}">
+    ${markerPolishStyle()}
+
+    <div class="game-rules-content go-rules" data-rule-variant="${size}" data-go-rule-marker-polish="v2">
       <section class="game-rule-card compact">
         <div class="game-rule-copy">
           <strong>${escapeHtml(t('rules.go.size_title', values))}</strong>
@@ -94,6 +96,64 @@ export function goRules({ variant } = {}){
 export function goRuleVariant(value){
   const size = Number(value);
   return GO_RULE_SIZES.includes(size) ? size : 9;
+}
+
+function markerPolishStyle(){
+  return `
+    <style data-mgw-go-rule-marker-polish="v2">
+      .go-rules[data-go-rule-marker-polish="v2"] .go-rule-point em.forbidden,
+      .go-rules[data-go-rule-marker-polish="v2"] .go-rule-point em.ko{
+        position:absolute!important;
+        left:50%!important;
+        top:50%!important;
+        margin:0!important;
+        display:grid!important;
+        place-items:center!important;
+        transform:translate(-50%,-50%)!important;
+        transform-origin:50% 50%!important;
+        box-sizing:border-box!important;
+      }
+      .go-rules[data-go-rule-marker-polish="v2"] .go-rule-point em.forbidden{
+        width:44%!important;
+        aspect-ratio:1!important;
+        border-width:2px!important;
+        box-shadow:0 0 9px rgba(255,104,117,.42)!important;
+      }
+      .go-rules[data-go-rule-marker-polish="v2"] .go-rule-point em.ko{
+        width:39%!important;
+        aspect-ratio:1!important;
+        border-width:2px!important;
+        box-shadow:0 0 8px rgba(255,216,91,.38)!important;
+      }
+      .go-rules[data-go-rule-marker-polish="v2"] .go-rule-point em.forbidden::after,
+      .go-rules[data-go-rule-marker-polish="v2"] .go-rule-point em.ko::after{
+        position:absolute!important;
+        left:50%!important;
+        top:50%!important;
+        right:auto!important;
+        bottom:auto!important;
+        width:100%!important;
+        height:100%!important;
+        display:grid!important;
+        place-items:center!important;
+        margin:0!important;
+        padding:0!important;
+        line-height:1!important;
+        text-align:center!important;
+        transform-origin:50% 50%!important;
+      }
+      .go-rules[data-go-rule-marker-polish="v2"] .go-rule-point em.forbidden::after{
+        font-size:11px!important;
+        font-weight:900!important;
+        transform:translate(-50%,-50%) translateY(-.35px)!important;
+      }
+      .go-rules[data-go-rule-marker-polish="v2"] .go-rule-point em.ko::after{
+        font-size:9px!important;
+        font-weight:900!important;
+        transform:translate(-50%,-50%) translateY(-.7px)!important;
+      }
+    </style>
+  `;
 }
 
 function ruleBoard(type, size){
