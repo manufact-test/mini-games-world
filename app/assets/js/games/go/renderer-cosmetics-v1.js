@@ -14,7 +14,6 @@ const EFFECT_IDS = new Set([
 ]);
 const cosmeticsByGamePlayer = new Map();
 const lastBoardByGame = new Map();
-const scheduledCaptureFx = new Set();
 
 ensureLiveCosmeticStyles();
 
@@ -49,8 +48,6 @@ function cachePlayerCosmetics(game){
 
 function decorateLiveGo({ game, me, container, size, removedCells }){
   if (!(container instanceof HTMLElement)) return;
-  const board = container.querySelector('.go-board');
-  if (!(board instanceof HTMLElement)) return;
 
   const gameId = String(game?.id || '');
   const players = Array.isArray(game?.players) ? game.players : [];
@@ -96,17 +93,6 @@ function decorateLiveGo({ game, me, container, size, removedCells }){
     }
   }
 
-  if (isAnimatedPlacement && effectId === 'game-go-effect-territory-finish') {
-    applyTerritoryQaPreview({
-      board,
-      container,
-      size,
-      placedCell,
-      side:normalizeSide(game?.last_move?.side),
-    });
-    return;
-  }
-
   const finishEffectId = effectForPlayer(gameId, presentationOwner);
   if (
     String(game?.status || '') === 'finished'
@@ -126,12 +112,6 @@ function applyGroupCaptureEffect({ game, mover, container, captureCells, removed
   const removedByCell = new Map(removedCells.map(entry => [entry.cell, entry]));
   const moverSide = normalizeSide(mover?.side || game?.last_move?.side);
   const fallbackColor = moverSide === 'black' ? 'white' : 'black';
-  const moveKey = [
-    String(game?.id || ''),
-    Number(game?.move_count || 0),
-    Number(game?.last_move?.cell ?? -1),
-    captureCells.join(','),
-  ].join(':');
 
   captureCells.forEach((cell, index) => {
     const point = pointElement(container, cell);
@@ -140,97 +120,17 @@ function applyGroupCaptureEffect({ game, mover, container, captureCells, removed
     point.dataset.mgwGoFx = 'group-capture';
     point.style.setProperty('--mgw-go-fx-step', String(index));
 
-    if (!point.querySelector('.go-stone')) {
-      const ghost = document.createElement('span');
-      const color = removedByCell.get(cell)?.color || fallbackColor;
-      ghost.className = `go-stone ${color} mgw-go-capture-ghost`;
-      ghost.setAttribute('aria-hidden', 'true');
-      point.appendChild(ghost);
+    if (!animatedByBase || !point.querySelector('.go-stone')) {
+      if (!point.querySelector('.go-stone')) {
+        const ghost = document.createElement('span');
+        const color = removedByCell.get(cell)?.color || fallbackColor;
+        ghost.className = `go-stone ${color} mgw-go-capture-ghost`;
+        ghost.setAttribute('aria-hidden', 'true');
+        point.appendChild(ghost);
+      }
       point.classList.add('mgw-go-capture-fallback');
     }
   });
-
-  if (!animatedByBase) {
-    container.querySelectorAll('.go-point[data-mgw-go-fx="group-capture"]')
-      .forEach(point => point instanceof HTMLElement && point.classList.add('mgw-go-capture-paid-active'));
-    return;
-  }
-
-  if (scheduledCaptureFx.has(moveKey)) {
-    captureCells.forEach(cell => {
-      const point = pointElement(container, cell);
-      if (point instanceof HTMLElement && point.classList.contains('capture-out')) {
-        point.classList.add('mgw-go-capture-paid-active');
-      }
-    });
-    return;
-  }
-
-  scheduledCaptureFx.add(moveKey);
-  const captureStart = 300;
-  captureCells.forEach((cell, index) => {
-    globalThis.setTimeout(() => {
-      const livePoint = pointElement(container, cell);
-      if (!(livePoint instanceof HTMLElement)) return;
-      livePoint.classList.add('mgw-go-capture-paid-active');
-    }, captureStart + Math.min(index, 10) * 38);
-  });
-  globalThis.setTimeout(() => scheduledCaptureFx.delete(moveKey), 1800);
-}
-
-function applyTerritoryQaPreview({ board, container, size, placedCell, side }){
-  board.dataset.mgwGoTerritoryQa = 'placement';
-  const tone = side === 'white' ? 'white' : 'black';
-  const cells = nearbyTerritoryPreviewCells(container, size, placedCell, tone);
-
-  cells.forEach((cell, index) => {
-    const point = pointElement(container, cell);
-    if (!(point instanceof HTMLElement)) return;
-    const x = point.style.getPropertyValue('--go-x').trim();
-    const y = point.style.getPropertyValue('--go-y').trim();
-    if (!x || !y) return;
-
-    const marker = document.createElement('i');
-    marker.className = `mgw-go-live-territory ${tone}`;
-    marker.dataset.mgwGoTerritoryQaMarker = '1';
-    marker.style.setProperty('--go-x', x);
-    marker.style.setProperty('--go-y', y);
-    marker.style.setProperty('--fx-step', String(index));
-    board.appendChild(marker);
-  });
-}
-
-function nearbyTerritoryPreviewCells(container, size, placedCell, tone){
-  if (!(placedCell >= 0)) return [];
-  const row = Math.floor(placedCell / size);
-  const col = placedCell % size;
-  const primary = tone === 'white'
-    ? [[0,-1],[0,-2],[-1,-1],[-1,0],[1,-1],[-2,0],[1,0],[-1,1]]
-    : [[0,1],[0,2],[1,1],[1,0],[-1,1],[2,0],[-1,0],[1,-1]];
-  const cells = [];
-
-  const tryAdd = (candidateRow, candidateCol) => {
-    if (cells.length >= 3) return;
-    if (candidateRow < 0 || candidateCol < 0 || candidateRow >= size || candidateCol >= size) return;
-    const cell = candidateRow * size + candidateCol;
-    if (cell === placedCell || cells.includes(cell)) return;
-    const point = pointElement(container, cell);
-    if (!(point instanceof HTMLElement) || point.querySelector('.go-stone')) return;
-    cells.push(cell);
-  };
-
-  primary.forEach(([dr, dc]) => tryAdd(row + dr, col + dc));
-  if (cells.length < 3) {
-    for (let radius = 1; radius <= 2 && cells.length < 3; radius += 1) {
-      for (let dr = -radius; dr <= radius && cells.length < 3; dr += 1) {
-        for (let dc = -radius; dc <= radius && cells.length < 3; dc += 1) {
-          if (Math.max(Math.abs(dr), Math.abs(dc)) !== radius) continue;
-          tryAdd(row + dr, col + dc);
-        }
-      }
-    }
-  }
-  return cells;
 }
 
 function clearTransientTerritoryMarks(container){
@@ -239,7 +139,6 @@ function clearTransientTerritoryMarks(container){
     delete element.dataset.mgwGoTerritoryFx;
     element.style.removeProperty('--mgw-go-territory-step');
   });
-  container.querySelectorAll('[data-mgw-go-territory-qa-marker]').forEach(element => element.remove());
   const board = container.querySelector('.go-board');
   if (board instanceof HTMLElement) {
     delete board.dataset.mgwGoFx;
@@ -359,6 +258,12 @@ function ensureLiveCosmeticStyles(){
     marker:'mgwGoLiveEffectsCorrective',
     markerValue:'mvp19-8-live-effects-corrective-v2',
     href:new URL('../../../css/games/go/live-effects-corrective-v2.css?v=2&mvp19_8=live-effects-corrective-v2', import.meta.url).href,
+  });
+  ensureStylesheet({
+    selector:'link[data-mgw-go-live-effects-v7-runtime]',
+    marker:'mgwGoLiveEffectsV7Runtime',
+    markerValue:'mvp19-8-effect2-single-pass-territory-final-v7',
+    href:new URL('../../../css/games/go/live-effects-corrective-v7.css?v=1&mvp19_8=effect2-single-pass-territory-final-v7', import.meta.url).href,
   });
 }
 
