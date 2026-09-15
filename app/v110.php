@@ -79,7 +79,7 @@ if (!isset($imports[$goRendererImportKey])
     echo 'Mini Games World Go staging corrective renderer is unavailable.';
     exit;
 }
-$imports[$goRendererImportKey] .= '&manual_review=live-final-corrective-v6';
+$imports[$goRendererImportKey] .= '&manual_review=effect2-single-pass-territory-final-v7';
 
 foreach (['main_css', 'consistency_css', 'bootstrap'] as $requiredAsset) {
     if (!isset($assets[$requiredAsset]) || !is_string($assets[$requiredAsset]) || $assets[$requiredAsset] === '') {
@@ -117,14 +117,14 @@ if (!is_file($goExitFitPath)) {
 }
 $goExitFitTarget = './assets/css/games/go/live-exit-fit-v1.css?v=3&mvp19_8=full-width-scroll-v3';
 
-$goEffectsV6Path = __DIR__ . '/assets/css/games/go/live-effects-corrective-v6.css';
-if (!is_file($goEffectsV6Path)) {
+$goEffectsV7Path = __DIR__ . '/assets/css/games/go/live-effects-corrective-v7.css';
+if (!is_file($goEffectsV7Path)) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Go live effects corrective v6 is unavailable.';
+    echo 'Mini Games World Go live effects corrective v7 is unavailable.';
     exit;
 }
-$goEffectsV6Target = './assets/css/games/go/live-effects-corrective-v6.css?v=1&mvp19_8=final-capture-adjacent-territory-v6';
+$goEffectsV7Target = './assets/css/games/go/live-effects-corrective-v7.css?v=1&mvp19_8=effect2-single-pass-territory-final-v7';
 
 $goRulesAlignmentPath = __DIR__ . '/assets/css/games/go/rules-alignment-v1.css';
 if (!is_file($goRulesAlignmentPath)) {
@@ -183,12 +183,12 @@ $bootstrapTag = '  <script type="module" src="' . $bootstrapTarget . '"></script
 $checkersTelegramHeightFitTag = '  <link rel="stylesheet" href="' . $checkersTelegramHeightFitTarget . '" />';
 $chessCaptureParityTag = '  <link rel="stylesheet" href="' . $chessCaptureParityTarget . '" />';
 $goExitFitTag = '  <link rel="stylesheet" data-mgw-go-live-exit-fit="mvp19-8-full-width-scroll-v3" href="' . $goExitFitTarget . '" />';
-$goEffectsV6Tag = '  <link rel="stylesheet" data-mgw-go-live-effects-v6="mvp19-8-final-capture-adjacent-territory-v6" href="' . $goEffectsV6Target . '" />';
+$goEffectsV7Tag = '  <link rel="stylesheet" data-mgw-go-live-effects-v7="mvp19-8-effect2-single-pass-territory-final-v7" href="' . $goEffectsV7Target . '" />';
 $goRulesAlignmentTag = '  <link rel="stylesheet" data-mgw-go-rules-alignment="mvp19-8-rule-marker-center-v1" href="' . $goRulesAlignmentTarget . '" />';
 
 $html = str_replace($cssAnchor, $cssTarget, $html);
 $html = str_replace('./assets/css/production-v95-consistency.css?v=95', $consistencyCssTarget, $html);
-$html = str_replace($headClose, $checkersTelegramHeightFitTag . "\n" . $chessCaptureParityTag . "\n" . $goExitFitTag . "\n" . $goEffectsV6Tag . "\n" . $goRulesAlignmentTag . "\n" . $headClose, $html);
+$html = str_replace($headClose, $checkersTelegramHeightFitTag . "\n" . $chessCaptureParityTag . "\n" . $goExitFitTag . "\n" . $goEffectsV7Tag . "\n" . $goRulesAlignmentTag . "\n" . $headClose, $html);
 $html = str_replace(
     '<p>Готовим игровую комнату</p>',
     '<p>Те самые игры. То самое чувство.</p>',
@@ -210,7 +210,7 @@ $requiredRenderedTargets = [
     'checkers_telegram_height_fit' => $checkersTelegramHeightFitTarget,
     'chess_capture_store_parity' => $chessCaptureParityTarget,
     'go_full_width_scroll' => $goExitFitTarget,
-    'go_live_final_effects' => $goEffectsV6Target,
+    'go_effect2_single_pass_territory_final' => $goEffectsV7Target,
     'go_rules_marker_alignment' => $goRulesAlignmentTarget,
     'go_manual_review_renderer' => $imports[$goRendererImportKey],
     'chess_check_test_hook' => $imports[$chessRendererImportKey],
@@ -286,6 +286,6 @@ header('X-MGW-Battleship-Shot-Feedback: hit-sunk-impact-miss-static');
 header('X-MGW-Battleship-Pending-Paint: none-legacy-owner-removed');
 header('X-MGW-Chess-Check-Test: staging-any-move-v1');
 header('X-MGW-Go-Viewport: full-width-scroll-v3');
-header('X-MGW-Go-Live-Effects: final-capture-adjacent-territory-v6');
+header('X-MGW-Go-Live-Effects: effect2-single-pass-territory-final-v7');
 header('X-MGW-Go-Rules-Markers: centered-v1');
 echo $html;
