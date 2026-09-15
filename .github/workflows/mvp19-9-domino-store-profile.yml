@@ -75,6 +75,8 @@ jobs:
         run: |
           set -euo pipefail
           migration='bot/database/migrations/20260915_0035_add_domino_store_cosmetics.php'
+          preview='app/assets/css/games/domino/store-cosmetics-v1.css'
+          store='app/assets/js/screens/store-screen-domino-store-v1.js'
           for id in \
             game-domino-table-felt game-domino-table-midnight game-domino-table-walnut game-domino-table-neon \
             game-domino-tiles-ivory game-domino-tiles-ebony game-domino-tiles-marble game-domino-tiles-neon \
@@ -84,7 +86,14 @@ jobs:
           grep -F "'game_domino_theme'" "$migration"
           grep -F "'game_domino_elements'" "$migration"
           grep -F "'game_domino_effect'" "$migration"
-          grep -F 'aspect-ratio:8 / 5!important' app/assets/css/games/domino/store-cosmetics-v1.css
+          grep -F 'aspect-ratio:8 / 5!important' "$preview"
+          grep -F 'aspect-ratio:47 / 24' "$preview"
+          grep -F 'border-radius:10.6% / 20.8%' "$preview"
+          grep -F 'mgw-domino-snap-tile' "$preview"
+          grep -F 'mgw-domino-stock-peel' "$preview"
+          grep -F 'mgw-domino-cascade-tile' "$preview"
+          ! grep -Fq 'mgw-domino-impact-ring' "$preview"
+          ! grep -Fq '<b>DOMINO</b>' "$store"
           grep -F 'aspect-ratio:8 / 5!important' app/assets/css/screens/profile-domino-store-parity-v1.css
           grep -F 'const HEIGHT_RATIO = 5 / 8' app/assets/js/profile/mgw-profile-domino-hard-ratio-v1.js
           ! grep -Fq "offer_type' => 'bundle'" "$migration"
@@ -93,8 +102,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; $p=$m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??""; if(!str_contains($s,"store-screen-checkers-board-source-wrapper.js?v=7") || !str_contains($s,"mvp19_9=domino-store-profile-v1") || !str_contains($p,"mgw-profile-chess-layout-v2.js?v=19") || !str_contains($p,"mvp19_9=domino-profile-parity-v1") || !str_contains($p,"domino_card_runtime=hard-8x5-v1")) exit(1);'
-          php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1153) exit(1);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; $p=$m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??""; $ds=$m["imports"]["./assets/js/screens/store-screen-domino-store-v1.js?v=1&mvp19_9=store-profile-preview-8x5-v1"]??""; $dp=$m["imports"]["./assets/js/profile/mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1"]??""; if(!str_contains($s,"store-screen-checkers-board-source-wrapper.js?v=7") || !str_contains($s,"mvp19_9=domino-store-profile-v1") || !str_contains($s,"domino_preview=authentic-v2") || !str_contains($p,"mgw-profile-chess-layout-v2.js?v=19") || !str_contains($p,"mvp19_9=domino-profile-parity-v1") || !str_contains($p,"domino_card_runtime=hard-8x5-v1") || !str_contains($p,"domino_preview=authentic-v2") || !str_contains($ds,"domino-authentic-tiles-effects-v2") || !str_contains($dp,"domino-authentic-tiles-effects-v2")) exit(1);'
+          php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1154) exit(1);'
           if [ '${{ github.event_name }}' = 'pull_request' ]; then
             base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
             git diff --exit-code "$base" "$head" -- \
