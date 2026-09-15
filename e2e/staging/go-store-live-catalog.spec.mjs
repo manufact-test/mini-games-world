@@ -170,9 +170,13 @@ test('GO STORE LIVE CATALOG: automatic staging update publishes the full Go cata
     await goButton.scrollIntoViewIfNeeded();
     await expect(goButton).toBeVisible();
 
+    const dominoButton = selector.locator('[data-store-v2-game="domino"]');
+    await expect(dominoButton).toHaveCount(1);
+    await expect(dominoButton).toHaveText('Домино');
+
     const gameTypes = await selector.locator('[data-store-v2-game]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-store-v2-game')));
-    expect(gameTypes).toHaveLength(5);
-    expect([...gameTypes].sort()).toEqual(['tictactoe', 'chess', 'checkers', 'reversi', 'go'].sort());
+    expect(gameTypes).toHaveLength(6);
+    expect([...gameTypes].sort()).toEqual(['tictactoe', 'chess', 'checkers', 'domino', 'reversi', 'go'].sort());
   } finally {
     await uiContext.close().catch(() => null);
   }
