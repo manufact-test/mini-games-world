@@ -1,6 +1,6 @@
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
-import { dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=5&mvp19_9=domino-deterministic-rerender-v5';
+import { dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=6&mvp19_9=domino-native-render-v6';
 
 const GROUP_TITLES = Object.freeze({ theme:'Столы', elements:'Костяшки', effect:'Эффекты' });
 const ITEM_ORDER = Object.freeze([
@@ -16,7 +16,7 @@ const ITEM_ORDER = Object.freeze([
   'game-domino-effect-stock-pulse',
   'game-domino-effect-chain-finale',
 ]);
-const PROFILE_API_REPAIR_HOOK = Symbol.for('mgw.profile.domino-store-parity.profile-v2.v3');
+const PROFILE_API_REPAIR_HOOK = Symbol.for('mgw.profile.domino-store-parity.profile-v2.v4');
 let initialized = false;
 let repairQueued = false;
 
@@ -67,8 +67,8 @@ export function initProfileDominoParity(){
 function ensureDominoProfileStyles(){
   ensureStyle('data-mgw-domino-store', '../../css/games/domino/store-cosmetics-v1.css?v=4&mvp19_9=domino-uniform-fullfield-v4');
   ensureStyle('data-mgw-domino-store-card-fill-v5', '../../css/games/domino/store-card-fill-live-pips-v5.css?v=2&mvp19_9=domino-card-fill-live-pips-v6');
-  ensureStyle('data-mgw-domino-store-effects-v9', '../../css/games/domino/store-effects-scene-v9.css?v=1&mvp19_9=domino-store-effects-scene-v9');
-  ensureStyle('data-mgw-profile-domino-parity', '../../css/screens/profile-domino-store-parity-v1.css?v=2&mvp19_9=domino-profile-store-exact-v2');
+  ensureStyle('data-mgw-domino-store-effects-v9', '../../css/games/domino/store-effects-scene-v9.css?v=2&mvp19_9=domino-store-effects-scene-v10');
+  ensureStyle('data-mgw-profile-domino-parity', '../../css/screens/profile-domino-store-parity-v1.css?v=3&mvp19_9=domino-profile-single-back-v3');
 }
 
 function ensureStyle(marker, relativeHref){
@@ -126,12 +126,10 @@ function ensureDominoTab(screen){
     dominoTab.setAttribute('role', 'tab');
     dominoTab.dataset.profileGameTab = 'domino';
     dominoTab.setAttribute('aria-selected', 'false');
-    dominoTab.innerHTML = '<span class="profile-v2-game-tab-mark" aria-hidden="true">▦</span><span>Домино</span>';
     tabs.appendChild(dominoTab);
   }
 
-  const label = dominoTab.querySelector('span:last-child');
-  if (label instanceof HTMLElement) label.textContent = 'Домино';
+  dominoTab.innerHTML = '<span class="profile-v2-game-tab-mark mgw-domino-profile-tab-mark" aria-hidden="true"></span><span class="profile-v2-game-tab-label">Домино</span>';
   return dominoTab;
 }
 

@@ -1,21 +1,10 @@
-import { api } from '../api/client.js?v=34';
-
-const API_HOOK = Symbol.for('mgw.store.domino.mvp19-9.deterministic-v2');
 const INSTALL_KEY = '__mgwDominoStoreV1Installed';
-const STYLE_MARK = 'mvp19-9-domino-store-v5';
-let upgradeQueued = false;
+const STYLE_MARK = 'mvp19-9-domino-store-v6';
 
 export function installDominoStorePresentation(){
   ensureStyles();
-  installApiHooks();
   if (globalThis[INSTALL_KEY]) return;
   globalThis[INSTALL_KEY] = true;
-  document.addEventListener('click', event => {
-    const target = event.target instanceof Element ? event.target : null;
-    if (!target) return;
-    if (!target.closest('[data-store-v2-tab="games"], [data-store-v2-game], [data-store-v2-buy], [data-store-v2-equip], [data-store-v2-unequip], #storeV2ConfirmBuy')) return;
-    queuePostRenderUpgrade();
-  });
 }
 
 export function upgradeDominoStorePresentation(){
@@ -43,6 +32,10 @@ export function dominoPreviewMarkup(layer, variant){
   return `<i class="mgw-domino-preview ${modeClass}" aria-hidden="true">${tableMarkup(normalizedLayer, normalizedVariant)}</i>`;
 }
 
+export function dominoHeaderMarksMarkup(){
+  return `<b class="mgw-domino-head-tile light" aria-hidden="true">${headBackMarkup('light')}</b><b class="mgw-domino-head-tile dark" aria-hidden="true">${headBackMarkup('dark')}</b>`;
+}
+
 function ensureStyles(){
   const href = new URL('../../css/games/domino/store-cosmetics-v1.css?v=4&mvp19_9=domino-uniform-fullfield-v4', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-domino-store]');
@@ -59,35 +52,6 @@ function ensureStyles(){
   document.head.appendChild(link);
 }
 
-function installApiHooks(){
-  ['cosmeticStoreStatus','cosmeticStorePurchase','cosmeticStoreEquip','cosmeticStoreUnequip'].forEach(methodName => {
-    const current = api?.[methodName];
-    if (typeof current !== 'function' || current[API_HOOK]) return;
-    const wrapped = (...args) => new Promise((resolve, reject) => {
-      Promise.resolve()
-        .then(() => current.apply(api, args))
-        .then(result => {
-          resolve(result);
-          queuePostRenderUpgrade();
-        }, error => {
-          reject(error);
-          queuePostRenderUpgrade();
-        });
-    });
-    Object.defineProperty(wrapped, API_HOOK, { value:true });
-    api[methodName] = wrapped;
-  });
-}
-
-function queuePostRenderUpgrade(){
-  if (upgradeQueued) return;
-  upgradeQueued = true;
-  queueMicrotask(() => {
-    upgradeQueued = false;
-    upgradeDominoStorePresentation();
-  });
-}
-
 function renameSelector(root){
   root.querySelectorAll('[data-store-v2-game="domino"]').forEach(button => {
     if (button instanceof HTMLElement) button.textContent = 'Домино';
@@ -99,14 +63,8 @@ function upgradeHeader(root){
   if (!(head instanceof HTMLElement)) return;
   const title = head.querySelector('h2');
   if (title instanceof HTMLElement) title.textContent = 'Домино';
-  const marks = head.querySelectorAll('.store-v2-game-head-marks b');
-  marks.forEach((mark, index) => {
-    if (!(mark instanceof HTMLElement)) return;
-    mark.textContent = '';
-    mark.classList.add('mgw-domino-head-tile', index === 0 ? 'light' : 'dark');
-    mark.setAttribute('aria-hidden', 'true');
-    mark.innerHTML = headBackMarkup(index === 0 ? 'light' : 'dark');
-  });
+  const marks = head.querySelector('.store-v2-game-head-marks');
+  if (marks instanceof HTMLElement && !marks.querySelector('.mgw-domino-head-tile')) marks.innerHTML = dominoHeaderMarksMarkup();
 }
 
 function upgradeGroups(root){
@@ -152,11 +110,11 @@ function upgradePreviews(root){
     const expectedClass = modeClass(layer, variant);
     const visual = preview.querySelector(':scope > .mgw-domino-preview');
     if (visual instanceof HTMLElement && visual.classList.contains(expectedClass)) {
-      preview.dataset.mgwDominoPreview = `${layer}:${variant}:deterministic:v5`;
+      preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v6`;
       return;
     }
     preview.innerHTML = dominoPreviewMarkup(layer, variant);
-    preview.dataset.mgwDominoPreview = `${layer}:${variant}:deterministic:v5`;
+    preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v6`;
   });
 }
 
@@ -178,45 +136,27 @@ function descriptionFor(layer, variant){
     })[variant] || 'Меняет внешний вид костяшек';
   }
   return ({
-    'precision-drop':'Одна костяшка плавно входит в сцену и точно защёлкивается к открытому концу цепи',
-    'stock-pulse':'Костяшка выходит из запаса, переворачивается лицевой стороной и мягко ложится на стол',
-    'chain-finale':'По цепочке одинаковых костяшек проходит непрерывная волна завершения партии',
+    'precision-drop':'Костяшка мягко входит в сцену по дуге и точно стыкуется с цепью',
+    'stock-pulse':'Костяшка выходит из запаса, переворачивается в воздухе и спокойно ложится на стол',
+    'chain-finale':'По цепочке проходит плавная волна завершения — костяшки последовательно приподнимаются и возвращаются на место',
   })[variant] || 'Добавляет визуальный эффект партии';
 }
 
 function tableMarkup(layer, variant){
-  const chain = effectChain(layer, variant);
-  const showStock = layer === 'effect' && variant === 'stock-pulse';
-  const stock = showStock
-    ? '<span class="mgw-domino-preview-top"><span class="mgw-domino-stock fx-stock"><i></i><i></i><i></i></span></span>'
-    : '<span class="mgw-domino-preview-top"><span class="mgw-domino-stock"><i></i><i></i></span></span>';
-  const drawGhost = showStock
-    ? `<span class="mgw-domino-draw-ghost">${tileMarkup(2,5,'ghost')}</span>`
-    : '';
-  const snapMarks = layer === 'effect' && variant === 'precision-drop'
-    ? '<span class="mgw-domino-snap-marks"><i></i><i></i><i></i></span>'
-    : '';
-  const finaleBars = layer === 'effect' && variant === 'chain-finale'
-    ? '<span class="mgw-domino-finale-bars"><i></i><i></i><i></i></span>'
-    : '';
-  return `<span class="mgw-domino-preview-table">${stock}<span class="mgw-domino-preview-chain">${chain}</span>${drawGhost}${snapMarks}${finaleBars}<span class="mgw-domino-table-glow"></span></span>`;
+  if (layer === 'effect') return effectSceneMarkup(variant);
+  const chain = [[6,3],[3,5],[5,2]].map(pair => `<span class="mgw-domino-preview-slot">${tileMarkup(pair[0], pair[1])}</span>`).join('');
+  const stock = '<span class="mgw-domino-preview-top"><span class="mgw-domino-stock"><i></i><i></i></span></span>';
+  return `<span class="mgw-domino-preview-table">${stock}<span class="mgw-domino-preview-chain">${chain}</span><span class="mgw-domino-table-glow"></span></span>`;
 }
 
-function effectChain(layer, variant){
-  if (layer !== 'effect') {
-    return [[6,3],[3,5],[5,2]].map(pair => `<span class="mgw-domino-preview-slot">${tileMarkup(pair[0], pair[1])}</span>`).join('');
+function effectSceneMarkup(variant){
+  if (variant === 'stock-pulse') {
+    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-scene mgw-domino-fx-stock"><span class="mgw-domino-fx-stock-stack"><i></i><i></i><i></i></span><span class="mgw-domino-fx-piece stable face dots-21"></span><span class="mgw-domino-fx-flip"><i class="back"></i><i class="face dots-12"></i></span><span class="mgw-domino-fx-floor-line"></span></span><span class="mgw-domino-table-glow"></span></span>`;
   }
-
-  const values = variant === 'stock-pulse'
-    ? [[6,3]]
-    : [[6,3],[3,5],[5,2]];
-  return values.map((pair, index) => {
-    const classes = [];
-    if (variant === 'precision-drop' && index === values.length - 1) classes.push('fx-precision-target');
-    if (variant === 'chain-finale') classes.push('fx-finale');
-    const step = variant === 'chain-finale' ? ` style="--fx-step:${index}"` : '';
-    return `<span class="mgw-domino-preview-slot ${classes.join(' ')}"${step}>${tileMarkup(pair[0], pair[1])}</span>`;
-  }).join('');
+  if (variant === 'chain-finale') {
+    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-scene mgw-domino-fx-finale"><span class="mgw-domino-fx-chain"><i class="mgw-domino-fx-piece face dots-12" style="--i:0"></i><i class="mgw-domino-fx-piece face dots-21" style="--i:1"></i><i class="mgw-domino-fx-piece face dots-11" style="--i:2"></i></span><span class="mgw-domino-fx-rail"></span></span><span class="mgw-domino-table-glow"></span></span>`;
+  }
+  return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-scene mgw-domino-fx-precision"><span class="mgw-domino-fx-piece stable one face dots-21"></span><span class="mgw-domino-fx-piece stable two face dots-12"></span><span class="mgw-domino-fx-piece mover face dots-11"></span><span class="mgw-domino-fx-snap-line"></span></span><span class="mgw-domino-table-glow"></span></span>`;
 }
 
 function modeClass(layer, variant){
