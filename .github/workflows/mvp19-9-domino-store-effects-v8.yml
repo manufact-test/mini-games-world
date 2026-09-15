@@ -1,4 +1,4 @@
-name: MVP-19.9 Domino Store/Profile native v10
+name: MVP-19.9 Domino Store/Profile premium v11
 
 on:
   pull_request:
@@ -10,6 +10,7 @@ on:
       - 'app/assets/js/screens/store-screen-domino-store-v1.js'
       - 'app/assets/js/screens/store-screen-domino-effects-v9.js'
       - 'app/assets/js/screens/store-screen-checkers-board-source-wrapper.js'
+      - 'app/assets/js/screens/store-screen-reversi-store-v1.js'
       - 'app/assets/js/profile/mgw-profile-domino-parity.js'
       - 'app/assets/js/profile/mgw-profile-domino-hard-ratio-v1.js'
       - 'app/runtime/client/version-manifest.php'
@@ -23,11 +24,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: mgw-mvp19-9-domino-native-v10-${{ github.ref }}
+  group: mgw-mvp19-9-domino-premium-v11-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  domino-store-profile-v10:
+  domino-store-profile-v11:
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     steps:
@@ -58,19 +59,21 @@ jobs:
           node --check app/assets/js/screens/store-screen-domino-store-v1.js
           node --check app/assets/js/screens/store-screen-domino-effects-v9.js
           node --check app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+          node --check app/assets/js/screens/store-screen-reversi-store-v1.js
           node --check app/assets/js/profile/mgw-profile-domino-parity.js
           node --check app/assets/js/profile/mgw-profile-domino-hard-ratio-v1.js
           node --check bot/tests/Mvp19_9DominoPreviewReadabilityContractTest.mjs
           php bot/tests/Mvp19_9DominoStoreProfileTest.php
           node bot/tests/Mvp19_9DominoPreviewReadabilityContractTest.mjs
 
-      - name: Guard native Store render and v10 choreography
+      - name: Guard native Store render, stable selector and premium v11 choreography
         shell: bash
         run: |
           set -euo pipefail
           base_store='app/assets/js/screens/store-screen.js'
           store='app/assets/js/screens/store-screen-domino-store-v1.js'
           wrapper='app/assets/js/screens/store-screen-checkers-board-source-wrapper.js'
+          selector_owner='app/assets/js/screens/store-screen-reversi-store-v1.js'
           effects='app/assets/css/games/domino/store-effects-scene-v9.css'
           effect_loader='app/assets/js/screens/store-screen-domino-effects-v9.js'
           profile='app/assets/js/profile/mgw-profile-domino-parity.js'
@@ -90,22 +93,28 @@ jobs:
           ! grep -Fq 'requestAnimationFrame' "$store"
           ! grep -Fq 'setTimeout' "$store"
 
+          grep -F "store-screen-reversi-store-v1.js?v=2&mvp19_7=store-only&selector=instant-active-v1" "$wrapper"
           grep -F "store-screen-domino-store-v1.js?v=6&mvp19_9=domino-native-render-v6" "$wrapper"
-          grep -F "store-screen-domino-effects-v9.js?v=2&mvp19_9=domino-store-effects-scene-v10" "$wrapper"
+          grep -F "store-screen-domino-effects-v9.js?v=3&mvp19_9=domino-premium-effects-v11" "$wrapper"
           ! grep -Fq 'installDominoStoreRerenderStabilityV1' "$wrapper"
+          grep -F 'selector.scrollLeft = left;' "$selector_owner"
+          ! grep -Fq "behavior:'smooth'" "$selector_owner"
 
           grep -F '.mgw-domino-fx-piece' "$effects"
           grep -F 'aspect-ratio:47 / 24!important' "$effects"
-          grep -F 'mgw-domino-v10-precision-glide' "$effects"
-          grep -F 'mgw-domino-v10-stock-flight' "$effects"
-          grep -F 'mgw-domino-v10-finale-wave' "$effects"
-          grep -F 'transform-style:preserve-3d!important' "$effects"
+          grep -F 'mgw-domino-v11-magnetic-glide' "$effects"
+          grep -F 'mgw-domino-v11-spectral-draw' "$effects"
+          grep -F 'mgw-domino-v11-lux-sheen' "$effects"
+          grep -F 'mix-blend-mode:screen!important' "$effects"
           grep -F '@media(prefers-reduced-motion:reduce)' "$effects"
-          ! grep -Fq 'scale(.18' "$effects"
-          grep -F 'store-effects-scene-v9.css?v=2&mvp19_9=domino-store-effects-scene-v10' "$effect_loader"
+          ! grep -Fq 'mgw-domino-v10-precision-glide' "$effects"
+          ! grep -Fq 'mgw-domino-v10-stock-flight' "$effects"
+          ! grep -Fq 'mgw-domino-v10-finale-wave' "$effects"
+          ! grep -Fq 'transform-style:preserve-3d' "$effects"
+          grep -F 'store-effects-scene-v9.css?v=3&mvp19_9=domino-premium-effects-v11' "$effect_loader"
 
           grep -F "dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=6&mvp19_9=domino-native-render-v6'" "$profile"
-          grep -F 'store-effects-scene-v9.css?v=2&mvp19_9=domino-store-effects-scene-v10' "$profile"
+          grep -F 'store-effects-scene-v9.css?v=3&mvp19_9=domino-premium-effects-v11' "$profile"
           grep -F 'profile-domino-store-parity-v1.css?v=3&mvp19_9=domino-profile-single-back-v3' "$profile"
           grep -F 'mgw-domino-profile-tab-mark::before' "$profile_css"
           ! grep -Fq 'radial-gradient(circle at 24% 31%' "$profile_css"
@@ -114,12 +123,13 @@ jobs:
           ! grep -Fq 'setTimeout' "$hard_ratio"
 
           grep -F 'domino_preview=native-v10' "$manifest"
-          grep -F 'domino_effects=scene-v10' "$manifest"
+          grep -F 'domino_effects=premium-v11' "$manifest"
+          grep -F 'selector_center=instant-v1' "$manifest"
           grep -F 'domino_base=native-render-v1' "$manifest"
           grep -F 'domino_preview=shared-store-v10' "$manifest"
           grep -F 'domino_icon=single-back-v1' "$manifest"
           grep -F 'ux=ready-only-history-sheet' "$manifest"
-          php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1165) exit(1);'
+          php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1166) exit(1);'
 
       - name: Guard accepted static Store geometry and frozen gameplay
         shell: bash
