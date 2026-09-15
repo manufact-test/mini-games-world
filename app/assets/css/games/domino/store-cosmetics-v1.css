@@ -1,12 +1,15 @@
 /* MVP-19.9 Domino Store/Profile shared visual owner. Store is the source of truth. */
 
-.store-v2-game-head[data-store-game-type="domino"] .store-v2-game-head-marks{display:flex;align-items:center;gap:7px;overflow:visible}
-.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-tile{position:relative;display:grid;place-items:center;width:28px;height:16px;padding:0;border:0;background:transparent;box-shadow:none;font-size:0;overflow:visible;transform:rotate(-7deg)}
-.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-tile.three{transform:rotate(7deg)}
-.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-tile .mgw-domino-preview-tile{width:28px;height:14px;aspect-ratio:auto;border-radius:10.6% / 20.8%;border:1px solid rgba(64,69,79,.72);box-shadow:0 3px 7px #0007,inset 0 0 0 1px #fff9}
-.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-tile.three .mgw-domino-preview-tile{color:#f7f2e8;background:linear-gradient(155deg,#30343c,#090b0f 72%);border-color:#69727f;box-shadow:0 3px 7px #0008,inset 0 0 0 1px #fff1}
-.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-tile .mgw-domino-preview-half{padding:1.5px}
-.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-tile .mgw-domino-preview-half i{min-width:1.5px;width:1.5px;max-width:1.5px}
+.store-v2-game-head[data-store-game-type="domino"] .store-v2-game-head-marks{display:flex;align-items:center;gap:8px;overflow:visible}
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-tile{position:relative;display:grid;place-items:center;width:31px;height:19px;padding:0;border:0;background:transparent;box-shadow:none;font-size:0;overflow:visible;transform:rotate(-7deg)}
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-tile.dark{transform:rotate(7deg)}
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-back{position:relative;display:flex;width:30px;height:16px;overflow:hidden;border-radius:3px;border:1px solid rgba(64,69,79,.72);background:linear-gradient(155deg,#fff,#dde1e5);box-shadow:0 3px 7px #0007,inset 0 0 0 1px #fff9}
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-back.dark{border-color:#69727f;background:linear-gradient(155deg,#30343c,#090b0f 72%);box-shadow:0 3px 7px #0008,inset 0 0 0 1px #fff1}
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-back>i{position:relative;display:block;width:50%;height:100%;box-sizing:border-box}
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-back>i:first-child{border-right:1px solid rgba(24,28,34,.42)}
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-back.dark>i:first-child{border-right-color:rgba(255,255,255,.34)}
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-back>i::after{content:"";position:absolute;inset:3px;border:1px solid rgba(42,48,57,.26);border-radius:2px;background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(0,0,0,.04))}
+.store-v2-game-head[data-store-game-type="domino"] .mgw-domino-head-back.dark>i::after{border-color:rgba(255,255,255,.18);background:linear-gradient(145deg,rgba(255,255,255,.06),rgba(0,0,0,.18))}
 
 .store-v2-game-preview[data-game-type="domino"]{
   box-sizing:border-box!important;
@@ -22,40 +25,44 @@
   overflow:hidden!important;
   isolation:isolate!important;
   border-radius:14px!important;
-  background:#0c1712!important;
+  background:#0b1110!important;
 }
-.mgw-domino-preview{position:absolute;inset:0;display:block;width:100%;height:100%;overflow:hidden;background:linear-gradient(145deg,#142f24,#07130e);color:#fff}
-.mgw-domino-preview-table{position:absolute;inset:6.5% 5%;display:block;overflow:hidden;border-radius:15px;border:1px solid rgba(173,217,179,.28);background:radial-gradient(circle at 49% 45%,rgba(78,157,94,.36),transparent 48%),linear-gradient(145deg,#1b4934,#10281e);box-shadow:inset 0 0 34px rgba(0,0,0,.28),0 11px 26px rgba(0,0,0,.34);perspective:460px}
-.mgw-domino-preview-top{position:absolute;z-index:4;left:7%;right:7%;top:8%;display:flex;align-items:center;justify-content:flex-start;height:16%}
+.mgw-domino-preview{position:absolute;inset:0;display:block;width:100%;height:100%;overflow:hidden;background:linear-gradient(145deg,#10251b,#07110d);color:#fff}
+.mgw-domino-preview-table{position:absolute;inset:3px;display:block;overflow:hidden;border-radius:11px;border:1px solid rgba(173,217,179,.3);background:radial-gradient(circle at 50% 47%,rgba(78,157,94,.4),transparent 54%),linear-gradient(145deg,#1b4934,#10281e);box-shadow:inset 0 0 28px rgba(0,0,0,.24),0 8px 18px rgba(0,0,0,.28);perspective:460px}
+.mgw-domino-preview-top{position:absolute;z-index:4;left:5.5%;right:5.5%;top:5.5%;display:flex;align-items:center;justify-content:flex-start;height:18%}
 .mgw-domino-stock{position:relative;display:flex;align-items:center;width:34px;height:16px;padding-left:12px;transform-origin:center}
-.mgw-domino-stock i{position:relative;display:block;width:20px;height:10px;margin-left:-11px;border-radius:10.6% / 20.8%;border:1px solid rgba(255,255,255,.25);background:repeating-linear-gradient(135deg,#28354a 0 3px,#121b2d 3px 6px);box-shadow:0 2px 4px rgba(0,0,0,.35);transform-origin:center}
-.mgw-domino-preview-chain{position:absolute;z-index:5;left:6.5%;right:6.5%;top:27%;bottom:14%;display:flex;align-items:center;justify-content:center;gap:.5%}
-.mgw-domino-preview-slot{position:relative;display:block;flex:0 0 20.5%;width:20.5%;max-width:20.5%;margin-left:-.4%;transform-origin:center center;filter:drop-shadow(0 4px 4px rgba(0,0,0,.28))}
-.mgw-domino-preview-slot.turn{margin-left:2.8%;margin-right:2.8%;transform:rotate(90deg)}
-.mgw-domino-preview-tile{position:relative;display:flex;flex-direction:row;width:100%;height:auto;min-width:0;max-width:none;aspect-ratio:47 / 24;box-sizing:border-box;overflow:hidden;border-radius:10.6% / 20.8%;border:1px solid rgba(54,59,70,.58);background:linear-gradient(155deg,#fff,#dfe3e8);box-shadow:inset 0 0 0 1px rgba(255,255,255,.76),0 4px 8px rgba(0,0,0,.28);color:#151923;transform-origin:center}
-.mgw-domino-preview-half{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);align-items:center;justify-items:center;width:50%;height:100%;padding:6%;box-sizing:border-box}
-.mgw-domino-preview-half+.mgw-domino-preview-half{border-left:1px solid currentColor;opacity:1}
-.mgw-domino-preview-half i{width:22%;min-width:1.45px;max-width:3.4px;height:auto;aspect-ratio:1 / 1;border-radius:50%;background:transparent}
-.mgw-domino-preview-half i.active{background:currentColor;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
-.mgw-domino-table-glow{position:absolute;z-index:1;inset:auto 12% 3% 12%;height:24%;border-radius:50%;background:radial-gradient(ellipse,#47d08d12,transparent 72%);filter:blur(5px);pointer-events:none}
+.mgw-domino-stock i{position:relative;display:block;width:22px;height:11px;margin-left:-10px;border-radius:3px;border:1px solid rgba(255,255,255,.28);background:repeating-linear-gradient(135deg,#29364b 0 3px,#111a2b 3px 6px);box-shadow:0 2px 4px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.04);transform-origin:center}
+.mgw-domino-preview-chain{position:absolute;z-index:5;left:4.5%;right:4.5%;top:24%;bottom:10%;display:flex;align-items:center;justify-content:center;gap:1.5%}
+.mgw-domino-preview-slot{position:relative;display:block;flex:0 0 31.5%;width:31.5%;max-width:31.5%;transform-origin:center center;filter:drop-shadow(0 4px 4px rgba(0,0,0,.3))}
+.mgw-domino-preview[class*="effect-"] .mgw-domino-preview-slot{flex-basis:21.2%;width:21.2%;max-width:21.2%;margin-left:-.25%}
+.mgw-domino-preview-slot.turn{margin-left:2.2%!important;margin-right:2.2%;transform:rotate(90deg)}
+.mgw-domino-preview-tile{position:relative;display:flex;flex-direction:row;width:100%;height:auto;min-width:0;max-width:none;aspect-ratio:47 / 24;box-sizing:border-box;overflow:hidden;border-radius:3px;border:1px solid rgba(54,59,70,.66);background:linear-gradient(155deg,#fff,#dfe3e8);box-shadow:inset 0 0 0 1px rgba(255,255,255,.72),0 4px 8px rgba(0,0,0,.3);color:#151923;transform-origin:center}
+.mgw-domino-preview-half{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);align-items:center;justify-items:center;width:50%;height:100%;padding:7%;box-sizing:border-box}
+.mgw-domino-preview-half+.mgw-domino-preview-half{border-left:1px solid currentColor}
+.mgw-domino-preview-half i{width:40%;min-width:1.9px;max-width:4.6px;height:auto;aspect-ratio:1 / 1;border-radius:50%;background:transparent}
+.mgw-domino-preview-half i.active{background:currentColor;box-shadow:none}
+.mgw-domino-table-glow{position:absolute;z-index:1;inset:auto 8% 1% 8%;height:24%;border-radius:50%;background:radial-gradient(ellipse,#47d08d18,transparent 72%);filter:blur(5px);pointer-events:none}
 
-/* Table themes. */
+/* Table themes. All tables use the same full-field geometry; only the material changes. */
 .mgw-domino-preview.theme-felt{background:linear-gradient(145deg,#15251c,#080f0b)}
-.mgw-domino-preview.theme-felt .mgw-domino-preview-table{background:radial-gradient(circle at 49% 45%,rgba(76,158,95,.38),transparent 48%),linear-gradient(145deg,#1a4b34,#0f291d)}
+.mgw-domino-preview.theme-felt .mgw-domino-preview-table{background:radial-gradient(circle at 50% 47%,rgba(76,158,95,.4),transparent 54%),linear-gradient(145deg,#1a4b34,#0f291d)}
 .mgw-domino-preview.theme-midnight{background:radial-gradient(circle at 50% 38%,#1b263d,#060911 74%)}
-.mgw-domino-preview.theme-midnight .mgw-domino-preview-table{border-color:#728cce55;background:radial-gradient(circle at 48% 43%,#253d6659,transparent 52%),linear-gradient(145deg,#17233b,#0b1120);box-shadow:inset 0 0 34px #0007,0 0 24px #597ce12b}
-.mgw-domino-preview.theme-midnight .mgw-domino-table-glow{background:radial-gradient(ellipse,#6489ff1e,transparent 72%)}
-.mgw-domino-preview.theme-walnut{background:repeating-linear-gradient(93deg,rgba(74,33,12,.35) 0 2px,transparent 2px 18px),linear-gradient(145deg,#6e3d20,#211109)}
-.mgw-domino-preview.theme-walnut .mgw-domino-preview-table{inset:5.5%;border:5px solid #754021;background:radial-gradient(circle at 49% 45%,rgba(62,148,87,.34),transparent 48%),linear-gradient(145deg,#25533b,#142c20);box-shadow:inset 0 0 30px #0005,0 12px 25px #0007}
+.mgw-domino-preview.theme-midnight .mgw-domino-preview-table{border-color:#728cce66;background:radial-gradient(circle at 50% 46%,#253d6664,transparent 56%),linear-gradient(145deg,#17233b,#0b1120);box-shadow:inset 0 0 30px #0007,0 0 22px #597ce12c}
+.mgw-domino-preview.theme-midnight .mgw-domino-table-glow{background:radial-gradient(ellipse,#6489ff24,transparent 72%)}
+.mgw-domino-preview.theme-walnut{background:repeating-linear-gradient(94deg,rgba(46,20,8,.2) 0 2px,transparent 2px 14px),linear-gradient(145deg,#5f351f,#24130c)}
+.mgw-domino-preview.theme-walnut .mgw-domino-preview-table{border-color:#a76e45;background:repeating-linear-gradient(92deg,rgba(53,24,10,.22) 0 2px,rgba(120,73,42,.08) 2px 13px),radial-gradient(circle at 44% 36%,rgba(188,122,75,.2),transparent 46%),linear-gradient(145deg,#75472d,#3c2115);box-shadow:inset 0 0 28px rgba(28,11,4,.44),0 8px 18px #0007}
+.mgw-domino-preview.theme-walnut .mgw-domino-table-glow{background:radial-gradient(ellipse,rgba(230,157,99,.16),transparent 72%)}
 .mgw-domino-preview.theme-neon{background:radial-gradient(circle at 48% 45%,#0a2b36,#03060c 72%)}
-.mgw-domino-preview.theme-neon .mgw-domino-preview-table{border-color:#2deaffb8;background:radial-gradient(circle at 49% 45%,rgba(15,102,116,.28),transparent 48%),linear-gradient(145deg,#071a22,#050a10);box-shadow:0 0 16px #00dfff62,0 0 32px #a855ff2c,inset 0 0 26px #00eaff14}
-.mgw-domino-preview.theme-neon .mgw-domino-preview-table::after{content:"";position:absolute;inset:2px;border-radius:12px;border:1px solid #c65dff75;pointer-events:none}
+.mgw-domino-preview.theme-neon .mgw-domino-preview-table{border-color:#2deaffc7;background:radial-gradient(circle at 49% 45%,rgba(15,102,116,.3),transparent 52%),linear-gradient(145deg,#071a22,#050a10);box-shadow:0 0 14px #00dfff62,0 0 26px #a855ff2c,inset 0 0 24px #00eaff14}
+.mgw-domino-preview.theme-neon .mgw-domino-preview-table::after{content:"";position:absolute;inset:2px;border-radius:8px;border:1px solid #c65dff75;pointer-events:none}
 .mgw-domino-preview.theme-neon .mgw-domino-table-glow{background:radial-gradient(ellipse,#20eaff2b,#aa50ff12 46%,transparent 72%)}
 
-/* Tile sets. Shape and proportions intentionally mirror live Domino tiles. */
+/* Tile sets. Neutral tables keep attention on the larger readable tiles. */
+.mgw-domino-preview.tiles-ivory,.mgw-domino-preview.tiles-ebony,.mgw-domino-preview.tiles-marble{background:linear-gradient(145deg,#151a19,#090d0c)}
+.mgw-domino-preview.tiles-ivory .mgw-domino-preview-table,.mgw-domino-preview.tiles-ebony .mgw-domino-preview-table,.mgw-domino-preview.tiles-marble .mgw-domino-preview-table{border-color:#5e716b66;background:radial-gradient(circle at 50% 46%,rgba(60,92,82,.22),transparent 56%),linear-gradient(145deg,#1b2924,#101713)}
 .mgw-domino-preview.tiles-ivory .mgw-domino-preview-tile{color:#171a20;background:linear-gradient(155deg,#fffdf3,#d8d2c3);border-color:#7d796f80;box-shadow:inset 0 0 0 1px #fff9,0 4px 8px #0005}
 .mgw-domino-preview.tiles-ebony .mgw-domino-preview-tile{color:#f8f4e9;background:linear-gradient(155deg,#30343c,#090b0f 72%);border-color:#77808d9c;box-shadow:inset 0 0 0 1px #fff1,0 5px 10px #0008}
-.mgw-domino-preview.tiles-ebony .mgw-domino-preview-half i.active{box-shadow:0 0 2px rgba(255,255,255,.32)}
+.mgw-domino-preview.tiles-ebony .mgw-domino-preview-half i.active{box-shadow:0 0 2px rgba(255,255,255,.35)}
 .mgw-domino-preview.tiles-marble .mgw-domino-preview-tile{color:#24282c;background:radial-gradient(circle at 18% 22%,#6c707530 0 1px,transparent 1.6px),radial-gradient(circle at 72% 68%,#85898d24 0 1.2px,transparent 1.8px),linear-gradient(145deg,#f1efea,#bfc0bc);border-color:#95989b99;box-shadow:inset 0 0 0 1px #fff8,0 5px 10px #0006}
 .mgw-domino-preview.tiles-neon{background:radial-gradient(circle at 48% 45%,#0b2834,#04070d 72%)}
 .mgw-domino-preview.tiles-neon .mgw-domino-preview-table{border-color:#2ceaff72;background:linear-gradient(145deg,#071b22,#071016);box-shadow:0 0 22px #00dfff35,inset 0 0 28px #00eaff10}
@@ -63,27 +70,27 @@
 .mgw-domino-preview.tiles-neon .mgw-domino-preview-half+.mgw-domino-preview-half{border-color:#be5cff}
 .mgw-domino-preview.tiles-neon .mgw-domino-preview-slot:nth-child(even) .mgw-domino-preview-tile{color:#df75ff;border-color:#c45cff;box-shadow:0 0 6px #c45cff,0 0 11px #00dfff34,inset 0 0 7px #ae50ff25}
 
-/* Effect 1: domino snap. No generic particle rings: the played tile flips and clicks into the matching end. */
+/* Effect 1: domino snap. */
 .mgw-domino-preview.effect-precision-drop .mgw-domino-preview-slot.fx-precision-target{z-index:9}
 .mgw-domino-preview.effect-precision-drop .mgw-domino-preview-slot.fx-precision-target .mgw-domino-preview-tile{animation:mgw-domino-snap-tile 2.55s cubic-bezier(.18,.82,.22,1) infinite}
 .mgw-domino-preview.effect-precision-drop .mgw-domino-preview-slot.fx-precision-target .mgw-domino-preview-half i.active{animation:mgw-domino-snap-pip 2.55s ease-out infinite}
-.mgw-domino-snap-marks{position:absolute;z-index:10;right:7%;top:48%;width:14%;height:24%;pointer-events:none}
+.mgw-domino-snap-marks{position:absolute;z-index:10;right:5%;top:47%;width:14%;height:24%;pointer-events:none}
 .mgw-domino-snap-marks i{position:absolute;right:16%;top:50%;width:34%;height:2px;border-radius:1px;background:#8ff6d7;box-shadow:0 0 5px #52e6bd;opacity:0;transform-origin:right center;animation:mgw-domino-snap-mark 2.55s ease-out infinite}
 .mgw-domino-snap-marks i:nth-child(1){transform:rotate(-34deg);margin-top:-6px}
 .mgw-domino-snap-marks i:nth-child(2){transform:rotate(0deg);margin-top:0}
 .mgw-domino-snap-marks i:nth-child(3){transform:rotate(34deg);margin-top:6px}
 
-/* Effect 2: domino stock shuffle. The stack physically riffles and one real tile peels out. */
+/* Effect 2: domino stock shuffle. */
 .mgw-domino-preview.effect-stock-pulse .mgw-domino-stock.fx-stock i:nth-child(1){animation:mgw-domino-stock-riffle-a 2.8s ease-in-out infinite}
 .mgw-domino-preview.effect-stock-pulse .mgw-domino-stock.fx-stock i:nth-child(2){animation:mgw-domino-stock-riffle-b 2.8s ease-in-out infinite}
 .mgw-domino-preview.effect-stock-pulse .mgw-domino-stock.fx-stock i:nth-child(3){animation:mgw-domino-stock-riffle-c 2.8s ease-in-out infinite}
-.mgw-domino-draw-ghost{position:absolute;z-index:10;left:9%;top:14%;width:21%;opacity:0;transform:translate(0,0) rotate(-12deg) scale(.76);transform-style:preserve-3d;filter:drop-shadow(0 6px 7px #0008);animation:mgw-domino-stock-peel 2.8s cubic-bezier(.18,.8,.2,1) infinite}
+.mgw-domino-draw-ghost{position:absolute;z-index:10;left:8%;top:12%;width:22%;opacity:0;transform:translate(0,0) rotate(-12deg) scale(.76);transform-style:preserve-3d;filter:drop-shadow(0 6px 7px #0008);animation:mgw-domino-stock-peel 2.8s cubic-bezier(.18,.8,.2,1) infinite}
 .mgw-domino-draw-ghost .mgw-domino-preview-tile{width:100%;height:auto;box-shadow:0 0 0 1px #ffd85b80,0 5px 10px #0008}
 
-/* Effect 3: domino cascade. The finish travels tile-by-tile through the chain itself. */
+/* Effect 3: domino cascade. */
 .mgw-domino-preview.effect-chain-finale .mgw-domino-preview-slot.fx-finale .mgw-domino-preview-tile{transform-origin:left center;animation:mgw-domino-cascade-tile 3.15s cubic-bezier(.2,.74,.24,1) infinite;animation-delay:calc(var(--fx-step) * .13s)}
 .mgw-domino-preview.effect-chain-finale .mgw-domino-preview-slot.fx-finale .mgw-domino-preview-half i.active{animation:mgw-domino-cascade-pip 3.15s ease-in-out infinite;animation-delay:calc(var(--fx-step) * .13s)}
-.mgw-domino-finale-bars{position:absolute;z-index:4;left:12%;right:12%;bottom:14%;display:grid;grid-template-columns:repeat(4,1fr);gap:6%}
+.mgw-domino-finale-bars{position:absolute;z-index:4;left:10%;right:10%;bottom:9%;display:grid;grid-template-columns:repeat(4,1fr);gap:6%}
 .mgw-domino-finale-bars i{display:block;height:2px;border-radius:1px;background:linear-gradient(90deg,#ffd85b,#ff9f4d);box-shadow:0 0 5px #ffb84d99;opacity:.08;transform:scaleX(.35);animation:mgw-domino-cascade-bar 3.15s ease-in-out infinite;transform-origin:left center}
 .mgw-domino-finale-bars i:nth-child(2){animation-delay:.13s}
 .mgw-domino-finale-bars i:nth-child(3){animation-delay:.26s}
@@ -145,8 +152,9 @@
 
 @media(max-width:390px){
   .store-v2-game-preview[data-game-type="domino"]{border-radius:12px!important}
-  .mgw-domino-preview-table{border-radius:12px}
-  .mgw-domino-preview-half i{min-width:1.55px}
+  .mgw-domino-preview-table{inset:2px;border-radius:10px}
+  .mgw-domino-preview-chain{left:4%;right:4%}
+  .mgw-domino-preview-half i{min-width:2px}
 }
 @media(prefers-reduced-motion:reduce){
   .store-v2-game-preview[data-game-type="domino"] *{animation:none!important}
