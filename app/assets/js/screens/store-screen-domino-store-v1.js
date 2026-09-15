@@ -208,7 +208,7 @@ function effectChain(layer, variant){
   }
 
   const values = variant === 'stock-pulse'
-    ? [[6,3],[3,5]]
+    ? [[6,3]]
     : [[6,3],[3,5],[5,2]];
   return values.map((pair, index) => {
     const classes = [];
