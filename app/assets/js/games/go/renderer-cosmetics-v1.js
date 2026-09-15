@@ -13,6 +13,11 @@ const EFFECT_IDS = new Set([
   'game-go-effect-territory-finish',
 ]);
 const cosmeticsByGamePlayer = new Map();
+const TERRITORY_QA_OFFSETS = [
+  [-24, -18], [0, -26], [24, -18],
+  [-28, 0], [28, 0],
+  [-24, 18], [0, 26], [24, 18],
+];
 
 ensureLiveCosmeticStyles();
 
@@ -83,7 +88,7 @@ function decorateLiveGo({ game, me, container }){
     }
 
     if (effectId === 'game-go-effect-territory-finish') {
-      applyTerritoryQaPreview({ board, container, size, placedCell });
+      applyTerritoryQaPreview({ board, container });
       return;
     }
   }
@@ -95,7 +100,6 @@ function decorateLiveGo({ game, me, container }){
     && (effectId === 'game-go-effect-territory-finish' || finishEffectId === 'game-go-effect-territory-finish')
   ) {
     board.dataset.mgwGoFx = 'territory-finish';
-    board.dataset.mgwGoSeal = 'MGW';
     container.querySelectorAll('.go-point.territory-black,.go-point.territory-white,.go-point.territory-neutral')
       .forEach((point, index) => {
         if (!(point instanceof HTMLElement)) return;
@@ -105,39 +109,23 @@ function decorateLiveGo({ game, me, container }){
   }
 }
 
-function applyTerritoryQaPreview({ board, container, size, placedCell }){
-  board.dataset.mgwGoFx = 'territory-finish';
-  board.dataset.mgwGoSeal = 'MGW';
+function applyTerritoryQaPreview({ board, container }){
   board.dataset.mgwGoTerritoryQa = 'placement';
 
-  qaTerritoryCells(size, placedCell).forEach((cell, index) => {
-    const point = pointElement(container, cell);
-    if (!point) return;
-    point.dataset.mgwGoTerritoryFx = 'qa';
-    point.dataset.mgwGoTerritoryTone = index % 2 === 0 ? 'black' : 'white';
-    point.style.setProperty('--mgw-go-territory-step', String(index));
-  });
-}
+  const occupiedPoints = [...container.querySelectorAll('.go-point')]
+    .filter(point => point instanceof HTMLElement && point.querySelector('.go-stone'));
 
-function qaTerritoryCells(size, placedCell){
-  const centerRow = Math.floor(size / 2);
-  const centerCol = Math.floor(size / 2);
-  const center = centerRow * size + centerCol;
-  const anchor = placedCell >= 0 ? placedCell : center;
-  const anchorRow = Math.floor(anchor / size);
-  const anchorCol = anchor % size;
-  const candidates = [
-    [anchorRow - 1, anchorCol - 1], [anchorRow - 1, anchorCol], [anchorRow - 1, anchorCol + 1],
-    [anchorRow + 1, anchorCol - 1], [anchorRow + 1, anchorCol], [anchorRow + 1, anchorCol + 1],
-    [centerRow, centerCol - 1], [centerRow, centerCol], [centerRow, centerCol + 1],
-  ];
-  const cells = [];
-  candidates.forEach(([row, col]) => {
-    if (row < 0 || col < 0 || row >= size || col >= size) return;
-    const cell = row * size + col;
-    if (!cells.includes(cell)) cells.push(cell);
+  occupiedPoints.forEach((point, index) => {
+    if (!(point instanceof HTMLElement)) return;
+    const stone = point.querySelector('.go-stone');
+    if (!(stone instanceof HTMLElement)) return;
+    const [offsetX, offsetY] = TERRITORY_QA_OFFSETS[index % TERRITORY_QA_OFFSETS.length];
+    point.dataset.mgwGoTerritoryFx = 'qa';
+    point.dataset.mgwGoTerritoryTone = stone.classList.contains('black') ? 'black' : 'white';
+    point.style.setProperty('--mgw-go-territory-step', String(index));
+    point.style.setProperty('--mgw-go-cube-x', `${offsetX}px`);
+    point.style.setProperty('--mgw-go-cube-y', `${offsetY}px`);
   });
-  return cells.slice(0, 8);
 }
 
 function clearPaidEffectMarks(container){
@@ -151,6 +139,8 @@ function clearPaidEffectMarks(container){
     delete element.dataset.mgwGoTerritoryFx;
     delete element.dataset.mgwGoTerritoryTone;
     element.style.removeProperty('--mgw-go-territory-step');
+    element.style.removeProperty('--mgw-go-cube-x');
+    element.style.removeProperty('--mgw-go-cube-y');
   });
   const board = container.querySelector('.go-board');
   if (board instanceof HTMLElement) {
