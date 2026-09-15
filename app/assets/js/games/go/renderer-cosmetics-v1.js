@@ -14,6 +14,7 @@ const EFFECT_IDS = new Set([
 ]);
 const cosmeticsByGamePlayer = new Map();
 const lastBoardByGame = new Map();
+const activeCaptureOverlayKeys = new Set();
 
 ensureLiveCosmeticStyles();
 
@@ -81,7 +82,7 @@ function decorateLiveGo({ game, me, container, size, removedCells }){
       : removedCells.map(entry => entry.cell);
 
     if (captureCells.length > 0) {
-      applyGroupCaptureEffect({
+      applyGroupCaptureOverlay({
         game,
         mover,
         container,
@@ -108,7 +109,19 @@ function decorateLiveGo({ game, me, container, size, removedCells }){
   }
 }
 
-function applyGroupCaptureEffect({ game, mover, container, captureCells, removedCells, animatedByBase }){
+function applyGroupCaptureOverlay({ game, mover, container, captureCells, removedCells, animatedByBase }){
+  const board = container.querySelector('.go-board');
+  if (!(board instanceof HTMLElement)) return;
+
+  const moveKey = [
+    String(game?.id || ''),
+    Number(game?.move_count || 0),
+    Number(game?.last_move?.cell ?? -1),
+    captureCells.join(','),
+  ].join(':');
+  if (activeCaptureOverlayKeys.has(moveKey)) return;
+  activeCaptureOverlayKeys.add(moveKey);
+
   const removedByCell = new Map(removedCells.map(entry => [entry.cell, entry]));
   const moverSide = normalizeSide(mover?.side || game?.last_move?.side);
   const fallbackColor = moverSide === 'black' ? 'white' : 'black';
@@ -117,20 +130,34 @@ function applyGroupCaptureEffect({ game, mover, container, captureCells, removed
     const point = pointElement(container, cell);
     if (!(point instanceof HTMLElement)) return;
 
-    point.dataset.mgwGoFx = 'group-capture';
-    point.style.setProperty('--mgw-go-fx-step', String(index));
+    const x = point.style.getPropertyValue('--go-x').trim();
+    const y = point.style.getPropertyValue('--go-y').trim();
+    const pointSize = point.style.getPropertyValue('--go-point-size').trim();
+    if (!x || !y || !pointSize) return;
 
-    if (!animatedByBase || !point.querySelector('.go-stone')) {
-      if (!point.querySelector('.go-stone')) {
-        const ghost = document.createElement('span');
-        const color = removedByCell.get(cell)?.color || fallbackColor;
-        ghost.className = `go-stone ${color} mgw-go-capture-ghost`;
-        ghost.setAttribute('aria-hidden', 'true');
-        point.appendChild(ghost);
-      }
-      point.classList.add('mgw-go-capture-fallback');
+    const sourceStone = point.querySelector('.go-stone');
+    const color = sourceStone?.classList.contains('white')
+      ? 'white'
+      : (sourceStone?.classList.contains('black')
+        ? 'black'
+        : (removedByCell.get(cell)?.color || fallbackColor));
+
+    if (sourceStone instanceof HTMLElement) {
+      point.dataset.mgwGoPaidCaptureSource = '1';
     }
+
+    const overlay = document.createElement('span');
+    overlay.className = 'mgw-go-capture-overlay-v8';
+    overlay.dataset.mgwGoCaptureOverlay = '1';
+    overlay.style.setProperty('--go-x', x);
+    overlay.style.setProperty('--go-y', y);
+    overlay.style.setProperty('--go-point-size', pointSize);
+    overlay.style.setProperty('--mgw-go-capture-delay', animatedByBase ? `${330 + Math.min(index, 10) * 38}ms` : `${Math.min(index, 10) * 38}ms`);
+    overlay.innerHTML = `<span class="go-stone ${color} mgw-go-capture-overlay-stone" aria-hidden="true"></span>`;
+    board.appendChild(overlay);
   });
+
+  globalThis.setTimeout(() => activeCaptureOverlayKeys.delete(moveKey), 1800);
 }
 
 function clearTransientTerritoryMarks(container){
@@ -264,6 +291,12 @@ function ensureLiveCosmeticStyles(){
     marker:'mgwGoLiveEffectsV7Runtime',
     markerValue:'mvp19-8-effect2-single-pass-territory-final-v7',
     href:new URL('../../../css/games/go/live-effects-corrective-v7.css?v=1&mvp19_8=effect2-single-pass-territory-final-v7', import.meta.url).href,
+  });
+  ensureStylesheet({
+    selector:'link[data-mgw-go-live-capture-overlay-v8-runtime]',
+    marker:'mgwGoLiveCaptureOverlayV8Runtime',
+    markerValue:'mvp19-8-capture-overlay-v8',
+    href:new URL('../../../css/games/go/live-capture-overlay-v8.css?v=1&mvp19_8=capture-overlay-v8', import.meta.url).href,
   });
 }
 
