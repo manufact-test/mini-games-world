@@ -4,6 +4,8 @@ import { initProfileReversiParity } from './mgw-profile-reversi-parity.js?v=2&mv
 import { initProfileReversiHardSquare } from './mgw-profile-reversi-hard-square-v1.js?v=1&mvp19_7=profile-hard-square-v1';
 import { initProfileGoParity } from './mgw-profile-go-parity.js?v=2&mvp19_8=go-profile-corrective-v2';
 import { initProfileGoHardSquare } from './mgw-profile-go-hard-square-v1.js?v=1&mvp19_8=go-profile-hard-square-v1';
+import { initProfileDominoParity } from './mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1';
+import { initProfileDominoHardRatio } from './mgw-profile-domino-hard-ratio-v1.js?v=1&mvp19_9=hard-8x5-v1';
 
 const profileChessArtworkPrewarm = [];
 const PROFILE_GAME_TAB_DRAG_THRESHOLD = 5;
@@ -33,6 +35,8 @@ export function initProfileScreen(){
   initProfileReversiHardSquare();
   initProfileGoParity();
   initProfileGoHardSquare();
+  initProfileDominoParity();
+  initProfileDominoHardRatio();
 }
 
 function prepareProfileGameTabInputMode(){
