@@ -44,9 +44,9 @@ expect(store.includes('mgw-domino-fx-trail'), 'Precision must render a dedicated
 expect(store.includes('mgw-domino-fx-stock-halo') && store.includes('mgw-domino-fx-stock-particles'), 'Stock must have a local lift halo/particle language distinct from Precision.');
 expect(store.includes('mgw-domino-fx-burst') && store.includes('mgw-domino-fx-halo') && store.includes('mgw-domino-fx-sparks'), 'Finale must use the new burst/halo/sparks finish scene.');
 expect(!store.includes('mgw-domino-fx-rail'), 'Rejected Finale bottom rail must be removed from markup.');
-expect(store.includes('Костяшка влетает в цепь со световым шлейфом и яркой вспышкой в момент стыковки'), 'Precision customer copy must describe the visible effect in normal language.');
-expect(store.includes('Костяшка поднимается из запаса в холодном свечении и плавно выходит на игровое поле'), 'Stock customer copy must be simple and human-facing.');
-expect(store.includes('После последнего хода цепь вспыхивает золотым светом, а вокруг костяшек рассыпаются искры'), 'Finale customer copy must describe the celebratory finish in normal language.');
+expect(store.includes('Световой шлейф сопровождает ход и ярко вспыхивает в момент стыковки'), 'Precision customer copy must be simple and human-facing.');
+expect(store.includes('При взятии из запаса появляется холодное свечение и короткая россыпь искр'), 'Stock customer copy must be simple and human-facing.');
+expect(store.includes('Последний ход запускает золотую вспышку и праздничный поток искр вокруг цепи'), 'Finale customer copy must be simple and human-facing.');
 
 expect(css.includes('aspect-ratio:8 / 5!important'), 'Base Domino preview primitive must retain accepted 8:5 geometry where explicitly used.');
 expect(css.includes('aspect-ratio:47 / 24'), 'Static Domino tiles must keep authentic live proportions.');
@@ -72,6 +72,7 @@ expect(!effectCss.includes('mgw-domino-v11-magnetic-glide'), 'Superseded v11 Pre
 expect(!effectCss.includes('mgw-domino-v11-spectral-draw'), 'Superseded v11 Stock choreography must be removed.');
 expect(!effectCss.includes('mgw-domino-v11-lux-sheen'), 'Superseded v11 Finale choreography must be removed.');
 expect(!effectCss.includes('transform-style:preserve-3d'), 'Premium v12 must not depend on staged 3D flips.');
+expect(!effectCss.includes('calc(var(--tilt'), 'Finale transforms must stay compatible with Telegram WebView CSS parsing.');
 
 expect(selectorOwner.includes('selector.scrollLeft = left;'), 'Fresh Store game selector must center its active game instantly.');
 expect(!selectorOwner.includes("behavior:'smooth'"), 'Store selector must never visibly smooth-scroll through an intermediate position after rerender.');
