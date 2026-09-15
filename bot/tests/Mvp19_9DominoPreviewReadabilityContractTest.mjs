@@ -30,9 +30,10 @@ expect(css.includes('theme-walnut .mgw-domino-preview-table'), 'Walnut table mus
 expect(css.includes('mgw-domino-head-back>i:first-child'), 'Header backs must visibly split through the centre.');
 expect(css.includes('mgw-domino-head-back>i::after{display:none!important;content:none!important}'), 'Header backs must not contain decorative circles/insets.');
 
-expect(manifest.includes('domino_preview=expanded-readable-v3'), 'Accepted Store owner graph must remain unchanged while v4 is published by the Domino module itself.');
-expect(manifest.includes('domino-expanded-readable-v3'), 'Accepted Domino module import-map key must remain stable.');
+expect(manifest.includes('domino_preview=uniform-fullfield-v4'), 'Active Store owner URL must be cache-busted for Domino v4.');
+expect(manifest.includes("'./assets/js/screens/store-screen-domino-store-v1.js?v=1&mvp19_9=store-profile-preview-8x5-v1' => './assets/js/screens/store-screen-domino-store-v1.js?v=4&mvp19_9=domino-uniform-fullfield-v4'"), 'Active import map must resolve the Domino module to v4.');
+expect(!manifest.includes('domino_preview=expanded-readable-v3'), 'Active Store owner must not remain on the stale Domino v3 cache marker.');
 const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);
-expect(launchMatch && Number(launchMatch[1]) >= 1158, 'Telegram entry must publish the v4 preview cache bump.');
+expect(launchMatch && Number(launchMatch[1]) >= 1159, 'Telegram entry must publish the active-graph v4 cache bump.');
 
-console.log('MVP-19.9 Domino preview readability v4 contract passed.');
+console.log('MVP-19.9 Domino preview readability v4 active-graph contract passed.');
