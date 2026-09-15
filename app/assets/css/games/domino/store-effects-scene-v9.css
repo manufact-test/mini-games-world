@@ -389,7 +389,7 @@ body .mgw-domino-fx-finale .mgw-domino-fx-sparks{
 @keyframes mgw-domino-v12-finale-piece{
   0%,46%{transform:translateY(-50%) rotate(0deg) scale(1);filter:drop-shadow(0 7px 13px rgba(0,0,0,.36))}
   56%{transform:translateY(-61%) rotate(var(--tilt,0deg)) scale(1.035);filter:drop-shadow(0 0 13px rgba(255,214,137,.58)) drop-shadow(0 8px 14px rgba(0,0,0,.28))}
-  65%{transform:translateY(-54%) rotate(calc(var(--tilt,0deg) * -.45)) scale(1.012);filter:drop-shadow(0 0 9px rgba(108,255,216,.32)) drop-shadow(0 7px 13px rgba(0,0,0,.32))}
+  65%{transform:translateY(-54%) rotate(0deg) scale(1.012);filter:drop-shadow(0 0 9px rgba(108,255,216,.32)) drop-shadow(0 7px 13px rgba(0,0,0,.32))}
   74%,100%{transform:translateY(-50%) rotate(0deg) scale(1);filter:drop-shadow(0 7px 13px rgba(0,0,0,.36))}
 }
 @keyframes mgw-domino-v12-finale-burst{
