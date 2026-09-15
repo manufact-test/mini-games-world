@@ -89,11 +89,11 @@ body .mgw-domino-preview.effect-precision-drop .mgw-domino-preview-table{
     linear-gradient(145deg,#194834,#081a14 75%)!important;
 }
 body .mgw-domino-v13-impact .mgw-domino-v13-chain > i:nth-child(1){
-  left:6%!important;top:59%!important;transform:translateY(-50%)!important;
+  left:6%!important;top:47.2%!important;
   animation:mgw-domino-v15-chain-kick-left 3.2s ease-in-out infinite!important;
 }
 body .mgw-domino-v13-impact .mgw-domino-v13-chain > i:nth-child(2){
-  left:36.5%!important;top:59%!important;transform:translateY(-50%)!important;
+  left:36.5%!important;top:47.2%!important;
   animation:mgw-domino-v15-chain-kick-mid 3.2s ease-in-out infinite!important;
 }
 body .mgw-domino-v13-impact .mgw-domino-v13-impact-piece{
@@ -141,9 +141,9 @@ body .mgw-domino-v13-impact .mgw-domino-v13-impact-sparks > i{
   filter:drop-shadow(0 0 4px rgba(89,246,188,.55))!important;
   animation:mgw-domino-v15-precision-spark 3.2s ease-out infinite!important;
 }
-body .mgw-domino-v13-impact .mgw-domino-v13-impact-sparks > i:nth-child(1){rotate:-58deg}
-body .mgw-domino-v13-impact .mgw-domino-v13-impact-sparks > i:nth-child(2){rotate:0deg}
-body .mgw-domino-v13-impact .mgw-domino-v13-impact-sparks > i:nth-child(3){rotate:58deg}
+body .mgw-domino-v13-impact .mgw-domino-v13-impact-sparks > i:nth-child(1){--mgw-spark-angle:-58deg}
+body .mgw-domino-v13-impact .mgw-domino-v13-impact-sparks > i:nth-child(2){--mgw-spark-angle:0deg}
+body .mgw-domino-v13-impact .mgw-domino-v13-impact-sparks > i:nth-child(3){--mgw-spark-angle:58deg}
 
 /* EFFECT 2 — STOCK LIFT / FLIP / LAND.
    The stock is large enough to read immediately. One full-size tile lifts out, flips its face and travels
@@ -197,7 +197,6 @@ body .mgw-domino-v13-draw .mgw-domino-v13-draw-piece > i.back::before{
 }
 body .mgw-domino-v13-draw .mgw-domino-v13-stock > i:nth-child(1){transform:translate(0,0) rotate(-3deg)!important}
 body .mgw-domino-v13-draw .mgw-domino-v13-stock > i:nth-child(2){transform:translate(6%,-10%) rotate(0deg)!important}
-body .mgw-domino-v13-draw .mgw-domino-v13-draw-stock > i:nth-child(3){transform:translate(12%,-20%) rotate(3deg)!important}
 body .mgw-domino-v13-draw .mgw-domino-v13-stock > i:nth-child(3){transform:translate(12%,-20%) rotate(3deg)!important}
 body .mgw-domino-v13-draw .mgw-domino-v13-draw-piece{
   position:absolute!important;
@@ -220,12 +219,14 @@ body .mgw-domino-v13-draw .mgw-domino-v13-draw-piece > i{
   transform-origin:center!important;
   will-change:transform,opacity!important;
 }
+body .store-v2-game-preview[data-game-type="domino"] .mgw-domino-v13-draw .mgw-domino-v13-draw-piece > i.face{
+  width:100%!important;
+  height:100%!important;
+}
 body .mgw-domino-v13-draw .mgw-domino-v13-draw-piece > i.back{
   animation:mgw-domino-v15-stock-back 3.65s ease-in-out infinite!important;
 }
 body .mgw-domino-v13-draw .mgw-domino-v13-draw-piece > i.face{
-  width:100%!important;
-  height:100%!important;
   opacity:0;
   animation:mgw-domino-v15-stock-face 3.65s ease-in-out infinite!important;
 }
@@ -328,14 +329,14 @@ body .mgw-domino-v13-cascade .mgw-domino-v13-finish-dust{
   94%,100%{opacity:0;transform:translate3d(0,-50%,0) rotate(0deg) scale(1)}
 }
 @keyframes mgw-domino-v15-chain-kick-left{
-  0%,52%{transform:translateY(-50%) translateX(0)}
-  58%{transform:translateY(-50%) translateX(-5%)}
-  66%,100%{transform:translateY(-50%) translateX(0)}
+  0%,52%{transform:translateX(0)}
+  58%{transform:translateX(-5%)}
+  66%,100%{transform:translateX(0)}
 }
 @keyframes mgw-domino-v15-chain-kick-mid{
-  0%,52%{transform:translateY(-50%) translateX(0)}
-  58%{transform:translateY(-50%) translateX(-3%)}
-  66%,100%{transform:translateY(-50%) translateX(0)}
+  0%,52%{transform:translateX(0)}
+  58%{transform:translateX(-3%)}
+  66%,100%{transform:translateX(0)}
 }
 @keyframes mgw-domino-v15-precision-wave{
   0%,52%{opacity:0;transform:translate(-50%,-50%) scale(.16)}
@@ -344,10 +345,10 @@ body .mgw-domino-v13-cascade .mgw-domino-v13-finish-dust{
   82%,100%{opacity:0;transform:translate(-50%,-50%) scale(1.54)}
 }
 @keyframes mgw-domino-v15-precision-spark{
-  0%,53%{opacity:0;transform:translateX(0) scaleX(.25)}
-  58%{opacity:1;transform:translateX(0) scaleX(1)}
-  69%{opacity:0;transform:translateX(38%) scaleX(.82)}
-  100%{opacity:0;transform:translateX(38%) scaleX(.82)}
+  0%,53%{opacity:0;transform:rotate(var(--mgw-spark-angle)) translateX(0) scaleX(.25)}
+  58%{opacity:1;transform:rotate(var(--mgw-spark-angle)) translateX(0) scaleX(1)}
+  69%{opacity:0;transform:rotate(var(--mgw-spark-angle)) translateX(38%) scaleX(.82)}
+  100%{opacity:0;transform:rotate(var(--mgw-spark-angle)) translateX(38%) scaleX(.82)}
 }
 
 @keyframes mgw-domino-v15-stock-flight{
@@ -419,7 +420,7 @@ body .mgw-domino-v13-cascade .mgw-domino-v13-finish-dust{
   body .mgw-domino-v13-cascade .mgw-domino-v13-finish-dust{
     animation:none!important;
   }
-  body .mgw-domino-v13-impact .mgw-domino-v13-chain > i{opacity:1!important;transform:translateY(-50%)!important}
+  body .mgw-domino-v13-impact .mgw-domino-v13-chain > i{opacity:1!important;transform:none!important}
   body .mgw-domino-v13-impact .mgw-domino-v13-impact-piece{opacity:1!important;transform:translate3d(0,-50%,0)!important}
   body .mgw-domino-v13-impact .mgw-domino-v13-impact-ring,
   body .mgw-domino-v13-impact .mgw-domino-v13-impact-sparks > i,
@@ -427,6 +428,5 @@ body .mgw-domino-v13-cascade .mgw-domino-v13-finish-dust{
   body .mgw-domino-v13-draw .mgw-domino-v13-draw-piece{opacity:1!important;transform:translate3d(155%,88%,0)!important}
   body .mgw-domino-v13-draw .mgw-domino-v13-draw-piece > i.back{opacity:0!important}
   body .mgw-domino-v13-draw .mgw-domino-v13-draw-piece > i.face{opacity:1!important;transform:scaleX(1)!important}
-  body .mgw-domino-v13-draw .mgw-domino-v13-cascade-row > i,
   body .mgw-domino-v13-cascade .mgw-domino-v13-cascade-row > i{opacity:1!important;transform:rotate(0deg)!important}
 }
