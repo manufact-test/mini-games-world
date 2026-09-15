@@ -67,7 +67,7 @@ export function initProfileDominoParity(){
 function ensureDominoProfileStyles(){
   ensureStyle('data-mgw-domino-store', '../../css/games/domino/store-cosmetics-v1.css?v=4&mvp19_9=domino-uniform-fullfield-v4');
   ensureStyle('data-mgw-domino-store-card-fill-v5', '../../css/games/domino/store-card-fill-live-pips-v5.css?v=2&mvp19_9=domino-card-fill-live-pips-v6');
-  ensureStyle('data-mgw-domino-store-effects-v9', '../../css/games/domino/store-effects-scene-v9.css?v=2&mvp19_9=domino-store-effects-scene-v10');
+  ensureStyle('data-mgw-domino-store-effects-v9', '../../css/games/domino/store-effects-scene-v9.css?v=3&mvp19_9=domino-premium-effects-v11');
   ensureStyle('data-mgw-profile-domino-parity', '../../css/screens/profile-domino-store-parity-v1.css?v=3&mvp19_9=domino-profile-single-back-v3');
 }
 
