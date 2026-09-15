@@ -1,6 +1,7 @@
-/* Go rules diagram marker alignment corrective.
- * Keeps the accepted diagrams and moves only the forbidden/ko markers onto the
- * exact board intersection centre.
+/* Go rules diagram marker alignment corrective v2.
+ * Keep the accepted rule diagrams intact; only polish the suicide/ko markers.
+ * Both rings sit on the exact intersection. The glyphs are deliberately smaller
+ * so they remain readable without merging into nearby stones/rings.
  */
 .go-rule-point em.forbidden,
 .go-rule-point em.ko{
@@ -8,20 +9,53 @@
   left:50%!important;
   top:50%!important;
   margin:0!important;
+  display:grid!important;
+  place-items:center!important;
   transform:translate(-50%,-50%)!important;
   transform-origin:50% 50%!important;
   box-sizing:border-box!important;
 }
+
+.go-rule-point em.forbidden{
+  width:44%!important;
+  aspect-ratio:1!important;
+  border-width:2px!important;
+  box-shadow:0 0 9px rgba(255,104,117,.42)!important;
+}
+
+.go-rule-point em.ko{
+  width:39%!important;
+  aspect-ratio:1!important;
+  border-width:2px!important;
+  box-shadow:0 0 8px rgba(255,216,91,.38)!important;
+}
+
 .go-rule-point em.forbidden::after,
 .go-rule-point em.ko::after{
   position:absolute!important;
-  inset:0!important;
-  display:flex!important;
-  align-items:center!important;
-  justify-content:center!important;
+  left:50%!important;
+  top:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:100%!important;
+  height:100%!important;
+  display:grid!important;
+  place-items:center!important;
   margin:0!important;
   padding:0!important;
   line-height:1!important;
   text-align:center!important;
-  transform:none!important;
+  transform-origin:50% 50%!important;
+}
+
+.go-rule-point em.forbidden::after{
+  font-size:11px!important;
+  font-weight:900!important;
+  transform:translate(-50%,-50%) translateY(-.35px)!important;
+}
+
+.go-rule-point em.ko::after{
+  font-size:9px!important;
+  font-weight:900!important;
+  transform:translate(-50%,-50%) translateY(-.7px)!important;
 }
