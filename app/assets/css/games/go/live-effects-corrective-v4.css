@@ -1,0 +1,107 @@
+/* MVP-19.8 Go live effects corrective v4.
+ * Manual review correction: restore cube reconstruction, remove board wave/logo,
+ * keep all presentation anchored to real Go intersections.
+ */
+
+/* Effect 3 QA must not emit the board-wide radial wave or any central seal. */
+.go-board[data-mgw-go-territory-qa="placement"]::before,
+.go-board[data-mgw-go-territory-qa="placement"]::after,
+.go-board[data-mgw-go-fx="territory-finish"]::before,
+.go-board[data-mgw-go-fx="territory-finish"]::after{
+  content:none!important;
+  display:none!important;
+  animation:none!important;
+}
+
+/* Remove the rejected v3 stone-outline substitute. */
+.go-board[data-mgw-go-territory-qa="placement"] .go-stone::before{
+  content:none!important;
+  display:none!important;
+  animation:none!important;
+}
+
+/* Restore the actual square/cube marks from the accepted Store language.
+ * Each cube starts close to its own target and reconstructs back onto the exact
+ * occupied intersection; it never chooses an unrelated board position. */
+.go-board[data-mgw-go-territory-qa="placement"] .go-point[data-mgw-go-territory-fx="qa"]{
+  overflow:visible!important;
+}
+.go-board[data-mgw-go-territory-qa="placement"] .go-point[data-mgw-go-territory-fx="qa"]::after{
+  content:""!important;
+  display:block!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  z-index:9!important;
+  width:38%!important;
+  height:38%!important;
+  aspect-ratio:1!important;
+  border-radius:22%!important;
+  pointer-events:none!important;
+  opacity:0;
+  transform-origin:50% 50%!important;
+  transform:translate(-50%,-50%) translate(var(--mgw-go-cube-x,0),var(--mgw-go-cube-y,0)) scale(.42) rotate(-28deg)!important;
+  animation:mgw-go-live-territory-cube-home-v4 .94s cubic-bezier(.16,.82,.18,1.08) calc(var(--mgw-go-territory-step,0) * .035s + .04s) both!important;
+}
+.go-board[data-mgw-go-territory-qa="placement"] .go-point[data-mgw-go-territory-tone="black"]::after{
+  background:linear-gradient(145deg,rgba(111,248,255,.78),rgba(22,164,196,.38))!important;
+  border:1px solid rgba(104,244,255,.95)!important;
+  box-shadow:0 0 8px #2ce5ffcc,0 0 18px #2ce5ff66,inset 0 0 5px rgba(255,255,255,.55)!important;
+}
+.go-board[data-mgw-go-territory-qa="placement"] .go-point[data-mgw-go-territory-tone="white"]::after{
+  background:linear-gradient(145deg,rgba(238,159,255,.78),rgba(161,69,224,.38))!important;
+  border:1px solid rgba(224,126,255,.95)!important;
+  box-shadow:0 0 8px #c45dffcc,0 0 18px #c45dff66,inset 0 0 5px rgba(255,255,255,.55)!important;
+}
+
+/* Terminal territory squares use the same reconstruction idea and finish on the
+ * exact authoritative territory intersections produced by the base renderer. */
+.go-point[data-mgw-go-territory-fx="1"] .go-territory-marker{
+  transform-origin:50% 50%!important;
+  animation:mgw-go-live-territory-marker-home-v4 .72s cubic-bezier(.16,.82,.18,1.08) calc(var(--mgw-go-territory-step,0) * .035s + .06s) both!important;
+}
+
+@keyframes mgw-go-live-territory-cube-home-v4{
+  0%{
+    opacity:0;
+    transform:translate(-50%,-50%) translate(var(--mgw-go-cube-x,0),var(--mgw-go-cube-y,0)) scale(.42) rotate(-28deg);
+    filter:blur(.7px) brightness(1.25);
+  }
+  24%{opacity:1}
+  62%{
+    opacity:1;
+    transform:translate(-50%,-50%) translate(0,0) scale(1.18) rotate(5deg);
+    filter:blur(0) brightness(1.12);
+  }
+  78%{
+    opacity:1;
+    transform:translate(-50%,-50%) translate(0,0) scale(.94) rotate(-2deg);
+  }
+  88%{
+    opacity:.96;
+    transform:translate(-50%,-50%) translate(0,0) scale(1) rotate(0);
+  }
+  100%{
+    opacity:0;
+    transform:translate(-50%,-50%) translate(0,0) scale(1) rotate(0);
+    filter:none;
+  }
+}
+
+@keyframes mgw-go-live-territory-marker-home-v4{
+  0%{opacity:0;transform:translateY(-9px) scale(.48) rotate(-18deg)}
+  58%{opacity:1;transform:translateY(0) scale(1.16) rotate(4deg)}
+  78%{opacity:1;transform:translateY(0) scale(.95) rotate(-1deg)}
+  100%{opacity:1;transform:translateY(0) scale(1) rotate(0)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .go-board[data-mgw-go-territory-qa="placement"] .go-point[data-mgw-go-territory-fx="qa"]::after,
+  .go-point[data-mgw-go-territory-fx="1"] .go-territory-marker{
+    animation:none!important;
+  }
+  .go-board[data-mgw-go-territory-qa="placement"] .go-point[data-mgw-go-territory-fx="qa"]::after{
+    opacity:.82!important;
+    transform:translate(-50%,-50%) scale(1)!important;
+  }
+}

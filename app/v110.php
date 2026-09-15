@@ -68,6 +68,19 @@ if (!isset($imports[$chessRendererImportKey])
 }
 $imports[$chessRendererImportKey] .= '&staging_check_test=any-move-v1';
 
+// Temporary staging-only Go manual-review cache hook. This changes only the module
+// identity so the current corrective renderer cannot be hidden behind an older WebView cache.
+$goRendererImportKey = './assets/js/games/go/renderer.js?v=70';
+if (!isset($imports[$goRendererImportKey])
+    || !is_string($imports[$goRendererImportKey])
+    || $imports[$goRendererImportKey] === '') {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World Go staging corrective renderer is unavailable.';
+    exit;
+}
+$imports[$goRendererImportKey] .= '&manual_review=territory-cubes-v4';
+
 foreach (['main_css', 'consistency_css', 'bootstrap'] as $requiredAsset) {
     if (!isset($assets[$requiredAsset]) || !is_string($assets[$requiredAsset]) || $assets[$requiredAsset] === '') {
         http_response_code(500);
@@ -102,16 +115,16 @@ if (!is_file($goExitFitPath)) {
     echo 'Mini Games World Go exit fit stylesheet is unavailable.';
     exit;
 }
-$goExitFitTarget = './assets/css/games/go/live-exit-fit-v1.css?v=2&mvp19_8=checkers-scroll-parity-v2';
+$goExitFitTarget = './assets/css/games/go/live-exit-fit-v1.css?v=3&mvp19_8=full-width-scroll-v3';
 
-$goEffectsV3Path = __DIR__ . '/assets/css/games/go/live-effects-corrective-v3.css';
-if (!is_file($goEffectsV3Path)) {
+$goEffectsV4Path = __DIR__ . '/assets/css/games/go/live-effects-corrective-v4.css';
+if (!is_file($goEffectsV4Path)) {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Go live effects corrective v3 is unavailable.';
+    echo 'Mini Games World Go live effects corrective v4 is unavailable.';
     exit;
 }
-$goEffectsV3Target = './assets/css/games/go/live-effects-corrective-v3.css?v=1&mvp19_8=territory-point-lock-no-logo-v3';
+$goEffectsV4Target = './assets/css/games/go/live-effects-corrective-v4.css?v=1&mvp19_8=territory-cubes-no-bloom-v4';
 
 $headClose = '</head>';
 $cssAnchor = './assets/css/main.css?v=93-wallet-15-3';
@@ -160,12 +173,12 @@ $bootstrapTarget = $assets['bootstrap'];
 $bootstrapTag = '  <script type="module" src="' . $bootstrapTarget . '"></script>';
 $checkersTelegramHeightFitTag = '  <link rel="stylesheet" href="' . $checkersTelegramHeightFitTarget . '" />';
 $chessCaptureParityTag = '  <link rel="stylesheet" href="' . $chessCaptureParityTarget . '" />';
-$goExitFitTag = '  <link rel="stylesheet" data-mgw-go-live-exit-fit="mvp19-8-checkers-scroll-parity-v2" href="' . $goExitFitTarget . '" />';
-$goEffectsV3Tag = '  <link rel="stylesheet" data-mgw-go-live-effects-v3="mvp19-8-territory-point-lock-no-logo-v3" href="' . $goEffectsV3Target . '" />';
+$goExitFitTag = '  <link rel="stylesheet" data-mgw-go-live-exit-fit="mvp19-8-full-width-scroll-v3" href="' . $goExitFitTarget . '" />';
+$goEffectsV4Tag = '  <link rel="stylesheet" data-mgw-go-live-effects-v4="mvp19-8-territory-cubes-no-bloom-v4" href="' . $goEffectsV4Target . '" />';
 
 $html = str_replace($cssAnchor, $cssTarget, $html);
 $html = str_replace('./assets/css/production-v95-consistency.css?v=95', $consistencyCssTarget, $html);
-$html = str_replace($headClose, $checkersTelegramHeightFitTag . "\n" . $chessCaptureParityTag . "\n" . $goExitFitTag . "\n" . $goEffectsV3Tag . "\n" . $headClose, $html);
+$html = str_replace($headClose, $checkersTelegramHeightFitTag . "\n" . $chessCaptureParityTag . "\n" . $goExitFitTag . "\n" . $goEffectsV4Tag . "\n" . $headClose, $html);
 $html = str_replace(
     '<p>Готовим игровую комнату</p>',
     '<p>Те самые игры. То самое чувство.</p>',
@@ -186,8 +199,9 @@ $requiredRenderedTargets = [
     'shield_king_css' => $cssTarget,
     'checkers_telegram_height_fit' => $checkersTelegramHeightFitTarget,
     'chess_capture_store_parity' => $chessCaptureParityTarget,
-    'go_checkers_scroll_parity' => $goExitFitTarget,
-    'go_territory_point_lock_no_logo' => $goEffectsV3Target,
+    'go_full_width_scroll' => $goExitFitTarget,
+    'go_territory_cubes_no_bloom' => $goEffectsV4Target,
+    'go_manual_review_renderer' => $imports[$goRendererImportKey],
     'chess_check_test_hook' => $imports[$chessRendererImportKey],
     'unified_ui_cache' => $imports['./assets/js/ui.js?v=89'] ?? '',
     'match_config_cache' => $imports['./assets/js/config.js?v=38'] ?? '',
@@ -260,6 +274,6 @@ header('X-MGW-Battleship-Miss-Handoff: 900ms');
 header('X-MGW-Battleship-Shot-Feedback: hit-sunk-impact-miss-static');
 header('X-MGW-Battleship-Pending-Paint: none-legacy-owner-removed');
 header('X-MGW-Chess-Check-Test: staging-any-move-v1');
-header('X-MGW-Go-Viewport: checkers-scroll-parity-v2');
-header('X-MGW-Go-Territory-FX: point-lock-no-logo-v3');
+header('X-MGW-Go-Viewport: full-width-scroll-v3');
+header('X-MGW-Go-Territory-FX: territory-cubes-no-bloom-v4');
 echo $html;

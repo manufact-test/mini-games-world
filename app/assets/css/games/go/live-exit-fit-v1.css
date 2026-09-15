@@ -1,8 +1,6 @@
-/* MVP-19.8 Go viewport corrective v2.
- * Mirror the accepted Checkers viewport strategy: the screen is bounded to the
- * WebView, the normal content flow scrolls, and the board is only gently capped
- * on genuinely short viewports. Do not crush the board just to keep every
- * control simultaneously above the fold.
+/* MVP-19.8 Go viewport corrective v3.
+ * Keep the accepted Checkers bounded-screen/scroll ownership, but do not narrow
+ * the Go play column. Board, pass button and leave button share one full width.
  */
 .game-board-screen[data-game-type="go"]{
   box-sizing:border-box!important;
@@ -29,6 +27,25 @@
     56px + env(safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)
   );
 }
+.game-board-screen[data-game-type="go"] .board-wrap{
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:100%!important;
+  padding-left:0!important;
+  padding-right:0!important;
+}
+.game-board-screen[data-game-type="go"] .board.go-surface,
+.game-board-screen[data-game-type="go"] .go-panel,
+.game-board-screen[data-game-type="go"] .go-pass-button,
+.game-board-screen[data-game-type="go"] #leaveGame{
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:100%!important;
+}
+.game-board-screen[data-game-type="go"] .board.go-surface{
+  margin-left:0!important;
+  margin-right:0!important;
+}
 .game-board-screen[data-game-type="go"] #leaveGame{
   display:flex!important;
   align-items:center!important;
@@ -40,7 +57,7 @@
 
 @media (max-height:680px){
   .game-board-screen[data-game-type="go"] .board-wrap{
-    padding:4px!important;
+    padding:0!important;
     margin-top:2px!important;
     margin-bottom:8px!important;
   }
@@ -52,18 +69,10 @@
     padding:4px 8px!important;
   }
   .game-board-screen[data-game-type="go"] .board.go-surface{
-    width:min(100%,clamp(300px,calc(100dvh - 245px),360px))!important;
+    width:100%!important;
     max-width:100%!important;
-    margin-left:auto!important;
-    margin-right:auto!important;
   }
   .game-board-screen[data-game-type="go"] .go-pass-button{
     min-height:40px!important;
-  }
-}
-
-@media (max-width:380px) and (max-height:680px){
-  .game-board-screen[data-game-type="go"] .board.go-surface{
-    width:min(100%,clamp(286px,calc(100dvh - 245px),350px))!important;
   }
 }

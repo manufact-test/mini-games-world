@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 const live = fs.readFileSync('app/assets/js/games/go/renderer-cosmetics-v1.js', 'utf8');
 const css = fs.readFileSync('app/assets/css/games/go/live-cosmetics-v1.css', 'utf8');
 const correctiveCss = fs.readFileSync('app/assets/css/games/go/live-effects-corrective-v2.css', 'utf8');
-const correctiveV3Css = fs.readFileSync('app/assets/css/games/go/live-effects-corrective-v3.css', 'utf8');
+const correctiveV4Css = fs.readFileSync('app/assets/css/games/go/live-effects-corrective-v4.css', 'utf8');
 const exitFitCss = fs.readFileSync('app/assets/css/games/go/live-exit-fit-v1.css', 'utf8');
 const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 const v110 = fs.readFileSync('app/v110.php', 'utf8');
@@ -25,6 +25,9 @@ assert.ok(live.includes("point.dataset.mgwGoFx = 'group-capture'"), 'Group captu
 assert.ok(live.includes('capturedCount <= 0 || captured.length <= 0'), 'Group-capture cosmetic must stay silent on ordinary placement');
 assert.ok(live.includes('applyTerritoryQaPreview'), 'Territory finish must retain the temporary placement QA trigger until manual approval');
 assert.ok(live.includes("board.dataset.mgwGoTerritoryQa = 'placement'"), 'Temporary territory QA trigger must remain explicitly isolated for later removal');
+assert.ok(live.includes(".filter(point => point instanceof HTMLElement && point.querySelector('.go-stone'))"), 'Temporary territory QA cubes must be derived from actually occupied Go points');
+assert.ok(live.includes("point.dataset.mgwGoTerritoryTone = stone.classList.contains('black') ? 'black' : 'white'"), 'Temporary cubes must inherit their real stone side');
+assert.ok(!live.includes("board.dataset.mgwGoSeal = 'MGW'"), 'Rejected MG/MGW seal must not be emitted by the active Go renderer');
 assert.ok(live.includes('game?.last_captured_cells'), 'Live group capture must use authoritative captured-cell data');
 assert.ok(live.includes("String(game?.status || '') === 'finished'"), 'Canonical territory finish must still activate on a finished game');
 assert.ok(live.includes('game?.final_score'), 'Canonical territory finish must still require authoritative final territory data');
@@ -49,17 +52,14 @@ for (const fx of [
   assert.ok(css.includes(`@keyframes ${fx}`), `Missing Go live animation ${fx}`);
 }
 assert.ok(correctiveCss.includes('26px 0 #67efff'), 'Placement corrective v2 must retain its outward burst base');
-assert.ok(correctiveV3Css.includes('32px 0 #67efff'), 'Placement corrective v3 must keep the live particle burst clearly visible');
-assert.ok(correctiveV3Css.includes('.go-board[data-mgw-go-territory-qa="placement"] .go-stone::before'), 'Territory QA squares must be anchored to actual occupied Go intersections');
-assert.ok(correctiveV3Css.includes('content:none!important'), 'Territory corrective must remove the giant central MG/MGW seal');
-assert.ok(correctiveV3Css.includes('mgw-go-live-territory-lock-v3'), 'Temporary territory squares must reconstruct in place instead of travelling across the board');
-assert.ok(correctiveV3Css.includes('mgw-go-live-territory-lock-marker-v3'), 'Canonical final territory markers must also resolve in place');
-const territoryQaKeyframes = correctiveV3Css.match(/@keyframes mgw-go-live-territory-lock-v3\{([\s\S]*?)\n\}/);
-const territoryFinalKeyframes = correctiveV3Css.match(/@keyframes mgw-go-live-territory-lock-marker-v3\{([\s\S]*?)\n\}/);
-assert.ok(territoryQaKeyframes && !territoryQaKeyframes[1].includes('translate('), 'Temporary territory squares must scale in place and never travel');
-assert.ok(territoryFinalKeyframes && !territoryFinalKeyframes[1].includes('translate('), 'Canonical territory markers must scale in place and never travel');
+assert.ok(correctiveV4Css.includes('mgw-go-live-territory-cube-home-v4'), 'Effect 3 must restore the visible cube reconstruction animation');
+assert.ok(correctiveV4Css.includes('translate(var(--mgw-go-cube-x,0),var(--mgw-go-cube-y,0))'), 'Territory cubes must move only relative to their own target point');
+assert.ok(correctiveV4Css.includes('translate(0,0) scale(1)'), 'Territory cubes must reconstruct exactly on their target point');
+assert.ok(correctiveV4Css.includes('.go-board[data-mgw-go-territory-qa="placement"]::before'), 'Effect 3 QA must explicitly suppress the board-wide wave');
+assert.ok(correctiveV4Css.includes('.go-board[data-mgw-go-fx="territory-finish"]::after'), 'Effect 3 must explicitly suppress the rejected central seal layer');
+assert.ok(correctiveV4Css.includes('content:none!important'), 'Rejected wave/logo layers must be removed by the v4 corrective');
 
-/* Go must use the same viewport ownership strategy already accepted for Checkers. */
+/* Keep Checkers-style bounded scrolling, but never narrow the actual Go play column. */
 for (const rule of [
   'height:100dvh!important',
   'max-height:100dvh!important',
@@ -69,26 +69,31 @@ for (const rule of [
   'touch-action:pan-y',
 ]) {
   assert.ok(checkersFit.includes(rule), `Accepted Checkers fit is missing expected rule: ${rule}`);
-  assert.ok(exitFitCss.includes(rule), `Go fit must mirror accepted Checkers viewport rule: ${rule}`);
+  assert.ok(exitFitCss.includes(rule), `Go fit must retain accepted Checkers viewport rule: ${rule}`);
 }
-assert.ok(exitFitCss.includes('width:min(100%,clamp(300px,calc(100dvh - 245px),360px))!important'), 'Short Go viewport must use the accepted Checkers-style board cap rather than crush the board');
-assert.ok(!exitFitCss.includes('calc(100dvh - 380px)'), 'Rejected tiny-board formula must not return');
-assert.ok(exitFitCss.includes('.game-board-screen[data-game-type="go"] #leaveGame'), 'Go fit must preserve the existing leave control');
-assert.ok(v110.includes("$goExitFitTarget = './assets/css/games/go/live-exit-fit-v1.css?v=2&mvp19_8=checkers-scroll-parity-v2';"), 'v110 must publish the fresh Checkers-parity Go viewport stylesheet');
-assert.ok(v110.includes("$goEffectsV3Target = './assets/css/games/go/live-effects-corrective-v3.css?v=1&mvp19_8=territory-point-lock-no-logo-v3';"), 'v110 must publish the fresh territory point-lock corrective stylesheet');
-assert.ok(v110.includes('data-mgw-go-live-effects-v3="mvp19-8-territory-point-lock-no-logo-v3"'), 'v110 must expose the unique Go territory v3 stylesheet marker');
-assert.ok(v110.includes("'go_checkers_scroll_parity' => $goExitFitTarget"), 'v110 rendered-target guard must require the Go Checkers-parity viewport stylesheet');
-assert.ok(v110.includes("'go_territory_point_lock_no_logo' => $goEffectsV3Target"), 'v110 rendered-target guard must require the no-logo territory corrective stylesheet');
+assert.ok(exitFitCss.includes('.game-board-screen[data-game-type="go"] .board.go-surface,'), 'Go width corrective must bind the board to the shared full-width play column');
+assert.ok(exitFitCss.includes('.game-board-screen[data-game-type="go"] .go-pass-button,'), 'Go pass button must share the board width');
+assert.ok(exitFitCss.includes('.game-board-screen[data-game-type="go"] #leaveGame{'), 'Go leave button must share the same column width');
+assert.ok(exitFitCss.includes('width:100%!important'), 'Go board and controls must use the full available content width');
+assert.ok(!exitFitCss.includes('clamp('), 'Rejected short-viewport board-width clamp must not return');
+assert.ok(!exitFitCss.includes('calc(100dvh - 245px)'), 'Height-derived board narrowing must not return');
+
+assert.ok(v110.includes("$goExitFitTarget = './assets/css/games/go/live-exit-fit-v1.css?v=3&mvp19_8=full-width-scroll-v3';"), 'v110 must publish the fresh full-width Go viewport stylesheet');
+assert.ok(v110.includes("$goEffectsV4Target = './assets/css/games/go/live-effects-corrective-v4.css?v=1&mvp19_8=territory-cubes-no-bloom-v4';"), 'v110 must publish the cube reconstruction corrective stylesheet');
+assert.ok(v110.includes('data-mgw-go-live-effects-v4="mvp19-8-territory-cubes-no-bloom-v4"'), 'v110 must expose the unique Go v4 effect marker');
+assert.ok(v110.includes("$imports[$goRendererImportKey] .= '&manual_review=territory-cubes-v4';"), 'v110 must force a fresh Go renderer identity for manual review');
+assert.ok(v110.includes("'go_full_width_scroll' => $goExitFitTarget"), 'v110 rendered-target guard must require the full-width viewport stylesheet');
+assert.ok(v110.includes("'go_territory_cubes_no_bloom' => $goEffectsV4Target"), 'v110 rendered-target guard must require the cube corrective stylesheet');
 
 assert.ok(
   manifest.includes("'./assets/js/games/go/renderer.js?v=70' => './assets/js/games/go/renderer-cosmetics-v1.js?v=2&mvp19_8=live-effects-corrective-v2&fx=placement-burst-capture-guard-territory-qa-v2'"),
-  'Active v110 import graph must keep the accepted Go renderer identity',
+  'Version manifest must keep the accepted Go renderer owner; v110 only adds a cache identity suffix',
 );
 const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);
-assert.ok(launchMatch && Number(launchMatch[1]) >= 1143, 'Telegram launch must publish the fresh Go layout/territory corrective cache identity');
+assert.ok(launchMatch && Number(launchMatch[1]) >= 1144, 'Telegram launch must publish the fresh Go width/cubes corrective cache identity');
 
 assert.ok(base.includes('function shouldAnimateMove('), 'Accepted Go move animation sequencing must remain in the frozen base renderer');
 assert.ok(base.includes("onAction?.({ type:'cell', cell });"), 'Accepted Go move action owner must remain in the frozen base renderer');
 assert.ok(base.includes("onAction?.({ type:'pass' });"), 'Accepted Go pass action owner must remain in the frozen base renderer');
 
-console.log('MVP-19.8 Go Live corrective contract passed: Checkers-parity scrolling, normal board size, point-locked territory squares, no central MGW logo.');
+console.log('MVP-19.8 Go Live corrective contract passed: full-width play column, cube reconstruction on real occupied points, no board wave or MG/MGW seal.');

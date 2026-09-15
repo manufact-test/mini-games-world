@@ -8,6 +8,7 @@ on:
       - 'app/assets/css/games/go/live-cosmetics-v1.css'
       - 'app/assets/css/games/go/live-effects-corrective-v2.css'
       - 'app/assets/css/games/go/live-effects-corrective-v3.css'
+      - 'app/assets/css/games/go/live-effects-corrective-v4.css'
       - 'app/assets/css/games/go/live-exit-fit-v1.css'
       - 'app/runtime/client/version-manifest.php'
       - 'app/v110.php'
