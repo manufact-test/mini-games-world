@@ -86,25 +86,26 @@ $assertSame(4, count($domino['elements'] ?? []), 'Store snapshot must expose fou
 $assertSame(3, count($domino['effects'] ?? []), 'Store snapshot must expose three Domino effects');
 $assertSame(false, $snapshot['purchase_rules']['auto_equip'] ?? true, 'Domino purchases must never auto-equip');
 
-$tableQuote = $store->quote($mgwId, 'domino-table-neon');
-$assertSame(12000, (int)$tableQuote['price_coins'], 'Neon Domino table must cost 12,000 coins');
+$neonTableQuote = $store->quote($mgwId, 'domino-table-neon');
+$assertSame(12000, (int)$neonTableQuote['price_coins'], 'Neon Domino table must cost 12,000 coins');
+$tableQuote = $store->quote($mgwId, 'domino-table-felt');
 $tablePurchase = $store->fulfill($mgwId, 'mgw:' . $mgwId, 'legacy-domino-user', [
-    'request_token'=>'store:mvp19-9-domino-table-0001', 'offer_id'=>'domino-table-neon',
+    'request_token'=>'store:mvp19-9-domino-table-felt-0001', 'offer_id'=>'domino-table-felt',
     'price_coins'=>$tableQuote['price_coins'], 'item_ids'=>$tableQuote['item_ids'],
 ]);
 $assertSame(false, $tablePurchase['auto_equipped'], 'Buying a Domino table must not auto-equip');
 $assertSame(null, $inventory->snapshot($mgwId)['equipped']['game_domino_theme'] ?? null, 'Bought table must remain inactive before explicit equip');
-$store->equipGameItem($mgwId, 'game-domino-table-neon');
-$assertSame('game-domino-table-neon', $inventory->snapshot($mgwId)['equipped']['game_domino_theme'] ?? null, 'Explicit table equip must use game_domino_theme');
+$store->equipGameItem($mgwId, 'game-domino-table-felt');
+$assertSame('game-domino-table-felt', $inventory->snapshot($mgwId)['equipped']['game_domino_theme'] ?? null, 'Explicit table equip must use game_domino_theme');
 
-$tilesQuote = $store->quote($mgwId, 'domino-tiles-marble');
+$tilesQuote = $store->quote($mgwId, 'domino-tiles-ivory');
 $tilesPurchase = $store->fulfill($mgwId, 'mgw:' . $mgwId, 'legacy-domino-user', [
-    'request_token'=>'store:mvp19-9-domino-tiles-0002', 'offer_id'=>'domino-tiles-marble',
+    'request_token'=>'store:mvp19-9-domino-tiles-ivory-0002', 'offer_id'=>'domino-tiles-ivory',
     'price_coins'=>$tilesQuote['price_coins'], 'item_ids'=>$tilesQuote['item_ids'],
 ]);
 $assertSame(false, $tilesPurchase['auto_equipped'], 'Buying Domino tiles must not auto-equip');
-$store->equipGameItem($mgwId, 'game-domino-tiles-marble');
-$assertSame('game-domino-tiles-marble', $inventory->snapshot($mgwId)['equipped']['game_domino_elements'] ?? null, 'Explicit tile equip must use game_domino_elements');
+$store->equipGameItem($mgwId, 'game-domino-tiles-ivory');
+$assertSame('game-domino-tiles-ivory', $inventory->snapshot($mgwId)['equipped']['game_domino_elements'] ?? null, 'Explicit tile equip must use game_domino_elements');
 
 foreach ([['precision-drop',2500,'0003'],['stock-pulse',5000,'0004'],['chain-finale',7500,'0005']] as [$variant,$price,$token]) {
     $quote = $store->quote($mgwId, 'domino-effect-' . $variant);
@@ -124,6 +125,8 @@ $assertSame(null, $inventory->snapshot($mgwId)['equipped']['game_domino_effect']
 $storeModule = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-domino-store-v1.js');
 $storeOwner = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-checkers-board-source-wrapper.js');
 $storeCss = (string)file_get_contents($root . '/app/assets/css/games/domino/store-cosmetics-v1.css');
+$cardCss = (string)file_get_contents($root . '/app/assets/css/games/domino/store-card-fill-live-pips-v5.css');
+$effectCss = (string)file_get_contents($root . '/app/assets/css/games/domino/store-effects-scene-v9.css');
 $profileModule = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-domino-parity.js');
 $profileOwner = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-chess-layout-v2.js');
 $profileHardRatio = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-domino-hard-ratio-v1.js');
@@ -133,19 +136,21 @@ $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
 
 $activeStore = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $activeProfile = (string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? '');
-$assertTrue(str_contains($activeStore, 'store-screen-checkers-board-source-wrapper.js?v=7') && str_contains($activeStore, 'mvp19_9=domino-store-profile-v1'), 'Active Store import must preserve the accepted owner and publish Domino');
-$assertTrue(str_contains($activeProfile, 'mgw-profile-chess-layout-v2.js?v=19') && str_contains($activeProfile, 'mvp19_9=domino-profile-parity-v1'), 'Active Profile import must preserve the accepted owner and publish Domino');
-$assertTrue(str_contains($storeOwner, "from './store-screen-domino-store-v1.js?v=1&mvp19_9=store-profile-preview-8x5-v1'") && str_contains($storeOwner, 'installDominoStorePresentation();') && str_contains($storeOwner, 'upgradeDominoStorePresentation();'), 'Accepted Store owner must install and refresh the Domino presentation');
-$assertTrue(str_contains($profileOwner, "from './mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1'") && str_contains($profileOwner, 'initProfileDominoParity();') && str_contains($profileOwner, 'initProfileDominoHardRatio();'), 'Accepted Profile owner must append Domino parity and hard ratio repair');
-$assertTrue(str_contains($profileModule, "dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js"), 'Profile must reuse the exact Store Domino preview primitive');
+$assertTrue(str_contains($activeStore, 'store-screen-checkers-board-source-wrapper.js?v=7') && str_contains($activeStore, 'domino_preview=deterministic-v9') && str_contains($activeStore, 'domino_effects=scene-v9'), 'Active Store import must preserve the accepted owner and publish deterministic Domino v9');
+$assertTrue(str_contains($activeProfile, 'mgw-profile-chess-layout-v2.js?v=19') && str_contains($activeProfile, 'mvp19_9=domino-profile-parity-v2') && str_contains($activeProfile, 'domino_card_runtime=css-8x5-v2'), 'Active Profile import must preserve the accepted owner and publish CSS-owned Domino parity');
+$assertTrue(str_contains($storeOwner, "from './store-screen-domino-store-v1.js?v=5&mvp19_9=domino-deterministic-rerender-v5'") && str_contains($storeOwner, 'installDominoStorePresentation();') && str_contains($storeOwner, 'upgradeDominoStorePresentation();'), 'Accepted Store owner must install and refresh deterministic Domino presentation');
+$assertTrue(!str_contains($storeOwner, 'installDominoStoreRerenderStabilityV1') && !file_exists($root . '/app/assets/js/screens/store-screen-domino-rerender-stability-v1.js'), 'Obsolete Domino MutationObserver repair must be removed from the active graph');
+$assertTrue(str_contains($profileOwner, "from './mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1'") && str_contains($profileOwner, 'initProfileDominoParity();') && str_contains($profileOwner, 'initProfileDominoHardRatio();'), 'Accepted Profile owner must keep its existing extension points');
+$assertTrue(str_contains($profileModule, "dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=5&mvp19_9=domino-deterministic-rerender-v5'"), 'Profile must reuse the exact active Store Domino preview primitive');
+$assertTrue(str_contains($profileModule, 'store-card-fill-live-pips-v5.css?v=2&mvp19_9=domino-card-fill-live-pips-v6') && str_contains($profileModule, 'store-effects-scene-v9.css?v=1&mvp19_9=domino-store-effects-scene-v9'), 'Profile must load the exact Store pip and effect styles');
 $assertTrue(str_contains($storeCss, 'aspect-ratio:8 / 5!important') && str_contains($profileCss, 'aspect-ratio:8 / 5!important'), 'Store and Profile must explicitly share the 8:5 Domino geometry');
-$assertTrue(str_contains($profileHardRatio, 'const HEIGHT_RATIO = 5 / 8') && str_contains($profileHardRatio, "setImportant(preview, 'height', px)"), 'Profile must have hard runtime repair for the 8:5 geometry');
-$assertTrue(str_contains($profileHardRatio, "context === 'sheet'"), 'Hard ratio repair must include the detail sheet');
+$assertTrue(str_contains($cardCss, 'width:3px!important') && str_contains($cardCss, 'border-radius:50%!important'), 'Shared visible Domino pips must remain small centered circles');
+$assertTrue(!str_contains($profileHardRatio, 'setImportant(') && !str_contains($profileHardRatio, 'setTimeout') && !str_contains($profileHardRatio, 'getBoundingClientRect'), 'Profile must not retain an imperative second geometry owner');
 $assertTrue(str_contains($profileCss, 'overflow-x:auto!important'), 'Profile game tabs must remain horizontally scrollable');
 foreach (['precision-drop','stock-pulse','chain-finale'] as $variant) $assertTrue(str_contains($storeModule, $variant) && str_contains($storeCss, 'effect-' . $variant), 'Store must own the Domino preview concept for ' . $variant);
-$assertTrue(str_contains($storeCss, '@media(prefers-reduced-motion:reduce)'), 'Domino preview effects must include reduced-motion fallbacks');
+$assertTrue(str_contains($effectCss, '@media (prefers-reduced-motion:reduce)') && str_contains($effectCss, 'aspect-ratio:47 / 24!important'), 'Domino v9 effect scenes must retain fixed tile geometry and reduced-motion fallback');
 $assertTrue(!str_contains($storeModule, 'renderDominoSurface(') && !str_contains($profileModule, 'renderDominoSurface('), 'Store/Profile work must not wire live Domino before preview acceptance');
 $launchMatch = [];
-$assertTrue(preg_match('~/app/v110\.php\?v=(\d+)~', $launch, $launchMatch) === 1 && (int)$launchMatch[1] >= 1153, 'Telegram launch must publish the Domino Store/Profile graph');
+$assertTrue(preg_match('~/app/v110\.php\?v=(\d+)~', $launch, $launchMatch) === 1 && (int)$launchMatch[1] >= 1164, 'Telegram launch must publish the deterministic Domino Store/Profile graph');
 
-echo "MVP-19.9 Domino Store/Profile contract passed ({$assertions} assertions).\n";
+echo "MVP-19.9 Domino Store/Profile deterministic contract passed ({$assertions} assertions).\n";

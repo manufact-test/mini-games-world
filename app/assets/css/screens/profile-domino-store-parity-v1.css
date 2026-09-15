@@ -1,11 +1,14 @@
 /* MVP-19.9 Domino Profile exact Store parity owner. Loaded after generic Profile rules. */
 
 #screen-profile .profile-v2-game-tabs{
+  box-sizing:border-box!important;
   display:flex!important;
   flex-wrap:nowrap!important;
   gap:8px!important;
   width:100%!important;
   max-width:100%!important;
+  padding-inline:2px!important;
+  scroll-padding-inline:8px!important;
   overflow-x:auto!important;
   overflow-y:hidden!important;
   overscroll-behavior-x:contain;
@@ -21,7 +24,7 @@
   place-items:center!important;
   flex:0 0 24px!important;
   width:24px!important;
-  height:20px!important;
+  height:24px!important;
   margin:0!important;
   padding:0!important;
   color:transparent!important;
@@ -32,7 +35,7 @@
   content:""!important;
   position:absolute!important;
   left:2px!important;
-  top:5px!important;
+  top:7px!important;
   width:20px!important;
   height:10px!important;
   box-sizing:border-box!important;

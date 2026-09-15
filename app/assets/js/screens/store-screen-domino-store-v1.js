@@ -1,8 +1,9 @@
 import { api } from '../api/client.js?v=34';
 
-const API_HOOK = Symbol.for('mgw.store.domino.mvp19-9.v1');
+const API_HOOK = Symbol.for('mgw.store.domino.mvp19-9.deterministic-v2');
 const INSTALL_KEY = '__mgwDominoStoreV1Installed';
-const STYLE_MARK = 'mvp19-9-domino-store-v4';
+const STYLE_MARK = 'mvp19-9-domino-store-v5';
+let upgradeQueued = false;
 
 export function installDominoStorePresentation(){
   ensureStyles();
@@ -13,7 +14,7 @@ export function installDominoStorePresentation(){
     const target = event.target instanceof Element ? event.target : null;
     if (!target) return;
     if (!target.closest('[data-store-v2-tab="games"], [data-store-v2-game], [data-store-v2-buy], [data-store-v2-equip], [data-store-v2-unequip], #storeV2ConfirmBuy')) return;
-    scheduleUpgrade();
+    queuePostRenderUpgrade();
   });
 }
 
@@ -62,24 +63,29 @@ function installApiHooks(){
   ['cosmeticStoreStatus','cosmeticStorePurchase','cosmeticStoreEquip','cosmeticStoreUnequip'].forEach(methodName => {
     const current = api?.[methodName];
     if (typeof current !== 'function' || current[API_HOOK]) return;
-    const wrapped = async (...args) => {
-      try {
-        return await current.apply(api, args);
-      } finally {
-        scheduleUpgrade();
-      }
-    };
+    const wrapped = (...args) => new Promise((resolve, reject) => {
+      Promise.resolve()
+        .then(() => current.apply(api, args))
+        .then(result => {
+          resolve(result);
+          queuePostRenderUpgrade();
+        }, error => {
+          reject(error);
+          queuePostRenderUpgrade();
+        });
+    });
     Object.defineProperty(wrapped, API_HOOK, { value:true });
     api[methodName] = wrapped;
   });
 }
 
-function scheduleUpgrade(){
-  const run = () => upgradeDominoStorePresentation();
-  queueMicrotask(run);
-  if (typeof globalThis.requestAnimationFrame === 'function') globalThis.requestAnimationFrame(run);
-  globalThis.setTimeout(run, 0);
-  globalThis.setTimeout(run, 80);
+function queuePostRenderUpgrade(){
+  if (upgradeQueued) return;
+  upgradeQueued = true;
+  queueMicrotask(() => {
+    upgradeQueued = false;
+    upgradeDominoStorePresentation();
+  });
 }
 
 function renameSelector(root){
@@ -143,10 +149,14 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = String(preview.dataset.cosmeticVariant || 'felt');
-    const signature = `${layer}:${variant}:8x5:v4`;
-    if (preview.dataset.mgwDominoPreview === signature) return;
-    preview.dataset.mgwDominoPreview = signature;
+    const expectedClass = modeClass(layer, variant);
+    const visual = preview.querySelector(':scope > .mgw-domino-preview');
+    if (visual instanceof HTMLElement && visual.classList.contains(expectedClass)) {
+      preview.dataset.mgwDominoPreview = `${layer}:${variant}:deterministic:v5`;
+      return;
+    }
     preview.innerHTML = dominoPreviewMarkup(layer, variant);
+    preview.dataset.mgwDominoPreview = `${layer}:${variant}:deterministic:v5`;
   });
 }
 
@@ -168,9 +178,9 @@ function descriptionFor(layer, variant){
     })[variant] || 'Меняет внешний вид костяшек';
   }
   return ({
-    'precision-drop':'Костяшка переворачивается в полёте и точно защёлкивается к подходящему концу цепи коротким световым щелчком',
-    'stock-pulse':'Запас быстро перетасовывается, после чего одна костяшка выскальзывает из стопки и переворачивается к столу',
-    'chain-finale':'По всей цепочке проходит последовательная волна падения: костяшки одна за другой наклоняются и вспыхивают точками',
+    'precision-drop':'Одна костяшка плавно входит в сцену и точно защёлкивается к открытому концу цепи',
+    'stock-pulse':'Костяшка выходит из запаса, переворачивается лицевой стороной и мягко ложится на стол',
+    'chain-finale':'По цепочке одинаковых костяшек проходит непрерывная волна завершения партии',
   })[variant] || 'Добавляет визуальный эффект партии';
 }
 
@@ -187,23 +197,34 @@ function tableMarkup(layer, variant){
     ? '<span class="mgw-domino-snap-marks"><i></i><i></i><i></i></span>'
     : '';
   const finaleBars = layer === 'effect' && variant === 'chain-finale'
-    ? '<span class="mgw-domino-finale-bars"><i></i><i></i><i></i><i></i></span>'
+    ? '<span class="mgw-domino-finale-bars"><i></i><i></i><i></i></span>'
     : '';
   return `<span class="mgw-domino-preview-table">${stock}<span class="mgw-domino-preview-chain">${chain}</span>${drawGhost}${snapMarks}${finaleBars}<span class="mgw-domino-table-glow"></span></span>`;
 }
 
 function effectChain(layer, variant){
-  const values = layer === 'effect'
-    ? [[6,3],[3,4],[4,4],[4,1]]
+  if (layer !== 'effect') {
+    return [[6,3],[3,5],[5,2]].map(pair => `<span class="mgw-domino-preview-slot">${tileMarkup(pair[0], pair[1])}</span>`).join('');
+  }
+
+  const values = variant === 'stock-pulse'
+    ? [[6,3]]
     : [[6,3],[3,5],[5,2]];
   return values.map((pair, index) => {
     const classes = [];
-    if (layer === 'effect' && pair[0] === pair[1]) classes.push('turn', 'is-double');
-    if (layer === 'effect' && variant === 'precision-drop' && index === values.length - 1) classes.push('fx-precision-target');
-    if (layer === 'effect' && variant === 'chain-finale') classes.push('fx-finale');
-    const step = layer === 'effect' && variant === 'chain-finale' ? ` style="--fx-step:${index}"` : '';
+    if (variant === 'precision-drop' && index === values.length - 1) classes.push('fx-precision-target');
+    if (variant === 'chain-finale') classes.push('fx-finale');
+    const step = variant === 'chain-finale' ? ` style="--fx-step:${index}"` : '';
     return `<span class="mgw-domino-preview-slot ${classes.join(' ')}"${step}>${tileMarkup(pair[0], pair[1])}</span>`;
   }).join('');
+}
+
+function modeClass(layer, variant){
+  const normalizedLayer = String(layer || 'theme');
+  const normalizedVariant = safeVariant(variant || (normalizedLayer === 'elements' ? 'ivory' : (normalizedLayer === 'effect' ? 'precision-drop' : 'felt')));
+  return normalizedLayer === 'theme'
+    ? `theme-${normalizedVariant}`
+    : (normalizedLayer === 'elements' ? `tiles-${normalizedVariant}` : `effect-${normalizedVariant}`);
 }
 
 function headBackMarkup(tone){
