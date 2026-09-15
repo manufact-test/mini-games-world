@@ -108,6 +108,16 @@ for (const token of [
 ]) {
   assert.ok(rulesAlignmentCss.includes(token), `Missing Go rules marker-centering token: ${token}`);
 }
+for (const token of [
+  '.go-rule-board.size-9 .go-rule-point em.forbidden{',
+  '.go-rule-board.size-9 .go-rule-point em.ko{',
+  '.go-rule-board.size-13 .go-rule-point em.forbidden{',
+  '.go-rule-board.size-13 .go-rule-point em.ko{',
+  'linear-gradient(45deg,transparent 40%,#ff8d97 41% 59%,transparent 60%)',
+  'font-size:7px!important',
+]) {
+  assert.ok(rulesAlignmentCss.includes(token), `Missing size-specific Go rule marker token: ${token}`);
+}
 
 assert.ok(v110.includes("$goEffectsV7Target = './assets/css/games/go/live-effects-corrective-v7.css?v=1&mvp19_8=effect2-single-pass-territory-final-v7';"), 'v110 must keep v7 for accepted final territory presentation');
 assert.ok(v110.includes("$goCaptureOverlayV9Target = './assets/css/games/go/live-capture-overlay-v9.css?v=1&mvp19_8=stable-capture-overlay-v9';"), 'v110 still publishes v9 so stale clients receive the compatibility correction');
@@ -124,4 +134,4 @@ assert.ok(base.includes("container.querySelector(`[data-go-cell=\"${cell}\"]`)?.
 assert.ok(base.includes("onAction?.({ type:'cell', cell });"), 'Accepted Go move action owner must remain in the frozen base renderer');
 assert.ok(base.includes("onAction?.({ type:'pass' });"), 'Accepted Go pass action owner must remain in the frozen base renderer');
 
-console.log('MVP-19.8 Go Live v10 contract passed: Effect 2 runs on the real captured stone from authoritative capture-out; stale v9 no longer hides stones; gameplay frozen.');
+console.log('MVP-19.8 Go Live v10 contract passed: Effect 2 runs on the real captured stone from authoritative capture-out; rule markers have 9x9/13x13 optical parity; gameplay frozen.');
