@@ -3,23 +3,7 @@ import { initProfileDominoParity } from './mgw-profile-domino-parity.js?v=1&mvp1
 import { initProfileDominoHardRatio } from './mgw-profile-domino-hard-ratio-v1.js?v=1&mvp19_9=hard-8x5-v1';
 
 export function initProfileScreen(){
-  ensureDominoScaleStyles();
   initAcceptedProfileScreen();
   initProfileDominoParity();
   initProfileDominoHardRatio();
-}
-
-function ensureDominoScaleStyles(){
-  const href = new URL('../../css/games/domino/store-cosmetics-scale-v2.css?v=1&mvp19_9=container-relative-v2', import.meta.url).href;
-  const existing = document.querySelector('link[data-mgw-domino-scale]');
-  if (existing instanceof HTMLLinkElement) {
-    if (existing.href !== href) existing.href = href;
-    document.head.appendChild(existing);
-    return;
-  }
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.dataset.mgwDominoScale = 'container-relative-v2';
-  link.href = href;
-  document.head.appendChild(link);
 }
