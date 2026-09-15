@@ -5,7 +5,7 @@ const live = fs.readFileSync('app/assets/js/games/go/renderer-cosmetics-v1.js', 
 const css = fs.readFileSync('app/assets/css/games/go/live-cosmetics-v1.css', 'utf8');
 const correctiveCss = fs.readFileSync('app/assets/css/games/go/live-effects-corrective-v2.css', 'utf8');
 const correctiveV7Css = fs.readFileSync('app/assets/css/games/go/live-effects-corrective-v7.css', 'utf8');
-const captureV8Css = fs.readFileSync('app/assets/css/games/go/live-capture-overlay-v8.css', 'utf8');
+const captureV9Css = fs.readFileSync('app/assets/css/games/go/live-capture-overlay-v9.css', 'utf8');
 const storeCss = fs.readFileSync('app/assets/css/games/go/store-cosmetics-v1.css', 'utf8');
 const rulesAlignmentCss = fs.readFileSync('app/assets/css/games/go/rules-alignment-v1.css', 'utf8');
 const exitFitCss = fs.readFileSync('app/assets/css/games/go/live-exit-fit-v1.css', 'utf8');
@@ -22,35 +22,41 @@ assert.ok(live.includes('game_go_elements'), 'Live Go must read the canonical st
 assert.ok(live.includes('game_go_effect'), 'Live Go must read the canonical effect equip slot');
 assert.ok(live.includes("point.dataset.mgwGoFx = 'placement'"), 'Accepted placement effect must remain attached to the authoritative last-move point');
 
-/* Effect 2 — independent overlay, not a disappearing live stone. */
-assert.ok(live.includes('applyGroupCaptureOverlay({'), 'Group Capture must use the independent presentation overlay owner');
+/* Effect 2 — stable viewport overlay survives gameBoard.innerHTML replacement. */
+assert.ok(live.includes('applyGroupCaptureOverlay({'), 'Group Capture must use the isolated presentation overlay owner');
 assert.ok(live.includes('game?.last_captured_cells'), 'Group Capture must prefer authoritative captured-cell data');
 assert.ok(live.includes('removedBoardCells(previousBoard, currentBoard, size)'), 'Group Capture must retain board-diff fallback for skipped polling frames');
 assert.ok(live.includes('const activeCaptureOverlayKeys = new Set();'), 'Capture overlays must be deduplicated per move');
-assert.ok(live.includes("point.dataset.mgwGoPaidCaptureSource = '1'"), 'The real captured stone must be marked only so base capture-out can hide it under the overlay');
-assert.ok(live.includes("overlay.className = 'mgw-go-capture-overlay-v8'"), 'A dedicated visual overlay must be created on the captured intersection');
-assert.ok(live.includes("overlay.dataset.mgwGoCaptureOverlay = '1'"), 'Capture overlay must be presentation-only and explicitly identifiable');
-assert.ok(live.includes("overlay.innerHTML = `<span class=\"go-stone ${color} mgw-go-capture-overlay-stone\""), 'Overlay must contain a visual copy using the real captured stone color');
-assert.ok(live.includes('animatedByBase ? `${330 + Math.min(index, 10) * 38}ms`'), 'Overlay must align to the frozen base renderer capture timestamp');
-assert.ok(!live.includes("point.dataset.mgwGoFx = 'group-capture'"), 'V8 must not re-arm the legacy immediate group-capture CSS owner');
-assert.ok(!live.includes('mgw-go-capture-paid-active'), 'Rejected second-stage paid-active trigger must not return');
-assert.ok(!live.includes('scheduledCaptureFx'), 'Rejected delayed second owner must not return');
+assert.ok(live.includes("point.dataset.mgwGoPaidCaptureSourceV9 = '1'"), 'Real source stone must be marked only for visual hiding at base capture-out');
+assert.ok(live.includes("overlay.className = 'mgw-go-capture-overlay-v9 go-surface'"), 'Effect 2 must mount a stable viewport overlay rather than a child of the replaceable Go board');
+assert.ok(live.includes("document.body.appendChild(overlay)"), 'Capture overlay must live outside gameBoard.innerHTML so base rerenders cannot delete it');
+assert.ok(live.includes("overlay.dataset.goStones = stoneVariant"), 'Stable overlay must preserve the equipped Go stone skin');
+assert.ok(live.includes("overlay.innerHTML = `<span class=\"go-stone ${color} mgw-go-capture-overlay-stone-v9\""), 'Overlay must contain a visual copy using the actual captured stone color');
+assert.ok(live.includes('const pointRect = point.getBoundingClientRect();'), 'Overlay coordinates must come from the real captured intersection');
+assert.ok(live.includes('const stoneRect = sourceStone instanceof HTMLElement ? sourceStone.getBoundingClientRect() : null;'), 'Overlay should use the real stone screen rectangle when available');
+assert.ok(live.includes('315 + Math.min(snapshot.index, 10) * 38'), 'Stable overlay must begin immediately around the frozen 330ms capture window');
+assert.ok(!live.includes("point.dataset.mgwGoFx = 'group-capture'"), 'V9 must not re-arm the legacy group-capture CSS owner');
+assert.ok(!live.includes('mgw-go-capture-paid-active'), 'Rejected paid-active second-stage trigger must not return');
+assert.ok(!live.includes('scheduledCaptureFx'), 'Rejected duplicate delayed owner must not return');
 assert.ok(!live.includes('capturedCount'), 'Capture presentation must not depend on optional last_move.captured');
 
-assert.ok(captureV8Css.includes('.go-point[data-mgw-go-paid-capture-source="1"].capture-out .go-stone'), 'Real source stone must be hidden at the authoritative capture-out moment');
-assert.ok(captureV8Css.includes('.mgw-go-capture-overlay-v8::before'), 'Independent overlay must render the capture corona');
-assert.ok(captureV8Css.includes('.mgw-go-capture-overlay-v8::after'), 'Independent overlay must render capture particles');
-assert.ok(captureV8Css.includes('.mgw-go-capture-overlay-v8 .mgw-go-capture-overlay-stone'), 'Independent overlay stone must visibly implode');
+assert.ok(captureV9Css.includes('.go-point[data-mgw-go-paid-capture-source-v9="1"].capture-out .go-stone'), 'Real source stone must be hidden at authoritative capture-out');
+assert.ok(captureV9Css.includes('.mgw-go-capture-overlay-v9{'), 'Stable capture overlay CSS must exist');
+assert.ok(captureV9Css.includes('position:fixed!important'), 'Effect 2 overlay must be viewport-stable across gameBoard rerenders');
+assert.ok(captureV9Css.includes('z-index:2147483000!important'), 'Stable capture overlay must remain visibly above the game renderer');
+assert.ok(captureV9Css.includes('.mgw-go-capture-overlay-v9::before'), 'Stable overlay must render the approved corona');
+assert.ok(captureV9Css.includes('.mgw-go-capture-overlay-v9::after'), 'Stable overlay must render approved particles');
+assert.ok(captureV9Css.includes('.mgw-go-capture-overlay-v9 .mgw-go-capture-overlay-stone-v9'), 'Stable overlay stone must visibly implode');
 for (const token of [
   'conic-gradient(from 0deg,#66efff 0 8%,transparent 9% 27%,#d36cff 28% 36%,transparent 37% 57%,#7fffd4 58% 66%,transparent 67% 86%,#fff 87% 93%,transparent 94% 100%)',
   '13px 0 #67efff,-13px 0 #d06dff,0 13px #7fffd4,0 -13px #fff3a0',
 ]) {
   assert.ok(storeCss.includes(token), `Approved Store capture token missing: ${token}`);
-  assert.ok(captureV8Css.includes(token), `Independent live overlay must reuse approved Store token: ${token}`);
+  assert.ok(captureV9Css.includes(token), `Stable live overlay must reuse approved Store token: ${token}`);
 }
-assert.ok(captureV8Css.includes('animation:mgw-go-v8-capture-implode .28s'), 'Overlay implode must finish before the frozen base renderer replaces the animated board');
-assert.ok(captureV8Css.includes('animation:mgw-go-v8-capture-corona .28s'), 'Overlay corona must finish inside the base capture window');
-assert.ok(captureV8Css.includes('animation:mgw-go-v8-capture-particles .28s'), 'Overlay particles must finish inside the base capture window');
+assert.ok(captureV9Css.includes('@media (prefers-reduced-motion:reduce)'), 'V9 must explicitly handle reduced-motion clients');
+assert.ok(captureV9Css.includes('mgw-go-v9-reduced-stone'), 'Reduced-motion mode must still show a visible capture fade instead of hiding Effect 2 entirely');
+assert.ok(!captureV9Css.includes('animation:none!important;\n    opacity:0!important;'), 'V9 must not repeat the v8 rule that made the paid effect completely invisible');
 
 /* Effect 3 — accepted and restored to canonical finish-only trigger. */
 assert.ok(!live.includes('applyTerritoryQaPreview'), 'Accepted Effect 3 must not trigger on ordinary placement');
@@ -75,7 +81,7 @@ for (const stones of ['classic','marble','glass','neon']) {
 
 /* Effect 1 and accepted field geometry remain untouched. */
 assert.ok(correctiveCss.includes('26px 0 #67efff'), 'Accepted placement burst must remain present');
-assert.ok(!captureV8Css.includes('data-mgw-go-fx="placement"'), 'V8 must not alter accepted Effect 1');
+assert.ok(!captureV9Css.includes('data-mgw-go-fx="placement"'), 'V9 must not alter accepted Effect 1');
 for (const rule of [
   'height:100dvh!important',
   'max-height:100dvh!important',
@@ -105,10 +111,10 @@ for (const token of [
 }
 
 assert.ok(v110.includes("$goEffectsV7Target = './assets/css/games/go/live-effects-corrective-v7.css?v=1&mvp19_8=effect2-single-pass-territory-final-v7';"), 'v110 must keep v7 for accepted final territory presentation');
-assert.ok(v110.includes("$goCaptureOverlayV8Target = './assets/css/games/go/live-capture-overlay-v8.css?v=1&mvp19_8=capture-overlay-v8';"), 'v110 must publish the independent capture overlay v8');
-assert.ok(v110.includes('data-mgw-go-live-capture-overlay-v8="mvp19-8-capture-overlay-v8"'), 'v110 must expose the unique capture overlay v8 marker');
-assert.ok(v110.includes("$imports[$goRendererImportKey] .= '&manual_review=effect2-overlay-v8';"), 'v110 must force a fresh Go renderer identity for v8');
-assert.ok(v110.includes("'go_capture_overlay_v8' => $goCaptureOverlayV8Target"), 'v110 rendered-target guard must require capture overlay v8');
+assert.ok(v110.includes("$goCaptureOverlayV9Target = './assets/css/games/go/live-capture-overlay-v9.css?v=1&mvp19_8=stable-capture-overlay-v9';"), 'v110 must publish stable capture overlay v9');
+assert.ok(v110.includes('data-mgw-go-live-capture-overlay-v9="mvp19-8-stable-capture-overlay-v9"'), 'v110 must expose the unique stable capture overlay v9 marker');
+assert.ok(v110.includes("$imports[$goRendererImportKey] .= '&manual_review=effect2-stable-overlay-v9';"), 'v110 must force a fresh Go renderer identity for v9');
+assert.ok(v110.includes("'go_capture_overlay_v9' => $goCaptureOverlayV9Target"), 'v110 rendered-target guard must require stable capture overlay v9');
 assert.ok(v110.includes("'go_rules_marker_alignment' => $goRulesAlignmentTarget"), 'v110 must preserve the pending rules alignment corrective');
 
 assert.ok(
@@ -116,11 +122,11 @@ assert.ok(
   'Version manifest must keep the accepted Go renderer owner; v110 only adds the cache identity suffix',
 );
 const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);
-assert.ok(launchMatch && Number(launchMatch[1]) >= 1148, 'Telegram launch must publish the fresh Go v8 capture overlay cache identity');
+assert.ok(launchMatch && Number(launchMatch[1]) >= 1149, 'Telegram launch must publish stable Go Effect 2 overlay v9');
 
 assert.ok(base.includes('const captureStart = 330;'), 'Frozen base capture moment must remain 330ms');
 assert.ok(base.includes("container.querySelector(`[data-go-cell=\"${cell}\"]`)?.classList.add('capture-out');"), 'Frozen base renderer must remain the authoritative capture timing owner');
 assert.ok(base.includes("onAction?.({ type:'cell', cell });"), 'Accepted Go move action owner must remain in the frozen base renderer');
 assert.ok(base.includes("onAction?.({ type:'pass' });"), 'Accepted Go pass action owner must remain in the frozen base renderer');
 
-console.log('MVP-19.8 Go Live v8 contract passed: Effect 2 uses one independent captured-stone overlay; Effect 1/3/field unchanged; gameplay owner frozen.');
+console.log('MVP-19.8 Go Live v9 contract passed: Effect 2 survives base DOM replacement in a stable viewport overlay; Effect 1/3/field unchanged; gameplay frozen.');
