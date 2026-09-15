@@ -1,4 +1,4 @@
-/* MVP-19.9 Domino Profile exact Store parity owner. Loaded after generic Profile rules. */
+/* MVP-19.9 Domino Profile exact Store parity owner v3. Loaded after generic Profile rules. */
 
 #screen-profile .profile-v2-game-tabs{
   box-sizing:border-box!important;
@@ -18,12 +18,13 @@
 #screen-profile .profile-v2-game-tabs::-webkit-scrollbar{display:none}
 #screen-profile .profile-v2-game-tab{flex:0 0 auto!important;min-width:max-content!important}
 
+/* One calm face-down Domino back: larger, centred, no decorative pips. */
 #screen-profile .profile-v2-game-tab[data-profile-game-tab="domino"] .profile-v2-game-tab-mark{
   position:relative!important;
   display:inline-grid!important;
   place-items:center!important;
-  flex:0 0 24px!important;
-  width:24px!important;
+  flex:0 0 26px!important;
+  width:26px!important;
   height:24px!important;
   margin:0!important;
   padding:0!important;
@@ -31,29 +32,25 @@
   font-size:0!important;
   overflow:visible!important;
 }
-#screen-profile .profile-v2-game-tab[data-profile-game-tab="domino"] .profile-v2-game-tab-mark::before{
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="domino"] .mgw-domino-profile-tab-mark::before{
   content:""!important;
   position:absolute!important;
-  left:2px!important;
-  top:7px!important;
-  width:20px!important;
-  height:10px!important;
+  left:1.5px!important;
+  top:5.5px!important;
+  width:23px!important;
+  height:13px!important;
   box-sizing:border-box!important;
-  border-radius:3px!important;
-  border:1px solid #777d87!important;
+  border-radius:3.5px!important;
+  border:1px solid #858b95!important;
   background:
-    radial-gradient(circle at 24% 31%,#171b22 0 1.3px,transparent 1.5px),
-    radial-gradient(circle at 24% 69%,#171b22 0 1.3px,transparent 1.5px),
-    radial-gradient(circle at 76% 31%,#171b22 0 1.3px,transparent 1.5px),
-    radial-gradient(circle at 76% 69%,#171b22 0 1.3px,transparent 1.5px),
-    linear-gradient(90deg,transparent 48%,#777d87 48% 52%,transparent 52%),
-    linear-gradient(155deg,#fffdf5,#d8d6cf)!important;
-  box-shadow:0 2px 5px #0007!important;
-  transform:rotate(-5deg)!important;
+    linear-gradient(90deg,transparent 48%,#737983 48% 52%,transparent 52%),
+    linear-gradient(155deg,#fffef8,#d9d8d2)!important;
+  box-shadow:0 2px 6px rgba(0,0,0,.52),inset 0 0 0 1px rgba(255,255,255,.5)!important;
+  transform:none!important;
 }
-#screen-profile .profile-v2-game-tab.active[data-profile-game-tab="domino"] .profile-v2-game-tab-mark::before{
+#screen-profile .profile-v2-game-tab.active[data-profile-game-tab="domino"] .mgw-domino-profile-tab-mark::before{
   border-color:#43e6ae!important;
-  box-shadow:0 0 0 1px #43e6ae3d,0 0 8px #43e6ae66,0 2px 5px #0007!important;
+  box-shadow:0 0 0 1px rgba(67,230,174,.24),0 0 9px rgba(67,230,174,.42),0 2px 6px rgba(0,0,0,.52),inset 0 0 0 1px rgba(255,255,255,.5)!important;
 }
 
 #screen-profile .profile-v2-game-panel[data-profile-game-panel="domino"] .profile-v2-game-card{
