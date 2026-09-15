@@ -15,6 +15,7 @@ import {
   installDominoStorePresentation,
   upgradeDominoStorePresentation,
 } from './store-screen-domino-store-v1.js?v=1&mvp19_9=store-profile-preview-8x5-v1';
+import { installDominoStoreCardFillV5 } from './store-screen-domino-card-fill-v5.js?v=1&mvp19_9=domino-card-fill-live-pips-v5';
 import { installStoreGameSelectorSwipe } from './store-game-selector-swipe-v1.js?v=1&mvp19_7=touch-drag';
 
 ensureBoardSourceParityStyles();
@@ -25,6 +26,7 @@ installStoreGameSelectorSwipe();
 installReversiStorePresentation();
 installGoStorePresentation();
 installDominoStorePresentation();
+installDominoStoreCardFillV5();
 
 export function initStoreScreen(){
   ensureBoardSourceParityStyles();
@@ -35,6 +37,7 @@ export function initStoreScreen(){
   installReversiStorePresentation();
   installGoStorePresentation();
   installDominoStorePresentation();
+  installDominoStoreCardFillV5();
   const result = initAcceptedCheckersStore();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
@@ -53,6 +56,7 @@ export async function openStoreTab(){
   installReversiStorePresentation();
   installGoStorePresentation();
   installDominoStorePresentation();
+  installDominoStoreCardFillV5();
   const result = await openAcceptedCheckersStoreTab();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
@@ -71,6 +75,7 @@ export async function openStoreSheet(){
   installReversiStorePresentation();
   installGoStorePresentation();
   installDominoStorePresentation();
+  installDominoStoreCardFillV5();
   const result = await openAcceptedCheckersStoreSheet();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
