@@ -1,0 +1,213 @@
+import { api } from '../api/client.js?v=34';
+
+const API_HOOK = Symbol.for('mgw.store.domino.mvp19-9.v1');
+const INSTALL_KEY = '__mgwDominoStoreV1Installed';
+const STYLE_MARK = 'mvp19-9-domino-store-v1';
+
+export function installDominoStorePresentation(){
+  ensureStyles();
+  installApiHooks();
+  if (globalThis[INSTALL_KEY]) return;
+  globalThis[INSTALL_KEY] = true;
+  document.addEventListener('click', event => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target) return;
+    if (!target.closest('[data-store-v2-tab="games"], [data-store-v2-game], [data-store-v2-buy], [data-store-v2-equip], [data-store-v2-unequip], #storeV2ConfirmBuy')) return;
+    scheduleUpgrade();
+  });
+}
+
+export function upgradeDominoStorePresentation(){
+  ensureStyles();
+  const roots = [
+    document.querySelector('[data-store-v2-panel="games"]'),
+    document.getElementById('sheet'),
+  ];
+  roots.forEach(root => {
+    if (!(root instanceof HTMLElement)) return;
+    renameSelector(root);
+    upgradeHeader(root);
+    upgradeGroups(root);
+    upgradeProducts(root);
+    upgradePreviews(root);
+  });
+}
+
+export function dominoPreviewMarkup(layer, variant){
+  const normalizedLayer = String(layer || 'theme');
+  const normalizedVariant = safeVariant(variant || (normalizedLayer === 'elements' ? 'ivory' : (normalizedLayer === 'effect' ? 'precision-drop' : 'felt')));
+  const modeClass = normalizedLayer === 'theme'
+    ? `theme-${normalizedVariant}`
+    : (normalizedLayer === 'elements' ? `tiles-${normalizedVariant}` : `effect-${normalizedVariant}`);
+  return `<i class="mgw-domino-preview ${modeClass}" aria-hidden="true">${tableMarkup(normalizedLayer, normalizedVariant)}</i>`;
+}
+
+function ensureStyles(){
+  const href = new URL('../../css/games/domino/store-cosmetics-v1.css?v=1&mvp19_9=store-profile-preview-8x5-v1', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-domino-store]');
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    existing.dataset.mgwDominoStore = STYLE_MARK;
+    document.head.appendChild(existing);
+    return;
+  }
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwDominoStore = STYLE_MARK;
+  link.href = href;
+  document.head.appendChild(link);
+}
+
+function installApiHooks(){
+  ['cosmeticStoreStatus','cosmeticStorePurchase','cosmeticStoreEquip','cosmeticStoreUnequip'].forEach(methodName => {
+    const current = api?.[methodName];
+    if (typeof current !== 'function' || current[API_HOOK]) return;
+    const wrapped = async (...args) => {
+      try {
+        return await current.apply(api, args);
+      } finally {
+        scheduleUpgrade();
+      }
+    };
+    Object.defineProperty(wrapped, API_HOOK, { value:true });
+    api[methodName] = wrapped;
+  });
+}
+
+function scheduleUpgrade(){
+  const run = () => upgradeDominoStorePresentation();
+  queueMicrotask(run);
+  if (typeof globalThis.requestAnimationFrame === 'function') globalThis.requestAnimationFrame(run);
+  globalThis.setTimeout(run, 0);
+  globalThis.setTimeout(run, 80);
+}
+
+function renameSelector(root){
+  root.querySelectorAll('[data-store-v2-game="domino"]').forEach(button => {
+    if (button instanceof HTMLElement) button.textContent = 'Домино';
+  });
+}
+
+function upgradeHeader(root){
+  const head = root.querySelector('.store-v2-game-head[data-store-game-type="domino"]');
+  if (!(head instanceof HTMLElement)) return;
+  const title = head.querySelector('h2');
+  if (title instanceof HTMLElement) title.textContent = 'Домино';
+  const marks = head.querySelectorAll('.store-v2-game-head-marks b');
+  marks.forEach((mark, index) => {
+    if (!(mark instanceof HTMLElement)) return;
+    mark.textContent = '';
+    mark.classList.add('mgw-domino-head-tile', index === 0 ? 'six' : 'three');
+    mark.setAttribute('aria-hidden', 'true');
+  });
+}
+
+function upgradeGroups(root){
+  root.querySelectorAll('.store-v2-game-group').forEach(group => {
+    if (!(group instanceof HTMLElement)) return;
+    const preview = group.querySelector('.store-v2-game-preview[data-game-type="domino"]');
+    if (!(preview instanceof HTMLElement)) return;
+    const layer = String(preview.dataset.cosmeticLayer || 'theme');
+    const title = group.querySelector('.store-v2-game-title-row h2');
+    const subtitle = group.querySelector('.store-v2-game-title-row p');
+    const copy = {
+      theme:['Столы','Оформление игрового стола'],
+      elements:['Костяшки','Комплект костяшек домино'],
+      effect:['Эффекты',''],
+    }[layer] || ['Домино','Игровая косметика'];
+    if (title instanceof HTMLElement) title.textContent = copy[0];
+    if (subtitle instanceof HTMLElement) {
+      if (layer === 'effect') subtitle.remove();
+      else subtitle.textContent = copy[1];
+    }
+  });
+}
+
+function upgradeProducts(root){
+  root.querySelectorAll('.store-v2-game-product[data-store-game-product="domino"]').forEach(product => {
+    if (!(product instanceof HTMLElement)) return;
+    const preview = product.querySelector('.store-v2-game-preview[data-game-type="domino"]');
+    if (!(preview instanceof HTMLElement)) return;
+    const layer = String(preview.dataset.cosmeticLayer || 'theme');
+    const variant = String(preview.dataset.cosmeticVariant || 'felt');
+    const kind = product.querySelector('.store-v2-game-product-copy > span');
+    const description = product.querySelector('.store-v2-game-product-copy > p');
+    if (kind instanceof HTMLElement) kind.textContent = layer === 'theme' ? 'Игровой стол' : (layer === 'elements' ? 'Комплект костяшек' : 'Эффект партии');
+    if (description instanceof HTMLElement) description.textContent = descriptionFor(layer, variant);
+  });
+}
+
+function upgradePreviews(root){
+  root.querySelectorAll('.store-v2-game-preview[data-game-type="domino"]').forEach(preview => {
+    if (!(preview instanceof HTMLElement)) return;
+    const layer = String(preview.dataset.cosmeticLayer || 'theme');
+    const variant = String(preview.dataset.cosmeticVariant || 'felt');
+    const signature = `${layer}:${variant}:8x5:v1`;
+    if (preview.dataset.mgwDominoPreview === signature) return;
+    preview.dataset.mgwDominoPreview = signature;
+    preview.innerHTML = dominoPreviewMarkup(layer, variant);
+  });
+}
+
+function descriptionFor(layer, variant){
+  if (layer === 'theme') {
+    return ({
+      felt:'Классический зелёный суконный стол с мягкой глубиной и тёплой кромкой',
+      midnight:'Тёмно-синий стол с холодной подсветкой и спокойным клубным настроением',
+      walnut:'Тёплый орех с живой древесной фактурой и зелёной игровой вставкой',
+      neon:'Глубокий тёмный стол с цианово-фиолетовой неоновой кромкой',
+    })[variant] || 'Меняет оформление игрового стола';
+  }
+  if (layer === 'elements') {
+    return ({
+      ivory:'Светлые костяшки с классическим тёплым оттенком и глубокими точками',
+      ebony:'Чёрные костяшки с матовой поверхностью и светлыми точками',
+      marble:'Мраморные костяшки с натуральной минеральной фактурой',
+      neon:'Тёмные костяшки с яркими неоновыми точками и контуром',
+    })[variant] || 'Меняет внешний вид костяшек';
+  }
+  return ({
+    'precision-drop':'Новая костяшка точно падает в цепочку, оставляя ударную волну и короткий световой след',
+    'stock-pulse':'Добор из запаса сопровождается импульсом колоды и летящей костяшкой',
+    'chain-finale':'Финальная цепочка поочерёдно вспыхивает и замыкается световым проходом по столу',
+  })[variant] || 'Добавляет визуальный эффект партии';
+}
+
+function tableMarkup(layer, variant){
+  const chain = effectChain(layer, variant);
+  const stockClass = layer === 'effect' && variant === 'stock-pulse' ? ' fx-stock' : '';
+  const finaleLine = layer === 'effect' && variant === 'chain-finale' ? '<em class="mgw-domino-finale-line"></em>' : '';
+  const drawGhost = layer === 'effect' && variant === 'stock-pulse'
+    ? `<span class="mgw-domino-draw-ghost">${tileMarkup(2,5,'ghost')}</span>`
+    : '';
+  return `<span class="mgw-domino-preview-table"><span class="mgw-domino-preview-top"><span class="mgw-domino-stock${stockClass}"><i></i><i></i><i></i></span><b>DOMINO</b></span><span class="mgw-domino-preview-chain">${chain}${finaleLine}</span>${drawGhost}<span class="mgw-domino-table-glow"></span></span>`;
+}
+
+function effectChain(layer, variant){
+  const values = [[6,6],[6,3],[3,4],[4,1],[1,5]];
+  return values.map((pair, index) => {
+    const classes = [];
+    if (index === 2) classes.push('turn');
+    if (layer === 'effect' && variant === 'precision-drop' && index === values.length - 1) classes.push('fx-precision-target');
+    if (layer === 'effect' && variant === 'chain-finale') classes.push('fx-finale');
+    const step = layer === 'effect' && variant === 'chain-finale' ? ` style="--fx-step:${index}"` : '';
+    return `<span class="mgw-domino-preview-slot ${classes.join(' ')}"${step}>${tileMarkup(pair[0], pair[1])}</span>`;
+  }).join('');
+}
+
+function tileMarkup(a, b, extraClass = ''){
+  return `<span class="mgw-domino-preview-tile${extraClass ? ` ${extraClass}` : ''}">${halfMarkup(a)}${halfMarkup(b)}</span>`;
+}
+
+function halfMarkup(value){
+  const active = new Set(pipPositions(value));
+  return `<span class="mgw-domino-preview-half">${Array.from({length:9}, (_, index) => `<i class="${active.has(index + 1) ? 'active' : ''}"></i>`).join('')}</span>`;
+}
+
+function pipPositions(value){
+  return ({0:[],1:[5],2:[1,9],3:[1,5,9],4:[1,3,7,9],5:[1,3,5,7,9],6:[1,3,4,6,7,9]})[Number(value)] || [];
+}
+
+function safeVariant(value){
+  return String(value || '').replace(/[^a-z0-9-]/gi, '').toLowerCase() || 'felt';
+}
