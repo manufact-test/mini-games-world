@@ -1,7 +1,6 @@
-/* Go rules diagram marker alignment corrective v2.
- * Keep the accepted rule diagrams intact; only polish the suicide/ko markers.
- * Both rings sit on the exact intersection. The glyphs are deliberately smaller
- * so they remain readable without merging into nearby stones/rings.
+/* Go rules diagram marker alignment corrective v3.
+ * Presentation-only polish. The 9x9 and 13x13 diagrams use different optical
+ * marker sizes so the symbols stay centered on their real intersections.
  */
 .go-rule-point em.forbidden,
 .go-rule-point em.ko{
@@ -16,22 +15,40 @@
   box-sizing:border-box!important;
 }
 
-.go-rule-point em.forbidden{
+/* 9x9: keep the accepted ko marker, but make the forbidden cross geometrically
+ * centered instead of relying on the font glyph's uneven visual metrics. */
+.go-rule-board.size-9 .go-rule-point em.forbidden{
   width:44%!important;
   aspect-ratio:1!important;
   border-width:2px!important;
   box-shadow:0 0 9px rgba(255,104,117,.42)!important;
 }
+.go-rule-board.size-9 .go-rule-point em.forbidden::after{
+  content:""!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:54%!important;
+  height:54%!important;
+  margin:0!important;
+  padding:0!important;
+  transform:translate(-50%,-50%)!important;
+  transform-origin:50% 50%!important;
+  background:
+    linear-gradient(45deg,transparent 40%,#ff8d97 41% 59%,transparent 60%),
+    linear-gradient(-45deg,transparent 40%,#ff8d97 41% 59%,transparent 60%)!important;
+}
 
-.go-rule-point em.ko{
+.go-rule-board.size-9 .go-rule-point em.ko{
   width:39%!important;
   aspect-ratio:1!important;
   border-width:2px!important;
   box-shadow:0 0 8px rgba(255,216,91,.38)!important;
 }
-
-.go-rule-point em.forbidden::after,
-.go-rule-point em.ko::after{
+.go-rule-board.size-9 .go-rule-point em.ko::after{
+  content:"↺"!important;
   position:absolute!important;
   left:50%!important;
   top:50%!important;
@@ -43,19 +60,68 @@
   place-items:center!important;
   margin:0!important;
   padding:0!important;
+  color:#ffe89b!important;
+  font-size:9px!important;
+  font-weight:900!important;
+  font-family:Arial,sans-serif!important;
   line-height:1!important;
   text-align:center!important;
+  transform:translate(-50%,-50%) translateY(-.7px)!important;
   transform-origin:50% 50%!important;
 }
 
-.go-rule-point em.forbidden::after{
-  font-size:11px!important;
-  font-weight:900!important;
-  transform:translate(-50%,-50%) translateY(-.35px)!important;
+/* 13x13: the rule points are physically smaller, so reuse the same visual
+ * language with its own optical scale. The ring itself stays mathematically on
+ * the intersection while the glyph is centered inside it. */
+.go-rule-board.size-13 .go-rule-point em.forbidden{
+  width:50%!important;
+  aspect-ratio:1!important;
+  border-width:1.5px!important;
+  box-shadow:0 0 7px rgba(255,104,117,.4)!important;
+}
+.go-rule-board.size-13 .go-rule-point em.forbidden::after{
+  content:""!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:52%!important;
+  height:52%!important;
+  margin:0!important;
+  padding:0!important;
+  transform:translate(-50%,-50%)!important;
+  transform-origin:50% 50%!important;
+  background:
+    linear-gradient(45deg,transparent 39%,#ff8d97 40% 60%,transparent 61%),
+    linear-gradient(-45deg,transparent 39%,#ff8d97 40% 60%,transparent 61%)!important;
 }
 
-.go-rule-point em.ko::after{
-  font-size:9px!important;
+.go-rule-board.size-13 .go-rule-point em.ko{
+  width:48%!important;
+  aspect-ratio:1!important;
+  border-width:1.5px!important;
+  box-shadow:0 0 6px rgba(255,216,91,.36)!important;
+}
+.go-rule-board.size-13 .go-rule-point em.ko::after{
+  content:"↺"!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:100%!important;
+  height:100%!important;
+  display:grid!important;
+  place-items:center!important;
+  margin:0!important;
+  padding:0!important;
+  color:#ffe89b!important;
+  font-size:7px!important;
   font-weight:900!important;
-  transform:translate(-50%,-50%) translateY(-.7px)!important;
+  font-family:Arial,sans-serif!important;
+  line-height:1!important;
+  text-align:center!important;
+  transform:translate(-50%,-50%) translate(-.25px,-.35px)!important;
+  transform-origin:50% 50%!important;
 }

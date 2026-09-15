@@ -151,7 +151,7 @@ if (!is_file($goRulesAlignmentPath)) {
     echo 'Mini Games World Go rules alignment corrective is unavailable.';
     exit;
 }
-$goRulesAlignmentTarget = './assets/css/games/go/rules-alignment-v1.css?v=2&mvp19_8=rule-marker-center-compact-v2';
+$goRulesAlignmentTarget = './assets/css/games/go/rules-alignment-v1.css?v=3&mvp19_8=rule-marker-size-parity-v3';
 
 $headClose = '</head>';
 $cssAnchor = './assets/css/main.css?v=93-wallet-15-3';
@@ -204,7 +204,7 @@ $goExitFitTag = '  <link rel="stylesheet" data-mgw-go-live-exit-fit="mvp19-8-ful
 $goEffectsV7Tag = '  <link rel="stylesheet" data-mgw-go-live-effects-v7="mvp19-8-effect2-single-pass-territory-final-v7" href="' . $goEffectsV7Target . '" />';
 $goCaptureOverlayV8Tag = '  <link rel="stylesheet" data-mgw-go-live-capture-overlay-v8="mvp19-8-capture-overlay-v8" href="' . $goCaptureOverlayV8Target . '" />';
 $goCaptureOverlayV9Tag = '  <link rel="stylesheet" data-mgw-go-live-capture-overlay-v9="mvp19-8-stable-capture-overlay-v9" href="' . $goCaptureOverlayV9Target . '" />';
-$goRulesAlignmentTag = '  <link rel="stylesheet" data-mgw-go-rules-alignment="mvp19-8-rule-marker-center-compact-v2" href="' . $goRulesAlignmentTarget . '" />';
+$goRulesAlignmentTag = '  <link rel="stylesheet" data-mgw-go-rules-alignment="mvp19-8-rule-marker-size-parity-v3" href="' . $goRulesAlignmentTarget . '" />';
 
 $html = str_replace($cssAnchor, $cssTarget, $html);
 $html = str_replace('./assets/css/production-v95-consistency.css?v=95', $consistencyCssTarget, $html);
@@ -309,5 +309,5 @@ header('X-MGW-Battleship-Pending-Paint: none-legacy-owner-removed');
 header('X-MGW-Chess-Check-Test: staging-any-move-v1');
 header('X-MGW-Go-Viewport: full-width-scroll-v3');
 header('X-MGW-Go-Live-Effects: effect2-stable-overlay-v9-territory-final-v7');
-header('X-MGW-Go-Rules-Markers: centered-compact-v2');
+header('X-MGW-Go-Rules-Markers: size-parity-v3');
 echo $html;
