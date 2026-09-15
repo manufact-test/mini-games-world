@@ -4,7 +4,7 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
 import { haptic } from '../telegram/telegram-app.js?v=27';
-import { dominoPreviewMarkup, dominoHeaderMarksMarkup } from './store-screen-domino-store-v1.js?v=6&mvp19_9=domino-native-render-v6';
+import { dominoPreviewMarkup, dominoHeaderMarksMarkup } from './store-screen-domino-store-v1.js?v=8&mvp19_9=domino-native-render-v8';
 
 const STORE_TABS = Object.freeze([
   { id:'coins', label:'Коины' },
@@ -413,7 +413,7 @@ function gameCosmeticDescription(gameType, layer, variant){
   if (gameType === 'domino') {
     if (layer === 'theme') return ({ felt:'Классический зелёный суконный стол с мягкой глубиной и тёплой кромкой', midnight:'Тёмно-синий стол с холодной подсветкой и спокойным клубным настроением', walnut:'Тёплый ореховый стол с цельной древесной игровой поверхностью и живой фактурой', neon:'Глубокий тёмный стол с цианово-фиолетовой неоновой кромкой' })[variant] || 'Меняет оформление игрового стола';
     if (layer === 'elements') return ({ ivory:'Светлые костяшки классической игровой формы с глубокими контрастными точками', ebony:'Чёрные матовые костяшки классической формы со светлыми точками', marble:'Мраморные костяшки с натуральной минеральной фактурой и чёткими точками', neon:'Тёмные костяшки с яркими неоновыми точками и тонким контуром' })[variant] || 'Меняет внешний вид костяшек';
-    return ({ 'precision-drop':'Костяшка мягко входит в сцену по дуге и точно стыкуется с цепью', 'stock-pulse':'Костяшка выходит из запаса, переворачивается в воздухе и спокойно ложится на стол', 'chain-finale':'По цепочке проходит плавная волна завершения партии' })[variant] || 'Добавляет визуальный эффект партии';
+    return ({ 'precision-drop':'Яркий акцент в момент точного хода', 'stock-pulse':'Эффектный выход костяшки из запаса', 'chain-finale':'Финал с каскадом падающих костяшек' })[variant] || 'Добавляет визуальный эффект партии';
   }
   if (layer === 'theme') {
     return ({ classic:'Тёплая классическая доска', dark:'Строгое тёмное оформление', glass:'Объёмное стеклянное поле', neon:'Неоновая сетка и свечение' })[variant] || 'Меняет фон и сетку поля';
