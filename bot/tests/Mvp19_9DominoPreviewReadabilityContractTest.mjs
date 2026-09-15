@@ -36,18 +36,21 @@ expect(correctiveCss.includes('height:100%!important'), 'Mobile Domino Store pro
 expect(correctiveCss.includes('aspect-ratio:auto!important'), 'Mobile Domino Store product preview must not be constrained to 8:5.');
 expect(correctiveCss.includes('.store-v2-confirm-game .store-v2-game-preview[data-game-type="domino"]'), 'Purchase confirmation must own a separate Domino preview rule.');
 expect(correctiveCss.includes('aspect-ratio:8 / 5!important'), 'Purchase confirmation must remain a wide 8:5 Domino preview.');
-expect(correctiveCss.includes('width:4px!important'), 'Domino pips must use a stable visible diameter.');
-expect(correctiveCss.includes('height:4px!important'), 'Domino pips must use a stable visible diameter.');
-expect(correctiveCss.includes('border-radius:999px!important'), 'Domino pips must be true circles.');
-expect(correctiveCss.includes('transform:none!important'), 'Domino pips must not be distorted by transforms.');
-expect(correctiveLoader.includes('store-card-fill-live-pips-v5.css?v=1&mvp19_9=domino-card-fill-live-pips-v5'), 'Corrective loader must use a unique v5 stylesheet URL.');
-expect(wrapper.includes("import { installDominoStoreCardFillV5 } from './store-screen-domino-card-fill-v5.js?v=1&mvp19_9=domino-card-fill-live-pips-v5';"), 'Accepted Store owner must import the Domino v5 corrective.');
-expect(wrapper.includes('installDominoStoreCardFillV5();'), 'Accepted Store owner must install the Domino v5 corrective.');
+expect(correctiveCss.includes('place-self:center!important'), 'Domino pip placement slots must stay centered in their 3x3 cells.');
+expect(correctiveCss.includes('width:4px!important'), 'Domino pip placement slot must remain stable.');
+expect(correctiveCss.includes('.mgw-domino-preview-half i.active::after'), 'Visible Domino pips must be drawn as an inner disc.');
+expect(correctiveCss.includes('width:3px!important'), 'Visible Domino pips must use the smaller 3px diameter.');
+expect(correctiveCss.includes('height:3px!important'), 'Visible Domino pips must use the smaller 3px diameter.');
+expect(correctiveCss.includes('border-radius:50%!important'), 'Visible Domino pips must be true circles.');
+expect(correctiveCss.includes('transform:translate(-50%,-50%)!important'), 'Visible Domino pips must be centered in their placement slots.');
+expect(correctiveLoader.includes('store-card-fill-live-pips-v5.css?v=2&mvp19_9=domino-card-fill-live-pips-v6'), 'Corrective loader must use the v6 cache-busted stylesheet URL.');
+expect(wrapper.includes("import { installDominoStoreCardFillV5 } from './store-screen-domino-card-fill-v5.js?v=2&mvp19_9=domino-card-fill-live-pips-v6';"), 'Accepted Store owner must import the cache-busted Domino pip corrective.');
+expect(wrapper.includes('installDominoStoreCardFillV5();'), 'Accepted Store owner must install the Domino corrective.');
 
-expect(manifest.includes('domino_preview=card-fill-live-pips-v5'), 'Active Store owner URL must be cache-busted for Domino v5.');
+expect(manifest.includes('domino_preview=pips-centered-v6'), 'Active Store owner URL must be cache-busted for Domino v6 pip polish.');
 expect(manifest.includes("'./assets/js/screens/store-screen-domino-store-v1.js?v=1&mvp19_9=store-profile-preview-8x5-v1' => './assets/js/screens/store-screen-domino-store-v1.js?v=4&mvp19_9=domino-uniform-fullfield-v4'"), 'Active import map must continue to resolve the accepted Domino primitive to v4.');
 expect(!manifest.includes('domino_preview=expanded-readable-v3'), 'Active Store owner must not regress to stale Domino v3.');
 const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);
-expect(launchMatch && Number(launchMatch[1]) >= 1160, 'Telegram entry must publish the Domino v5 cache bump.');
+expect(launchMatch && Number(launchMatch[1]) >= 1161, 'Telegram entry must publish the Domino v6 pip cache bump.');
 
-console.log('MVP-19.9 Domino Store card-fill and round-pip v5 contract passed.');
+console.log('MVP-19.9 Domino Store smaller centered round-pip v6 contract passed.');

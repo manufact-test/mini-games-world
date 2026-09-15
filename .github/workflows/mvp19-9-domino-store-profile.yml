@@ -115,11 +115,14 @@ jobs:
           grep -F 'height:100%!important' "$corrective"
           grep -F 'aspect-ratio:auto!important' "$corrective"
           grep -F '.store-v2-confirm-game .store-v2-game-preview[data-game-type="domino"]' "$corrective"
+          grep -F 'place-self:center!important' "$corrective"
           grep -F 'width:4px!important' "$corrective"
-          grep -F 'height:4px!important' "$corrective"
-          grep -F 'border-radius:999px!important' "$corrective"
-          grep -F 'transform:none!important' "$corrective"
-          grep -F "store-screen-domino-card-fill-v5.js?v=1&mvp19_9=domino-card-fill-live-pips-v5" "$wrapper"
+          grep -F '.mgw-domino-preview-half i.active::after' "$corrective"
+          grep -F 'width:3px!important' "$corrective"
+          grep -F 'height:3px!important' "$corrective"
+          grep -F 'border-radius:50%!important' "$corrective"
+          grep -F 'transform:translate(-50%,-50%)!important' "$corrective"
+          grep -F "store-screen-domino-card-fill-v5.js?v=2&mvp19_9=domino-card-fill-live-pips-v6" "$wrapper"
           grep -F 'installDominoStoreCardFillV5();' "$wrapper"
           grep -F 'aspect-ratio:8 / 5!important' app/assets/css/screens/profile-domino-store-parity-v1.css
           grep -F 'const HEIGHT_RATIO = 5 / 8' app/assets/js/profile/mgw-profile-domino-hard-ratio-v1.js
@@ -129,9 +132,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; $p=$m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??""; $ds=$m["imports"]["./assets/js/screens/store-screen-domino-store-v1.js?v=1&mvp19_9=store-profile-preview-8x5-v1"]??""; $dp=$m["imports"]["./assets/js/profile/mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1"]??""; if(!str_contains($s,"store-screen-checkers-board-source-wrapper.js?v=7") || !str_contains($s,"mvp19_9=domino-store-profile-v1") || !str_contains($s,"domino_preview=card-fill-live-pips-v5") || !str_contains($p,"mgw-profile-chess-layout-v2.js?v=19") || !str_contains($p,"mvp19_9=domino-profile-parity-v1") || !str_contains($p,"domino_card_runtime=hard-8x5-v1") || !str_contains($p,"domino_preview=authentic-v2") || !str_contains($ds,"store-screen-domino-store-v1.js?v=4") || !str_contains($ds,"domino-uniform-fullfield-v4") || !str_contains($dp,"domino-authentic-tiles-effects-v2")) exit(1);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; $p=$m["imports"]["./assets/js/screens/profile-screen-v110.js?v=1108"]??""; $ds=$m["imports"]["./assets/js/screens/store-screen-domino-store-v1.js?v=1&mvp19_9=store-profile-preview-8x5-v1"]??""; $dp=$m["imports"]["./assets/js/profile/mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1"]??""; if(!str_contains($s,"store-screen-checkers-board-source-wrapper.js?v=7") || !str_contains($s,"mvp19_9=domino-store-profile-v1") || !str_contains($s,"domino_preview=pips-centered-v6") || !str_contains($p,"mgw-profile-chess-layout-v2.js?v=19") || !str_contains($p,"mvp19_9=domino-profile-parity-v1") || !str_contains($p,"domino_card_runtime=hard-8x5-v1") || !str_contains($p,"domino_preview=authentic-v2") || !str_contains($ds,"store-screen-domino-store-v1.js?v=4") || !str_contains($ds,"domino-uniform-fullfield-v4") || !str_contains($dp,"domino-authentic-tiles-effects-v2")) exit(1);'
           ! grep -Fq 'domino_preview=expanded-readable-v3' app/runtime/client/version-manifest.php
-          php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1160) exit(1);'
+          php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1161) exit(1);'
           if [ '${{ github.event_name }}' = 'pull_request' ]; then
             base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
             git diff --exit-code "$base" "$head" -- \

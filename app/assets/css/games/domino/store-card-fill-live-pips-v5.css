@@ -1,6 +1,6 @@
-/* MVP-19.9 Domino Store corrective v5.
+/* MVP-19.9 Domino Store corrective v5 + pip polish v6.
    Store cards fill the whole accepted preview column; purchase sheet keeps its accepted 8:5 frame.
-   Pips are hard-reset to true circles instead of sub-pixel scaled dots. */
+   Pips use a stable 4px placement slot with a smaller 3px circular ink mark. */
 
 @media (max-width:719px){
   .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"]{
@@ -33,10 +33,12 @@
   aspect-ratio:8 / 5!important;
 }
 
-/* Use clearly round pips. The previous percentage/min-width combination collapsed to ~2px
-   in Store cards, which rasterized as tiny squares/diamonds on some WebViews. */
+/* The i-node is only a centred placement slot. The visible pip is a smaller inner disc,
+   so dots cannot crowd the tile edge and WebViews cannot rasterize them as squares/diamonds. */
 .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview-half i{
+  position:relative!important;
   display:block!important;
+  place-self:center!important;
   width:4px!important;
   min-width:4px!important;
   max-width:4px!important;
@@ -58,10 +60,36 @@
   line-height:0!important;
 }
 
+.store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview-half i::after{
+  content:none!important;
+}
+
 .store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview-half i.active{
-  background:currentColor!important;
+  background:transparent!important;
   border-radius:999px!important;
   box-shadow:none!important;
+}
+
+.store-v2-game-preview[data-game-type="domino"] .mgw-domino-preview-half i.active::after{
+  content:""!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  width:3px!important;
+  height:3px!important;
+  min-width:3px!important;
+  min-height:3px!important;
+  max-width:3px!important;
+  max-height:3px!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:50%!important;
+  clip-path:none!important;
+  background:currentColor!important;
+  box-shadow:none!important;
+  transform:translate(-50%,-50%)!important;
+  transform-origin:center!important;
 }
 
 /* Keep the centre divider identical and quiet; it is not a pip. */
