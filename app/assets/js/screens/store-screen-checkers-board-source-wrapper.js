@@ -6,7 +6,7 @@ import {
 import {
   installReversiStorePresentation,
   upgradeReversiStorePresentation,
-} from './store-screen-reversi-store-v1.js?v=2&mvp19_7=store-only&selector=instant-active-v1';
+} from './store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only&review=manual-corrective-v2';
 import {
   installGoStorePresentation,
   upgradeGoStorePresentation,
