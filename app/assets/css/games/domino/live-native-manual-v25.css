@@ -1,6 +1,15 @@
 /* MVP-19.9 manual corrective v25.
    Real-DOM only: restore nested horizontal hand gesture ownership and make paid LIVE effects unmistakable. */
 
+/* The v1 accent host used paint containment while precision/stock hosts are only 1px tall.
+   Telegram therefore clipped most rings, glow and particles down to a tiny line. Keep layout/style
+   containment, but explicitly allow these two transient effects to paint outside their 1px path. */
+.domino-native-fx-accent.is-precision,
+.domino-native-fx-accent.is-stock{
+  contain:layout style!important;
+  overflow:visible!important;
+}
+
 /* Telegram nested scrolling: the vertical content owner must not veto horizontal gestures
    before they reach the real Domino hand scroller. */
 .game-board-screen[data-game-type="domino"] .content{
