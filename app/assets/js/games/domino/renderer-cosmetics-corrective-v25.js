@@ -13,6 +13,7 @@ let handScrollGameId = '';
 let handScrollLeft = 0;
 
 ensureCorrectiveStyles();
+ensureHandGestureStyles();
 
 export { dominoMeta, dominoPlayerMark, dominoStatus };
 
@@ -48,6 +49,7 @@ function restoreAndBindHandDrag(gameId, container){
   const maxScroll = Math.max(0, hand.scrollWidth - hand.clientWidth);
   hand.scrollLeft = Math.max(0, Math.min(handScrollLeft, maxScroll));
   hand.dataset.dominoHandDrag = 'v26';
+  hand.dataset.dominoHandGesture = 'v27';
 
   let touchId = null;
   let startX = 0;
@@ -265,6 +267,23 @@ function ensureCorrectiveStyles(){
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.dataset.mgwDominoManualCorrective = 'v25';
+  link.href = href;
+  document.head.appendChild(link);
+}
+
+function ensureHandGestureStyles(){
+  if (typeof document === 'undefined') return;
+  const href = new URL('../../../css/games/domino/live-hand-gesture-v27.css?v=1&mvp19_9=hand-gesture-owner-v27', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-domino-hand-gesture]');
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    existing.dataset.mgwDominoHandGesture = 'v27';
+    return;
+  }
+
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwDominoHandGesture = 'v27';
   link.href = href;
   document.head.appendChild(link);
 }
