@@ -118,14 +118,14 @@ jobs:
               "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" \
               --output domino-live-readiness.json; then
               if python3 - domino-live-readiness.json "${expected_fingerprint}" <<'PY'
-import json
-import sys
-from pathlib import Path
-payload = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
-assert payload.get('ok') is True
-assert payload.get('source_fingerprint_sha256') == sys.argv[2]
-assert payload.get('environment') == 'staging'
-PY
+          import json
+          import sys
+          from pathlib import Path
+          payload = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+          assert payload.get('ok') is True
+          assert payload.get('source_fingerprint_sha256') == sys.argv[2]
+          assert payload.get('environment') == 'staging'
+          PY
               then
                 ready=1
                 break
