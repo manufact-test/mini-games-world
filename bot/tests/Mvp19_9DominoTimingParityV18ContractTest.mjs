@@ -11,9 +11,9 @@ assert.match(index, /store-effects-timing-parity-v18\.css\?v=1&mvp19_9=domino-ti
 assert.match(index, /data-mgw-domino-effects-timing-parity="v18"/);
 assert.match(index, /store-effects-precision-alignment-v19\.css\?v=1&mvp19_9=domino-precision-alignment-v19/);
 assert.match(index, /data-mgw-domino-effects-precision-alignment="v19"/);
-assert.match(index, /store-effects-card-fullwidth-v20\.css\?v=4&mvp19_9=domino-effect-card-canonical-stage-v23/);
-assert.match(index, /data-mgw-domino-effects-card-canonical-stage="v23"/);
-assert.match(launch, /\/app\/v110\.php\?v=1179/);
+assert.match(index, /store-effects-card-fullwidth-v20\.css\?v=5&mvp19_9=domino-effect-card-micro-parity-v24/);
+assert.match(index, /data-mgw-domino-effects-card-canonical-stage="v24"/);
+assert.match(launch, /\/app\/v110\.php\?v=1180/);
 
 assert.match(css, /store-v2-game-product\[data-store-game-product="domino"\][\s\S]*transform:scale\(\.88\)!important/);
 assert.match(css, /store-v2-game-preview\[data-game-type="domino"\]\[data-cosmetic-layer="effect"\][\s\S]*transform:scale\(\.88\)!important/);
@@ -43,12 +43,20 @@ assert.match(cardLayout, /aspect-ratio:auto!important/);
 assert.match(cardLayout, /mgw-domino-preview-table > \.mgw-domino-fx-stage\{[\s\S]*width:100%!important;[\s\S]*height:auto!important;[\s\S]*aspect-ratio:8 \/ 5!important;/);
 assert.match(cardLayout, /top:50%!important/);
 assert.match(cardLayout, /margin-top:-31\.25%!important/);
-assert.ok(!cardLayout.includes('aspect-ratio:2 / 1!important'), 'v23 must not resize Store pieces independently');
-assert.ok(!cardLayout.includes('aspect-ratio:1 / 2!important'), 'v23 must keep piece geometry owned by the canonical 8:5 scene');
+assert.ok(!cardLayout.includes('aspect-ratio:2 / 1!important'), 'v24 must not resize Store pieces independently');
+assert.ok(!cardLayout.includes('aspect-ratio:1 / 2!important'), 'v24 must keep piece geometry owned by the canonical 8:5 scene');
 assert.match(cardLayout, /grid-template-columns:101px minmax\(0,1fr\)!important/);
-assert.ok(!cardLayout.includes('grid-template-areas:"preview" "copy" "foot"'), 'v23 must keep the compact Store card');
-assert.ok(!cardLayout.includes('@keyframes'), 'v23 is scene/layout-only and must not change accepted animations');
-assert.ok(!cardLayout.includes('animation:'), 'v23 is scene/layout-only and must not take animation ownership');
+assert.ok(!cardLayout.includes('grid-template-areas:"preview" "copy" "foot"'), 'v24 must keep the compact Store card');
+
+// v24 fixes only compact Store micro geometry. The wide Buy/Profile previews retain
+// the accepted v16 pixel skin; Store pips/radii are reduced because the same fixed
+// pixels otherwise look oversized inside the 116px card stage.
+assert.match(cardLayout, /store-v2-game-product\[data-store-game-product="domino"\] > \.store-v2-game-preview\[data-game-type="domino"\]\[data-cosmetic-layer="effect"\][\s\S]*border-radius:2px!important/);
+assert.match(cardLayout, /#171a1f 0 1\.35px,transparent 1\.85px/);
+assert.match(cardLayout, /data-cosmetic-variant="chain-finale"[\s\S]*#171a1f 0 1\.05px,transparent 1\.5px/);
+assert.ok(!cardLayout.includes('.store-v2-confirm-game'), 'v24 must not change the accepted Buy-sheet preview');
+assert.ok(!cardLayout.includes('@keyframes'), 'v24 must not change accepted animations');
+assert.ok(!cardLayout.includes('animation:'), 'v24 must not take animation ownership');
 
 assert.match(css, /@keyframes mgw-domino-v18-stock-flight/);
 assert.match(css, /mgw-domino-v18-stock-source-pulse/);
@@ -69,4 +77,4 @@ assert.ok(!alignment.includes('MutationObserver'));
 assert.ok(!cardLayout.includes('setTimeout('));
 assert.ok(!cardLayout.includes('MutationObserver'));
 
-console.log('MVP-19.9 Domino timing/parity v18 + Precision v19 + compact Store cards + canonical 8:5 Store scene v23 contract: OK');
+console.log('MVP-19.9 Domino timing/parity v18 + Precision v19 + compact Store canonical stage/micro parity v24 contract: OK');
