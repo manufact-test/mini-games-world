@@ -7,9 +7,11 @@ const liveJs = read('app/assets/js/games/domino/renderer-cosmetics-v1.js');
 const correctiveJs = read('app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js');
 const nativeCss = read('app/assets/css/games/domino/live-native-effects-v1.css');
 const correctiveCss = read('app/assets/css/games/domino/live-native-manual-v25.css');
+const handGestureCss = read('app/assets/css/games/domino/live-hand-gesture-v27.css');
 const liveCosmeticsCss = read('app/assets/css/games/domino/live-cosmetics-v2.css');
 const migration = read('bot/database/migrations/20260915_0035_add_domino_store_cosmetics.php');
 const manifest = read('app/runtime/client/version-manifest.php');
+const entry = read('app/v110.php');
 const launch = read('bot/helpers/WebAppLaunchUrl.php');
 
 for (const itemId of [
@@ -72,13 +74,19 @@ assert.ok(correctiveJs.includes("container.querySelectorAll('.domino-chain-slot 
 assert.ok(!correctiveJs.includes('onAction'), 'finale QA must not mutate authoritative game state');
 
 assert.ok(correctiveJs.includes("hand.dataset.dominoHandDrag = 'v26'"), 'real hand must expose the v26 drag owner');
+assert.ok(correctiveJs.includes("hand.dataset.dominoHandGesture = 'v27'"), 'real hand must expose the corrected v27 gesture owner');
 assert.ok(correctiveJs.includes("hand.addEventListener('touchmove'"), 'real hand must own the touchmove gesture');
 assert.ok(correctiveJs.includes('{ passive:false }'), 'horizontal touchmove must be non-passive so Telegram cannot steal the gesture');
 assert.ok(correctiveJs.includes('event.preventDefault()'), 'horizontal drag must cancel native nested-scroll ownership after direction lock');
 assert.ok(correctiveJs.includes('handScrollLeft'), 'hand horizontal position must survive polling rerenders for the same game');
 assert.ok(correctiveJs.includes('suppressNextClick'), 'a completed drag must not accidentally play the tile under the finger');
+assert.ok(correctiveJs.includes('live-hand-gesture-v27.css?v=1&mvp19_9=hand-gesture-owner-v27'), 'corrective runtime must load fresh v27 gesture CSS');
 
-assert.ok(correctiveCss.includes('touch-action:pan-x pan-y!important'), 'Telegram nested gesture ownership must allow horizontal hand swipes');
+assert.ok(correctiveCss.includes('touch-action:pan-x pan-y!important'), 'outer Domino content may remain a normal two-axis browser surface');
+assert.ok(handGestureCss.includes('.domino-hand,'), 'v27 gesture CSS must own the real hand');
+assert.ok(handGestureCss.includes('.domino-hand-tile{'), 'v27 gesture CSS must own touch targets inside the hand');
+assert.ok(handGestureCss.includes('touch-action:pan-y!important'), 'browser must retain vertical panning while JS exclusively owns horizontal hand drag');
+assert.ok(!handGestureCss.includes('touch-action:pan-x'), 'v27 hand gesture owner must not advertise horizontal panning back to Chromium');
 assert.ok(correctiveCss.includes('mgw-domino-native-precision-tile-v25'), 'precision corrective must visibly strengthen the real placed tile impact');
 assert.ok(correctiveCss.includes('mgw-domino-native-precision-shock-v25'), 'precision corrective must expose a readable contact shockwave');
 assert.ok(correctiveCss.includes('mgw-domino-native-stock-source-v25'), 'stock corrective must visibly pulse the real stock owner');
@@ -91,8 +99,9 @@ assert.ok(liveCosmeticsCss.includes('overflow-x:auto!important'), 'large hand ho
 assert.ok(liveCosmeticsCss.includes('overflow-y:auto!important'), 'mobile Domino vertical scroll must remain preserved');
 assert.ok(liveCosmeticsCss.includes('height:100dvh!important'), 'bounded Telegram viewport owner must remain preserved');
 
-assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-cosmetics-corrective-v25.js?v=1&mvp19_9=manual-corrective-v25&hand_drag=v26'"), 'active import graph must route Domino through corrective v25 runtime with v26 hand-drag identity');
-assert.ok(correctiveJs.includes('live-native-manual-v25.css?v=1&mvp19_9=manual-corrective-v25&hand_drag=v26'), 'corrective runtime must publish the fresh v26 stylesheet identity');
-assert.match(launch, /\/app\/v110\.php\?v=1188&hand_drag=26/);
+assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-cosmetics-corrective-v25.js?v=1&mvp19_9=manual-corrective-v25&hand_drag=v26'"), 'manifest must keep the accepted v25/v26 Domino route');
+assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&gesture_owner=v27';"), 'active v110 entry must publish a fresh v27 Domino module identity');
+assert.ok(entry.includes("header('X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal');"), 'active entry must identify v27 gesture arbitration');
+assert.match(launch, /\/app\/v110\.php\?v=1189&hand_gesture=27/);
 
-console.log('MVP-19.9 Domino manual corrective v25 + hand drag v26 contract: OK');
+console.log('MVP-19.9 Domino manual corrective v25 + hand drag v26 + gesture owner v27 contract: OK');
