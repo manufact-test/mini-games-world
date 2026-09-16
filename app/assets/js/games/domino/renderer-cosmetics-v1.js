@@ -32,7 +32,6 @@ function decorateLiveDomino({ game, me, container }){
   if (!gameId) return;
 
   container.dataset.mgwDominoLiveCosmetics = 'effects-v1';
-  clearLiveEffectHosts(container);
 
   const players = Array.isArray(game?.players) ? game.players : [];
   const action = game?.last_action || {};
@@ -45,71 +44,75 @@ function decorateLiveDomino({ game, me, container }){
 
   if (!signature || seenEventByGame.get(gameId) === signature) return;
   seenEventByGame.set(gameId, signature);
+  clearLiveEffectHosts(gameId);
+
+  if (prefersReducedMotion()) return;
 
   if (String(game?.status || '') === 'finished' && finishEffect === FINALE_ID) {
-    mountFinale(container);
+    mountFinale(gameId, container);
     return;
   }
 
   if (actionType === 'play' && actorEffect === PRECISION_ID) {
     container.querySelector('.domino-chain-slot.latest')?.classList.remove('animate-in');
-    mountPrecision(container);
+    mountPrecision(gameId, container);
     return;
   }
 
   if (actionType === 'draw' && actorEffect === STOCK_ID) {
     container.querySelector('.domino-hand')?.classList.remove('draw-pulse');
-    mountStock(container);
+    mountStock(gameId, container);
   }
 }
 
-function mountPrecision(container){
+function mountPrecision(gameId, container){
+  const latest = container.querySelector('.domino-chain-slot.latest');
   const chainArea = container.querySelector('.domino-chain-area');
   if (!(chainArea instanceof HTMLElement)) return;
 
-  const latest = chainArea.querySelector('.domino-chain-slot.latest');
-  const x = cssNumber(latest, '--domino-x', 50);
-  const y = cssNumber(latest, '--domino-y', 50);
+  const anchorRect = latest instanceof HTMLElement ? latest.getBoundingClientRect() : chainArea.getBoundingClientRect();
   const rotation = cssNumber(latest, '--domino-rotation', 0);
-  const host = makeEffectHost('precision-drop');
+  const host = makeEffectHost(gameId, 'precision-drop');
   host.classList.add('is-precision');
-  host.style.left = `${x}%`;
-  host.style.top = `${y}%`;
+  host.style.left = `${anchorRect.left + anchorRect.width / 2}px`;
+  host.style.top = `${anchorRect.top + anchorRect.height / 2}px`;
   host.style.setProperty('--mgw-domino-live-rotation', `${rotation}deg`);
-  chainArea.appendChild(host);
+  document.body.appendChild(host);
   finishOnCanonicalAnimation(host, '.mgw-domino-v13-impact-piece', 'mgw-domino-v18-precision-flight');
 }
 
-function mountStock(container){
-  const table = container.querySelector('.domino-table');
+function mountStock(gameId, container){
   const stock = container.querySelector('.domino-stock-count');
-  if (!(table instanceof HTMLElement) || !(stock instanceof HTMLElement)) return;
+  const table = container.querySelector('.domino-table');
+  if (!(table instanceof HTMLElement)) return;
 
-  const tableRect = table.getBoundingClientRect();
-  const stockRect = stock.getBoundingClientRect();
-  const host = makeEffectHost('stock-pulse');
+  const anchorRect = stock instanceof HTMLElement ? stock.getBoundingClientRect() : table.getBoundingClientRect();
+  const host = makeEffectHost(gameId, 'stock-pulse');
   host.classList.add('is-stock');
-  host.style.left = `${stockRect.left - tableRect.left + stockRect.width / 2}px`;
-  host.style.top = `${stockRect.top - tableRect.top + stockRect.height / 2}px`;
-  table.appendChild(host);
+  host.style.left = `${anchorRect.left + anchorRect.width / 2}px`;
+  host.style.top = `${anchorRect.top + anchorRect.height / 2}px`;
+  document.body.appendChild(host);
   finishOnCanonicalAnimation(host, '.mgw-domino-v13-draw-piece', 'mgw-domino-v18-stock-flight');
 }
 
-function mountFinale(container){
+function mountFinale(gameId, container){
   const chainArea = container.querySelector('.domino-chain-area');
-  if (!(chainArea instanceof HTMLElement)) return;
+  const table = container.querySelector('.domino-table');
+  if (!(table instanceof HTMLElement)) return;
 
-  const host = makeEffectHost('chain-finale');
+  const anchorRect = chainArea instanceof HTMLElement ? chainArea.getBoundingClientRect() : table.getBoundingClientRect();
+  const host = makeEffectHost(gameId, 'chain-finale');
   host.classList.add('is-finale');
-  host.style.left = '50%';
-  host.style.top = '50%';
-  chainArea.appendChild(host);
+  host.style.left = `${anchorRect.left + anchorRect.width / 2}px`;
+  host.style.top = `${anchorRect.top + anchorRect.height / 2}px`;
+  document.body.appendChild(host);
   finishOnCanonicalAnimation(host, '.mgw-domino-v13-cascade-row > i:nth-child(5)', 'mgw-domino-v18-cascade-5');
 }
 
-function makeEffectHost(variant){
+function makeEffectHost(gameId, variant){
   const host = document.createElement('span');
   host.className = 'domino-live-fx-host';
+  host.dataset.dominoLiveGame = gameId;
   host.dataset.dominoLiveEffect = variant;
   host.setAttribute('aria-hidden', 'true');
 
@@ -137,8 +140,11 @@ function finishOnCanonicalAnimation(host, selector, animationName){
   actor.addEventListener('animationend', finish);
 }
 
-function clearLiveEffectHosts(container){
-  container.querySelectorAll('.domino-live-fx-host').forEach(host => host.remove());
+function clearLiveEffectHosts(gameId){
+  document.querySelectorAll('.domino-live-fx-host[data-domino-live-game]').forEach(host => {
+    if (!(host instanceof HTMLElement)) return;
+    if (String(host.dataset.dominoLiveGame || '') === gameId) host.remove();
+  });
 }
 
 function cachePlayerCosmetics(game){
@@ -216,6 +222,12 @@ function cssNumber(element, property, fallback){
   const raw = getComputedStyle(element).getPropertyValue(property);
   const parsed = Number.parseFloat(raw);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function prefersReducedMotion(){
+  return typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 function ensureLiveStyles(){
