@@ -1,0 +1,102 @@
+/* MVP-19.9 Domino effect smooth-preview corrective v17.
+   Keep accepted v15 concepts, but remove segmented motion beats in effects 1/2,
+   shrink the Store-card scene without changing the Buy/Profile scene, and force
+   the finale tiles to the compact low-radius Domino visual language. */
+
+/* Store cards are visually denser than the Buy sheet. Scale only the animated
+   scene inside product cards so pieces do not look oversized there. */
+body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-fx-stage{
+  transform:scale(.78)!important;
+  transform-origin:center center!important;
+}
+
+/* Finale: v15 is dynamically appended after shell CSS, so use the full scoped
+   selector to make the compact radius authoritative in Store, Buy and Profile. */
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="chain-finale"] .mgw-domino-v13-cascade .mgw-domino-v13-cascade-row > i{
+  border-radius:2px!important;
+}
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="chain-finale"] .mgw-domino-v13-cascade .mgw-domino-v13-cascade-row > i::after{
+  border-radius:2px!important;
+}
+
+/* EFFECT 1 — one continuous flight segment.
+   v15 used several transform keyframes with the same easing between each pair,
+   so the WebView visibly decelerated at every intermediate stop. */
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="precision-drop"] .mgw-domino-v13-impact .mgw-domino-v13-impact-piece{
+  filter:none!important;
+  animation:mgw-domino-v17-precision-flight 2.9s cubic-bezier(.17,.72,.2,1) infinite!important;
+  will-change:transform,opacity!important;
+}
+@keyframes mgw-domino-v17-precision-flight{
+  0%,12%{opacity:0;transform:translate3d(30%,-220%,0) rotate(-14deg) scale(.92)}
+  16%{opacity:1;transform:translate3d(30%,-220%,0) rotate(-14deg) scale(.92)}
+  60%{opacity:1;transform:translate3d(0,-50%,0) rotate(0deg) scale(1)}
+  84%{opacity:1;transform:translate3d(0,-50%,0) rotate(0deg) scale(1)}
+  96%,100%{opacity:0;transform:translate3d(0,-50%,0) rotate(0deg) scale(1)}
+}
+
+/* Keep the impact reaction short and after the single flight, not as another
+   long movement segment. */
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="precision-drop"] .mgw-domino-v13-impact .mgw-domino-v13-chain > i:nth-child(1){
+  animation:mgw-domino-v17-chain-kick-left 2.9s ease-out infinite!important;
+}
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="precision-drop"] .mgw-domino-v13-impact .mgw-domino-v13-chain > i:nth-child(2){
+  animation:mgw-domino-v17-chain-kick-mid 2.9s ease-out infinite!important;
+}
+@keyframes mgw-domino-v17-chain-kick-left{
+  0%,58%{transform:translateX(0)}
+  63%{transform:translateX(-4%)}
+  70%,100%{transform:translateX(0)}
+}
+@keyframes mgw-domino-v17-chain-kick-mid{
+  0%,58%{transform:translateX(0)}
+  63%{transform:translateX(-2.4%)}
+  70%,100%{transform:translateX(0)}
+}
+
+/* EFFECT 2 — parent tile now travels from stock to landing in one uninterrupted
+   transform interval. The face change happens while it is moving, instead of
+   dividing the journey into lift / hover / almost-land / land beats. */
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="stock-pulse"] .mgw-domino-v13-draw .mgw-domino-v13-draw-piece{
+  filter:none!important;
+  animation:mgw-domino-v17-stock-flight 3.15s cubic-bezier(.18,.7,.18,1) infinite!important;
+  will-change:transform,opacity!important;
+}
+@keyframes mgw-domino-v17-stock-flight{
+  0%,12%{opacity:0;transform:translate3d(0,0,0) rotate(-5deg) scale(.96)}
+  16%{opacity:1;transform:translate3d(0,0,0) rotate(-5deg) scale(.96)}
+  68%{opacity:1;transform:translate3d(155%,88%,0) rotate(0deg) scale(1)}
+  88%{opacity:1;transform:translate3d(155%,88%,0) rotate(0deg) scale(1)}
+  97%,100%{opacity:0;transform:translate3d(155%,88%,0) rotate(0deg) scale(1)}
+}
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="stock-pulse"] .mgw-domino-v13-draw .mgw-domino-v13-draw-piece > i.back{
+  animation:mgw-domino-v17-stock-back 3.15s linear infinite!important;
+}
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="stock-pulse"] .mgw-domino-v13-draw .mgw-domino-v13-draw-piece > i.face{
+  animation:mgw-domino-v17-stock-face 3.15s linear infinite!important;
+}
+@keyframes mgw-domino-v17-stock-back{
+  0%,36%{opacity:1;transform:scaleX(1)}
+  47%{opacity:1;transform:scaleX(.08)}
+  48%,100%{opacity:0;transform:scaleX(.08)}
+}
+@keyframes mgw-domino-v17-stock-face{
+  0%,47%{opacity:0;transform:scaleX(.08)}
+  48%{opacity:1;transform:scaleX(.08)}
+  59%,100%{opacity:1;transform:scaleX(1)}
+}
+
+/* Reduce continuously animated paint work on the two moving pieces. */
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="precision-drop"] .mgw-domino-v13-impact .mgw-domino-v13-impact-piece,
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="stock-pulse"] .mgw-domino-v13-draw .mgw-domino-v13-draw-piece{
+  backface-visibility:hidden!important;
+  contain:layout paint!important;
+}
+
+@media(prefers-reduced-motion:reduce){
+  body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="precision-drop"] .mgw-domino-v13-impact .mgw-domino-v13-impact-piece,
+  body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="stock-pulse"] .mgw-domino-v13-draw .mgw-domino-v13-draw-piece,
+  body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="stock-pulse"] .mgw-domino-v13-draw .mgw-domino-v13-draw-piece > i{
+    animation:none!important;
+  }
+}
