@@ -1,33 +1,38 @@
-/* MVP-19.9 Domino Store effect-card layout v20.
-   Store only: make the three effect previews use the full card width while
-   preserving the accepted 8:5 scene geometry used by the Buy sheet/Profile. */
+/* MVP-19.9 Domino Store effect-card layout v21 corrective.
+   v20 overreached by turning the three effect products into stacked cards.
+   Restore the exact compact two-column card language used by the accepted
+   Domino table/tile products above, while letting the preview fill the full
+   left column from the copy top to the action bottom.
+   Buy sheet/Profile and animation timing remain untouched. */
 
-body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]){
-  min-height:0!important;
-  grid-template-columns:minmax(0,1fr)!important;
-  grid-template-areas:"preview" "copy" "foot"!important;
-  grid-template-rows:auto auto auto!important;
-  gap:8px!important;
-}
+@media (max-width:719px){
+  body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]){
+    min-height:122px!important;
+    grid-template-columns:116px minmax(0,1fr)!important;
+    grid-template-areas:"preview copy" "preview foot"!important;
+    grid-template-rows:minmax(0,1fr) auto!important;
+    gap:7px 11px!important;
+  }
 
-body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]) > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]{
-  width:100%!important;
-  height:auto!important;
-  min-height:0!important;
-  max-height:none!important;
-  aspect-ratio:8 / 5!important;
-  align-self:stretch!important;
-}
+  body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]) > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]{
+    width:100%!important;
+    height:100%!important;
+    min-height:104px!important;
+    max-height:none!important;
+    aspect-ratio:auto!important;
+    align-self:stretch!important;
+  }
 
-body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]) > .store-v2-game-product-copy,
-body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]) > .store-v2-game-product-foot{
-  width:100%!important;
-  min-width:0!important;
+  body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]) > .store-v2-game-product-copy,
+  body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]) > .store-v2-game-product-foot{
+    width:auto!important;
+    min-width:0!important;
+  }
 }
 
 @media (max-width:340px){
   body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]){
-    grid-template-columns:minmax(0,1fr)!important;
-    gap:7px!important;
+    grid-template-columns:101px minmax(0,1fr)!important;
+    gap:6px 9px!important;
   }
 }
