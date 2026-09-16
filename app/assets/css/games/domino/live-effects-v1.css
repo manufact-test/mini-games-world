@@ -1,0 +1,89 @@
+/* MVP-19.9 Domino live effects v2.
+   Live reuses the accepted Store/Buy DOM primitive and v18/v19 keyframes.
+   This bridge owns only real-game anchoring, physical scale and one-shot playback. */
+
+.domino-live-fx-host{
+  position:fixed;
+  z-index:45;
+  width:0;
+  height:0;
+  pointer-events:none;
+  contain:layout style;
+}
+.domino-live-fx-host .domino-live-fx-preview{
+  position:absolute!important;
+  display:block!important;
+  width:min(var(--mgw-domino-live-scene-width,230px),92vw)!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  aspect-ratio:8 / 5!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  overflow:visible!important;
+  pointer-events:none!important;
+}
+.domino-live-fx-host .domino-live-fx-preview > .mgw-domino-preview,
+.domino-live-fx-host .domino-live-fx-preview > .mgw-domino-preview > .mgw-domino-preview-table{
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+.domino-live-fx-host .mgw-domino-fx-stage{
+  overflow:visible!important;
+}
+
+/* The purchase preview loops. One live event executes exactly one unchanged canonical cycle. */
+body .domino-live-fx-host .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-fx-stage *,
+body .domino-live-fx-host .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-fx-stage *::before,
+body .domino-live-fx-host .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-fx-stage *::after{
+  animation-iteration-count:1!important;
+}
+
+/* Final accepted precision geometry is v16 + v18 + v19:
+   raw contact x=63.6%, y=58.2%; v18 scales the stage .88 around centre,
+   therefore the painted contact is x=61.968%, y=57.216%.
+   JS places that exact point on the real chain joint and rotates the whole accepted scene
+   so its +X axis follows the real snake-chain outward direction. */
+.domino-live-fx-host.is-precision .domino-live-fx-preview{
+  transform:translate(-61.968%,-57.216%) rotate(var(--mgw-domino-live-rotation,0deg))!important;
+  transform-origin:61.968% 57.216%!important;
+}
+
+/* Final accepted stock source deck is left=9%, top=30%, width=27%, height=21.6%.
+   Its raw centre 22.5%/40.8% paints at 25.8%/41.904% after v18 scale.
+   Mirror only the live table primitive so the identical accepted flight travels from the
+   real top-right stock back into the board instead of outside the viewport. */
+.domino-live-fx-host.is-stock .domino-live-fx-preview{
+  transform:translate(-74.2%,-41.904%)!important;
+  transform-origin:74.2% 41.904%!important;
+}
+.domino-live-fx-host.is-stock .mgw-domino-preview-table{
+  transform:scaleX(-1)!important;
+  transform-origin:center!important;
+}
+
+/* Finale remains the accepted five-piece 8:5 cascade, centred over the real chain.
+   JS scales the stage so each accepted upright piece has the same physical width as a live tile. */
+.domino-live-fx-host.is-finale .domino-live-fx-preview{
+  transform:translate(-50%,-50%)!important;
+  transform-origin:center!important;
+}
+
+/* The existing game owner prepares the result sheet after 1.1s. Keep it visually deferred
+   until the exact accepted 3.5s finale cycle ends. JS owns this compatibility marker so
+   older Telegram WebViews do not depend on :has(). */
+body[data-mgw-domino-finale] #sheetOverlay{
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+
+@media (prefers-reduced-motion:reduce){
+  .domino-live-fx-host{display:none!important}
+}
