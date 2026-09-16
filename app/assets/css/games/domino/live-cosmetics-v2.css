@@ -1,7 +1,7 @@
-/* MVP-19.9 Domino live cosmetics v2.
+/* MVP-19.9 Domino live cosmetics v3.
    Store materials remain the visual source of truth; this file maps them onto real Domino DOM. */
 
-.domino-surface[data-mgw-domino-live-cosmetics="full-v2"] .domino-table{
+.domino-surface[data-mgw-domino-live-cosmetics="full-v3"] .domino-table{
   transition:background .18s ease,border-color .18s ease,box-shadow .18s ease;
 }
 
@@ -106,6 +106,46 @@
   box-shadow:0 0 0 3px #ffd85b,0 0 16px rgba(255,216,91,.38),0 6px 12px rgba(0,0,0,.38);
 }
 
+/* Mobile gameplay corrective: drawn hands must remain usable beyond 7 tiles. */
+.game-board-screen[data-game-type="domino"] .content{
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain;
+  padding-bottom:calc(64px + env(safe-area-inset-bottom))!important;
+}
+.game-board-screen[data-game-type="domino"] #leaveGame{
+  margin-top:10px;
+  margin-bottom:calc(8px + env(safe-area-inset-bottom));
+}
+.domino-surface[data-mgw-domino-live-cosmetics="full-v3"] .domino-hand{
+  display:flex!important;
+  align-items:flex-end!important;
+  justify-content:flex-start!important;
+  gap:5px!important;
+  min-width:0;
+  width:100%;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  scroll-snap-type:x proximity;
+  touch-action:pan-x pan-y;
+  padding-left:8px!important;
+  padding-right:8px!important;
+  padding-bottom:9px!important;
+}
+.domino-surface[data-mgw-domino-live-cosmetics="full-v3"] .domino-hand::-webkit-scrollbar{display:none}
+.domino-surface[data-mgw-domino-live-cosmetics="full-v3"] .domino-hand-tile{
+  flex:0 0 clamp(44px,12.5vw,52px)!important;
+  width:clamp(44px,12.5vw,52px)!important;
+  min-width:44px!important;
+  scroll-snap-align:start;
+  touch-action:pan-x pan-y!important;
+}
+
 @media (prefers-reduced-motion:reduce){
-  .domino-surface[data-mgw-domino-live-cosmetics="full-v2"] .domino-table{transition:none}
+  .domino-surface[data-mgw-domino-live-cosmetics="full-v3"] .domino-table{transition:none}
 }
