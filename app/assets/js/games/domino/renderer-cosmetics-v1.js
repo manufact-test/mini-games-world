@@ -4,13 +4,20 @@ import {
   dominoPlayerMark,
   dominoStatus,
 } from './renderer.js?v=75&base=mvp19-9-live-effects-v1';
+import { state } from '../../state.js?v=27';
 import { dominoPreviewMarkup } from '../../screens/store-screen-domino-store-v1.js?v=9&mvp19_9=domino-native-render-v9';
 
+const THEME_SLOT = 'game_domino_theme';
+const ELEMENTS_SLOT = 'game_domino_elements';
 const EFFECT_SLOT = 'game_domino_effect';
+const TABLE_PREFIX = 'game-domino-table-';
+const TILES_PREFIX = 'game-domino-tiles-';
 const PRECISION_ID = 'game-domino-effect-precision-drop';
 const STOCK_ID = 'game-domino-effect-stock-pulse';
 const FINALE_ID = 'game-domino-effect-chain-finale';
 const EFFECT_IDS = new Set([PRECISION_ID, STOCK_ID, FINALE_ID]);
+const THEME_VARIANTS = new Set(['felt', 'midnight', 'walnut', 'neon']);
+const ELEMENT_VARIANTS = new Set(['ivory', 'ebony', 'marble', 'neon']);
 const HORIZONTAL_PIECE_WIDTH = 0.27 * 0.88;
 const FINALE_PIECE_WIDTH = 0.12 * 0.88;
 const cosmeticsByGamePlayer = new Map();
@@ -33,38 +40,71 @@ function decorateLiveDomino({ game, me, container }){
   const gameId = String(game?.id || '');
   if (!gameId) return;
 
-  container.dataset.mgwDominoLiveCosmetics = 'effects-v1';
-
   const players = Array.isArray(game?.players) ? game.players : [];
+  const myId = String(me?.id || '');
+  const viewer = players.find(player => String(player?.id || '') === myId) || null;
+  const presentationOwner = viewer || players[0] || null;
+  const presentationSlots = slotsFor(gameId, presentationOwner, me);
+  const themeVariant = variantFromItem(
+    presentationSlots[THEME_SLOT],
+    TABLE_PREFIX,
+    THEME_VARIANTS,
+  );
+  const elementsVariant = variantFromItem(
+    presentationSlots[ELEMENTS_SLOT],
+    TILES_PREFIX,
+    ELEMENT_VARIANTS,
+  );
+
+  container.dataset.mgwDominoLiveCosmetics = 'full-v2';
+  container.dataset.dominoTheme = themeVariant;
+  container.dataset.dominoElements = elementsVariant;
+
+  const table = container.querySelector('.domino-table');
+  if (table instanceof HTMLElement) {
+    table.dataset.dominoTheme = themeVariant;
+    table.dataset.dominoElements = elementsVariant;
+  }
+
   const action = game?.last_action || {};
   const actionType = String(action?.type || '');
   const actor = actionPlayer(game, players);
-  const actorEffect = effectForPlayer(gameId, actor);
+  const actorEffect = effectForPlayer(gameId, actor, me);
   const finishOwner = finishPlayer(game, players, me);
-  const finishEffect = effectForPlayer(gameId, finishOwner);
+  const finishEffect = effectForPlayer(gameId, finishOwner, me);
   const signature = eventSignature(game);
 
   suppressBaseFallback(container, actionType, actorEffect);
 
-  if (!signature || seenEventByGame.get(gameId) === signature) return;
+  let effectId = '';
+  let effectKind = '';
+  if (String(game?.status || '') === 'finished' && finishEffect === FINALE_ID) {
+    effectId = FINALE_ID;
+    effectKind = 'finale';
+  } else if (actionType === 'play' && actorEffect === PRECISION_ID) {
+    effectId = PRECISION_ID;
+    effectKind = 'precision';
+  } else if (actionType === 'draw' && actorEffect === STOCK_ID) {
+    effectId = STOCK_ID;
+    effectKind = 'stock';
+  }
+
+  if (!signature || !effectId) return;
+  if (seenEventByGame.get(gameId) === signature) return;
   seenEventByGame.set(gameId, signature);
   clearLiveEffectHosts(gameId);
 
   if (prefersReducedMotion()) return;
 
-  if (String(game?.status || '') === 'finished' && finishEffect === FINALE_ID) {
+  if (effectKind === 'finale') {
     mountFinale(gameId, container);
     return;
   }
-
-  if (actionType === 'play' && actorEffect === PRECISION_ID) {
+  if (effectKind === 'precision') {
     mountPrecision(gameId, container);
     return;
   }
-
-  if (actionType === 'draw' && actorEffect === STOCK_ID) {
-    mountStock(gameId, container);
-  }
+  if (effectKind === 'stock') mountStock(gameId, container);
 }
 
 function suppressBaseFallback(container, actionType, actorEffect){
@@ -272,17 +312,36 @@ function cachePlayerCosmetics(game){
   });
 }
 
-function slotsFor(gameId, player){
+function localEquippedSlots(player, me){
+  const playerId = String(player?.id || '');
+  const myId = String(me?.id || '');
+  if (!playerId || !myId || playerId !== myId) return null;
+  const equipped = state?.profileInventory?.equipped;
+  return equipped && typeof equipped === 'object' ? equipped : null;
+}
+
+function slotsFor(gameId, player, me){
+  const local = localEquippedSlots(player, me);
+  if (local) return local;
+
   const direct = player?.game_cosmetics?.slots;
   if (direct && typeof direct === 'object') return direct;
+
   const playerId = String(player?.id || '');
   if (!gameId || !playerId) return {};
   return cosmeticsByGamePlayer.get(`${gameId}:${playerId}`) || {};
 }
 
-function effectForPlayer(gameId, player){
-  const itemId = String(slotsFor(gameId, player)[EFFECT_SLOT] || '');
+function effectForPlayer(gameId, player, me){
+  const itemId = String(slotsFor(gameId, player, me)[EFFECT_SLOT] || '');
   return EFFECT_IDS.has(itemId) ? itemId : '';
+}
+
+function variantFromItem(value, prefix, allowed){
+  const itemId = String(value || '');
+  if (!itemId.startsWith(prefix)) return 'base';
+  const variant = itemId.slice(prefix.length);
+  return allowed.has(variant) ? variant : 'base';
 }
 
 function actionPlayer(game, players){
@@ -343,18 +402,32 @@ function prefersReducedMotion(){
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-function ensureLiveStyles(){
-  if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/domino/live-effects-v1.css?v=2&mvp19_9=accepted-preview-parity-v2', import.meta.url).href;
-  const existing = document.querySelector('link[data-mgw-domino-live-effects]');
+function ensureStylesheet(selector, marker, markerValue, href){
+  const existing = document.querySelector(selector);
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwDominoLiveEffects = 'mvp19-9-live-effects-v2';
+    existing.dataset[marker] = markerValue;
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwDominoLiveEffects = 'mvp19-9-live-effects-v2';
+  link.dataset[marker] = markerValue;
   link.href = href;
   document.head.appendChild(link);
+}
+
+function ensureLiveStyles(){
+  if (typeof document === 'undefined') return;
+  ensureStylesheet(
+    'link[data-mgw-domino-live-cosmetics]',
+    'mgwDominoLiveCosmetics',
+    'mvp19-9-full-v2',
+    new URL('../../../css/games/domino/live-cosmetics-v2.css?v=1&mvp19_9=full-live-v2', import.meta.url).href,
+  );
+  ensureStylesheet(
+    'link[data-mgw-domino-live-effects]',
+    'mgwDominoLiveEffects',
+    'mvp19-9-live-effects-v2',
+    new URL('../../../css/games/domino/live-effects-v1.css?v=2&mvp19_9=accepted-preview-parity-v2', import.meta.url).href,
+  );
 }
