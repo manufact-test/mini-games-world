@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 const css = fs.readFileSync('app/assets/css/games/domino/store-effects-timing-parity-v18.css', 'utf8');
 const alignment = fs.readFileSync('app/assets/css/games/domino/store-effects-precision-alignment-v19.css', 'utf8');
+const cardLayout = fs.readFileSync('app/assets/css/games/domino/store-effects-card-fullwidth-v20.css', 'utf8');
 const index = fs.readFileSync('app/index.html', 'utf8');
 const launch = fs.readFileSync('bot/helpers/WebAppLaunchUrl.php', 'utf8');
 
@@ -10,7 +11,9 @@ assert.match(index, /store-effects-timing-parity-v18\.css\?v=1&mvp19_9=domino-ti
 assert.match(index, /data-mgw-domino-effects-timing-parity="v18"/);
 assert.match(index, /store-effects-precision-alignment-v19\.css\?v=1&mvp19_9=domino-precision-alignment-v19/);
 assert.match(index, /data-mgw-domino-effects-precision-alignment="v19"/);
-assert.match(launch, /\/app\/v110\.php\?v=1174/);
+assert.match(index, /store-effects-card-fullwidth-v20\.css\?v=1&mvp19_9=domino-effect-card-fullwidth-v20/);
+assert.match(index, /data-mgw-domino-effects-card-fullwidth="v20"/);
+assert.match(launch, /\/app\/v110\.php\?v=1175/);
 
 assert.match(css, /store-v2-game-product\[data-store-game-product="domino"\][\s\S]*transform:scale\(\.88\)!important/);
 assert.match(css, /store-v2-game-preview\[data-game-type="domino"\]\[data-cosmetic-layer="effect"\][\s\S]*transform:scale\(\.88\)!important/);
@@ -30,6 +33,13 @@ assert.match(alignment, /top:58\.2%!important/);
 assert.ok(!alignment.includes('@keyframes'), 'v19 alignment must not redesign accepted timing');
 assert.ok(!alignment.includes('scale('), 'v19 alignment must not change accepted effect scale');
 
+assert.match(cardLayout, /:has\(> \.store-v2-game-preview\[data-game-type="domino"\]\[data-cosmetic-layer="effect"\]\)/);
+assert.match(cardLayout, /grid-template-columns:minmax\(0,1fr\)!important/);
+assert.match(cardLayout, /grid-template-areas:"preview" "copy" "foot"!important/);
+assert.match(cardLayout, /aspect-ratio:8 \/ 5!important/);
+assert.ok(!cardLayout.includes('@keyframes'), 'v20 is layout-only and must not change accepted animations');
+assert.ok(!cardLayout.includes('animation:'), 'v20 is layout-only and must not take animation ownership');
+
 assert.match(css, /@keyframes mgw-domino-v18-stock-flight/);
 assert.match(css, /mgw-domino-v18-stock-source-pulse/);
 assert.match(css, /mgw-domino-v18-stock-land-glow/);
@@ -46,5 +56,7 @@ assert.ok(!css.includes('setTimeout('));
 assert.ok(!css.includes('MutationObserver'));
 assert.ok(!alignment.includes('setTimeout('));
 assert.ok(!alignment.includes('MutationObserver'));
+assert.ok(!cardLayout.includes('setTimeout('));
+assert.ok(!cardLayout.includes('MutationObserver'));
 
-console.log('MVP-19.9 Domino timing/parity v18 + Precision alignment v19 contract: OK');
+console.log('MVP-19.9 Domino timing/parity v18 + Precision v19 + full-width Store cards v20 contract: OK');
