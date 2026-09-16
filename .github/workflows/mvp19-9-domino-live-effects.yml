@@ -6,6 +6,7 @@ on:
     paths:
       - 'app/assets/js/games/domino/renderer-cosmetics-v1.js'
       - 'app/assets/css/games/domino/live-effects-v1.css'
+      - 'app/assets/css/games/domino/live-cosmetics-v2.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs'
@@ -32,7 +33,7 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Syntax and live parity contract
+      - name: Syntax and full live cosmetics contract
         run: |
           set -euo pipefail
           node --check app/assets/js/games/domino/renderer-cosmetics-v1.js
@@ -49,6 +50,7 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           git diff --exit-code "$base" "$head" -- \
             app/assets/js/screens/store-screen-domino-store-v1.js \
+            app/assets/css/games/domino/store-cosmetics-v1.css \
             app/assets/css/games/domino/store-effects-scene-v9.css \
             app/assets/css/games/domino/store-effects-visual-parity-v16.css \
             app/assets/css/games/domino/store-effects-smooth-preview-v17.css \
@@ -58,14 +60,18 @@ jobs:
             app/assets/js/games/domino/renderer.js \
             app/assets/css/games/domino/game.css
 
-      - name: Guard no duplicate live animation owner
+      - name: Guard full live cosmetic ownership
         run: |
           set -euo pipefail
           ! grep -Fq '@keyframes' app/assets/css/games/domino/live-effects-v1.css
+          ! grep -Fq '@keyframes' app/assets/css/games/domino/live-cosmetics-v2.css
           ! grep -Fq 'MutationObserver' app/assets/js/games/domino/renderer-cosmetics-v1.js
           ! grep -Fq 'setTimeout(' app/assets/js/games/domino/renderer-cosmetics-v1.js
           ! grep -Fq 'setInterval(' app/assets/js/games/domino/renderer-cosmetics-v1.js
           grep -F "dominoPreviewMarkup('effect', variant)" app/assets/js/games/domino/renderer-cosmetics-v1.js
+          grep -F "game_domino_theme" app/assets/js/games/domino/renderer-cosmetics-v1.js
+          grep -F "game_domino_elements" app/assets/js/games/domino/renderer-cosmetics-v1.js
           grep -F "game_domino_effect" app/assets/js/games/domino/renderer-cosmetics-v1.js
-          grep -F "accepted-preview-live-v1" app/runtime/client/version-manifest.php
-          grep -F "/app/v110.php?v=1181" bot/helpers/WebAppLaunchUrl.php
+          grep -F "state?.profileInventory?.equipped" app/assets/js/games/domino/renderer-cosmetics-v1.js
+          grep -F "full-live-cosmetics-v2" app/runtime/client/version-manifest.php
+          grep -F "/app/v110.php?v=1182" bot/helpers/WebAppLaunchUrl.php
