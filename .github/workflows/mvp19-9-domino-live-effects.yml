@@ -95,10 +95,11 @@ jobs:
           grep -F "max-height:100dvh!important" app/assets/css/games/domino/live-cosmetics-v2.css
           grep -F "overflow-y:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
           grep -F "overflow-x:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
+          grep -F 'body .domino-live-fx-host > .store-v2-game-preview.domino-live-fx-preview[data-game-type="domino"]{' app/assets/css/games/domino/live-effects-v1.css
           grep -F "max-width:none!important" app/assets/css/games/domino/live-effects-v1.css
           grep -F "animation-iteration-count:1!important" app/assets/css/games/domino/live-effects-v1.css
-          grep -F "live-preview-root-width-v5" app/runtime/client/version-manifest.php
-          grep -F "/app/v110.php?v=1185" bot/helpers/WebAppLaunchUrl.php
+          grep -F "live-preview-root-specificity-v6" app/runtime/client/version-manifest.php
+          grep -F "/app/v110.php?v=1186" bot/helpers/WebAppLaunchUrl.php
 
       - name: Wait for exact Hostinger staging fingerprint
         id: readiness
