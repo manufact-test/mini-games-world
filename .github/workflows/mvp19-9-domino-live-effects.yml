@@ -10,6 +10,7 @@ on:
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs'
+      - 'e2e/staging/domino-live-diagnostic.spec.mjs'
       - '.github/workflows/mvp19-9-domino-live-effects.yml'
   workflow_dispatch:
 
@@ -19,6 +20,9 @@ permissions:
 concurrency:
   group: mgw-mvp19-9-domino-live-effects-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
 
 jobs:
   domino-live-effects:
@@ -38,6 +42,7 @@ jobs:
           set -euo pipefail
           node --check app/assets/js/games/domino/renderer-cosmetics-v1.js
           node --check bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs
+          node --check e2e/staging/domino-live-diagnostic.spec.mjs
           php -l app/runtime/client/version-manifest.php
           php -l bot/helpers/WebAppLaunchUrl.php
           node bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs
@@ -79,3 +84,14 @@ jobs:
           grep -F "overflow-y:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
           grep -F "live-effects-scroll-corrective-v3" app/runtime/client/version-manifest.php
           grep -F "/app/v110.php?v=1183" bot/helpers/WebAppLaunchUrl.php
+
+      - name: Install pinned Playwright browser
+        run: |
+          set -euo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install chromium
+
+      - name: Probe deployed Domino runtime in a real browser
+        run: |
+          set -euo pipefail
+          npx --no-install playwright test e2e/staging/domino-live-diagnostic.spec.mjs --config=e2e/playwright.config.mjs --workers=1
