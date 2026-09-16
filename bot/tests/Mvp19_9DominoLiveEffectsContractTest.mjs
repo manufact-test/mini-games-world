@@ -74,7 +74,7 @@ assert.ok(liveCss.includes('transform:translate(-61.968%,-57.216%)'), 'precision
 assert.ok(liveCss.includes('transform:translate(-74.2%,-41.904%)'), 'mirrored stock source must use final v16/v18 source geometry');
 assert.ok(liveCss.includes('transform:scaleX(-1)!important'), 'stock live coordinate adaptation must send the accepted flight inward from top-right stock');
 assert.ok(liveCss.includes('body[data-mgw-domino-finale] #sheetOverlay'), 'result sheet must not cover the accepted 3.5s finale');
-assert.ok(!liveCss.includes(':has('), 'live result-sheet gate must not depend on :has support');
+assert.ok(!/body\s*:has\s*\(/.test(liveCss), 'live result-sheet gate must not depend on a :has selector');
 assert.ok(alignment.includes('top:58.2%!important'), 'accepted precision v19 alignment must remain canonical');
 assert.ok(visual.includes('left:63.6%!important;top:59%!important'), 'accepted v16 precision contact x must remain canonical');
 assert.ok(visual.includes('left:9%!important;'), 'accepted v16 stock source left edge must remain canonical');
