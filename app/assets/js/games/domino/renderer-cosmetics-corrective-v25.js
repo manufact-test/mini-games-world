@@ -399,7 +399,7 @@ function ensureCorrectiveStyles(){
 
 function ensureHandGestureStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/domino/live-hand-gesture-v27.css?v=1&mvp19_9=hand-gesture-owner-v27', import.meta.url).href;
+  const href = new URL('../../../css/games/domino/live-hand-gesture-v27.css?v=2&mvp19_9=hand-gesture-owner-v27&hand_layout=v29', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-domino-hand-gesture]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
