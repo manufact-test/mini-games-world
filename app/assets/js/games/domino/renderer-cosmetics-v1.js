@@ -133,8 +133,9 @@ function mountFinale(gameId, container){
   host.style.left = `${anchorRect.left + anchorRect.width / 2}px`;
   host.style.top = `${anchorRect.top + anchorRect.height / 2}px`;
   host.style.setProperty('--mgw-domino-live-scene-width', `${sceneWidthFromShortEdge(referenceRect)}px`);
+  document.body.dataset.mgwDominoFinale = gameId;
   document.body.appendChild(host);
-  finishOnCanonicalAnimation(host, '.mgw-domino-v13-cascade-row > i:nth-child(5)', 'mgw-domino-v18-cascade-5');
+  finishOnCanonicalAnimation(host, '.mgw-domino-v13-cascade-row > i:nth-child(5)', 'mgw-domino-v18-cascade-5', () => releaseFinaleGate(gameId));
 }
 
 function adjacentChainSlot(slots, latestIndex){
@@ -223,25 +224,40 @@ function makeEffectHost(gameId, variant){
   return host;
 }
 
-function finishOnCanonicalAnimation(host, selector, animationName){
+function finishOnCanonicalAnimation(host, selector, animationName, afterFinish = null){
   const actor = host.querySelector(selector);
   if (!(actor instanceof HTMLElement)) {
     host.remove();
+    afterFinish?.();
     return;
   }
   const finish = event => {
-    if (event.target !== actor || String(event.animationName || '') !== animationName) return;
+    if (event.target !== actor) return;
+    if (event.type === 'animationend' && String(event.animationName || '') !== animationName) return;
     actor.removeEventListener('animationend', finish);
+    actor.removeEventListener('animationcancel', finish);
     host.remove();
+    afterFinish?.();
   };
   actor.addEventListener('animationend', finish);
+  actor.addEventListener('animationcancel', finish);
 }
 
 function clearLiveEffectHosts(gameId){
   document.querySelectorAll('.domino-live-fx-host[data-domino-live-game]').forEach(host => {
     if (!(host instanceof HTMLElement)) return;
-    if (String(host.dataset.dominoLiveGame || '') === gameId) host.remove();
+    if (String(host.dataset.dominoLiveGame || '') !== gameId) return;
+    const wasFinale = String(host.dataset.dominoLiveEffect || '') === 'chain-finale';
+    host.remove();
+    if (wasFinale) releaseFinaleGate(gameId);
   });
+}
+
+function releaseFinaleGate(gameId){
+  if (typeof document === 'undefined') return;
+  if (String(document.body?.dataset?.mgwDominoFinale || '') === gameId) {
+    delete document.body.dataset.mgwDominoFinale;
+  }
 }
 
 function cachePlayerCosmetics(game){
