@@ -8,19 +8,119 @@ import { state } from '../../state.js?v=27';
 
 const EFFECT_SLOT = 'game_domino_effect';
 const FINALE_ID = 'game-domino-effect-chain-finale';
+const HAND_DRAG_THRESHOLD = 8;
+let handScrollGameId = '';
+let handScrollLeft = 0;
 
 ensureCorrectiveStyles();
 
 export { dominoMeta, dominoPlayerMark, dominoStatus };
 
 export function renderDominoSurface(args){
+  const { game, me, container } = args || {};
+  const gameId = String(game?.id || '');
+  captureHandScroll(gameId, container);
+
   renderNativeV1(args);
 
-  const { game, me, container } = args || {};
   if (!(container instanceof HTMLElement)) return;
 
   container.dataset.mgwDominoManualCorrective = 'v25';
+  restoreAndBindHandDrag(gameId, container);
   mountFinaleQaControl(game, me, container);
+}
+
+function captureHandScroll(gameId, container){
+  if (!gameId || gameId !== handScrollGameId) {
+    handScrollGameId = gameId;
+    handScrollLeft = 0;
+    return;
+  }
+
+  const hand = container instanceof HTMLElement ? container.querySelector('.domino-hand') : null;
+  if (hand instanceof HTMLElement) handScrollLeft = hand.scrollLeft;
+}
+
+function restoreAndBindHandDrag(gameId, container){
+  const hand = container.querySelector('.domino-hand');
+  if (!(hand instanceof HTMLElement)) return;
+
+  const maxScroll = Math.max(0, hand.scrollWidth - hand.clientWidth);
+  hand.scrollLeft = Math.max(0, Math.min(handScrollLeft, maxScroll));
+  hand.dataset.dominoHandDrag = 'v26';
+  hand.style.setProperty('touch-action', 'pan-y', 'important');
+
+  let pointerId = null;
+  let startX = 0;
+  let startY = 0;
+  let startScrollLeft = 0;
+  let horizontalDrag = false;
+  let verticalGesture = false;
+  let suppressNextClick = false;
+
+  const resetPointer = event => {
+    if (pointerId === null || Number(event?.pointerId) !== pointerId) return;
+    if (horizontalDrag) {
+      suppressNextClick = true;
+      hand.classList.remove('is-dragging');
+      if (hand.hasPointerCapture?.(pointerId)) {
+        try { hand.releasePointerCapture(pointerId); } catch (_) {}
+      }
+    }
+    pointerId = null;
+    horizontalDrag = false;
+    verticalGesture = false;
+  };
+
+  hand.addEventListener('pointerdown', event => {
+    if (!event.isPrimary) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    pointerId = Number(event.pointerId);
+    startX = Number(event.clientX);
+    startY = Number(event.clientY);
+    startScrollLeft = hand.scrollLeft;
+    horizontalDrag = false;
+    verticalGesture = false;
+    suppressNextClick = false;
+  });
+
+  hand.addEventListener('pointermove', event => {
+    if (pointerId === null || Number(event.pointerId) !== pointerId || verticalGesture) return;
+
+    const dx = Number(event.clientX) - startX;
+    const dy = Number(event.clientY) - startY;
+
+    if (!horizontalDrag) {
+      if (Math.abs(dx) < HAND_DRAG_THRESHOLD && Math.abs(dy) < HAND_DRAG_THRESHOLD) return;
+      if (Math.abs(dx) <= Math.abs(dy) * 1.05) {
+        verticalGesture = true;
+        return;
+      }
+
+      horizontalDrag = true;
+      hand.classList.add('is-dragging');
+      try { hand.setPointerCapture?.(pointerId); } catch (_) {}
+    }
+
+    event.preventDefault();
+    const next = Math.max(0, Math.min(startScrollLeft - dx, Math.max(0, hand.scrollWidth - hand.clientWidth)));
+    hand.scrollLeft = next;
+    if (gameId === handScrollGameId) handScrollLeft = next;
+  }, { passive:false });
+
+  hand.addEventListener('pointerup', resetPointer);
+  hand.addEventListener('pointercancel', resetPointer);
+
+  hand.addEventListener('click', event => {
+    if (!suppressNextClick) return;
+    suppressNextClick = false;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+
+  hand.addEventListener('scroll', () => {
+    if (gameId === handScrollGameId) handScrollLeft = hand.scrollLeft;
+  }, { passive:true });
 }
 
 function mountFinaleQaControl(game, me, container){
@@ -147,7 +247,7 @@ function viewerEffect(game, me){
 
 function ensureCorrectiveStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/domino/live-native-manual-v25.css?v=1&mvp19_9=manual-corrective-v25', import.meta.url).href;
+  const href = new URL('../../../css/games/domino/live-native-manual-v25.css?v=1&mvp19_9=manual-corrective-v25&hand_drag=v26', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-domino-manual-corrective]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
