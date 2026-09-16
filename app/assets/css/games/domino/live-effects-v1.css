@@ -1,4 +1,4 @@
-/* MVP-19.9 Domino live effects v5.
+/* MVP-19.9 Domino live effects v6.
    Live reuses the accepted Store/Buy DOM primitive and v18/v19 keyframes.
    This bridge owns only real-game anchoring, physical scale and one-shot playback. */
 
@@ -10,7 +10,9 @@
   pointer-events:none;
   contain:layout style;
 }
-.domino-live-fx-host .domino-live-fx-preview{
+/* Store's accepted preview root owns width:100%/max-width:100% with !important.
+   LIVE must outrank that exact root selector because the anchor host is intentionally 0x0. */
+body .domino-live-fx-host > .store-v2-game-preview.domino-live-fx-preview[data-game-type="domino"]{
   position:absolute!important;
   display:block!important;
   width:min(var(--mgw-domino-live-scene-width,230px),92vw)!important;
