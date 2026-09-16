@@ -57,7 +57,7 @@ function decorateLiveDomino({ game, me, container }){
   );
   const viewerEffect = normalizedEffectId(presentationSlots[EFFECT_SLOT]);
 
-  container.dataset.mgwDominoLiveCosmetics = 'full-v3';
+  container.dataset.mgwDominoLiveCosmetics = 'full-v4';
   container.dataset.dominoTheme = themeVariant;
   container.dataset.dominoElements = elementsVariant;
   container.dataset.dominoEffect = viewerEffect || 'base';
@@ -421,13 +421,13 @@ function ensureLiveStyles(){
   ensureStylesheet(
     'link[data-mgw-domino-live-cosmetics]',
     'mgwDominoLiveCosmetics',
-    'mvp19-9-full-v3',
-    new URL('../../../css/games/domino/live-cosmetics-v2.css?v=2&mvp19_9=full-live-v3-scroll', import.meta.url).href,
+    'mvp19-9-full-v4',
+    new URL('../../../css/games/domino/live-cosmetics-v2.css?v=3&mvp19_9=full-live-v4-bounded', import.meta.url).href,
   );
   ensureStylesheet(
     'link[data-mgw-domino-live-effects]',
     'mgwDominoLiveEffects',
-    'mvp19-9-live-effects-v3',
-    new URL('../../../css/games/domino/live-effects-v1.css?v=3&mvp19_9=accepted-preview-live-v3', import.meta.url).href,
+    'mvp19-9-live-effects-v4',
+    new URL('../../../css/games/domino/live-effects-v1.css?v=4&mvp19_9=accepted-preview-live-v4', import.meta.url).href,
   );
 }
