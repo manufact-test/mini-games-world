@@ -45,18 +45,18 @@ body .domino-live-fx-host .store-v2-game-preview[data-game-type="domino"][data-c
   animation-iteration-count:1!important;
 }
 
-/* Precision: canonical impact point is x=81.75%, y=58.2% of the 8:5 stage.
-   The whole accepted scene rotates around that point so horizontal/vertical/snake turns stay aligned. */
+/* Accepted v18 scales the whole stage to .88 around centre.
+   Precision's raw impact point 81.75% / 58.2% therefore paints at 77.94% / 57.216%.
+   Rotate the complete accepted scene around that painted point for real snake-chain orientation. */
 .domino-live-fx-host.is-precision .domino-live-fx-preview{
-  transform:translate(-81.75%,-58.2%) rotate(var(--mgw-domino-live-rotation,0deg))!important;
-  transform-origin:81.75% 58.2%!important;
+  transform:translate(-77.94%,-57.216%) rotate(var(--mgw-domino-live-rotation,0deg))!important;
+  transform-origin:77.94% 57.216%!important;
 }
 
-/* Stock: canonical source piece centre is approximately x=27.5%, y=43.4%.
-   Anchor that exact source to the real live stock indicator. */
+/* Stock's raw source centre 27.5% / 43.4% paints at 30.2% / 44.192% after the same .88 scale. */
 .domino-live-fx-host.is-stock .domino-live-fx-preview{
-  transform:translate(-27.5%,-43.4%)!important;
-  transform-origin:27.5% 43.4%!important;
+  transform:translate(-30.2%,-44.192%)!important;
+  transform-origin:30.2% 44.192%!important;
 }
 
 /* Finale remains the accepted five-piece 8:5 cascade, centred over the real chain. */
