@@ -11,9 +11,9 @@ assert.match(index, /store-effects-timing-parity-v18\.css\?v=1&mvp19_9=domino-ti
 assert.match(index, /data-mgw-domino-effects-timing-parity="v18"/);
 assert.match(index, /store-effects-precision-alignment-v19\.css\?v=1&mvp19_9=domino-precision-alignment-v19/);
 assert.match(index, /data-mgw-domino-effects-precision-alignment="v19"/);
-assert.match(index, /store-effects-card-fullwidth-v20\.css\?v=2&mvp19_9=domino-effect-card-compact-v21/);
-assert.match(index, /data-mgw-domino-effects-card-compact="v21"/);
-assert.match(launch, /\/app\/v110\.php\?v=1177/);
+assert.match(index, /store-effects-card-fullwidth-v20\.css\?v=3&mvp19_9=domino-effect-card-proportions-v22/);
+assert.match(index, /data-mgw-domino-effects-card-proportions="v22"/);
+assert.match(launch, /\/app\/v110\.php\?v=1178/);
 
 assert.match(css, /store-v2-game-product\[data-store-game-product="domino"\][\s\S]*transform:scale\(\.88\)!important/);
 assert.match(css, /store-v2-game-preview\[data-game-type="domino"\]\[data-cosmetic-layer="effect"\][\s\S]*transform:scale\(\.88\)!important/);
@@ -40,10 +40,13 @@ assert.match(cardLayout, /grid-template-areas:"preview copy" "preview foot"!impo
 assert.match(cardLayout, /height:100%!important/);
 assert.match(cardLayout, /min-height:104px!important/);
 assert.match(cardLayout, /aspect-ratio:auto!important/);
+assert.match(cardLayout, /mgw-domino-v13-chain > i,[\s\S]*aspect-ratio:2 \/ 1!important/);
+assert.match(cardLayout, /mgw-domino-v13-stock,[\s\S]*mgw-domino-v13-draw-piece[\s\S]*aspect-ratio:2 \/ 1!important/);
+assert.match(cardLayout, /data-cosmetic-variant="chain-finale"[\s\S]*mgw-domino-v13-cascade-row > i[\s\S]*aspect-ratio:1 \/ 2!important/);
 assert.match(cardLayout, /grid-template-columns:101px minmax\(0,1fr\)!important/);
-assert.ok(!cardLayout.includes('grid-template-areas:"preview" "copy" "foot"'), 'v21 must not keep the stacked v20 Store card');
-assert.ok(!cardLayout.includes('@keyframes'), 'v21 is layout-only and must not change accepted animations');
-assert.ok(!cardLayout.includes('animation:'), 'v21 is layout-only and must not take animation ownership');
+assert.ok(!cardLayout.includes('grid-template-areas:"preview" "copy" "foot"'), 'v22 must keep the compact Store card');
+assert.ok(!cardLayout.includes('@keyframes'), 'v22 is geometry/layout-only and must not change accepted animations');
+assert.ok(!cardLayout.includes('animation:'), 'v22 is geometry/layout-only and must not take animation ownership');
 
 assert.match(css, /@keyframes mgw-domino-v18-stock-flight/);
 assert.match(css, /mgw-domino-v18-stock-source-pulse/);
@@ -64,4 +67,4 @@ assert.ok(!alignment.includes('MutationObserver'));
 assert.ok(!cardLayout.includes('setTimeout('));
 assert.ok(!cardLayout.includes('MutationObserver'));
 
-console.log('MVP-19.9 Domino timing/parity v18 + Precision v19 + compact Store cards v21 runtime cache-bust contract: OK');
+console.log('MVP-19.9 Domino timing/parity v18 + Precision v19 + compact Store cards + Store preview proportions v22 contract: OK');
