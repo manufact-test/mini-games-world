@@ -1,0 +1,84 @@
+/* MVP-19.9 Domino live effects v1.
+   The live layer reuses the accepted Store/Buy DOM primitive and v18/v19 keyframes.
+   This file only owns live placement, one-shot playback and game-surface transparency. */
+
+.domino-live-fx-host{
+  position:fixed;
+  z-index:45;
+  width:0;
+  height:0;
+  pointer-events:none;
+  contain:layout style;
+}
+.domino-live-fx-host .domino-live-fx-preview{
+  position:absolute!important;
+  display:block!important;
+  width:min(230px,72vw)!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  aspect-ratio:8 / 5!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  overflow:visible!important;
+  pointer-events:none!important;
+}
+.domino-live-fx-host .domino-live-fx-preview > .mgw-domino-preview,
+.domino-live-fx-host .domino-live-fx-preview > .mgw-domino-preview > .mgw-domino-preview-table{
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+.domino-live-fx-host .mgw-domino-fx-stage{
+  overflow:visible!important;
+}
+
+/* The canonical preview loops forever. Live events execute exactly one canonical cycle. */
+body .domino-live-fx-host .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-fx-stage *,
+body .domino-live-fx-host .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-fx-stage *::before,
+body .domino-live-fx-host .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-fx-stage *::after{
+  animation-iteration-count:1!important;
+}
+
+/* Precision: canonical impact point is x=81.75%, y=58.2% of the 8:5 stage.
+   The whole accepted scene rotates around that point so horizontal/vertical/snake turns stay aligned. */
+.domino-live-fx-host.is-precision .domino-live-fx-preview{
+  transform:translate(-81.75%,-58.2%) rotate(var(--mgw-domino-live-rotation,0deg))!important;
+  transform-origin:81.75% 58.2%!important;
+}
+
+/* Stock: canonical source piece centre is approximately x=27.5%, y=43.4%.
+   Anchor that exact source to the real live stock indicator. */
+.domino-live-fx-host.is-stock .domino-live-fx-preview{
+  transform:translate(-27.5%,-43.4%)!important;
+  transform-origin:27.5% 43.4%!important;
+}
+
+/* Finale remains the accepted five-piece 8:5 cascade, centred over the real chain. */
+.domino-live-fx-host.is-finale .domino-live-fx-preview{
+  width:min(280px,84vw)!important;
+  transform:translate(-50%,-50%)!important;
+  transform-origin:center!important;
+}
+
+/* Keep the result sheet visually deferred until the exact 3.5s accepted finale cycle ends.
+   The sheet may already be prepared by the existing game owner; it becomes visible when the host removes itself. */
+body:has(.domino-live-fx-host[data-domino-live-effect="chain-finale"]) #sheetOverlay{
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+
+@media (max-width:380px){
+  .domino-live-fx-host .domino-live-fx-preview{width:min(205px,76vw)!important}
+  .domino-live-fx-host.is-finale .domino-live-fx-preview{width:min(250px,88vw)!important}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .domino-live-fx-host{display:none!important}
+}
