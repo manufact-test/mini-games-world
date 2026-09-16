@@ -54,7 +54,7 @@ test('DOMINO LIVE — deployed effect, hand scroll and exit reachability', async
     const viewerHand = handPairs.map(([a,b], index) => ({ id:`${a}-${b}-${index}`, a, b, double:a === b }));
 
     const game = {
-      id:'domino-live-diagnostic-v4', game_type:'domino', status:'active', turn:'diag-me',
+      id:'domino-live-diagnostic-v5', game_type:'domino', status:'active', turn:'diag-me',
       players:[
         { id:'diag-me', name:'Diagnostic A', tile_count:viewerHand.length },
         { id:'diag-opponent', name:'Diagnostic B', tile_count:3 },
@@ -98,6 +98,7 @@ test('DOMINO LIVE — deployed effect, hand scroll and exit reachability', async
     const hand = container.querySelector('.domino-hand');
     const content = screen.querySelector(':scope > .content');
     const leave = document.getElementById('leaveGame');
+    const latestTile = container.querySelector('.domino-chain-slot.latest .domino-tile');
     const host = document.querySelector('.domino-live-fx-host.is-precision');
     const preview = host?.querySelector('.domino-live-fx-preview');
     const actor = host?.querySelector('.mgw-domino-v13-impact-piece');
@@ -110,7 +111,9 @@ test('DOMINO LIVE — deployed effect, hand scroll and exit reachability', async
     const screenStyle = getComputedStyle(screen);
     const actorStyle = actor instanceof HTMLElement ? getComputedStyle(actor) : null;
     const hostStyle = host instanceof HTMLElement ? getComputedStyle(host) : null;
+    const previewStyle = preview instanceof HTMLElement ? getComputedStyle(preview) : null;
     const screenRectBefore = screen.getBoundingClientRect();
+    const latestTileRect = latestTile instanceof HTMLElement ? latestTile.getBoundingClientRect() : null;
 
     hand.scrollLeft = hand.scrollWidth;
     content.scrollTop = content.scrollHeight;
@@ -126,7 +129,7 @@ test('DOMINO LIVE — deployed effect, hand scroll and exit reachability', async
 
     return {
       entry:String(location.pathname + location.search),
-      importMapHasV4:String(document.querySelector('script[type="importmap"]')?.textContent || '').includes('bounded-live-corrective-v4'),
+      importMapHasV5:String(document.querySelector('script[type="importmap"]')?.textContent || '').includes('live-preview-root-width-v5'),
       cosmeticsSheetLoaded,
       effectsSheetLoaded,
       cosmeticsHref:String(document.querySelector('link[data-mgw-domino-live-cosmetics]')?.href || ''),
@@ -157,9 +160,13 @@ test('DOMINO LIVE — deployed effect, hand scroll and exit reachability', async
         scrollTop:content.scrollTop,
       },
       leave:{ top:leaveRect.top, bottom:leaveRect.bottom, height:leaveRect.height, viewportHeight:innerHeight },
+      latestTileRect,
       effectHost:{
         exists:host instanceof HTMLElement,
         actorExists:actor instanceof HTMLElement,
+        sceneWidthVar:host instanceof HTMLElement ? host.style.getPropertyValue('--mgw-domino-live-scene-width') : '',
+        previewCssWidth:previewStyle?.width || '',
+        previewCssMaxWidth:previewStyle?.maxWidth || '',
         animationName:actorStyle?.animationName || '',
         animationDuration:actorStyle?.animationDuration || '',
         iterationCount:actorStyle?.animationIterationCount || '',
@@ -177,12 +184,12 @@ test('DOMINO LIVE — deployed effect, hand scroll and exit reachability', async
   });
 
   console.log(`DOMINO_LIVE_DIAGNOSTIC=${JSON.stringify(diagnostic)}`);
-  expect(diagnostic.entry).toContain('v=1184');
-  expect(diagnostic.importMapHasV4).toBe(true);
+  expect(diagnostic.entry).toContain('v=1185');
+  expect(diagnostic.importMapHasV5).toBe(true);
   expect(diagnostic.cosmeticsSheetLoaded).toBe(true);
   expect(diagnostic.effectsSheetLoaded).toBe(true);
   expect(diagnostic.cosmeticsHref).toContain('full-live-v4-bounded');
-  expect(diagnostic.effectsHref).toContain('accepted-preview-live-v4');
+  expect(diagnostic.effectsHref).toContain('accepted-preview-live-v5-root-width');
   expect(diagnostic.marker).toBe('full-v4');
   expect(diagnostic.theme).toBe('walnut');
   expect(diagnostic.elements).toBe('neon');
@@ -207,8 +214,11 @@ test('DOMINO LIVE — deployed effect, hand scroll and exit reachability', async
   expect(Number(diagnostic.effectHost.opacity)).toBeGreaterThan(0);
   expect(diagnostic.effectHost.animationName).toContain('mgw-domino-v18-precision-flight');
   expect(diagnostic.effectHost.iterationCount).toBe('1');
+  expect(diagnostic.effectHost.previewCssMaxWidth).toBe('none');
   expect(diagnostic.effectHost.previewIntersectsViewport).toBe(true);
   expect(diagnostic.effectHost.actorIntersectsViewport).toBe(true);
-  expect(diagnostic.effectHost.actorRect?.width || 0).toBeGreaterThan(4);
-  expect(diagnostic.effectHost.actorRect?.height || 0).toBeGreaterThan(4);
+  expect(diagnostic.effectHost.previewRect?.width || 0).toBeGreaterThan(80);
+  expect(diagnostic.effectHost.previewRect?.height || 0).toBeGreaterThan(50);
+  expect(diagnostic.effectHost.actorRect?.width || 0).toBeGreaterThan(15);
+  expect(diagnostic.effectHost.actorRect?.height || 0).toBeGreaterThan(8);
 });
