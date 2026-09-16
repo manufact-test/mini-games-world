@@ -1,0 +1,9 @@
+/* MVP-19.9 Domino precision alignment corrective v19.
+   Manual Telegram polish: the arriving Precision tile read a touch lower than the two settled tiles.
+   Move the complete impact center (tile + ring + sparks) upward together without changing timing or scale. */
+
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="precision-drop"] .mgw-domino-v13-impact .mgw-domino-v13-impact-piece,
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="precision-drop"] .mgw-domino-v13-impact .mgw-domino-v13-impact-ring,
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="precision-drop"] .mgw-domino-v13-impact .mgw-domino-v13-impact-sparks{
+  top:58.2%!important;
+}
