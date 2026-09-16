@@ -76,8 +76,9 @@ body .domino-live-fx-host .store-v2-game-preview[data-game-type="domino"][data-c
 }
 
 /* The existing game owner prepares the result sheet after 1.1s. Keep it visually deferred
-   until the exact accepted 3.5s finale cycle ends and the transient host removes itself. */
-body:has(.domino-live-fx-host[data-domino-live-effect="chain-finale"]) #sheetOverlay{
+   until the exact accepted 3.5s finale cycle ends. JS owns this compatibility marker so
+   older Telegram WebViews do not depend on :has(). */
+body[data-mgw-domino-finale] #sheetOverlay{
   opacity:0!important;
   visibility:hidden!important;
   pointer-events:none!important;
