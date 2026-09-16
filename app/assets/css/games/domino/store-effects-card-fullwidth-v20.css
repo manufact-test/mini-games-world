@@ -1,9 +1,7 @@
-/* MVP-19.9 Domino Store effect-card layout v21 corrective.
-   v20 overreached by turning the three effect products into stacked cards.
-   Restore the exact compact two-column card language used by the accepted
-   Domino table/tile products above, while letting the preview fill the full
-   left column from the copy top to the action bottom.
-   Buy sheet/Profile and animation timing remain untouched. */
+/* MVP-19.9 Domino Store effect-card layout v22 corrective.
+   Keep the accepted compact two-column card and stretched green preview field,
+   but decouple Domino-piece geometry from the non-8:5 Store preview container.
+   Buy sheet/Profile stay untouched and remain the visual reference. */
 
 @media (max-width:719px){
   body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]){
@@ -27,6 +25,31 @@
   body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]) > .store-v2-game-product-foot{
     width:auto!important;
     min-width:0!important;
+  }
+
+  /* Store cards are intentionally taller than the canonical 8:5 effect scene.
+     Percentage width + percentage height therefore distorted the physical tile body.
+     Lock every Store-only horizontal piece to a real 2:1 body, using width as the
+     authoritative dimension. Buy sheet/Profile retain their existing 8:5 geometry. */
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-chain > i,
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-impact-piece,
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-stock,
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-draw-piece{
+    height:auto!important;
+    aspect-ratio:2 / 1!important;
+  }
+
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-draw-piece > i.face,
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-draw-piece > i.back{
+    width:100%!important;
+    height:100%!important;
+    aspect-ratio:auto!important;
+  }
+
+  /* Finale pieces are the same physical Domino body rotated upright: 1:2. */
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="chain-finale"] .mgw-domino-v13-cascade-row > i{
+    height:auto!important;
+    aspect-ratio:1 / 2!important;
   }
 }
 
