@@ -59,7 +59,7 @@ assert.ok(migration.includes("'event'=>'finish'"), 'finale event must remain fin
 
 assert.ok(liveJs.includes("import { state } from '../../state.js?v=27'"), 'live Domino must use canonical client state');
 assert.ok(liveJs.includes('state?.profileInventory?.equipped'), 'viewer cosmetics must use current Store/Profile equipped inventory');
-assert.ok(liveJs.includes("container.dataset.mgwDominoLiveCosmetics = 'full-v4'"), 'full v4 live cosmetics marker must be applied after every base render');
+assert.ok(liveJs.includes("container.dataset.mgwDominoLiveCosmetics = 'full-v4'"), 'full live cosmetics marker must be applied after every base render');
 assert.ok(liveJs.includes('container.dataset.dominoTheme = themeVariant'), 'live table theme must be projected onto real Domino DOM');
 assert.ok(liveJs.includes('container.dataset.dominoElements = elementsVariant'), 'live tile set must be projected onto real Domino DOM');
 assert.ok(liveJs.includes("container.dataset.dominoEffect = viewerEffect || 'base'"), 'resolved viewer effect must be observable on real Domino DOM');
@@ -129,6 +129,7 @@ assert.ok(liveCss.includes('.domino-live-fx-host.is-stock'), 'stock one-shot ove
 assert.ok(liveCss.includes('.domino-live-fx-host.is-finale'), 'finale one-shot override must outrank canonical Store shorthand');
 assert.ok(liveCss.includes('animation-iteration-count:1!important'), 'live bridge may only make the accepted loop one-shot');
 assert.ok(liveCss.includes('width:min(var(--mgw-domino-live-scene-width,230px),92vw)!important'), 'live scene width must derive from real tile geometry');
+assert.ok(liveCss.includes('max-width:none!important'), 'live scene must neutralize Store max-width against the zero-sized anchor host');
 assert.ok(liveCss.includes('transform:translate(-61.968%,-57.216%)'), 'precision anchor must use final v16/v18/v19 contact geometry');
 assert.ok(liveCss.includes('transform:translate(-74.2%,-41.904%)'), 'mirrored stock source must use final v16/v18 source geometry');
 assert.ok(liveCss.includes('transform:scaleX(-1)!important'), 'stock live coordinate adaptation must send the accepted flight inward from top-right stock');
@@ -144,7 +145,8 @@ assert.ok(store.includes('data-mgw-domino-fx-v14'), 'accepted Store primitive si
 assert.ok(index.includes('data-mgw-domino-effects-visual-parity="v16"'), 'active shell must load accepted v16 visual parity');
 assert.ok(index.includes('data-mgw-domino-effects-timing-parity="v18"'), 'active shell must load accepted v18 timing parity');
 assert.ok(index.includes('data-mgw-domino-effects-precision-alignment="v19"'), 'active shell must load accepted v19 precision alignment');
-assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-cosmetics-v1.js?v=4&mvp19_9=bounded-live-corrective-v4'"), 'active import graph must route Domino through bounded live corrective v4');
-assert.match(launch, /\/app\/v110\.php\?v=1184/);
+assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-cosmetics-v1.js?v=5&mvp19_9=live-preview-root-width-v5'"), 'active import graph must route Domino through live root-width corrective v5');
+assert.ok(liveJs.includes("live-effects-v1.css?v=5&mvp19_9=accepted-preview-live-v5-root-width"), 'live renderer must publish a fresh effect stylesheet identity');
+assert.match(launch, /\/app\/v110\.php\?v=1185/);
 
-console.log('MVP-19.9 Domino bounded live v4 contract: OK');
+console.log('MVP-19.9 Domino live root-width v5 contract: OK');
