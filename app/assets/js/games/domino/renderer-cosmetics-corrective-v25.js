@@ -8,19 +8,126 @@ import { state } from '../../state.js?v=27';
 
 const EFFECT_SLOT = 'game_domino_effect';
 const FINALE_ID = 'game-domino-effect-chain-finale';
+const HAND_DRAG_THRESHOLD = 8;
+let handScrollGameId = '';
+let handScrollLeft = 0;
 
 ensureCorrectiveStyles();
 
 export { dominoMeta, dominoPlayerMark, dominoStatus };
 
 export function renderDominoSurface(args){
+  const { game, me, container } = args || {};
+  const gameId = String(game?.id || '');
+  captureHandScroll(gameId, container);
+
   renderNativeV1(args);
 
-  const { game, me, container } = args || {};
   if (!(container instanceof HTMLElement)) return;
 
   container.dataset.mgwDominoManualCorrective = 'v25';
+  restoreAndBindHandDrag(gameId, container);
   mountFinaleQaControl(game, me, container);
+}
+
+function captureHandScroll(gameId, container){
+  if (!gameId || gameId !== handScrollGameId) {
+    handScrollGameId = gameId;
+    handScrollLeft = 0;
+    return;
+  }
+
+  const hand = container instanceof HTMLElement ? container.querySelector('.domino-hand') : null;
+  if (hand instanceof HTMLElement) handScrollLeft = hand.scrollLeft;
+}
+
+function restoreAndBindHandDrag(gameId, container){
+  const hand = container.querySelector('.domino-hand');
+  if (!(hand instanceof HTMLElement)) return;
+
+  const maxScroll = Math.max(0, hand.scrollWidth - hand.clientWidth);
+  hand.scrollLeft = Math.max(0, Math.min(handScrollLeft, maxScroll));
+  hand.dataset.dominoHandDrag = 'v26';
+
+  let touchId = null;
+  let startX = 0;
+  let startY = 0;
+  let startScrollLeft = 0;
+  let horizontalDrag = false;
+  let verticalGesture = false;
+  let suppressNextClick = false;
+
+  const begin = touch => {
+    touchId = Number(touch.identifier);
+    startX = Number(touch.clientX);
+    startY = Number(touch.clientY);
+    startScrollLeft = hand.scrollLeft;
+    horizontalDrag = false;
+    verticalGesture = false;
+    suppressNextClick = false;
+  };
+
+  const finish = () => {
+    if (horizontalDrag) {
+      suppressNextClick = true;
+      hand.classList.remove('is-dragging');
+    }
+    touchId = null;
+    horizontalDrag = false;
+    verticalGesture = false;
+  };
+
+  hand.addEventListener('touchstart', event => {
+    if (touchId !== null || event.changedTouches.length === 0) return;
+    begin(event.changedTouches[0]);
+  }, { passive:true });
+
+  hand.addEventListener('touchmove', event => {
+    if (touchId === null || verticalGesture) return;
+    const touch = [...event.touches].find(item => Number(item.identifier) === touchId);
+    if (!touch) return;
+
+    const dx = Number(touch.clientX) - startX;
+    const dy = Number(touch.clientY) - startY;
+
+    if (!horizontalDrag) {
+      if (Math.abs(dx) < HAND_DRAG_THRESHOLD && Math.abs(dy) < HAND_DRAG_THRESHOLD) return;
+      if (Math.abs(dx) <= Math.abs(dy) * 1.05) {
+        verticalGesture = true;
+        return;
+      }
+      horizontalDrag = true;
+      hand.classList.add('is-dragging');
+    }
+
+    event.preventDefault();
+    const next = Math.max(0, Math.min(startScrollLeft - dx, Math.max(0, hand.scrollWidth - hand.clientWidth)));
+    hand.scrollLeft = next;
+    if (gameId === handScrollGameId) handScrollLeft = next;
+  }, { passive:false });
+
+  hand.addEventListener('touchend', event => {
+    if (touchId === null) return;
+    const ended = [...event.changedTouches].some(item => Number(item.identifier) === touchId);
+    if (ended) finish();
+  }, { passive:true });
+
+  hand.addEventListener('touchcancel', event => {
+    if (touchId === null) return;
+    const cancelled = [...event.changedTouches].some(item => Number(item.identifier) === touchId);
+    if (cancelled || event.changedTouches.length === 0) finish();
+  }, { passive:true });
+
+  hand.addEventListener('click', event => {
+    if (!suppressNextClick) return;
+    suppressNextClick = false;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+
+  hand.addEventListener('scroll', () => {
+    if (gameId === handScrollGameId) handScrollLeft = hand.scrollLeft;
+  }, { passive:true });
 }
 
 function mountFinaleQaControl(game, me, container){
@@ -147,7 +254,7 @@ function viewerEffect(game, me){
 
 function ensureCorrectiveStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/domino/live-native-manual-v25.css?v=1&mvp19_9=manual-corrective-v25', import.meta.url).href;
+  const href = new URL('../../../css/games/domino/live-native-manual-v25.css?v=1&mvp19_9=manual-corrective-v25&hand_drag=v26', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-domino-manual-corrective]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
