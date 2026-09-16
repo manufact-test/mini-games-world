@@ -1,0 +1,275 @@
+/* MVP-19.9 manual corrective v25.
+   Real-DOM only: restore nested horizontal hand gesture ownership and make paid LIVE effects unmistakable. */
+
+/* Telegram nested scrolling: the vertical content owner must not veto horizontal gestures
+   before they reach the real Domino hand scroller. */
+.game-board-screen[data-game-type="domino"] .content{
+  touch-action:pan-x pan-y!important;
+}
+.domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand,
+.domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand-tile{
+  touch-action:pan-x pan-y!important;
+}
+.domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand{
+  overscroll-behavior-inline:contain;
+  scroll-padding-inline:8px;
+}
+
+/* Tier 1 — Precision Drop corrective: the real placed tile must read as a paid impact,
+   not as a tiny contact sparkle. */
+.domino-surface .domino-chain-slot.latest .domino-tile.mgw-domino-native-precision-tile{
+  animation:mgw-domino-native-precision-tile-v25 .92s cubic-bezier(.14,.84,.2,1) both!important;
+  transform-origin:center!important;
+  will-change:translate,scale,filter,box-shadow;
+}
+.domino-native-fx-accent.is-precision{
+  filter:drop-shadow(0 0 10px rgba(255,216,91,.7));
+}
+.domino-native-fx-accent.is-precision::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  width:18px;
+  height:18px;
+  margin:-9px 0 0 -9px;
+  border-radius:50%;
+  background:radial-gradient(circle,#fffdf0 0 13%,#ffe17a 24%,rgba(255,190,61,.44) 48%,rgba(255,216,91,0) 74%);
+  box-shadow:0 0 18px rgba(255,217,91,.82),0 0 34px rgba(255,159,48,.42);
+  animation:mgw-domino-native-precision-flash-v25 .62s ease-out both;
+}
+.domino-native-fx-accent.is-precision::after{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  width:42px;
+  height:42px;
+  margin:-21px 0 0 -21px;
+  border:2px solid rgba(255,245,183,.92);
+  border-radius:50%;
+  box-shadow:0 0 14px rgba(255,216,91,.72),inset 0 0 13px rgba(255,191,55,.26);
+  animation:mgw-domino-native-precision-shock-v25 .78s cubic-bezier(.16,.72,.22,1) both;
+}
+.domino-native-fx-accent.is-precision .ring{
+  width:34px;
+  height:34px;
+  margin:-17px 0 0 -17px;
+  border-width:3px;
+  border-color:rgba(255,220,89,.98);
+  box-shadow:0 0 14px rgba(255,216,91,.74),0 0 28px rgba(255,166,52,.36);
+  animation:mgw-domino-native-precision-ring-v25 .82s ease-out both;
+}
+.domino-native-fx-accent.is-precision .ring::after{
+  content:"";
+  position:absolute;
+  inset:-8px;
+  border:1px solid rgba(255,246,188,.7);
+  border-radius:50%;
+  animation:mgw-domino-native-precision-ring-secondary-v25 .72s .06s ease-out both;
+}
+.domino-native-fx-accent.is-precision .spark{
+  width:4px;
+  height:16px;
+  margin:-8px 0 0 -2px;
+  background:linear-gradient(180deg,#fffdf1,#ffe077 42%,#ffae42 70%,rgba(255,174,66,0));
+  box-shadow:0 0 9px rgba(255,225,112,.88),0 0 16px rgba(255,158,52,.5);
+  transform-origin:50% 8px;
+  animation:mgw-domino-native-precision-spark-v25 .68s cubic-bezier(.18,.7,.2,1) both;
+}
+
+/* Tier 2 — Stock Pulse corrective: a broader energy ribbon, a larger travelling core,
+   a destination burst and a stronger real-tile arrival. */
+.domino-surface .domino-stock-count.mgw-domino-native-stock-source{
+  animation:mgw-domino-native-stock-source-v25 1.04s cubic-bezier(.18,.74,.2,1) both!important;
+  transform-origin:center!important;
+  will-change:scale,filter;
+}
+.domino-surface .domino-hand-tile.mgw-domino-native-stock-target .domino-tile{
+  animation:mgw-domino-native-stock-target-v25 1.08s cubic-bezier(.15,.82,.2,1) both!important;
+  animation-delay:calc(var(--mgw-domino-native-draw-index,0) * 85ms)!important;
+  transform-origin:center!important;
+  will-change:translate,scale,filter,box-shadow;
+}
+.domino-native-fx-accent.is-stock{
+  height:1px;
+  filter:drop-shadow(0 0 8px rgba(71,235,255,.68)) drop-shadow(0 0 14px rgba(155,91,255,.44));
+}
+.domino-native-fx-accent.is-stock::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:-7px;
+  width:100%;
+  height:14px;
+  border-radius:999px;
+  background:linear-gradient(90deg,rgba(68,236,255,.02),rgba(68,236,255,.28) 20%,rgba(159,93,255,.30) 60%,rgba(255,255,255,.04));
+  filter:blur(5px);
+  transform-origin:0 50%;
+  animation:mgw-domino-native-stock-halo-v25 1.02s ease-out both;
+}
+.domino-native-fx-accent.is-stock::after{
+  content:"";
+  position:absolute;
+  left:100%;
+  top:0;
+  width:38px;
+  height:38px;
+  margin:-19px 0 0 -19px;
+  border-radius:50%;
+  border:2px solid rgba(103,240,255,.88);
+  box-shadow:0 0 16px rgba(73,235,255,.72),0 0 30px rgba(165,91,255,.42),inset 0 0 14px rgba(255,255,255,.18);
+  opacity:0;
+  animation:mgw-domino-native-stock-arrival-v25 .54s .58s ease-out both;
+}
+.domino-native-fx-accent.is-stock .stock-line{
+  top:-3px;
+  height:6px;
+  background:linear-gradient(90deg,rgba(61,236,255,0),rgba(61,236,255,.98) 14%,rgba(118,211,255,.96) 38%,rgba(169,93,255,.86) 68%,rgba(255,247,211,.72) 88%,rgba(255,255,255,0));
+  box-shadow:0 0 8px rgba(67,235,255,.86),0 0 18px rgba(150,91,255,.42);
+  animation:mgw-domino-native-stock-line-v25 1.02s cubic-bezier(.18,.72,.2,1) both;
+}
+.domino-native-fx-accent.is-stock .stock-line::before,
+.domino-native-fx-accent.is-stock .stock-line::after{
+  content:"";
+  position:absolute;
+  left:0;
+  width:100%;
+  height:1px;
+  border-radius:999px;
+  background:linear-gradient(90deg,transparent,rgba(226,252,255,.92) 32%,rgba(215,187,255,.74) 72%,transparent);
+}
+.domino-native-fx-accent.is-stock .stock-line::before{top:-4px}
+.domino-native-fx-accent.is-stock .stock-line::after{bottom:-4px}
+.domino-native-fx-accent.is-stock .stock-orb{
+  width:17px;
+  height:17px;
+  margin:-8.5px 0 0 -8.5px;
+  background:radial-gradient(circle at 38% 34%,#ffffff 0 20%,#92f7ff 36%,#7c8cff 58%,#bd66ff 76%,rgba(189,102,255,0) 78%);
+  box-shadow:0 0 12px #5cf1ff,0 0 26px rgba(154,89,255,.92),0 0 42px rgba(80,222,255,.42);
+  animation:mgw-domino-native-stock-orb-v25 1.04s cubic-bezier(.16,.76,.18,1) both;
+}
+.domino-native-fx-accent.is-stock .stock-orb::before,
+.domino-native-fx-accent.is-stock .stock-orb::after{
+  content:"";
+  position:absolute;
+  left:-14px;
+  top:50%;
+  width:10px;
+  height:3px;
+  margin-top:-1.5px;
+  border-radius:999px;
+  background:#9ff8ff;
+  box-shadow:0 0 7px rgba(91,239,255,.9);
+  opacity:.72;
+}
+.domino-native-fx-accent.is-stock .stock-orb::after{
+  left:-26px;
+  width:16px;
+  opacity:.4;
+}
+
+/* Temporary manual QA control. It never mutates game state; it only replays the real-chain finale locally. */
+.domino-finale-qa-row{
+  width:100%;
+  margin-top:8px;
+}
+.domino-finale-qa-button{
+  min-height:40px!important;
+  border:1px dashed rgba(108,240,255,.5)!important;
+  background:linear-gradient(135deg,rgba(40,72,98,.5),rgba(70,38,98,.45))!important;
+  color:#dffcff!important;
+  box-shadow:inset 0 0 14px rgba(86,231,255,.08),0 0 16px rgba(133,86,255,.08)!important;
+  font-size:13px!important;
+  letter-spacing:.01em;
+}
+.domino-finale-qa-button:disabled{
+  opacity:.72!important;
+}
+
+@keyframes mgw-domino-native-precision-tile-v25{
+  0%{translate:0 -24px;scale:.62;filter:brightness(1.95) saturate(1.34);box-shadow:0 0 0 2px rgba(255,236,151,.98),0 0 34px rgba(255,183,56,.72),0 10px 22px rgba(0,0,0,.28)}
+  38%{translate:0 3px;scale:1.14;filter:brightness(1.48) saturate(1.22);box-shadow:0 0 0 3px rgba(255,216,91,.98),0 0 26px rgba(255,178,48,.58),0 10px 18px rgba(0,0,0,.38)}
+  62%{translate:0 -1px;scale:.97;filter:brightness(1.18) saturate(1.1);box-shadow:0 0 0 2px rgba(255,216,91,.9),0 0 18px rgba(255,190,60,.42),0 7px 14px rgba(0,0,0,.36)}
+  100%{translate:0 0;scale:1;filter:brightness(1) saturate(1);box-shadow:0 0 0 2px rgba(255,216,91,.72),0 7px 14px rgba(0,0,0,.35)}
+}
+@keyframes mgw-domino-native-precision-flash-v25{
+  0%{opacity:0;scale:.25}
+  18%{opacity:1;scale:1}
+  100%{opacity:0;scale:2.1}
+}
+@keyframes mgw-domino-native-precision-shock-v25{
+  0%{opacity:0;scale:.18}
+  16%{opacity:.96}
+  100%{opacity:0;scale:2.15}
+}
+@keyframes mgw-domino-native-precision-ring-v25{
+  0%{opacity:.98;scale:.3}
+  54%{opacity:.85;scale:1.2}
+  100%{opacity:0;scale:2.25}
+}
+@keyframes mgw-domino-native-precision-ring-secondary-v25{
+  0%{opacity:.7;scale:.45}
+  100%{opacity:0;scale:1.75}
+}
+@keyframes mgw-domino-native-precision-spark-v25{
+  0%{opacity:0;transform:rotate(var(--spark-angle)) translateY(0) scaleY(.5)}
+  12%{opacity:1}
+  100%{opacity:0;transform:rotate(var(--spark-angle)) translateY(-31px) scaleY(.12)}
+}
+@keyframes mgw-domino-native-stock-source-v25{
+  0%{scale:1;filter:brightness(1)}
+  20%{scale:1.08;filter:brightness(1.8) drop-shadow(0 0 10px rgba(65,235,255,.94)) drop-shadow(0 0 18px rgba(154,87,255,.54))}
+  48%{scale:.97;filter:brightness(1.3) drop-shadow(0 0 13px rgba(65,235,255,.72))}
+  100%{scale:1;filter:brightness(1)}
+}
+@keyframes mgw-domino-native-stock-target-v25{
+  0%{opacity:.18;translate:0 -14px;scale:.68;filter:brightness(2.15) saturate(1.5);box-shadow:0 0 0 3px rgba(79,241,255,.98),0 0 28px rgba(154,89,255,.78)}
+  42%{opacity:1;translate:0 2px;scale:1.13;filter:brightness(1.48) saturate(1.25);box-shadow:0 0 0 3px rgba(79,241,255,.88),0 0 22px rgba(154,89,255,.6)}
+  68%{translate:0 -1px;scale:.98;filter:brightness(1.18) saturate(1.1);box-shadow:0 0 0 2px rgba(121,236,255,.68),0 0 14px rgba(154,89,255,.35)}
+  100%{opacity:1;translate:0 0;scale:1;filter:brightness(1) saturate(1)}
+}
+@keyframes mgw-domino-native-stock-halo-v25{
+  0%{opacity:0;scale:0 1}
+  15%{opacity:.88}
+  82%{opacity:.74;scale:1 1}
+  100%{opacity:0;scale:1 1}
+}
+@keyframes mgw-domino-native-stock-line-v25{
+  0%{opacity:0;scale:0 1}
+  14%{opacity:1}
+  78%{opacity:.92;scale:1 1}
+  100%{opacity:0;scale:1 1}
+}
+@keyframes mgw-domino-native-stock-orb-v25{
+  0%{opacity:0;transform:translateX(0) scale(.5)}
+  10%{opacity:1}
+  76%{opacity:1}
+  100%{opacity:0;transform:translateX(var(--mgw-domino-native-path-length,80px)) scale(1.12)}
+}
+@keyframes mgw-domino-native-stock-arrival-v25{
+  0%{opacity:0;scale:.25}
+  26%{opacity:1;scale:.85}
+  100%{opacity:0;scale:1.8}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .domino-surface .domino-chain-slot.latest .domino-tile.mgw-domino-native-precision-tile,
+  .domino-native-fx-accent.is-precision::before,
+  .domino-native-fx-accent.is-precision::after,
+  .domino-native-fx-accent.is-precision .ring,
+  .domino-native-fx-accent.is-precision .ring::after,
+  .domino-native-fx-accent.is-precision .spark{
+    animation-duration:.56s!important;
+    animation-delay:0ms!important;
+  }
+  .domino-surface .domino-stock-count.mgw-domino-native-stock-source,
+  .domino-surface .domino-hand-tile.mgw-domino-native-stock-target .domino-tile,
+  .domino-native-fx-accent.is-stock::before,
+  .domino-native-fx-accent.is-stock::after,
+  .domino-native-fx-accent.is-stock .stock-line,
+  .domino-native-fx-accent.is-stock .stock-orb{
+    animation-duration:.64s!important;
+    animation-delay:0ms!important;
+  }
+}
