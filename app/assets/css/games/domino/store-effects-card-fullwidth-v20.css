@@ -1,8 +1,9 @@
-/* MVP-19.9 Domino Store effect-card layout v23 corrective.
-   Keep the accepted compact two-column card and stretched green preview field,
-   but stop resizing individual Domino pieces inside that non-8:5 field.
-   The Store card now hosts one centered canonical 8:5 animation stage, exactly
-   like the accepted Buy preview geometry. Buy sheet/Profile remain untouched. */
+/* MVP-19.9 Domino Store effect-card layout v24 corrective.
+   Keep the accepted compact two-column card and stretched green preview field.
+   v23 keeps animation geometry inside one centered canonical 8:5 stage.
+   v24 additionally corrects compact-Store micro geometry only: v16 uses fixed-pixel
+   pip/radius values tuned on the wider Buy sheet, so those same pixels read too
+   heavy and too rounded inside the 116px Store column. Buy/Profile stay untouched. */
 
 @media (max-width:719px){
   body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]){
@@ -30,9 +31,7 @@
 
   /* The outer green preview intentionally fills the tall left card column.
      Animation geometry must not inherit that stretched aspect ratio. Recreate the
-     original 8:5 coordinate system inside the field and center it vertically.
-     All tile widths/heights, pips, radii and animation coordinates then resolve
-     exactly as they do in the canonical Buy scene. */
+     original 8:5 coordinate system inside the field and center it vertically. */
   body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] > .mgw-domino-preview > .mgw-domino-preview-table > .mgw-domino-fx-stage{
     width:100%!important;
     height:auto!important;
@@ -40,6 +39,85 @@
     inset:auto 0 auto 0!important;
     top:50%!important;
     margin-top:-31.25%!important;
+  }
+
+  /* Compact Store micro-parity.
+     v16's 2.0–2.1px pip radii and 3px corners are fixed CSS pixels. They look
+     correct in the wider Buy sheet, but become visually oversized after the same
+     scene is rendered in the narrow Store column. Scale only these visible ink
+     details on Store cards; body proportions, coordinates and animations stay
+     owned by the canonical 8:5 scene and existing v18/v19 choreography. */
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-chain > i,
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-impact-piece,
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-draw-piece > i.face,
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-stock > i,
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-draw-piece > i.back{
+    border-radius:2px!important;
+  }
+
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-impact .mgw-domino-v13-chain > i::after,
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-impact .mgw-domino-v13-impact-piece::after,
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-draw .mgw-domino-v13-draw-piece > i.face::after{
+    border-radius:2px!important;
+  }
+
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-impact .mgw-domino-v13-chain > i:nth-child(1)::after{
+    background:
+      radial-gradient(circle at 13% 29%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 13% 50%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 13% 71%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 37% 29%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 37% 50%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 37% 71%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 63% 29%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 75% 50%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 87% 71%,#171a1f 0 1.35px,transparent 1.85px)!important;
+  }
+
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-impact .mgw-domino-v13-chain > i:nth-child(2)::after{
+    background:
+      radial-gradient(circle at 13% 29%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 25% 50%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 37% 71%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 63% 29%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 87% 29%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 75% 50%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 63% 71%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 87% 71%,#171a1f 0 1.35px,transparent 1.85px)!important;
+  }
+
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-impact .mgw-domino-v13-impact-piece::after{
+    background:
+      radial-gradient(circle at 13% 29%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 37% 29%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 25% 50%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 13% 71%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 37% 71%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 63% 29%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 87% 71%,#171a1f 0 1.35px,transparent 1.85px)!important;
+  }
+
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-draw .mgw-domino-v13-draw-piece > i.face::after{
+    background:
+      radial-gradient(circle at 13% 29%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 37% 29%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 13% 71%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 37% 71%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 63% 29%,#171a1f 0 1.35px,transparent 1.85px),
+      radial-gradient(circle at 87% 71%,#171a1f 0 1.35px,transparent 1.85px)!important;
+  }
+
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="chain-finale"] .mgw-domino-v13-cascade .mgw-domino-v13-cascade-row > i,
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="chain-finale"] .mgw-domino-v13-cascade .mgw-domino-v13-cascade-row > i::after{
+    border-radius:1px!important;
+  }
+
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="chain-finale"] .mgw-domino-v13-cascade .mgw-domino-v13-cascade-row > i::after{
+    background:
+      radial-gradient(circle at 31% 14%,#171a1f 0 1.05px,transparent 1.5px),
+      radial-gradient(circle at 69% 36%,#171a1f 0 1.05px,transparent 1.5px),
+      radial-gradient(circle at 50% 65%,#171a1f 0 1.05px,transparent 1.5px),
+      radial-gradient(circle at 31% 86%,#171a1f 0 1.05px,transparent 1.5px)!important;
   }
 }
 
