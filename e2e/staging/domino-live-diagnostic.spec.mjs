@@ -54,7 +54,7 @@ test('DOMINO LIVE — deployed effect, hand scroll and exit reachability', async
     const viewerHand = handPairs.map(([a,b], index) => ({ id:`${a}-${b}-${index}`, a, b, double:a === b }));
 
     const game = {
-      id:'domino-live-diagnostic-v5', game_type:'domino', status:'active', turn:'diag-me',
+      id:'domino-live-diagnostic-v6', game_type:'domino', status:'active', turn:'diag-me',
       players:[
         { id:'diag-me', name:'Diagnostic A', tile_count:viewerHand.length },
         { id:'diag-opponent', name:'Diagnostic B', tile_count:3 },
@@ -129,7 +129,7 @@ test('DOMINO LIVE — deployed effect, hand scroll and exit reachability', async
 
     return {
       entry:String(location.pathname + location.search),
-      importMapHasV5:String(document.querySelector('script[type="importmap"]')?.textContent || '').includes('live-preview-root-width-v5'),
+      importMapHasV6:String(document.querySelector('script[type="importmap"]')?.textContent || '').includes('live-preview-root-specificity-v6'),
       cosmeticsSheetLoaded,
       effectsSheetLoaded,
       cosmeticsHref:String(document.querySelector('link[data-mgw-domino-live-cosmetics]')?.href || ''),
@@ -184,12 +184,12 @@ test('DOMINO LIVE — deployed effect, hand scroll and exit reachability', async
   });
 
   console.log(`DOMINO_LIVE_DIAGNOSTIC=${JSON.stringify(diagnostic)}`);
-  expect(diagnostic.entry).toContain('v=1185');
-  expect(diagnostic.importMapHasV5).toBe(true);
+  expect(diagnostic.entry).toContain('v=1186');
+  expect(diagnostic.importMapHasV6).toBe(true);
   expect(diagnostic.cosmeticsSheetLoaded).toBe(true);
   expect(diagnostic.effectsSheetLoaded).toBe(true);
   expect(diagnostic.cosmeticsHref).toContain('full-live-v4-bounded');
-  expect(diagnostic.effectsHref).toContain('accepted-preview-live-v5-root-width');
+  expect(diagnostic.effectsHref).toContain('accepted-preview-live-v6-root-specificity');
   expect(diagnostic.marker).toBe('full-v4');
   expect(diagnostic.theme).toBe('walnut');
   expect(diagnostic.elements).toBe('neon');
@@ -215,6 +215,7 @@ test('DOMINO LIVE — deployed effect, hand scroll and exit reachability', async
   expect(diagnostic.effectHost.animationName).toContain('mgw-domino-v18-precision-flight');
   expect(diagnostic.effectHost.iterationCount).toBe('1');
   expect(diagnostic.effectHost.previewCssMaxWidth).toBe('none');
+  expect(Number.parseFloat(diagnostic.effectHost.previewCssWidth)).toBeGreaterThan(80);
   expect(diagnostic.effectHost.previewIntersectsViewport).toBe(true);
   expect(diagnostic.effectHost.actorIntersectsViewport).toBe(true);
   expect(diagnostic.effectHost.previewRect?.width || 0).toBeGreaterThan(80);
