@@ -427,7 +427,7 @@ function ensureLiveStyles(){
   ensureStylesheet(
     'link[data-mgw-domino-live-effects]',
     'mgwDominoLiveEffects',
-    'mvp19-9-live-effects-v5',
-    new URL('../../../css/games/domino/live-effects-v1.css?v=5&mvp19_9=accepted-preview-live-v5-root-width', import.meta.url).href,
+    'mvp19-9-live-effects-v6',
+    new URL('../../../css/games/domino/live-effects-v1.css?v=6&mvp19_9=accepted-preview-live-v6-root-specificity', import.meta.url).href,
   );
 }
