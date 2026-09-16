@@ -5,8 +5,10 @@ on:
     branches: [agent/mvp-13-2-staging]
     paths:
       - 'app/v110.php'
+      - 'app/v111.php'
       - 'app/assets/js/games/domino/renderer-cosmetics-v1.js'
       - 'app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js'
+      - 'app/assets/js/games/domino/renderer-cosmetics-corrective-v25-base.js'
       - 'app/assets/css/games/domino/live-native-effects-v1.css'
       - 'app/assets/css/games/domino/live-native-manual-v25.css'
       - 'app/assets/css/games/domino/live-hand-gesture-v27.css'
@@ -21,8 +23,10 @@ on:
     branches: [agent/mvp-13-2-staging]
     paths:
       - 'app/v110.php'
+      - 'app/v111.php'
       - 'app/assets/js/games/domino/renderer-cosmetics-v1.js'
       - 'app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js'
+      - 'app/assets/js/games/domino/renderer-cosmetics-corrective-v25-base.js'
       - 'app/assets/css/games/domino/live-native-effects-v1.css'
       - 'app/assets/css/games/domino/live-native-manual-v25.css'
       - 'app/assets/css/games/domino/live-hand-gesture-v27.css'
@@ -62,11 +66,13 @@ jobs:
         run: |
           set -euo pipefail
           node --check app/assets/js/games/domino/renderer-cosmetics-v1.js
+          node --check app/assets/js/games/domino/renderer-cosmetics-corrective-v25-base.js
           node --check app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js
           node --check bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs
           node --check e2e/staging/domino-live-diagnostic.spec.mjs
           node --check e2e/playwright.domino-live-diagnostic.config.mjs
           php -l app/v110.php
+          php -l app/v111.php
           php -l app/runtime/client/version-manifest.php
           php -l bot/helpers/WebAppLaunchUrl.php
           node bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs
@@ -94,6 +100,7 @@ jobs:
           set -euo pipefail
           for file in \
             app/assets/js/games/domino/renderer-cosmetics-v1.js \
+            app/assets/js/games/domino/renderer-cosmetics-corrective-v25-base.js \
             app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js; do
             ! grep -Fq 'dominoPreviewMarkup' "$file"
             ! grep -Fq 'store-screen-domino-store' "$file"
@@ -107,23 +114,20 @@ jobs:
           grep -F "mgw-domino-native-stock-source" app/assets/js/games/domino/renderer-cosmetics-v1.js
           grep -F "mgw-domino-native-stock-target" app/assets/js/games/domino/renderer-cosmetics-v1.js
           grep -F "mgw-domino-native-finale-tile" app/assets/js/games/domino/renderer-cosmetics-v1.js
-          grep -F "container.dataset.mgwDominoLiveCosmetics = 'full-v4'" app/assets/js/games/domino/renderer-cosmetics-v1.js
-          grep -F "container.dataset.mgwDominoNativeEffects = 'v1'" app/assets/js/games/domino/renderer-cosmetics-v1.js
-          grep -F "container.dataset.mgwDominoManualCorrective = 'v25'" app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js
-          grep -F "hand.dataset.dominoHandDrag = 'v26'" app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js
-          grep -F "hand.dataset.dominoHandGesture = 'v27'" app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js
-          grep -F "button.dataset.dominoFinaleQa = 'preview'" app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js
-          grep -F "touch-action:pan-x pan-y!important" app/assets/css/games/domino/live-native-manual-v25.css
+          grep -F "container.dataset.mgwDominoManualCorrective = 'v25'" app/assets/js/games/domino/renderer-cosmetics-corrective-v25-base.js
+          grep -F "button.dataset.dominoFinaleQa = 'preview'" app/assets/js/games/domino/renderer-cosmetics-corrective-v25-base.js
+          grep -F "container.dataset.mgwDominoHandPointer = 'v28'" app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js
+          grep -F "container.addEventListener('pointermove'" app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js
+          grep -F "container.setPointerCapture(drag.pointerId)" app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js
           grep -F "touch-action:pan-y!important" app/assets/css/games/domino/live-hand-gesture-v27.css
           ! grep -Fq "touch-action:pan-x" app/assets/css/games/domino/live-hand-gesture-v27.css
-          grep -F "mgw-domino-native-precision-tile-v25" app/assets/css/games/domino/live-native-manual-v25.css
-          grep -F "mgw-domino-native-stock-orb-v25" app/assets/css/games/domino/live-native-manual-v25.css
           grep -F "overflow-y:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
           grep -F "overflow-x:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
           grep -F "renderer-cosmetics-corrective-v25.js?v=1&mvp19_9=manual-corrective-v25&hand_drag=v26" app/runtime/client/version-manifest.php
           grep -F "&gesture_owner=v27" app/v110.php
-          grep -F "X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal" app/v110.php
-          grep -F "/app/v110.php?v=1189&hand_gesture=27" bot/helpers/WebAppLaunchUrl.php
+          grep -F "&pointer_owner=v28" app/v111.php
+          grep -F "X-MGW-Domino-Hand-Pointer: v28-stable-container-capture" app/v111.php
+          grep -F "/app/v111.php?v=1189&hand_gesture=27&pointer_owner=28" bot/helpers/WebAppLaunchUrl.php
 
       - name: Wait for exact Hostinger staging fingerprint
         id: readiness
