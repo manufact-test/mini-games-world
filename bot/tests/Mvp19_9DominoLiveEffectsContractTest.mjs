@@ -59,7 +59,7 @@ assert.ok(migration.includes("'event'=>'finish'"), 'finale event must remain fin
 
 assert.ok(liveJs.includes("import { state } from '../../state.js?v=27'"), 'live Domino must use canonical client state');
 assert.ok(liveJs.includes('state?.profileInventory?.equipped'), 'viewer cosmetics must use current Store/Profile equipped inventory');
-assert.ok(liveJs.includes("container.dataset.mgwDominoLiveCosmetics = 'full-v3'"), 'full v3 live cosmetics marker must be applied after every base render');
+assert.ok(liveJs.includes("container.dataset.mgwDominoLiveCosmetics = 'full-v4'"), 'full v4 live cosmetics marker must be applied after every base render');
 assert.ok(liveJs.includes('container.dataset.dominoTheme = themeVariant'), 'live table theme must be projected onto real Domino DOM');
 assert.ok(liveJs.includes('container.dataset.dominoElements = elementsVariant'), 'live tile set must be projected onto real Domino DOM');
 assert.ok(liveJs.includes("container.dataset.dominoEffect = viewerEffect || 'base'"), 'resolved viewer effect must be observable on real Domino DOM');
@@ -88,12 +88,18 @@ assert.ok(!liveJs.includes('MutationObserver'), 'live renderer must not use DOM 
 assert.ok(!liveJs.includes('setInterval('), 'live renderer must not add polling');
 assert.ok(!liveJs.includes('setTimeout('), 'live renderer must not use timer cleanup');
 
-assert.ok(liveCosmeticsCss.includes('.game-board-screen[data-game-type="domino"] .content'), 'Domino game screen must own a mobile vertical scroll corrective');
+assert.ok(liveCosmeticsCss.includes('.game-board-screen[data-game-type="domino"]{'), 'Domino game screen must own the viewport bound');
+assert.ok(liveCosmeticsCss.includes('height:100dvh!important'), 'Domino game screen must be bounded to the WebView height');
+assert.ok(liveCosmeticsCss.includes('max-height:100dvh!important'), 'Domino game screen must not grow beyond the WebView height');
+assert.ok(liveCosmeticsCss.includes('.game-board-screen[data-game-type="domino"] .content{'), 'Domino game content must own the vertical scroller');
+assert.ok(liveCosmeticsCss.includes('height:100%!important'), 'Domino scroller must fill the bounded game screen');
+assert.ok(liveCosmeticsCss.includes('max-height:100%!important'), 'Domino scroller must remain inside the bounded game screen');
+assert.ok(liveCosmeticsCss.includes('flex:1 1 0%!important'), 'Domino scroller must be allowed to shrink inside the game screen');
 assert.ok(liveCosmeticsCss.includes('overflow-y:auto!important'), 'Domino game content must remain vertically scrollable');
+assert.ok(liveCosmeticsCss.includes('var(--tg-content-safe-area-inset-bottom, 0px)'), 'Domino bottom reserve must include Telegram content safe area');
 assert.ok(liveCosmeticsCss.includes('.domino-hand{'), 'Domino hand must have a dedicated live overflow owner');
 assert.ok(liveCosmeticsCss.includes('overflow-x:auto!important'), 'drawn Domino hand must remain horizontally swipeable');
 assert.ok(liveCosmeticsCss.includes('touch-action:pan-x pan-y!important'), 'tile buttons must not block horizontal or vertical pan gestures');
-assert.ok(liveCosmeticsCss.includes('env(safe-area-inset-bottom)'), 'Domino game must reserve the Telegram/mobile safe-area at the bottom');
 
 for (const canonical of [
   'mgw-domino-v18-precision-flight',
@@ -118,6 +124,9 @@ for (const canonical of [
 }
 assert.ok(!liveCss.includes('@keyframes'), 'live CSS must not own a second animation timeline');
 assert.ok(!liveCosmeticsCss.includes('@keyframes'), 'table/tile live CSS must not own animation timelines');
+assert.ok(liveCss.includes('.domino-live-fx-host.is-precision'), 'precision one-shot override must outrank canonical Store shorthand');
+assert.ok(liveCss.includes('.domino-live-fx-host.is-stock'), 'stock one-shot override must outrank canonical Store shorthand');
+assert.ok(liveCss.includes('.domino-live-fx-host.is-finale'), 'finale one-shot override must outrank canonical Store shorthand');
 assert.ok(liveCss.includes('animation-iteration-count:1!important'), 'live bridge may only make the accepted loop one-shot');
 assert.ok(liveCss.includes('width:min(var(--mgw-domino-live-scene-width,230px),92vw)!important'), 'live scene width must derive from real tile geometry');
 assert.ok(liveCss.includes('transform:translate(-61.968%,-57.216%)'), 'precision anchor must use final v16/v18/v19 contact geometry');
@@ -135,7 +144,7 @@ assert.ok(store.includes('data-mgw-domino-fx-v14'), 'accepted Store primitive si
 assert.ok(index.includes('data-mgw-domino-effects-visual-parity="v16"'), 'active shell must load accepted v16 visual parity');
 assert.ok(index.includes('data-mgw-domino-effects-timing-parity="v18"'), 'active shell must load accepted v18 timing parity');
 assert.ok(index.includes('data-mgw-domino-effects-precision-alignment="v19"'), 'active shell must load accepted v19 precision alignment');
-assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-cosmetics-v1.js?v=3&mvp19_9=live-effects-scroll-corrective-v3'"), 'active import graph must route Domino through live corrective v3');
-assert.match(launch, /\/app\/v110\.php\?v=1183/);
+assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-cosmetics-v1.js?v=4&mvp19_9=bounded-live-corrective-v4'"), 'active import graph must route Domino through bounded live corrective v4');
+assert.match(launch, /\/app\/v110\.php\?v=1184/);
 
-console.log('MVP-19.9 Domino live effect + mobile scroll corrective contract: OK');
+console.log('MVP-19.9 Domino bounded live v4 contract: OK');
