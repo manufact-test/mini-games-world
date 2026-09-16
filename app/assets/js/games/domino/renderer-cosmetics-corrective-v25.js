@@ -11,6 +11,7 @@ const FINALE_ID = 'game-domino-effect-chain-finale';
 const HAND_DRAG_THRESHOLD = 8;
 let handScrollGameId = '';
 let handScrollLeft = 0;
+const pointerOwners = new WeakMap();
 
 ensureCorrectiveStyles();
 ensureHandGestureStyles();
@@ -27,7 +28,10 @@ export function renderDominoSurface(args){
   if (!(container instanceof HTMLElement)) return;
 
   container.dataset.mgwDominoManualCorrective = 'v25';
+  container.dataset.mgwDominoHandPointer = 'v28';
   restoreAndBindHandDrag(gameId, container);
+  ensureStablePointerOwner(container, gameId);
+  markCurrentHand(container);
   mountFinaleQaControl(game, me, container);
 }
 
@@ -50,6 +54,7 @@ function restoreAndBindHandDrag(gameId, container){
   hand.scrollLeft = Math.max(0, Math.min(handScrollLeft, maxScroll));
   hand.dataset.dominoHandDrag = 'v26';
   hand.dataset.dominoHandGesture = 'v27';
+  hand.dataset.dominoHandPointer = 'v28';
 
   let touchId = null;
   let startX = 0;
@@ -130,6 +135,127 @@ function restoreAndBindHandDrag(gameId, container){
   hand.addEventListener('scroll', () => {
     if (gameId === handScrollGameId) handScrollLeft = hand.scrollLeft;
   }, { passive:true });
+}
+
+function markCurrentHand(container){
+  const hand = container.querySelector('.domino-hand');
+  if (!(hand instanceof HTMLElement)) return null;
+  hand.dataset.dominoHandPointer = 'v28';
+  return hand;
+}
+
+function ensureStablePointerOwner(container, gameId){
+  const existing = pointerOwners.get(container);
+  if (existing) {
+    existing.gameId = gameId;
+    return;
+  }
+
+  const drag = {
+    gameId,
+    pointerId:null,
+    hand:null,
+    startX:0,
+    startY:0,
+    startScrollLeft:0,
+    lastScrollLeft:0,
+    horizontal:false,
+    vertical:false,
+    suppressClick:false,
+  };
+  pointerOwners.set(container, drag);
+
+  const reset = event => {
+    if (drag.pointerId === null) return;
+    if (event && Number(event.pointerId) !== drag.pointerId) return;
+
+    const pointerId = drag.pointerId;
+    if (drag.horizontal) drag.suppressClick = true;
+    if (drag.hand instanceof HTMLElement) drag.hand.classList.remove('is-dragging');
+
+    drag.pointerId = null;
+    drag.hand = null;
+    drag.horizontal = false;
+    drag.vertical = false;
+
+    if (typeof container.hasPointerCapture === 'function'
+      && typeof container.releasePointerCapture === 'function'
+      && container.hasPointerCapture(pointerId)) {
+      try { container.releasePointerCapture(pointerId); } catch (_) {}
+    }
+  };
+
+  container.addEventListener('pointerdown', event => {
+    if (!event.isPrimary || event.pointerType === 'mouse' || drag.pointerId !== null) return;
+    const target = event.target instanceof Element ? event.target : null;
+    const hand = target?.closest('.domino-hand');
+    if (!(hand instanceof HTMLElement) || !container.contains(hand)) return;
+
+    drag.gameId = gameId;
+    drag.pointerId = Number(event.pointerId);
+    drag.hand = hand;
+    drag.startX = Number(event.clientX);
+    drag.startY = Number(event.clientY);
+    drag.startScrollLeft = hand.scrollLeft;
+    drag.lastScrollLeft = hand.scrollLeft;
+    drag.horizontal = false;
+    drag.vertical = false;
+    drag.suppressClick = false;
+    hand.dataset.dominoHandPointer = 'v28';
+  }, { passive:true });
+
+  container.addEventListener('pointermove', event => {
+    if (drag.pointerId === null || Number(event.pointerId) !== drag.pointerId || drag.vertical) return;
+
+    let hand = drag.hand;
+    if (!(hand instanceof HTMLElement) || !hand.isConnected || !container.contains(hand)) {
+      hand = markCurrentHand(container);
+      if (!(hand instanceof HTMLElement)) return;
+      hand.scrollLeft = drag.lastScrollLeft;
+      drag.hand = hand;
+      drag.startScrollLeft = drag.lastScrollLeft;
+      drag.startX = Number(event.clientX);
+      drag.startY = Number(event.clientY);
+      return;
+    }
+
+    const dx = Number(event.clientX) - drag.startX;
+    const dy = Number(event.clientY) - drag.startY;
+
+    if (!drag.horizontal) {
+      if (Math.abs(dx) < HAND_DRAG_THRESHOLD && Math.abs(dy) < HAND_DRAG_THRESHOLD) return;
+      if (Math.abs(dx) <= Math.abs(dy) * 1.05) {
+        drag.vertical = true;
+        return;
+      }
+
+      drag.horizontal = true;
+      hand.classList.add('is-dragging');
+      if (typeof container.setPointerCapture === 'function') {
+        try { container.setPointerCapture(drag.pointerId); } catch (_) {}
+      }
+    }
+
+    if (event.cancelable) event.preventDefault();
+    const maxScroll = Math.max(0, hand.scrollWidth - hand.clientWidth);
+    const next = Math.max(0, Math.min(drag.startScrollLeft - dx, maxScroll));
+    hand.scrollLeft = next;
+    drag.lastScrollLeft = next;
+    if (drag.gameId === handScrollGameId) handScrollLeft = next;
+  }, { passive:false });
+
+  container.addEventListener('pointerup', reset, { passive:true });
+  container.addEventListener('pointercancel', reset, { passive:true });
+
+  container.addEventListener('click', event => {
+    if (!drag.suppressClick) return;
+    const target = event.target instanceof Element ? event.target : null;
+    if (!(target?.closest('.domino-hand') instanceof HTMLElement)) return;
+
+    drag.suppressClick = false;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
 }
 
 function mountFinaleQaControl(game, me, container){
