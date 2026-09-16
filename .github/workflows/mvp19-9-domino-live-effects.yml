@@ -11,6 +11,7 @@ on:
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs'
       - 'e2e/staging/domino-live-diagnostic.spec.mjs'
+      - 'e2e/playwright.domino-live-diagnostic.config.mjs'
       - '.github/workflows/mvp19-9-domino-live-effects.yml'
   workflow_dispatch:
 
@@ -43,6 +44,7 @@ jobs:
           node --check app/assets/js/games/domino/renderer-cosmetics-v1.js
           node --check bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs
           node --check e2e/staging/domino-live-diagnostic.spec.mjs
+          node --check e2e/playwright.domino-live-diagnostic.config.mjs
           php -l app/runtime/client/version-manifest.php
           php -l bot/helpers/WebAppLaunchUrl.php
           node bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs
@@ -94,4 +96,4 @@ jobs:
       - name: Probe deployed Domino runtime in a real browser
         run: |
           set -euo pipefail
-          npx --no-install playwright test e2e/staging/domino-live-diagnostic.spec.mjs --config=e2e/playwright.config.mjs --workers=1
+          npx --no-install playwright test --config=e2e/playwright.domino-live-diagnostic.config.mjs --workers=1
