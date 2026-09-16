@@ -1,0 +1,111 @@
+/* MVP-19.9 Domino live cosmetics v2.
+   Store materials remain the visual source of truth; this file maps them onto real Domino DOM. */
+
+.domino-surface[data-mgw-domino-live-cosmetics="full-v2"] .domino-table{
+  transition:background .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+
+/* Tables */
+.domino-surface[data-domino-theme="felt"] .domino-table{
+  border-color:rgba(173,217,179,.3);
+  background:radial-gradient(circle at 50% 47%,rgba(76,158,95,.4),transparent 58%),linear-gradient(145deg,#1a4b34,#0f291d);
+  box-shadow:inset 0 0 28px rgba(0,0,0,.24),0 14px 34px rgba(0,0,0,.24);
+}
+.domino-surface[data-domino-theme="midnight"] .domino-table{
+  border-color:#728cce66;
+  background:radial-gradient(circle at 50% 46%,#253d6664,transparent 60%),linear-gradient(145deg,#17233b,#0b1120);
+  box-shadow:inset 0 0 30px #0007,0 14px 34px rgba(0,0,0,.28);
+}
+.domino-surface[data-domino-theme="walnut"] .domino-table{
+  border-color:#a76e45;
+  background:repeating-linear-gradient(92deg,rgba(53,24,10,.22) 0 2px,rgba(120,73,42,.08) 2px 13px),radial-gradient(circle at 44% 36%,rgba(188,122,75,.2),transparent 50%),linear-gradient(145deg,#75472d,#3c2115);
+  box-shadow:inset 0 0 28px rgba(28,11,4,.44),0 14px 34px rgba(0,0,0,.3);
+}
+.domino-surface[data-domino-theme="neon"] .domino-table{
+  border-color:#2deaffc7;
+  background:radial-gradient(circle at 49% 45%,rgba(15,102,116,.3),transparent 56%),linear-gradient(145deg,#071a22,#050a10);
+  box-shadow:0 0 12px #00dfff62,0 0 22px #a855ff2c,inset 0 0 24px #00eaff14;
+}
+.domino-surface[data-domino-theme="neon"] .domino-table::after{
+  content:"";
+  position:absolute;
+  inset:2px;
+  border-radius:17px;
+  border:1px solid #c65dff75;
+  pointer-events:none;
+}
+.domino-surface[data-domino-theme="neon"] .domino-table{position:relative}
+.domino-surface[data-domino-theme="midnight"] .domino-opponent-back i,
+.domino-surface[data-domino-theme="midnight"] .domino-stock-count i{
+  border-color:#728cce88;
+  background:repeating-linear-gradient(135deg,#273754 0 3px,#111a2c 3px 6px);
+}
+.domino-surface[data-domino-theme="walnut"] .domino-opponent-back i,
+.domino-surface[data-domino-theme="walnut"] .domino-stock-count i{
+  border-color:#b47a5199;
+  background:repeating-linear-gradient(135deg,#5d351f 0 3px,#2a160d 3px 6px);
+}
+.domino-surface[data-domino-theme="neon"] .domino-opponent-back i,
+.domino-surface[data-domino-theme="neon"] .domino-stock-count i{
+  border-color:#2deaff;
+  background:repeating-linear-gradient(135deg,#082631 0 3px,#070c15 3px 6px);
+  box-shadow:0 0 6px #00dfff66;
+}
+
+/* Tile sets */
+.domino-surface[data-domino-elements="ivory"] .domino-tile{
+  color:#171a20;
+  background:linear-gradient(155deg,#fffdf3,#d8d2c3);
+  border-color:#7d796f80;
+}
+.domino-surface[data-domino-elements="ebony"] .domino-tile{
+  color:#f8f4e9;
+  background:linear-gradient(155deg,#30343c,#090b0f 72%);
+  border-color:#77808d9c;
+}
+.domino-surface[data-domino-elements="marble"] .domino-tile{
+  color:#24282c;
+  background:radial-gradient(circle at 18% 22%,#6c707530 0 1px,transparent 1.6px),radial-gradient(circle at 72% 68%,#85898d24 0 1.2px,transparent 1.8px),linear-gradient(145deg,#f1efea,#bfc0bc);
+  border-color:#95989b99;
+}
+.domino-surface[data-domino-elements="neon"] .domino-tile{
+  color:#5ff2ff;
+  background:#070b10;
+  border-color:#28e9ff;
+  box-shadow:0 0 6px #00ddff,0 0 11px #9c4fff3d,inset 0 0 7px #00dfff25;
+}
+.domino-surface[data-domino-elements="ivory"] .domino-half i.active,
+.domino-surface[data-domino-elements="ebony"] .domino-half i.active,
+.domino-surface[data-domino-elements="marble"] .domino-half i.active,
+.domino-surface[data-domino-elements="neon"] .domino-half i.active{
+  background:currentColor;
+  box-shadow:none;
+}
+.domino-surface[data-domino-elements="ivory"] .domino-half + .domino-half,
+.domino-surface[data-domino-elements="ebony"] .domino-half + .domino-half,
+.domino-surface[data-domino-elements="marble"] .domino-half + .domino-half,
+.domino-surface[data-domino-elements="neon"] .domino-half + .domino-half{
+  border-left-color:currentColor;
+}
+.domino-surface[data-domino-elements="neon"] .domino-chain-slot:nth-child(even) .domino-tile,
+.domino-surface[data-domino-elements="neon"] .domino-hand-tile:nth-child(even) .domino-tile,
+.domino-surface[data-domino-elements="neon"] .domino-reveal .domino-tile:nth-child(even){
+  color:#df75ff;
+  border-color:#c45cff;
+  box-shadow:0 0 6px #c45cff,0 0 11px #00dfff34,inset 0 0 7px #ae50ff25;
+}
+
+/* Preserve gameplay affordances on top of the material skins. */
+.domino-surface[data-domino-elements]:not([data-domino-elements="base"]) .domino-chain-slot.latest .domino-tile{
+  box-shadow:0 0 0 2px rgba(255,216,91,.72),0 7px 14px rgba(0,0,0,.35);
+}
+.domino-surface[data-domino-elements]:not([data-domino-elements="base"]) .domino-hand-tile.playable .domino-tile{
+  box-shadow:0 0 0 2px rgba(46,230,166,.72),0 0 12px rgba(46,230,166,.28),0 5px 10px rgba(0,0,0,.35);
+}
+.domino-surface[data-domino-elements]:not([data-domino-elements="base"]) .domino-hand-tile.selected .domino-tile{
+  box-shadow:0 0 0 3px #ffd85b,0 0 16px rgba(255,216,91,.38),0 6px 12px rgba(0,0,0,.38);
+}
+
+@media (prefers-reduced-motion:reduce){
+  .domino-surface[data-mgw-domino-live-cosmetics="full-v2"] .domino-table{transition:none}
+}
