@@ -1,7 +1,8 @@
-/* MVP-19.9 Domino Store effect-card layout v22 corrective.
+/* MVP-19.9 Domino Store effect-card layout v23 corrective.
    Keep the accepted compact two-column card and stretched green preview field,
-   but decouple Domino-piece geometry from the non-8:5 Store preview container.
-   Buy sheet/Profile stay untouched and remain the visual reference. */
+   but stop resizing individual Domino pieces inside that non-8:5 field.
+   The Store card now hosts one centered canonical 8:5 animation stage, exactly
+   like the accepted Buy preview geometry. Buy sheet/Profile remain untouched. */
 
 @media (max-width:719px){
   body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]){
@@ -27,29 +28,18 @@
     min-width:0!important;
   }
 
-  /* Store cards are intentionally taller than the canonical 8:5 effect scene.
-     Percentage width + percentage height therefore distorted the physical tile body.
-     Lock every Store-only horizontal piece to a real 2:1 body, using width as the
-     authoritative dimension. Buy sheet/Profile retain their existing 8:5 geometry. */
-  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-chain > i,
-  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-impact-piece,
-  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-stock,
-  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-draw-piece{
-    height:auto!important;
-    aspect-ratio:2 / 1!important;
-  }
-
-  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-draw-piece > i.face,
-  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-draw-piece > i.back{
+  /* The outer green preview intentionally fills the tall left card column.
+     Animation geometry must not inherit that stretched aspect ratio. Recreate the
+     original 8:5 coordinate system inside the field and center it vertically.
+     All tile widths/heights, pips, radii and animation coordinates then resolve
+     exactly as they do in the canonical Buy scene. */
+  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] > .mgw-domino-preview > .mgw-domino-preview-table > .mgw-domino-fx-stage{
     width:100%!important;
-    height:100%!important;
-    aspect-ratio:auto!important;
-  }
-
-  /* Finale pieces are the same physical Domino body rotated upright: 1:2. */
-  body .store-v2-game-product[data-store-game-product="domino"] > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="chain-finale"] .mgw-domino-v13-cascade-row > i{
     height:auto!important;
-    aspect-ratio:1 / 2!important;
+    aspect-ratio:8 / 5!important;
+    inset:auto 0 auto 0!important;
+    top:50%!important;
+    margin-top:-31.25%!important;
   }
 }
 
