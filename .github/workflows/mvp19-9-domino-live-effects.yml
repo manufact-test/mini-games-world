@@ -68,10 +68,14 @@ jobs:
           ! grep -Fq 'MutationObserver' app/assets/js/games/domino/renderer-cosmetics-v1.js
           ! grep -Fq 'setTimeout(' app/assets/js/games/domino/renderer-cosmetics-v1.js
           ! grep -Fq 'setInterval(' app/assets/js/games/domino/renderer-cosmetics-v1.js
+          ! grep -Fq 'prefersReducedMotion()' app/assets/js/games/domino/renderer-cosmetics-v1.js
+          ! grep -Fq '.domino-live-fx-host{display:none!important}' app/assets/css/games/domino/live-effects-v1.css
           grep -F "dominoPreviewMarkup('effect', variant)" app/assets/js/games/domino/renderer-cosmetics-v1.js
           grep -F "game_domino_theme" app/assets/js/games/domino/renderer-cosmetics-v1.js
           grep -F "game_domino_elements" app/assets/js/games/domino/renderer-cosmetics-v1.js
           grep -F "game_domino_effect" app/assets/js/games/domino/renderer-cosmetics-v1.js
           grep -F "state?.profileInventory?.equipped" app/assets/js/games/domino/renderer-cosmetics-v1.js
-          grep -F "full-live-cosmetics-v2" app/runtime/client/version-manifest.php
-          grep -F "/app/v110.php?v=1182" bot/helpers/WebAppLaunchUrl.php
+          grep -F "overflow-x:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
+          grep -F "overflow-y:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
+          grep -F "live-effects-scroll-corrective-v3" app/runtime/client/version-manifest.php
+          grep -F "/app/v110.php?v=1183" bot/helpers/WebAppLaunchUrl.php
