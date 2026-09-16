@@ -48,9 +48,8 @@ function restoreAndBindHandDrag(gameId, container){
   const maxScroll = Math.max(0, hand.scrollWidth - hand.clientWidth);
   hand.scrollLeft = Math.max(0, Math.min(handScrollLeft, maxScroll));
   hand.dataset.dominoHandDrag = 'v26';
-  hand.style.setProperty('touch-action', 'pan-y', 'important');
 
-  let pointerId = null;
+  let touchId = null;
   let startX = 0;
   let startY = 0;
   let startScrollLeft = 0;
@@ -58,37 +57,38 @@ function restoreAndBindHandDrag(gameId, container){
   let verticalGesture = false;
   let suppressNextClick = false;
 
-  const resetPointer = event => {
-    if (pointerId === null || Number(event?.pointerId) !== pointerId) return;
-    if (horizontalDrag) {
-      suppressNextClick = true;
-      hand.classList.remove('is-dragging');
-      if (hand.hasPointerCapture?.(pointerId)) {
-        try { hand.releasePointerCapture(pointerId); } catch (_) {}
-      }
-    }
-    pointerId = null;
-    horizontalDrag = false;
-    verticalGesture = false;
-  };
-
-  hand.addEventListener('pointerdown', event => {
-    if (!event.isPrimary) return;
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
-    pointerId = Number(event.pointerId);
-    startX = Number(event.clientX);
-    startY = Number(event.clientY);
+  const begin = touch => {
+    touchId = Number(touch.identifier);
+    startX = Number(touch.clientX);
+    startY = Number(touch.clientY);
     startScrollLeft = hand.scrollLeft;
     horizontalDrag = false;
     verticalGesture = false;
     suppressNextClick = false;
-  });
+  };
 
-  hand.addEventListener('pointermove', event => {
-    if (pointerId === null || Number(event.pointerId) !== pointerId || verticalGesture) return;
+  const finish = () => {
+    if (horizontalDrag) {
+      suppressNextClick = true;
+      hand.classList.remove('is-dragging');
+    }
+    touchId = null;
+    horizontalDrag = false;
+    verticalGesture = false;
+  };
 
-    const dx = Number(event.clientX) - startX;
-    const dy = Number(event.clientY) - startY;
+  hand.addEventListener('touchstart', event => {
+    if (touchId !== null || event.changedTouches.length === 0) return;
+    begin(event.changedTouches[0]);
+  }, { passive:true });
+
+  hand.addEventListener('touchmove', event => {
+    if (touchId === null || verticalGesture) return;
+    const touch = [...event.touches].find(item => Number(item.identifier) === touchId);
+    if (!touch) return;
+
+    const dx = Number(touch.clientX) - startX;
+    const dy = Number(touch.clientY) - startY;
 
     if (!horizontalDrag) {
       if (Math.abs(dx) < HAND_DRAG_THRESHOLD && Math.abs(dy) < HAND_DRAG_THRESHOLD) return;
@@ -96,10 +96,8 @@ function restoreAndBindHandDrag(gameId, container){
         verticalGesture = true;
         return;
       }
-
       horizontalDrag = true;
       hand.classList.add('is-dragging');
-      try { hand.setPointerCapture?.(pointerId); } catch (_) {}
     }
 
     event.preventDefault();
@@ -108,8 +106,17 @@ function restoreAndBindHandDrag(gameId, container){
     if (gameId === handScrollGameId) handScrollLeft = next;
   }, { passive:false });
 
-  hand.addEventListener('pointerup', resetPointer);
-  hand.addEventListener('pointercancel', resetPointer);
+  hand.addEventListener('touchend', event => {
+    if (touchId === null) return;
+    const ended = [...event.changedTouches].some(item => Number(item.identifier) === touchId);
+    if (ended) finish();
+  }, { passive:true });
+
+  hand.addEventListener('touchcancel', event => {
+    if (touchId === null) return;
+    const cancelled = [...event.changedTouches].some(item => Number(item.identifier) === touchId);
+    if (cancelled || event.changedTouches.length === 0) finish();
+  }, { passive:true });
 
   hand.addEventListener('click', event => {
     if (!suppressNextClick) return;
