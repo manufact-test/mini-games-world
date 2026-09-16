@@ -1,0 +1,32 @@
+name: MVP-19.9 Domino timing parity v18
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/css/games/domino/store-effects-timing-parity-v18.css'
+      - 'app/index.html'
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'bot/tests/Mvp19_9DominoTimingParityV18ContractTest.mjs'
+      - 'bot/tests/Mvp19_9DominoSmoothPreviewV17ContractTest.mjs'
+      - '.github/workflows/mvp19-9-domino-timing-parity-v18.yml'
+
+jobs:
+  domino-timing-parity-v18:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run Domino timing/parity contract
+        run: node bot/tests/Mvp19_9DominoTimingParityV18ContractTest.mjs
+      - name: Guard predecessor Domino contracts
+        run: |
+          node bot/tests/Mvp19_9DominoVisualParityV16ContractTest.mjs
+          node bot/tests/Mvp19_9DominoSmoothPreviewV17ContractTest.mjs
+      - name: Guard PHP syntax
+        run: php -l bot/helpers/WebAppLaunchUrl.php
