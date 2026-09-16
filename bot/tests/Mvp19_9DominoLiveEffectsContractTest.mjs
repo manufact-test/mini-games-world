@@ -10,6 +10,7 @@ const timing = read('app/assets/css/games/domino/store-effects-timing-parity-v18
 const alignment = read('app/assets/css/games/domino/store-effects-precision-alignment-v19.css');
 const visual = read('app/assets/css/games/domino/store-effects-visual-parity-v16.css');
 const store = read('app/assets/js/screens/store-screen-domino-store-v1.js');
+const storeCss = read('app/assets/css/games/domino/store-cosmetics-v1.css');
 const index = read('app/index.html');
 const migration = read('bot/database/migrations/20260915_0035_add_domino_store_cosmetics.php');
 const manifest = read('app/runtime/client/version-manifest.php');
@@ -128,6 +129,11 @@ assert.ok(liveCss.includes('.domino-live-fx-host.is-precision'), 'precision one-
 assert.ok(liveCss.includes('.domino-live-fx-host.is-stock'), 'stock one-shot override must outrank canonical Store shorthand');
 assert.ok(liveCss.includes('.domino-live-fx-host.is-finale'), 'finale one-shot override must outrank canonical Store shorthand');
 assert.ok(liveCss.includes('animation-iteration-count:1!important'), 'live bridge may only make the accepted loop one-shot');
+assert.ok(storeCss.includes('.store-v2-game-preview[data-game-type="domino"]{'), 'accepted Store root selector must remain canonical');
+assert.ok(storeCss.includes('width:100%!important;'), 'accepted Store root remains percentage-sized in Store');
+assert.ok(storeCss.includes('max-width:100%!important;'), 'accepted Store root remains bounded in Store');
+const liveRootSelector = 'body .domino-live-fx-host > .store-v2-game-preview.domino-live-fx-preview[data-game-type="domino"]{';
+assert.ok(liveCss.includes(liveRootSelector), 'LIVE root-size owner must have higher specificity than the accepted Store preview root');
 assert.ok(liveCss.includes('width:min(var(--mgw-domino-live-scene-width,230px),92vw)!important'), 'live scene width must derive from real tile geometry');
 assert.ok(liveCss.includes('max-width:none!important'), 'live scene must neutralize Store max-width against the zero-sized anchor host');
 assert.ok(liveCss.includes('transform:translate(-61.968%,-57.216%)'), 'precision anchor must use final v16/v18/v19 contact geometry');
@@ -145,8 +151,8 @@ assert.ok(store.includes('data-mgw-domino-fx-v14'), 'accepted Store primitive si
 assert.ok(index.includes('data-mgw-domino-effects-visual-parity="v16"'), 'active shell must load accepted v16 visual parity');
 assert.ok(index.includes('data-mgw-domino-effects-timing-parity="v18"'), 'active shell must load accepted v18 timing parity');
 assert.ok(index.includes('data-mgw-domino-effects-precision-alignment="v19"'), 'active shell must load accepted v19 precision alignment');
-assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-cosmetics-v1.js?v=5&mvp19_9=live-preview-root-width-v5'"), 'active import graph must route Domino through live root-width corrective v5');
-assert.ok(liveJs.includes("live-effects-v1.css?v=5&mvp19_9=accepted-preview-live-v5-root-width"), 'live renderer must publish a fresh effect stylesheet identity');
-assert.match(launch, /\/app\/v110\.php\?v=1185/);
+assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-cosmetics-v1.js?v=6&mvp19_9=live-preview-root-specificity-v6'"), 'active import graph must route Domino through live root-specificity corrective v6');
+assert.ok(liveJs.includes("live-effects-v1.css?v=6&mvp19_9=accepted-preview-live-v6-root-specificity"), 'live renderer must publish a fresh effect stylesheet identity');
+assert.match(launch, /\/app\/v110\.php\?v=1186/);
 
-console.log('MVP-19.9 Domino live root-width v5 contract: OK');
+console.log('MVP-19.9 Domino live root-specificity v6 contract: OK');
