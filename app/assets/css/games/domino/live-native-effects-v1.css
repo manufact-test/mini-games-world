@@ -201,13 +201,25 @@ body[data-mgw-domino-finale] #sheetOverlay{
 }
 
 @media (prefers-reduced-motion:reduce){
-  .domino-surface .mgw-domino-native-precision-tile,
-  .domino-surface .mgw-domino-native-stock-source,
-  .domino-surface .mgw-domino-native-stock-target .domino-tile,
-  .domino-surface .mgw-domino-native-finale-tile,
-  .domino-surface .mgw-domino-native-finale-table,
-  .domino-native-fx-accent *{
-    animation-duration:.01ms!important;
+  .domino-surface .domino-chain-slot.latest .domino-tile.mgw-domino-native-precision-tile,
+  .domino-native-fx-accent.is-precision .ring,
+  .domino-native-fx-accent.is-precision .spark{
+    animation-duration:.38s!important;
+    animation-delay:0ms!important;
+  }
+  .domino-surface .domino-stock-count.mgw-domino-native-stock-source,
+  .domino-surface .domino-hand-tile.mgw-domino-native-stock-target .domino-tile,
+  .domino-native-fx-accent.is-stock .stock-line,
+  .domino-native-fx-accent.is-stock .stock-orb{
+    animation-duration:.48s!important;
+    animation-delay:0ms!important;
+  }
+  .domino-surface .domino-chain-slot .domino-tile.mgw-domino-native-finale-tile,
+  .domino-surface .domino-table.mgw-domino-native-finale-table,
+  .domino-native-fx-accent.is-finale .finale-sweep,
+  .domino-native-fx-accent.is-finale .finale-flash,
+  .domino-native-fx-accent.is-finale .finale-ring{
+    animation-duration:.72s!important;
     animation-delay:0ms!important;
   }
 }
