@@ -1,0 +1,33 @@
+/* MVP-19.9 Domino Store effect-card layout v20.
+   Store only: make the three effect previews use the full card width while
+   preserving the accepted 8:5 scene geometry used by the Buy sheet/Profile. */
+
+body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]){
+  min-height:0!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-areas:"preview" "copy" "foot"!important;
+  grid-template-rows:auto auto auto!important;
+  gap:8px!important;
+}
+
+body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]) > .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]{
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  aspect-ratio:8 / 5!important;
+  align-self:stretch!important;
+}
+
+body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]) > .store-v2-game-product-copy,
+body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]) > .store-v2-game-product-foot{
+  width:100%!important;
+  min-width:0!important;
+}
+
+@media (max-width:340px){
+  body .store-v2-game-product[data-store-game-product="domino"]:has(> .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"]){
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:7px!important;
+  }
+}
