@@ -3,9 +3,8 @@ import {
   dominoMeta,
   dominoPlayerMark,
   dominoStatus,
-} from './renderer.js?v=75&base=mvp19-9-live-effects-v1';
+} from './renderer.js?v=75&base=mvp19-9-live-native-effects-v1';
 import { state } from '../../state.js?v=27';
-import { dominoPreviewMarkup } from '../../screens/store-screen-domino-store-v1.js?v=9&mvp19_9=domino-native-render-v9';
 
 const THEME_SLOT = 'game_domino_theme';
 const ELEMENTS_SLOT = 'game_domino_elements';
@@ -18,8 +17,6 @@ const FINALE_ID = 'game-domino-effect-chain-finale';
 const EFFECT_IDS = new Set([PRECISION_ID, STOCK_ID, FINALE_ID]);
 const THEME_VARIANTS = new Set(['felt', 'midnight', 'walnut', 'neon']);
 const ELEMENT_VARIANTS = new Set(['ivory', 'ebony', 'marble', 'neon']);
-const HORIZONTAL_PIECE_WIDTH = 0.27 * 0.88;
-const FINALE_PIECE_WIDTH = 0.12 * 0.88;
 const cosmeticsByGamePlayer = new Map();
 const seenEventByGame = new Map();
 
@@ -45,19 +42,12 @@ function decorateLiveDomino({ game, me, container }){
   const viewer = players.find(player => String(player?.id || '') === myId) || null;
   const presentationOwner = viewer || players[0] || null;
   const presentationSlots = slotsFor(gameId, presentationOwner, me);
-  const themeVariant = variantFromItem(
-    presentationSlots[THEME_SLOT],
-    TABLE_PREFIX,
-    THEME_VARIANTS,
-  );
-  const elementsVariant = variantFromItem(
-    presentationSlots[ELEMENTS_SLOT],
-    TILES_PREFIX,
-    ELEMENT_VARIANTS,
-  );
+  const themeVariant = variantFromItem(presentationSlots[THEME_SLOT], TABLE_PREFIX, THEME_VARIANTS);
+  const elementsVariant = variantFromItem(presentationSlots[ELEMENTS_SLOT], TILES_PREFIX, ELEMENT_VARIANTS);
   const viewerEffect = normalizedEffectId(presentationSlots[EFFECT_SLOT]);
 
   container.dataset.mgwDominoLiveCosmetics = 'full-v4';
+  container.dataset.mgwDominoNativeEffects = 'v1';
   container.dataset.dominoTheme = themeVariant;
   container.dataset.dominoElements = elementsVariant;
   container.dataset.dominoEffect = viewerEffect || 'base';
@@ -80,33 +70,23 @@ function decorateLiveDomino({ game, me, container }){
 
   suppressBaseFallback(container, actionType, actorEffect);
 
-  let effectId = '';
   let effectKind = '';
   if (String(game?.status || '') === 'finished' && finishEffect === FINALE_ID) {
-    effectId = FINALE_ID;
     effectKind = 'finale';
   } else if (actionType === 'play' && actorEffect === PRECISION_ID) {
-    effectId = PRECISION_ID;
     effectKind = 'precision';
   } else if (actionType === 'draw' && actorEffect === STOCK_ID) {
-    effectId = STOCK_ID;
     effectKind = 'stock';
   }
 
-  if (!signature || !effectId) return;
+  if (!signature || !effectKind) return;
   if (seenEventByGame.get(gameId) === signature) return;
   seenEventByGame.set(gameId, signature);
-  clearLiveEffectHosts(gameId);
+  clearNativeAccents(gameId);
 
-  if (effectKind === 'finale') {
-    mountFinale(gameId, container);
-    return;
-  }
-  if (effectKind === 'precision') {
-    mountPrecision(gameId, container);
-    return;
-  }
-  if (effectKind === 'stock') mountStock(gameId, container);
+  if (effectKind === 'precision') mountPrecisionNative(gameId, container);
+  if (effectKind === 'stock') mountStockNative(gameId, container, Number(action?.drawn_count || 1), actorIsViewer);
+  if (effectKind === 'finale') mountFinaleNative(gameId, container);
 }
 
 function suppressBaseFallback(container, actionType, actorEffect){
@@ -118,66 +98,180 @@ function suppressBaseFallback(container, actionType, actorEffect){
   }
 }
 
-function mountPrecision(gameId, container){
+function mountPrecisionNative(gameId, container){
+  const latestSlot = container.querySelector('.domino-chain-slot.latest');
+  const latestTile = latestSlot?.querySelector('.domino-tile');
+  if (!(latestSlot instanceof HTMLElement) || !(latestTile instanceof HTMLElement)) return;
+
+  latestTile.classList.remove('mgw-domino-native-precision-tile');
+  void latestTile.offsetWidth;
+  latestTile.classList.add('mgw-domino-native-precision-tile');
+  removeClassOnAnimationEnd(latestTile, 'mgw-domino-native-precision-tile', 'mgw-domino-native-precision-tile');
+
   const slots = [...container.querySelectorAll('.domino-chain-slot')]
     .filter(slot => slot instanceof HTMLElement);
-  const latest = slots.find(slot => slot.classList.contains('latest')) || null;
-  const latestTile = latest?.querySelector('.domino-tile');
-  const chainArea = container.querySelector('.domino-chain-area');
-  if (!(chainArea instanceof HTMLElement)) return;
-
-  const latestRect = latestTile instanceof HTMLElement
-    ? latestTile.getBoundingClientRect()
-    : (latest instanceof HTMLElement ? latest.getBoundingClientRect() : chainArea.getBoundingClientRect());
-  const latestIndex = latest instanceof HTMLElement ? slots.indexOf(latest) : -1;
+  const latestIndex = slots.indexOf(latestSlot);
   const neighbor = adjacentChainSlot(slots, latestIndex);
+  const latestRect = latestTile.getBoundingClientRect();
   const neighborTile = neighbor?.querySelector('.domino-tile');
-  const neighborRect = neighborTile instanceof HTMLElement
-    ? neighborTile.getBoundingClientRect()
-    : (neighbor instanceof HTMLElement ? neighbor.getBoundingClientRect() : null);
-  const geometry = precisionContactGeometry(latestRect, neighborRect, latest);
+  const neighborRect = neighborTile instanceof HTMLElement ? neighborTile.getBoundingClientRect() : null;
+  const contact = precisionContactGeometry(latestRect, neighborRect, latestSlot);
 
-  const host = makeEffectHost(gameId, 'precision-drop');
-  host.classList.add('is-precision');
-  host.style.left = `${geometry.x}px`;
-  host.style.top = `${geometry.y}px`;
-  host.style.setProperty('--mgw-domino-live-rotation', `${geometry.angle}deg`);
-  host.style.setProperty('--mgw-domino-live-scene-width', `${sceneWidthFromLongEdge(latestRect)}px`);
-  document.body.appendChild(host);
-  finishOnCanonicalAnimation(host, '.mgw-domino-v13-impact-piece', 'mgw-domino-v18-precision-flight');
+  const accent = document.createElement('span');
+  accent.className = 'domino-native-fx-accent is-precision';
+  accent.dataset.dominoNativeGame = gameId;
+  accent.dataset.dominoNativeEffect = 'precision';
+  accent.setAttribute('aria-hidden', 'true');
+  accent.style.left = `${contact.x}px`;
+  accent.style.top = `${contact.y}px`;
+  accent.style.setProperty('--mgw-domino-native-angle', `${contact.angle}deg`);
+  accent.innerHTML = '<i class="ring"></i><i class="spark s1"></i><i class="spark s2"></i><i class="spark s3"></i><i class="spark s4"></i>';
+  document.body.appendChild(accent);
+  removeNodeOnAnimationEnd(accent, accent.querySelector('.ring'), 'mgw-domino-native-precision-ring');
 }
 
-function mountStock(gameId, container){
+function mountStockNative(gameId, container, drawnCount, actorIsViewer){
   const stock = container.querySelector('.domino-stock-count');
-  const table = container.querySelector('.domino-table');
-  if (!(table instanceof HTMLElement)) return;
+  if (!(stock instanceof HTMLElement)) return;
 
-  const anchorRect = stock instanceof HTMLElement ? stock.getBoundingClientRect() : table.getBoundingClientRect();
-  const referenceRect = representativeTileRect(container);
-  const host = makeEffectHost(gameId, 'stock-pulse');
-  host.classList.add('is-stock');
-  host.style.left = `${anchorRect.left + anchorRect.width / 2}px`;
-  host.style.top = `${anchorRect.top + anchorRect.height / 2}px`;
-  host.style.setProperty('--mgw-domino-live-scene-width', `${sceneWidthFromLongEdge(referenceRect)}px`);
-  document.body.appendChild(host);
-  finishOnCanonicalAnimation(host, '.mgw-domino-v13-draw-piece', 'mgw-domino-v18-stock-flight');
+  stock.classList.remove('mgw-domino-native-stock-source');
+  void stock.offsetWidth;
+  stock.classList.add('mgw-domino-native-stock-source');
+  removeClassOnAnimationEnd(stock, 'mgw-domino-native-stock-source', 'mgw-domino-native-stock-source');
+
+  const handTiles = [...container.querySelectorAll('.domino-hand-tile')]
+    .filter(tile => tile instanceof HTMLElement);
+  const count = Math.max(1, Math.min(Math.max(1, drawnCount), handTiles.length));
+  const targets = actorIsViewer ? handTiles.slice(-count) : [];
+  targets.forEach((button, index) => {
+    button.style.setProperty('--mgw-domino-native-draw-index', String(index));
+    button.classList.remove('mgw-domino-native-stock-target');
+    void button.offsetWidth;
+    button.classList.add('mgw-domino-native-stock-target');
+    const actor = button.querySelector('.domino-tile');
+    if (actor instanceof HTMLElement) {
+      removeClassOnAnimationEnd(button, 'mgw-domino-native-stock-target', 'mgw-domino-native-stock-target', actor);
+    }
+  });
+
+  const stockRect = stock.getBoundingClientRect();
+  const target = targets[targets.length - 1] || container.querySelector('.domino-hand');
+  const targetRect = target instanceof HTMLElement ? target.getBoundingClientRect() : null;
+  if (!targetRect) return;
+
+  const start = rectCenter(stockRect);
+  const end = rectCenter(targetRect);
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const distance = Math.hypot(dx, dy);
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+  const accent = document.createElement('span');
+  accent.className = 'domino-native-fx-accent is-stock';
+  accent.dataset.dominoNativeGame = gameId;
+  accent.dataset.dominoNativeEffect = 'stock';
+  accent.setAttribute('aria-hidden', 'true');
+  accent.style.left = `${start.x}px`;
+  accent.style.top = `${start.y}px`;
+  accent.style.setProperty('--mgw-domino-native-path-length', `${Math.max(24, distance)}px`);
+  accent.style.setProperty('--mgw-domino-native-angle', `${angle}deg`);
+  accent.innerHTML = '<i class="stock-line"></i><i class="stock-orb"></i>';
+  document.body.appendChild(accent);
+  removeNodeOnAnimationEnd(accent, accent.querySelector('.stock-orb'), 'mgw-domino-native-stock-orb');
 }
 
-function mountFinale(gameId, container){
-  const chainArea = container.querySelector('.domino-chain-area');
+function mountFinaleNative(gameId, container){
   const table = container.querySelector('.domino-table');
   if (!(table instanceof HTMLElement)) return;
 
-  const anchorRect = chainArea instanceof HTMLElement ? chainArea.getBoundingClientRect() : table.getBoundingClientRect();
-  const referenceRect = representativeTileRect(container);
-  const host = makeEffectHost(gameId, 'chain-finale');
-  host.classList.add('is-finale');
-  host.style.left = `${anchorRect.left + anchorRect.width / 2}px`;
-  host.style.top = `${anchorRect.top + anchorRect.height / 2}px`;
-  host.style.setProperty('--mgw-domino-live-scene-width', `${sceneWidthFromShortEdge(referenceRect)}px`);
+  const chainTiles = [...container.querySelectorAll('.domino-chain-slot .domino-tile')]
+    .filter(tile => tile instanceof HTMLElement);
+  const visibleTiles = chainTiles.length ? chainTiles : [...container.querySelectorAll('.domino-tile')]
+    .filter(tile => tile instanceof HTMLElement);
+
+  const step = visibleTiles.length > 24 ? 34 : (visibleTiles.length > 14 ? 48 : 62);
+  visibleTiles.forEach((tile, index) => {
+    tile.style.setProperty('--mgw-domino-native-finale-index', String(index));
+    tile.style.setProperty('--mgw-domino-native-finale-step', `${step}ms`);
+    tile.classList.add('mgw-domino-native-finale-tile');
+  });
+  table.classList.add('mgw-domino-native-finale-table');
   document.body.dataset.mgwDominoFinale = gameId;
-  document.body.appendChild(host);
-  finishOnCanonicalAnimation(host, '.mgw-domino-v13-cascade-row > i:nth-child(5)', 'mgw-domino-v18-cascade-5', () => releaseFinaleGate(gameId));
+
+  const tableRect = table.getBoundingClientRect();
+  const accent = document.createElement('span');
+  accent.className = 'domino-native-fx-accent is-finale';
+  accent.dataset.dominoNativeGame = gameId;
+  accent.dataset.dominoNativeEffect = 'finale';
+  accent.setAttribute('aria-hidden', 'true');
+  accent.style.left = `${tableRect.left}px`;
+  accent.style.top = `${tableRect.top}px`;
+  accent.style.width = `${tableRect.width}px`;
+  accent.style.height = `${tableRect.height}px`;
+  accent.style.setProperty('--mgw-domino-native-finale-delay', `${Math.max(240, (visibleTiles.length - 1) * step)}ms`);
+  accent.innerHTML = '<i class="finale-sweep"></i><i class="finale-flash"></i><i class="finale-ring"></i>';
+  document.body.appendChild(accent);
+
+  const finisher = accent.querySelector('.finale-ring');
+  const finish = event => {
+    if (event.target !== finisher) return;
+    if (event.type === 'animationend' && String(event.animationName || '') !== 'mgw-domino-native-finale-ring') return;
+    finisher.removeEventListener('animationend', finish);
+    finisher.removeEventListener('animationcancel', finish);
+    accent.remove();
+    releaseFinaleGate(gameId);
+  };
+  if (finisher instanceof HTMLElement) {
+    finisher.addEventListener('animationend', finish);
+    finisher.addEventListener('animationcancel', finish);
+  } else {
+    accent.remove();
+    releaseFinaleGate(gameId);
+  }
+}
+
+function removeClassOnAnimationEnd(element, className, animationName, actor = element){
+  if (!(element instanceof HTMLElement) || !(actor instanceof HTMLElement)) return;
+  const finish = event => {
+    if (event.target !== actor) return;
+    if (event.type === 'animationend' && String(event.animationName || '') !== animationName) return;
+    actor.removeEventListener('animationend', finish);
+    actor.removeEventListener('animationcancel', finish);
+    element.classList.remove(className);
+  };
+  actor.addEventListener('animationend', finish);
+  actor.addEventListener('animationcancel', finish);
+}
+
+function removeNodeOnAnimationEnd(node, actor, animationName){
+  if (!(node instanceof HTMLElement) || !(actor instanceof HTMLElement)) {
+    node?.remove?.();
+    return;
+  }
+  const finish = event => {
+    if (event.target !== actor) return;
+    if (event.type === 'animationend' && String(event.animationName || '') !== animationName) return;
+    actor.removeEventListener('animationend', finish);
+    actor.removeEventListener('animationcancel', finish);
+    node.remove();
+  };
+  actor.addEventListener('animationend', finish);
+  actor.addEventListener('animationcancel', finish);
+}
+
+function clearNativeAccents(gameId){
+  document.querySelectorAll('.domino-native-fx-accent[data-domino-native-game]').forEach(node => {
+    if (!(node instanceof HTMLElement)) return;
+    if (String(node.dataset.dominoNativeGame || '') !== gameId) return;
+    node.remove();
+  });
+}
+
+function releaseFinaleGate(gameId){
+  if (typeof document === 'undefined') return;
+  if (String(document.body?.dataset?.mgwDominoFinale || '') === gameId) {
+    delete document.body.dataset.mgwDominoFinale;
+  }
 }
 
 function adjacentChainSlot(slots, latestIndex){
@@ -219,87 +313,11 @@ function precisionContactGeometry(latestRect, neighborRect, latestSlot){
   };
 }
 
-function representativeTileRect(container){
-  const selectors = [
-    '.domino-chain-slot.latest .domino-tile',
-    '.domino-chain-slot .domino-tile',
-    '.domino-hand-tile .domino-tile',
-  ];
-  for (const selector of selectors) {
-    const tile = container.querySelector(selector);
-    if (tile instanceof HTMLElement) return tile.getBoundingClientRect();
-  }
-  return { width:47, height:24 };
-}
-
-function sceneWidthFromLongEdge(rect){
-  const longEdge = Math.max(Number(rect?.width || 0), Number(rect?.height || 0), 1);
-  return longEdge / HORIZONTAL_PIECE_WIDTH;
-}
-
-function sceneWidthFromShortEdge(rect){
-  const shortEdge = Math.max(Math.min(Number(rect?.width || 0), Number(rect?.height || 0)), 1);
-  return shortEdge / FINALE_PIECE_WIDTH;
-}
-
 function rectCenter(rect){
   return {
     x:Number(rect?.left || 0) + Number(rect?.width || 0) / 2,
     y:Number(rect?.top || 0) + Number(rect?.height || 0) / 2,
   };
-}
-
-function makeEffectHost(gameId, variant){
-  const host = document.createElement('span');
-  host.className = 'domino-live-fx-host';
-  host.dataset.dominoLiveGame = gameId;
-  host.dataset.dominoLiveEffect = variant;
-  host.setAttribute('aria-hidden', 'true');
-
-  const preview = document.createElement('span');
-  preview.className = 'store-v2-game-preview domino-live-fx-preview';
-  preview.dataset.gameType = 'domino';
-  preview.dataset.cosmeticLayer = 'effect';
-  preview.dataset.cosmeticVariant = variant;
-  preview.innerHTML = dominoPreviewMarkup('effect', variant);
-  host.appendChild(preview);
-  return host;
-}
-
-function finishOnCanonicalAnimation(host, selector, animationName, afterFinish = null){
-  const actor = host.querySelector(selector);
-  if (!(actor instanceof HTMLElement)) {
-    host.remove();
-    afterFinish?.();
-    return;
-  }
-  const finish = event => {
-    if (event.target !== actor) return;
-    if (event.type === 'animationend' && String(event.animationName || '') !== animationName) return;
-    actor.removeEventListener('animationend', finish);
-    actor.removeEventListener('animationcancel', finish);
-    host.remove();
-    afterFinish?.();
-  };
-  actor.addEventListener('animationend', finish);
-  actor.addEventListener('animationcancel', finish);
-}
-
-function clearLiveEffectHosts(gameId){
-  document.querySelectorAll('.domino-live-fx-host[data-domino-live-game]').forEach(host => {
-    if (!(host instanceof HTMLElement)) return;
-    if (String(host.dataset.dominoLiveGame || '') !== gameId) return;
-    const wasFinale = String(host.dataset.dominoLiveEffect || '') === 'chain-finale';
-    host.remove();
-    if (wasFinale) releaseFinaleGate(gameId);
-  });
-}
-
-function releaseFinaleGate(gameId){
-  if (typeof document === 'undefined') return;
-  if (String(document.body?.dataset?.mgwDominoFinale || '') === gameId) {
-    delete document.body.dataset.mgwDominoFinale;
-  }
 }
 
 function cachePlayerCosmetics(game){
@@ -421,13 +439,13 @@ function ensureLiveStyles(){
   ensureStylesheet(
     'link[data-mgw-domino-live-cosmetics]',
     'mgwDominoLiveCosmetics',
-    'mvp19-9-full-v4',
-    new URL('../../../css/games/domino/live-cosmetics-v2.css?v=3&mvp19_9=full-live-v4-bounded', import.meta.url).href,
+    'mvp19-9-native-v1',
+    new URL('../../../css/games/domino/live-cosmetics-v2.css?v=4&mvp19_9=live-native-v1', import.meta.url).href,
   );
   ensureStylesheet(
-    'link[data-mgw-domino-live-effects]',
-    'mgwDominoLiveEffects',
-    'mvp19-9-live-effects-v6',
-    new URL('../../../css/games/domino/live-effects-v1.css?v=6&mvp19_9=accepted-preview-live-v6-root-specificity', import.meta.url).href,
+    'link[data-mgw-domino-live-native-effects]',
+    'mgwDominoLiveNativeEffects',
+    'mvp19-9-native-effects-v1',
+    new URL('../../../css/games/domino/live-native-effects-v1.css?v=1&mvp19_9=live-native-v1', import.meta.url).href,
   );
 }
