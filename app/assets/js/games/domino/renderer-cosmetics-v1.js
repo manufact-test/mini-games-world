@@ -55,10 +55,12 @@ function decorateLiveDomino({ game, me, container }){
     TILES_PREFIX,
     ELEMENT_VARIANTS,
   );
+  const viewerEffect = normalizedEffectId(presentationSlots[EFFECT_SLOT]);
 
-  container.dataset.mgwDominoLiveCosmetics = 'full-v2';
+  container.dataset.mgwDominoLiveCosmetics = 'full-v3';
   container.dataset.dominoTheme = themeVariant;
   container.dataset.dominoElements = elementsVariant;
+  container.dataset.dominoEffect = viewerEffect || 'base';
 
   const table = container.querySelector('.domino-table');
   if (table instanceof HTMLElement) {
@@ -69,9 +71,11 @@ function decorateLiveDomino({ game, me, container }){
   const action = game?.last_action || {};
   const actionType = String(action?.type || '');
   const actor = actionPlayer(game, players);
-  const actorEffect = effectForPlayer(gameId, actor, me);
+  const actorIsViewer = String(actor?.id || '') !== '' && String(actor?.id || '') === myId;
+  const actorEffect = effectForPlayer(gameId, actor, me) || (actorIsViewer ? viewerEffect : '');
   const finishOwner = finishPlayer(game, players, me);
-  const finishEffect = effectForPlayer(gameId, finishOwner, me);
+  const finishIsViewer = String(finishOwner?.id || '') !== '' && String(finishOwner?.id || '') === myId;
+  const finishEffect = effectForPlayer(gameId, finishOwner, me) || (finishIsViewer ? viewerEffect : '');
   const signature = eventSignature(game);
 
   suppressBaseFallback(container, actionType, actorEffect);
@@ -93,8 +97,6 @@ function decorateLiveDomino({ game, me, container }){
   if (seenEventByGame.get(gameId) === signature) return;
   seenEventByGame.set(gameId, signature);
   clearLiveEffectHosts(gameId);
-
-  if (prefersReducedMotion()) return;
 
   if (effectKind === 'finale') {
     mountFinale(gameId, container);
@@ -332,9 +334,13 @@ function slotsFor(gameId, player, me){
   return cosmeticsByGamePlayer.get(`${gameId}:${playerId}`) || {};
 }
 
-function effectForPlayer(gameId, player, me){
-  const itemId = String(slotsFor(gameId, player, me)[EFFECT_SLOT] || '');
+function normalizedEffectId(value){
+  const itemId = String(value || '');
   return EFFECT_IDS.has(itemId) ? itemId : '';
+}
+
+function effectForPlayer(gameId, player, me){
+  return normalizedEffectId(slotsFor(gameId, player, me)[EFFECT_SLOT]);
 }
 
 function variantFromItem(value, prefix, allowed){
@@ -396,12 +402,6 @@ function cssNumber(element, property, fallback){
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function prefersReducedMotion(){
-  return typeof window !== 'undefined'
-    && typeof window.matchMedia === 'function'
-    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
 function ensureStylesheet(selector, marker, markerValue, href){
   const existing = document.querySelector(selector);
   if (existing instanceof HTMLLinkElement) {
@@ -421,13 +421,13 @@ function ensureLiveStyles(){
   ensureStylesheet(
     'link[data-mgw-domino-live-cosmetics]',
     'mgwDominoLiveCosmetics',
-    'mvp19-9-full-v2',
-    new URL('../../../css/games/domino/live-cosmetics-v2.css?v=1&mvp19_9=full-live-v2', import.meta.url).href,
+    'mvp19-9-full-v3',
+    new URL('../../../css/games/domino/live-cosmetics-v2.css?v=2&mvp19_9=full-live-v3-scroll', import.meta.url).href,
   );
   ensureStylesheet(
     'link[data-mgw-domino-live-effects]',
     'mgwDominoLiveEffects',
-    'mvp19-9-live-effects-v2',
-    new URL('../../../css/games/domino/live-effects-v1.css?v=2&mvp19_9=accepted-preview-parity-v2', import.meta.url).href,
+    'mvp19-9-live-effects-v3',
+    new URL('../../../css/games/domino/live-effects-v1.css?v=3&mvp19_9=accepted-preview-live-v3', import.meta.url).href,
   );
 }

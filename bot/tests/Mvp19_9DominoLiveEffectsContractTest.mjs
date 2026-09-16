@@ -58,13 +58,18 @@ assert.ok(migration.includes("'event'=>'draw'"), 'stock event must remain draw')
 assert.ok(migration.includes("'event'=>'finish'"), 'finale event must remain finish');
 
 assert.ok(liveJs.includes("import { state } from '../../state.js?v=27'"), 'live Domino must use canonical client state');
-assert.ok(liveJs.includes('state?.profileInventory?.equipped'), 'viewer cosmetics must fall back to the current Store/Profile equipped inventory');
-assert.ok(liveJs.includes("container.dataset.mgwDominoLiveCosmetics = 'full-v2'"), 'full live cosmetics marker must be applied after every base render');
+assert.ok(liveJs.includes('state?.profileInventory?.equipped'), 'viewer cosmetics must use current Store/Profile equipped inventory');
+assert.ok(liveJs.includes("container.dataset.mgwDominoLiveCosmetics = 'full-v3'"), 'full v3 live cosmetics marker must be applied after every base render');
 assert.ok(liveJs.includes('container.dataset.dominoTheme = themeVariant'), 'live table theme must be projected onto real Domino DOM');
 assert.ok(liveJs.includes('container.dataset.dominoElements = elementsVariant'), 'live tile set must be projected onto real Domino DOM');
+assert.ok(liveJs.includes("container.dataset.dominoEffect = viewerEffect || 'base'"), 'resolved viewer effect must be observable on real Domino DOM');
 assert.ok(liveJs.indexOf('renderBaseDominoSurface(args);') < liveJs.indexOf('decorateLiveDomino({ game, me, container });'), 'cosmetics must decorate after polling innerHTML rebuilds');
 assert.ok(liveJs.includes('if (!signature || !effectId) return;'), 'an event must not be consumed before a real equipped effect is resolved');
 assert.ok(liveJs.indexOf('if (!signature || !effectId) return;') < liveJs.indexOf('seenEventByGame.set(gameId, signature);'), 'dedupe marker must be written only after an effect is actually eligible');
+assert.ok(liveJs.includes("actorIsViewer ? viewerEffect : ''"), 'viewer play/draw must retain the equipped effect even if the transient player projection omits cosmetics');
+assert.ok(liveJs.includes("finishIsViewer ? viewerEffect : ''"), 'viewer finish must retain the equipped finale effect');
+assert.ok(!liveJs.includes('prefersReducedMotion()'), 'Telegram reduced-motion must not silently consume an otherwise eligible live effect');
+assert.ok(!liveCss.includes('.domino-live-fx-host{display:none!important}'), 'LIVE effect host must not be hidden while Store preview remains animated');
 
 assert.ok(liveJs.includes('dominoPreviewMarkup'), 'live must reuse the accepted Store/Buy preview primitive');
 assert.ok(liveJs.includes("dominoPreviewMarkup('effect', variant)"), 'live scene markup must come from the accepted primitive');
@@ -73,7 +78,6 @@ assert.ok(liveJs.includes("actionType === 'draw' && actorEffect === STOCK_ID"), 
 assert.ok(liveJs.includes("status || '') === 'finished' && finishEffect === FINALE_ID"), 'finale must bind to terminal state');
 assert.ok(liveJs.includes('seenEventByGame'), 'live events must be de-duplicated across polling renders');
 assert.ok(liveJs.includes('document.body.appendChild(host)'), 'transient effects must survive board innerHTML polling rebuilds');
-assert.ok(liveJs.includes("prefers-reduced-motion: reduce"), 'live renderer must respect reduced motion');
 assert.ok(liveJs.includes('suppressBaseFallback'), 'premium live effect must suppress the base fallback on every polling render');
 assert.ok(liveJs.includes('adjacentChainSlot'), 'precision must use the real adjacent snake-chain tile');
 assert.ok(liveJs.includes('precisionContactGeometry'), 'precision must anchor to the real chain joint');
@@ -83,6 +87,13 @@ assert.ok(liveJs.includes('animationcancel'), 'animation cancellation must relea
 assert.ok(!liveJs.includes('MutationObserver'), 'live renderer must not use DOM repair observers');
 assert.ok(!liveJs.includes('setInterval('), 'live renderer must not add polling');
 assert.ok(!liveJs.includes('setTimeout('), 'live renderer must not use timer cleanup');
+
+assert.ok(liveCosmeticsCss.includes('.game-board-screen[data-game-type="domino"] .content'), 'Domino game screen must own a mobile vertical scroll corrective');
+assert.ok(liveCosmeticsCss.includes('overflow-y:auto!important'), 'Domino game content must remain vertically scrollable');
+assert.ok(liveCosmeticsCss.includes('.domino-hand{'), 'Domino hand must have a dedicated live overflow owner');
+assert.ok(liveCosmeticsCss.includes('overflow-x:auto!important'), 'drawn Domino hand must remain horizontally swipeable');
+assert.ok(liveCosmeticsCss.includes('touch-action:pan-x pan-y!important'), 'tile buttons must not block horizontal or vertical pan gestures');
+assert.ok(liveCosmeticsCss.includes('env(safe-area-inset-bottom)'), 'Domino game must reserve the Telegram/mobile safe-area at the bottom');
 
 for (const canonical of [
   'mgw-domino-v18-precision-flight',
@@ -124,7 +135,7 @@ assert.ok(store.includes('data-mgw-domino-fx-v14'), 'accepted Store primitive si
 assert.ok(index.includes('data-mgw-domino-effects-visual-parity="v16"'), 'active shell must load accepted v16 visual parity');
 assert.ok(index.includes('data-mgw-domino-effects-timing-parity="v18"'), 'active shell must load accepted v18 timing parity');
 assert.ok(index.includes('data-mgw-domino-effects-precision-alignment="v19"'), 'active shell must load accepted v19 precision alignment');
-assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-cosmetics-v1.js?v=2&mvp19_9=full-live-cosmetics-v2'"), 'active import graph must route Domino through full live cosmetics v2');
-assert.match(launch, /\/app\/v110\.php\?v=1182/);
+assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-cosmetics-v1.js?v=3&mvp19_9=live-effects-scroll-corrective-v3'"), 'active import graph must route Domino through live corrective v3');
+assert.match(launch, /\/app\/v110\.php\?v=1183/);
 
-console.log('MVP-19.9 Domino full live cosmetics contract: OK');
+console.log('MVP-19.9 Domino live effect + mobile scroll corrective contract: OK');

@@ -1,6 +1,7 @@
-/* MVP-19.9 Domino live effects v2.
+/* MVP-19.9 Domino live effects v3.
    Live reuses the accepted Store/Buy DOM primitive and v18/v19 keyframes.
-   This bridge owns only real-game anchoring, physical scale and one-shot playback. */
+   This bridge owns only real-game anchoring, physical scale and one-shot playback.
+   Store and LIVE now share the same motion eligibility: do not silently suppress LIVE only. */
 
 .domino-live-fx-host{
   position:fixed;
@@ -82,8 +83,4 @@ body[data-mgw-domino-finale] #sheetOverlay{
   opacity:0!important;
   visibility:hidden!important;
   pointer-events:none!important;
-}
-
-@media (prefers-reduced-motion:reduce){
-  .domino-live-fx-host{display:none!important}
 }
