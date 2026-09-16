@@ -1,0 +1,10 @@
+/* MVP-19.9 hand gesture owner v27.
+   Horizontal drag is owned by the Domino hand JS; Chromium/Telegram keeps only vertical page panning. */
+.domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand,
+.domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand-tile{
+  touch-action:pan-y!important;
+}
+.domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand.is-dragging{
+  cursor:grabbing;
+  scroll-behavior:auto!important;
+}
