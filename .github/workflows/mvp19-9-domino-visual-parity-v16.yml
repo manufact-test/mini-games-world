@@ -1,0 +1,29 @@
+name: MVP-19.9 Domino visual parity v16
+
+on:
+  pull_request:
+    paths:
+      - 'app/index.html'
+      - 'app/assets/css/games/domino/store-effects-visual-parity-v16.css'
+      - 'app/assets/css/games/domino/store-effects-scene-v9.css'
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'bot/tests/Mvp19_9DominoVisualParityV16ContractTest.mjs'
+      - '.github/workflows/mvp19-9-domino-visual-parity-v16.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  domino-visual-parity-v16:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run Domino visual parity contract
+        run: node bot/tests/Mvp19_9DominoVisualParityV16ContractTest.mjs
+      - name: Guard PHP syntax
+        run: php -l bot/helpers/WebAppLaunchUrl.php

@@ -1,0 +1,140 @@
+/* MVP-19.9 Domino effect visual parity v16.
+   Manual-review corrective: keep v15 choreography unchanged, but make every effect piece
+   read like the accepted Domino set previews above it (compact body, 3px corners, restrained shadow/pips).
+   Shared by Store cards, purchase sheet and Profile because all three surfaces use the same preview DOM. */
+
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-preview-table{
+  border-radius:13px!important;
+}
+
+/* Horizontal effect pieces: same compact physical language as accepted Store tile sets. */
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-chain > i,
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-impact-piece,
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-draw-piece > i.face{
+  width:27%!important;
+  height:21.6%!important;
+  border-radius:3px!important;
+  border:1px solid rgba(54,59,70,.66)!important;
+  background:linear-gradient(155deg,#fff,#dfe3e8)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.72),0 4px 8px rgba(0,0,0,.30)!important;
+}
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-chain > i::before,
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-impact-piece::before,
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-draw-piece > i.face::before{
+  background:rgba(24,28,34,.46)!important;
+}
+
+/* Precision: preserve v15 motion, tighten the chain spacing to the accepted Store proportions. */
+body .mgw-domino-v13-impact .mgw-domino-v13-chain > i:nth-child(1){left:8%!important;top:48.2%!important}
+body .mgw-domino-v13-impact .mgw-domino-v13-chain > i:nth-child(2){left:35.8%!important;top:48.2%!important}
+body .mgw-domino-v13-impact .mgw-domino-v13-impact-piece{left:63.6%!important;top:59%!important}
+body .mgw-domino-v13-impact .mgw-domino-v13-impact-ring{left:63.6%!important;width:18%!important;height:28.8%!important}
+body .mgw-domino-v13-impact .mgw-domino-v13-impact-sparks{left:63.6%!important;width:21%!important;height:38%!important}
+
+/* Give the three precision pieces real Domino faces rather than the old generic 1|1 dots. */
+body .mgw-domino-v13-impact .mgw-domino-v13-chain > i::after,
+body .mgw-domino-v13-impact .mgw-domino-v13-impact-piece::after{
+  inset:0!important;
+  border-radius:3px!important;
+  background-repeat:no-repeat!important;
+}
+body .mgw-domino-v13-impact .mgw-domino-v13-chain > i:nth-child(1)::after{
+  background:
+    radial-gradient(circle at 13% 29%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 13% 50%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 13% 71%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 37% 29%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 37% 50%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 37% 71%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 63% 29%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 75% 50%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 87% 71%,#171a1f 0 2.1px,transparent 2.7px)!important;
+}
+body .mgw-domino-v13-impact .mgw-domino-v13-chain > i:nth-child(2)::after{
+  background:
+    radial-gradient(circle at 13% 29%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 25% 50%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 37% 71%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 63% 29%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 87% 29%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 75% 50%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 63% 71%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 87% 71%,#171a1f 0 2.1px,transparent 2.7px)!important;
+}
+body .mgw-domino-v13-impact .mgw-domino-v13-impact-piece::after{
+  background:
+    radial-gradient(circle at 13% 29%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 37% 29%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 25% 50%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 13% 71%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 37% 71%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 63% 29%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 87% 71%,#171a1f 0 2.1px,transparent 2.7px)!important;
+}
+
+/* Stock: same compact striped backs as the accepted tile-set preview above. */
+body .mgw-domino-v13-draw .mgw-domino-v13-stock{
+  left:9%!important;
+  top:30%!important;
+  width:27%!important;
+  height:21.6%!important;
+}
+body .mgw-domino-v13-draw .mgw-domino-v13-stock::after{
+  inset:-12%!important;
+  border-radius:7px!important;
+}
+body .mgw-domino-v13-draw .mgw-domino-v13-stock > i,
+body .mgw-domino-v13-draw .mgw-domino-v13-draw-piece > i.back{
+  border-radius:3px!important;
+  border:1px solid rgba(255,255,255,.28)!important;
+  background:repeating-linear-gradient(135deg,#29364b 0 4px,#111a2b 4px 8px)!important;
+  box-shadow:0 3px 6px rgba(0,0,0,.38),inset 0 0 0 1px rgba(255,255,255,.05)!important;
+}
+body .mgw-domino-v13-draw .mgw-domino-v13-draw-piece{
+  left:12%!important;
+  top:32%!important;
+  width:27%!important;
+  height:21.6%!important;
+}
+body .mgw-domino-v13-draw .mgw-domino-v13-draw-piece > i.face::after{
+  border-radius:3px!important;
+  background:
+    radial-gradient(circle at 13% 29%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 37% 29%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 13% 71%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 37% 71%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 63% 29%,#171a1f 0 2.1px,transparent 2.7px),
+    radial-gradient(circle at 87% 71%,#171a1f 0 2.1px,transparent 2.7px)!important;
+}
+body .mgw-domino-v13-draw .mgw-domino-v13-draw-shadow{width:27%!important;height:9%!important}
+
+/* Finale: keep the approved cascade idea, only make its pieces less bulky and visually identical to the set family. */
+body .mgw-domino-v13-cascade .mgw-domino-v13-floor{left:9%!important;right:9%!important}
+body .mgw-domino-v13-cascade .mgw-domino-v13-cascade-row > i{
+  width:12%!important;
+  height:38.4%!important;
+  border-radius:3px!important;
+  border:1px solid rgba(84,82,76,.74)!important;
+  background:linear-gradient(155deg,#fffdf3,#d8d2c3)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.72),0 4px 8px rgba(0,0,0,.30)!important;
+}
+body .mgw-domino-v13-cascade .mgw-domino-v13-cascade-row > i::before{
+  background:rgba(24,28,34,.46)!important;
+}
+body .mgw-domino-v13-cascade .mgw-domino-v13-cascade-row > i::after{
+  border-radius:3px!important;
+  background:
+    radial-gradient(circle at 31% 14%,#171a1f 0 2px,transparent 2.6px),
+    radial-gradient(circle at 69% 36%,#171a1f 0 2px,transparent 2.6px),
+    radial-gradient(circle at 50% 65%,#171a1f 0 2px,transparent 2.6px),
+    radial-gradient(circle at 31% 86%,#171a1f 0 2px,transparent 2.6px)!important;
+}
+
+/* Keep animation ownership in v15. These hints only prevent extra paint work from the parity skin. */
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-fx-stage,
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-chain > i,
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-impact-piece,
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-draw-piece,
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-v13-cascade-row > i{
+  backface-visibility:hidden!important;
+}
