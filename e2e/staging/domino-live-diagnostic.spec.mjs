@@ -12,7 +12,7 @@ const ENTRY_URL = `${ORIGIN}${entryMatch[1]}`;
 
 test.use({ viewport:{ width:390, height:560 }, isMobile:true, hasTouch:true, reducedMotion:'no-preference' });
 
-test('DOMINO LIVE DIAGNOSTIC — deployed wrapper, effect host, hand scroll and exit reachability', async ({ page }) => {
+test('DOMINO LIVE — deployed effect, hand scroll and exit reachability', async ({ page }) => {
   const response = await page.goto(ENTRY_URL, { waitUntil:'domcontentloaded' });
   expect(response?.ok()).toBe(true);
   expect(response?.headers()['x-mgw-client-bootstrap']).toBe('v2-single-owner');
@@ -78,7 +78,12 @@ test('DOMINO LIVE DIAGNOSTIC — deployed wrapper, effect host, hand scroll and 
       if (!(link instanceof HTMLLinkElement)) return false;
       if (link.sheet) return true;
       return await new Promise(resolve => {
-        const done = value => resolve(value);
+        let settled = false;
+        const done = value => {
+          if (settled) return;
+          settled = true;
+          resolve(value);
+        };
         link.addEventListener('load', () => done(true), { once:true });
         link.addEventListener('error', () => done(false), { once:true });
         setTimeout(() => done(Boolean(link.sheet)), 4000);
@@ -86,12 +91,15 @@ test('DOMINO LIVE DIAGNOSTIC — deployed wrapper, effect host, hand scroll and 
     };
     const cosmeticsSheetLoaded = await waitForSheet('link[data-mgw-domino-live-cosmetics]');
     const effectsSheetLoaded = await waitForSheet('link[data-mgw-domino-live-effects]');
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    /* Sample during the visible flight, not at the initial opacity:0 keyframe. */
+    await new Promise(resolve => setTimeout(resolve, 850));
 
     const hand = container.querySelector('.domino-hand');
     const content = screen.querySelector(':scope > .content');
     const leave = document.getElementById('leaveGame');
     const host = document.querySelector('.domino-live-fx-host.is-precision');
+    const preview = host?.querySelector('.domino-live-fx-preview');
     const actor = host?.querySelector('.mgw-domino-v13-impact-piece');
     if (!(hand instanceof HTMLElement) || !(content instanceof HTMLElement) || !(leave instanceof HTMLElement)) {
       throw new Error('Domino diagnostic layout nodes are unavailable.');
@@ -99,15 +107,26 @@ test('DOMINO LIVE DIAGNOSTIC — deployed wrapper, effect host, hand scroll and 
 
     const handStyle = getComputedStyle(hand);
     const contentStyle = getComputedStyle(content);
+    const screenStyle = getComputedStyle(screen);
     const actorStyle = actor instanceof HTMLElement ? getComputedStyle(actor) : null;
+    const hostStyle = host instanceof HTMLElement ? getComputedStyle(host) : null;
+    const screenRectBefore = screen.getBoundingClientRect();
+
     hand.scrollLeft = hand.scrollWidth;
     content.scrollTop = content.scrollHeight;
     await new Promise(resolve => requestAnimationFrame(resolve));
+
     const leaveRect = leave.getBoundingClientRect();
+    const hostRect = host instanceof HTMLElement ? host.getBoundingClientRect() : null;
+    const previewRect = preview instanceof HTMLElement ? preview.getBoundingClientRect() : null;
+    const actorRect = actor instanceof HTMLElement ? actor.getBoundingClientRect() : null;
+    const intersectsViewport = rect => Boolean(rect)
+      && rect.right > 0 && rect.left < innerWidth
+      && rect.bottom > 0 && rect.top < innerHeight;
 
     return {
       entry:String(location.pathname + location.search),
-      importMapHasV3:String(document.querySelector('script[type="importmap"]')?.textContent || '').includes('live-effects-scroll-corrective-v3'),
+      importMapHasV4:String(document.querySelector('script[type="importmap"]')?.textContent || '').includes('bounded-live-corrective-v4'),
       cosmeticsSheetLoaded,
       effectsSheetLoaded,
       cosmeticsHref:String(document.querySelector('link[data-mgw-domino-live-cosmetics]')?.href || ''),
@@ -116,6 +135,14 @@ test('DOMINO LIVE DIAGNOSTIC — deployed wrapper, effect host, hand scroll and 
       theme:String(container.dataset.dominoTheme || ''),
       elements:String(container.dataset.dominoElements || ''),
       effect:String(container.dataset.dominoEffect || ''),
+      viewport:{ innerWidth, innerHeight, visualHeight:visualViewport?.height || null },
+      screen:{
+        height:screenRectBefore.height,
+        top:screenRectBefore.top,
+        bottom:screenRectBefore.bottom,
+        cssHeight:screenStyle.height,
+        cssMaxHeight:screenStyle.maxHeight,
+      },
       hand:{
         display:handStyle.display,
         overflowX:handStyle.overflowX,
@@ -136,21 +163,33 @@ test('DOMINO LIVE DIAGNOSTIC — deployed wrapper, effect host, hand scroll and 
         animationName:actorStyle?.animationName || '',
         animationDuration:actorStyle?.animationDuration || '',
         iterationCount:actorStyle?.animationIterationCount || '',
-        display:host instanceof HTMLElement ? getComputedStyle(host).display : '',
+        opacity:actorStyle?.opacity || '',
+        visibility:actorStyle?.visibility || '',
+        display:hostStyle?.display || '',
+        zIndex:hostStyle?.zIndex || '',
+        hostRect,
+        previewRect,
+        actorRect,
+        previewIntersectsViewport:intersectsViewport(previewRect),
+        actorIntersectsViewport:intersectsViewport(actorRect),
       },
     };
   });
 
   console.log(`DOMINO_LIVE_DIAGNOSTIC=${JSON.stringify(diagnostic)}`);
-  expect(diagnostic.importMapHasV3).toBe(true);
+  expect(diagnostic.entry).toContain('v=1184');
+  expect(diagnostic.importMapHasV4).toBe(true);
   expect(diagnostic.cosmeticsSheetLoaded).toBe(true);
   expect(diagnostic.effectsSheetLoaded).toBe(true);
-  expect(diagnostic.cosmeticsHref).toContain('full-live-v3-scroll');
-  expect(diagnostic.effectsHref).toContain('accepted-preview-live-v3');
-  expect(diagnostic.marker).toBe('full-v3');
+  expect(diagnostic.cosmeticsHref).toContain('full-live-v4-bounded');
+  expect(diagnostic.effectsHref).toContain('accepted-preview-live-v4');
+  expect(diagnostic.marker).toBe('full-v4');
   expect(diagnostic.theme).toBe('walnut');
   expect(diagnostic.elements).toBe('neon');
   expect(diagnostic.effect).toBe('game-domino-effect-precision-drop');
+
+  expect(diagnostic.screen.height).toBeLessThanOrEqual(diagnostic.viewport.innerHeight + 1);
+  expect(diagnostic.screen.bottom).toBeLessThanOrEqual(diagnostic.viewport.innerHeight + 1);
   expect(diagnostic.hand.display).toBe('flex');
   expect(diagnostic.hand.overflowX).toBe('auto');
   expect(diagnostic.hand.scrollWidth).toBeGreaterThan(diagnostic.hand.clientWidth);
@@ -160,9 +199,16 @@ test('DOMINO LIVE DIAGNOSTIC — deployed wrapper, effect host, hand scroll and 
   expect(diagnostic.content.scrollTop).toBeGreaterThan(0);
   expect(diagnostic.leave.bottom).toBeLessThanOrEqual(diagnostic.leave.viewportHeight + 1);
   expect(diagnostic.leave.top).toBeGreaterThanOrEqual(-1);
+
   expect(diagnostic.effectHost.exists).toBe(true);
   expect(diagnostic.effectHost.actorExists).toBe(true);
   expect(diagnostic.effectHost.display).not.toBe('none');
+  expect(diagnostic.effectHost.visibility).not.toBe('hidden');
+  expect(Number(diagnostic.effectHost.opacity)).toBeGreaterThan(0);
   expect(diagnostic.effectHost.animationName).toContain('mgw-domino-v18-precision-flight');
   expect(diagnostic.effectHost.iterationCount).toBe('1');
+  expect(diagnostic.effectHost.previewIntersectsViewport).toBe(true);
+  expect(diagnostic.effectHost.actorIntersectsViewport).toBe(true);
+  expect(diagnostic.effectHost.actorRect?.width || 0).toBeGreaterThan(4);
+  expect(diagnostic.effectHost.actorRect?.height || 0).toBeGreaterThan(4);
 });
