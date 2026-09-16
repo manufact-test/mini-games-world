@@ -11,9 +11,9 @@ assert.match(index, /store-effects-timing-parity-v18\.css\?v=1&mvp19_9=domino-ti
 assert.match(index, /data-mgw-domino-effects-timing-parity="v18"/);
 assert.match(index, /store-effects-precision-alignment-v19\.css\?v=1&mvp19_9=domino-precision-alignment-v19/);
 assert.match(index, /data-mgw-domino-effects-precision-alignment="v19"/);
-assert.match(index, /store-effects-card-fullwidth-v20\.css\?v=1&mvp19_9=domino-effect-card-fullwidth-v20/);
-assert.match(index, /data-mgw-domino-effects-card-fullwidth="v20"/);
-assert.match(launch, /\/app\/v110\.php\?v=1176/);
+assert.match(index, /store-effects-card-fullwidth-v20\.css\?v=2&mvp19_9=domino-effect-card-compact-v21/);
+assert.match(index, /data-mgw-domino-effects-card-compact="v21"/);
+assert.match(launch, /\/app\/v110\.php\?v=1177/);
 
 assert.match(css, /store-v2-game-product\[data-store-game-product="domino"\][\s\S]*transform:scale\(\.88\)!important/);
 assert.match(css, /store-v2-game-preview\[data-game-type="domino"\]\[data-cosmetic-layer="effect"\][\s\S]*transform:scale\(\.88\)!important/);
@@ -64,4 +64,4 @@ assert.ok(!alignment.includes('MutationObserver'));
 assert.ok(!cardLayout.includes('setTimeout('));
 assert.ok(!cardLayout.includes('MutationObserver'));
 
-console.log('MVP-19.9 Domino timing/parity v18 + Precision v19 + compact Store cards v21 contract: OK');
+console.log('MVP-19.9 Domino timing/parity v18 + Precision v19 + compact Store cards v21 runtime cache-bust contract: OK');
