@@ -12,10 +12,11 @@ const ENTRY_URL = `${ORIGIN}${entryMatch[1]}`;
 
 test.use({ viewport:{ width:390, height:560 }, isMobile:true, hasTouch:true, reducedMotion:'no-preference' });
 
-test('DOMINO manual corrective v25 — visible paid effects, real touch swipe and finale QA', async ({ page }) => {
+test('DOMINO manual corrective v25/v27 — visible paid effects, real touch swipe and finale QA', async ({ page }) => {
   const response = await page.goto(ENTRY_URL, { waitUntil:'domcontentloaded' });
   expect(response?.ok()).toBe(true);
   expect(response?.headers()['x-mgw-client-bootstrap']).toBe('v2-single-owner');
+  expect(response?.headers()['x-mgw-domino-hand-gesture']).toBe('v27-pan-y-js-horizontal');
 
   const diagnostic = await page.evaluate(async () => {
     const [{ renderDominoSurface }, { state }] = await Promise.all([
@@ -86,6 +87,7 @@ test('DOMINO manual corrective v25 — visible paid effects, real touch swipe an
     const cosmeticsSheetLoaded = await waitForSheet('link[data-mgw-domino-live-cosmetics]');
     const nativeSheetLoaded = await waitForSheet('link[data-mgw-domino-live-native-effects]');
     const correctiveSheetLoaded = await waitForSheet('link[data-mgw-domino-manual-corrective]');
+    const gestureSheetLoaded = await waitForSheet('link[data-mgw-domino-hand-gesture]');
     await new Promise(resolve => setTimeout(resolve, 100));
 
     const precisionTile = container.querySelector('.domino-chain-slot.latest .domino-tile');
@@ -146,10 +148,13 @@ test('DOMINO manual corrective v25 — visible paid effects, real touch swipe an
     return {
       entry:String(location.pathname + location.search),
       importMapHasCorrective:String(document.querySelector('script[type="importmap"]')?.textContent || '').includes('manual-corrective-v25'),
+      importMapHasGestureOwner:String(document.querySelector('script[type="importmap"]')?.textContent || '').includes('gesture_owner=v27'),
       cosmeticsSheetLoaded,
       nativeSheetLoaded,
       correctiveSheetLoaded,
+      gestureSheetLoaded,
       correctiveHref:String(document.querySelector('link[data-mgw-domino-manual-corrective]')?.href || ''),
+      gestureHref:String(document.querySelector('link[data-mgw-domino-hand-gesture]')?.href || ''),
       marker:String(container.dataset.mgwDominoLiveCosmetics || ''),
       nativeMarker:String(container.dataset.mgwDominoNativeEffects || ''),
       correctiveMarker:String(container.dataset.mgwDominoManualCorrective || ''),
@@ -161,6 +166,7 @@ test('DOMINO manual corrective v25 — visible paid effects, real touch swipe an
       layout:{
         handOverflowX:getComputedStyle(hand).overflowX,
         handTouchAction:getComputedStyle(hand).touchAction,
+        handGestureMarker:String(hand.dataset.dominoHandGesture || ''),
         contentOverflowY:getComputedStyle(content).overflowY,
         contentTouchAction:getComputedStyle(content).touchAction,
         handClientWidth:hand.clientWidth,
@@ -169,12 +175,16 @@ test('DOMINO manual corrective v25 — visible paid effects, real touch swipe an
     };
   });
 
-  expect(diagnostic.entry).toContain('v=1188');
+  expect(diagnostic.entry).toContain('v=1189');
+  expect(diagnostic.entry).toContain('hand_gesture=27');
   expect(diagnostic.importMapHasCorrective).toBe(true);
+  expect(diagnostic.importMapHasGestureOwner).toBe(true);
   expect(diagnostic.cosmeticsSheetLoaded).toBe(true);
   expect(diagnostic.nativeSheetLoaded).toBe(true);
   expect(diagnostic.correctiveSheetLoaded).toBe(true);
+  expect(diagnostic.gestureSheetLoaded).toBe(true);
   expect(diagnostic.correctiveHref).toContain('live-native-manual-v25.css');
+  expect(diagnostic.gestureHref).toContain('live-hand-gesture-v27.css');
   expect(diagnostic.marker).toBe('full-v4');
   expect(diagnostic.nativeMarker).toBe('v1');
   expect(diagnostic.correctiveMarker).toBe('v25');
@@ -201,7 +211,9 @@ test('DOMINO manual corrective v25 — visible paid effects, real touch swipe an
   expect(diagnostic.finaleQa.buttonText).toContain('Финиш цепи');
   expect(diagnostic.layout.handOverflowX).toBe('auto');
   expect(diagnostic.layout.handScrollWidth).toBeGreaterThan(diagnostic.layout.handClientWidth);
-  expect(diagnostic.layout.handTouchAction).toContain('pan-x');
+  expect(diagnostic.layout.handTouchAction).toContain('pan-y');
+  expect(diagnostic.layout.handTouchAction).not.toContain('pan-x');
+  expect(diagnostic.layout.handGestureMarker).toBe('v27');
   expect(diagnostic.layout.contentTouchAction).toContain('pan-x');
   expect(diagnostic.layout.contentOverflowY).toBe('auto');
 
@@ -326,5 +338,5 @@ test('DOMINO manual corrective v25 — visible paid effects, real touch swipe an
   expect(exitLayout.leaveBottom).toBeLessThanOrEqual(exitLayout.viewportHeight + 1);
   expect(exitLayout.leaveTop).toBeGreaterThanOrEqual(-1);
 
-  console.log(`DOMINO_MANUAL_CORRECTIVE_V25=${JSON.stringify({ diagnostic, swipe, qaRunning, qaFinished, terminalFinale, exitLayout })}`);
+  console.log(`DOMINO_MANUAL_CORRECTIVE_V27=${JSON.stringify({ diagnostic, swipe, qaRunning, qaFinished, terminalFinale, exitLayout })}`);
 });
