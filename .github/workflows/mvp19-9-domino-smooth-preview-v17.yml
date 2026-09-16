@@ -1,0 +1,27 @@
+name: MVP-19.9 Domino smooth preview v17
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/css/games/domino/store-effects-smooth-preview-v17.css'
+      - 'app/index.html'
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'bot/tests/Mvp19_9DominoSmoothPreviewV17ContractTest.mjs'
+      - '.github/workflows/mvp19-9-domino-smooth-preview-v17.yml'
+
+jobs:
+  domino-smooth-preview-v17:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run Domino smooth preview contract
+        run: node bot/tests/Mvp19_9DominoSmoothPreviewV17ContractTest.mjs
+      - name: Guard PHP syntax
+        run: php -l bot/helpers/WebAppLaunchUrl.php
