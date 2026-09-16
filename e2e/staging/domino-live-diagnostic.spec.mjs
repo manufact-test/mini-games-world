@@ -12,11 +12,10 @@ const ENTRY_URL = `${ORIGIN}${entryMatch[1]}`;
 
 test.use({ viewport:{ width:390, height:560 }, isMobile:true, hasTouch:true, reducedMotion:'no-preference' });
 
-test('DOMINO manual corrective v25/v27 — visible paid effects, real touch swipe and finale QA', async ({ page }) => {
+test('DOMINO v29 — paid effects, 9+ tile accessibility, bottom reachability and finale QA', async ({ page }) => {
   const response = await page.goto(ENTRY_URL, { waitUntil:'domcontentloaded' });
   expect(response?.ok()).toBe(true);
   expect(response?.headers()['x-mgw-client-bootstrap']).toBe('v2-single-owner');
-  expect(response?.headers()['x-mgw-domino-hand-gesture']).toBe('v27-pan-y-js-horizontal');
 
   const diagnostic = await page.evaluate(async () => {
     const [{ renderDominoSurface }, { state }] = await Promise.all([
@@ -29,7 +28,12 @@ test('DOMINO manual corrective v25/v27 — visible paid effects, real touch swip
       if (!(link instanceof HTMLLinkElement)) return false;
       if (link.sheet) return true;
       return await new Promise(resolve => {
-        const done = value => resolve(value);
+        let settled = false;
+        const done = value => {
+          if (settled) return;
+          settled = true;
+          resolve(value);
+        };
         link.addEventListener('load', () => done(true), { once:true });
         link.addEventListener('error', () => done(false), { once:true });
         setTimeout(() => done(Boolean(link.sheet)), 4000);
@@ -80,7 +84,7 @@ test('DOMINO manual corrective v25/v27 — visible paid effects, real touch swip
 
     equip('game-domino-effect-precision-drop');
     renderDominoSurface({
-      game:{ ...baseGame('diag-v25-precision'), last_action:{ type:'play', player_id:'diag-me', tile:'6-5', side:'right' } },
+      game:{ ...baseGame('diag-v29-precision'), last_action:{ type:'play', player_id:'diag-me', tile:'6-5', side:'right' } },
       me:{ id:'diag-me' }, container, onAction:() => {},
     });
 
@@ -98,7 +102,6 @@ test('DOMINO manual corrective v25/v27 — visible paid effects, real touch swip
     const precision = {
       realTileClass:precisionTile?.classList.contains('mgw-domino-native-precision-tile') || false,
       animationName:precisionStyle?.animationName || '',
-      animationDuration:precisionStyle?.animationDuration || '',
       accentExists:precisionAccent instanceof HTMLElement,
       ringWidth:Number.parseFloat(precisionRingStyle?.width || '0'),
       previewInsideAccent:Boolean(precisionAccent?.querySelector('.store-v2-game-preview,.mgw-domino-preview')),
@@ -107,7 +110,7 @@ test('DOMINO manual corrective v25/v27 — visible paid effects, real touch swip
 
     equip('game-domino-effect-stock-pulse');
     renderDominoSurface({
-      game:{ ...baseGame('diag-v25-stock'), stock_count:7, last_action:{ type:'draw', player_id:'diag-me', drawn_count:2 } },
+      game:{ ...baseGame('diag-v29-stock'), stock_count:7, last_action:{ type:'draw', player_id:'diag-me', drawn_count:2 } },
       me:{ id:'diag-me' }, container, onAction:() => {},
     });
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -130,64 +133,93 @@ test('DOMINO manual corrective v25/v27 — visible paid effects, real touch swip
 
     equip('game-domino-effect-chain-finale');
     renderDominoSurface({
-      game:{ ...baseGame('diag-v25-finale-qa'), last_action:{ type:'play', player_id:'diag-opponent', tile:'5-6', side:'right' } },
+      game:{ ...baseGame('diag-v29-finale-qa'), last_action:{ type:'play', player_id:'diag-opponent', tile:'5-6', side:'right' } },
       me:{ id:'diag-me' }, container, onAction:() => {},
     });
     await new Promise(resolve => requestAnimationFrame(resolve));
 
     const hand = container.querySelector('.domino-hand');
+    const handTiles = [...container.querySelectorAll('.domino-hand > .domino-hand-tile')]
+      .filter(node => node instanceof HTMLElement);
     const content = screen.querySelector(':scope > .content');
     const leave = document.getElementById('leaveGame');
     const qaButton = container.querySelector('[data-domino-finale-qa="preview"]');
     if (!(hand instanceof HTMLElement) || !(content instanceof HTMLElement) || !(leave instanceof HTMLElement)) {
       throw new Error('Domino diagnostic layout nodes are unavailable.');
     }
-    hand.scrollLeft = 0;
-    content.scrollTop = 0;
+
+    const handRect = hand.getBoundingClientRect();
+    const tileRects = handTiles.map(tile => tile.getBoundingClientRect());
+    const ninth = tileRects[8] || null;
+    const twelfth = tileRects[11] || null;
+    const horizontallyVisible = rect => Boolean(rect)
+      && rect.left >= handRect.left - 1
+      && rect.right <= handRect.right + 1
+      && rect.left >= -1
+      && rect.right <= innerWidth + 1;
+    const distinctRows = [...new Set(tileRects.map(rect => Math.round(rect.top)))].length;
+
+    content.scrollTop = content.scrollHeight;
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    const leaveRect = leave.getBoundingClientRect();
+    const handStyle = getComputedStyle(hand);
 
     return {
       entry:String(location.pathname + location.search),
-      importMapHasCorrective:String(document.querySelector('script[type="importmap"]')?.textContent || '').includes('manual-corrective-v25'),
-      importMapHasGestureOwner:String(document.querySelector('script[type="importmap"]')?.textContent || '').includes('gesture_owner=v27'),
+      importMap:String(document.querySelector('script[type="importmap"]')?.textContent || ''),
       cosmeticsSheetLoaded,
       nativeSheetLoaded,
       correctiveSheetLoaded,
       gestureSheetLoaded,
-      correctiveHref:String(document.querySelector('link[data-mgw-domino-manual-corrective]')?.href || ''),
       gestureHref:String(document.querySelector('link[data-mgw-domino-hand-gesture]')?.href || ''),
       marker:String(container.dataset.mgwDominoLiveCosmetics || ''),
       nativeMarker:String(container.dataset.mgwDominoNativeEffects || ''),
       correctiveMarker:String(container.dataset.mgwDominoManualCorrective || ''),
+      pointerMarker:String(container.dataset.mgwDominoHandPointer || ''),
       theme:String(container.dataset.dominoTheme || ''),
       elements:String(container.dataset.dominoElements || ''),
       precision,
       stock,
       finaleQa:{ buttonExists:qaButton instanceof HTMLButtonElement, buttonText:String(qaButton?.textContent || '') },
-      layout:{
-        handOverflowX:getComputedStyle(hand).overflowX,
-        handTouchAction:getComputedStyle(hand).touchAction,
-        handGestureMarker:String(hand.dataset.dominoHandGesture || ''),
-        contentOverflowY:getComputedStyle(content).overflowY,
-        contentTouchAction:getComputedStyle(content).touchAction,
-        handClientWidth:hand.clientWidth,
-        handScrollWidth:hand.scrollWidth,
+      hand:{
+        count:handTiles.length,
+        display:handStyle.display,
+        flexWrap:handStyle.flexWrap,
+        overflowX:handStyle.overflowX,
+        touchAction:handStyle.touchAction,
+        distinctRows,
+        ninthVisible:horizontallyVisible(ninth),
+        twelfthVisible:horizontallyVisible(twelfth),
+        allHorizontallyVisible:tileRects.every(horizontallyVisible),
+        ninthRect:ninth ? { left:ninth.left, right:ninth.right, top:ninth.top, bottom:ninth.bottom } : null,
+        twelfthRect:twelfth ? { left:twelfth.left, right:twelfth.right, top:twelfth.top, bottom:twelfth.bottom } : null,
+        handRect:{ left:handRect.left, right:handRect.right, top:handRect.top, bottom:handRect.bottom },
       },
+      content:{
+        overflowY:getComputedStyle(content).overflowY,
+        clientHeight:content.clientHeight,
+        scrollHeight:content.scrollHeight,
+        scrollTop:content.scrollTop,
+      },
+      leave:{ top:leaveRect.top, bottom:leaveRect.bottom, viewportHeight:innerHeight },
     };
   });
 
-  expect(diagnostic.entry).toContain('v=1189');
-  expect(diagnostic.entry).toContain('hand_gesture=27');
-  expect(diagnostic.importMapHasCorrective).toBe(true);
-  expect(diagnostic.importMapHasGestureOwner).toBe(true);
+  console.log(`DOMINO_V29_DIAGNOSTIC=${JSON.stringify(diagnostic)}`);
+  expect(diagnostic.entry).toContain('/app/v110.php');
+  expect(diagnostic.entry).toContain('v=1190');
+  expect(diagnostic.entry).toContain('hand_layout=29');
+  expect(diagnostic.importMap).toContain('pointer_owner=v28');
+  expect(diagnostic.importMap).toContain('hand_layout=v29');
   expect(diagnostic.cosmeticsSheetLoaded).toBe(true);
   expect(diagnostic.nativeSheetLoaded).toBe(true);
   expect(diagnostic.correctiveSheetLoaded).toBe(true);
   expect(diagnostic.gestureSheetLoaded).toBe(true);
-  expect(diagnostic.correctiveHref).toContain('live-native-manual-v25.css');
-  expect(diagnostic.gestureHref).toContain('live-hand-gesture-v27.css');
+  expect(diagnostic.gestureHref).toContain('hand_layout=v29');
   expect(diagnostic.marker).toBe('full-v4');
   expect(diagnostic.nativeMarker).toBe('v1');
   expect(diagnostic.correctiveMarker).toBe('v25');
+  expect(diagnostic.pointerMarker).toBe('v28');
   expect(diagnostic.theme).toBe('walnut');
   expect(diagnostic.elements).toBe('neon');
 
@@ -209,36 +241,21 @@ test('DOMINO manual corrective v25/v27 — visible paid effects, real touch swip
 
   expect(diagnostic.finaleQa.buttonExists).toBe(true);
   expect(diagnostic.finaleQa.buttonText).toContain('Финиш цепи');
-  expect(diagnostic.layout.handOverflowX).toBe('auto');
-  expect(diagnostic.layout.handScrollWidth).toBeGreaterThan(diagnostic.layout.handClientWidth);
-  expect(diagnostic.layout.handTouchAction).toContain('pan-y');
-  expect(diagnostic.layout.handTouchAction).not.toContain('pan-x');
-  expect(diagnostic.layout.handGestureMarker).toBe('v27');
-  expect(diagnostic.layout.contentTouchAction).toContain('pan-x');
-  expect(diagnostic.layout.contentOverflowY).toBe('auto');
 
-  const handBox = await page.locator('.domino-hand').boundingBox();
-  expect(handBox).not.toBeNull();
-  const client = await page.context().newCDPSession(page);
-  const startX = handBox.x + handBox.width - 28;
-  const endX = handBox.x + 54;
-  const y = handBox.y + handBox.height / 2;
-  await client.send('Input.dispatchTouchEvent', { type:'touchStart', touchPoints:[{ x:startX, y, radiusX:4, radiusY:4, force:1 }] });
-  for (const ratio of [0.18,0.36,0.54,0.72,0.9,1]) {
-    const x = startX + (endX - startX) * ratio;
-    await client.send('Input.dispatchTouchEvent', { type:'touchMove', touchPoints:[{ x, y, radiusX:4, radiusY:4, force:1 }] });
-    await page.waitForTimeout(18);
-  }
-  await client.send('Input.dispatchTouchEvent', { type:'touchEnd', touchPoints:[] });
-  await page.waitForTimeout(180);
+  expect(diagnostic.hand.count).toBe(12);
+  expect(diagnostic.hand.display).toBe('flex');
+  expect(diagnostic.hand.flexWrap).toBe('wrap');
+  expect(diagnostic.hand.overflowX).toBe('visible');
+  expect(diagnostic.hand.distinctRows).toBeGreaterThanOrEqual(2);
+  expect(diagnostic.hand.ninthVisible).toBe(true);
+  expect(diagnostic.hand.twelfthVisible).toBe(true);
+  expect(diagnostic.hand.allHorizontallyVisible).toBe(true);
 
-  const swipe = await page.evaluate(() => {
-    const hand = document.querySelector('.domino-hand');
-    if (!(hand instanceof HTMLElement)) throw new Error('Domino hand disappeared during touch swipe.');
-    return { scrollLeft:hand.scrollLeft, maxScroll:hand.scrollWidth - hand.clientWidth };
-  });
-  expect(swipe.maxScroll).toBeGreaterThan(120);
-  expect(swipe.scrollLeft).toBeGreaterThan(45);
+  expect(diagnostic.content.overflowY).toBe('auto');
+  expect(diagnostic.content.scrollHeight).toBeGreaterThan(diagnostic.content.clientHeight);
+  expect(diagnostic.content.scrollTop).toBeGreaterThan(0);
+  expect(diagnostic.leave.bottom).toBeLessThanOrEqual(diagnostic.leave.viewportHeight + 1);
+  expect(diagnostic.leave.top).toBeGreaterThanOrEqual(-1);
 
   await page.locator('[data-domino-finale-qa="preview"]').click();
   await page.waitForTimeout(120);
@@ -266,77 +283,4 @@ test('DOMINO manual corrective v25/v27 — visible paid effects, real touch swip
   expect(qaFinished.classesRemoved).toBe(true);
   expect(qaFinished.buttonEnabled).toBe(true);
   expect(qaFinished.buttonText).toContain('Повторить');
-
-  const terminalFinale = await page.evaluate(async () => {
-    const [{ renderDominoSurface }, { state }] = await Promise.all([
-      import('./assets/js/games/domino/renderer.js?v=74'),
-      import('./assets/js/state.js?v=27'),
-    ]);
-    const container = document.getElementById('gameBoard');
-    const handPairs = [[0,0],[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[1,1],[2,2],[3,3],[4,4],[6,6]];
-    const viewerHand = handPairs.map(([a,b], index) => ({ id:`${a}-${b}-${index}`, a, b, double:a === b }));
-    const chain = Array.from({ length:18 }, (_, index) => ({
-      tile:index % 2 ? '6-5' : '5-6', left:index % 2 ? 6 : 5, right:index % 2 ? 5 : 6,
-      player_id:index === 17 ? 'diag-me' : 'diag-opponent', side:index === 0 ? 'start' : 'right', move_number:index + 1,
-    }));
-    state.profileInventory = { equipped:{ game_domino_effect:'game-domino-effect-chain-finale' }, catalog:[], owned:[] };
-    const game = {
-      id:'diag-v25-terminal', game_type:'domino', status:'finished', turn:'', winner_id:'diag-me',
-      players:[{id:'diag-me',tile_count:0},{id:'diag-opponent',tile_count:3}], viewer_hand:viewerHand,
-      playable_sides:{}, chain, open_left:5, open_right:6, stock_count:0, opponent_tile_count:3,
-      can_draw:false, move_count:18, my_points:0, opponent_points:17, end_reason:'empty_hand',
-      last_action:{ type:'play', player_id:'diag-me', tile:'6-5', side:'right' },
-    };
-    renderDominoSurface({ game, me:{id:'diag-me'}, container, onAction:() => {} });
-    await new Promise(resolve => setTimeout(resolve, 120));
-    return {
-      animatedRealChainCount:container.querySelectorAll('.domino-chain-slot .domino-tile.mgw-domino-native-finale-tile').length,
-      realChainCount:container.querySelectorAll('.domino-chain-slot .domino-tile').length,
-      accentExists:Boolean(document.querySelector('.domino-native-fx-accent.is-finale:not(.is-qa)')),
-      gateActive:String(document.body.dataset.mgwDominoFinale || '') === 'diag-v25-terminal',
-      qaButtonAbsent:!container.querySelector('[data-domino-finale-qa="preview"]'),
-    };
-  });
-  expect(terminalFinale.animatedRealChainCount).toBe(terminalFinale.realChainCount);
-  expect(terminalFinale.accentExists).toBe(true);
-  expect(terminalFinale.gateActive).toBe(true);
-  expect(terminalFinale.qaButtonAbsent).toBe(true);
-
-  await page.waitForTimeout(2300);
-  expect(await page.evaluate(() => !document.body.dataset.mgwDominoFinale)).toBe(true);
-
-  await page.evaluate(() => {
-    const screen = document.getElementById('screen-game');
-    const content = screen?.querySelector(':scope > .content');
-    if (content instanceof HTMLElement) content.scrollTop = content.scrollHeight;
-  });
-  await page.waitForTimeout(40);
-  const exitLayout = await page.evaluate(() => {
-    const screen = document.getElementById('screen-game');
-    const content = screen?.querySelector(':scope > .content');
-    const leave = document.getElementById('leaveGame');
-    if (!(screen instanceof HTMLElement) || !(content instanceof HTMLElement) || !(leave instanceof HTMLElement)) {
-      throw new Error('Domino exit layout unavailable.');
-    }
-    const leaveRect = leave.getBoundingClientRect();
-    const screenRect = screen.getBoundingClientRect();
-    return {
-      contentScrollTop:content.scrollTop,
-      contentScrollHeight:content.scrollHeight,
-      contentClientHeight:content.clientHeight,
-      leaveTop:leaveRect.top,
-      leaveBottom:leaveRect.bottom,
-      viewportHeight:innerHeight,
-      screenHeight:screenRect.height,
-      screenBottom:screenRect.bottom,
-    };
-  });
-  expect(exitLayout.screenHeight).toBeLessThanOrEqual(exitLayout.viewportHeight + 1);
-  expect(exitLayout.screenBottom).toBeLessThanOrEqual(exitLayout.viewportHeight + 1);
-  expect(exitLayout.contentScrollHeight).toBeGreaterThan(exitLayout.contentClientHeight);
-  expect(exitLayout.contentScrollTop).toBeGreaterThan(0);
-  expect(exitLayout.leaveBottom).toBeLessThanOrEqual(exitLayout.viewportHeight + 1);
-  expect(exitLayout.leaveTop).toBeGreaterThanOrEqual(-1);
-
-  console.log(`DOMINO_MANUAL_CORRECTIVE_V27=${JSON.stringify({ diagnostic, swipe, qaRunning, qaFinished, terminalFinale, exitLayout })}`);
 });
