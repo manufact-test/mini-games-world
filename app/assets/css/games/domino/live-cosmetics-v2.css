@@ -1,7 +1,7 @@
-/* MVP-19.9 Domino live cosmetics v3.
+/* MVP-19.9 Domino live cosmetics v4.
    Store materials remain the visual source of truth; this file maps them onto real Domino DOM. */
 
-.domino-surface[data-mgw-domino-live-cosmetics="full-v3"] .domino-table{
+.domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-table{
   transition:background .18s ease,border-color .18s ease,box-shadow .18s ease;
 }
 
@@ -106,20 +106,40 @@
   box-shadow:0 0 0 3px #ffd85b,0 0 16px rgba(255,216,91,.38),0 6px 12px rgba(0,0,0,.38);
 }
 
-/* Mobile gameplay corrective: drawn hands must remain usable beyond 7 tiles. */
+/* Telegram viewport owner: bound the game screen first, then let its content scroll.
+   This is the same accepted C15 ownership pattern already used by Checkers. */
+.game-board-screen[data-game-type="domino"]{
+  box-sizing:border-box!important;
+  height:100dvh!important;
+  max-height:100dvh!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
 .game-board-screen[data-game-type="domino"] .content{
+  box-sizing:border-box!important;
+  height:100%!important;
+  max-height:100%!important;
+  flex:1 1 0%!important;
   min-height:0!important;
   overflow-y:auto!important;
   overflow-x:hidden!important;
-  -webkit-overflow-scrolling:touch;
   overscroll-behavior-y:contain;
-  padding-bottom:calc(64px + env(safe-area-inset-bottom))!important;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  padding-bottom:calc(
+    56px + env(safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)
+  )!important;
+  scroll-padding-bottom:calc(
+    56px + env(safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)
+  );
 }
 .game-board-screen[data-game-type="domino"] #leaveGame{
   margin-top:10px;
-  margin-bottom:calc(8px + env(safe-area-inset-bottom));
+  margin-bottom:8px;
 }
-.domino-surface[data-mgw-domino-live-cosmetics="full-v3"] .domino-hand{
+
+/* Drawn hands remain readable and reachable beyond the opening seven tiles. */
+.domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand{
   display:flex!important;
   align-items:flex-end!important;
   justify-content:flex-start!important;
@@ -137,8 +157,8 @@
   padding-right:8px!important;
   padding-bottom:9px!important;
 }
-.domino-surface[data-mgw-domino-live-cosmetics="full-v3"] .domino-hand::-webkit-scrollbar{display:none}
-.domino-surface[data-mgw-domino-live-cosmetics="full-v3"] .domino-hand-tile{
+.domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand::-webkit-scrollbar{display:none}
+.domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand-tile{
   flex:0 0 clamp(44px,12.5vw,52px)!important;
   width:clamp(44px,12.5vw,52px)!important;
   min-width:44px!important;
@@ -147,5 +167,5 @@
 }
 
 @media (prefers-reduced-motion:reduce){
-  .domino-surface[data-mgw-domino-live-cosmetics="full-v3"] .domino-table{transition:none}
+  .domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-table{transition:none}
 }
