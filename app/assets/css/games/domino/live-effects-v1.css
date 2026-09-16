@@ -1,7 +1,6 @@
-/* MVP-19.9 Domino live effects v3.
+/* MVP-19.9 Domino live effects v4.
    Live reuses the accepted Store/Buy DOM primitive and v18/v19 keyframes.
-   This bridge owns only real-game anchoring, physical scale and one-shot playback.
-   Store and LIVE now share the same motion eligibility: do not silently suppress LIVE only. */
+   This bridge owns only real-game anchoring, physical scale and one-shot playback. */
 
 .domino-live-fx-host{
   position:fixed;
@@ -35,11 +34,18 @@
   box-shadow:none!important;
   overflow:visible!important;
 }
-.domino-live-fx-host .mgw-domino-fx-stage{
-  overflow:visible!important;
+.domino-live-fx-host .mgw-domino-fx-stage{overflow:visible!important}
+
+/* Store owns looping choreography. LIVE owns exactly one cycle. The canonical
+   Store rules use an !important animation shorthand, so the three cleanup actors
+   need a more-specific LIVE selector for animation-iteration-count to win. */
+body .domino-live-fx-host.is-precision .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="precision-drop"] .mgw-domino-v13-impact .mgw-domino-v13-impact-piece,
+body .domino-live-fx-host.is-stock .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="stock-pulse"] .mgw-domino-v13-draw .mgw-domino-v13-draw-piece,
+body .domino-live-fx-host.is-finale .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="chain-finale"] .mgw-domino-v13-cascade .mgw-domino-v13-cascade-row > i:nth-child(5){
+  animation-iteration-count:1!important;
 }
 
-/* The purchase preview loops. One live event executes exactly one unchanged canonical cycle. */
+/* Keep every secondary accepted accent bounded to the same live event too. */
 body .domino-live-fx-host .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-fx-stage *,
 body .domino-live-fx-host .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-fx-stage *::before,
 body .domino-live-fx-host .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-fx-stage *::after{
@@ -76,9 +82,7 @@ body .domino-live-fx-host .store-v2-game-preview[data-game-type="domino"][data-c
   transform-origin:center!important;
 }
 
-/* The existing game owner prepares the result sheet after 1.1s. Keep it visually deferred
-   until the exact accepted 3.5s finale cycle ends. JS owns this compatibility marker so
-   older Telegram WebViews do not depend on :has(). */
+/* Keep the result sheet behind the accepted 3.5s finale cycle. */
 body[data-mgw-domino-finale] #sheetOverlay{
   opacity:0!important;
   visibility:hidden!important;

@@ -10,6 +10,20 @@ on:
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs'
+      - 'e2e/staging/domino-live-diagnostic.spec.mjs'
+      - 'e2e/playwright.domino-live-diagnostic.config.mjs'
+      - '.github/workflows/mvp19-9-domino-live-effects.yml'
+  push:
+    branches: [agent/mvp-13-2-staging]
+    paths:
+      - 'app/assets/js/games/domino/renderer-cosmetics-v1.js'
+      - 'app/assets/css/games/domino/live-effects-v1.css'
+      - 'app/assets/css/games/domino/live-cosmetics-v2.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs'
+      - 'e2e/staging/domino-live-diagnostic.spec.mjs'
+      - 'e2e/playwright.domino-live-diagnostic.config.mjs'
       - '.github/workflows/mvp19-9-domino-live-effects.yml'
   workflow_dispatch:
 
@@ -19,6 +33,9 @@ permissions:
 concurrency:
   group: mgw-mvp19-9-domino-live-effects-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
 
 jobs:
   domino-live-effects:
@@ -33,11 +50,13 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Syntax and full live cosmetics contract
+      - name: Syntax and bounded live cosmetics contract
         run: |
           set -euo pipefail
           node --check app/assets/js/games/domino/renderer-cosmetics-v1.js
           node --check bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs
+          node --check e2e/staging/domino-live-diagnostic.spec.mjs
+          node --check e2e/playwright.domino-live-diagnostic.config.mjs
           php -l app/runtime/client/version-manifest.php
           php -l bot/helpers/WebAppLaunchUrl.php
           node bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs
@@ -60,7 +79,7 @@ jobs:
             app/assets/js/games/domino/renderer.js \
             app/assets/css/games/domino/game.css
 
-      - name: Guard full live cosmetic ownership
+      - name: Guard bounded live cosmetic ownership
         run: |
           set -euo pipefail
           ! grep -Fq '@keyframes' app/assets/css/games/domino/live-effects-v1.css
@@ -69,13 +88,61 @@ jobs:
           ! grep -Fq 'setTimeout(' app/assets/js/games/domino/renderer-cosmetics-v1.js
           ! grep -Fq 'setInterval(' app/assets/js/games/domino/renderer-cosmetics-v1.js
           ! grep -Fq 'prefersReducedMotion()' app/assets/js/games/domino/renderer-cosmetics-v1.js
-          ! grep -Fq '.domino-live-fx-host{display:none!important}' app/assets/css/games/domino/live-effects-v1.css
           grep -F "dominoPreviewMarkup('effect', variant)" app/assets/js/games/domino/renderer-cosmetics-v1.js
-          grep -F "game_domino_theme" app/assets/js/games/domino/renderer-cosmetics-v1.js
-          grep -F "game_domino_elements" app/assets/js/games/domino/renderer-cosmetics-v1.js
-          grep -F "game_domino_effect" app/assets/js/games/domino/renderer-cosmetics-v1.js
+          grep -F "container.dataset.mgwDominoLiveCosmetics = 'full-v4'" app/assets/js/games/domino/renderer-cosmetics-v1.js
           grep -F "state?.profileInventory?.equipped" app/assets/js/games/domino/renderer-cosmetics-v1.js
-          grep -F "overflow-x:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
+          grep -F "height:100dvh!important" app/assets/css/games/domino/live-cosmetics-v2.css
+          grep -F "max-height:100dvh!important" app/assets/css/games/domino/live-cosmetics-v2.css
           grep -F "overflow-y:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
-          grep -F "live-effects-scroll-corrective-v3" app/runtime/client/version-manifest.php
-          grep -F "/app/v110.php?v=1183" bot/helpers/WebAppLaunchUrl.php
+          grep -F "overflow-x:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
+          grep -F "animation-iteration-count:1!important" app/assets/css/games/domino/live-effects-v1.css
+          grep -F "bounded-live-corrective-v4" app/runtime/client/version-manifest.php
+          grep -F "/app/v110.php?v=1184" bot/helpers/WebAppLaunchUrl.php
+
+      - name: Wait for exact Hostinger staging fingerprint
+        id: readiness
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          expected_fingerprint="$(python3 scripts/ci/staging-runtime-fingerprint.py)"
+          test "${#expected_fingerprint}" = '64'
+          ready=0
+          for attempt in $(seq 1 24); do
+            rm -f domino-live-readiness.json
+            if curl --fail-with-body --silent --show-error \
+              --connect-timeout 10 --max-time 25 \
+              --retry 1 --retry-delay 2 --retry-connrefused \
+              --header 'Accept: application/json' \
+              "${MGW_STAGING_ORIGIN}/bot/staging-e2e-readiness.php" \
+              --output domino-live-readiness.json; then
+              if python3 - domino-live-readiness.json "${expected_fingerprint}" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          payload = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+          assert payload.get('ok') is True
+          assert payload.get('source_fingerprint_sha256') == sys.argv[2]
+          assert payload.get('environment') == 'staging'
+          PY
+              then
+                ready=1
+                break
+              fi
+            fi
+            if [[ "$attempt" -lt 24 ]]; then sleep 15; fi
+          done
+          test "$ready" = '1'
+
+      - name: Install pinned Playwright browser
+        if: github.event_name != 'pull_request' && steps.readiness.outcome == 'success'
+        run: |
+          set -euo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install chromium
+
+      - name: Probe deployed Domino runtime in a real browser
+        if: github.event_name != 'pull_request' && steps.readiness.outcome == 'success'
+        run: |
+          set -euo pipefail
+          npx --no-install playwright test --config=e2e/playwright.domino-live-diagnostic.config.mjs --workers=1
