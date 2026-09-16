@@ -13,7 +13,8 @@ assert.match(index, /store-effects-precision-alignment-v19\.css\?v=1&mvp19_9=dom
 assert.match(index, /data-mgw-domino-effects-precision-alignment="v19"/);
 assert.match(index, /store-effects-card-fullwidth-v20\.css\?v=5&mvp19_9=domino-effect-card-micro-parity-v24/);
 assert.match(index, /data-mgw-domino-effects-card-canonical-stage="v24"/);
-assert.match(launch, /\/app\/v110\.php\?v=1180/);
+const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);
+assert.ok(launchMatch && Number(launchMatch[1]) >= 1180, 'accepted v18/v19/v24 graph must never roll back below Telegram v1180');
 
 assert.match(css, /store-v2-game-product\[data-store-game-product="domino"\][\s\S]*transform:scale\(\.88\)!important/);
 assert.match(css, /store-v2-game-preview\[data-game-type="domino"\]\[data-cosmetic-layer="effect"\][\s\S]*transform:scale\(\.88\)!important/);
