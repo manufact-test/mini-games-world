@@ -93,7 +93,7 @@ if (!isset($imports[$dominoRendererImportKey])
     exit;
 }
 $imports[$dominoRendererImportKey] .= '&gesture_owner=v27&precision_static=2';
-$imports[$dominoRendererImportKey] .= '&live_effects=v32';
+$imports[$dominoRendererImportKey] .= '&live_effects=v33';
 
 foreach (['main_css', 'consistency_css', 'bootstrap'] as $requiredAsset) {
     if (!isset($assets[$requiredAsset]) || !is_string($assets[$requiredAsset]) || $assets[$requiredAsset] === '') {
@@ -326,6 +326,6 @@ header('X-MGW-Go-Viewport: full-width-scroll-v3');
 header('X-MGW-Go-Live-Effects: effect2-stable-overlay-v9-territory-final-v7');
 header('X-MGW-Go-Rules-Markers: size-parity-v3');
 header('X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal');
-header('X-MGW-Domino-Live-Precision: static-v2');
-header('X-MGW-Domino-Live-Effects: tile-local-stock-exact-v32');
+header('X-MGW-Domino-Live-Precision: local-owner-single-pulse-v33');
+header('X-MGW-Domino-Live-Effects: owner-gated-single-pulse-stock-spark-v33');
 echo $html;

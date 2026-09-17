@@ -12,7 +12,7 @@ const ENTRY_URL = `${ORIGIN}${entryMatch[1]}`;
 
 test.use({ viewport:{ width:320, height:640 }, isMobile:true, hasTouch:true, reducedMotion:'no-preference' });
 
-test('DOMINO — stable 2-row hand + tile-local Precision + exact boneyard Stock v32', async ({ page }) => {
+test('DOMINO — stable hand + owner-gated Precision + exact single-shot sparkling Stock v33', async ({ page }) => {
   const response = await page.goto(ENTRY_URL, { waitUntil:'domcontentloaded' });
   expect(response?.ok()).toBe(true);
 
@@ -32,6 +32,7 @@ test('DOMINO — stable 2-row hand + tile-local Precision + exact boneyard Stock
     screen.dataset.gameType = 'domino';
 
     const nextFrame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const oneFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
     const waitForSheet = async selector => {
       const link = document.querySelector(selector);
       if (!(link instanceof HTMLLinkElement)) return false;
@@ -59,16 +60,16 @@ test('DOMINO — stable 2-row hand + tile-local Precision + exact boneyard Stock
       move_number:index + 1,
       is_start:index === 0,
     }));
-    const gameFor = ({ id, handCount, chainCount, action }) => {
+    const gameFor = ({ id, handCount, chainCount, action, players, stockCount = 12 }) => {
       const hand = makeHand(handCount);
       return {
         id,
         game_type:'domino', status:'active', turn:'diag-me',
-        players:[{ id:'diag-me', tile_count:handCount }, { id:'diag-opponent', tile_count:4 }],
+        players:players || [{ id:'diag-me', tile_count:handCount }, { id:'diag-opponent', tile_count:4 }],
         viewer_hand:hand,
         playable_sides:hand.length ? { [hand[0].id]:['right'] } : {},
         chain:makeChain(chainCount),
-        open_left:5, open_right:6, stock_count:12, opponent_tile_count:4,
+        open_left:5, open_right:6, stock_count:stockCount, opponent_tile_count:4,
         can_draw:false,
         move_count:chainCount,
         last_action:action || { type:'start', player_id:'diag-opponent', tile:'5-6' },
@@ -115,14 +116,14 @@ test('DOMINO — stable 2-row hand + tile-local Precision + exact boneyard Stock
     const areaHeight = () => container.querySelector('.domino-chain-area')?.getBoundingClientRect().height || 0;
 
     state.profileInventory = { equipped:{ game_domino_effect:'base' }, catalog:[], owned:[] };
-    renderDominoSurface({ game:gameFor({ id:'diag-v32-seven', handCount:7, chainCount:1 }), me:{ id:'diag-me' }, container, onAction:() => {} });
+    renderDominoSurface({ game:gameFor({ id:'diag-v33-seven', handCount:7, chainCount:1 }), me:{ id:'diag-me' }, container, onAction:() => {} });
     const stabilitySheetLoaded = await waitForSheet('link[data-mgw-domino-mobile-stability]');
-    const effectsSheetLoaded = await waitForSheet('link[data-mgw-domino-live-effects-v32]');
+    const effectsSheetLoaded = await waitForSheet('link[data-mgw-domino-live-effects-v33]');
     await nextFrame();
     const seven = measureHand();
     const shortHeight = areaHeight();
 
-    const twelveGame = gameFor({ id:'diag-v32-twelve', handCount:12, chainCount:18 });
+    const twelveGame = gameFor({ id:'diag-v33-twelve', handCount:12, chainCount:18 });
     renderDominoSurface({ game:twelveGame, me:{ id:'diag-me' }, container, onAction:() => {} });
     await nextFrame();
     const twelve = measureHand();
@@ -134,47 +135,75 @@ test('DOMINO — stable 2-row hand + tile-local Precision + exact boneyard Stock
     const afterInternalHeight = areaHeight();
 
     state.profileInventory.equipped.game_domino_effect = 'game-domino-effect-precision-drop';
-    renderDominoSurface({
-      game:gameFor({
-        id:'diag-v32-precision', handCount:7, chainCount:4,
-        action:{ type:'play', player_id:'diag-me', tile:'6-5', side:'right' },
-      }),
-      me:{ id:'diag-me' }, container, onAction:() => {},
+    const myPrecisionGame = gameFor({
+      id:'diag-v33-precision-mine', handCount:7, chainCount:4,
+      action:{ type:'play', player_id:'diag-me', tile:'6-5', side:'right' },
     });
-    await new Promise(resolve => requestAnimationFrame(resolve));
-    const latestSlot = container.querySelector('.domino-chain-slot.latest');
-    const precisionLocal = latestSlot?.querySelector(':scope > .mgw-domino-precision-local-v32');
-    const fixedPrecisionProbes = [...document.querySelectorAll('body > .domino-native-fx-accent.is-precision')]
-      .filter(node => node instanceof HTMLElement);
-    const detachedVisibleCount = fixedPrecisionProbes.filter(node => {
-      const style = getComputedStyle(node);
-      return style.display !== 'none'
-        && style.visibility !== 'hidden'
-        && Number.parseFloat(style.opacity || '1') > 0.01;
-    }).length;
-    const precision = {
-      exists:precisionLocal instanceof HTMLElement,
-      parentIsLatest:precisionLocal?.parentElement === latestSlot,
-      anchor:precisionLocal instanceof HTMLElement ? precisionLocal.dataset.dominoPrecisionAnchor || '' : '',
-      probeCount:fixedPrecisionProbes.length,
-      detachedVisibleCount,
+    renderDominoSurface({ game:myPrecisionGame, me:{ id:'diag-me' }, container, onAction:() => {} });
+    await oneFrame();
+    const myPrecisionLocal = container.querySelector('.domino-chain-slot.latest > .mgw-domino-precision-local-v33');
+    const myPrecision = {
+      exists:myPrecisionLocal instanceof HTMLElement,
+      owner:myPrecisionLocal instanceof HTMLElement ? myPrecisionLocal.dataset.dominoPrecisionOwner || '' : '',
+      launches:Number(container.dataset.dominoPrecisionLaunches || 0),
+      waves:myPrecisionLocal?.querySelectorAll('.tile-wave').length || 0,
+      aura:myPrecisionLocal?.querySelectorAll('.tile-aura').length || 0,
+      detachedNative:document.querySelectorAll('body > .domino-native-fx-accent.is-precision').length,
+    };
+    renderDominoSurface({ game:myPrecisionGame, me:{ id:'diag-me' }, container, onAction:() => {} });
+    await oneFrame();
+    const myPrecisionLaunchesAfterRepeat = Number(container.dataset.dominoPrecisionLaunches || 0);
+
+    const opponentWithoutEffect = gameFor({
+      id:'diag-v33-precision-opponent-base', handCount:7, chainCount:5,
+      action:{ type:'play', player_id:'diag-opponent', tile:'6-5', side:'right' },
+      players:[{ id:'diag-me', tile_count:7 }, { id:'diag-opponent', tile_count:4 }],
+    });
+    renderDominoSurface({ game:opponentWithoutEffect, me:{ id:'diag-me' }, container, onAction:() => {} });
+    await oneFrame();
+    const opponentWithoutEffectCount = container.querySelectorAll('.mgw-domino-precision-local-v33').length;
+
+    const opponentWithEffect = gameFor({
+      id:'diag-v33-precision-opponent-owned', handCount:7, chainCount:6,
+      action:{ type:'play', player_id:'diag-opponent', tile:'6-5', side:'right' },
+      players:[
+        { id:'diag-me', tile_count:7 },
+        { id:'diag-opponent', tile_count:4, game_cosmetics:{ slots:{ game_domino_effect:'game-domino-effect-precision-drop' } } },
+      ],
+    });
+    renderDominoSurface({ game:opponentWithEffect, me:{ id:'diag-me' }, container, onAction:() => {} });
+    await oneFrame();
+    const opponentOwnedLocal = container.querySelector('.domino-chain-slot.latest > .mgw-domino-precision-local-v33');
+    const opponentOwnedPrecision = {
+      exists:opponentOwnedLocal instanceof HTMLElement,
+      owner:opponentOwnedLocal instanceof HTMLElement ? opponentOwnedLocal.dataset.dominoPrecisionOwner || '' : '',
     };
 
     state.profileInventory.equipped.game_domino_effect = 'game-domino-effect-stock-pulse';
-    renderDominoSurface({
-      game:{
-        ...gameFor({
-          id:'diag-v32-stock', handCount:8, chainCount:4,
-          action:{ type:'draw', player_id:'diag-me', drawn_count:1 },
-        }),
-        stock_count:11,
-      },
-      me:{ id:'diag-me' }, container, onAction:() => {},
+    const stockBase = gameFor({ id:'diag-v33-stock', handCount:7, chainCount:4, stockCount:12 });
+    renderDominoSurface({ game:stockBase, me:{ id:'diag-me' }, container, onAction:() => {} });
+    await oneFrame();
+
+    const stockInterim = gameFor({
+      id:'diag-v33-stock', handCount:7, chainCount:4, stockCount:11,
+      action:{ type:'draw', player_id:'diag-me', drawn_count:1 },
     });
-    await new Promise(resolve => requestAnimationFrame(resolve));
+    renderDominoSurface({ game:stockInterim, me:{ id:'diag-me' }, container, onAction:() => {} });
+    await oneFrame();
+    const interimBeamCount = document.querySelectorAll('.domino-native-fx-accent.is-stock-v33').length;
+
+    const stockFinal = gameFor({
+      id:'diag-v33-stock', handCount:8, chainCount:4, stockCount:11,
+      action:{ type:'draw', player_id:'diag-me', drawn_count:1 },
+    });
+    renderDominoSurface({ game:stockFinal, me:{ id:'diag-me' }, container, onAction:() => {} });
+    await oneFrame();
+    const expectedTargetId = makeHand(8)[7].id;
     const stock = container.querySelector('.domino-stock-count');
-    const target = container.querySelector('.domino-hand-tile.mgw-domino-native-stock-target .domino-tile');
-    const beam = document.querySelector('.domino-native-fx-accent.is-stock.is-stock-v32');
+    const targetButton = [...container.querySelectorAll('.domino-hand-tile')]
+      .find(node => node instanceof HTMLElement && node.dataset.dominoTile === expectedTargetId) || null;
+    const target = targetButton?.querySelector('.domino-tile');
+    const beam = document.querySelector('.domino-native-fx-accent.is-stock-v33');
     let stockBeam = null;
     if (stock instanceof HTMLElement && target instanceof HTMLElement && beam instanceof HTMLElement) {
       const startRect = stock.getBoundingClientRect();
@@ -184,19 +213,27 @@ test('DOMINO — stable 2-row hand + tile-local Precision + exact boneyard Stock
       const startX = Number.parseFloat(beam.style.left || '0');
       const startY = Number.parseFloat(beam.style.top || '0');
       const distance = Number.parseFloat(beam.style.width || '0');
-      const angle = Number.parseFloat(beam.style.getPropertyValue('--mgw-domino-native-angle') || '0') * Math.PI / 180;
+      const angle = Number.parseFloat(beam.style.getPropertyValue('--mgw-domino-stock-angle') || '0') * Math.PI / 180;
       stockBeam = {
         source:beam.dataset.dominoStockSource || '',
         target:beam.dataset.dominoStockTarget || '',
+        targetTile:beam.dataset.dominoStockTargetTile || '',
         startError:Math.hypot(startX - expectedStart.x, startY - expectedStart.y),
         endError:Math.hypot(startX + Math.cos(angle) * distance - expectedEnd.x, startY + Math.sin(angle) * distance - expectedEnd.y),
-        lineHeight:getComputedStyle(beam.querySelector('.stock-line')).height,
+        lineHeight:getComputedStyle(beam.querySelector('.stock-line-v33')).height,
+        sparks:beam.querySelectorAll('.stock-spark-v33').length,
+        launches:Number(container.dataset.dominoStockLaunches || 0),
+        nativeWrongBeams:document.querySelectorAll('.domino-native-fx-accent.is-stock').length,
+        nativeWrongTargets:container.querySelectorAll('.mgw-domino-native-stock-target').length,
       };
     }
+    renderDominoSurface({ game:stockFinal, me:{ id:'diag-me' }, container, onAction:() => {} });
+    await oneFrame();
+    const stockLaunchesAfterRepeat = Number(container.dataset.dominoStockLaunches || 0);
 
     state.profileInventory.equipped.game_domino_effect = 'game-domino-effect-chain-finale';
-    renderDominoSurface({ game:gameFor({ id:'diag-v32-finale-active', handCount:7, chainCount:4 }), me:{ id:'diag-me' }, container, onAction:() => {} });
-    await new Promise(resolve => requestAnimationFrame(resolve));
+    renderDominoSurface({ game:gameFor({ id:'diag-v33-finale-active', handCount:7, chainCount:4 }), me:{ id:'diag-me' }, container, onAction:() => {} });
+    await oneFrame();
     const finaleQaCount = container.querySelectorAll('.domino-finale-qa-row,.domino-finale-qa-button').length;
 
     return {
@@ -209,18 +246,23 @@ test('DOMINO — stable 2-row hand + tile-local Precision + exact boneyard Stock
       twelve,
       afterInternalRerender,
       heights:{ short:shortHeight, long:longHeight, afterInternal:afterInternalHeight },
-      precision,
+      myPrecision,
+      myPrecisionLaunchesAfterRepeat,
+      opponentWithoutEffectCount,
+      opponentOwnedPrecision,
+      interimBeamCount,
       stockBeam,
+      stockLaunchesAfterRepeat,
       finaleQaCount,
     };
   });
 
-  console.log(`DOMINO_V32_STABILITY=${JSON.stringify(setup)}`);
+  console.log(`DOMINO_V33_STABILITY=${JSON.stringify(setup)}`);
   expect(setup.entry).toContain('/app/v110.php');
   expect(setup.stabilitySheetLoaded).toBe(true);
   expect(setup.effectsSheetLoaded).toBe(true);
   expect(setup.marker).toBe('v30');
-  expect(setup.liveEffects).toBe('v32');
+  expect(setup.liveEffects).toBe('v33');
 
   expect(setup.seven).toMatchObject({ count:7, layout:'single-row', rows:1, columns:7, allVisible:true });
   expect(setup.twelve).toMatchObject({ count:12, layout:'two-row', rows:2, columns:6, allVisible:true });
@@ -229,17 +271,29 @@ test('DOMINO — stable 2-row hand + tile-local Precision + exact boneyard Stock
   expect(setup.heights.long).toBeCloseTo(setup.heights.short, 0);
   expect(setup.heights.afterInternal).toBeCloseTo(setup.heights.short, 0);
 
-  expect(setup.precision).toEqual({
+  expect(setup.myPrecision).toEqual({
     exists:true,
-    parentIsLatest:true,
-    anchor:'latest-slot-local-v32',
-    probeCount:1,
-    detachedVisibleCount:0,
+    owner:'diag-me',
+    launches:1,
+    waves:2,
+    aura:1,
+    detachedNative:0,
   });
-  expect(setup.stockBeam?.source).toBe('boneyard-v32');
-  expect(setup.stockBeam?.target).toBe('exact-drawn-tile-v32');
+  expect(setup.myPrecisionLaunchesAfterRepeat).toBe(1);
+  expect(setup.opponentWithoutEffectCount).toBe(0);
+  expect(setup.opponentOwnedPrecision).toEqual({ exists:true, owner:'diag-opponent' });
+
+  expect(setup.interimBeamCount).toBe(0);
+  expect(setup.stockBeam?.source).toBe('boneyard-v33');
+  expect(setup.stockBeam?.target).toBe('exact-new-tile-v33');
+  expect(setup.stockBeam?.targetTile).toBe('0-2-7');
   expect(setup.stockBeam?.startError).toBeLessThanOrEqual(1);
   expect(setup.stockBeam?.endError).toBeLessThanOrEqual(1);
-  expect(Number.parseFloat(setup.stockBeam?.lineHeight || '99')).toBeLessThanOrEqual(1.5);
+  expect(Number.parseFloat(setup.stockBeam?.lineHeight || '99')).toBeLessThan(1);
+  expect(setup.stockBeam?.sparks).toBe(8);
+  expect(setup.stockBeam?.launches).toBe(1);
+  expect(setup.stockBeam?.nativeWrongBeams).toBe(0);
+  expect(setup.stockBeam?.nativeWrongTargets).toBe(0);
+  expect(setup.stockLaunchesAfterRepeat).toBe(1);
   expect(setup.finaleQaCount).toBe(0);
 });
