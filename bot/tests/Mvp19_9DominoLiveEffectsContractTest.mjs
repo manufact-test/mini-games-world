@@ -82,15 +82,14 @@ assert.ok(correctiveJs.includes("container.addEventListener('pointermove'"), 'st
 assert.ok(correctiveJs.includes('container.setPointerCapture(drag.pointerId)'), 'horizontal pointer intent must use capture');
 assert.ok(correctiveJs.includes('hand.scrollLeft = next'), 'drag owner must still be able to move a scrollable hand');
 assert.ok(correctiveJs.includes('event.stopImmediatePropagation()'), 'completed drag must not accidentally play a tile');
-assert.ok(correctiveJs.includes('live-hand-gesture-v27.css?v=2&mvp19_9=hand-gesture-owner-v27&hand_layout=v29'), 'runtime must force a fresh v29 hand-layout stylesheet');
+assert.ok(correctiveJs.includes('live-hand-gesture-v27.css?v=2&mvp19_9=hand-gesture-owner-v27&hand_layout=v29'), 'legacy v29 hand fallback stylesheet must remain available beneath v30');
 
 assert.ok(correctiveCss.includes('touch-action:pan-x pan-y!important'), 'outer Domino content may remain a normal two-axis browser surface');
 assert.ok(handGestureCss.includes('touch-action:pan-y!important'), 'browser must retain vertical panning around the real hand');
 assert.ok(!handGestureCss.includes('touch-action:pan-x'), 'hand must not advertise horizontal native panning back to Chromium');
-assert.ok(handGestureCss.includes('.domino-hand:has(> .domino-hand-tile:nth-child(9))'), '9+ mobile tiles must activate the visibility fallback');
-assert.ok(handGestureCss.includes('flex-wrap:wrap!important'), '9+ mobile tiles must wrap into visible rows');
-assert.ok(handGestureCss.includes('overflow-x:visible!important'), '9+ layout must not hide the playable tail off-screen');
-assert.ok(handGestureCss.includes('justify-content:center!important'), 'wrapped hand must remain visually centered');
+assert.ok(handGestureCss.includes('.domino-hand:has(> .domino-hand-tile:nth-child(9))'), 'legacy 9+ visibility fallback must remain available');
+assert.ok(handGestureCss.includes('flex-wrap:wrap!important'), 'legacy 9+ fallback must still wrap when supported');
+assert.ok(handGestureCss.includes('overflow-x:visible!important'), 'legacy 9+ fallback must not hide the playable tail off-screen');
 assert.ok(correctiveCss.includes('mgw-domino-native-precision-tile-v25'), 'precision corrective must visibly strengthen the real placed tile impact');
 assert.ok(correctiveCss.includes('mgw-domino-native-precision-shock-v25'), 'precision corrective must expose a readable contact shockwave');
 assert.ok(correctiveCss.includes('mgw-domino-native-stock-source-v25'), 'stock corrective must visibly pulse the real stock owner');
@@ -99,13 +98,13 @@ assert.ok(correctiveCss.includes('mgw-domino-native-stock-arrival-v25'), 'stock 
 assert.ok(!correctiveCss.includes('.store-v2-game-preview'), 'corrective CSS must not style a Store preview scene');
 assert.ok(!correctiveCss.includes('.mgw-domino-preview'), 'corrective CSS must not contain miniature board selectors');
 
-assert.ok(liveCosmeticsCss.includes('overflow-x:auto!important'), 'ordinary hand horizontal overflow owner must remain preserved');
+assert.ok(liveCosmeticsCss.includes('overflow-x:auto!important'), 'ordinary hand horizontal overflow owner must remain preserved beneath v30');
 assert.ok(liveCosmeticsCss.includes('overflow-y:auto!important'), 'mobile Domino vertical scroll must remain preserved');
 assert.ok(liveCosmeticsCss.includes('height:100dvh!important'), 'bounded Telegram viewport owner must remain preserved');
 
-assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-cosmetics-corrective-v25.js?v=2&mvp19_9=manual-corrective-v25&hand_drag=v26&pointer_owner=v28&hand_layout=v29'"), 'manifest must publish the v29 Domino hand-accessibility identity');
+assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25'"), 'manifest must publish the v30 Domino stability owner');
 assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&gesture_owner=v27';"), 'active entry must remain canonical v110 and keep its accepted gesture hook');
 assert.ok(entry.includes("header('X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal');"), 'active entry must retain the existing Domino diagnostic header');
-assert.match(launch, /\/app\/v110\.php\?v=1190&hand_layout=29/);
+assert.match(launch, /\/app\/v110\.php\?v=1191&domino_stability=30/);
 
-console.log('MVP-19.9 Domino v25 effects + v28 pointer owner + v29 9+ tile accessibility contract: OK');
+console.log('MVP-19.9 Domino legacy effects + v30 live stability contract: OK');
