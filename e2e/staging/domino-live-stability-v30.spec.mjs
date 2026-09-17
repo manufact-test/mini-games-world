@@ -100,7 +100,7 @@ test('DOMINO v30 — stable table, reachable hand and deterministic precision se
         layout:hand.dataset.dominoHandLayout || '',
         count:tiles.length,
         columns:getComputedStyle(hand).gridTemplateColumns.split(' ').filter(Boolean).length,
-        rows:[...new Set(rects.map(rect => Math.round(rect.top)))].length,
+        rows:[...new Set(tiles.map(tile => tile.offsetTop))].length,
         allVisible:rects.every(rect => rect.left >= handRect.left - 1 && rect.right <= handRect.right + 1 && rect.left >= -1 && rect.right <= innerWidth + 1),
         overflowX:getComputedStyle(hand).overflowX,
       };
