@@ -5,8 +5,10 @@ const read = path => fs.readFileSync(path, 'utf8');
 
 const liveJs = read('app/assets/js/games/domino/renderer-cosmetics-v1.js');
 const correctiveJs = read('app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js');
+const manualJs = read('app/assets/js/games/domino/renderer-live-manual-v30.js');
 const nativeCss = read('app/assets/css/games/domino/live-native-effects-v1.css');
 const correctiveCss = read('app/assets/css/games/domino/live-native-manual-v25.css');
+const liveEffectsCss = read('app/assets/css/games/domino/live-effects-v32.css');
 const handGestureCss = read('app/assets/css/games/domino/live-hand-gesture-v27.css');
 const liveCosmeticsCss = read('app/assets/css/games/domino/live-cosmetics-v2.css');
 const migration = read('bot/database/migrations/20260915_0035_add_domino_store_cosmetics.php');
@@ -98,16 +100,30 @@ assert.ok(correctiveCss.includes('mgw-domino-native-stock-arrival-v25'), 'stock 
 assert.ok(!correctiveCss.includes('.store-v2-game-preview'), 'corrective CSS must not style a Store preview scene');
 assert.ok(!correctiveCss.includes('.mgw-domino-preview'), 'corrective CSS must not contain miniature board selectors');
 
+assert.ok(manualJs.includes("container.dataset.mgwDominoLiveEffects = 'v38'"), 'v38 viewport particle owner must be active');
+assert.ok(manualJs.includes("root.dataset.dominoPrecisionVisual = 'eight-visible-shards-v38'"), 'Precision must expose the eight-shard visual marker');
+assert.ok(manualJs.includes("root.dataset.dominoPrecisionShardCount = '8'"), 'Precision must create eight visible shards');
+assert.ok(manualJs.includes('for (let index = 0; index < 8; index += 1)'), 'Precision must build eight independent particles');
+assert.ok(manualJs.includes("duration:1700"), 'Precision shards must stay readable long enough');
+assert.ok(manualJs.includes("root.dataset.dominoStockSparkCount = '12'"), 'Stock must expose twelve off-axis sparks');
+assert.ok(manualJs.includes('for (let index = 0; index < 12; index += 1)'), 'Stock must build twelve independent particles');
+assert.ok(manualJs.includes('const spread = 38 + (index % 4) * 7'), 'Stock sparks must leave the beam by tens of pixels');
+assert.ok(manualJs.includes('Promise.allSettled(animations.map(animation => animation.finished))'), 'v38 effects must clean up from actual Web Animation completion');
+assert.ok(manualJs.includes("live-effects-v32.css?v=8&mvp19_9=viewport-particles-v38"), 'v38 stylesheet must have a fresh cache identity');
+assert.ok(liveEffectsCss.includes('.mgw-domino-live-fx-layer-v38'), 'v38 must render above clipped Domino board containers');
+assert.ok(liveEffectsCss.includes('.mgw-domino-precision-burst-v38 .precision-shard-v38'), 'Precision viewport shards must be styled');
+assert.ok(liveEffectsCss.includes('.mgw-domino-stock-burst-v38 .stock-spark-v38'), 'Stock viewport sparks must be styled');
+assert.ok(liveEffectsCss.includes('height:.62px!important'), 'Stock central beam must remain thinner than one pixel');
+assert.ok(liveEffectsCss.includes('z-index:10050!important'), 'viewport particle layer must stay visibly above the board');
+
 assert.ok(liveCosmeticsCss.includes('overflow-x:auto!important'), 'ordinary hand horizontal overflow owner must remain preserved beneath v30');
 assert.ok(liveCosmeticsCss.includes('overflow-y:auto!important'), 'mobile Domino vertical scroll must remain preserved');
 assert.ok(liveCosmeticsCss.includes('height:100dvh!important'), 'bounded Telegram viewport owner must remain preserved');
 
-assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25'"), 'manifest must publish the v30 Domino stability owner');
+assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25&visual_portal=v38'"), 'manifest must publish the fresh v38 Domino renderer URL');
 assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&gesture_owner=v27&precision_static=2';"), 'active entry must remain canonical v110 and keep the accepted gesture owner');
-assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&live_effects=v37';"), 'active entry must publish the fresh Domino v37 cache identity');
+assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&live_effects=v37';"), 'v110 may retain the prior diagnostic suffix while the manifest provides the v38 cache break');
 assert.ok(entry.includes("header('X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal');"), 'active entry must retain the existing Domino gesture diagnostic header');
-assert.ok(entry.includes("header('X-MGW-Domino-Live-Precision: local-owner-readable-radial-v37');"), 'active entry must expose v37 Precision diagnostics');
-assert.ok(entry.includes("header('X-MGW-Domino-Live-Effects: precision-readable-radial-stock-crossburst-v37');"), 'active entry must expose Domino v37 live-effect diagnostics');
 assert.match(launch, /\/app\/v110\.php\?v=1192&domino_stability=30&runtime_fix=1/);
 
-console.log('MVP-19.9 Domino legacy effects + v37 visual cache contract: OK');
+console.log('MVP-19.9 Domino legacy effects + v38 viewport particle contract: OK');
