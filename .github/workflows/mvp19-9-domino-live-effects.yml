@@ -13,6 +13,7 @@ on:
       - 'app/assets/css/games/domino/live-hand-gesture-v27.css'
       - 'app/assets/css/games/domino/live-cosmetics-v2.css'
       - 'app/assets/css/games/domino/live-mobile-stability-v30.css'
+      - 'app/assets/css/games/domino/live-effects-v32.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs'
@@ -33,6 +34,7 @@ on:
       - 'app/assets/css/games/domino/live-hand-gesture-v27.css'
       - 'app/assets/css/games/domino/live-cosmetics-v2.css'
       - 'app/assets/css/games/domino/live-mobile-stability-v30.css'
+      - 'app/assets/css/games/domino/live-effects-v32.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs'
@@ -126,11 +128,16 @@ jobs:
           grep -F "container.dataset.mgwDominoHandPointer = 'v28'" app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js
           grep -F "button.dataset.dominoFinaleQa = 'preview'" app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js
           grep -F "container.dataset.mgwDominoManualStability = 'v30'" app/assets/js/games/domino/renderer-live-manual-v30.js
+          grep -F "container.dataset.mgwDominoLiveEffects = 'v33'" app/assets/js/games/domino/renderer-live-manual-v30.js
           grep -F "new MutationObserver" app/assets/js/games/domino/renderer-live-manual-v30.js
           grep -F "count >= 9" app/assets/js/games/domino/renderer-live-manual-v30.js
           grep -F "hand.style.setProperty('display', 'grid', 'important')" app/assets/js/games/domino/renderer-live-manual-v30.js
-          grep -F "const horizontal = Math.abs(latest.x - neighbor.x) >= Math.abs(latest.y - neighbor.y)" app/assets/js/games/domino/renderer-live-manual-v30.js
-          grep -F "accent.dataset.dominoPrecisionAnchor = 'seam-v30'" app/assets/js/games/domino/renderer-live-manual-v30.js
+          grep -F "actionEffectId(args, container) !== PRECISION_ID" app/assets/js/games/domino/renderer-live-manual-v30.js
+          grep -F "const precisionSeenByGame = new Map()" app/assets/js/games/domino/renderer-live-manual-v30.js
+          grep -F "const viewerHandIdsByGame = new Map()" app/assets/js/games/domino/renderer-live-manual-v30.js
+          grep -F "const newIds = currentIds.filter(id => !previousViewerHandIds.has(id))" app/assets/js/games/domino/renderer-live-manual-v30.js
+          grep -F "accent.dataset.dominoStockTarget = 'exact-new-tile-v33'" app/assets/js/games/domino/renderer-live-manual-v30.js
+          grep -F "stock-spark-v33 p8" app/assets/js/games/domino/renderer-live-manual-v30.js
           ! grep -Fq 'rayBoxDistance' app/assets/js/games/domino/renderer-live-manual-v30.js
           ! grep -Fq 'store-screen-domino-store' app/assets/js/games/domino/renderer-live-manual-v30.js
           ! grep -Fq 'onAction?.' app/assets/js/games/domino/renderer-live-manual-v30.js
@@ -142,12 +149,16 @@ jobs:
           grep -F "transition:none!important" app/assets/css/games/domino/live-mobile-stability-v30.css
           grep -F "display:grid!important" app/assets/css/games/domino/live-mobile-stability-v30.css
           grep -F "overflow-x:visible!important" app/assets/css/games/domino/live-mobile-stability-v30.css
+          grep -F "height:.64px" app/assets/css/games/domino/live-effects-v32.css
+          grep -F "stock-spark-v33" app/assets/css/games/domino/live-effects-v32.css
           grep -F "mgw-domino-native-precision-tile-v25" app/assets/css/games/domino/live-native-manual-v25.css
           grep -F "mgw-domino-native-stock-orb-v25" app/assets/css/games/domino/live-native-manual-v25.css
           grep -F "overflow-y:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
           grep -F "renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25" app/runtime/client/version-manifest.php
           grep -F "&gesture_owner=v27" app/v110.php
+          grep -F "&live_effects=v33" app/v110.php
           grep -F "X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal" app/v110.php
+          grep -F "X-MGW-Domino-Live-Effects: owner-gated-single-pulse-stock-spark-v33" app/v110.php
           grep -F "/app/v110.php?v=1192&domino_stability=30&runtime_fix=1" bot/helpers/WebAppLaunchUrl.php
 
       - name: Wait for exact Hostinger staging fingerprint
