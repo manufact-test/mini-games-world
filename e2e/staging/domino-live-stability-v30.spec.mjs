@@ -90,18 +90,47 @@ test('DOMINO v30 — stable table, reachable hand and deterministic precision se
     const stabilitySheetLoaded = await waitForSheet('link[data-mgw-domino-mobile-stability]');
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
+    const transformOffset = tile => {
+      const transform = getComputedStyle(tile).transform;
+      if (!transform || transform === 'none') return { x:0, y:0 };
+      try {
+        const matrix = new DOMMatrixReadOnly(transform);
+        return { x:Number(matrix.m41 || 0), y:Number(matrix.m42 || 0) };
+      } catch (_) {
+        return { x:0, y:0 };
+      }
+    };
+    const normalizedTileRect = tile => {
+      const rect = tile.getBoundingClientRect();
+      const offset = transformOffset(tile);
+      return {
+        left:rect.left - offset.x,
+        top:rect.top - offset.y,
+        right:rect.right - offset.x,
+        bottom:rect.bottom - offset.y,
+      };
+    };
+    const uniqueAxisCount = values => {
+      const ordered = [...values].sort((a, b) => a - b);
+      const groups = [];
+      for (const value of ordered) {
+        if (!groups.some(existing => Math.abs(existing - value) <= 1)) groups.push(value);
+      }
+      return groups.length;
+    };
     const measureHand = () => {
       const hand = container.querySelector('.domino-hand');
       if (!(hand instanceof HTMLElement)) return null;
       const handRect = hand.getBoundingClientRect();
       const tiles = [...hand.querySelectorAll(':scope > .domino-hand-tile')].filter(node => node instanceof HTMLElement);
-      const rects = tiles.map(tile => tile.getBoundingClientRect());
+      const actualRects = tiles.map(tile => tile.getBoundingClientRect());
+      const layoutRects = tiles.map(normalizedTileRect);
       return {
         layout:hand.dataset.dominoHandLayout || '',
         count:tiles.length,
-        columns:getComputedStyle(hand).gridTemplateColumns.split(' ').filter(Boolean).length,
-        rows:[...new Set(tiles.map(tile => tile.offsetTop))].length,
-        allVisible:rects.every(rect => rect.left >= handRect.left - 1 && rect.right <= handRect.right + 1 && rect.left >= -1 && rect.right <= innerWidth + 1),
+        columns:uniqueAxisCount(layoutRects.map(rect => rect.left)),
+        rows:uniqueAxisCount(layoutRects.map(rect => rect.top)),
+        allVisible:actualRects.every(rect => rect.left >= handRect.left - 1 && rect.right <= handRect.right + 1 && rect.left >= -1 && rect.right <= innerWidth + 1),
         overflowX:getComputedStyle(hand).overflowX,
       };
     };
@@ -136,10 +165,32 @@ test('DOMINO v30 — stable table, reachable hand and deterministic precision se
     const accent = [...document.querySelectorAll('.domino-native-fx-accent.is-precision')]
       .find(node => node instanceof HTMLElement && node.dataset.dominoNativeGame === 'diag-v30-precision');
 
+    const stableSlotTileRect = (slot, tile) => {
+      const slotRect = slot.getBoundingClientRect();
+      const center = { x:slotRect.left + slotRect.width / 2, y:slotRect.top + slotRect.height / 2 };
+      const baseWidth = Number(tile.offsetWidth || 0) || Number(tile.getBoundingClientRect().width || 0);
+      const baseHeight = Number(tile.offsetHeight || 0) || Number(tile.getBoundingClientRect().height || 0);
+      const vertical = slot.classList.contains('vertical');
+      const isDouble = slot.classList.contains('is-double');
+      const quarterTurn = (vertical && !isDouble) || (!vertical && isDouble);
+      const width = quarterTurn ? baseHeight : baseWidth;
+      const height = quarterTurn ? baseWidth : baseHeight;
+      return {
+        left:center.x - width / 2,
+        right:center.x + width / 2,
+        top:center.y - height / 2,
+        bottom:center.y + height / 2,
+        width,
+        height,
+      };
+    };
+
     let precision = null;
-    if (latest instanceof HTMLElement && neighbor instanceof HTMLElement && accent instanceof HTMLElement) {
-      const a = latest.getBoundingClientRect();
-      const b = neighbor.getBoundingClientRect();
+    if (latestSlot instanceof HTMLElement && latest instanceof HTMLElement
+      && neighborSlot instanceof HTMLElement && neighbor instanceof HTMLElement
+      && accent instanceof HTMLElement) {
+      const a = stableSlotTileRect(latestSlot, latest);
+      const b = stableSlotTileRect(neighborSlot, neighbor);
       const latestCenter = { x:a.left + a.width / 2, y:a.top + a.height / 2 };
       const neighborCenter = { x:b.left + b.width / 2, y:b.top + b.height / 2 };
       const horizontal = Math.abs(latestCenter.x - neighborCenter.x) >= Math.abs(latestCenter.y - neighborCenter.y);
@@ -154,6 +205,7 @@ test('DOMINO v30 — stable table, reachable hand and deterministic precision se
           };
       precision = {
         anchor:accent.dataset.dominoPrecisionAnchor || '',
+        geometry:accent.dataset.dominoPrecisionGeometry || '',
         x:Number.parseFloat(accent.style.left || '0'),
         y:Number.parseFloat(accent.style.top || '0'),
         expectedX:expected.x,
@@ -195,6 +247,7 @@ test('DOMINO v30 — stable table, reachable hand and deterministic precision se
 
   expect(setup.afterInternalRerender?.layout).toBe('two-row');
   expect(setup.afterInternalRerender?.rows).toBe(2);
+  expect(setup.afterInternalRerender?.columns).toBe(6);
   expect(setup.afterInternalRerender?.allVisible).toBe(true);
 
   expect(setup.heights.short).toBeCloseTo(232, 0);
@@ -202,6 +255,7 @@ test('DOMINO v30 — stable table, reachable hand and deterministic precision se
   expect(setup.heights.afterInternal).toBeCloseTo(setup.heights.short, 0);
 
   expect(setup.precision?.anchor).toBe('seam-v30');
-  expect(Math.abs(setup.precision.x - setup.precision.expectedX)).toBeLessThanOrEqual(2);
-  expect(Math.abs(setup.precision.y - setup.precision.expectedY)).toBeLessThanOrEqual(2);
+  expect(setup.precision?.geometry).toBe('static-v2');
+  expect(Math.abs(setup.precision.x - setup.precision.expectedX)).toBeLessThanOrEqual(0.5);
+  expect(Math.abs(setup.precision.y - setup.precision.expectedY)).toBeLessThanOrEqual(0.5);
 });
