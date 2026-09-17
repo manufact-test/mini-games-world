@@ -81,8 +81,8 @@ if (!isset($imports[$goRendererImportKey])
 }
 $imports[$goRendererImportKey] .= '&manual_review=effect2-stable-overlay-v9';
 
-// Staging Domino cache hook: v27 changes gesture arbitration, so the corrective module
-// must be a fresh URL in Telegram WebView even when v26 itself is already cached.
+// Staging Domino cache hook: keep the current v30 live wrapper on a fresh static URL
+// so Hostinger CDN and Telegram WebView cannot reuse an older Precision implementation.
 $dominoRendererImportKey = './assets/js/games/domino/renderer.js?v=74';
 if (!isset($imports[$dominoRendererImportKey])
     || !is_string($imports[$dominoRendererImportKey])
@@ -92,7 +92,7 @@ if (!isset($imports[$dominoRendererImportKey])
     echo 'Mini Games World Domino hand gesture renderer is unavailable.';
     exit;
 }
-$imports[$dominoRendererImportKey] .= '&gesture_owner=v27';
+$imports[$dominoRendererImportKey] .= '&gesture_owner=v27&precision_static=2';
 
 foreach (['main_css', 'consistency_css', 'bootstrap'] as $requiredAsset) {
     if (!isset($assets[$requiredAsset]) || !is_string($assets[$requiredAsset]) || $assets[$requiredAsset] === '') {
@@ -325,4 +325,5 @@ header('X-MGW-Go-Viewport: full-width-scroll-v3');
 header('X-MGW-Go-Live-Effects: effect2-stable-overlay-v9-territory-final-v7');
 header('X-MGW-Go-Rules-Markers: size-parity-v3');
 header('X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal');
+header('X-MGW-Domino-Live-Precision: static-v2');
 echo $html;
