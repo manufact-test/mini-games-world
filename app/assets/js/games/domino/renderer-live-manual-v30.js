@@ -30,7 +30,7 @@ export function renderDominoSurface(args){
   if (!(container instanceof HTMLElement)) return;
 
   container.dataset.mgwDominoManualStability = 'v30';
-  container.dataset.mgwDominoLiveEffects = 'v35';
+  container.dataset.mgwDominoLiveEffects = 'v36';
   markHandLayout(container);
   ensureHandLayoutObserver(container);
   mountTileLocalPrecisionV33(args, container);
@@ -103,17 +103,17 @@ function mountTileLocalPrecisionV33(args, container){
   const local = document.createElement('span');
   local.className = 'mgw-domino-precision-local-v33';
   local.dataset.dominoPrecisionAnchor = 'latest-slot-local-v33';
-  local.dataset.dominoPrecisionVisual = 'shimmer-spark-v35';
+  local.dataset.dominoPrecisionVisual = 'edge-shard-burst-v36';
   local.dataset.dominoPrecisionOwner = String(action?.player_id || '');
   local.dataset.dominoPrecisionSignature = signature;
   local.setAttribute('aria-hidden', 'true');
-  local.innerHTML = '<i class="tile-aura"></i><i class="tile-wave wave-1"></i><i class="tile-wave wave-2"></i>';
+  local.innerHTML = '<i class="precision-frame"></i><i class="precision-streak s1"></i><i class="precision-streak s2"></i><i class="precision-streak s3"></i><i class="precision-streak s4"></i><i class="precision-streak s5"></i><i class="precision-streak s6"></i><i class="precision-streak s7"></i><i class="precision-streak s8"></i><i class="precision-echo echo-1"></i><i class="precision-echo echo-2"></i>';
   latestSlot.appendChild(local);
 
-  const finisher = local.querySelector('.wave-2');
+  const finisher = local.querySelector('.precision-streak.s8');
   const cleanup = event => {
     if (event.target !== finisher) return;
-    if (event.type === 'animationend' && String(event.animationName || '') !== 'mgw-domino-precision-local-v35') return;
+    if (event.type === 'animationend' && String(event.animationName || '') !== 'mgw-domino-precision-streak-v36') return;
     finisher.removeEventListener('animationend', cleanup);
     finisher.removeEventListener('animationcancel', cleanup);
     local.remove();
@@ -327,18 +327,18 @@ function ensureLiveEffectsV31Styles(){
 
 function ensureLiveEffectsV33Styles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/domino/live-effects-v32.css?v=5&mvp19_9=precision-shimmer-stock-static-sparks-v35', import.meta.url).href;
+  const href = new URL('../../../css/games/domino/live-effects-v32.css?v=6&mvp19_9=precision-shard-burst-stock-wide-sparks-v36', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-domino-live-effects-v33]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwDominoLiveEffectsV33 = 'precision-shimmer-stock-static-sparks-v35';
+    existing.dataset.mgwDominoLiveEffectsV33 = 'precision-shard-burst-stock-wide-sparks-v36';
     return;
   }
 
   document.querySelectorAll('link[data-mgw-domino-live-effects-v32]').forEach(node => node.remove());
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwDominoLiveEffectsV33 = 'precision-shimmer-stock-static-sparks-v35';
+  link.dataset.mgwDominoLiveEffectsV33 = 'precision-shard-burst-stock-wide-sparks-v36';
   link.href = href;
   document.head.appendChild(link);
 }
