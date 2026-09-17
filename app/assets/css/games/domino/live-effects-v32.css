@@ -39,7 +39,6 @@
   transform:rotate(0deg);
 }
 
-/* v36: a deliberate edge pulse, not a broad flashlight. */
 .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-frame{
   position:absolute;
   inset:-2px;
@@ -79,7 +78,6 @@
   animation:mgw-domino-precision-edge-run-v36 1.18s .24s ease-out both reverse;
 }
 
-/* Eight short golden shards clearly leave the domino in different directions. */
 .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-streak{
   --dx:0px;
   --dy:-18px;
@@ -94,7 +92,7 @@
   background:linear-gradient(180deg,rgba(255,255,242,.98),rgba(255,215,87,.96) 42%,rgba(255,148,27,0));
   box-shadow:0 0 4px rgba(255,237,159,1),0 0 9px rgba(255,184,50,.82);
   transform-origin:50% 50%;
-  animation:mgw-domino-precision-streak-v36 1.18s cubic-bezier(.16,.72,.18,1) var(--delay) both;
+  animation:mgw-domino-precision-streak-v36 1.35s cubic-bezier(.16,.72,.18,1) var(--delay) both;
 }
 .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-streak::after{
   content:"";
@@ -108,16 +106,15 @@
   background:#fffef0;
   box-shadow:0 0 5px rgba(255,246,196,1),0 0 10px rgba(255,187,51,.8);
 }
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s1{left:15%;top:10%;--dx:-18px;--dy:-17px;--rot:-45deg;--delay:80ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s2{left:50%;top:2%;--dx:0px;--dy:-23px;--rot:0deg;--delay:135ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s3{left:85%;top:10%;--dx:18px;--dy:-17px;--rot:45deg;--delay:190ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s4{left:98%;top:50%;--dx:25px;--dy:0px;--rot:90deg;--delay:245ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s5{left:85%;top:90%;--dx:18px;--dy:17px;--rot:135deg;--delay:300ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s6{left:50%;top:98%;--dx:0px;--dy:23px;--rot:180deg;--delay:355ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s7{left:15%;top:90%;--dx:-18px;--dy:17px;--rot:225deg;--delay:410ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s8{left:2%;top:50%;--dx:-25px;--dy:0px;--rot:270deg;--delay:465ms}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s1{left:15%;top:10%;--dx:-18px;--dy:-17px;--rot:-45deg;--delay:70ms}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s2{left:50%;top:2%;--dx:0px;--dy:-23px;--rot:0deg;--delay:120ms}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s3{left:85%;top:10%;--dx:18px;--dy:-17px;--rot:45deg;--delay:170ms}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s4{left:98%;top:50%;--dx:25px;--dy:0px;--rot:90deg;--delay:220ms}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s5{left:85%;top:90%;--dx:18px;--dy:17px;--rot:135deg;--delay:270ms}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s6{left:50%;top:98%;--dx:0px;--dy:23px;--rot:180deg;--delay:320ms}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s7{left:15%;top:90%;--dx:-18px;--dy:17px;--rot:225deg;--delay:370ms}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s8{left:2%;top:50%;--dx:-25px;--dy:0px;--rot:270deg;--delay:420ms}
 
-/* A restrained afterimage follows the domino silhouette after the shard burst. */
 .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-echo{
   position:absolute;
   inset:0;
@@ -127,10 +124,10 @@
   opacity:0;
   box-shadow:0 0 7px rgba(255,195,59,.36);
   transform-origin:center;
-  animation:mgw-domino-precision-echo-v36 1.52s cubic-bezier(.14,.72,.18,1) both;
+  animation:mgw-domino-precision-echo-v36 1.28s cubic-bezier(.14,.72,.18,1) both;
 }
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .echo-1{animation-delay:180ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .echo-2{animation-delay:430ms;border-color:rgba(255,248,211,.5)}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .echo-1{animation-delay:160ms}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .echo-2{animation-delay:400ms;border-color:rgba(255,248,211,.5)}
 .domino-chain-slot.latest > .domino-tile.mgw-domino-precision-glow-v33{
   animation:mgw-domino-precision-tile-kick-v36 1.55s ease-out both!important;
 }
@@ -166,7 +163,6 @@
   46%{filter:brightness(1.1) saturate(1.05) drop-shadow(0 0 6px rgba(255,185,51,.28))}
 }
 
-/* Suppress the legacy Stock accent completely. */
 .domino-native-fx-accent.is-stock[data-domino-native-effect="stock"]{
   opacity:0!important;
   visibility:hidden!important;
@@ -176,7 +172,6 @@
   display:none!important;
 }
 
-/* Stock geometry/timing stays frozen from v35. Only spark readability changes in v36. */
 .domino-native-fx-accent.is-stock-v33{
   position:fixed;
   z-index:10005;
@@ -225,7 +220,7 @@
   box-shadow:0 0 5px rgba(115,250,255,1),0 0 11px rgba(131,222,255,.9),0 0 16px rgba(157,99,255,.62);
   opacity:0;
   transform:rotate(45deg);
-  animation:mgw-domino-stock-spark-v36 .68s cubic-bezier(.15,.72,.18,1) var(--spark-delay) both;
+  animation:mgw-domino-stock-spark-v36 .48s cubic-bezier(.15,.72,.18,1) var(--spark-delay) both;
 }
 .domino-native-fx-accent.is-stock-v33 .stock-spark-v33::before,
 .domino-native-fx-accent.is-stock-v33 .stock-spark-v33::after{
@@ -245,14 +240,14 @@
   width:calc(var(--spark-size) + 9px);
   height:1.5px;
 }
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p1{left:12%;--spark-side:-15px;--spark-delay:55ms;--spark-size:9px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p2{left:23%;--spark-side:13px;--spark-delay:105ms;--spark-size:7px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p3{left:35%;--spark-side:-17px;--spark-delay:155ms;--spark-size:9px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p4{left:47%;--spark-side:15px;--spark-delay:205ms;--spark-size:8px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p5{left:59%;--spark-side:-16px;--spark-delay:255ms;--spark-size:9px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p6{left:70%;--spark-side:14px;--spark-delay:305ms;--spark-size:7px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p7{left:81%;--spark-side:-15px;--spark-delay:355ms;--spark-size:9px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p8{left:91%;--spark-side:13px;--spark-delay:405ms;--spark-size:8px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p1{left:12%;--spark-side:-15px;--spark-delay:30ms;--spark-size:9px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p2{left:23%;--spark-side:13px;--spark-delay:65ms;--spark-size:7px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p3{left:35%;--spark-side:-17px;--spark-delay:100ms;--spark-size:9px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p4{left:47%;--spark-side:15px;--spark-delay:135ms;--spark-size:8px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p5{left:59%;--spark-side:-16px;--spark-delay:170ms;--spark-size:9px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p6{left:70%;--spark-side:14px;--spark-delay:205ms;--spark-size:7px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p7{left:81%;--spark-side:-15px;--spark-delay:240ms;--spark-size:9px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p8{left:91%;--spark-side:13px;--spark-delay:275ms;--spark-size:8px}
 .domino-stock-count.mgw-domino-stock-source-v33{
   animation:mgw-domino-stock-source-v33 .68s ease-out both!important;
 }
@@ -287,7 +282,6 @@
   38%{filter:brightness(1.34) saturate(1.14) drop-shadow(0 0 6px rgba(111,232,255,.5))}
 }
 
-/* QA-only Chain Finale control remains retired. Natural finished-game trigger is unchanged. */
 .domino-finale-qa-row,
 .domino-finale-qa-button{
   display:none!important;
