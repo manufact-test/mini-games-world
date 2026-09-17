@@ -58,8 +58,12 @@ test('DOMINO v29 — paid effects, 9+ tile accessibility, bottom reachability an
       move_number:index + 1,
       is_start:index === 0,
     }));
-    const handPairs = [[0,0],[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[1,1],[2,2],[3,3],[4,4],[6,6]];
+    const handPairs = [[0,0],[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[1,1],[5,5],[3,3],[4,4],[6,6]];
     const viewerHand = handPairs.map(([a,b], index) => ({ id:`${a}-${b}-${index}`, a, b, double:a === b }));
+    const playableSides = {
+      [viewerHand[8].id]:['left'],
+      [viewerHand[11].id]:['right'],
+    };
     const baseGame = id => ({
       id, game_type:'domino', status:'active', turn:'diag-me',
       players:[
@@ -67,7 +71,7 @@ test('DOMINO v29 — paid effects, 9+ tile accessibility, bottom reachability an
         { id:'diag-opponent', name:'Diagnostic B', tile_count:3 },
       ],
       viewer_hand:viewerHand,
-      playable_sides:{}, chain,
+      playable_sides:playableSides, chain,
       open_left:5, open_right:6, stock_count:9, opponent_tile_count:3,
       can_draw:false, move_count:18,
     });
@@ -256,6 +260,16 @@ test('DOMINO v29 — paid effects, 9+ tile accessibility, bottom reachability an
   expect(diagnostic.content.scrollTop).toBeGreaterThan(0);
   expect(diagnostic.leave.bottom).toBeLessThanOrEqual(diagnostic.leave.viewportHeight + 1);
   expect(diagnostic.leave.top).toBeGreaterThanOrEqual(-1);
+
+  const ninthTile = page.locator('[data-domino-tile="5-5-8"]');
+  await ninthTile.tap();
+  await expect(page.locator('[data-domino-tile="5-5-8"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-domino-side="left"]')).toBeVisible();
+
+  const twelfthTile = page.locator('[data-domino-tile="6-6-11"]');
+  await twelfthTile.tap();
+  await expect(page.locator('[data-domino-tile="6-6-11"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-domino-side="right"]')).toBeVisible();
 
   await page.locator('[data-domino-finale-qa="preview"]').click();
   await page.waitForTimeout(120);
