@@ -1,6 +1,6 @@
-/* MVP-19.9 Domino live effects v33 corrective.
-   Precision is a single owner-gated tile-local pulse with glow.
-   Stock is an exact boneyard -> newly drawn tile beam with a thin spark trail.
+/* MVP-19.9 Domino live effects v34 visual tuning.
+   Precision keeps the accepted owner-gated tile-local geometry, but now reads as a sustained premium domino impact.
+   Stock keeps the exact boneyard -> newly drawn tile beam, with a visibly moving star/spark trail from the travelling core.
    Accepted premium Finale v31 remains untouched; QA control stays retired. */
 
 /* Never let the legacy fixed/body Precision accent paint. v33 owns the visible effect locally. */
@@ -40,46 +40,81 @@
 }
 .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .tile-aura{
   position:absolute;
-  inset:-2px;
+  inset:-4px;
   display:block;
-  border-radius:7px;
+  border-radius:9px;
   opacity:0;
-  box-shadow:0 0 10px rgba(255,220,95,.58),0 0 18px rgba(255,184,58,.34),inset 0 0 8px rgba(255,246,203,.18);
-  animation:mgw-domino-precision-aura-v33 .62s ease-out both;
+  background:radial-gradient(ellipse at center,rgba(255,245,191,.22) 0%,rgba(255,210,73,.13) 44%,rgba(255,177,44,0) 76%);
+  box-shadow:0 0 13px rgba(255,224,99,.76),0 0 27px rgba(255,183,48,.5),0 0 42px rgba(255,147,26,.22),inset 0 0 10px rgba(255,250,218,.34);
+  animation:mgw-domino-precision-aura-v33 1.62s cubic-bezier(.16,.72,.18,1) both;
+}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .tile-aura::before,
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .tile-aura::after{
+  content:"";
+  position:absolute;
+  inset:-3px;
+  border-radius:inherit;
+  pointer-events:none;
+  opacity:0;
+}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .tile-aura::before{
+  border:1px solid rgba(255,241,180,.62);
+  box-shadow:0 0 12px rgba(255,214,76,.58);
+  animation:mgw-domino-precision-aura-shell-v34 1.28s .12s ease-out both;
+}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .tile-aura::after{
+  inset:-7px;
+  border:1px solid rgba(255,194,58,.28);
+  box-shadow:0 0 18px rgba(255,170,37,.34);
+  animation:mgw-domino-precision-aura-shell-v34 1.34s .28s ease-out both;
 }
 .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .tile-wave{
   position:absolute;
   inset:0;
   display:block;
-  border:1.25px solid rgba(255,226,111,.94);
+  border:1.5px solid rgba(255,231,127,.98);
   border-radius:inherit;
-  box-shadow:0 0 7px rgba(255,215,87,.42);
+  box-shadow:0 0 9px rgba(255,220,91,.68),0 0 18px rgba(255,176,46,.28);
   opacity:0;
   transform-origin:center;
-  animation:mgw-domino-precision-local-v33 .62s cubic-bezier(.12,.72,.18,1) both;
+  animation:mgw-domino-precision-local-v33 1.42s cubic-bezier(.12,.72,.18,1) both;
+}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .wave-1{
+  animation-delay:40ms;
 }
 .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .wave-2{
-  border-color:rgba(255,244,194,.56);
-  animation-delay:78ms;
+  border-color:rgba(255,248,211,.76);
+  box-shadow:0 0 11px rgba(255,235,151,.58),0 0 22px rgba(255,181,52,.2);
+  animation-delay:300ms;
 }
 .domino-chain-slot.latest > .domino-tile.mgw-domino-precision-glow-v33{
-  animation:mgw-domino-precision-tile-glow-v33 .66s ease-out both!important;
+  animation:mgw-domino-precision-tile-glow-v33 1.72s cubic-bezier(.16,.72,.18,1) both!important;
 }
 @keyframes mgw-domino-precision-local-v33{
-  0%{opacity:0;transform:scale(.99)}
-  16%{opacity:.96;transform:scale(1)}
-  68%{opacity:.42}
-  100%{opacity:0;transform:scale(1.33)}
+  0%{opacity:0;transform:scale(.985)}
+  10%{opacity:1;transform:scale(1.01)}
+  34%{opacity:.92}
+  67%{opacity:.58}
+  100%{opacity:0;transform:scale(1.62)}
 }
 @keyframes mgw-domino-precision-aura-v33{
-  0%{opacity:0;transform:scale(.98)}
-  22%{opacity:.92;transform:scale(1)}
-  100%{opacity:0;transform:scale(1.18)}
+  0%{opacity:0;transform:scale(.96)}
+  12%{opacity:1;transform:scale(1)}
+  35%{opacity:.92;transform:scale(1.06)}
+  64%{opacity:.58;transform:scale(1.16)}
+  100%{opacity:0;transform:scale(1.34)}
+}
+@keyframes mgw-domino-precision-aura-shell-v34{
+  0%{opacity:0;transform:scale(.96)}
+  18%{opacity:.88;transform:scale(1.02)}
+  100%{opacity:0;transform:scale(1.5)}
 }
 @keyframes mgw-domino-precision-tile-glow-v33{
   0%,100%{filter:brightness(1) saturate(1)}
-  26%{filter:brightness(1.36) saturate(1.16) drop-shadow(0 0 5px rgba(255,218,91,.64))}
-  52%{filter:brightness(1.17) saturate(1.08) drop-shadow(0 0 8px rgba(255,190,62,.34))}
+  11%{filter:brightness(1.46) saturate(1.18) drop-shadow(0 0 6px rgba(255,230,126,.9))}
+  30%{filter:brightness(1.34) saturate(1.14) drop-shadow(0 0 11px rgba(255,201,71,.72))}
+  53%{filter:brightness(1.22) saturate(1.1) drop-shadow(0 0 13px rgba(255,175,47,.46))}
+  76%{filter:brightness(1.1) saturate(1.06) drop-shadow(0 0 8px rgba(255,190,62,.24))}
 }
 
 /* Suppress the legacy Stock accent completely. It can target stale hand geometry during polling. */
@@ -92,7 +127,7 @@
   display:none!important;
 }
 
-/* v33 draws one beam only after the newly added viewer-hand tile ID is known. */
+/* v33 geometry stays exact; v34 makes the travelling trail visually legible. */
 .domino-native-fx-accent.is-stock-v33{
   position:fixed;
   z-index:10005;
@@ -101,7 +136,7 @@
   pointer-events:none!important;
   transform-origin:0 50%!important;
   transform:rotate(var(--mgw-domino-stock-angle,0deg));
-  filter:drop-shadow(0 0 2px rgba(74,238,255,.34));
+  filter:drop-shadow(0 0 2px rgba(74,238,255,.42));
 }
 .domino-native-fx-accent.is-stock-v33 .stock-line-v33{
   position:absolute;
@@ -111,74 +146,110 @@
   height:.64px;
   border-radius:999px;
   transform-origin:0 50%;
-  background:linear-gradient(90deg,rgba(70,238,255,.08),rgba(80,241,255,.92) 26%,rgba(122,216,255,.78) 58%,rgba(166,105,255,.5) 84%,rgba(255,255,255,.04));
-  box-shadow:0 0 3px rgba(72,238,255,.45);
-  animation:mgw-domino-stock-line-v33 .72s cubic-bezier(.16,.78,.18,1) both;
+  background:linear-gradient(90deg,rgba(70,238,255,.08),rgba(80,241,255,.94) 24%,rgba(122,216,255,.82) 56%,rgba(166,105,255,.52) 84%,rgba(255,255,255,.04));
+  box-shadow:0 0 3px rgba(72,238,255,.52),0 0 7px rgba(128,116,255,.18);
+  animation:mgw-domino-stock-line-v33 .92s cubic-bezier(.16,.78,.18,1) both;
 }
 .domino-native-fx-accent.is-stock-v33 .stock-orb-v33{
   position:absolute;
   left:0;
   top:0;
-  width:4px;
-  height:4px;
-  margin:-2px 0 0 -2px;
+  width:5px;
+  height:5px;
+  margin:-2.5px 0 0 -2.5px;
   border-radius:50%;
-  background:#f7ffff;
-  box-shadow:0 0 5px rgba(91,245,255,.95),0 0 9px rgba(157,91,255,.62);
-  animation:mgw-domino-stock-orb-v33 .8s cubic-bezier(.15,.8,.18,1) both;
+  background:#f9ffff;
+  box-shadow:0 0 6px rgba(91,245,255,1),0 0 12px rgba(157,91,255,.74),0 0 18px rgba(72,225,255,.35);
+  animation:mgw-domino-stock-orb-v33 1.08s cubic-bezier(.15,.8,.18,1) both;
+}
+.domino-native-fx-accent.is-stock-v33 .stock-orb-v33::after{
+  content:"";
+  position:absolute;
+  inset:-5px;
+  border-radius:50%;
+  border:1px solid rgba(184,250,255,.5);
+  box-shadow:0 0 8px rgba(94,242,255,.45);
+  animation:mgw-domino-stock-orb-halo-v34 .46s ease-out infinite alternate;
 }
 .domino-native-fx-accent.is-stock-v33 .stock-spark-v33{
-  --sx:0px;
-  --sy:-6px;
+  --spark-end:72%;
+  --spark-side:-8px;
+  --spark-delay:0ms;
+  --spark-size:4px;
   position:absolute;
+  left:0;
   top:0;
+  width:var(--spark-size);
+  height:var(--spark-size);
+  margin:calc(var(--spark-size) / -2) 0 0 calc(var(--spark-size) / -2);
+  background:#efffff;
+  clip-path:polygon(50% 0,61% 36%,100% 50%,61% 64%,50% 100%,39% 64%,0 50%,39% 36%);
+  filter:drop-shadow(0 0 2px rgba(118,248,255,1)) drop-shadow(0 0 5px rgba(159,99,255,.68));
+  opacity:0;
+  animation:mgw-domino-stock-spark-v34 .86s cubic-bezier(.17,.72,.2,1) var(--spark-delay) both;
+}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
   width:2px;
   height:2px;
   margin:-1px 0 0 -1px;
   border-radius:50%;
-  background:#eaffff;
-  box-shadow:0 0 4px rgba(87,243,255,.95),0 0 7px rgba(173,108,255,.48);
-  opacity:0;
-  animation:mgw-domino-stock-spark-v33 .5s ease-out both;
+  background:#fff;
+  box-shadow:0 0 4px rgba(100,245,255,.96),0 0 8px rgba(156,105,255,.54);
+  transform:translate(-4px,3px);
 }
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p1{left:14%;--sx:-4px;--sy:-7px;animation-delay:70ms}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p2{left:24%;--sx:3px;--sy:6px;animation-delay:120ms}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p3{left:36%;--sx:-2px;--sy:-9px;animation-delay:165ms}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p4{left:48%;--sx:4px;--sy:8px;animation-delay:205ms}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p5{left:59%;--sx:-4px;--sy:-8px;animation-delay:245ms}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p6{left:69%;--sx:2px;--sy:7px;animation-delay:285ms}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p7{left:79%;--sx:-3px;--sy:-6px;animation-delay:325ms}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p8{left:88%;--sx:4px;--sy:8px;animation-delay:360ms}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p1{--spark-end:26%;--spark-side:-10px;--spark-delay:20ms;--spark-size:4px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p2{--spark-end:38%;--spark-side:8px;--spark-delay:62ms;--spark-size:3px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p3{--spark-end:50%;--spark-side:-12px;--spark-delay:105ms;--spark-size:4px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p4{--spark-end:61%;--spark-side:10px;--spark-delay:148ms;--spark-size:3px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p5{--spark-end:72%;--spark-side:-11px;--spark-delay:188ms;--spark-size:4px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p6{--spark-end:82%;--spark-side:9px;--spark-delay:226ms;--spark-size:3px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p7{--spark-end:91%;--spark-side:-9px;--spark-delay:260ms;--spark-size:4px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p8{--spark-end:98%;--spark-side:8px;--spark-delay:292ms;--spark-size:3px}
 .domino-stock-count.mgw-domino-stock-source-v33{
-  animation:mgw-domino-stock-source-v33 .68s ease-out both!important;
+  animation:mgw-domino-stock-source-v33 .82s ease-out both!important;
 }
 .domino-tile.mgw-domino-stock-target-v33{
-  animation:mgw-domino-stock-target-v33 .72s .28s ease-out both!important;
+  animation:mgw-domino-stock-target-v33 .84s .34s ease-out both!important;
 }
 @keyframes mgw-domino-stock-line-v33{
   0%{opacity:0;transform:scaleX(0)}
-  12%{opacity:1}
-  72%{opacity:.9;transform:scaleX(1)}
+  10%{opacity:1}
+  74%{opacity:.94;transform:scaleX(1)}
   100%{opacity:0;transform:scaleX(1)}
 }
 @keyframes mgw-domino-stock-orb-v33{
-  0%{opacity:0;transform:translateX(0) scale(.45)}
-  10%{opacity:1}
-  82%{opacity:1}
-  100%{opacity:0;transform:translateX(var(--mgw-domino-stock-distance,24px)) scale(.72)}
+  0%{opacity:0;transform:translateX(0) scale(.5)}
+  7%{opacity:1}
+  84%{opacity:1}
+  100%{opacity:0;transform:translateX(var(--mgw-domino-stock-distance,24px)) scale(.76)}
+}
+@keyframes mgw-domino-stock-orb-halo-v34{
+  from{opacity:.42;transform:scale(.8)}
+  to{opacity:.9;transform:scale(1.22)}
 }
 @keyframes mgw-domino-stock-spark-v33{
   0%{opacity:0;transform:translate(0,0) scale(.5)}
   18%{opacity:.95}
   100%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(.1)}
 }
+@keyframes mgw-domino-stock-spark-v34{
+  0%{opacity:0;left:0;transform:translateY(0) scale(.3) rotate(0deg)}
+  9%{opacity:1}
+  34%{opacity:1;transform:translateY(calc(var(--spark-side) * .35)) scale(1.12) rotate(70deg)}
+  70%{opacity:.86;transform:translateY(calc(var(--spark-side) * .76)) scale(.86) rotate(142deg)}
+  100%{opacity:0;left:var(--spark-end);transform:translateY(var(--spark-side)) scale(.16) rotate(220deg)}
+}
 @keyframes mgw-domino-stock-source-v33{
   0%,100%{filter:brightness(1) saturate(1)}
-  30%{filter:brightness(1.26) saturate(1.14) drop-shadow(0 0 5px rgba(75,239,255,.38))}
+  24%{filter:brightness(1.32) saturate(1.18) drop-shadow(0 0 6px rgba(75,239,255,.5))}
 }
 @keyframes mgw-domino-stock-target-v33{
   0%,100%{filter:brightness(1) saturate(1)}
-  38%{filter:brightness(1.34) saturate(1.14) drop-shadow(0 0 6px rgba(111,232,255,.5))}
+  38%{filter:brightness(1.38) saturate(1.16) drop-shadow(0 0 7px rgba(111,232,255,.62))}
 }
 
 /* QA-only Chain Finale control remains retired. Natural finished-game trigger is unchanged. */
@@ -193,7 +264,7 @@
   .domino-native-fx-accent.is-stock-v33 .stock-line-v33,
   .domino-native-fx-accent.is-stock-v33 .stock-orb-v33,
   .domino-native-fx-accent.is-stock-v33 .stock-spark-v33{
-    animation-duration:.38s!important;
+    animation-duration:.42s!important;
     animation-delay:0ms!important;
   }
 }

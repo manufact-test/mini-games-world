@@ -104,10 +104,10 @@ assert.ok(liveCosmeticsCss.includes('height:100dvh!important'), 'bounded Telegra
 
 assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25'"), 'manifest must publish the v30 Domino stability owner');
 assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&gesture_owner=v27&precision_static=2';"), 'active entry must remain canonical v110 and keep the accepted gesture owner');
-assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&live_effects=v33';"), 'active entry must publish the fresh Domino v33 cache identity');
+assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&live_effects=v34';"), 'active entry must publish the fresh Domino v34 visual cache identity');
 assert.ok(entry.includes("header('X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal');"), 'active entry must retain the existing Domino gesture diagnostic header');
 assert.ok(entry.includes("header('X-MGW-Domino-Live-Precision: local-owner-single-pulse-v33');"), 'active entry must expose owner-gated local Precision diagnostics');
 assert.ok(entry.includes("header('X-MGW-Domino-Live-Effects: owner-gated-single-pulse-stock-spark-v33');"), 'active entry must expose Domino v33 live-effect diagnostics');
 assert.match(launch, /\/app\/v110\.php\?v=1192&domino_stability=30&runtime_fix=1/);
 
-console.log('MVP-19.9 Domino legacy effects + v33 live stability contract: OK');
+console.log('MVP-19.9 Domino legacy effects + v34 visual cache contract: OK');

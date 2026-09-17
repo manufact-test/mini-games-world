@@ -326,7 +326,7 @@ function ensureLiveEffectsV31Styles(){
 
 function ensureLiveEffectsV33Styles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/domino/live-effects-v32.css?v=3&mvp19_9=owner-gated-single-pulse-stock-spark-v33', import.meta.url).href;
+  const href = new URL('../../../css/games/domino/live-effects-v32.css?v=4&mvp19_9=sustained-precision-moving-stock-stars-v34', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-domino-live-effects-v33]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
