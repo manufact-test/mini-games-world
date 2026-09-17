@@ -29,7 +29,6 @@
   overflow:visible!important;
   pointer-events:none!important;
   z-index:10050!important;
-  contain:layout style!important;
 }
 .mgw-domino-live-fx-layer-v38,
 .mgw-domino-live-fx-layer-v38 *{
