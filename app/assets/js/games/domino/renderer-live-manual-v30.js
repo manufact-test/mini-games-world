@@ -15,7 +15,7 @@ const viewerHandIdsByGame = new Map();
 
 ensureStabilityStyles();
 ensureLiveEffectsV31Styles();
-ensureLiveEffectsV33Styles();
+ensureLiveEffectsV38Styles();
 
 export { dominoMeta, dominoPlayerMark, dominoStatus };
 
@@ -30,11 +30,11 @@ export function renderDominoSurface(args){
   if (!(container instanceof HTMLElement)) return;
 
   container.dataset.mgwDominoManualStability = 'v30';
-  container.dataset.mgwDominoLiveEffects = 'v36';
+  container.dataset.mgwDominoLiveEffects = 'v38';
   markHandLayout(container);
   ensureHandLayoutObserver(container);
-  mountTileLocalPrecisionV33(args, container);
-  correctStockBeamV33(args, container, previousViewerHandIds);
+  mountViewportPrecisionV38(args, container);
+  mountViewportStockV38(args, container, previousViewerHandIds);
   removeFinaleQaControlV32(container);
   enhanceFinaleAccents(container);
   rememberViewerHand(game);
@@ -72,12 +72,12 @@ function ensureHandLayoutObserver(container){
   handObservers.set(container, observer);
 }
 
-function mountTileLocalPrecisionV33(args, container){
+function mountViewportPrecisionV38(args, container){
   const game = args?.game;
   const gameId = String(game?.id || '');
   if (!gameId) return;
 
-  removeNativePrecisionAccents(gameId);
+  removeLegacyPrecisionVisuals(gameId, container);
 
   const action = game?.last_action || {};
   if (String(action?.type || '') !== 'play') return;
@@ -95,42 +95,100 @@ function mountTileLocalPrecisionV33(args, container){
   container.dataset.dominoPrecisionSignature = signature;
   container.dataset.dominoPrecisionLaunches = String(Number(container.dataset.dominoPrecisionLaunches || 0) + 1);
 
-  latestSlot.querySelector('.mgw-domino-precision-local-v33')?.remove();
-  latestTile.classList.remove('mgw-domino-native-precision-tile', 'mgw-domino-precision-glow-v33');
-  void latestTile.offsetWidth;
-  latestTile.classList.add('mgw-domino-precision-glow-v33');
+  const layer = ensureViewportFxLayer();
+  document.querySelectorAll(`.mgw-domino-precision-burst-v38[data-domino-native-game="${cssEscape(gameId)}"]`).forEach(node => node.remove());
 
-  const local = document.createElement('span');
-  local.className = 'mgw-domino-precision-local-v33';
-  local.dataset.dominoPrecisionAnchor = 'latest-slot-local-v33';
-  local.dataset.dominoPrecisionVisual = 'edge-shard-burst-v36';
-  local.dataset.dominoPrecisionOwner = String(action?.player_id || '');
-  local.dataset.dominoPrecisionSignature = signature;
-  local.setAttribute('aria-hidden', 'true');
-  local.innerHTML = '<i class="precision-frame"></i><i class="precision-streak s1"></i><i class="precision-streak s2"></i><i class="precision-streak s3"></i><i class="precision-streak s4"></i><i class="precision-streak s5"></i><i class="precision-streak s6"></i><i class="precision-streak s7"></i><i class="precision-streak s8"></i><i class="precision-echo echo-1"></i><i class="precision-echo echo-2"></i>';
-  latestSlot.appendChild(local);
+  const root = document.createElement('span');
+  root.className = 'mgw-domino-precision-burst-v38';
+  root.dataset.dominoNativeGame = gameId;
+  root.dataset.dominoPrecisionAnchor = 'latest-tile-viewport-v38';
+  root.dataset.dominoPrecisionVisual = 'eight-visible-shards-v38';
+  root.dataset.dominoPrecisionOwner = String(action?.player_id || '');
+  root.dataset.dominoPrecisionSignature = signature;
+  root.dataset.dominoPrecisionShardCount = '8';
+  root.dataset.dominoPrecisionRadius = '72-96px';
+  root.setAttribute('aria-hidden', 'true');
 
-  const finisher = local.querySelector('.precision-streak.s8');
-  const cleanup = event => {
-    if (event.target !== finisher) return;
-    if (event.type === 'animationend' && String(event.animationName || '') !== 'mgw-domino-precision-streak-v37') return;
-    finisher.removeEventListener('animationend', cleanup);
-    finisher.removeEventListener('animationcancel', cleanup);
-    local.remove();
-    latestTile.classList.remove('mgw-domino-precision-glow-v33');
+  const ring = document.createElement('i');
+  ring.className = 'precision-ring-v38';
+  root.appendChild(ring);
+
+  const distances = [88, 96, 84, 94, 90, 96, 82, 92];
+  const animations = [];
+  for (let index = 0; index < 8; index += 1) {
+    const angle = -90 + index * 45;
+    const radians = angle * Math.PI / 180;
+    const distance = distances[index];
+    const dx = Math.cos(radians) * distance;
+    const dy = Math.sin(radians) * distance;
+    const shard = document.createElement('i');
+    shard.className = `precision-shard-v38 s${index + 1}`;
+    shard.dataset.dominoPrecisionShard = String(index + 1);
+    shard.dataset.dominoPrecisionDx = dx.toFixed(2);
+    shard.dataset.dominoPrecisionDy = dy.toFixed(2);
+    root.appendChild(shard);
+
+    if (typeof shard.animate === 'function') {
+      const animation = shard.animate([
+        { opacity:0, transform:`translate(0px,0px) rotate(${angle + 90}deg) scaleY(.55)`, offset:0 },
+        { opacity:1, transform:`translate(${(dx * .08).toFixed(2)}px,${(dy * .08).toFixed(2)}px) rotate(${angle + 90}deg) scaleY(1)`, offset:.12 },
+        { opacity:1, transform:`translate(${(dx * .68).toFixed(2)}px,${(dy * .68).toFixed(2)}px) rotate(${angle + 96}deg) scaleY(1.04)`, offset:.68 },
+        { opacity:.92, transform:`translate(${dx.toFixed(2)}px,${dy.toFixed(2)}px) rotate(${angle + 104}deg) scaleY(.9)`, offset:.9 },
+        { opacity:0, transform:`translate(${(dx * 1.08).toFixed(2)}px,${(dy * 1.08).toFixed(2)}px) rotate(${angle + 110}deg) scaleY(.72)`, offset:1 },
+      ], {
+        duration:1700,
+        delay:index * 35,
+        easing:'cubic-bezier(.18,.68,.16,1)',
+        fill:'forwards',
+      });
+      animations.push(animation);
+    }
+  }
+
+  layer.appendChild(root);
+
+  const ringAnimation = typeof ring.animate === 'function'
+    ? ring.animate([
+        { opacity:0, transform:'scale(.72)' },
+        { opacity:.92, transform:'scale(1)', offset:.12 },
+        { opacity:.52, transform:'scale(1.45)', offset:.62 },
+        { opacity:0, transform:'scale(1.9)' },
+      ], { duration:1450, easing:'cubic-bezier(.18,.72,.2,1)', fill:'forwards' })
+    : null;
+  if (ringAnimation) animations.push(ringAnimation);
+
+  let rafId = 0;
+  const track = () => {
+    if (!root.isConnected || !latestTile.isConnected) return;
+    const rect = latestTile.getBoundingClientRect();
+    const center = rectCenter(rect);
+    root.style.left = `${center.x}px`;
+    root.style.top = `${center.y}px`;
+    const ringWidth = Math.max(34, rect.width + 12);
+    const ringHeight = Math.max(24, rect.height + 12);
+    ring.style.width = `${ringWidth}px`;
+    ring.style.height = `${ringHeight}px`;
+    ring.style.left = `${-ringWidth / 2}px`;
+    ring.style.top = `${-ringHeight / 2}px`;
+    rafId = requestAnimationFrame(track);
   };
-  if (finisher instanceof HTMLElement) {
-    finisher.addEventListener('animationend', cleanup);
-    finisher.addEventListener('animationcancel', cleanup);
+  track();
+
+  const cleanup = () => {
+    if (rafId) cancelAnimationFrame(rafId);
+    root.remove();
+  };
+  if (animations.length) {
+    Promise.allSettled(animations.map(animation => animation.finished)).then(cleanup);
   }
 }
 
-function correctStockBeamV33(args, container, previousViewerHandIds){
+function mountViewportStockV38(args, container, previousViewerHandIds){
   const game = args?.game;
   const gameId = String(game?.id || '');
   if (!gameId) return;
 
-  removeNativeStockVisuals(gameId, container);
+  removeLegacyStockVisuals(gameId, container);
 
   const action = game?.last_action || {};
   if (String(action?.type || '') !== 'draw') return;
@@ -139,7 +197,6 @@ function correctStockBeamV33(args, container, previousViewerHandIds){
   const myId = String(args?.me?.id || '');
   const actorId = String(action?.player_id || '');
   if (!myId || actorId !== myId) return;
-
   if (!(previousViewerHandIds instanceof Set)) return;
 
   const currentIds = viewerHandIds(game);
@@ -155,72 +212,156 @@ function correctStockBeamV33(args, container, previousViewerHandIds){
 
   const signature = stockSignature(game, targetId);
   if (!signature || stockSeenByGame.get(gameId) === signature) return;
-  stockSeenByGame.set(gameId, signature);
 
   const start = rectCenter(stock.getBoundingClientRect());
   const end = rectCenter(targetButton.getBoundingClientRect());
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   const distance = Math.max(12, Math.hypot(dx, dy));
+  const ux = dx / distance;
+  const uy = dy / distance;
+  const px = -uy;
+  const py = ux;
   const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
-  const accent = document.createElement('span');
-  accent.className = 'domino-native-fx-accent is-stock-v33';
-  accent.dataset.dominoNativeGame = gameId;
-  accent.dataset.dominoNativeEffect = 'stock-v33';
-  accent.dataset.dominoStockSource = 'boneyard-v33';
-  accent.dataset.dominoStockTarget = 'exact-new-tile-v33';
-  accent.dataset.dominoStockGeometry = 'stable-hand-button-v35';
-  accent.dataset.dominoStockTargetTile = targetId;
-  accent.dataset.dominoStockSignature = signature;
-  accent.setAttribute('aria-hidden', 'true');
-  accent.style.left = `${start.x}px`;
-  accent.style.top = `${start.y}px`;
-  accent.style.width = `${distance}px`;
-  accent.style.setProperty('--mgw-domino-stock-distance', `${distance}px`);
-  accent.style.setProperty('--mgw-domino-stock-angle', `${angle}deg`);
-  accent.innerHTML = '<i class="stock-line-v33"></i><i class="stock-orb-v33"></i><i class="stock-spark-v33 p1"></i><i class="stock-spark-v33 p2"></i><i class="stock-spark-v33 p3"></i><i class="stock-spark-v33 p4"></i><i class="stock-spark-v33 p5"></i><i class="stock-spark-v33 p6"></i><i class="stock-spark-v33 p7"></i><i class="stock-spark-v33 p8"></i>';
-  document.body.appendChild(accent);
-
-  stock.classList.add('mgw-domino-stock-source-v33');
-  targetTile.classList.add('mgw-domino-stock-target-v33');
+  stockSeenByGame.set(gameId, signature);
   container.dataset.dominoStockTargetTile = targetId;
   container.dataset.dominoStockSignature = signature;
   container.dataset.dominoStockLaunches = String(Number(container.dataset.dominoStockLaunches || 0) + 1);
 
-  const finisher = accent.querySelector('.stock-spark-v33.p8');
-  const cleanup = event => {
-    if (event.target !== finisher) return;
-    if (event.type === 'animationend' && String(event.animationName || '') !== 'mgw-domino-stock-spark-v37') return;
-    finisher.removeEventListener('animationend', cleanup);
-    finisher.removeEventListener('animationcancel', cleanup);
-    accent.remove();
-    stock.classList.remove('mgw-domino-stock-source-v33');
-    targetTile.classList.remove('mgw-domino-stock-target-v33');
+  const layer = ensureViewportFxLayer();
+  document.querySelectorAll(`.mgw-domino-stock-burst-v38[data-domino-native-game="${cssEscape(gameId)}"]`).forEach(node => node.remove());
+
+  const root = document.createElement('span');
+  root.className = 'mgw-domino-stock-burst-v38';
+  root.dataset.dominoNativeGame = gameId;
+  root.dataset.dominoStockSource = 'boneyard-v38';
+  root.dataset.dominoStockTarget = 'exact-new-tile-v38';
+  root.dataset.dominoStockGeometry = 'viewport-portal-v38';
+  root.dataset.dominoStockTargetTile = targetId;
+  root.dataset.dominoStockSignature = signature;
+  root.dataset.dominoStockSparkCount = '12';
+  root.setAttribute('aria-hidden', 'true');
+
+  const line = document.createElement('i');
+  line.className = 'stock-line-v38';
+  line.style.left = `${start.x}px`;
+  line.style.top = `${start.y}px`;
+  line.style.width = `${distance}px`;
+  line.style.setProperty('--mgw-domino-stock-angle-v38', `${angle}deg`);
+  root.appendChild(line);
+
+  const orb = document.createElement('i');
+  orb.className = 'stock-orb-v38';
+  orb.style.left = `${start.x}px`;
+  orb.style.top = `${start.y}px`;
+  root.appendChild(orb);
+
+  const animations = [];
+  if (typeof line.animate === 'function') {
+    animations.push(line.animate([
+      { opacity:0, transform:`rotate(${angle}deg) scaleX(0)` },
+      { opacity:1, transform:`rotate(${angle}deg) scaleX(.22)`, offset:.12 },
+      { opacity:.96, transform:`rotate(${angle}deg) scaleX(1)`, offset:.7 },
+      { opacity:0, transform:`rotate(${angle}deg) scaleX(1)` },
+    ], { duration:900, easing:'cubic-bezier(.16,.76,.18,1)', fill:'forwards' }));
+  }
+  if (typeof orb.animate === 'function') {
+    animations.push(orb.animate([
+      { opacity:0, transform:'translate(0px,0px) scale(.45)' },
+      { opacity:1, transform:`translate(${(dx * .08).toFixed(2)}px,${(dy * .08).toFixed(2)}px) scale(1)`, offset:.1 },
+      { opacity:1, transform:`translate(${(dx * .86).toFixed(2)}px,${(dy * .86).toFixed(2)}px) scale(.9)`, offset:.82 },
+      { opacity:0, transform:`translate(${dx.toFixed(2)}px,${dy.toFixed(2)}px) scale(.65)` },
+    ], { duration:900, easing:'cubic-bezier(.15,.78,.18,1)', fill:'forwards' }));
+  }
+
+  for (let index = 0; index < 12; index += 1) {
+    const progress = (index + 1) / 13;
+    const baseX = start.x + dx * progress;
+    const baseY = start.y + dy * progress;
+    const side = index % 2 === 0 ? -1 : 1;
+    const spread = 38 + (index % 4) * 7;
+    const along = 8 + (index % 3) * 5;
+    const outX = px * spread * side + ux * along;
+    const outY = py * spread * side + uy * along;
+
+    const spark = document.createElement('i');
+    spark.className = `stock-spark-v38 p${index + 1}`;
+    spark.dataset.dominoStockSpark = String(index + 1);
+    spark.dataset.dominoStockOutX = outX.toFixed(2);
+    spark.dataset.dominoStockOutY = outY.toFixed(2);
+    spark.style.left = `${baseX}px`;
+    spark.style.top = `${baseY}px`;
+    spark.style.width = `${6 + (index % 3)}px`;
+    spark.style.height = `${6 + (index % 3)}px`;
+    root.appendChild(spark);
+
+    if (typeof spark.animate === 'function') {
+      const animation = spark.animate([
+        { opacity:0, transform:'translate(0px,0px) scale(.45)', offset:0 },
+        { opacity:1, transform:`translate(${(outX * .08).toFixed(2)}px,${(outY * .08).toFixed(2)}px) scale(1.12)`, offset:.14 },
+        { opacity:1, transform:`translate(${(outX * .62).toFixed(2)}px,${(outY * .62).toFixed(2)}px) scale(1)`, offset:.64 },
+        { opacity:.9, transform:`translate(${outX.toFixed(2)}px,${outY.toFixed(2)}px) scale(.82)`, offset:.9 },
+        { opacity:0, transform:`translate(${(outX * 1.12).toFixed(2)}px,${(outY * 1.12).toFixed(2)}px) scale(.35)`, offset:1 },
+      ], {
+        duration:1050,
+        delay:90 + index * 38,
+        easing:'cubic-bezier(.18,.68,.16,1)',
+        fill:'forwards',
+      });
+      animations.push(animation);
+    }
+  }
+
+  layer.appendChild(root);
+  stock.classList.add('mgw-domino-stock-source-v38');
+  targetTile.classList.add('mgw-domino-stock-target-v38');
+
+  const cleanup = () => {
+    root.remove();
+    stock.classList.remove('mgw-domino-stock-source-v38');
+    targetTile.classList.remove('mgw-domino-stock-target-v38');
   };
-  if (finisher instanceof HTMLElement) {
-    finisher.addEventListener('animationend', cleanup);
-    finisher.addEventListener('animationcancel', cleanup);
+  if (animations.length) {
+    Promise.allSettled(animations.map(animation => animation.finished)).then(cleanup);
   }
 }
 
-function removeNativePrecisionAccents(gameId){
+function ensureViewportFxLayer(){
+  let layer = document.querySelector('.mgw-domino-live-fx-layer-v38');
+  if (layer instanceof HTMLElement) return layer;
+  layer = document.createElement('div');
+  layer.className = 'mgw-domino-live-fx-layer-v38';
+  layer.dataset.mgwDominoLiveFxLayer = 'v38';
+  layer.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(layer);
+  return layer;
+}
+
+function removeLegacyPrecisionVisuals(gameId, container){
   document.querySelectorAll('.domino-native-fx-accent.is-precision[data-domino-native-game]').forEach(node => {
     if (!(node instanceof HTMLElement)) return;
     if (String(node.dataset.dominoNativeGame || '') !== gameId) return;
     node.remove();
   });
+  container.querySelectorAll('.mgw-domino-precision-local-v33').forEach(node => node.remove());
+  container.querySelectorAll('.domino-tile.mgw-domino-native-precision-tile,.domino-tile.mgw-domino-precision-glow-v33').forEach(node => {
+    node.classList.remove('mgw-domino-native-precision-tile', 'mgw-domino-precision-glow-v33');
+  });
 }
 
-function removeNativeStockVisuals(gameId, container){
-  document.querySelectorAll('.domino-native-fx-accent.is-stock[data-domino-native-game]').forEach(node => {
+function removeLegacyStockVisuals(gameId, container){
+  document.querySelectorAll('.domino-native-fx-accent.is-stock[data-domino-native-game],.domino-native-fx-accent.is-stock-v33[data-domino-native-game]').forEach(node => {
     if (!(node instanceof HTMLElement)) return;
     if (String(node.dataset.dominoNativeGame || '') !== gameId) return;
     node.remove();
   });
-  container.querySelector('.domino-stock-count')?.classList.remove('mgw-domino-native-stock-source');
+  container.querySelector('.domino-stock-count')?.classList.remove('mgw-domino-native-stock-source', 'mgw-domino-stock-source-v33');
   container.querySelectorAll('.domino-hand-tile.mgw-domino-native-stock-target').forEach(node => {
     node.classList.remove('mgw-domino-native-stock-target');
+  });
+  container.querySelectorAll('.domino-tile.mgw-domino-stock-target-v33').forEach(node => {
+    node.classList.remove('mgw-domino-stock-target-v33');
   });
 }
 
@@ -291,6 +432,11 @@ function rectCenter(rect){
   };
 }
 
+function cssEscape(value){
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') return CSS.escape(String(value));
+  return String(value).replace(/["\\]/g, '\\$&');
+}
+
 function ensureStabilityStyles(){
   if (typeof document === 'undefined') return;
   const href = new URL('../../../css/games/domino/live-mobile-stability-v30.css?v=1&mvp19_9=mobile-stability-v30', import.meta.url).href;
@@ -325,20 +471,22 @@ function ensureLiveEffectsV31Styles(){
   document.head.appendChild(link);
 }
 
-function ensureLiveEffectsV33Styles(){
+function ensureLiveEffectsV38Styles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/domino/live-effects-v32.css?v=7&mvp19_9=precision-readable-radial-stock-crossburst-v37', import.meta.url).href;
-  const existing = document.querySelector('link[data-mgw-domino-live-effects-v33]');
+  const href = new URL('../../../css/games/domino/live-effects-v32.css?v=8&mvp19_9=viewport-particles-v38', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-domino-live-effects-v38],link[data-mgw-domino-live-effects-v33]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwDominoLiveEffectsV33 = 'precision-readable-radial-stock-crossburst-v37';
+    existing.dataset.mgwDominoLiveEffectsV33 = 'viewport-particles-v38';
+    existing.dataset.mgwDominoLiveEffectsV38 = 'viewport-particles-v38';
     return;
   }
 
   document.querySelectorAll('link[data-mgw-domino-live-effects-v32]').forEach(node => node.remove());
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwDominoLiveEffectsV33 = 'precision-readable-radial-stock-crossburst-v37';
+  link.dataset.mgwDominoLiveEffectsV33 = 'viewport-particles-v38';
+  link.dataset.mgwDominoLiveEffectsV38 = 'viewport-particles-v38';
   link.href = href;
   document.head.appendChild(link);
 }
