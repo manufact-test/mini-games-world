@@ -74,11 +74,28 @@ function mountTileLocalPrecisionV32(container){
     return;
   }
 
-  // The old body/fixed accent is the source of the drift when the chain reflows.
-  // Remove it completely and attach the visual to the real latest chain slot instead.
-  accent.remove();
-  latestSlot.querySelector('.mgw-domino-precision-local-v32')?.remove();
+  // Keep the old fixed accent only as an invisible geometry probe so it can never paint
+  // in the viewport again. The visible effect is a child of the real placed slot below.
+  const slots = [...container.querySelectorAll('.domino-chain-slot')]
+    .filter(slot => slot instanceof HTMLElement);
+  const latestIndex = slots.indexOf(latestSlot);
+  const neighborSlot = adjacentSlot(slots, latestIndex);
+  const neighborTile = neighborSlot?.querySelector('.domino-tile');
+  const latestRect = stableSlotTileRect(latestSlot, latestTile);
 
+  if (neighborSlot instanceof HTMLElement && neighborTile instanceof HTMLElement) {
+    const neighborRect = stableSlotTileRect(neighborSlot, neighborTile);
+    const contact = seamBetweenRects(latestRect, neighborRect);
+    accent.dataset.dominoPrecisionAnchor = 'seam-v30';
+    accent.style.left = `${contact.x}px`;
+    accent.style.top = `${contact.y}px`;
+    accent.style.setProperty('--mgw-domino-native-angle', `${contact.angle}deg`);
+  }
+  accent.dataset.dominoPrecisionGeometry = 'static-v2';
+  accent.dataset.dominoPrecisionProbe = 'hidden-v32';
+  accent.dataset.dominoPrecisionVisual = 'tile-local-v32';
+
+  latestSlot.querySelector('.mgw-domino-precision-local-v32')?.remove();
   const local = document.createElement('span');
   local.className = 'mgw-domino-precision-local-v32';
   local.dataset.dominoPrecisionAnchor = 'latest-slot-local-v32';
@@ -108,8 +125,8 @@ function correctStockBeamV32(args, container){
   const targetButton = markedTargets[markedTargets.length - 1] || null;
   const targetTile = targetButton?.querySelector('.domino-tile');
 
-  // Never fall back to the hand/screen centre. If the exact drawn tile is unavailable,
-  // suppress the beam rather than show a visually wrong target.
+  // Never fall back to the hand or screen centre. A beam is shown only when the real
+  // drawn domino exists, otherwise it is suppressed instead of lying about the target.
   if (!(stock instanceof HTMLElement) || !(targetTile instanceof HTMLElement)) {
     accents.forEach(node => node.remove());
     return;
@@ -136,6 +153,7 @@ function correctStockBeamV32(args, container){
 function removeFinaleQaControlV32(container){
   container.querySelectorAll('.domino-finale-qa-row,.domino-finale-qa-button').forEach(node => node.remove());
   document.querySelectorAll('.domino-native-fx-accent[data-domino-native-qa="finale"]').forEach(node => node.remove());
+  container.dataset.dominoFinaleQa = 'retired-v32';
 }
 
 function enhanceFinaleAccents(container){
@@ -167,6 +185,59 @@ function actionEffectId(args, container){
 
   const direct = actor?.game_cosmetics?.slots?.[EFFECT_SLOT];
   return String(direct || '');
+}
+
+function adjacentSlot(slots, latestIndex){
+  if (latestIndex < 0 || slots.length < 2) return null;
+  if (latestIndex === 0) return slots[1] || null;
+  if (latestIndex === slots.length - 1) return slots[latestIndex - 1] || null;
+  return slots[latestIndex - 1] || slots[latestIndex + 1] || null;
+}
+
+function stableSlotTileRect(slot, tile){
+  const slotRect = slot.getBoundingClientRect();
+  const center = rectCenter(slotRect);
+  const baseWidth = Number(tile.offsetWidth || 0) || Number(tile.getBoundingClientRect().width || 0);
+  const baseHeight = Number(tile.offsetHeight || 0) || Number(tile.getBoundingClientRect().height || 0);
+  const vertical = slot.classList.contains('vertical');
+  const isDouble = slot.classList.contains('is-double');
+  const quarterTurn = (vertical && !isDouble) || (!vertical && isDouble);
+  const width = quarterTurn ? baseHeight : baseWidth;
+  const height = quarterTurn ? baseWidth : baseHeight;
+
+  return {
+    left:center.x - width / 2,
+    right:center.x + width / 2,
+    top:center.y - height / 2,
+    bottom:center.y + height / 2,
+    width,
+    height,
+  };
+}
+
+function seamBetweenRects(latestRect, neighborRect){
+  const latest = rectCenter(latestRect);
+  const neighbor = rectCenter(neighborRect);
+  const horizontal = Math.abs(latest.x - neighbor.x) >= Math.abs(latest.y - neighbor.y);
+  const angle = Math.atan2(latest.y - neighbor.y, latest.x - neighbor.x) * 180 / Math.PI;
+
+  if (horizontal) {
+    const latestEdgeX = latest.x > neighbor.x ? latestRect.left : latestRect.right;
+    const neighborEdgeX = latest.x > neighbor.x ? neighborRect.right : neighborRect.left;
+    return {
+      x:(latestEdgeX + neighborEdgeX) / 2,
+      y:(latest.y + neighbor.y) / 2,
+      angle,
+    };
+  }
+
+  const latestEdgeY = latest.y > neighbor.y ? latestRect.top : latestRect.bottom;
+  const neighborEdgeY = latest.y > neighbor.y ? neighborRect.bottom : neighborRect.top;
+  return {
+    x:(latest.x + neighbor.x) / 2,
+    y:(latestEdgeY + neighborEdgeY) / 2,
+    angle,
+  };
 }
 
 function rectCenter(rect){
@@ -228,7 +299,7 @@ function ensureLiveEffectsV31Styles(){
 
 function ensureLiveEffectsV32Styles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/domino/live-effects-v32.css?v=1&mvp19_9=tile-local-stock-exact-v32', import.meta.url).href;
+  const href = new URL('../../../css/games/domino/live-effects-v32.css?v=2&mvp19_9=tile-local-stock-exact-v32', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-domino-live-effects-v32]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
