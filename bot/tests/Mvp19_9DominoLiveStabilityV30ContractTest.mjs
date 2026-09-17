@@ -17,9 +17,13 @@ assert.ok(wrapper.includes("count >= 9"), '9+ tiles must enter the multi-row lay
 assert.ok(wrapper.includes('Math.ceil(count / 2)'), '9+ hands must target two deterministic rows');
 assert.ok(wrapper.includes("hand.dataset.dominoHandLayout = twoRow ? 'two-row' : 'single-row'"), 'hand must expose explicit layout state');
 assert.ok(wrapper.includes("--mgw-domino-hand-columns"), 'hand must publish its deterministic grid column count');
+assert.ok(wrapper.includes("hand.style.setProperty('display', 'grid', 'important')"), 'v30 runtime must outrank the accepted v29 flex fallback');
+assert.ok(wrapper.includes("hand.style.setProperty('grid-template-columns'"), 'v30 runtime must own deterministic grid columns after every rerender');
 assert.ok(wrapper.includes("accent.dataset.dominoPrecisionAnchor = 'seam-v30'"), 'precision accent must expose the corrected seam anchor');
-assert.ok(wrapper.includes('rayBoxDistance'), 'precision seam must use a ray/box edge intersection instead of the old support extent');
-assert.ok(wrapper.includes('(latestEdge.x + neighborEdge.x) / 2'), 'precision contact must resolve between the two touching edges');
+assert.ok(wrapper.includes('const horizontal = Math.abs(latest.x - neighbor.x) >= Math.abs(latest.y - neighbor.y)'), 'precision seam must resolve on the dominant touching axis');
+assert.ok(wrapper.includes('(latestEdgeX + neighborEdgeX) / 2'), 'horizontal precision contact must resolve between facing edges');
+assert.ok(wrapper.includes('(latestEdgeY + neighborEdgeY) / 2'), 'vertical precision contact must resolve between facing edges');
+assert.ok(!wrapper.includes('rayBoxDistance'), 'old ray/support precision geometry must not remain active');
 assert.ok(!wrapper.includes('onAction?.'), 'v30 must not mutate Domino mechanics');
 assert.ok(!wrapper.includes('store-screen-domino-store'), 'v30 must not depend on Store preview code');
 
@@ -34,7 +38,7 @@ assert.ok(css.includes('overflow-x:visible!important'), 'hand tail must not be c
 assert.ok(css.includes('touch-action:pan-y!important'), 'vertical page scrolling must remain native around the hand');
 
 assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25'"), 'manifest must publish v30 live Domino owner');
-assert.match(launch, /\/app\/v110\.php\?v=1191&domino_stability=30/);
+assert.match(launch, /\/app\/v110\.php\?v=1192&domino_stability=30&runtime_fix=1/);
 
 assert.ok(store.includes('domino'), 'accepted Store source remains present');
 

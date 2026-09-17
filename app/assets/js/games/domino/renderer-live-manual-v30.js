@@ -34,6 +34,9 @@ function markHandLayout(container){
   hand.dataset.dominoHandLayout = twoRow ? 'two-row' : 'single-row';
   hand.dataset.dominoHandCount = String(count);
   hand.style.setProperty('--mgw-domino-hand-columns', String(columns));
+  hand.style.setProperty('display', 'grid', 'important');
+  hand.style.setProperty('grid-template-columns', `repeat(${columns}, minmax(0,1fr))`, 'important');
+  hand.style.setProperty('flex-wrap', 'nowrap', 'important');
 }
 
 function ensureHandLayoutObserver(container){
@@ -90,41 +93,26 @@ function adjacentSlot(slots, latestIndex){
 function seamBetweenRects(latestRect, neighborRect){
   const latest = rectCenter(latestRect);
   const neighbor = rectCenter(neighborRect);
-  const dx = neighbor.x - latest.x;
-  const dy = neighbor.y - latest.y;
-  const length = Math.hypot(dx, dy);
+  const horizontal = Math.abs(latest.x - neighbor.x) >= Math.abs(latest.y - neighbor.y);
+  const angle = Math.atan2(latest.y - neighbor.y, latest.x - neighbor.x) * 180 / Math.PI;
 
-  if (length <= 0.5) {
-    return { x:latest.x, y:latest.y, angle:0 };
+  if (horizontal) {
+    const latestEdgeX = latest.x > neighbor.x ? latestRect.left : latestRect.right;
+    const neighborEdgeX = latest.x > neighbor.x ? neighborRect.right : neighborRect.left;
+    return {
+      x:(latestEdgeX + neighborEdgeX) / 2,
+      y:(latest.y + neighbor.y) / 2,
+      angle,
+    };
   }
 
-  const ux = dx / length;
-  const uy = dy / length;
-  const latestDistance = rayBoxDistance(latestRect, ux, uy);
-  const neighborDistance = rayBoxDistance(neighborRect, -ux, -uy);
-  const latestEdge = {
-    x:latest.x + ux * latestDistance,
-    y:latest.y + uy * latestDistance,
-  };
-  const neighborEdge = {
-    x:neighbor.x - ux * neighborDistance,
-    y:neighbor.y - uy * neighborDistance,
-  };
-
+  const latestEdgeY = latest.y > neighbor.y ? latestRect.top : latestRect.bottom;
+  const neighborEdgeY = latest.y > neighbor.y ? neighborRect.bottom : neighborRect.top;
   return {
-    x:(latestEdge.x + neighborEdge.x) / 2,
-    y:(latestEdge.y + neighborEdge.y) / 2,
-    angle:Math.atan2(latest.y - neighbor.y, latest.x - neighbor.x) * 180 / Math.PI,
+    x:(latest.x + neighbor.x) / 2,
+    y:(latestEdgeY + neighborEdgeY) / 2,
+    angle,
   };
-}
-
-function rayBoxDistance(rect, ux, uy){
-  const halfWidth = Math.max(0, Number(rect?.width || 0) / 2);
-  const halfHeight = Math.max(0, Number(rect?.height || 0) / 2);
-  const tx = Math.abs(ux) > 0.0001 ? halfWidth / Math.abs(ux) : Number.POSITIVE_INFINITY;
-  const ty = Math.abs(uy) > 0.0001 ? halfHeight / Math.abs(uy) : Number.POSITIVE_INFINITY;
-  const distance = Math.min(tx, ty);
-  return Number.isFinite(distance) ? distance : 0;
 }
 
 function rectCenter(rect){

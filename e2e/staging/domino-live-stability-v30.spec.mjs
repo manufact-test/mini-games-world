@@ -175,8 +175,9 @@ test('DOMINO v30 — stable table, reachable hand and deterministic precision se
 
   console.log(`DOMINO_V30_STABILITY=${JSON.stringify(setup)}`);
   expect(setup.entry).toContain('/app/v110.php');
-  expect(setup.entry).toContain('v=1191');
+  expect(setup.entry).toContain('v=1192');
   expect(setup.entry).toContain('domino_stability=30');
+  expect(setup.entry).toContain('runtime_fix=1');
   expect(setup.stabilitySheetLoaded).toBe(true);
   expect(setup.marker).toBe('v30');
 
