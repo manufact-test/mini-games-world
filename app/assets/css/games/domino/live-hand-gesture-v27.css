@@ -1,5 +1,6 @@
-/* MVP-19.9 hand gesture owner v27.
-   Horizontal drag is owned by the Domino hand JS; Chromium/Telegram keeps only vertical page panning. */
+/* MVP-19.9 hand gesture owner v27 + hand accessibility fallback v29.
+   Horizontal drag remains available, but once the hand reaches 9+ tiles the layout wraps
+   into two visible rows so no playable tile can sit off-screen behind a WebView gesture bug. */
 .domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand,
 .domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand-tile{
   touch-action:pan-y!important;
@@ -7,4 +8,24 @@
 .domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand.is-dragging{
   cursor:grabbing;
   scroll-behavior:auto!important;
+}
+
+@media (max-width:640px){
+  .domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand:has(> .domino-hand-tile:nth-child(9)){
+    display:flex!important;
+    flex-wrap:wrap!important;
+    justify-content:center!important;
+    align-content:flex-start!important;
+    gap:8px 7px!important;
+    width:100%!important;
+    max-width:100%!important;
+    overflow-x:visible!important;
+    overflow-y:visible!important;
+    scroll-snap-type:none!important;
+    padding-inline:2px!important;
+  }
+  .domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand:has(> .domino-hand-tile:nth-child(9)) > .domino-hand-tile{
+    flex:0 0 auto!important;
+    min-width:0!important;
+  }
 }
