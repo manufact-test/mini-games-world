@@ -136,13 +136,15 @@ jobs:
           grep -F "const precisionSeenByGame = new Map()" app/assets/js/games/domino/renderer-live-manual-v30.js
           grep -F "local.dataset.dominoPrecisionVisual = 'edge-shard-burst-v36'" app/assets/js/games/domino/renderer-live-manual-v30.js
           grep -F "precision-streak s8" app/assets/js/games/domino/renderer-live-manual-v30.js
+          grep -F "mgw-domino-precision-streak-v37" app/assets/js/games/domino/renderer-live-manual-v30.js
           grep -F "const viewerHandIdsByGame = new Map()" app/assets/js/games/domino/renderer-live-manual-v30.js
           grep -F "const newIds = currentIds.filter(id => !previousViewerHandIds.has(id))" app/assets/js/games/domino/renderer-live-manual-v30.js
           grep -F "accent.dataset.dominoStockTarget = 'exact-new-tile-v33'" app/assets/js/games/domino/renderer-live-manual-v30.js
           grep -F "accent.dataset.dominoStockGeometry = 'stable-hand-button-v35'" app/assets/js/games/domino/renderer-live-manual-v30.js
           grep -F "const end = rectCenter(targetButton.getBoundingClientRect())" app/assets/js/games/domino/renderer-live-manual-v30.js
-          grep -F "stock-spark-v33 p8" app/assets/js/games/domino/renderer-live-manual-v30.js
-          grep -F "live-effects-v32.css?v=6&mvp19_9=precision-shard-burst-stock-wide-sparks-v36" app/assets/js/games/domino/renderer-live-manual-v30.js
+          grep -F "const finisher = accent.querySelector('.stock-spark-v33.p8')" app/assets/js/games/domino/renderer-live-manual-v30.js
+          grep -F "mgw-domino-stock-spark-v37" app/assets/js/games/domino/renderer-live-manual-v30.js
+          grep -F "live-effects-v32.css?v=7&mvp19_9=precision-readable-radial-stock-crossburst-v37" app/assets/js/games/domino/renderer-live-manual-v30.js
           ! grep -Fq 'rayBoxDistance' app/assets/js/games/domino/renderer-live-manual-v30.js
           ! grep -Fq 'store-screen-domino-store' app/assets/js/games/domino/renderer-live-manual-v30.js
           ! grep -Fq 'onAction?.' app/assets/js/games/domino/renderer-live-manual-v30.js
@@ -155,12 +157,17 @@ jobs:
           grep -F "display:grid!important" app/assets/css/games/domino/live-mobile-stability-v30.css
           grep -F "overflow-x:visible!important" app/assets/css/games/domino/live-mobile-stability-v30.css
           grep -F "height:.64px" app/assets/css/games/domino/live-effects-v32.css
-          grep -F "@keyframes mgw-domino-precision-frame-v36" app/assets/css/games/domino/live-effects-v32.css
-          grep -F "@keyframes mgw-domino-precision-streak-v36" app/assets/css/games/domino/live-effects-v32.css
-          grep -F "@keyframes mgw-domino-precision-echo-v36" app/assets/css/games/domino/live-effects-v32.css
-          grep -F "@keyframes mgw-domino-stock-spark-v36" app/assets/css/games/domino/live-effects-v32.css
-          grep -F -- "--spark-side:-17px" app/assets/css/games/domino/live-effects-v32.css
-          grep -F -- "--spark-size:9px" app/assets/css/games/domino/live-effects-v32.css
+          grep -F "@keyframes mgw-domino-precision-frame-v37" app/assets/css/games/domino/live-effects-v32.css
+          grep -F "@keyframes mgw-domino-precision-streak-v37" app/assets/css/games/domino/live-effects-v32.css
+          grep -F -- "--dx:60px" app/assets/css/games/domino/live-effects-v32.css
+          grep -F -- "--dy:-58px" app/assets/css/games/domino/live-effects-v32.css
+          grep -F "2.2s cubic-bezier" app/assets/css/games/domino/live-effects-v32.css
+          grep -F "@keyframes mgw-domino-stock-spark-v37" app/assets/css/games/domino/live-effects-v32.css
+          grep -F -- "--spark-side:-36px" app/assets/css/games/domino/live-effects-v32.css
+          grep -F -- "--spark-side:34px" app/assets/css/games/domino/live-effects-v32.css
+          grep -F "1.15s cubic-bezier" app/assets/css/games/domino/live-effects-v32.css
+          grep -F "width:8px" app/assets/css/games/domino/live-effects-v32.css
+          ! grep -Fq "animation-duration:.46s" app/assets/css/games/domino/live-effects-v32.css
           ! grep -Fq "left:var(--spark-end)" app/assets/css/games/domino/live-effects-v32.css
           ! grep -Fq "mgw-domino-stock-orb-halo-v34" app/assets/css/games/domino/live-effects-v32.css
           ! grep -Fq "mgw-domino-precision-shimmer-v35" app/assets/css/games/domino/live-effects-v32.css
@@ -169,10 +176,10 @@ jobs:
           grep -F "overflow-y:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
           grep -F "renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25" app/runtime/client/version-manifest.php
           grep -F "&gesture_owner=v27" app/v110.php
-          grep -F "&live_effects=v36" app/v110.php
+          grep -F "&live_effects=v37" app/v110.php
           grep -F "X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal" app/v110.php
-          grep -F "X-MGW-Domino-Live-Precision: local-owner-edge-shard-burst-v36" app/v110.php
-          grep -F "X-MGW-Domino-Live-Effects: precision-shard-burst-stock-wide-sparks-v36" app/v110.php
+          grep -F "X-MGW-Domino-Live-Precision: local-owner-readable-radial-v37" app/v110.php
+          grep -F "X-MGW-Domino-Live-Effects: precision-readable-radial-stock-crossburst-v37" app/v110.php
           grep -F "/app/v110.php?v=1192&domino_stability=30&runtime_fix=1" bot/helpers/WebAppLaunchUrl.php
 
       - name: Wait for exact Hostinger staging fingerprint
