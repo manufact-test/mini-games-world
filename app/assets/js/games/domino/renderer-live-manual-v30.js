@@ -5,9 +5,15 @@ import {
   dominoStatus,
 } from './renderer-cosmetics-corrective-v25.js?v=2&mvp19_9=manual-corrective-v25&hand_drag=v26&pointer_owner=v28&hand_layout=v29';
 
+const STOCK_ID = 'game-domino-effect-stock-pulse';
+const EFFECT_SLOT = 'game_domino_effect';
 const handObservers = new WeakMap();
+const joinedBeamSeenByGame = new Map();
+let finaleQaEnhancerBound = false;
 
 ensureStabilityStyles();
+ensureLiveEffectsV31Styles();
+ensureFinaleQaEnhancer();
 
 export { dominoMeta, dominoPlayerMark, dominoStatus };
 
@@ -18,9 +24,13 @@ export function renderDominoSurface(args){
   if (!(container instanceof HTMLElement)) return;
 
   container.dataset.mgwDominoManualStability = 'v30';
+  container.dataset.mgwDominoLiveEffects = 'v31';
   markHandLayout(container);
   ensureHandLayoutObserver(container);
   correctPrecisionContact(container);
+  suppressLegacyStockDraw(args, container);
+  mountJoinedBeamV31(args, container);
+  enhanceFinaleAccents(container);
 }
 
 function markHandLayout(container){
@@ -67,22 +77,155 @@ function correctPrecisionContact(container){
   const neighborSlot = adjacentSlot(slots, latestIndex);
   const neighborTile = neighborSlot?.querySelector('.domino-tile');
   const latestRect = stableSlotTileRect(latestSlot, latestTile);
+  if (accent.dataset.dominoPrecisionVisual === 'tile-outline-v31') return;
 
-  if (!(neighborSlot instanceof HTMLElement) || !(neighborTile instanceof HTMLElement)) {
-    const center = rectCenter(latestRect);
-    accent.style.left = `${center.x}px`;
-    accent.style.top = `${center.y}px`;
-    accent.dataset.dominoPrecisionGeometry = 'static-v2';
-    return;
+  if (neighborSlot instanceof HTMLElement && neighborTile instanceof HTMLElement) {
+    const neighborRect = stableSlotTileRect(neighborSlot, neighborTile);
+    const contact = seamBetweenRects(latestRect, neighborRect);
+    accent.dataset.dominoPrecisionAnchor = 'seam-v30';
+    accent.style.setProperty('--mgw-domino-native-angle', `${contact.angle}deg`);
   }
 
-  const neighborRect = stableSlotTileRect(neighborSlot, neighborTile);
-  const contact = seamBetweenRects(latestRect, neighborRect);
-  accent.style.left = `${contact.x}px`;
-  accent.style.top = `${contact.y}px`;
-  accent.style.setProperty('--mgw-domino-native-angle', `${contact.angle}deg`);
-  accent.dataset.dominoPrecisionAnchor = 'seam-v30';
+  accent.classList.add('is-precision-v31');
   accent.dataset.dominoPrecisionGeometry = 'static-v2';
+  accent.dataset.dominoPrecisionVisual = 'tile-outline-v31';
+  accent.style.left = `${latestRect.left}px`;
+  accent.style.top = `${latestRect.top}px`;
+  accent.style.width = `${latestRect.width}px`;
+  accent.style.height = `${latestRect.height}px`;
+  accent.style.transform = 'none';
+  accent.innerHTML = '<i class="tile-wave wave-1"></i><i class="tile-wave wave-2"></i><i class="tile-wave wave-3"></i>';
+
+  const finisher = accent.querySelector('.wave-3');
+  removeNodeOnAnimationEndV31(accent, finisher, 'mgw-domino-precision-outline-v31');
+}
+
+function suppressLegacyStockDraw(args, container){
+  const game = args?.game;
+  if (String(game?.last_action?.type || '') !== 'draw') return;
+  if (actionEffectId(args, container) !== STOCK_ID) return;
+
+  const gameId = String(game?.id || '');
+  document.querySelectorAll('.domino-native-fx-accent.is-stock[data-domino-native-game]').forEach(node => {
+    if (!(node instanceof HTMLElement)) return;
+    if (gameId && String(node.dataset.dominoNativeGame || '') !== gameId) return;
+    node.remove();
+  });
+  container.querySelector('.domino-stock-count')?.classList.remove('mgw-domino-native-stock-source');
+  container.querySelectorAll('.domino-hand-tile.mgw-domino-native-stock-target').forEach(node => {
+    node.classList.remove('mgw-domino-native-stock-target');
+  });
+}
+
+function mountJoinedBeamV31(args, container){
+  const game = args?.game;
+  const action = game?.last_action || {};
+  if (String(action?.type || '') !== 'play') return;
+  if (actionEffectId(args, container) !== STOCK_ID) return;
+
+  const gameId = String(game?.id || '');
+  if (!gameId) return;
+  const signature = `join:${gameId}:${Number(game?.move_count || 0)}:${String(action?.player_id || '')}:${String(action?.tile || '')}:${String(action?.side || '')}`;
+  if (joinedBeamSeenByGame.get(gameId) === signature) return;
+  joinedBeamSeenByGame.set(gameId, signature);
+
+  const latestSlot = container.querySelector('.domino-chain-slot.latest');
+  const latestTile = latestSlot?.querySelector('.domino-tile');
+  if (!(latestSlot instanceof HTMLElement) || !(latestTile instanceof HTMLElement)) return;
+
+  const slots = [...container.querySelectorAll('.domino-chain-slot')]
+    .filter(slot => slot instanceof HTMLElement);
+  const latestIndex = slots.indexOf(latestSlot);
+  const neighborSlot = adjacentSlot(slots, latestIndex);
+  const neighborTile = neighborSlot?.querySelector('.domino-tile');
+  if (!(neighborSlot instanceof HTMLElement) || !(neighborTile instanceof HTMLElement)) return;
+
+  document.querySelectorAll('.domino-native-fx-accent.is-join-beam-v31[data-domino-native-game]').forEach(node => {
+    if (!(node instanceof HTMLElement)) return;
+    if (String(node.dataset.dominoNativeGame || '') === gameId) node.remove();
+  });
+
+  const latestRect = stableSlotTileRect(latestSlot, latestTile);
+  const neighborRect = stableSlotTileRect(neighborSlot, neighborTile);
+  const start = rectCenter(latestRect);
+  const end = seamBetweenRects(latestRect, neighborRect);
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const distance = Math.max(8, Math.hypot(dx, dy));
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+  const accent = document.createElement('span');
+  accent.className = 'domino-native-fx-accent is-join-beam-v31';
+  accent.dataset.dominoNativeGame = gameId;
+  accent.dataset.dominoNativeEffect = 'stock-joined-v31';
+  accent.dataset.dominoBeamTarget = 'real-join-seam-v31';
+  accent.setAttribute('aria-hidden', 'true');
+  accent.style.left = `${start.x}px`;
+  accent.style.top = `${start.y}px`;
+  accent.style.width = `${distance}px`;
+  accent.style.setProperty('--mgw-domino-join-angle', `${angle}deg`);
+  accent.style.setProperty('--mgw-domino-join-distance', `${distance}px`);
+  accent.innerHTML = '<i class="join-beam"></i><i class="join-orb"></i><i class="join-impact"></i>';
+  document.body.appendChild(accent);
+
+  latestTile.classList.add('mgw-domino-join-source-v31');
+  neighborTile.classList.add('mgw-domino-join-target-v31');
+  const finisher = accent.querySelector('.join-impact');
+  const finish = event => {
+    if (event.target !== finisher) return;
+    if (event.type === 'animationend' && String(event.animationName || '') !== 'mgw-domino-join-impact-v31') return;
+    finisher.removeEventListener('animationend', finish);
+    finisher.removeEventListener('animationcancel', finish);
+    accent.remove();
+    latestTile.classList.remove('mgw-domino-join-source-v31');
+    neighborTile.classList.remove('mgw-domino-join-target-v31');
+  };
+  if (finisher instanceof HTMLElement) {
+    finisher.addEventListener('animationend', finish);
+    finisher.addEventListener('animationcancel', finish);
+  }
+}
+
+function enhanceFinaleAccents(container){
+  const accents = document.querySelectorAll('.domino-native-fx-accent.is-finale[data-domino-native-game]');
+  accents.forEach(accent => {
+    if (!(accent instanceof HTMLElement) || accent.dataset.dominoFinaleVisual === 'premium-v31') return;
+    accent.dataset.dominoFinaleVisual = 'premium-v31';
+    accent.classList.add('is-finale-v31');
+    accent.insertAdjacentHTML('beforeend', '<i class="finale-aura-v31"></i><i class="finale-prism-v31"></i><i class="finale-spark-v31 s1"></i><i class="finale-spark-v31 s2"></i><i class="finale-spark-v31 s3"></i><i class="finale-spark-v31 s4"></i><i class="finale-spark-v31 s5"></i><i class="finale-spark-v31 s6"></i>');
+  });
+
+  if (!(container instanceof HTMLElement)) return;
+  container.querySelector('.domino-table.mgw-domino-native-finale-table')?.setAttribute('data-domino-finale-visual', 'premium-v31');
+}
+
+function ensureFinaleQaEnhancer(){
+  if (finaleQaEnhancerBound || typeof document === 'undefined') return;
+  finaleQaEnhancerBound = true;
+  document.addEventListener('click', event => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!(target?.closest('.domino-finale-qa-button') instanceof HTMLElement)) return;
+    requestAnimationFrame(() => enhanceFinaleAccents(document.querySelector('.domino-surface')));
+  });
+}
+
+function actionEffectId(args, container){
+  const game = args?.game;
+  const me = args?.me;
+  const players = Array.isArray(game?.players) ? game.players : [];
+  const actionPlayerId = String(game?.last_action?.player_id || '');
+  const actor = actionPlayerId
+    ? players.find(player => String(player?.id || '') === actionPlayerId) || null
+    : null;
+  const myId = String(me?.id || '');
+
+  if (actor && String(actor?.id || '') === myId) {
+    const local = String(container?.dataset?.dominoEffect || '');
+    if (local) return local;
+  }
+
+  const direct = actor?.game_cosmetics?.slots?.[EFFECT_SLOT];
+  return String(direct || '');
 }
 
 function adjacentSlot(slots, latestIndex){
@@ -145,6 +288,22 @@ function rectCenter(rect){
   };
 }
 
+function removeNodeOnAnimationEndV31(node, actor, animationName){
+  if (!(node instanceof HTMLElement) || !(actor instanceof HTMLElement)) {
+    node?.remove?.();
+    return;
+  }
+  const finish = event => {
+    if (event.target !== actor) return;
+    if (event.type === 'animationend' && String(event.animationName || '') !== animationName) return;
+    actor.removeEventListener('animationend', finish);
+    actor.removeEventListener('animationcancel', finish);
+    node.remove();
+  };
+  actor.addEventListener('animationend', finish);
+  actor.addEventListener('animationcancel', finish);
+}
+
 function ensureStabilityStyles(){
   if (typeof document === 'undefined') return;
   const href = new URL('../../../css/games/domino/live-mobile-stability-v30.css?v=1&mvp19_9=mobile-stability-v30', import.meta.url).href;
@@ -158,6 +317,23 @@ function ensureStabilityStyles(){
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.dataset.mgwDominoMobileStability = 'v30';
+  link.href = href;
+  document.head.appendChild(link);
+}
+
+function ensureLiveEffectsV31Styles(){
+  if (typeof document === 'undefined') return;
+  const href = new URL('../../../css/games/domino/live-effects-v31.css?v=1&mvp19_9=live-effects-v31', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-domino-live-effects-v31]');
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    existing.dataset.mgwDominoLiveEffectsV31 = 'premium-v31';
+    return;
+  }
+
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwDominoLiveEffectsV31 = 'premium-v31';
   link.href = href;
   document.head.appendChild(link);
 }
