@@ -138,6 +138,7 @@ jobs:
           grep -F "const newIds = currentIds.filter(id => !previousViewerHandIds.has(id))" app/assets/js/games/domino/renderer-live-manual-v30.js
           grep -F "accent.dataset.dominoStockTarget = 'exact-new-tile-v33'" app/assets/js/games/domino/renderer-live-manual-v30.js
           grep -F "stock-spark-v33 p8" app/assets/js/games/domino/renderer-live-manual-v30.js
+          grep -F "live-effects-v32.css?v=4&mvp19_9=sustained-precision-moving-stock-stars-v34" app/assets/js/games/domino/renderer-live-manual-v30.js
           ! grep -Fq 'rayBoxDistance' app/assets/js/games/domino/renderer-live-manual-v30.js
           ! grep -Fq 'store-screen-domino-store' app/assets/js/games/domino/renderer-live-manual-v30.js
           ! grep -Fq 'onAction?.' app/assets/js/games/domino/renderer-live-manual-v30.js
@@ -150,13 +151,15 @@ jobs:
           grep -F "display:grid!important" app/assets/css/games/domino/live-mobile-stability-v30.css
           grep -F "overflow-x:visible!important" app/assets/css/games/domino/live-mobile-stability-v30.css
           grep -F "height:.64px" app/assets/css/games/domino/live-effects-v32.css
-          grep -F "stock-spark-v33" app/assets/css/games/domino/live-effects-v32.css
+          grep -F "@keyframes mgw-domino-precision-aura-shell-v34" app/assets/css/games/domino/live-effects-v32.css
+          grep -F "@keyframes mgw-domino-stock-spark-v34" app/assets/css/games/domino/live-effects-v32.css
+          grep -F "left:var(--spark-end)" app/assets/css/games/domino/live-effects-v32.css
           grep -F "mgw-domino-native-precision-tile-v25" app/assets/css/games/domino/live-native-manual-v25.css
           grep -F "mgw-domino-native-stock-orb-v25" app/assets/css/games/domino/live-native-manual-v25.css
           grep -F "overflow-y:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
           grep -F "renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25" app/runtime/client/version-manifest.php
           grep -F "&gesture_owner=v27" app/v110.php
-          grep -F "&live_effects=v33" app/v110.php
+          grep -F "&live_effects=v34" app/v110.php
           grep -F "X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal" app/v110.php
           grep -F "X-MGW-Domino-Live-Effects: owner-gated-single-pulse-stock-spark-v33" app/v110.php
           grep -F "/app/v110.php?v=1192&domino_stability=30&runtime_fix=1" bot/helpers/WebAppLaunchUrl.php
