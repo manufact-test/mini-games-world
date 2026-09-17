@@ -261,16 +261,6 @@ test('DOMINO v29 — paid effects, 9+ tile accessibility, bottom reachability an
   expect(diagnostic.leave.bottom).toBeLessThanOrEqual(diagnostic.leave.viewportHeight + 1);
   expect(diagnostic.leave.top).toBeGreaterThanOrEqual(-1);
 
-  const ninthTile = page.locator('[data-domino-tile="5-5-8"]');
-  await ninthTile.tap();
-  await expect(page.locator('[data-domino-tile="5-5-8"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('[data-domino-side="left"]')).toBeVisible();
-
-  const twelfthTile = page.locator('[data-domino-tile="6-6-11"]');
-  await twelfthTile.tap();
-  await expect(page.locator('[data-domino-tile="6-6-11"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('[data-domino-side="right"]')).toBeVisible();
-
   await page.locator('[data-domino-finale-qa="preview"]').click();
   await page.waitForTimeout(120);
   const qaRunning = await page.evaluate(() => ({
@@ -297,4 +287,14 @@ test('DOMINO v29 — paid effects, 9+ tile accessibility, bottom reachability an
   expect(qaFinished.classesRemoved).toBe(true);
   expect(qaFinished.buttonEnabled).toBe(true);
   expect(qaFinished.buttonText).toContain('Повторить');
+
+  const ninthTile = page.locator('[data-domino-tile="5-5-8"]');
+  await ninthTile.tap();
+  await expect(page.locator('[data-domino-tile="5-5-8"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-domino-side="left"]')).toBeVisible();
+
+  const twelfthTile = page.locator('[data-domino-tile="6-6-11"]');
+  await twelfthTile.tap();
+  await expect(page.locator('[data-domino-tile="6-6-11"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-domino-side="right"]')).toBeVisible();
 });
