@@ -93,7 +93,7 @@ if (!isset($imports[$dominoRendererImportKey])
     exit;
 }
 $imports[$dominoRendererImportKey] .= '&gesture_owner=v27&precision_static=2';
-$imports[$dominoRendererImportKey] .= '&live_effects=v33';
+$imports[$dominoRendererImportKey] .= '&live_effects=v34';
 
 foreach (['main_css', 'consistency_css', 'bootstrap'] as $requiredAsset) {
     if (!isset($assets[$requiredAsset]) || !is_string($assets[$requiredAsset]) || $assets[$requiredAsset] === '') {
