@@ -1,229 +1,142 @@
-/* MVP-19.9 Domino live effects v37 visual corrective.
-   Precision: readable 2.5s radial burst from the placed domino itself, no flashlight-like tile glow, no tiny corner dots.
-   Stock: accepted boneyard -> exact drawn tile beam geometry remains unchanged; particles now travel 30-36px perpendicular to the beam and stay alive long enough to read.
-   Accepted premium Finale v31 remains untouched; QA control stays retired. */
+/* MVP-19.9 Domino live effects v38.
+   Precision and Stock particles render in a dedicated viewport layer and move through
+   Web Animations with concrete pixel coordinates. Accepted Finale v31 is untouched. */
 
-/* Never let the legacy fixed/body Precision accent paint. */
-.domino-native-fx-accent.is-precision[data-domino-native-effect="precision"]{
+/* Suppress every legacy Precision/Stock visual so old flashes cannot leak underneath v38. */
+.domino-native-fx-accent.is-precision[data-domino-native-game],
+.domino-native-fx-accent.is-stock[data-domino-native-game],
+.domino-native-fx-accent.is-stock-v33[data-domino-native-game],
+.mgw-domino-precision-local-v33{
+  display:none!important;
   opacity:0!important;
   visibility:hidden!important;
-  pointer-events:none!important;
+  animation:none!important;
   filter:none!important;
   box-shadow:none!important;
-}
-.domino-native-fx-accent.is-precision[data-domino-native-effect="precision"] *{
-  display:none!important;
-}
-
-.domino-chain-slot.latest > .domino-tile{
-  position:relative;
-  z-index:1;
-}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33{
-  position:absolute;
-  inset:0;
-  z-index:2;
-  display:block;
-  width:100%;
-  height:100%;
-  overflow:visible!important;
   pointer-events:none!important;
-  border-radius:5px;
-  transform-origin:50% 50%;
 }
-.domino-chain-slot.vertical > .mgw-domino-precision-local-v33,
-.domino-chain-slot.horizontal.is-double > .mgw-domino-precision-local-v33{
-  transform:rotate(90deg);
-}
-.domino-chain-slot.vertical.is-double > .mgw-domino-precision-local-v33{
-  transform:rotate(0deg);
-}
-
-/* One restrained outline says where the burst came from; the particles do the actual visual work. */
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-frame{
-  position:absolute;
-  inset:-2px;
-  display:block;
-  border:1.5px solid rgba(255,224,102,.96);
-  border-radius:7px;
-  opacity:0;
-  box-shadow:0 0 5px rgba(255,211,86,.48);
-  animation:mgw-domino-precision-frame-v37 2.35s cubic-bezier(.18,.68,.18,1) both;
-}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-frame::before,
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-frame::after{
-  display:none!important;
-  content:none!important;
-}
-
-/* All eight shards start at the domino centre and travel far enough outside it to be unmistakable. */
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-streak{
-  --dx:0px;
-  --dy:-56px;
-  --rot:0deg;
-  --delay:0ms;
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:3px;
-  height:16px;
-  margin:-8px 0 0 -1.5px;
-  border-radius:999px;
-  opacity:0;
-  background:linear-gradient(180deg,rgba(255,255,242,1),rgba(255,222,95,.98) 48%,rgba(255,160,35,.2));
-  box-shadow:0 0 4px rgba(255,241,173,.96),0 0 8px rgba(255,185,49,.68);
-  transform-origin:50% 50%;
-  animation:mgw-domino-precision-streak-v37 2.2s cubic-bezier(.16,.66,.16,1) var(--delay) both;
-}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-streak::after{
-  display:none!important;
-  content:none!important;
-}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s1{--dx:-46px;--dy:-34px;--rot:-54deg;--delay:0ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s2{--dx:0px;--dy:-58px;--rot:0deg;--delay:40ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s3{--dx:46px;--dy:-34px;--rot:54deg;--delay:80ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s4{--dx:60px;--dy:0px;--rot:90deg;--delay:120ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s5{--dx:46px;--dy:34px;--rot:126deg;--delay:160ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s6{--dx:0px;--dy:58px;--rot:180deg;--delay:200ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s7{--dx:-46px;--dy:34px;--rot:234deg;--delay:240ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s8{--dx:-60px;--dy:0px;--rot:270deg;--delay:280ms}
-
-/* Old silhouette echoes are intentionally suppressed; they read as another glow rather than motion. */
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-echo{
-  display:none!important;
-  animation:none!important;
-}
-.domino-chain-slot.latest > .domino-tile.mgw-domino-precision-glow-v33{
+.domino-tile.mgw-domino-precision-glow-v33,
+.domino-tile.mgw-domino-native-precision-tile{
   animation:none!important;
   filter:none!important;
 }
 
-@keyframes mgw-domino-precision-frame-v37{
-  0%{opacity:0;transform:scale(.98)}
-  10%{opacity:.95;transform:scale(1)}
-  40%{opacity:.86;transform:scale(1.02)}
-  76%{opacity:.46;transform:scale(1.04)}
-  100%{opacity:0;transform:scale(1.06)}
-}
-@keyframes mgw-domino-precision-streak-v37{
-  0%{opacity:0;transform:translate(0,0) rotate(var(--rot)) scaleY(.72)}
-  10%{opacity:1;transform:translate(0,0) rotate(var(--rot)) scaleY(1)}
-  40%{opacity:1;transform:translate(calc(var(--dx) * .38),calc(var(--dy) * .38)) rotate(var(--rot)) scaleY(1.05)}
-  72%{opacity:1;transform:translate(calc(var(--dx) * .78),calc(var(--dy) * .78)) rotate(var(--rot)) scaleY(.96)}
-  90%{opacity:.86;transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scaleY(.84)}
-  100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scaleY(.7)}
-}
-
-/* Suppress the legacy Stock accent completely. */
-.domino-native-fx-accent.is-stock[data-domino-native-effect="stock"]{
-  opacity:0!important;
-  visibility:hidden!important;
-  pointer-events:none!important;
-}
-.domino-native-fx-accent.is-stock[data-domino-native-effect="stock"] *{
-  display:none!important;
-}
-
-/* Accepted beam geometry stays exactly as before. */
-.domino-native-fx-accent.is-stock-v33{
-  position:fixed;
-  z-index:10005;
-  height:1px;
+.mgw-domino-live-fx-layer-v38{
+  position:fixed!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100vh!important;
   overflow:visible!important;
   pointer-events:none!important;
-  transform-origin:0 50%!important;
-  transform:rotate(var(--mgw-domino-stock-angle,0deg));
-  filter:drop-shadow(0 0 2px rgba(74,238,255,.34));
+  z-index:10050!important;
+  contain:layout style!important;
 }
-.domino-native-fx-accent.is-stock-v33 .stock-line-v33{
-  position:absolute;
-  left:0;
-  top:-.32px;
-  width:100%;
-  height:.64px;
-  border-radius:999px;
-  transform-origin:0 50%;
-  background:linear-gradient(90deg,rgba(70,238,255,.08),rgba(80,241,255,.92) 26%,rgba(122,216,255,.78) 58%,rgba(166,105,255,.5) 84%,rgba(255,255,255,.04));
-  box-shadow:0 0 3px rgba(72,238,255,.45);
-  animation:mgw-domino-stock-line-v33 .72s cubic-bezier(.16,.78,.18,1) both;
-}
-.domino-native-fx-accent.is-stock-v33 .stock-orb-v33{
-  position:absolute;
-  left:0;
-  top:0;
-  width:4px;
-  height:4px;
-  margin:-2px 0 0 -2px;
-  border-radius:50%;
-  background:#f7ffff;
-  box-shadow:0 0 5px rgba(91,245,255,.95),0 0 9px rgba(157,91,255,.62);
-  animation:mgw-domino-stock-orb-v33 .8s cubic-bezier(.15,.8,.18,1) both;
+.mgw-domino-live-fx-layer-v38,
+.mgw-domino-live-fx-layer-v38 *{
+  box-sizing:border-box!important;
+  pointer-events:none!important;
 }
 
-/* Sparks are now elongated shards that visibly leave the beam path by 30-36px. */
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33{
-  --spark-side:-32px;
-  --spark-delay:0ms;
-  --spark-size:12px;
-  position:absolute;
-  top:0;
-  width:8px;
-  height:var(--spark-size);
-  margin:calc(var(--spark-size) / -2) 0 0 -4px;
-  border-radius:999px;
-  background:linear-gradient(180deg,#ffffff 0%,#bffbff 42%,rgba(111,223,255,.28) 100%);
-  box-shadow:0 0 5px rgba(134,252,255,1),0 0 10px rgba(105,228,255,.86),0 0 14px rgba(151,102,255,.42);
+/* Precision: eight large, glowing shards visibly leave the placed domino. */
+.mgw-domino-precision-burst-v38{
+  position:fixed!important;
+  width:0!important;
+  height:0!important;
+  overflow:visible!important;
+  pointer-events:none!important;
+  z-index:2!important;
+}
+.mgw-domino-precision-burst-v38 .precision-ring-v38{
+  position:absolute!important;
+  display:block!important;
+  border:2px solid rgba(255,226,112,.96)!important;
+  border-radius:9px!important;
+  background:transparent!important;
+  box-shadow:0 0 9px rgba(255,222,101,.72),0 0 18px rgba(255,161,41,.32)!important;
+  transform-origin:50% 50%!important;
+  will-change:transform,opacity!important;
+}
+.mgw-domino-precision-burst-v38 .precision-shard-v38{
+  position:absolute!important;
+  left:-3px!important;
+  top:-11px!important;
+  display:block!important;
+  width:6px!important;
+  height:22px!important;
+  border-radius:999px 999px 3px 3px!important;
   opacity:0;
-  transform:rotate(18deg);
-  animation:mgw-domino-stock-spark-v37 1.15s cubic-bezier(.16,.66,.18,1) var(--spark-delay) both;
+  background:linear-gradient(180deg,#ffffff 0%,#fff6ba 20%,#ffd95b 54%,#ff9f27 82%,rgba(255,125,18,.08) 100%)!important;
+  box-shadow:0 0 6px rgba(255,247,188,1),0 0 12px rgba(255,205,66,.94),0 0 19px rgba(255,137,24,.56)!important;
+  transform-origin:50% 50%!important;
+  will-change:transform,opacity!important;
 }
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33::before,
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33::after{
-  display:none!important;
-  content:none!important;
+.mgw-domino-precision-burst-v38 .precision-shard-v38:nth-of-type(3n){
+  width:5px!important;
+  height:19px!important;
+  left:-2.5px!important;
+  top:-9.5px!important;
 }
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p1{left:12%;--spark-side:-32px;--spark-delay:40ms;--spark-size:14px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p2{left:23%;--spark-side:30px;--spark-delay:90ms;--spark-size:12px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p3{left:35%;--spark-side:-36px;--spark-delay:140ms;--spark-size:15px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p4{left:47%;--spark-side:34px;--spark-delay:190ms;--spark-size:13px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p5{left:59%;--spark-side:-35px;--spark-delay:240ms;--spark-size:15px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p6{left:70%;--spark-side:31px;--spark-delay:290ms;--spark-size:12px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p7{left:81%;--spark-side:-34px;--spark-delay:340ms;--spark-size:14px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p8{left:91%;--spark-side:32px;--spark-delay:390ms;--spark-size:13px}
 
-.domino-stock-count.mgw-domino-stock-source-v33{
-  animation:mgw-domino-stock-source-v33 .68s ease-out both!important;
+/* Stock: very thin beam plus twelve sparks that leave the beam by 38-59px. */
+.mgw-domino-stock-burst-v38{
+  position:fixed!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100vh!important;
+  overflow:visible!important;
+  pointer-events:none!important;
+  z-index:3!important;
 }
-.domino-tile.mgw-domino-stock-target-v33{
-  animation:mgw-domino-stock-target-v33 .72s .28s ease-out both!important;
+.mgw-domino-stock-burst-v38 .stock-line-v38{
+  position:absolute!important;
+  display:block!important;
+  height:.62px!important;
+  margin-top:-.31px!important;
+  border-radius:999px!important;
+  transform-origin:0 50%!important;
+  background:linear-gradient(90deg,rgba(53,232,255,.08),rgba(88,245,255,.98) 22%,rgba(120,221,255,.9) 56%,rgba(174,113,255,.62) 84%,rgba(255,255,255,.06))!important;
+  box-shadow:0 0 3px rgba(81,241,255,.58),0 0 7px rgba(135,112,255,.26)!important;
+  will-change:transform,opacity!important;
 }
-@keyframes mgw-domino-stock-line-v33{
-  0%{opacity:0;transform:scaleX(0)}
-  12%{opacity:1}
-  72%{opacity:.9;transform:scaleX(1)}
-  100%{opacity:0;transform:scaleX(1)}
+.mgw-domino-stock-burst-v38 .stock-orb-v38{
+  position:absolute!important;
+  display:block!important;
+  width:7px!important;
+  height:7px!important;
+  margin:-3.5px 0 0 -3.5px!important;
+  border-radius:50%!important;
+  background:#ffffff!important;
+  box-shadow:0 0 6px rgba(113,249,255,1),0 0 12px rgba(80,224,255,.9),0 0 18px rgba(157,91,255,.62)!important;
+  will-change:transform,opacity!important;
 }
-@keyframes mgw-domino-stock-orb-v33{
-  0%{opacity:0;transform:translateX(0) scale(.45)}
-  10%{opacity:1}
-  82%{opacity:1}
-  100%{opacity:0;transform:translateX(var(--mgw-domino-stock-distance,24px)) scale(.72)}
+.mgw-domino-stock-burst-v38 .stock-spark-v38{
+  position:absolute!important;
+  display:block!important;
+  margin:-4px 0 0 -4px!important;
+  border-radius:50%!important;
+  opacity:0;
+  background:#efffff!important;
+  box-shadow:0 0 5px rgba(169,255,255,1),0 0 10px rgba(79,235,255,.98),0 0 16px rgba(139,91,255,.58)!important;
+  will-change:transform,opacity!important;
 }
-@keyframes mgw-domino-stock-spark-v37{
-  0%{opacity:0;transform:translateY(0) rotate(18deg) scaleY(.7)}
-  12%{opacity:1;transform:translateY(0) rotate(18deg) scaleY(1)}
-  42%{opacity:1;transform:translateY(calc(var(--spark-side) * .38)) rotate(28deg) scaleY(1.04)}
-  76%{opacity:1;transform:translateY(calc(var(--spark-side) * .82)) rotate(38deg) scaleY(.96)}
-  92%{opacity:.88;transform:translateY(var(--spark-side)) rotate(44deg) scaleY(.9)}
-  100%{opacity:0;transform:translateY(var(--spark-side)) rotate(48deg) scaleY(.82)}
+.mgw-domino-stock-burst-v38 .stock-spark-v38:nth-of-type(3n){
+  background:#d8fbff!important;
+  box-shadow:0 0 5px rgba(213,255,255,1),0 0 12px rgba(113,214,255,.98),0 0 18px rgba(177,103,255,.65)!important;
 }
-@keyframes mgw-domino-stock-source-v33{
+
+.domino-stock-count.mgw-domino-stock-source-v38{
+  animation:mgw-domino-stock-source-v38 .82s ease-out both!important;
+}
+.domino-tile.mgw-domino-stock-target-v38{
+  animation:mgw-domino-stock-target-v38 .86s .22s ease-out both!important;
+}
+@keyframes mgw-domino-stock-source-v38{
   0%,100%{filter:brightness(1) saturate(1)}
-  30%{filter:brightness(1.26) saturate(1.14) drop-shadow(0 0 5px rgba(75,239,255,.38))}
+  36%{filter:brightness(1.28) saturate(1.18) drop-shadow(0 0 6px rgba(75,239,255,.5))}
 }
-@keyframes mgw-domino-stock-target-v33{
+@keyframes mgw-domino-stock-target-v38{
   0%,100%{filter:brightness(1) saturate(1)}
-  38%{filter:brightness(1.34) saturate(1.14) drop-shadow(0 0 6px rgba(111,232,255,.5))}
+  42%{filter:brightness(1.38) saturate(1.18) drop-shadow(0 0 7px rgba(111,232,255,.62))}
 }
 
 /* QA-only Chain Finale control remains retired. Natural finished-game trigger is unchanged. */
@@ -231,6 +144,3 @@
 .domino-finale-qa-button{
   display:none!important;
 }
-
-/* Deliberately no prefers-reduced-motion duration collapse here.
-   v36 compressed these purchased effects to 0.46s, which made them look like a single flash in some WebViews. */
