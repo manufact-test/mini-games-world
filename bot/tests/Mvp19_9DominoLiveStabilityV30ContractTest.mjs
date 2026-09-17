@@ -38,7 +38,7 @@ assert.ok(css.includes('overflow-x:visible!important'), 'hand tail must not be c
 assert.ok(css.includes('touch-action:pan-y!important'), 'vertical page scrolling must remain native around the hand');
 
 assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25'"), 'manifest must publish v30 live Domino owner');
-assert.match(launch, /\/app\/v110\.php\?v=1191&domino_stability=30/);
+assert.match(launch, /\/app\/v110\.php\?v=1192&domino_stability=30&runtime_fix=1/);
 
 assert.ok(store.includes('domino'), 'accepted Store source remains present');
 
