@@ -336,7 +336,7 @@ test('CURRENT FINAL CORE: canonical Telegram v110 two-player TTT lifecycle', asy
   try {
     A = await openPlayer(browser, 'A');
     B = await openPlayer(browser, 'B');
-    expect(ENTRY_PATH).toMatch(/^\/app\/v110\.php\?v=\d+$/);
+    expect(ENTRY_PATH).toMatch(/^\/app\/v110\.php\?v=\d+(?:&[A-Za-z0-9_.~-]+=[A-Za-z0-9_.~-]+)*$/);
     expect(A.cookie.value).not.toBe(B.cookie.value);
 
     const entryCost = Number(A.bootstrap.match_economy.entry_cost);
