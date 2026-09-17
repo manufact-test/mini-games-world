@@ -12,7 +12,7 @@ const ENTRY_URL = `${ORIGIN}${entryMatch[1]}`;
 
 test.use({ viewport:{ width:320, height:640 }, isMobile:true, hasTouch:true, reducedMotion:'no-preference' });
 
-test('DOMINO — stable hand + owner-gated Precision shimmer + stable exact sparkling Stock v35', async ({ page }) => {
+test('DOMINO — stable hand + owner-gated Precision shard burst + stable exact wide-spark Stock v36', async ({ page }) => {
   const response = await page.goto(ENTRY_URL, { waitUntil:'domcontentloaded' });
   expect(response?.ok()).toBe(true);
 
@@ -116,14 +116,14 @@ test('DOMINO — stable hand + owner-gated Precision shimmer + stable exact spar
     const areaHeight = () => container.querySelector('.domino-chain-area')?.getBoundingClientRect().height || 0;
 
     state.profileInventory = { equipped:{ game_domino_effect:'base' }, catalog:[], owned:[] };
-    renderDominoSurface({ game:gameFor({ id:'diag-v35-seven', handCount:7, chainCount:1 }), me:{ id:'diag-me' }, container, onAction:() => {} });
+    renderDominoSurface({ game:gameFor({ id:'diag-v36-seven', handCount:7, chainCount:1 }), me:{ id:'diag-me' }, container, onAction:() => {} });
     const stabilitySheetLoaded = await waitForSheet('link[data-mgw-domino-mobile-stability]');
     const effectsSheetLoaded = await waitForSheet('link[data-mgw-domino-live-effects-v33]');
     await nextFrame();
     const seven = measureHand();
     const shortHeight = areaHeight();
 
-    const twelveGame = gameFor({ id:'diag-v35-twelve', handCount:12, chainCount:18 });
+    const twelveGame = gameFor({ id:'diag-v36-twelve', handCount:12, chainCount:18 });
     renderDominoSurface({ game:twelveGame, me:{ id:'diag-me' }, container, onAction:() => {} });
     await nextFrame();
     const twelve = measureHand();
@@ -136,7 +136,7 @@ test('DOMINO — stable hand + owner-gated Precision shimmer + stable exact spar
 
     state.profileInventory.equipped.game_domino_effect = 'game-domino-effect-precision-drop';
     const myPrecisionGame = gameFor({
-      id:'diag-v35-precision-mine', handCount:7, chainCount:4,
+      id:'diag-v36-precision-mine', handCount:7, chainCount:4,
       action:{ type:'play', player_id:'diag-me', tile:'6-5', side:'right' },
     });
     renderDominoSurface({ game:myPrecisionGame, me:{ id:'diag-me' }, container, onAction:() => {} });
@@ -147,8 +147,10 @@ test('DOMINO — stable hand + owner-gated Precision shimmer + stable exact spar
       owner:myPrecisionLocal instanceof HTMLElement ? myPrecisionLocal.dataset.dominoPrecisionOwner || '' : '',
       visual:myPrecisionLocal instanceof HTMLElement ? myPrecisionLocal.dataset.dominoPrecisionVisual || '' : '',
       launches:Number(container.dataset.dominoPrecisionLaunches || 0),
-      waves:myPrecisionLocal?.querySelectorAll('.tile-wave').length || 0,
-      aura:myPrecisionLocal?.querySelectorAll('.tile-aura').length || 0,
+      frame:myPrecisionLocal?.querySelectorAll('.precision-frame').length || 0,
+      streaks:myPrecisionLocal?.querySelectorAll('.precision-streak').length || 0,
+      echoes:myPrecisionLocal?.querySelectorAll('.precision-echo').length || 0,
+      zIndex:myPrecisionLocal instanceof HTMLElement ? getComputedStyle(myPrecisionLocal).zIndex : '',
       detachedNative:document.querySelectorAll('body > .domino-native-fx-accent.is-precision').length,
     };
     renderDominoSurface({ game:myPrecisionGame, me:{ id:'diag-me' }, container, onAction:() => {} });
@@ -156,7 +158,7 @@ test('DOMINO — stable hand + owner-gated Precision shimmer + stable exact spar
     const myPrecisionLaunchesAfterRepeat = Number(container.dataset.dominoPrecisionLaunches || 0);
 
     const opponentWithoutEffect = gameFor({
-      id:'diag-v35-precision-opponent-base', handCount:7, chainCount:5,
+      id:'diag-v36-precision-opponent-base', handCount:7, chainCount:5,
       action:{ type:'play', player_id:'diag-opponent', tile:'6-5', side:'right' },
       players:[{ id:'diag-me', tile_count:7 }, { id:'diag-opponent', tile_count:4 }],
     });
@@ -165,7 +167,7 @@ test('DOMINO — stable hand + owner-gated Precision shimmer + stable exact spar
     const opponentWithoutEffectCount = container.querySelectorAll('.mgw-domino-precision-local-v33').length;
 
     const opponentWithEffect = gameFor({
-      id:'diag-v35-precision-opponent-owned', handCount:7, chainCount:6,
+      id:'diag-v36-precision-opponent-owned', handCount:7, chainCount:6,
       action:{ type:'play', player_id:'diag-opponent', tile:'6-5', side:'right' },
       players:[
         { id:'diag-me', tile_count:7 },
@@ -181,12 +183,12 @@ test('DOMINO — stable hand + owner-gated Precision shimmer + stable exact spar
     };
 
     state.profileInventory.equipped.game_domino_effect = 'game-domino-effect-stock-pulse';
-    const stockBase = gameFor({ id:'diag-v35-stock', handCount:7, chainCount:4, stockCount:12 });
+    const stockBase = gameFor({ id:'diag-v36-stock', handCount:7, chainCount:4, stockCount:12 });
     renderDominoSurface({ game:stockBase, me:{ id:'diag-me' }, container, onAction:() => {} });
     await oneFrame();
 
     const stockInterim = gameFor({
-      id:'diag-v35-stock', handCount:7, chainCount:4, stockCount:11,
+      id:'diag-v36-stock', handCount:7, chainCount:4, stockCount:11,
       action:{ type:'draw', player_id:'diag-me', drawn_count:1 },
     });
     renderDominoSurface({ game:stockInterim, me:{ id:'diag-me' }, container, onAction:() => {} });
@@ -194,7 +196,7 @@ test('DOMINO — stable hand + owner-gated Precision shimmer + stable exact spar
     const interimBeamCount = document.querySelectorAll('.domino-native-fx-accent.is-stock-v33').length;
 
     const stockFinal = gameFor({
-      id:'diag-v35-stock', handCount:8, chainCount:4, stockCount:11,
+      id:'diag-v36-stock', handCount:8, chainCount:4, stockCount:11,
       action:{ type:'draw', player_id:'diag-me', drawn_count:1 },
     });
     renderDominoSurface({ game:stockFinal, me:{ id:'diag-me' }, container, onAction:() => {} });
@@ -225,6 +227,7 @@ test('DOMINO — stable hand + owner-gated Precision shimmer + stable exact spar
         endError:Math.hypot(startX + Math.cos(angle) * distance - expectedEnd.x, startY + Math.sin(angle) * distance - expectedEnd.y),
         lineHeight:getComputedStyle(beam.querySelector('.stock-line-v33')).height,
         sparkWidth:spark instanceof HTMLElement ? getComputedStyle(spark).width : '0px',
+        sparkSide:spark instanceof HTMLElement ? getComputedStyle(spark).getPropertyValue('--spark-side').trim() : '',
         sparks:beam.querySelectorAll('.stock-spark-v33').length,
         launches:Number(container.dataset.dominoStockLaunches || 0),
         nativeWrongBeams:document.querySelectorAll('.domino-native-fx-accent.is-stock').length,
@@ -236,7 +239,7 @@ test('DOMINO — stable hand + owner-gated Precision shimmer + stable exact spar
     const stockLaunchesAfterRepeat = Number(container.dataset.dominoStockLaunches || 0);
 
     state.profileInventory.equipped.game_domino_effect = 'game-domino-effect-chain-finale';
-    renderDominoSurface({ game:gameFor({ id:'diag-v35-finale-active', handCount:7, chainCount:4 }), me:{ id:'diag-me' }, container, onAction:() => {} });
+    renderDominoSurface({ game:gameFor({ id:'diag-v36-finale-active', handCount:7, chainCount:4 }), me:{ id:'diag-me' }, container, onAction:() => {} });
     await oneFrame();
     const finaleQaCount = container.querySelectorAll('.domino-finale-qa-row,.domino-finale-qa-button').length;
 
@@ -261,12 +264,12 @@ test('DOMINO — stable hand + owner-gated Precision shimmer + stable exact spar
     };
   });
 
-  console.log(`DOMINO_V35_STABILITY=${JSON.stringify(setup)}`);
+  console.log(`DOMINO_V36_STABILITY=${JSON.stringify(setup)}`);
   expect(setup.entry).toContain('/app/v110.php');
   expect(setup.stabilitySheetLoaded).toBe(true);
   expect(setup.effectsSheetLoaded).toBe(true);
   expect(setup.marker).toBe('v30');
-  expect(setup.liveEffects).toBe('v35');
+  expect(setup.liveEffects).toBe('v36');
 
   expect(setup.seven).toMatchObject({ count:7, layout:'single-row', rows:1, columns:7, allVisible:true });
   expect(setup.twelve).toMatchObject({ count:12, layout:'two-row', rows:2, columns:6, allVisible:true });
@@ -278,10 +281,12 @@ test('DOMINO — stable hand + owner-gated Precision shimmer + stable exact spar
   expect(setup.myPrecision).toEqual({
     exists:true,
     owner:'diag-me',
-    visual:'shimmer-spark-v35',
+    visual:'edge-shard-burst-v36',
     launches:1,
-    waves:2,
-    aura:1,
+    frame:1,
+    streaks:8,
+    echoes:2,
+    zIndex:'2',
     detachedNative:0,
   });
   expect(setup.myPrecisionLaunchesAfterRepeat).toBe(1);
@@ -296,7 +301,8 @@ test('DOMINO — stable hand + owner-gated Precision shimmer + stable exact spar
   expect(setup.stockBeam?.startError).toBeLessThanOrEqual(1);
   expect(setup.stockBeam?.endError).toBeLessThanOrEqual(1);
   expect(Number.parseFloat(setup.stockBeam?.lineHeight || '99')).toBeLessThan(1);
-  expect(Number.parseFloat(setup.stockBeam?.sparkWidth || '0')).toBeGreaterThanOrEqual(5);
+  expect(Number.parseFloat(setup.stockBeam?.sparkWidth || '0')).toBeGreaterThanOrEqual(7);
+  expect(Math.abs(Number.parseFloat(setup.stockBeam?.sparkSide || '0'))).toBeGreaterThanOrEqual(12);
   expect(setup.stockBeam?.sparks).toBe(8);
   expect(setup.stockBeam?.launches).toBe(1);
   expect(setup.stockBeam?.nativeWrongBeams).toBe(0);
