@@ -1,25 +1,25 @@
-/* MVP-19.9 Domino live effects v32 corrective.
-   Effect 1 is physically anchored to the real chain slot.
-   Effect 2 keeps the original boneyard -> drawn domino meaning, with an exact target.
-   Effect 3 remains the accepted premium-v31 visual; only its staging QA control is retired. */
+/* MVP-19.9 Domino live effects v33 corrective.
+   Precision is a single owner-gated tile-local pulse with glow.
+   Stock is an exact boneyard -> newly drawn tile beam with a thin spark trail.
+   Accepted premium Finale v31 remains untouched; QA control stays retired. */
 
-/* Precision Drop — the old fixed/body accent remains only as an invisible geometry probe. */
-.domino-native-fx-accent.is-precision[data-domino-precision-probe="hidden-v32"]{
+/* Never let the legacy fixed/body Precision accent paint. v33 owns the visible effect locally. */
+.domino-native-fx-accent.is-precision[data-domino-native-effect="precision"]{
   opacity:0!important;
   visibility:hidden!important;
+  pointer-events:none!important;
   filter:none!important;
   box-shadow:none!important;
 }
-.domino-native-fx-accent.is-precision[data-domino-precision-probe="hidden-v32"] *{
+.domino-native-fx-accent.is-precision[data-domino-native-effect="precision"] *{
   display:none!important;
 }
 
-/* The visible waves live inside the real latest slot, so board growth/reflow moves them with the domino. */
 .domino-chain-slot.latest > .domino-tile{
   position:relative;
   z-index:1;
 }
-.domino-chain-slot.latest > .mgw-domino-precision-local-v32{
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33{
   position:absolute;
   inset:0;
   z-index:0;
@@ -31,75 +31,169 @@
   border-radius:5px;
   transform-origin:50% 50%;
 }
-.domino-chain-slot.vertical > .mgw-domino-precision-local-v32,
-.domino-chain-slot.horizontal.is-double > .mgw-domino-precision-local-v32{
+.domino-chain-slot.vertical > .mgw-domino-precision-local-v33,
+.domino-chain-slot.horizontal.is-double > .mgw-domino-precision-local-v33{
   transform:rotate(90deg);
 }
-.domino-chain-slot.vertical.is-double > .mgw-domino-precision-local-v32{
+.domino-chain-slot.vertical.is-double > .mgw-domino-precision-local-v33{
   transform:rotate(0deg);
 }
-.domino-chain-slot.latest > .mgw-domino-precision-local-v32 .tile-wave{
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .tile-aura{
+  position:absolute;
+  inset:-2px;
+  display:block;
+  border-radius:7px;
+  opacity:0;
+  box-shadow:0 0 10px rgba(255,220,95,.58),0 0 18px rgba(255,184,58,.34),inset 0 0 8px rgba(255,246,203,.18);
+  animation:mgw-domino-precision-aura-v33 .62s ease-out both;
+}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .tile-wave{
   position:absolute;
   inset:0;
   display:block;
-  border:1.4px solid rgba(255,226,111,.96);
+  border:1.25px solid rgba(255,226,111,.94);
   border-radius:inherit;
-  box-shadow:0 0 8px rgba(255,215,87,.5),inset 0 0 7px rgba(255,244,194,.12);
+  box-shadow:0 0 7px rgba(255,215,87,.42);
   opacity:0;
   transform-origin:center;
-  animation:mgw-domino-precision-local-v32 .78s cubic-bezier(.12,.72,.18,1) both;
+  animation:mgw-domino-precision-local-v33 .62s cubic-bezier(.12,.72,.18,1) both;
 }
-.domino-chain-slot.latest > .mgw-domino-precision-local-v32 .wave-2{
-  border-color:rgba(255,190,72,.78);
-  animation-delay:70ms;
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .wave-2{
+  border-color:rgba(255,244,194,.56);
+  animation-delay:78ms;
 }
-.domino-chain-slot.latest > .mgw-domino-precision-local-v32 .wave-3{
-  border-color:rgba(255,244,194,.62);
-  animation-delay:140ms;
+.domino-chain-slot.latest > .domino-tile.mgw-domino-precision-glow-v33{
+  animation:mgw-domino-precision-tile-glow-v33 .66s ease-out both!important;
 }
-@keyframes mgw-domino-precision-local-v32{
+@keyframes mgw-domino-precision-local-v33{
+  0%{opacity:0;transform:scale(.99)}
+  16%{opacity:.96;transform:scale(1)}
+  68%{opacity:.42}
+  100%{opacity:0;transform:scale(1.33)}
+}
+@keyframes mgw-domino-precision-aura-v33{
   0%{opacity:0;transform:scale(.98)}
-  14%{opacity:1;transform:scale(1)}
-  72%{opacity:.5}
-  100%{opacity:0;transform:scale(1.48)}
+  22%{opacity:.92;transform:scale(1)}
+  100%{opacity:0;transform:scale(1.18)}
+}
+@keyframes mgw-domino-precision-tile-glow-v33{
+  0%,100%{filter:brightness(1) saturate(1)}
+  26%{filter:brightness(1.36) saturate(1.16) drop-shadow(0 0 5px rgba(255,218,91,.64))}
+  52%{filter:brightness(1.17) saturate(1.08) drop-shadow(0 0 8px rgba(255,190,62,.34))}
 }
 
-/* Stock Pulse — restore the original boneyard beam, but make it thin and target the exact drawn domino. */
-.domino-native-fx-accent.is-stock.is-stock-v32[data-domino-native-effect="stock"]{
-  opacity:1!important;
-  height:1px!important;
+/* Suppress the legacy Stock accent completely. It can target stale hand geometry during polling. */
+.domino-native-fx-accent.is-stock[data-domino-native-effect="stock"]{
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+.domino-native-fx-accent.is-stock[data-domino-native-effect="stock"] *{
+  display:none!important;
+}
+
+/* v33 draws one beam only after the newly added viewer-hand tile ID is known. */
+.domino-native-fx-accent.is-stock-v33{
+  position:fixed;
+  z-index:10005;
+  height:1px;
   overflow:visible!important;
+  pointer-events:none!important;
   transform-origin:0 50%!important;
-  filter:drop-shadow(0 0 2.5px rgba(69,238,255,.42));
+  transform:rotate(var(--mgw-domino-stock-angle,0deg));
+  filter:drop-shadow(0 0 2px rgba(74,238,255,.34));
 }
-.domino-native-fx-accent.is-stock.is-stock-v32 .stock-line{
-  top:-.5px!important;
-  height:1px!important;
-  background:linear-gradient(90deg,rgba(69,238,255,.84),rgba(122,214,255,.7) 54%,rgba(163,103,255,.45) 82%,rgba(255,255,255,0))!important;
-  filter:drop-shadow(0 0 2.5px rgba(69,238,255,.46))!important;
+.domino-native-fx-accent.is-stock-v33 .stock-line-v33{
+  position:absolute;
+  left:0;
+  top:-.32px;
+  width:100%;
+  height:.64px;
+  border-radius:999px;
+  transform-origin:0 50%;
+  background:linear-gradient(90deg,rgba(70,238,255,.08),rgba(80,241,255,.92) 26%,rgba(122,216,255,.78) 58%,rgba(166,105,255,.5) 84%,rgba(255,255,255,.04));
+  box-shadow:0 0 3px rgba(72,238,255,.45);
+  animation:mgw-domino-stock-line-v33 .72s cubic-bezier(.16,.78,.18,1) both;
 }
-.domino-native-fx-accent.is-stock.is-stock-v32 .stock-orb{
-  width:5px!important;
-  height:5px!important;
-  margin:-2.5px 0 0 -2.5px!important;
-  box-shadow:0 0 5px #4deaff,0 0 9px rgba(157,91,255,.62)!important;
+.domino-native-fx-accent.is-stock-v33 .stock-orb-v33{
+  position:absolute;
+  left:0;
+  top:0;
+  width:4px;
+  height:4px;
+  margin:-2px 0 0 -2px;
+  border-radius:50%;
+  background:#f7ffff;
+  box-shadow:0 0 5px rgba(91,245,255,.95),0 0 9px rgba(157,91,255,.62);
+  animation:mgw-domino-stock-orb-v33 .8s cubic-bezier(.15,.8,.18,1) both;
+}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33{
+  --sx:0px;
+  --sy:-6px;
+  position:absolute;
+  top:0;
+  width:2px;
+  height:2px;
+  margin:-1px 0 0 -1px;
+  border-radius:50%;
+  background:#eaffff;
+  box-shadow:0 0 4px rgba(87,243,255,.95),0 0 7px rgba(173,108,255,.48);
+  opacity:0;
+  animation:mgw-domino-stock-spark-v33 .5s ease-out both;
+}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p1{left:14%;--sx:-4px;--sy:-7px;animation-delay:70ms}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p2{left:24%;--sx:3px;--sy:6px;animation-delay:120ms}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p3{left:36%;--sx:-2px;--sy:-9px;animation-delay:165ms}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p4{left:48%;--sx:4px;--sy:8px;animation-delay:205ms}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p5{left:59%;--sx:-4px;--sy:-8px;animation-delay:245ms}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p6{left:69%;--sx:2px;--sy:7px;animation-delay:285ms}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p7{left:79%;--sx:-3px;--sy:-6px;animation-delay:325ms}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p8{left:88%;--sx:4px;--sy:8px;animation-delay:360ms}
+.domino-stock-count.mgw-domino-stock-source-v33{
+  animation:mgw-domino-stock-source-v33 .68s ease-out both!important;
+}
+.domino-tile.mgw-domino-stock-target-v33{
+  animation:mgw-domino-stock-target-v33 .72s .28s ease-out both!important;
+}
+@keyframes mgw-domino-stock-line-v33{
+  0%{opacity:0;transform:scaleX(0)}
+  12%{opacity:1}
+  72%{opacity:.9;transform:scaleX(1)}
+  100%{opacity:0;transform:scaleX(1)}
+}
+@keyframes mgw-domino-stock-orb-v33{
+  0%{opacity:0;transform:translateX(0) scale(.45)}
+  10%{opacity:1}
+  82%{opacity:1}
+  100%{opacity:0;transform:translateX(var(--mgw-domino-stock-distance,24px)) scale(.72)}
+}
+@keyframes mgw-domino-stock-spark-v33{
+  0%{opacity:0;transform:translate(0,0) scale(.5)}
+  18%{opacity:.95}
+  100%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(.1)}
+}
+@keyframes mgw-domino-stock-source-v33{
+  0%,100%{filter:brightness(1) saturate(1)}
+  30%{filter:brightness(1.26) saturate(1.14) drop-shadow(0 0 5px rgba(75,239,255,.38))}
+}
+@keyframes mgw-domino-stock-target-v33{
+  0%,100%{filter:brightness(1) saturate(1)}
+  38%{filter:brightness(1.34) saturate(1.14) drop-shadow(0 0 6px rgba(111,232,255,.5))}
 }
 
-/* v31 hid the native stock beam while experimenting with a join-beam replacement.
-   v32 restores it only after JS resolves the real newly drawn domino. */
-.domino-native-fx-accent.is-stock.is-stock-v32[data-domino-stock-target="exact-drawn-tile-v32"]{
-  opacity:1!important;
-}
-
-/* QA-only Chain Finale control is retired. Natural finished-game trigger stays untouched. */
+/* QA-only Chain Finale control remains retired. Natural finished-game trigger is unchanged. */
 .domino-finale-qa-row,
 .domino-finale-qa-button{
   display:none!important;
 }
 
 @media (prefers-reduced-motion:reduce){
-  .domino-chain-slot.latest > .mgw-domino-precision-local-v32 .tile-wave{
-    animation-duration:.42s!important;
+  .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .tile-aura,
+  .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .tile-wave,
+  .domino-native-fx-accent.is-stock-v33 .stock-line-v33,
+  .domino-native-fx-accent.is-stock-v33 .stock-orb-v33,
+  .domino-native-fx-accent.is-stock-v33 .stock-spark-v33{
+    animation-duration:.38s!important;
     animation-delay:0ms!important;
   }
 }
