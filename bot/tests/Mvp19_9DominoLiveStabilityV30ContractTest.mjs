@@ -24,17 +24,19 @@ assert.ok(wrapper.includes("hand.style.setProperty('display', 'grid', 'important
 assert.ok(wrapper.includes("hand.style.setProperty('grid-template-columns'"), 'v30 runtime must own deterministic grid columns after every rerender');
 
 assert.ok(wrapper.includes('function mountTileLocalPrecisionV32'), 'Precision v32 corrective must exist');
-assert.ok(wrapper.includes("accent.remove();"), 'old body-level Precision accent must be removed');
-assert.ok(wrapper.includes("local.dataset.dominoPrecisionAnchor = 'latest-slot-local-v32'"), 'Precision must publish a chain-local anchor');
-assert.ok(wrapper.includes("local.dataset.dominoPrecisionVisual = 'tile-outline-v32'"), 'Precision must publish the tile outline visual');
-assert.ok(wrapper.includes('latestSlot.appendChild(local)'), 'Precision outline must be physically owned by the real latest chain slot');
-assert.ok(!wrapper.includes("accent.dataset.dominoPrecisionAnchor = 'seam-v30'"), 'old fixed viewport Precision anchor must no longer be active');
+assert.ok(wrapper.includes("accent.dataset.dominoPrecisionProbe = 'hidden-v32'"), 'old fixed Precision owner must be retained only as a hidden diagnostic probe');
+assert.ok(wrapper.includes("accent.dataset.dominoPrecisionAnchor = 'seam-v30'"), 'hidden probe must preserve deterministic seam diagnostics');
+assert.ok(wrapper.includes("accent.dataset.dominoPrecisionGeometry = 'static-v2'"), 'hidden probe must keep static geometry diagnostics');
+assert.ok(wrapper.includes("local.dataset.dominoPrecisionAnchor = 'latest-slot-local-v32'"), 'visible Precision must publish a chain-local anchor');
+assert.ok(wrapper.includes("local.dataset.dominoPrecisionVisual = 'tile-outline-v32'"), 'visible Precision must publish the tile outline visual');
+assert.ok(wrapper.includes('latestSlot.appendChild(local)'), 'visible Precision outline must be physically owned by the real latest chain slot');
+assert.ok(liveEffectsV32Css.includes('[data-domino-precision-probe="hidden-v32"]'), 'fixed Precision probe must be invisible');
 assert.ok(liveEffectsV32Css.includes('.domino-chain-slot.latest > .mgw-domino-precision-local-v32'), 'Precision waves must be styled inside the real chain slot');
 assert.ok(liveEffectsV32Css.includes('@keyframes mgw-domino-precision-local-v32'), 'Precision local wave animation must exist');
 
 assert.ok(wrapper.includes('function correctStockBeamV32'), 'Stock v32 corrective must exist');
 assert.ok(wrapper.includes("String(game?.last_action?.type || '') !== 'draw'"), 'Stock must remain a real draw effect');
-assert.ok(wrapper.includes(".domino-hand-tile.mgw-domino-native-stock-target"), 'Stock must resolve the exact native drawn tile marker');
+assert.ok(wrapper.includes('.domino-hand-tile.mgw-domino-native-stock-target'), 'Stock must resolve the exact native drawn tile marker');
 assert.ok(wrapper.includes("accent.dataset.dominoStockSource = 'boneyard-v32'"), 'Stock beam must retain the boneyard as source');
 assert.ok(wrapper.includes("accent.dataset.dominoStockTarget = 'exact-drawn-tile-v32'"), 'Stock beam must target the exact drawn domino');
 assert.ok(wrapper.includes('accents.forEach(node => node.remove())'), 'Stock must suppress itself instead of falling back to an incorrect hand/screen centre');
@@ -43,8 +45,9 @@ assert.ok(!wrapper.includes('suppressLegacyStockDraw'), 'original Stock draw eff
 assert.ok(liveEffectsV32Css.includes('height:1px!important'), 'Stock beam must be visibly thin');
 assert.ok(liveEffectsV32Css.includes('exact-drawn-tile-v32'), 'Stock CSS must only restore the beam after exact target resolution');
 
-assert.ok(wrapper.includes('function removeFinaleQaControlV32'), 'accepted Finale must remove the staging-only QA control');
-assert.ok(wrapper.includes(".domino-finale-qa-row,.domino-finale-qa-button"), 'QA row/button must be removed from the rendered panel');
+assert.ok(wrapper.includes('function removeFinaleQaControlV32'), 'accepted Finale must retire the staging-only QA control');
+assert.ok(wrapper.includes('.domino-finale-qa-row,.domino-finale-qa-button'), 'QA row/button must be removed from the rendered panel');
+assert.ok(wrapper.includes("container.dataset.dominoFinaleQa = 'retired-v32'"), 'runtime must expose QA retirement marker');
 assert.ok(wrapper.includes("accent.dataset.dominoFinaleVisual = 'premium-v31'"), 'accepted premium Finale v31 visual must remain unchanged');
 assert.ok(liveEffectsV32Css.includes('.domino-finale-qa-row'), 'QA control must also be hidden before removal to prevent flash');
 
