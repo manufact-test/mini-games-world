@@ -144,11 +144,20 @@ test('DOMINO — stable 2-row hand + tile-local Precision + exact boneyard Stock
     await new Promise(resolve => requestAnimationFrame(resolve));
     const latestSlot = container.querySelector('.domino-chain-slot.latest');
     const precisionLocal = latestSlot?.querySelector(':scope > .mgw-domino-precision-local-v32');
+    const fixedPrecisionProbes = [...document.querySelectorAll('body > .domino-native-fx-accent.is-precision')]
+      .filter(node => node instanceof HTMLElement);
+    const detachedVisibleCount = fixedPrecisionProbes.filter(node => {
+      const style = getComputedStyle(node);
+      return style.display !== 'none'
+        && style.visibility !== 'hidden'
+        && Number.parseFloat(style.opacity || '1') > 0.01;
+    }).length;
     const precision = {
       exists:precisionLocal instanceof HTMLElement,
       parentIsLatest:precisionLocal?.parentElement === latestSlot,
       anchor:precisionLocal instanceof HTMLElement ? precisionLocal.dataset.dominoPrecisionAnchor || '' : '',
-      globalCount:document.querySelectorAll('.domino-native-fx-accent.is-precision').length,
+      probeCount:fixedPrecisionProbes.length,
+      detachedVisibleCount,
     };
 
     state.profileInventory.equipped.game_domino_effect = 'game-domino-effect-stock-pulse';
@@ -220,7 +229,13 @@ test('DOMINO — stable 2-row hand + tile-local Precision + exact boneyard Stock
   expect(setup.heights.long).toBeCloseTo(setup.heights.short, 0);
   expect(setup.heights.afterInternal).toBeCloseTo(setup.heights.short, 0);
 
-  expect(setup.precision).toEqual({ exists:true, parentIsLatest:true, anchor:'latest-slot-local-v32', globalCount:0 });
+  expect(setup.precision).toEqual({
+    exists:true,
+    parentIsLatest:true,
+    anchor:'latest-slot-local-v32',
+    probeCount:1,
+    detachedVisibleCount:0,
+  });
   expect(setup.stockBeam?.source).toBe('boneyard-v32');
   expect(setup.stockBeam?.target).toBe('exact-drawn-tile-v32');
   expect(setup.stockBeam?.startError).toBeLessThanOrEqual(1);
