@@ -66,21 +66,23 @@ function correctPrecisionContact(container){
   const latestIndex = slots.indexOf(latestSlot);
   const neighborSlot = adjacentSlot(slots, latestIndex);
   const neighborTile = neighborSlot?.querySelector('.domino-tile');
-  const latestRect = latestTile.getBoundingClientRect();
+  const latestRect = stableSlotTileRect(latestSlot, latestTile);
 
-  if (!(neighborTile instanceof HTMLElement)) {
+  if (!(neighborSlot instanceof HTMLElement) || !(neighborTile instanceof HTMLElement)) {
     const center = rectCenter(latestRect);
     accent.style.left = `${center.x}px`;
     accent.style.top = `${center.y}px`;
+    accent.dataset.dominoPrecisionGeometry = 'static-v2';
     return;
   }
 
-  const neighborRect = neighborTile.getBoundingClientRect();
+  const neighborRect = stableSlotTileRect(neighborSlot, neighborTile);
   const contact = seamBetweenRects(latestRect, neighborRect);
   accent.style.left = `${contact.x}px`;
   accent.style.top = `${contact.y}px`;
   accent.style.setProperty('--mgw-domino-native-angle', `${contact.angle}deg`);
   accent.dataset.dominoPrecisionAnchor = 'seam-v30';
+  accent.dataset.dominoPrecisionGeometry = 'static-v2';
 }
 
 function adjacentSlot(slots, latestIndex){
@@ -88,6 +90,27 @@ function adjacentSlot(slots, latestIndex){
   if (latestIndex === 0) return slots[1] || null;
   if (latestIndex === slots.length - 1) return slots[latestIndex - 1] || null;
   return slots[latestIndex - 1] || slots[latestIndex + 1] || null;
+}
+
+function stableSlotTileRect(slot, tile){
+  const slotRect = slot.getBoundingClientRect();
+  const center = rectCenter(slotRect);
+  const baseWidth = Number(tile.offsetWidth || 0) || Number(tile.getBoundingClientRect().width || 0);
+  const baseHeight = Number(tile.offsetHeight || 0) || Number(tile.getBoundingClientRect().height || 0);
+  const vertical = slot.classList.contains('vertical');
+  const isDouble = slot.classList.contains('is-double');
+  const quarterTurn = (vertical && !isDouble) || (!vertical && isDouble);
+  const width = quarterTurn ? baseHeight : baseWidth;
+  const height = quarterTurn ? baseWidth : baseHeight;
+
+  return {
+    left:center.x - width / 2,
+    right:center.x + width / 2,
+    top:center.y - height / 2,
+    bottom:center.y + height / 2,
+    width,
+    height,
+  };
 }
 
 function seamBetweenRects(latestRect, neighborRect){
