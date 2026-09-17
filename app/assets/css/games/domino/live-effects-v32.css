@@ -1,7 +1,7 @@
-/* MVP-19.9 Domino live effects v39.
+/* MVP-19.9 Domino live effects v40.
    Precision and Stock particles render in a dedicated viewport layer and move through
    Web Animations with concrete pixel coordinates. Accepted Finale v31 is untouched.
-   v39 trims only the accepted Precision ring spread by 40%; shards and Stock are frozen. */
+   v40 halves the entire current Precision burst footprint (ring + shards); Stock stays frozen. */
 
 /* Suppress every legacy Precision/Stock visual so old flashes cannot leak underneath v38. */
 .domino-native-fx-accent.is-precision[data-domino-native-game],
@@ -37,7 +37,7 @@
   pointer-events:none!important;
 }
 
-/* Precision: eight large, glowing shards visibly leave the placed domino. */
+/* Precision: keep the accepted motion/timing, but halve the whole visual footprint from v39. */
 .mgw-domino-precision-burst-v38{
   position:fixed!important;
   width:0!important;
@@ -45,6 +45,8 @@
   overflow:visible!important;
   pointer-events:none!important;
   z-index:2!important;
+  scale:.5!important;
+  transform-origin:0 0!important;
 }
 .mgw-domino-precision-burst-v38 .precision-ring-v38{
   position:absolute!important;
