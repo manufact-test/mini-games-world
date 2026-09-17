@@ -112,18 +112,22 @@ jobs:
           grep -F "container.dataset.mgwDominoManualCorrective = 'v25'" app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js
           grep -F "hand.dataset.dominoHandDrag = 'v26'" app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js
           grep -F "hand.dataset.dominoHandGesture = 'v27'" app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js
+          grep -F "container.dataset.mgwDominoHandPointer = 'v28'" app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js
           grep -F "button.dataset.dominoFinaleQa = 'preview'" app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js
           grep -F "touch-action:pan-x pan-y!important" app/assets/css/games/domino/live-native-manual-v25.css
           grep -F "touch-action:pan-y!important" app/assets/css/games/domino/live-hand-gesture-v27.css
           ! grep -Fq "touch-action:pan-x" app/assets/css/games/domino/live-hand-gesture-v27.css
+          grep -F ".domino-hand:has(> .domino-hand-tile:nth-child(9))" app/assets/css/games/domino/live-hand-gesture-v27.css
+          grep -F "flex-wrap:wrap!important" app/assets/css/games/domino/live-hand-gesture-v27.css
+          grep -F "overflow-x:visible!important" app/assets/css/games/domino/live-hand-gesture-v27.css
           grep -F "mgw-domino-native-precision-tile-v25" app/assets/css/games/domino/live-native-manual-v25.css
           grep -F "mgw-domino-native-stock-orb-v25" app/assets/css/games/domino/live-native-manual-v25.css
           grep -F "overflow-y:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
           grep -F "overflow-x:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
-          grep -F "renderer-cosmetics-corrective-v25.js?v=1&mvp19_9=manual-corrective-v25&hand_drag=v26" app/runtime/client/version-manifest.php
+          grep -F "renderer-cosmetics-corrective-v25.js?v=2&mvp19_9=manual-corrective-v25&hand_drag=v26&pointer_owner=v28&hand_layout=v29" app/runtime/client/version-manifest.php
           grep -F "&gesture_owner=v27" app/v110.php
           grep -F "X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal" app/v110.php
-          grep -F "/app/v110.php?v=1189&hand_gesture=27" bot/helpers/WebAppLaunchUrl.php
+          grep -F "/app/v110.php?v=1190&hand_layout=29" bot/helpers/WebAppLaunchUrl.php
 
       - name: Wait for exact Hostinger staging fingerprint
         id: readiness
