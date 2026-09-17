@@ -1,6 +1,7 @@
-/* MVP-19.9 Domino live effects v38.
+/* MVP-19.9 Domino live effects v39.
    Precision and Stock particles render in a dedicated viewport layer and move through
-   Web Animations with concrete pixel coordinates. Accepted Finale v31 is untouched. */
+   Web Animations with concrete pixel coordinates. Accepted Finale v31 is untouched.
+   v39 trims only the accepted Precision ring spread by 40%; shards and Stock are frozen. */
 
 /* Suppress every legacy Precision/Stock visual so old flashes cannot leak underneath v38. */
 .domino-native-fx-accent.is-precision[data-domino-native-game],
@@ -52,6 +53,7 @@
   border-radius:9px!important;
   background:transparent!important;
   box-shadow:0 0 9px rgba(255,222,101,.72),0 0 18px rgba(255,161,41,.32)!important;
+  scale:.81!important;
   transform-origin:50% 50%!important;
   will-change:transform,opacity!important;
 }
