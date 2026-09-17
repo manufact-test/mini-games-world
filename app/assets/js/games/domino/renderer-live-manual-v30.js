@@ -113,7 +113,7 @@ function mountTileLocalPrecisionV33(args, container){
   const finisher = local.querySelector('.precision-streak.s8');
   const cleanup = event => {
     if (event.target !== finisher) return;
-    if (event.type === 'animationend' && String(event.animationName || '') !== 'mgw-domino-precision-streak-v36') return;
+    if (event.type === 'animationend' && String(event.animationName || '') !== 'mgw-domino-precision-streak-v37') return;
     finisher.removeEventListener('animationend', cleanup);
     finisher.removeEventListener('animationcancel', cleanup);
     local.remove();
@@ -188,10 +188,10 @@ function correctStockBeamV33(args, container, previousViewerHandIds){
   container.dataset.dominoStockSignature = signature;
   container.dataset.dominoStockLaunches = String(Number(container.dataset.dominoStockLaunches || 0) + 1);
 
-  const finisher = accent.querySelector('.stock-orb-v33');
+  const finisher = accent.querySelector('.stock-spark-v33.p8');
   const cleanup = event => {
     if (event.target !== finisher) return;
-    if (event.type === 'animationend' && String(event.animationName || '') !== 'mgw-domino-stock-orb-v33') return;
+    if (event.type === 'animationend' && String(event.animationName || '') !== 'mgw-domino-stock-spark-v37') return;
     finisher.removeEventListener('animationend', cleanup);
     finisher.removeEventListener('animationcancel', cleanup);
     accent.remove();
@@ -327,18 +327,18 @@ function ensureLiveEffectsV31Styles(){
 
 function ensureLiveEffectsV33Styles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/domino/live-effects-v32.css?v=6&mvp19_9=precision-shard-burst-stock-wide-sparks-v36', import.meta.url).href;
+  const href = new URL('../../../css/games/domino/live-effects-v32.css?v=7&mvp19_9=precision-readable-radial-stock-crossburst-v37', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-domino-live-effects-v33]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwDominoLiveEffectsV33 = 'precision-shard-burst-stock-wide-sparks-v36';
+    existing.dataset.mgwDominoLiveEffectsV33 = 'precision-readable-radial-stock-crossburst-v37';
     return;
   }
 
   document.querySelectorAll('link[data-mgw-domino-live-effects-v32]').forEach(node => node.remove());
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwDominoLiveEffectsV33 = 'precision-shard-burst-stock-wide-sparks-v36';
+  link.dataset.mgwDominoLiveEffectsV33 = 'precision-readable-radial-stock-crossburst-v37';
   link.href = href;
   document.head.appendChild(link);
 }
