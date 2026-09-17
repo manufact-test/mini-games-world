@@ -8,12 +8,10 @@ import {
 const STOCK_ID = 'game-domino-effect-stock-pulse';
 const EFFECT_SLOT = 'game_domino_effect';
 const handObservers = new WeakMap();
-const joinedBeamSeenByGame = new Map();
-let finaleQaEnhancerBound = false;
 
 ensureStabilityStyles();
 ensureLiveEffectsV31Styles();
-ensureFinaleQaEnhancer();
+ensureLiveEffectsV32Styles();
 
 export { dominoMeta, dominoPlayerMark, dominoStatus };
 
@@ -24,12 +22,12 @@ export function renderDominoSurface(args){
   if (!(container instanceof HTMLElement)) return;
 
   container.dataset.mgwDominoManualStability = 'v30';
-  container.dataset.mgwDominoLiveEffects = 'v31';
+  container.dataset.mgwDominoLiveEffects = 'v32';
   markHandLayout(container);
   ensureHandLayoutObserver(container);
-  correctPrecisionContact(container);
-  suppressLegacyStockDraw(args, container);
-  mountJoinedBeamV31(args, container);
+  mountTileLocalPrecisionV32(container);
+  correctStockBeamV32(args, container);
+  removeFinaleQaControlV32(container);
   enhanceFinaleAccents(container);
 }
 
@@ -65,125 +63,79 @@ function ensureHandLayoutObserver(container){
   handObservers.set(container, observer);
 }
 
-function correctPrecisionContact(container){
+function mountTileLocalPrecisionV32(container){
   const accent = document.querySelector('.domino-native-fx-accent.is-precision[data-domino-native-game]');
+  if (!(accent instanceof HTMLElement)) return;
+
   const latestSlot = container.querySelector('.domino-chain-slot.latest');
   const latestTile = latestSlot?.querySelector('.domino-tile');
-  if (!(accent instanceof HTMLElement) || !(latestSlot instanceof HTMLElement) || !(latestTile instanceof HTMLElement)) return;
-
-  const slots = [...container.querySelectorAll('.domino-chain-slot')]
-    .filter(slot => slot instanceof HTMLElement);
-  const latestIndex = slots.indexOf(latestSlot);
-  const neighborSlot = adjacentSlot(slots, latestIndex);
-  const neighborTile = neighborSlot?.querySelector('.domino-tile');
-  const latestRect = stableSlotTileRect(latestSlot, latestTile);
-  if (accent.dataset.dominoPrecisionVisual === 'tile-outline-v31') return;
-
-  if (neighborSlot instanceof HTMLElement && neighborTile instanceof HTMLElement) {
-    const neighborRect = stableSlotTileRect(neighborSlot, neighborTile);
-    const contact = seamBetweenRects(latestRect, neighborRect);
-    accent.dataset.dominoPrecisionAnchor = 'seam-v30';
-    accent.style.setProperty('--mgw-domino-native-angle', `${contact.angle}deg`);
+  if (!(latestSlot instanceof HTMLElement) || !(latestTile instanceof HTMLElement)) {
+    accent.remove();
+    return;
   }
 
-  accent.classList.add('is-precision-v31');
-  accent.dataset.dominoPrecisionGeometry = 'static-v2';
-  accent.dataset.dominoPrecisionVisual = 'tile-outline-v31';
-  accent.style.left = `${latestRect.left}px`;
-  accent.style.top = `${latestRect.top}px`;
-  accent.style.width = `${latestRect.width}px`;
-  accent.style.height = `${latestRect.height}px`;
-  accent.style.transform = 'none';
-  accent.innerHTML = '<i class="tile-wave wave-1"></i><i class="tile-wave wave-2"></i><i class="tile-wave wave-3"></i>';
+  // The old body/fixed accent is the source of the drift when the chain reflows.
+  // Remove it completely and attach the visual to the real latest chain slot instead.
+  accent.remove();
+  latestSlot.querySelector('.mgw-domino-precision-local-v32')?.remove();
 
-  const finisher = accent.querySelector('.wave-3');
-  removeNodeOnAnimationEndV31(accent, finisher, 'mgw-domino-precision-outline-v31');
+  const local = document.createElement('span');
+  local.className = 'mgw-domino-precision-local-v32';
+  local.dataset.dominoPrecisionAnchor = 'latest-slot-local-v32';
+  local.dataset.dominoPrecisionVisual = 'tile-outline-v32';
+  local.setAttribute('aria-hidden', 'true');
+  local.innerHTML = '<i class="tile-wave wave-1"></i><i class="tile-wave wave-2"></i><i class="tile-wave wave-3"></i>';
+  latestSlot.appendChild(local);
+
+  const finisher = local.querySelector('.wave-3');
+  removeNodeOnAnimationEnd(local, finisher, 'mgw-domino-precision-local-v32');
 }
 
-function suppressLegacyStockDraw(args, container){
+function correctStockBeamV32(args, container){
   const game = args?.game;
   if (String(game?.last_action?.type || '') !== 'draw') return;
   if (actionEffectId(args, container) !== STOCK_ID) return;
 
   const gameId = String(game?.id || '');
-  document.querySelectorAll('.domino-native-fx-accent.is-stock[data-domino-native-game]').forEach(node => {
-    if (!(node instanceof HTMLElement)) return;
-    if (gameId && String(node.dataset.dominoNativeGame || '') !== gameId) return;
-    node.remove();
-  });
-  container.querySelector('.domino-stock-count')?.classList.remove('mgw-domino-native-stock-source');
-  container.querySelectorAll('.domino-hand-tile.mgw-domino-native-stock-target').forEach(node => {
-    node.classList.remove('mgw-domino-native-stock-target');
-  });
-}
+  const accents = [...document.querySelectorAll('.domino-native-fx-accent.is-stock[data-domino-native-game]')]
+    .filter(node => node instanceof HTMLElement && (!gameId || String(node.dataset.dominoNativeGame || '') === gameId));
+  if (accents.length === 0) return;
 
-function mountJoinedBeamV31(args, container){
-  const game = args?.game;
-  const action = game?.last_action || {};
-  if (String(action?.type || '') !== 'play') return;
-  if (actionEffectId(args, container) !== STOCK_ID) return;
+  const accent = accents[accents.length - 1];
+  const stock = container.querySelector('.domino-stock-count');
+  const markedTargets = [...container.querySelectorAll('.domino-hand-tile.mgw-domino-native-stock-target')]
+    .filter(node => node instanceof HTMLElement);
+  const targetButton = markedTargets[markedTargets.length - 1] || null;
+  const targetTile = targetButton?.querySelector('.domino-tile');
 
-  const gameId = String(game?.id || '');
-  if (!gameId) return;
-  const signature = `join:${gameId}:${Number(game?.move_count || 0)}:${String(action?.player_id || '')}:${String(action?.tile || '')}:${String(action?.side || '')}`;
-  if (joinedBeamSeenByGame.get(gameId) === signature) return;
-  joinedBeamSeenByGame.set(gameId, signature);
+  // Never fall back to the hand/screen centre. If the exact drawn tile is unavailable,
+  // suppress the beam rather than show a visually wrong target.
+  if (!(stock instanceof HTMLElement) || !(targetTile instanceof HTMLElement)) {
+    accents.forEach(node => node.remove());
+    return;
+  }
 
-  const latestSlot = container.querySelector('.domino-chain-slot.latest');
-  const latestTile = latestSlot?.querySelector('.domino-tile');
-  if (!(latestSlot instanceof HTMLElement) || !(latestTile instanceof HTMLElement)) return;
-
-  const slots = [...container.querySelectorAll('.domino-chain-slot')]
-    .filter(slot => slot instanceof HTMLElement);
-  const latestIndex = slots.indexOf(latestSlot);
-  const neighborSlot = adjacentSlot(slots, latestIndex);
-  const neighborTile = neighborSlot?.querySelector('.domino-tile');
-  if (!(neighborSlot instanceof HTMLElement) || !(neighborTile instanceof HTMLElement)) return;
-
-  document.querySelectorAll('.domino-native-fx-accent.is-join-beam-v31[data-domino-native-game]').forEach(node => {
-    if (!(node instanceof HTMLElement)) return;
-    if (String(node.dataset.dominoNativeGame || '') === gameId) node.remove();
-  });
-
-  const latestRect = stableSlotTileRect(latestSlot, latestTile);
-  const neighborRect = stableSlotTileRect(neighborSlot, neighborTile);
-  const start = rectCenter(latestRect);
-  const end = seamBetweenRects(latestRect, neighborRect);
+  const start = rectCenter(stock.getBoundingClientRect());
+  const end = rectCenter(targetTile.getBoundingClientRect());
   const dx = end.x - start.x;
   const dy = end.y - start.y;
-  const distance = Math.max(8, Math.hypot(dx, dy));
+  const distance = Math.max(12, Math.hypot(dx, dy));
   const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
-  const accent = document.createElement('span');
-  accent.className = 'domino-native-fx-accent is-join-beam-v31';
-  accent.dataset.dominoNativeGame = gameId;
-  accent.dataset.dominoNativeEffect = 'stock-joined-v31';
-  accent.dataset.dominoBeamTarget = 'real-join-seam-v31';
-  accent.setAttribute('aria-hidden', 'true');
+  accent.classList.add('is-stock-v32');
+  accent.dataset.dominoStockSource = 'boneyard-v32';
+  accent.dataset.dominoStockTarget = 'exact-drawn-tile-v32';
   accent.style.left = `${start.x}px`;
   accent.style.top = `${start.y}px`;
   accent.style.width = `${distance}px`;
-  accent.style.setProperty('--mgw-domino-join-angle', `${angle}deg`);
-  accent.style.setProperty('--mgw-domino-join-distance', `${distance}px`);
-  accent.innerHTML = '<i class="join-beam"></i><i class="join-orb"></i><i class="join-impact"></i>';
-  document.body.appendChild(accent);
+  accent.style.height = '1px';
+  accent.style.setProperty('--mgw-domino-native-path-length', `${distance}px`);
+  accent.style.setProperty('--mgw-domino-native-angle', `${angle}deg`);
+}
 
-  latestTile.classList.add('mgw-domino-join-source-v31');
-  neighborTile.classList.add('mgw-domino-join-target-v31');
-  const finisher = accent.querySelector('.join-impact');
-  const finish = event => {
-    if (event.target !== finisher) return;
-    if (event.type === 'animationend' && String(event.animationName || '') !== 'mgw-domino-join-impact-v31') return;
-    finisher.removeEventListener('animationend', finish);
-    finisher.removeEventListener('animationcancel', finish);
-    accent.remove();
-    latestTile.classList.remove('mgw-domino-join-source-v31');
-    neighborTile.classList.remove('mgw-domino-join-target-v31');
-  };
-  if (finisher instanceof HTMLElement) {
-    finisher.addEventListener('animationend', finish);
-    finisher.addEventListener('animationcancel', finish);
-  }
+function removeFinaleQaControlV32(container){
+  container.querySelectorAll('.domino-finale-qa-row,.domino-finale-qa-button').forEach(node => node.remove());
+  document.querySelectorAll('.domino-native-fx-accent[data-domino-native-qa="finale"]').forEach(node => node.remove());
 }
 
 function enhanceFinaleAccents(container){
@@ -195,18 +147,7 @@ function enhanceFinaleAccents(container){
     accent.insertAdjacentHTML('beforeend', '<i class="finale-aura-v31"></i><i class="finale-prism-v31"></i><i class="finale-spark-v31 s1"></i><i class="finale-spark-v31 s2"></i><i class="finale-spark-v31 s3"></i><i class="finale-spark-v31 s4"></i><i class="finale-spark-v31 s5"></i><i class="finale-spark-v31 s6"></i>');
   });
 
-  if (!(container instanceof HTMLElement)) return;
   container.querySelector('.domino-table.mgw-domino-native-finale-table')?.setAttribute('data-domino-finale-visual', 'premium-v31');
-}
-
-function ensureFinaleQaEnhancer(){
-  if (finaleQaEnhancerBound || typeof document === 'undefined') return;
-  finaleQaEnhancerBound = true;
-  document.addEventListener('click', event => {
-    const target = event.target instanceof Element ? event.target : null;
-    if (!(target?.closest('.domino-finale-qa-button') instanceof HTMLElement)) return;
-    requestAnimationFrame(() => enhanceFinaleAccents(document.querySelector('.domino-surface')));
-  });
 }
 
 function actionEffectId(args, container){
@@ -228,59 +169,6 @@ function actionEffectId(args, container){
   return String(direct || '');
 }
 
-function adjacentSlot(slots, latestIndex){
-  if (latestIndex < 0 || slots.length < 2) return null;
-  if (latestIndex === 0) return slots[1] || null;
-  if (latestIndex === slots.length - 1) return slots[latestIndex - 1] || null;
-  return slots[latestIndex - 1] || slots[latestIndex + 1] || null;
-}
-
-function stableSlotTileRect(slot, tile){
-  const slotRect = slot.getBoundingClientRect();
-  const center = rectCenter(slotRect);
-  const baseWidth = Number(tile.offsetWidth || 0) || Number(tile.getBoundingClientRect().width || 0);
-  const baseHeight = Number(tile.offsetHeight || 0) || Number(tile.getBoundingClientRect().height || 0);
-  const vertical = slot.classList.contains('vertical');
-  const isDouble = slot.classList.contains('is-double');
-  const quarterTurn = (vertical && !isDouble) || (!vertical && isDouble);
-  const width = quarterTurn ? baseHeight : baseWidth;
-  const height = quarterTurn ? baseWidth : baseHeight;
-
-  return {
-    left:center.x - width / 2,
-    right:center.x + width / 2,
-    top:center.y - height / 2,
-    bottom:center.y + height / 2,
-    width,
-    height,
-  };
-}
-
-function seamBetweenRects(latestRect, neighborRect){
-  const latest = rectCenter(latestRect);
-  const neighbor = rectCenter(neighborRect);
-  const horizontal = Math.abs(latest.x - neighbor.x) >= Math.abs(latest.y - neighbor.y);
-  const angle = Math.atan2(latest.y - neighbor.y, latest.x - neighbor.x) * 180 / Math.PI;
-
-  if (horizontal) {
-    const latestEdgeX = latest.x > neighbor.x ? latestRect.left : latestRect.right;
-    const neighborEdgeX = latest.x > neighbor.x ? neighborRect.right : neighborRect.left;
-    return {
-      x:(latestEdgeX + neighborEdgeX) / 2,
-      y:(latest.y + neighbor.y) / 2,
-      angle,
-    };
-  }
-
-  const latestEdgeY = latest.y > neighbor.y ? latestRect.top : latestRect.bottom;
-  const neighborEdgeY = latest.y > neighbor.y ? neighborRect.bottom : neighborRect.top;
-  return {
-    x:(latest.x + neighbor.x) / 2,
-    y:(latestEdgeY + neighborEdgeY) / 2,
-    angle,
-  };
-}
-
 function rectCenter(rect){
   return {
     x:Number(rect?.left || 0) + Number(rect?.width || 0) / 2,
@@ -288,7 +176,7 @@ function rectCenter(rect){
   };
 }
 
-function removeNodeOnAnimationEndV31(node, actor, animationName){
+function removeNodeOnAnimationEnd(node, actor, animationName){
   if (!(node instanceof HTMLElement) || !(actor instanceof HTMLElement)) {
     node?.remove?.();
     return;
@@ -334,6 +222,22 @@ function ensureLiveEffectsV31Styles(){
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.dataset.mgwDominoLiveEffectsV31 = 'premium-v31';
+  link.href = href;
+  document.head.appendChild(link);
+}
+
+function ensureLiveEffectsV32Styles(){
+  if (typeof document === 'undefined') return;
+  const href = new URL('../../../css/games/domino/live-effects-v32.css?v=1&mvp19_9=tile-local-stock-exact-v32', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-domino-live-effects-v32]');
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    return;
+  }
+
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwDominoLiveEffectsV32 = 'tile-local-stock-exact-v32';
   link.href = href;
   document.head.appendChild(link);
 }
