@@ -1,0 +1,54 @@
+/* MVP-19.9 manual mobile stability v30.
+   Keep the live table geometrically stable and make every hand size physically reachable. */
+
+@media (max-width:640px){
+  .domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-chain-area,
+  .domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-table[data-chain-density="solo"] .domino-chain-area,
+  .domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-table[data-chain-density="short"] .domino-chain-area,
+  .domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-table[data-chain-density="wide"] .domino-chain-area,
+  .domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-table[data-chain-density="medium"] .domino-chain-area,
+  .domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-table[data-chain-density="long"] .domino-chain-area{
+    height:232px!important;
+    min-height:232px!important;
+    max-height:232px!important;
+    transition:none!important;
+  }
+
+  .domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-table,
+  .domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand{
+    overflow-anchor:none;
+  }
+
+  .domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand[data-domino-hand-layout]{
+    display:grid!important;
+    grid-template-columns:repeat(var(--mgw-domino-hand-columns),minmax(0,1fr))!important;
+    align-items:end!important;
+    justify-items:stretch!important;
+    align-content:start!important;
+    justify-content:stretch!important;
+    column-gap:2px!important;
+    row-gap:4px!important;
+    width:100%!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+    padding-inline:4px!important;
+    overflow-x:visible!important;
+    overflow-y:visible!important;
+    scroll-snap-type:none!important;
+    touch-action:pan-y!important;
+  }
+
+  .domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand[data-domino-hand-layout] > .domino-hand-tile{
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    flex:none!important;
+    scroll-snap-align:none!important;
+    touch-action:pan-y!important;
+  }
+
+  .domino-surface[data-mgw-domino-live-cosmetics="full-v4"] .domino-hand[data-domino-hand-layout="two-row"]{
+    padding-top:5px!important;
+    padding-bottom:5px!important;
+  }
+}
