@@ -1,6 +1,6 @@
-/* MVP-19.9 Domino live effects v36 visual corrective.
-   Precision keeps the accepted owner-gated tile-local geometry, but replaces the flashlight-like glow with a clearly visible golden edge pulse + eight outward light shards above the placed domino.
-   Stock keeps the accepted v35 stable beam geometry/timing and only makes the spark trail larger, brighter and wider.
+/* MVP-19.9 Domino live effects v37 visual corrective.
+   Precision: readable 2.5s radial burst from the placed domino itself, no flashlight-like tile glow, no tiny corner dots.
+   Stock: accepted boneyard -> exact drawn tile beam geometry remains unchanged; particles now travel 30-36px perpendicular to the beam and stay alive long enough to read.
    Accepted premium Finale v31 remains untouched; QA control stays retired. */
 
 /* Never let the legacy fixed/body Precision accent paint. */
@@ -22,11 +22,11 @@
 .domino-chain-slot.latest > .mgw-domino-precision-local-v33{
   position:absolute;
   inset:0;
-  z-index:2;
+  z-index:4;
   display:block;
   width:100%;
   height:100%;
-  overflow:visible;
+  overflow:visible!important;
   pointer-events:none!important;
   border-radius:5px;
   transform-origin:50% 50%;
@@ -39,130 +39,82 @@
   transform:rotate(0deg);
 }
 
+/* One restrained outline says where the burst came from; the particles do the actual visual work. */
 .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-frame{
   position:absolute;
   inset:-2px;
   display:block;
-  border:1.5px solid rgba(255,225,105,.98);
+  border:1.5px solid rgba(255,224,102,.96);
   border-radius:7px;
   opacity:0;
-  box-shadow:0 0 5px rgba(255,231,142,.9),0 0 11px rgba(255,178,46,.48),inset 0 0 4px rgba(255,251,224,.62);
-  animation:mgw-domino-precision-frame-v36 1.58s cubic-bezier(.18,.7,.18,1) both;
+  box-shadow:0 0 5px rgba(255,211,86,.48);
+  animation:mgw-domino-precision-frame-v37 2.35s cubic-bezier(.18,.68,.18,1) both;
 }
 .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-frame::before,
 .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-frame::after{
-  content:"";
-  position:absolute;
-  pointer-events:none;
-}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-frame::before{
-  left:8%;
-  right:8%;
-  top:-2px;
-  height:2px;
-  border-radius:999px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,237,.98),rgba(255,195,53,.96),transparent);
-  box-shadow:0 0 7px rgba(255,205,68,.9);
-  transform-origin:center;
-  animation:mgw-domino-precision-edge-run-v36 1.18s .12s ease-out both;
-}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-frame::after{
-  left:8%;
-  right:8%;
-  bottom:-2px;
-  height:2px;
-  border-radius:999px;
-  background:linear-gradient(90deg,transparent,rgba(255,190,44,.88),rgba(255,255,232,.98),transparent);
-  box-shadow:0 0 7px rgba(255,204,64,.82);
-  transform-origin:center;
-  animation:mgw-domino-precision-edge-run-v36 1.18s .24s ease-out both reverse;
+  display:none!important;
+  content:none!important;
 }
 
+/* All eight shards start at the domino centre and travel far enough outside it to be unmistakable. */
 .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-streak{
   --dx:0px;
-  --dy:-18px;
+  --dy:-56px;
   --rot:0deg;
   --delay:0ms;
   position:absolute;
-  width:2px;
-  height:11px;
-  margin:-5.5px 0 0 -1px;
+  left:50%;
+  top:50%;
+  width:3px;
+  height:16px;
+  margin:-8px 0 0 -1.5px;
   border-radius:999px;
   opacity:0;
-  background:linear-gradient(180deg,rgba(255,255,242,.98),rgba(255,215,87,.96) 42%,rgba(255,148,27,0));
-  box-shadow:0 0 4px rgba(255,237,159,1),0 0 9px rgba(255,184,50,.82);
+  background:linear-gradient(180deg,rgba(255,255,242,1),rgba(255,222,95,.98) 48%,rgba(255,160,35,.2));
+  box-shadow:0 0 4px rgba(255,241,173,.96),0 0 8px rgba(255,185,49,.68);
   transform-origin:50% 50%;
-  animation:mgw-domino-precision-streak-v36 1.35s cubic-bezier(.16,.72,.18,1) var(--delay) both;
+  animation:mgw-domino-precision-streak-v37 2.2s cubic-bezier(.16,.66,.16,1) var(--delay) both;
 }
 .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-streak::after{
-  content:"";
-  position:absolute;
-  left:50%;
-  top:1px;
-  width:4px;
-  height:4px;
-  margin-left:-2px;
-  border-radius:50%;
-  background:#fffef0;
-  box-shadow:0 0 5px rgba(255,246,196,1),0 0 10px rgba(255,187,51,.8);
+  display:none!important;
+  content:none!important;
 }
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s1{left:15%;top:10%;--dx:-18px;--dy:-17px;--rot:-45deg;--delay:70ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s2{left:50%;top:2%;--dx:0px;--dy:-23px;--rot:0deg;--delay:120ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s3{left:85%;top:10%;--dx:18px;--dy:-17px;--rot:45deg;--delay:170ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s4{left:98%;top:50%;--dx:25px;--dy:0px;--rot:90deg;--delay:220ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s5{left:85%;top:90%;--dx:18px;--dy:17px;--rot:135deg;--delay:270ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s6{left:50%;top:98%;--dx:0px;--dy:23px;--rot:180deg;--delay:320ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s7{left:15%;top:90%;--dx:-18px;--dy:17px;--rot:225deg;--delay:370ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s8{left:2%;top:50%;--dx:-25px;--dy:0px;--rot:270deg;--delay:420ms}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s1{--dx:-46px;--dy:-34px;--rot:-54deg;--delay:0ms}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s2{--dx:0px;--dy:-58px;--rot:0deg;--delay:40ms}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s3{--dx:46px;--dy:-34px;--rot:54deg;--delay:80ms}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s4{--dx:60px;--dy:0px;--rot:90deg;--delay:120ms}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s5{--dx:46px;--dy:34px;--rot:126deg;--delay:160ms}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s6{--dx:0px;--dy:58px;--rot:180deg;--delay:200ms}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s7{--dx:-46px;--dy:34px;--rot:234deg;--delay:240ms}
+.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .s8{--dx:-60px;--dy:0px;--rot:270deg;--delay:280ms}
 
+/* Old silhouette echoes are intentionally suppressed; they read as another glow rather than motion. */
 .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-echo{
-  position:absolute;
-  inset:0;
-  display:block;
-  border:1px solid rgba(255,226,119,.78);
-  border-radius:inherit;
-  opacity:0;
-  box-shadow:0 0 7px rgba(255,195,59,.36);
-  transform-origin:center;
-  animation:mgw-domino-precision-echo-v36 1.28s cubic-bezier(.14,.72,.18,1) both;
+  display:none!important;
+  animation:none!important;
 }
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .echo-1{animation-delay:160ms}
-.domino-chain-slot.latest > .mgw-domino-precision-local-v33 .echo-2{animation-delay:400ms;border-color:rgba(255,248,211,.5)}
 .domino-chain-slot.latest > .domino-tile.mgw-domino-precision-glow-v33{
-  animation:mgw-domino-precision-tile-kick-v36 1.55s ease-out both!important;
+  animation:none!important;
+  filter:none!important;
 }
 
-@keyframes mgw-domino-precision-frame-v36{
+@keyframes mgw-domino-precision-frame-v37{
   0%{opacity:0;transform:scale(.98)}
-  12%{opacity:1;transform:scale(1.01)}
-  48%{opacity:.9;transform:scale(1.035)}
-  78%{opacity:.5;transform:scale(1.055)}
-  100%{opacity:0;transform:scale(1.08)}
+  10%{opacity:.95;transform:scale(1)}
+  40%{opacity:.86;transform:scale(1.02)}
+  76%{opacity:.46;transform:scale(1.04)}
+  100%{opacity:0;transform:scale(1.06)}
 }
-@keyframes mgw-domino-precision-edge-run-v36{
-  0%{opacity:0;transform:scaleX(.08)}
-  18%{opacity:1}
-  62%{opacity:.98;transform:scaleX(1)}
-  100%{opacity:0;transform:scaleX(.18)}
-}
-@keyframes mgw-domino-precision-streak-v36{
-  0%{opacity:0;transform:translate(0,0) rotate(var(--rot)) scaleY(.38)}
-  14%{opacity:1;transform:translate(0,0) rotate(var(--rot)) scaleY(1)}
-  58%{opacity:1;transform:translate(calc(var(--dx) * .68),calc(var(--dy) * .68)) rotate(var(--rot)) scaleY(1.08)}
-  100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scaleY(.2)}
-}
-@keyframes mgw-domino-precision-echo-v36{
-  0%{opacity:0;transform:scale(1)}
-  20%{opacity:.82}
-  68%{opacity:.44}
-  100%{opacity:0;transform:scale(1.48)}
-}
-@keyframes mgw-domino-precision-tile-kick-v36{
-  0%,100%{filter:brightness(1) saturate(1)}
-  15%{filter:brightness(1.18) saturate(1.08) drop-shadow(0 0 4px rgba(255,217,105,.46))}
-  46%{filter:brightness(1.1) saturate(1.05) drop-shadow(0 0 6px rgba(255,185,51,.28))}
+@keyframes mgw-domino-precision-streak-v37{
+  0%{opacity:0;transform:translate(0,0) rotate(var(--rot)) scaleY(.72)}
+  10%{opacity:1;transform:translate(0,0) rotate(var(--rot)) scaleY(1)}
+  40%{opacity:1;transform:translate(calc(var(--dx) * .38),calc(var(--dy) * .38)) rotate(var(--rot)) scaleY(1.05)}
+  72%{opacity:1;transform:translate(calc(var(--dx) * .78),calc(var(--dy) * .78)) rotate(var(--rot)) scaleY(.96)}
+  90%{opacity:.86;transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scaleY(.84)}
+  100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scaleY(.7)}
 }
 
+/* Suppress the legacy Stock accent completely. */
 .domino-native-fx-accent.is-stock[data-domino-native-effect="stock"]{
   opacity:0!important;
   visibility:hidden!important;
@@ -172,6 +124,7 @@
   display:none!important;
 }
 
+/* Accepted beam geometry stays exactly as before. */
 .domino-native-fx-accent.is-stock-v33{
   position:fixed;
   z-index:10005;
@@ -206,48 +159,38 @@
   box-shadow:0 0 5px rgba(91,245,255,.95),0 0 9px rgba(157,91,255,.62);
   animation:mgw-domino-stock-orb-v33 .8s cubic-bezier(.15,.8,.18,1) both;
 }
+
+/* Sparks are now elongated shards that visibly leave the beam path by 30-36px. */
 .domino-native-fx-accent.is-stock-v33 .stock-spark-v33{
-  --spark-side:-14px;
+  --spark-side:-32px;
   --spark-delay:0ms;
-  --spark-size:8px;
+  --spark-size:12px;
   position:absolute;
   top:0;
-  width:var(--spark-size);
+  width:4px;
   height:var(--spark-size);
-  margin:calc(var(--spark-size) / -2) 0 0 calc(var(--spark-size) / -2);
-  border-radius:1px;
-  background:#f8ffff;
-  box-shadow:0 0 5px rgba(115,250,255,1),0 0 11px rgba(131,222,255,.9),0 0 16px rgba(157,99,255,.62);
+  margin:calc(var(--spark-size) / -2) 0 0 -2px;
+  border-radius:999px;
+  background:linear-gradient(180deg,#ffffff 0%,#bffbff 42%,rgba(111,223,255,.28) 100%);
+  box-shadow:0 0 5px rgba(134,252,255,1),0 0 10px rgba(105,228,255,.86),0 0 14px rgba(151,102,255,.42);
   opacity:0;
-  transform:rotate(45deg);
-  animation:mgw-domino-stock-spark-v36 .48s cubic-bezier(.15,.72,.18,1) var(--spark-delay) both;
+  transform:rotate(18deg);
+  animation:mgw-domino-stock-spark-v37 1.15s cubic-bezier(.16,.66,.18,1) var(--spark-delay) both;
 }
 .domino-native-fx-accent.is-stock-v33 .stock-spark-v33::before,
 .domino-native-fx-accent.is-stock-v33 .stock-spark-v33::after{
-  content:"";
-  position:absolute;
-  left:50%;
-  top:50%;
-  background:rgba(248,255,255,.98);
-  box-shadow:0 0 5px rgba(99,247,255,1),0 0 9px rgba(157,107,255,.64);
-  transform:translate(-50%,-50%) rotate(-45deg);
+  display:none!important;
+  content:none!important;
 }
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33::before{
-  width:1.5px;
-  height:calc(var(--spark-size) + 9px);
-}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33::after{
-  width:calc(var(--spark-size) + 9px);
-  height:1.5px;
-}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p1{left:12%;--spark-side:-15px;--spark-delay:30ms;--spark-size:9px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p2{left:23%;--spark-side:13px;--spark-delay:65ms;--spark-size:7px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p3{left:35%;--spark-side:-17px;--spark-delay:100ms;--spark-size:9px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p4{left:47%;--spark-side:15px;--spark-delay:135ms;--spark-size:8px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p5{left:59%;--spark-side:-16px;--spark-delay:170ms;--spark-size:9px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p6{left:70%;--spark-side:14px;--spark-delay:205ms;--spark-size:7px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p7{left:81%;--spark-side:-15px;--spark-delay:240ms;--spark-size:9px}
-.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p8{left:91%;--spark-side:13px;--spark-delay:275ms;--spark-size:8px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p1{left:12%;--spark-side:-32px;--spark-delay:40ms;--spark-size:14px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p2{left:23%;--spark-side:30px;--spark-delay:90ms;--spark-size:12px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p3{left:35%;--spark-side:-36px;--spark-delay:140ms;--spark-size:15px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p4{left:47%;--spark-side:34px;--spark-delay:190ms;--spark-size:13px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p5{left:59%;--spark-side:-35px;--spark-delay:240ms;--spark-size:15px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p6{left:70%;--spark-side:31px;--spark-delay:290ms;--spark-size:12px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p7{left:81%;--spark-side:-34px;--spark-delay:340ms;--spark-size:14px}
+.domino-native-fx-accent.is-stock-v33 .stock-spark-v33.p8{left:91%;--spark-side:32px;--spark-delay:390ms;--spark-size:13px}
+
 .domino-stock-count.mgw-domino-stock-source-v33{
   animation:mgw-domino-stock-source-v33 .68s ease-out both!important;
 }
@@ -266,12 +209,13 @@
   82%{opacity:1}
   100%{opacity:0;transform:translateX(var(--mgw-domino-stock-distance,24px)) scale(.72)}
 }
-@keyframes mgw-domino-stock-spark-v36{
-  0%{opacity:0;transform:translateY(0) rotate(45deg) scale(.28)}
-  13%{opacity:1;transform:translateY(0) rotate(45deg) scale(1)}
-  42%{opacity:1;transform:translateY(calc(var(--spark-side) * .45)) rotate(62deg) scale(1.18)}
-  72%{opacity:.92;transform:translateY(calc(var(--spark-side) * .78)) rotate(78deg) scale(.92)}
-  100%{opacity:0;transform:translateY(var(--spark-side)) rotate(96deg) scale(.18)}
+@keyframes mgw-domino-stock-spark-v37{
+  0%{opacity:0;transform:translateY(0) rotate(18deg) scaleY(.7)}
+  12%{opacity:1;transform:translateY(0) rotate(18deg) scaleY(1)}
+  42%{opacity:1;transform:translateY(calc(var(--spark-side) * .38)) rotate(28deg) scaleY(1.04)}
+  76%{opacity:1;transform:translateY(calc(var(--spark-side) * .82)) rotate(38deg) scaleY(.96)}
+  92%{opacity:.88;transform:translateY(var(--spark-side)) rotate(44deg) scaleY(.9)}
+  100%{opacity:0;transform:translateY(var(--spark-side)) rotate(48deg) scaleY(.82)}
 }
 @keyframes mgw-domino-stock-source-v33{
   0%,100%{filter:brightness(1) saturate(1)}
@@ -282,19 +226,11 @@
   38%{filter:brightness(1.34) saturate(1.14) drop-shadow(0 0 6px rgba(111,232,255,.5))}
 }
 
+/* QA-only Chain Finale control remains retired. Natural finished-game trigger is unchanged. */
 .domino-finale-qa-row,
 .domino-finale-qa-button{
   display:none!important;
 }
 
-@media (prefers-reduced-motion:reduce){
-  .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-frame,
-  .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-streak,
-  .domino-chain-slot.latest > .mgw-domino-precision-local-v33 .precision-echo,
-  .domino-native-fx-accent.is-stock-v33 .stock-line-v33,
-  .domino-native-fx-accent.is-stock-v33 .stock-orb-v33,
-  .domino-native-fx-accent.is-stock-v33 .stock-spark-v33{
-    animation-duration:.46s!important;
-    animation-delay:0ms!important;
-  }
-}
+/* Deliberately no prefers-reduced-motion duration collapse here.
+   v36 compressed these purchased effects to 0.46s, which made them look like a single flash in some WebViews. */
