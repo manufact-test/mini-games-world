@@ -103,8 +103,9 @@ assert.ok(liveCosmeticsCss.includes('overflow-y:auto!important'), 'mobile Domino
 assert.ok(liveCosmeticsCss.includes('height:100dvh!important'), 'bounded Telegram viewport owner must remain preserved');
 
 assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25'"), 'manifest must publish the v30 Domino stability owner');
-assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&gesture_owner=v27';"), 'active entry must remain canonical v110 and keep its accepted gesture hook');
-assert.ok(entry.includes("header('X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal');"), 'active entry must retain the existing Domino diagnostic header');
+assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&gesture_owner=v27&precision_static=2';"), 'active entry must remain canonical v110, keep the accepted gesture owner, and publish the fresh Precision cache identity');
+assert.ok(entry.includes("header('X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal');"), 'active entry must retain the existing Domino gesture diagnostic header');
+assert.ok(entry.includes("header('X-MGW-Domino-Live-Precision: static-v2');"), 'active entry must expose the static Precision cache identity for deployed diagnostics');
 assert.match(launch, /\/app\/v110\.php\?v=1192&domino_stability=30&runtime_fix=1/);
 
 console.log('MVP-19.9 Domino legacy effects + v30 live stability contract: OK');
