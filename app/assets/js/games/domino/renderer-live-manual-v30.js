@@ -30,7 +30,7 @@ export function renderDominoSurface(args){
   if (!(container instanceof HTMLElement)) return;
 
   container.dataset.mgwDominoManualStability = 'v30';
-  container.dataset.mgwDominoLiveEffects = 'v33';
+  container.dataset.mgwDominoLiveEffects = 'v35';
   markHandLayout(container);
   ensureHandLayoutObserver(container);
   mountTileLocalPrecisionV33(args, container);
@@ -103,7 +103,7 @@ function mountTileLocalPrecisionV33(args, container){
   const local = document.createElement('span');
   local.className = 'mgw-domino-precision-local-v33';
   local.dataset.dominoPrecisionAnchor = 'latest-slot-local-v33';
-  local.dataset.dominoPrecisionVisual = 'single-pulse-glow-v33';
+  local.dataset.dominoPrecisionVisual = 'shimmer-spark-v35';
   local.dataset.dominoPrecisionOwner = String(action?.player_id || '');
   local.dataset.dominoPrecisionSignature = signature;
   local.setAttribute('aria-hidden', 'true');
@@ -113,7 +113,7 @@ function mountTileLocalPrecisionV33(args, container){
   const finisher = local.querySelector('.wave-2');
   const cleanup = event => {
     if (event.target !== finisher) return;
-    if (event.type === 'animationend' && String(event.animationName || '') !== 'mgw-domino-precision-local-v33') return;
+    if (event.type === 'animationend' && String(event.animationName || '') !== 'mgw-domino-precision-local-v35') return;
     finisher.removeEventListener('animationend', cleanup);
     finisher.removeEventListener('animationcancel', cleanup);
     local.remove();
@@ -151,14 +151,14 @@ function correctStockBeamV33(args, container, previousViewerHandIds){
     .find(node => node instanceof HTMLElement && String(node.dataset.dominoTile || '') === targetId) || null;
   const targetTile = targetButton?.querySelector('.domino-tile');
   const stock = container.querySelector('.domino-stock-count');
-  if (!(stock instanceof HTMLElement) || !(targetTile instanceof HTMLElement)) return;
+  if (!(stock instanceof HTMLElement) || !(targetButton instanceof HTMLElement) || !(targetTile instanceof HTMLElement)) return;
 
   const signature = stockSignature(game, targetId);
   if (!signature || stockSeenByGame.get(gameId) === signature) return;
   stockSeenByGame.set(gameId, signature);
 
   const start = rectCenter(stock.getBoundingClientRect());
-  const end = rectCenter(targetTile.getBoundingClientRect());
+  const end = rectCenter(targetButton.getBoundingClientRect());
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   const distance = Math.max(12, Math.hypot(dx, dy));
@@ -170,6 +170,7 @@ function correctStockBeamV33(args, container, previousViewerHandIds){
   accent.dataset.dominoNativeEffect = 'stock-v33';
   accent.dataset.dominoStockSource = 'boneyard-v33';
   accent.dataset.dominoStockTarget = 'exact-new-tile-v33';
+  accent.dataset.dominoStockGeometry = 'stable-hand-button-v35';
   accent.dataset.dominoStockTargetTile = targetId;
   accent.dataset.dominoStockSignature = signature;
   accent.setAttribute('aria-hidden', 'true');
@@ -326,17 +327,18 @@ function ensureLiveEffectsV31Styles(){
 
 function ensureLiveEffectsV33Styles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/domino/live-effects-v32.css?v=4&mvp19_9=sustained-precision-moving-stock-stars-v34', import.meta.url).href;
+  const href = new URL('../../../css/games/domino/live-effects-v32.css?v=5&mvp19_9=precision-shimmer-stock-static-sparks-v35', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-domino-live-effects-v33]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
+    existing.dataset.mgwDominoLiveEffectsV33 = 'precision-shimmer-stock-static-sparks-v35';
     return;
   }
 
   document.querySelectorAll('link[data-mgw-domino-live-effects-v32]').forEach(node => node.remove());
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwDominoLiveEffectsV33 = 'owner-gated-single-pulse-stock-spark-v33';
+  link.dataset.mgwDominoLiveEffectsV33 = 'precision-shimmer-stock-static-sparks-v35';
   link.href = href;
   document.head.appendChild(link);
 }
