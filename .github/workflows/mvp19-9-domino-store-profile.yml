@@ -79,6 +79,7 @@ jobs:
           manifest='app/runtime/client/version-manifest.php'
 
           grep -F "store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48" "$base"
+          grep -F "store-screen-domino-store-v1.js?v=15&mvp19_9=domino-svg-pips-v48&paid_default=copy-native-v1" app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
           grep -F 'native:v14:svg-pips-v48' "$store"
           grep -F 'data-mgw-domino-preview-component="v44"' "$store"
           grep -F 'sceneReady' "$store"
@@ -112,7 +113,7 @@ jobs:
           ! grep -Fq 'setTimeout' "$ratio"
           grep -F 'domino_effects=svg-pips-v48' "$manifest"
           grep -F "store-screen-domino-store-v1.js?v=8&mvp19_9=domino-native-render-v8' => './assets/js/screens/store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48" "$manifest"
-          grep -F 'store-screen.js?v=52&intent_base=1' "$manifest"
+          grep -F 'store-screen.js?v=53&intent_base=1' "$manifest"
           grep -F 'selector_center=instant-v1' "$manifest"
           grep -F 'ux=ready-only-history-sheet' "$manifest"
           php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1170) exit(1);'

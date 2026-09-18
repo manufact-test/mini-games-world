@@ -6,25 +6,25 @@ import {
 import {
   installReversiStorePresentation,
   upgradeReversiStorePresentation,
-} from './store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only&review=manual-corrective-v2';
+} from './store-screen-reversi-store-v1.js?v=3&mvp19_7=store-only&review=manual-corrective-v2&paid_default=copy-native-v1';
 import {
   installGoStorePresentation,
   upgradeGoStorePresentation,
-} from './store-screen-go-store-v1.js?v=2&mvp19_8=effects-premium-v2';
+} from './store-screen-go-store-v1.js?v=3&mvp19_8=effects-premium-v2&paid_default=copy-native-v1';
 import {
   installDominoStorePresentation,
   upgradeDominoStorePresentation,
-} from './store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48';
+} from './store-screen-domino-store-v1.js?v=15&mvp19_9=domino-svg-pips-v48&paid_default=copy-native-v1';
 import { installDominoStoreCardFillV5 } from './store-screen-domino-card-fill-v5.js?v=2&mvp19_9=domino-card-fill-live-pips-v6';
 import { installDominoStoreEffectsV9 } from './store-screen-domino-effects-v9.js?v=12&mvp19_9=domino-svg-pips-v48';
 import {
   installFourInARowStorePresentation,
   upgradeFourInARowStorePresentation,
-} from './store-screen-four-in-a-row-store-v1.js?v=1&four_store=static-v1';
+} from './store-screen-four-in-a-row-store-v1.js?v=2&four_store=static-v2';
 import {
   installPaidDefaultDedupV1,
   upgradePaidDefaultDedupV1,
-} from './store-paid-default-dedup-v1.js?v=1&paid_default=dedup-v1';
+} from './store-paid-default-dedup-v1.js?v=2&paid_default=dedup-v2';
 import { installStoreGameSelectorSwipe } from './store-game-selector-swipe-v1.js?v=1&mvp19_7=touch-drag';
 
 ensureBoardSourceParityStyles();

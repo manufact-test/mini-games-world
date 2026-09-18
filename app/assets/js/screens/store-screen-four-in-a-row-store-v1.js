@@ -1,8 +1,8 @@
 import { api } from '../api/client.js?v=34';
 
-const API_HOOK = Symbol.for('mgw.store.four-in-a-row.store-static-v1');
+const API_HOOK = Symbol.for('mgw.store.four-in-a-row.store-static-v2');
 const INSTALL_KEY = '__mgwFourInARowStoreStaticV1Installed';
-const STYLE_MARK = 'four-store-static-v1';
+const STYLE_MARK = 'four-store-static-v2';
 
 const EFFECT_ASSETS = Object.freeze({
   drop:new URL('../../media/cosmetics/four-in-a-row/effects/drop-v1.svg', import.meta.url).href,
@@ -41,7 +41,7 @@ export function upgradeFourInARowStorePresentation(){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/four-in-a-row/store-cosmetics-v1.css?v=1&four_store=static-v1', import.meta.url).href;
+  const href = new URL('../../css/games/four-in-a-row/store-cosmetics-v1.css?v=1&four_store=static-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-four-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -145,7 +145,7 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = safeVariant(preview.dataset.cosmeticVariant || 'blue');
-    const signature = `${layer}:${variant}:static-v1`;
+    const signature = `${layer}:${variant}:static-v2`;
     if (preview.dataset.mgwFourPreview === signature) return;
     preview.dataset.mgwFourPreview = signature;
     preview.dataset.mgwFourPreviewMode = layer === 'effect' ? 'static-concept' : 'static';
@@ -156,7 +156,7 @@ function upgradePreviews(root){
 function descriptionFor(layer, variant){
   if (layer === 'theme') {
     return ({
-      blue:'Чистое синее поле в духе классической аркадной игры',
+      blue:'Насыщенное фиолетово-сливовое поле вместо стандартной синей рамы',
       dark:'Глубокое ночное поле с холодной контрастной сеткой',
       metal:'Стальная рама с холодным матовым металлом и объёмными слотами',
       neon:'Тёмное поле с яркой цианово-фиолетовой неоновой рамой',
@@ -164,10 +164,10 @@ function descriptionFor(layer, variant){
   }
   if (layer === 'elements') {
     return ({
-      classic:'Чистые красные и жёлтые фишки с привычным игровым контрастом',
+      classic:'Яркая розово-бирюзовая пара вместо стандартных красных и жёлтых фишек',
       '3d':'Глубокие объёмные фишки с мягким светом и выраженной кромкой',
-      metal:'Полированные красный сплав и тёплое золото с металлическими бликами',
-      neon:'Тёмные фишки с красным и жёлтым неоновым свечением по контуру',
+      metal:'Глубокий бордовый металл и тёплая латунь с объёмным бликом без полос',
+      neon:'Яркие розовые и лаймовые фишки с насыщенным светящимся ядром и внешним свечением',
     })[variant] || 'Меняет внешний вид игровых фишек';
   }
   return ({

@@ -126,7 +126,7 @@ $wrapper = (string)file_get_contents($root . '/app/assets/js/screens/store-scree
 $css = (string)file_get_contents($root . '/app/assets/css/games/reversi/store-cosmetics-v1.css');
 $topWrapper = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-checkers-board-source-wrapper.js');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
-$assertTrue(str_contains($topWrapper, 'store-screen-reversi-store-v1.js?v=1'), 'Active accepted Store entrypoint must install the Reversi presentation layer');
+$assertTrue(str_contains($topWrapper, 'store-screen-reversi-store-v1.js?v=3'), 'Active accepted Store entrypoint must install the Reversi presentation layer');
 $assertTrue(str_contains((string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? ''), 'mvp19_7=reversi-store-v1'), 'Active Store URL must be cache-busted for MVP-19.7');
 foreach (['green','dark','marble','neon'] as $variant) $assertTrue(str_contains($css, 'theme-' . $variant) || $variant === 'green', 'Reversi Store CSS must style field ' . $variant);
 foreach (['classic','marble','metal','neon'] as $variant) $assertTrue(str_contains($css, 'pieces-' . $variant) || $variant === 'classic', 'Reversi Store CSS must style piece set ' . $variant);
