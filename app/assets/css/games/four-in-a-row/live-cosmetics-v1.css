@@ -1,0 +1,273 @@
+/* Four in a Row live cosmetics — presentation-only wrapper over the accepted renderer. */
+#gameBoard[data-game-type="four_in_a_row"][data-mgw-four-live-cosmetics="v1"] .four-disc-grid{
+  position:relative;
+}
+
+/* Accepted paid field identities. "blue" keeps its historical item id but is the accepted violet paid field. */
+#gameBoard[data-game-type="four_in_a_row"][data-four-theme="blue"] .four-board-frame{
+  background:linear-gradient(180deg,#8750d5,#4c287f)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 14px 32px rgba(53,20,86,.34)!important;
+}
+#gameBoard[data-game-type="four_in_a_row"][data-four-theme="dark"] .four-board-frame{
+  background:linear-gradient(180deg,#25384e,#101a28)!important;
+  box-shadow:inset 0 0 0 1px rgba(129,183,227,.20),0 14px 32px rgba(0,0,0,.38)!important;
+}
+#gameBoard[data-game-type="four_in_a_row"][data-four-theme="metal"] .four-board-frame{
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.15),transparent 18% 80%,rgba(255,255,255,.08)),
+    linear-gradient(180deg,#8e99a7,#535e6c 47%,#303944)!important;
+  box-shadow:inset 0 0 0 1px rgba(239,247,255,.28),0 14px 32px rgba(0,0,0,.36)!important;
+}
+#gameBoard[data-game-type="four_in_a_row"][data-four-theme="neon"] .four-board-frame{
+  background:linear-gradient(180deg,#11152d,#0a0d1f)!important;
+  box-shadow:inset 0 0 0 1px rgba(242,77,255,.32),0 0 18px rgba(53,224,255,.27),0 0 30px rgba(219,66,255,.16)!important;
+}
+#gameBoard[data-game-type="four_in_a_row"][data-four-theme="neon"] .four-disc-slot{
+  background:rgba(5,8,20,.92)!important;
+  box-shadow:inset 0 0 0 1px rgba(98,222,255,.17),inset 0 2px 8px rgba(0,0,0,.55)!important;
+}
+
+/* Accepted paid disc identities. "classic" keeps its historical id but is the accepted arcade pair. */
+#gameBoard[data-game-type="four_in_a_row"][data-four-discs="classic"] .four-disc-slot.red span{
+  background:radial-gradient(circle at 32% 25%,#ffd5ec 0 9%,#ff78b7 34%,#b52372 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),0 4px 10px rgba(255,75,158,.24);
+}
+#gameBoard[data-game-type="four_in_a_row"][data-four-discs="classic"] .four-disc-slot.yellow span{
+  background:radial-gradient(circle at 32% 25%,#d9fdff 0 9%,#66e8f3 35%,#168ca8 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.30),0 4px 10px rgba(66,220,240,.22);
+}
+#gameBoard[data-game-type="four_in_a_row"][data-four-discs="3d"] .four-disc-slot.red span{
+  background:radial-gradient(circle at 31% 24%,#fff0f2 0 7%,#ff8792 16%,#e34257 48%,#8c1428 82%,#500815 100%);
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.35),inset 0 -4px 5px rgba(61,0,10,.34),0 4px 8px rgba(0,0,0,.28);
+}
+#gameBoard[data-game-type="four_in_a_row"][data-four-discs="3d"] .four-disc-slot.yellow span{
+  background:radial-gradient(circle at 31% 24%,#fffbe0 0 7%,#ffe885 16%,#f5bc26 48%,#a66c00 82%,#684000 100%);
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.42),inset 0 -4px 5px rgba(79,45,0,.30),0 4px 8px rgba(0,0,0,.28);
+}
+#gameBoard[data-game-type="four_in_a_row"][data-four-discs="metal"] .four-disc-slot.red span{
+  background:radial-gradient(circle at 31% 23%,#fff7f8 0 6%,#e7a5af 13%,#b85061 34%,#6b2a39 66%,#31131c 100%);
+  border:1px solid rgba(236,183,192,.72);
+  box-shadow:inset 0 2px 2px rgba(255,255,255,.34),inset 0 -3px 5px rgba(50,10,20,.38),0 4px 8px rgba(0,0,0,.30);
+}
+#gameBoard[data-game-type="four_in_a_row"][data-four-discs="metal"] .four-disc-slot.yellow span{
+  background:radial-gradient(circle at 31% 23%,#fffbe7 0 6%,#f3dda0 14%,#c59b48 35%,#7f5d24 68%,#3a2810 100%);
+  border:1px solid rgba(246,222,154,.76);
+  box-shadow:inset 0 2px 2px rgba(255,255,255,.40),inset 0 -3px 5px rgba(67,42,8,.34),0 4px 8px rgba(0,0,0,.30);
+}
+#gameBoard[data-game-type="four_in_a_row"][data-four-discs="neon"] .four-disc-slot.red span{
+  background:radial-gradient(circle at 34% 28%,#ffd8ec 0 7%,#ff78c6 16%,#ff2d8c 42%,#7a123f 72%,#220815 100%);
+  border:1px solid #ff68b5;
+  box-shadow:inset 0 0 5px rgba(255,173,224,.50),0 0 7px rgba(255,45,140,.88),0 0 13px rgba(255,45,140,.46);
+}
+#gameBoard[data-game-type="four_in_a_row"][data-four-discs="neon"] .four-disc-slot.yellow span{
+  background:radial-gradient(circle at 34% 28%,#fbffe0 0 7%,#dfff79 16%,#9dff2e 42%,#397812 72%,#0d2307 100%);
+  border:1px solid #c8ff64;
+  box-shadow:inset 0 0 5px rgba(231,255,176,.48),0 0 7px rgba(154,255,47,.82),0 0 13px rgba(154,255,47,.42);
+}
+
+#gameBoard[data-game-type="four_in_a_row"][data-mgw-four-live-cosmetics="v1"] .four-disc-slot.winning span{
+  box-shadow:0 0 0 3px #fff,0 0 22px rgba(255,255,255,.72);
+}
+
+#gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-pending-drop="1"] span{
+  opacity:.16;
+  transform:scale(.74);
+  filter:saturate(.8);
+}
+
+/* Effect 1 — real disc drop, short light trail, compact landing ring. */
+#gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-drop-fx="1"]{
+  z-index:4;
+  pointer-events:none;
+}
+#gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-drop-fx="1"] span{
+  position:relative;
+  z-index:2;
+  animation:mgwFourLiveDrop .72s cubic-bezier(.18,.76,.22,1) var(--mgw-four-fx-delay,0ms) both!important;
+}
+#gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-drop-fx="1"]::before{
+  content:"";
+  position:absolute;
+  z-index:1;
+  left:50%;
+  bottom:48%;
+  width:22%;
+  height:calc(var(--mgw-four-drop-cells,1) * 104%);
+  transform:translateX(-50%);
+  border-radius:999px;
+  background:linear-gradient(180deg,transparent,rgba(102,232,255,.08) 18%,rgba(102,232,255,.62) 78%,rgba(255,255,255,.92));
+  filter:blur(1.2px);
+  transform-origin:50% 100%;
+  animation:mgwFourLiveDropTrail .72s ease-out var(--mgw-four-fx-delay,0ms) both;
+  pointer-events:none;
+}
+#gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-drop-fx="1"]::after{
+  content:"";
+  position:absolute;
+  z-index:5;
+  inset:8%;
+  border:2px solid rgba(118,238,255,.88);
+  border-radius:50%;
+  box-shadow:0 0 13px rgba(78,221,255,.65);
+  animation:mgwFourLiveDropRing .72s ease-out var(--mgw-four-fx-delay,0ms) both;
+  pointer-events:none;
+}
+
+/* Effect 2 — sequential four-disc ignition plus one connecting energy line. */
+#gameBoard[data-game-type="four_in_a_row"][data-four-active-fx="four"] .four-disc-slot.winning span{
+  animation:none!important;
+}
+#gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-sequence] span{
+  animation:mgwFourLiveSequence 1.05s ease-out calc(var(--mgw-four-fx-delay,0ms) + var(--mgw-four-seq,0) * 105ms) both!important;
+}
+.mgw-four-live-line-fx{
+  position:absolute;
+  z-index:3;
+  inset:0;
+  width:100%;
+  height:100%;
+  overflow:visible;
+  pointer-events:none;
+}
+.mgw-four-live-line-fx line{
+  vector-effect:non-scaling-stroke;
+  stroke-linecap:round;
+  stroke-dasharray:145;
+  stroke-dashoffset:145;
+}
+.mgw-four-live-line-glow{
+  stroke:rgba(83,226,255,.34);
+  stroke-width:7;
+  filter:drop-shadow(0 0 5px rgba(82,226,255,.75));
+  animation:mgwFourLiveLineDraw 1.18s cubic-bezier(.2,.8,.2,1) var(--mgw-four-fx-delay,0ms) both;
+}
+.mgw-four-live-line-core{
+  stroke:#dffcff;
+  stroke-width:2.2;
+  filter:drop-shadow(0 0 3px #5ce8ff);
+  animation:mgwFourLiveLineDraw 1.18s cubic-bezier(.2,.8,.2,1) calc(var(--mgw-four-fx-delay,0ms) + 70ms) both;
+}
+
+/* Effect 3 — two broad board waves from the completed four, then a restrained flare. */
+#gameBoard[data-game-type="four_in_a_row"][data-four-active-fx="victory"] .four-disc-slot.winning span{
+  animation:none!important;
+}
+#gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-victory-cell] span{
+  animation:mgwFourVictoryCell 1.28s ease-out calc(var(--mgw-four-fx-delay,0ms) + var(--mgw-four-seq,0) * 55ms) both!important;
+}
+.mgw-four-live-victory-fx{
+  position:absolute;
+  z-index:4;
+  inset:0;
+  pointer-events:none;
+  overflow:hidden;
+}
+.mgw-four-victory-wave,
+.mgw-four-victory-flare{
+  position:absolute;
+  left:var(--mgw-four-victory-x,50%);
+  top:var(--mgw-four-victory-y,50%);
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  pointer-events:none;
+}
+.mgw-four-victory-wave{
+  width:22%;
+  aspect-ratio:1;
+  border:2px solid rgba(116,237,255,.82);
+  box-shadow:0 0 12px rgba(75,224,255,.46),inset 0 0 10px rgba(224,96,255,.18);
+  opacity:0;
+}
+.mgw-four-victory-wave.wave-a{
+  animation:mgwFourVictoryWave 1.25s cubic-bezier(.12,.72,.18,1) var(--mgw-four-fx-delay,0ms) both;
+}
+.mgw-four-victory-wave.wave-b{
+  border-color:rgba(238,126,255,.72);
+  animation:mgwFourVictoryWave 1.25s cubic-bezier(.12,.72,.18,1) calc(var(--mgw-four-fx-delay,0ms) + 180ms) both;
+}
+.mgw-four-victory-flare{
+  width:12%;
+  aspect-ratio:1;
+  background:radial-gradient(circle,rgba(255,255,255,.95) 0 8%,rgba(105,235,255,.56) 20%,rgba(225,86,255,.28) 42%,transparent 72%);
+  filter:blur(.3px);
+  animation:mgwFourVictoryFlare 1.45s ease-out calc(var(--mgw-four-fx-delay,0ms) + 170ms) both;
+}
+
+@keyframes mgwFourLiveDrop{
+  0%{transform:translateY(calc(var(--mgw-four-drop-cells,1) * -112%)) scale(.88);filter:brightness(1.18)}
+  66%{transform:translateY(4%) scale(.94);filter:brightness(1.15)}
+  78%{transform:translateY(-5%) scale(.96);filter:brightness(1.28)}
+  100%{transform:translateY(0) scale(.92);filter:brightness(1)}
+}
+@keyframes mgwFourLiveDropTrail{
+  0%{opacity:0;transform:translateX(-50%) scaleY(.45)}
+  22%{opacity:.9}
+  70%{opacity:.72;transform:translateX(-50%) scaleY(1)}
+  100%{opacity:0;transform:translateX(-50%) scaleY(.08)}
+}
+@keyframes mgwFourLiveDropRing{
+  0%,62%{opacity:0;transform:scale(.42)}
+  72%{opacity:1;transform:scale(.68)}
+  100%{opacity:0;transform:scale(1.35)}
+}
+@keyframes mgwFourLiveSequence{
+  0%{transform:scale(.92);filter:brightness(1);box-shadow:0 0 0 0 rgba(105,235,255,0)}
+  30%{transform:scale(1.08);filter:brightness(1.55);box-shadow:0 0 0 3px rgba(225,251,255,.86),0 0 20px rgba(78,224,255,.78)}
+  72%{transform:scale(1.01);filter:brightness(1.18);box-shadow:0 0 0 2px rgba(189,245,255,.64),0 0 13px rgba(78,224,255,.44)}
+  100%{transform:scale(.98);filter:brightness(1.06);box-shadow:0 0 0 2px rgba(255,255,255,.44),0 0 9px rgba(78,224,255,.26)}
+}
+@keyframes mgwFourLiveLineDraw{
+  0%{stroke-dashoffset:145;opacity:0}
+  18%{opacity:1}
+  72%{stroke-dashoffset:0;opacity:1}
+  100%{stroke-dashoffset:0;opacity:.76}
+}
+@keyframes mgwFourVictoryCell{
+  0%{transform:scale(.92);filter:brightness(1)}
+  24%{transform:scale(1.08);filter:brightness(1.75);box-shadow:0 0 0 3px rgba(255,255,255,.86),0 0 22px rgba(191,94,255,.72)}
+  58%{transform:scale(1);filter:brightness(1.28);box-shadow:0 0 0 2px rgba(115,237,255,.66),0 0 18px rgba(93,224,255,.52)}
+  100%{transform:scale(.98);filter:brightness(1.06);box-shadow:0 0 0 2px rgba(255,255,255,.38),0 0 8px rgba(93,224,255,.24)}
+}
+@keyframes mgwFourVictoryWave{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.26)}
+  18%{opacity:.95}
+  76%{opacity:.42}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(5.4)}
+}
+@keyframes mgwFourVictoryFlare{
+  0%,8%{opacity:0;transform:translate(-50%,-50%) scale(.35)}
+  30%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}
+  70%{opacity:.58;transform:translate(-50%,-50%) scale(2.15)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(2.8)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-drop-fx="1"] span,
+  #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-sequence] span,
+  #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-victory-cell] span,
+  .mgw-four-live-line-fx line,
+  .mgw-four-victory-wave,
+  .mgw-four-victory-flare{
+    animation:none!important;
+  }
+  #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-drop-fx="1"]::before{
+    display:none!important;
+  }
+  #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-drop-fx="1"]::after{
+    animation:none!important;
+    opacity:.72!important;
+    transform:scale(1)!important;
+  }
+  .mgw-four-live-line-fx line{
+    stroke-dashoffset:0!important;
+    opacity:.82!important;
+  }
+  .mgw-four-victory-wave.wave-a{
+    opacity:.52!important;
+    transform:translate(-50%,-50%) scale(2.25)!important;
+  }
+  .mgw-four-victory-wave.wave-b,
+  .mgw-four-victory-flare{
+    display:none!important;
+  }
+}

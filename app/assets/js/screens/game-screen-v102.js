@@ -315,7 +315,33 @@ function finishGame(game, me){
   renderGame(game, me, false);
   if (runtime.resultOpened.has(id)) return;
   runtime.resultOpened.add(id);
+
+  const presentationDelay = fourTerminalPresentationDelay(game);
+  if (presentationDelay > 0) {
+    window.setTimeout(() => {
+      if (String(state.activeGame?.id || '') !== id) return;
+      if (!document.getElementById('screen-game')?.classList.contains('active')) return;
+      openResultSheet(game, me);
+    }, presentationDelay);
+    return;
+  }
   window.requestAnimationFrame(() => openResultSheet(game, me));
+}
+
+function fourTerminalPresentationDelay(game){
+  if (gameTypeOf(game) !== 'four_in_a_row') return 0;
+  const surface = document.getElementById('gameBoard');
+  const activeFx = String(surface?.dataset?.fourActiveFx || '');
+  const delay = {
+    drop: 820,
+    four: 1380,
+    victory: 1620,
+  }[activeFx] || 0;
+  if (delay <= 0) return 0;
+
+  const reduceMotion = typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return reduceMotion ? Math.min(delay, 240) : delay;
 }
 
 function requestLeaveGame(){

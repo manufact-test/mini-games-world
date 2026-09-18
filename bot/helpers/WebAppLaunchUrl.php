@@ -4,7 +4,7 @@ declare(strict_types=1);
 final class WebAppLaunchUrl
 {
     // Emergency rollback: restore the accepted v110 graph as the active route.
-    private const ENTRY_PATH = '/app/v110.php?v=1201&domino_stability=30&runtime_fix=1&four_store=static-v4&paid_default=dedup-v2&four_profile=spacing-v2&four_module=export-v6&copy=human-v1';
+    private const ENTRY_PATH = '/app/v110.php?v=1202&domino_stability=30&runtime_fix=1&four_store=static-v4&paid_default=dedup-v2&four_profile=spacing-v2&four_module=export-v6&four_live=game-v1&copy=human-v1';
     private const ADMIN_PATH = '/app/admin.php?v=1';
     // The isolated v120 controller remains in the repository for postmortem only:
     // private const ENTRY_PATH = '/app/v120.php?v=1200';
