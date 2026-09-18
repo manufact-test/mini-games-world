@@ -139,7 +139,7 @@ $renderer = (string)file_get_contents($root . '/app/assets/js/games/four-in-a-ro
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
 
-$assertTrue(str_contains($outer, "store-screen-four-in-a-row-store-v1.js?v=5&four_store=static-v4&export=profile-preview-v1"), 'Active Store wrapper must install Four in a Row presentation');
+$assertTrue(str_contains($outer, "store-screen-four-in-a-row-store-v1.js?v=6&four_store=static-v4&export=profile-preview-v1&copy=human-v1"), 'Active Store wrapper must install Four in a Row presentation');
 $activeStore = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $wrapperVersionMatch = [];
 $assertTrue(preg_match('~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~', $activeStore, $wrapperVersionMatch) === 1 && (int)$wrapperVersionMatch[1] >= 10, 'Active Store graph must stay at or beyond the accepted Four in a Row wrapper identity');
