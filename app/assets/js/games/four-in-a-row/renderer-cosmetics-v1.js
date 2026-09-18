@@ -2,7 +2,7 @@ import {
   renderFourInARowSurface as renderBaseFourInARowSurface,
   fourInARowMeta,
   fourInARowPlayerMark,
-} from './renderer.js?v=53&base=mvp19-10-live-v6';
+} from './renderer.js?v=53&base=mvp19-10-live-v7';
 import { state } from '../../state.js?v=27';
 
 const THEME_SLOT = 'game_four_in_a_row_theme';
@@ -26,7 +26,7 @@ const activeEffectByGame = new Map();
 const EFFECT_DURATION_MS = Object.freeze({
   drop: 900,
   pulse: 1080,
-  victory: 1580,
+  victory: 2250,
 });
 
 ensureLiveStyles();
@@ -120,7 +120,7 @@ export function renderFourInARowSurface(args){
 
   if (!(container instanceof HTMLElement)) return;
 
-  container.dataset.mgwFourLiveCosmetics = 'v6';
+  container.dataset.mgwFourLiveCosmetics = 'v7';
   container.dataset.fourTheme = themeVariant;
   container.dataset.fourDiscs = discsVariant;
   container.dataset.fourEffect = viewerEffect || 'base';
@@ -168,7 +168,7 @@ export function renderFourInARowSurface(args){
     return;
   }
   if (active.kind === 'victory') {
-    mountVictoryWaveEffect(container, active, delayMs);
+    mountVictoryOverdriveEffect(container, active, delayMs);
   }
 }
 
@@ -482,37 +482,114 @@ function lightningPath(x1, y1, x2, y2, seed){
   return points.map(([x, y], index) => `${index === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
 }
 
-function mountVictoryWaveEffect(container, active, delayMs){
+function mountVictoryOverdriveEffect(container, active, delayMs){
   const cells = Array.isArray(active.winningCells) ? active.winningCells.slice(0, 4) : [];
   if (cells.length < 4) return;
-
-  cells.forEach((cell, index) => {
-    const slot = slotForCell(container, cell);
-    if (!(slot instanceof HTMLElement)) return;
-    slot.dataset.mgwFourVictoryCell = String(index);
-    slot.style.setProperty('--mgw-four-seq', String(index));
-    slot.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
-  });
 
   const grid = container.querySelector('.four-disc-grid');
   if (!(grid instanceof HTMLElement)) return;
 
-  const points = cells.map(cell => cellPoint(cell, active.columns, active.rows));
-  const centerX = points.reduce((sum, point) => sum + point.x, 0) / points.length;
-  const centerY = points.reduce((sum, point) => sum + point.y, 0) / points.length;
+  const gridRect = grid.getBoundingClientRect();
+  if (gridRect.width <= 0 || gridRect.height <= 0) return;
+
+  const points = cells
+    .map((cell, index) => {
+      const slot = slotForCell(container, cell);
+      if (!(slot instanceof HTMLElement)) return null;
+      const rect = slot.getBoundingClientRect();
+      return {
+        cell,
+        slot,
+        sourceIndex:index,
+        x:rect.left - gridRect.left + (rect.width / 2),
+        y:rect.top - gridRect.top + (rect.height / 2),
+        size:Math.max(18, Math.min(rect.width, rect.height) * .84),
+      };
+    })
+    .filter(Boolean);
+
+  if (points.length < 4) return;
+
+  const ordered = orderVictoryPoints(points);
+  ordered.forEach((point, index) => {
+    point.slot.dataset.mgwFourVictoryCell = String(index);
+    point.slot.style.setProperty('--mgw-four-victory-delay', `${delayMs + (index * 125)}ms`);
+  });
+
+  const path = victoryPath(ordered);
+  const centerX = ordered.reduce((sum, point) => sum + point.x, 0) / ordered.length;
+  const centerY = ordered.reduce((sum, point) => sum + point.y, 0) / ordered.length;
+  const nodeSize = Math.max(9, Math.min(...ordered.map(point => point.size)) * .34);
 
   const host = document.createElement('span');
-  host.className = 'mgw-four-live-victory-fx';
+  host.className = 'mgw-four-live-victory-fx mgw-four-victory-overdrive';
   host.setAttribute('aria-hidden', 'true');
-  host.style.setProperty('--mgw-four-victory-x', `${centerX}%`);
-  host.style.setProperty('--mgw-four-victory-y', `${centerY}%`);
   host.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
-  host.innerHTML = `
-    <i class="mgw-four-victory-wave wave-a"></i>
-    <i class="mgw-four-victory-wave wave-b"></i>
-    <i class="mgw-four-victory-flare"></i>
+  host.style.setProperty('--mgw-four-victory-x', `${centerX}px`);
+  host.style.setProperty('--mgw-four-victory-y', `${centerY}px`);
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.classList.add('mgw-four-victory-rail');
+  svg.setAttribute('viewBox', `0 0 ${gridRect.width} ${gridRect.height}`);
+  svg.setAttribute('preserveAspectRatio', 'none');
+
+  const nodes = ordered.map((point, index) => {
+    const delay = delayMs + (index * 125);
+    return `
+      <g class="mgw-four-victory-node-group" transform="translate(${point.x.toFixed(1)} ${point.y.toFixed(1)}) rotate(45)">
+        <rect class="mgw-four-victory-node-lock" x="${(-nodeSize / 2).toFixed(1)}" y="${(-nodeSize / 2).toFixed(1)}" width="${nodeSize.toFixed(1)}" height="${nodeSize.toFixed(1)}" rx="2" style="--mgw-four-node-delay:${delay}ms"></rect>
+      </g>
+    `;
+  }).join('');
+
+  svg.innerHTML = `
+    <path class="mgw-four-victory-rail rail-glow" pathLength="1" d="${path}"></path>
+    <path class="mgw-four-victory-rail rail-color" pathLength="1" d="${path}"></path>
+    <path class="mgw-four-victory-rail rail-core" pathLength="1" d="${path}"></path>
+    <path class="mgw-four-victory-rail rail-scan" pathLength="1" d="${path}"></path>
+    ${nodes}
   `;
+
+  host.innerHTML = `
+    <i class="mgw-four-victory-shade"></i>
+    <i class="mgw-four-victory-prism">
+      <b class="prism-shell"></b>
+      <b class="prism-core"></b>
+      <b class="prism-cut cut-a"></b>
+      <b class="prism-cut cut-b"></b>
+    </i>
+    <i class="mgw-four-victory-blade blade-a"></i>
+    <i class="mgw-four-victory-blade blade-b"></i>
+    ${victoryShards(centerX, centerY, delayMs)}
+  `;
+  host.prepend(svg);
   grid.appendChild(host);
+}
+
+function orderVictoryPoints(points){
+  const xs = points.map(point => point.x);
+  const ys = points.map(point => point.y);
+  const xSpread = Math.max(...xs) - Math.min(...xs);
+  const ySpread = Math.max(...ys) - Math.min(...ys);
+  return [...points].sort((a, b) => xSpread >= ySpread ? (a.x - b.x) : (a.y - b.y));
+}
+
+function victoryPath(points){
+  return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ');
+}
+
+function victoryShards(centerX, centerY, delayMs){
+  const vectors = [
+    [-82,-64,-24],[-42,-92,-12],[18,-96,8],[72,-70,24],
+    [94,-20,44],[88,42,66],[46,88,82],[-16,98,102],
+    [-72,70,126],[-98,22,148],[-88,-34,166],[-38,-72,188],
+  ];
+
+  return vectors.map(([dx, dy, rot], index) => {
+    const delay = delayMs + 1320 + (index * 22);
+    const tone = index % 3 === 0 ? 'gold' : (index % 2 === 0 ? 'cyan' : 'magenta');
+    return `<i class="mgw-four-victory-shard shard-${tone}" style="left:${centerX}px;top:${centerY}px;--mgw-four-shard-x:${dx}px;--mgw-four-shard-y:${dy}px;--mgw-four-shard-rot:${rot}deg;--mgw-four-shard-delay:${delay}ms"></i>`;
+  }).join('');
 }
 
 function mountVictoryTestControl(container, game, viewerEffect, columns, rows){
@@ -523,7 +600,7 @@ function mountVictoryTestControl(container, game, viewerEffect, columns, rows){
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'mgw-four-victory-test';
-  button.textContent = 'Тест победной волны';
+  button.textContent = 'Тест финальной анимации';
   button.addEventListener('click', event => {
     event.preventDefault();
     event.stopPropagation();
@@ -532,7 +609,7 @@ function mountVictoryTestControl(container, game, viewerEffect, columns, rows){
     void container.offsetWidth;
 
     container.dataset.fourActiveFx = 'victory';
-    mountVictoryWaveEffect(container, {
+    mountVictoryOverdriveEffect(container, {
       winningCells: previewVictoryCells(columns, rows),
       columns,
       rows,
@@ -545,8 +622,7 @@ function clearVictoryPreview(container){
   container.querySelectorAll('.mgw-four-live-victory-fx').forEach(node => node.remove());
   container.querySelectorAll('[data-mgw-four-victory-cell]').forEach(node => {
     node.removeAttribute('data-mgw-four-victory-cell');
-    node.style.removeProperty('--mgw-four-seq');
-    node.style.removeProperty('--mgw-four-fx-delay');
+    node.style.removeProperty('--mgw-four-victory-delay');
   });
   delete container.dataset.fourActiveFx;
 }
@@ -575,16 +651,16 @@ function cellPoint(cell, columns, rows){
 
 function ensureLiveStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/four-in-a-row/live-cosmetics-v1.css?v=6&mvp19_10=live-game-v6&pulse=random-patterns-v1&victory_test=staging-v1', import.meta.url).href;
+  const href = new URL('../../../css/games/four-in-a-row/live-cosmetics-v1.css?v=7&mvp19_10=live-game-v7&victory=overdrive-v1', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-four-live-cosmetics]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v6';
+    existing.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v7';
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v6';
+  link.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v7';
   link.href = href;
   document.head.appendChild(link);
 }

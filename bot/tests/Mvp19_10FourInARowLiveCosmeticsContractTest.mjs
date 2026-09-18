@@ -11,7 +11,7 @@ const launch = fs.readFileSync('bot/helpers/WebAppLaunchUrl.php', 'utf8');
 const response = fs.readFileSync('bot/helpers/response.php', 'utf8');
 
 assert.ok(
-  live.includes("from './renderer.js?v=53&base=mvp19-10-live-v6'"),
+  live.includes("from './renderer.js?v=53&base=mvp19-10-live-v7'"),
   'Four live cosmetics must decorate the accepted base renderer instead of replacing gameplay',
 );
 assert.ok(live.includes('renderBaseFourInARowSurface(args);'), 'Base Four renderer must remain the gameplay/render owner');
@@ -65,9 +65,15 @@ assert.ok(live.includes('lightningPath(') && live.includes('mgw-four-pulse-bolt'
 assert.ok(live.includes('const patterns = [') && live.includes('stablePatternIndex(active?.key, patterns.length)'), 'Effect 2 must choose among deterministic move-seeded lightning patterns');
 assert.ok(live.includes('[[0,-2,2],[0,2,2],[-2,0,2],[2,0,2]]'), 'Effect 2 must include skip-a-cell lightning targets');
 assert.ok(live.includes('const desiredCount = [2,3,4,4][patternIndex]'), 'Effect 2 must vary between two, three, and four lightning targets');
-assert.ok(live.includes("button.textContent = 'Тест победной волны'"), 'Staging must expose a lightweight manual Victory Wave test control');
+assert.ok(live.includes("button.textContent = 'Тест финальной анимации'"), 'Staging must expose a lightweight manual premium-finale test control');
 assert.ok(live.includes("get('four_victory_test') === '1'"), 'Victory test control must be explicitly gated by staging launch query');
 assert.ok(live.includes('previewVictoryCells(columns, rows)'), 'Victory test must synthesize presentation cells without mutating match state');
+assert.ok(live.includes('mountVictoryOverdriveEffect(container, active, delayMs)'), 'Authoritative normal wins must mount the premium Victory Overdrive finale');
+assert.ok(live.includes('orderVictoryPoints(points)') && live.includes('victoryPath(ordered)'), 'Victory finale must follow the actual horizontal, vertical, or diagonal winning four');
+assert.ok(live.includes('victoryShards(centerX, centerY, delayMs)'), 'Victory finale must include a final directional shard burst');
+assert.ok(css.includes('.mgw-four-victory-prism') && css.includes('.mgw-four-victory-blade') && css.includes('.mgw-four-victory-shard'), 'Victory finale must include prism, crossing blades, and shards');
+assert.ok(css.includes('path.mgw-four-victory-rail.rail-core') && css.includes('path.mgw-four-victory-rail.rail-scan'), 'Victory finale must draw a layered energy rail through the winning discs');
+assert.ok(!css.includes('mgwFourVictoryWave') && !css.includes('.mgw-four-victory-wave'), 'Legacy generic expanding-wave presentation must be removed from effect 3');
 assert.ok(css.includes('.mgw-four-victory-test'), 'Victory test control must have an unobtrusive staging style');
 assert.ok(live.includes("pendingSlot.dataset.mgwFourPendingDrop = '1'"), 'Drop must avoid showing a settled disc before the authoritative move arrives');
 assert.ok(css.includes('data-mgw-four-pending-drop="1"') && css.includes('opacity:0!important'), 'Pending Drop must hide the already-settled optimistic disc while the target lock acquires the cell');
@@ -81,7 +87,7 @@ assert.ok(css.includes('data-four-theme="dark"') && css.includes('data-four-them
 assert.ok(css.includes('data-four-discs="3d"') && css.includes('data-four-discs="metal"') && css.includes('data-four-discs="neon"'), 'All accepted paid disc styles must be represented');
 assert.ok(css.includes('@keyframes mgwFourLiveDropDisc') && css.includes('--mgw-four-drop-start'), 'Drop must animate the actual cosmetic disc from above the board');
 assert.ok(css.includes('@keyframes mgwFourPulseDisc') && css.includes('@keyframes mgwFourPulseBolt') && css.includes('.mgw-four-pulse-bolt'), 'Effect 2 must be a visible branching electric chain, not a second drop or victory-line effect');
-assert.ok(css.includes('@keyframes mgwFourVictoryWave'), 'Victory Wave must have a distinct broad-wave animation');
+assert.ok(css.includes('@keyframes mgwFourVictoryDiscCharge') && css.includes('@keyframes mgwFourVictoryRailScan') && css.includes('@keyframes mgwFourVictoryPrism') && css.includes('@keyframes mgwFourVictoryShard'), 'Effect 3 must be a multi-stage premium finale, not a generic expanding wave');
 assert.ok(css.includes('@media (prefers-reduced-motion:reduce)'), 'Four live effects must be reduced-motion safe');
 assert.ok(css.includes('pointer-events:none'), 'Presentation effects must not steal gameplay hit targets');
 
@@ -95,21 +101,21 @@ assert.ok(base.includes("container.innerHTML ="), 'Accepted base renderer struct
 
 assert.ok(gameScreen.includes('fourTerminalPresentationDelay(game)'), 'Active v102 result owner must consult the live Four presentation state');
 assert.ok(gameScreen.includes("surface?.dataset?.fourActiveFx"), 'Result delay must come from an effect that the live renderer actually mounted');
-assert.ok(gameScreen.includes('drop: 930') && gameScreen.includes('pulse: 1180') && gameScreen.includes('victory: 1700'), 'Terminal moves must leave enough time for the currently mounted Four effect v4');
+assert.ok(gameScreen.includes('drop: 930') && gameScreen.includes('pulse: 1180') && gameScreen.includes('victory: 2400'), 'Terminal moves must leave enough time for the premium Victory Overdrive finale');
 assert.ok(gameScreen.includes("prefers-reduced-motion: reduce") && gameScreen.includes('Math.min(delay, 240)'), 'Reduced-motion users must not wait through a full animation delay');
 assert.ok(gameScreen.includes("String(state.activeGame?.id || '') !== id") && gameScreen.includes("classList.contains('active')"), 'Delayed result sheet must not reopen after the user leaves the finished match');
 assert.ok(gameScreen.includes("if (gameTypeOf(game) !== 'four_in_a_row') return 0;"), 'Other games must keep their accepted result timing');
 
 assert.ok(
-  manifest.includes("'./assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=6&mvp19_10=live-game-v6&drop=target-lock-no-base-flash-v2&effect2=random-chain-v4&victory_test=staging-v1'"),
+  manifest.includes("'./assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=7&mvp19_10=live-game-v7&drop=target-lock-no-base-flash-v2&effect2=random-chain-v4&victory=overdrive-v1&victory_test=staging-v1'"),
   'Active import map must route Four through the live cosmetics wrapper',
 );
 assert.ok(
-  manifest.includes("'./assets/js/screens/game-screen-v102.js?v=102' => './assets/js/screens/game-screen-v102.js?v=107&clock=phase-b-single-writer&battleship=leave-guard&mvp17=result-history-economy&live=owner-v3&result=compact-fast-v1&mvp19_10=four-effects-v2'"),
+  manifest.includes("'./assets/js/screens/game-screen-v102.js?v=102' => './assets/js/screens/game-screen-v102.js?v=108&clock=phase-b-single-writer&battleship=leave-guard&mvp17=result-history-economy&live=owner-v3&result=compact-fast-v1&mvp19_10=four-victory-overdrive-v1'"),
   'Active graph must cache-bust the Four terminal presentation gate',
 );
 const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);
-assert.ok(launchMatch && Number(launchMatch[1]) >= 1207 && launch.includes('four_live=game-v6') && launch.includes('four_effect2=random-chain-v4') && launch.includes('four_victory_test=1'), 'Telegram staging launch must publish random pulse and staging victory-test graph v6');
+assert.ok(launchMatch && Number(launchMatch[1]) >= 1208 && launch.includes('four_live=game-v7') && launch.includes('four_victory=overdrive-v1') && launch.includes('four_victory_test=1'), 'Telegram staging launch must publish the premium Victory Overdrive graph v7');
 
 assert.ok(
   response.includes("WHERE c.item_type = \\'game\\' AND c.catalog_status = \\'active\\'") || response.includes("WHERE c.item_type = 'game' AND c.catalog_status = 'active'"),
