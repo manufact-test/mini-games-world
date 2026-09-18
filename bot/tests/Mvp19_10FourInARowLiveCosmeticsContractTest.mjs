@@ -37,7 +37,7 @@ assert.ok(live.includes("winnerEffect === VICTORY_ID"), 'Only effect 3 may use w
 assert.ok(live.includes('mountPulseEffect(container, active, delayMs)'), 'Effect 2 must mount its own in-game pulse presentation');
 assert.ok(live.includes('falling.style.background = computed.background'), 'Drop must visibly carry the equipped disc material while falling');
 assert.ok(live.includes("pendingSlot.dataset.mgwFourPendingDrop = '1'"), 'Drop must avoid showing a settled disc before the authoritative move arrives');
-assert.ok(css.includes('data-mgw-four-pending-drop="1"') && css.includes('opacity:.16'), 'Pending Drop projection must remain a small visual ghost, not the paid effect itself');
+assert.ok(css.includes('data-mgw-four-pending-drop="1"') && css.includes('opacity:.14'), 'Pending Drop projection must remain a small visual ghost, not the paid effect itself');
 assert.ok(live.includes("FIELD_VARIANTS = new Set(['blue', 'dark', 'metal', 'neon'])"), 'All four accepted field identities must be live');
 assert.ok(live.includes("DISC_VARIANTS = new Set(['classic', '3d', 'metal', 'neon'])"), 'All four accepted disc identities must be live');
 assert.ok(live.includes('[6, 7, 8].includes(value)'), 'Live wrapper must retain 6x5, 7x6 and 8x7 boards');
