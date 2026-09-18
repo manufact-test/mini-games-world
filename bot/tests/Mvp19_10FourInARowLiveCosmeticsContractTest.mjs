@@ -30,6 +30,7 @@ assert.ok(live.includes('player?.game_cosmetics?.slots'), 'Opponent-owned effect
 assert.ok(live.includes('state?.profileInventory?.equipped'), 'Viewer cosmetics must retain the proven local inventory fallback');
 assert.ok(live.includes('seenMoveByGame'), 'Polling rerenders must not replay the same authoritative move');
 assert.ok(live.includes("moveKey || '__initial__'"), 'Empty opening position must arm the first real move without replaying reconnect snapshots');
+assert.ok(live.includes("game?.__mgw_v100_pending_action") && live.includes("&& !optimistic"), 'Optimistic local projection must never consume or trigger the authoritative paid effect event');
 assert.ok(live.includes("FIELD_VARIANTS = new Set(['blue', 'dark', 'metal', 'neon'])"), 'All four accepted field identities must be live');
 assert.ok(live.includes("DISC_VARIANTS = new Set(['classic', '3d', 'metal', 'neon'])"), 'All four accepted disc identities must be live');
 assert.ok(live.includes('[6, 7, 8].includes(value)'), 'Live wrapper must retain 6x5, 7x6 and 8x7 boards');
@@ -51,6 +52,7 @@ assert.ok(gameScreen.includes('fourTerminalPresentationDelay(game)'), 'Active v1
 assert.ok(gameScreen.includes("surface?.dataset?.fourActiveFx"), 'Result delay must come from an effect that the live renderer actually mounted');
 assert.ok(gameScreen.includes('drop: 820') && gameScreen.includes('four: 1380') && gameScreen.includes('victory: 1620'), 'Each accepted live effect needs enough terminal presentation time');
 assert.ok(gameScreen.includes("prefers-reduced-motion: reduce") && gameScreen.includes('Math.min(delay, 240)'), 'Reduced-motion users must not wait through a full animation delay');
+assert.ok(gameScreen.includes("String(state.activeGame?.id || '') !== id") && gameScreen.includes("classList.contains('active')"), 'Delayed result sheet must not reopen after the user leaves the finished match');
 assert.ok(gameScreen.includes("if (gameTypeOf(game) !== 'four_in_a_row') return 0;"), 'Other games must keep their accepted result timing');
 
 assert.ok(
