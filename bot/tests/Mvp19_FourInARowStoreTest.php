@@ -139,18 +139,18 @@ $renderer = (string)file_get_contents($root . '/app/assets/js/games/four-in-a-ro
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
 
-$assertTrue(str_contains($outer, "store-screen-four-in-a-row-store-v1.js?v=3&four_store=static-v3"), 'Active Store wrapper must install Four in a Row presentation');
+$assertTrue(str_contains($outer, "store-screen-four-in-a-row-store-v1.js?v=4&four_store=static-v4"), 'Active Store wrapper must install Four in a Row presentation');
 $activeStore = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $wrapperVersionMatch = [];
 $assertTrue(preg_match('~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~', $activeStore, $wrapperVersionMatch) === 1 && (int)$wrapperVersionMatch[1] >= 10, 'Active Store graph must stay at or beyond the accepted Four in a Row wrapper identity');
-$assertTrue(str_contains($activeStore, 'four_store=static-v3'), 'Active Store graph must publish static Four in a Row phase');
+$assertTrue(str_contains($activeStore, 'four_store=static-v4'), 'Active Store graph must publish static Four in a Row phase');
 $launchMatch = [];
 $assertTrue(preg_match('~/app/v110\.php\?v=(\d+)~', $launch, $launchMatch) === 1 && (int)$launchMatch[1] >= 1193, 'Telegram launch must publish the Four in a Row Store graph');
 
 foreach (['blue','dark','metal','neon'] as $variant) $assertTrue(str_contains($css, 'theme-' . $variant), 'Store CSS must style field ' . $variant);
 foreach (['classic','3d','metal','neon'] as $variant) $assertTrue(str_contains($css, 'pieces-' . $variant), 'Store CSS must style disc set ' . $variant);
 $assertTrue(str_contains($css, 'aspect-ratio:auto') && str_contains($css, 'grid-template-rows:repeat(6,auto)'), 'Small Four in a Row cards must let six equal square cell rows define board height without a compressed center row');
-$assertTrue(str_contains($css, '.store-v2-game-product[data-store-game-product="four_in_a_row"]') && str_contains($css, 'width:92%'), 'Compact Four in a Row element cards must enlarge discs without changing the purchase sheet size');
+$assertTrue(str_contains($css, '.store-v2-game-product[data-store-game-product="four_in_a_row"]') && str_contains($css, '.store-v2-game-preview[data-game-type="four_in_a_row"]') && !str_contains($css, '[data-cosmetic-layer="elements"]\n.mgw-four-disc{\n  width:92%') && str_contains($css, 'width:92%'), 'All compact Four in a Row cards, including Fields, must enlarge discs without changing the purchase sheet size');
 $assertTrue(str_contains($css, '.mgw-four-disc.pieces-metal.red') && str_contains($css, 'radial-gradient(circle at 31% 23%') && !str_contains($css, 'linear-gradient(145deg,#ffe0e4'), 'Metal discs must use a rounded specular material instead of the rejected center stripe');
 $assertTrue(str_contains($css, '.mgw-four-disc.pieces-neon.red') && str_contains($css, '#ff2d8c') && str_contains($css, '#9dff2e'), 'Neon discs must have bright filled luminous cores instead of outline-only rings');
 $assertTrue(str_contains($wrapper, "blue:'Насыщенное фиолетово-сливовое поле") && str_contains($wrapper, "classic:'Яркая розово-бирюзовая пара"), 'Four in a Row native Store copy must already contain the replacement descriptions');
