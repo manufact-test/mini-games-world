@@ -91,6 +91,44 @@ body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect
   background:currentColor!important;
 }
 
+/* v48 canonical effect-tile face.
+   All three effects use one SVG renderer, so pip geometry/color cannot vary by grid rounding,
+   pseudo-elements, CSS transforms or WebView rasterization quirks. */
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-live-v44-stage .mgw-domino-v48-face{
+  position:absolute!important;
+  inset:0!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border-radius:inherit!important;
+  pointer-events:none!important;
+}
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-live-v44-stage .mgw-domino-v48-face-svg{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  overflow:visible!important;
+}
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-live-v44-stage .mgw-domino-v48-divider{
+  fill:none!important;
+  stroke:rgba(23,26,32,.58)!important;
+  stroke-width:1!important;
+  vector-effect:non-scaling-stroke!important;
+  shape-rendering:geometricPrecision!important;
+}
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-live-v44-stage .mgw-domino-v48-pip{
+  fill:#171a20!important;
+  stroke:none!important;
+  opacity:1!important;
+  filter:none!important;
+  transform:none!important;
+  vector-effect:non-scaling-stroke!important;
+  shape-rendering:geometricPrecision!important;
+}
+
 /* Precision v41 motif: three settled tiles, compact 1.32 wave and eight shards. */
 body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"][data-cosmetic-variant="precision-drop"] .mgw-domino-live-v44-table{
   background:
