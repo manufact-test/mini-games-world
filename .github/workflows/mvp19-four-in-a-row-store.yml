@@ -1,0 +1,95 @@
+name: Four in a Row Store Phase 1
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260918_0036_add_four_in_a_row_store_cosmetics.php'
+      - 'bot/catalog/CosmeticStoreService.php'
+      - 'bot/tests/Mvp19_FourInARowStoreTest.php'
+      - 'app/assets/js/screens/store-screen-four-in-a-row-store-v1.js'
+      - 'app/assets/js/screens/store-screen-checkers-board-source-wrapper.js'
+      - 'app/assets/css/games/four-in-a-row/store-cosmetics-v1.css'
+      - 'app/assets/media/cosmetics/four-in-a-row/effects/**'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - '.github/workflows/mvp19-four-in-a-row-store.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-four-store-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  four-store:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Lint bounded Store slice
+        run: |
+          php -l bot/database/migrations/20260918_0036_add_four_in_a_row_store_cosmetics.php
+          php -l bot/catalog/CosmeticStoreService.php
+          php -l bot/tests/Mvp19_FourInARowStoreTest.php
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/helpers/WebAppLaunchUrl.php
+          node --check app/assets/js/screens/store-screen-four-in-a-row-store-v1.js
+          node --check app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+
+      - name: Run Four in a Row Store contract
+        run: php bot/tests/Mvp19_FourInARowStoreTest.php
+
+      - name: Re-run shared Store contracts
+        run: |
+          php bot/tests/Mvp19_2CosmeticStoreTest.php
+          php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
+          php bot/tests/Mvp19_5ChessCosmeticsTest.php
+          php bot/tests/Mvp19_7ReversiStoreTest.php
+          php bot/tests/Mvp19_8GoStoreTest.php
+
+      - name: Guard Phase 1 scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          migration='bot/database/migrations/20260918_0036_add_four_in_a_row_store_cosmetics.php'
+          wrapper='app/assets/js/screens/store-screen-four-in-a-row-store-v1.js'
+          css='app/assets/css/games/four-in-a-row/store-cosmetics-v1.css'
+
+          for id in             game-four-field-blue game-four-field-dark game-four-field-metal game-four-field-neon             game-four-discs-classic game-four-discs-3d game-four-discs-metal game-four-discs-neon             game-four-effect-drop game-four-effect-four game-four-effect-victory-wave; do
+            grep -F "'$id'" "$migration"
+          done
+
+          grep -F "'game_four_in_a_row_theme'" "$migration"
+          grep -F "'game_four_in_a_row_elements'" "$migration"
+          grep -F "'game_four_in_a_row_effect'" "$migration"
+          grep -F "'preview_mode' => (string)$definition['layer'] === 'effect' ? 'static_concept' : 'static'" "$migration"
+          ! grep -Fq "offer_type' => 'bundle'" "$migration"
+
+          grep -F 'drop-v1.svg' "$wrapper"
+          grep -F 'four-v1.svg' "$wrapper"
+          grep -F 'victory-wave-v1.svg' "$wrapper"
+          ! grep -Fq '@keyframes' "$css"
+          ! grep -Fq 'animation:' "$css"
+
+      - name: Guard frozen live game and active Store graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "store-screen-four-in-a-row-store-v1.js?v=1&four_store=static-v1" app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"store-screen-checkers-board-source-wrapper.js?v=10") || !str_contains($s,"four_store=static-v1")) exit(1);'
+          php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1193) exit(1);'
+          git diff --exit-code "${{ github.event.pull_request.base.sha || github.sha^ }}" "${{ github.event.pull_request.head.sha || github.sha }}" --             app/assets/js/games/four-in-a-row/renderer.js             app/assets/js/games/four-in-a-row/entry.js             app/assets/css/games/four-in-a-row/game.css             bot/services/FourInARowService.php             bot/services/FourInARowBotService.php
+          git diff --check
