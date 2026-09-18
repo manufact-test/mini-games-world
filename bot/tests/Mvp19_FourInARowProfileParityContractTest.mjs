@@ -69,7 +69,7 @@ assert.ok(layout.indexOf('initProfileDominoHardRatio();') < layout.indexOf('init
 
 const profileOwnerMatch = manifest.match(/mgw-profile-chess-layout-v2\.js\?v=(\d+)/);
 assert.ok(profileOwnerMatch && Number(profileOwnerMatch[1]) >= 20, 'Active Profile owner must publish the Four parity cache revision');
-assert.ok(manifest.includes('four_profile=live-previews-v2') && manifest.includes('four_module=export-v11') && manifest.includes('four_effect2=random-chain-v4') && manifest.includes('four_victory=overdrive-v3') && manifest.includes('copy=compact-v3'), 'Active Profile URL must publish accepted animated preview and player-copy identities');
+assert.ok(manifest.includes('four_profile=live-previews-v3') && manifest.includes('four_module=export-v11') && manifest.includes('four_effect2=random-chain-v4') && manifest.includes('four_victory=overdrive-v3') && manifest.includes('copy=compact-v3'), 'Active Profile URL must publish accepted animated preview and player-copy identities');
 
 assert.ok(profileApi.includes('(new ProductInventoryService($database))->snapshot($mgwId)'), 'Profile API must expose the same canonical inventory used by Store purchases');
 
