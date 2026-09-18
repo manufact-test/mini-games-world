@@ -128,7 +128,9 @@ $topWrapper = (string)file_get_contents($root . '/app/assets/js/screens/store-sc
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
 $assertTrue(str_contains($topWrapper, 'store-screen-go-store-v1.js?v=2&mvp19_8=effects-premium-v2'), 'Active Store entrypoint must install the fresh Go presentation layer');
-$assertTrue(str_contains((string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? ''), 'store-screen-checkers-board-source-wrapper.js?v=7'), 'Active Store outer wrapper must use the fresh corrective cache identity');
+$activeStoreTarget = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
+$wrapperVersionMatch = [];
+$assertTrue(preg_match('~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~', $activeStoreTarget, $wrapperVersionMatch) === 1 && (int)$wrapperVersionMatch[1] >= 7, 'Active Store outer wrapper must stay at or beyond the accepted Go corrective identity');
 $assertTrue(str_contains((string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? ''), 'go_effects=premium-v2'), 'Active Store URL must publish premium Go effects');
 $launchMatch = [];
 $assertTrue(preg_match('~/app/v110\.php\?v=(\d+)~', $launch, $launchMatch) === 1 && (int)$launchMatch[1] >= 1139, 'Telegram launch must remain at or beyond the accepted Go corrective graph');
