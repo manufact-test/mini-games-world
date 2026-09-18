@@ -318,7 +318,11 @@ function finishGame(game, me){
 
   const presentationDelay = fourTerminalPresentationDelay(game);
   if (presentationDelay > 0) {
-    window.setTimeout(() => openResultSheet(game, me), presentationDelay);
+    window.setTimeout(() => {
+      if (String(state.activeGame?.id || '') !== id) return;
+      if (!document.getElementById('screen-game')?.classList.contains('active')) return;
+      openResultSheet(game, me);
+    }, presentationDelay);
     return;
   }
   window.requestAnimationFrame(() => openResultSheet(game, me));
