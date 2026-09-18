@@ -15,7 +15,7 @@ async function probePreviewMotion(page) {
   expect(response?.ok()).toBe(true);
 
   return await page.evaluate(async () => {
-    const { dominoPreviewMarkup } = await import('./assets/js/screens/store-screen-domino-store-v1.js?v=11&mvp19_9=domino-preview-component-v44');
+    const { dominoPreviewMarkup } = await import('./assets/js/screens/store-screen-domino-store-v1.js?v=12&mvp19_9=domino-preview-motion-v46');
 
     const waitForSheet = async selector => {
       const link = document.querySelector(selector);
@@ -138,12 +138,12 @@ async function probePreviewMotion(page) {
 }
 
 for (const reducedMotion of ['no-preference','reduce']) {
-  test.describe(`DOMINO PREVIEW v44 motion — ${reducedMotion}`, () => {
+  test.describe(`DOMINO PREVIEW v46 motion — ${reducedMotion}`, () => {
     test.use({ viewport:{ width:390, height:700 }, reducedMotion });
 
     test('Store/Profile/detail use one moving component for all three effects', async ({ page }) => {
       const result = await probePreviewMotion(page);
-      console.log(`DOMINO_PREVIEW_V44_${reducedMotion.replace('-', '_').toUpperCase()}=${JSON.stringify(result)}`);
+      console.log(`DOMINO_PREVIEW_V46_${reducedMotion.replace('-', '_').toUpperCase()}=${JSON.stringify(result)}`);
       expect(result).toHaveLength(9);
       for (const entry of result) {
         expect(entry.component, `${entry.surface}/${entry.variant} component`).toBe('v44');

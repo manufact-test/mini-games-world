@@ -228,33 +228,33 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          rm -f domino-preview-store-v11.js domino-preview-loader-v9.js domino-preview-component-v44.css
+          rm -f domino-preview-store-v12.js domino-preview-loader-v10.js domino-preview-component-v44.css
 
           curl --fail-with-body --silent --show-error \
             --connect-timeout 10 --max-time 25 \
             --retry 2 --retry-delay 2 --retry-connrefused \
-            "${MGW_STAGING_ORIGIN}/app/assets/js/screens/store-screen-domino-store-v1.js?v=11&mvp19_9=domino-preview-component-v44" \
-            --output domino-preview-store-v11.js
+            "${MGW_STAGING_ORIGIN}/app/assets/js/screens/store-screen-domino-store-v1.js?v=12&mvp19_9=domino-preview-motion-v46" \
+            --output domino-preview-store-v12.js
 
           curl --fail-with-body --silent --show-error \
             --connect-timeout 10 --max-time 25 \
             --retry 2 --retry-delay 2 --retry-connrefused \
-            "${MGW_STAGING_ORIGIN}/app/assets/js/screens/store-screen-domino-effects-v9.js?v=9&mvp19_9=domino-preview-component-v44" \
-            --output domino-preview-loader-v9.js
+            "${MGW_STAGING_ORIGIN}/app/assets/js/screens/store-screen-domino-effects-v9.js?v=10&mvp19_9=domino-preview-motion-v46" \
+            --output domino-preview-loader-v10.js
 
           curl --fail-with-body --silent --show-error \
             --connect-timeout 10 --max-time 25 \
             --retry 2 --retry-delay 2 --retry-connrefused \
-            "${MGW_STAGING_ORIGIN}/app/assets/css/games/domino/store-effects-preview-component-v44.css?v=1&mvp19_9=domino-live-preview-v41" \
+            "${MGW_STAGING_ORIGIN}/app/assets/css/games/domino/store-effects-preview-component-v44.css?v=2&mvp19_9=domino-preview-motion-v46" \
             --output domino-preview-component-v44.css
 
-          grep -F 'native:v11:component-v44' domino-preview-store-v11.js
-          grep -F 'data-mgw-domino-preview-component' domino-preview-store-v11.js
-          grep -F 'data-mgw-domino-preview-particles="8"' domino-preview-store-v11.js
-          grep -F 'data-mgw-domino-preview-particles="12"' domino-preview-store-v11.js
-          grep -F 'data-mgw-domino-preview-particles="6"' domino-preview-store-v11.js
+          grep -F 'native:v12:motion-v46' domino-preview-store-v12.js
+          grep -F 'data-mgw-domino-preview-component' domino-preview-store-v12.js
+          grep -F 'data-mgw-domino-preview-particles="8"' domino-preview-store-v12.js
+          grep -F 'data-mgw-domino-preview-particles="12"' domino-preview-store-v12.js
+          grep -F 'data-mgw-domino-preview-particles="6"' domino-preview-store-v12.js
 
-          grep -F 'store-effects-preview-component-v44.css?v=1&mvp19_9=domino-preview-component-v44' domino-preview-loader-v9.js
+          grep -F 'store-effects-preview-component-v44.css?v=2&mvp19_9=domino-preview-motion-v46' domino-preview-loader-v10.js
 
           grep -F 'does not reuse the old v13/v15/v18 effect' domino-preview-component-v44.css
           grep -F '@keyframes mgw-domino-v44-precision-shard' domino-preview-component-v44.css
@@ -262,6 +262,10 @@ jobs:
           grep -F '@keyframes mgw-domino-v44-stock-spark' domino-preview-component-v44.css
           grep -F '@keyframes mgw-domino-v44-finale-sweep' domino-preview-component-v44.css
           grep -F '@keyframes mgw-domino-v44-finale-prism' domino-preview-component-v44.css
+          grep -F 'Animated properties intentionally do NOT use !important' domino-preview-component-v44.css
+          ! grep -Fq 'opacity:0!important' domino-preview-component-v44.css
+          ! grep -Fq 'left:var(--sx)!important' domino-preview-component-v44.css
+          ! grep -Fq 'top:var(--sy)!important' domino-preview-component-v44.css
 
           printf 'Hostinger Domino preview component v44 assets verified.\n'
 

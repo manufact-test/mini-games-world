@@ -30,7 +30,8 @@ body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect
   pointer-events:none!important;
 }
 
-/* Canonical tile geometry shared by all three effect previews. */
+/* Canonical tile geometry shared by all three effect previews.
+   Animated properties intentionally do NOT use !important: keyframes must win. */
 body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-live-v44-stage .mgw-domino-v44-tile{
   position:absolute!important;
   display:flex!important;
@@ -41,11 +42,11 @@ body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect
   margin:0!important;
   opacity:1!important;
   transform:none!important;
-  filter:none!important;
+  filter:none;
   border-radius:3px!important;
   border:1px solid rgba(54,59,70,.66)!important;
   background:linear-gradient(155deg,#fffdf3,#d8d2c3)!important;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.72),0 4px 8px rgba(0,0,0,.30)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.72),0 4px 8px rgba(0,0,0,.30);
   color:#171a20!important;
   overflow:hidden!important;
 }
@@ -100,8 +101,8 @@ body .mgw-domino-live-v44-stage.is-precision .mgw-domino-v44-precision-ring{
   border-radius:4px!important;
   background:transparent!important;
   box-shadow:0 0 8px rgba(255,215,87,.56),0 0 16px rgba(255,170,40,.28)!important;
-  opacity:0!important;
-  transform:translate(-50%,-50%) scale(.82)!important;
+  opacity:0;
+  transform:translate(-50%,-50%) scale(.82);
   transform-origin:center!important;
   animation:mgw-domino-v44-precision-ring 3.2s cubic-bezier(.18,.72,.2,1) infinite!important;
 }
@@ -117,16 +118,16 @@ body .mgw-domino-live-v44-stage.is-precision .mgw-domino-v44-precision-sparks>i{
   --ey:34%;
   --rot:0deg;
   position:absolute!important;
-  left:var(--sx)!important;
-  top:var(--sy)!important;
+  left:var(--sx);
+  top:var(--sy);
   width:3px!important;
   height:11px!important;
   margin:-5.5px 0 0 -1.5px!important;
   border-radius:999px 999px 2px 2px!important;
   background:linear-gradient(180deg,#fff 0%,#fff6ba 18%,#ffd95b 52%,#ff9f27 82%,rgba(255,125,18,.08) 100%)!important;
   box-shadow:0 0 5px rgba(255,247,188,1),0 0 10px rgba(255,205,66,.92),0 0 15px rgba(255,137,24,.48)!important;
-  opacity:0!important;
-  transform:rotate(var(--rot)) scaleY(.55)!important;
+  opacity:0;
+  transform:rotate(var(--rot)) scaleY(.55);
   transform-origin:center!important;
   animation:mgw-domino-v44-precision-shard 3.2s cubic-bezier(.18,.68,.16,1) infinite!important;
 }
@@ -179,25 +180,25 @@ body .mgw-domino-live-v44-stage.is-stock .mgw-domino-v44-stock-line{
   width:64%!important;
   height:.62px!important;
   border-radius:999px!important;
-  transform:rotate(27deg) scaleX(0)!important;
+  transform:rotate(27deg) scaleX(0);
   transform-origin:0 50%!important;
   background:linear-gradient(90deg,rgba(84,243,255,.05),rgba(115,245,255,.98) 27%,rgba(173,119,255,.94) 76%,rgba(255,246,202,.92))!important;
   box-shadow:0 0 5px rgba(90,237,255,.72),0 0 9px rgba(160,102,255,.28)!important;
-  opacity:0!important;
+  opacity:0;
   animation:mgw-domino-v44-stock-line 3.35s cubic-bezier(.16,.76,.18,1) infinite!important;
 }
 body .mgw-domino-live-v44-stage.is-stock .mgw-domino-v44-stock-orb{
   position:absolute!important;
   z-index:8!important;
-  left:20.5%!important;
-  top:33%!important;
+  left:20.5%;
+  top:33%;
   width:5px!important;
   height:5px!important;
   margin:-2.5px 0 0 -2.5px!important;
   border-radius:50%!important;
   background:#f3feff!important;
   box-shadow:0 0 6px #70f4ff,0 0 11px rgba(165,105,255,.74)!important;
-  opacity:0!important;
+  opacity:0;
   animation:mgw-domino-v44-stock-orb 3.35s cubic-bezier(.15,.78,.18,1) infinite!important;
 }
 body .mgw-domino-live-v44-stage.is-stock .mgw-domino-v44-stock-sparks{
@@ -211,15 +212,15 @@ body .mgw-domino-live-v44-stage.is-stock .mgw-domino-v44-stock-sparks>i{
   --ex:26%;
   --ey:22%;
   position:absolute!important;
-  left:var(--sx)!important;
-  top:var(--sy)!important;
+  left:var(--sx);
+  top:var(--sy);
   width:6px!important;
   height:6px!important;
   margin:-3px 0 0 -3px!important;
   border-radius:50%!important;
   background:#f5ffff!important;
   box-shadow:0 0 6px rgba(105,242,255,.96),0 0 11px rgba(166,104,255,.62)!important;
-  opacity:0!important;
+  opacity:0;
   animation:mgw-domino-v44-stock-spark 3.35s cubic-bezier(.18,.68,.16,1) infinite!important;
 }
 body .mgw-domino-live-v44-stage.is-stock .mgw-domino-v44-stock-sparks>i::before,
@@ -276,7 +277,7 @@ body .mgw-domino-live-v44-stage.is-finale .mgw-domino-v44-finale-prism{
   border-radius:14px!important;
   background:conic-gradient(from 210deg at 50% 50%,transparent 0 18%,rgba(74,238,255,.10) 26%,rgba(194,103,255,.14) 35%,rgba(255,222,112,.12) 43%,transparent 54% 100%)!important;
   filter:blur(7px)!important;
-  opacity:0!important;
+  opacity:0;
   animation:mgw-domino-v44-finale-prism 3.8s ease-out infinite!important;
 }
 body .mgw-domino-live-v44-stage.is-finale .mgw-domino-v44-finale-sweep{
@@ -284,8 +285,8 @@ body .mgw-domino-live-v44-stage.is-finale .mgw-domino-v44-finale-sweep{
   z-index:6!important;
   inset:-20% -55%!important;
   background:linear-gradient(104deg,transparent 34%,rgba(72,239,255,.04) 40%,rgba(104,248,255,.46) 48%,rgba(199,113,255,.52) 53%,rgba(255,224,115,.34) 58%,transparent 66%)!important;
-  opacity:0!important;
-  transform:translateX(-44%) skewX(-4deg)!important;
+  opacity:0;
+  transform:translateX(-44%) skewX(-4deg);
   animation:mgw-domino-v44-finale-sweep 3.8s cubic-bezier(.18,.76,.16,1) infinite!important;
 }
 body .mgw-domino-live-v44-stage.is-finale .mgw-domino-v44-finale-aura{
@@ -295,7 +296,7 @@ body .mgw-domino-live-v44-stage.is-finale .mgw-domino-v44-finale-aura{
   border-radius:12px!important;
   border:1px solid rgba(118,244,255,.72)!important;
   box-shadow:0 0 18px rgba(99,241,255,.24),inset 0 0 22px rgba(184,98,255,.12),0 0 34px rgba(185,99,255,.12)!important;
-  opacity:0!important;
+  opacity:0;
   animation:mgw-domino-v44-finale-aura 3.8s ease-out infinite!important;
 }
 body .mgw-domino-live-v44-stage.is-finale .mgw-domino-v44-finale-sparks{
@@ -309,15 +310,15 @@ body .mgw-domino-live-v44-stage.is-finale .mgw-domino-v44-finale-sparks>i{
   --ex:50%;
   --ey:22%;
   position:absolute!important;
-  left:var(--sx)!important;
-  top:var(--sy)!important;
+  left:var(--sx);
+  top:var(--sy);
   width:4px!important;
   height:4px!important;
   margin:-2px 0 0 -2px!important;
   border-radius:50%!important;
   background:#f7ffff!important;
   box-shadow:0 0 7px rgba(104,243,255,.9),0 0 12px rgba(186,104,255,.66)!important;
-  opacity:0!important;
+  opacity:0;
   animation:mgw-domino-v44-finale-spark 3.8s cubic-bezier(.14,.72,.2,1) infinite!important;
 }
 body .mgw-domino-live-v44-stage.is-finale .mgw-domino-v44-finale-sparks>.s1{--ex:18%;--ey:34%}
