@@ -77,10 +77,10 @@ expect(!effectCss.includes('mgw-domino-v12-'), 'Rejected v12 choreography must s
 expect(!effectCss.includes('repeating-conic-gradient') && !effectCss.includes('mix-blend-mode:screen') && !effectCss.includes('transform-style:preserve-3d'), 'Effects must avoid rejected generic light-show/fragile 3D language.');
 
 expect(selectorOwner.includes('selector.scrollLeft = left;') && !selectorOwner.includes("behavior:'smooth'"), 'Accepted no-jump Store selector behavior must remain intact.');
-expect(wrapper.includes("store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only&review=manual-corrective-v2"), 'Accepted Reversi Store identity must remain frozen.');
+expect(wrapper.includes("store-screen-reversi-store-v1.js?v=3&mvp19_7=store-only&review=manual-corrective-v2&paid_default=copy-native-v1"), 'Accepted Reversi Store identity must remain frozen apart from the native-copy cache revision.');
 expect(correctiveLoader.includes('store-card-fill-live-pips-v5.css?v=2&mvp19_9=domino-card-fill-live-pips-v6'), 'Accepted static Domino corrective must remain active.');
 expect(effectLoader.includes('store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions') && effectLoader.includes('store-effects-preview-component-v44.css?v=4&mvp19_9=domino-svg-pips-v48'), 'Effect loader must load old base geometry first and the isolated v44 component last.');
-expect(wrapper.includes("from './store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48'"), 'Store wrapper must load the fresh v44 Domino preview source.');
+expect(wrapper.includes("from './store-screen-domino-store-v1.js?v=15&mvp19_9=domino-svg-pips-v48&paid_default=copy-native-v1'"), 'Store wrapper must load the fresh v44 Domino preview source plus canonical Store copy.');
 expect(wrapper.includes("store-screen-domino-effects-v9.js?v=12&mvp19_9=domino-svg-pips-v48"), 'Store wrapper must load the fresh v44 effect loader.');
 
 expect(profile.includes("dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48'"), 'Profile must reuse the same v44 Store primitive.');
