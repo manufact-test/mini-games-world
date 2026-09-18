@@ -21,17 +21,17 @@ export function installDominoStoreEffectsV9(){
 }
 
 function ensurePreviewComponentV44(){
-  const href = new URL('../../css/games/domino/store-effects-preview-component-v44.css?v=2&mvp19_9=domino-preview-motion-v46', import.meta.url).href;
+  const href = new URL('../../css/games/domino/store-effects-preview-component-v44.css?v=3&mvp19_9=domino-preview-polish-v47', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-domino-preview-component-v44]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwDominoPreviewComponentV44 = 'mvp19-9-domino-preview-motion-v46';
+    existing.dataset.mgwDominoPreviewComponentV44 = 'mvp19-9-domino-preview-polish-v47';
     document.head.appendChild(existing);
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.href = href;
-  link.dataset.mgwDominoPreviewComponentV44 = 'mvp19-9-domino-preview-motion-v46';
+  link.dataset.mgwDominoPreviewComponentV44 = 'mvp19-9-domino-preview-polish-v47';
   document.head.appendChild(link);
 }
