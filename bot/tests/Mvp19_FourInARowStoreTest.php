@@ -63,7 +63,7 @@ foreach ($rows as $row) {
     $byLayer[$layer][] = (string)$row['equip_slot'];
     if ($layer === 'effect') {
         $events[(string)$metadata['variant']] = (string)($metadata['event'] ?? '');
-        $assertSame('static_concept', (string)($metadata['preview_mode'] ?? ''), 'Effect products must stay static during Store Phase 1');
+        $assertSame('animated_preview', (string)($metadata['preview_mode'] ?? ''), 'Accepted Four effects must publish animated Store/Profile preview mode');
     }
 }
 $assertSame(4, count($byLayer['theme']), 'Four in a Row must have four fields');
@@ -146,25 +146,28 @@ $renderer = (string)file_get_contents($root . '/app/assets/js/games/four-in-a-ro
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
 
-$assertTrue(str_contains($outer, "store-screen-four-in-a-row-store-v1.js?v=8&four_store=static-v6&effect2=chain-v3&export=profile-preview-v1&copy=human-v1"), 'Active Store wrapper must install Four in a Row presentation');
+$assertTrue(str_contains($outer, "store-screen-four-in-a-row-store-v1.js?v=9&four_store=live-previews-v1&effect2=random-chain-v4&victory=overdrive-v1&export=profile-preview-v2&copy=player-v2"), 'Active Store wrapper must install the accepted animated Four preview presentation');
 $activeStore = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $wrapperVersionMatch = [];
-$assertTrue(preg_match('~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~', $activeStore, $wrapperVersionMatch) === 1 && (int)$wrapperVersionMatch[1] >= 10, 'Active Store graph must stay at or beyond the accepted Four in a Row wrapper identity');
-$assertTrue(str_contains($activeStore, 'four_store=static-v6') && str_contains($activeStore, 'four_effect2=chain-v3'), 'Active Store graph must publish the differentiated electric-chain Four effect-2 concept');
+$assertTrue(preg_match('~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~', $activeStore, $wrapperVersionMatch) === 1 && (int)$wrapperVersionMatch[1] >= 19, 'Active Store graph must publish the Four animated-preview cache identity');
+$assertTrue(str_contains($activeStore, 'four_store=live-previews-v1') && str_contains($activeStore, 'four_effect2=random-chain-v4') && str_contains($activeStore, 'four_victory=overdrive-v1') && str_contains($activeStore, 'copy=player-v2'), 'Active Store graph must publish accepted preview and player-copy identities');
 $launchMatch = [];
-$assertTrue(preg_match('~/app/v110\.php\?v=(\d+)~', $launch, $launchMatch) === 1 && (int)$launchMatch[1] >= 1193, 'Telegram launch must publish the Four in a Row Store graph');
+$assertTrue(preg_match('~/app/v110\.php\\?v=(\\d+)~', $launch, $launchMatch) === 1 && (int)$launchMatch[1] >= 1211 && str_contains($launch, 'four_store=live-previews-v1') && str_contains($launch, 'four_profile=live-previews-v1'), 'Telegram launch must publish the Four Store/Profile animated-preview graph');
 
 foreach (['blue','dark','metal','neon'] as $variant) $assertTrue(str_contains($css, 'theme-' . $variant), 'Store CSS must style field ' . $variant);
 foreach (['classic','3d','metal','neon'] as $variant) $assertTrue(str_contains($css, 'pieces-' . $variant), 'Store CSS must style disc set ' . $variant);
 $assertTrue(str_contains($css, 'aspect-ratio:auto') && str_contains($css, 'grid-template-rows:repeat(6,auto)'), 'Small Four in a Row cards must let six equal square cell rows define board height without a compressed center row');
-$assertTrue(str_contains($css, '.store-v2-game-product[data-store-game-product="four_in_a_row"]') && str_contains($css, '.store-v2-game-preview[data-game-type="four_in_a_row"]') && !str_contains($css, '[data-cosmetic-layer="elements"]\n.mgw-four-disc{\n  width:92%') && str_contains($css, 'width:92%'), 'All compact Four in a Row cards, including Fields, must enlarge discs without changing the purchase sheet size');
-$assertTrue(str_contains($css, '.mgw-four-disc.pieces-metal.red') && str_contains($css, 'radial-gradient(circle at 31% 23%') && !str_contains($css, 'linear-gradient(145deg,#ffe0e4'), 'Metal discs must use a rounded specular material instead of the rejected center stripe');
-$assertTrue(str_contains($css, '.mgw-four-disc.pieces-neon.red') && str_contains($css, '#ff2d8c') && str_contains($css, '#9dff2e'), 'Neon discs must have bright filled luminous cores instead of outline-only rings');
-$assertTrue(str_contains($wrapper, "blue:'Насыщенное фиолетово-сливовое поле") && str_contains($wrapper, "classic:'Яркая розово-бирюзовая пара") && str_contains($wrapper, "four:'После каждого хода") && str_contains($wrapper, 'ветвящимися молниями'), 'Four in a Row native Store copy must contain the corrected field, disc, and mid-game pulse descriptions');
-foreach (['drop-v1.svg','four-v1.svg','victory-wave-v1.svg'] as $asset) $assertTrue(str_contains($wrapper, $asset), 'Effects must use static concept asset ' . $asset);
-$assertTrue(!str_contains($css, '@keyframes') && !str_contains($css, 'animation:'), 'Four in a Row Store Phase 1 must not contain effect animation');
-$assertTrue(str_contains($wrapper, 'data-mgw-four-preview-mode') || str_contains($wrapper, 'mgwFourPreviewMode'), 'Effect previews must publish static preview mode');
-$assertTrue(!str_contains($wrapper, 'renderFourInARowSurface') && !str_contains($wrapper, 'last_move') && !str_contains($wrapper, 'winning_cells'), 'Store-only wrapper must not own live game mechanics');
-$assertTrue(str_contains($renderer, 'winning_cells') && str_contains($renderer, 'last_move'), 'Accepted live renderer remains untouched and authoritative for future Phase 3 triggers');
+$assertTrue(str_contains($css, '.store-v2-game-product[data-store-game-product="four_in_a_row"]') && str_contains($css, '.store-v2-game-preview[data-game-type="four_in_a_row"]') && str_contains($css, 'width:92%'), 'All compact Four in a Row cards must retain the accepted disc sizing');
+$assertTrue(str_contains($css, '.mgw-four-disc.pieces-metal.red') && str_contains($css, 'radial-gradient(circle at 31% 23%') && !str_contains($css, 'linear-gradient(145deg,#ffe0e4'), 'Metal discs must keep the accepted rounded material');
+$assertTrue(str_contains($css, '.mgw-four-disc.pieces-neon.red') && str_contains($css, '#ff2d8c') && str_contains($css, '#9dff2e'), 'Neon discs must keep bright filled luminous cores');
+$assertTrue(str_contains($wrapper, "drop:'Прицел захватывает клетку") && str_contains($wrapper, "four:'Каждый ваш ход запускает новый рисунок молний") && str_contains($wrapper, "'victory-wave':'Победная четвёрка загорается по цепочке"), 'Effect descriptions must be written for the player and match the accepted live behavior');
+foreach (['Лазерное наведение','Энергетический импульс','Победный овердрайв'] as $name) $assertTrue(str_contains($wrapper, $name), 'Effect previews must expose player-facing name ' . $name);
+foreach (['mgw-four-preview-drop-reticle','mgw-four-preview-pulse-svg','mgw-four-preview-victory-prism'] as $primitive) $assertTrue(str_contains($wrapper, $primitive), 'Effect preview markup must include accepted visual primitive ' . $primitive);
+foreach (['mgwFourPreviewDropDisc','mgwFourPreviewBoltA','mgwFourPreviewVictoryPrism','mgwFourPreviewShard'] as $keyframe) $assertTrue(str_contains($css, '@keyframes ' . $keyframe), 'Store/Profile preview CSS must animate ' . $keyframe);
+$assertTrue(str_contains($css, '@media (prefers-reduced-motion:reduce)'), 'Animated Four previews must remain reduced-motion safe');
+$assertTrue(str_contains($wrapper, "mgwFourPreviewMode = layer === 'effect' ? 'animated-live-parity' : 'static'"), 'Effect previews must publish animated live-parity mode');
+$assertTrue(str_contains($wrapper, 'upgradePurchaseCopy(root)') && str_contains($wrapper, '.store-v2-confirm-copy strong'), 'Purchase confirmation must reuse the animated preview and player-facing effect name');
+$assertTrue(!str_contains($wrapper, 'renderFourInARowSurface') && !str_contains($wrapper, 'last_move') && !str_contains($wrapper, 'winning_cells'), 'Store/Profile previews must remain presentation-only and never own live mechanics');
+$assertTrue(str_contains($renderer, 'winning_cells') && str_contains($renderer, 'last_move'), 'Accepted live renderer remains authoritative for real move and victory triggers');
 
-echo "Four in a Row Store static-preview contract passed ({$assertions} assertions).\n";
+echo "Four in a Row animated Store/Profile preview contract passed ({$assertions} assertions).";
