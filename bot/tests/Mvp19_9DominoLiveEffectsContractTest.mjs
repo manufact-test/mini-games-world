@@ -103,13 +103,15 @@ assert.ok(!correctiveCss.includes('.mgw-domino-preview'), 'corrective CSS must n
 assert.ok(manualJs.includes("container.dataset.mgwDominoLiveEffects = 'v38'"), 'v38 viewport particle owner must be active');
 assert.ok(manualJs.includes("root.dataset.dominoPrecisionVisual = 'eight-visible-shards-v38'"), 'Precision must expose the eight-shard visual marker');
 assert.ok(manualJs.includes("root.dataset.dominoPrecisionShardCount = '8'"), 'Precision must create eight visible shards');
+assert.ok(manualJs.includes("root.dataset.dominoPrecisionGeometry = 'compact-v41'"), 'Precision must expose compact v41 geometry');
+assert.ok(manualJs.includes('const distances = [44, 48, 42, 47, 45, 48, 41, 46]'), 'Precision shard travel must be halved in the actual Web Animation geometry');
 assert.ok(manualJs.includes('for (let index = 0; index < 8; index += 1)'), 'Precision must build eight independent particles');
 assert.ok(manualJs.includes("duration:1700"), 'Precision shards must stay readable long enough');
 assert.ok(manualJs.includes("root.dataset.dominoStockSparkCount = '12'"), 'Stock must expose twelve off-axis sparks');
 assert.ok(manualJs.includes('for (let index = 0; index < 12; index += 1)'), 'Stock must build twelve independent particles');
 assert.ok(manualJs.includes('const spread = 38 + (index % 4) * 7'), 'Stock sparks must leave the beam by tens of pixels');
 assert.ok(manualJs.includes('Promise.allSettled(animations.map(animation => animation.finished))'), 'v38 effects must clean up from actual Web Animation completion');
-assert.ok(manualJs.includes("live-effects-v32.css?v=8&mvp19_9=viewport-particles-v38"), 'v38 stylesheet must have a fresh cache identity');
+assert.ok(manualJs.includes("live-effects-v32.css?v=9&mvp19_9=precision-compact-v41"), 'v41 Precision stylesheet must have a fresh cache identity');
 assert.ok(liveEffectsCss.includes('.mgw-domino-live-fx-layer-v38'), 'v38 must render above clipped Domino board containers');
 assert.ok(liveEffectsCss.includes('.mgw-domino-precision-burst-v38 .precision-shard-v38'), 'Precision viewport shards must be styled');
 assert.ok(liveEffectsCss.includes('.mgw-domino-stock-burst-v38 .stock-spark-v38'), 'Stock viewport sparks must be styled');
@@ -120,9 +122,9 @@ assert.ok(liveCosmeticsCss.includes('overflow-x:auto!important'), 'ordinary hand
 assert.ok(liveCosmeticsCss.includes('overflow-y:auto!important'), 'mobile Domino vertical scroll must remain preserved');
 assert.ok(liveCosmeticsCss.includes('height:100dvh!important'), 'bounded Telegram viewport owner must remain preserved');
 
-assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25&visual_portal=v38'"), 'manifest must publish the fresh v38 Domino renderer URL');
+assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25&visual_portal=v38&precision_geometry=v41'"), 'manifest must publish a fresh v41 Domino renderer URL');
 assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&gesture_owner=v27&precision_static=2';"), 'active entry must remain canonical v110 and keep the accepted gesture owner');
-assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&live_effects=v37';"), 'v110 may retain the prior diagnostic suffix while the manifest provides the v38 cache break');
+assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&live_effects=v41';"), 'v110 must force a fresh v41 Domino module URL');
 assert.ok(entry.includes("header('X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal');"), 'active entry must retain the existing Domino gesture diagnostic header');
 assert.match(launch, /\/app\/v110\.php\?v=1192&domino_stability=30&runtime_fix=1/);
 

@@ -106,14 +106,15 @@ function mountViewportPrecisionV38(args, container){
   root.dataset.dominoPrecisionOwner = String(action?.player_id || '');
   root.dataset.dominoPrecisionSignature = signature;
   root.dataset.dominoPrecisionShardCount = '8';
-  root.dataset.dominoPrecisionRadius = '72-96px';
+  root.dataset.dominoPrecisionGeometry = 'compact-v41';
+  root.dataset.dominoPrecisionRadius = '41-48px';
   root.setAttribute('aria-hidden', 'true');
 
   const ring = document.createElement('i');
   ring.className = 'precision-ring-v38';
   root.appendChild(ring);
 
-  const distances = [88, 96, 84, 94, 90, 96, 82, 92];
+  const distances = [44, 48, 42, 47, 45, 48, 41, 46];
   const animations = [];
   for (let index = 0; index < 8; index += 1) {
     const angle = -90 + index * 45;
@@ -149,10 +150,10 @@ function mountViewportPrecisionV38(args, container){
 
   const ringAnimation = typeof ring.animate === 'function'
     ? ring.animate([
-        { opacity:0, transform:'scale(.72)' },
+        { opacity:0, transform:'scale(.82)' },
         { opacity:.92, transform:'scale(1)', offset:.12 },
-        { opacity:.52, transform:'scale(1.45)', offset:.62 },
-        { opacity:0, transform:'scale(1.9)' },
+        { opacity:.52, transform:'scale(1.16)', offset:.62 },
+        { opacity:0, transform:'scale(1.32)' },
       ], { duration:1450, easing:'cubic-bezier(.18,.72,.2,1)', fill:'forwards' })
     : null;
   if (ringAnimation) animations.push(ringAnimation);
@@ -164,8 +165,8 @@ function mountViewportPrecisionV38(args, container){
     const center = rectCenter(rect);
     root.style.left = `${center.x}px`;
     root.style.top = `${center.y}px`;
-    const ringWidth = Math.max(34, rect.width + 12);
-    const ringHeight = Math.max(24, rect.height + 12);
+    const ringWidth = Math.max(32, rect.width + 8);
+    const ringHeight = Math.max(22, rect.height + 8);
     ring.style.width = `${ringWidth}px`;
     ring.style.height = `${ringHeight}px`;
     ring.style.left = `${-ringWidth / 2}px`;
@@ -473,7 +474,7 @@ function ensureLiveEffectsV31Styles(){
 
 function ensureLiveEffectsV38Styles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/domino/live-effects-v32.css?v=8&mvp19_9=viewport-particles-v38', import.meta.url).href;
+  const href = new URL('../../../css/games/domino/live-effects-v32.css?v=9&mvp19_9=precision-compact-v41', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-domino-live-effects-v38],link[data-mgw-domino-live-effects-v33]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;

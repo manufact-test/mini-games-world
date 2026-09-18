@@ -147,7 +147,7 @@ jobs:
           grep -F "for (let index = 0; index < 12; index += 1)" app/assets/js/games/domino/renderer-live-manual-v30.js
           grep -F "const spread = 38 + (index % 4) * 7" app/assets/js/games/domino/renderer-live-manual-v30.js
           grep -F "Promise.allSettled(animations.map(animation => animation.finished))" app/assets/js/games/domino/renderer-live-manual-v30.js
-          grep -F "live-effects-v32.css?v=8&mvp19_9=viewport-particles-v38" app/assets/js/games/domino/renderer-live-manual-v30.js
+          grep -F "live-effects-v32.css?v=9&mvp19_9=precision-compact-v41" app/assets/js/games/domino/renderer-live-manual-v30.js
           ! grep -Fq 'rayBoxDistance' app/assets/js/games/domino/renderer-live-manual-v30.js
           ! grep -Fq 'store-screen-domino-store' app/assets/js/games/domino/renderer-live-manual-v30.js
           ! grep -Fq 'onAction?.' app/assets/js/games/domino/renderer-live-manual-v30.js
@@ -172,9 +172,9 @@ jobs:
           grep -F "mgw-domino-native-precision-tile-v25" app/assets/css/games/domino/live-native-manual-v25.css
           grep -F "mgw-domino-native-stock-orb-v25" app/assets/css/games/domino/live-native-manual-v25.css
           grep -F "overflow-y:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
-          grep -F "renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25&visual_portal=v38" app/runtime/client/version-manifest.php
+          grep -F "renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25&visual_portal=v38&precision_geometry=v41" app/runtime/client/version-manifest.php
           grep -F "&gesture_owner=v27" app/v110.php
-          grep -F "&live_effects=v37" app/v110.php
+          grep -F "&live_effects=v41" app/v110.php
           grep -F "X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal" app/v110.php
           grep -F "/app/v110.php?v=1192&domino_stability=30&runtime_fix=1" bot/helpers/WebAppLaunchUrl.php
 

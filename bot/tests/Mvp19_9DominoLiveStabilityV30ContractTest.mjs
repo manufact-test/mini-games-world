@@ -34,7 +34,10 @@ assert.ok(wrapper.includes("latestSlot?.querySelector('.domino-tile')"), 'Precis
 assert.ok(wrapper.includes("root.dataset.dominoPrecisionAnchor = 'latest-tile-viewport-v38'"), 'Precision must publish its real tile viewport anchor');
 assert.ok(wrapper.includes("root.dataset.dominoPrecisionVisual = 'eight-visible-shards-v38'"), 'Precision must publish the v38 eight-shard visual');
 assert.ok(wrapper.includes("root.dataset.dominoPrecisionShardCount = '8'"), 'Precision must explicitly expose eight particles');
-assert.ok(wrapper.includes('const distances = [88, 96, 84, 94, 90, 96, 82, 92]'), 'Precision particles must travel well outside the domino');
+assert.ok(wrapper.includes('const distances = [44, 48, 42, 47, 45, 48, 41, 46]'), 'Precision particle travel must be explicitly halved in JS geometry');
+assert.ok(wrapper.includes("root.dataset.dominoPrecisionGeometry = 'compact-v41'"), 'Precision must publish the compact v41 geometry marker');
+assert.ok(wrapper.includes("transform:'scale(1.32)'"), 'Precision ring must use the compact v41 terminal scale');
+assert.ok(wrapper.includes("live-effects-v32.css?v=9&mvp19_9=precision-compact-v41"), 'Precision stylesheet must use the v41 cache identity');
 assert.ok(wrapper.includes('for (let index = 0; index < 8; index += 1)'), 'Precision must create eight independent particles');
 assert.ok(wrapper.includes("duration:1700"), 'Precision particle motion must remain readable rather than blink-length');
 assert.ok(wrapper.includes('requestAnimationFrame(track)'), 'Precision viewport origin must follow the real placed domino while the board settles');
@@ -97,8 +100,8 @@ assert.ok(css.includes('column-gap:2px!important'), 'mobile tile spacing must re
 assert.ok(css.includes('overflow-x:visible!important'), 'hand tail must not be clipped behind horizontal overflow');
 assert.ok(css.includes('touch-action:pan-y!important'), 'vertical page scrolling must remain native around the hand');
 
-assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25&visual_portal=v38'"), 'manifest must publish the fresh v38 Domino renderer identity');
-assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&live_effects=v37';"), 'entry may retain the prior diagnostic suffix while manifest provides the v38 cache break');
+assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25&visual_portal=v38&precision_geometry=v41'"), 'manifest must publish the fresh v41 Precision geometry cache identity');
+assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&live_effects=v41';"), 'entry must force a fresh Domino module URL for Precision v41');
 assert.match(launch, /\/app\/v110\.php\?v=1192&domino_stability=30&runtime_fix=1/);
 
 assert.ok(store.includes('domino'), 'accepted Store source remains present');
