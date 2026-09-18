@@ -2,7 +2,7 @@ import {
   renderFourInARowSurface as renderBaseFourInARowSurface,
   fourInARowMeta,
   fourInARowPlayerMark,
-} from './renderer.js?v=53&base=mvp19-10-live-v1';
+} from './renderer.js?v=53&base=mvp19-10-live-v2';
 import { state } from '../../state.js?v=27';
 
 const THEME_SLOT = 'game_four_in_a_row_theme';
@@ -13,9 +13,9 @@ const FIELD_PREFIX = 'game-four-field-';
 const DISCS_PREFIX = 'game-four-discs-';
 
 const DROP_ID = 'game-four-effect-drop';
-const FOUR_ID = 'game-four-effect-four';
+const PULSE_ID = 'game-four-effect-four';
 const VICTORY_ID = 'game-four-effect-victory-wave';
-const EFFECT_IDS = new Set([DROP_ID, FOUR_ID, VICTORY_ID]);
+const EFFECT_IDS = new Set([DROP_ID, PULSE_ID, VICTORY_ID]);
 const FIELD_VARIANTS = new Set(['blue', 'dark', 'metal', 'neon']);
 const DISC_VARIANTS = new Set(['classic', '3d', 'metal', 'neon']);
 
@@ -24,9 +24,9 @@ const seenMoveByGame = new Map();
 const activeEffectByGame = new Map();
 
 const EFFECT_DURATION_MS = Object.freeze({
-  drop: 720,
-  four: 1280,
-  victory: 1520,
+  drop: 860,
+  pulse: 1080,
+  victory: 1580,
 });
 
 ensureLiveStyles();
@@ -88,18 +88,13 @@ export function renderFourInARowSurface(args){
       String(game?.status || '') === 'finished'
       && String(game?.finish_reason || '') === 'normal_win'
       && winningCells.length >= 4
-      && winnerEffect === FOUR_ID
-    ) {
-      kind = 'four';
-      ownerId = String(winner?.id || '');
-    } else if (
-      String(game?.status || '') === 'finished'
-      && String(game?.finish_reason || '') === 'normal_win'
-      && winningCells.length >= 4
       && winnerEffect === VICTORY_ID
     ) {
       kind = 'victory';
       ownerId = String(winner?.id || '');
+    } else if (moverEffect === PULSE_ID && lastMove !== null) {
+      kind = 'pulse';
+      ownerId = String(mover?.id || '');
     } else if (moverEffect === DROP_ID && lastMove !== null) {
       kind = 'drop';
       ownerId = String(mover?.id || '');
@@ -125,7 +120,7 @@ export function renderFourInARowSurface(args){
 
   if (!(container instanceof HTMLElement)) return;
 
-  container.dataset.mgwFourLiveCosmetics = 'v1';
+  container.dataset.mgwFourLiveCosmetics = 'v2';
   container.dataset.fourTheme = themeVariant;
   container.dataset.fourDiscs = discsVariant;
   container.dataset.fourEffect = viewerEffect || 'base';
@@ -159,8 +154,8 @@ export function renderFourInARowSurface(args){
     mountDropEffect(container, active, delayMs);
     return;
   }
-  if (active.kind === 'four') {
-    mountFourLineEffect(container, active, delayMs);
+  if (active.kind === 'pulse') {
+    mountPulseEffect(container, active, delayMs);
     return;
   }
   if (active.kind === 'victory') {
@@ -270,44 +265,120 @@ function slotForCell(container, cell){
 
 function mountDropEffect(container, active, delayMs){
   const slot = slotForCell(container, active.lastMove);
-  if (!(slot instanceof HTMLElement)) return;
+  const grid = container.querySelector('.four-disc-grid');
+  const disc = slot?.querySelector('span');
+  if (!(slot instanceof HTMLElement) || !(grid instanceof HTMLElement) || !(disc instanceof HTMLElement)) return;
 
-  const row = Math.floor(Number(active.lastMove) / Number(active.columns || 7));
-  const travelCells = Math.max(1, row + 1);
+  const gridRect = grid.getBoundingClientRect();
+  const slotRect = slot.getBoundingClientRect();
+  const discRect = disc.getBoundingClientRect();
+  if (gridRect.width <= 0 || gridRect.height <= 0 || slotRect.width <= 0) return;
+
+  const centerX = slotRect.left - gridRect.left + (slotRect.width / 2);
+  const centerY = slotRect.top - gridRect.top + (slotRect.height / 2);
+  const size = Math.max(18, discRect.width || slotRect.width * .82);
+  const startOffset = -(centerY + size * .72);
+  const computed = window.getComputedStyle(disc);
 
   slot.dataset.mgwFourDropFx = '1';
-  slot.style.setProperty('--mgw-four-drop-cells', String(travelCells));
   slot.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
+
+  const falling = document.createElement('span');
+  falling.className = 'mgw-four-live-drop-disc';
+  falling.setAttribute('aria-hidden', 'true');
+  falling.style.left = `${centerX}px`;
+  falling.style.top = `${centerY}px`;
+  falling.style.width = `${size}px`;
+  falling.style.height = `${size}px`;
+  falling.style.background = computed.background;
+  falling.style.boxShadow = computed.boxShadow;
+  falling.style.border = computed.border;
+  falling.style.setProperty('--mgw-four-drop-start', `${startOffset}px`);
+  falling.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
+  grid.appendChild(falling);
+
+  const impact = document.createElement('span');
+  impact.className = 'mgw-four-live-drop-impact';
+  impact.setAttribute('aria-hidden', 'true');
+  impact.style.left = `${centerX}px`;
+  impact.style.top = `${centerY}px`;
+  impact.style.width = `${size}px`;
+  impact.style.height = `${size}px`;
+  impact.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
+  grid.appendChild(impact);
 }
 
-function mountFourLineEffect(container, active, delayMs){
-  const cells = Array.isArray(active.winningCells) ? active.winningCells.slice(0, 4) : [];
-  if (cells.length < 4) return;
+function mountPulseEffect(container, active, delayMs){
+  const slot = slotForCell(container, active.lastMove);
+  const grid = container.querySelector('.four-disc-grid');
+  if (!(slot instanceof HTMLElement) || !(grid instanceof HTMLElement)) return;
 
-  cells.forEach((cell, index) => {
-    const slot = slotForCell(container, cell);
-    if (!(slot instanceof HTMLElement)) return;
-    slot.dataset.mgwFourSequence = String(index);
-    slot.style.setProperty('--mgw-four-seq', String(index));
-    slot.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
+  const gridRect = grid.getBoundingClientRect();
+  const slotRect = slot.getBoundingClientRect();
+  if (gridRect.width <= 0 || gridRect.height <= 0 || slotRect.width <= 0) return;
+
+  const centerX = slotRect.left - gridRect.left + (slotRect.width / 2);
+  const centerY = slotRect.top - gridRect.top + (slotRect.height / 2);
+  const size = Math.max(22, slotRect.width * .86);
+
+  slot.dataset.mgwFourPulseCell = '1';
+  slot.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
+
+  pulseNeighborCells(container, active).forEach(({ cell, step }) => {
+    const neighbor = slotForCell(container, cell);
+    if (!(neighbor instanceof HTMLElement)) return;
+    neighbor.dataset.mgwFourPulseNeighbor = '1';
+    neighbor.style.setProperty('--mgw-four-pulse-step', String(step));
+    neighbor.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
   });
 
-  const grid = container.querySelector('.four-disc-grid');
-  if (!(grid instanceof HTMLElement)) return;
+  const host = document.createElement('span');
+  host.className = 'mgw-four-live-pulse-fx';
+  host.setAttribute('aria-hidden', 'true');
+  host.style.left = `${centerX}px`;
+  host.style.top = `${centerY}px`;
+  host.style.width = `${size}px`;
+  host.style.height = `${size}px`;
+  host.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
 
-  const first = cellPoint(cells[0], active.columns, active.rows);
-  const last = cellPoint(cells[cells.length - 1], active.columns, active.rows);
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.classList.add('mgw-four-live-line-fx');
-  svg.setAttribute('viewBox', '0 0 100 100');
-  svg.setAttribute('preserveAspectRatio', 'none');
-  svg.setAttribute('aria-hidden', 'true');
-  svg.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
-  svg.innerHTML = `
-    <line class="mgw-four-live-line-glow" x1="${first.x}" y1="${first.y}" x2="${last.x}" y2="${last.y}"></line>
-    <line class="mgw-four-live-line-core" x1="${first.x}" y1="${first.y}" x2="${last.x}" y2="${last.y}"></line>
+  const sparks = Array.from({ length:8 }, (_, index) => {
+    const angle = (Math.PI * 2 * index) / 8;
+    const distance = size * (1.15 + (index % 2) * .28);
+    const dx = Math.cos(angle) * distance;
+    const dy = Math.sin(angle) * distance;
+    return `<i class="mgw-four-pulse-spark" style="--mgw-four-spark-x:${dx.toFixed(1)}px;--mgw-four-spark-y:${dy.toFixed(1)}px;--mgw-four-spark-step:${index}"></i>`;
+  }).join('');
+
+  host.innerHTML = `
+    <i class="mgw-four-pulse-core"></i>
+    <i class="mgw-four-pulse-ring ring-a"></i>
+    <i class="mgw-four-pulse-ring ring-b"></i>
+    ${sparks}
   `;
-  grid.appendChild(svg);
+  grid.appendChild(host);
+}
+
+function pulseNeighborCells(container, active){
+  const cell = Number(active.lastMove);
+  const columns = Number(active.columns || 7);
+  const rows = Number(active.rows || 6);
+  const row = Math.floor(cell / columns);
+  const col = cell % columns;
+  const result = [];
+
+  [
+    [row, col - 1, 1],
+    [row, col + 1, 1],
+    [row - 1, col, 1],
+    [row + 1, col, 1],
+    [row, col - 2, 2],
+    [row, col + 2, 2],
+  ].forEach(([r, c, step]) => {
+    if (r < 0 || r >= rows || c < 0 || c >= columns) return;
+    result.push({ cell:r * columns + c, step });
+  });
+
+  return result;
 }
 
 function mountVictoryWaveEffect(container, active, delayMs){
@@ -354,15 +425,16 @@ function cellPoint(cell, columns, rows){
 
 function ensureLiveStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/four-in-a-row/live-cosmetics-v1.css?v=1&mvp19_10=live-game-v1', import.meta.url).href;
+  const href = new URL('../../../css/games/four-in-a-row/live-cosmetics-v1.css?v=2&mvp19_10=live-game-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-four-live-cosmetics]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
+    existing.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v2';
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v1';
+  link.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v2';
   link.href = href;
   document.head.appendChild(link);
 }
