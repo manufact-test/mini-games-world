@@ -1,8 +1,8 @@
 import { api } from '../api/client.js?v=34';
 
-const API_HOOK = Symbol.for('mgw.store.four-in-a-row.store-static-v2');
+const API_HOOK = Symbol.for('mgw.store.four-in-a-row.store-static-v3');
 const INSTALL_KEY = '__mgwFourInARowStoreStaticV1Installed';
-const STYLE_MARK = 'four-store-static-v2';
+const STYLE_MARK = 'four-store-static-v3';
 
 const EFFECT_ASSETS = Object.freeze({
   drop:new URL('../../media/cosmetics/four-in-a-row/effects/drop-v1.svg', import.meta.url).href,
@@ -41,7 +41,7 @@ export function upgradeFourInARowStorePresentation(){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/four-in-a-row/store-cosmetics-v1.css?v=1&four_store=static-v2', import.meta.url).href;
+  const href = new URL('../../css/games/four-in-a-row/store-cosmetics-v1.css?v=1&four_store=static-v3', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-four-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -145,7 +145,7 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = safeVariant(preview.dataset.cosmeticVariant || 'blue');
-    const signature = `${layer}:${variant}:static-v2`;
+    const signature = `${layer}:${variant}:static-v3`;
     if (preview.dataset.mgwFourPreview === signature) return;
     preview.dataset.mgwFourPreview = signature;
     preview.dataset.mgwFourPreviewMode = layer === 'effect' ? 'static-concept' : 'static';
