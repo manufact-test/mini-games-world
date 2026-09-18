@@ -69,6 +69,12 @@
   box-shadow:0 0 0 3px #fff,0 0 22px rgba(255,255,255,.72);
 }
 
+#gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-pending-drop="1"] span{
+  opacity:.16;
+  transform:scale(.74);
+  filter:saturate(.8);
+}
+
 /* Effect 1 — real disc drop, short light trail, compact landing ring. */
 #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-drop-fx="1"]{
   z-index:4;
