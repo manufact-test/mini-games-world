@@ -122,7 +122,7 @@
   animation:mgwFourPulseDisc 1.08s cubic-bezier(.18,.75,.2,1) var(--mgw-four-fx-delay,0ms) both!important;
 }
 #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-pulse-neighbor="1"]{
-  animation:mgwFourPulseNeighbor .8s ease-out calc(var(--mgw-four-fx-delay,0ms) + var(--mgw-four-pulse-step,1) * 70ms) both;
+  animation:mgwFourPulseNeighbor .8s ease-out var(--mgw-four-pulse-delay,0ms) both;
 }
 .mgw-four-live-pulse-fx{
   position:absolute;
@@ -169,7 +169,7 @@
   border-radius:50%;
   background:#e7fdff;
   box-shadow:0 0 8px rgba(91,234,255,.95),0 0 14px rgba(225,91,255,.48);
-  animation:mgwFourPulseSpark .72s ease-out calc(var(--mgw-four-fx-delay,0ms) + var(--mgw-four-spark-step,0) * 18ms) both;
+  animation:mgwFourPulseSpark .72s ease-out var(--mgw-four-spark-delay,0ms) both;
 }
 
 /* Effect 3: victory-only board wave from the completed four. */
