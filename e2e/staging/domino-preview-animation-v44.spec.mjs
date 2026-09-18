@@ -15,7 +15,7 @@ async function probePreviewMotion(page) {
   expect(response?.ok()).toBe(true);
 
   return await page.evaluate(async () => {
-    const { dominoPreviewMarkup } = await import('./assets/js/screens/store-screen-domino-store-v1.js?v=11&mvp19_9=domino-preview-component-v44');
+    const { dominoPreviewMarkup } = await import('./assets/js/screens/store-screen-domino-store-v1.js?v=12&mvp19_9=domino-preview-component-v44-fix-v45');
 
     const waitForSheet = async selector => {
       const link = document.querySelector(selector);
@@ -100,23 +100,33 @@ async function probePreviewMotion(page) {
       };
     });
 
-    await new Promise(resolve => setTimeout(resolve, 950));
-    const first = snapshot();
-    await new Promise(resolve => setTimeout(resolve, 700));
-    const second = snapshot();
+    const frames = [];
+    for (let index = 0; index < 10; index += 1) {
+      await new Promise(resolve => setTimeout(resolve, index === 0 ? 180 : 320));
+      frames.push(snapshot());
+    }
 
-    return first.map((a, index) => {
-      const b = second[index];
+    return entries.map((entry, index) => {
+      const samples = frames.map(frame => frame[index]);
+      const signatures = samples.map(sample => [sample.left, sample.top, sample.opacity, sample.transform].join('|'));
+      const uniqueSignatures = [...new Set(signatures)];
+      const opacities = samples.map(sample => Number.parseFloat(sample.opacity || '0')).filter(Number.isFinite);
+      const first = samples[0];
       return {
-        surface:a.surface,
-        variant:a.variant,
-        component:a.component,
-        stageRatio:a.stageRatio,
-        animationName:a.animationName,
-        animationPlayState:a.animationPlayState,
-        moved:a.left !== b.left || a.top !== b.top || a.opacity !== b.opacity || a.transform !== b.transform,
-        first:{ left:a.left, top:a.top, opacity:a.opacity, transform:a.transform },
-        second:{ left:b.left, top:b.top, opacity:b.opacity, transform:b.transform },
+        surface:first.surface,
+        variant:first.variant,
+        component:first.component,
+        stageRatio:first.stageRatio,
+        animationName:first.animationName,
+        animationPlayState:first.animationPlayState,
+        distinctFrames:uniqueSignatures.length,
+        maxOpacity:opacities.length ? Math.max(...opacities) : 0,
+        samples:samples.map(sample => ({
+          left:sample.left,
+          top:sample.top,
+          opacity:sample.opacity,
+          transform:sample.transform,
+        })),
       };
     });
   });
@@ -136,7 +146,8 @@ for (const reducedMotion of ['no-preference','reduce']) {
         expect(entry.stageRatio, `${entry.surface}/${entry.variant} canonical ratio`).toBeLessThan(1.63);
         expect(entry.animationName, `${entry.surface}/${entry.variant} animation name`).toContain('mgw-domino-v44-');
         expect(entry.animationPlayState, `${entry.surface}/${entry.variant} play state`).toBe('running');
-        expect(entry.moved, `${entry.surface}/${entry.variant} must visibly change between frames`).toBe(true);
+        expect(entry.distinctFrames, `${entry.surface}/${entry.variant} must change across the animation loop`).toBeGreaterThanOrEqual(3);
+        expect(entry.maxOpacity, `${entry.surface}/${entry.variant} must become visibly opaque`).toBeGreaterThan(0.15);
       }
     });
   });
