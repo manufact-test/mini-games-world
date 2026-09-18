@@ -105,6 +105,11 @@ foreach ([
 $migrationSource = (string)file_get_contents($databaseDir . '/migrations/20260918_0037_deduplicate_paid_game_defaults.php');
 $css = (string)file_get_contents($root . '/app/assets/css/games/paid-default-dedup-v1.css');
 $storeCorrective = (string)file_get_contents($root . '/app/assets/js/screens/store-paid-default-dedup-v1.js');
+$baseStoreSource = (string)file_get_contents($root . '/app/assets/js/screens/store-screen.js');
+$reversiStoreSource = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-reversi-store-v1.js');
+$goStoreSource = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-go-store-v1.js');
+$dominoStoreSource = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-domino-store-v1.js');
+$fourStoreSource = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-four-in-a-row-store-v1.js');
 $wrapper = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-checkers-board-source-wrapper.js');
 $mainCss = (string)file_get_contents($root . '/app/assets/css/main.css');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
@@ -118,15 +123,20 @@ $assertTrue(str_contains($css, 'data-go-theme="wood"') && str_contains($css, '#c
 $assertTrue(str_contains($css, 'data-domino-theme="felt"') && str_contains($css, '#5b1830'), 'Domino first paid table must no longer mirror base green felt');
 $assertTrue(str_contains($css, 'theme-blue') && str_contains($css, '#8750d5'), 'Four in a Row first paid field must no longer mirror the base blue board');
 $assertTrue(str_contains($css, 'pieces-classic.red') && str_contains($css, '#ff78b7') && str_contains($css, '#66e8f3'), 'Four in a Row first paid discs must no longer mirror base red/yellow discs');
-$assertTrue(str_contains($storeCorrective, 'Янтарная доска') && str_contains($storeCorrective, 'Аркадные фишки'), 'Store corrective must publish updated names/descriptions');
-$assertTrue(str_contains($wrapper, 'store-paid-default-dedup-v1.js?v=1&paid_default=dedup-v1'), 'Active Store wrapper must install the dedup corrective');
+$assertTrue(!str_contains($storeCorrective, 'const COPY') && !str_contains($storeCorrective, '.textContent = copy.') && !str_contains($storeCorrective, 'setTimeout'), 'Paid-default corrective must not rewrite text after render; native Store owners must render the final copy immediately');
+$assertTrue(str_contains($baseStoreSource, 'Янтарно-бордовая доска') && str_contains($baseStoreSource, 'Холодная лазурно-мятная доска'), 'Chess and Checkers replacement descriptions must render from the base Store owner');
+$assertTrue(str_contains($reversiStoreSource, 'Холодное лазурное поле') && str_contains($reversiStoreSource, 'Тёмный индиго и светлый перламутр'), 'Reversi replacement descriptions must render from its native Store owner');
+$assertTrue(str_contains($goStoreSource, 'Розово-вишнёвая древесина') && str_contains($goStoreSource, 'медово-янтарные камни'), 'Go replacement descriptions must render from its native Store owner');
+$assertTrue(str_contains($dominoStoreSource, 'Глубокое бордовое сукно') && str_contains($dominoStoreSource, 'Тёплые янтарные костяшки'), 'Domino replacement descriptions must render from its native Store owner');
+$assertTrue(str_contains($fourStoreSource, 'Насыщенное фиолетово-сливовое поле') && str_contains($fourStoreSource, 'Яркая розово-бирюзовая пара'), 'Four in a Row replacement descriptions must render from its native Store owner');
+$assertTrue(str_contains($wrapper, 'store-paid-default-dedup-v1.js?v=2&paid_default=dedup-v2'), 'Active Store wrapper must install the dedup corrective');
 $assertTrue(str_contains($mainCss, "paid-default-dedup-v1.css?v=1&paid_default=dedup-v1"), 'Global CSS must project new skins into already-live games');
 
 $activeStore = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
-$assertTrue(str_contains($activeStore, 'store-screen-checkers-board-source-wrapper.js?v=11') && str_contains($activeStore, 'paid_default=dedup-v1'), 'Active Store graph must publish dedup v1');
+$assertTrue(str_contains($activeStore, 'store-screen-checkers-board-source-wrapper.js?v=12') && str_contains($activeStore, 'paid_default=dedup-v2'), 'Active Store graph must publish dedup v1');
 $assertTrue(str_contains((string)($manifest['assets']['main_css'] ?? ''), 'main.css?v=191') && str_contains((string)($manifest['assets']['main_css'] ?? ''), 'paid_default=dedup-v1'), 'Active main CSS graph must publish dedup v1');
 
 $launchMatch = [];
-$assertTrue(preg_match('~/app/v110\.php\?v=(\d+)~', $launch, $launchMatch) === 1 && (int)$launchMatch[1] >= 1194, 'Telegram launch must publish dedup v1');
+$assertTrue(preg_match('~/app/v110\.php\?v=(\d+)~', $launch, $launchMatch) === 1 && (int)$launchMatch[1] >= 1195, 'Telegram launch must publish dedup v2');
 
 echo "Paid game-default dedup contract passed ({$assertions} assertions).\n";
