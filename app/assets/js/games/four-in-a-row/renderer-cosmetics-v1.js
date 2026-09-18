@@ -137,6 +137,11 @@ export function renderFourInARowSurface(args){
     frame.dataset.fourDiscs = discsVariant;
   }
 
+  if (optimistic && viewerEffect === DROP_ID && lastMove !== null) {
+    const pendingSlot = slotForCell(container, lastMove);
+    if (pendingSlot instanceof HTMLElement) pendingSlot.dataset.mgwFourPendingDrop = '1';
+  }
+
   const active = gameId ? activeEffectByGame.get(gameId) : null;
   if (!active) return;
 
