@@ -21,7 +21,7 @@ export function installDominoStoreEffectsV9(){
 }
 
 function ensurePreviewComponentV44(){
-  const href = new URL('../../css/games/domino/store-effects-preview-component-v44.css?v=1&mvp19_9=domino-preview-component-v44', import.meta.url).href;
+  const href = new URL('../../css/games/domino/store-effects-preview-component-v44.css?v=2&mvp19_9=domino-preview-component-v44-fix-v45', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-domino-preview-component-v44]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
