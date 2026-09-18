@@ -1,0 +1,71 @@
+name: MVP-19.10 Four in a Row LIVE cosmetics
+
+on:
+  pull_request:
+    branches: [agent/mvp-13-2-staging]
+    paths:
+      - 'app/assets/js/games/four-in-a-row/renderer-cosmetics-v1.js'
+      - 'app/assets/css/games/four-in-a-row/live-cosmetics-v1.css'
+      - 'app/assets/js/screens/game-screen.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'bot/tests/Mvp19_10FourInARowLiveCosmeticsContractTest.mjs'
+      - '.github/workflows/mvp19-10-four-live-cosmetics.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-four-live-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  four-live:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax checks
+        run: |
+          node --check app/assets/js/games/four-in-a-row/renderer-cosmetics-v1.js
+          node --check app/assets/js/screens/game-screen.js
+          node --check bot/tests/Mvp19_10FourInARowLiveCosmeticsContractTest.mjs
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/helpers/WebAppLaunchUrl.php
+
+      - name: Run Four LIVE contract
+        run: node bot/tests/Mvp19_10FourInARowLiveCosmeticsContractTest.mjs
+
+      - name: Re-run accepted Four Store/Profile and shared cosmetics contracts
+        run: |
+          php bot/tests/Mvp19_FourInARowStoreTest.php
+          php bot/tests/Mvp19_FourInARowProfileInventoryTest.php
+          node bot/tests/Mvp19_FourInARowProfileParityContractTest.mjs
+          php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
+          node bot/tests/Mvp19_8GoLiveCosmeticsContractTest.mjs
+
+      - name: Guard frozen Four mechanics and accepted Store/Profile owners
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" --             app/assets/js/games/four-in-a-row/renderer.js             app/assets/js/games/four-in-a-row/entry.js             app/assets/css/games/four-in-a-row/game.css             bot/services/FourInARowService.php             bot/services/FourInARowBotService.php             bot/catalog/ProductInventoryService.php             app/assets/js/screens/store-screen-four-in-a-row-store-v1.js             app/assets/css/games/four-in-a-row/store-cosmetics-v1.css             app/assets/js/profile/mgw-profile-four-in-a-row-parity.js             app/assets/css/screens/profile-four-in-a-row-store-parity-v1.css
+          git diff --check
