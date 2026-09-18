@@ -32,7 +32,7 @@ expect(baseStore.includes("'chain-finale':'Финал с каскадом пад
 expect(store.includes('native:v11:component-v44'), 'Domino compatibility signature must publish the isolated v44 preview owner.');
 expect(store.includes('ensureEffectStyles();') && store.includes('ensureLiveParityStyles();'), 'The Domino markup owner must load base geometry and the isolated v44 component stylesheet itself.');
 expect(store.includes('domino-premium-effects-v15-proportions'), 'The markup owner must publish the v15 stylesheet identity.');
-expect(store.includes('data-mgw-domino-fx-v14'), 'Existing deterministic inner scene identity must remain available.');
+expect(store.includes('data-mgw-domino-preview-component="v44"'), 'Every effect scene must publish the deterministic v44 component identity.');
 expect(store.includes('sceneReady') && store.includes('data-mgw-domino-preview-component'), 'Compatibility upgrade must reject stale pre-v44 inner markup.');
 expect(!store.includes('mgw-domino-v13-impact') && !store.includes('mgw-domino-v13-draw') && !store.includes('mgw-domino-v13-cascade'), 'Effect preview markup must not reuse legacy v13 scene classes.');
 expect(store.includes('mgw-domino-live-v44-stage') && store.includes('mgw-domino-v44-precision-sparks') && store.includes('mgw-domino-v44-stock-sparks') && store.includes('mgw-domino-v44-finale-sweep'), 'All three effects must use the isolated v44 preview component.');
