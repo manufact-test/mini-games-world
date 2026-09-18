@@ -1,9 +1,9 @@
 const INSTALL_KEY = '__mgwDominoStoreV1Installed';
-const STYLE_MARK = 'mvp19-9-domino-store-v13-preview-polish-v47';
+const STYLE_MARK = 'mvp19-9-domino-store-v14-svg-pips-v48';
 const EFFECT_STYLE_ATTR = 'data-mgw-domino-store-effects-v9';
 const EFFECT_STYLE_VALUE = 'mvp19-9-domino-premium-effects-v15-proportions';
 const LIVE_STYLE_ATTR = 'data-mgw-domino-preview-component-v44';
-const LIVE_STYLE_VALUE = 'mvp19-9-domino-preview-polish-v47';
+const LIVE_STYLE_VALUE = 'mvp19-9-domino-svg-pips-v48';
 
 ensureStyles();
 ensureEffectStyles();
@@ -81,7 +81,7 @@ function ensureEffectStyles(){
 }
 
 function ensureLiveParityStyles(){
-  const href = new URL('../../css/games/domino/store-effects-preview-component-v44.css?v=3&mvp19_9=domino-preview-polish-v47', import.meta.url).href;
+  const href = new URL('../../css/games/domino/store-effects-preview-component-v44.css?v=4&mvp19_9=domino-svg-pips-v48', import.meta.url).href;
   const existing = document.querySelector(`link[${LIVE_STYLE_ATTR}]`);
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -155,11 +155,11 @@ function upgradePreviews(root){
     const visual = preview.querySelector(':scope > .mgw-domino-preview');
     const sceneReady = layer !== 'effect' || visual?.querySelector(`.mgw-domino-live-v44-stage[data-mgw-domino-effect="${safeVariant(variant)}"][data-mgw-domino-preview-component="v44"]`);
     if (visual instanceof HTMLElement && visual.classList.contains(expectedClass) && sceneReady) {
-      preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v13:polish-v47`;
+      preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v14:svg-pips-v48`;
       return;
     }
     preview.innerHTML = dominoPreviewMarkup(layer, variant);
-    preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v13:polish-v47`;
+    preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v14:svg-pips-v48`;
   });
 }
 
@@ -196,19 +196,19 @@ function tableMarkup(layer, variant){
 
 function effectSceneMarkup(variant){
   if (variant === 'stock-pulse') {
-    const target = tileMarkup(1, 1, 'mgw-domino-v44-tile mgw-domino-v44-stock-target');
+    const target = effectTileMarkup(1, 1, 'mgw-domino-v44-tile mgw-domino-v44-stock-target');
     return `<span class="mgw-domino-preview-table mgw-domino-live-v44-table"><span class="mgw-domino-live-v44-stage is-stock" data-mgw-domino-effect="stock-pulse" data-mgw-domino-preview-component="v44" data-mgw-domino-preview-particles="12"><span class="mgw-domino-v44-stock-stack"><i></i><i></i><i></i></span>${target}<span class="mgw-domino-v44-stock-line"></span><span class="mgw-domino-v44-stock-orb"></span><span class="mgw-domino-v44-stock-sparks">${Array.from({length:12},(_,index)=>`<i class="p${index + 1}"></i>`).join('')}</span></span></span>`;
   }
   if (variant === 'chain-finale') {
     const chain = [[6,3],[3,5],[5,2],[2,4],[4,1]]
-      .map((pair,index) => tileMarkup(pair[0], pair[1], `mgw-domino-v44-tile mgw-domino-v44-finale-tile t${index + 1}`))
+      .map((pair,index) => effectTileMarkup(pair[0], pair[1], `mgw-domino-v44-tile mgw-domino-v44-finale-tile t${index + 1}`))
       .join('');
     return `<span class="mgw-domino-preview-table mgw-domino-live-v44-table"><span class="mgw-domino-live-v44-stage is-finale" data-mgw-domino-effect="chain-finale" data-mgw-domino-preview-component="v44" data-mgw-domino-preview-particles="6"><span class="mgw-domino-v44-finale-chain">${chain}</span><span class="mgw-domino-v44-finale-prism"></span><span class="mgw-domino-v44-finale-sweep"></span><span class="mgw-domino-v44-finale-aura"></span><span class="mgw-domino-v44-finale-sparks">${Array.from({length:6},(_,index)=>`<i class="s${index + 1}"></i>`).join('')}</span></span></span>`;
   }
   const chain = [
-    tileMarkup(6, 3, 'mgw-domino-v44-tile mgw-domino-v44-precision-tile t1'),
-    tileMarkup(3, 5, 'mgw-domino-v44-tile mgw-domino-v44-precision-tile t2'),
-    tileMarkup(5, 2, 'mgw-domino-v44-tile mgw-domino-v44-precision-tile target'),
+    effectTileMarkup(6, 3, 'mgw-domino-v44-tile mgw-domino-v44-precision-tile t1'),
+    effectTileMarkup(3, 5, 'mgw-domino-v44-tile mgw-domino-v44-precision-tile t2'),
+    effectTileMarkup(5, 2, 'mgw-domino-v44-tile mgw-domino-v44-precision-tile target'),
   ].join('');
   return `<span class="mgw-domino-preview-table mgw-domino-live-v44-table"><span class="mgw-domino-live-v44-stage is-precision" data-mgw-domino-effect="precision-drop" data-mgw-domino-preview-component="v44" data-mgw-domino-preview-particles="8"><span class="mgw-domino-v44-precision-chain">${chain}</span><span class="mgw-domino-v44-precision-ring"></span><span class="mgw-domino-v44-precision-sparks">${Array.from({length:8},(_,index)=>`<i class="s${index + 1}"></i>`).join('')}</span></span></span>`;
 }
@@ -223,6 +223,22 @@ function modeClass(layer, variant){
 
 function headBackMarkup(tone){
   return `<span class="mgw-domino-head-back ${safeVariant(tone)}"><i></i><i></i></span>`;
+}
+
+function effectTileMarkup(a, b, extraClass = ''){
+  return `<span class="mgw-domino-preview-tile${extraClass ? ` ${extraClass}` : ''}"><span class="mgw-domino-v48-face" data-mgw-domino-face="svg-v1">${effectFaceSvgMarkup(a, b)}</span></span>`;
+}
+
+function effectFaceSvgMarkup(a, b){
+  return `<svg class="mgw-domino-v48-face-svg" viewBox="0 0 94 48" preserveAspectRatio="none" shape-rendering="geometricPrecision" focusable="false" aria-hidden="true"><path class="mgw-domino-v48-divider" d="M47 5V43"></path>${effectPipsSvg(a, 0)}${effectPipsSvg(b, 47)}</svg>`;
+}
+
+function effectPipsSvg(value, offsetX){
+  const coords = [[12,11],[23.5,11],[35,11],[12,24],[23.5,24],[35,24],[12,37],[23.5,37],[35,37]];
+  return pipPositions(value).map(position => {
+    const [x,y] = coords[position - 1] || coords[4];
+    return `<circle class="mgw-domino-v48-pip" cx="${x + offsetX}" cy="${y}" r="2.4"></circle>`;
+  }).join('');
 }
 
 function tileMarkup(a, b, extraClass = ''){
