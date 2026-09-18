@@ -527,7 +527,9 @@ function mountVictoryTestControl(container, game, viewerEffect, columns, rows){
   button.addEventListener('click', event => {
     event.preventDefault();
     event.stopPropagation();
-    button.disabled = true;
+
+    clearVictoryPreview(container);
+    void container.offsetWidth;
 
     container.dataset.fourActiveFx = 'victory';
     mountVictoryWaveEffect(container, {
@@ -535,19 +537,18 @@ function mountVictoryTestControl(container, game, viewerEffect, columns, rows){
       columns,
       rows,
     }, 0);
-
-    window.setTimeout(() => {
-      container.querySelectorAll('.mgw-four-live-victory-fx').forEach(node => node.remove());
-      container.querySelectorAll('[data-mgw-four-victory-cell]').forEach(node => {
-        node.removeAttribute('data-mgw-four-victory-cell');
-        node.style.removeProperty('--mgw-four-seq');
-        node.style.removeProperty('--mgw-four-fx-delay');
-      });
-      delete container.dataset.fourActiveFx;
-      button.disabled = false;
-    }, 1720);
   });
   container.appendChild(button);
+}
+
+function clearVictoryPreview(container){
+  container.querySelectorAll('.mgw-four-live-victory-fx').forEach(node => node.remove());
+  container.querySelectorAll('[data-mgw-four-victory-cell]').forEach(node => {
+    node.removeAttribute('data-mgw-four-victory-cell');
+    node.style.removeProperty('--mgw-four-seq');
+    node.style.removeProperty('--mgw-four-fx-delay');
+  });
+  delete container.dataset.fourActiveFx;
 }
 
 function victoryTestEnabled(){
