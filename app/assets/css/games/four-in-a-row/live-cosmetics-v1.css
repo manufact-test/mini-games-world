@@ -1,5 +1,5 @@
 /* Four in a Row live cosmetics — presentation-only wrapper over the accepted renderer. */
-#gameBoard[data-game-type="four_in_a_row"][data-mgw-four-live-cosmetics="v7"] .four-disc-grid{
+#gameBoard[data-game-type="four_in_a_row"][data-mgw-four-live-cosmetics="v8"] .four-disc-grid{
   position:relative;
 }
 
@@ -65,7 +65,7 @@
   box-shadow:inset 0 0 5px rgba(231,255,176,.48),0 0 7px rgba(154,255,47,.82),0 0 13px rgba(154,255,47,.42);
 }
 
-#gameBoard[data-game-type="four_in_a_row"][data-mgw-four-live-cosmetics="v7"] .four-disc-slot.winning span{
+#gameBoard[data-game-type="four_in_a_row"][data-mgw-four-live-cosmetics="v8"] .four-disc-slot.winning span{
   box-shadow:0 0 0 3px #fff,0 0 22px rgba(255,255,255,.72);
 }
 
@@ -257,26 +257,6 @@
   filter:drop-shadow(0 0 7px rgba(255,255,255,.95)) drop-shadow(0 0 13px rgba(213,94,255,.72));
   animation:mgwFourPulseNodeCore .8s ease-out var(--mgw-four-fx-delay,0ms) both;
 }
-
-.mgw-four-victory-test{
-  display:block;
-  width:max-content;
-  max-width:calc(100% - 20px);
-  margin:8px auto 0;
-  padding:6px 10px;
-  border:1px solid rgba(129,224,255,.30);
-  border-radius:999px;
-  background:rgba(18,27,48,.72);
-  color:rgba(226,248,255,.88);
-  font-size:11px;
-  line-height:1;
-  font-weight:800;
-  letter-spacing:.01em;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
-  opacity:.8;
-}
-.mgw-four-victory-test:active{transform:scale(.98)}
-.mgw-four-victory-test:disabled{opacity:.42}
 
 /* Effect 3: premium Victory Overdrive finale — sequential charge, energy rail, prism cut and shards. */
 #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-victory-cell]{
