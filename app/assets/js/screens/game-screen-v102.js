@@ -333,9 +333,9 @@ function fourTerminalPresentationDelay(game){
   const surface = document.getElementById('gameBoard');
   const activeFx = String(surface?.dataset?.fourActiveFx || '');
   const delay = {
-    drop: 820,
-    four: 1380,
-    victory: 1620,
+    drop: 930,
+    pulse: 1180,
+    victory: 1700,
   }[activeFx] || 0;
   if (delay <= 0) return 0;
 
