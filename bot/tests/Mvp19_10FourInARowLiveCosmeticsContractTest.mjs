@@ -11,7 +11,7 @@ const launch = fs.readFileSync('bot/helpers/WebAppLaunchUrl.php', 'utf8');
 const response = fs.readFileSync('bot/helpers/response.php', 'utf8');
 
 assert.ok(
-  live.includes("from './renderer.js?v=53&base=mvp19-10-live-v9'"),
+  live.includes("from './renderer.js?v=53&base=mvp19-10-live-v10'"),
   'Four live cosmetics must decorate the accepted base renderer instead of replacing gameplay',
 );
 assert.ok(live.includes('renderBaseFourInARowSurface(args);'), 'Base Four renderer must remain the gameplay/render owner');
