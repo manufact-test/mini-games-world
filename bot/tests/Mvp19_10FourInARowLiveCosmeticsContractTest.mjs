@@ -47,7 +47,12 @@ assert.ok(css.includes('@keyframes mgwFourVictoryWave'), 'Victory Wave must have
 assert.ok(css.includes('@media (prefers-reduced-motion:reduce)'), 'Four live effects must be reduced-motion safe');
 assert.ok(css.includes('pointer-events:none'), 'Presentation effects must not steal gameplay hit targets');
 
-assert.ok(base.includes("onAction?.({ type:'column', column });"), 'Accepted Four action owner must stay in the base renderer');
+assert.ok(
+  base.includes('onAction?.({')
+    && base.includes("type: 'column'")
+    && base.includes('column: Number(button.dataset.fourColumn)'),
+  'Accepted Four action owner must stay in the base renderer',
+);
 assert.ok(base.includes("container.innerHTML ="), 'Accepted base renderer structure remains authoritative');
 
 assert.ok(gameScreen.includes('fourTerminalPresentationDelay(game)'), 'Active v102 result owner must consult the live Four presentation state');
