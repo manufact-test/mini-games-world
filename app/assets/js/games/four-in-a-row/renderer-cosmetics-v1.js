@@ -328,8 +328,7 @@ function mountPulseEffect(container, active, delayMs){
     const neighbor = slotForCell(container, cell);
     if (!(neighbor instanceof HTMLElement)) return;
     neighbor.dataset.mgwFourPulseNeighbor = '1';
-    neighbor.style.setProperty('--mgw-four-pulse-step', String(step));
-    neighbor.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
+    neighbor.style.setProperty('--mgw-four-pulse-delay', `${delayMs + (step * 70)}ms`);
   });
 
   const host = document.createElement('span');
@@ -346,7 +345,7 @@ function mountPulseEffect(container, active, delayMs){
     const distance = size * (1.15 + (index % 2) * .28);
     const dx = Math.cos(angle) * distance;
     const dy = Math.sin(angle) * distance;
-    return `<i class="mgw-four-pulse-spark" style="--mgw-four-spark-x:${dx.toFixed(1)}px;--mgw-four-spark-y:${dy.toFixed(1)}px;--mgw-four-spark-step:${index}"></i>`;
+    return `<i class="mgw-four-pulse-spark" style="--mgw-four-spark-x:${dx.toFixed(1)}px;--mgw-four-spark-y:${dy.toFixed(1)}px;--mgw-four-spark-delay:${delayMs + (index * 18)}ms"></i>`;
   }).join('');
 
   host.innerHTML = `
