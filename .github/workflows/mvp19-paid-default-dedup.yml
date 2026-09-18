@@ -54,6 +54,8 @@ jobs:
           node --check app/assets/js/screens/store-screen-go-store-v1.js
           node --check app/assets/js/screens/store-screen-domino-store-v1.js
           node --check app/assets/js/screens/store-screen-four-in-a-row-store-v1.js
+          ! grep -R -Fq "вместо стандарт" app/assets/js/screens/store-screen.js app/assets/js/screens/store-screen-reversi-store-v1.js app/assets/js/screens/store-screen-go-store-v1.js app/assets/js/screens/store-screen-domino-store-v1.js app/assets/js/screens/store-screen-four-in-a-row-store-v1.js
+          ! grep -R -Fq "базового набора" app/assets/js/screens/store-screen.js app/assets/js/screens/store-screen-reversi-store-v1.js app/assets/js/screens/store-screen-go-store-v1.js app/assets/js/screens/store-screen-domino-store-v1.js app/assets/js/screens/store-screen-four-in-a-row-store-v1.js
 
       - name: Run paid-default dedup contract
         run: php bot/tests/Mvp19_PaidDefaultDedupTest.php
