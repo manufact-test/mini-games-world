@@ -173,9 +173,6 @@
 }
 
 /* Effect 3: victory-only board wave from the completed four. */
-#gameBoard[data-game-type="four_in_a_row"][data-four-active-fx="victory"] .four-disc-slot.winning span{
-  animation:none!important;
-}
 #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-victory-cell] span{
   animation:mgwFourVictoryCell 1.32s ease-out calc(var(--mgw-four-fx-delay,0ms) + var(--mgw-four-seq,0) * 55ms) both!important;
 }
