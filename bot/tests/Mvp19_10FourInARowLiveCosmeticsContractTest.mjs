@@ -31,6 +31,8 @@ assert.ok(live.includes('state?.profileInventory?.equipped'), 'Viewer cosmetics 
 assert.ok(live.includes('seenMoveByGame'), 'Polling rerenders must not replay the same authoritative move');
 assert.ok(live.includes("moveKey || '__initial__'"), 'Empty opening position must arm the first real move without replaying reconnect snapshots');
 assert.ok(live.includes("game?.__mgw_v100_pending_action") && live.includes("&& !optimistic"), 'Optimistic local projection must never consume or trigger the authoritative paid effect event');
+assert.ok(live.includes("pendingSlot.dataset.mgwFourPendingDrop = '1'"), 'Drop must avoid showing a settled disc before the authoritative move arrives');
+assert.ok(css.includes('data-mgw-four-pending-drop="1"') && css.includes('opacity:.16'), 'Pending Drop projection must remain a small visual ghost, not the paid effect itself');
 assert.ok(live.includes("FIELD_VARIANTS = new Set(['blue', 'dark', 'metal', 'neon'])"), 'All four accepted field identities must be live');
 assert.ok(live.includes("DISC_VARIANTS = new Set(['classic', '3d', 'metal', 'neon'])"), 'All four accepted disc identities must be live');
 assert.ok(live.includes('[6, 7, 8].includes(value)'), 'Live wrapper must retain 6x5, 7x6 and 8x7 boards');
