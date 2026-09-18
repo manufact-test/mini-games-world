@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 const live = fs.readFileSync('app/assets/js/games/four-in-a-row/renderer-cosmetics-v1.js', 'utf8');
 const css = fs.readFileSync('app/assets/css/games/four-in-a-row/live-cosmetics-v1.css', 'utf8');
 const base = fs.readFileSync('app/assets/js/games/four-in-a-row/renderer.js', 'utf8');
-const gameScreen = fs.readFileSync('app/assets/js/screens/game-screen.js', 'utf8');
+const gameScreen = fs.readFileSync('app/assets/js/screens/game-screen-v102.js', 'utf8');
 const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 const launch = fs.readFileSync('bot/helpers/WebAppLaunchUrl.php', 'utf8');
 const response = fs.readFileSync('bot/helpers/response.php', 'utf8');
@@ -29,6 +29,7 @@ assert.ok(live.includes("String(game?.finish_reason || '') === 'normal_win'"), '
 assert.ok(live.includes('player?.game_cosmetics?.slots'), 'Opponent-owned effects must use public owner-specific cosmetic projection');
 assert.ok(live.includes('state?.profileInventory?.equipped'), 'Viewer cosmetics must retain the proven local inventory fallback');
 assert.ok(live.includes('seenMoveByGame'), 'Polling rerenders must not replay the same authoritative move');
+assert.ok(live.includes("moveKey || '__initial__'"), 'Empty opening position must arm the first real move without replaying reconnect snapshots');
 assert.ok(live.includes("FIELD_VARIANTS = new Set(['blue', 'dark', 'metal', 'neon'])"), 'All four accepted field identities must be live');
 assert.ok(live.includes("DISC_VARIANTS = new Set(['classic', '3d', 'metal', 'neon'])"), 'All four accepted disc identities must be live');
 assert.ok(live.includes('[6, 7, 8].includes(value)'), 'Live wrapper must retain 6x5, 7x6 and 8x7 boards');
@@ -46,18 +47,18 @@ assert.ok(css.includes('pointer-events:none'), 'Presentation effects must not st
 assert.ok(base.includes("onAction?.({ type:'column', column });"), 'Accepted Four action owner must stay in the base renderer');
 assert.ok(base.includes("container.innerHTML ="), 'Accepted base renderer structure remains authoritative');
 
-assert.ok(gameScreen.includes("fourTerminalEffect(game, me)"), 'Result sheet must wait only when a real equipped Four terminal effect needs presentation time');
-assert.ok(gameScreen.includes("fourEffect === 'game-four-effect-drop'") && gameScreen.includes('? 820'), 'Winning Drop must finish before result sheet');
-assert.ok(gameScreen.includes("fourEffect === 'game-four-effect-four'") && gameScreen.includes('? 1380'), 'Four line must finish before result sheet');
-assert.ok(gameScreen.includes("fourEffect === 'game-four-effect-victory-wave'") && gameScreen.includes('? 1620'), 'Victory Wave must finish before result sheet');
-assert.ok(gameScreen.includes("String(game?.finish_reason || '') !== 'normal_win'"), 'Technical finishes must not gain cosmetic delay');
+assert.ok(gameScreen.includes('fourTerminalPresentationDelay(game)'), 'Active v102 result owner must consult the live Four presentation state');
+assert.ok(gameScreen.includes("surface?.dataset?.fourActiveFx"), 'Result delay must come from an effect that the live renderer actually mounted');
+assert.ok(gameScreen.includes('drop: 820') && gameScreen.includes('four: 1380') && gameScreen.includes('victory: 1620'), 'Each accepted live effect needs enough terminal presentation time');
+assert.ok(gameScreen.includes("prefers-reduced-motion: reduce") && gameScreen.includes('Math.min(delay, 240)'), 'Reduced-motion users must not wait through a full animation delay');
+assert.ok(gameScreen.includes("if (gameTypeOf(game) !== 'four_in_a_row') return 0;"), 'Other games must keep their accepted result timing');
 
 assert.ok(
   manifest.includes("'./assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=1&mvp19_10=live-game-v1'"),
   'Active import map must route Four through the live cosmetics wrapper',
 );
 assert.ok(
-  manifest.includes("'./assets/js/screens/game-screen.js?v=74' => './assets/js/screens/game-screen.js?v=75&mvp19_10=four-live-result-gate-v1'"),
+  manifest.includes("'./assets/js/screens/game-screen-v102.js?v=102' => './assets/js/screens/game-screen-v102.js?v=103&mvp19_10=four-live-result-gate-v1'"),
   'Active graph must cache-bust the Four terminal presentation gate',
 );
 const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);
