@@ -68,7 +68,7 @@ export function initProfileFourInARowParity(){
 
 function ensureFourProfileStyles(){
   ensureStyle('data-mgw-four-store-profile', '../../css/games/four-in-a-row/store-cosmetics-v1.css?v=7&four_store=live-previews-v3&geometry=7x6&fx=victory-test-exact-v3');
-  ensureStyle('data-mgw-profile-four-parity', '../../css/screens/profile-four-in-a-row-store-parity-v1.css?v=3&four_profile=live-previews-v2&geometry=7x6');
+  ensureStyle('data-mgw-profile-four-parity', '../../css/screens/profile-four-in-a-row-store-parity-v1.css?v=3&four_profile=live-previews-v3&geometry=7x6');
 }
 
 function ensureStyle(marker, relativeHref){
