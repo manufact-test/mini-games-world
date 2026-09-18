@@ -6,21 +6,21 @@ import {
 import {
   installReversiStorePresentation,
   upgradeReversiStorePresentation,
-} from './store-screen-reversi-store-v1.js?v=3&mvp19_7=store-only&review=manual-corrective-v2&paid_default=copy-native-v1';
+} from './store-screen-reversi-store-v1.js?v=4&mvp19_7=store-only&review=manual-corrective-v2&paid_default=copy-human-v1';
 import {
   installGoStorePresentation,
   upgradeGoStorePresentation,
-} from './store-screen-go-store-v1.js?v=3&mvp19_8=effects-premium-v2&paid_default=copy-native-v1';
+} from './store-screen-go-store-v1.js?v=4&mvp19_8=effects-premium-v2&paid_default=copy-human-v1';
 import {
   installDominoStorePresentation,
   upgradeDominoStorePresentation,
-} from './store-screen-domino-store-v1.js?v=15&mvp19_9=domino-svg-pips-v48&paid_default=copy-native-v1';
+} from './store-screen-domino-store-v1.js?v=16&mvp19_9=domino-svg-pips-v48&paid_default=copy-human-v1';
 import { installDominoStoreCardFillV5 } from './store-screen-domino-card-fill-v5.js?v=2&mvp19_9=domino-card-fill-live-pips-v6';
 import { installDominoStoreEffectsV9 } from './store-screen-domino-effects-v9.js?v=12&mvp19_9=domino-svg-pips-v48';
 import {
   installFourInARowStorePresentation,
   upgradeFourInARowStorePresentation,
-} from './store-screen-four-in-a-row-store-v1.js?v=5&four_store=static-v4&export=profile-preview-v1';
+} from './store-screen-four-in-a-row-store-v1.js?v=6&four_store=static-v4&export=profile-preview-v1&copy=human-v1';
 import {
   installPaidDefaultDedupV1,
   upgradePaidDefaultDedupV1,

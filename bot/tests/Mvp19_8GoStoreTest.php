@@ -127,7 +127,7 @@ $css = (string)file_get_contents($root . '/app/assets/css/games/go/store-cosmeti
 $topWrapper = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-checkers-board-source-wrapper.js');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
-$assertTrue(str_contains($topWrapper, 'store-screen-go-store-v1.js?v=3&mvp19_8=effects-premium-v2'), 'Active Store entrypoint must install the fresh Go presentation layer');
+$assertTrue(str_contains($topWrapper, 'store-screen-go-store-v1.js?v=4&mvp19_8=effects-premium-v2&paid_default=copy-human-v1'), 'Active Store entrypoint must install the fresh Go presentation layer');
 $activeStoreTarget = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $wrapperVersionMatch = [];
 $assertTrue(preg_match('~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~', $activeStoreTarget, $wrapperVersionMatch) === 1 && (int)$wrapperVersionMatch[1] >= 7, 'Active Store outer wrapper must stay at or beyond the accepted Go corrective identity');

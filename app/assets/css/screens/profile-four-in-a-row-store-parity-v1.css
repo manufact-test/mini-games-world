@@ -26,6 +26,33 @@
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.27),0 2px 5px rgba(255,194,24,.20)!important;
 }
 
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="four_in_a_row"]{
+  box-sizing:border-box!important;
+  padding-top:10px!important;
+  padding-bottom:16px!important;
+}
+
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="four_in_a_row"] .profile-v2-game-group{
+  margin:0 0 14px!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="four_in_a_row"] .profile-v2-game-group:last-child{
+  margin-bottom:0!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="four_in_a_row"] .profile-v2-game-group-title{
+  margin:0 0 8px!important;
+  padding:0 2px!important;
+}
+
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="four_in_a_row"] [data-profile-game-cosmetic^="game-four-field-"]{
+  --mgw-profile-card-subtitle:"Поле";
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="four_in_a_row"] [data-profile-game-cosmetic^="game-four-discs-"]{
+  --mgw-profile-card-subtitle:"Фишки";
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="four_in_a_row"] [data-profile-game-cosmetic^="game-four-effect-"]{
+  --mgw-profile-card-subtitle:"Эффект";
+}
+
 #screen-profile .profile-v2-game-panel[data-profile-game-panel="four_in_a_row"] .profile-v2-game-card{
   box-sizing:border-box!important;
   display:flex!important;
@@ -36,7 +63,8 @@
   height:auto!important;
   min-height:0!important;
   max-height:none!important;
-  padding:6px!important;
+  padding:8px!important;
+  gap:5px!important;
   overflow:visible!important;
 }
 
@@ -53,7 +81,7 @@
   max-height:none!important;
   aspect-ratio:1 / 1!important;
   overflow:hidden!important;
-  margin:0!important;
+  margin:2px 0 4px!important;
   padding:0!important;
   border-radius:14px!important;
 }
@@ -81,12 +109,7 @@
 }
 
 #screen-profile .profile-v2-game-panel[data-profile-game-panel="four_in_a_row"] .profile-v2-game-card .profile-v2-game-card-name{
-  display:block!important;
-  margin:6px 2px 1px!important;
-  line-height:1.2!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
-  white-space:nowrap!important;
+  display:none!important;
 }
 
 .profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="four_in_a_row"]{
