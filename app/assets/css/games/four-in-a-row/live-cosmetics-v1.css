@@ -29,40 +29,44 @@
 
 /* Accepted paid disc identities. "classic" keeps its historical id but is the accepted arcade pair. */
 #gameBoard[data-game-type="four_in_a_row"][data-four-discs="classic"] .four-disc-slot.red span{
-  background:radial-gradient(circle at 32% 25%,#ffd5ec 0 9%,#ff78b7 34%,#b52372 100%)!important;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),0 4px 10px rgba(255,75,158,.24)!important;
+  background:radial-gradient(circle at 32% 25%,#ffd5ec 0 9%,#ff78b7 34%,#b52372 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),0 4px 10px rgba(255,75,158,.24);
 }
 #gameBoard[data-game-type="four_in_a_row"][data-four-discs="classic"] .four-disc-slot.yellow span{
-  background:radial-gradient(circle at 32% 25%,#d9fdff 0 9%,#66e8f3 35%,#168ca8 100%)!important;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.30),0 4px 10px rgba(66,220,240,.22)!important;
+  background:radial-gradient(circle at 32% 25%,#d9fdff 0 9%,#66e8f3 35%,#168ca8 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.30),0 4px 10px rgba(66,220,240,.22);
 }
 #gameBoard[data-game-type="four_in_a_row"][data-four-discs="3d"] .four-disc-slot.red span{
-  background:radial-gradient(circle at 31% 24%,#fff0f2 0 7%,#ff8792 16%,#e34257 48%,#8c1428 82%,#500815 100%)!important;
-  box-shadow:inset 0 2px 3px rgba(255,255,255,.35),inset 0 -4px 5px rgba(61,0,10,.34),0 4px 8px rgba(0,0,0,.28)!important;
+  background:radial-gradient(circle at 31% 24%,#fff0f2 0 7%,#ff8792 16%,#e34257 48%,#8c1428 82%,#500815 100%);
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.35),inset 0 -4px 5px rgba(61,0,10,.34),0 4px 8px rgba(0,0,0,.28);
 }
 #gameBoard[data-game-type="four_in_a_row"][data-four-discs="3d"] .four-disc-slot.yellow span{
-  background:radial-gradient(circle at 31% 24%,#fffbe0 0 7%,#ffe885 16%,#f5bc26 48%,#a66c00 82%,#684000 100%)!important;
-  box-shadow:inset 0 2px 3px rgba(255,255,255,.42),inset 0 -4px 5px rgba(79,45,0,.30),0 4px 8px rgba(0,0,0,.28)!important;
+  background:radial-gradient(circle at 31% 24%,#fffbe0 0 7%,#ffe885 16%,#f5bc26 48%,#a66c00 82%,#684000 100%);
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.42),inset 0 -4px 5px rgba(79,45,0,.30),0 4px 8px rgba(0,0,0,.28);
 }
 #gameBoard[data-game-type="four_in_a_row"][data-four-discs="metal"] .four-disc-slot.red span{
-  background:radial-gradient(circle at 31% 23%,#fff7f8 0 6%,#e7a5af 13%,#b85061 34%,#6b2a39 66%,#31131c 100%)!important;
-  border:1px solid rgba(236,183,192,.72)!important;
-  box-shadow:inset 0 2px 2px rgba(255,255,255,.34),inset 0 -3px 5px rgba(50,10,20,.38),0 4px 8px rgba(0,0,0,.30)!important;
+  background:radial-gradient(circle at 31% 23%,#fff7f8 0 6%,#e7a5af 13%,#b85061 34%,#6b2a39 66%,#31131c 100%);
+  border:1px solid rgba(236,183,192,.72);
+  box-shadow:inset 0 2px 2px rgba(255,255,255,.34),inset 0 -3px 5px rgba(50,10,20,.38),0 4px 8px rgba(0,0,0,.30);
 }
 #gameBoard[data-game-type="four_in_a_row"][data-four-discs="metal"] .four-disc-slot.yellow span{
-  background:radial-gradient(circle at 31% 23%,#fffbe7 0 6%,#f3dda0 14%,#c59b48 35%,#7f5d24 68%,#3a2810 100%)!important;
-  border:1px solid rgba(246,222,154,.76)!important;
-  box-shadow:inset 0 2px 2px rgba(255,255,255,.40),inset 0 -3px 5px rgba(67,42,8,.34),0 4px 8px rgba(0,0,0,.30)!important;
+  background:radial-gradient(circle at 31% 23%,#fffbe7 0 6%,#f3dda0 14%,#c59b48 35%,#7f5d24 68%,#3a2810 100%);
+  border:1px solid rgba(246,222,154,.76);
+  box-shadow:inset 0 2px 2px rgba(255,255,255,.40),inset 0 -3px 5px rgba(67,42,8,.34),0 4px 8px rgba(0,0,0,.30);
 }
 #gameBoard[data-game-type="four_in_a_row"][data-four-discs="neon"] .four-disc-slot.red span{
-  background:radial-gradient(circle at 34% 28%,#ffd8ec 0 7%,#ff78c6 16%,#ff2d8c 42%,#7a123f 72%,#220815 100%)!important;
-  border:1px solid #ff68b5!important;
-  box-shadow:inset 0 0 5px rgba(255,173,224,.50),0 0 7px rgba(255,45,140,.88),0 0 13px rgba(255,45,140,.46)!important;
+  background:radial-gradient(circle at 34% 28%,#ffd8ec 0 7%,#ff78c6 16%,#ff2d8c 42%,#7a123f 72%,#220815 100%);
+  border:1px solid #ff68b5;
+  box-shadow:inset 0 0 5px rgba(255,173,224,.50),0 0 7px rgba(255,45,140,.88),0 0 13px rgba(255,45,140,.46);
 }
 #gameBoard[data-game-type="four_in_a_row"][data-four-discs="neon"] .four-disc-slot.yellow span{
-  background:radial-gradient(circle at 34% 28%,#fbffe0 0 7%,#dfff79 16%,#9dff2e 42%,#397812 72%,#0d2307 100%)!important;
-  border:1px solid #c8ff64!important;
-  box-shadow:inset 0 0 5px rgba(231,255,176,.48),0 0 7px rgba(154,255,47,.82),0 0 13px rgba(154,255,47,.42)!important;
+  background:radial-gradient(circle at 34% 28%,#fbffe0 0 7%,#dfff79 16%,#9dff2e 42%,#397812 72%,#0d2307 100%);
+  border:1px solid #c8ff64;
+  box-shadow:inset 0 0 5px rgba(231,255,176,.48),0 0 7px rgba(154,255,47,.82),0 0 13px rgba(154,255,47,.42);
+}
+
+#gameBoard[data-game-type="four_in_a_row"][data-mgw-four-live-cosmetics="v1"] .four-disc-slot.winning span{
+  box-shadow:0 0 0 3px #fff,0 0 22px rgba(255,255,255,.72);
 }
 
 /* Effect 1 — real disc drop, short light trail, compact landing ring. */
@@ -71,12 +75,14 @@
   pointer-events:none;
 }
 #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-drop-fx="1"] span{
+  position:relative;
+  z-index:2;
   animation:mgwFourLiveDrop .72s cubic-bezier(.18,.76,.22,1) var(--mgw-four-fx-delay,0ms) both!important;
 }
 #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-drop-fx="1"]::before{
   content:"";
   position:absolute;
-  z-index:-1;
+  z-index:1;
   left:50%;
   bottom:48%;
   width:22%;
