@@ -15,7 +15,7 @@ async function probePreviewMotion(page) {
   expect(response?.ok()).toBe(true);
 
   return await page.evaluate(async () => {
-    const { dominoPreviewMarkup } = await import('./assets/js/screens/store-screen-domino-store-v1.js?v=11&mvp19_9=domino-preview-component-v44');
+    const { dominoPreviewMarkup } = await import('./assets/js/screens/store-screen-domino-store-v1.js?v=12&mvp19_9=domino-preview-motion-v45');
 
     const waitForSheet = async selector => {
       const link = document.querySelector(selector);
