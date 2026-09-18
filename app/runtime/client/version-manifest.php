@@ -59,7 +59,7 @@ return [
         './assets/js/games/chess/renderer.js?v=68' => './assets/js/games/chess/renderer-move-effect-v3.js?v=2&mvp19_5=cosmetics&move=trail-gather-no-hold-v1&quantum_echo=every-move-ghost-halo-v1&base=./assets/js/games/chess/renderer.js?v=70&mvp19_5=cosmetics&fx_runtime=landing-sync-v2',
         './assets/js/games/reversi/renderer.js?v=66' => './assets/js/games/reversi/renderer-cosmetics-premium-v4.js?v=4&mvp19_7=line-mass-premium-v8&motion=single-transform-owner-v1&parent=live-parity-v3&footer=fullwidth-scroll-v2',
         './assets/js/games/go/renderer.js?v=70' => './assets/js/games/go/renderer-cosmetics-v1.js?v=2&mvp19_8=live-effects-corrective-v2&fx=placement-burst-capture-guard-territory-qa-v2',
-        './assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=5&mvp19_10=live-game-v5&drop=target-lock-no-base-flash-v2&effect2=chain-v3',
+        './assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=6&mvp19_10=live-game-v6&drop=target-lock-no-base-flash-v2&effect2=random-chain-v4&victory_test=staging-v1',
         './assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25&visual_portal=v38&precision_geometry=v41',
         './assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer.js?v=60&shot=miss-no-impact',
         './assets/js/production-v110-acceptance-runtime.js?v=110' => './assets/js/production-v110-acceptance-runtime.js?v=130&clock=battleship-setup-single-writer&launch=ready-gated-v2&terminal=clock-stable&input=first-tap-v1',

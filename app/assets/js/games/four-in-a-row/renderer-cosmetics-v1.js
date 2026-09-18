@@ -2,7 +2,7 @@ import {
   renderFourInARowSurface as renderBaseFourInARowSurface,
   fourInARowMeta,
   fourInARowPlayerMark,
-} from './renderer.js?v=53&base=mvp19-10-live-v5';
+} from './renderer.js?v=53&base=mvp19-10-live-v6';
 import { state } from '../../state.js?v=27';
 
 const THEME_SLOT = 'game_four_in_a_row_theme';
@@ -120,7 +120,7 @@ export function renderFourInARowSurface(args){
 
   if (!(container instanceof HTMLElement)) return;
 
-  container.dataset.mgwFourLiveCosmetics = 'v4';
+  container.dataset.mgwFourLiveCosmetics = 'v6';
   container.dataset.fourTheme = themeVariant;
   container.dataset.fourDiscs = discsVariant;
   container.dataset.fourEffect = viewerEffect || 'base';
@@ -137,6 +137,8 @@ export function renderFourInARowSurface(args){
     frame.dataset.fourTheme = themeVariant;
     frame.dataset.fourDiscs = discsVariant;
   }
+
+  mountVictoryTestControl(container, game, viewerEffect, columns, rows);
 
   if (optimistic && viewerEffect === DROP_ID && lastMove !== null) {
     const pendingSlot = slotForCell(container, lastMove);
@@ -418,23 +420,49 @@ function pulseNeighborCells(active){
   const rows = Number(active.rows || 6);
   const row = Math.floor(cell / columns);
   const col = cell % columns;
+
+  const patterns = [
+    [[0,-1,1],[0,1,1]],
+    [[-1,-1,1],[-1,1,1],[1,0,1]],
+    [[0,-2,2],[0,2,2],[-2,0,2],[2,0,2]],
+    [[-1,0,1],[1,1,1],[0,-2,2],[1,-2,2]],
+  ];
+
+  const fallback = [
+    [0,-1,1],[0,1,1],[-1,0,1],[1,0,1],
+    [-1,-1,2],[-1,1,2],[1,-1,2],[1,1,2],
+    [0,-2,2],[0,2,2],[-2,0,2],[2,0,2],
+  ];
+
+  const patternIndex = stablePatternIndex(active?.key, patterns.length);
+  const ordered = [...patterns[patternIndex], ...fallback];
+  const seen = new Set();
   const result = [];
 
-  [
-    [row, col - 1, 1],
-    [row, col + 1, 1],
-    [row - 1, col, 1],
-    [row + 1, col, 1],
-    [row - 1, col - 1, 2],
-    [row - 1, col + 1, 2],
-    [row + 1, col - 1, 2],
-    [row + 1, col + 1, 2],
-  ].forEach(([r, c, step]) => {
-    if (r < 0 || r >= rows || c < 0 || c >= columns) return;
-    result.push({ cell:r * columns + c, step });
-  });
+  for (const [dr, dc, step] of ordered) {
+    const r = row + dr;
+    const c = col + dc;
+    if (r < 0 || r >= rows || c < 0 || c >= columns) continue;
+    const target = r * columns + c;
+    if (target === cell || seen.has(target)) continue;
+    seen.add(target);
+    result.push({ cell:target, step });
+
+    const desiredCount = [2,3,4,4][patternIndex];
+    if (result.length >= desiredCount) break;
+  }
 
   return result;
+}
+
+function stablePatternIndex(key, count){
+  const value = String(key || '');
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index++) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return Math.abs(hash >>> 0) % Math.max(1, Number(count || 1));
 }
 
 function lightningPath(x1, y1, x2, y2, seed){
@@ -487,6 +515,55 @@ function mountVictoryWaveEffect(container, active, delayMs){
   grid.appendChild(host);
 }
 
+function mountVictoryTestControl(container, game, viewerEffect, columns, rows){
+  if (!victoryTestEnabled()) return;
+  if (viewerEffect !== VICTORY_ID || String(game?.status || '') !== 'active') return;
+  if (!(container instanceof HTMLElement)) return;
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'mgw-four-victory-test';
+  button.textContent = 'Тест победной волны';
+  button.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    clearVictoryPreview(container);
+    void container.offsetWidth;
+
+    container.dataset.fourActiveFx = 'victory';
+    mountVictoryWaveEffect(container, {
+      winningCells: previewVictoryCells(columns, rows),
+      columns,
+      rows,
+    }, 0);
+  });
+  container.appendChild(button);
+}
+
+function clearVictoryPreview(container){
+  container.querySelectorAll('.mgw-four-live-victory-fx').forEach(node => node.remove());
+  container.querySelectorAll('[data-mgw-four-victory-cell]').forEach(node => {
+    node.removeAttribute('data-mgw-four-victory-cell');
+    node.style.removeProperty('--mgw-four-seq');
+    node.style.removeProperty('--mgw-four-fx-delay');
+  });
+  delete container.dataset.fourActiveFx;
+}
+
+function victoryTestEnabled(){
+  if (typeof window === 'undefined') return false;
+  return new URLSearchParams(window.location.search).get('four_victory_test') === '1';
+}
+
+function previewVictoryCells(columns, rows){
+  const safeColumns = Math.max(4, Number(columns || 7));
+  const safeRows = Math.max(4, Number(rows || 6));
+  const row = Math.max(0, Math.min(safeRows - 1, Math.floor(safeRows / 2)));
+  const start = Math.max(0, Math.floor((safeColumns - 4) / 2));
+  return [0,1,2,3].map(offset => row * safeColumns + start + offset);
+}
+
 function cellPoint(cell, columns, rows){
   const col = Number(cell) % Number(columns);
   const row = Math.floor(Number(cell) / Number(columns));
@@ -498,16 +575,16 @@ function cellPoint(cell, columns, rows){
 
 function ensureLiveStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/four-in-a-row/live-cosmetics-v1.css?v=5&mvp19_10=live-game-v5&drop=target-lock-no-base-flash-v2', import.meta.url).href;
+  const href = new URL('../../../css/games/four-in-a-row/live-cosmetics-v1.css?v=6&mvp19_10=live-game-v6&pulse=random-patterns-v1&victory_test=staging-v1', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-four-live-cosmetics]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v5';
+    existing.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v6';
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v5';
+  link.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v6';
   link.href = href;
   document.head.appendChild(link);
 }
