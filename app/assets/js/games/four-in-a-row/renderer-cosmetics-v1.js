@@ -2,7 +2,7 @@ import {
   renderFourInARowSurface as renderBaseFourInARowSurface,
   fourInARowMeta,
   fourInARowPlayerMark,
-} from './renderer.js?v=53&base=mvp19-10-live-v3';
+} from './renderer.js?v=53&base=mvp19-10-live-v4';
 import { state } from '../../state.js?v=27';
 
 const THEME_SLOT = 'game_four_in_a_row_theme';
@@ -24,7 +24,7 @@ const seenMoveByGame = new Map();
 const activeEffectByGame = new Map();
 
 const EFFECT_DURATION_MS = Object.freeze({
-  drop: 860,
+  drop: 900,
   pulse: 1080,
   victory: 1580,
 });
@@ -120,11 +120,17 @@ export function renderFourInARowSurface(args){
 
   if (!(container instanceof HTMLElement)) return;
 
-  container.dataset.mgwFourLiveCosmetics = 'v3';
+  container.dataset.mgwFourLiveCosmetics = 'v4';
   container.dataset.fourTheme = themeVariant;
   container.dataset.fourDiscs = discsVariant;
   container.dataset.fourEffect = viewerEffect || 'base';
   delete container.dataset.fourActiveFx;
+
+  const currentMover = moverPlayer(players, board, lastMove);
+  const currentMoverIsViewer = String(currentMover?.id || '') !== '' && String(currentMover?.id || '') === myId;
+  const currentMoverEffect = effectForPlayer(gameId, currentMover, me)
+    || (currentMoverIsViewer ? viewerEffect : '');
+  container.dataset.fourLastMoveEffect = currentMoverEffect || 'base';
 
   const frame = container.querySelector('.four-board-frame');
   if (frame instanceof HTMLElement) {
@@ -135,6 +141,7 @@ export function renderFourInARowSurface(args){
   if (optimistic && viewerEffect === DROP_ID && lastMove !== null) {
     const pendingSlot = slotForCell(container, lastMove);
     if (pendingSlot instanceof HTMLElement) pendingSlot.dataset.mgwFourPendingDrop = '1';
+    mountDropTargetLock(container, lastMove, 0, true);
   }
 
   const active = gameId ? activeEffectByGame.get(gameId) : null;
@@ -275,17 +282,24 @@ function mountDropEffect(container, active, delayMs){
 
   const gridRect = grid.getBoundingClientRect();
   const slotRect = slot.getBoundingClientRect();
-  const discRect = disc.getBoundingClientRect();
   if (gridRect.width <= 0 || gridRect.height <= 0 || slotRect.width <= 0) return;
+
+  const computed = window.getComputedStyle(disc);
+  const naturalWidth = Number.parseFloat(computed.width);
+  const naturalHeight = Number.parseFloat(computed.height);
+  const size = Math.max(18, Math.min(
+    Number.isFinite(naturalWidth) && naturalWidth > 0 ? naturalWidth : slotRect.width * .82,
+    Number.isFinite(naturalHeight) && naturalHeight > 0 ? naturalHeight : slotRect.height * .82,
+  ));
 
   const centerX = slotRect.left - gridRect.left + (slotRect.width / 2);
   const centerY = slotRect.top - gridRect.top + (slotRect.height / 2);
-  const size = Math.max(18, discRect.width || slotRect.width * .82);
-  const startOffset = -(centerY + size * .72);
-  const computed = window.getComputedStyle(disc);
+  const startOffset = -(centerY + size * .62);
 
   slot.dataset.mgwFourDropFx = '1';
   slot.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
+
+  mountDropTargetLock(container, active.lastMove, delayMs, false);
 
   const falling = document.createElement('span');
   falling.className = 'mgw-four-live-drop-disc';
@@ -300,16 +314,49 @@ function mountDropEffect(container, active, delayMs){
   falling.style.setProperty('--mgw-four-drop-start', `${startOffset}px`);
   falling.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
   grid.appendChild(falling);
+}
 
-  const impact = document.createElement('span');
-  impact.className = 'mgw-four-live-drop-impact';
-  impact.setAttribute('aria-hidden', 'true');
-  impact.style.left = `${centerX}px`;
-  impact.style.top = `${centerY}px`;
-  impact.style.width = `${size}px`;
-  impact.style.height = `${size}px`;
-  impact.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
-  grid.appendChild(impact);
+function mountDropTargetLock(container, cell, delayMs, pending){
+  const slot = slotForCell(container, cell);
+  const grid = container.querySelector('.four-disc-grid');
+  if (!(slot instanceof HTMLElement) || !(grid instanceof HTMLElement)) return;
+
+  const gridRect = grid.getBoundingClientRect();
+  const slotRect = slot.getBoundingClientRect();
+  if (gridRect.width <= 0 || gridRect.height <= 0 || slotRect.width <= 0) return;
+
+  const centerX = slotRect.left - gridRect.left + (slotRect.width / 2);
+  const centerY = slotRect.top - gridRect.top + (slotRect.height / 2);
+  const targetSize = Math.max(30, slotRect.width * 1.28);
+
+  const target = document.createElement('span');
+  target.className = `mgw-four-drop-target-lock${pending ? ' is-pending' : ''}`;
+  target.setAttribute('aria-hidden', 'true');
+  target.style.left = `${centerX}px`;
+  target.style.top = `${centerY}px`;
+  target.style.width = `${targetSize}px`;
+  target.style.height = `${targetSize}px`;
+  target.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
+  target.innerHTML = `
+    <i class="mgw-four-drop-reticle"></i>
+    <i class="mgw-four-drop-corner corner-tl"></i>
+    <i class="mgw-four-drop-corner corner-tr"></i>
+    <i class="mgw-four-drop-corner corner-bl"></i>
+    <i class="mgw-four-drop-corner corner-br"></i>
+    <i class="mgw-four-drop-cross cross-h"></i>
+    <i class="mgw-four-drop-cross cross-v"></i>
+    <i class="mgw-four-drop-lock-dot"></i>
+  `;
+  grid.appendChild(target);
+
+  const laser = document.createElement('span');
+  laser.className = `mgw-four-drop-laser${pending ? ' is-pending' : ''}`;
+  laser.setAttribute('aria-hidden', 'true');
+  laser.style.left = `${centerX}px`;
+  laser.style.top = '0px';
+  laser.style.height = `${Math.max(12, centerY - targetSize * .34)}px`;
+  laser.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
+  grid.appendChild(laser);
 }
 
 function mountPulseEffect(container, active, delayMs){
@@ -451,16 +498,16 @@ function cellPoint(cell, columns, rows){
 
 function ensureLiveStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/four-in-a-row/live-cosmetics-v1.css?v=3&mvp19_10=live-game-v3', import.meta.url).href;
+  const href = new URL('../../../css/games/four-in-a-row/live-cosmetics-v1.css?v=4&mvp19_10=live-game-v4&drop=target-lock-v1', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-four-live-cosmetics]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v3';
+    existing.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v4';
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v3';
+  link.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v4';
   link.href = href;
   document.head.appendChild(link);
 }
