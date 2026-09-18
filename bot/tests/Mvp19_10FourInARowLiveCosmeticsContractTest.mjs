@@ -11,7 +11,7 @@ const launch = fs.readFileSync('bot/helpers/WebAppLaunchUrl.php', 'utf8');
 const response = fs.readFileSync('bot/helpers/response.php', 'utf8');
 
 assert.ok(
-  live.includes("from './renderer.js?v=53&base=mvp19-10-live-v8'"),
+  live.includes("from './renderer.js?v=53&base=mvp19-10-live-v9'"),
   'Four live cosmetics must decorate the accepted base renderer instead of replacing gameplay',
 );
 assert.ok(live.includes('renderBaseFourInARowSurface(args);'), 'Base Four renderer must remain the gameplay/render owner');
@@ -50,14 +50,20 @@ assert.ok(
   'Base Four stylesheet must keep the standard white column press affordance for players without paid Drop',
 );
 assert.ok(
-  css.includes('[data-four-effect^="game-four-effect-"] .four-column-hit:not(:disabled):active')
+  css.includes('[data-four-effect="game-four-effect-drop"] .four-column-hit:not(:disabled):active')
+    && css.includes('[data-four-effect="game-four-effect-four"] .four-column-hit:not(:disabled):active')
     && css.includes('background:transparent!important'),
-  'Every paid Four effect must suppress the standard white full-column press flash',
+  'Effects 1 and 2 must suppress the standard white full-column press flash',
 );
 assert.ok(
-  css.includes('[data-four-effect^="game-four-effect-"] .four-column-hit')
+  css.includes('[data-four-effect="game-four-effect-drop"] .four-column-hit')
+    && css.includes('[data-four-effect="game-four-effect-four"] .four-column-hit')
     && css.includes('-webkit-tap-highlight-color:transparent'),
-  'Every paid Four effect must suppress the WebView tap highlight without changing standard players',
+  'Effects 1 and 2 must suppress WebView tap highlight',
+);
+assert.ok(
+  !css.includes('[data-four-effect="game-four-effect-victory-wave"] .four-column-hit:not(:disabled):active'),
+  'Victory Overdrive must retain the base white column press feedback during normal play',
 );
 assert.ok(live.includes("container.querySelectorAll('.four-disc-slot')") && live.includes('slots.item(index)'), 'Live effects must resolve cells from the accepted base renderer DOM order');
 assert.ok(!live.includes('.four-disc-slot[data-four-cell='), 'Live effects must not depend on the nonexistent data-four-cell attribute');
@@ -105,7 +111,7 @@ assert.ok(gameScreen.includes("String(state.activeGame?.id || '') !== id") && ga
 assert.ok(gameScreen.includes("if (gameTypeOf(game) !== 'four_in_a_row') return 0;"), 'Other games must keep their accepted result timing');
 
 assert.ok(
-  manifest.includes("'./assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=8&mvp19_10=live-game-v8&drop=target-lock-no-base-flash-v2&effect2=random-chain-v4&victory=overdrive-accepted-v1'"),
+  manifest.includes("'./assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=9&mvp19_10=live-game-v9&drop=target-lock-no-base-flash-v2&effect2=random-chain-v4&victory=overdrive-base-flash-v2'"),
   'Active import map must route Four through the live cosmetics wrapper',
 );
 assert.ok(
@@ -113,7 +119,7 @@ assert.ok(
   'Active graph must cache-bust the Four terminal presentation gate',
 );
 const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);
-assert.ok(launchMatch && Number(launchMatch[1]) >= 1209 && launch.includes('four_live=game-v8') && launch.includes('four_victory=overdrive-accepted-v1') && !launch.includes('four_victory_test'), 'Telegram staging launch must publish the accepted Victory Overdrive graph without the temporary test control');
+assert.ok(launchMatch && Number(launchMatch[1]) >= 1210 && launch.includes('four_live=game-v9') && launch.includes('four_victory=overdrive-base-flash-v2') && !launch.includes('four_victory_test'), 'Telegram staging launch must publish Victory Overdrive with standard column press feedback and no temporary test control');
 
 assert.ok(
   response.includes("WHERE c.item_type = \\'game\\' AND c.catalog_status = \\'active\\'") || response.includes("WHERE c.item_type = 'game' AND c.catalog_status = 'active'"),
