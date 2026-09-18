@@ -27,6 +27,7 @@ final class CosmeticStoreService
         'chess' => 'Шахматы',
         'checkers' => 'Шашки',
         'four_in_a_row' => '4 в ряд',
+        'battleship' => 'Морской бой',
     ];
 
     private ProductInventoryService $inventory;
