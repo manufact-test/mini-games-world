@@ -49,6 +49,11 @@ jobs:
           php -l bot/helpers/WebAppLaunchUrl.php
           node --check app/assets/js/screens/store-paid-default-dedup-v1.js
           node --check app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+          node --check app/assets/js/screens/store-screen.js
+          node --check app/assets/js/screens/store-screen-reversi-store-v1.js
+          node --check app/assets/js/screens/store-screen-go-store-v1.js
+          node --check app/assets/js/screens/store-screen-domino-store-v1.js
+          node --check app/assets/js/screens/store-screen-four-in-a-row-store-v1.js
 
       - name: Run paid-default dedup contract
         run: php bot/tests/Mvp19_PaidDefaultDedupTest.php
