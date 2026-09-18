@@ -109,7 +109,7 @@ jobs:
           ! grep -Fq 'transform-style:preserve-3d' "$effects"
 
           grep -F "store-screen-domino-store-v1.js?v=10&mvp19_9=domino-live-preview-v41" "$wrapper"
-          grep -F "store-screen-domino-effects-v9.js?v=7&mvp19_9=domino-premium-effects-v15-proportions" "$wrapper"
+          grep -F "store-screen-domino-effects-v9.js?v=8&mvp19_9=domino-live-preview-v41" "$wrapper"
           grep -F "store-screen-domino-store-v1.js?v=10&mvp19_9=domino-live-preview-v41" "$profile"
           grep -F 'store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions' "$profile"
           grep -F 'store-effects-live-parity-v41.css?v=1&mvp19_9=domino-live-preview-v41' "$profile"

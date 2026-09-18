@@ -70,7 +70,7 @@ expect(wrapper.includes("store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only
 expect(correctiveLoader.includes('store-card-fill-live-pips-v5.css?v=2&mvp19_9=domino-card-fill-live-pips-v6'), 'Accepted static Domino corrective must remain active.');
 expect(effectLoader.includes('store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions') && effectLoader.includes('store-effects-live-parity-v41.css?v=1&mvp19_9=domino-live-preview-v41'), 'Effect loader must load old base geometry first and live-v41 parity last.');
 expect(wrapper.includes("from './store-screen-domino-store-v1.js?v=10&mvp19_9=domino-live-preview-v41'"), 'Store wrapper must load the fresh live-v41 Domino preview source.');
-expect(wrapper.includes("store-screen-domino-effects-v9.js?v=7&mvp19_9=domino-premium-effects-v15-proportions"), 'Store wrapper must load v15 effects.');
+expect(wrapper.includes("store-screen-domino-effects-v9.js?v=8&mvp19_9=domino-live-preview-v41"), 'Store wrapper must load v15 effects.');
 
 expect(profile.includes("dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=10&mvp19_9=domino-live-preview-v41'"), 'Profile must reuse the same fresh Store live-v41 primitive.');
 expect(profile.includes('store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions') && profile.includes('store-effects-live-parity-v41.css?v=1&mvp19_9=domino-live-preview-v41'), 'Profile must share both base geometry and the exact live-v41 parity stylesheet.');
