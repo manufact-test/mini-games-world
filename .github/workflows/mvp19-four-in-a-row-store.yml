@@ -6,6 +6,7 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'bot/database/migrations/20260918_0036_add_four_in_a_row_store_cosmetics.php'
+      - 'bot/database/migrations/20260918_0038_four_in_a_row_effect_two_midgame_pulse.php'
       - 'bot/catalog/CosmeticStoreService.php'
       - 'bot/tests/Mvp19_FourInARowStoreTest.php'
       - 'app/assets/js/screens/store-screen-four-in-a-row-store-v1.js'
@@ -44,6 +45,7 @@ jobs:
       - name: Lint bounded Store slice
         run: |
           php -l bot/database/migrations/20260918_0036_add_four_in_a_row_store_cosmetics.php
+          php -l bot/database/migrations/20260918_0038_four_in_a_row_effect_two_midgame_pulse.php
           php -l bot/catalog/CosmeticStoreService.php
           php -l bot/tests/Mvp19_FourInARowStoreTest.php
           php -l app/runtime/client/version-manifest.php
@@ -101,8 +103,8 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
-          grep -F "store-screen-four-in-a-row-store-v1.js?v=6&four_store=static-v4&export=profile-preview-v1&copy=human-v1" app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
-          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!preg_match("~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~",$s,$v) || (int)$v[1] < 10 || !str_contains($s,"four_store=static-v4")) exit(1);'
+          grep -F "store-screen-four-in-a-row-store-v1.js?v=7&four_store=static-v5&effect2=pulse-v2&export=profile-preview-v1&copy=human-v1" app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!preg_match("~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~",$s,$v) || (int)$v[1] < 10 || !str_contains($s,"four_store=static-v5") || !str_contains($s,"four_effect2=pulse-v2")) exit(1);'
           php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1193) exit(1);'
           git diff --exit-code "$BASE_SHA" "$HEAD_SHA" --             app/assets/js/games/four-in-a-row/renderer.js             app/assets/js/games/four-in-a-row/entry.js             app/assets/css/games/four-in-a-row/game.css             bot/services/FourInARowService.php             bot/services/FourInARowBotService.php
           git diff --check
