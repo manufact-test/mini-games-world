@@ -26,6 +26,7 @@ final class CosmeticStoreService
         'tictactoe' => 'Крестики-нолики',
         'chess' => 'Шахматы',
         'checkers' => 'Шашки',
+        'four_in_a_row' => '4 в ряд',
     ];
 
     private ProductInventoryService $inventory;
