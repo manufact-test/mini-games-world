@@ -98,7 +98,7 @@
 /* Compact Store cards need the actual discs to read larger than in the purchase sheet.
    This deliberately does not target .store-v2-confirm-game. */
 .store-v2-game-product[data-store-game-product="four_in_a_row"]
-.store-v2-game-preview[data-game-type="four_in_a_row"][data-cosmetic-layer="elements"]
+.store-v2-game-preview[data-game-type="four_in_a_row"]
 .mgw-four-disc{
   width:92%;
 }
