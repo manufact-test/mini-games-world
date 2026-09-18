@@ -24,6 +24,7 @@ on:
       - 'bot/tests/Mvp19_9DominoLiveStabilityV30ContractTest.mjs'
       - 'e2e/staging/domino-live-diagnostic.spec.mjs'
       - 'e2e/staging/domino-live-stability-v30.spec.mjs'
+      - 'e2e/staging/domino-preview-animation-v44.spec.mjs'
       - 'e2e/playwright.domino-live-diagnostic.config.mjs'
       - '.github/workflows/mvp19-9-domino-live-effects.yml'
   push:
@@ -49,6 +50,7 @@ on:
       - 'bot/tests/Mvp19_9DominoLiveStabilityV30ContractTest.mjs'
       - 'e2e/staging/domino-live-diagnostic.spec.mjs'
       - 'e2e/staging/domino-live-stability-v30.spec.mjs'
+      - 'e2e/staging/domino-preview-animation-v44.spec.mjs'
       - 'e2e/playwright.domino-live-diagnostic.config.mjs'
       - '.github/workflows/mvp19-9-domino-live-effects.yml'
   workflow_dispatch:
@@ -85,6 +87,7 @@ jobs:
           node --check bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs
           node --check bot/tests/Mvp19_9DominoLiveStabilityV30ContractTest.mjs
           node --check e2e/staging/domino-live-stability-v30.spec.mjs
+          node --check e2e/staging/domino-preview-animation-v44.spec.mjs
           node --check e2e/playwright.domino-live-diagnostic.config.mjs
           php -l app/v110.php
           php -l app/runtime/client/version-manifest.php
