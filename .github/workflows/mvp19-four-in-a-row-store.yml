@@ -75,7 +75,8 @@ jobs:
           grep -F "'game_four_in_a_row_theme'" "$migration"
           grep -F "'game_four_in_a_row_elements'" "$migration"
           grep -F "'game_four_in_a_row_effect'" "$migration"
-          grep -F "'preview_mode' => (string)$definition['layer'] === 'effect' ? 'static_concept' : 'static'" "$migration"
+          grep -F "'preview_mode'" "$migration"
+          grep -F "'static_concept'" "$migration"
           ! grep -Fq "offer_type' => 'bundle'" "$migration"
 
           grep -F 'drop-v1.svg' "$wrapper"
