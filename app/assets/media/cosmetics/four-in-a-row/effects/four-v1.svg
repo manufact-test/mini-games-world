@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" role="img" aria-label="Линия четырёх — статичный концепт">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#141a2b"/><stop offset="1" stop-color="#080b13"/></linearGradient>
+  <linearGradient id="board" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#26384e"/><stop offset="1" stop-color="#111b28"/></linearGradient>
+  <radialGradient id="yellow" cx=".34" cy=".28"><stop offset="0" stop-color="#fffbd8"/><stop offset=".2" stop-color="#ffe983"/><stop offset=".65" stop-color="#f2bd29"/><stop offset="1" stop-color="#9b6500"/></radialGradient>
+  <filter id="g"><feGaussianBlur stdDeviation="6"/></filter>
+</defs>
+<rect width="320" height="200" rx="22" fill="url(#bg)"/>
+<rect x="48" y="35" width="224" height="137" rx="16" fill="url(#board)" stroke="#a7bdd6" stroke-opacity=".24"/>
+<g fill="#080d17">
+  <circle cx="68" cy="55" r="10"/><circle cx="99" cy="55" r="10"/><circle cx="130" cy="55" r="10"/><circle cx="161" cy="55" r="10"/><circle cx="192" cy="55" r="10"/><circle cx="223" cy="55" r="10"/><circle cx="254" cy="55" r="10"/>
+  <circle cx="68" cy="84" r="10"/><circle cx="99" cy="84" r="10"/><circle cx="130" cy="84" r="10"/><circle cx="161" cy="84" r="10"/><circle cx="192" cy="84" r="10"/><circle cx="223" cy="84" r="10"/><circle cx="254" cy="84" r="10"/>
+  <circle cx="68" cy="113" r="10"/><circle cx="99" cy="113" r="10"/><circle cx="130" cy="113" r="10"/><circle cx="161" cy="113" r="10"/><circle cx="192" cy="113" r="10"/><circle cx="223" cy="113" r="10"/><circle cx="254" cy="113" r="10"/>
+  <circle cx="68" cy="142" r="10"/><circle cx="99" cy="142" r="10"/><circle cx="130" cy="142" r="10"/><circle cx="161" cy="142" r="10"/><circle cx="192" cy="142" r="10"/><circle cx="223" cy="142" r="10"/><circle cx="254" cy="142" r="10"/>
+</g>
+<path d="M99 142L130 113L161 84L192 55" stroke="#ffd958" stroke-width="11" opacity=".28" stroke-linecap="round" filter="url(#g)"/>
+<path d="M99 142L130 113L161 84L192 55" stroke="#fff2a1" stroke-width="3.5" opacity=".94" stroke-linecap="round"/>
+<g fill="url(#yellow)" stroke="#fff4af" stroke-opacity=".62">
+  <circle cx="99" cy="142" r="12"/><circle cx="130" cy="113" r="12"/><circle cx="161" cy="84" r="12"/><circle cx="192" cy="55" r="12"/>
+</g>
+<g fill="none" stroke="#ffd653" stroke-width="1.5" opacity=".55">
+  <circle cx="99" cy="142" r="17"/><circle cx="130" cy="113" r="17"/><circle cx="161" cy="84" r="17"/><circle cx="192" cy="55" r="17"/>
+</g>
+</svg>
