@@ -50,7 +50,7 @@ assert.ok(profile.includes('fourInARowPreviewMarkup(layer, variant)'), 'Profile 
 assert.ok(profile.includes("drop:'Лазерное наведение'") && profile.includes("four:'Энергетический импульс'") && profile.includes("'victory-wave':'Победный овердрайв'"), 'Profile cards and equip sheet must use player-facing effect names');
 assert.ok(store.includes('upgradePurchaseCopy(root)') && store.includes('.store-v2-confirm-copy strong'), 'Store purchase sheet must use the same shared preview/name presentation as Profile');
 assert.ok(profile.includes("store-screen-four-in-a-row-store-v1.js?v=10&four_store=live-previews-v2&geometry=7x6&fx=contained-v2&effect2=random-chain-v4&victory=overdrive-v2&export=profile-preview-v3&copy=compact-v3"), 'Profile must request the shared accepted animated Four preview primitive and player-facing copy');
-assert.ok(profile.includes("four_profile=spacing-v2") || profile.includes("four_profile=live-previews-v1"), 'Four Profile must retain its dedicated presentation identity');
+assert.ok(profile.includes("four_profile=live-previews-v2"), 'Four Profile must publish the corrected animated-preview presentation identity');
 assert.ok(profile.includes("store-cosmetics-v1.css?v=6&four_store=live-previews-v2&geometry=7x6&fx=contained-v2"), 'Profile must load the accepted animated Four Store/Profile preview CSS');
 assert.ok(!profile.includes('gameAction('), 'Four Profile must never own gameplay actions');
 assert.ok(!profile.includes('last_move'), 'Four Profile must not implement live move triggers');
