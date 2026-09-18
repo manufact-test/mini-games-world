@@ -1,8 +1,8 @@
 import { api } from '../api/client.js?v=34';
 
-const API_HOOK = Symbol.for('mgw.store.four-in-a-row.live-previews-v2');
+const API_HOOK = Symbol.for('mgw.store.four-in-a-row.live-previews-v3');
 const INSTALL_KEY = '__mgwFourInARowStoreStaticV1Installed';
-const STYLE_MARK = 'four-store-live-previews-v2';
+const STYLE_MARK = 'four-store-live-previews-v3';
 
 export function installFourInARowStorePresentation(){
   ensureStyles();
@@ -36,7 +36,7 @@ export function upgradeFourInARowStorePresentation(){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/four-in-a-row/store-cosmetics-v1.css?v=6&four_store=live-previews-v2&geometry=7x6&fx=contained-v2', import.meta.url).href;
+  const href = new URL('../../css/games/four-in-a-row/store-cosmetics-v1.css?v=7&four_store=live-previews-v3&geometry=7x6&fx=victory-test-exact-v3', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-four-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -148,7 +148,7 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = safeVariant(preview.dataset.cosmeticVariant || 'blue');
-    const signature = `${layer}:${variant}:live-preview-v2`;
+    const signature = `${layer}:${variant}:live-preview-v3`;
     if (preview.dataset.mgwFourPreview === signature) return;
     preview.dataset.mgwFourPreview = signature;
     preview.dataset.mgwFourPreviewMode = layer === 'effect' ? 'animated-live-parity' : 'static';
@@ -213,10 +213,10 @@ function effectSceneMarkup(variant){
 
   if (safe === 'drop') occupied.delete(17);
   if (safe === 'victory-wave') {
-    [23,24,25,26].forEach(cell => occupied.set(cell,'red'));
+    [22,23,24,25].forEach(cell => occupied.set(cell,'red'));
   }
 
-  const winCells = new Set([23,24,25,26]);
+  const winCells = new Set([22,23,24,25]);
   const cells = Array.from({ length:42 }, (_, index) => {
     const color = occupied.get(index);
     const extra = safe === 'drop' && index === 17
@@ -237,7 +237,7 @@ function effectSceneMarkup(variant){
     return `<i class="mgw-four-preview mgw-four-effect-preview effect-four" aria-hidden="true"><span class="mgw-four-fx-stage"><span class="mgw-four-fx-board-shell">${board}<svg class="mgw-four-preview-pulse-svg" viewBox="0 0 7 6" preserveAspectRatio="none"><path class="b1" pathLength="1" d="M3.5 2.5 L2.95 2.28 L2.5 2.5"></path><path class="b2" pathLength="1" d="M3.5 2.5 L4.05 2.18 L4.5 2.5"></path><path class="b3" pathLength="1" d="M3.5 2.5 L3.55 3.02 L3.5 3.5"></path><path class="b4" pathLength="1" d="M3.5 2.5 L2.7 3.22 L1.5 3.5"></path><path class="b5" pathLength="1" d="M3.5 2.5 L4.65 2.7 L5.5 2.5"></path><circle class="node-glow" cx="3.5" cy="2.5" r=".55"></circle><circle class="node-core" cx="3.5" cy="2.5" r=".13"></circle></svg></span></span></i>`;
   }
 
-  return `<i class="mgw-four-preview mgw-four-effect-preview effect-victory-wave" aria-hidden="true"><span class="mgw-four-fx-stage"><span class="mgw-four-fx-board-shell">${board}<span class="mgw-four-preview-victory-shade"></span><svg class="mgw-four-preview-victory-svg" viewBox="0 0 7 6" preserveAspectRatio="none"><path class="rail glow" pathLength="1" d="M2.5 3.5 L3.5 3.5 L4.5 3.5 L5.5 3.5"></path><path class="rail color" pathLength="1" d="M2.5 3.5 L3.5 3.5 L4.5 3.5 L5.5 3.5"></path><path class="rail core" pathLength="1" d="M2.5 3.5 L3.5 3.5 L4.5 3.5 L5.5 3.5"></path><path class="rail scan" pathLength="1" d="M2.5 3.5 L3.5 3.5 L4.5 3.5 L5.5 3.5"></path><rect class="node n1" x="2.31" y="3.31" width=".38" height=".38" rx=".05" transform="rotate(45 2.5 3.5)"></rect><rect class="node n2" x="3.31" y="3.31" width=".38" height=".38" rx=".05" transform="rotate(45 3.5 3.5)"></rect><rect class="node n3" x="4.31" y="3.31" width=".38" height=".38" rx=".05" transform="rotate(45 4.5 3.5)"></rect><rect class="node n4" x="5.31" y="3.31" width=".38" height=".38" rx=".05" transform="rotate(45 5.5 3.5)"></rect></svg><span class="mgw-four-preview-victory-prism"><b class="shell"></b><b class="core"></b><b class="cut cut-a"></b><b class="cut cut-b"></b></span><span class="mgw-four-preview-victory-blade blade-a"></span><span class="mgw-four-preview-victory-blade blade-b"></span><span class="mgw-four-preview-victory-shards">${Array.from({length:12},(_,index)=>`<i class="s${index + 1}"></i>`).join('')}</span></span></span></i>`;
+  return `<i class="mgw-four-preview mgw-four-effect-preview effect-victory-wave" aria-hidden="true"><span class="mgw-four-fx-stage"><span class="mgw-four-fx-board-shell">${board}<span class="mgw-four-preview-victory-shade"></span><svg class="mgw-four-preview-victory-svg" viewBox="0 0 7 6" preserveAspectRatio="none"><path class="rail glow" pathLength="1" d="M1.5 3.5 L2.5 3.5 L3.5 3.5 L4.5 3.5"></path><path class="rail color" pathLength="1" d="M1.5 3.5 L2.5 3.5 L3.5 3.5 L4.5 3.5"></path><path class="rail core" pathLength="1" d="M1.5 3.5 L2.5 3.5 L3.5 3.5 L4.5 3.5"></path><path class="rail scan" pathLength="1" d="M1.5 3.5 L2.5 3.5 L3.5 3.5 L4.5 3.5"></path><rect class="node n1" x="1.355" y="3.355" width=".29" height=".29" rx=".04" transform="rotate(45 1.5 3.5)"></rect><rect class="node n2" x="2.355" y="3.355" width=".29" height=".29" rx=".04" transform="rotate(45 2.5 3.5)"></rect><rect class="node n3" x="3.355" y="3.355" width=".29" height=".29" rx=".04" transform="rotate(45 3.5 3.5)"></rect><rect class="node n4" x="4.355" y="3.355" width=".29" height=".29" rx=".04" transform="rotate(45 4.5 3.5)"></rect></svg><span class="mgw-four-preview-victory-prism"><b class="shell"></b><b class="core"></b><b class="cut cut-a"></b><b class="cut cut-b"></b></span><span class="mgw-four-preview-victory-blade blade-a"></span><span class="mgw-four-preview-victory-blade blade-b"></span><span class="mgw-four-preview-victory-shards">${Array.from({length:12},(_,index)=>`<i class="s${index + 1}"></i>`).join('')}</span></span></span></i>`;
 }
 function boardMarkup(modeClass, layer){
   const occupied = new Map([
