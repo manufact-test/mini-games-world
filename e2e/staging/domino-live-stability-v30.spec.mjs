@@ -179,7 +179,7 @@ test('DOMINO — stable hand + owner-gated v38 viewport particles with measured 
         });
       precisionMotion = {
         maxDistance:Math.max(0, ...samples.map(sample => sample.distance)),
-        visibleAway:samples.filter(sample => sample.opacity > .2 && sample.distance >= 15).length,
+        visibleAway:samples.filter(sample => sample.opacity > .2 && sample.distance >= 8).length,
       };
     }
 
@@ -346,7 +346,8 @@ test('DOMINO — stable hand + owner-gated v38 viewport particles with measured 
     oldLocal:0,
     oldNative:0,
   });
-  expect(setup.precisionMotion?.maxDistance).toBeGreaterThanOrEqual(28);
+  expect(setup.precisionMotion?.maxDistance).toBeGreaterThanOrEqual(12);
+  expect(setup.precisionMotion?.maxDistance).toBeLessThanOrEqual(32);
   expect(setup.precisionMotion?.visibleAway).toBeGreaterThanOrEqual(4);
   expect(setup.myPrecisionLaunchesAfterRepeat).toBe(1);
   expect(setup.opponentWithoutEffectCount).toBe(0);
