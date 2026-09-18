@@ -95,28 +95,43 @@ async function probePreviewMotion(page) {
         animationPlayState:moverStyle.animationPlayState,
         left:moverStyle.left,
         top:moverStyle.top,
-        opacity:moverStyle.opacity,
+        opacity:Number.parseFloat(moverStyle.opacity || '0'),
         transform:moverStyle.transform,
       };
     });
 
-    await new Promise(resolve => setTimeout(resolve, 950));
-    const first = snapshot();
-    await new Promise(resolve => setTimeout(resolve, 700));
-    const second = snapshot();
+    const frames = [];
+    for (let index = 0; index < 13; index += 1) {
+      await new Promise(resolve => setTimeout(resolve, 350));
+      frames.push(snapshot());
+    }
 
-    return first.map((a, index) => {
-      const b = second[index];
+    return entries.map((entry, entryIndex) => {
+      const samples = frames.map(frame => frame[entryIndex]);
+      const states = samples.map(sample => [
+        sample.left,
+        sample.top,
+        sample.opacity.toFixed(3),
+        sample.transform,
+      ].join('|'));
+      const visibleSamples = samples.filter(sample => sample.opacity >= .12).length;
+      const maxOpacity = Math.max(...samples.map(sample => sample.opacity));
       return {
-        surface:a.surface,
-        variant:a.variant,
-        component:a.component,
-        stageRatio:a.stageRatio,
-        animationName:a.animationName,
-        animationPlayState:a.animationPlayState,
-        moved:a.left !== b.left || a.top !== b.top || a.opacity !== b.opacity || a.transform !== b.transform,
-        first:{ left:a.left, top:a.top, opacity:a.opacity, transform:a.transform },
-        second:{ left:b.left, top:b.top, opacity:b.opacity, transform:b.transform },
+        surface:entry.surface,
+        variant:entry.variant,
+        component:samples[0]?.component || '',
+        stageRatio:samples[0]?.stageRatio || 0,
+        animationName:samples[0]?.animationName || '',
+        animationPlayState:samples[0]?.animationPlayState || '',
+        distinctStates:new Set(states).size,
+        visibleSamples,
+        maxOpacity,
+        samples:samples.map(sample => ({
+          left:sample.left,
+          top:sample.top,
+          opacity:sample.opacity,
+          transform:sample.transform,
+        })),
       };
     });
   });
@@ -136,7 +151,9 @@ for (const reducedMotion of ['no-preference','reduce']) {
         expect(entry.stageRatio, `${entry.surface}/${entry.variant} canonical ratio`).toBeLessThan(1.63);
         expect(entry.animationName, `${entry.surface}/${entry.variant} animation name`).toContain('mgw-domino-v44-');
         expect(entry.animationPlayState, `${entry.surface}/${entry.variant} play state`).toBe('running');
-        expect(entry.moved, `${entry.surface}/${entry.variant} must visibly change between frames`).toBe(true);
+        expect(entry.distinctStates, `${entry.surface}/${entry.variant} must change across a full animation cycle`).toBeGreaterThanOrEqual(3);
+        expect(entry.visibleSamples, `${entry.surface}/${entry.variant} must become visibly non-transparent`).toBeGreaterThanOrEqual(1);
+        expect(entry.maxOpacity, `${entry.surface}/${entry.variant} must reach readable opacity`).toBeGreaterThanOrEqual(.35);
       }
     });
   });
