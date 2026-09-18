@@ -15,7 +15,7 @@ async function probePreviewMotion(page) {
   expect(response?.ok()).toBe(true);
 
   return await page.evaluate(async () => {
-    const { dominoPreviewMarkup } = await import('./assets/js/screens/store-screen-domino-store-v1.js?v=13&mvp19_9=domino-preview-polish-v47');
+    const { dominoPreviewMarkup } = await import('./assets/js/screens/store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48');
 
     const waitForSheet = async selector => {
       const link = document.querySelector(selector);
@@ -76,10 +76,12 @@ async function probePreviewMotion(page) {
         const preview = host.querySelector('.store-v2-game-preview');
         const stage = host.querySelector('.mgw-domino-live-v44-stage');
         const mover = host.querySelector(selectors[variant]);
+        const faces = [...host.querySelectorAll('.mgw-domino-v48-face[data-mgw-domino-face="svg-v1"]')];
+        const legacyHalves = host.querySelectorAll('.mgw-domino-live-v44-stage .mgw-domino-v44-tile .mgw-domino-preview-half');
         if (!(preview instanceof HTMLElement) || !(stage instanceof HTMLElement) || !(mover instanceof HTMLElement)) {
           throw new Error(`Missing v44 preview nodes for ${surface.id}/${variant}`);
         }
-        entries.push({ surface:surface.id, variant, preview, stage, mover });
+        entries.push({ surface:surface.id, variant, preview, stage, mover, faceCount:faces.length, legacyHalfCount:legacyHalves.length });
       });
     });
 
@@ -120,6 +122,8 @@ async function probePreviewMotion(page) {
         surface:entry.surface,
         variant:entry.variant,
         component:samples[0]?.component || '',
+        faceCount:entry.faceCount,
+        legacyHalfCount:entry.legacyHalfCount,
         stageRatio:samples[0]?.stageRatio || 0,
         animationName:samples[0]?.animationName || '',
         animationPlayState:samples[0]?.animationPlayState || '',
@@ -138,15 +142,17 @@ async function probePreviewMotion(page) {
 }
 
 for (const reducedMotion of ['no-preference','reduce']) {
-  test.describe(`DOMINO PREVIEW v47 motion — ${reducedMotion}`, () => {
+  test.describe(`DOMINO PREVIEW v48 motion — ${reducedMotion}`, () => {
     test.use({ viewport:{ width:390, height:700 }, reducedMotion });
 
     test('Store/Profile/detail use one moving component for all three effects', async ({ page }) => {
       const result = await probePreviewMotion(page);
-      console.log(`DOMINO_PREVIEW_V47_${reducedMotion.replace('-', '_').toUpperCase()}=${JSON.stringify(result)}`);
+      console.log(`DOMINO_PREVIEW_V48_${reducedMotion.replace('-', '_').toUpperCase()}=${JSON.stringify(result)}`);
       expect(result).toHaveLength(9);
       for (const entry of result) {
         expect(entry.component, `${entry.surface}/${entry.variant} component`).toBe('v44');
+        expect(entry.faceCount, `${entry.surface}/${entry.variant} SVG face count`).toBe(entry.variant === 'precision-drop' ? 3 : (entry.variant === 'chain-finale' ? 5 : 1));
+        expect(entry.legacyHalfCount, `${entry.surface}/${entry.variant} legacy half count`).toBe(0);
         expect(entry.stageRatio, `${entry.surface}/${entry.variant} canonical ratio`).toBeGreaterThan(1.57);
         expect(entry.stageRatio, `${entry.surface}/${entry.variant} canonical ratio`).toBeLessThan(1.63);
         expect(entry.animationName, `${entry.surface}/${entry.variant} animation name`).toContain('mgw-domino-v44-');
