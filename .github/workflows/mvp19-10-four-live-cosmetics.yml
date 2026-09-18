@@ -6,7 +6,7 @@ on:
     paths:
       - 'app/assets/js/games/four-in-a-row/renderer-cosmetics-v1.js'
       - 'app/assets/css/games/four-in-a-row/live-cosmetics-v1.css'
-      - 'app/assets/js/screens/game-screen.js'
+      - 'app/assets/js/screens/game-screen-v102.js'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/Mvp19_10FourInARowLiveCosmeticsContractTest.mjs'
@@ -45,7 +45,7 @@ jobs:
       - name: Syntax checks
         run: |
           node --check app/assets/js/games/four-in-a-row/renderer-cosmetics-v1.js
-          node --check app/assets/js/screens/game-screen.js
+          node --check app/assets/js/screens/game-screen-v102.js
           node --check bot/tests/Mvp19_10FourInARowLiveCosmeticsContractTest.mjs
           php -l app/runtime/client/version-manifest.php
           php -l bot/helpers/WebAppLaunchUrl.php
