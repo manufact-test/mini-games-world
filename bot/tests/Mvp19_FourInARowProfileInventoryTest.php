@@ -71,6 +71,6 @@ $assertSame(null, $snapshot['equipped']['game_four_in_a_row_effect'] ?? null, 'P
 
 $profileApiSource = (string)file_get_contents($root . '/bot/profile-v2.php');
 $assertTrue(str_contains($profileApiSource, '(new ProductInventoryService($database))->snapshot($mgwId)'), 'Profile API must return canonical ProductInventoryService snapshot');
-$assertTrue(str_contains($profileApiSource, "'inventory'=>$inventory"), 'Profile API response must publish inventory to the client');
+$assertTrue(str_contains($profileApiSource, "'inventory'=>\$inventory"), 'Profile API response must publish inventory to the client');
 
 echo "Four in a Row Profile inventory contract passed ({$assertions} assertions).\n";
