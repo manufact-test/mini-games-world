@@ -143,6 +143,13 @@ $assertTrue(str_contains($cssSource, 'chessFxMoveRing') && str_contains($cssSour
 $assertTrue(str_contains($cssSource, '@media(prefers-reduced-motion:reduce)'), 'Chess cosmetics must remain reduced-motion safe');
 $assertTrue(str_contains($mainCssSource, "./games/chess/game.css?v=68"), 'Accepted main CSS must retain the Chess game stylesheet owner');
 $assertTrue(str_contains($chessCssEntrySource, "@import url('./cosmetics.css?v=1&mvp19_5=chess-cosmetics');"), 'Chess game stylesheet must compose the isolated cosmetic presentation without replacing global main CSS');
-$assertTrue(str_contains($manifestSource, "./assets/js/games/chess/renderer.js?v=70&mvp19_5=cosmetics&fx_runtime=landing-sync-v2") && str_contains($manifestSource, "main.css?v=190") && str_contains($manifestSource, "mvp19_5=chess-cosmetics"), 'Active v110 manifest must select the corrected Chess renderer and retain the accepted main stylesheet');
+$mainCssMatch = [];
+$assertTrue(
+    str_contains($manifestSource, "./assets/js/games/chess/renderer.js?v=70&mvp19_5=cosmetics&fx_runtime=landing-sync-v2")
+    && preg_match('~main\\.css\\?v=(\\d+)~', $manifestSource, $mainCssMatch) === 1
+    && (int)$mainCssMatch[1] >= 190
+    && str_contains($manifestSource, "mvp19_5=chess-cosmetics"),
+    'Active v110 manifest must select the corrected Chess renderer and stay at or beyond the accepted main stylesheet'
+);
 
 echo "MVP-19.5 Chess cosmetics contract passed ({$assertions} assertions).\n";

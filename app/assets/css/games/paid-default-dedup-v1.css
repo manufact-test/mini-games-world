@@ -1,0 +1,183 @@
+/* Paid default dedup v1.
+   Stable item ids remain unchanged; only the first paid field/element visual is
+   deliberately moved away from each game's free/default presentation. */
+
+/* ---------- CHESS: wood id -> amber/cherry premium identity ---------- */
+#gameBoard[data-game-type="chess"][data-chess-theme="wood"]{
+  background:linear-gradient(145deg,#4b141d,#21080d)!important;
+  border-color:#8d4c2f!important;
+}
+#gameBoard[data-game-type="chess"][data-chess-theme="wood"] .chess-cell.light{
+  background:
+    linear-gradient(135deg,rgba(255,247,197,.26),transparent 42%),
+    linear-gradient(145deg,#f0c36c,#cf8737)!important;
+}
+#gameBoard[data-game-type="chess"][data-chess-theme="wood"] .chess-cell.dark{
+  background:
+    linear-gradient(135deg,rgba(255,176,102,.12),transparent 45%),
+    linear-gradient(145deg,#8a2f35,#4d1723)!important;
+}
+#gameBoard[data-game-type="chess"] .chess-piece[data-chess-piece-style="wood"].white{
+  color:#ffc85f!important;
+  -webkit-text-stroke:1px #7c4215!important;
+  text-shadow:0 1px 0 #fff0a9,0 0 8px rgba(244,163,45,.22),0 3px 5px rgba(63,24,7,.58)!important;
+}
+#gameBoard[data-game-type="chess"] .chess-piece[data-chess-piece-style="wood"].black{
+  color:#7f2435!important;
+  -webkit-text-stroke:1px #2c0d15!important;
+  text-shadow:0 1px 0 rgba(255,180,96,.24),0 0 7px rgba(164,53,70,.22),0 3px 5px rgba(25,5,9,.66)!important;
+}
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="theme"][data-cosmetic-variant="wood"] .store-v2-mini-chess-board{
+  background-image:url('./chess/board-previews/amber-v2.svg')!important;
+}
+.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="elements"][data-cosmetic-variant="wood"] .store-v2-mini-chess-pieces span,
+.profile-v2-game-card[data-profile-game-cosmetic="game-chess-pieces-wood"] .store-v2-mini-marks::before,
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label="Янтарные фигуры"] .store-v2-mini-marks::before{
+  color:#f0ad3f!important;
+  -webkit-text-stroke:1px #6f3214!important;
+  text-shadow:0 1px 0 #ffe3a1,0 3px 5px rgba(54,20,5,.5)!important;
+}
+.profile-v2-game-card[data-profile-game-cosmetic="game-chess-board-wood"] .store-v2-mini-board,
+.profile-v2-game-preview-wrap .store-v2-game-preview[aria-label="Янтарная доска"] .store-v2-mini-board{
+  background:linear-gradient(145deg,#efbe62 0 48%,#762837 49% 100%)!important;
+}
+
+/* ---------- CHECKERS: wood id -> azure board, ceramic pieces ---------- */
+.checkers-surface[data-checkers-theme="wood"] .checkers-board{
+  border-color:rgba(115,225,222,.52)!important;
+  background:#103943!important;
+  box-shadow:0 16px 38px rgba(0,0,0,.26),0 0 24px rgba(58,201,206,.16)!important;
+}
+.checkers-surface[data-checkers-theme="wood"] .checkers-cell.light{
+  background:linear-gradient(145deg,#c7e7df,#91c7c1)!important;
+}
+.checkers-surface[data-checkers-theme="wood"] .checkers-cell.dark{
+  background:linear-gradient(145deg,#2d7d88,#174c58)!important;
+}
+.store-v2-game-product[data-store-game-product="checkers"] .store-v2-game-preview[data-cosmetic-layer="theme"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board,
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board{
+  border-color:rgba(115,225,222,.52)!important;
+  background:#103943!important;
+  box-shadow:0 12px 28px rgba(0,0,0,.28),0 0 22px rgba(58,201,206,.16)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board>span.light{
+  background:linear-gradient(145deg,#c7e7df,#91c7c1)!important;
+}
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="theme"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-board>span.dark{
+  background:linear-gradient(145deg,#2d7d88,#174c58)!important;
+}
+.checkers-surface[data-checkers-black-piece-style="wood"] .checkers-piece.black,
+.checkers-piece.black[data-checkers-piece-style="wood"],
+.mgw-checkers-live-fx-piece.black[data-checkers-piece-style="wood"],
+.mgw-checkers-live-fx-target.black[data-checkers-piece-style="wood"],
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-pieces>.black{
+  background:radial-gradient(circle at 31% 24%,#8de4e1 0 8%,#2d8892 30%,#15444d 76%)!important;
+  border-color:rgba(159,239,235,.38)!important;
+}
+.checkers-surface[data-checkers-white-piece-style="wood"] .checkers-piece.white,
+.checkers-piece.white[data-checkers-piece-style="wood"],
+.mgw-checkers-live-fx-piece.white[data-checkers-piece-style="wood"],
+.mgw-checkers-live-fx-target.white[data-checkers-piece-style="wood"],
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-pieces>.white,
+.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="wood"] .store-v2-mini-checkers-pieces>.king{
+  background:radial-gradient(circle at 31% 24%,#ffe5b9 0 8%,#d98c58 32%,#8f4938 78%)!important;
+  border-color:rgba(255,224,183,.42)!important;
+}
+
+/* ---------- REVERSI: green/classic ids -> azure + pearl ---------- */
+#gameBoard[data-game-type="reversi"][data-reversi-theme="green"] .reversi-board,
+.mgw-reversi-preview.theme-green .mgw-rv-board{
+  background:linear-gradient(145deg,#268da2,#125164)!important;
+  box-shadow:0 13px 30px rgba(0,0,0,.38),inset 0 0 0 2px rgba(150,239,255,.16)!important;
+}
+#gameBoard[data-game-type="reversi"][data-reversi-theme="green"] .reversi-cell,
+.mgw-reversi-preview.theme-green .mgw-rv-board>span{
+  border-right-color:rgba(7,48,61,.62)!important;
+  border-bottom-color:rgba(7,48,61,.62)!important;
+  background:linear-gradient(145deg,rgba(104,219,232,.18),rgba(15,82,101,.08))!important;
+}
+#gameBoard[data-game-type="reversi"][data-reversi-black-pieces="classic"] .reversi-disc.black,
+#gameBoard[data-game-type="reversi"][data-reversi-black-pieces="classic"] .reversi-mini-disc.black,
+.mgw-reversi-preview.pieces-classic .mgw-rv-disc.black{
+  background:radial-gradient(circle at 32% 25%,#7988ca 0 8%,#344378 30%,#10162e 76%)!important;
+  box-shadow:inset 0 0 0 1px #8695d455,0 3px 5px #0008!important;
+}
+#gameBoard[data-game-type="reversi"][data-reversi-white-pieces="classic"] .reversi-disc.white,
+#gameBoard[data-game-type="reversi"][data-reversi-white-pieces="classic"] .reversi-mini-disc.white,
+.mgw-reversi-preview.pieces-classic .mgw-rv-disc.white{
+  background:radial-gradient(circle at 31% 23%,#fff 0 8%,#f5dfe8 34%,#c994aa 100%)!important;
+  box-shadow:inset 0 0 0 1px #fff8,0 3px 5px #0005!important;
+}
+
+/* ---------- GO: wood/classic ids -> sakura board + amber stones ---------- */
+.go-surface[data-go-theme="wood"] .go-board,
+.mgw-go-preview.theme-wood .mgw-go-board{
+  background:
+    repeating-linear-gradient(4deg,rgba(104,35,42,.08) 0 1px,transparent 1px 8px),
+    repeating-linear-gradient(92deg,rgba(255,230,218,.07) 0 2px,transparent 2px 15px),
+    radial-gradient(circle at 28% 20%,rgba(255,226,211,.18),transparent 37%),
+    linear-gradient(135deg,#cf8b7f,#8f4e4a)!important;
+  border-color:#5d2d32!important;
+}
+.go-surface[data-go-theme="wood"] .go-grid-svg line,
+.mgw-go-preview.theme-wood .mgw-go-grid line{
+  stroke:#55272d!important;
+  opacity:.78!important;
+}
+.go-surface[data-go-theme="wood"] .go-star,
+.mgw-go-preview.theme-wood .mgw-go-star{
+  background:#4d2128!important;
+}
+.go-surface[data-go-stones="classic"] .go-stone.black,
+.mgw-go-preview.stones-classic .mgw-go-stone.black{
+  background:radial-gradient(circle at 31% 24%,#9f7446 0 8%,#5a3922 30%,#1a100b 78%)!important;
+  box-shadow:inset 0 0 0 1px #d0a06344,0 4px 7px #0008!important;
+}
+.go-surface[data-go-stones="classic"] .go-stone.white,
+.mgw-go-preview.stones-classic .mgw-go-stone.white{
+  background:radial-gradient(circle at 30% 23%,#fff3c4 0 9%,#f0b955 38%,#b66521 100%)!important;
+  box-shadow:inset 0 0 0 1px #fff0a666,0 4px 7px #0005!important;
+}
+
+/* ---------- DOMINO: felt/ivory ids -> burgundy table + amber tiles ---------- */
+.domino-surface[data-domino-theme="felt"] .domino-table,
+.mgw-domino-preview.theme-felt .mgw-domino-preview-table{
+  border-color:rgba(198,102,137,.48)!important;
+  background:radial-gradient(circle at 50% 47%,rgba(172,59,101,.30),transparent 58%),linear-gradient(145deg,#5b1830,#280b18)!important;
+  box-shadow:inset 0 0 30px rgba(20,0,8,.34),0 14px 34px rgba(0,0,0,.28)!important;
+}
+.mgw-domino-preview.theme-felt{
+  background:linear-gradient(145deg,#3c1122,#14060d)!important;
+}
+.domino-surface[data-domino-elements="ivory"] .domino-tile,
+.mgw-domino-preview.tiles-ivory .mgw-domino-preview-tile{
+  color:#44220b!important;
+  background:linear-gradient(155deg,#ffe7a8,#c8872c)!important;
+  border-color:#8d5c2188!important;
+  box-shadow:inset 0 0 0 1px rgba(255,245,195,.56),0 5px 10px rgba(0,0,0,.30)!important;
+}
+.mgw-domino-preview.tiles-ivory{
+  background:linear-gradient(145deg,#23180f,#0d0906)!important;
+}
+.mgw-domino-preview.tiles-ivory .mgw-domino-preview-table{
+  border-color:#8e694766!important;
+  background:radial-gradient(circle at 50% 46%,rgba(128,90,50,.18),transparent 60%),linear-gradient(145deg,#2b2016,#15100b)!important;
+}
+
+/* ---------- FOUR IN A ROW: blue/classic ids -> violet board + arcade pieces ---------- */
+.mgw-four-board-preview.theme-blue{
+  background:radial-gradient(circle at 82% 12%,rgba(191,110,255,.22),transparent 38%),linear-gradient(155deg,#21152f,#0d0915)!important;
+}
+.mgw-four-board-preview.theme-blue .mgw-four-board{
+  background:linear-gradient(180deg,#8750d5,#4c287f)!important;
+  border-color:rgba(225,177,255,.28)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 9px 20px rgba(0,0,0,.28)!important;
+}
+.mgw-four-disc.pieces-classic.red{
+  background:radial-gradient(circle at 32% 25%,#ffd5ec 0 9%,#ff78b7 34%,#b52372 100%)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),0 2px 7px rgba(255,75,158,.24)!important;
+}
+.mgw-four-disc.pieces-classic.yellow{
+  background:radial-gradient(circle at 32% 25%,#d9fdff 0 9%,#66e8f3 35%,#168ca8 100%)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.30),0 2px 7px rgba(66,220,240,.22)!important;
+}
