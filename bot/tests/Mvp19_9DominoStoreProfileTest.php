@@ -141,7 +141,7 @@ $assertTrue(str_contains($storeCss, 'aspect-ratio:8 / 5!important') && str_conta
 $assertTrue(str_contains($activeStore, 'domino_effects=polish-v47') && str_contains($activeStore, 'domino_preview=polish-v47') && str_contains($activeStore, 'domino_base=native-render-v2'), 'Active Store graph must publish v47 previews without changing the accepted base owner');
 $assertTrue(str_contains($baseStoreTarget, 'store-screen.js?v=51'), 'Base Store target must remain on the accepted cache-safe native base');
 $assertTrue(str_contains($activeProfile, 'domino_effects=polish-v47') && str_contains($activeProfile, 'domino_preview=shared-polish-v47'), 'Active Profile graph must publish v47 parity');
-$assertTrue(str_contains($dominoSource, 'store-screen-domino-store-v1.js?v=12') && str_contains($dominoCachedSource, 'store-screen-domino-store-v1.js?v=12') && str_contains($dominoProfile, 'mgw-profile-domino-parity.js?v=12'), 'Import map must cache-bust Store, cached base import and Profile to v47 sources');
+$assertTrue(str_contains($dominoSource, 'store-screen-domino-store-v1.js?v=13') && str_contains($dominoCachedSource, 'store-screen-domino-store-v1.js?v=13') && str_contains($dominoProfile, 'mgw-profile-domino-parity.js?v=13'), 'Import map must cache-bust Store, cached base import and Profile to v47 sources');
 $launchMatch = [];
 $assertTrue(preg_match('~/app/v110\.php\?v=(\d+)~', $launch, $launchMatch) === 1 && (int)$launchMatch[1] >= 1170, 'Telegram entry must publish the v15 graph');
 
