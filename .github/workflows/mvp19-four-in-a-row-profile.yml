@@ -66,6 +66,8 @@ jobs:
           set -euo pipefail
           grep -F "item.owned === true" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
           grep -F "fourInARowPreviewMarkup(layer, variant)" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
+          grep -F "store-screen-four-in-a-row-store-v1.js?v=5&four_store=static-v4&export=profile-preview-v1" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
+          grep -F "export function fourInARowPreviewMarkup(layer, variant)" app/assets/js/screens/store-screen-four-in-a-row-store-v1.js
           grep -F "mgw:cosmetic-inventory-changed" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
           grep -F "four_profile=parity-v1" app/runtime/client/version-manifest.php
           ! grep -Fq "gameAction(" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
