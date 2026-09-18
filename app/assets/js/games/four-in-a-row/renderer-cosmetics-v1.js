@@ -53,11 +53,18 @@ export function renderFourInARowSurface(args){
   const board = normalizeBoard(game?.board, columns, rows);
   const lastMove = normalizeCell(game?.last_move, columns, rows);
   const moveKey = eventSignature(game, board, lastMove);
+  const optimistic = Boolean(game?.__mgw_v100_pending_action);
   const alreadyObserved = gameId !== '' && seenMoveByGame.has(gameId);
   const previousMoveKey = gameId ? String(seenMoveByGame.get(gameId) || '') : '';
-  const newMove = Boolean(gameId && moveKey && alreadyObserved && previousMoveKey !== moveKey);
+  const newMove = Boolean(
+    gameId
+    && moveKey
+    && !optimistic
+    && alreadyObserved
+    && previousMoveKey !== moveKey
+  );
 
-  if (gameId) {
+  if (gameId && !optimistic) {
     if (!alreadyObserved) {
       seenMoveByGame.set(gameId, moveKey || '__initial__');
     } else if (moveKey) {
