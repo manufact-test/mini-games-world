@@ -14,6 +14,10 @@ on:
       - 'app/assets/css/games/domino/live-cosmetics-v2.css'
       - 'app/assets/css/games/domino/live-mobile-stability-v30.css'
       - 'app/assets/css/games/domino/live-effects-v32.css'
+      - 'app/assets/js/screens/store-screen-domino-store-v1.js'
+      - 'app/assets/js/screens/store-screen-domino-effects-v9.js'
+      - 'app/assets/js/profile/mgw-profile-domino-parity.js'
+      - 'app/assets/css/games/domino/store-effects-live-parity-v41.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs'
@@ -35,6 +39,10 @@ on:
       - 'app/assets/css/games/domino/live-cosmetics-v2.css'
       - 'app/assets/css/games/domino/live-mobile-stability-v30.css'
       - 'app/assets/css/games/domino/live-effects-v32.css'
+      - 'app/assets/js/screens/store-screen-domino-store-v1.js'
+      - 'app/assets/js/screens/store-screen-domino-effects-v9.js'
+      - 'app/assets/js/profile/mgw-profile-domino-parity.js'
+      - 'app/assets/css/games/domino/store-effects-live-parity-v41.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs'
@@ -212,6 +220,48 @@ jobs:
             if [[ "$attempt" -lt 24 ]]; then sleep 15; fi
           done
           test "$ready" = '1'
+
+      - name: Probe deployed Domino Store/Profile live-v41 preview assets
+        if: github.event_name != 'pull_request' && steps.readiness.outcome == 'success'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -f domino-preview-store-v10.js domino-preview-loader-v8.js domino-preview-live-v41.css
+
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            --retry 2 --retry-delay 2 --retry-connrefused \
+            "${MGW_STAGING_ORIGIN}/app/assets/js/screens/store-screen-domino-store-v1.js?v=10&mvp19_9=domino-live-preview-v41" \
+            --output domino-preview-store-v10.js
+
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            --retry 2 --retry-delay 2 --retry-connrefused \
+            "${MGW_STAGING_ORIGIN}/app/assets/js/screens/store-screen-domino-effects-v9.js?v=8&mvp19_9=domino-live-preview-v41" \
+            --output domino-preview-loader-v8.js
+
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 25 \
+            --retry 2 --retry-delay 2 --retry-connrefused \
+            "${MGW_STAGING_ORIGIN}/app/assets/css/games/domino/store-effects-live-parity-v41.css?v=1&mvp19_9=domino-live-preview-v41" \
+            --output domino-preview-live-v41.css
+
+          grep -F 'native:v10:live-v41' domino-preview-store-v10.js
+          grep -F 'data-mgw-domino-preview-live-v41' domino-preview-store-v10.js
+          grep -F 'data-mgw-domino-preview-particles="8"' domino-preview-store-v10.js
+          grep -F 'data-mgw-domino-preview-particles="12"' domino-preview-store-v10.js
+          grep -F 'data-mgw-domino-preview-particles="6"' domino-preview-store-v10.js
+
+          grep -F 'store-effects-live-parity-v41.css?v=1&mvp19_9=domino-live-preview-v41' domino-preview-loader-v8.js
+
+          grep -F '41-48px shard travel' domino-preview-live-v41.css
+          grep -F '@keyframes mgw-domino-v41-precision-shard' domino-preview-live-v41.css
+          grep -F 'height:.62px!important' domino-preview-live-v41.css
+          grep -F '@keyframes mgw-domino-v41-stock-spark' domino-preview-live-v41.css
+          grep -F '@keyframes mgw-domino-v41-finale-sweep' domino-preview-live-v41.css
+          grep -F '@keyframes mgw-domino-v41-finale-prism' domino-preview-live-v41.css
+
+          printf 'Hostinger Domino preview live-v41 assets verified.\n'
 
       - name: Install pinned Playwright browser
         if: github.event_name != 'pull_request' && steps.readiness.outcome == 'success'
