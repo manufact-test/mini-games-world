@@ -78,8 +78,8 @@ jobs:
           ratio='app/assets/js/profile/mgw-profile-domino-hard-ratio-v1.js'
           manifest='app/runtime/client/version-manifest.php'
 
-          grep -F "store-screen-domino-store-v1.js?v=12&mvp19_9=domino-preview-motion-v46" "$base"
-          grep -F 'native:v12:motion-v46' "$store"
+          grep -F "store-screen-domino-store-v1.js?v=13&mvp19_9=domino-preview-polish-v47" "$base"
+          grep -F 'native:v13:polish-v47' "$store"
           grep -F 'data-mgw-domino-preview-component="v44"' "$store"
           grep -F 'sceneReady' "$store"
           grep -F 'data-mgw-domino-preview-component' "$store"
@@ -105,14 +105,14 @@ jobs:
           ! grep -Fq 'top:var(--sy)!important' "$preview_component"
           grep -F 'Animated properties intentionally do NOT use !important' "$preview_component"
           grep -F 'mgw-domino-v44-finale-sweep' "$preview_component"
-          grep -F "dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=12&mvp19_9=domino-preview-motion-v46'" "$profile"
+          grep -F "dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=13&mvp19_9=domino-preview-polish-v47'" "$profile"
           grep -F 'store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions' "$profile"
-          grep -F 'store-effects-preview-component-v44.css?v=2&mvp19_9=domino-preview-motion-v46' "$profile"
+          grep -F 'store-effects-preview-component-v44.css?v=3&mvp19_9=domino-preview-polish-v47' "$profile"
           ! grep -Fq 'getBoundingClientRect' "$ratio"
           ! grep -Fq 'setTimeout' "$ratio"
-          grep -F 'domino_effects=motion-v46' "$manifest"
-          grep -F "store-screen-domino-store-v1.js?v=8&mvp19_9=domino-native-render-v8' => './assets/js/screens/store-screen-domino-store-v1.js?v=12&mvp19_9=domino-preview-motion-v46" "$manifest"
-          grep -F 'store-screen.js?v=50&intent_base=1' "$manifest"
+          grep -F 'domino_effects=polish-v47' "$manifest"
+          grep -F "store-screen-domino-store-v1.js?v=8&mvp19_9=domino-native-render-v8' => './assets/js/screens/store-screen-domino-store-v1.js?v=13&mvp19_9=domino-preview-polish-v47" "$manifest"
+          grep -F 'store-screen.js?v=51&intent_base=1' "$manifest"
           grep -F 'selector_center=instant-v1' "$manifest"
           grep -F 'ux=ready-only-history-sheet' "$manifest"
           php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1170) exit(1);'

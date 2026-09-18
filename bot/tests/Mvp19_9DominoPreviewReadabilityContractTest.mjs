@@ -29,7 +29,7 @@ expect(baseStore.includes("'precision-drop':'Яркий акцент в моме
 expect(baseStore.includes("'stock-pulse':'Эффектный выход костяшки из запаса'"), 'Stock copy must stay short and player-facing.');
 expect(baseStore.includes("'chain-finale':'Финал с каскадом падающих костяшек'"), 'Finale copy must stay short and player-facing.');
 
-expect(store.includes('native:v12:motion-v46'), 'Domino compatibility signature must publish the isolated v44 preview owner.');
+expect(store.includes('native:v13:polish-v47'), 'Domino compatibility signature must publish the isolated v44 preview owner.');
 expect(store.includes('ensureEffectStyles();') && store.includes('ensureLiveParityStyles();'), 'The Domino markup owner must load base geometry and the isolated v44 component stylesheet itself.');
 expect(store.includes('domino-premium-effects-v15-proportions'), 'The markup owner must publish the v15 stylesheet identity.');
 expect(store.includes('data-mgw-domino-preview-component="v44"'), 'Every effect scene must publish the deterministic v44 component identity.');
@@ -64,32 +64,34 @@ expect(previewComponentCss.includes('@keyframes mgw-domino-v44-precision-shard')
 expect(previewComponentCss.includes('@keyframes mgw-domino-v44-stock-spark'), 'Stock preview must own twelve off-axis particles.');
 expect(previewComponentCss.includes('@keyframes mgw-domino-v44-finale-sweep') && previewComponentCss.includes('@keyframes mgw-domino-v44-finale-prism'), 'Finale preview must own sweep/prism motion.');
 expect(previewComponentCss.includes('Animated properties intentionally do NOT use !important'), 'Preview CSS must document keyframe ownership of animated properties.');
+expect(previewComponentCss.includes('Preview-only pip geometry scales with tile size') && previewComponentCss.includes('width:clamp(1.25px,32%,3px)!important') && previewComponentCss.includes('content:none!important'), 'Effect preview pips must scale with the tile instead of inheriting the fixed 3px pseudo-pip.');
+expect(previewComponentCss.includes('Stock beam geometry is pinned to the exact source/target centers') && previewComponentCss.includes('width:60.2%!important') && previewComponentCss.includes('rotate(20deg)'), 'Stock beam/orb trajectory must share the exact source-to-target geometry.');
 expect(!previewComponentCss.includes('opacity:0!important'), 'Animated preview opacity must not be locked by !important.');
 expect(!previewComponentCss.includes('left:var(--sx)!important') && !previewComponentCss.includes('top:var(--sy)!important'), 'Animated particle positions must not be locked by !important.');
 expect(!previewComponentCss.includes('transform:rotate(27deg) scaleX(0)!important') && !previewComponentCss.includes('transform:translateX(-44%) skewX(-4deg)!important'), 'Animated beam/sweep transforms must remain keyframe-owned.');
 expect(!profileCss.includes('animation:none!important'), 'Profile CSS must not freeze Domino effect previews.');
-expect(baseStore.includes("store-screen-domino-store-v1.js?v=12&mvp19_9=domino-preview-motion-v46"), 'Base Store must directly import the fresh animated v46 preview source.');
+expect(baseStore.includes("store-screen-domino-store-v1.js?v=13&mvp19_9=domino-preview-polish-v47"), 'Base Store must directly import the fresh polished v47 preview source.');
 expect(!effectCss.includes('mgw-domino-v12-'), 'Rejected v12 choreography must stay removed.');
 expect(!effectCss.includes('repeating-conic-gradient') && !effectCss.includes('mix-blend-mode:screen') && !effectCss.includes('transform-style:preserve-3d'), 'Effects must avoid rejected generic light-show/fragile 3D language.');
 
 expect(selectorOwner.includes('selector.scrollLeft = left;') && !selectorOwner.includes("behavior:'smooth'"), 'Accepted no-jump Store selector behavior must remain intact.');
 expect(wrapper.includes("store-screen-reversi-store-v1.js?v=1&mvp19_7=store-only&review=manual-corrective-v2"), 'Accepted Reversi Store identity must remain frozen.');
 expect(correctiveLoader.includes('store-card-fill-live-pips-v5.css?v=2&mvp19_9=domino-card-fill-live-pips-v6'), 'Accepted static Domino corrective must remain active.');
-expect(effectLoader.includes('store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions') && effectLoader.includes('store-effects-preview-component-v44.css?v=2&mvp19_9=domino-preview-motion-v46'), 'Effect loader must load old base geometry first and the isolated v44 component last.');
-expect(wrapper.includes("from './store-screen-domino-store-v1.js?v=12&mvp19_9=domino-preview-motion-v46'"), 'Store wrapper must load the fresh v44 Domino preview source.');
-expect(wrapper.includes("store-screen-domino-effects-v9.js?v=10&mvp19_9=domino-preview-motion-v46"), 'Store wrapper must load the fresh v44 effect loader.');
+expect(effectLoader.includes('store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions') && effectLoader.includes('store-effects-preview-component-v44.css?v=3&mvp19_9=domino-preview-polish-v47'), 'Effect loader must load old base geometry first and the isolated v44 component last.');
+expect(wrapper.includes("from './store-screen-domino-store-v1.js?v=13&mvp19_9=domino-preview-polish-v47'"), 'Store wrapper must load the fresh v44 Domino preview source.');
+expect(wrapper.includes("store-screen-domino-effects-v9.js?v=11&mvp19_9=domino-preview-polish-v47"), 'Store wrapper must load the fresh v44 effect loader.');
 
-expect(profile.includes("dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=12&mvp19_9=domino-preview-motion-v46'"), 'Profile must reuse the same v44 Store primitive.');
-expect(profile.includes('store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions') && profile.includes('store-effects-preview-component-v44.css?v=2&mvp19_9=domino-preview-motion-v46'), 'Profile must share both base geometry and the exact v44 component stylesheet.');
+expect(profile.includes("dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=13&mvp19_9=domino-preview-polish-v47'"), 'Profile must reuse the same v44 Store primitive.');
+expect(profile.includes('store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions') && profile.includes('store-effects-preview-component-v44.css?v=3&mvp19_9=domino-preview-polish-v47'), 'Profile must share both base geometry and the exact v44 component stylesheet.');
 expect(profileCss.includes('mgw-domino-profile-tab-mark::before'), 'Profile Domino tab icon must remain accepted.');
 expect(!hardRatio.includes('getBoundingClientRect') && !hardRatio.includes('setTimeout'), 'Profile must not regain an imperative geometry owner.');
 
-expect(manifest.includes('domino_effects=motion-v46') && manifest.includes('domino_preview=motion-v46') && manifest.includes('domino_preview=shared-motion-v46'), 'Active Store/Profile graph must publish fresh v44 preview identities.');
-expect(manifest.includes("'./assets/js/screens/store-screen-domino-store-v1.js?v=1&mvp19_9=store-profile-preview-8x5-v1' => './assets/js/screens/store-screen-domino-store-v1.js?v=12&mvp19_9=domino-preview-motion-v46'"), 'Import map must publish native Domino v9.');
-expect(manifest.includes("'./assets/js/screens/store-screen-domino-store-v1.js?v=8&mvp19_9=domino-native-render-v8' => './assets/js/screens/store-screen-domino-store-v1.js?v=12&mvp19_9=domino-preview-motion-v46'"), 'Cached base Store v8 imports must be redirected to v9.');
-expect(manifest.includes("'./assets/js/profile/mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1' => './assets/js/profile/mgw-profile-domino-parity.js?v=12&mvp19_9=domino-preview-motion-v46'"), 'Profile import map must cache-bust v15 parity.');
+expect(manifest.includes('domino_effects=polish-v47') && manifest.includes('domino_preview=polish-v47') && manifest.includes('domino_preview=shared-polish-v47'), 'Active Store/Profile graph must publish fresh v44 preview identities.');
+expect(manifest.includes("'./assets/js/screens/store-screen-domino-store-v1.js?v=1&mvp19_9=store-profile-preview-8x5-v1' => './assets/js/screens/store-screen-domino-store-v1.js?v=13&mvp19_9=domino-preview-polish-v47'"), 'Import map must publish native Domino v9.');
+expect(manifest.includes("'./assets/js/screens/store-screen-domino-store-v1.js?v=8&mvp19_9=domino-native-render-v8' => './assets/js/screens/store-screen-domino-store-v1.js?v=13&mvp19_9=domino-preview-polish-v47'"), 'Cached base Store v8 imports must be redirected to v9.');
+expect(manifest.includes("'./assets/js/profile/mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1' => './assets/js/profile/mgw-profile-domino-parity.js?v=13&mvp19_9=domino-preview-polish-v47'"), 'Profile import map must cache-bust v15 parity.');
 expect(manifest.includes('selector_center=instant-v1') && manifest.includes('ux=ready-only-history-sheet'), 'Unrelated accepted Store/Home markers must stay intact.');
 const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);
 expect(launchMatch && Number(launchMatch[1]) >= 1170, 'Telegram entry must publish the Domino v15 graph.');
 
-console.log('MVP-19.9 Domino Store/Purchase/Profile v46 animated preview contract passed.');
+console.log('MVP-19.9 Domino Store/Purchase/Profile v47 polished preview contract passed.');
