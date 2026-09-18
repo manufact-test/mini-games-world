@@ -22,6 +22,10 @@ import {
   upgradeFourInARowStorePresentation,
 } from './store-screen-four-in-a-row-store-v1.js?v=11&four_store=live-previews-v3&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&export=profile-preview-v4&copy=compact-v3';
 import {
+  installBattleshipStorePresentation,
+  upgradeBattleshipStorePresentation,
+} from './store-screen-battleship-store-v1.js?v=1&mvp19_12=store-phase1&paid_default=distinct-v1';
+import {
   installPaidDefaultDedupV1,
   upgradePaidDefaultDedupV1,
 } from './store-paid-default-dedup-v1.js?v=2&paid_default=dedup-v2';
@@ -38,6 +42,7 @@ installDominoStorePresentation();
 installDominoStoreCardFillV5();
 installDominoStoreEffectsV9();
 installFourInARowStorePresentation();
+installBattleshipStorePresentation();
 installPaidDefaultDedupV1();
 
 export function initStoreScreen(){
@@ -52,6 +57,7 @@ export function initStoreScreen(){
   installDominoStoreCardFillV5();
   installDominoStoreEffectsV9();
 installFourInARowStorePresentation();
+installBattleshipStorePresentation();
 installPaidDefaultDedupV1();
   const result = initAcceptedCheckersStore();
   ensureEffectPreviewStyles();
@@ -60,6 +66,7 @@ installPaidDefaultDedupV1();
   upgradeGoStorePresentation();
   upgradeDominoStorePresentation();
   upgradeFourInARowStorePresentation();
+  upgradeBattleshipStorePresentation();
   upgradePaidDefaultDedupV1();
   return result;
 }
@@ -76,6 +83,7 @@ export async function openStoreTab(){
   installDominoStoreCardFillV5();
   installDominoStoreEffectsV9();
 installFourInARowStorePresentation();
+installBattleshipStorePresentation();
 installPaidDefaultDedupV1();
   const result = await openAcceptedCheckersStoreTab();
   ensureBoardSourceParityStyles();
@@ -86,6 +94,7 @@ installPaidDefaultDedupV1();
   upgradeGoStorePresentation();
   upgradeDominoStorePresentation();
   upgradeFourInARowStorePresentation();
+  upgradeBattleshipStorePresentation();
   upgradePaidDefaultDedupV1();
   return result;
 }
@@ -102,6 +111,7 @@ export async function openStoreSheet(){
   installDominoStoreCardFillV5();
   installDominoStoreEffectsV9();
 installFourInARowStorePresentation();
+installBattleshipStorePresentation();
 installPaidDefaultDedupV1();
   const result = await openAcceptedCheckersStoreSheet();
   ensureBoardSourceParityStyles();
@@ -112,6 +122,7 @@ installPaidDefaultDedupV1();
   upgradeGoStorePresentation();
   upgradeDominoStorePresentation();
   upgradeFourInARowStorePresentation();
+  upgradeBattleshipStorePresentation();
   upgradePaidDefaultDedupV1();
   return result;
 }
