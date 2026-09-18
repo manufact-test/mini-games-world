@@ -2,7 +2,7 @@ import {
   renderFourInARowSurface as renderBaseFourInARowSurface,
   fourInARowMeta,
   fourInARowPlayerMark,
-} from './renderer.js?v=53&base=mvp19-10-live-v10';
+} from './renderer.js?v=53&base=mvp19-10-live-v11';
 import { state } from '../../state.js?v=27';
 
 const THEME_SLOT = 'game_four_in_a_row_theme';
@@ -22,11 +22,12 @@ const DISC_VARIANTS = new Set(['classic', '3d', 'metal', 'neon']);
 const cosmeticsByGamePlayer = new Map();
 const seenMoveByGame = new Map();
 const activeEffectByGame = new Map();
+const victoryTestByGame = new Map();
 
 const EFFECT_DURATION_MS = Object.freeze({
   drop: 900,
   pulse: 1080,
-  victory: 2250,
+  victory: 3900,
 });
 
 ensureLiveStyles();
@@ -120,7 +121,7 @@ export function renderFourInARowSurface(args){
 
   if (!(container instanceof HTMLElement)) return;
 
-  container.dataset.mgwFourLiveCosmetics = 'v10';
+  container.dataset.mgwFourLiveCosmetics = 'v11';
   container.dataset.fourTheme = themeVariant;
   container.dataset.fourDiscs = discsVariant;
   container.dataset.fourEffect = viewerEffect || 'base';
@@ -140,6 +141,20 @@ export function renderFourInARowSurface(args){
 
   mountVictoryTestControl(container, game, viewerEffect, columns, rows);
 
+  const testActive = gameId ? victoryTestByGame.get(gameId) : null;
+  if (
+    testActive
+    && viewerEffect === VICTORY_ID
+    && String(game?.status || '') === 'active'
+  ) {
+    const testElapsed = Math.max(0, Date.now() - Number(testActive.startedAt || 0));
+    if (testElapsed < EFFECT_DURATION_MS.victory) {
+      container.dataset.fourActiveFx = 'victory-test';
+      mountVictoryOverdriveEffect(container, testActive, -Math.round(testElapsed));
+      return;
+    }
+    victoryTestByGame.delete(gameId);
+  }
 
   if (optimistic && viewerEffect === DROP_ID && lastMove !== null) {
     const pendingSlot = slotForCell(container, lastMove);
@@ -561,6 +576,7 @@ function mountVictoryOverdriveEffect(container, active, delayMs){
     </i>
     <i class="mgw-four-victory-blade blade-a"></i>
     <i class="mgw-four-victory-blade blade-b"></i>
+    <i class="mgw-four-victory-wave"></i>
     ${victoryShards(centerX, centerY, delayMs)}
   `;
   host.prepend(svg);
@@ -587,7 +603,7 @@ function victoryShards(centerX, centerY, delayMs){
   ];
 
   return vectors.map(([dx, dy, rot], index) => {
-    const delay = delayMs + 1320 + (index * 22);
+    const delay = delayMs + 2250 + (index * 34);
     const tone = index % 3 === 0 ? 'gold' : (index % 2 === 0 ? 'cyan' : 'magenta');
     return `<i class="mgw-four-victory-shard shard-${tone}" style="left:${centerX}px;top:${centerY}px;--mgw-four-shard-x:${dx}px;--mgw-four-shard-y:${dy}px;--mgw-four-shard-rot:${rot}deg;--mgw-four-shard-delay:${delay}ms"></i>`;
   }).join('');
@@ -597,6 +613,9 @@ function mountVictoryTestControl(container, game, viewerEffect, columns, rows){
   if (!victoryTestEnabled()) return;
   if (viewerEffect !== VICTORY_ID || String(game?.status || '') !== 'active') return;
   if (!(container instanceof HTMLElement)) return;
+
+  const gameId = String(game?.id || '');
+  if (!gameId) return;
 
   const button = document.createElement('button');
   button.type = 'button';
@@ -609,12 +628,15 @@ function mountVictoryTestControl(container, game, viewerEffect, columns, rows){
     clearVictoryPreview(container);
     void container.offsetWidth;
 
-    container.dataset.fourActiveFx = 'victory';
-    mountVictoryOverdriveEffect(container, {
+    const testState = {
       winningCells: previewVictoryCells(columns, rows),
       columns,
       rows,
-    }, 0);
+      startedAt:Date.now(),
+    };
+    victoryTestByGame.set(gameId, testState);
+    container.dataset.fourActiveFx = 'victory-test';
+    mountVictoryOverdriveEffect(container, testState, 0);
   });
   container.appendChild(button);
 }
@@ -652,16 +674,16 @@ function cellPoint(cell, columns, rows){
 
 function ensureLiveStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/four-in-a-row/live-cosmetics-v1.css?v=10&mvp19_10=live-game-v10&victory_test=restored-v1', import.meta.url).href;
+  const href = new URL('../../../css/games/four-in-a-row/live-cosmetics-v1.css?v=11&mvp19_10=live-game-v11&victory=full-finale-v2&victory_test=persistent-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-four-live-cosmetics]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v10';
+    existing.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v11';
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v10';
+  link.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v11';
   link.href = href;
   document.head.appendChild(link);
 }

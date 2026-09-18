@@ -284,7 +284,7 @@
   z-index:8;
 }
 #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-victory-cell] span{
-  animation:mgwFourVictoryDiscCharge 2.12s cubic-bezier(.16,.78,.18,1) var(--mgw-four-victory-delay,0ms) both!important;
+  animation:mgwFourVictoryDiscCharge 3.05s cubic-bezier(.16,.78,.18,1) var(--mgw-four-victory-delay,0ms) both!important;
 }
 
 .mgw-four-live-victory-fx{
@@ -303,7 +303,7 @@
   background:
     linear-gradient(90deg,rgba(5,7,15,.52),rgba(5,7,15,.08) 48%,rgba(5,7,15,.52)),
     linear-gradient(180deg,rgba(7,9,20,.14),rgba(7,9,20,.48));
-  animation:mgwFourVictoryShade 2.2s ease-out var(--mgw-four-fx-delay,0ms) both;
+  animation:mgwFourVictoryShade 3.65s ease-out var(--mgw-four-fx-delay,0ms) both;
 }
 
 svg.mgw-four-victory-rail{
@@ -327,19 +327,19 @@ path.mgw-four-victory-rail.rail-glow{
   stroke:rgba(92,233,255,.42);
   stroke-width:12;
   filter:drop-shadow(0 0 7px rgba(89,230,255,.64));
-  animation:mgwFourVictoryRailGlow 1.55s cubic-bezier(.12,.72,.16,1) calc(var(--mgw-four-fx-delay,0ms) + 360ms) both;
+  animation:mgwFourVictoryRailGlow 2.05s cubic-bezier(.12,.72,.16,1) calc(var(--mgw-four-fx-delay,0ms) + 460ms) both;
 }
 path.mgw-four-victory-rail.rail-color{
   stroke:#d46cff;
   stroke-width:6;
   filter:drop-shadow(0 0 4px rgba(220,90,255,.66));
-  animation:mgwFourVictoryRailColor 1.45s cubic-bezier(.12,.72,.16,1) calc(var(--mgw-four-fx-delay,0ms) + 430ms) both;
+  animation:mgwFourVictoryRailColor 1.95s cubic-bezier(.12,.72,.16,1) calc(var(--mgw-four-fx-delay,0ms) + 540ms) both;
 }
 path.mgw-four-victory-rail.rail-core{
   stroke:#fff0a8;
   stroke-width:2.4;
   filter:drop-shadow(0 0 3px rgba(255,240,168,.9));
-  animation:mgwFourVictoryRailCore 1.35s cubic-bezier(.12,.72,.16,1) calc(var(--mgw-four-fx-delay,0ms) + 500ms) both;
+  animation:mgwFourVictoryRailCore 1.85s cubic-bezier(.12,.72,.16,1) calc(var(--mgw-four-fx-delay,0ms) + 620ms) both;
 }
 path.mgw-four-victory-rail.rail-scan{
   stroke:#ffffff;
@@ -348,7 +348,7 @@ path.mgw-four-victory-rail.rail-scan{
   stroke-dashoffset:1;
   opacity:0;
   filter:drop-shadow(0 0 5px rgba(255,255,255,.9));
-  animation:mgwFourVictoryRailScan 1.08s linear calc(var(--mgw-four-fx-delay,0ms) + 840ms) both;
+  animation:mgwFourVictoryRailScan 1.5s linear calc(var(--mgw-four-fx-delay,0ms) + 1040ms) both;
 }
 
 .mgw-four-victory-node-group{
@@ -362,7 +362,7 @@ path.mgw-four-victory-rail.rail-scan{
   transform-box:fill-box;
   transform-origin:center;
   filter:drop-shadow(0 0 5px rgba(255,211,75,.72));
-  animation:mgwFourVictoryNodeLock 1.3s cubic-bezier(.18,.78,.2,1) var(--mgw-four-node-delay,0ms) both;
+  animation:mgwFourVictoryNodeLock 2.05s cubic-bezier(.18,.78,.2,1) var(--mgw-four-node-delay,0ms) both;
 }
 
 .mgw-four-victory-prism{
@@ -370,11 +370,11 @@ path.mgw-four-victory-rail.rail-scan{
   z-index:7;
   left:var(--mgw-four-victory-x,50%);
   top:var(--mgw-four-victory-y,50%);
-  width:54px;
-  height:54px;
+  width:62px;
+  height:62px;
   transform:translate(-50%,-50%);
   pointer-events:none;
-  animation:mgwFourVictoryPrism 1.28s cubic-bezier(.16,.8,.18,1) calc(var(--mgw-four-fx-delay,0ms) + 980ms) both;
+  animation:mgwFourVictoryPrism 1.55s cubic-bezier(.16,.8,.18,1) calc(var(--mgw-four-fx-delay,0ms) + 1580ms) both;
 }
 .mgw-four-victory-prism > b{
   position:absolute;
@@ -415,7 +415,7 @@ path.mgw-four-victory-rail.rail-scan{
   z-index:6;
   left:var(--mgw-four-victory-x,50%);
   top:var(--mgw-four-victory-y,50%);
-  width:78%;
+  width:86%;
   height:3px;
   transform-origin:center;
   pointer-events:none;
@@ -424,10 +424,10 @@ path.mgw-four-victory-rail.rail-scan{
   box-shadow:0 0 7px rgba(122,236,255,.6);
 }
 .mgw-four-victory-blade.blade-a{
-  animation:mgwFourVictoryBladeA .82s cubic-bezier(.16,.76,.18,1) calc(var(--mgw-four-fx-delay,0ms) + 1210ms) both;
+  animation:mgwFourVictoryBladeA 1.18s cubic-bezier(.16,.76,.18,1) calc(var(--mgw-four-fx-delay,0ms) + 2020ms) both;
 }
 .mgw-four-victory-blade.blade-b{
-  animation:mgwFourVictoryBladeB .82s cubic-bezier(.16,.76,.18,1) calc(var(--mgw-four-fx-delay,0ms) + 1290ms) both;
+  animation:mgwFourVictoryBladeB 1.18s cubic-bezier(.16,.76,.18,1) calc(var(--mgw-four-fx-delay,0ms) + 2140ms) both;
 }
 
 .mgw-four-victory-shard{
@@ -441,7 +441,7 @@ path.mgw-four-victory-rail.rail-scan{
   opacity:0;
   transform-origin:center;
   background:#fff;
-  animation:mgwFourVictoryShard .82s cubic-bezier(.1,.72,.18,1) var(--mgw-four-shard-delay,0ms) both;
+  animation:mgwFourVictoryShard 1.15s cubic-bezier(.1,.72,.18,1) var(--mgw-four-shard-delay,0ms) both;
 }
 .mgw-four-victory-shard.shard-cyan{
   background:#8bf5ff;
@@ -454,6 +454,25 @@ path.mgw-four-victory-rail.rail-scan{
 .mgw-four-victory-shard.shard-gold{
   background:#ffe172;
   box-shadow:0 0 6px rgba(255,217,94,.78);
+}
+
+.mgw-four-victory-wave{
+  position:absolute;
+  z-index:5;
+  left:var(--mgw-four-victory-x,50%);
+  top:var(--mgw-four-victory-y,50%);
+  width:42px;
+  height:42px;
+  margin:-21px 0 0 -21px;
+  border:3px solid rgba(255,232,132,.92);
+  border-radius:50%;
+  pointer-events:none;
+  opacity:0;
+  box-shadow:
+    0 0 10px rgba(255,232,132,.72),
+    0 0 24px rgba(105,235,255,.44),
+    inset 0 0 10px rgba(226,104,255,.32);
+  animation:mgwFourVictoryWave 1.35s cubic-bezier(.1,.72,.14,1) calc(var(--mgw-four-fx-delay,0ms) + 2180ms) both;
 }
 
 @keyframes mgwFourDropDestination{
@@ -592,16 +611,18 @@ path.mgw-four-victory-rail.rail-scan{
 }
 @keyframes mgwFourVictoryDiscCharge{
   0%{transform:scale(.92);filter:brightness(1) saturate(1)}
-  18%{transform:scale(1.04);filter:brightness(1.45) saturate(1.12)}
-  34%{transform:scale(1.14);filter:brightness(2.1) saturate(.92);box-shadow:0 0 0 3px rgba(255,227,112,.96),0 0 18px rgba(255,216,78,.72),0 0 28px rgba(110,236,255,.42)}
-  55%{transform:scale(1.02);filter:brightness(1.46);box-shadow:0 0 0 2px rgba(117,238,255,.82),0 0 18px rgba(214,101,255,.54)}
-  72%{transform:scale(1.08);filter:brightness(1.72)}
+  12%{transform:scale(1.04);filter:brightness(1.45) saturate(1.12)}
+  24%{transform:scale(1.14);filter:brightness(2.1) saturate(.92);box-shadow:0 0 0 3px rgba(255,227,112,.96),0 0 18px rgba(255,216,78,.72),0 0 28px rgba(110,236,255,.42)}
+  46%{transform:scale(1.02);filter:brightness(1.46);box-shadow:0 0 0 2px rgba(117,238,255,.82),0 0 18px rgba(214,101,255,.54)}
+  68%{transform:scale(1.08);filter:brightness(1.72)}
+  86%{transform:scale(1.04);filter:brightness(1.48)}
   100%{transform:scale(1);filter:brightness(1.08);box-shadow:0 0 0 2px rgba(255,226,108,.46),0 0 10px rgba(106,232,255,.28)}
 }
 @keyframes mgwFourVictoryShade{
   0%{opacity:0}
-  12%{opacity:.72}
-  72%{opacity:.56}
+  9%{opacity:.72}
+  76%{opacity:.58}
+  92%{opacity:.42}
   100%{opacity:0}
 }
 @keyframes mgwFourVictoryRailGlow{
@@ -637,28 +658,39 @@ path.mgw-four-victory-rail.rail-scan{
 }
 @keyframes mgwFourVictoryPrism{
   0%{opacity:0;transform:translate(-50%,-50%) scale(.18) rotate(-35deg)}
-  24%{opacity:1;transform:translate(-50%,-50%) scale(1.18) rotate(0)}
-  48%{transform:translate(-50%,-50%) scale(.94) rotate(8deg)}
-  68%{opacity:1;transform:translate(-50%,-50%) scale(1.1) rotate(0)}
-  100%{opacity:0;transform:translate(-50%,-50%) scale(1.34) rotate(12deg)}
+  16%{opacity:1;transform:translate(-50%,-50%) scale(1.2) rotate(0)}
+  38%{opacity:1;transform:translate(-50%,-50%) scale(.96) rotate(8deg)}
+  68%{opacity:1;transform:translate(-50%,-50%) scale(1.12) rotate(0)}
+  84%{opacity:.96;transform:translate(-50%,-50%) scale(1.06) rotate(4deg)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.4) rotate(12deg)}
 }
 @keyframes mgwFourVictoryBladeA{
   0%{opacity:0;transform:translate(-50%,-50%) rotate(28deg) scaleX(.08)}
-  24%{opacity:1}
-  72%{opacity:.9;transform:translate(-50%,-50%) rotate(28deg) scaleX(1)}
+  16%{opacity:1}
+  58%{opacity:.96;transform:translate(-50%,-50%) rotate(28deg) scaleX(1)}
+  82%{opacity:.84;transform:translate(-50%,-50%) rotate(28deg) scaleX(1.02)}
   100%{opacity:0;transform:translate(-50%,-50%) rotate(28deg) scaleX(1.08)}
 }
 @keyframes mgwFourVictoryBladeB{
   0%{opacity:0;transform:translate(-50%,-50%) rotate(-28deg) scaleX(.08)}
-  24%{opacity:1}
-  72%{opacity:.9;transform:translate(-50%,-50%) rotate(-28deg) scaleX(1)}
+  16%{opacity:1}
+  58%{opacity:.96;transform:translate(-50%,-50%) rotate(-28deg) scaleX(1)}
+  82%{opacity:.84;transform:translate(-50%,-50%) rotate(-28deg) scaleX(1.02)}
   100%{opacity:0;transform:translate(-50%,-50%) rotate(-28deg) scaleX(1.08)}
 }
 @keyframes mgwFourVictoryShard{
   0%{opacity:0;transform:translate(0,0) rotate(var(--mgw-four-shard-rot,0deg)) scale(.3)}
-  18%{opacity:1}
-  76%{opacity:.94}
-  100%{opacity:0;transform:translate(var(--mgw-four-shard-x,0),var(--mgw-four-shard-y,0)) rotate(calc(var(--mgw-four-shard-rot,0deg) + 120deg)) scale(.75)}
+  14%{opacity:1}
+  66%{opacity:.96}
+  84%{opacity:.82}
+  100%{opacity:0;transform:translate(var(--mgw-four-shard-x,0),var(--mgw-four-shard-y,0)) rotate(calc(var(--mgw-four-shard-rot,0deg) + 120deg)) scale(.78)}
+}
+@keyframes mgwFourVictoryWave{
+  0%{opacity:0;transform:scale(.22)}
+  14%{opacity:.98}
+  48%{opacity:.82;transform:scale(2.2)}
+  76%{opacity:.48;transform:scale(4.2)}
+  100%{opacity:0;transform:scale(5.8)}
 }
 
 @media (prefers-reduced-motion:reduce){
@@ -676,7 +708,8 @@ path.mgw-four-victory-rail.rail-scan{
   .mgw-four-victory-node-lock,
   .mgw-four-victory-prism,
   .mgw-four-victory-blade,
-  .mgw-four-victory-shard{
+  .mgw-four-victory-shard,
+  .mgw-four-victory-wave{
     animation:none!important;
   }
 
@@ -700,7 +733,8 @@ path.mgw-four-victory-rail.rail-scan{
   .mgw-four-victory-node-lock,
   .mgw-four-victory-prism,
   .mgw-four-victory-blade,
-  .mgw-four-victory-shard{
+  .mgw-four-victory-shard,
+  .mgw-four-victory-wave{
     display:none!important;
   }
 
