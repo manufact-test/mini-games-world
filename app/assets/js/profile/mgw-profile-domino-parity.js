@@ -1,6 +1,6 @@
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
-import { dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=11&mvp19_9=domino-preview-component-v44';
+import { dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=12&mvp19_9=domino-preview-motion-v45';
 
 const GROUP_TITLES = Object.freeze({ theme:'Столы', elements:'Костяшки', effect:'Эффекты' });
 const ITEM_ORDER = Object.freeze([
@@ -68,7 +68,7 @@ function ensureDominoProfileStyles(){
   ensureStyle('data-mgw-domino-store', '../../css/games/domino/store-cosmetics-v1.css?v=4&mvp19_9=domino-uniform-fullfield-v4');
   ensureStyle('data-mgw-domino-store-card-fill-v5', '../../css/games/domino/store-card-fill-live-pips-v5.css?v=2&mvp19_9=domino-card-fill-live-pips-v6');
   ensureStyle('data-mgw-domino-store-effects-v9', '../../css/games/domino/store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions');
-  ensureStyle('data-mgw-domino-preview-component-v44', '../../css/games/domino/store-effects-preview-component-v44.css?v=1&mvp19_9=domino-preview-component-v44');
+  ensureStyle('data-mgw-domino-preview-component-v44', '../../css/games/domino/store-effects-preview-component-v44.css?v=2&mvp19_9=domino-preview-motion-v45');
   ensureStyle('data-mgw-profile-domino-parity', '../../css/screens/profile-domino-store-parity-v1.css?v=4&mvp19_9=domino-profile-animation-parity-v44');
 }
 
