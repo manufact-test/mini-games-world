@@ -129,6 +129,9 @@ $assertTrue(str_contains($reversiStoreSource, 'Холодное лазурное
 $assertTrue(str_contains($goStoreSource, 'Розово-вишнёвая древесина') && str_contains($goStoreSource, 'медово-янтарные камни'), 'Go replacement descriptions must render from its native Store owner');
 $assertTrue(str_contains($dominoStoreSource, 'Глубокое бордовое сукно') && str_contains($dominoStoreSource, 'Тёплые янтарные костяшки'), 'Domino replacement descriptions must render from its native Store owner');
 $assertTrue(str_contains($fourStoreSource, 'Насыщенное фиолетово-сливовое поле') && str_contains($fourStoreSource, 'Яркая розово-бирюзовая пара'), 'Four in a Row replacement descriptions must render from its native Store owner');
+foreach ([$baseStoreSource, $reversiStoreSource, $goStoreSource, $dominoStoreSource, $fourStoreSource] as $source) {
+    $assertTrue(!str_contains($source, 'вместо стандарт') && !str_contains($source, 'базового набора'), 'Replacement cosmetic copy must describe the item itself without technical comparison language');
+}
 $assertTrue(str_contains($wrapper, 'store-paid-default-dedup-v1.js?v=2&paid_default=dedup-v2'), 'Active Store wrapper must install the dedup corrective');
 $assertTrue(str_contains($mainCss, "paid-default-dedup-v1.css?v=1&paid_default=dedup-v1"), 'Global CSS must project new skins into already-live games');
 
