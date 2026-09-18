@@ -186,14 +186,14 @@
   box-shadow:inset 0 0 5px rgba(231,255,176,.48),0 0 5px rgba(154,255,47,.82),0 0 10px rgba(154,255,47,.42);
 }
 
-/* Accepted effect previews — shared by Store cards, purchase sheet, Profile cards and equip sheet. */
+/* Accepted effect previews — compact live-parity scenes shared by Store and Profile. */
 .mgw-four-effect-preview{
   min-height:104px;
   display:block;
   position:relative;
   overflow:hidden;
   background:
-    radial-gradient(circle at 50% 48%,rgba(91,118,255,.12),transparent 44%),
+    radial-gradient(circle at 50% 48%,rgba(91,118,255,.10),transparent 42%),
     linear-gradient(155deg,#111625,#080b14);
 }
 .mgw-four-fx-stage{
@@ -202,23 +202,31 @@
   overflow:hidden;
   isolation:isolate;
 }
+.mgw-four-fx-board-shell{
+  position:absolute;
+  z-index:1;
+  left:50%;
+  top:50%;
+  width:72%;
+  aspect-ratio:7 / 6;
+  transform:translate(-50%,-50%);
+}
 .mgw-four-fx-preview-board{
   position:absolute;
   z-index:1;
-  left:12%;
-  top:10%;
-  width:76%;
-  height:80%;
+  inset:0;
+  width:100%;
+  height:100%;
   padding:4px;
   display:grid;
   grid-template-columns:repeat(7,minmax(0,1fr));
-  grid-template-rows:repeat(5,minmax(0,1fr));
+  grid-template-rows:repeat(6,minmax(0,1fr));
   gap:2px;
   box-sizing:border-box;
   border:1px solid rgba(255,255,255,.18);
   border-radius:10px;
-  background:linear-gradient(180deg,#415ce4,#2e36a4);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),0 7px 16px rgba(0,0,0,.28);
+  background:linear-gradient(180deg,#5573ff,#4340d8);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),0 7px 16px rgba(0,0,0,.28);
 }
 .mgw-four-fx-cell{
   position:relative;
@@ -227,85 +235,96 @@
   display:grid;
   place-items:center;
   border-radius:50%;
-  background:rgba(5,9,19,.76);
-  box-shadow:inset 0 1px 4px rgba(0,0,0,.54),0 1px 0 rgba(255,255,255,.06);
+  background:rgba(6,10,24,.70);
+  box-shadow:inset 0 1px 4px rgba(0,0,0,.52),0 1px 0 rgba(255,255,255,.07);
 }
 .mgw-four-fx-disc{
   display:block;
-  width:78%;
+  width:84%;
   aspect-ratio:1;
   border-radius:50%;
 }
 .mgw-four-fx-disc.red{
-  background:radial-gradient(circle at 34% 28%,#ffc2c8 0 10%,#ff5a6b 35%,#bd2036 100%);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),0 2px 5px rgba(255,64,86,.24);
+  background:radial-gradient(circle at 35% 28%,#ffb6bd 0 10%,#ff5a68 34%,#c7253b 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),0 2px 5px rgba(255,65,88,.24);
 }
 .mgw-four-fx-disc.yellow{
-  background:radial-gradient(circle at 34% 28%,#fff5ae 0 10%,#ffd84e 35%,#d69a00 100%);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.24),0 2px 5px rgba(255,194,24,.22);
+  background:radial-gradient(circle at 35% 28%,#fff4a8 0 10%,#ffd84f 32%,#eaa900 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),0 2px 5px rgba(255,193,25,.23);
 }
 
-/* Effect 1 — accepted target-lock + laser + materialized disc. */
+/* Effect 1 — same compact target-lock geometry as the accepted live drop. */
 .effect-drop .fx-drop-target .mgw-four-fx-disc{opacity:0}
 .mgw-four-preview-drop-reticle{
   position:absolute;
-  z-index:6;
+  z-index:7;
   left:50%;
-  top:50%;
-  width:27%;
+  top:41.666%;
+  width:17.5%;
   aspect-ratio:1;
   transform:translate(-50%,-50%);
-  border:2px solid rgba(255,214,99,.96);
-  border-radius:50%;
-  box-shadow:0 0 0 1px rgba(255,89,117,.44),0 0 9px rgba(255,89,117,.52);
-  animation:mgwFourPreviewReticle 3.8s cubic-bezier(.18,.76,.18,1) infinite;
+  pointer-events:none;
+  animation:mgwFourPreviewReticle 3.65s ease-out infinite;
 }
-.mgw-four-preview-drop-reticle::before,
-.mgw-four-preview-drop-reticle::after{
+.mgw-four-preview-drop-reticle::before{
   content:"";
   position:absolute;
+  inset:13%;
+  border:2px solid rgba(255,213,101,.92);
+  border-radius:50%;
+  box-shadow:0 0 0 1px rgba(255,91,119,.40),0 0 7px rgba(255,91,119,.44),inset 0 0 6px rgba(255,213,101,.16);
+}
+.mgw-four-preview-drop-reticle .corner{
+  position:absolute;
+  width:22%;
+  height:22%;
+  border-color:#ff6078;
+  border-style:solid;
+  filter:drop-shadow(0 0 3px rgba(255,96,120,.64));
+}
+.mgw-four-preview-drop-reticle .tl{left:0;top:0;border-width:2px 0 0 2px;border-radius:4px 0 0 0}
+.mgw-four-preview-drop-reticle .tr{right:0;top:0;border-width:2px 2px 0 0;border-radius:0 4px 0 0}
+.mgw-four-preview-drop-reticle .bl{left:0;bottom:0;border-width:0 0 2px 2px;border-radius:0 0 0 4px}
+.mgw-four-preview-drop-reticle .br{right:0;bottom:0;border-width:0 2px 2px 0;border-radius:0 0 4px 0}
+.mgw-four-preview-drop-reticle .cross{
+  position:absolute;
   left:50%;
   top:50%;
-  background:#ffd663;
+  background:#ffd565;
   border-radius:999px;
-  box-shadow:0 0 5px rgba(255,214,99,.82);
+  box-shadow:0 0 4px rgba(255,213,101,.75);
   transform:translate(-50%,-50%);
 }
-.mgw-four-preview-drop-reticle::before{width:134%;height:2px}
-.mgw-four-preview-drop-reticle::after{width:2px;height:134%}
-.mgw-four-preview-drop-reticle > b{
-  position:absolute;
-  inset:-8%;
-  border:2px solid #ff6078;
-  border-radius:7px;
-  clip-path:polygon(0 0,28% 0,28% 7%,7% 7%,7% 28%,0 28%,0 0,72% 0,100% 0,100% 28%,93% 28%,93% 7%,72% 7%,72% 0,100% 72%,100% 100%,72% 100%,72% 93%,93% 93%,93% 72%,100% 72%,28% 100%,0 100%,0 72%,7% 72%,7% 93%,28% 93%,28% 100%);
-}
-.mgw-four-preview-drop-reticle > i{
+.mgw-four-preview-drop-reticle .cross.h{width:112%;height:2px}
+.mgw-four-preview-drop-reticle .cross.v{width:2px;height:112%}
+.mgw-four-preview-drop-reticle em{
   position:absolute;
   left:50%;
   top:50%;
-  width:6px;
-  height:6px;
+  width:5px;
+  height:5px;
   border-radius:50%;
   background:#ff6078;
-  box-shadow:0 0 7px #ff6078,0 0 12px rgba(255,214,99,.7);
+  box-shadow:0 0 6px #ff6078,0 0 10px rgba(255,213,101,.68);
   transform:translate(-50%,-50%);
 }
 .mgw-four-preview-drop-laser{
   position:absolute;
-  z-index:5;
+  z-index:6;
   left:50%;
-  top:2%;
-  width:8px;
-  height:39%;
+  top:0;
+  width:3.2%;
+  min-width:2px;
+  max-width:6px;
+  height:34%;
   transform:translateX(-50%);
-  background:
-    repeating-linear-gradient(to bottom,transparent 0 4px,#ff6078 4px 9px,#ffd663 9px 12px,transparent 12px 17px);
-  filter:drop-shadow(0 0 4px rgba(255,82,113,.82));
   opacity:0;
-  animation:mgwFourPreviewLaser 3.8s ease-out infinite;
+  overflow:visible;
+  background:repeating-linear-gradient(to bottom,transparent 0 4px,rgba(255,96,120,.96) 4px 9px,rgba(255,213,101,.96) 9px 12px,transparent 12px 17px);
+  filter:drop-shadow(0 0 3px rgba(255,76,112,.82));
+  animation:mgwFourPreviewLaser 3.65s ease-out infinite;
 }
-.mgw-four-preview-drop-laser::after{
+.mgw-four-preview-drop-laser::before{
   content:"";
   position:absolute;
   left:50%;
@@ -313,268 +332,364 @@
   bottom:0;
   width:2px;
   transform:translateX(-50%);
-  background:linear-gradient(180deg,rgba(255,96,120,.1),#ff6078 28%,#ffd663 82%,#ff6078);
+  background:linear-gradient(180deg,rgba(255,71,105,.12),#ff4f6f 18%,#ffd565 78%,#ff6078);
 }
 .mgw-four-preview-drop-disc{
   position:absolute;
-  z-index:7;
+  z-index:8;
   left:50%;
-  top:50%;
-  width:12.5%;
+  top:41.666%;
+  width:11.8%;
   aspect-ratio:1;
   border-radius:50%;
-  background:radial-gradient(circle at 34% 28%,#ffc2c8 0 10%,#ff5a6b 35%,#bd2036 100%);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),0 0 10px rgba(255,83,106,.42);
-  animation:mgwFourPreviewDropDisc 3.8s cubic-bezier(.16,.78,.18,1) infinite;
+  background:radial-gradient(circle at 35% 28%,#ffb6bd 0 10%,#ff5a68 34%,#c7253b 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),0 0 8px rgba(255,83,106,.40);
+  animation:mgwFourPreviewDropDisc 3.65s cubic-bezier(.16,.78,.18,1) infinite;
 }
 
-/* Effect 2 — accepted branching electric chain. */
+/* Effect 2 — local branching lightning, kept inside the board like the accepted live effect. */
 .effect-four .fx-pulse-target .mgw-four-fx-disc{
-  animation:mgwFourPreviewPulseDisc 4.2s ease-out infinite;
+  animation:mgwFourPreviewPulseDisc 4s cubic-bezier(.18,.75,.2,1) infinite;
 }
 .mgw-four-preview-pulse-svg{
   position:absolute;
-  z-index:6;
+  z-index:7;
   inset:0;
   width:100%;
   height:100%;
   overflow:visible;
+  pointer-events:none;
 }
 .mgw-four-preview-pulse-svg path{
   fill:none;
-  stroke-width:2.2;
+  stroke-width:2.1;
   stroke-linecap:round;
   stroke-linejoin:round;
-  vector-effect:non-scaling-stroke;
   stroke-dasharray:1;
   stroke-dashoffset:1;
+  vector-effect:non-scaling-stroke;
   opacity:0;
-  filter:drop-shadow(0 0 3px rgba(116,241,255,.82));
+  filter:drop-shadow(0 0 2px rgba(255,255,255,.62));
 }
 .mgw-four-preview-pulse-svg .b1,
 .mgw-four-preview-pulse-svg .b3,
-.mgw-four-preview-pulse-svg .b5{stroke:#78f2ff}
+.mgw-four-preview-pulse-svg .b5{stroke:#7af4ff}
 .mgw-four-preview-pulse-svg .b2,
 .mgw-four-preview-pulse-svg .b4{stroke:#e57bff}
-.mgw-four-preview-pulse-svg .b1{animation:mgwFourPreviewBoltA 4.2s ease-out infinite}
-.mgw-four-preview-pulse-svg .b2{animation:mgwFourPreviewBoltB 4.2s ease-out infinite}
-.mgw-four-preview-pulse-svg .b3{animation:mgwFourPreviewBoltC 4.2s ease-out infinite}
-.mgw-four-preview-pulse-svg .b4{animation:mgwFourPreviewBoltD 4.2s ease-out infinite}
-.mgw-four-preview-pulse-svg .b5{animation:mgwFourPreviewBoltE 4.2s ease-out infinite}
-.mgw-four-preview-pulse-core{
-  position:absolute;
-  z-index:7;
-  left:50%;
-  top:50%;
-  width:8px;
-  height:8px;
-  border-radius:50%;
-  background:#fff;
-  box-shadow:0 0 7px #fff,0 0 15px rgba(112,239,255,.8),0 0 20px rgba(224,105,255,.5);
-  transform:translate(-50%,-50%);
-  animation:mgwFourPreviewPulseCore 4.2s ease-out infinite;
+.mgw-four-preview-pulse-svg .b1{animation:mgwFourPreviewBoltA 4s ease-out infinite}
+.mgw-four-preview-pulse-svg .b2{animation:mgwFourPreviewBoltB 4s ease-out infinite}
+.mgw-four-preview-pulse-svg .b3{animation:mgwFourPreviewBoltC 4s ease-out infinite}
+.mgw-four-preview-pulse-svg .b4{animation:mgwFourPreviewBoltD 4s ease-out infinite}
+.mgw-four-preview-pulse-svg .b5{animation:mgwFourPreviewBoltE 4s ease-out infinite}
+.mgw-four-preview-pulse-svg .node-glow{
+  fill:rgba(101,236,255,.16);
+  stroke:#7df4ff;
+  stroke-width:1.6;
+  vector-effect:non-scaling-stroke;
+  filter:drop-shadow(0 0 4px rgba(82,230,255,.74));
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:mgwFourPreviewPulseNodeGlow 4s ease-out infinite;
+}
+.mgw-four-preview-pulse-svg .node-core{
+  fill:#fff;
+  filter:drop-shadow(0 0 4px rgba(255,255,255,.92)) drop-shadow(0 0 7px rgba(213,94,255,.65));
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:mgwFourPreviewPulseNodeCore 4s ease-out infinite;
 }
 
-/* Effect 3 — accepted Victory Overdrive finale. */
+/* Effect 3 — preview reproduces the accepted Overdrive sequence on an actual winning four. */
 .effect-victory-wave .fx-win .mgw-four-fx-disc{
-  animation:mgwFourPreviewWinDisc 4.8s cubic-bezier(.16,.78,.18,1) infinite;
+  animation:mgwFourPreviewWinDisc 4.65s cubic-bezier(.16,.78,.18,1) infinite;
 }
-.effect-victory-wave .fx-win:nth-child(24) .mgw-four-fx-disc{animation-delay:.06s}
-.effect-victory-wave .fx-win:nth-child(25) .mgw-four-fx-disc{animation-delay:.16s}
-.effect-victory-wave .fx-win:nth-child(26) .mgw-four-fx-disc{animation-delay:.26s}
-.effect-victory-wave .fx-win:nth-child(27) .mgw-four-fx-disc{animation-delay:.36s}
-.mgw-four-preview-victory-rail{
+.effect-victory-wave .fx-win:nth-child(24) .mgw-four-fx-disc{animation-delay:.00s}
+.effect-victory-wave .fx-win:nth-child(25) .mgw-four-fx-disc{animation-delay:.10s}
+.effect-victory-wave .fx-win:nth-child(26) .mgw-four-fx-disc{animation-delay:.20s}
+.effect-victory-wave .fx-win:nth-child(27) .mgw-four-fx-disc{animation-delay:.30s}
+.mgw-four-preview-victory-shade{
   position:absolute;
-  z-index:6;
-  left:38.5%;
-  top:65.8%;
-  width:34%;
-  height:5px;
-  transform:translateY(-50%) scaleX(0);
-  transform-origin:left center;
-  border-radius:999px;
-  background:linear-gradient(90deg,#7bf2ff,#fff3ad 50%,#db72ff);
-  box-shadow:0 0 6px rgba(111,239,255,.72),0 0 13px rgba(216,105,255,.46);
-  animation:mgwFourPreviewVictoryRail 4.8s cubic-bezier(.12,.72,.16,1) infinite;
+  z-index:2;
+  inset:0;
+  border-radius:10px;
+  background:linear-gradient(90deg,rgba(5,7,15,.46),rgba(5,7,15,.07) 48%,rgba(5,7,15,.46)),linear-gradient(180deg,rgba(7,9,20,.08),rgba(7,9,20,.40));
+  opacity:0;
+  animation:mgwFourPreviewVictoryShade 4.65s ease-out infinite;
 }
-.mgw-four-preview-victory-rail > i{
+.mgw-four-preview-victory-svg{
   position:absolute;
-  left:0;
-  top:50%;
-  width:18%;
-  height:2px;
-  border-radius:999px;
-  background:#fff;
-  box-shadow:0 0 5px #fff;
-  transform:translateY(-50%);
-  animation:mgwFourPreviewVictoryScan 4.8s linear infinite;
+  z-index:5;
+  inset:0;
+  width:100%;
+  height:100%;
+  overflow:visible;
+  pointer-events:none;
 }
+.mgw-four-preview-victory-svg .rail{
+  fill:none;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-dasharray:1;
+  stroke-dashoffset:1;
+  vector-effect:non-scaling-stroke;
+}
+.mgw-four-preview-victory-svg .rail.glow{
+  stroke:rgba(92,233,255,.42);
+  stroke-width:5;
+  filter:drop-shadow(0 0 4px rgba(89,230,255,.58));
+  animation:mgwFourPreviewVictoryRailGlow 4.65s cubic-bezier(.12,.72,.16,1) infinite;
+}
+.mgw-four-preview-victory-svg .rail.color{
+  stroke:#d46cff;
+  stroke-width:3;
+  filter:drop-shadow(0 0 3px rgba(220,90,255,.62));
+  animation:mgwFourPreviewVictoryRailColor 4.65s cubic-bezier(.12,.72,.16,1) infinite;
+}
+.mgw-four-preview-victory-svg .rail.core{
+  stroke:#fff0a8;
+  stroke-width:1.4;
+  filter:drop-shadow(0 0 2px rgba(255,240,168,.86));
+  animation:mgwFourPreviewVictoryRailCore 4.65s cubic-bezier(.12,.72,.16,1) infinite;
+}
+.mgw-four-preview-victory-svg .rail.scan{
+  stroke:#fff;
+  stroke-width:2;
+  stroke-dasharray:.11 .89;
+  opacity:0;
+  filter:drop-shadow(0 0 3px rgba(255,255,255,.86));
+  animation:mgwFourPreviewVictoryRailScan 4.65s linear infinite;
+}
+.mgw-four-preview-victory-svg .node{
+  fill:rgba(255,218,94,.08);
+  stroke:#ffd95e;
+  stroke-width:1.4;
+  vector-effect:non-scaling-stroke;
+  filter:drop-shadow(0 0 3px rgba(255,211,75,.66));
+  opacity:0;
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:mgwFourPreviewVictoryNode 4.65s ease-out infinite;
+}
+.mgw-four-preview-victory-svg .n2{animation-delay:.08s}
+.mgw-four-preview-victory-svg .n3{animation-delay:.16s}
+.mgw-four-preview-victory-svg .n4{animation-delay:.24s}
 .mgw-four-preview-victory-prism{
   position:absolute;
   z-index:8;
-  left:55.5%;
-  top:65.8%;
-  width:25px;
-  height:25px;
-  transform:translate(-50%,-50%) scale(0) rotate(-35deg);
+  left:57.143%;
+  top:58.333%;
+  width:15.5%;
+  aspect-ratio:1;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
   opacity:0;
-  animation:mgwFourPreviewVictoryPrism 4.8s cubic-bezier(.16,.8,.18,1) infinite;
+  animation:mgwFourPreviewVictoryPrism 4.65s cubic-bezier(.16,.8,.18,1) infinite;
 }
-.mgw-four-preview-victory-prism::before{
-  content:"";
-  position:absolute;
-  inset:4px;
+.mgw-four-preview-victory-prism > b{position:absolute}
+.mgw-four-preview-victory-prism .shell{
+  inset:14%;
   transform:rotate(45deg);
   border:2px solid #ffe06d;
-  background:rgba(255,222,96,.08);
-  box-shadow:0 0 7px rgba(255,218,92,.76);
+  background:rgba(255,222,96,.06);
+  box-shadow:0 0 6px rgba(255,218,92,.70),inset 0 0 5px rgba(255,255,255,.16);
 }
-.mgw-four-preview-victory-prism > b{
-  position:absolute;
+.mgw-four-preview-victory-prism .core{
   left:50%;
   top:50%;
-  width:8px;
-  height:8px;
+  width:26%;
+  aspect-ratio:1;
   transform:translate(-50%,-50%) rotate(45deg);
   background:#fff7c9;
-  box-shadow:0 0 6px #fff,0 0 13px rgba(255,219,91,.9);
+  box-shadow:0 0 5px #fff,0 0 9px rgba(255,219,91,.84),0 0 13px rgba(212,91,255,.44);
 }
+.mgw-four-preview-victory-prism .cut{
+  left:50%;
+  top:50%;
+  width:118%;
+  height:2px;
+  transform-origin:center;
+  background:linear-gradient(90deg,transparent,#78f0ff 18%,#fff 50%,#df72ff 82%,transparent);
+  box-shadow:0 0 4px rgba(124,238,255,.66);
+}
+.mgw-four-preview-victory-prism .cut-a{transform:translate(-50%,-50%) rotate(45deg)}
+.mgw-four-preview-victory-prism .cut-b{transform:translate(-50%,-50%) rotate(-45deg)}
 .mgw-four-preview-victory-blade{
   position:absolute;
   z-index:7;
-  left:55.5%;
-  top:65.8%;
-  width:70%;
+  left:57.143%;
+  top:58.333%;
+  width:76%;
   height:2px;
   opacity:0;
   transform-origin:center;
   background:linear-gradient(90deg,transparent,#79f0ff 14%,#fff7bc 50%,#e16fff 86%,transparent);
-  box-shadow:0 0 5px rgba(122,236,255,.62);
+  box-shadow:0 0 4px rgba(122,236,255,.56);
 }
-.mgw-four-preview-victory-blade.blade-a{animation:mgwFourPreviewBladeA 4.8s ease-out infinite}
-.mgw-four-preview-victory-blade.blade-b{animation:mgwFourPreviewBladeB 4.8s ease-out infinite}
+.mgw-four-preview-victory-blade.blade-a{animation:mgwFourPreviewBladeA 4.65s ease-out infinite}
+.mgw-four-preview-victory-blade.blade-b{animation:mgwFourPreviewBladeB 4.65s ease-out infinite}
 .mgw-four-preview-victory-shards > i{
   position:absolute;
   z-index:9;
-  left:55.5%;
-  top:65.8%;
+  left:57.143%;
+  top:58.333%;
   width:3px;
-  height:10px;
-  margin:-5px 0 0 -1px;
+  height:9px;
+  margin:-4px 0 0 -1px;
   border-radius:1px;
   opacity:0;
   background:#8bf5ff;
-  box-shadow:0 0 5px rgba(113,239,255,.72);
+  box-shadow:0 0 4px rgba(113,239,255,.68);
+  --sx:57.143%;
+  --sy:58.333%;
+  --rot:0deg;
+  animation:mgwFourPreviewShard 4.65s cubic-bezier(.1,.72,.18,1) infinite;
 }
 .mgw-four-preview-victory-shards .s2,
 .mgw-four-preview-victory-shards .s5,
-.mgw-four-preview-victory-shards .s8{background:#e37bff;box-shadow:0 0 5px rgba(222,104,255,.72)}
+.mgw-four-preview-victory-shards .s8,
+.mgw-four-preview-victory-shards .s11{background:#e37bff;box-shadow:0 0 4px rgba(222,104,255,.68)}
 .mgw-four-preview-victory-shards .s3,
 .mgw-four-preview-victory-shards .s6,
-.mgw-four-preview-victory-shards .s9{background:#ffe172;box-shadow:0 0 5px rgba(255,217,94,.76)}
-.mgw-four-preview-victory-shards .s1{--x:-55px;--y:-35px;--r:-28deg}
-.mgw-four-preview-victory-shards .s2{--x:-30px;--y:-50px;--r:-12deg}
-.mgw-four-preview-victory-shards .s3{--x:8px;--y:-54px;--r:10deg}
-.mgw-four-preview-victory-shards .s4{--x:48px;--y:-38px;--r:28deg}
-.mgw-four-preview-victory-shards .s5{--x:58px;--y:6px;--r:64deg}
-.mgw-four-preview-victory-shards .s6{--x:32px;--y:42px;--r:84deg}
-.mgw-four-preview-victory-shards .s7{--x:-8px;--y:50px;--r:108deg}
-.mgw-four-preview-victory-shards .s8{--x:-48px;--y:35px;--r:132deg}
-.mgw-four-preview-victory-shards .s9{--x:-60px;--y:0px;--r:160deg}
-.mgw-four-preview-victory-shards .s10{--x:-30px;--y:-36px;--r:188deg}
-.mgw-four-preview-victory-shards > i{animation:mgwFourPreviewShard 4.8s cubic-bezier(.1,.72,.18,1) infinite}
-.mgw-four-preview-victory-shards .s2{animation-delay:.03s}
-.mgw-four-preview-victory-shards .s3{animation-delay:.06s}
-.mgw-four-preview-victory-shards .s4{animation-delay:.09s}
-.mgw-four-preview-victory-shards .s5{animation-delay:.12s}
-.mgw-four-preview-victory-shards .s6{animation-delay:.15s}
-.mgw-four-preview-victory-shards .s7{animation-delay:.18s}
-.mgw-four-preview-victory-shards .s8{animation-delay:.21s}
-.mgw-four-preview-victory-shards .s9{animation-delay:.24s}
-.mgw-four-preview-victory-shards .s10{animation-delay:.27s}
+.mgw-four-preview-victory-shards .s9,
+.mgw-four-preview-victory-shards .s12{background:#ffe172;box-shadow:0 0 4px rgba(255,217,94,.72)}
+.mgw-four-preview-victory-shards .s1{--sx:34%;--sy:36%;--rot:-24deg}
+.mgw-four-preview-victory-shards .s2{--sx:44%;--sy:24%;--rot:-12deg}
+.mgw-four-preview-victory-shards .s3{--sx:58%;--sy:22%;--rot:8deg}
+.mgw-four-preview-victory-shards .s4{--sx:72%;--sy:30%;--rot:24deg}
+.mgw-four-preview-victory-shards .s5{--sx:80%;--sy:48%;--rot:44deg}
+.mgw-four-preview-victory-shards .s6{--sx:76%;--sy:70%;--rot:66deg}
+.mgw-four-preview-victory-shards .s7{--sx:64%;--sy:82%;--rot:82deg}
+.mgw-four-preview-victory-shards .s8{--sx:48%;--sy:84%;--rot:102deg}
+.mgw-four-preview-victory-shards .s9{--sx:34%;--sy:75%;--rot:126deg}
+.mgw-four-preview-victory-shards .s10{--sx:28%;--sy:58%;--rot:148deg}
+.mgw-four-preview-victory-shards .s11{--sx:31%;--sy:43%;--rot:166deg}
+.mgw-four-preview-victory-shards .s12{--sx:43%;--sy:31%;--rot:188deg}
 
 @keyframes mgwFourPreviewReticle{
-  0%,7%,72%,100%{opacity:0;transform:translate(-50%,-50%) scale(1.36) rotate(-10deg)}
-  13%{opacity:1}
-  27%,58%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0)}
-  66%{opacity:0;transform:translate(-50%,-50%) scale(.9) rotate(0)}
+  0%,5%,30%,100%{opacity:0;transform:translate(-50%,-50%) scale(1.34) rotate(-10deg)}
+  9%{opacity:1}
+  16%,24%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0)}
+  29%{opacity:0;transform:translate(-50%,-50%) scale(.92)}
 }
 @keyframes mgwFourPreviewLaser{
-  0%,11%,67%,100%{opacity:0;clip-path:inset(0 0 100% 0)}
-  18%{opacity:1;clip-path:inset(0 0 0 0)}
-  53%{opacity:.9;clip-path:inset(0 0 0 0)}
-  62%{opacity:0;clip-path:inset(0 0 0 0)}
+  0%,7%,29%,100%{opacity:0;clip-path:inset(0 0 100% 0)}
+  11%{opacity:.95;clip-path:inset(0 0 0 0)}
+  23%{opacity:.90;clip-path:inset(0 0 0 0)}
+  28%{opacity:0;clip-path:inset(0 0 0 0)}
 }
 @keyframes mgwFourPreviewDropDisc{
-  0%,17%{opacity:0;transform:translate(-50%,-50%) translateY(-72px) scale(.2);filter:brightness(2)}
-  25%{opacity:1;transform:translate(-50%,-50%) translateY(-72px) scale(1);filter:brightness(1.3)}
-  51%{opacity:1;transform:translate(-50%,-50%) translateY(0) scale(1);filter:brightness(1.08)}
-  61%{opacity:1;transform:translate(-50%,-50%) translateY(0) scale(1);filter:brightness(1)}
-  70%,100%{opacity:0;transform:translate(-50%,-50%) translateY(0) scale(1);filter:brightness(1)}
+  0%,10%{opacity:0;transform:translate(-50%,-50%) translateY(-340%) scale(.18);filter:brightness(2.1) saturate(.3)}
+  14%{opacity:.92;transform:translate(-50%,-50%) translateY(-340%) scale(.72);filter:brightness(1.8) saturate(.72)}
+  18%{opacity:1;transform:translate(-50%,-50%) translateY(-340%) scale(1);filter:brightness(1.24)}
+  27%{opacity:1;transform:translate(-50%,-50%) translateY(0) scale(1);filter:brightness(1.08)}
+  31%{opacity:0;transform:translate(-50%,-50%) translateY(0) scale(1);filter:brightness(1)}
+  100%{opacity:0}
 }
 @keyframes mgwFourPreviewPulseDisc{
-  0%,10%,65%,100%{transform:scale(1);filter:brightness(1)}
-  18%{transform:scale(1.16);filter:brightness(1.9);box-shadow:0 0 0 2px rgba(255,255,255,.9),0 0 16px rgba(96,237,255,.9)}
-  35%{transform:scale(.98);filter:brightness(1.22)}
-  52%{transform:scale(1.06);filter:brightness(1.5)}
+  0%,9%,34%,100%{transform:scale(1);filter:brightness(1)}
+  13%{transform:scale(1.15);filter:brightness(1.9);box-shadow:0 0 0 2px rgba(255,255,255,.88),0 0 10px rgba(96,237,255,.82)}
+  20%{transform:scale(.99);filter:brightness(1.22)}
+  28%{transform:scale(1.05);filter:brightness(1.42)}
 }
-@keyframes mgwFourPreviewPulseCore{
-  0%,11%,61%,100%{opacity:0;transform:translate(-50%,-50%) scale(.2)}
-  18%{opacity:1;transform:translate(-50%,-50%) scale(1.4)}
-  40%{opacity:.9;transform:translate(-50%,-50%) scale(.8)}
-  55%{opacity:0;transform:translate(-50%,-50%) scale(.3)}
+@keyframes mgwFourPreviewPulseNodeGlow{
+  0%,9%,33%,100%{opacity:0;transform:scale(.18)}
+  13%{opacity:1;transform:scale(1.05)}
+  23%{opacity:.66;transform:scale(1.42)}
+  31%{opacity:0;transform:scale(1.8)}
+}
+@keyframes mgwFourPreviewPulseNodeCore{
+  0%,9%,31%,100%{opacity:0;transform:scale(.2)}
+  12%{opacity:1;transform:scale(1.4)}
+  20%{opacity:.95;transform:scale(.82)}
+  29%{opacity:0;transform:scale(.3)}
 }
 @keyframes mgwFourPreviewBoltA{
-  0%,12%,23%,100%{opacity:0;stroke-dashoffset:1} 15%,20%{opacity:1;stroke-dashoffset:0}
+  0%,10%,19%,100%{opacity:0;stroke-dashoffset:1}
+  12%,17%{opacity:1;stroke-dashoffset:0}
 }
 @keyframes mgwFourPreviewBoltB{
-  0%,17%,31%,100%{opacity:0;stroke-dashoffset:1} 21%,28%{opacity:1;stroke-dashoffset:0}
+  0%,13%,22%,100%{opacity:0;stroke-dashoffset:1}
+  15%,20%{opacity:1;stroke-dashoffset:0}
 }
 @keyframes mgwFourPreviewBoltC{
-  0%,26%,40%,100%{opacity:0;stroke-dashoffset:1} 30%,37%{opacity:1;stroke-dashoffset:0}
+  0%,17%,26%,100%{opacity:0;stroke-dashoffset:1}
+  19%,24%{opacity:1;stroke-dashoffset:0}
 }
 @keyframes mgwFourPreviewBoltD{
-  0%,35%,49%,100%{opacity:0;stroke-dashoffset:1} 39%,46%{opacity:1;stroke-dashoffset:0}
+  0%,21%,30%,100%{opacity:0;stroke-dashoffset:1}
+  23%,28%{opacity:1;stroke-dashoffset:0}
 }
 @keyframes mgwFourPreviewBoltE{
-  0%,44%,58%,100%{opacity:0;stroke-dashoffset:1} 48%,55%{opacity:1;stroke-dashoffset:0}
+  0%,25%,34%,100%{opacity:0;stroke-dashoffset:1}
+  27%,32%{opacity:1;stroke-dashoffset:0}
 }
 @keyframes mgwFourPreviewWinDisc{
-  0%,12%,70%,100%{transform:scale(1);filter:brightness(1)}
-  24%{transform:scale(1.13);filter:brightness(2);box-shadow:0 0 0 2px rgba(255,227,112,.94),0 0 14px rgba(255,216,78,.66)}
-  42%{transform:scale(1.03);filter:brightness(1.45);box-shadow:0 0 0 2px rgba(117,238,255,.75),0 0 12px rgba(214,101,255,.5)}
-  60%{transform:scale(1.07);filter:brightness(1.7)}
+  0%,7%,48%,100%{transform:scale(1);filter:brightness(1)}
+  12%{transform:scale(1.04);filter:brightness(1.45)}
+  18%{transform:scale(1.13);filter:brightness(2.05);box-shadow:0 0 0 2px rgba(255,227,112,.92),0 0 10px rgba(255,216,78,.66),0 0 15px rgba(110,236,255,.38)}
+  29%{transform:scale(1.02);filter:brightness(1.45);box-shadow:0 0 0 2px rgba(117,238,255,.78),0 0 9px rgba(214,101,255,.48)}
+  40%{transform:scale(1.07);filter:brightness(1.7)}
 }
-@keyframes mgwFourPreviewVictoryRail{
-  0%,21%,74%,100%{opacity:0;transform:translateY(-50%) scaleX(0)}
-  29%{opacity:1;transform:translateY(-50%) scaleX(.05)}
-  46%,66%{opacity:1;transform:translateY(-50%) scaleX(1)}
+@keyframes mgwFourPreviewVictoryShade{
+  0%,5%,50%,100%{opacity:0}
+  9%{opacity:.68}
+  38%{opacity:.50}
+  47%{opacity:0}
 }
-@keyframes mgwFourPreviewVictoryScan{
-  0%,35%,72%,100%{opacity:0;left:0}
-  43%{opacity:1;left:0}
-  62%{opacity:1;left:82%}
+@keyframes mgwFourPreviewVictoryRailGlow{
+  0%,12%,46%,100%{opacity:0;stroke-dashoffset:1}
+  16%{opacity:.9}
+  34%{opacity:.76;stroke-dashoffset:0}
+  43%{opacity:.08;stroke-dashoffset:0}
+}
+@keyframes mgwFourPreviewVictoryRailColor{
+  0%,14%,45%,100%{opacity:0;stroke-dashoffset:1}
+  18%{opacity:1}
+  34%{opacity:1;stroke-dashoffset:0}
+  42%{opacity:.15;stroke-dashoffset:0}
+}
+@keyframes mgwFourPreviewVictoryRailCore{
+  0%,16%,44%,100%{opacity:0;stroke-dashoffset:1}
+  20%{opacity:1}
+  34%{opacity:1;stroke-dashoffset:0}
+  41%{opacity:.3;stroke-dashoffset:0}
+}
+@keyframes mgwFourPreviewVictoryRailScan{
+  0%,23%,44%,100%{opacity:0;stroke-dashoffset:1}
+  26%{opacity:1}
+  38%{opacity:1;stroke-dashoffset:-1}
+  42%{opacity:0;stroke-dashoffset:-1}
+}
+@keyframes mgwFourPreviewVictoryNode{
+  0%,8%,43%,100%{opacity:0}
+  13%{opacity:1}
+  22%{opacity:1}
+  34%{opacity:.9}
+  41%{opacity:.15}
 }
 @keyframes mgwFourPreviewVictoryPrism{
-  0%,38%,75%,100%{opacity:0;transform:translate(-50%,-50%) scale(.15) rotate(-35deg)}
-  48%{opacity:1;transform:translate(-50%,-50%) scale(1.18) rotate(0)}
-  60%{opacity:1;transform:translate(-50%,-50%) scale(.95) rotate(8deg)}
-  68%{opacity:0;transform:translate(-50%,-50%) scale(1.32) rotate(12deg)}
+  0%,27%,47%,100%{opacity:0;transform:translate(-50%,-50%) scale(.18) rotate(-35deg)}
+  31%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(0)}
+  38%{opacity:1;transform:translate(-50%,-50%) scale(.96) rotate(8deg)}
+  45%{opacity:0;transform:translate(-50%,-50%) scale(1.25) rotate(12deg)}
 }
 @keyframes mgwFourPreviewBladeA{
-  0%,45%,74%,100%{opacity:0;transform:translate(-50%,-50%) rotate(28deg) scaleX(.08)}
-  52%{opacity:1}
-  66%{opacity:.9;transform:translate(-50%,-50%) rotate(28deg) scaleX(1)}
+  0%,31%,49%,100%{opacity:0;transform:translate(-50%,-50%) rotate(28deg) scaleX(.08)}
+  35%{opacity:1}
+  43%{opacity:.86;transform:translate(-50%,-50%) rotate(28deg) scaleX(1)}
+  47%{opacity:0;transform:translate(-50%,-50%) rotate(28deg) scaleX(1)}
 }
 @keyframes mgwFourPreviewBladeB{
-  0%,48%,76%,100%{opacity:0;transform:translate(-50%,-50%) rotate(-28deg) scaleX(.08)}
-  55%{opacity:1}
-  69%{opacity:.9;transform:translate(-50%,-50%) rotate(-28deg) scaleX(1)}
+  0%,33%,50%,100%{opacity:0;transform:translate(-50%,-50%) rotate(-28deg) scaleX(.08)}
+  37%{opacity:1}
+  45%{opacity:.86;transform:translate(-50%,-50%) rotate(-28deg) scaleX(1)}
+  49%{opacity:0;transform:translate(-50%,-50%) rotate(-28deg) scaleX(1)}
 }
 @keyframes mgwFourPreviewShard{
-  0%,53%,78%,100%{opacity:0;transform:translate(0,0) rotate(var(--r,0deg)) scale(.3)}
-  59%{opacity:1}
-  72%{opacity:.9;transform:translate(var(--x,0),var(--y,0)) rotate(calc(var(--r,0deg) + 100deg)) scale(.75)}
+  0%,34%,51%,100%{opacity:0;left:57.143%;top:58.333%;transform:rotate(var(--rot)) scale(.3)}
+  38%{opacity:1}
+  47%{opacity:.85;left:var(--sx);top:var(--sy);transform:rotate(calc(var(--rot) + 100deg)) scale(.74)}
+  50%{opacity:0;left:var(--sx);top:var(--sy);transform:rotate(calc(var(--rot) + 120deg)) scale(.7)}
 }
 
 @media (prefers-reduced-motion:reduce){
@@ -584,16 +699,20 @@
     animation:none!important;
   }
   .effect-drop .mgw-four-preview-drop-reticle{opacity:.78;transform:translate(-50%,-50%) scale(1)}
-  .effect-drop .mgw-four-preview-drop-laser{opacity:.55;clip-path:none}
+  .effect-drop .mgw-four-preview-drop-laser{opacity:.54;clip-path:none}
   .effect-drop .mgw-four-preview-drop-disc{opacity:1;transform:translate(-50%,-50%)}
-  .effect-four .mgw-four-preview-pulse-core{opacity:.82;transform:translate(-50%,-50%)}
   .effect-four .mgw-four-preview-pulse-svg path{opacity:.58;stroke-dashoffset:0}
-  .effect-victory-wave .mgw-four-preview-victory-rail{opacity:.9;transform:translateY(-50%) scaleX(1)}
-  .effect-victory-wave .mgw-four-preview-victory-prism{opacity:.85;transform:translate(-50%,-50%) scale(1)}
+  .effect-four .mgw-four-preview-pulse-svg .node-core{opacity:.82;transform:scale(1)}
+  .effect-victory-wave .mgw-four-preview-victory-shade{opacity:.30}
+  .effect-victory-wave .mgw-four-preview-victory-svg .rail{opacity:.75;stroke-dashoffset:0}
+  .effect-victory-wave .mgw-four-preview-victory-prism{opacity:.82;transform:translate(-50%,-50%) scale(1)}
 }
 
 .store-v2-confirm-game .store-v2-game-preview[data-game-type="four_in_a_row"] .mgw-four-preview{
   min-height:118px;
+}
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="four_in_a_row"][data-cosmetic-layer="effect"] .mgw-four-fx-board-shell{
+  width:82%;
 }
 
 @media (min-width:720px){

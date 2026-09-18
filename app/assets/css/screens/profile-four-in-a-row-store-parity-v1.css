@@ -108,6 +108,11 @@
   width:92%!important;
 }
 
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="four_in_a_row"] .profile-v2-game-card
+.store-v2-game-preview[data-game-type="four_in_a_row"][data-cosmetic-layer="effect"] .mgw-four-fx-board-shell{
+  width:86%!important;
+}
+
 #screen-profile .profile-v2-game-panel[data-profile-game-panel="four_in_a_row"] .profile-v2-game-card .profile-v2-game-card-name{
   display:none!important;
 }
@@ -144,6 +149,11 @@
 
 .profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="four_in_a_row"] .mgw-four-disc{
   width:78%!important;
+}
+
+.profile-v2-game-preview-wrap
+.store-v2-game-preview[data-game-type="four_in_a_row"][data-cosmetic-layer="effect"] .mgw-four-fx-board-shell{
+  width:82%!important;
 }
 
 #screen-profile .store-v2-game-preview[data-game-type="four_in_a_row"] *,

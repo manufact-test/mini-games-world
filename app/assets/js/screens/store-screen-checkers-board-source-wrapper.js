@@ -20,7 +20,7 @@ import { installDominoStoreEffectsV9 } from './store-screen-domino-effects-v9.js
 import {
   installFourInARowStorePresentation,
   upgradeFourInARowStorePresentation,
-} from './store-screen-four-in-a-row-store-v1.js?v=9&four_store=live-previews-v1&effect2=random-chain-v4&victory=overdrive-v1&export=profile-preview-v2&copy=player-v2';
+} from './store-screen-four-in-a-row-store-v1.js?v=10&four_store=live-previews-v2&geometry=7x6&fx=contained-v2&effect2=random-chain-v4&victory=overdrive-v2&export=profile-preview-v3&copy=compact-v3';
 import {
   installPaidDefaultDedupV1,
   upgradePaidDefaultDedupV1,
