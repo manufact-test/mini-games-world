@@ -48,7 +48,7 @@ assert.ok(profile.includes('mgw:cosmetic-inventory-changed'), 'Four parity must 
 assert.ok(profile.includes('data-game-type="four_in_a_row"'), 'Four Profile previews must identify game type explicitly');
 assert.ok(profile.includes('fourInARowPreviewMarkup(layer, variant)'), 'Profile must reuse the accepted Store preview primitive');
 assert.ok(profile.includes("store-screen-four-in-a-row-store-v1.js?v=6&four_store=static-v4&export=profile-preview-v1&copy=human-v1"), 'Profile must request the current Four Store module URL with the shared preview primitive and human copy');
-assert.ok(profile.includes("four_profile=parity-v1"), 'Four Profile must publish a dedicated parity style identity');
+assert.ok(profile.includes("four_profile=spacing-v2"), 'Four Profile must publish the dedicated spacing-corrective style identity');
 assert.ok(profile.includes("store-cosmetics-v1.css?v=4&four_store=static-v4"), 'Profile must load the accepted Four Store artwork CSS');
 assert.ok(!profile.includes('gameAction('), 'Four Profile must never own gameplay actions');
 assert.ok(!profile.includes('last_move'), 'Four Profile must not implement live move triggers');
