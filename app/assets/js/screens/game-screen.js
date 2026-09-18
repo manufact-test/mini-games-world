@@ -242,43 +242,17 @@ function scheduleResultSheet(game, me){
   const gameType = gameTypeOf(game);
   const flippedCount = Array.isArray(game?.last_flipped_cells) ? game.last_flipped_cells.length : 0;
   const capturedCount = Array.isArray(game?.last_captured_cells) ? game.last_captured_cells.length : 0;
-  const fourEffect = gameType === 'four_in_a_row' ? fourTerminalEffect(game, me) : '';
   const delay = gameType === 'reversi'
     ? Math.min(4200, 650 + flippedCount * 150)
     : (gameType === 'go'
       ? Math.min(2600, 1450 + capturedCount * 35)
-      : (gameType === 'domino'
-        ? 1100
-        : (fourEffect === 'game-four-effect-drop'
-          ? 820
-          : (fourEffect === 'game-four-effect-four'
-            ? 1380
-            : (fourEffect === 'game-four-effect-victory-wave' ? 1620 : 0)))));
+      : (gameType === 'domino' ? 1100 : 0));
 
   if (delay <= 0) {
     openResultSheet(game, me);
     return;
   }
   window.setTimeout(() => openResultSheet(game, me), delay);
-}
-
-function fourTerminalEffect(game, me){
-  if (
-    String(game?.status || '') !== 'finished'
-    || String(game?.finish_reason || '') !== 'normal_win'
-    || !game?.winner_id
-  ) return '';
-
-  const winnerId = String(game.winner_id);
-  const players = Array.isArray(game?.players) ? game.players : [];
-  const winner = players.find(player => String(player?.id || '') === winnerId) || null;
-  const direct = String(winner?.game_cosmetics?.slots?.game_four_in_a_row_effect || '');
-  if (direct) return direct;
-
-  if (winnerId === String(me?.id || '')) {
-    return String(state?.profileInventory?.equipped?.game_four_in_a_row_effect || '');
-  }
-  return '';
 }
 
 function openResultSheet(game, me){
