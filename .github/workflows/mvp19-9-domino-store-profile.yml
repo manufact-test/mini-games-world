@@ -107,7 +107,7 @@ jobs:
           ! grep -Fq 'getBoundingClientRect' "$ratio"
           ! grep -Fq 'setTimeout' "$ratio"
           grep -F 'domino_effects=component-v44' "$manifest"
-          grep -F "store-screen-domino-store-v1.js?v=11&mvp19_9=domino-preview-component-v44' => './assets/js/screens/store-screen-domino-store-v1.js?v=11&mvp19_9=domino-preview-component-v44" "$manifest"
+          grep -F "store-screen-domino-store-v1.js?v=8&mvp19_9=domino-native-render-v8' => './assets/js/screens/store-screen-domino-store-v1.js?v=11&mvp19_9=domino-preview-component-v44" "$manifest"
           grep -F 'store-screen.js?v=49&intent_base=1' "$manifest"
           grep -F 'selector_center=instant-v1' "$manifest"
           grep -F 'ux=ready-only-history-sheet' "$manifest"
