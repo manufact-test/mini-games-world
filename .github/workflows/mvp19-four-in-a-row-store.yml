@@ -86,6 +86,11 @@ jobs:
           grep -F 'victory-wave-v1.svg' "$wrapper"
           ! grep -Fq '@keyframes' "$css"
           ! grep -Fq 'animation:' "$css"
+          grep -F 'aspect-ratio:auto' "$css"
+          grep -F 'grid-template-rows:repeat(6,auto)' "$css"
+          grep -F '#ff2d8c' "$css"
+          grep -F '#9dff2e' "$css"
+          ! grep -Fq 'linear-gradient(145deg,#ffe0e4' "$css"
 
       - name: Guard frozen live game and active Store graph
         shell: bash
@@ -94,8 +99,8 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
-          grep -F "store-screen-four-in-a-row-store-v1.js?v=1&four_store=static-v1" app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
-          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!preg_match("~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~",$s,$v) || (int)$v[1] < 10 || !str_contains($s,"four_store=static-v1")) exit(1);'
+          grep -F "store-screen-four-in-a-row-store-v1.js?v=2&four_store=static-v2" app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!preg_match("~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~",$s,$v) || (int)$v[1] < 10 || !str_contains($s,"four_store=static-v2")) exit(1);'
           php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1193) exit(1);'
           git diff --exit-code "$BASE_SHA" "$HEAD_SHA" --             app/assets/js/games/four-in-a-row/renderer.js             app/assets/js/games/four-in-a-row/entry.js             app/assets/css/games/four-in-a-row/game.css             bot/services/FourInARowService.php             bot/services/FourInARowBotService.php
           git diff --check
