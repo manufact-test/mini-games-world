@@ -1,6 +1,6 @@
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
-import { fourInARowPreviewMarkup } from '../screens/store-screen-four-in-a-row-store-v1.js?v=8&four_store=static-v6&effect2=chain-v3&export=profile-preview-v1&copy=human-v1';
+import { fourInARowPreviewMarkup } from '../screens/store-screen-four-in-a-row-store-v1.js?v=9&four_store=live-previews-v1&effect2=random-chain-v4&victory=overdrive-v1&export=profile-preview-v2&copy=player-v2';
 
 const GROUP_TITLES = Object.freeze({ theme:'Поля', elements:'Фишки', effect:'Эффекты' });
 const ITEM_ORDER = Object.freeze([
@@ -67,7 +67,7 @@ export function initProfileFourInARowParity(){
 }
 
 function ensureFourProfileStyles(){
-  ensureStyle('data-mgw-four-store-profile', '../../css/games/four-in-a-row/store-cosmetics-v1.css?v=4&four_store=static-v4');
+  ensureStyle('data-mgw-four-store-profile', '../../css/games/four-in-a-row/store-cosmetics-v1.css?v=5&four_store=live-previews-v1');
   ensureStyle('data-mgw-profile-four-parity', '../../css/screens/profile-four-in-a-row-store-parity-v1.css?v=2&four_profile=spacing-v2');
 }
 
@@ -260,6 +260,13 @@ function fourVariant(item){
 }
 
 function fourDisplayName(item){
+  if (fourLayer(item) === 'effect') {
+    return ({
+      drop:'Лазерное наведение',
+      four:'Энергетический импульс',
+      'victory-wave':'Победный овердрайв',
+    })[fourVariant(item)] || 'Эффект партии';
+  }
   const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata : {};
   return String(metadata.display_name || item?.item_id || 'Предмет 4 в ряд').trim();
 }

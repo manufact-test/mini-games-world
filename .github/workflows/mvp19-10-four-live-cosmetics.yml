@@ -13,6 +13,9 @@ on:
       - 'app/assets/js/profile/mgw-profile-chess-layout-v2.js'
       - 'app/assets/media/cosmetics/four-in-a-row/effects/four-v1.svg'
       - 'bot/database/migrations/20260918_0038_four_in_a_row_effect_two_midgame_pulse.php'
+      - 'bot/database/migrations/20260918_0039_four_in_a_row_accepted_preview_copy.php'
+      - 'app/assets/css/games/four-in-a-row/store-cosmetics-v1.css'
+      - 'app/assets/css/screens/profile-four-in-a-row-store-parity-v1.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/Mvp19_10FourInARowLiveCosmeticsContractTest.mjs'
@@ -60,6 +63,7 @@ jobs:
           php -l app/runtime/client/version-manifest.php
           php -l bot/helpers/WebAppLaunchUrl.php
           php -l bot/database/migrations/20260918_0038_four_in_a_row_effect_two_midgame_pulse.php
+          php -l bot/database/migrations/20260918_0039_four_in_a_row_accepted_preview_copy.php
 
       - name: Run Four LIVE contract
         run: node bot/tests/Mvp19_10FourInARowLiveCosmeticsContractTest.mjs
@@ -78,5 +82,5 @@ jobs:
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
-          git diff --exit-code "$base" "$head" --             app/assets/js/games/four-in-a-row/renderer.js             app/assets/js/games/four-in-a-row/entry.js             app/assets/css/games/four-in-a-row/game.css             bot/services/FourInARowService.php             bot/services/FourInARowBotService.php             bot/catalog/ProductInventoryService.php             app/assets/css/games/four-in-a-row/store-cosmetics-v1.css             app/assets/css/screens/profile-four-in-a-row-store-parity-v1.css
+          git diff --exit-code "$base" "$head" --             app/assets/js/games/four-in-a-row/renderer.js             app/assets/js/games/four-in-a-row/entry.js             app/assets/css/games/four-in-a-row/game.css             bot/services/FourInARowService.php             bot/services/FourInARowBotService.php             bot/catalog/ProductInventoryService.php
           git diff --check

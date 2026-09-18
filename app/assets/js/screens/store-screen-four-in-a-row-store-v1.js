@@ -1,14 +1,8 @@
 import { api } from '../api/client.js?v=34';
 
-const API_HOOK = Symbol.for('mgw.store.four-in-a-row.store-static-v4');
+const API_HOOK = Symbol.for('mgw.store.four-in-a-row.live-previews-v1');
 const INSTALL_KEY = '__mgwFourInARowStoreStaticV1Installed';
-const STYLE_MARK = 'four-store-static-v4';
-
-const EFFECT_ASSETS = Object.freeze({
-  drop:new URL('../../media/cosmetics/four-in-a-row/effects/drop-v1.svg', import.meta.url).href,
-  four:new URL('../../media/cosmetics/four-in-a-row/effects/four-v1.svg?rev=3', import.meta.url).href,
-  'victory-wave':new URL('../../media/cosmetics/four-in-a-row/effects/victory-wave-v1.svg', import.meta.url).href,
-});
+const STYLE_MARK = 'four-store-live-previews-v1';
 
 export function installFourInARowStorePresentation(){
   ensureStyles();
@@ -37,11 +31,12 @@ export function upgradeFourInARowStorePresentation(){
     upgradeGroups(root);
     upgradeProducts(root);
     upgradePreviews(root);
+    upgradePurchaseCopy(root);
   });
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/four-in-a-row/store-cosmetics-v1.css?v=1&four_store=static-v4', import.meta.url).href;
+  const href = new URL('../../css/games/four-in-a-row/store-cosmetics-v1.css?v=5&four_store=live-previews-v1', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-four-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -111,7 +106,7 @@ function upgradeGroups(root){
     const copy = {
       theme:['Поля','Оформление игрового поля'],
       elements:['Фишки','Внешний вид красных и жёлтых фишек'],
-      effect:['Эффекты',''],
+      effect:['Эффекты','Анимации для ваших ходов и побед'],
     }[layer] || ['4 в ряд',''];
 
     if (title instanceof HTMLElement) title.textContent = copy[0];
@@ -135,10 +130,14 @@ function upgradeProducts(root){
     const description = product.querySelector('.store-v2-game-product-copy > p');
 
     if (kind instanceof HTMLElement) {
-      kind.textContent = layer === 'theme' ? 'Игровое поле' : (layer === 'elements' ? 'Комплект фишек' : 'Эффект партии');
+      kind.textContent = layer === 'theme'
+        ? 'Игровое поле'
+        : (layer === 'elements'
+          ? 'Комплект фишек'
+          : (variant === 'victory-wave' ? 'Эффект победы' : 'Эффект хода'));
     }
-    if (title instanceof HTMLElement && layer === 'effect' && variant === 'four') {
-      title.textContent = 'Энергетический импульс';
+    if (title instanceof HTMLElement && layer === 'effect') {
+      title.textContent = effectDisplayName(variant);
     }
     if (description instanceof HTMLElement) description.textContent = descriptionFor(layer, variant);
   });
@@ -149,10 +148,10 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = safeVariant(preview.dataset.cosmeticVariant || 'blue');
-    const signature = `${layer}:${variant}:static-v4`;
+    const signature = `${layer}:${variant}:live-preview-v1`;
     if (preview.dataset.mgwFourPreview === signature) return;
     preview.dataset.mgwFourPreview = signature;
-    preview.dataset.mgwFourPreviewMode = layer === 'effect' ? 'static-concept' : 'static';
+    preview.dataset.mgwFourPreviewMode = layer === 'effect' ? 'animated-live-parity' : 'static';
     preview.innerHTML = fourInARowPreviewMarkup(layer, variant);
   });
 }
@@ -175,20 +174,69 @@ function descriptionFor(layer, variant){
     })[variant] || 'Меняет внешний вид игровых фишек';
   }
   return ({
-    drop:'При падении фишка оставит короткий световой след, а в точке посадки разойдётся компактное ударное кольцо',
-    four:'После каждого хода от поставленной фишки по соседним ячейкам пробегает короткий электрический разряд с яркими ветвящимися молниями',
-    'victory-wave':'От собранной четвёрки по всему полю разойдутся две широкие победные волны с финальным световым акцентом',
-  })[variant] || 'Будущий визуальный эффект партии';
+    drop:'Прицел захватывает клетку, сверху бьёт лазер — и ваша фишка эффектно появляется точно в точке хода.',
+    four:'Каждый ваш ход запускает новый рисунок молний: разряды перескакивают по клеткам и каждый раз выглядят немного иначе.',
+    'victory-wave':'Победная четвёрка загорается по цепочке, соединяется энергетической линией и заканчивается ярким финальным взрывом.',
+  })[variant] || 'Добавляет яркую анимацию в нужный момент партии.';
 }
 
 export function fourInARowPreviewMarkup(layer, variant){
-  if (layer === 'effect') {
-    const src = EFFECT_ASSETS[variant] || EFFECT_ASSETS.drop;
-    return `<i class="mgw-four-preview mgw-four-effect-static effect-${variant}" aria-hidden="true"><img src="${escapeAttr(src)}" alt="" loading="eager" decoding="async" draggable="false"></i>`;
-  }
+  if (layer === 'effect') return effectSceneMarkup(variant);
 
   const modeClass = layer === 'theme' ? `theme-${variant}` : `pieces-${variant}`;
   return boardMarkup(modeClass, layer);
+}
+
+function effectDisplayName(variant){
+  return ({
+    drop:'Лазерное наведение',
+    four:'Энергетический импульс',
+    'victory-wave':'Победный овердрайв',
+  })[variant] || 'Эффект партии';
+}
+
+function upgradePurchaseCopy(root){
+  const preview = root.querySelector('.store-v2-confirm-game .store-v2-game-preview[data-game-type="four_in_a_row"][data-cosmetic-layer="effect"]');
+  if (!(preview instanceof HTMLElement)) return;
+  const variant = safeVariant(preview.dataset.cosmeticVariant || 'drop');
+  const title = root.querySelector('.store-v2-confirm-copy strong');
+  if (title instanceof HTMLElement) title.textContent = effectDisplayName(variant);
+}
+
+function effectSceneMarkup(variant){
+  const safe = ['drop','four','victory-wave'].includes(String(variant || '')) ? String(variant) : 'drop';
+  const occupied = new Map([
+    [24,'red'],[25,'yellow'],[26,'red'],[27,'yellow'],
+    [30,'yellow'],[31,'red'],[32,'yellow'],[33,'red'],
+  ]);
+  if (safe === 'four') occupied.set(17,'red');
+  if (safe === 'victory-wave') {
+    occupied.set(23,'red');
+    occupied.set(24,'red');
+    occupied.set(25,'red');
+    occupied.set(26,'red');
+  }
+  const cells = Array.from({ length:35 }, (_, index) => {
+    const color = occupied.get(index);
+    const extra = safe === 'drop' && index === 17
+      ? ' fx-drop-target'
+      : (safe === 'four' && index === 17
+        ? ' fx-pulse-target'
+        : (safe === 'victory-wave' && [23,24,25,26].includes(index) ? ' fx-win' : ''));
+    return `<span class="mgw-four-fx-cell${extra}">${color ? `<i class="mgw-four-fx-disc ${color}"></i>` : ''}</span>`;
+  }).join('');
+
+  const board = `<span class="mgw-four-fx-preview-board">${cells}</span>`;
+
+  if (safe === 'drop') {
+    return `<i class="mgw-four-preview mgw-four-effect-preview effect-drop" aria-hidden="true"><span class="mgw-four-fx-stage">${board}<span class="mgw-four-preview-drop-reticle"><b></b><i></i></span><span class="mgw-four-preview-drop-laser"></span><span class="mgw-four-preview-drop-disc"></span></span></i>`;
+  }
+
+  if (safe === 'four') {
+    return `<i class="mgw-four-preview mgw-four-effect-preview effect-four" aria-hidden="true"><span class="mgw-four-fx-stage">${board}<svg class="mgw-four-preview-pulse-svg" viewBox="0 0 140 100" preserveAspectRatio="none"><path class="b1" d="M70 50 L52 39 L34 51"></path><path class="b2" d="M70 50 L88 36 L108 44"></path><path class="b3" d="M70 50 L74 72 L98 82"></path><path class="b4" d="M70 50 L47 69 L25 80"></path><path class="b5" d="M70 50 L102 59 L126 68"></path></svg><span class="mgw-four-preview-pulse-core"></span></span></i>`;
+  }
+
+  return `<i class="mgw-four-preview mgw-four-effect-preview effect-victory-wave" aria-hidden="true"><span class="mgw-four-fx-stage">${board}<span class="mgw-four-preview-victory-rail"><i></i></span><span class="mgw-four-preview-victory-prism"><b></b></span><span class="mgw-four-preview-victory-blade blade-a"></span><span class="mgw-four-preview-victory-blade blade-b"></span><span class="mgw-four-preview-victory-shards">${Array.from({length:10},(_,index)=>`<i class="s${index + 1}"></i>`).join('')}</span></span></i>`;
 }
 
 function boardMarkup(modeClass, layer){

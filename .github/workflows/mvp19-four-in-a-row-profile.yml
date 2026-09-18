@@ -66,13 +66,13 @@ jobs:
           set -euo pipefail
           grep -F "item.owned === true" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
           grep -F "fourInARowPreviewMarkup(layer, variant)" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
-          grep -F "store-screen-four-in-a-row-store-v1.js?v=8&four_store=static-v6&effect2=chain-v3&export=profile-preview-v1&copy=human-v1" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
+          grep -F "store-screen-four-in-a-row-store-v1.js?v=9&four_store=live-previews-v1&effect2=random-chain-v4&victory=overdrive-v1&export=profile-preview-v2&copy=player-v2" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
           grep -F "export function fourInARowPreviewMarkup(layer, variant)" app/assets/js/screens/store-screen-four-in-a-row-store-v1.js
           grep -F "mgw:cosmetic-inventory-changed" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
-          grep -F "four_profile=spacing-v2" app/runtime/client/version-manifest.php
-          grep -F "mgw-profile-four-in-a-row-parity.js?v=5&four_profile=spacing-v2&four_module=export-v8&effect2=chain-v3" app/assets/js/profile/mgw-profile-chess-layout-v2.js
+          grep -F "four_profile=live-previews-v1" app/runtime/client/version-manifest.php
+          grep -F "mgw-profile-four-in-a-row-parity.js?v=6&four_profile=live-previews-v1&four_module=export-v9&effect2=random-chain-v4&victory=overdrive-v1&copy=player-v2" app/assets/js/profile/mgw-profile-chess-layout-v2.js
           grep -F "padding-bottom:16px!important" app/assets/css/screens/profile-four-in-a-row-store-parity-v1.css
           grep -F "display:none!important" app/assets/css/screens/profile-four-in-a-row-store-parity-v1.css
           ! grep -Fq "gameAction(" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
-          ! grep -Fq "@keyframes" app/assets/css/games/four-in-a-row/store-cosmetics-v1.css
+          grep -F "@keyframes mgwFourPreviewVictoryPrism" app/assets/css/games/four-in-a-row/store-cosmetics-v1.css
           git diff --check

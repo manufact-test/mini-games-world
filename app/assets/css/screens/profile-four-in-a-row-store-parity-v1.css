@@ -1,5 +1,5 @@
-/* Four in a Row Profile parity v1.
-   Reuses the accepted Store primitive; effects remain static until live Phase 3 is accepted. */
+/* Four in a Row Profile parity.
+   Reuses the accepted Store primitive, including the three accepted animated effect previews. */
 
 #screen-profile .profile-v2-game-tab[data-profile-game-tab="four_in_a_row"] .profile-v2-game-tab-mark{
   color:transparent!important;

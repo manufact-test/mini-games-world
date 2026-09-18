@@ -7,6 +7,7 @@ on:
     paths:
       - 'bot/database/migrations/20260918_0036_add_four_in_a_row_store_cosmetics.php'
       - 'bot/database/migrations/20260918_0038_four_in_a_row_effect_two_midgame_pulse.php'
+      - 'bot/database/migrations/20260918_0039_four_in_a_row_accepted_preview_copy.php'
       - 'bot/catalog/CosmeticStoreService.php'
       - 'bot/tests/Mvp19_FourInARowStoreTest.php'
       - 'app/assets/js/screens/store-screen-four-in-a-row-store-v1.js'
@@ -46,6 +47,7 @@ jobs:
         run: |
           php -l bot/database/migrations/20260918_0036_add_four_in_a_row_store_cosmetics.php
           php -l bot/database/migrations/20260918_0038_four_in_a_row_effect_two_midgame_pulse.php
+          php -l bot/database/migrations/20260918_0039_four_in_a_row_accepted_preview_copy.php
           php -l bot/catalog/CosmeticStoreService.php
           php -l bot/tests/Mvp19_FourInARowStoreTest.php
           php -l app/runtime/client/version-manifest.php
@@ -64,30 +66,34 @@ jobs:
           php bot/tests/Mvp19_7ReversiStoreTest.php
           php bot/tests/Mvp19_8GoStoreTest.php
 
-      - name: Guard Phase 1 scope
+      - name: Guard accepted Store preview scope
         shell: bash
         run: |
           set -euo pipefail
           migration='bot/database/migrations/20260918_0036_add_four_in_a_row_store_cosmetics.php'
+          preview_migration='bot/database/migrations/20260918_0039_four_in_a_row_accepted_preview_copy.php'
           wrapper='app/assets/js/screens/store-screen-four-in-a-row-store-v1.js'
           css='app/assets/css/games/four-in-a-row/store-cosmetics-v1.css'
 
-          for id in             game-four-field-blue game-four-field-dark game-four-field-metal game-four-field-neon             game-four-discs-classic game-four-discs-3d game-four-discs-metal game-four-discs-neon             game-four-effect-drop game-four-effect-four game-four-effect-victory-wave; do
+          for id in game-four-field-blue game-four-field-dark game-four-field-metal game-four-field-neon game-four-discs-classic game-four-discs-3d game-four-discs-metal game-four-discs-neon game-four-effect-drop game-four-effect-four game-four-effect-victory-wave; do
             grep -F "'$id'" "$migration"
           done
 
-          grep -F "'game_four_in_a_row_theme'" "$migration"
-          grep -F "'game_four_in_a_row_elements'" "$migration"
-          grep -F "'game_four_in_a_row_effect'" "$migration"
-          grep -F "'preview_mode'" "$migration"
-          grep -F "'static_concept'" "$migration"
-          ! grep -Fq "offer_type' => 'bundle'" "$migration"
+          grep -F "'animated_preview'" "$preview_migration"
+          grep -F "'Лазерное наведение'" "$preview_migration"
+          grep -F "'Энергетический импульс'" "$preview_migration"
+          grep -F "'Победный овердрайв'" "$preview_migration"
 
-          grep -F 'drop-v1.svg' "$wrapper"
-          grep -F 'four-v1.svg' "$wrapper"
-          grep -F 'victory-wave-v1.svg' "$wrapper"
-          ! grep -Fq '@keyframes' "$css"
-          ! grep -Fq 'animation:' "$css"
+          grep -F 'mgw-four-preview-drop-reticle' "$wrapper"
+          grep -F 'mgw-four-preview-pulse-svg' "$wrapper"
+          grep -F 'mgw-four-preview-victory-prism' "$wrapper"
+          grep -F 'animated-live-parity' "$wrapper"
+          grep -F 'upgradePurchaseCopy(root)' "$wrapper"
+
+          grep -F '@keyframes mgwFourPreviewDropDisc' "$css"
+          grep -F '@keyframes mgwFourPreviewBoltA' "$css"
+          grep -F '@keyframes mgwFourPreviewVictoryPrism' "$css"
+          grep -F '@media (prefers-reduced-motion:reduce)' "$css"
           grep -F 'aspect-ratio:auto' "$css"
           grep -F 'grid-template-rows:repeat(6,auto)' "$css"
           grep -F '#ff2d8c' "$css"
@@ -103,8 +109,8 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
-          grep -F "store-screen-four-in-a-row-store-v1.js?v=8&four_store=static-v6&effect2=chain-v3&export=profile-preview-v1&copy=human-v1" app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
-          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!preg_match("~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~",$s,$v) || (int)$v[1] < 10 || !str_contains($s,"four_store=static-v6") || !str_contains($s,"four_effect2=chain-v3")) exit(1);'
-          php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1193) exit(1);'
+          grep -F "store-screen-four-in-a-row-store-v1.js?v=9&four_store=live-previews-v1&effect2=random-chain-v4&victory=overdrive-v1&export=profile-preview-v2&copy=player-v2" app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!preg_match("~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~",$s,$v) || (int)$v[1] < 19 || !str_contains($s,"four_store=live-previews-v1") || !str_contains($s,"four_effect2=random-chain-v4") || !str_contains($s,"four_victory=overdrive-v1") || !str_contains($s,"copy=player-v2")) exit(1);'
+          php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1211 || !str_contains($s,"four_store=live-previews-v1") || !str_contains($s,"four_profile=live-previews-v1")) exit(1);'
           git diff --exit-code "$BASE_SHA" "$HEAD_SHA" --             app/assets/js/games/four-in-a-row/renderer.js             app/assets/js/games/four-in-a-row/entry.js             app/assets/css/games/four-in-a-row/game.css             bot/services/FourInARowService.php             bot/services/FourInARowBotService.php
           git diff --check

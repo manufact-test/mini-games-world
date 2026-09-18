@@ -6,7 +6,7 @@ import { initProfileGoParity } from './mgw-profile-go-parity.js?v=2&mvp19_8=go-p
 import { initProfileGoHardSquare } from './mgw-profile-go-hard-square-v1.js?v=1&mvp19_8=go-profile-hard-square-v1';
 import { initProfileDominoParity } from './mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1';
 import { initProfileDominoHardRatio } from './mgw-profile-domino-hard-ratio-v1.js?v=1&mvp19_9=hard-8x5-v1';
-import { initProfileFourInARowParity } from './mgw-profile-four-in-a-row-parity.js?v=5&four_profile=spacing-v2&four_module=export-v8&effect2=chain-v3';
+import { initProfileFourInARowParity } from './mgw-profile-four-in-a-row-parity.js?v=6&four_profile=live-previews-v1&four_module=export-v9&effect2=random-chain-v4&victory=overdrive-v1&copy=player-v2';
 
 const profileChessArtworkPrewarm = [];
 const PROFILE_GAME_TAB_DRAG_THRESHOLD = 5;

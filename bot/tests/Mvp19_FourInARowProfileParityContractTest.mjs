@@ -47,23 +47,25 @@ assert.ok(profile.includes('api.profileV2'), 'Four parity must converge from aut
 assert.ok(profile.includes('mgw:cosmetic-inventory-changed'), 'Four parity must react to Store ownership/equip refresh');
 assert.ok(profile.includes('data-game-type="four_in_a_row"'), 'Four Profile previews must identify game type explicitly');
 assert.ok(profile.includes('fourInARowPreviewMarkup(layer, variant)'), 'Profile must reuse the accepted Store preview primitive');
-assert.ok(profile.includes("store-screen-four-in-a-row-store-v1.js?v=8&four_store=static-v6&effect2=chain-v3&export=profile-preview-v1&copy=human-v1"), 'Profile must request the current Four Store module URL with the shared preview primitive and human copy');
-assert.ok(profile.includes("four_profile=spacing-v2"), 'Four Profile must publish the dedicated spacing-corrective style identity');
-assert.ok(profile.includes("store-cosmetics-v1.css?v=4&four_store=static-v4"), 'Profile must load the accepted Four Store artwork CSS');
+assert.ok(profile.includes("drop:'Лазерное наведение'") && profile.includes("four:'Энергетический импульс'") && profile.includes("'victory-wave':'Победный овердрайв'"), 'Profile cards and equip sheet must use player-facing effect names');
+assert.ok(store.includes('upgradePurchaseCopy(root)') && store.includes('.store-v2-confirm-copy strong'), 'Store purchase sheet must use the same shared preview/name presentation as Profile');
+assert.ok(profile.includes("store-screen-four-in-a-row-store-v1.js?v=9&four_store=live-previews-v1&effect2=random-chain-v4&victory=overdrive-v1&export=profile-preview-v2&copy=player-v2"), 'Profile must request the shared accepted animated Four preview primitive and player-facing copy');
+assert.ok(profile.includes("four_profile=spacing-v2") || profile.includes("four_profile=live-previews-v1"), 'Four Profile must retain its dedicated presentation identity');
+assert.ok(profile.includes("store-cosmetics-v1.css?v=5&four_store=live-previews-v1"), 'Profile must load the accepted animated Four Store/Profile preview CSS');
 assert.ok(!profile.includes('gameAction('), 'Four Profile must never own gameplay actions');
 assert.ok(!profile.includes('last_move'), 'Four Profile must not implement live move triggers');
 
 assert.ok(store.includes('export function fourInARowPreviewMarkup(layer, variant)'), 'Store must export the accepted Four preview primitive for Profile reuse');
-assert.ok(store.includes('EFFECT_ASSETS') && store.includes("four:'После каждого хода") && store.includes('ветвящимися молниями'), 'Static Store/Profile concept for effect 2 must describe the differentiated electric chain');
-assert.ok(!storeCss.includes('@keyframes'), 'Four Store/Profile effects must remain static before live animation acceptance');
+assert.ok(store.includes('mgw-four-preview-drop-reticle') && store.includes('mgw-four-preview-pulse-svg') && store.includes('mgw-four-preview-victory-prism'), 'Store/Profile must share the three accepted animated effect preview scenes');
+assert.ok(storeCss.includes('@keyframes mgwFourPreviewDropDisc') && storeCss.includes('@keyframes mgwFourPreviewBoltA') && storeCss.includes('@keyframes mgwFourPreviewVictoryPrism'), 'Four Store/Profile effects must now animate the accepted live concepts');
 
-assert.ok(layout.includes("mgw-profile-four-in-a-row-parity.js?v=5&four_profile=spacing-v2&four_module=export-v8&effect2=chain-v3"), 'Active Profile wrapper must import the Four spacing/human-copy module');
+assert.ok(layout.includes("mgw-profile-four-in-a-row-parity.js?v=6&four_profile=live-previews-v1&four_module=export-v9&effect2=random-chain-v4&victory=overdrive-v1&copy=player-v2"), 'Active Profile wrapper must import the accepted animated Four preview module');
 assert.ok(layout.includes('initProfileFourInARowParity();'), 'Active Profile wrapper must initialize Four parity');
 assert.ok(layout.indexOf('initProfileDominoHardRatio();') < layout.indexOf('initProfileFourInARowParity();'), 'Four parity must be added after accepted existing game owners without replacing them');
 
 const profileOwnerMatch = manifest.match(/mgw-profile-chess-layout-v2\.js\?v=(\d+)/);
 assert.ok(profileOwnerMatch && Number(profileOwnerMatch[1]) >= 20, 'Active Profile owner must publish the Four parity cache revision');
-assert.ok(manifest.includes('four_profile=spacing-v2') && manifest.includes('four_module=export-v8') && manifest.includes('four_effect2=chain-v3') && manifest.includes('copy=human-v1'), 'Active Profile URL must publish Four spacing and human-copy identities');
+assert.ok(manifest.includes('four_profile=live-previews-v1') && manifest.includes('four_module=export-v9') && manifest.includes('four_effect2=random-chain-v4') && manifest.includes('four_victory=overdrive-v1') && manifest.includes('copy=player-v2'), 'Active Profile URL must publish accepted animated preview and player-copy identities');
 
 assert.ok(profileApi.includes('(new ProductInventoryService($database))->snapshot($mgwId)'), 'Profile API must expose the same canonical inventory used by Store purchases');
 
