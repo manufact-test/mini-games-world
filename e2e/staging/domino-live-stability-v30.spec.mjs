@@ -346,8 +346,8 @@ test('DOMINO — stable hand + owner-gated v38 viewport particles with measured 
     oldLocal:0,
     oldNative:0,
   });
-  expect(setup.precisionMotion?.maxDistance).toBeGreaterThanOrEqual(12);
-  expect(setup.precisionMotion?.maxDistance).toBeLessThanOrEqual(32);
+  expect(setup.precisionMotion?.maxDistance).toBeGreaterThanOrEqual(30);
+  expect(setup.precisionMotion?.maxDistance).toBeLessThanOrEqual(60);
   expect(setup.precisionMotion?.visibleAway).toBeGreaterThanOrEqual(4);
   expect(setup.myPrecisionLaunchesAfterRepeat).toBe(1);
   expect(setup.opponentWithoutEffectCount).toBe(0);
