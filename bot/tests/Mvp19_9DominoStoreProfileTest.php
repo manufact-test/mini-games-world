@@ -133,7 +133,7 @@ $assertTrue(!str_contains($previewComponentCss, 'opacity:0!important'), 'Animate
 $assertTrue(!str_contains($previewComponentCss, 'left:var(--sx)!important') && !str_contains($previewComponentCss, 'top:var(--sy)!important'), 'Animated particle positions must not be locked by !important');
 $assertTrue(!str_contains($previewComponentCss, 'transform:rotate(27deg) scaleX(0)!important') && !str_contains($previewComponentCss, 'transform:translateX(-44%) skewX(-4deg)!important'), 'Animated beam/sweep transforms must remain keyframe-owned');
 $assertTrue(!str_contains($profileCss, 'animation:none!important'), 'Profile CSS must not freeze Domino effect previews');
-$assertTrue(str_contains($baseStore, "store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48"), 'Base Store must directly import polished v47 instead of relying on wrapper repair');
+$assertTrue(str_contains($baseStore, "store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48"), 'Base Store must directly import SVG-pip v48 instead of relying on wrapper repair');
 $assertTrue(!str_contains($effectCss, 'mgw-domino-v12-') && !str_contains($effectCss, 'repeating-conic-gradient') && !str_contains($effectCss, 'mix-blend-mode:screen'), 'Rejected v12/rainbow/light-show language must remain absent');
 $assertTrue(str_contains($storeOwner, "store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48") && str_contains($storeOwner, "store-screen-domino-effects-v9.js?v=12&mvp19_9=domino-svg-pips-v48"), 'Store owner must wire fresh v48 preview motion over accepted base geometry');
 $assertTrue(str_contains($selectorOwner, 'selector.scrollLeft = left;') && !str_contains($selectorOwner, "behavior:'smooth'"), 'Accepted no-jump Store selector must remain intact');
