@@ -1,14 +1,18 @@
 const INSTALL_KEY = '__mgwDominoStoreV1Installed';
-const STYLE_MARK = 'mvp19-9-domino-store-v9';
+const STYLE_MARK = 'mvp19-9-domino-store-v10-live-v41';
 const EFFECT_STYLE_ATTR = 'data-mgw-domino-store-effects-v9';
 const EFFECT_STYLE_VALUE = 'mvp19-9-domino-premium-effects-v15-proportions';
+const LIVE_STYLE_ATTR = 'data-mgw-domino-store-live-parity-v41';
+const LIVE_STYLE_VALUE = 'mvp19-9-domino-live-preview-v41';
 
 ensureStyles();
 ensureEffectStyles();
+ensureLiveParityStyles();
 
 export function installDominoStorePresentation(){
   ensureStyles();
   ensureEffectStyles();
+ensureLiveParityStyles();
   if (globalThis[INSTALL_KEY]) return;
   globalThis[INSTALL_KEY] = true;
 }
@@ -16,6 +20,7 @@ export function installDominoStorePresentation(){
 export function upgradeDominoStorePresentation(){
   ensureStyles();
   ensureEffectStyles();
+ensureLiveParityStyles();
   const roots = [
     document.querySelector('[data-store-v2-panel="games"]'),
     document.getElementById('sheet'),
@@ -72,6 +77,22 @@ function ensureEffectStyles(){
   link.rel = 'stylesheet';
   link.href = href;
   link.setAttribute(EFFECT_STYLE_ATTR, EFFECT_STYLE_VALUE);
+  document.head.appendChild(link);
+}
+
+function ensureLiveParityStyles(){
+  const href = new URL('../../css/games/domino/store-effects-live-parity-v41.css?v=1&mvp19_9=domino-live-preview-v41', import.meta.url).href;
+  const existing = document.querySelector(`link[${LIVE_STYLE_ATTR}]`);
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    existing.setAttribute(LIVE_STYLE_ATTR, LIVE_STYLE_VALUE);
+    document.head.appendChild(existing);
+    return;
+  }
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = href;
+  link.setAttribute(LIVE_STYLE_ATTR, LIVE_STYLE_VALUE);
   document.head.appendChild(link);
 }
 
@@ -132,13 +153,13 @@ function upgradePreviews(root){
     const variant = String(preview.dataset.cosmeticVariant || 'felt');
     const expectedClass = modeClass(layer, variant);
     const visual = preview.querySelector(':scope > .mgw-domino-preview');
-    const sceneReady = layer !== 'effect' || visual?.querySelector(`.mgw-domino-fx-stage[data-mgw-domino-fx-v14="${safeVariant(variant)}"]`);
+    const sceneReady = layer !== 'effect' || visual?.querySelector(`.mgw-domino-fx-stage[data-mgw-domino-fx-v14="${safeVariant(variant)}"][data-mgw-domino-preview-live-v41="${safeVariant(variant)}"]`);
     if (visual instanceof HTMLElement && visual.classList.contains(expectedClass) && sceneReady) {
-      preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v9`;
+      preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v10:live-v41`;
       return;
     }
     preview.innerHTML = dominoPreviewMarkup(layer, variant);
-    preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v9`;
+    preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v10:live-v41`;
   });
 }
 
@@ -160,9 +181,9 @@ function descriptionFor(layer, variant){
     })[variant] || 'Меняет внешний вид костяшек';
   }
   return ({
-    'precision-drop':'Яркий акцент в момент точного хода',
-    'stock-pulse':'Эффектный выход костяшки из запаса',
-    'chain-finale':'Финал с каскадом падающих костяшек',
+    'precision-drop':'Компактная золотая волна и восемь частиц от поставленной костяшки',
+    'stock-pulse':'Тонкий импульс из запаса к новой костяшке с разлетающимися частицами',
+    'chain-finale':'Финальный проход по цепочке с призмой, аурой и искрами',
   })[variant] || 'Добавляет визуальный эффект партии';
 }
 
@@ -175,12 +196,12 @@ function tableMarkup(layer, variant){
 
 function effectSceneMarkup(variant){
   if (variant === 'stock-pulse') {
-    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-draw" data-mgw-domino-fx-v14="stock-pulse"><span class="mgw-domino-v13-stock"><i></i><i></i><i></i></span><span class="mgw-domino-v13-draw-piece"><i class="back"></i><i class="face"></i></span><span class="mgw-domino-v13-draw-shadow"></span></span></span>`;
+    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-draw mgw-domino-live-preview-v41" data-mgw-domino-fx-v14="stock-pulse" data-mgw-domino-preview-live-v41="stock-pulse" data-mgw-domino-preview-particles="12"><span class="mgw-domino-v13-stock"><i></i><i></i><i></i></span><span class="mgw-domino-v13-draw-piece"><i class="back"></i><i class="face"></i></span><span class="mgw-domino-v13-draw-shadow"></span><span class="mgw-domino-v41-stock-line"></span><span class="mgw-domino-v41-stock-orb"></span><span class="mgw-domino-v41-stock-sparks">${Array.from({length:12},(_,index)=>`<i class="p${index + 1}"></i>`).join('')}</span></span></span>`;
   }
   if (variant === 'chain-finale') {
-    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-cascade" data-mgw-domino-fx-v14="chain-finale"><span class="mgw-domino-v13-floor"></span><span class="mgw-domino-v13-cascade-row"><i></i><i></i><i></i><i></i><i></i></span><span class="mgw-domino-v13-finish-dust"></span></span></span>`;
+    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-cascade mgw-domino-live-preview-v41" data-mgw-domino-fx-v14="chain-finale" data-mgw-domino-preview-live-v41="chain-finale" data-mgw-domino-preview-particles="6"><span class="mgw-domino-v13-floor"></span><span class="mgw-domino-v13-cascade-row"><i></i><i></i><i></i><i></i><i></i></span><span class="mgw-domino-v13-finish-dust"></span><span class="mgw-domino-v41-finale-sweep"></span><span class="mgw-domino-v41-finale-aura"></span><span class="mgw-domino-v41-finale-prism"></span><span class="mgw-domino-v41-finale-sparks">${Array.from({length:6},(_,index)=>`<i class="s${index + 1}"></i>`).join('')}</span></span></span>`;
   }
-  return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-impact" data-mgw-domino-fx-v14="precision-drop"><span class="mgw-domino-v13-chain"><i></i><i></i></span><span class="mgw-domino-v13-impact-piece"></span><span class="mgw-domino-v13-impact-ring"></span><span class="mgw-domino-v13-impact-sparks"><i></i><i></i><i></i></span></span></span>`;
+  return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-impact mgw-domino-live-preview-v41" data-mgw-domino-fx-v14="precision-drop" data-mgw-domino-preview-live-v41="precision-drop" data-mgw-domino-preview-particles="8"><span class="mgw-domino-v13-chain"><i></i><i></i></span><span class="mgw-domino-v13-impact-piece"></span><span class="mgw-domino-v13-impact-ring"></span><span class="mgw-domino-v13-impact-sparks">${Array.from({length:8},(_,index)=>`<i class="s${index + 1}"></i>`).join('')}</span></span></span>`;
 }
 
 function modeClass(layer, variant){

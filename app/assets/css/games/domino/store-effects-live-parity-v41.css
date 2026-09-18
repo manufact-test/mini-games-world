@@ -1,0 +1,434 @@
+/* MVP-19.9 Domino preview live parity v41.
+   Shared by Store cards, purchase confirmation, purchased-item sheets and Profile/Portfolio.
+   Precision mirrors accepted live compact-v41: 41-48px shard travel and compact 1.32 outline wave.
+   Stock mirrors accepted live v38: thin beam plus twelve off-axis particles.
+   Finale mirrors accepted live premium-v31: sequential chain pass, sweep, aura, prism and six sparks.
+   This layer intentionally overrides the old v15-v24 preview choreography only. */
+
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-live-preview-v41{
+  --mgw-domino-preview-live-source:live-v41;
+  transform:none!important;
+  transform-origin:center!important;
+  overflow:hidden!important;
+  isolation:isolate!important;
+}
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-live-preview-v41::before{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  pointer-events:none!important;
+  background:radial-gradient(circle at 50% 52%,rgba(255,255,255,.035),transparent 54%)!important;
+}
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-live-preview-v41 .mgw-domino-v13-chain>i,
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-live-preview-v41 .mgw-domino-v13-impact-piece,
+body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-live-preview-v41 .mgw-domino-v13-draw-piece{
+  width:27%!important;
+  height:21.6%!important;
+  border-radius:3px!important;
+  border:1px solid rgba(54,59,70,.66)!important;
+  background:linear-gradient(155deg,#fff,#dfe3e8)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.72),0 4px 8px rgba(0,0,0,.30)!important;
+}
+
+/* Precision: compact golden wave and eight shards around the already placed tile. */
+body .mgw-domino-preview.effect-precision-drop .mgw-domino-preview-table{
+  background:
+    radial-gradient(circle at 69% 54%,rgba(255,196,70,.11),transparent 28%),
+    linear-gradient(145deg,#183c2d,#081713 76%)!important;
+}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="precision-drop"] .mgw-domino-v13-chain>i{
+  top:43%!important;
+  opacity:1!important;
+  animation:none!important;
+  transform:none!important;
+}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="precision-drop"] .mgw-domino-v13-chain>i:nth-child(1){left:4%!important}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="precision-drop"] .mgw-domino-v13-chain>i:nth-child(2){left:30%!important}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="precision-drop"] .mgw-domino-v13-impact-piece{
+  left:56%!important;
+  top:43%!important;
+  opacity:1!important;
+  transform:none!important;
+  filter:none!important;
+  animation:mgw-domino-v41-precision-tile 3.2s ease-out infinite!important;
+}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="precision-drop"] .mgw-domino-v13-impact-ring{
+  position:absolute!important;
+  z-index:7!important;
+  left:69.5%!important;
+  top:53.8%!important;
+  width:27%!important;
+  height:21.6%!important;
+  border:1.5px solid rgba(255,226,111,.96)!important;
+  border-radius:4px!important;
+  background:transparent!important;
+  box-shadow:0 0 8px rgba(255,215,87,.56),0 0 16px rgba(255,170,40,.28)!important;
+  opacity:0!important;
+  transform:translate(-50%,-50%) scale(.82)!important;
+  transform-origin:center!important;
+  animation:mgw-domino-v41-precision-ring 3.2s cubic-bezier(.18,.72,.2,1) infinite!important;
+}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="precision-drop"] .mgw-domino-v13-impact-sparks{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  transform:none!important;
+  z-index:9!important;
+}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="precision-drop"] .mgw-domino-v13-impact-sparks>i{
+  --x:69.5%;
+  --y:53.8%;
+  --fx:69.5%;
+  --fy:32.8%;
+  --rot:0deg;
+  position:absolute!important;
+  left:var(--x)!important;
+  top:var(--y)!important;
+  width:3px!important;
+  height:12px!important;
+  border-radius:999px 999px 2px 2px!important;
+  background:linear-gradient(180deg,#fff 0%,#fff6ba 18%,#ffd95b 52%,#ff9f27 82%,rgba(255,125,18,.08) 100%)!important;
+  box-shadow:0 0 5px rgba(255,247,188,1),0 0 10px rgba(255,205,66,.92),0 0 16px rgba(255,137,24,.52)!important;
+  transform:translate(-50%,-50%) rotate(var(--rot)) scaleY(.55)!important;
+  transform-origin:center!important;
+  opacity:0!important;
+  animation:mgw-domino-v41-precision-shard 3.2s cubic-bezier(.18,.68,.16,1) infinite!important;
+}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="precision-drop"] .mgw-domino-v13-impact-sparks>.s1{--fx:69.5%;--fy:32.8%;--rot:0deg}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="precision-drop"] .mgw-domino-v13-impact-sparks>.s2{--fx:78.5%;--fy:38.8%;--rot:45deg;animation-delay:.035s!important}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="precision-drop"] .mgw-domino-v13-impact-sparks>.s3{--fx:82.5%;--fy:53.8%;--rot:90deg;animation-delay:.07s!important}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="precision-drop"] .mgw-domino-v13-impact-sparks>.s4{--fx:78.5%;--fy:68.8%;--rot:135deg;animation-delay:.105s!important}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="precision-drop"] .mgw-domino-v13-impact-sparks>.s5{--fx:69.5%;--fy:74.8%;--rot:180deg;animation-delay:.14s!important}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="precision-drop"] .mgw-domino-v13-impact-sparks>.s6{--fx:60.5%;--fy:68.8%;--rot:225deg;animation-delay:.175s!important}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="precision-drop"] .mgw-domino-v13-impact-sparks>.s7{--fx:56.5%;--fy:53.8%;--rot:270deg;animation-delay:.21s!important}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="precision-drop"] .mgw-domino-v13-impact-sparks>.s8{--fx:60.5%;--fy:38.8%;--rot:315deg;animation-delay:.245s!important}
+
+/* Stock: static source and target, sub-pixel beam, traveling core and twelve off-axis particles. */
+body .mgw-domino-preview.effect-stock-pulse .mgw-domino-preview-table{
+  background:
+    radial-gradient(circle at 23% 35%,rgba(82,239,255,.10),transparent 25%),
+    radial-gradient(circle at 79% 69%,rgba(171,104,255,.10),transparent 24%),
+    linear-gradient(145deg,#143436,#071719 76%)!important;
+}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="stock-pulse"] .mgw-domino-v13-stock{
+  left:9%!important;
+  top:24%!important;
+  width:27%!important;
+  height:21.6%!important;
+  opacity:1!important;
+  animation:mgw-domino-v41-stock-source 3.4s ease-out infinite!important;
+}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="stock-pulse"] .mgw-domino-v13-stock::after{display:none!important}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="stock-pulse"] .mgw-domino-v13-stock>i{
+  border-radius:3px!important;
+  background:repeating-linear-gradient(135deg,#29364b 0 4px,#111a2b 4px 8px)!important;
+  box-shadow:0 3px 6px rgba(0,0,0,.38),inset 0 0 0 1px rgba(255,255,255,.05)!important;
+  animation:none!important;
+}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="stock-pulse"] .mgw-domino-v13-draw-piece{
+  left:65%!important;
+  top:58%!important;
+  opacity:1!important;
+  transform:none!important;
+  filter:none!important;
+  animation:mgw-domino-v41-stock-target 3.4s ease-out infinite!important;
+}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="stock-pulse"] .mgw-domino-v13-draw-piece>i.back{
+  display:none!important;
+  opacity:0!important;
+  animation:none!important;
+}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="stock-pulse"] .mgw-domino-v13-draw-piece>i.face{
+  display:block!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  opacity:1!important;
+  transform:none!important;
+  animation:none!important;
+}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="stock-pulse"] .mgw-domino-v13-draw-shadow{
+  display:none!important;
+  opacity:0!important;
+  animation:none!important;
+}
+body .mgw-domino-v41-stock-line{
+  position:absolute!important;
+  z-index:7!important;
+  left:22.5%!important;
+  top:34.8%!important;
+  width:61%!important;
+  height:.62px!important;
+  border-radius:999px!important;
+  transform:rotate(20.7deg) scaleX(0)!important;
+  transform-origin:0 50%!important;
+  background:linear-gradient(90deg,rgba(84,243,255,.05),rgba(115,245,255,.96) 26%,rgba(173,119,255,.92) 76%,rgba(255,246,202,.9))!important;
+  box-shadow:0 0 5px rgba(90,237,255,.72),0 0 9px rgba(160,102,255,.28)!important;
+  opacity:0!important;
+  animation:mgw-domino-v41-stock-line 3.4s cubic-bezier(.16,.76,.18,1) infinite!important;
+}
+body .mgw-domino-v41-stock-orb{
+  position:absolute!important;
+  z-index:9!important;
+  left:22.5%!important;
+  top:34.8%!important;
+  width:5px!important;
+  height:5px!important;
+  margin:-2.5px 0 0 -2.5px!important;
+  border-radius:50%!important;
+  background:#f3feff!important;
+  box-shadow:0 0 6px #70f4ff,0 0 11px rgba(165,105,255,.74)!important;
+  opacity:0!important;
+  animation:mgw-domino-v41-stock-orb 3.4s cubic-bezier(.15,.78,.18,1) infinite!important;
+}
+body .mgw-domino-v41-stock-sparks{
+  position:absolute!important;
+  inset:0!important;
+  z-index:10!important;
+}
+body .mgw-domino-v41-stock-sparks>i{
+  --x:30%;
+  --y:39%;
+  --fx:27%;
+  --fy:24%;
+  position:absolute!important;
+  left:var(--x)!important;
+  top:var(--y)!important;
+  width:6px!important;
+  height:6px!important;
+  margin:-3px 0 0 -3px!important;
+  border-radius:50%!important;
+  background:#f5ffff!important;
+  box-shadow:0 0 6px rgba(105,242,255,.96),0 0 11px rgba(166,104,255,.62)!important;
+  opacity:0!important;
+  animation:mgw-domino-v41-stock-spark 3.4s cubic-bezier(.18,.68,.16,1) infinite!important;
+}
+body .mgw-domino-v41-stock-sparks>i::before,
+body .mgw-domino-v41-stock-sparks>i::after{
+  content:""!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  background:rgba(231,255,255,.92)!important;
+  border-radius:999px!important;
+  transform:translate(-50%,-50%)!important;
+}
+body .mgw-domino-v41-stock-sparks>i::before{width:14px!important;height:1px!important}
+body .mgw-domino-v41-stock-sparks>i::after{width:1px!important;height:14px!important}
+body .mgw-domino-v41-stock-sparks>.p1{--x:28%;--y:38%;--fx:25%;--fy:22%}
+body .mgw-domino-v41-stock-sparks>.p2{--x:32%;--y:40%;--fx:36%;--fy:55%;animation-delay:.038s!important}
+body .mgw-domino-v41-stock-sparks>.p3{--x:37%;--y:43%;--fx:32%;--fy:25%;animation-delay:.076s!important}
+body .mgw-domino-v41-stock-sparks>.p4{--x:42%;--y:46%;--fx:48%;--fy:63%;animation-delay:.114s!important}
+body .mgw-domino-v41-stock-sparks>.p5{--x:47%;--y:49%;--fx:42%;--fy:30%;animation-delay:.152s!important}
+body .mgw-domino-v41-stock-sparks>.p6{--x:52%;--y:52%;--fx:58%;--fy:70%;animation-delay:.19s!important}
+body .mgw-domino-v41-stock-sparks>.p7{--x:57%;--y:55%;--fx:51%;--fy:35%;animation-delay:.228s!important}
+body .mgw-domino-v41-stock-sparks>.p8{--x:62%;--y:58%;--fx:69%;--fy:76%;animation-delay:.266s!important}
+body .mgw-domino-v41-stock-sparks>.p9{--x:67%;--y:61%;--fx:60%;--fy:40%;animation-delay:.304s!important}
+body .mgw-domino-v41-stock-sparks>.p10{--x:71%;--y:64%;--fx:79%;--fy:82%;animation-delay:.342s!important}
+body .mgw-domino-v41-stock-sparks>.p11{--x:75%;--y:66%;--fx:68%;--fy:44%;animation-delay:.38s!important}
+body .mgw-domino-v41-stock-sparks>.p12{--x:78%;--y:68%;--fx:86%;--fy:86%;animation-delay:.418s!important}
+
+/* Finale: accepted premium-v31 chain pass, aura, prism and six sparks; no falling preview cascade. */
+body .mgw-domino-preview.effect-chain-finale .mgw-domino-preview-table{
+  background:
+    radial-gradient(circle at 50% 55%,rgba(87,238,255,.08),transparent 34%),
+    radial-gradient(circle at 57% 52%,rgba(184,98,255,.07),transparent 42%),
+    linear-gradient(145deg,#23382f,#081713 76%)!important;
+}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="chain-finale"] .mgw-domino-v13-floor,
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="chain-finale"] .mgw-domino-v13-finish-dust{
+  display:none!important;
+  opacity:0!important;
+  animation:none!important;
+}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="chain-finale"] .mgw-domino-v13-cascade-row{
+  position:absolute!important;
+  inset:0!important;
+  z-index:7!important;
+}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="chain-finale"] .mgw-domino-v13-cascade-row>i{
+  position:absolute!important;
+  top:47%!important;
+  bottom:auto!important;
+  width:18%!important;
+  height:14.4%!important;
+  border:1px solid rgba(84,82,76,.74)!important;
+  border-radius:3px!important;
+  background:linear-gradient(155deg,#fffdf3,#d8d2c3)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.72),0 4px 8px rgba(0,0,0,.30)!important;
+  transform:none!important;
+  transform-origin:center!important;
+  opacity:1!important;
+  animation:mgw-domino-v41-finale-tile 3.8s cubic-bezier(.16,.76,.18,1) infinite!important;
+}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="chain-finale"] .mgw-domino-v13-cascade-row>i:nth-child(1){left:4%!important}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="chain-finale"] .mgw-domino-v13-cascade-row>i:nth-child(2){left:22.5%!important;animation-delay:.052s!important}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="chain-finale"] .mgw-domino-v13-cascade-row>i:nth-child(3){left:41%!important;animation-delay:.104s!important}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="chain-finale"] .mgw-domino-v13-cascade-row>i:nth-child(4){left:59.5%!important;animation-delay:.156s!important}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="chain-finale"] .mgw-domino-v13-cascade-row>i:nth-child(5){left:78%!important;animation-delay:.208s!important}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="chain-finale"] .mgw-domino-v13-cascade-row>i::before{
+  content:""!important;
+  position:absolute!important;
+  left:50%!important;
+  top:0!important;
+  bottom:0!important;
+  width:1px!important;
+  height:auto!important;
+  background:rgba(24,28,34,.46)!important;
+  transform:translateX(-.5px)!important;
+}
+body .mgw-domino-live-preview-v41[data-mgw-domino-preview-live-v41="chain-finale"] .mgw-domino-v13-cascade-row>i::after{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  border-radius:inherit!important;
+  background:
+    radial-gradient(circle at 25% 50%,#171a1f 0 1.9px,transparent 2.5px),
+    radial-gradient(circle at 75% 50%,#171a1f 0 1.9px,transparent 2.5px)!important;
+}
+body .mgw-domino-v41-finale-sweep{
+  position:absolute!important;
+  z-index:8!important;
+  inset:-20% -55%!important;
+  background:linear-gradient(104deg,transparent 34%,rgba(72,239,255,.04) 40%,rgba(104,248,255,.46) 48%,rgba(199,113,255,.52) 53%,rgba(255,224,115,.34) 58%,transparent 66%)!important;
+  opacity:0!important;
+  transform:translateX(-44%) skewX(-4deg)!important;
+  animation:mgw-domino-v41-finale-sweep 3.8s cubic-bezier(.18,.76,.16,1) infinite!important;
+}
+body .mgw-domino-v41-finale-aura{
+  position:absolute!important;
+  z-index:9!important;
+  inset:14% 6%!important;
+  border-radius:12px!important;
+  border:1px solid rgba(118,244,255,.72)!important;
+  box-shadow:0 0 18px rgba(99,241,255,.24),inset 0 0 22px rgba(184,98,255,.12),0 0 34px rgba(185,99,255,.12)!important;
+  opacity:0!important;
+  animation:mgw-domino-v41-finale-aura 3.8s ease-out infinite!important;
+}
+body .mgw-domino-v41-finale-prism{
+  position:absolute!important;
+  z-index:6!important;
+  inset:10% 4%!important;
+  border-radius:14px!important;
+  background:conic-gradient(from 210deg at 50% 50%,transparent 0 18%,rgba(74,238,255,.10) 26%,rgba(194,103,255,.14) 35%,rgba(255,222,112,.12) 43%,transparent 54% 100%)!important;
+  filter:blur(7px)!important;
+  opacity:0!important;
+  animation:mgw-domino-v41-finale-prism 3.8s ease-out infinite!important;
+}
+body .mgw-domino-v41-finale-sparks{
+  position:absolute!important;
+  inset:0!important;
+  z-index:10!important;
+}
+body .mgw-domino-v41-finale-sparks>i{
+  --x:50%;
+  --y:54%;
+  --fx:50%;
+  --fy:22%;
+  position:absolute!important;
+  left:var(--x)!important;
+  top:var(--y)!important;
+  width:4px!important;
+  height:4px!important;
+  margin:-2px 0 0 -2px!important;
+  border-radius:50%!important;
+  background:#f7ffff!important;
+  box-shadow:0 0 7px rgba(104,243,255,.9),0 0 12px rgba(186,104,255,.66)!important;
+  opacity:0!important;
+  animation:mgw-domino-v41-finale-spark 3.8s cubic-bezier(.14,.72,.2,1) infinite!important;
+}
+body .mgw-domino-v41-finale-sparks>.s1{--fx:18%;--fy:34%}
+body .mgw-domino-v41-finale-sparks>.s2{--fx:31%;--fy:79%;animation-delay:.05s!important}
+body .mgw-domino-v41-finale-sparks>.s3{--fx:50%;--fy:18%;animation-delay:.025s!important}
+body .mgw-domino-v41-finale-sparks>.s4{--fx:72%;--fy:31%;animation-delay:.075s!important}
+body .mgw-domino-v41-finale-sparks>.s5{--fx:84%;--fy:67%;animation-delay:.035s!important}
+body .mgw-domino-v41-finale-sparks>.s6{--fx:59%;--fy:82%;animation-delay:.09s!important}
+
+@keyframes mgw-domino-v41-precision-tile{
+  0%,18%,100%{filter:brightness(1) saturate(1)}
+  27%{filter:brightness(1.62) saturate(1.28)}
+  48%{filter:brightness(1.2) saturate(1.12)}
+  72%{filter:brightness(1) saturate(1)}
+}
+@keyframes mgw-domino-v41-precision-ring{
+  0%,18%{opacity:0;transform:translate(-50%,-50%) scale(.82)}
+  24%{opacity:.94;transform:translate(-50%,-50%) scale(1)}
+  55%{opacity:.52;transform:translate(-50%,-50%) scale(1.16)}
+  69%{opacity:0;transform:translate(-50%,-50%) scale(1.32)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.32)}
+}
+@keyframes mgw-domino-v41-precision-shard{
+  0%,20%{opacity:0;left:var(--x);top:var(--y);transform:translate(-50%,-50%) rotate(var(--rot)) scaleY(.55)}
+  27%{opacity:1;left:var(--x);top:var(--y);transform:translate(-50%,-50%) rotate(var(--rot)) scaleY(1)}
+  63%{opacity:.92;left:var(--fx);top:var(--fy);transform:translate(-50%,-50%) rotate(var(--rot)) scaleY(.9)}
+  72%,100%{opacity:0;left:var(--fx);top:var(--fy);transform:translate(-50%,-50%) rotate(var(--rot)) scaleY(.72)}
+}
+@keyframes mgw-domino-v41-stock-source{
+  0%,16%,100%{filter:brightness(1)}
+  24%{filter:brightness(1.28)}
+  40%{filter:brightness(1)}
+}
+@keyframes mgw-domino-v41-stock-target{
+  0%,47%,100%{filter:brightness(1)}
+  58%{filter:brightness(1.45) saturate(1.2)}
+  72%{filter:brightness(1)}
+}
+@keyframes mgw-domino-v41-stock-line{
+  0%,17%{opacity:0;transform:rotate(20.7deg) scaleX(0)}
+  24%{opacity:1;transform:rotate(20.7deg) scaleX(.2)}
+  53%{opacity:.96;transform:rotate(20.7deg) scaleX(1)}
+  67%,100%{opacity:0;transform:rotate(20.7deg) scaleX(1)}
+}
+@keyframes mgw-domino-v41-stock-orb{
+  0%,18%{opacity:0;left:22.5%;top:34.8%;transform:scale(.45)}
+  24%{opacity:1;left:26%;top:37%;transform:scale(1)}
+  55%{opacity:1;left:76%;top:67%;transform:scale(.9)}
+  63%{opacity:0;left:78.5%;top:68.8%;transform:scale(.65)}
+  100%{opacity:0;left:78.5%;top:68.8%;transform:scale(.65)}
+}
+@keyframes mgw-domino-v41-stock-spark{
+  0%,29%{opacity:0;left:var(--x);top:var(--y);transform:scale(.45)}
+  36%{opacity:1;left:var(--x);top:var(--y);transform:scale(1.12)}
+  64%{opacity:.9;left:var(--fx);top:var(--fy);transform:scale(.82)}
+  72%,100%{opacity:0;left:var(--fx);top:var(--fy);transform:scale(.35)}
+}
+@keyframes mgw-domino-v41-finale-tile{
+  0%,18%,100%{filter:brightness(1) saturate(1)}
+  28%{filter:brightness(1.72) saturate(1.4)}
+  43%{filter:brightness(1.28) saturate(1.18)}
+  56%{filter:brightness(1) saturate(1)}
+}
+@keyframes mgw-domino-v41-finale-sweep{
+  0%,16%{opacity:0;transform:translateX(-44%) skewX(-4deg)}
+  24%{opacity:1}
+  52%{opacity:.96;transform:translateX(10%) skewX(-4deg)}
+  68%{opacity:0;transform:translateX(44%) skewX(-4deg)}
+  100%{opacity:0;transform:translateX(44%) skewX(-4deg)}
+}
+@keyframes mgw-domino-v41-finale-aura{
+  0%,28%{opacity:0;transform:scale(.96)}
+  38%{opacity:.9;transform:scale(1)}
+  70%{opacity:0;transform:scale(1.08)}
+  100%{opacity:0;transform:scale(1.08)}
+}
+@keyframes mgw-domino-v41-finale-prism{
+  0%,31%{opacity:0;transform:rotate(-10deg) scale(.9)}
+  42%{opacity:.8}
+  68%{opacity:0;transform:rotate(10deg) scale(1.08)}
+  100%{opacity:0;transform:rotate(10deg) scale(1.08)}
+}
+@keyframes mgw-domino-v41-finale-spark{
+  0%,37%{opacity:0;left:var(--x);top:var(--y);transform:scale(.45)}
+  45%{opacity:1;left:var(--x);top:var(--y)}
+  68%{opacity:0;left:var(--fx);top:var(--fy);transform:scale(.1)}
+  100%{opacity:0;left:var(--fx);top:var(--fy);transform:scale(.1)}
+}
+
+@media(prefers-reduced-motion:reduce){
+  body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-live-preview-v41 *,
+  body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-live-preview-v41 *::before,
+  body .store-v2-game-preview[data-game-type="domino"][data-cosmetic-layer="effect"] .mgw-domino-live-preview-v41 *::after{
+    animation-duration:.9s!important;
+  }
+}
