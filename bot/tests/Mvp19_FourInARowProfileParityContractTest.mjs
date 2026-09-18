@@ -47,7 +47,7 @@ assert.ok(profile.includes('api.profileV2'), 'Four parity must converge from aut
 assert.ok(profile.includes('mgw:cosmetic-inventory-changed'), 'Four parity must react to Store ownership/equip refresh');
 assert.ok(profile.includes('data-game-type="four_in_a_row"'), 'Four Profile previews must identify game type explicitly');
 assert.ok(profile.includes('fourInARowPreviewMarkup(layer, variant)'), 'Profile must reuse the accepted Store preview primitive');
-assert.ok(profile.includes("store-screen-four-in-a-row-store-v1.js?v=5&four_store=static-v4&export=profile-preview-v1"), 'Profile must request the fresh Four Store module URL that actually exports the shared preview primitive');
+assert.ok(profile.includes("store-screen-four-in-a-row-store-v1.js?v=6&four_store=static-v4&export=profile-preview-v1&copy=human-v1"), 'Profile must request the current Four Store module URL with the shared preview primitive and human copy');
 assert.ok(profile.includes("four_profile=parity-v1"), 'Four Profile must publish a dedicated parity style identity');
 assert.ok(profile.includes("store-cosmetics-v1.css?v=4&four_store=static-v4"), 'Profile must load the accepted Four Store artwork CSS');
 assert.ok(!profile.includes('gameAction('), 'Four Profile must never own gameplay actions');
@@ -57,13 +57,13 @@ assert.ok(store.includes('export function fourInARowPreviewMarkup(layer, variant
 assert.ok(store.includes('EFFECT_ASSETS'), 'Accepted static effect concept assets must remain the Phase 2 source');
 assert.ok(!storeCss.includes('@keyframes'), 'Four Store/Profile effects must remain static before live animation acceptance');
 
-assert.ok(layout.includes("mgw-profile-four-in-a-row-parity.js?v=2&four_profile=parity-v2&four_module=export-v5"), 'Active Profile wrapper must import the fresh Four parity module');
+assert.ok(layout.includes("mgw-profile-four-in-a-row-parity.js?v=3&four_profile=spacing-v2&four_module=export-v6"), 'Active Profile wrapper must import the Four spacing/human-copy module');
 assert.ok(layout.includes('initProfileFourInARowParity();'), 'Active Profile wrapper must initialize Four parity');
 assert.ok(layout.indexOf('initProfileDominoHardRatio();') < layout.indexOf('initProfileFourInARowParity();'), 'Four parity must be added after accepted existing game owners without replacing them');
 
 const profileOwnerMatch = manifest.match(/mgw-profile-chess-layout-v2\.js\?v=(\d+)/);
 assert.ok(profileOwnerMatch && Number(profileOwnerMatch[1]) >= 20, 'Active Profile owner must publish the Four parity cache revision');
-assert.ok(manifest.includes('four_profile=parity-v2') && manifest.includes('four_module=export-v5'), 'Active Profile URL must publish fresh Four parity and shared-module identities');
+assert.ok(manifest.includes('four_profile=spacing-v2') && manifest.includes('four_module=export-v6') && manifest.includes('copy=human-v1'), 'Active Profile URL must publish Four spacing and human-copy identities');
 
 assert.ok(profileApi.includes('(new ProductInventoryService($database))->snapshot($mgwId)'), 'Profile API must expose the same canonical inventory used by Store purchases');
 
@@ -73,5 +73,8 @@ assert.ok(css.includes('data-game-type="four_in_a_row"'), 'Four card/sheet styli
 assert.ok(css.includes('width:92%!important'), 'Four Profile cards must match accepted compact Store disc sizing');
 assert.ok(css.includes('width:78%!important'), 'Four Profile detail sheet must match accepted purchase-sheet disc sizing');
 assert.ok(css.includes('aspect-ratio:1 / 1!important'), 'Four Profile cards and sheet must keep a stable full preview canvas');
+assert.ok(css.includes('padding-bottom:16px!important'), 'Four Profile panel must keep visible bottom breathing room');
+assert.ok(css.includes('margin:2px 0 4px!important'), 'Four Profile preview must keep space around the image canvas');
+assert.ok(css.includes('.profile-v2-game-card-name{') && css.includes('display:none!important'), 'Four Profile must not duplicate the card title above and below the preview');
 
 console.log(`Four in a Row Profile parity contract passed (${itemIds.length} catalogue items).`);
