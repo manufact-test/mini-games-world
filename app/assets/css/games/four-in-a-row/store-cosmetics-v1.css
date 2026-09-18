@@ -211,6 +211,10 @@
   aspect-ratio:7 / 6;
   transform:translate(-50%,-50%);
 }
+.effect-victory-wave .mgw-four-fx-board-shell{
+  overflow:hidden;
+  border-radius:10px;
+}
 .mgw-four-fx-preview-board{
   position:absolute;
   z-index:1;
@@ -403,10 +407,10 @@
 .effect-victory-wave .fx-win .mgw-four-fx-disc{
   animation:mgwFourPreviewWinDisc 4.65s cubic-bezier(.16,.78,.18,1) infinite;
 }
-.effect-victory-wave .fx-win:nth-child(24) .mgw-four-fx-disc{animation-delay:.00s}
-.effect-victory-wave .fx-win:nth-child(25) .mgw-four-fx-disc{animation-delay:.10s}
-.effect-victory-wave .fx-win:nth-child(26) .mgw-four-fx-disc{animation-delay:.20s}
-.effect-victory-wave .fx-win:nth-child(27) .mgw-four-fx-disc{animation-delay:.30s}
+.effect-victory-wave .fx-win:nth-child(23) .mgw-four-fx-disc{animation-delay:.000s}
+.effect-victory-wave .fx-win:nth-child(24) .mgw-four-fx-disc{animation-delay:.125s}
+.effect-victory-wave .fx-win:nth-child(25) .mgw-four-fx-disc{animation-delay:.250s}
+.effect-victory-wave .fx-win:nth-child(26) .mgw-four-fx-disc{animation-delay:.375s}
 .mgw-four-preview-victory-shade{
   position:absolute;
   z-index:2;
@@ -470,15 +474,15 @@
   transform-origin:center;
   animation:mgwFourPreviewVictoryNode 4.65s ease-out infinite;
 }
-.mgw-four-preview-victory-svg .n2{animation-delay:.08s}
-.mgw-four-preview-victory-svg .n3{animation-delay:.16s}
-.mgw-four-preview-victory-svg .n4{animation-delay:.24s}
+.mgw-four-preview-victory-svg .n2{animation-delay:.125s}
+.mgw-four-preview-victory-svg .n3{animation-delay:.250s}
+.mgw-four-preview-victory-svg .n4{animation-delay:.375s}
 .mgw-four-preview-victory-prism{
   position:absolute;
   z-index:8;
-  left:57.143%;
+  left:42.857%;
   top:58.333%;
-  width:15.5%;
+  width:16.2%;
   aspect-ratio:1;
   transform:translate(-50%,-50%);
   pointer-events:none;
@@ -516,9 +520,9 @@
 .mgw-four-preview-victory-blade{
   position:absolute;
   z-index:7;
-  left:57.143%;
+  left:42.857%;
   top:58.333%;
-  width:76%;
+  width:78%;
   height:2px;
   opacity:0;
   transform-origin:center;
@@ -530,7 +534,7 @@
 .mgw-four-preview-victory-shards > i{
   position:absolute;
   z-index:9;
-  left:57.143%;
+  left:42.857%;
   top:58.333%;
   width:3px;
   height:9px;
@@ -544,26 +548,30 @@
   --rot:0deg;
   animation:mgwFourPreviewShard 4.65s cubic-bezier(.1,.72,.18,1) infinite;
 }
+.mgw-four-preview-victory-shards .s1,
+.mgw-four-preview-victory-shards .s4,
+.mgw-four-preview-victory-shards .s7,
+.mgw-four-preview-victory-shards .s10{background:#ffe172;box-shadow:0 0 4px rgba(255,217,94,.72)}
 .mgw-four-preview-victory-shards .s2,
-.mgw-four-preview-victory-shards .s5,
-.mgw-four-preview-victory-shards .s8,
-.mgw-four-preview-victory-shards .s11{background:#e37bff;box-shadow:0 0 4px rgba(222,104,255,.68)}
-.mgw-four-preview-victory-shards .s3,
 .mgw-four-preview-victory-shards .s6,
+.mgw-four-preview-victory-shards .s8,
+.mgw-four-preview-victory-shards .s12{background:#e37bff;box-shadow:0 0 4px rgba(222,104,255,.68)}
+.mgw-four-preview-victory-shards .s3,
+.mgw-four-preview-victory-shards .s5,
 .mgw-four-preview-victory-shards .s9,
-.mgw-four-preview-victory-shards .s12{background:#ffe172;box-shadow:0 0 4px rgba(255,217,94,.72)}
-.mgw-four-preview-victory-shards .s1{--sx:34%;--sy:36%;--rot:-24deg}
-.mgw-four-preview-victory-shards .s2{--sx:44%;--sy:24%;--rot:-12deg}
-.mgw-four-preview-victory-shards .s3{--sx:58%;--sy:22%;--rot:8deg}
-.mgw-four-preview-victory-shards .s4{--sx:72%;--sy:30%;--rot:24deg}
-.mgw-four-preview-victory-shards .s5{--sx:80%;--sy:48%;--rot:44deg}
-.mgw-four-preview-victory-shards .s6{--sx:76%;--sy:70%;--rot:66deg}
-.mgw-four-preview-victory-shards .s7{--sx:64%;--sy:82%;--rot:82deg}
-.mgw-four-preview-victory-shards .s8{--sx:48%;--sy:84%;--rot:102deg}
-.mgw-four-preview-victory-shards .s9{--sx:34%;--sy:75%;--rot:126deg}
-.mgw-four-preview-victory-shards .s10{--sx:28%;--sy:58%;--rot:148deg}
-.mgw-four-preview-victory-shards .s11{--sx:31%;--sy:43%;--rot:166deg}
-.mgw-four-preview-victory-shards .s12{--sx:43%;--sy:31%;--rot:188deg}
+.mgw-four-preview-victory-shards .s11{background:#8bf5ff;box-shadow:0 0 4px rgba(113,239,255,.68)}
+.mgw-four-preview-victory-shards .s1{--sx:18.31%;--sy:35.80%;--rot:-24deg}
+.mgw-four-preview-victory-shards .s2{--sx:30.28%;--sy:25.94%;--rot:-12deg;animation-delay:.022s}
+.mgw-four-preview-victory-shards .s3{--sx:48.25%;--sy:24.53%;--rot:8deg;animation-delay:.044s}
+.mgw-four-preview-victory-shards .s4{--sx:64.41%;--sy:33.69%;--rot:24deg;animation-delay:.066s}
+.mgw-four-preview-victory-shards .s5{--sx:71.00%;--sy:51.29%;--rot:44deg;animation-delay:.088s}
+.mgw-four-preview-victory-shards .s6{--sx:69.20%;--sy:73.12%;--rot:66deg;animation-delay:.110s}
+.mgw-four-preview-victory-shards .s7{--sx:56.63%;--sy:89.32%;--rot:82deg;animation-delay:.132s}
+.mgw-four-preview-victory-shards .s8{--sx:38.07%;--sy:92.84%;--rot:102deg;animation-delay:.154s}
+.mgw-four-preview-victory-shards .s9{--sx:21.30%;--sy:82.98%;--rot:126deg;animation-delay:.176s}
+.mgw-four-preview-victory-shards .s10{--sx:13.52%;--sy:66.08%;--rot:148deg;animation-delay:.198s}
+.mgw-four-preview-victory-shards .s11{--sx:16.51%;--sy:46.36%;--rot:166deg;animation-delay:.220s}
+.mgw-four-preview-victory-shards .s12{--sx:31.48%;--sy:32.98%;--rot:188deg;animation-delay:.242s}
 
 @keyframes mgwFourPreviewReticle{
   0%,5%,30%,100%{opacity:0;transform:translate(-50%,-50%) scale(1.34) rotate(-10deg)}
@@ -668,28 +676,29 @@
   41%{opacity:.15}
 }
 @keyframes mgwFourPreviewVictoryPrism{
-  0%,27%,47%,100%{opacity:0;transform:translate(-50%,-50%) scale(.18) rotate(-35deg)}
-  31%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(0)}
-  38%{opacity:1;transform:translate(-50%,-50%) scale(.96) rotate(8deg)}
-  45%{opacity:0;transform:translate(-50%,-50%) scale(1.25) rotate(12deg)}
+  0%,21%,49%,100%{opacity:0;transform:translate(-50%,-50%) scale(.18) rotate(-35deg)}
+  28%{opacity:1;transform:translate(-50%,-50%) scale(1.18) rotate(0)}
+  34%{opacity:1;transform:translate(-50%,-50%) scale(.94) rotate(8deg)}
+  40%{opacity:1;transform:translate(-50%,-50%) scale(1.10) rotate(0)}
+  49%{opacity:0;transform:translate(-50%,-50%) scale(1.34) rotate(12deg)}
 }
 @keyframes mgwFourPreviewBladeA{
-  0%,31%,49%,100%{opacity:0;transform:translate(-50%,-50%) rotate(28deg) scaleX(.08)}
-  35%{opacity:1}
-  43%{opacity:.86;transform:translate(-50%,-50%) rotate(28deg) scaleX(1)}
-  47%{opacity:0;transform:translate(-50%,-50%) rotate(28deg) scaleX(1)}
+  0%,26%,44%,100%{opacity:0;transform:translate(-50%,-50%) rotate(28deg) scaleX(.08)}
+  30%{opacity:1}
+  39%{opacity:.90;transform:translate(-50%,-50%) rotate(28deg) scaleX(1)}
+  44%{opacity:0;transform:translate(-50%,-50%) rotate(28deg) scaleX(1.08)}
 }
 @keyframes mgwFourPreviewBladeB{
-  0%,33%,50%,100%{opacity:0;transform:translate(-50%,-50%) rotate(-28deg) scaleX(.08)}
-  37%{opacity:1}
-  45%{opacity:.86;transform:translate(-50%,-50%) rotate(-28deg) scaleX(1)}
-  49%{opacity:0;transform:translate(-50%,-50%) rotate(-28deg) scaleX(1)}
+  0%,28%,46%,100%{opacity:0;transform:translate(-50%,-50%) rotate(-28deg) scaleX(.08)}
+  32%{opacity:1}
+  40%{opacity:.90;transform:translate(-50%,-50%) rotate(-28deg) scaleX(1)}
+  46%{opacity:0;transform:translate(-50%,-50%) rotate(-28deg) scaleX(1.08)}
 }
 @keyframes mgwFourPreviewShard{
-  0%,34%,51%,100%{opacity:0;left:57.143%;top:58.333%;transform:rotate(var(--rot)) scale(.3)}
-  38%{opacity:1}
-  47%{opacity:.85;left:var(--sx);top:var(--sy);transform:rotate(calc(var(--rot) + 100deg)) scale(.74)}
-  50%{opacity:0;left:var(--sx);top:var(--sy);transform:rotate(calc(var(--rot) + 120deg)) scale(.7)}
+  0%,28%,47%,100%{opacity:0;left:42.857%;top:58.333%;transform:rotate(var(--rot)) scale(.3)}
+  32%{opacity:1}
+  42%{opacity:.94;left:var(--sx);top:var(--sy);transform:rotate(calc(var(--rot) + 100deg)) scale(.75)}
+  47%{opacity:0;left:var(--sx);top:var(--sy);transform:rotate(calc(var(--rot) + 120deg)) scale(.7)}
 }
 
 @media (prefers-reduced-motion:reduce){
