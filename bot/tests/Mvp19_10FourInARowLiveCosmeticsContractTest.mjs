@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 const live = fs.readFileSync('app/assets/js/games/four-in-a-row/renderer-cosmetics-v1.js', 'utf8');
 const css = fs.readFileSync('app/assets/css/games/four-in-a-row/live-cosmetics-v1.css', 'utf8');
 const base = fs.readFileSync('app/assets/js/games/four-in-a-row/renderer.js', 'utf8');
+const baseCss = fs.readFileSync('app/assets/css/games/four-in-a-row/game.css', 'utf8');
 const gameScreen = fs.readFileSync('app/assets/js/screens/game-screen-v102.js', 'utf8');
 const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 const launch = fs.readFileSync('bot/helpers/WebAppLaunchUrl.php', 'utf8');
@@ -45,8 +46,8 @@ assert.ok(!css.includes('.mgw-four-live-drop-disc::after'), 'The old falling-dis
 assert.ok(!css.includes('.mgw-four-live-drop-impact'), 'Drop must not use the old expanding impact ring');
 assert.ok(css.includes('data-four-last-move-effect="game-four-effect-drop"') && css.includes('transform:scale(1)!important'), 'A paid Drop disc must remain the same size as the other discs after landing');
 assert.ok(
-  base.includes('.four-column-hit:not(:disabled):active{background:rgba(255,255,255,.12)}') || true,
-  'Base renderer stylesheet keeps the standard column press affordance for players without paid Drop',
+  baseCss.includes('.four-column-hit:not(:disabled):active{background:rgba(255,255,255,.12)}'),
+  'Base Four stylesheet must keep the standard white column press affordance for players without paid Drop',
 );
 assert.ok(
   css.includes('[data-four-effect="game-four-effect-drop"] .four-column-hit:not(:disabled):active')
