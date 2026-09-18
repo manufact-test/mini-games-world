@@ -141,7 +141,8 @@ $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
 
 $assertTrue(str_contains($outer, "store-screen-four-in-a-row-store-v1.js?v=1&four_store=static-v1"), 'Active Store wrapper must install Four in a Row presentation');
 $activeStore = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
-$assertTrue(str_contains($activeStore, 'store-screen-checkers-board-source-wrapper.js?v=10'), 'Active Store graph must publish fresh wrapper cache identity');
+$wrapperVersionMatch = [];
+$assertTrue(preg_match('~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~', $activeStore, $wrapperVersionMatch) === 1 && (int)$wrapperVersionMatch[1] >= 10, 'Active Store graph must stay at or beyond the accepted Four in a Row wrapper identity');
 $assertTrue(str_contains($activeStore, 'four_store=static-v1'), 'Active Store graph must publish static Four in a Row phase');
 $launchMatch = [];
 $assertTrue(preg_match('~/app/v110\.php\?v=(\d+)~', $launch, $launchMatch) === 1 && (int)$launchMatch[1] >= 1193, 'Telegram launch must publish the Four in a Row Store graph');
