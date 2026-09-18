@@ -115,7 +115,8 @@ assert.ok(activeProfileOwner && Number(activeProfileOwner[1]) >= 19, 'Active Pro
 assert.ok(manifest.includes('mvp19_8=go-profile-corrective-v2'), 'Active Profile URL must publish Go Profile corrective v2');
 assert.ok(manifest.includes('game_tab_icons=normalized-v3'), 'Active Profile URL must publish normalized game-tab marks');
 assert.ok(manifest.includes('go_card_runtime=hard-square-v1'), 'Active Profile URL must retain Go hard-square runtime');
-assert.ok(manifest.includes('store-screen-checkers-board-source-wrapper.js?v=7'), 'Active Store outer wrapper must have a fresh cache identity');
+const activeStoreOwner = manifest.match(/store-screen-checkers-board-source-wrapper\.js\?v=(\d+)/);
+assert.ok(activeStoreOwner && Number(activeStoreOwner[1]) >= 7, 'Active Store outer wrapper must stay at or beyond the accepted Go cache identity');
 assert.ok(manifest.includes('go_effects=premium-v2'), 'Active Store URL must publish premium Go effect previews');
 
 assert.ok(!profile.includes('gameAction('), 'Profile parity must not own Go gameplay actions');
