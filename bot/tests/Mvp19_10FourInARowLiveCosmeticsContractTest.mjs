@@ -11,7 +11,7 @@ const launch = fs.readFileSync('bot/helpers/WebAppLaunchUrl.php', 'utf8');
 const response = fs.readFileSync('bot/helpers/response.php', 'utf8');
 
 assert.ok(
-  live.includes("from './renderer.js?v=53&base=mvp19-10-live-v5'"),
+  live.includes("from './renderer.js?v=53&base=mvp19-10-live-v6'"),
   'Four live cosmetics must decorate the accepted base renderer instead of replacing gameplay',
 );
 assert.ok(live.includes('renderBaseFourInARowSurface(args);'), 'Base Four renderer must remain the gameplay/render owner');
@@ -50,18 +50,25 @@ assert.ok(
   'Base Four stylesheet must keep the standard white column press affordance for players without paid Drop',
 );
 assert.ok(
-  css.includes('[data-four-effect="game-four-effect-drop"] .four-column-hit:not(:disabled):active')
+  css.includes('[data-four-effect^="game-four-effect-"] .four-column-hit:not(:disabled):active')
     && css.includes('background:transparent!important'),
-  'Paid Drop must suppress only the standard white full-column press flash',
+  'Every paid Four effect must suppress the standard white full-column press flash',
 );
 assert.ok(
-  css.includes('[data-four-effect="game-four-effect-drop"] .four-column-hit')
+  css.includes('[data-four-effect^="game-four-effect-"] .four-column-hit')
     && css.includes('-webkit-tap-highlight-color:transparent'),
-  'Paid Drop must also suppress the WebView tap highlight without changing standard players',
+  'Every paid Four effect must suppress the WebView tap highlight without changing standard players',
 );
 assert.ok(live.includes("container.querySelectorAll('.four-disc-slot')") && live.includes('slots.item(index)'), 'Live effects must resolve cells from the accepted base renderer DOM order');
 assert.ok(!live.includes('.four-disc-slot[data-four-cell='), 'Live effects must not depend on the nonexistent data-four-cell attribute');
 assert.ok(live.includes('lightningPath(') && live.includes('mgw-four-pulse-bolt'), 'Effect 2 must mount a visually distinct branching electric-chain presentation');
+assert.ok(live.includes('const patterns = [') && live.includes('stablePatternIndex(active?.key, patterns.length)'), 'Effect 2 must choose among deterministic move-seeded lightning patterns');
+assert.ok(live.includes('[[0,-2,2],[0,2,2],[-2,0,2],[2,0,2]]'), 'Effect 2 must include skip-a-cell lightning targets');
+assert.ok(live.includes('const desiredCount = [2,3,4,4][patternIndex]'), 'Effect 2 must vary between two, three, and four lightning targets');
+assert.ok(live.includes("button.textContent = 'Тест победной волны'"), 'Staging must expose a lightweight manual Victory Wave test control');
+assert.ok(live.includes("get('four_victory_test') === '1'"), 'Victory test control must be explicitly gated by staging launch query');
+assert.ok(live.includes('previewVictoryCells(columns, rows)'), 'Victory test must synthesize presentation cells without mutating match state');
+assert.ok(css.includes('.mgw-four-victory-test'), 'Victory test control must have an unobtrusive staging style');
 assert.ok(live.includes("pendingSlot.dataset.mgwFourPendingDrop = '1'"), 'Drop must avoid showing a settled disc before the authoritative move arrives');
 assert.ok(css.includes('data-mgw-four-pending-drop="1"') && css.includes('opacity:0!important'), 'Pending Drop must hide the already-settled optimistic disc while the target lock acquires the cell');
 assert.ok(live.includes("FIELD_VARIANTS = new Set(['blue', 'dark', 'metal', 'neon'])"), 'All four accepted field identities must be live');
@@ -94,7 +101,7 @@ assert.ok(gameScreen.includes("String(state.activeGame?.id || '') !== id") && ga
 assert.ok(gameScreen.includes("if (gameTypeOf(game) !== 'four_in_a_row') return 0;"), 'Other games must keep their accepted result timing');
 
 assert.ok(
-  manifest.includes("'./assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=5&mvp19_10=live-game-v5&drop=target-lock-no-base-flash-v2&effect2=chain-v3'"),
+  manifest.includes("'./assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=6&mvp19_10=live-game-v6&drop=target-lock-no-base-flash-v2&effect2=random-chain-v4&victory_test=staging-v1'"),
   'Active import map must route Four through the live cosmetics wrapper',
 );
 assert.ok(
@@ -102,7 +109,7 @@ assert.ok(
   'Active graph must cache-bust the Four terminal presentation gate',
 );
 const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);
-assert.ok(launchMatch && Number(launchMatch[1]) >= 1206 && launch.includes('four_live=game-v5') && launch.includes('four_drop=target-lock-no-base-flash-v2'), 'Telegram staging launch must publish Four Drop no-base-flash corrective v5');
+assert.ok(launchMatch && Number(launchMatch[1]) >= 1207 && launch.includes('four_live=game-v6') && launch.includes('four_effect2=random-chain-v4') && launch.includes('four_victory_test=1'), 'Telegram staging launch must publish random pulse and staging victory-test graph v6');
 
 assert.ok(
   response.includes("WHERE c.item_type = \\'game\\' AND c.catalog_status = \\'active\\'") || response.includes("WHERE c.item_type = 'game' AND c.catalog_status = 'active'"),
