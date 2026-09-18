@@ -1,5 +1,5 @@
 /* Four in a Row live cosmetics — presentation-only wrapper over the accepted renderer. */
-#gameBoard[data-game-type="four_in_a_row"][data-mgw-four-live-cosmetics="v2"] .four-disc-grid{
+#gameBoard[data-game-type="four_in_a_row"][data-mgw-four-live-cosmetics="v3"] .four-disc-grid{
   position:relative;
 }
 
@@ -65,7 +65,7 @@
   box-shadow:inset 0 0 5px rgba(231,255,176,.48),0 0 7px rgba(154,255,47,.82),0 0 13px rgba(154,255,47,.42);
 }
 
-#gameBoard[data-game-type="four_in_a_row"][data-mgw-four-live-cosmetics="v2"] .four-disc-slot.winning span{
+#gameBoard[data-game-type="four_in_a_row"][data-mgw-four-live-cosmetics="v3"] .four-disc-slot.winning span{
   box-shadow:0 0 0 3px #fff,0 0 22px rgba(255,255,255,.72);
 }
 
@@ -114,62 +114,59 @@
   animation:mgwFourDropImpact .86s ease-out var(--mgw-four-fx-delay,0ms) both;
 }
 
-/* Effect 2: every normal move emits an energy pulse from the placed disc. */
+/* Effect 2: a branching electric chain jumps from the placed disc into nearby cells. */
 #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-pulse-cell="1"]{
-  z-index:5;
+  z-index:6;
 }
 #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-pulse-cell="1"] > span{
-  animation:mgwFourPulseDisc 1.08s cubic-bezier(.18,.75,.2,1) var(--mgw-four-fx-delay,0ms) both!important;
+  animation:mgwFourPulseDisc 1.05s cubic-bezier(.18,.75,.2,1) var(--mgw-four-fx-delay,0ms) both!important;
 }
 #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-pulse-neighbor="1"]{
-  animation:mgwFourPulseNeighbor .8s ease-out var(--mgw-four-pulse-delay,0ms) both;
+  animation:mgwFourPulseNeighbor .72s ease-out var(--mgw-four-pulse-delay,0ms) both;
 }
 .mgw-four-live-pulse-fx{
   position:absolute;
-  z-index:7;
-  transform:translate(-50%,-50%);
-  pointer-events:none;
-}
-.mgw-four-live-pulse-fx > i{
-  position:absolute;
-  left:50%;
-  top:50%;
-  pointer-events:none;
-}
-.mgw-four-pulse-core{
-  width:88%;
-  height:88%;
-  border-radius:50%;
-  background:radial-gradient(circle,rgba(255,255,255,.96) 0 5%,rgba(92,234,255,.68) 18%,rgba(219,86,255,.34) 42%,transparent 72%);
-  transform:translate(-50%,-50%) scale(.2);
-  filter:blur(.2px);
-  animation:mgwFourPulseCore .9s ease-out var(--mgw-four-fx-delay,0ms) both;
-}
-.mgw-four-pulse-ring{
+  z-index:10;
+  inset:0;
   width:100%;
   height:100%;
-  border-radius:50%;
-  transform:translate(-50%,-50%) scale(.38);
-  opacity:0;
+  overflow:visible;
+  pointer-events:none;
 }
-.mgw-four-pulse-ring.ring-a{
-  border:2px solid rgba(102,238,255,.92);
-  box-shadow:0 0 14px rgba(75,226,255,.72);
-  animation:mgwFourPulseRingA 1s cubic-bezier(.1,.72,.2,1) var(--mgw-four-fx-delay,0ms) both;
+.mgw-four-pulse-bolt{
+  fill:none;
+  stroke-width:3.2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-dasharray:1;
+  stroke-dashoffset:1;
+  vector-effect:non-scaling-stroke;
+  filter:drop-shadow(0 0 3px rgba(255,255,255,.65));
+  animation:mgwFourPulseBolt .72s cubic-bezier(.12,.72,.16,1) var(--mgw-four-bolt-delay,0ms) both;
 }
-.mgw-four-pulse-ring.ring-b{
-  border:2px solid rgba(229,108,255,.78);
-  box-shadow:0 0 12px rgba(211,79,255,.5);
-  animation:mgwFourPulseRingB 1.08s cubic-bezier(.1,.72,.2,1) calc(var(--mgw-four-fx-delay,0ms) + 100ms) both;
+.mgw-four-pulse-bolt.bolt-cyan{
+  stroke:#7af4ff;
 }
-.mgw-four-pulse-spark{
-  width:5px;
-  height:5px;
-  margin:-2.5px 0 0 -2.5px;
-  border-radius:50%;
-  background:#e7fdff;
-  box-shadow:0 0 8px rgba(91,234,255,.95),0 0 14px rgba(225,91,255,.48);
-  animation:mgwFourPulseSpark .72s ease-out var(--mgw-four-spark-delay,0ms) both;
+.mgw-four-pulse-bolt.bolt-magenta{
+  stroke:#e57bff;
+}
+.mgw-four-pulse-node{
+  transform-box:fill-box;
+  transform-origin:center;
+  pointer-events:none;
+}
+.mgw-four-pulse-node.node-glow{
+  fill:rgba(101,236,255,.18);
+  stroke:#7df4ff;
+  stroke-width:2;
+  vector-effect:non-scaling-stroke;
+  filter:drop-shadow(0 0 9px rgba(82,230,255,.88));
+  animation:mgwFourPulseNodeGlow .9s ease-out var(--mgw-four-fx-delay,0ms) both;
+}
+.mgw-four-pulse-node.node-core{
+  fill:#fff;
+  filter:drop-shadow(0 0 7px rgba(255,255,255,.95)) drop-shadow(0 0 13px rgba(213,94,255,.72));
+  animation:mgwFourPulseNodeCore .8s ease-out var(--mgw-four-fx-delay,0ms) both;
 }
 
 /* Effect 3: victory-only board wave from the completed four. */
@@ -234,38 +231,33 @@
 }
 @keyframes mgwFourPulseDisc{
   0%{transform:scale(.92);filter:brightness(1)}
-  18%{transform:scale(1.14);filter:brightness(1.7);box-shadow:0 0 0 3px rgba(255,255,255,.88),0 0 22px rgba(91,234,255,.88)}
-  42%{transform:scale(.97);filter:brightness(1.15);box-shadow:0 0 0 2px rgba(220,111,255,.68),0 0 17px rgba(213,80,255,.55)}
-  68%{transform:scale(1.05);filter:brightness(1.34)}
+  14%{transform:scale(1.16);filter:brightness(1.9);box-shadow:0 0 0 3px rgba(255,255,255,.92),0 0 24px rgba(96,237,255,.92)}
+  34%{transform:scale(.98);filter:brightness(1.22);box-shadow:0 0 0 2px rgba(225,112,255,.78),0 0 18px rgba(217,84,255,.62)}
+  64%{transform:scale(1.05);filter:brightness(1.42)}
   100%{transform:scale(.92);filter:brightness(1)}
 }
 @keyframes mgwFourPulseNeighbor{
-  0%,18%{box-shadow:inset 0 2px 8px rgba(0,0,0,.45),0 1px 0 rgba(255,255,255,.08)}
-  42%{box-shadow:inset 0 0 0 2px rgba(93,232,255,.7),0 0 13px rgba(93,232,255,.45)}
+  0%,15%{box-shadow:inset 0 2px 8px rgba(0,0,0,.45),0 1px 0 rgba(255,255,255,.08)}
+  42%{box-shadow:inset 0 0 0 2px rgba(116,242,255,.86),0 0 16px rgba(104,235,255,.58)}
   100%{box-shadow:inset 0 2px 8px rgba(0,0,0,.45),0 1px 0 rgba(255,255,255,.08)}
 }
-@keyframes mgwFourPulseCore{
-  0%{opacity:0;transform:translate(-50%,-50%) scale(.18)}
-  22%{opacity:1;transform:translate(-50%,-50%) scale(.7)}
-  60%{opacity:.58;transform:translate(-50%,-50%) scale(1.8)}
-  100%{opacity:0;transform:translate(-50%,-50%) scale(2.7)}
-}
-@keyframes mgwFourPulseRingA{
-  0%{opacity:0;transform:translate(-50%,-50%) scale(.38)}
+@keyframes mgwFourPulseBolt{
+  0%{opacity:0;stroke-dashoffset:1}
   16%{opacity:1}
-  72%{opacity:.42}
-  100%{opacity:0;transform:translate(-50%,-50%) scale(4.2)}
+  62%{opacity:1;stroke-dashoffset:0}
+  100%{opacity:0;stroke-dashoffset:0}
 }
-@keyframes mgwFourPulseRingB{
-  0%{opacity:0;transform:translate(-50%,-50%) scale(.42)}
-  20%{opacity:.9}
-  100%{opacity:0;transform:translate(-50%,-50%) scale(3.35)}
+@keyframes mgwFourPulseNodeGlow{
+  0%{opacity:0;transform:scale(.18)}
+  20%{opacity:1;transform:scale(1.05)}
+  58%{opacity:.66;transform:scale(1.45)}
+  100%{opacity:0;transform:scale(1.8)}
 }
-@keyframes mgwFourPulseSpark{
-  0%{opacity:0;transform:translate(0,0) scale(.4)}
-  18%{opacity:1}
-  75%{opacity:.88}
-  100%{opacity:0;transform:translate(var(--mgw-four-spark-x,0),var(--mgw-four-spark-y,0)) scale(.05)}
+@keyframes mgwFourPulseNodeCore{
+  0%{opacity:0;transform:scale(.2)}
+  16%{opacity:1;transform:scale(1.4)}
+  48%{opacity:.95;transform:scale(.82)}
+  100%{opacity:0;transform:scale(.3)}
 }
 @keyframes mgwFourVictoryCell{
   0%{transform:scale(.92);filter:brightness(1)}
@@ -293,7 +285,8 @@
   #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-victory-cell] span,
   .mgw-four-live-drop-disc,
   .mgw-four-live-drop-impact,
-  .mgw-four-live-pulse-fx > i,
+  .mgw-four-pulse-bolt,
+  .mgw-four-pulse-node,
   .mgw-four-victory-wave,
   .mgw-four-victory-flare{
     animation:none!important;
