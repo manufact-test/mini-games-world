@@ -73,7 +73,7 @@ jobs:
         run: |
           set -euo pipefail
           grep -F "store-screen-go-store-v1.js?v=2&mvp19_8=effects-premium-v2" app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
-          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"store-screen-checkers-board-source-wrapper.js?v=7") || !str_contains($s,"mvp19_7=reversi-store-v1") || !str_contains($s,"go_effects=premium-v2")) exit(1);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!preg_match("~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~",$s,$v) || (int)$v[1] < 7 || !str_contains($s,"mvp19_7=reversi-store-v1") || !str_contains($s,"go_effects=premium-v2")) exit(1);'
           grep -F 'data-game-type="go"' app/assets/css/games/go/store-cosmetics-v1.css
           grep -F "mgw-go-v2-stonefall" app/assets/css/games/go/store-cosmetics-v1.css
           grep -F "mgw-go-v2-capture-implode" app/assets/css/games/go/store-cosmetics-v1.css

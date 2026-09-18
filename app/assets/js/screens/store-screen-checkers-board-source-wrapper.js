@@ -17,6 +17,10 @@ import {
 } from './store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48';
 import { installDominoStoreCardFillV5 } from './store-screen-domino-card-fill-v5.js?v=2&mvp19_9=domino-card-fill-live-pips-v6';
 import { installDominoStoreEffectsV9 } from './store-screen-domino-effects-v9.js?v=12&mvp19_9=domino-svg-pips-v48';
+import {
+  installFourInARowStorePresentation,
+  upgradeFourInARowStorePresentation,
+} from './store-screen-four-in-a-row-store-v1.js?v=1&four_store=static-v1';
 import { installStoreGameSelectorSwipe } from './store-game-selector-swipe-v1.js?v=1&mvp19_7=touch-drag';
 
 ensureBoardSourceParityStyles();
@@ -29,6 +33,7 @@ installGoStorePresentation();
 installDominoStorePresentation();
 installDominoStoreCardFillV5();
 installDominoStoreEffectsV9();
+installFourInARowStorePresentation();
 
 export function initStoreScreen(){
   ensureBoardSourceParityStyles();
@@ -41,12 +46,14 @@ export function initStoreScreen(){
   installDominoStorePresentation();
   installDominoStoreCardFillV5();
   installDominoStoreEffectsV9();
+installFourInARowStorePresentation();
   const result = initAcceptedCheckersStore();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
   upgradeReversiStorePresentation();
   upgradeGoStorePresentation();
   upgradeDominoStorePresentation();
+  upgradeFourInARowStorePresentation();
   return result;
 }
 
@@ -61,6 +68,7 @@ export async function openStoreTab(){
   installDominoStorePresentation();
   installDominoStoreCardFillV5();
   installDominoStoreEffectsV9();
+installFourInARowStorePresentation();
   const result = await openAcceptedCheckersStoreTab();
   ensureBoardSourceParityStyles();
   ensureBoardCardRadiusStyles();
@@ -69,6 +77,7 @@ export async function openStoreTab(){
   upgradeReversiStorePresentation();
   upgradeGoStorePresentation();
   upgradeDominoStorePresentation();
+  upgradeFourInARowStorePresentation();
   return result;
 }
 
@@ -83,6 +92,7 @@ export async function openStoreSheet(){
   installDominoStorePresentation();
   installDominoStoreCardFillV5();
   installDominoStoreEffectsV9();
+installFourInARowStorePresentation();
   const result = await openAcceptedCheckersStoreSheet();
   ensureBoardSourceParityStyles();
   ensureBoardCardRadiusStyles();
@@ -91,6 +101,7 @@ export async function openStoreSheet(){
   upgradeReversiStorePresentation();
   upgradeGoStorePresentation();
   upgradeDominoStorePresentation();
+  upgradeFourInARowStorePresentation();
   return result;
 }
 

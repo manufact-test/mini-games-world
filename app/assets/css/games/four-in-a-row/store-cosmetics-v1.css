@@ -1,0 +1,210 @@
+/* Four in a Row Store — Phase 1 only.
+   Static previews by design. Live cosmetics and animated effect previews are deferred. */
+
+.store-v2-game-head[data-store-game-type="four_in_a_row"] .store-v2-game-head-marks{
+  gap:8px;
+}
+.store-v2-game-head[data-store-game-type="four_in_a_row"] .mgw-four-head-disc{
+  position:relative;
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.22);
+  background:none;
+}
+.store-v2-game-head[data-store-game-type="four_in_a_row"] .mgw-four-head-disc::before{
+  content:"";
+  position:absolute;
+  inset:5px;
+  border-radius:50%;
+}
+.store-v2-game-head[data-store-game-type="four_in_a_row"] .mgw-four-head-disc.red::before{
+  background:radial-gradient(circle at 34% 28%,#ffc1c6 0 10%,#ff6070 36%,#bc2036 100%);
+  box-shadow:0 4px 12px rgba(255,69,90,.28);
+}
+.store-v2-game-head[data-store-game-type="four_in_a_row"] .mgw-four-head-disc.yellow::before{
+  background:radial-gradient(circle at 34% 28%,#fff5b0 0 10%,#ffd84e 36%,#d69a00 100%);
+  box-shadow:0 4px 12px rgba(255,199,43,.25);
+}
+
+.store-v2-game-preview[data-game-type="four_in_a_row"]{
+  box-sizing:border-box;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.11);
+  background:linear-gradient(145deg,#171b29,#0b0e17);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+.store-v2-game-preview[data-game-type="four_in_a_row"][data-cosmetic-layer="theme"]{
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.11);
+  background:linear-gradient(145deg,#171b29,#0b0e17);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+.mgw-four-preview{
+  box-sizing:border-box;
+  display:block;
+  position:relative;
+  width:100%;
+  height:100%;
+  min-height:104px;
+  overflow:hidden;
+  border-radius:13px;
+}
+
+.mgw-four-board-preview{
+  padding:10px;
+  display:grid;
+  place-items:center;
+  background:linear-gradient(155deg,#172033,#0d111c);
+}
+
+.mgw-four-board{
+  box-sizing:border-box;
+  width:min(100%,116px);
+  aspect-ratio:7 / 6;
+  padding:6px;
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  grid-template-rows:repeat(6,minmax(0,1fr));
+  gap:3px;
+  border-radius:13px;
+  background:linear-gradient(180deg,#5573ff,#4340d8);
+  border:1px solid rgba(255,255,255,.20);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 9px 20px rgba(0,0,0,.25);
+}
+
+.mgw-four-cell{
+  position:relative;
+  min-width:0;
+  min-height:0;
+  aspect-ratio:1;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:rgba(5,9,19,.72);
+  box-shadow:inset 0 1px 5px rgba(0,0,0,.52),0 1px 0 rgba(255,255,255,.08);
+}
+
+.mgw-four-disc{
+  box-sizing:border-box;
+  width:78%;
+  aspect-ratio:1;
+  border-radius:50%;
+  display:block;
+}
+
+.mgw-four-disc.red{
+  background:radial-gradient(circle at 34% 28%,#ffc2c8 0 10%,#ff5a6b 35%,#bd2036 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.24),0 2px 6px rgba(255,64,86,.22);
+}
+.mgw-four-disc.yellow{
+  background:radial-gradient(circle at 34% 28%,#fff5ae 0 10%,#ffd84e 35%,#d69a00 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.27),0 2px 6px rgba(255,194,24,.20);
+}
+
+/* Field identities. */
+.mgw-four-board-preview.theme-blue{
+  background:radial-gradient(circle at 82% 12%,rgba(98,132,255,.18),transparent 38%),linear-gradient(155deg,#161e31,#0d111c);
+}
+.mgw-four-board-preview.theme-blue .mgw-four-board{
+  background:linear-gradient(180deg,#5478ff,#413fd5);
+}
+.mgw-four-board-preview.theme-dark{
+  background:radial-gradient(circle at 20% 0,rgba(80,122,168,.13),transparent 42%),linear-gradient(155deg,#111821,#080b11);
+}
+.mgw-four-board-preview.theme-dark .mgw-four-board{
+  background:linear-gradient(180deg,#25384e,#101a28);
+  border-color:rgba(129,183,227,.20);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.025),0 10px 22px rgba(0,0,0,.36);
+}
+.mgw-four-board-preview.theme-metal{
+  background:linear-gradient(145deg,#282e37,#11151b);
+}
+.mgw-four-board-preview.theme-metal .mgw-four-board{
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.15),transparent 18% 80%,rgba(255,255,255,.08)),
+    linear-gradient(180deg,#8e99a7,#535e6c 47%,#303944);
+  border-color:rgba(239,247,255,.28);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.13),0 10px 22px rgba(0,0,0,.34);
+}
+.mgw-four-board-preview.theme-neon{
+  background:radial-gradient(circle at 18% 18%,rgba(238,70,255,.18),transparent 38%),radial-gradient(circle at 82% 76%,rgba(52,229,255,.16),transparent 40%),linear-gradient(155deg,#090b17,#111126);
+}
+.mgw-four-board-preview.theme-neon .mgw-four-board{
+  background:linear-gradient(180deg,#11152d,#0a0d1f);
+  border-color:rgba(69,238,255,.62);
+  box-shadow:inset 0 0 0 1px rgba(242,77,255,.26),0 0 15px rgba(53,224,255,.22),0 0 24px rgba(219,66,255,.12);
+}
+.mgw-four-board-preview.theme-neon .mgw-four-cell{
+  background:rgba(5,8,20,.92);
+  box-shadow:inset 0 0 0 1px rgba(98,222,255,.17),inset 0 2px 7px rgba(0,0,0,.55);
+}
+
+/* Disc identities. */
+.mgw-four-disc.pieces-classic.red{
+  background:radial-gradient(circle at 34% 28%,#ffc2c8 0 10%,#ff5a6b 35%,#bd2036 100%);
+}
+.mgw-four-disc.pieces-classic.yellow{
+  background:radial-gradient(circle at 34% 28%,#fff5ae 0 10%,#ffd84e 35%,#d69a00 100%);
+}
+.mgw-four-disc.pieces-3d.red{
+  background:radial-gradient(circle at 31% 24%,#fff0f2 0 7%,#ff8792 16%,#e34257 48%,#8c1428 82%,#500815 100%);
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.35),inset 0 -4px 5px rgba(61,0,10,.34),0 3px 5px rgba(0,0,0,.28);
+}
+.mgw-four-disc.pieces-3d.yellow{
+  background:radial-gradient(circle at 31% 24%,#fffbe0 0 7%,#ffe885 16%,#f5bc26 48%,#a66c00 82%,#684000 100%);
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.42),inset 0 -4px 5px rgba(79,45,0,.30),0 3px 5px rgba(0,0,0,.28);
+}
+.mgw-four-disc.pieces-metal.red{
+  background:linear-gradient(145deg,#ffe0e4 0 12%,#bfc6cf 14%,#7e8794 28%,#f04f62 46%,#7d1d2c 66%,#d6dde4 82%,#5a606a 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.30),0 3px 6px rgba(0,0,0,.28);
+}
+.mgw-four-disc.pieces-metal.yellow{
+  background:linear-gradient(145deg,#fff7c2 0 12%,#e9c56b 15%,#a47a1e 30%,#ffe171 48%,#8d5c09 67%,#f3d992 83%,#66501d 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.34),0 3px 6px rgba(0,0,0,.28);
+}
+.mgw-four-disc.pieces-neon.red{
+  background:#160c16;
+  border:1px solid #ff536a;
+  box-shadow:inset 0 0 7px rgba(255,58,90,.38),0 0 6px rgba(255,58,90,.62);
+}
+.mgw-four-disc.pieces-neon.yellow{
+  background:#17150a;
+  border:1px solid #ffe05d;
+  box-shadow:inset 0 0 7px rgba(255,222,72,.32),0 0 6px rgba(255,222,72,.56);
+}
+
+/* Static effect concept art. This phase intentionally owns no animation. */
+.mgw-four-effect-static{
+  min-height:104px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  background:linear-gradient(155deg,#111625,#080b14);
+}
+.mgw-four-effect-static img{
+  display:block;
+  width:100%;
+  height:100%;
+  min-height:104px;
+  object-fit:cover;
+  object-position:center;
+}
+
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="four_in_a_row"] .mgw-four-preview{
+  min-height:118px;
+}
+
+@media (min-width:720px){
+  .mgw-four-preview{min-height:0;aspect-ratio:1.45}
+  .mgw-four-board-preview{padding:8px}
+  .mgw-four-board{width:min(100%,128px)}
+  .mgw-four-effect-static img{min-height:0}
+}
+
+@media (max-width:340px){
+  .mgw-four-board-preview{padding:7px}
+  .mgw-four-board{padding:5px;gap:2px;border-radius:11px}
+}

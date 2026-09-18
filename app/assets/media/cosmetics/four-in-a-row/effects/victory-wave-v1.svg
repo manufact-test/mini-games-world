@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" role="img" aria-label="Победная волна — статичный концепт">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#101326"/><stop offset=".55" stop-color="#101227"/><stop offset="1" stop-color="#070a12"/></linearGradient>
+  <linearGradient id="board" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#10152d"/><stop offset="1" stop-color="#090d20"/></linearGradient>
+  <radialGradient id="red" cx=".34" cy=".28"><stop offset="0" stop-color="#ffd5da"/><stop offset=".2" stop-color="#ff7b89"/><stop offset=".64" stop-color="#e13b50"/><stop offset="1" stop-color="#881326"/></radialGradient>
+  <linearGradient id="wave" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#5cecff"/><stop offset=".5" stop-color="#b56cff"/><stop offset="1" stop-color="#ffd85d"/></linearGradient>
+  <filter id="g"><feGaussianBlur stdDeviation="8"/></filter>
+</defs>
+<rect width="320" height="200" rx="22" fill="url(#bg)"/>
+<ellipse cx="160" cy="105" rx="128" ry="58" fill="none" stroke="url(#wave)" stroke-width="12" opacity=".18" filter="url(#g)"/>
+<ellipse cx="160" cy="105" rx="122" ry="52" fill="none" stroke="url(#wave)" stroke-width="2.5" opacity=".72"/>
+<ellipse cx="160" cy="105" rx="96" ry="38" fill="none" stroke="#70efff" stroke-width="1.8" opacity=".42"/>
+<rect x="58" y="55" width="204" height="115" rx="15" fill="url(#board)" stroke="#63ecff" stroke-opacity=".48"/>
+<g fill="#060a16">
+  <circle cx="77" cy="74" r="9"/><circle cx="105" cy="74" r="9"/><circle cx="133" cy="74" r="9"/><circle cx="161" cy="74" r="9"/><circle cx="189" cy="74" r="9"/><circle cx="217" cy="74" r="9"/><circle cx="245" cy="74" r="9"/>
+  <circle cx="77" cy="100" r="9"/><circle cx="105" cy="100" r="9"/><circle cx="133" cy="100" r="9"/><circle cx="161" cy="100" r="9"/><circle cx="189" cy="100" r="9"/><circle cx="217" cy="100" r="9"/><circle cx="245" cy="100" r="9"/>
+  <circle cx="77" cy="126" r="9"/><circle cx="105" cy="126" r="9"/><circle cx="133" cy="126" r="9"/><circle cx="161" cy="126" r="9"/><circle cx="189" cy="126" r="9"/><circle cx="217" cy="126" r="9"/><circle cx="245" cy="126" r="9"/>
+  <circle cx="77" cy="152" r="9"/><circle cx="105" cy="152" r="9"/><circle cx="133" cy="152" r="9"/><circle cx="161" cy="152" r="9"/><circle cx="189" cy="152" r="9"/><circle cx="217" cy="152" r="9"/><circle cx="245" cy="152" r="9"/>
+</g>
+<path d="M105 126H189" stroke="#ff5b72" stroke-width="13" opacity=".22" stroke-linecap="round" filter="url(#g)"/>
+<path d="M105 126H189" stroke="#fff0a0" stroke-width="2.5" opacity=".76" stroke-linecap="round"/>
+<g fill="url(#red)" stroke="#ffd9de" stroke-opacity=".55">
+  <circle cx="105" cy="126" r="11"/><circle cx="133" cy="126" r="11"/><circle cx="161" cy="126" r="11"/><circle cx="189" cy="126" r="11"/>
+</g>
+<g fill="#fff4a3">
+  <circle cx="50" cy="48" r="2.5"/><circle cx="277" cy="52" r="2.2"/><circle cx="284" cy="121" r="2.7"/><circle cx="36" cy="126" r="2.3"/><circle cx="247" cy="31" r="1.8"/><circle cx="71" cy="30" r="1.7"/>
+</g>
+</svg>
