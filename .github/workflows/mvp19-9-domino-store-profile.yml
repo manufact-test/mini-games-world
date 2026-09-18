@@ -14,7 +14,7 @@ on:
       - 'app/assets/css/games/domino/store-cosmetics-v1.css'
       - 'app/assets/css/games/domino/store-card-fill-live-pips-v5.css'
       - 'app/assets/css/games/domino/store-effects-scene-v9.css'
-      - 'app/assets/css/games/domino/store-effects-live-parity-v41.css'
+      - 'app/assets/css/games/domino/store-effects-preview-component-v44.css'
       - 'app/assets/js/profile/mgw-profile-domino-parity.js'
       - 'app/assets/js/profile/mgw-profile-domino-hard-ratio-v1.js'
       - 'app/runtime/client/version-manifest.php'
@@ -74,15 +74,15 @@ jobs:
           store='app/assets/js/screens/store-screen-domino-store-v1.js'
           profile='app/assets/js/profile/mgw-profile-domino-parity.js'
           effects='app/assets/css/games/domino/store-effects-scene-v9.css'
-          live_parity='app/assets/css/games/domino/store-effects-live-parity-v41.css'
+          preview_component='app/assets/css/games/domino/store-effects-preview-component-v44.css'
           ratio='app/assets/js/profile/mgw-profile-domino-hard-ratio-v1.js'
           manifest='app/runtime/client/version-manifest.php'
 
-          grep -F "store-screen-domino-store-v1.js?v=8&mvp19_9=domino-native-render-v8" "$base"
-          grep -F 'native:v10:live-v41' "$store"
-          grep -F 'data-mgw-domino-fx-v14' "$store"
+          grep -F "store-screen-domino-store-v1.js?v=11&mvp19_9=domino-preview-component-v44" "$base"
+          grep -F 'native:v11:component-v44' "$store"
+          grep -F 'data-mgw-domino-preview-component="v44"' "$store"
           grep -F 'sceneReady' "$store"
-          grep -F 'data-mgw-domino-preview-live-v41' "$store"
+          grep -F 'data-mgw-domino-preview-component' "$store"
           grep -F 'data-mgw-domino-preview-particles="8"' "$store"
           grep -F 'data-mgw-domino-preview-particles="12"' "$store"
           grep -F 'data-mgw-domino-preview-particles="6"' "$store"
@@ -96,18 +96,19 @@ jobs:
           grep -F 'mgw-domino-v15-precision-flight' "$effects"
           grep -F 'mgw-domino-v15-stock-flight' "$effects"
           grep -F 'mgw-domino-v15-cascade-tile' "$effects"
-          grep -F 'mgw-domino-v41-precision-shard' "$live_parity"
-          grep -F 'mgw-domino-v41-stock-line' "$live_parity"
-          grep -F 'height:.62px!important' "$live_parity"
-          grep -F 'mgw-domino-v41-finale-sweep' "$live_parity"
-          grep -F "dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=10&mvp19_9=domino-live-preview-v41'" "$profile"
+          grep -F 'mgw-domino-v44-precision-shard' "$preview_component"
+          grep -F 'mgw-domino-v44-stock-line' "$preview_component"
+          grep -F 'height:.62px!important' "$preview_component"
+          ! grep -Fq 'animation:none!important' app/assets/css/screens/profile-domino-store-parity-v1.css
+          grep -F 'mgw-domino-v44-finale-sweep' "$preview_component"
+          grep -F "dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=11&mvp19_9=domino-preview-component-v44'" "$profile"
           grep -F 'store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions' "$profile"
-          grep -F 'store-effects-live-parity-v41.css?v=1&mvp19_9=domino-live-preview-v41' "$profile"
+          grep -F 'store-effects-preview-component-v44.css?v=1&mvp19_9=domino-preview-component-v44' "$profile"
           ! grep -Fq 'getBoundingClientRect' "$ratio"
           ! grep -Fq 'setTimeout' "$ratio"
-          grep -F 'domino_effects=live-v41' "$manifest"
-          grep -F "store-screen-domino-store-v1.js?v=8&mvp19_9=domino-native-render-v8' => './assets/js/screens/store-screen-domino-store-v1.js?v=10&mvp19_9=domino-live-preview-v41" "$manifest"
-          grep -F 'store-screen.js?v=48&intent_base=1' "$manifest"
+          grep -F 'domino_effects=component-v44' "$manifest"
+          grep -F "store-screen-domino-store-v1.js?v=8&mvp19_9=domino-native-render-v8' => './assets/js/screens/store-screen-domino-store-v1.js?v=11&mvp19_9=domino-preview-component-v44" "$manifest"
+          grep -F 'store-screen.js?v=49&intent_base=1' "$manifest"
           grep -F 'selector_center=instant-v1' "$manifest"
           grep -F 'ux=ready-only-history-sheet' "$manifest"
           php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1170) exit(1);'

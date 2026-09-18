@@ -9,7 +9,7 @@ export function installDominoStoreEffectsV9(){
     if (existing.href !== href) existing.href = href;
     existing.setAttribute(STYLE_ATTR, STYLE_VALUE);
     document.head.appendChild(existing);
-    ensureLiveParityV41();
+    ensurePreviewComponentV44();
     return;
   }
   const link = document.createElement('link');
@@ -17,21 +17,21 @@ export function installDominoStoreEffectsV9(){
   link.href = href;
   link.setAttribute(STYLE_ATTR, STYLE_VALUE);
   document.head.appendChild(link);
-  ensureLiveParityV41();
+  ensurePreviewComponentV44();
 }
 
-function ensureLiveParityV41(){
-  const href = new URL('../../css/games/domino/store-effects-live-parity-v41.css?v=1&mvp19_9=domino-live-preview-v41', import.meta.url).href;
-  const existing = document.querySelector('link[data-mgw-domino-store-live-parity-v41]');
+function ensurePreviewComponentV44(){
+  const href = new URL('../../css/games/domino/store-effects-preview-component-v44.css?v=1&mvp19_9=domino-preview-component-v44', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-domino-preview-component-v44]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwDominoStoreLiveParityV41 = 'mvp19-9-domino-live-preview-v41';
+    existing.dataset.mgwDominoPreviewComponentV44 = 'mvp19-9-domino-preview-component-v44';
     document.head.appendChild(existing);
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.href = href;
-  link.dataset.mgwDominoStoreLiveParityV41 = 'mvp19-9-domino-live-preview-v41';
+  link.dataset.mgwDominoPreviewComponentV44 = 'mvp19-9-domino-preview-component-v44';
   document.head.appendChild(link);
 }

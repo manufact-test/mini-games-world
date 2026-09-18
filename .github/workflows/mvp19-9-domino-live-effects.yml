@@ -17,13 +17,14 @@ on:
       - 'app/assets/js/screens/store-screen-domino-store-v1.js'
       - 'app/assets/js/screens/store-screen-domino-effects-v9.js'
       - 'app/assets/js/profile/mgw-profile-domino-parity.js'
-      - 'app/assets/css/games/domino/store-effects-live-parity-v41.css'
+      - 'app/assets/css/games/domino/store-effects-preview-component-v44.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs'
       - 'bot/tests/Mvp19_9DominoLiveStabilityV30ContractTest.mjs'
       - 'e2e/staging/domino-live-diagnostic.spec.mjs'
       - 'e2e/staging/domino-live-stability-v30.spec.mjs'
+      - 'e2e/staging/domino-preview-animation-v44.spec.mjs'
       - 'e2e/playwright.domino-live-diagnostic.config.mjs'
       - '.github/workflows/mvp19-9-domino-live-effects.yml'
   push:
@@ -42,13 +43,14 @@ on:
       - 'app/assets/js/screens/store-screen-domino-store-v1.js'
       - 'app/assets/js/screens/store-screen-domino-effects-v9.js'
       - 'app/assets/js/profile/mgw-profile-domino-parity.js'
-      - 'app/assets/css/games/domino/store-effects-live-parity-v41.css'
+      - 'app/assets/css/games/domino/store-effects-preview-component-v44.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs'
       - 'bot/tests/Mvp19_9DominoLiveStabilityV30ContractTest.mjs'
       - 'e2e/staging/domino-live-diagnostic.spec.mjs'
       - 'e2e/staging/domino-live-stability-v30.spec.mjs'
+      - 'e2e/staging/domino-preview-animation-v44.spec.mjs'
       - 'e2e/playwright.domino-live-diagnostic.config.mjs'
       - '.github/workflows/mvp19-9-domino-live-effects.yml'
   workflow_dispatch:
@@ -85,6 +87,7 @@ jobs:
           node --check bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs
           node --check bot/tests/Mvp19_9DominoLiveStabilityV30ContractTest.mjs
           node --check e2e/staging/domino-live-stability-v30.spec.mjs
+          node --check e2e/staging/domino-preview-animation-v44.spec.mjs
           node --check e2e/playwright.domino-live-diagnostic.config.mjs
           php -l app/v110.php
           php -l app/runtime/client/version-manifest.php
@@ -99,7 +102,6 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           git diff --exit-code "$base" "$head" -- \
-            app/assets/js/screens/store-screen-domino-store-v1.js \
             app/assets/css/games/domino/store-cosmetics-v1.css \
             app/assets/css/games/domino/store-effects-scene-v9.css \
             app/assets/css/games/domino/store-effects-visual-parity-v16.css \
@@ -221,47 +223,47 @@ jobs:
           done
           test "$ready" = '1'
 
-      - name: Probe deployed Domino Store/Profile live-v41 preview assets
+      - name: Probe deployed Domino Store/Profile v44 preview component
         if: github.event_name != 'pull_request' && steps.readiness.outcome == 'success'
         shell: bash
         run: |
           set -Eeuo pipefail
-          rm -f domino-preview-store-v10.js domino-preview-loader-v8.js domino-preview-live-v41.css
+          rm -f domino-preview-store-v11.js domino-preview-loader-v9.js domino-preview-component-v44.css
 
           curl --fail-with-body --silent --show-error \
             --connect-timeout 10 --max-time 25 \
             --retry 2 --retry-delay 2 --retry-connrefused \
-            "${MGW_STAGING_ORIGIN}/app/assets/js/screens/store-screen-domino-store-v1.js?v=10&mvp19_9=domino-live-preview-v41" \
-            --output domino-preview-store-v10.js
+            "${MGW_STAGING_ORIGIN}/app/assets/js/screens/store-screen-domino-store-v1.js?v=11&mvp19_9=domino-preview-component-v44" \
+            --output domino-preview-store-v11.js
 
           curl --fail-with-body --silent --show-error \
             --connect-timeout 10 --max-time 25 \
             --retry 2 --retry-delay 2 --retry-connrefused \
-            "${MGW_STAGING_ORIGIN}/app/assets/js/screens/store-screen-domino-effects-v9.js?v=8&mvp19_9=domino-live-preview-v41" \
-            --output domino-preview-loader-v8.js
+            "${MGW_STAGING_ORIGIN}/app/assets/js/screens/store-screen-domino-effects-v9.js?v=9&mvp19_9=domino-preview-component-v44" \
+            --output domino-preview-loader-v9.js
 
           curl --fail-with-body --silent --show-error \
             --connect-timeout 10 --max-time 25 \
             --retry 2 --retry-delay 2 --retry-connrefused \
-            "${MGW_STAGING_ORIGIN}/app/assets/css/games/domino/store-effects-live-parity-v41.css?v=1&mvp19_9=domino-live-preview-v41" \
-            --output domino-preview-live-v41.css
+            "${MGW_STAGING_ORIGIN}/app/assets/css/games/domino/store-effects-preview-component-v44.css?v=1&mvp19_9=domino-live-preview-v41" \
+            --output domino-preview-component-v44.css
 
-          grep -F 'native:v10:live-v41' domino-preview-store-v10.js
-          grep -F 'data-mgw-domino-preview-live-v41' domino-preview-store-v10.js
-          grep -F 'data-mgw-domino-preview-particles="8"' domino-preview-store-v10.js
-          grep -F 'data-mgw-domino-preview-particles="12"' domino-preview-store-v10.js
-          grep -F 'data-mgw-domino-preview-particles="6"' domino-preview-store-v10.js
+          grep -F 'native:v11:component-v44' domino-preview-store-v11.js
+          grep -F 'data-mgw-domino-preview-component' domino-preview-store-v11.js
+          grep -F 'data-mgw-domino-preview-particles="8"' domino-preview-store-v11.js
+          grep -F 'data-mgw-domino-preview-particles="12"' domino-preview-store-v11.js
+          grep -F 'data-mgw-domino-preview-particles="6"' domino-preview-store-v11.js
 
-          grep -F 'store-effects-live-parity-v41.css?v=1&mvp19_9=domino-live-preview-v41' domino-preview-loader-v8.js
+          grep -F 'store-effects-preview-component-v44.css?v=1&mvp19_9=domino-preview-component-v44' domino-preview-loader-v9.js
 
-          grep -F '41-48px shard travel' domino-preview-live-v41.css
-          grep -F '@keyframes mgw-domino-v41-precision-shard' domino-preview-live-v41.css
-          grep -F 'height:.62px!important' domino-preview-live-v41.css
-          grep -F '@keyframes mgw-domino-v41-stock-spark' domino-preview-live-v41.css
-          grep -F '@keyframes mgw-domino-v41-finale-sweep' domino-preview-live-v41.css
-          grep -F '@keyframes mgw-domino-v41-finale-prism' domino-preview-live-v41.css
+          grep -F 'does not reuse the old v13/v15/v18 effect' domino-preview-component-v44.css
+          grep -F '@keyframes mgw-domino-v44-precision-shard' domino-preview-component-v44.css
+          grep -F 'height:.62px!important' domino-preview-component-v44.css
+          grep -F '@keyframes mgw-domino-v44-stock-spark' domino-preview-component-v44.css
+          grep -F '@keyframes mgw-domino-v44-finale-sweep' domino-preview-component-v44.css
+          grep -F '@keyframes mgw-domino-v44-finale-prism' domino-preview-component-v44.css
 
-          printf 'Hostinger Domino preview live-v41 assets verified.\n'
+          printf 'Hostinger Domino preview component v44 assets verified.\n'
 
       - name: Install pinned Playwright browser
         if: github.event_name != 'pull_request' && steps.readiness.outcome == 'success'

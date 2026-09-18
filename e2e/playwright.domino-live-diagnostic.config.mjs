@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './staging',
-  testMatch: ['domino-live-stability-v30.spec.mjs'],
+  testMatch: ['domino-live-stability-v30.spec.mjs','domino-preview-animation-v44.spec.mjs'],
   outputDir: 'artifacts/playwright-domino-live/test-results',
   fullyParallel: false,
   workers: 1,

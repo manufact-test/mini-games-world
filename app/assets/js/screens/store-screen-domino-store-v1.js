@@ -1,9 +1,9 @@
 const INSTALL_KEY = '__mgwDominoStoreV1Installed';
-const STYLE_MARK = 'mvp19-9-domino-store-v10-live-v41';
+const STYLE_MARK = 'mvp19-9-domino-store-v11-preview-component-v44';
 const EFFECT_STYLE_ATTR = 'data-mgw-domino-store-effects-v9';
 const EFFECT_STYLE_VALUE = 'mvp19-9-domino-premium-effects-v15-proportions';
-const LIVE_STYLE_ATTR = 'data-mgw-domino-store-live-parity-v41';
-const LIVE_STYLE_VALUE = 'mvp19-9-domino-live-preview-v41';
+const LIVE_STYLE_ATTR = 'data-mgw-domino-preview-component-v44';
+const LIVE_STYLE_VALUE = 'mvp19-9-domino-preview-component-v44';
 
 ensureStyles();
 ensureEffectStyles();
@@ -81,7 +81,7 @@ function ensureEffectStyles(){
 }
 
 function ensureLiveParityStyles(){
-  const href = new URL('../../css/games/domino/store-effects-live-parity-v41.css?v=1&mvp19_9=domino-live-preview-v41', import.meta.url).href;
+  const href = new URL('../../css/games/domino/store-effects-preview-component-v44.css?v=1&mvp19_9=domino-preview-component-v44', import.meta.url).href;
   const existing = document.querySelector(`link[${LIVE_STYLE_ATTR}]`);
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -153,13 +153,13 @@ function upgradePreviews(root){
     const variant = String(preview.dataset.cosmeticVariant || 'felt');
     const expectedClass = modeClass(layer, variant);
     const visual = preview.querySelector(':scope > .mgw-domino-preview');
-    const sceneReady = layer !== 'effect' || visual?.querySelector(`.mgw-domino-fx-stage[data-mgw-domino-fx-v14="${safeVariant(variant)}"][data-mgw-domino-preview-live-v41="${safeVariant(variant)}"]`);
+    const sceneReady = layer !== 'effect' || visual?.querySelector(`.mgw-domino-live-v44-stage[data-mgw-domino-effect="${safeVariant(variant)}"][data-mgw-domino-preview-component="v44"]`);
     if (visual instanceof HTMLElement && visual.classList.contains(expectedClass) && sceneReady) {
-      preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v10:live-v41`;
+      preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v11:component-v44`;
       return;
     }
     preview.innerHTML = dominoPreviewMarkup(layer, variant);
-    preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v10:live-v41`;
+    preview.dataset.mgwDominoPreview = `${layer}:${variant}:native:v11:component-v44`;
   });
 }
 
@@ -196,12 +196,21 @@ function tableMarkup(layer, variant){
 
 function effectSceneMarkup(variant){
   if (variant === 'stock-pulse') {
-    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-draw mgw-domino-live-preview-v41" data-mgw-domino-fx-v14="stock-pulse" data-mgw-domino-preview-live-v41="stock-pulse" data-mgw-domino-preview-particles="12"><span class="mgw-domino-v13-stock"><i></i><i></i><i></i></span><span class="mgw-domino-v13-draw-piece"><i class="back"></i><i class="face"></i></span><span class="mgw-domino-v13-draw-shadow"></span><span class="mgw-domino-v41-stock-line"></span><span class="mgw-domino-v41-stock-orb"></span><span class="mgw-domino-v41-stock-sparks">${Array.from({length:12},(_,index)=>`<i class="p${index + 1}"></i>`).join('')}</span></span></span>`;
+    const target = tileMarkup(1, 1, 'mgw-domino-v44-tile mgw-domino-v44-stock-target');
+    return `<span class="mgw-domino-preview-table mgw-domino-live-v44-table"><span class="mgw-domino-live-v44-stage is-stock" data-mgw-domino-effect="stock-pulse" data-mgw-domino-preview-component="v44" data-mgw-domino-preview-particles="12"><span class="mgw-domino-v44-stock-stack"><i></i><i></i><i></i></span>${target}<span class="mgw-domino-v44-stock-line"></span><span class="mgw-domino-v44-stock-orb"></span><span class="mgw-domino-v44-stock-sparks">${Array.from({length:12},(_,index)=>`<i class="p${index + 1}"></i>`).join('')}</span></span></span>`;
   }
   if (variant === 'chain-finale') {
-    return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-cascade mgw-domino-live-preview-v41" data-mgw-domino-fx-v14="chain-finale" data-mgw-domino-preview-live-v41="chain-finale" data-mgw-domino-preview-particles="6"><span class="mgw-domino-v13-floor"></span><span class="mgw-domino-v13-cascade-row"><i></i><i></i><i></i><i></i><i></i></span><span class="mgw-domino-v13-finish-dust"></span><span class="mgw-domino-v41-finale-sweep"></span><span class="mgw-domino-v41-finale-aura"></span><span class="mgw-domino-v41-finale-prism"></span><span class="mgw-domino-v41-finale-sparks">${Array.from({length:6},(_,index)=>`<i class="s${index + 1}"></i>`).join('')}</span></span></span>`;
+    const chain = [[6,3],[3,5],[5,2],[2,4],[4,1]]
+      .map((pair,index) => tileMarkup(pair[0], pair[1], `mgw-domino-v44-tile mgw-domino-v44-finale-tile t${index + 1}`))
+      .join('');
+    return `<span class="mgw-domino-preview-table mgw-domino-live-v44-table"><span class="mgw-domino-live-v44-stage is-finale" data-mgw-domino-effect="chain-finale" data-mgw-domino-preview-component="v44" data-mgw-domino-preview-particles="6"><span class="mgw-domino-v44-finale-chain">${chain}</span><span class="mgw-domino-v44-finale-prism"></span><span class="mgw-domino-v44-finale-sweep"></span><span class="mgw-domino-v44-finale-aura"></span><span class="mgw-domino-v44-finale-sparks">${Array.from({length:6},(_,index)=>`<i class="s${index + 1}"></i>`).join('')}</span></span></span>`;
   }
-  return `<span class="mgw-domino-preview-table"><span class="mgw-domino-fx-stage mgw-domino-v13-impact mgw-domino-live-preview-v41" data-mgw-domino-fx-v14="precision-drop" data-mgw-domino-preview-live-v41="precision-drop" data-mgw-domino-preview-particles="8"><span class="mgw-domino-v13-chain"><i></i><i></i></span><span class="mgw-domino-v13-impact-piece"></span><span class="mgw-domino-v13-impact-ring"></span><span class="mgw-domino-v13-impact-sparks">${Array.from({length:8},(_,index)=>`<i class="s${index + 1}"></i>`).join('')}</span></span></span>`;
+  const chain = [
+    tileMarkup(6, 3, 'mgw-domino-v44-tile mgw-domino-v44-precision-tile t1'),
+    tileMarkup(3, 5, 'mgw-domino-v44-tile mgw-domino-v44-precision-tile t2'),
+    tileMarkup(5, 2, 'mgw-domino-v44-tile mgw-domino-v44-precision-tile target'),
+  ].join('');
+  return `<span class="mgw-domino-preview-table mgw-domino-live-v44-table"><span class="mgw-domino-live-v44-stage is-precision" data-mgw-domino-effect="precision-drop" data-mgw-domino-preview-component="v44" data-mgw-domino-preview-particles="8"><span class="mgw-domino-v44-precision-chain">${chain}</span><span class="mgw-domino-v44-precision-ring"></span><span class="mgw-domino-v44-precision-sparks">${Array.from({length:8},(_,index)=>`<i class="s${index + 1}"></i>`).join('')}</span></span></span>`;
 }
 
 function modeClass(layer, variant){

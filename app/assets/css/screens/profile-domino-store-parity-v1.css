@@ -145,7 +145,5 @@
   #screen-profile .profile-v2-game-panel[data-profile-game-panel="domino"] .profile-v2-game-card .store-v2-game-preview[data-game-type="domino"]{border-radius:12px!important}
   .profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="domino"]{border-radius:16px!important}
 }
-@media(prefers-reduced-motion:reduce){
-  #screen-profile .store-v2-game-preview[data-game-type="domino"] *,
-  .profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="domino"] *{animation:none!important}
-}
+/* Effect previews must remain animated in Profile and the detail sheet.
+   The isolated v44 component owns its own reduced-motion behavior. */
