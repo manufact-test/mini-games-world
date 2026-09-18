@@ -4,7 +4,7 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
 import { haptic } from '../telegram/telegram-app.js?v=27';
-import { dominoPreviewMarkup, dominoHeaderMarksMarkup } from './store-screen-domino-store-v1.js?v=11&mvp19_9=domino-preview-component-v44';
+import { dominoPreviewMarkup, dominoHeaderMarksMarkup } from './store-screen-domino-store-v1.js?v=12&mvp19_9=domino-preview-motion-v45';
 
 const STORE_TABS = Object.freeze([
   { id:'coins', label:'Коины' },
