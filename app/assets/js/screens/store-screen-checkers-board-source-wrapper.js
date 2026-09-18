@@ -14,7 +14,7 @@ import {
 import {
   installDominoStorePresentation,
   upgradeDominoStorePresentation,
-} from './store-screen-domino-store-v1.js?v=9&mvp19_9=domino-native-render-v9';
+} from './store-screen-domino-store-v1.js?v=10&mvp19_9=domino-live-preview-v41';
 import { installDominoStoreCardFillV5 } from './store-screen-domino-card-fill-v5.js?v=2&mvp19_9=domino-card-fill-live-pips-v6';
 import { installDominoStoreEffectsV9 } from './store-screen-domino-effects-v9.js?v=7&mvp19_9=domino-premium-effects-v15-proportions';
 import { installStoreGameSelectorSwipe } from './store-game-selector-swipe-v1.js?v=1&mvp19_7=touch-drag';
