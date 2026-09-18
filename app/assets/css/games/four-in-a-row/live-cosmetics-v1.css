@@ -678,27 +678,34 @@ path.mgw-four-victory-rail.rail-scan{
   .mgw-four-victory-shard{
     animation:none!important;
   }
+
   #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-drop-fx="1"] > span{
     opacity:1!important;
     transform:scale(1)!important;
   }
+
+  #gameBoard[data-game-type="four_in_a_row"] .four-disc-slot[data-mgw-four-victory-cell] span{
+    transform:scale(1)!important;
+    filter:brightness(1.22)!important;
+    box-shadow:0 0 0 2px rgba(255,226,108,.58),0 0 10px rgba(106,232,255,.34)!important;
+  }
+
   .mgw-four-live-drop-disc,
   .mgw-four-drop-target-lock,
   .mgw-four-drop-laser,
-  .mgw-four-live-pulse-fx{
-    display:none!important;
-  }
-  .mgw-four-victory-wave.wave-a{
-    opacity:.5!important;
-    transform:translate(-50%,-50%) scale(2.2)!important;
-  }
-  .mgw-four-victory-wave.wave-b,
+  .mgw-four-live-pulse-fx,
   .mgw-four-victory-shade,
-  path.mgw-four-victory-rail,
+  path.mgw-four-victory-rail:not(.rail-core),
   .mgw-four-victory-node-lock,
   .mgw-four-victory-prism,
   .mgw-four-victory-blade,
   .mgw-four-victory-shard{
     display:none!important;
+  }
+
+  path.mgw-four-victory-rail.rail-core{
+    display:block!important;
+    opacity:.62!important;
+    stroke-dashoffset:0!important;
   }
 }
