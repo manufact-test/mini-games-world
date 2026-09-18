@@ -1,0 +1,73 @@
+name: Four in a Row Profile parity
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/profile/mgw-profile-four-in-a-row-parity.js'
+      - 'app/assets/js/profile/mgw-profile-chess-layout-v2.js'
+      - 'app/assets/js/screens/store-screen-four-in-a-row-store-v1.js'
+      - 'app/assets/css/screens/profile-four-in-a-row-store-parity-v1.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'bot/tests/Mvp19_FourInARowProfileParityContractTest.mjs'
+      - 'bot/tests/Mvp19_FourInARowProfileInventoryTest.php'
+      - '.github/workflows/mvp19-four-in-a-row-profile.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-four-profile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  four-profile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Lint Four Profile slice
+        run: |
+          node --check app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
+          node --check app/assets/js/profile/mgw-profile-chess-layout-v2.js
+          node --check app/assets/js/screens/store-screen-four-in-a-row-store-v1.js
+          php -l bot/tests/Mvp19_FourInARowProfileInventoryTest.php
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/helpers/WebAppLaunchUrl.php
+
+      - name: Run Four Profile contracts
+        run: |
+          node bot/tests/Mvp19_FourInARowProfileParityContractTest.mjs
+          php bot/tests/Mvp19_FourInARowProfileInventoryTest.php
+
+      - name: Re-run shared Profile contracts
+        run: |
+          node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
+          node bot/tests/Mvp19_6ProfileGameCosmeticsParityContractTest.mjs
+          node bot/tests/Mvp19_7ReversiProfileParityContractTest.mjs
+          node bot/tests/Mvp19_8GoProfileParityContractTest.mjs
+          php bot/tests/Mvp19_9DominoStoreProfileTest.php
+
+      - name: Guard Phase 2 scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "item.owned === true" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
+          grep -F "fourInARowPreviewMarkup(layer, variant)" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
+          grep -F "mgw:cosmetic-inventory-changed" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
+          grep -F "four_profile=parity-v1" app/runtime/client/version-manifest.php
+          ! grep -Fq "gameAction(" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
+          ! grep -Fq "@keyframes" app/assets/css/games/four-in-a-row/store-cosmetics-v1.css
+          git diff --check

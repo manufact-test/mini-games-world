@@ -149,7 +149,7 @@ function upgradePreviews(root){
     if (preview.dataset.mgwFourPreview === signature) return;
     preview.dataset.mgwFourPreview = signature;
     preview.dataset.mgwFourPreviewMode = layer === 'effect' ? 'static-concept' : 'static';
-    preview.innerHTML = previewMarkup(layer, variant);
+    preview.innerHTML = fourInARowPreviewMarkup(layer, variant);
   });
 }
 
@@ -177,7 +177,7 @@ function descriptionFor(layer, variant){
   })[variant] || 'Будущий визуальный эффект партии';
 }
 
-function previewMarkup(layer, variant){
+export function fourInARowPreviewMarkup(layer, variant){
   if (layer === 'effect') {
     const src = EFFECT_ASSETS[variant] || EFFECT_ASSETS.drop;
     return `<i class="mgw-four-preview mgw-four-effect-static effect-${variant}" aria-hidden="true"><img src="${escapeAttr(src)}" alt="" loading="eager" decoding="async" draggable="false"></i>`;
