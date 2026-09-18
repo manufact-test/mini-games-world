@@ -6,7 +6,7 @@ const STYLE_MARK = 'four-store-static-v4';
 
 const EFFECT_ASSETS = Object.freeze({
   drop:new URL('../../media/cosmetics/four-in-a-row/effects/drop-v1.svg', import.meta.url).href,
-  four:new URL('../../media/cosmetics/four-in-a-row/effects/four-v1.svg?rev=2', import.meta.url).href,
+  four:new URL('../../media/cosmetics/four-in-a-row/effects/four-v1.svg?rev=3', import.meta.url).href,
   'victory-wave':new URL('../../media/cosmetics/four-in-a-row/effects/victory-wave-v1.svg', import.meta.url).href,
 });
 
@@ -176,7 +176,7 @@ function descriptionFor(layer, variant){
   }
   return ({
     drop:'При падении фишка оставит короткий световой след, а в точке посадки разойдётся компактное ударное кольцо',
-    four:'После каждого хода от поставленной фишки расходится яркий энергетический импульс: кольца, искры и короткая подсветка соседних ячеек',
+    four:'После каждого хода от поставленной фишки по соседним ячейкам пробегает короткий электрический разряд с яркими ветвящимися молниями',
     'victory-wave':'От собранной четвёрки по всему полю разойдутся две широкие победные волны с финальным световым акцентом',
   })[variant] || 'Будущий визуальный эффект партии';
 }
