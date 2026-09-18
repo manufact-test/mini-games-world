@@ -2,7 +2,7 @@ import {
   renderFourInARowSurface as renderBaseFourInARowSurface,
   fourInARowMeta,
   fourInARowPlayerMark,
-} from './renderer.js?v=53&base=mvp19-10-live-v2';
+} from './renderer.js?v=53&base=mvp19-10-live-v3';
 import { state } from '../../state.js?v=27';
 
 const THEME_SLOT = 'game_four_in_a_row_theme';
@@ -120,7 +120,7 @@ export function renderFourInARowSurface(args){
 
   if (!(container instanceof HTMLElement)) return;
 
-  container.dataset.mgwFourLiveCosmetics = 'v2';
+  container.dataset.mgwFourLiveCosmetics = 'v3';
   container.dataset.fourTheme = themeVariant;
   container.dataset.fourDiscs = discsVariant;
   container.dataset.fourEffect = viewerEffect || 'base';
@@ -260,7 +260,11 @@ function normalizedWinningCells(value, columns, rows){
 }
 
 function slotForCell(container, cell){
-  return container.querySelector(`.four-disc-slot[data-four-cell="${cell}"]`);
+  const index = Number(cell);
+  if (!Number.isInteger(index) || index < 0) return null;
+  const slots = container.querySelectorAll('.four-disc-slot');
+  const slot = slots.item(index);
+  return slot instanceof HTMLElement ? slot : null;
 }
 
 function mountDropEffect(container, active, delayMs){
@@ -319,45 +323,49 @@ function mountPulseEffect(container, active, delayMs){
 
   const centerX = slotRect.left - gridRect.left + (slotRect.width / 2);
   const centerY = slotRect.top - gridRect.top + (slotRect.height / 2);
-  const size = Math.max(22, slotRect.width * .86);
 
   slot.dataset.mgwFourPulseCell = '1';
   slot.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
 
-  pulseNeighborCells(container, active).forEach(({ cell, step }) => {
-    const neighbor = slotForCell(container, cell);
-    if (!(neighbor instanceof HTMLElement)) return;
-    neighbor.dataset.mgwFourPulseNeighbor = '1';
-    neighbor.style.setProperty('--mgw-four-pulse-delay', `${delayMs + (step * 70)}ms`);
-  });
+  const targets = pulseNeighborCells(active)
+    .map(({ cell, step }, index) => {
+      const neighbor = slotForCell(container, cell);
+      if (!(neighbor instanceof HTMLElement)) return null;
+      const rect = neighbor.getBoundingClientRect();
+      neighbor.dataset.mgwFourPulseNeighbor = '1';
+      neighbor.style.setProperty('--mgw-four-pulse-delay', `${delayMs + (step * 75)}ms`);
+      return {
+        index,
+        step,
+        x: rect.left - gridRect.left + (rect.width / 2),
+        y: rect.top - gridRect.top + (rect.height / 2),
+      };
+    })
+    .filter(Boolean);
 
-  const host = document.createElement('span');
-  host.className = 'mgw-four-live-pulse-fx';
-  host.setAttribute('aria-hidden', 'true');
-  host.style.left = `${centerX}px`;
-  host.style.top = `${centerY}px`;
-  host.style.width = `${size}px`;
-  host.style.height = `${size}px`;
-  host.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.classList.add('mgw-four-live-pulse-fx');
+  svg.setAttribute('viewBox', `0 0 ${gridRect.width} ${gridRect.height}`);
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.style.setProperty('--mgw-four-fx-delay', `${delayMs}ms`);
 
-  const sparks = Array.from({ length:8 }, (_, index) => {
-    const angle = (Math.PI * 2 * index) / 8;
-    const distance = size * (1.15 + (index % 2) * .28);
-    const dx = Math.cos(angle) * distance;
-    const dy = Math.sin(angle) * distance;
-    return `<i class="mgw-four-pulse-spark" style="--mgw-four-spark-x:${dx.toFixed(1)}px;--mgw-four-spark-y:${dy.toFixed(1)}px;--mgw-four-spark-delay:${delayMs + (index * 18)}ms"></i>`;
+  const paths = targets.map(target => {
+    const path = lightningPath(centerX, centerY, target.x, target.y, target.index);
+    const className = target.index % 2 === 0 ? 'bolt-cyan' : 'bolt-magenta';
+    const delay = delayMs + 55 + (target.step * 55) + (target.index * 24);
+    return `<path class="mgw-four-pulse-bolt ${className}" pathLength="1" d="${path}" style="--mgw-four-bolt-delay:${delay}ms"></path>`;
   }).join('');
 
-  host.innerHTML = `
-    <i class="mgw-four-pulse-core"></i>
-    <i class="mgw-four-pulse-ring ring-a"></i>
-    <i class="mgw-four-pulse-ring ring-b"></i>
-    ${sparks}
+  svg.innerHTML = `
+    <circle class="mgw-four-pulse-node node-glow" cx="${centerX}" cy="${centerY}" r="${Math.max(14, slotRect.width * .56)}"></circle>
+    <circle class="mgw-four-pulse-node node-core" cx="${centerX}" cy="${centerY}" r="${Math.max(4, slotRect.width * .13)}"></circle>
+    ${paths}
   `;
-  grid.appendChild(host);
+  grid.appendChild(svg);
 }
 
-function pulseNeighborCells(container, active){
+function pulseNeighborCells(active){
   const cell = Number(active.lastMove);
   const columns = Number(active.columns || 7);
   const rows = Number(active.rows || 6);
@@ -370,14 +378,33 @@ function pulseNeighborCells(container, active){
     [row, col + 1, 1],
     [row - 1, col, 1],
     [row + 1, col, 1],
-    [row, col - 2, 2],
-    [row, col + 2, 2],
+    [row - 1, col - 1, 2],
+    [row - 1, col + 1, 2],
+    [row + 1, col - 1, 2],
+    [row + 1, col + 1, 2],
   ].forEach(([r, c, step]) => {
     if (r < 0 || r >= rows || c < 0 || c >= columns) return;
     result.push({ cell:r * columns + c, step });
   });
 
   return result;
+}
+
+function lightningPath(x1, y1, x2, y2, seed){
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const length = Math.max(1, Math.hypot(dx, dy));
+  const nx = -dy / length;
+  const ny = dx / length;
+  const sign = seed % 2 === 0 ? 1 : -1;
+  const points = [
+    [x1, y1],
+    [x1 + dx * .28 + nx * 6 * sign, y1 + dy * .28 + ny * 6 * sign],
+    [x1 + dx * .52 - nx * 4 * sign, y1 + dy * .52 - ny * 4 * sign],
+    [x1 + dx * .76 + nx * 5 * sign, y1 + dy * .76 + ny * 5 * sign],
+    [x2, y2],
+  ];
+  return points.map(([x, y], index) => `${index === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
 }
 
 function mountVictoryWaveEffect(container, active, delayMs){
@@ -424,16 +451,16 @@ function cellPoint(cell, columns, rows){
 
 function ensureLiveStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/four-in-a-row/live-cosmetics-v1.css?v=2&mvp19_10=live-game-v2', import.meta.url).href;
+  const href = new URL('../../../css/games/four-in-a-row/live-cosmetics-v1.css?v=3&mvp19_10=live-game-v3', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-four-live-cosmetics]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v2';
+    existing.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v3';
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v2';
+  link.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v3';
   link.href = href;
   document.head.appendChild(link);
 }

@@ -10,7 +10,7 @@ const launch = fs.readFileSync('bot/helpers/WebAppLaunchUrl.php', 'utf8');
 const response = fs.readFileSync('bot/helpers/response.php', 'utf8');
 
 assert.ok(
-  live.includes("from './renderer.js?v=53&base=mvp19-10-live-v2'"),
+  live.includes("from './renderer.js?v=53&base=mvp19-10-live-v3'"),
   'Four live cosmetics must decorate the accepted base renderer instead of replacing gameplay',
 );
 assert.ok(live.includes('renderBaseFourInARowSurface(args);'), 'Base Four renderer must remain the gameplay/render owner');
@@ -36,6 +36,9 @@ assert.ok(!live.includes("winnerEffect === PULSE_ID"), 'Effect 2 must not be gat
 assert.ok(live.includes("winnerEffect === VICTORY_ID"), 'Only effect 3 may use winner-owned victory semantics');
 assert.ok(live.includes('mountPulseEffect(container, active, delayMs)'), 'Effect 2 must mount its own in-game pulse presentation');
 assert.ok(live.includes('falling.style.background = computed.background'), 'Drop must visibly carry the equipped disc material while falling');
+assert.ok(live.includes("container.querySelectorAll('.four-disc-slot')") && live.includes('slots.item(index)'), 'Live effects must resolve cells from the accepted base renderer DOM order');
+assert.ok(!live.includes('.four-disc-slot[data-four-cell='), 'Live effects must not depend on the nonexistent data-four-cell attribute');
+assert.ok(live.includes('lightningPath(') && live.includes('mgw-four-pulse-bolt'), 'Effect 2 must mount a visually distinct branching electric-chain presentation');
 assert.ok(live.includes("pendingSlot.dataset.mgwFourPendingDrop = '1'"), 'Drop must avoid showing a settled disc before the authoritative move arrives');
 assert.ok(css.includes('data-mgw-four-pending-drop="1"') && css.includes('opacity:.14'), 'Pending Drop projection must remain a small visual ghost, not the paid effect itself');
 assert.ok(live.includes("FIELD_VARIANTS = new Set(['blue', 'dark', 'metal', 'neon'])"), 'All four accepted field identities must be live');
@@ -47,7 +50,7 @@ assert.ok(css.includes('#ff78b7') && css.includes('#66e8f3'), 'Historical classi
 assert.ok(css.includes('data-four-theme="dark"') && css.includes('data-four-theme="metal"') && css.includes('data-four-theme="neon"'), 'All accepted paid field styles must be represented');
 assert.ok(css.includes('data-four-discs="3d"') && css.includes('data-four-discs="metal"') && css.includes('data-four-discs="neon"'), 'All accepted paid disc styles must be represented');
 assert.ok(css.includes('@keyframes mgwFourLiveDropDisc') && css.includes('--mgw-four-drop-start'), 'Drop must animate an actual cosmetic disc from above the board without calc multiplication');
-assert.ok(css.includes('@keyframes mgwFourPulseDisc') && css.includes('@keyframes mgwFourPulseRingA') && css.includes('@keyframes mgwFourPulseSpark'), 'Effect 2 must be a visible mid-game energy pulse, not a victory-line effect');
+assert.ok(css.includes('@keyframes mgwFourPulseDisc') && css.includes('@keyframes mgwFourPulseBolt') && css.includes('.mgw-four-pulse-bolt'), 'Effect 2 must be a visible branching electric chain, not a second drop or victory-line effect');
 assert.ok(css.includes('@keyframes mgwFourVictoryWave'), 'Victory Wave must have a distinct broad-wave animation');
 assert.ok(css.includes('@media (prefers-reduced-motion:reduce)'), 'Four live effects must be reduced-motion safe');
 assert.ok(css.includes('pointer-events:none'), 'Presentation effects must not steal gameplay hit targets');
@@ -62,13 +65,13 @@ assert.ok(base.includes("container.innerHTML ="), 'Accepted base renderer struct
 
 assert.ok(gameScreen.includes('fourTerminalPresentationDelay(game)'), 'Active v102 result owner must consult the live Four presentation state');
 assert.ok(gameScreen.includes("surface?.dataset?.fourActiveFx"), 'Result delay must come from an effect that the live renderer actually mounted');
-assert.ok(gameScreen.includes('drop: 930') && gameScreen.includes('pulse: 1180') && gameScreen.includes('victory: 1700'), 'Terminal moves must leave enough time for the currently mounted Four effect v2');
+assert.ok(gameScreen.includes('drop: 930') && gameScreen.includes('pulse: 1180') && gameScreen.includes('victory: 1700'), 'Terminal moves must leave enough time for the currently mounted Four effect v3');
 assert.ok(gameScreen.includes("prefers-reduced-motion: reduce") && gameScreen.includes('Math.min(delay, 240)'), 'Reduced-motion users must not wait through a full animation delay');
 assert.ok(gameScreen.includes("String(state.activeGame?.id || '') !== id") && gameScreen.includes("classList.contains('active')"), 'Delayed result sheet must not reopen after the user leaves the finished match');
 assert.ok(gameScreen.includes("if (gameTypeOf(game) !== 'four_in_a_row') return 0;"), 'Other games must keep their accepted result timing');
 
 assert.ok(
-  manifest.includes("'./assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=2&mvp19_10=live-game-v2&effect2=pulse-v2'"),
+  manifest.includes("'./assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=3&mvp19_10=live-game-v3&effect2=chain-v3'"),
   'Active import map must route Four through the live cosmetics wrapper',
 );
 assert.ok(
@@ -76,7 +79,7 @@ assert.ok(
   'Active graph must cache-bust the Four terminal presentation gate',
 );
 const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);
-assert.ok(launchMatch && Number(launchMatch[1]) >= 1203 && launch.includes('four_live=game-v2') && launch.includes('four_effect2=pulse-v2'), 'Telegram staging launch must publish Four live effects corrective v2');
+assert.ok(launchMatch && Number(launchMatch[1]) >= 1204 && launch.includes('four_live=game-v3') && launch.includes('four_effect2=chain-v3'), 'Telegram staging launch must publish Four live effects cell-target corrective v3');
 
 assert.ok(
   response.includes("WHERE c.item_type = \\'game\\' AND c.catalog_status = \\'active\\'") || response.includes("WHERE c.item_type = 'game' AND c.catalog_status = 'active'"),
