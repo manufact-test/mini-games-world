@@ -335,7 +335,7 @@ function fourTerminalPresentationDelay(game){
   const delay = {
     drop: 930,
     pulse: 1180,
-    victory: 1700,
+    victory: 2400,
   }[activeFx] || 0;
   if (delay <= 0) return 0;
 
