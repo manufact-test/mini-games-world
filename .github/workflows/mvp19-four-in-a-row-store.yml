@@ -93,6 +93,9 @@ jobs:
           grep -F '@keyframes mgwFourPreviewDropDisc' "$css"
           grep -F '@keyframes mgwFourPreviewBoltA' "$css"
           grep -F '@keyframes mgwFourPreviewVictoryPrism' "$css"
+          grep -F 'grid-template-rows:repeat(6,minmax(0,1fr))' "$css"
+          grep -F 'aspect-ratio:7 / 6' "$css"
+          grep -F 'width:17.5%' "$css"
           grep -F '@media (prefers-reduced-motion:reduce)' "$css"
           grep -F 'aspect-ratio:auto' "$css"
           grep -F 'grid-template-rows:repeat(6,auto)' "$css"
@@ -109,8 +112,8 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
-          grep -F "store-screen-four-in-a-row-store-v1.js?v=9&four_store=live-previews-v1&effect2=random-chain-v4&victory=overdrive-v1&export=profile-preview-v2&copy=player-v2" app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
-          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!preg_match("~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~",$s,$v) || (int)$v[1] < 19 || !str_contains($s,"four_store=live-previews-v1") || !str_contains($s,"four_effect2=random-chain-v4") || !str_contains($s,"four_victory=overdrive-v1") || !str_contains($s,"copy=player-v2")) exit(1);'
-          php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1211 || !str_contains($s,"four_store=live-previews-v1") || !str_contains($s,"four_profile=live-previews-v1")) exit(1);'
+          grep -F "store-screen-four-in-a-row-store-v1.js?v=10&four_store=live-previews-v2&geometry=7x6&fx=contained-v2&effect2=random-chain-v4&victory=overdrive-v2&export=profile-preview-v3&copy=compact-v3" app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!preg_match("~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~",$s,$v) || (int)$v[1] < 20 || !str_contains($s,"four_store=live-previews-v2") || !str_contains($s,"four_effect2=random-chain-v4") || !str_contains($s,"four_victory=overdrive-v2") || !str_contains($s,"copy=compact-v3")) exit(1);'
+          php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1212 || !str_contains($s,"four_store=live-previews-v2") || !str_contains($s,"four_profile=live-previews-v2")) exit(1);'
           git diff --exit-code "$BASE_SHA" "$HEAD_SHA" --             app/assets/js/games/four-in-a-row/renderer.js             app/assets/js/games/four-in-a-row/entry.js             app/assets/css/games/four-in-a-row/game.css             bot/services/FourInARowService.php             bot/services/FourInARowBotService.php
           git diff --check
