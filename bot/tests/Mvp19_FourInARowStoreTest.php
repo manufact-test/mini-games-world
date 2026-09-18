@@ -146,13 +146,13 @@ $renderer = (string)file_get_contents($root . '/app/assets/js/games/four-in-a-ro
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
 
-$assertTrue(str_contains($outer, "store-screen-four-in-a-row-store-v1.js?v=10&four_store=live-previews-v2&geometry=7x6&fx=contained-v2&effect2=random-chain-v4&victory=overdrive-v2&export=profile-preview-v3&copy=compact-v3"), 'Active Store wrapper must install the accepted animated Four preview presentation');
+$assertTrue(str_contains($outer, "store-screen-four-in-a-row-store-v1.js?v=11&four_store=live-previews-v3&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&export=profile-preview-v4&copy=compact-v3"), 'Active Store wrapper must install the accepted animated Four preview presentation');
 $activeStore = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $wrapperVersionMatch = [];
-$assertTrue(preg_match('~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~', $activeStore, $wrapperVersionMatch) === 1 && (int)$wrapperVersionMatch[1] >= 20, 'Active Store graph must publish the Four animated-preview cache identity');
-$assertTrue(str_contains($activeStore, 'four_store=live-previews-v2') && str_contains($activeStore, 'four_effect2=random-chain-v4') && str_contains($activeStore, 'four_victory=overdrive-v2') && str_contains($activeStore, 'copy=compact-v3'), 'Active Store graph must publish accepted preview and player-copy identities');
+$assertTrue(preg_match('~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~', $activeStore, $wrapperVersionMatch) === 1 && (int)$wrapperVersionMatch[1] >= 21, 'Active Store graph must publish the Four animated-preview cache identity');
+$assertTrue(str_contains($activeStore, 'four_store=live-previews-v3') && str_contains($activeStore, 'four_effect2=random-chain-v4') && str_contains($activeStore, 'four_victory=overdrive-v3') && str_contains($activeStore, 'copy=compact-v3'), 'Active Store graph must publish accepted preview and player-copy identities');
 $launchMatch = [];
-$assertTrue(preg_match('~/app/v110\.php\\?v=(\\d+)~', $launch, $launchMatch) === 1 && (int)$launchMatch[1] >= 1212 && str_contains($launch, 'four_store=live-previews-v2') && str_contains($launch, 'four_profile=live-previews-v2'), 'Telegram launch must publish the Four Store/Profile animated-preview graph');
+$assertTrue(preg_match('~/app/v110\.php\\?v=(\\d+)~', $launch, $launchMatch) === 1 && (int)$launchMatch[1] >= 1213 && str_contains($launch, 'four_store=live-previews-v3') && str_contains($launch, 'four_profile=live-previews-v3'), 'Telegram launch must publish the Four Store/Profile animated-preview graph');
 
 foreach (['blue','dark','metal','neon'] as $variant) $assertTrue(str_contains($css, 'theme-' . $variant), 'Store CSS must style field ' . $variant);
 foreach (['classic','3d','metal','neon'] as $variant) $assertTrue(str_contains($css, 'pieces-' . $variant), 'Store CSS must style disc set ' . $variant);
@@ -166,7 +166,10 @@ foreach (['mgw-four-preview-drop-reticle','mgw-four-preview-pulse-svg','mgw-four
 foreach (['mgwFourPreviewDropDisc','mgwFourPreviewBoltA','mgwFourPreviewVictoryPrism','mgwFourPreviewShard'] as $keyframe) $assertTrue(str_contains($css, '@keyframes ' . $keyframe), 'Store/Profile preview CSS must animate ' . $keyframe);
 $assertTrue(str_contains($wrapper, 'Array.from({ length:42 }') && str_contains($css, 'grid-template-rows:repeat(6,minmax(0,1fr))') && str_contains($css, 'aspect-ratio:7 / 6'), 'Effect previews must use the real 7x6 Four board geometry');
 $assertTrue(str_contains($css, 'width:17.5%') && str_contains($css, 'width:11.8%'), 'Drop reticle and falling disc must stay cell-scaled instead of covering the preview');
-$assertTrue(str_contains($wrapper, 'viewBox="0 0 7 6"') && str_contains($wrapper, 'M2.5 3.5 L3.5 3.5 L4.5 3.5 L5.5 3.5'), 'Pulse and Victory previews must be anchored to board-local coordinates');
+$assertTrue(str_contains($wrapper, 'viewBox="0 0 7 6"'), 'Pulse and Victory previews must be anchored to board-local coordinates');
+$assertTrue(str_contains($wrapper, '[22,23,24,25]') && str_contains($wrapper, 'M1.5 3.5 L2.5 3.5 L3.5 3.5 L4.5 3.5'), 'Victory preview must use the exact centered four produced by the accepted staging test button');
+$assertTrue(str_contains($css, 'left:42.857%') && str_contains($css, '.effect-victory-wave .mgw-four-fx-board-shell') && str_contains($css, 'overflow:hidden'), 'Victory preview prism/blades/shards must share the accepted test center and stay clipped to the board');
+$assertTrue(str_contains($css, '.s1,') && str_contains($css, '.s4,') && str_contains($css, '.s7,') && str_contains($css, '.s10{background:#ffe172'), 'Victory preview must preserve the live gold shard sequence');
 $assertTrue(str_contains($css, '@media (prefers-reduced-motion:reduce)'), 'Animated Four previews must remain reduced-motion safe');
 $assertTrue(str_contains($wrapper, "mgwFourPreviewMode = layer === 'effect' ? 'animated-live-parity' : 'static'"), 'Effect previews must publish animated live-parity mode');
 $assertTrue(str_contains($wrapper, 'upgradePurchaseCopy(root)') && str_contains($wrapper, '.store-v2-confirm-copy strong'), 'Purchase confirmation must reuse the animated preview and player-facing effect name');
