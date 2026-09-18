@@ -9,11 +9,29 @@ export function installDominoStoreEffectsV9(){
     if (existing.href !== href) existing.href = href;
     existing.setAttribute(STYLE_ATTR, STYLE_VALUE);
     document.head.appendChild(existing);
+    ensureLiveParityV41();
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.href = href;
   link.setAttribute(STYLE_ATTR, STYLE_VALUE);
+  document.head.appendChild(link);
+  ensureLiveParityV41();
+}
+
+function ensureLiveParityV41(){
+  const href = new URL('../../css/games/domino/store-effects-live-parity-v41.css?v=1&mvp19_9=domino-live-preview-v41', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-domino-store-live-parity-v41]');
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    existing.dataset.mgwDominoStoreLiveParityV41 = 'mvp19-9-domino-live-preview-v41';
+    document.head.appendChild(existing);
+    return;
+  }
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = href;
+  link.dataset.mgwDominoStoreLiveParityV41 = 'mvp19-9-domino-live-preview-v41';
   document.head.appendChild(link);
 }
