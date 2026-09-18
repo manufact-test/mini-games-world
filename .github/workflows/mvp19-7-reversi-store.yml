@@ -83,7 +83,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -F "store-screen-reversi-store-v1.js?v=3&mvp19_7=store-only" app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+          grep -F "store-screen-reversi-store-v1.js?v=4&mvp19_7=store-only" app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
           php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!preg_match("~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~",$s,$v) || (int)$v[1] < 5 || !str_contains($s,"mvp19_6=board-source-parity-v1") || !str_contains($s,"mvp19_7=reversi-store-v1")) exit(1);'
           grep -F 'data-game-type="reversi"' app/assets/css/games/reversi/store-cosmetics-v1.css
           git diff --check
