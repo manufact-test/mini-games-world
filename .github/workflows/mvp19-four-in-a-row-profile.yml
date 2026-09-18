@@ -69,7 +69,8 @@ jobs:
           grep -F "store-screen-four-in-a-row-store-v1.js?v=5&four_store=static-v4&export=profile-preview-v1" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
           grep -F "export function fourInARowPreviewMarkup(layer, variant)" app/assets/js/screens/store-screen-four-in-a-row-store-v1.js
           grep -F "mgw:cosmetic-inventory-changed" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
-          grep -F "four_profile=parity-v1" app/runtime/client/version-manifest.php
+          grep -F "four_profile=parity-v2" app/runtime/client/version-manifest.php
+          grep -F "mgw-profile-four-in-a-row-parity.js?v=2&four_profile=parity-v2&four_module=export-v5" app/assets/js/profile/mgw-profile-chess-layout-v2.js
           ! grep -Fq "gameAction(" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
           ! grep -Fq "@keyframes" app/assets/css/games/four-in-a-row/store-cosmetics-v1.css
           git diff --check

@@ -57,13 +57,13 @@ assert.ok(store.includes('export function fourInARowPreviewMarkup(layer, variant
 assert.ok(store.includes('EFFECT_ASSETS'), 'Accepted static effect concept assets must remain the Phase 2 source');
 assert.ok(!storeCss.includes('@keyframes'), 'Four Store/Profile effects must remain static before live animation acceptance');
 
-assert.ok(layout.includes("mgw-profile-four-in-a-row-parity.js?v=1&four_profile=parity-v1"), 'Active Profile wrapper must import Four parity');
+assert.ok(layout.includes("mgw-profile-four-in-a-row-parity.js?v=2&four_profile=parity-v2&four_module=export-v5"), 'Active Profile wrapper must import the fresh Four parity module');
 assert.ok(layout.includes('initProfileFourInARowParity();'), 'Active Profile wrapper must initialize Four parity');
 assert.ok(layout.indexOf('initProfileDominoHardRatio();') < layout.indexOf('initProfileFourInARowParity();'), 'Four parity must be added after accepted existing game owners without replacing them');
 
 const profileOwnerMatch = manifest.match(/mgw-profile-chess-layout-v2\.js\?v=(\d+)/);
 assert.ok(profileOwnerMatch && Number(profileOwnerMatch[1]) >= 20, 'Active Profile owner must publish the Four parity cache revision');
-assert.ok(manifest.includes('four_profile=parity-v1') && manifest.includes('four_module=export-v5'), 'Active Profile URL must publish Four parity and fresh shared-module identity');
+assert.ok(manifest.includes('four_profile=parity-v2') && manifest.includes('four_module=export-v5'), 'Active Profile URL must publish fresh Four parity and shared-module identities');
 
 assert.ok(profileApi.includes('(new ProductInventoryService($database))->snapshot($mgwId)'), 'Profile API must expose the same canonical inventory used by Store purchases');
 
