@@ -1,6 +1,6 @@
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
-import { fourInARowPreviewMarkup } from '../screens/store-screen-four-in-a-row-store-v1.js?v=4&four_store=static-v4';
+import { fourInARowPreviewMarkup } from '../screens/store-screen-four-in-a-row-store-v1.js?v=5&four_store=static-v4&export=profile-preview-v1';
 
 const GROUP_TITLES = Object.freeze({ theme:'Поля', elements:'Фишки', effect:'Эффекты' });
 const ITEM_ORDER = Object.freeze([
