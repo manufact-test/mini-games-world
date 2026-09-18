@@ -11,7 +11,7 @@ const launch = fs.readFileSync('bot/helpers/WebAppLaunchUrl.php', 'utf8');
 const response = fs.readFileSync('bot/helpers/response.php', 'utf8');
 
 assert.ok(
-  live.includes("from './renderer.js?v=53&base=mvp19-10-live-v11'"),
+  live.includes("from './renderer.js?v=53&base=mvp19-10-live-v12'"),
   'Four live cosmetics must decorate the accepted base renderer instead of replacing gameplay',
 );
 assert.ok(live.includes('renderBaseFourInARowSurface(args);'), 'Base Four renderer must remain the gameplay/render owner');
@@ -72,13 +72,17 @@ assert.ok(live.includes('const patterns = [') && live.includes('stablePatternInd
 assert.ok(live.includes('[[0,-2,2],[0,2,2],[-2,0,2],[2,0,2]]'), 'Effect 2 must include skip-a-cell lightning targets');
 assert.ok(live.includes('const desiredCount = [2,3,4,4][patternIndex]'), 'Effect 2 must vary between two, three, and four lightning targets');
 assert.ok(live.includes('mountVictoryOverdriveEffect(container, active, delayMs)'), 'Authoritative normal wins must mount the premium Victory Overdrive finale');
-assert.ok(live.includes('mountVictoryTestControl(') && live.includes('previewVictoryCells(') && live.includes("get('four_victory_test') === '1'"), 'Staging must expose the manual Victory test control for exact visual comparison');
-assert.ok(live.includes('const victoryTestByGame = new Map()'), 'Manual Victory test must persist presentation state across polling rerenders');
-assert.ok(live.includes("container.dataset.fourActiveFx = 'victory-test'") && live.includes('mountVictoryOverdriveEffect(container, testActive, -Math.round(testElapsed))'), 'Polling rerenders must resume the same Victory test from elapsed time instead of truncating it');
+assert.ok(
+  !live.includes('mountVictoryTestControl(')
+    && !live.includes('previewVictoryCells(')
+    && !live.includes('four_victory_test')
+    && !live.includes('victoryTestByGame'),
+  'Accepted live runtime must not ship the temporary manual Victory test control or its persistence state',
+);
 assert.ok(live.includes('victory: 3900'), 'Live effect owner must keep Victory state alive for the complete slower finale');
 assert.ok(live.includes('<i class="mgw-four-victory-wave"></i>'), 'Victory markup must include the late-stage energy wave');
 assert.ok(live.includes('delayMs + 2250 + (index * 34)'), 'Shard burst must occur in the visible late phase rather than immediately after the rail');
-assert.ok(css.includes('.mgw-four-victory-test'), 'Staging must style the restored Victory test button');
+assert.ok(!css.includes('.mgw-four-victory-test'), 'Accepted live stylesheet must not ship temporary Victory test button styling');
 assert.ok(live.includes('orderVictoryPoints(points)') && live.includes('victoryPath(ordered)'), 'Victory finale must follow the actual horizontal, vertical, or diagonal winning four');
 assert.ok(live.includes('victoryShards(centerX, centerY, delayMs)'), 'Victory finale must include a final directional shard burst');
 assert.ok(css.includes('.mgw-four-victory-prism') && css.includes('.mgw-four-victory-blade') && css.includes('.mgw-four-victory-shard'), 'Victory finale must include prism, crossing blades, and shards');
@@ -116,7 +120,7 @@ assert.ok(gameScreen.includes("String(state.activeGame?.id || '') !== id") && ga
 assert.ok(gameScreen.includes("if (gameTypeOf(game) !== 'four_in_a_row') return 0;"), 'Other games must keep their accepted result timing');
 
 assert.ok(
-  manifest.includes("'./assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=11&mvp19_10=live-game-v11&drop=target-lock-no-base-flash-v2&effect2=random-chain-v4&victory=full-finale-v2&victory_test=persistent-v2'"),
+  manifest.includes("'./assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=12&mvp19_10=live-game-v12&drop=target-lock-no-base-flash-v2&effect2=random-chain-v4&victory=full-finale-v2'"),
   'Active import map must route Four through the live cosmetics wrapper',
 );
 assert.ok(
@@ -124,7 +128,7 @@ assert.ok(
   'Active graph must cache-bust the Four terminal presentation gate',
 );
 const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);
-assert.ok(launchMatch && Number(launchMatch[1]) >= 1215 && launch.includes('four_live=game-v11') && launch.includes('four_victory=full-finale-v2') && launch.includes('four_victory_test=1') && launch.includes('four_victory_test_mode=persistent-v2'), 'Telegram staging launch must publish the slower full Victory finale and persistent manual test mode');
+assert.ok(launchMatch && Number(launchMatch[1]) >= 1216 && launch.includes('four_live=game-v12') && launch.includes('four_victory=full-finale-v2') && !launch.includes('four_victory_test'), 'Telegram staging launch must publish the accepted slower full Victory finale with no temporary test control');
 
 assert.ok(
   response.includes("WHERE c.item_type = \\'game\\' AND c.catalog_status = \\'active\\'") || response.includes("WHERE c.item_type = 'game' AND c.catalog_status = 'active'"),
