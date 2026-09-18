@@ -2,7 +2,7 @@ import {
   renderFourInARowSurface as renderBaseFourInARowSurface,
   fourInARowMeta,
   fourInARowPlayerMark,
-} from './renderer.js?v=53&base=mvp19-10-live-v4';
+} from './renderer.js?v=53&base=mvp19-10-live-v5';
 import { state } from '../../state.js?v=27';
 
 const THEME_SLOT = 'game_four_in_a_row_theme';
@@ -498,16 +498,16 @@ function cellPoint(cell, columns, rows){
 
 function ensureLiveStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/four-in-a-row/live-cosmetics-v1.css?v=4&mvp19_10=live-game-v4&drop=target-lock-v1', import.meta.url).href;
+  const href = new URL('../../../css/games/four-in-a-row/live-cosmetics-v1.css?v=5&mvp19_10=live-game-v5&drop=target-lock-no-base-flash-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-four-live-cosmetics]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v4';
+    existing.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v5';
     return;
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v4';
+  link.dataset.mgwFourLiveCosmetics = 'mvp19-10-live-v5';
   link.href = href;
   document.head.appendChild(link);
 }

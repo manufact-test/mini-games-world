@@ -69,6 +69,13 @@
   box-shadow:0 0 0 3px #fff,0 0 22px rgba(255,255,255,.72);
 }
 
+#gameBoard[data-game-type="four_in_a_row"][data-four-effect="game-four-effect-drop"] .four-column-hit:not(:disabled):active{
+  background:transparent!important;
+}
+#gameBoard[data-game-type="four_in_a_row"][data-four-effect="game-four-effect-drop"] .four-column-hit{
+  -webkit-tap-highlight-color:transparent;
+}
+
 /* Effect 1 — target lock + colored laser + full-size disc materialization/fall. */
 #gameBoard[data-game-type="four_in_a_row"][data-four-last-move-effect="game-four-effect-drop"] .four-disc-slot.last-move > span{
   transform:scale(1)!important;

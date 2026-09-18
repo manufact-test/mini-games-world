@@ -4,13 +4,14 @@ import assert from 'node:assert/strict';
 const live = fs.readFileSync('app/assets/js/games/four-in-a-row/renderer-cosmetics-v1.js', 'utf8');
 const css = fs.readFileSync('app/assets/css/games/four-in-a-row/live-cosmetics-v1.css', 'utf8');
 const base = fs.readFileSync('app/assets/js/games/four-in-a-row/renderer.js', 'utf8');
+const baseCss = fs.readFileSync('app/assets/css/games/four-in-a-row/game.css', 'utf8');
 const gameScreen = fs.readFileSync('app/assets/js/screens/game-screen-v102.js', 'utf8');
 const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 const launch = fs.readFileSync('bot/helpers/WebAppLaunchUrl.php', 'utf8');
 const response = fs.readFileSync('bot/helpers/response.php', 'utf8');
 
 assert.ok(
-  live.includes("from './renderer.js?v=53&base=mvp19-10-live-v4'"),
+  live.includes("from './renderer.js?v=53&base=mvp19-10-live-v5'"),
   'Four live cosmetics must decorate the accepted base renderer instead of replacing gameplay',
 );
 assert.ok(live.includes('renderBaseFourInARowSurface(args);'), 'Base Four renderer must remain the gameplay/render owner');
@@ -44,6 +45,20 @@ assert.ok(css.includes('.mgw-four-drop-laser') && css.includes('repeating-linear
 assert.ok(!css.includes('.mgw-four-live-drop-disc::after'), 'The old falling-disc stripe must be removed');
 assert.ok(!css.includes('.mgw-four-live-drop-impact'), 'Drop must not use the old expanding impact ring');
 assert.ok(css.includes('data-four-last-move-effect="game-four-effect-drop"') && css.includes('transform:scale(1)!important'), 'A paid Drop disc must remain the same size as the other discs after landing');
+assert.ok(
+  baseCss.includes('.four-column-hit:not(:disabled):active{background:rgba(255,255,255,.12)}'),
+  'Base Four stylesheet must keep the standard white column press affordance for players without paid Drop',
+);
+assert.ok(
+  css.includes('[data-four-effect="game-four-effect-drop"] .four-column-hit:not(:disabled):active')
+    && css.includes('background:transparent!important'),
+  'Paid Drop must suppress only the standard white full-column press flash',
+);
+assert.ok(
+  css.includes('[data-four-effect="game-four-effect-drop"] .four-column-hit')
+    && css.includes('-webkit-tap-highlight-color:transparent'),
+  'Paid Drop must also suppress the WebView tap highlight without changing standard players',
+);
 assert.ok(live.includes("container.querySelectorAll('.four-disc-slot')") && live.includes('slots.item(index)'), 'Live effects must resolve cells from the accepted base renderer DOM order');
 assert.ok(!live.includes('.four-disc-slot[data-four-cell='), 'Live effects must not depend on the nonexistent data-four-cell attribute');
 assert.ok(live.includes('lightningPath(') && live.includes('mgw-four-pulse-bolt'), 'Effect 2 must mount a visually distinct branching electric-chain presentation');
@@ -79,7 +94,7 @@ assert.ok(gameScreen.includes("String(state.activeGame?.id || '') !== id") && ga
 assert.ok(gameScreen.includes("if (gameTypeOf(game) !== 'four_in_a_row') return 0;"), 'Other games must keep their accepted result timing');
 
 assert.ok(
-  manifest.includes("'./assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=4&mvp19_10=live-game-v4&drop=target-lock-v1&effect2=chain-v3'"),
+  manifest.includes("'./assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=5&mvp19_10=live-game-v5&drop=target-lock-no-base-flash-v2&effect2=chain-v3'"),
   'Active import map must route Four through the live cosmetics wrapper',
 );
 assert.ok(
@@ -87,7 +102,7 @@ assert.ok(
   'Active graph must cache-bust the Four terminal presentation gate',
 );
 const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);
-assert.ok(launchMatch && Number(launchMatch[1]) >= 1205 && launch.includes('four_live=game-v4') && launch.includes('four_drop=target-lock-v1'), 'Telegram staging launch must publish Four Drop target-lock corrective v4');
+assert.ok(launchMatch && Number(launchMatch[1]) >= 1206 && launch.includes('four_live=game-v5') && launch.includes('four_drop=target-lock-no-base-flash-v2'), 'Telegram staging launch must publish Four Drop no-base-flash corrective v5');
 
 assert.ok(
   response.includes("WHERE c.item_type = \\'game\\' AND c.catalog_status = \\'active\\'") || response.includes("WHERE c.item_type = 'game' AND c.catalog_status = 'active'"),
