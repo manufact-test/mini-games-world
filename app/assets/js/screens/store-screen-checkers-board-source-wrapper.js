@@ -21,6 +21,10 @@ import {
   installFourInARowStorePresentation,
   upgradeFourInARowStorePresentation,
 } from './store-screen-four-in-a-row-store-v1.js?v=1&four_store=static-v1';
+import {
+  installPaidDefaultDedupV1,
+  upgradePaidDefaultDedupV1,
+} from './store-paid-default-dedup-v1.js?v=1&paid_default=dedup-v1';
 import { installStoreGameSelectorSwipe } from './store-game-selector-swipe-v1.js?v=1&mvp19_7=touch-drag';
 
 ensureBoardSourceParityStyles();
@@ -34,6 +38,7 @@ installDominoStorePresentation();
 installDominoStoreCardFillV5();
 installDominoStoreEffectsV9();
 installFourInARowStorePresentation();
+installPaidDefaultDedupV1();
 
 export function initStoreScreen(){
   ensureBoardSourceParityStyles();
@@ -47,6 +52,7 @@ export function initStoreScreen(){
   installDominoStoreCardFillV5();
   installDominoStoreEffectsV9();
 installFourInARowStorePresentation();
+installPaidDefaultDedupV1();
   const result = initAcceptedCheckersStore();
   ensureEffectPreviewStyles();
   ensureEffectFinalCenteringStyles();
@@ -54,6 +60,7 @@ installFourInARowStorePresentation();
   upgradeGoStorePresentation();
   upgradeDominoStorePresentation();
   upgradeFourInARowStorePresentation();
+  upgradePaidDefaultDedupV1();
   return result;
 }
 
@@ -69,6 +76,7 @@ export async function openStoreTab(){
   installDominoStoreCardFillV5();
   installDominoStoreEffectsV9();
 installFourInARowStorePresentation();
+installPaidDefaultDedupV1();
   const result = await openAcceptedCheckersStoreTab();
   ensureBoardSourceParityStyles();
   ensureBoardCardRadiusStyles();
@@ -78,6 +86,7 @@ installFourInARowStorePresentation();
   upgradeGoStorePresentation();
   upgradeDominoStorePresentation();
   upgradeFourInARowStorePresentation();
+  upgradePaidDefaultDedupV1();
   return result;
 }
 
@@ -93,6 +102,7 @@ export async function openStoreSheet(){
   installDominoStoreCardFillV5();
   installDominoStoreEffectsV9();
 installFourInARowStorePresentation();
+installPaidDefaultDedupV1();
   const result = await openAcceptedCheckersStoreSheet();
   ensureBoardSourceParityStyles();
   ensureBoardCardRadiusStyles();
@@ -102,6 +112,7 @@ installFourInARowStorePresentation();
   upgradeGoStorePresentation();
   upgradeDominoStorePresentation();
   upgradeFourInARowStorePresentation();
+  upgradePaidDefaultDedupV1();
   return result;
 }
 
