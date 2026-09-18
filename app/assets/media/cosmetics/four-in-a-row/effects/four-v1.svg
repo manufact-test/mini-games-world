@@ -1,28 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" role="img" aria-label="Энергетический импульс — статичный концепт">
 <defs>
-  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#11172a"/><stop offset="1" stop-color="#080b13"/></linearGradient>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#101528"/><stop offset="1" stop-color="#070a12"/></linearGradient>
   <linearGradient id="board" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#26384e"/><stop offset="1" stop-color="#111b28"/></linearGradient>
-  <radialGradient id="yellow" cx=".34" cy=".28"><stop offset="0" stop-color="#fffbd8"/><stop offset=".2" stop-color="#ffe983"/><stop offset=".65" stop-color="#f2bd29"/><stop offset="1" stop-color="#9b6500"/></radialGradient>
-  <radialGradient id="pulse" cx=".5" cy=".5"><stop stop-color="#fff"/><stop offset=".16" stop-color="#7cf0ff"/><stop offset=".42" stop-color="#c96cff" stop-opacity=".72"/><stop offset="1" stop-color="#c96cff" stop-opacity="0"/></radialGradient>
-  <filter id="g"><feGaussianBlur stdDeviation="6"/></filter>
+  <radialGradient id="red" cx=".34" cy=".28"><stop offset="0" stop-color="#ffd4dc"/><stop offset=".2" stop-color="#ff8392"/><stop offset=".64" stop-color="#df3e55"/><stop offset="1" stop-color="#821326"/></radialGradient>
+  <filter id="glow"><feGaussianBlur stdDeviation="3"/></filter>
 </defs>
 <rect width="320" height="200" rx="22" fill="url(#bg)"/>
-<rect x="48" y="35" width="224" height="137" rx="16" fill="url(#board)" stroke="#8dcdf0" stroke-opacity=".25"/>
+<rect x="48" y="35" width="224" height="137" rx="16" fill="url(#board)" stroke="#7deeff" stroke-opacity=".22"/>
 <g fill="#080d17">
   <circle cx="68" cy="55" r="10"/><circle cx="99" cy="55" r="10"/><circle cx="130" cy="55" r="10"/><circle cx="161" cy="55" r="10"/><circle cx="192" cy="55" r="10"/><circle cx="223" cy="55" r="10"/><circle cx="254" cy="55" r="10"/>
   <circle cx="68" cy="84" r="10"/><circle cx="99" cy="84" r="10"/><circle cx="130" cy="84" r="10"/><circle cx="161" cy="84" r="10"/><circle cx="192" cy="84" r="10"/><circle cx="223" cy="84" r="10"/><circle cx="254" cy="84" r="10"/>
   <circle cx="68" cy="113" r="10"/><circle cx="99" cy="113" r="10"/><circle cx="130" cy="113" r="10"/><circle cx="161" cy="113" r="10"/><circle cx="192" cy="113" r="10"/><circle cx="223" cy="113" r="10"/><circle cx="254" cy="113" r="10"/>
   <circle cx="68" cy="142" r="10"/><circle cx="99" cy="142" r="10"/><circle cx="130" cy="142" r="10"/><circle cx="161" cy="142" r="10"/><circle cx="192" cy="142" r="10"/><circle cx="223" cy="142" r="10"/><circle cx="254" cy="142" r="10"/>
 </g>
-<circle cx="161" cy="113" r="42" fill="url(#pulse)" opacity=".28" filter="url(#g)"/>
-<circle cx="161" cy="113" r="30" fill="none" stroke="#69efff" stroke-width="2.8" opacity=".9"/>
-<circle cx="161" cy="113" r="40" fill="none" stroke="#db78ff" stroke-width="1.8" opacity=".58"/>
-<circle cx="161" cy="113" r="12.5" fill="url(#yellow)" stroke="#fff7bd" stroke-opacity=".72"/>
-<g stroke="#dffcff" stroke-width="2.2" stroke-linecap="round">
-  <path d="M161 66v17"/><path d="M161 143v17"/><path d="M114 113h18"/><path d="M190 113h18"/>
-  <path d="M127 79l13 13"/><path d="M182 134l13 13"/><path d="M127 147l13-13"/><path d="M182 92l13-13"/>
+
+<!-- broad electric branches: deliberately no falling trail or landing rings -->
+<g fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M161 113L146 104L133 111L117 99L99 113" stroke="#76f3ff" stroke-width="8" opacity=".14" filter="url(#glow)"/>
+  <path d="M161 113L146 104L133 111L117 99L99 113" stroke="#dffeff" stroke-width="2.8"/>
+  <path d="M161 113L177 101L190 108L207 96L223 113" stroke="#e472ff" stroke-width="8" opacity=".14" filter="url(#glow)"/>
+  <path d="M161 113L177 101L190 108L207 96L223 113" stroke="#f3c7ff" stroke-width="2.8"/>
+  <path d="M161 113L151 95L157 84L145 72L130 55" stroke="#78efff" stroke-width="7" opacity=".12" filter="url(#glow)"/>
+  <path d="M161 113L151 95L157 84L145 72L130 55" stroke="#bff9ff" stroke-width="2.4"/>
+  <path d="M161 113L173 127L169 138L181 145L192 142" stroke="#dc6dff" stroke-width="7" opacity=".12" filter="url(#glow)"/>
+  <path d="M161 113L173 127L169 138L181 145L192 142" stroke="#efc0ff" stroke-width="2.4"/>
 </g>
-<g fill="#edfdff">
-  <circle cx="108" cy="90" r="2.4"/><circle cx="215" cy="91" r="2.2"/><circle cx="114" cy="146" r="2"/><circle cx="210" cy="144" r="2.5"/>
-</g>
+
+<circle cx="161" cy="113" r="21" fill="#76efff" opacity=".15" filter="url(#glow)"/>
+<circle cx="161" cy="113" r="14" fill="none" stroke="#8df6ff" stroke-width="2.2"/>
+<circle cx="161" cy="113" r="11.5" fill="url(#red)" stroke="#fff" stroke-opacity=".7"/>
+<circle cx="99" cy="113" r="13" fill="none" stroke="#76f3ff" stroke-width="1.8" opacity=".72"/>
+<circle cx="223" cy="113" r="13" fill="none" stroke="#e472ff" stroke-width="1.8" opacity=".72"/>
+<circle cx="130" cy="55" r="13" fill="none" stroke="#76f3ff" stroke-width="1.6" opacity=".52"/>
+<circle cx="192" cy="142" r="13" fill="none" stroke="#e472ff" stroke-width="1.6" opacity=".52"/>
 </svg>
