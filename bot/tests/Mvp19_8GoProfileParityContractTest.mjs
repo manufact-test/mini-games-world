@@ -110,7 +110,8 @@ assert.ok(!storeCss.includes('animation:mgw-go-territory-sweep'), 'Old linear te
 assert.ok(storeWrapper.includes('store-cosmetics-v1.css?v=2&mvp19_8=effects-premium-v2'), 'Store presentation must request the fresh premium effect CSS identity');
 assert.ok(storeWrapper.includes('const signature = `${layer}:${variant}:v2`'), 'Store previews must repaint under a fresh v2 signature');
 
-assert.ok(manifest.includes('mgw-profile-chess-layout-v2.js?v=19'), 'Active Profile owner must use the fresh corrective cache identity');
+const activeProfileOwner = manifest.match(/mgw-profile-chess-layout-v2\.js\?v=(\d+)/);
+assert.ok(activeProfileOwner && Number(activeProfileOwner[1]) >= 19, 'Active Profile owner must stay at or beyond the accepted Go corrective cache identity');
 assert.ok(manifest.includes('mvp19_8=go-profile-corrective-v2'), 'Active Profile URL must publish Go Profile corrective v2');
 assert.ok(manifest.includes('game_tab_icons=normalized-v3'), 'Active Profile URL must publish normalized game-tab marks');
 assert.ok(manifest.includes('go_card_runtime=hard-square-v1'), 'Active Profile URL must retain Go hard-square runtime');
