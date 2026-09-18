@@ -70,7 +70,7 @@ jobs:
           grep -F "export function fourInARowPreviewMarkup(layer, variant)" app/assets/js/screens/store-screen-four-in-a-row-store-v1.js
           grep -F "mgw:cosmetic-inventory-changed" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
           grep -F "four_profile=live-previews-v3" app/runtime/client/version-manifest.php
-          grep -F "mgw-profile-four-in-a-row-parity.js?v=7&four_profile=live-previews-v3&four_module=export-v10&geometry=7x6&fx=contained-v2&effect2=random-chain-v4&victory=overdrive-v2&copy=compact-v3" app/assets/js/profile/mgw-profile-chess-layout-v2.js
+          grep -F "mgw-profile-four-in-a-row-parity.js?v=8&four_profile=live-previews-v3&four_module=export-v11&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&copy=compact-v3" app/assets/js/profile/mgw-profile-chess-layout-v2.js
           grep -F "padding-bottom:16px!important" app/assets/css/screens/profile-four-in-a-row-store-parity-v1.css
           grep -F "display:none!important" app/assets/css/screens/profile-four-in-a-row-store-parity-v1.css
           ! grep -Fq "gameAction(" app/assets/js/profile/mgw-profile-four-in-a-row-parity.js
