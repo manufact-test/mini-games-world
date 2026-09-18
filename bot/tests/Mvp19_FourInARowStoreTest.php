@@ -72,7 +72,7 @@ $assertSame(3, count($byLayer['effect']), 'Four in a Row must have three effects
 $assertSame(['game_four_in_a_row_theme'], array_values(array_unique($byLayer['theme'])), 'Fields must share one theme slot');
 $assertSame(['game_four_in_a_row_elements'], array_values(array_unique($byLayer['elements'])), 'Discs must share one elements slot');
 $assertSame(['game_four_in_a_row_effect'], array_values(array_unique($byLayer['effect'])), 'Effects must share one effect slot');
-$assertSame(['drop'=>'drop','four'=>'four','victory-wave'=>'victory_wave'], $events, 'Effect metadata must preserve the three future live concepts');
+$assertSame(['drop'=>'drop','four'=>'placement_pulse','victory-wave'=>'victory_wave'], $events, 'Effect metadata must expose drop, mid-game pulse, and victory-wave semantics');
 
 $bundleCount = (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_type = 'bundle' AND subcategory = 'four_in_a_row'");
 $assertSame(0, $bundleCount, 'Four in a Row Phase 1 must not create a bundle');
@@ -89,6 +89,13 @@ $assertSame('4 в ряд', (string)($four['title'] ?? ''), 'Store snapshot must 
 $assertSame(4, count($four['themes'] ?? []), 'Store snapshot must expose four fields');
 $assertSame(4, count($four['elements'] ?? []), 'Store snapshot must expose four disc sets');
 $assertSame(3, count($four['effects'] ?? []), 'Store snapshot must expose three effects');
+$pulseOffer = null;
+foreach (($four['effects'] ?? []) as $effectOffer) {
+    if ((string)($effectOffer['metadata']['variant'] ?? '') === 'four') $pulseOffer = $effectOffer;
+}
+$assertTrue(is_array($pulseOffer), 'Store snapshot must expose effect 2');
+$assertSame('Энергетический импульс', (string)($pulseOffer['display_name'] ?? ''), 'Effect 2 must use the mid-game pulse player-facing name');
+$assertSame('placement_pulse', (string)($pulseOffer['metadata']['event'] ?? ''), 'Effect 2 must be a normal-placement event, not a victory event');
 $assertSame(false, $snapshot['purchase_rules']['auto_equip'] ?? true, 'Four in a Row purchases must never auto-equip');
 
 $fieldQuote = $store->quote($mgwId, 'four-field-neon');
@@ -139,11 +146,11 @@ $renderer = (string)file_get_contents($root . '/app/assets/js/games/four-in-a-ro
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
 
-$assertTrue(str_contains($outer, "store-screen-four-in-a-row-store-v1.js?v=6&four_store=static-v4&export=profile-preview-v1&copy=human-v1"), 'Active Store wrapper must install Four in a Row presentation');
+$assertTrue(str_contains($outer, "store-screen-four-in-a-row-store-v1.js?v=7&four_store=static-v5&effect2=pulse-v2&export=profile-preview-v1&copy=human-v1"), 'Active Store wrapper must install Four in a Row presentation');
 $activeStore = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $wrapperVersionMatch = [];
 $assertTrue(preg_match('~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~', $activeStore, $wrapperVersionMatch) === 1 && (int)$wrapperVersionMatch[1] >= 10, 'Active Store graph must stay at or beyond the accepted Four in a Row wrapper identity');
-$assertTrue(str_contains($activeStore, 'four_store=static-v4'), 'Active Store graph must publish static Four in a Row phase');
+$assertTrue(str_contains($activeStore, 'four_store=static-v5') && str_contains($activeStore, 'four_effect2=pulse-v2'), 'Active Store graph must publish the corrected static Four effect-2 concept');
 $launchMatch = [];
 $assertTrue(preg_match('~/app/v110\.php\?v=(\d+)~', $launch, $launchMatch) === 1 && (int)$launchMatch[1] >= 1193, 'Telegram launch must publish the Four in a Row Store graph');
 
@@ -153,7 +160,7 @@ $assertTrue(str_contains($css, 'aspect-ratio:auto') && str_contains($css, 'grid-
 $assertTrue(str_contains($css, '.store-v2-game-product[data-store-game-product="four_in_a_row"]') && str_contains($css, '.store-v2-game-preview[data-game-type="four_in_a_row"]') && !str_contains($css, '[data-cosmetic-layer="elements"]\n.mgw-four-disc{\n  width:92%') && str_contains($css, 'width:92%'), 'All compact Four in a Row cards, including Fields, must enlarge discs without changing the purchase sheet size');
 $assertTrue(str_contains($css, '.mgw-four-disc.pieces-metal.red') && str_contains($css, 'radial-gradient(circle at 31% 23%') && !str_contains($css, 'linear-gradient(145deg,#ffe0e4'), 'Metal discs must use a rounded specular material instead of the rejected center stripe');
 $assertTrue(str_contains($css, '.mgw-four-disc.pieces-neon.red') && str_contains($css, '#ff2d8c') && str_contains($css, '#9dff2e'), 'Neon discs must have bright filled luminous cores instead of outline-only rings');
-$assertTrue(str_contains($wrapper, "blue:'Насыщенное фиолетово-сливовое поле") && str_contains($wrapper, "classic:'Яркая розово-бирюзовая пара"), 'Four in a Row native Store copy must already contain the replacement descriptions');
+$assertTrue(str_contains($wrapper, "blue:'Насыщенное фиолетово-сливовое поле") && str_contains($wrapper, "classic:'Яркая розово-бирюзовая пара") && str_contains($wrapper, "four:'После каждого хода"), 'Four in a Row native Store copy must contain the corrected field, disc, and mid-game pulse descriptions');
 foreach (['drop-v1.svg','four-v1.svg','victory-wave-v1.svg'] as $asset) $assertTrue(str_contains($wrapper, $asset), 'Effects must use static concept asset ' . $asset);
 $assertTrue(!str_contains($css, '@keyframes') && !str_contains($css, 'animation:'), 'Four in a Row Store Phase 1 must not contain effect animation');
 $assertTrue(str_contains($wrapper, 'data-mgw-four-preview-mode') || str_contains($wrapper, 'mgwFourPreviewMode'), 'Effect previews must publish static preview mode');

@@ -6,7 +6,7 @@ const STYLE_MARK = 'four-store-static-v4';
 
 const EFFECT_ASSETS = Object.freeze({
   drop:new URL('../../media/cosmetics/four-in-a-row/effects/drop-v1.svg', import.meta.url).href,
-  four:new URL('../../media/cosmetics/four-in-a-row/effects/four-v1.svg', import.meta.url).href,
+  four:new URL('../../media/cosmetics/four-in-a-row/effects/four-v1.svg?rev=2', import.meta.url).href,
   'victory-wave':new URL('../../media/cosmetics/four-in-a-row/effects/victory-wave-v1.svg', import.meta.url).href,
 });
 
@@ -131,10 +131,14 @@ function upgradeProducts(root){
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = String(preview.dataset.cosmeticVariant || 'blue');
     const kind = product.querySelector('.store-v2-game-product-copy > span');
+    const title = product.querySelector('.store-v2-game-product-copy > strong');
     const description = product.querySelector('.store-v2-game-product-copy > p');
 
     if (kind instanceof HTMLElement) {
       kind.textContent = layer === 'theme' ? 'Игровое поле' : (layer === 'elements' ? 'Комплект фишек' : 'Эффект партии');
+    }
+    if (title instanceof HTMLElement && layer === 'effect' && variant === 'four') {
+      title.textContent = 'Энергетический импульс';
     }
     if (description instanceof HTMLElement) description.textContent = descriptionFor(layer, variant);
   });
@@ -172,7 +176,7 @@ function descriptionFor(layer, variant){
   }
   return ({
     drop:'При падении фишка оставит короткий световой след, а в точке посадки разойдётся компактное ударное кольцо',
-    four:'Четыре победные фишки последовательно зажгутся и соединятся одной яркой энергетической линией',
+    four:'После каждого хода от поставленной фишки расходится яркий энергетический импульс: кольца, искры и короткая подсветка соседних ячеек',
     'victory-wave':'От собранной четвёрки по всему полю разойдутся две широкие победные волны с финальным световым акцентом',
   })[variant] || 'Будущий визуальный эффект партии';
 }
