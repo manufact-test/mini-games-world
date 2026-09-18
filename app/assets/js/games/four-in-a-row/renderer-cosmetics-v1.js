@@ -57,7 +57,13 @@ export function renderFourInARowSurface(args){
   const previousMoveKey = gameId ? String(seenMoveByGame.get(gameId) || '') : '';
   const newMove = Boolean(gameId && moveKey && alreadyObserved && previousMoveKey !== moveKey);
 
-  if (gameId && moveKey) seenMoveByGame.set(gameId, moveKey);
+  if (gameId) {
+    if (!alreadyObserved) {
+      seenMoveByGame.set(gameId, moveKey || '__initial__');
+    } else if (moveKey) {
+      seenMoveByGame.set(gameId, moveKey);
+    }
+  }
 
   if (newMove) {
     const mover = moverPlayer(players, board, lastMove);
