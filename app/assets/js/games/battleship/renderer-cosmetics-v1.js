@@ -319,7 +319,7 @@ function mountHitEffect({ targetCell, gameId, ownerId }){
 
   [core, ring, flare].forEach(node => {
     node.style.left = `${x}px`;
-    node.style.top = `${y}px`;
+    node.style.top = `${visualY}px`;
     node.style.width = `${size}px`;
     node.style.height = `${size}px`;
   });
@@ -402,13 +402,15 @@ function mountDestroyEffect({ targetCells, gameId, ownerId }){
   const bottom = Math.max(...rects.map(rect => rect.bottom));
   const x = (left + right) / 2;
   const y = (top + bottom) / 2;
+  const cellHeight = Math.max(...rects.map(rect => rect.height));
+  const visualY = y + Math.max(2, Math.min(5, cellHeight * .12));
   const shipWidth = Math.max(24, right - left);
   const shipHeight = Math.max(24, bottom - top);
   const blastSize = Math.max(74, Math.min(170, Math.max(shipWidth, shipHeight) * 2.45));
 
   const root = document.createElement('span');
   root.className = 'mgw-bs-live-destroy-fx';
-  root.dataset.battleshipDestroyFx = 'critical-sink-v1';
+  root.dataset.battleshipDestroyFx = 'critical-sink-v2';
   root.dataset.battleshipDestroyGame = gameId;
   root.dataset.battleshipDestroyOwner = ownerId;
   root.dataset.battleshipDestroyCells = String(cells.length);
@@ -425,7 +427,7 @@ function mountDestroyEffect({ targetCells, gameId, ownerId }){
 
   [flash, ring, ring2, wreck].forEach(node => {
     node.style.left = `${x}px`;
-    node.style.top = `${y}px`;
+    node.style.top = `${visualY}px`;
     node.style.width = `${blastSize}px`;
     node.style.height = `${blastSize}px`;
   });
@@ -440,7 +442,7 @@ function mountDestroyEffect({ targetCells, gameId, ownerId }){
     const smoke = document.createElement('i');
     smoke.className = 'mgw-bs-live-destroy-smoke';
     smoke.style.left = `${x + blastSize * ox}px`;
-    smoke.style.top = `${y + blastSize * oy}px`;
+    smoke.style.top = `${visualY + blastSize * oy}px`;
     smoke.style.width = `${blastSize * scale}px`;
     smoke.style.height = `${blastSize * scale}px`;
     smoke.dataset.smoke = String(index + 1);
@@ -454,7 +456,7 @@ function mountDestroyEffect({ targetCells, gameId, ownerId }){
     const shard = document.createElement('i');
     shard.className = 'mgw-bs-live-destroy-shard';
     shard.style.left = `${x}px`;
-    shard.style.top = `${y}px`;
+    shard.style.top = `${visualY}px`;
     root.appendChild(shard);
     shards.push({ node:shard, angle });
   }
@@ -468,7 +470,7 @@ function mountDestroyEffect({ targetCells, gameId, ownerId }){
 
   if (reducedMotion || typeof flash.animate !== 'function') {
     root.classList.add('is-reduced-motion');
-    globalThis.setTimeout(cleanup, reducedMotion ? 320 : 1100);
+    globalThis.setTimeout(cleanup, reducedMotion ? 360 : 1500);
     return;
   }
 
@@ -479,25 +481,27 @@ function mountDestroyEffect({ targetCells, gameId, ownerId }){
       { opacity:.94, transform:'translate(-50%,-50%) scale(1.08) rotate(6deg)', offset:.34 },
       { opacity:.2, transform:'translate(-50%,-50%) scale(1.34) rotate(12deg)', offset:.64 },
       { opacity:0, transform:'translate(-50%,-50%) scale(1.48) rotate(15deg)' },
-    ], { duration:1050, easing:'cubic-bezier(.1,.78,.16,1)', fill:'forwards' }),
+    ], { duration:1500, easing:'cubic-bezier(.1,.78,.16,1)', fill:'forwards' }),
     ring.animate([
       { opacity:0, transform:'translate(-50%,-50%) scale(.25)' },
-      { opacity:.95, transform:'translate(-50%,-50%) scale(.52)', offset:.18 },
-      { opacity:.48, transform:'translate(-50%,-50%) scale(1.08)', offset:.52 },
+      { opacity:.95, transform:'translate(-50%,-50%) scale(.52)', offset:.16 },
+      { opacity:.62, transform:'translate(-50%,-50%) scale(1.08)', offset:.5 },
+      { opacity:.28, transform:'translate(-50%,-50%) scale(1.42)', offset:.72 },
       { opacity:0, transform:'translate(-50%,-50%) scale(1.78)' },
-    ], { duration:1120, easing:'cubic-bezier(.12,.72,.18,1)', fill:'forwards' }),
+    ], { duration:1650, easing:'cubic-bezier(.12,.72,.18,1)', fill:'forwards' }),
     ring2.animate([
       { opacity:0, transform:'translate(-50%,-50%) scale(.35)' },
-      { opacity:.72, transform:'translate(-50%,-50%) scale(.62)', offset:.25 },
-      { opacity:.3, transform:'translate(-50%,-50%) scale(1.25)', offset:.58 },
+      { opacity:.76, transform:'translate(-50%,-50%) scale(.62)', offset:.22 },
+      { opacity:.42, transform:'translate(-50%,-50%) scale(1.25)', offset:.58 },
       { opacity:0, transform:'translate(-50%,-50%) scale(1.98)' },
-    ], { duration:1180, delay:80, easing:'ease-out', fill:'forwards' }),
+    ], { duration:1780, delay:110, easing:'ease-out', fill:'forwards' }),
     wreck.animate([
       { opacity:0, transform:'translate(-50%,-50%) scale(.72)' },
-      { opacity:.9, transform:'translate(-50%,-50%) scale(1)', offset:.24 },
-      { opacity:.62, transform:'translate(-50%,-50%) scale(1.08)', offset:.52 },
-      { opacity:0, transform:'translate(-50%,-50%) scale(1.18)' },
-    ], { duration:980, delay:35, easing:'ease-out', fill:'forwards' }),
+      { opacity:.94, transform:'translate(-50%,-50%) scale(1)', offset:.2 },
+      { opacity:.72, transform:'translate(-50%,-50%) scale(1.08)', offset:.56 },
+      { opacity:.28, transform:'translate(-50%,-50%) scale(1.14)', offset:.76 },
+      { opacity:0, transform:'translate(-50%,-50%) scale(1.2)' },
+    ], { duration:1520, delay:45, easing:'ease-out', fill:'forwards' }),
   ];
 
   smokeNodes.forEach((node, index) => {
@@ -508,7 +512,7 @@ function mountDestroyEffect({ targetCells, gameId, ownerId }){
       { opacity:.62, transform:'translate(-50%,-50%) scale(.82)', offset:.26 },
       { opacity:.48, transform:`translate(-50%,-50%) translate(${(driftX * .4).toFixed(2)}px,${(driftY * .45).toFixed(2)}px) scale(1.04)`, offset:.58 },
       { opacity:0, transform:`translate(-50%,-50%) translate(${driftX.toFixed(2)}px,${driftY.toFixed(2)}px) scale(1.3)` },
-    ], { duration:1200, delay:120 + index * 45, easing:'cubic-bezier(.18,.6,.24,1)', fill:'forwards' }));
+    ], { duration:1900, delay:150 + index * 60, easing:'cubic-bezier(.18,.6,.24,1)', fill:'forwards' }));
   });
 
   shards.forEach(({ node, angle }, index) => {
@@ -521,11 +525,11 @@ function mountDestroyEffect({ targetCells, gameId, ownerId }){
       { opacity:1, transform:`translate(-50%,-50%) translate(${(dx * .12).toFixed(2)}px,${(dy * .12).toFixed(2)}px) rotate(${angle + 96}deg) scale(1)`, offset:.18 },
       { opacity:.86, transform:`translate(-50%,-50%) translate(${(dx * .68).toFixed(2)}px,${(dy * .68).toFixed(2)}px) rotate(${angle + 128}deg) scale(.86)`, offset:.62 },
       { opacity:0, transform:`translate(-50%,-50%) translate(${dx.toFixed(2)}px,${dy.toFixed(2)}px) rotate(${angle + 164}deg) scale(.62)` },
-    ], { duration:980, delay:35 + index * 18, easing:'cubic-bezier(.12,.72,.18,1)', fill:'forwards' }));
+    ], { duration:1550, delay:45 + index * 24, easing:'cubic-bezier(.12,.72,.18,1)', fill:'forwards' }));
   });
 
   Promise.allSettled(animations.map(animation => animation.finished)).then(cleanup);
-  globalThis.setTimeout(cleanup, 1500);
+  globalThis.setTimeout(cleanup, 2250);
 }
 
 function shotEventKey(game){
@@ -649,7 +653,7 @@ function clamp(value, min, max){
 
 function ensureLiveStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/battleship/live-cosmetics-v1.css?v=9&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&effects=accepted-three-v1&fire=queue-gap-v2&shot_motion=readable-v2&hit=preview-parity-v2', import.meta.url).href;
+  const href = new URL('../../../css/games/battleship/live-cosmetics-v1.css?v=10&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&effects=accepted-three-v1&fire=pending-truth-v3&shot_motion=readable-v2&hit=preview-parity-v2&destroy=readable-centered-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-live-cosmetics]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
