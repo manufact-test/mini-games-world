@@ -858,6 +858,7 @@ function hydrateCheckersBundleConfirmFromVisibleCard(){
   clone.classList.add('store-v2-bundle-confirm-cloned-members');
   clone.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
   target.replaceChildren(clone);
+  scheduleBundlePreviewFit(sheet);
   return true;
 }
 
