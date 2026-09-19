@@ -151,16 +151,16 @@ function submitAction(gameId, action){
   const id = String(gameId || '');
   const item = gameRuntime(id);
   const base = item.optimistic || state.activeGame;
-  if (!base || String(base.id || '') !== id || String(base.status || '') !== 'active' || item.surrenderPending) return;
+  if (!base || String(base.id || '') !== id || String(base.status || '') !== 'active' || item.surrenderPending) return false;
 
   const viewer = item.viewer || resolveViewer(base);
-  if (!viewer?.id) return;
+  if (!viewer?.id) return false;
   item.viewer = viewer;
 
   const type = gameTypeOf(base);
   const optimistic = buildV100OptimisticGame(base, action, viewer.id, type);
   const localBattleshipSetup = type === 'battleship' && String(base?.phase || '') === 'setup';
-  if (localBattleshipSetup && !optimistic) return;
+  if (localBattleshipSetup && !optimistic) return false;
 
   haptic('light');
   item.generation++;
@@ -180,7 +180,21 @@ function submitAction(gameId, action){
 
   coalesceReplaceableAction(item, action, type, base);
   item.queue.push({ action:clone(action) });
+
+  if (type === 'battleship'
+      && String(base?.phase || '') === 'battle'
+      && String(action?.type || '') === 'fire') {
+    document.dispatchEvent(new CustomEvent('mgw:battleship-fire-queued', {
+      detail:{
+        gameId:id,
+        playerId:String(viewer.id),
+        cell:Number(action.cell),
+      },
+    }));
+  }
+
   drainActions(id, item);
+  return true;
 }
 
 function coalesceReplaceableAction(item, action, type, game){
@@ -205,6 +219,12 @@ async function drainActions(gameId, item){
       try {
         result = await api.gameAction(gameId, queued.action);
       } catch (error) {
+        const reconciled = await reconcileBattleshipFireFailure(gameId, item, queued.action);
+        if (reconciled === 'committed') {
+          item.queue.shift();
+          continue;
+        }
+
         item.queue.length = 0;
         if (item.surrenderPending) break;
         restoreAuthoritative(item);
@@ -241,6 +261,38 @@ async function drainActions(gameId, item){
     document.getElementById('gameBoard')?.classList.remove('is-submitting', 'mgw-action-pending');
     item.generation++;
     if (item.queue.length) drainActions(gameId, item);
+  }
+}
+
+async function reconcileBattleshipFireFailure(gameId, item, action){
+  if (String(action?.type || '') !== 'fire') return 'not-applicable';
+
+  const local = item?.optimistic || item?.authoritative || state.activeGame;
+  if (gameTypeOf(local) !== 'battleship' || String(local?.phase || '') !== 'battle') return 'not-applicable';
+
+  const cell = Number(action?.cell);
+  if (!Number.isInteger(cell) || cell < 0 || cell > 99) return 'not-applicable';
+
+  try {
+    const result = await api.gameState(gameId);
+    rememberUserAndSession(result);
+    const game = result?.game;
+    if (!game || String(game.id || '') !== String(gameId || '')) return 'not-applicable';
+
+    const viewer = normalizeViewer(result.me) || item.viewer || resolveViewer(game);
+    if (viewer) item.viewer = viewer;
+    item.authoritative = clone(game);
+    item.optimistic = clone(game);
+    state.activeGame = game;
+    state.selectedGame = gameTypeOf(game);
+    item.generation++;
+
+    if (viewer) renderGame(game, viewer, false);
+
+    const cellState = String(game?.enemy_board?.[cell] || 'unknown');
+    return ['miss','hit','sunk'].includes(cellState) ? 'committed' : 'reconciled-uncommitted';
+  } catch {
+    return 'not-applicable';
   }
 }
 
