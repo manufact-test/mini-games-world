@@ -34,19 +34,20 @@ $assertTrue(str_contains($profileApi, 'snapshotForProfile($mgwId)'), 'Profile AP
 $assertTrue(str_contains($profileApi, "'rating'=>\$rating"), 'Profile API must expose rating as a first-class payload.');
 
 $assertTrue(str_contains($profileClient, 'state.profileRating = result.rating'), 'Profile client must consume rating payload.');
-$assertTrue(str_contains($profileClient, "profile.rating_title"), 'Profile must render a visible seasonal rating section.');
-$assertTrue(str_contains($profileClient, "ratingNoteKey(rating)"), 'Profile must distinguish OFF/PRESEASON/ACTIVE copy.');
+$assertTrue(str_contains($profileClient, "profile.rating_title"), 'Profile must render a visible rating section.');
+$assertTrue(!str_contains($profileClient, "ratingNoteKey(rating)"), 'User-facing rating block must not expose preseason/season-state explainer copy.');
+$assertTrue(str_contains($profileClient, "profile-v2-rating-score"), 'Profile rating cards must use one compact score chip.');
 $assertTrue(str_contains($profileClient, "GAME_TYPES.map(gameType => gameRatingCard"), 'Profile must show rating for all eight canonical games.');
 
 $profileKeys = $locale['profile'] ?? [];
-foreach (['rating_title','rating_note_preseason','rating_note_active','rating_note_off','rating_points'] as $key) {
+foreach (['rating_title','rating_points'] as $key) {
     $assertTrue(is_string($profileKeys[$key] ?? null) && trim((string)$profileKeys[$key]) !== '', 'Russian locale must define profile.' . $key);
 }
 
-$assertTrue(str_contains($manifest, 'mvp20_1=visible-rating-v1'), 'Version manifest must publish a fresh rating UI identity.');
-$assertTrue(str_contains($v110, 'X-MGW-Visible-Rating: per-game-preseason-v1'), 'Active v110 entry must identify the visible-rating runtime.');
+$assertTrue(str_contains($manifest, 'mvp20_1=visible-rating-v2'), 'Version manifest must publish the polished rating UI identity.');
+$assertTrue(str_contains($v110, 'X-MGW-Visible-Rating: per-game-preseason-v2'), 'Active v110 entry must identify the polished visible-rating runtime.');
 $assertTrue(str_contains($v110, "'visible_rating_profile'"), 'Active v110 entry must fail closed if the fresh profile rating target is absent.');
-$assertTrue(str_contains($launch, 'rating=per-game-visible-v1'), 'Telegram launch URL must carry the fresh rating deployment identity.');
+$assertTrue(str_contains($launch, 'rating=per-game-visible-v2'), 'Telegram launch URL must carry the polished rating deployment identity.');
 
 $service = $read('bot/ratings/PerGameRatingService.php');
 $assertTrue(str_contains($service, "public const STATE_PRESEASON = 'preseason';"), 'PRESEASON must be explicit in the rating owner.');
@@ -55,5 +56,8 @@ $assertTrue(str_contains($service, "finishReason !== 'normal_win'"), 'Technical 
 $assertTrue(str_contains($service, "TOURNAMENT_MATCH_SOURCE"), 'Tournament +2 compatibility must have one exact source contract.');
 $assertTrue(str_contains($service, 'INSERT OR IGNORE INTO mgw_game_rating_outcomes'), 'SQLite idempotency must be enforced by the durable match outcome key.');
 $assertTrue(str_contains($service, 'INSERT IGNORE INTO mgw_game_rating_outcomes'), 'MySQL idempotency must be enforced by the durable match outcome key.');
+
+$assertTrue(($profileKeys['rating_title'] ?? '') === 'Рейтинг', 'User-facing title must be the plain Rating label.');
+$assertTrue(($profileKeys['rating_points'] ?? '') === 'Очки', 'Rating score chip must use the compact Points label.');
 
 fwrite(STDOUT, "Mvp20_1VisibleRatingIntegrationContractTest: {$assertions} assertions passed\n");
