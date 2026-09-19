@@ -6,6 +6,7 @@ const root = path.resolve(import.meta.dirname, '../..');
 const live = fs.readFileSync(path.join(root, 'app/assets/js/games/battleship/renderer-cosmetics-v1.js'), 'utf8');
 const liveCss = fs.readFileSync(path.join(root, 'app/assets/css/games/battleship/live-cosmetics-v1.css'), 'utf8');
 const base = fs.readFileSync(path.join(root, 'app/assets/js/games/battleship/renderer.js'), 'utf8');
+const gameScreen = fs.readFileSync(path.join(root, 'app/assets/js/screens/game-screen-v102.js'), 'utf8');
 const manifest = fs.readFileSync(path.join(root, 'app/runtime/client/version-manifest.php'), 'utf8');
 const launch = fs.readFileSync(path.join(root, 'bot/helpers/WebAppLaunchUrl.php'), 'utf8');
 const entry = fs.readFileSync(path.join(root, 'app/v110.php'), 'utf8');
@@ -14,15 +15,16 @@ assert.ok(live.includes("const EFFECT_SLOT = 'game_battleship_effect'"), 'Shot m
 assert.ok(live.includes("const SHOT_ID = 'game-battleship-effect-shot'"), 'Shot must use the catalog Shot item id');
 assert.ok(live.includes("const HIT_ID = 'game-battleship-effect-hit'") && live.includes("const DESTROY_ID = 'game-battleship-effect-destroy'"), 'Shot acceptance must coexist with Hit/Destroy review ids without changing Shot ownership');
 
-assert.ok(live.includes("container.addEventListener('click', handler, true)"), 'Local Shot must observe the legal fire click before the base bubble handler');
-assert.ok(live.includes("String(target.dataset.cellState || '') !== 'unknown'"), 'Local Shot must only arm on unrevealed enemy cells');
-assert.ok(live.includes("target.classList.contains('interactive')"), 'Local Shot must require the base renderer interactive state');
-assert.ok(live.includes("String(game?.status || '') === 'active'"), 'Local Shot must require an active game');
-assert.ok(live.includes("String(game?.turn || '') === myId"), 'Local Shot must require the viewer turn');
+assert.ok(!live.includes("container.addEventListener('click', handler, true)"), 'Local Shot must not run from an independent raw capture click');
+assert.ok(live.includes("document.addEventListener('mgw:battleship-fire-queued'"), 'Local Shot must listen only to the canonical queued-fire event');
+assert.ok(gameScreen.includes("document.dispatchEvent(new CustomEvent('mgw:battleship-fire-queued'"), 'Game action owner must publish queued fire after accepting the action');
+assert.ok(gameScreen.indexOf("item.queue.push({ action:clone(action) });") < gameScreen.indexOf("new CustomEvent('mgw:battleship-fire-queued'"), 'Queued-fire event must be emitted only after the action entered the client queue');
+assert.ok(live.includes("context.viewerEffect !== SHOT_ID"), 'Queued Shot must still require the equipped Plasma Shot effect');
+assert.ok(live.includes("ownerId !== context.myId"), 'Queued Shot must belong to the local viewer');
 
 assert.ok(live.includes("game?.last_shooter_id") && live.includes("game?.last_shot"), 'Remote/authoritative Shot must follow the canonical shot owner and target');
 assert.ok(live.includes("source:'local-fire'") && live.includes("source:'authoritative-shot'"), 'Shot runtime must distinguish local pre-result and authoritative remote paths');
-const shotStart = live.indexOf('function installShotCapture');
+const shotStart = live.indexOf('function ensureShotQueueListener');
 const impactStart = live.indexOf('function maybePlayResultEffect');
 assert.ok(shotStart >= 0 && impactStart > shotStart, 'Shot and result-effect owners must remain separately bounded');
 const shotOwner = live.slice(shotStart, impactStart);
@@ -51,8 +53,8 @@ assert.ok(
   manifest.includes("renderer-cosmetics-v1.js?v=4&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&base=v60-shot-miss-no-impact"),
   'Shot manual review must preserve the accepted Battleship manifest baseline'
 );
-assert.ok(entry.includes("$battleshipRendererImportKey = './assets/js/games/battleship/renderer.js?v=56'") && entry.includes("$imports[$battleshipRendererImportKey] .= '&live_effects=shot-hit-destroy-v1';"), 'Active v110 runtime must cache-bust the accepted Shot plus Hit/Destroy review module');
+assert.ok(entry.includes("$battleshipRendererImportKey = './assets/js/games/battleship/renderer.js?v=56'") && entry.includes("$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v2&fire=queued-v1';"), 'Active v110 runtime must cache-bust the accepted three-effect module with queued-fire ownership');
 assert.ok(launch.includes('/app/v110.php?v=1233&'), 'Shot must preserve the accepted shared Telegram route version');
-assert.ok(launch.includes('battleship_shot=live-v1') && launch.includes('battleship_impacts=live-v1'), 'Telegram route must preserve Shot and publish the impact-review identity');
+assert.ok(launch.includes('battleship_shot=live-v1') && launch.includes('battleship_impacts=live-v1') && launch.includes('battleship_fire=queued-reconcile-v1'), 'Telegram route must preserve accepted effects and publish reliable-fire identity');
 
 console.log('Battleship LIVE Shot effect contract passed.');
