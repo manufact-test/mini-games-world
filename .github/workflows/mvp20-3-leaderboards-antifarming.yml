@@ -1,0 +1,141 @@
+name: MVP-20.3 Leaderboards and anti-farming
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260919_0044_create_leaderboards_and_antifarming.php'
+      - 'bot/ratings/PerGameRatingService.php'
+      - 'bot/ratings/LeaderboardService.php'
+      - 'bot/leaderboard.php'
+      - 'bot/core/bootstrap.php'
+      - 'bot/tests/Mvp20_1PerGameVisibleRatingTest.php'
+      - 'bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php'
+      - 'bot/tests/Mvp20_3LeaderboardIntegrationContractTest.php'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/css/main.css'
+      - 'app/locales/ru.json'
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/v110.php'
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - '.github/workflows/mvp20-3-leaderboards-antifarming.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp20-3-leaderboards-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Leaderboards, eligibility and anti-farming contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint MVP-20.3 server slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            bot/database/migrations/20260919_0044_create_leaderboards_and_antifarming.php
+            bot/ratings/PerGameRatingService.php
+            bot/ratings/LeaderboardService.php
+            bot/leaderboard.php
+            bot/core/bootstrap.php
+            bot/tests/Mvp20_1PerGameVisibleRatingTest.php
+            bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php
+            bot/tests/Mvp20_3LeaderboardIntegrationContractTest.php
+            app/v110.php
+            app/runtime/client/version-manifest.php
+            bot/helpers/WebAppLaunchUrl.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done
+          php -r 'json_decode(file_get_contents("app/locales/ru.json"), true, 512, JSON_THROW_ON_ERROR);'
+
+      - name: Check leaderboard client syntax
+        shell: bash
+        run: |
+          node --input-type=module --check < app/assets/js/api/client.js
+          node --input-type=module --check < app/assets/js/screens/profile-screen-v110.js
+
+      - name: Run MVP-20.3 anti-farming and leaderboard model
+        run: php bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php
+
+      - name: Run MVP-20.3 integration contract
+        run: php bot/tests/Mvp20_3LeaderboardIntegrationContractTest.php
+
+      - name: Preserve MVP-20.1 visible rating
+        run: |
+          php bot/tests/Mvp20_1PerGameVisibleRatingTest.php
+          php bot/tests/Mvp20_1VisibleRatingIntegrationContractTest.php
+
+      - name: Preserve MVP-20.2 hidden skill separation
+        run: |
+          php bot/tests/Mvp20_2HiddenSkillModelTest.php
+          php bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php
+
+      - name: Preserve matchmaking widening
+        run: |
+          php bot/tests/Mvp17_1MatchmakingQueueTest.php
+          php bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php
+          php bot/tests/Mvp17_2MatchmakingIntegrationContractTest.php
+
+      - name: Preserve Profile and localization
+        run: |
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+          php bot/tests/ProfileV2CorrectiveStaticContractTest.php
+
+      - name: Guard MVP-20.3 scope and frozen game mechanics
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp20-3-leaderboards-antifarming.yml|\
+              bot/database/migrations/20260919_0044_create_leaderboards_and_antifarming.php|\
+              bot/ratings/PerGameRatingService.php|\
+              bot/ratings/LeaderboardService.php|\
+              bot/leaderboard.php|\
+              bot/core/bootstrap.php|\
+              bot/tests/Mvp20_1PerGameVisibleRatingTest.php|\
+              bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php|\
+              bot/tests/Mvp20_3LeaderboardIntegrationContractTest.php|\
+              app/assets/js/api/client.js|\
+              app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/css/main.css|\
+              app/locales/ru.json|\
+              app/runtime/client/version-manifest.php|\
+              app/v110.php|\
+              bot/helpers/WebAppLaunchUrl.php)
+                ;;
+              *)
+                echo "Unexpected MVP-20.3 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+          git diff --exit-code "$base" "$head" -- bot/games app/assets/js/games app/assets/css/games
