@@ -105,7 +105,7 @@ ok(liveWrapper.includes('function cellPoint') && liveWrapper.includes('cellRect.
 ok(liveEffectCss.includes('position:fixed'), 'single-flight live decoration layer remains detached from the rerendered board subtree');
 ok(liveEffectCss.includes('@keyframes mgw-checkers-live-field-move-trail'), 'Move retains its immediate dedicated travel streak');
 ok(!liveEffectCss.includes('0%,18%{transform:translate(-50%,-50%)}'), 'Move no longer holds still for the old initial delay');
-ok(liveEffectCss.includes('.mgw-checkers-live-fx-move.mgw-checkers-live-fx-event-capture .mgw-checkers-live-fx-impact'), 'Move-on-capture explicitly suppresses burst while preserving travel streak');
+ok(liveEffectCss.includes('.mgw-checkers-live-fx-move .mgw-checkers-live-fx-impact') && liveEffectCss.includes('display:none;'), 'accepted Move effect suppresses the circular burst while preserving the travel streak');
 ok(liveEffectCss.includes('.mgw-checkers-live-fx-crown::after') && liveEffectCss.includes('content:"MG"'), 'promotion overlay uses the same crown plus MG identity');
 ok(liveEffectCss.includes('pointer-events:none'), 'live effect layer leaves board hit targets untouched');
 ok(liveEffectCss.includes('@media (prefers-reduced-motion:reduce)'), 'live effects preserve reduced-motion handling');
