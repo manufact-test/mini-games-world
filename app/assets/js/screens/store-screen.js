@@ -19,6 +19,7 @@ let storeState = null;
 let storeSurface = 'tab';
 let activeTab = 'profile';
 let activeGameCatalog = 'tictactoe';
+let activeBundleGame = 'tictactoe';
 let storeLoadPromise = null;
 let purchaseBusy = false;
 let equipBusy = false;
@@ -26,7 +27,7 @@ let equipBusy = false;
 ensureBundlePrototypeStyles();
 
 function ensureBundlePrototypeStyles(){
-  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=3&mvp19_13=ttt-checkers-reference-v1', import.meta.url).href;
+  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=4&mvp19_13=bundle-game-selector-sheet-scroll-v1', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-store-bundle-prototype]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -34,7 +35,7 @@ function ensureBundlePrototypeStyles(){
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-ttt-checkers-reference-v1';
+  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-bundle-game-selector-sheet-scroll-v1';
   link.href = href;
   document.head.appendChild(link);
 }
@@ -575,9 +576,38 @@ function renderBundleMembers(bundle, sheet = false){
 function renderBundlesTab(){
   const bundles = gameBundlesFromSnapshot().filter(bundle => BUNDLE_REFERENCE_GAMES.includes(bundleGameType(bundle)));
   if (!bundles.length) return emptyState('Наборы пока недоступны');
+
+  const availableGames = bundles.map(bundle => bundleGameType(bundle)).filter(Boolean);
+  if (!availableGames.includes(activeBundleGame)) activeBundleGame = availableGames[0] || 'tictactoe';
+  const activeBundle = bundles.find(bundle => bundleGameType(bundle) === activeBundleGame) || bundles[0];
+
   return `
-    <div class="store-v2-bundle-reference-list">
-      ${bundles.map(renderGameBundle).join('')}
+    <div class="store-v2-bundle-game-picker" aria-label="Выберите игру">
+      <div class="store-v2-bundle-game-picker-track" role="tablist">
+        ${bundles.map(bundle => {
+          const gameType = bundleGameType(bundle);
+          const presentation = bundlePresentation(gameType);
+          const count = Array.isArray(bundle?.item_ids) ? bundle.item_ids.length : 0;
+          const owned = Math.max(0, Number(bundle?.owned_count || 0));
+          const active = gameType === activeBundleGame;
+          return `
+            <button
+              class="store-v2-bundle-game-option ${active ? 'active' : ''}"
+              type="button"
+              role="tab"
+              aria-selected="${active ? 'true' : 'false'}"
+              data-store-v2-bundle-game="${escapeAttr(gameType)}"
+              data-store-v2-game="${escapeAttr(gameType)}"
+            >
+              <span>${escapeHtml(presentation.gameTitle)}</span>
+              <small>${bundle?.already_owned ? 'Собран' : `${owned}/${count || 5}`}</small>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    </div>
+    <div class="store-v2-bundle-reference-list" data-store-v2-bundle-stage="${escapeAttr(activeBundleGame)}">
+      ${renderGameBundle(activeBundle)}
     </div>
   `;
 }
@@ -643,11 +673,12 @@ function regularBundlePrice(bundle){
 function renderBundleConfirmVisual(bundle){
   const owned = Number(bundle?.owned_count || 0);
   const missing = Number(bundle?.missing_count || 0);
+  const itemCount = Array.isArray(bundle?.item_ids) ? bundle.item_ids.length : 0;
   return `
     <div class="store-v2-bundle-confirm-reference">
       <div class="store-v2-bundle-confirm-reference-head">
         <span>В составе</span>
-        <b>${owned > 0 ? `${missing} осталось · ${owned} уже есть` : '5 предметов'}</b>
+        <b>${owned > 0 ? `${missing} осталось · ${owned} уже есть` : `${itemCount || 5} предметов`}</b>
       </div>
       ${renderBundleMembers(bundle, true)}
       <p>Оплачиваются только недостающие предметы. После покупки они появятся в коллекции без автоматического выбора.</p>
@@ -682,8 +713,11 @@ function bindStoreEvents(){
 }
 
 function bindPanelEvents(root){
-  root.querySelectorAll('[data-store-v2-game]').forEach(button => {
+  root.querySelectorAll('[data-store-v2-game]:not([data-store-v2-bundle-game])').forEach(button => {
     button.addEventListener('click', () => activateGameCatalog(String(button.dataset.storeV2Game || '')));
+  });
+  root.querySelectorAll('[data-store-v2-bundle-game]').forEach(button => {
+    button.addEventListener('click', () => activateBundleGame(String(button.dataset.storeV2BundleGame || '')));
   });
   root.querySelectorAll('[data-store-v2-buy]').forEach(button => {
     button.addEventListener('click', () => {
@@ -736,6 +770,18 @@ function activateGameCatalog(gameType){
   const panel = root?.querySelector('[data-store-v2-panel="games"]');
   if (!panel) return;
   panel.innerHTML = renderGamesTab();
+  bindPanelEvents(panel);
+}
+
+function activateBundleGame(gameType){
+  const bundles = gameBundlesFromSnapshot().filter(bundle => BUNDLE_REFERENCE_GAMES.includes(bundleGameType(bundle)));
+  if (!gameType || !bundles.some(bundle => bundleGameType(bundle) === gameType) || gameType === activeBundleGame) return;
+  activeBundleGame = gameType;
+  haptic('light');
+  const root = currentRoot();
+  const panel = root?.querySelector('[data-store-v2-panel="bundles"]');
+  if (!panel) return;
+  panel.innerHTML = renderBundlesTab();
   bindPanelEvents(panel);
 }
 
@@ -875,7 +921,7 @@ function openPurchaseConfirm(offer){
 
   openSheet(`
     <div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="store-v2-confirm">
+    <div class="store-v2-confirm ${isBundle ? 'store-v2-confirm-bundle' : ''}">
       ${visual}
       <div class="store-v2-confirm-copy"><strong>${escapeHtml(title)}</strong></div>
       ${isBundle
