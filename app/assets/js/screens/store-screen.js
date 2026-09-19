@@ -26,7 +26,7 @@ let equipBusy = false;
 ensureBundlePrototypeStyles();
 
 function ensureBundlePrototypeStyles(){
-  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=1&mvp19_13=ttt-reference-v1', import.meta.url).href;
+  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=2&mvp19_13=mobile-scroll-v1', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-store-bundle-prototype]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -34,7 +34,7 @@ function ensureBundlePrototypeStyles(){
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-ttt-reference-v1';
+  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-mobile-scroll-v1';
   link.href = href;
   document.head.appendChild(link);
 }
