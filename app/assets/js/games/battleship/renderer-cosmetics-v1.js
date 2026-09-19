@@ -13,6 +13,9 @@ const EFFECT_SLOT = 'game_battleship_effect';
 const MAP_PREFIX = 'game-battleship-map-';
 const FLEET_PREFIX = 'game-battleship-fleet-';
 const SHOT_ID = 'game-battleship-effect-shot';
+const HIT_ID = 'game-battleship-effect-hit';
+const DESTROY_ID = 'game-battleship-effect-destroy';
+const EFFECT_IDS = new Set([SHOT_ID, HIT_ID, DESTROY_ID]);
 
 const MAP_VARIANTS = new Set(['sea','dark-military','storm','neon']);
 const FLEET_VARIANTS = new Set(['classic','modern','armored','neon']);
@@ -20,6 +23,8 @@ const FLEET_VARIANTS = new Set(['classic','modern','armored','neon']);
 const cosmeticsByGamePlayer = new Map();
 const observedShotByGame = new Map();
 const playedShotByGame = new Map();
+const observedImpactByGame = new Map();
+const playedImpactByGame = new Map();
 const shotCaptureHandlers = new WeakMap();
 
 ensureLiveStyles();
@@ -38,19 +43,20 @@ export function renderBattleshipSurface(args){
   const slots = viewerPresentationSlots(game, me, viewer);
   const mapVariant = variantFromItem(slots[THEME_SLOT], MAP_PREFIX, MAP_VARIANTS);
   const fleetVariant = variantFromItem(slots[ELEMENTS_SLOT], FLEET_PREFIX, FLEET_VARIANTS);
-  const viewerEffect = normalizedShotEffectId(slots[EFFECT_SLOT]);
+  const viewerEffect = normalizedEffectId(slots[EFFECT_SLOT]);
 
   renderBaseBattleshipSurface(args);
 
   if (!(container instanceof HTMLElement)) return;
   container.dataset.mgwBattleshipLiveCosmetics = 'maps-fleets-v4';
-  container.dataset.mgwBattleshipLiveEffect = viewerEffect === SHOT_ID ? 'shot-v1' : 'base';
+  container.dataset.mgwBattleshipLiveEffect = viewerEffect || 'base';
   container.dataset.battleshipMap = mapVariant;
   container.dataset.battleshipFleet = fleetVariant;
   container.dataset.battleshipEffect = viewerEffect || 'base';
 
   installShotCapture({ game, me, container, viewerEffect });
   maybePlayAuthoritativeShot({ game, me, container, players });
+  maybePlayResultEffect({ game, me, container, players });
 }
 
 function cachePlayerCosmetics(gameId, players){
@@ -93,11 +99,12 @@ function playerPresentationSlots(gameId, player, me, game){
 }
 
 function effectForPlayer(gameId, player, me, game){
-  return normalizedShotEffectId(playerPresentationSlots(gameId, player, me, game)[EFFECT_SLOT]);
+  return normalizedEffectId(playerPresentationSlots(gameId, player, me, game)[EFFECT_SLOT]);
 }
 
-function normalizedShotEffectId(value){
-  return String(value || '') === SHOT_ID ? SHOT_ID : '';
+function normalizedEffectId(value){
+  const itemId = String(value || '');
+  return EFFECT_IDS.has(itemId) ? itemId : '';
 }
 
 function variantFromItem(value, prefix, allowed){
@@ -183,6 +190,332 @@ function maybePlayAuthoritativeShot({ game, me, container, players }){
     ownerId,
     source:'authoritative-shot',
   });
+}
+
+function maybePlayResultEffect({ game, me, container, players }){
+  const gameId = String(game?.id || '');
+  if (!gameId) return;
+
+  const key = impactEventKey(game);
+  if (!observedImpactByGame.has(gameId)) {
+    observedImpactByGame.set(gameId, key || '__none__');
+    return;
+  }
+  if (!key || observedImpactByGame.get(gameId) === key) return;
+  observedImpactByGame.set(gameId, key);
+
+  const result = String(game?.last_result || '');
+  const requiredEffect = result === 'hit' ? HIT_ID : (result === 'sunk' ? DESTROY_ID : '');
+  if (!requiredEffect) return;
+
+  const ownerId = String(game?.last_shooter_id || '');
+  const shooter = players.find(player => String(player?.id || '') === ownerId) || null;
+  if (effectForPlayer(gameId, shooter, me, game) !== requiredEffect) return;
+
+  const cell = Number(game?.last_shot);
+  if (!Number.isInteger(cell) || cell < 0 || cell > 99) return;
+
+  const targetCell = container.querySelector(`.battleship-cell[data-battleship-cell="${cell}"]`);
+  if (!(targetCell instanceof HTMLElement)) return;
+
+  const recent = playedImpactByGame.get(gameId);
+  if (recent?.key === key) return;
+  playedImpactByGame.set(gameId, { key, at:Date.now() });
+
+  if (result === 'hit') {
+    mountHitEffect({ targetCell, gameId, ownerId });
+    return;
+  }
+
+  const shipCells = connectedVisibleSunkCells(container, cell);
+  mountDestroyEffect({
+    targetCells:shipCells.length ? shipCells : [targetCell],
+    gameId,
+    ownerId,
+  });
+}
+
+function impactEventKey(game){
+  const result = String(game?.last_result || '');
+  if (!['hit','sunk'].includes(result)) return '';
+  if (game?.last_shot === null || game?.last_shot === undefined) return '';
+
+  const gameId = String(game?.id || '');
+  const ownerId = String(game?.last_shooter_id || '');
+  const cell = Number(game?.last_shot);
+  if (!gameId || !ownerId || !Number.isInteger(cell) || cell < 0 || cell > 99) return '';
+
+  return `${gameId}:${ownerId}:${cell}:${result}`;
+}
+
+function connectedVisibleSunkCells(container, originCell){
+  const byCell = new Map();
+  container.querySelectorAll('.battleship-cell[data-cell-state="sunk"]').forEach(node => {
+    if (!(node instanceof HTMLElement)) return;
+    const cell = Number(node.dataset.battleshipCell);
+    if (!Number.isInteger(cell) || cell < 0 || cell > 99) return;
+    byCell.set(cell, node);
+  });
+
+  if (!byCell.has(originCell)) return [];
+
+  const queue = [originCell];
+  const seen = new Set([originCell]);
+  const result = [];
+
+  while (queue.length) {
+    const cell = queue.shift();
+    const node = byCell.get(cell);
+    if (node) result.push(node);
+
+    const row = Math.floor(cell / 10);
+    const col = cell % 10;
+    const neighbors = [];
+    if (row > 0) neighbors.push(cell - 10);
+    if (row < 9) neighbors.push(cell + 10);
+    if (col > 0) neighbors.push(cell - 1);
+    if (col < 9) neighbors.push(cell + 1);
+
+    neighbors.forEach(next => {
+      if (!seen.has(next) && byCell.has(next)) {
+        seen.add(next);
+        queue.push(next);
+      }
+    });
+  }
+
+  return result;
+}
+
+function mountHitEffect({ targetCell, gameId, ownerId }){
+  if (!(targetCell instanceof HTMLElement) || typeof document === 'undefined') return;
+
+  const rect = targetCell.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return;
+
+  const x = rect.left + rect.width / 2;
+  const y = rect.top + rect.height / 2;
+  const size = Math.max(34, Math.min(68, Math.max(rect.width, rect.height) * 2.1));
+
+  const root = document.createElement('span');
+  root.className = 'mgw-bs-live-hit-fx';
+  root.dataset.battleshipHitFx = 'impact-flash-v1';
+  root.dataset.battleshipHitGame = gameId;
+  root.dataset.battleshipHitOwner = ownerId;
+  root.setAttribute('aria-hidden', 'true');
+
+  const core = document.createElement('i');
+  core.className = 'mgw-bs-live-hit-core';
+  const ring = document.createElement('i');
+  ring.className = 'mgw-bs-live-hit-ring';
+  const flare = document.createElement('i');
+  flare.className = 'mgw-bs-live-hit-flare';
+
+  [core, ring, flare].forEach(node => {
+    node.style.left = `${x}px`;
+    node.style.top = `${y}px`;
+    node.style.width = `${size}px`;
+    node.style.height = `${size}px`;
+  });
+
+  const sparks = [];
+  for (let index = 0; index < 6; index += 1) {
+    const angle = -90 + index * 60;
+    const spark = document.createElement('i');
+    spark.className = 'mgw-bs-live-hit-spark';
+    spark.style.left = `${x}px`;
+    spark.style.top = `${y}px`;
+    spark.style.setProperty('--mgw-bs-hit-angle', `${angle}deg`);
+    root.appendChild(spark);
+    sparks.push({ node:spark, angle });
+  }
+
+  root.append(core, ring, flare);
+  document.body.appendChild(root);
+
+  const reducedMotion = typeof globalThis.matchMedia === 'function'
+    && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const cleanup = () => root.remove();
+
+  if (reducedMotion || typeof core.animate !== 'function') {
+    root.classList.add('is-reduced-motion');
+    globalThis.setTimeout(cleanup, reducedMotion ? 260 : 760);
+    return;
+  }
+
+  const animations = [
+    core.animate([
+      { opacity:0, transform:'translate(-50%,-50%) scale(.22)' },
+      { opacity:1, transform:'translate(-50%,-50%) scale(.82)', offset:.24 },
+      { opacity:.96, transform:'translate(-50%,-50%) scale(1)', offset:.42 },
+      { opacity:0, transform:'translate(-50%,-50%) scale(1.28)' },
+    ], { duration:720, easing:'cubic-bezier(.12,.8,.2,1)', fill:'forwards' }),
+    ring.animate([
+      { opacity:0, transform:'translate(-50%,-50%) scale(.3)' },
+      { opacity:.92, transform:'translate(-50%,-50%) scale(.62)', offset:.22 },
+      { opacity:.64, transform:'translate(-50%,-50%) scale(1)', offset:.48 },
+      { opacity:0, transform:'translate(-50%,-50%) scale(1.55)' },
+    ], { duration:820, easing:'cubic-bezier(.14,.74,.18,1)', fill:'forwards' }),
+    flare.animate([
+      { opacity:0, transform:'translate(-50%,-50%) rotate(-16deg) scale(.45)' },
+      { opacity:.94, transform:'translate(-50%,-50%) rotate(3deg) scale(1)', offset:.28 },
+      { opacity:0, transform:'translate(-50%,-50%) rotate(16deg) scale(1.2)' },
+    ], { duration:650, easing:'ease-out', fill:'forwards' }),
+  ];
+
+  sparks.forEach(({ node, angle }, index) => {
+    const radians = angle * Math.PI / 180;
+    const distance = size * (.56 + (index % 2) * .08);
+    const dx = Math.cos(radians) * distance;
+    const dy = Math.sin(radians) * distance;
+    animations.push(node.animate([
+      { opacity:0, transform:`translate(-50%,-50%) translate(0px,0px) rotate(${angle + 90}deg) scaleY(.45)` },
+      { opacity:1, transform:`translate(-50%,-50%) translate(${(dx * .15).toFixed(2)}px,${(dy * .15).toFixed(2)}px) rotate(${angle + 90}deg) scaleY(1)`, offset:.2 },
+      { opacity:0, transform:`translate(-50%,-50%) translate(${dx.toFixed(2)}px,${dy.toFixed(2)}px) rotate(${angle + 98}deg) scaleY(.68)` },
+    ], { duration:650, delay:index * 18, easing:'cubic-bezier(.12,.72,.18,1)', fill:'forwards' }));
+  });
+
+  Promise.allSettled(animations.map(animation => animation.finished)).then(cleanup);
+  globalThis.setTimeout(cleanup, 1050);
+}
+
+function mountDestroyEffect({ targetCells, gameId, ownerId }){
+  const cells = targetCells.filter(node => node instanceof HTMLElement);
+  if (!cells.length || typeof document === 'undefined') return;
+
+  const rects = cells.map(node => node.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
+  if (!rects.length) return;
+
+  const left = Math.min(...rects.map(rect => rect.left));
+  const right = Math.max(...rects.map(rect => rect.right));
+  const top = Math.min(...rects.map(rect => rect.top));
+  const bottom = Math.max(...rects.map(rect => rect.bottom));
+  const x = (left + right) / 2;
+  const y = (top + bottom) / 2;
+  const shipWidth = Math.max(24, right - left);
+  const shipHeight = Math.max(24, bottom - top);
+  const blastSize = Math.max(74, Math.min(170, Math.max(shipWidth, shipHeight) * 2.45));
+
+  const root = document.createElement('span');
+  root.className = 'mgw-bs-live-destroy-fx';
+  root.dataset.battleshipDestroyFx = 'critical-sink-v1';
+  root.dataset.battleshipDestroyGame = gameId;
+  root.dataset.battleshipDestroyOwner = ownerId;
+  root.dataset.battleshipDestroyCells = String(cells.length);
+  root.setAttribute('aria-hidden', 'true');
+
+  const flash = document.createElement('i');
+  flash.className = 'mgw-bs-live-destroy-flash';
+  const ring = document.createElement('i');
+  ring.className = 'mgw-bs-live-destroy-ring';
+  const ring2 = document.createElement('i');
+  ring2.className = 'mgw-bs-live-destroy-ring secondary';
+  const wreck = document.createElement('i');
+  wreck.className = 'mgw-bs-live-destroy-wreck';
+
+  [flash, ring, ring2, wreck].forEach(node => {
+    node.style.left = `${x}px`;
+    node.style.top = `${y}px`;
+    node.style.width = `${blastSize}px`;
+    node.style.height = `${blastSize}px`;
+  });
+
+  const smokeNodes = [];
+  const smokeOffsets = [
+    [-.18, -.08, .42],
+    [.10, -.18, .52],
+    [.22, .02, .36],
+  ];
+  smokeOffsets.forEach(([ox, oy, scale], index) => {
+    const smoke = document.createElement('i');
+    smoke.className = 'mgw-bs-live-destroy-smoke';
+    smoke.style.left = `${x + blastSize * ox}px`;
+    smoke.style.top = `${y + blastSize * oy}px`;
+    smoke.style.width = `${blastSize * scale}px`;
+    smoke.style.height = `${blastSize * scale}px`;
+    smoke.dataset.smoke = String(index + 1);
+    root.appendChild(smoke);
+    smokeNodes.push(smoke);
+  });
+
+  const shards = [];
+  for (let index = 0; index < 10; index += 1) {
+    const angle = -102 + index * 36 + (index % 2 ? 7 : -4);
+    const shard = document.createElement('i');
+    shard.className = 'mgw-bs-live-destroy-shard';
+    shard.style.left = `${x}px`;
+    shard.style.top = `${y}px`;
+    root.appendChild(shard);
+    shards.push({ node:shard, angle });
+  }
+
+  root.append(flash, ring, ring2, wreck);
+  document.body.appendChild(root);
+
+  const reducedMotion = typeof globalThis.matchMedia === 'function'
+    && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const cleanup = () => root.remove();
+
+  if (reducedMotion || typeof flash.animate !== 'function') {
+    root.classList.add('is-reduced-motion');
+    globalThis.setTimeout(cleanup, reducedMotion ? 320 : 1100);
+    return;
+  }
+
+  const animations = [
+    flash.animate([
+      { opacity:0, transform:'translate(-50%,-50%) scale(.18) rotate(-10deg)' },
+      { opacity:1, transform:'translate(-50%,-50%) scale(.82) rotate(1deg)', offset:.18 },
+      { opacity:.94, transform:'translate(-50%,-50%) scale(1.08) rotate(6deg)', offset:.34 },
+      { opacity:.2, transform:'translate(-50%,-50%) scale(1.34) rotate(12deg)', offset:.64 },
+      { opacity:0, transform:'translate(-50%,-50%) scale(1.48) rotate(15deg)' },
+    ], { duration:1050, easing:'cubic-bezier(.1,.78,.16,1)', fill:'forwards' }),
+    ring.animate([
+      { opacity:0, transform:'translate(-50%,-50%) scale(.25)' },
+      { opacity:.95, transform:'translate(-50%,-50%) scale(.52)', offset:.18 },
+      { opacity:.48, transform:'translate(-50%,-50%) scale(1.08)', offset:.52 },
+      { opacity:0, transform:'translate(-50%,-50%) scale(1.78)' },
+    ], { duration:1120, easing:'cubic-bezier(.12,.72,.18,1)', fill:'forwards' }),
+    ring2.animate([
+      { opacity:0, transform:'translate(-50%,-50%) scale(.35)' },
+      { opacity:.72, transform:'translate(-50%,-50%) scale(.62)', offset:.25 },
+      { opacity:.3, transform:'translate(-50%,-50%) scale(1.25)', offset:.58 },
+      { opacity:0, transform:'translate(-50%,-50%) scale(1.98)' },
+    ], { duration:1180, delay:80, easing:'ease-out', fill:'forwards' }),
+    wreck.animate([
+      { opacity:0, transform:'translate(-50%,-50%) scale(.72)' },
+      { opacity:.9, transform:'translate(-50%,-50%) scale(1)', offset:.24 },
+      { opacity:.62, transform:'translate(-50%,-50%) scale(1.08)', offset:.52 },
+      { opacity:0, transform:'translate(-50%,-50%) scale(1.18)' },
+    ], { duration:980, delay:35, easing:'ease-out', fill:'forwards' }),
+  ];
+
+  smokeNodes.forEach((node, index) => {
+    const driftX = (index - 1) * blastSize * .12;
+    const driftY = -blastSize * (.34 + index * .04);
+    animations.push(node.animate([
+      { opacity:0, transform:'translate(-50%,-50%) scale(.48)' },
+      { opacity:.62, transform:'translate(-50%,-50%) scale(.82)', offset:.26 },
+      { opacity:.48, transform:`translate(calc(-50% + ${(driftX * .4).toFixed(2)}px),calc(-50% + ${(driftY * .45).toFixed(2)}px)) scale(1.04)`, offset:.58 },
+      { opacity:0, transform:`translate(calc(-50% + ${driftX.toFixed(2)}px),calc(-50% + ${driftY.toFixed(2)}px)) scale(1.3)` },
+    ], { duration:1200, delay:120 + index * 45, easing:'cubic-bezier(.18,.6,.24,1)', fill:'forwards' }));
+  });
+
+  shards.forEach(({ node, angle }, index) => {
+    const radians = angle * Math.PI / 180;
+    const distance = blastSize * (.46 + (index % 3) * .08);
+    const dx = Math.cos(radians) * distance;
+    const dy = Math.sin(radians) * distance;
+    animations.push(node.animate([
+      { opacity:0, transform:`translate(-50%,-50%) translate(0px,0px) rotate(${angle + 90}deg) scale(.55)` },
+      { opacity:1, transform:`translate(-50%,-50%) translate(${(dx * .12).toFixed(2)}px,${(dy * .12).toFixed(2)}px) rotate(${angle + 96}deg) scale(1)`, offset:.18 },
+      { opacity:.86, transform:`translate(-50%,-50%) translate(${(dx * .68).toFixed(2)}px,${(dy * .68).toFixed(2)}px) rotate(${angle + 128}deg) scale(.86)`, offset:.62 },
+      { opacity:0, transform:`translate(-50%,-50%) translate(${dx.toFixed(2)}px,${dy.toFixed(2)}px) rotate(${angle + 164}deg) scale(.62)` },
+    ], { duration:980, delay:35 + index * 18, easing:'cubic-bezier(.12,.72,.18,1)', fill:'forwards' }));
+  });
+
+  Promise.allSettled(animations.map(animation => animation.finished)).then(cleanup);
+  globalThis.setTimeout(cleanup, 1500);
 }
 
 function shotEventKey(game){
@@ -306,17 +639,17 @@ function clamp(value, min, max){
 
 function ensureLiveStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/battleship/live-cosmetics-v1.css?v=5&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&shot=plasma-lock-v1', import.meta.url).href;
+  const href = new URL('../../../css/games/battleship/live-cosmetics-v1.css?v=6&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&effects=shot-hit-destroy-v1', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-live-cosmetics]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwBattleshipLiveCosmetics = 'maps-fleets-v4-shot-v1';
+    existing.dataset.mgwBattleshipLiveCosmetics = 'maps-fleets-v4-effects-v1';
     return;
   }
 
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwBattleshipLiveCosmetics = 'maps-fleets-v4-shot-v1';
+  link.dataset.mgwBattleshipLiveCosmetics = 'maps-fleets-v4-effects-v1';
   link.href = href;
   document.head.appendChild(link);
 }
