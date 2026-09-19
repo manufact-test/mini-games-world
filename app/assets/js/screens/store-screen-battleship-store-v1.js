@@ -1,8 +1,8 @@
 import { api } from '../api/client.js?v=34';
 
-const API_HOOK = Symbol.for('mgw.store.battleship.corrective.v2');
-const INSTALL_KEY = '__mgwBattleshipStoreCorrectiveV2Installed';
-const STYLE_MARK = 'mvp19-12-battleship-store-corrective-v2';
+const API_HOOK = Symbol.for('mgw.store.battleship.polish.v3');
+const INSTALL_KEY = '__mgwBattleshipStorePolishV3Installed';
+const STYLE_MARK = 'mvp19-12-battleship-store-polish-v3';
 
 export function installBattleshipStorePresentation(){
   ensureStyles();
@@ -35,7 +35,7 @@ export function upgradeBattleshipStorePresentation(){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=2&mvp19_12=manual-corrective-v2&geometry=square&copy=human&effects=distinct', import.meta.url).href;
+  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=3&mvp19_12=store-polish-v3&header=steel-ship&neon_frame=outer-safe&effects=unchanged-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -92,13 +92,27 @@ function upgradeHeader(root){
     marks.innerHTML = `
       <b class="mgw-bs-head-vessel" aria-hidden="true">
         <svg viewBox="0 0 92 48" focusable="false">
-          <path class="hull" d="M12 29h67l-8 11H25L12 29Z"></path>
-          <path class="deck" d="M28 29V18h29v11M39 18V10h9v8"></path>
-          <path class="mast" d="M43.5 10V5"></path>
-          <circle class="port" cx="34" cy="34" r="2"></circle>
-          <circle class="port" cx="45" cy="34" r="2"></circle>
-          <circle class="port" cx="56" cy="34" r="2"></circle>
-          <path class="wake" d="M18 44c12 2 22 2 34 0 11-2 20-2 28 0"></path>
+          <defs>
+            <linearGradient id="mgwBsHullSteel" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#d7dde5"></stop>
+              <stop offset=".48" stop-color="#84909e"></stop>
+              <stop offset="1" stop-color="#3b4551"></stop>
+            </linearGradient>
+            <linearGradient id="mgwBsCabinSteel" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#f0f3f6"></stop>
+              <stop offset=".58" stop-color="#98a3ae"></stop>
+              <stop offset="1" stop-color="#58636f"></stop>
+            </linearGradient>
+          </defs>
+          <path class="hull" d="M14 29h64l-9 10H26L14 29Z"></path>
+          <path class="hull-highlight" d="M20 29h52"></path>
+          <rect class="cabin" x="31" y="18" width="28" height="10" rx="2.5"></rect>
+          <rect class="bridge" x="40" y="12" width="11" height="6" rx="1.5"></rect>
+          <path class="mast" d="M45.5 12V7"></path>
+          <circle class="port" cx="35" cy="23" r="1.4"></circle>
+          <circle class="port" cx="42" cy="23" r="1.4"></circle>
+          <circle class="port" cx="49" cy="23" r="1.4"></circle>
+          <path class="wake" d="M22 42c10 1.5 18 1.5 28 0 9-1.4 17-1.4 24 0"></path>
         </svg>
       </b>
     `;
@@ -154,7 +168,7 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = safeVariant(preview.dataset.cosmeticVariant || 'sea');
-    const signature = `${layer}:${variant}:manual-corrective-v2`;
+    const signature = `${layer}:${variant}:store-polish-v3`;
 
     if (preview.dataset.mgwBattleshipPreview === signature) return;
     preview.dataset.mgwBattleshipPreview = signature;
