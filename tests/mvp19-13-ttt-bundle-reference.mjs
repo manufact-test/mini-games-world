@@ -40,7 +40,7 @@ assert.match(css, /\.store-v2-bundle-confirm-reference\{/);
 assert.match(css, /@media \(max-width:360px\)/);
 assert.match(css, /@media \(prefers-reduced-motion:reduce\)/);
 
-assert.match(manifest, /store-screen\.js\?v=55[^']*mvp19_13=ttt-bundle-reference-v2/);
+assert.match(manifest, /store-screen\.js\?v=56[^']*mvp19_13=ttt-bundle-reference-v2/);
 assert.match(launch, /bundles=ttt-reference-v2/);
 
 for (const itemId of [
