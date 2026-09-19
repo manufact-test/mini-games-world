@@ -9,8 +9,14 @@ const tttMigration = readFileSync('bot/database/migrations/20260824_0015_create_
 const checkersMigration = readFileSync('bot/database/migrations/20260912_0032_complete_checkers_store_cosmetics.php', 'utf8');
 const checkersWrapper = readFileSync('app/assets/js/screens/store-screen-checkers-wrapper.js', 'utf8');
 const checkersSourceWrapper = readFileSync('app/assets/js/screens/store-screen-checkers-board-source-wrapper.js', 'utf8');
+const allBundlesMigration = readFileSync('bot/database/migrations/20260919_0041_add_remaining_game_premium_bundles.php', 'utf8');
+const storeService = readFileSync('bot/catalog/CosmeticStoreService.php', 'utf8');
+const reversiStore = readFileSync('app/assets/js/screens/store-screen-reversi-store-v1.js', 'utf8');
+const goStore = readFileSync('app/assets/js/screens/store-screen-go-store-v1.js', 'utf8');
+const fourStore = readFileSync('app/assets/js/screens/store-screen-four-in-a-row-store-v1.js', 'utf8');
+const battleshipStore = readFileSync('app/assets/js/screens/store-screen-battleship-store-v1.js', 'utf8');
 
-assert.match(store, /const BUNDLE_REFERENCE_GAMES = Object\.freeze\(\['tictactoe','checkers'\]\);/);
+assert.match(store, /const BUNDLE_REFERENCE_GAMES = Object\.freeze\(\['tictactoe','chess','checkers','reversi','go','domino','four_in_a_row','battleship'\]\);/);
 assert.match(store, /gameBundlesFromSnapshot\(\)\.filter\(bundle => BUNDLE_REFERENCE_GAMES\.includes\(bundleGameType\(bundle\)\)\)/);
 assert.match(store, /let activeBundleGame = 'tictactoe';/);
 assert.match(store, /data-store-v2-bundle-game=/);
@@ -93,10 +99,10 @@ assert.match(css, /flex:1 1 0/);
 assert.match(css, /overflow-y:auto!important/);
 assert.match(css, /border-radius:11px/);
 assert.match(css, /border-radius:8px/);
-assert.match(store, /store-bundle-prototype-v1\.css\?v=10&mvp19_13=bundle-detail-class-separation-v7/);
+assert.match(store, /store-bundle-prototype-v1\.css\?v=11&mvp19_13=all-eight-bundles-v8/);
 assert.match(store, /data-store-bundle-member-game=/);
 assert.match(store, /data-store-bundle-member-layer=/);
-assert.match(css, /data-store-bundle-member-game="checkers"/);
+assert.match(css, /store-v2-bundle-reference-member:not\(\[data-store-bundle-member-game="tictactoe"\]\)/);
 assert.match(css, /store-v2-bundle-native-store-viewport/);
 assert.match(css, /store-v2-game-product\.store-v2-bundle-native-store-product/);
 assert.match(css, /--mgw-bundle-native-scale/);
@@ -116,9 +122,9 @@ assert.match(checkersWrapper, /inactiveBundlePanel/);
 assert.match(checkersWrapper, /checkersEffectObserver\.unobserve\(preview\)/);
 assert.match(checkersWrapper, /data-mgw-checkers-frozen-snapshot/);
 
-assert.match(manifest, /store-screen-checkers-board-source-wrapper\.js\?v=35[^']*bundle_fit=v4[^']*parent=store-screen-checkers-wrapper\.js\?v=5/);
-assert.match(manifest, /store-screen\.js\?v=65[^']*mvp19_13=bundle-detail-class-separation-v7/);
-assert.match(launch, /bundles=bundle-detail-class-separation-v7/);
+assert.match(manifest, /store-screen-checkers-board-source-wrapper\.js\?v=36[^']*bundle_fit=v4[^']*parent=store-screen-checkers-wrapper\.js\?v=5[^']*mvp19_13=all-eight-bundles-v8/);
+assert.match(manifest, /store-screen\.js\?v=66[^']*mvp19_13=all-eight-bundles-v8/);
+assert.match(launch, /bundles=all-eight-bundles-v8/);
 
 for (const itemId of [
   'game-ttt-field-neon',
@@ -148,4 +154,35 @@ for (const itemId of [
 }
 assert.match(checkersMigration, /'price_coins' => 34000/);
 
-console.log('MVP-19.13 TTT + Checkers bundle reference contract: OK');
+const expectedBundles = {
+  chess:['game-chess-board-neon','game-chess-pieces-neon','game-chess-effect-move','game-chess-effect-capture','game-chess-effect-check'],
+  reversi:['game-reversi-field-neon','game-reversi-pieces-neon','game-reversi-effect-placement','game-reversi-effect-line','game-reversi-effect-mass-flip'],
+  go:['game-go-board-neon','game-go-stones-neon','game-go-effect-placement','game-go-effect-group-capture','game-go-effect-territory-finish'],
+  domino:['game-domino-table-neon','game-domino-tiles-neon','game-domino-effect-precision-drop','game-domino-effect-stock-pulse','game-domino-effect-chain-finale'],
+  four_in_a_row:['game-four-field-neon','game-four-discs-neon','game-four-effect-drop','game-four-effect-four','game-four-effect-victory-wave'],
+  battleship:['game-battleship-map-neon','game-battleship-fleet-neon','game-battleship-effect-shot','game-battleship-effect-hit','game-battleship-effect-destroy'],
+};
+for (const [gameType, members] of Object.entries(expectedBundles)) {
+  for (const itemId of members) assert.ok(allBundlesMigration.includes(`'${itemId}'`), `${gameType} bundle member missing: ${itemId}`);
+}
+assert.equal((allBundlesMigration.match(/price_coins=34000/g) || []).length >= 1, true);
+for (const id of ['chess-premium-bundle','reversi-premium-bundle','go-premium-bundle','domino-premium-bundle','four-in-a-row-premium-bundle','battleship-premium-bundle']) {
+  assert.ok(allBundlesMigration.includes(`'${id}'`), `bundle offer missing: ${id}`);
+  assert.ok(storeService.includes(`'${id}'`), `Store snapshot bundle missing: ${id}`);
+}
+assert.match(storeService, /'tictactoe' => \[self::TICTACTOE_BUNDLE_OFFER_ID/);
+assert.match(storeService, /'chess' => \[self::CHESS_BUNDLE_OFFER_ID/);
+assert.match(storeService, /'checkers' => \[self::CHECKERS_BUNDLE_OFFER_ID/);
+assert.match(storeService, /'reversi' => \[self::REVERSI_BUNDLE_OFFER_ID/);
+assert.match(storeService, /'go' => \[self::GO_BUNDLE_OFFER_ID/);
+assert.match(storeService, /'domino' => \[self::DOMINO_BUNDLE_OFFER_ID/);
+assert.match(storeService, /'four_in_a_row' => \[self::FOUR_IN_A_ROW_BUNDLE_OFFER_ID/);
+assert.match(storeService, /'battleship' => \[self::BATTLESHIP_BUNDLE_OFFER_ID/);
+
+for (const owner of [reversiStore, goStore, fourStore, battleshipStore]) {
+  assert.match(owner, /document\.querySelector\('\[data-store-v2-panel="bundles"\]'\)/);
+  assert.match(owner, /\[data-store-v2-bundle-game\]/);
+}
+assert.match(css, /store-v2-bundle-reference-panel:not\(\.active\)[\s\S]*animation-play-state:paused!important/);
+
+console.log('MVP-19.13 all eight game bundles contract: OK');
