@@ -138,8 +138,7 @@ jobs:
               app/assets/js/games/checkers \
               app/assets/js/checkers-cosmetics \
               bot/catalog/ProductInventoryService.php
-            unexpected_migrations="$(git diff --name-only "$base" "$head" -- bot/database/migrations | grep -v '^bot/database/migrations/20260919_0041_add_remaining_game_premium_bundles.php
- || true)"
+            unexpected_migrations="$(git diff --name-only "$base" "$head" -- bot/database/migrations | grep -vxF 'bot/database/migrations/20260919_0041_add_remaining_game_premium_bundles.php' || true)"
             if [ -n "$unexpected_migrations" ]; then
               echo "Unexpected frozen migration changes:" >&2
               echo "$unexpected_migrations" >&2
