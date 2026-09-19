@@ -122,7 +122,7 @@ $bundle = $snapshot['bundles']['checkers_bundle'] ?? null;
 $assertTrue(is_array($bundle), 'Store snapshot must expose the Checkers premium bundle');
 $assertSame('checkers', (string)($bundle['game_type'] ?? ''), 'Checkers bundle must identify its game');
 $assertSame('Неоновый комплект шашек', (string)($bundle['display_name'] ?? ''), 'Checkers bundle must expose its Store title');
-$assertSame(2, count($snapshot['bundles']['game_bundles'] ?? []), 'Game bundles must expose TTT and Checkers without regressing the existing bundle');
+$assertSame(8, count($snapshot['bundles']['game_bundles'] ?? []), 'MVP-19.13 must expose all eight game bundles while preserving the Checkers reference');
 $assertSame(false, $snapshot['purchase_rules']['auto_equip'] ?? true, 'Purchase must never auto-equip');
 
 $neonBoardQuote = $store->quote($mgwId, 'checkers-board-neon');
@@ -218,7 +218,7 @@ $assertTrue(str_contains($storeScreen, "bundleGameType === 'checkers'") && str_c
 $storeTarget = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $storeBaseTarget = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog'] ?? '');
 $checkersTarget = (string)($manifest['imports']['./assets/js/games/checkers/renderer.js?v=57'] ?? '');
-$assertTrue(str_contains($storeTarget, 'store-screen-checkers-board-source-wrapper.js?v=35') && str_contains($storeTarget, 'store-screen-checkers-wrapper.js?v=5') && str_contains($storeTarget, 'bundle_selector=preserve-v1') && str_contains($storeTarget, 'mvp19_6=visual-corrective-v3'), 'Active Store graph must select the accepted Checkers corrective with bundle-selector preservation');
+$assertTrue(str_contains($storeTarget, 'store-screen-checkers-board-source-wrapper.js?v=36') && str_contains($storeTarget, 'store-screen-checkers-wrapper.js?v=5') && str_contains($storeTarget, 'bundle_selector=preserve-v1') && str_contains($storeTarget, 'mvp19_6=visual-corrective-v3'), 'Active Store graph must select the accepted Checkers corrective with bundle-selector preservation');
 $assertTrue(str_contains($storeBaseTarget, 'mvp19_6=full-checkers-store'), 'Active import graph must preserve the native Store owner under the corrective wrapper');
 $assertTrue(
     str_contains($checkersTarget, 'renderer-real-flight-cascade-v1.js?v=2')
