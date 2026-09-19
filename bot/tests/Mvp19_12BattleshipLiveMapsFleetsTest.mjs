@@ -58,8 +58,8 @@ for (const token of [
 ]) {
   assert.ok(liveCss.includes(token), `LIVE map/fleet material must keep accepted Store identity token ${token}`);
 }
-for (const token of ['#0b8ea8','#f3e2b8','#e8bf68','#9bd7ea','#8b959d','#55f5ff']) {
-  assert.ok(storeCss.includes(token), `Store baseline must contain shared visual token ${token}`);
+for (const token of ['#0b8ea8','#e7c56e','#ffe6a6','#4f7f96','#4b535b','#59f6ff']) {
+  assert.ok(storeCss.includes(token), `Store preview baseline must contain the current scale-appropriate visual token ${token}`);
 }
 
 assert.ok(liveCss.includes('.battleship-cell.ship'), 'Fleet materials must target already-visible ship cells');
