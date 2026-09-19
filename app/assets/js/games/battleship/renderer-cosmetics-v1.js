@@ -3,7 +3,7 @@ import {
   battleshipMeta,
   battleshipPlayerMark,
   battleshipStatus,
-} from './renderer.js?v=60&shot=miss-no-impact&base=mvp19_12-live-maps-fleets-v1';
+} from './renderer.js?v=60&shot=miss-no-impact&base=mvp19_12-live-maps-fleets-v2';
 import { state } from '../../state.js?v=27';
 
 const THEME_SLOT = 'game_battleship_theme';
@@ -28,7 +28,7 @@ export function renderBattleshipSurface(args){
   renderBaseBattleshipSurface(args);
 
   if (!(container instanceof HTMLElement)) return;
-  container.dataset.mgwBattleshipLiveCosmetics = 'maps-fleets-v1';
+  container.dataset.mgwBattleshipLiveCosmetics = 'maps-fleets-v2';
   container.dataset.battleshipMap = mapVariant;
   container.dataset.battleshipFleet = fleetVariant;
 }
@@ -59,17 +59,17 @@ function variantFromItem(value, prefix, allowed){
 
 function ensureLiveStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/battleship/live-cosmetics-v1.css?v=1&mvp19_12=live-maps-fleets-v1', import.meta.url).href;
+  const href = new URL('../../../css/games/battleship/live-cosmetics-v1.css?v=2&mvp19_12=live-maps-fleets-v2&frame=full-v1&neon_fleet=filled-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-live-cosmetics]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
-    existing.dataset.mgwBattleshipLiveCosmetics = 'maps-fleets-v1';
+    existing.dataset.mgwBattleshipLiveCosmetics = 'maps-fleets-v2';
     return;
   }
 
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwBattleshipLiveCosmetics = 'maps-fleets-v1';
+  link.dataset.mgwBattleshipLiveCosmetics = 'maps-fleets-v2';
   link.href = href;
   document.head.appendChild(link);
 }
