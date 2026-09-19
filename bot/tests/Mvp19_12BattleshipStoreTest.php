@@ -75,7 +75,7 @@ $assertSame('v1', (string)($metadataByVariant['theme:sea']['paid_default_distinc
 $assertSame('v1', (string)($metadataByVariant['elements:classic']['paid_default_distinct'] ?? ''), 'Paid classic fleet must explicitly record free-default separation');
 
 $bundleCount = (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_type = 'bundle' AND subcategory = 'battleship'");
-$assertSame(0, $bundleCount, 'Battleship Phase 1 must not create a bundle before all eight game slices are closed');
+$assertSame(1, $bundleCount, 'MVP-19.13 must add exactly one Battleship premium bundle after all eight game slices are closed');
 
 $accounts = new AccountIdentityService($database, 3600);
 $account = $accounts->resolveProviderIdentity('development', 'battleship-store-user', 'browser_dev', ['username'=>'battleship-store'], 'battleship-store-session');
