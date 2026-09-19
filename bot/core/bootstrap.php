@@ -88,6 +88,8 @@ require_once __DIR__ . '/../realtime/RealtimeDatabaseStore.php';
 require_once __DIR__ . '/../realtime/RuntimeRealtimeRepository.php';
 require_once __DIR__ . '/../realtime/LegacyRealtimeShadowSyncService.php';
 require_once __DIR__ . '/../realtime/RealtimeRuntimeBridge.php';
+require_once __DIR__ . '/../ratings/PerGameRatingService.php';
+require_once __DIR__ . '/../ratings/PerGameRatingRuntimeBridge.php';
 require_once __DIR__ . '/../notifications/RuntimeNotificationRepository.php';
 require_once __DIR__ . '/../invites/RuntimeInviteRepository.php';
 require_once __DIR__ . '/../ledger/LedgerIntegrity.php';
@@ -151,6 +153,7 @@ $runtimeEconomyBridge = new EconomyRuntimeBridge($config, $runtimeStorageRouter)
 $runtimeShopBridge = new ShopRuntimeBridge($config, $runtimeStorageRouter);
 $runtimePaymentBridge = new PaymentRuntimeBridge($config, $runtimeStorageRouter);
 $runtimeWeeklyBonusBridge = new WeeklyBonusRuntimeBridge($config, $runtimeStorageRouter);
+$runtimeRatingBridge = new PerGameRatingRuntimeBridge($config, $runtimeStorageRouter);
 $runtimeScript = basename(trim((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? '')));
 $runtimeApiSuccessHooks = [];
 
@@ -212,6 +215,17 @@ if ($runtimeScript === 'api.php' && $runtimeWeeklyBonusBridge->shouldAttachToCur
         );
     };
     $GLOBALS['mgw_api_data_filters'] = $runtimeApiDataFilters;
+}
+if ($runtimeScript === 'api.php' && $runtimeRatingBridge->shouldAttachToCurrentRequest($_SERVER)) {
+    $runtimeApiSuccessHooks[] = static function () use ($runtimeRatingBridge): void {
+        $action = (string)($GLOBALS['mgw_api_action'] ?? '');
+        if ($runtimeRatingBridge->shouldProcessApiAction($action)) {
+            // This hook is intentionally after realtime/weekly projection hooks.
+            // It consumes their normalized terminal match rows and never writes
+            // accepted game mechanics or the JSON rollback source.
+            $runtimeRatingBridge->processProjectedMatches();
+        }
+    };
 }
 if ($runtimeApiSuccessHooks !== []) {
     $GLOBALS['mgw_api_success_hooks'] = $runtimeApiSuccessHooks;
