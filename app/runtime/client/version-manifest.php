@@ -61,7 +61,7 @@ return [
         './assets/js/games/go/renderer.js?v=70' => './assets/js/games/go/renderer-cosmetics-v1.js?v=2&mvp19_8=live-effects-corrective-v2&fx=placement-burst-capture-guard-territory-qa-v2',
         './assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=12&mvp19_10=live-game-v12&drop=target-lock-no-base-flash-v2&effect2=random-chain-v4&victory=full-finale-v2',
         './assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25&visual_portal=v38&precision_geometry=v41',
-        './assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer-cosmetics-v1.js?v=1&mvp19_12=live-maps-fleets-v1&base=v60-shot-miss-no-impact',
+        './assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer-cosmetics-v1.js?v=2&mvp19_12=live-maps-fleets-v2&frame=full-v1&neon_fleet=filled-v2&base=v60-shot-miss-no-impact',
         './assets/js/production-v110-acceptance-runtime.js?v=110' => './assets/js/production-v110-acceptance-runtime.js?v=130&clock=battleship-setup-single-writer&launch=ready-gated-v2&terminal=clock-stable&input=first-tap-v1',
         './assets/js/components/shield-king-visuals.js?v=125&sk=2' => './assets/js/components/shield-king-visuals.js?v=129&sk=4&icons=c1efd5af&shell=nav&settings=metallic&friends=1',
         './assets/js/components/shield-king-visuals.js?v=127&sk=4&icons=c1efd5af&shell=nav' => './assets/js/components/shield-king-visuals.js?v=129&sk=4&icons=c1efd5af&shell=nav&settings=metallic&friends=1',
