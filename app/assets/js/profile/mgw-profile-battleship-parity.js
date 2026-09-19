@@ -1,6 +1,6 @@
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
-import { battleshipPreviewMarkup } from '../screens/store-screen-battleship-store-v1.js?v=6&mvp19_12=store-preview-parity-v6&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&preview_geometry=square-grid-v2&hydration=observer-v1&effects=unchanged-v2';
+import { battleshipPreviewMarkup } from '../screens/store-screen-battleship-store-v1.js?v=7&mvp19_12=store-preview-parity-v7&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&preview_geometry=inline-square-v3&hydration=observer-v1&inline_owner=v1&effects=unchanged-v2';
 
 const GROUP_TITLES = Object.freeze({ theme:'Карты', elements:'Флот', effect:'Эффекты' });
 const ITEM_ORDER = Object.freeze([
@@ -72,7 +72,7 @@ export function initProfileBattleshipParity(){
 function ensureBattleshipProfileStyles(){
   ensureStyle(
     'data-mgw-battleship-store-profile',
-    '../../css/games/battleship/store-cosmetics-v1.css?v=6&mvp19_12=store-preview-parity-v6&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&preview_geometry=square-grid-v2&hydration=observer-v1&effects=unchanged-v2'
+    '../../css/games/battleship/store-cosmetics-v1.css?v=7&mvp19_12=store-preview-parity-v7&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&preview_geometry=inline-square-v3&hydration=observer-v1&inline_owner=v1&effects=unchanged-v2'
   );
   ensureStyle(
     'data-mgw-profile-battleship-parity',
