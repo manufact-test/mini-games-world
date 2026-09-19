@@ -7,7 +7,7 @@ const live = fs.readFileSync(path.join(root, 'app/assets/js/games/battleship/ren
 const liveCss = fs.readFileSync(path.join(root, 'app/assets/css/games/battleship/live-cosmetics-v1.css'), 'utf8');
 const base = fs.readFileSync(path.join(root, 'app/assets/js/games/battleship/renderer.js'), 'utf8');
 const manifest = fs.readFileSync(path.join(root, 'app/runtime/client/version-manifest.php'), 'utf8');
-const launch = fs.readFileSync(path.join(root, 'bot/helpers/WebAppLaunchUrl.php'), 'utf8');
+const launch = fs.readFileSync(path.join(root, 'bot/helpers/WebAppLaunchUrl.php'), 'utf8');\nconst entry = fs.readFileSync(path.join(root, 'app/v110.php'), 'utf8');
 
 assert.ok(live.includes("const EFFECT_SLOT = 'game_battleship_effect'"), 'Shot must use the canonical Battleship effect slot');
 assert.ok(live.includes("const SHOT_ID = 'game-battleship-effect-shot'"), 'Shot must use the catalog Shot item id');
@@ -43,9 +43,10 @@ assert.ok(live.includes("duration:560") && live.includes("duration:420") && live
 assert.ok(live.includes("globalThis.setTimeout(cleanup, 900)"), 'Shot overlay must have a bounded cleanup fallback');
 
 assert.ok(
-  manifest.includes("renderer-cosmetics-v1.js?v=5&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&shot=plasma-lock-v1&base=v60-shot-miss-no-impact"),
-  'Active runtime manifest must publish the Shot wrapper'
+  manifest.includes("renderer-cosmetics-v1.js?v=4&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&base=v60-shot-miss-no-impact"),
+  'Shot manual review must preserve the accepted Battleship manifest baseline'
 );
+assert.ok(entry.includes("$battleshipRendererImportKey = './assets/js/games/battleship/renderer.js?v=56'") && entry.includes("$imports[$battleshipRendererImportKey] .= '&live_effects=shot-v1';"), 'Active v110 runtime must cache-bust only the Battleship Shot module');
 assert.ok(launch.includes('/app/v110.php?v=1233&'), 'Shot must preserve the accepted shared Telegram route version');
 assert.ok(launch.includes('battleship_shot=live-v1'), 'Telegram route must publish the LIVE Shot identity');
 
