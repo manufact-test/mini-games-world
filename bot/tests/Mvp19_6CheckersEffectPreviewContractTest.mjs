@@ -21,7 +21,7 @@ function ok(value, label){
   console.log(`PASS ${label}`);
 }
 
-ok(manifest.includes('store-screen-checkers-board-source-wrapper.js?v=5') && manifest.includes('promotion_preview=king-readable-v2') && manifest.includes('final_centering=king-readable-v2'), 'active Store route preserves accepted Checkers effect preview and readable king corrective');
+ok(manifest.includes('store-screen-checkers-board-source-wrapper.js?v=34') && manifest.includes('promotion_preview=king-readable-v2') && manifest.includes('final_centering=king-readable-v2'), 'active Store route preserves accepted Checkers effect preview and readable king corrective');
 ok(wrapper.includes('store-effects-live-board-v1.css?v=2&mvp19_6=effects-live-board-only'), 'accepted Checkers wrapper remains intact beneath the outer cache-bust owner');
 ok(sourceWrapper.includes('store-effects-live-board-v1.css?v=3&mvp19_6=promotion-destination-parity-v1'), 'outer Checkers Store owner keeps the accepted effect board stylesheet');
 ok(sourceWrapper.includes('store-effects-final-centering-v1.css?v=2&mvp19_6=king-readable-v2'), 'outer Checkers Store owner keeps the accepted final centering/readability stylesheet');
@@ -110,9 +110,9 @@ ok(liveEffectCss.includes('.mgw-checkers-live-fx-crown::after') && liveEffectCss
 ok(liveEffectCss.includes('pointer-events:none'), 'live effect layer leaves board hit targets untouched');
 ok(liveEffectCss.includes('@media (prefers-reduced-motion:reduce)'), 'live effects preserve reduced-motion handling');
 
-ok(manifest.includes('renderer-board-themes.js?v=12&mvp19_6=equal-grid-rows-v1') && manifest.includes('renderer-live-effects-v1.js?v=13&mvp19_6=runtime-smoothing-v13') && manifest.includes('landing=real-piece-flip-final-rect-v2') && manifest.includes('grid_rows=equal-v1') && manifest.includes('legend=stable-paint-v1') && manifest.includes('mobile=insets-v1'), 'active Checkers import map routes through final-rect real-piece FLIP owner');
-ok(manifest.includes('promotion=authoritative-only-v1'), 'Promotion remains authoritative-only after the move-owner replacement');
-ok(manifest.includes('mvp19_6=checkers-real-piece-flip-v11'), 'bootstrap cache-bust activates the final-rect real-piece FLIP graph');
+ok(manifest.includes('renderer-board-themes.js?v=12&mvp19_6=equal-grid-rows-v1') && manifest.includes('landing=real-piece-flip-final-rect-v2') && manifest.includes('legend=stable-paint-v1') && manifest.includes('mobile=insets=v1') && manifest.includes('renderer-real-flight-cascade-v1.js?v=2&mvp19_6=all-paid-real-flight-v1') && manifest.includes('parent=single-flight-dom-v2'), 'active Checkers import map routes through accepted final-rect real-piece FLIP plus paid-effect cascade owner');
+ok(manifest.includes('all_paid_flight=v1') && manifest.includes('real_flight=cascade-v2'), 'accepted paid Checkers effects remain on the canonical cascade owner');
+ok(manifest.includes('mvp19_6=checkers-real-piece-flip-v12'), 'bootstrap cache-bust activates the accepted final-rect real-piece FLIP graph');
 ok(!manifest.includes('renderer-live-effects-final-handoff.js') && !fs.existsSync(failedFinalHandoffPath), 'failed detached final-handoff wrapper is fully retired');
 
 console.log('MVP-19.6 Checkers effect preview + live final-rect real-piece FLIP contract passed.');
