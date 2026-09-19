@@ -70,7 +70,7 @@ assert.ok(apiPhp.includes("if (\$action !== 'game_state' && !\$battleshipFireFas
 
 assert.ok(entry.includes("\$battleshipGameScreenImportKey = './assets/js/screens/game-screen-v102.js?v=102'"), 'Active v110 must cache-bust the game-screen fire owner');
 assert.ok(entry.includes("&battleship_fire=direct-result-v4"), 'Active v110 must publish queued-fire reconciliation module identity');
-assert.ok(entry.includes("&live_effects=accepted-three-v6&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-layer-v3"), 'Active v110 must publish the accepted effect renderer with queued-fire ownership');
+assert.ok(entry.includes("&live_effects=accepted-three-v7&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-core-v4"), 'Active v110 must publish the accepted effect renderer with queued-fire ownership');
 assert.ok(entry.includes("&battleship_fire=direct-result-v4"), 'Active v110 must refresh the main CSS pending-fire owner');
 assert.ok(launch.includes('battleship_fire=direct-result-v4'), 'Telegram launch must expose the reliable-fire build identity');
 

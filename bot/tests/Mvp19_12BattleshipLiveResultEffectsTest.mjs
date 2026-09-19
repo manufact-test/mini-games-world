@@ -44,11 +44,12 @@ for (const token of [
 for (const token of [
   'mgw-bs-live-destroy-fx',
   'mgw-bs-live-destroy-flash',
+  'mgw-bs-live-destroy-fire-core',
   'mgw-bs-live-destroy-ring',
   'mgw-bs-live-destroy-wreck',
   'mgw-bs-live-destroy-smoke',
   'mgw-bs-live-destroy-shard',
-  'critical-sink-v3',
+  'critical-sink-v4',
 ]) {
   assert.ok(live.includes(token) || liveCss.includes(token), `Destroy must publish visual token ${token}`);
 }
@@ -60,13 +61,16 @@ assert.ok(live.includes("globalThis.setTimeout(cleanup, 1450)"), 'Hit must remai
 assert.ok(live.includes("for (let index = 0; index < 6; index += 1)"), 'LIVE Hit must retain all six preview-parity streaks');
 assert.ok(liveCss.includes("height:21px") && liveCss.includes("z-index:4") && liveCss.includes("#fffdf0"), 'LIVE Hit streaks must be visibly longer, brighter and layered above the core');
 assert.ok(live.includes("duration:1500") && live.includes("duration:1650") && live.includes("duration:1780") && live.includes("duration:1900") && live.includes("duration:1550"), 'Destroy must expose slower readable fire, shockwave, smoke and debris phases');
-assert.ok(live.includes("globalThis.setTimeout(cleanup, 2250)"), 'Destroy must remain bounded while keeping smoke/fire readable');
+assert.ok(live.includes("globalThis.setTimeout(cleanup, 2350)"), 'Destroy must remain bounded while keeping smoke/fire readable');
 assert.ok(live.includes("const visualY = y + Math.max(2, Math.min(5, cellHeight * .12))"), 'LIVE Destroy must apply the small optical downshift from the actual sunk-ship center');
 assert.ok(liveCss.includes('.mgw-bs-live-destroy-flash{\n  z-index:6;'), 'Destroy fire core must render above every wreck layer');
+assert.ok(liveCss.includes('.mgw-bs-live-destroy-fire-core{\n  z-index:7;'), 'Critical Sink must publish a separate bright center flame above the blast and wreck');
+assert.ok(live.includes("fireCore.className = 'mgw-bs-live-destroy-fire-core'"), 'LIVE Destroy must mount the persistent center flame');
+assert.ok(live.includes("duration:2050") && live.includes("opacity:.96") && live.includes("offset:.68"), 'Center flame must remain strongly visible through most of the Destroy animation');
 assert.ok(liveCss.includes('.mgw-bs-live-destroy-wreck{\n  z-index:2;'), 'Destroy wreck must remain below the bright fire core');
 assert.ok(liveCss.includes('.mgw-bs-live-destroy-shard{\n  z-index:5;'), 'Destroy debris must remain readable without covering the fire core');
 
-assert.ok(entry.includes("$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v6&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-layer-v3';"), 'Active v110 runtime must publish the accepted three-effect queued-fire module');
-assert.ok(launch.includes('battleship_shot=live-v2') && launch.includes('battleship_impacts=live-v2') && launch.includes('battleship_destroy=live-v3') && launch.includes('battleship_fire=direct-result-v4'), 'Telegram route must publish all accepted effects plus reliable-fire identity');
+assert.ok(entry.includes("$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v7&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-core-v4';"), 'Active v110 runtime must publish the accepted three-effect queued-fire module');
+assert.ok(launch.includes('battleship_shot=live-v2') && launch.includes('battleship_impacts=live-v2') && launch.includes('battleship_destroy=live-v4') && launch.includes('battleship_fire=direct-result-v4'), 'Telegram route must publish all accepted effects plus reliable-fire identity');
 
 console.log('Battleship LIVE Hit/Destroy effect contract passed.');
