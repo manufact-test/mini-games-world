@@ -50,7 +50,7 @@ assert.ok(profile.includes('mgw:cosmetic-inventory-changed'), 'Battleship parity
 
 assert.ok(profile.includes("data-game-type=\"battleship\""), 'Profile previews must identify Battleship explicitly');
 assert.ok(profile.includes('battleshipPreviewMarkup(layer, variant)'), 'Profile must reuse the Store Battleship preview primitive exactly');
-assert.ok(profile.includes("store-screen-battleship-store-v1.js?v=5&mvp19_12=store-preview-parity-v5&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&preview_geometry=square-grid-v2&effects=unchanged-v2"), 'Profile must import the exact current Store preview owner');
+assert.ok(profile.includes("store-screen-battleship-store-v1.js?v=6&mvp19_12=store-preview-parity-v6&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&preview_geometry=square-grid-v2&hydration=observer-v1&effects=unchanged-v2"), 'Profile must import the exact current Store preview owner');
 assert.ok(store.includes('export function battleshipPreviewMarkup(layer, variant)'), 'Store must export Battleship preview markup for Profile reuse');
 assert.ok(store.includes('Array.from({ length:100 }'), 'Store/Profile preview primitive must preserve real 10x10 geometry');
 assert.ok(storeCss.includes('width:84%') && storeCss.includes('grid-template-rows:repeat(10,minmax(0,1fr))') && storeCss.includes('aspect-ratio:1 / 1') && storeCss.includes('transform:translateY(-50%)'), 'Store/Profile previews must render from one square 10x10 grid without a squashed row');
@@ -72,13 +72,13 @@ assert.ok(css.includes('padding-bottom:16px!important'), 'Battleship Profile pan
 assert.ok(css.includes('--mgw-profile-card-subtitle:"Карта"') && css.includes('--mgw-profile-card-subtitle:"Флот"') && css.includes('--mgw-profile-card-subtitle:"Эффект"'), 'Battleship cards must use Four-style singular category subtitles');
 assert.ok(css.includes('.profile-v2-game-card .profile-v2-game-card-name') && css.includes('display:none!important'), 'Battleship cards must delegate visible title placement to the same shared owner as Four in a Row');
 
-assert.ok(layout.includes("mgw-profile-battleship-parity.js?v=5&mvp19_12=profile-four-parity-v3&store=preview-parity-v5&geometry=square&header=steel-ship&neon_fleet=tube-v4&preview_geometry=square-grid-v2&effects=unchanged-v2&copy=four-pattern"), 'Active Profile owner must import Battleship Four-parity v3 with preview parity v5');
+assert.ok(layout.includes("mgw-profile-battleship-parity.js?v=6&mvp19_12=profile-four-parity-v3&store=preview-parity-v6&geometry=square&header=steel-ship&neon_fleet=tube-v4&preview_geometry=square-grid-v2&hydration=observer-v1&effects=unchanged-v2&copy=four-pattern"), 'Active Profile owner must import Battleship Four-parity v3 with preview parity v6');
 assert.ok(layout.includes('initProfileBattleshipParity();'), 'Active Profile owner must initialize Battleship parity');
 assert.ok(layout.indexOf('initProfileFourInARowParity();') < layout.indexOf('initProfileBattleshipParity();'), 'Battleship owner must be added after accepted Four owner without replacing it');
 
 const profileOwnerMatch = manifest.match(/mgw-profile-chess-layout-v2\.js\?v=(\d+)/);
-assert.ok(profileOwnerMatch && Number(profileOwnerMatch[1]) >= 32, 'Active Profile owner must bump the parent layout cache so the new Battleship child import reaches clients');
-assert.ok(manifest.includes('mgw-profile-chess-layout-v2.js?v=32') && manifest.includes('battleship_profile=four-parity-v3') && manifest.includes('battleship_store=preview-parity-v5') && manifest.includes('battleship_header=steel-ship-v1') && manifest.includes('battleship_neon_frame=outer-safe-v1') && manifest.includes('battleship_neon_fleet=tube-v4') && manifest.includes('battleship_preview_geometry=square-grid-v2'), 'Manifest must bump the parent Profile owner and publish current Store/Profile preview parity identity');
+assert.ok(profileOwnerMatch && Number(profileOwnerMatch[1]) >= 33, 'Active Profile owner must bump the parent layout cache so preview parity v6 reaches clients');
+assert.ok(manifest.includes('mgw-profile-chess-layout-v2.js?v=33') && manifest.includes('battleship_profile=four-parity-v3') && manifest.includes('battleship_store=preview-parity-v6') && manifest.includes('battleship_header=steel-ship-v1') && manifest.includes('battleship_neon_frame=outer-safe-v1') && manifest.includes('battleship_neon_fleet=tube-v4') && manifest.includes('battleship_preview_geometry=square-grid-v2') && manifest.includes('battleship_store_hydration=observer-v1'), 'Manifest must bump the parent Profile owner and publish preview parity v6');
 assert.ok(launch.includes('battleship_profile=four-parity-v3'), 'Telegram launch must publish Battleship Profile Four-parity identity');
 
 assert.ok(profileApi.includes('(new ProductInventoryService($database))->snapshot($mgwId)'), 'Profile API must expose canonical inventory');
