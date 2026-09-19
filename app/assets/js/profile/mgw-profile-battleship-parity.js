@@ -16,7 +16,7 @@ const ITEM_ORDER = Object.freeze([
   'game-battleship-effect-hit',
   'game-battleship-effect-destroy',
 ]);
-const PROFILE_API_REPAIR_HOOK = Symbol.for('mgw.profile.battleship.store-parity.v1');
+const PROFILE_API_REPAIR_HOOK = Symbol.for('mgw.profile.battleship.four-parity.v3');
 let initialized = false;
 
 ensureBattleshipProfileStyles();
@@ -76,7 +76,7 @@ function ensureBattleshipProfileStyles(){
   );
   ensureStyle(
     'data-mgw-profile-battleship-parity',
-    '../../css/screens/profile-battleship-store-parity-v1.css?v=1&mvp19_12=profile-store-parity-v1'
+    '../../css/screens/profile-battleship-store-parity-v1.css?v=2&mvp19_12=profile-four-parity-v3&copy=four-pattern'
   );
 }
 
@@ -237,11 +237,11 @@ function upgradeBattleshipSheet(itemId){
   const title = sheet.querySelector('.sheet-head h2');
   if (title instanceof HTMLElement) {
     title.textContent = battleshipDisplayName(item);
-    title.style.display = 'none';
+    title.style.removeProperty('display');
   }
 
   const strong = sheet.querySelector('.profile-v2-game-preview-meta strong');
-  if (strong instanceof HTMLElement) strong.textContent = battleshipDisplayName(item);
+  if (strong instanceof HTMLElement) strong.textContent = 'Морской бой';
 
   const group = sheet.querySelector('.profile-v2-game-preview-meta small');
   if (group instanceof HTMLElement) group.textContent = GROUP_TITLES[battleshipLayer(item)] || 'Оформление';
