@@ -1,8 +1,8 @@
 import { api } from '../api/client.js?v=34';
 
-const API_HOOK = Symbol.for('mgw.store.battleship.phase1.v1');
-const INSTALL_KEY = '__mgwBattleshipStorePhase1V1Installed';
-const STYLE_MARK = 'mvp19-12-battleship-store-phase1-v1';
+const API_HOOK = Symbol.for('mgw.store.battleship.corrective.v2');
+const INSTALL_KEY = '__mgwBattleshipStoreCorrectiveV2Installed';
+const STYLE_MARK = 'mvp19-12-battleship-store-corrective-v2';
 
 export function installBattleshipStorePresentation(){
   ensureStyles();
@@ -35,7 +35,7 @@ export function upgradeBattleshipStorePresentation(){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=1&mvp19_12=store-phase1&paid_default=distinct-v1', import.meta.url).href;
+  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=2&mvp19_12=manual-corrective-v2&geometry=square&copy=human&effects=distinct', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -83,11 +83,25 @@ function renameSelector(root){
 function upgradeHeader(root){
   const head = root.querySelector('.store-v2-game-head[data-store-game-type="battleship"]');
   if (!(head instanceof HTMLElement)) return;
+
   const title = head.querySelector('h2');
   if (title instanceof HTMLElement) title.textContent = 'Морской бой';
+
   const marks = head.querySelector('.store-v2-game-head-marks');
   if (marks instanceof HTMLElement) {
-    marks.innerHTML = '<b class="mgw-bs-head-radar" aria-hidden="true"></b><b class="mgw-bs-head-ship" aria-hidden="true"><i></i><i></i><i></i></b>';
+    marks.innerHTML = `
+      <b class="mgw-bs-head-vessel" aria-hidden="true">
+        <svg viewBox="0 0 92 48" focusable="false">
+          <path class="hull" d="M12 29h67l-8 11H25L12 29Z"></path>
+          <path class="deck" d="M28 29V18h29v11M39 18V10h9v8"></path>
+          <path class="mast" d="M43.5 10V5"></path>
+          <circle class="port" cx="34" cy="34" r="2"></circle>
+          <circle class="port" cx="45" cy="34" r="2"></circle>
+          <circle class="port" cx="56" cy="34" r="2"></circle>
+          <path class="wake" d="M18 44c12 2 22 2 34 0 11-2 20-2 28 0"></path>
+        </svg>
+      </b>
+    `;
   }
 }
 
@@ -96,14 +110,16 @@ function upgradeGroups(root){
     if (!(group instanceof HTMLElement)) return;
     const preview = group.querySelector('.store-v2-game-preview[data-game-type="battleship"]');
     if (!(preview instanceof HTMLElement)) return;
+
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const title = group.querySelector('.store-v2-game-title-row h2');
     const subtitle = group.querySelector('.store-v2-game-title-row p');
     const copy = {
-      theme:['Карты','Оформление боевой карты и воды'],
-      elements:['Флот','Внешний вид ваших открытых кораблей'],
-      effect:['Эффекты','Визуальные эффекты выстрела, попадания и потопления'],
+      theme:['Карты','Стиль боевой карты'],
+      elements:['Флот','Внешний вид кораблей'],
+      effect:['Эффекты','Прицел, попадание и потопление'],
     }[layer] || ['Морской бой',''];
+
     if (title instanceof HTMLElement) title.textContent = copy[0];
     if (subtitle instanceof HTMLElement) {
       if (copy[1]) subtitle.textContent = copy[1];
@@ -115,16 +131,19 @@ function upgradeGroups(root){
 function upgradeProducts(root){
   root.querySelectorAll('.store-v2-game-product[data-store-game-product="battleship"]').forEach(product => {
     if (!(product instanceof HTMLElement)) return;
+
     const preview = product.querySelector('.store-v2-game-preview[data-game-type="battleship"]');
     if (!(preview instanceof HTMLElement)) return;
+
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = safeVariant(preview.dataset.cosmeticVariant || 'sea');
     const kind = product.querySelector('.store-v2-game-product-copy > span');
     const description = product.querySelector('.store-v2-game-product-copy > p');
+
     if (kind instanceof HTMLElement) {
       kind.textContent = layer === 'theme'
-        ? 'Карта боя'
-        : (layer === 'elements' ? 'Комплект флота' : effectKind(variant));
+        ? 'Карта'
+        : (layer === 'elements' ? 'Флот' : effectKind(variant));
     }
     if (description instanceof HTMLElement) description.textContent = descriptionFor(layer, variant);
   });
@@ -135,40 +154,47 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = safeVariant(preview.dataset.cosmeticVariant || 'sea');
-    const signature = `${layer}:${variant}:store-phase1-v1`;
+    const signature = `${layer}:${variant}:manual-corrective-v2`;
+
     if (preview.dataset.mgwBattleshipPreview === signature) return;
     preview.dataset.mgwBattleshipPreview = signature;
-    preview.dataset.mgwBattleshipPreviewMode = layer === 'effect' ? 'static-concept' : 'static';
+    preview.dataset.mgwBattleshipPreviewMode = layer === 'effect' ? 'animated-concept' : 'static';
     preview.innerHTML = battleshipPreviewMarkup(layer, variant);
   });
 }
 
 function effectKind(variant){
-  return ({ shot:'Эффект выстрела', hit:'Эффект попадания', destroy:'Эффект потопления' })[variant] || 'Эффект боя';
+  return ({
+    shot:'Прицел',
+    hit:'Попадание',
+    destroy:'Потопление',
+  })[variant] || 'Эффект';
 }
 
 function descriptionFor(layer, variant){
   if (layer === 'theme') {
     return ({
-      sea:'Бирюзовая морская карта с ярким фарватером и светлой координатной сеткой — не повторяет бесплатное синее поле',
-      'dark-military':'Тёмный тактический радар с оливковыми линиями и военной разметкой',
-      storm:'Грозовая карта с холодной сталью, дождевыми бликами и глубокими волнами',
-      neon:'Чёрный сектор с цианово-фиолетовой неоновой координатной сеткой',
-    })[variant] || 'Меняет оформление карты Морского боя';
+      sea:'Бирюзовая вода, светлый фарватер и свежий морской стиль.',
+      'dark-military':'Тёмный тактический радар с военным характером.',
+      storm:'Глубокое море, дождь и холодные штормовые блики.',
+      neon:'Цельная тёмная карта с ярким циановым неоновым свечением.',
+    })[variant] || 'Новый стиль для боевой карты.';
   }
+
   if (layer === 'elements') {
     return ({
-      classic:'Светлый адмиральский флот с латунной окантовкой — отдельный платный образ, не серые стандартные корабли',
-      modern:'Графитовый современный флот с холодными голубыми панелями',
-      armored:'Тяжёлый тёмный металл, бронепластины и яркие стальные кромки',
-      neon:'Тёмные корпуса с ярким цианово-розовым свечением',
-    })[variant] || 'Меняет внешний вид вашего флота';
+      classic:'Светлые корпуса с тёплой латунной отделкой.',
+      modern:'Графитовые корабли с холодными голубыми панелями.',
+      armored:'Тяжёлые бронекорпуса из тёмного металла.',
+      neon:'Тёмный флот с ярким цианово-розовым контуром.',
+    })[variant] || 'Новый внешний вид вашего флота.';
   }
+
   return ({
-    shot:'Прицел и световой трассер показывают направление вашего выстрела.',
-    hit:'Яркая ударная вспышка подчёркивает точное попадание.',
-    destroy:'Потопленный корабль отмечается мощной финальной вспышкой и разломом.',
-  })[variant] || 'Добавляет визуальный эффект боя.';
+    shot:'Прицел наводится на клетку, затем проходит короткий световой выстрел.',
+    hit:'Точное попадание вспыхивает и расходится ударным кольцом.',
+    destroy:'Потопленный корабль накрывает большая вспышка и красная ударная волна.',
+  })[variant] || 'Яркий эффект для боя.';
 }
 
 export function battleshipPreviewMarkup(layer, variant){
@@ -184,18 +210,37 @@ function boardPreview(layer, variant){
     const ship = ships.has(index);
     return `<span class="${ship ? 'ship' : ''}"></span>`;
   }).join('');
+
   const kind = layer === 'theme' ? `map-${variant}` : `fleet-${variant}`;
-  return `<i class="mgw-battleship-preview ${kind} ${layer}" aria-hidden="true"><span class="mgw-bs-preview-board">${cells}</span><b class="mgw-bs-preview-sweep"></b></i>`;
+  return `
+    <i class="mgw-battleship-preview ${kind} ${layer}" aria-hidden="true">
+      <span class="mgw-bs-preview-board">${cells}</span>
+      <b class="mgw-bs-preview-sweep"></b>
+    </i>
+  `;
 }
 
 function effectPreview(variant){
+  const safe = ['shot','hit','destroy'].includes(variant) ? variant : 'shot';
   const cells = Array.from({ length:100 }, (_, index) => {
     const target = index === 55 ? ' target' : '';
-    const ship = (variant === 'destroy' && [54,55,56].includes(index)) ? ' ship' : '';
+    let ship = '';
+    if (safe === 'hit' && index === 55) ship = ' ship hit-ship';
+    if (safe === 'destroy' && [54,55,56].includes(index)) ship = ' ship destroyed-ship';
     return `<span class="${target}${ship}"></span>`;
   }).join('');
-  const safe = ['shot','hit','destroy'].includes(variant) ? variant : 'shot';
-  return `<i class="mgw-battleship-preview effect effect-${safe}" aria-hidden="true"><span class="mgw-bs-preview-board">${cells}</span><b class="mgw-bs-fx-reticle"></b><b class="mgw-bs-fx-tracer"></b><b class="mgw-bs-fx-burst"></b><b class="mgw-bs-fx-shock"></b></i>`;
+
+  return `
+    <i class="mgw-battleship-preview effect effect-${safe}" aria-hidden="true">
+      <span class="mgw-bs-preview-board">${cells}</span>
+      <b class="mgw-bs-fx-reticle"></b>
+      <b class="mgw-bs-fx-tracer"></b>
+      <b class="mgw-bs-fx-burst"></b>
+      <b class="mgw-bs-fx-shock"></b>
+      <b class="mgw-bs-fx-smoke"></b>
+      <span class="mgw-bs-fx-shards"><i></i><i></i><i></i><i></i></span>
+    </i>
+  `;
 }
 
 function safeVariant(value){
