@@ -16,6 +16,12 @@ final class CosmeticStoreService
     public const AVATAR_BUNDLE_OFFER_ID = 'avatar-bundle-5';
     public const TICTACTOE_BUNDLE_OFFER_ID = 'ttt-premium-bundle';
     public const CHECKERS_BUNDLE_OFFER_ID = 'checkers-premium-bundle';
+    public const CHESS_BUNDLE_OFFER_ID = 'chess-premium-bundle';
+    public const REVERSI_BUNDLE_OFFER_ID = 'reversi-premium-bundle';
+    public const GO_BUNDLE_OFFER_ID = 'go-premium-bundle';
+    public const DOMINO_BUNDLE_OFFER_ID = 'domino-premium-bundle';
+    public const FOUR_IN_A_ROW_BUNDLE_OFFER_ID = 'four-in-a-row-premium-bundle';
+    public const BATTLESHIP_BUNDLE_OFFER_ID = 'battleship-premium-bundle';
     public const PURCHASE_TRANSACTION_TYPE = 'cosmetic_purchase';
     public const PURCHASE_PENDING_STATUS = 'debited';
     public const PURCHASE_COMPLETED_STATUS = 'completed';
@@ -26,6 +32,9 @@ final class CosmeticStoreService
         'tictactoe' => 'Крестики-нолики',
         'chess' => 'Шахматы',
         'checkers' => 'Шашки',
+        'reversi' => 'Реверси',
+        'go' => 'Го',
+        'domino' => 'Домино',
         'four_in_a_row' => '4 в ряд',
         'battleship' => 'Морской бой',
     ];
@@ -113,19 +122,34 @@ final class CosmeticStoreService
         }
         unset($gameCatalog);
 
-        $tictactoeBundle = $offers[self::TICTACTOE_BUNDLE_OFFER_ID] ?? null;
-        if (is_array($tictactoeBundle)) {
-            $tictactoeBundle['display_name'] = 'Неоновый комплект';
-            $tictactoeBundle['preview_kind'] = 'tictactoe_premium_bundle';
-            $tictactoeBundle['game_type'] = 'tictactoe';
+        $bundleDefinitions = [
+            'tictactoe' => [self::TICTACTOE_BUNDLE_OFFER_ID, 'Неоновый комплект'],
+            'chess' => [self::CHESS_BUNDLE_OFFER_ID, 'Неоновый комплект шахмат'],
+            'checkers' => [self::CHECKERS_BUNDLE_OFFER_ID, 'Неоновый комплект шашек'],
+            'reversi' => [self::REVERSI_BUNDLE_OFFER_ID, 'Неоновый комплект Реверси'],
+            'go' => [self::GO_BUNDLE_OFFER_ID, 'Неоновый комплект Го'],
+            'domino' => [self::DOMINO_BUNDLE_OFFER_ID, 'Неоновый комплект домино'],
+            'four_in_a_row' => [self::FOUR_IN_A_ROW_BUNDLE_OFFER_ID, 'Неоновый комплект 4 в ряд'],
+            'battleship' => [self::BATTLESHIP_BUNDLE_OFFER_ID, 'Неоновый комплект Морского боя'],
+        ];
+        $gameBundlesByType = [];
+        foreach ($bundleDefinitions as $gameType => [$offerId, $displayName]) {
+            $bundle = $offers[$offerId] ?? null;
+            if (!is_array($bundle)) continue;
+            $bundle['display_name'] = $displayName;
+            $bundle['preview_kind'] = $gameType . '_premium_bundle';
+            $bundle['game_type'] = $gameType;
+            $gameBundlesByType[$gameType] = $bundle;
         }
-        $checkersBundle = $offers[self::CHECKERS_BUNDLE_OFFER_ID] ?? null;
-        if (is_array($checkersBundle)) {
-            $checkersBundle['display_name'] = 'Неоновый комплект шашек';
-            $checkersBundle['preview_kind'] = 'checkers_premium_bundle';
-            $checkersBundle['game_type'] = 'checkers';
-        }
-        $gameBundles = array_values(array_filter([$tictactoeBundle, $checkersBundle], 'is_array'));
+        $tictactoeBundle = $gameBundlesByType['tictactoe'] ?? null;
+        $chessBundle = $gameBundlesByType['chess'] ?? null;
+        $checkersBundle = $gameBundlesByType['checkers'] ?? null;
+        $reversiBundle = $gameBundlesByType['reversi'] ?? null;
+        $goBundle = $gameBundlesByType['go'] ?? null;
+        $dominoBundle = $gameBundlesByType['domino'] ?? null;
+        $fourInARowBundle = $gameBundlesByType['four_in_a_row'] ?? null;
+        $battleshipBundle = $gameBundlesByType['battleship'] ?? null;
+        $gameBundles = array_values($gameBundlesByType);
 
         $ownedItems = [];
         foreach ((array)($inventory['owned'] ?? []) as $ownedRow) {
@@ -200,7 +224,13 @@ final class CosmeticStoreService
             'bundles' => [
                 'avatar_bundle' => $avatarBundle,
                 'tictactoe_bundle' => $tictactoeBundle,
+                'chess_bundle' => $chessBundle,
                 'checkers_bundle' => $checkersBundle,
+                'reversi_bundle' => $reversiBundle,
+                'go_bundle' => $goBundle,
+                'domino_bundle' => $dominoBundle,
+                'four_in_a_row_bundle' => $fourInARowBundle,
+                'battleship_bundle' => $battleshipBundle,
                 'game_bundles' => $gameBundles,
             ],
             'inventory' => [
