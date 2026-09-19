@@ -73,6 +73,7 @@ try {
         throw $error;
     }
     $inventory = (new ProductInventoryService($database))->snapshot($mgwId);
+    $rating = (new PerGameRatingRuntimeBridge($configRef, $router, $database))->snapshotForProfile($mgwId);
 
     $users = new UserService($configRef);
     $historyService = new HistoryService($configRef, $users);
@@ -93,6 +94,7 @@ try {
         'ok'=>true,
         'profile'=>$canonicalProfile,
         'inventory'=>$inventory,
+        'rating'=>$rating,
         'user'=>$runtime['user'] ?? null,
         'stats'=>$runtime['stats'] ?? null,
         'history'=>$runtime['history'] ?? ['matches'=>[],'operations'=>[]],
