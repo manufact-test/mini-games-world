@@ -1,8 +1,8 @@
 import { api } from '../api/client.js?v=34';
 
-const API_HOOK = Symbol.for('mgw.store.battleship.polish.v3');
-const INSTALL_KEY = '__mgwBattleshipStorePolishV3Installed';
-const STYLE_MARK = 'mvp19-12-battleship-store-polish-v3';
+const API_HOOK = Symbol.for('mgw.store.battleship.preview-parity.v4');
+const INSTALL_KEY = '__mgwBattleshipStorePreviewParityV4Installed';
+const STYLE_MARK = 'mvp19-12-battleship-store-preview-parity-v4';
 
 export function installBattleshipStorePresentation(){
   ensureStyles();
@@ -35,7 +35,7 @@ export function upgradeBattleshipStorePresentation(){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=3&mvp19_12=store-polish-v3&header=steel-ship&neon_frame=outer-safe&effects=unchanged-v2', import.meta.url).href;
+  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=4&mvp19_12=store-preview-parity-v4&header=steel-ship&neon_frame=outer-safe&neon_fleet=flat-v3&preview_geometry=equal-cells-v1&effects=unchanged-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -168,7 +168,7 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = safeVariant(preview.dataset.cosmeticVariant || 'sea');
-    const signature = `${layer}:${variant}:store-polish-v3`;
+    const signature = `${layer}:${variant}:store-preview-parity-v4`;
 
     if (preview.dataset.mgwBattleshipPreview === signature) return;
     preview.dataset.mgwBattleshipPreview = signature;
