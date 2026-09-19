@@ -1,0 +1,155 @@
+/* MVP-19.12 Battleship Profile: exact Store preview reuse for owned items. */
+
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="battleship"] .profile-v2-game-tab-mark{
+  position:relative!important;
+  display:inline-grid!important;
+  place-items:center!important;
+  flex:0 0 24px!important;
+  width:24px!important;
+  height:20px!important;
+  margin:0!important;
+  padding:0!important;
+  color:transparent!important;
+  font-size:0!important;
+  overflow:visible!important;
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="battleship"] .profile-v2-game-tab-mark svg{
+  display:block!important;
+  width:24px!important;
+  height:17px!important;
+  overflow:visible!important;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.36));
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="battleship"] .mgw-bs-tab-hull{
+  fill:#737f8c!important;
+  stroke:#b8c0c8!important;
+  stroke-width:1!important;
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="battleship"] .mgw-bs-tab-cabin{
+  fill:#aeb7c0!important;
+  stroke:#d9dee3!important;
+  stroke-width:.8!important;
+}
+#screen-profile .profile-v2-game-tab[data-profile-game-tab="battleship"] .mgw-bs-tab-bridge{
+  fill:#505b66!important;
+  stroke:#aeb7c0!important;
+  stroke-width:.6!important;
+}
+#screen-profile .profile-v2-game-tab.active[data-profile-game-tab="battleship"] .profile-v2-game-tab-mark svg{
+  filter:drop-shadow(0 0 4px rgba(130,221,255,.36)) drop-shadow(0 2px 2px rgba(0,0,0,.36));
+}
+
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="battleship"]{
+  box-sizing:border-box!important;
+  padding-top:10px!important;
+  padding-bottom:16px!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="battleship"] .profile-v2-game-group{
+  margin:0 0 14px!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="battleship"] .profile-v2-game-group:last-child{
+  margin-bottom:0!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="battleship"] .profile-v2-game-group-title{
+  margin:0 0 8px!important;
+  padding:0 2px!important;
+}
+
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="battleship"] .profile-v2-game-card{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  justify-content:flex-start!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  padding:6px!important;
+  gap:5px!important;
+  overflow:visible!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="battleship"] .profile-v2-game-card .store-v2-game-preview[data-game-type="battleship"]{
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  flex:0 0 auto!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  aspect-ratio:1 / 1!important;
+  overflow:hidden!important;
+  margin:0!important;
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.09)!important;
+  border-radius:14px!important;
+  background:#071525!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="battleship"] .profile-v2-game-card .store-v2-game-preview[data-game-type="battleship"]>.mgw-battleship-preview{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="battleship"] .profile-v2-game-card .profile-v2-game-card-name{
+  position:relative!important;
+  z-index:2!important;
+  display:block!important;
+  flex:0 0 auto!important;
+  margin:6px 2px 1px!important;
+  font-size:11px!important;
+  line-height:1.2!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="battleship"]{
+  box-sizing:border-box!important;
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  width:min(100%,236px)!important;
+  max-width:236px!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  aspect-ratio:1 / 1!important;
+  overflow:hidden!important;
+  margin:0 auto!important;
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.11)!important;
+  border-radius:18px!important;
+  background:#071525!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04)!important;
+}
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="battleship"]>.mgw-battleship-preview{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+}
+
+#screen-profile .profile-v2-game-card .store-v2-game-preview[data-game-type="battleship"] *,
+.profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="battleship"] *{
+  pointer-events:none!important;
+}
+
+@media(max-width:390px){
+  #screen-profile .profile-v2-game-panel[data-profile-game-panel="battleship"] .profile-v2-game-card .store-v2-game-preview[data-game-type="battleship"]{
+    border-radius:12px!important;
+  }
+  .profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="battleship"]{
+    border-radius:16px!important;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  #screen-profile .store-v2-game-preview[data-game-type="battleship"] *{
+    animation:none!important;
+    transition:none!important;
+  }
+}
