@@ -13,7 +13,7 @@ export function installFourInARowStorePresentation(){
   document.addEventListener('click', event => {
     const target = event.target instanceof Element ? event.target : null;
     if (!target) return;
-    if (!target.closest('[data-store-v2-tab="games"], [data-store-v2-game], [data-store-v2-buy], [data-store-v2-equip], [data-store-v2-unequip], #storeV2ConfirmBuy')) return;
+    if (!target.closest('[data-store-v2-tab], [data-store-v2-game], [data-store-v2-bundle-game], [data-store-v2-buy], [data-store-v2-equip], [data-store-v2-unequip], #storeV2ConfirmBuy')) return;
     scheduleUpgrade();
   });
 }
@@ -22,6 +22,7 @@ export function upgradeFourInARowStorePresentation(){
   ensureStyles();
   const roots = [
     document.querySelector('[data-store-v2-panel="games"]'),
+    document.querySelector('[data-store-v2-panel="bundles"]'),
     document.getElementById('sheet'),
   ];
   roots.forEach(root => {
