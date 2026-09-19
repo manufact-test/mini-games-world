@@ -1,8 +1,8 @@
 import { api } from '../api/client.js?v=34';
 
-const API_HOOK = Symbol.for('mgw.store.battleship.preview-parity.v7');
-const INSTALL_KEY = '__mgwBattleshipStorePreviewParityV7Installed';
-const STYLE_MARK = 'mvp19-12-battleship-store-preview-parity-v7';
+const API_HOOK = Symbol.for('mgw.store.battleship.preview-parity.v8');
+const INSTALL_KEY = '__mgwBattleshipStorePreviewParityV8Installed';
+const STYLE_MARK = 'mvp19-12-battleship-store-preview-parity-v8';
 
 export function installBattleshipStorePresentation(){
   ensureStyles();
@@ -36,7 +36,7 @@ export function upgradeBattleshipStorePresentation(){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=7&mvp19_12=store-preview-parity-v7&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&preview_geometry=inline-square-v3&hydration=observer-v1&inline_owner=v1&effects=unchanged-v2', import.meta.url).href;
+  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=8&mvp19_12=store-preview-parity-v8&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=scale-parity-v1&preview_geometry=inline-square-v3&hydration=observer-v1&inline_owner=v2&effects=unchanged-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -209,7 +209,7 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = safeVariant(preview.dataset.cosmeticVariant || 'sea');
-    const signature = `${layer}:${variant}:store-preview-parity-v7`;
+    const signature = `${layer}:${variant}:store-preview-parity-v8`;
 
     if (preview.dataset.mgwBattleshipPreview === signature) return;
     preview.dataset.mgwBattleshipPreview = signature;
@@ -295,10 +295,10 @@ function previewCellInlineStyle(layer, variant, ship){
     style += 'background:rgba(13,48,72,.62);border:1px solid rgba(129,190,220,.18);';
     if (!ship) return style;
     return style + ({
-      classic:'background:radial-gradient(circle at 34% 28%,#fff7db 0 18%,#f3e2b8 36%,#9f7b42 100%);border:1px solid #e8bf68;box-shadow:0 0 0 1px rgba(74,48,17,.45),inset 0 0 0 1px rgba(255,255,255,.55);',
-      modern:'background:linear-gradient(145deg,#9bd7ea 0 18%,#426d82 20% 62%,#173444 64%);border:1px solid #a8e9ff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),0 0 7px rgba(76,181,218,.22);',
-      armored:'background:radial-gradient(circle at 28% 28%,rgba(255,255,255,.58) 0 4%,transparent 5%),linear-gradient(145deg,#8b959d 0 18%,#343c45 20% 58%,#161b21 60%);border:2px solid #aeb8c0;box-shadow:inset 0 0 0 1px #252c33,0 2px 4px rgba(0,0,0,.45);',
-      neon:'background:linear-gradient(145deg,#4d3aaa 0%,#2a205f 58%,#12152e 100%);border:2px solid #55f5ff;box-shadow:0 0 5px rgba(85,245,255,.86),0 0 10px rgba(85,245,255,.42),0 0 15px rgba(255,70,223,.22),inset 0 0 0 2px rgba(255,70,223,.34),inset 0 0 9px rgba(123,92,255,.34);',
+      classic:'background:radial-gradient(circle at 38% 32%,#fff8dc 0 22%,#ead6a1 48%,#8d6934 100%);border:1px solid #d8ad52;box-shadow:0 0 0 1px rgba(92,58,16,.34),inset 0 0 0 1px rgba(255,255,255,.42);',
+      modern:'background:linear-gradient(145deg,#8fd0e4 0 24%,#3e7189 25% 62%,#163344 63% 100%);border:1px solid #9ce6ff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),0 0 3px rgba(76,181,218,.22);',
+      armored:'background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.48) 0 6%,transparent 7%),linear-gradient(145deg,#747f87 0 22%,#384149 24% 63%,#171c21 64% 100%);border:1px solid #9ea8b0;box-shadow:inset 0 0 0 1px #272e34,0 1px 2px rgba(0,0,0,.38);',
+      neon:'background:linear-gradient(145deg,#5a45bd 0%,#342778 58%,#171936 100%);border:1px solid #55f5ff;box-shadow:0 0 3px rgba(85,245,255,.78),0 0 5px rgba(85,245,255,.30),inset 0 0 0 1px rgba(255,70,223,.62),inset 0 0 3px rgba(123,92,255,.46);',
     }[variant] || '');
   }
 
