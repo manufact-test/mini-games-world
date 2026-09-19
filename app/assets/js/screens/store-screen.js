@@ -597,8 +597,6 @@ function renderBundlesTab(){
 
   const availableGames = bundles.map(bundle => bundleGameType(bundle)).filter(Boolean);
   if (!availableGames.includes(activeBundleGame)) activeBundleGame = availableGames[0] || 'tictactoe';
-  const activeBundle = bundles.find(bundle => bundleGameType(bundle) === activeBundleGame) || bundles[0];
-
   return `
     <div class="store-v2-bundle-game-picker" aria-label="Выберите игру">
       <div class="store-v2-bundle-game-picker-track" role="tablist">
