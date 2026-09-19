@@ -28,6 +28,11 @@ assert.match(store, /bundles\.map\(bundle => \{/);
 assert.match(store, /bundlePanel\.classList\.toggle\('active', active\)/);
 assert.match(store, /bundlePanel\.setAttribute\('aria-hidden', active \? 'false' : 'true'\)/);
 assert.match(store, /function activateBundleGame\(gameType\)/);
+assert.match(store, /function bindBundleGamePickerScroll\(root\)/);
+assert.match(store, /store-v2-bundle-game-picker-track/);
+assert.match(store, /mgwBundlePickerSuppressClickUntil/);
+assert.match(store, /track\.scrollLeft = drag\.startScrollLeft - dx/);
+assert.match(store, /function centerBundlePickerOption\(panel, gameType\)/);
 assert.match(store, /data-store-v2-game]:not\(\[data-store-v2-bundle-game\]\)/);
 assert.match(store, /const memberIds = new Set\(Array\.isArray\(bundle\?\.item_ids\)/);
 assert.match(store, /function renderBundleMemberStorePreview\(gameType, layer, variant, name, owned, sheet = false\)/);
@@ -124,8 +129,8 @@ assert.match(checkersWrapper, /checkersEffectObserver\.unobserve\(preview\)/);
 assert.match(checkersWrapper, /data-mgw-checkers-frozen-snapshot/);
 
 assert.match(manifest, /store-screen-checkers-board-source-wrapper\.js\?v=36[^']*bundle_fit=v4[^']*parent=store-screen-checkers-wrapper\.js\?v=5[^']*mvp19_13=all-eight-bundles-v8/);
-assert.match(manifest, /store-screen\.js\?v=66[^']*mvp19_13=all-eight-bundles-v8/);
-assert.match(launch, /bundles=all-eight-bundles-v8/);
+assert.match(manifest, /store-screen\.js\?v=67[^']*mvp19_13=bundle-selector-drag-v9/);
+assert.match(launch, /bundles=bundle-selector-drag-v9/);
 
 for (const itemId of [
   'game-ttt-field-neon',
