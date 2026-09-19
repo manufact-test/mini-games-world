@@ -372,22 +372,46 @@
   border-color:rgba(218,226,238,.22)!important;
 }
 
-/* MVP-20.1 visible per-game rating: intentionally reuses the accepted Profile
-   game-card grid while keeping the new points label visually subordinate. */
+/* MVP-20.1 rating UI: compact horizontal cards with one clear score chip. */
+#screen-profile .profile-v2-rating-section{
+  gap:9px;
+}
 #screen-profile .profile-v2-rating-card{
-  min-height:72px;
+  min-height:58px;
+  padding:11px 12px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:9px;
+}
+#screen-profile .profile-v2-rating-game{
+  min-width:0;
+  font-size:12.5px;
+  line-height:1.22;
+}
+#screen-profile .profile-v2-rating-score{
+  min-width:58px;
+  min-height:30px;
+  padding:0 9px;
+  border:1px solid rgba(178,116,255,.42);
+  border-radius:999px;
+  display:flex;
+  align-items:center;
   justify-content:center;
+  gap:4px;
+  background:linear-gradient(135deg,rgba(115,91,255,.17),rgba(178,116,255,.08));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+  white-space:nowrap;
 }
-#screen-profile .profile-v2-rating-card .profile-v2-game-stat-head>b{
-  color:var(--sk-brand-purple-light,#b274ff);
-  font-size:18px;
-  line-height:1;
-}
-#screen-profile .profile-v2-rating-card>small{
-  display:block;
-  margin-top:6px;
+#screen-profile .profile-v2-rating-score>span{
   color:var(--muted);
   font-size:9px;
-  font-weight:750;
-  line-height:1.15;
+  font-weight:800;
+  line-height:1;
+}
+#screen-profile .profile-v2-rating-score>b{
+  color:var(--sk-brand-purple-light,#b274ff);
+  font-size:14px;
+  line-height:1;
+  font-variant-numeric:tabular-nums;
 }
