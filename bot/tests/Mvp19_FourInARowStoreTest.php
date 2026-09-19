@@ -75,7 +75,7 @@ $assertSame(['game_four_in_a_row_effect'], array_values(array_unique($byLayer['e
 $assertSame(['drop'=>'drop','four'=>'placement_pulse','victory-wave'=>'victory_wave'], $events, 'Effect metadata must expose drop, mid-game pulse, and victory-wave semantics');
 
 $bundleCount = (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_type = 'bundle' AND subcategory = 'four_in_a_row'");
-$assertSame(0, $bundleCount, 'Four in a Row Phase 1 must not create a bundle');
+$assertSame(1, $bundleCount, 'MVP-19.13 must add exactly one Four in a Row premium bundle after the accepted Store slice');
 
 $accounts = new AccountIdentityService($database, 3600);
 $account = $accounts->resolveProviderIdentity('development', 'four-store-user', 'browser_dev', ['username'=>'four-store'], 'four-store-session');
