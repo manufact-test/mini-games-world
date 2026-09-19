@@ -591,8 +591,6 @@ function renderBundlesTab(){
         ${bundles.map(bundle => {
           const gameType = bundleGameType(bundle);
           const presentation = bundlePresentation(gameType);
-          const count = Array.isArray(bundle?.item_ids) ? bundle.item_ids.length : 0;
-          const owned = Math.max(0, Number(bundle?.owned_count || 0));
           const active = gameType === activeBundleGame;
           return `
             <button
