@@ -790,7 +790,88 @@ function bindStoreEvents(){
   bindPanelEvents(root);
 }
 
+function bindBundleGamePickerScroll(root){
+  root.querySelectorAll('.store-v2-bundle-game-picker-track').forEach(track => {
+    if (!(track instanceof HTMLElement) || track.dataset.mgwBundlePickerBound === '1') return;
+    track.dataset.mgwBundlePickerBound = '1';
+    track.style.cursor = 'grab';
+    track.style.userSelect = 'none';
+    track.style.webkitUserSelect = 'none';
+
+    let drag = null;
+    const finishDrag = event => {
+      if (!drag || (event && event.pointerId !== drag.pointerId)) return;
+      if (drag.moved) {
+        track.dataset.mgwBundlePickerSuppressClickUntil = String(Date.now() + 360);
+      }
+      track.classList.remove('is-dragging');
+      track.style.cursor = 'grab';
+      try {
+        if (track.hasPointerCapture?.(drag.pointerId)) track.releasePointerCapture(drag.pointerId);
+      } catch (_) {}
+      drag = null;
+    };
+
+    track.addEventListener('pointerdown', event => {
+      if (event.pointerType !== 'mouse' || event.button !== 0) return;
+      drag = {
+        pointerId:event.pointerId,
+        startX:event.clientX,
+        startY:event.clientY,
+        startScrollLeft:track.scrollLeft,
+        axis:null,
+        moved:false,
+      };
+      try { track.setPointerCapture?.(event.pointerId); } catch (_) {}
+    });
+
+    track.addEventListener('pointermove', event => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      const dx = event.clientX - drag.startX;
+      const dy = event.clientY - drag.startY;
+      if (drag.axis === null) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 7) return;
+        drag.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      }
+      if (drag.axis !== 'x') return;
+      drag.moved = true;
+      track.classList.add('is-dragging');
+      track.style.cursor = 'grabbing';
+      track.scrollLeft = drag.startScrollLeft - dx;
+      if (event.cancelable) event.preventDefault();
+    }, { passive:false });
+
+    track.addEventListener('pointerup', finishDrag);
+    track.addEventListener('pointercancel', finishDrag);
+
+    track.addEventListener('click', event => {
+      const suppressUntil = Number(track.dataset.mgwBundlePickerSuppressClickUntil || 0);
+      if (!Number.isFinite(suppressUntil) || Date.now() >= suppressUntil) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }, true);
+
+    track.addEventListener('wheel', event => {
+      if (track.scrollWidth <= track.clientWidth) return;
+      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+      if (!delta) return;
+      const before = track.scrollLeft;
+      track.scrollLeft += delta;
+      if (track.scrollLeft !== before && event.cancelable) event.preventDefault();
+    }, { passive:false });
+  });
+}
+
+function centerBundlePickerOption(panel, gameType){
+  const track = panel?.querySelector('.store-v2-bundle-game-picker-track');
+  const button = panel?.querySelector(`[data-store-v2-bundle-game="${CSS.escape(gameType)}"]`);
+  if (!(track instanceof HTMLElement) || !(button instanceof HTMLElement)) return;
+  const left = button.offsetLeft - Math.max(0, (track.clientWidth - button.offsetWidth) / 2);
+  track.scrollTo({ left:Math.max(0, left), behavior:'smooth' });
+}
+
 function bindPanelEvents(root){
+  bindBundleGamePickerScroll(root);
   root.querySelectorAll('[data-store-v2-game]:not([data-store-v2-bundle-game])').forEach(button => {
     button.addEventListener('click', () => activateGameCatalog(String(button.dataset.storeV2Game || '')));
   });
@@ -876,6 +957,7 @@ function activateBundleGame(gameType){
     bundlePanel.classList.toggle('active', active);
     bundlePanel.setAttribute('aria-hidden', active ? 'false' : 'true');
   });
+  centerBundlePickerOption(panel, activeBundleGame);
   scheduleBundlePreviewFit(panel);
 }
 
