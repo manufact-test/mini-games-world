@@ -22,6 +22,7 @@ on:
       - 'bot/tests/Mvp19_12BattleshipProfileParityContractTest.mjs'
       - 'bot/tests/Mvp19_12BattleshipProfileInventoryTest.php'
       - 'bot/tests/Mvp19_12BattleshipLiveMapsFleetsTest.mjs'
+      - 'bot/tests/Mvp19_12BattleshipLiveShotEffectTest.mjs'
       - 'bot/tests/Mvp19_12BattleshipViewportScrollTest.php'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
@@ -49,6 +50,7 @@ on:
       - 'bot/tests/Mvp19_12BattleshipProfileParityContractTest.mjs'
       - 'bot/tests/Mvp19_12BattleshipProfileInventoryTest.php'
       - 'bot/tests/Mvp19_12BattleshipLiveMapsFleetsTest.mjs'
+      - 'bot/tests/Mvp19_12BattleshipLiveShotEffectTest.mjs'
       - 'bot/tests/Mvp19_12BattleshipViewportScrollTest.php'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
@@ -75,6 +77,7 @@ jobs:
           php -l app/v110.php
           node --check bot/tests/Mvp19_12BattleshipProfileParityContractTest.mjs
           node --check bot/tests/Mvp19_12BattleshipLiveMapsFleetsTest.mjs
+          node --check bot/tests/Mvp19_12BattleshipLiveShotEffectTest.mjs
           node --check app/assets/js/screens/store-screen-battleship-store-v1.js
           node --check app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
           node --check app/assets/js/profile/mgw-profile-battleship-parity.js
@@ -90,6 +93,8 @@ jobs:
           php bot/tests/Mvp19_12BattleshipProfileInventoryTest.php
       - name: Battleship LIVE maps/fleets contract
         run: node bot/tests/Mvp19_12BattleshipLiveMapsFleetsTest.mjs
+      - name: Battleship LIVE Shot effect contract
+        run: node bot/tests/Mvp19_12BattleshipLiveShotEffectTest.mjs
       - name: Battleship viewport scroll contract
         run: php bot/tests/Mvp19_12BattleshipViewportScrollTest.php
       - name: Re-run shared Store/Profile contracts

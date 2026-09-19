@@ -24,7 +24,9 @@ const launch = fs.readFileSync(launchPath, 'utf8');
 for (const slot of ['game_battleship_theme','game_battleship_elements']) {
   assert.ok(live.includes(slot), `LIVE Battleship wrapper must read ${slot}`);
 }
-assert.ok(!live.includes('game_battleship_effect'), 'Maps/fleets phase must not activate provisional Store effect concepts');
+assert.ok(live.includes('game_battleship_effect'), 'LIVE wrapper must read the canonical Battleship effect slot for accepted effects');
+assert.ok(live.includes("'game-battleship-effect-shot'"), 'LIVE wrapper must activate Shot only in the current phase');
+assert.ok(!live.includes('game-battleship-effect-hit') && !live.includes('game-battleship-effect-destroy'), 'Hit and Destroy must remain inactive until their own manual acceptance phases');
 
 for (const variant of ['sea','dark-military','storm','neon']) {
   assert.ok(live.includes(`'${variant}'`), `LIVE map variants must include ${variant}`);
@@ -37,7 +39,7 @@ for (const variant of ['classic','modern','armored','neon']) {
 
 assert.ok(live.includes("state?.profileInventory?.equipped"), 'LIVE cosmetics must use canonical local equipped inventory');
 assert.ok(live.includes("me?.game_cosmetics?.slots"), 'LIVE cosmetics must fall back to projected viewer slots');
-assert.ok(live.includes("viewer?.game_cosmetics?.slots"), 'LIVE cosmetics must support game-player projection');
+assert.ok(live.includes("player?.game_cosmetics?.slots"), 'LIVE cosmetics must support per-player projected cosmetics');
 assert.ok(live.includes("renderBaseBattleshipSurface(args);"), 'LIVE cosmetics must wrap the accepted Battleship renderer rather than replace mechanics');
 assert.ok(live.indexOf("renderBaseBattleshipSurface(args);") < live.indexOf("container.dataset.mgwBattleshipLiveCosmetics"), 'Presentation data must be applied after the accepted renderer');
 assert.ok(!live.includes('enemy_board') && !live.includes('my_board') && !live.includes('last_result'), 'Presentation wrapper must not inspect or rewrite Battleship board/shot state');
@@ -74,9 +76,9 @@ assert.ok(liveCss.includes('#4d3aaa') && liveCss.includes('#2a205f') && liveCss.
 
 assert.ok(
   manifest.includes("'./assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer-cosmetics-v1.js?v=4&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&base=v60-shot-miss-no-impact'"),
-  'Active manifest must route canonical Battleship renderer import through LIVE maps/fleets wrapper'
+  'Accepted manifest baseline must remain on the LIVE maps/fleets wrapper during Shot manual review'
 );
-assert.ok(launch.includes('battleship_live=maps-fleets-v4') && launch.includes('battleship_frame=full-v1') && launch.includes('battleship_neon_fleet=tube-v4') && launch.includes('battleship_preview_geometry=svg-circles-v6') && launch.includes('battleship_preview_inline_owner=svg-v5') && launch.includes('battleship_fleet_preview=svg-models-v3&battleship_neon_map_ships=white-v1'), 'Telegram launch must publish Battleship LIVE/SVG-preview parity identity');
+assert.ok(launch.includes('battleship_live=maps-fleets-v4') && launch.includes('battleship_shot=live-v1') && launch.includes('battleship_frame=full-v1') && launch.includes('battleship_neon_fleet=tube-v4') && launch.includes('battleship_preview_geometry=svg-circles-v6') && launch.includes('battleship_preview_inline_owner=svg-v5') && launch.includes('battleship_fleet_preview=svg-models-v3&battleship_neon_map_ships=white-v1'), 'Telegram launch must publish Battleship LIVE/SVG-preview parity identity');
 
 assert.ok(liveCss.includes('data-mgw-battleship-live-cosmetics="maps-fleets-v4"'), 'LIVE frame/reduced-motion selectors must match the renderer dataset identity');
-console.log('Battleship LIVE maps/fleets contract passed.');
+console.log('Battleship LIVE maps/fleets + Shot safety contract passed.');

@@ -157,3 +157,100 @@
     transition:none!important;
   }
 }
+
+
+/* LIVE EFFECT 1 — Plasma Shot.
+   Fast pre-result targeting/tracer only: cyan/white, no explosion, no hit/miss color language. */
+.mgw-bs-live-shot-fx{
+  position:fixed;
+  inset:0;
+  z-index:6200;
+  display:block;
+  pointer-events:none;
+  overflow:hidden;
+  contain:layout paint style;
+}
+.mgw-bs-live-shot-reticle,
+.mgw-bs-live-shot-ping,
+.mgw-bs-live-shot-tracer{
+  position:absolute;
+  display:block;
+  pointer-events:none;
+  box-sizing:border-box;
+  will-change:transform,opacity;
+}
+.mgw-bs-live-shot-reticle{
+  border:1.5px solid rgba(126,248,255,.96);
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+  background:
+    radial-gradient(circle,rgba(238,254,255,.86) 0 3%,rgba(92,239,255,.22) 4% 7%,transparent 8% 100%);
+  box-shadow:
+    0 0 0 1px rgba(46,208,255,.24),
+    0 0 10px rgba(77,232,255,.58),
+    inset 0 0 9px rgba(82,235,255,.18);
+}
+.mgw-bs-live-shot-reticle::before,
+.mgw-bs-live-shot-reticle::after{
+  content:'';
+  position:absolute;
+  left:50%;
+  top:50%;
+  background:linear-gradient(90deg,transparent,rgba(188,252,255,.98),transparent);
+  box-shadow:0 0 5px rgba(95,239,255,.62);
+  transform:translate(-50%,-50%);
+}
+.mgw-bs-live-shot-reticle::before{
+  width:145%;
+  height:1px;
+}
+.mgw-bs-live-shot-reticle::after{
+  width:1px;
+  height:145%;
+  background:linear-gradient(180deg,transparent,rgba(188,252,255,.98),transparent);
+}
+.mgw-bs-live-shot-ping{
+  border:1px solid rgba(100,236,255,.7);
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+  box-shadow:0 0 8px rgba(77,225,255,.28);
+}
+.mgw-bs-live-shot-tracer{
+  height:2px;
+  transform-origin:0 50%;
+  border-radius:999px;
+  background:linear-gradient(90deg,transparent 0%,rgba(97,224,255,.2) 14%,rgba(205,253,255,.98) 72%,rgba(101,239,255,.98) 100%);
+  box-shadow:0 0 5px rgba(82,230,255,.72),0 0 10px rgba(67,193,255,.24);
+}
+.mgw-bs-live-shot-bolt{
+  position:absolute;
+  left:0;
+  top:50%;
+  width:10px;
+  height:4px;
+  border-radius:999px;
+  transform:translate(-50%,-50%);
+  background:#f2feff;
+  box-shadow:
+    0 0 4px #fff,
+    0 0 8px rgba(88,241,255,.92),
+    0 0 13px rgba(67,178,255,.55);
+}
+.mgw-bs-live-shot-fx.is-reduced-motion .mgw-bs-live-shot-reticle{
+  opacity:.92;
+  transform:translate(-50%,-50%) scale(1);
+}
+.mgw-bs-live-shot-fx.is-reduced-motion .mgw-bs-live-shot-ping{
+  opacity:.36;
+  transform:translate(-50%,-50%) scale(1);
+}
+.mgw-bs-live-shot-fx.is-reduced-motion .mgw-bs-live-shot-tracer{
+  opacity:.42;
+}
+
+@media (prefers-reduced-motion:reduce){
+  .mgw-bs-live-shot-fx *{
+    animation:none!important;
+    transition:none!important;
+  }
+}
