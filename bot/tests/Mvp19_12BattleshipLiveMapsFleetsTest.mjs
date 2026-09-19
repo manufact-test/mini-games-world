@@ -69,11 +69,13 @@ assert.ok(!liveCss.includes('data-battleship-fleet="armored"] .battleship-cell.u
 assert.ok(!liveCss.includes('data-battleship-fleet="neon"] .battleship-cell.unknown'), 'Neon fleet must never reveal unknown enemy cells');
 assert.ok(liveCss.includes('.battleship-cell.hit') && liveCss.includes('.battleship-cell.sunk') && liveCss.includes('.battleship-cell.miss'), 'Shot-result states must remain explicit and readable above map skins');
 assert.ok(liveCss.includes('.battleship-cell.pending') && liveCss.includes('.battleship-cell.invalid-pick'), 'Setup interaction states must remain explicit above fleet skins');
+assert.ok(liveCss.includes('padding:4px 7px 7px 4px') && liveCss.includes('box-sizing:border-box') && liveCss.includes('border:1px solid rgba(151,190,215,.24)'), 'Every LIVE Battleship board must expose a complete four-sided frame with right/bottom breathing room');
+assert.ok(liveCss.includes('#d8feff') && liveCss.includes('#60eef7') && liveCss.includes('#6650d8') && liveCss.includes('#ff67e8'), 'Neon fleet must use a visibly filled cyan/violet core instead of looking like another hollow board cell');
 
 assert.ok(
-  manifest.includes("'./assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer-cosmetics-v1.js?v=1&mvp19_12=live-maps-fleets-v1&base=v60-shot-miss-no-impact'"),
+  manifest.includes("'./assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer-cosmetics-v1.js?v=2&mvp19_12=live-maps-fleets-v2&frame=full-v1&neon_fleet=filled-v2&base=v60-shot-miss-no-impact'"),
   'Active manifest must route canonical Battleship renderer import through LIVE maps/fleets wrapper'
 );
-assert.ok(launch.includes('battleship_live=maps-fleets-v1'), 'Telegram launch must publish Battleship LIVE maps/fleets identity');
+assert.ok(launch.includes('battleship_live=maps-fleets-v2') && launch.includes('battleship_frame=full-v1') && launch.includes('battleship_neon_fleet=filled-v2'), 'Telegram launch must publish Battleship LIVE frame/neon-fleet visual identity');
 
 console.log('Battleship LIVE maps/fleets contract passed.');
