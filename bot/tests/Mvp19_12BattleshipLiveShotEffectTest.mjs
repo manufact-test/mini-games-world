@@ -46,7 +46,7 @@ assert.ok(
   manifest.includes("renderer-cosmetics-v1.js?v=5&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&shot=plasma-lock-v1&base=v60-shot-miss-no-impact"),
   'Active runtime manifest must publish the Shot wrapper'
 );
-assert.ok(launch.includes('/app/v110.php?v=1234&'), 'Telegram route must be cache-bumped for Shot');
+assert.ok(launch.includes('/app/v110.php?v=1233&'), 'Shot must preserve the accepted shared Telegram route version');
 assert.ok(launch.includes('battleship_shot=live-v1'), 'Telegram route must publish the LIVE Shot identity');
 
 console.log('Battleship LIVE Shot effect contract passed.');
