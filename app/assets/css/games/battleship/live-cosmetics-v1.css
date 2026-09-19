@@ -125,21 +125,19 @@
 }
 
 /* FLEET 4 — Неоновый флот.
-   Filled cores deliberately separate ships from the hollow neon water cells. */
+   Clean flat neon hull: filled violet body, cyan edge, restrained magenta core.
+   Deliberately avoids glossy/marbled highlights that looked like a bad raster asset. */
 #gameBoard[data-game-type="battleship"][data-battleship-fleet="neon"] .battleship-cell.ship,
 #gameBoard[data-game-type="battleship"][data-battleship-fleet="neon"] :is(.battleship-current-ship-dots,.battleship-ship-dots,.ship-shape) i{
   background:
-    radial-gradient(circle at 32% 28%,
-      #d8feff 0 13%,
-      #60eef7 14% 33%,
-      #6650d8 34% 68%,
-      #271641 69% 100%);
+    radial-gradient(circle at 50% 50%,rgba(255,73,224,.58) 0 22%,transparent 23% 100%),
+    linear-gradient(145deg,#5f46d8 0%,#3a2a86 58%,#171737 100%);
   border-color:#41f6ff;
   box-shadow:
-    0 0 0 1px rgba(255,103,232,.34),
-    0 0 8px rgba(45,235,255,.72),
-    0 0 12px rgba(255,73,224,.22),
-    inset 0 0 8px rgba(255,255,255,.18);
+    0 0 0 1px rgba(65,246,255,.24),
+    0 0 7px rgba(45,235,255,.58),
+    0 0 10px rgba(255,73,224,.18),
+    inset 0 0 0 1px rgba(255,255,255,.10);
 }
 
 /* Pending placement and shot-result semantics always win over fleet materials. */
