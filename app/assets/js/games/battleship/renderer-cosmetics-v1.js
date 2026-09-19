@@ -617,16 +617,16 @@ function mountShotEffect({ targetCell, container, gameId, ownerId, source }){
     ], { duration:560, easing:'cubic-bezier(.18,.78,.18,1)', fill:'forwards' }),
     tracer.animate([
       { opacity:0, transform:`rotate(${angle}deg) scaleX(.04)`, offset:0 },
-      { opacity:.96, transform:`rotate(${angle}deg) scaleX(.16)`, offset:.25 },
-      { opacity:1, transform:`rotate(${angle}deg) scaleX(1)`, offset:.62 },
+      { opacity:.96, transform:`rotate(${angle}deg) scaleX(.16)`, offset:.22 },
+      { opacity:1, transform:`rotate(${angle}deg) scaleX(1)`, offset:.68 },
       { opacity:0, transform:`rotate(${angle}deg) scaleX(1)`, offset:1 },
-    ], { duration:420, delay:90, easing:'cubic-bezier(.18,.72,.2,1)', fill:'forwards' }),
+    ], { duration:560, delay:90, easing:'cubic-bezier(.18,.72,.2,1)', fill:'forwards' }),
     bolt.animate([
       { opacity:0, transform:'translate(-50%,-50%) translateX(0px) scale(.62)' },
       { opacity:1, transform:'translate(-50%,-50%) translateX(0px) scale(1)', offset:.12 },
-      { opacity:1, transform:`translate(-50%,-50%) translateX(${Math.max(0, distance - 5)}px) scale(1.12)`, offset:.72 },
+      { opacity:1, transform:`translate(-50%,-50%) translateX(${distance}px) scale(1.12)`, offset:.82 },
       { opacity:0, transform:`translate(-50%,-50%) translateX(${distance}px) scale(.72)` },
-    ], { duration:390, delay:92, easing:'cubic-bezier(.12,.7,.12,1)', fill:'forwards' }),
+    ], { duration:540, delay:92, easing:'cubic-bezier(.12,.7,.12,1)', fill:'forwards' }),
     ping.animate([
       { opacity:0, transform:'translate(-50%,-50%) scale(.7)' },
       { opacity:.72, transform:'translate(-50%,-50%) scale(.86)', offset:.36 },
@@ -645,7 +645,7 @@ function clamp(value, min, max){
 
 function ensureLiveStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/battleship/live-cosmetics-v1.css?v=7&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&effects=accepted-three-v1&fire=queued-v1', import.meta.url).href;
+  const href = new URL('../../../css/games/battleship/live-cosmetics-v1.css?v=8&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&effects=accepted-three-v1&fire=queued-v1&shot_motion=readable-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-live-cosmetics]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
