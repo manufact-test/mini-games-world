@@ -1,5 +1,100 @@
-/* MVP-19.13 — Tic-Tac-Toe premium bundle reference card.
-   Scoped bundle-only presentation. Accepted individual Store/Profile cards remain untouched. */
+/* MVP-19.13 — shared premium bundle presentation.
+   One selected game is mounted at a time; individual Store/Profile cards remain untouched. */
+
+
+.store-v2-bundle-game-picker{
+  position:relative;
+  min-width:0;
+  margin-bottom:10px;
+}
+
+.store-v2-bundle-game-picker::after{
+  content:"";
+  position:absolute;
+  top:0;
+  right:0;
+  width:18px;
+  height:100%;
+  pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(12,16,27,.88));
+  opacity:.75;
+}
+
+.store-v2-bundle-game-picker-track{
+  display:flex;
+  gap:7px;
+  min-width:0;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:1px 18px 3px 1px;
+  scroll-snap-type:x proximity;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-x;
+}
+
+.store-v2-bundle-game-picker-track::-webkit-scrollbar{
+  display:none;
+}
+
+.store-v2-bundle-game-option{
+  flex:1 0 138px;
+  min-width:0;
+  height:42px;
+  padding:0 11px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:9px;
+  scroll-snap-align:start;
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:11px;
+  background:rgba(255,255,255,.035);
+  color:var(--soft);
+  box-shadow:none;
+  text-align:left;
+}
+
+.store-v2-bundle-game-option>span{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:10px;
+  line-height:1;
+  font-weight:900;
+}
+
+.store-v2-bundle-game-option>small{
+  flex:0 0 auto;
+  min-width:32px;
+  height:22px;
+  padding:0 7px;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  background:rgba(255,255,255,.055);
+  color:var(--muted);
+  font-size:8px;
+  line-height:1;
+  font-weight:900;
+}
+
+.store-v2-bundle-game-option.active{
+  border-color:rgba(126,102,255,.58);
+  background:linear-gradient(135deg,rgba(124,92,255,.24),rgba(69,213,240,.08));
+  color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 7px 18px rgba(41,31,101,.16);
+}
+
+.store-v2-bundle-game-option.active>small{
+  background:rgba(128,105,255,.20);
+  color:#cfc5ff;
+}
+
+.store-v2-bundle-game-option:active{
+  transform:translateY(1px);
+}
 
 .store-v2-bundle-reference-list{
   display:grid;
@@ -14,7 +109,7 @@
   min-width:0;
   padding:14px;
   border:1px solid rgba(139,116,255,.42);
-  border-radius:24px;
+  border-radius:18px;
   background:
     radial-gradient(circle at 94% 3%,rgba(68,232,255,.14),transparent 34%),
     radial-gradient(circle at 5% 96%,rgba(234,91,255,.10),transparent 38%),
@@ -102,7 +197,7 @@
 .store-v2-bundle-reference-hero>em{
   width:48px;
   height:48px;
-  border-radius:16px;
+  border-radius:12px;
   display:grid;
   place-items:center;
   flex:0 0 auto;
@@ -130,7 +225,7 @@
   min-width:0;
   padding:6px;
   border:1px solid rgba(255,255,255,.105);
-  border-radius:16px;
+  border-radius:11px;
   background:linear-gradient(155deg,rgba(255,255,255,.055),rgba(255,255,255,.022));
 }
 
@@ -148,7 +243,7 @@
   position:relative;
   min-width:0;
   overflow:hidden;
-  border-radius:12px;
+  border-radius:8px;
   background:linear-gradient(145deg,rgba(18,22,36,.90),rgba(9,12,21,.94));
   border:1px solid rgba(255,255,255,.055);
 }
@@ -156,12 +251,24 @@
 .store-v2-bundle-reference-preview .store-v2-game-preview{
   width:100%;
   height:auto;
-  min-height:70px;
-  aspect-ratio:1.32;
+  height:78px!important;
+  min-height:78px!important;
+  aspect-ratio:auto!important;
   border:0;
-  border-radius:12px;
+  border-radius:8px!important;
   background:transparent;
   box-shadow:none;
+}
+
+
+.store-v2-bundle-reference-member.layer-theme .store-v2-bundle-reference-preview .store-v2-game-preview,
+.store-v2-bundle-reference-member.layer-elements .store-v2-bundle-reference-preview .store-v2-game-preview{
+  height:102px!important;
+  min-height:102px!important;
+}
+
+.store-v2-bundle-reference-preview .store-v2-game-preview[data-game-type="checkers"]{
+  overflow:hidden!important;
 }
 
 .store-v2-bundle-reference-preview .store-v2-game-preview[data-cosmetic-layer="theme"]{
@@ -240,7 +347,7 @@
   margin-top:11px;
   padding:9px 10px;
   border:1px solid rgba(255,255,255,.085);
-  border-radius:13px;
+  border-radius:10px;
   background:rgba(255,255,255,.027);
 }
 
@@ -342,7 +449,7 @@
   justify-content:space-between;
   gap:10px;
   border:1px solid rgba(150,121,255,.58);
-  border-radius:13px;
+  border-radius:11px;
   color:#fff;
   background:linear-gradient(135deg,rgba(124,92,255,.72),rgba(182,91,224,.43));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 9px 22px rgba(68,43,151,.22);
@@ -399,6 +506,23 @@
 }
 
 /* Bundle detail / purchase sheet. */
+
+#sheet > .store-v2-confirm.store-v2-confirm-bundle{
+  min-height:0;
+  flex:1 1 auto;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain;
+  touch-action:pan-y;
+  scrollbar-width:none;
+  padding:0 2px max(8px,env(safe-area-inset-bottom));
+}
+
+#sheet > .store-v2-confirm.store-v2-confirm-bundle::-webkit-scrollbar{
+  display:none;
+}
+
 .store-v2-bundle-confirm-reference{
   display:flex;
   flex-direction:column;
@@ -432,11 +556,18 @@
 
 .store-v2-bundle-reference-members.is-sheet .store-v2-bundle-reference-member{
   padding:5px;
-  border-radius:14px;
+  border-radius:10px;
 }
 
 .store-v2-bundle-reference-members.is-sheet .store-v2-bundle-reference-preview .store-v2-game-preview{
-  min-height:62px;
+  height:68px!important;
+  min-height:68px!important;
+}
+
+.store-v2-bundle-reference-members.is-sheet .store-v2-bundle-reference-member.layer-theme .store-v2-game-preview,
+.store-v2-bundle-reference-members.is-sheet .store-v2-bundle-reference-member.layer-elements .store-v2-game-preview{
+  height:84px!important;
+  min-height:84px!important;
 }
 
 .store-v2-bundle-reference-members.is-sheet .store-v2-bundle-reference-member-copy>strong{
@@ -512,7 +643,14 @@
   }
 
   .store-v2-bundle-reference-preview .store-v2-game-preview{
-    min-height:92px;
+    height:86px!important;
+    min-height:86px!important;
+  }
+
+  .store-v2-bundle-reference-member.layer-theme .store-v2-game-preview,
+  .store-v2-bundle-reference-member.layer-elements .store-v2-game-preview{
+    height:112px!important;
+    min-height:112px!important;
   }
 
   .store-v2-bundle-reference-member-copy>strong{
@@ -527,7 +665,7 @@
 @media (max-width:360px){
   .store-v2-bundle-reference{
     padding:11px;
-    border-radius:20px;
+    border-radius:16px;
   }
 
   .store-v2-bundle-reference-topline>span,
@@ -554,11 +692,18 @@
 
   .store-v2-bundle-reference-member{
     padding:4px;
-    border-radius:13px;
+    border-radius:9px;
   }
 
   .store-v2-bundle-reference-preview .store-v2-game-preview{
-    min-height:62px;
+    height:68px!important;
+    min-height:68px!important;
+  }
+
+  .store-v2-bundle-reference-member.layer-theme .store-v2-game-preview,
+  .store-v2-bundle-reference-member.layer-elements .store-v2-game-preview{
+    height:88px!important;
+    min-height:88px!important;
   }
 
   .store-v2-bundle-reference-member-copy>strong{
@@ -577,6 +722,10 @@
 @media (prefers-reduced-motion:reduce){
   .store-v2-bundle-reference-progress>i>b{
     transition:none;
+  }
+
+  .store-v2-bundle-game-option:active{
+    transform:none;
   }
 
   .store-v2-bundle-reference-buy:active{
