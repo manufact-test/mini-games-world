@@ -13,6 +13,9 @@ on:
       - 'bot/tests/Mvp20_1PerGameVisibleRatingTest.php'
       - 'bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php'
       - 'bot/tests/Mvp20_3LeaderboardIntegrationContractTest.php'
+      - 'bot/tests/Mvp19_3ProfileNameColorsTest.php'
+      - 'bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs'
+      - '.github/workflows/mvp19-3-profile-name-colors.yml'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/profile-screen-v110.js'
       - 'app/assets/css/main.css'
@@ -123,6 +126,9 @@ jobs:
               bot/tests/Mvp20_1PerGameVisibleRatingTest.php|\
               bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php|\
               bot/tests/Mvp20_3LeaderboardIntegrationContractTest.php|\
+              bot/tests/Mvp19_3ProfileNameColorsTest.php|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
+              .github/workflows/mvp19-3-profile-name-colors.yml|\
               app/assets/js/api/client.js|\
               app/assets/js/screens/profile-screen-v110.js|\
               app/assets/css/main.css|\
