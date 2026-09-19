@@ -234,6 +234,19 @@ function makeCheckersEffectsPassive(root){
     preview.removeAttribute('title');
     preview.classList.remove('is-playing');
     upgradeCheckersEffectMarkup(preview);
+
+    const inBundleSheet = Boolean(preview.closest('.store-v2-confirm-bundle'));
+    const inactiveBundlePanel = Boolean(preview.closest('.store-v2-bundle-reference-panel:not(.active)'));
+    if (inBundleSheet || inactiveBundlePanel) {
+      if (checkersEffectObserver) checkersEffectObserver.unobserve(preview);
+      preview.dataset.mgwCheckersFxObserved = '0';
+      preview.dataset.mgwCheckersFxVisible = '0';
+      preview.classList.add('is-reduced-preview');
+      stopPassiveEffectPreview(preview);
+      return;
+    }
+
+    preview.classList.remove('is-reduced-preview');
     startPassiveEffectPreview(preview);
   });
 }

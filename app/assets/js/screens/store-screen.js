@@ -23,11 +23,12 @@ let activeBundleGame = 'tictactoe';
 let storeLoadPromise = null;
 let purchaseBusy = false;
 let equipBusy = false;
+let bundlePreviewResizeBound = false;
 
 ensureBundlePrototypeStyles();
 
 function ensureBundlePrototypeStyles(){
-  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=6&mvp19_13=native-checkers-preview-prewarm-v3', import.meta.url).href;
+  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=7&mvp19_13=checkers-preview-fit-sheet-parity-v4', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-store-bundle-prototype]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -35,7 +36,7 @@ function ensureBundlePrototypeStyles(){
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-native-checkers-preview-prewarm-v3';
+  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-checkers-preview-fit-sheet-parity-v4';
   link.href = href;
   document.head.appendChild(link);
 }
@@ -48,6 +49,11 @@ export function initStoreScreen(){
     event.stopImmediatePropagation();
     openStoreTab();
   }, true);
+
+  if (!bundlePreviewResizeBound) {
+    bundlePreviewResizeBound = true;
+    globalThis.addEventListener?.('resize', () => scheduleBundlePreviewFit(currentRoot()), { passive:true });
+  }
 
   const warm = () => void warmStore().catch(() => {});
   if (typeof globalThis.requestIdleCallback === 'function') {
@@ -162,6 +168,7 @@ function renderStore(){
     </div>
   `);
   bindStoreEvents();
+  scheduleBundlePreviewFit(currentRoot());
 }
 
 function renderBalanceHero(){
@@ -544,16 +551,23 @@ function bundleMemberLabel(gameType, offer){
   return presentation.labels[layer] || 'Эффект';
 }
 
-function renderBundleMemberStorePreview(gameType, layer, variant, name, owned){
+function renderBundleMemberStorePreview(gameType, layer, variant, name, owned, sheet = false){
   const preview = gameCosmeticPreview(gameType, layer, variant, name);
   if (gameType !== 'checkers') return preview;
   return `
     <div
-      class="store-v2-game-product store-v2-bundle-native-store-product ${owned ? 'owned' : ''}"
-      data-store-game-product="checkers"
-      aria-hidden="true"
+      class="store-v2-bundle-native-store-viewport ${sheet ? 'is-sheet' : ''}"
+      data-store-v2-native-preview-viewport
+      data-store-v2-native-preview-layer="${escapeAttr(layer)}"
     >
-      ${preview}
+      <div
+        class="store-v2-game-product store-v2-bundle-native-store-product ${owned ? 'owned' : ''}"
+        data-store-game-product="checkers"
+        data-store-v2-native-preview-source
+        aria-hidden="true"
+      >
+        ${preview}
+      </div>
     </div>
   `;
 }
@@ -577,7 +591,7 @@ function renderBundleMembers(bundle, sheet = false){
             data-store-bundle-member-layer="${escapeAttr(layer)}"
           >
             <div class="store-v2-bundle-reference-preview">
-              ${renderBundleMemberStorePreview(gameType, layer, variant, name, owned)}
+              ${renderBundleMemberStorePreview(gameType, layer, variant, name, owned, sheet)}
               ${owned ? '<i class="store-v2-bundle-owned-check" aria-label="Уже в коллекции">✓</i>' : ''}
             </div>
             <div class="store-v2-bundle-reference-member-copy">
@@ -626,7 +640,7 @@ function renderBundlesTab(){
           <div
             class="store-v2-bundle-reference-panel ${active ? 'active' : ''}"
             data-store-v2-bundle-panel="${escapeAttr(gameType)}"
-            ${active ? '' : 'hidden'}
+            aria-hidden="${active ? 'false' : 'true'}"
           >
             ${renderGameBundle(bundle)}
           </div>
@@ -783,6 +797,7 @@ function activateStoreTab(nextTab){
   panel.dataset.storeV2Panel = activeTab;
   panel.innerHTML = storeState ? renderActiveTab() : '<div class="store-v2-skeleton-grid" aria-hidden="true"><span></span><span></span><span></span><span></span></div>';
   bindPanelEvents(panel);
+  scheduleBundlePreviewFit(panel);
 }
 
 function activateGameCatalog(gameType){
@@ -818,9 +833,41 @@ function activateBundleGame(gameType){
   panel.querySelectorAll('[data-store-v2-bundle-panel]').forEach(bundlePanel => {
     if (!(bundlePanel instanceof HTMLElement)) return;
     const active = String(bundlePanel.dataset.storeV2BundlePanel || '') === activeBundleGame;
-    bundlePanel.hidden = !active;
     bundlePanel.classList.toggle('active', active);
+    bundlePanel.setAttribute('aria-hidden', active ? 'false' : 'true');
   });
+  scheduleBundlePreviewFit(panel);
+}
+
+function fitBundleNativePreviews(root){
+  if (!(root instanceof HTMLElement)) return;
+  root.querySelectorAll('[data-store-v2-native-preview-viewport]').forEach(viewport => {
+    if (!(viewport instanceof HTMLElement)) return;
+    const source = viewport.querySelector('[data-store-v2-native-preview-source]');
+    if (!(source instanceof HTMLElement)) return;
+    const viewportWidth = viewport.clientWidth;
+    const viewportHeight = viewport.clientHeight;
+    const sourceWidth = source.offsetWidth;
+    const sourceHeight = source.offsetHeight;
+    if (!viewportWidth || !viewportHeight || !sourceWidth || !sourceHeight) return;
+    const scale = Math.max(.35, Math.min(1.16, viewportWidth / sourceWidth, viewportHeight / sourceHeight));
+    source.style.setProperty('--mgw-bundle-native-scale', scale.toFixed(4));
+  });
+}
+
+function scheduleBundlePreviewFit(root){
+  if (!(root instanceof HTMLElement)) return;
+  const fit = () => fitBundleNativePreviews(root);
+  queueMicrotask(fit);
+  if (typeof globalThis.requestAnimationFrame === 'function') {
+    globalThis.requestAnimationFrame(() => {
+      fit();
+      globalThis.requestAnimationFrame(fit);
+    });
+  } else {
+    globalThis.setTimeout(fit, 0);
+  }
+  globalThis.setTimeout(fit, 90);
 }
 
 function findOffer(offerId){
@@ -969,6 +1016,8 @@ function openPurchaseConfirm(offer){
       <button class="btn primary full" id="storeV2ConfirmBuy" type="button" ${missing > 0 ? 'disabled' : ''}>${missing > 0 ? `Не хватает ${formatNumber(missing)}` : `Купить за ${formatNumber(price)}`}</button>
     </div>
   `);
+
+  scheduleBundlePreviewFit(document.getElementById('sheet'));
 
   document.getElementById('storeV2ConfirmBuy')?.addEventListener('click', event => {
     void purchaseOffer(offer, token, event.currentTarget);
