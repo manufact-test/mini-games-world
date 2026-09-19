@@ -117,8 +117,8 @@ assert.match(checkersWrapper, /checkersEffectObserver\.unobserve\(preview\)/);
 assert.match(checkersWrapper, /data-mgw-checkers-frozen-snapshot/);
 
 assert.match(manifest, /store-screen-checkers-board-source-wrapper\.js\?v=35[^']*bundle_fit=v4[^']*parent=store-screen-checkers-wrapper\.js\?v=5/);
-assert.match(manifest, /store-screen\.js\?v=64[^']*mvp19_13=checkers-sheet-exact-snapshot-v6/);
-assert.match(launch, /bundles=checkers-sheet-exact-snapshot-v6/);
+assert.match(manifest, /store-screen\.js\?v=65[^']*mvp19_13=bundle-detail-class-separation-v7/);
+assert.match(launch, /bundles=bundle-detail-class-separation-v7/);
 
 for (const itemId of [
   'game-ttt-field-neon',
