@@ -59,7 +59,7 @@ foreach ($rows as $row) {
     if (($metadata['layer'] ?? '') === 'effect') $events[(string)$metadata['variant']] = (string)($metadata['event'] ?? '');
 }
 $assertSame(['precision-drop'=>'play','stock-pulse'=>'draw','chain-finale'=>'finish'], $events, 'Domino event semantics must remain stable');
-$assertSame(0, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_type = 'bundle' AND subcategory = 'domino'"), 'Domino must not create a bundle');
+$assertSame(1, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_type = 'bundle' AND subcategory = 'domino' AND offer_status = 'active'"), 'MVP-19.13 must add exactly one Domino premium bundle without changing the accepted Domino Store/Profile slice');
 
 $accounts = new AccountIdentityService($database, 3600);
 $account = $accounts->resolveProviderIdentity('development', 'mvp19-9-domino-user', 'browser_dev', ['username'=>'domino-store'], 'mvp19-9-session');
