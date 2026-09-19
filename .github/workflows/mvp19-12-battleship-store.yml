@@ -1,4 +1,4 @@
-name: MVP-19.12 Battleship Store/Profile
+name: MVP-19.12 Battleship Store/Profile/LIVE
 
 on:
   pull_request:
@@ -9,11 +9,17 @@ on:
       - 'app/assets/js/profile/mgw-profile-battleship-parity.js'
       - 'app/assets/css/screens/profile-battleship-store-parity-v1.css'
       - 'app/assets/js/profile/mgw-profile-chess-layout-v2.js'
+      - 'app/assets/js/games/battleship/renderer.js'
+      - 'app/assets/js/games/battleship/renderer-v102.js'
+      - 'app/assets/js/games/battleship/renderer-cosmetics-v1.js'
+      - 'app/assets/css/games/battleship/game.css'
+      - 'app/assets/css/games/battleship/live-cosmetics-v1.css'
       - 'bot/database/migrations/20260919_0040_add_battleship_store_cosmetics.php'
       - 'bot/catalog/CosmeticStoreService.php'
       - 'bot/tests/Mvp19_12BattleshipStoreTest.php'
       - 'bot/tests/Mvp19_12BattleshipProfileParityContractTest.mjs'
       - 'bot/tests/Mvp19_12BattleshipProfileInventoryTest.php'
+      - 'bot/tests/Mvp19_12BattleshipLiveMapsFleetsTest.mjs'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - '.github/workflows/mvp19-12-battleship-store.yml'
@@ -27,16 +33,22 @@ on:
       - 'app/assets/js/profile/mgw-profile-battleship-parity.js'
       - 'app/assets/css/screens/profile-battleship-store-parity-v1.css'
       - 'app/assets/js/profile/mgw-profile-chess-layout-v2.js'
+      - 'app/assets/js/games/battleship/renderer.js'
+      - 'app/assets/js/games/battleship/renderer-v102.js'
+      - 'app/assets/js/games/battleship/renderer-cosmetics-v1.js'
+      - 'app/assets/css/games/battleship/game.css'
+      - 'app/assets/css/games/battleship/live-cosmetics-v1.css'
       - 'bot/database/migrations/20260919_0040_add_battleship_store_cosmetics.php'
       - 'bot/catalog/CosmeticStoreService.php'
       - 'bot/tests/Mvp19_12BattleshipStoreTest.php'
       - 'bot/tests/Mvp19_12BattleshipProfileParityContractTest.mjs'
       - 'bot/tests/Mvp19_12BattleshipProfileInventoryTest.php'
+      - 'bot/tests/Mvp19_12BattleshipLiveMapsFleetsTest.mjs'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
 
 jobs:
-  battleship-store-profile:
+  battleship-store-profile-live:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -54,16 +66,22 @@ jobs:
           php -l bot/tests/Mvp19_12BattleshipStoreTest.php
           php -l bot/tests/Mvp19_12BattleshipProfileInventoryTest.php
           node --check bot/tests/Mvp19_12BattleshipProfileParityContractTest.mjs
+          node --check bot/tests/Mvp19_12BattleshipLiveMapsFleetsTest.mjs
           node --check app/assets/js/screens/store-screen-battleship-store-v1.js
           node --check app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
           node --check app/assets/js/profile/mgw-profile-battleship-parity.js
           node --check app/assets/js/profile/mgw-profile-chess-layout-v2.js
+          node --check app/assets/js/games/battleship/renderer.js
+          node --check app/assets/js/games/battleship/renderer-v102.js
+          node --check app/assets/js/games/battleship/renderer-cosmetics-v1.js
       - name: Battleship Store contract
         run: php bot/tests/Mvp19_12BattleshipStoreTest.php
       - name: Battleship Profile contracts
         run: |
           node bot/tests/Mvp19_12BattleshipProfileParityContractTest.mjs
           php bot/tests/Mvp19_12BattleshipProfileInventoryTest.php
+      - name: Battleship LIVE maps/fleets contract
+        run: node bot/tests/Mvp19_12BattleshipLiveMapsFleetsTest.mjs
       - name: Re-run shared Store/Profile contracts
         run: |
           php bot/tests/Mvp19_2CosmeticStoreTest.php
