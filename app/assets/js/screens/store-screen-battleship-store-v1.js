@@ -71,7 +71,7 @@ let hydrationObserver = null;
 let hydrationUpgradeQueued = false;
 
 function installHydrationRepair(){
-  if (hydrationObserver instanceof MutationObserver || typeof MutationObserver === 'undefined') return;
+  if (typeof MutationObserver === 'undefined' || hydrationObserver instanceof MutationObserver) return;
   const root = document.documentElement;
   if (!(root instanceof HTMLElement)) return;
 
