@@ -107,7 +107,7 @@ if (!isset($imports[$battleshipRendererImportKey])
     echo 'Mini Games World Battleship LIVE effects renderer is unavailable.';
     exit;
 }
-$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v5&fire=pending-truth-v3&shot_motion=readable-v2&hit=preview-parity-v2&destroy=readable-centered-v2';
+$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v6&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-layer-v3';
 
 // Battleship fire reliability review: refresh only the active game-screen owner so a
 // queued fire can drive the accepted Shot visual and reconcile a lost HTTP response.
@@ -120,12 +120,12 @@ if (!isset($imports[$battleshipGameScreenImportKey])
     echo 'Mini Games World Battleship fire reliability owner is unavailable.';
     exit;
 }
-$imports[$battleshipGameScreenImportKey] .= '&battleship_fire=pending-truth-v3';
+$imports[$battleshipGameScreenImportKey] .= '&battleship_fire=direct-result-v4';
 
 
 
 if (isset($assets['main_css']) && is_string($assets['main_css']) && $assets['main_css'] !== '') {
-    $assets['main_css'] .= '&battleship_fire=pending-truth-v3';
+    $assets['main_css'] .= '&battleship_fire=direct-result-v4';
 }
 
 foreach (['main_css', 'consistency_css', 'bootstrap'] as $requiredAsset) {
