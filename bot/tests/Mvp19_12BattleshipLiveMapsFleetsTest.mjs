@@ -54,11 +54,11 @@ assert.ok(liveCss.includes('#f3e2b8') && liveCss.includes('#e8bf68'), 'Paid clas
 
 for (const token of [
   '#1c281f','#536c80','#081326',
-  '#9bd7ea','#8b959d','#41f6ff',
+  '#9bd7ea','#8b959d','#55f5ff',
 ]) {
   assert.ok(liveCss.includes(token), `LIVE map/fleet material must keep accepted Store identity token ${token}`);
 }
-for (const token of ['#0b8ea8','#f3e2b8','#e8bf68','#9bd7ea','#8b959d','#41f6ff']) {
+for (const token of ['#0b8ea8','#f3e2b8','#e8bf68','#9bd7ea','#8b959d','#55f5ff']) {
   assert.ok(storeCss.includes(token), `Store baseline must contain shared visual token ${token}`);
 }
 
@@ -70,12 +70,13 @@ assert.ok(!liveCss.includes('data-battleship-fleet="neon"] .battleship-cell.unkn
 assert.ok(liveCss.includes('.battleship-cell.hit') && liveCss.includes('.battleship-cell.sunk') && liveCss.includes('.battleship-cell.miss'), 'Shot-result states must remain explicit and readable above map skins');
 assert.ok(liveCss.includes('.battleship-cell.pending') && liveCss.includes('.battleship-cell.invalid-pick'), 'Setup interaction states must remain explicit above fleet skins');
 assert.ok(liveCss.includes('padding:4px 7px 7px 4px') && liveCss.includes('box-sizing:border-box') && liveCss.includes('border:1px solid rgba(151,190,215,.24)'), 'Every LIVE Battleship board must expose a complete four-sided frame with right/bottom breathing room');
-assert.ok(liveCss.includes('#5f46d8') && liveCss.includes('#3a2a86') && liveCss.includes('#171737') && liveCss.includes('rgba(255,73,224,.58)') && liveCss.includes('#41f6ff'), 'Neon fleet must use a clean flat violet fill with cyan neon edge and restrained magenta core');
+assert.ok(liveCss.includes('#4d3aaa') && liveCss.includes('#2a205f') && liveCss.includes('#12152e') && liveCss.includes('#55f5ff') && liveCss.includes('inset 0 0 0 2px rgba(255,70,223,.34)'), 'Neon fleet must use a filled violet hull with cyan luminous rim and inner magenta tube glow, without a center dot');
 
 assert.ok(
-  manifest.includes("'./assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer-cosmetics-v1.js?v=3&mvp19_12=live-maps-fleets-v3&frame=full-v1&neon_fleet=flat-v3&base=v60-shot-miss-no-impact'"),
+  manifest.includes("'./assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer-cosmetics-v1.js?v=4&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&base=v60-shot-miss-no-impact'"),
   'Active manifest must route canonical Battleship renderer import through LIVE maps/fleets wrapper'
 );
-assert.ok(launch.includes('battleship_live=maps-fleets-v3') && launch.includes('battleship_frame=full-v1') && launch.includes('battleship_neon_fleet=flat-v3') && launch.includes('battleship_preview_geometry=equal-cells-v1'), 'Telegram launch must publish Battleship LIVE/preview parity identity');
+assert.ok(launch.includes('battleship_live=maps-fleets-v4') && launch.includes('battleship_frame=full-v1') && launch.includes('battleship_neon_fleet=tube-v4') && launch.includes('battleship_preview_geometry=square-grid-v2'), 'Telegram launch must publish Battleship LIVE/preview parity identity');
 
+assert.ok(liveCss.includes('data-mgw-battleship-live-cosmetics="maps-fleets-v4"'), 'LIVE frame/reduced-motion selectors must match the renderer dataset identity');
 console.log('Battleship LIVE maps/fleets contract passed.');

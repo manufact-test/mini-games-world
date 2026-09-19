@@ -1,7 +1,7 @@
 /* MVP-19.12 Battleship LIVE — maps + fleets only.
    This layer is presentation-only. It never changes board state, hit logic or hidden information. */
 
-#gameBoard[data-game-type="battleship"][data-mgw-battleship-live-cosmetics="maps-fleets-v2"] .battleship-coordinate-board{
+#gameBoard[data-game-type="battleship"][data-mgw-battleship-live-cosmetics="maps-fleets-v4"] .battleship-coordinate-board{
   isolation:isolate;
   box-sizing:border-box;
   padding:4px 7px 7px 4px;
@@ -125,19 +125,18 @@
 }
 
 /* FLEET 4 — Неоновый флот.
-   Clean flat neon hull: filled violet body, cyan edge, restrained magenta core.
-   Deliberately avoids glossy/marbled highlights that looked like a bad raster asset. */
+   Neon is defined by a luminous rim around a filled hull, not by a center dot.
+   The inner magenta rim gives a second tube-like glow while the body stays readable. */
 #gameBoard[data-game-type="battleship"][data-battleship-fleet="neon"] .battleship-cell.ship,
 #gameBoard[data-game-type="battleship"][data-battleship-fleet="neon"] :is(.battleship-current-ship-dots,.battleship-ship-dots,.ship-shape) i{
-  background:
-    radial-gradient(circle at 50% 50%,rgba(255,73,224,.58) 0 22%,transparent 23% 100%),
-    linear-gradient(145deg,#5f46d8 0%,#3a2a86 58%,#171737 100%);
-  border-color:#41f6ff;
+  background:linear-gradient(145deg,#4d3aaa 0%,#2a205f 58%,#12152e 100%);
+  border:2px solid #55f5ff;
   box-shadow:
-    0 0 0 1px rgba(65,246,255,.24),
-    0 0 7px rgba(45,235,255,.58),
-    0 0 10px rgba(255,73,224,.18),
-    inset 0 0 0 1px rgba(255,255,255,.10);
+    0 0 5px rgba(85,245,255,.86),
+    0 0 10px rgba(85,245,255,.42),
+    0 0 15px rgba(255,70,223,.22),
+    inset 0 0 0 2px rgba(255,70,223,.34),
+    inset 0 0 9px rgba(123,92,255,.34);
 }
 
 /* Pending placement and shot-result semantics always win over fleet materials. */
@@ -153,8 +152,8 @@
 }
 
 @media (prefers-reduced-motion:reduce){
-  #gameBoard[data-game-type="battleship"][data-mgw-battleship-live-cosmetics="maps-fleets-v2"] .battleship-coordinate-board,
-  #gameBoard[data-game-type="battleship"][data-mgw-battleship-live-cosmetics="maps-fleets-v2"] .battleship-cell{
+  #gameBoard[data-game-type="battleship"][data-mgw-battleship-live-cosmetics="maps-fleets-v4"] .battleship-coordinate-board,
+  #gameBoard[data-game-type="battleship"][data-mgw-battleship-live-cosmetics="maps-fleets-v4"] .battleship-cell{
     transition:none!important;
   }
 }
