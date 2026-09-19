@@ -1,8 +1,8 @@
 import { api } from '../api/client.js?v=34';
 
-const API_HOOK = Symbol.for('mgw.store.battleship.preview-parity.v13');
-const INSTALL_KEY = '__mgwBattleshipStorePreviewParityV13Installed';
-const STYLE_MARK = 'mvp19-12-battleship-store-preview-parity-v13';
+const API_HOOK = Symbol.for('mgw.store.battleship.preview-parity.v14');
+const INSTALL_KEY = '__mgwBattleshipStorePreviewParityV14Installed';
+const STYLE_MARK = 'mvp19-12-battleship-store-preview-parity-v14';
 
 export function installBattleshipStorePresentation(){
   ensureStyles();
@@ -36,7 +36,7 @@ export function upgradeBattleshipStorePresentation(){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=13&mvp19_12=store-preview-parity-v13&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=live-parity-shot-v2', import.meta.url).href;
+  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=14&mvp19_12=store-preview-parity-v14&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=live-parity-destroy-v3', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -209,7 +209,7 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = safeVariant(preview.dataset.cosmeticVariant || 'sea');
-    const signature = `${layer}:${variant}:store-preview-parity-v13`;
+    const signature = `${layer}:${variant}:store-preview-parity-v14`;
 
     if (preview.dataset.mgwBattleshipPreview === signature) return;
     preview.dataset.mgwBattleshipPreview = signature;
@@ -416,7 +416,7 @@ function effectPreview(variant){
   const fx = safe === 'shot' ? shotFx : (safe === 'hit' ? hitFx : destroyFx);
 
   return `
-    <i class="mgw-battleship-preview effect effect-${safe}" data-battleship-effect-preview="accepted-live-parity-shot-v2" aria-hidden="true">
+    <i class="mgw-battleship-preview effect effect-${safe}" data-battleship-effect-preview="accepted-live-parity-destroy-v3" aria-hidden="true">
       <span class="mgw-bs-preview-board" style="${PREVIEW_BOARD_STYLE}">${cells}</span>
       ${fx}
     </i>
