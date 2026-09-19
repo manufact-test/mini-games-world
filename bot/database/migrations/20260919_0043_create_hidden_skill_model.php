@@ -25,6 +25,24 @@ return new class implements DatabaseMigrationInterface {
         }
 
         $database->execute(<<<'SQL'
+CREATE TABLE IF NOT EXISTS mgw_hidden_skill_control (
+    control_key VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL PRIMARY KEY,
+    model_version VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    tracking_started_at_utc DATETIME(6) NOT NULL,
+    soft_carry_basis_points SMALLINT UNSIGNED NOT NULL DEFAULT 7500,
+    updated_at_utc DATETIME(6) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+SQL);
+        $database->execute(<<<'SQL'
+INSERT IGNORE INTO mgw_hidden_skill_control (
+    control_key, model_version, tracking_started_at_utc,
+    soft_carry_basis_points, updated_at_utc
+) VALUES (
+    'global', 'elo-v1', UTC_TIMESTAMP(6), 7500, UTC_TIMESTAMP(6)
+)
+SQL);
+
+        $database->execute(<<<'SQL'
 CREATE TABLE IF NOT EXISTS mgw_hidden_skill_scores (
     mgw_id VARCHAR(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     game_type VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
@@ -67,6 +85,25 @@ SQL);
 
     private function upSqlite(DatabaseConnectionInterface $database): void
     {
+        $database->execute(<<<'SQL'
+CREATE TABLE IF NOT EXISTS mgw_hidden_skill_control (
+    control_key TEXT NOT NULL PRIMARY KEY,
+    model_version TEXT NOT NULL,
+    tracking_started_at_utc TEXT NOT NULL,
+    soft_carry_basis_points INTEGER NOT NULL DEFAULT 7500,
+    updated_at_utc TEXT NOT NULL
+)
+SQL);
+        $database->execute(<<<'SQL'
+INSERT OR IGNORE INTO mgw_hidden_skill_control (
+    control_key, model_version, tracking_started_at_utc,
+    soft_carry_basis_points, updated_at_utc
+) VALUES (
+    'global', 'elo-v1', strftime('%Y-%m-%d %H:%M:%f', 'now'),
+    7500, strftime('%Y-%m-%d %H:%M:%f', 'now')
+)
+SQL);
+
         $database->execute(<<<'SQL'
 CREATE TABLE IF NOT EXISTS mgw_hidden_skill_scores (
     mgw_id TEXT NOT NULL,
