@@ -79,6 +79,14 @@
   min-width:0;
 }
 
+.store-v2-bundle-reference-panel{
+  min-width:0;
+}
+
+.store-v2-bundle-reference-panel[hidden]{
+  display:none!important;
+}
+
 .store-v2-bundle-reference{
   position:relative;
   overflow:hidden;
@@ -224,7 +232,7 @@
   border:1px solid rgba(255,255,255,.055);
 }
 
-.store-v2-bundle-reference-preview .store-v2-game-preview{
+.store-v2-bundle-reference-member[data-store-bundle-member-game="tictactoe"] .store-v2-bundle-reference-preview .store-v2-game-preview{
   width:100%;
   height:auto;
   min-height:70px;
@@ -235,76 +243,53 @@
   box-shadow:none;
 }
 
-.store-v2-bundle-reference-preview .store-v2-game-preview[data-cosmetic-layer="theme"]{
+.store-v2-bundle-reference-member[data-store-bundle-member-game="tictactoe"] .store-v2-bundle-reference-preview .store-v2-game-preview[data-cosmetic-layer="theme"]{
   overflow:hidden;
   border:0;
   background:transparent;
 }
 
-.store-v2-bundle-reference-preview .store-v2-mini-board{
+.store-v2-bundle-reference-member[data-store-bundle-member-game="tictactoe"] .store-v2-bundle-reference-preview .store-v2-mini-board{
   width:64px;
   height:64px;
 }
 
-.store-v2-bundle-reference-preview .store-v2-mini-marks span{
+.store-v2-bundle-reference-member[data-store-bundle-member-game="tictactoe"] .store-v2-bundle-reference-preview .store-v2-mini-marks span{
   font-size:38px;
 }
 
-.store-v2-bundle-reference-preview .store-v2-mini-effect{
+.store-v2-bundle-reference-member[data-store-bundle-member-game="tictactoe"] .store-v2-bundle-reference-preview .store-v2-mini-effect{
   width:66px;
   height:62px;
 }
 
-/* Checkers bundle previews must keep the accepted square Store geometry.
-   Only the selected bundle exists in DOM, so the live effect owner remains bounded. */
+/* Checkers bundle previews are not redrawn here.
+   The wrapper below only restores the exact Store product context so the accepted
+   Checkers Store owners render the board, pieces and effects unchanged. */
 [data-store-bundle-member-game="checkers"] .store-v2-bundle-reference-preview{
   display:grid;
   place-items:center;
-  overflow:hidden;
-  border-radius:8px;
+  overflow:visible;
+  border:0;
+  background:transparent;
 }
 
-[data-store-bundle-member-game="checkers"] .store-v2-game-preview{
-  box-sizing:border-box!important;
-  display:grid!important;
-  place-items:center!important;
-  width:100%!important;
-  height:auto!important;
-  min-height:0!important;
-  aspect-ratio:1!important;
-  padding:0!important;
-  overflow:hidden!important;
-  border:0!important;
-  border-radius:8px!important;
-  background:transparent!important;
-  box-shadow:none!important;
+.store-v2-game-product.store-v2-bundle-native-store-product{
+  box-sizing:border-box;
+  display:block;
+  width:min(100%,116px);
+  min-width:0;
+  min-height:0;
+  margin:0 auto;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
 }
 
-[data-store-bundle-member-game="checkers"][data-store-bundle-member-layer="theme"] .store-v2-mini-checkers-board{
-  box-sizing:border-box!important;
-  width:100%!important;
-  max-width:none!important;
-  height:auto!important;
-  aspect-ratio:1!important;
-  margin:0!important;
-  border-radius:8px!important;
-  transform:none!important;
-}
-
-[data-store-bundle-member-game="checkers"][data-store-bundle-member-layer="elements"] .store-v2-mini-checkers-pieces{
-  transform:scale(.86)!important;
-  transform-origin:50% 50%!important;
-}
-
-[data-store-bundle-member-game="checkers"][data-store-bundle-member-layer="effect"] .store-v2-mini-checkers-effect{
-  box-sizing:border-box!important;
-  width:100%!important;
-  max-width:none!important;
-  height:auto!important;
-  aspect-ratio:1!important;
-  margin:0!important;
-  border-radius:8px!important;
-  transform:none!important;
+.store-v2-game-product.store-v2-bundle-native-store-product .store-v2-game-preview{
+  grid-area:auto;
 }
 
 .store-v2-bundle-owned-check{
@@ -583,13 +568,8 @@
   border-radius:10px;
 }
 
-.store-v2-bundle-reference-members.is-sheet .store-v2-bundle-reference-preview .store-v2-game-preview{
+.store-v2-bundle-reference-members.is-sheet .store-v2-bundle-reference-member[data-store-bundle-member-game="tictactoe"] .store-v2-bundle-reference-preview .store-v2-game-preview{
   min-height:64px;
-}
-
-.store-v2-bundle-reference-members.is-sheet [data-store-bundle-member-game="checkers"] .store-v2-game-preview{
-  min-height:0!important;
-  aspect-ratio:1!important;
 }
 
 .store-v2-bundle-reference-members.is-sheet .store-v2-bundle-reference-member-copy>strong{

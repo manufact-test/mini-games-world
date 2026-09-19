@@ -27,7 +27,7 @@ let equipBusy = false;
 ensureBundlePrototypeStyles();
 
 function ensureBundlePrototypeStyles(){
-  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=5&mvp19_13=bundle-selector-checkers-parity-v2', import.meta.url).href;
+  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=6&mvp19_13=native-checkers-preview-prewarm-v3', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-store-bundle-prototype]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -35,7 +35,7 @@ function ensureBundlePrototypeStyles(){
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-bundle-selector-checkers-parity-v2';
+  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-native-checkers-preview-prewarm-v3';
   link.href = href;
   document.head.appendChild(link);
 }
@@ -544,6 +544,20 @@ function bundleMemberLabel(gameType, offer){
   return presentation.labels[layer] || 'Эффект';
 }
 
+function renderBundleMemberStorePreview(gameType, layer, variant, name, owned){
+  const preview = gameCosmeticPreview(gameType, layer, variant, name);
+  if (gameType !== 'checkers') return preview;
+  return `
+    <div
+      class="store-v2-game-product store-v2-bundle-native-store-product ${owned ? 'owned' : ''}"
+      data-store-game-product="checkers"
+      aria-hidden="true"
+    >
+      ${preview}
+    </div>
+  `;
+}
+
 function renderBundleMembers(bundle, sheet = false){
   const gameType = bundleGameType(bundle) || 'tictactoe';
   const missing = new Set(Array.isArray(bundle?.missing_item_ids) ? bundle.missing_item_ids.map(String) : []);
@@ -563,7 +577,7 @@ function renderBundleMembers(bundle, sheet = false){
             data-store-bundle-member-layer="${escapeAttr(layer)}"
           >
             <div class="store-v2-bundle-reference-preview">
-              ${gameCosmeticPreview(gameType, layer, variant, name)}
+              ${renderBundleMemberStorePreview(gameType, layer, variant, name, owned)}
               ${owned ? '<i class="store-v2-bundle-owned-check" aria-label="Уже в коллекции">✓</i>' : ''}
             </div>
             <div class="store-v2-bundle-reference-member-copy">
@@ -583,8 +597,6 @@ function renderBundlesTab(){
 
   const availableGames = bundles.map(bundle => bundleGameType(bundle)).filter(Boolean);
   if (!availableGames.includes(activeBundleGame)) activeBundleGame = availableGames[0] || 'tictactoe';
-  const activeBundle = bundles.find(bundle => bundleGameType(bundle) === activeBundleGame) || bundles[0];
-
   return `
     <div class="store-v2-bundle-game-picker" aria-label="Выберите игру">
       <div class="store-v2-bundle-game-picker-track" role="tablist">
@@ -607,7 +619,19 @@ function renderBundlesTab(){
       </div>
     </div>
     <div class="store-v2-bundle-reference-list" data-store-v2-bundle-stage="${escapeAttr(activeBundleGame)}">
-      ${renderGameBundle(activeBundle)}
+      ${bundles.map(bundle => {
+        const gameType = bundleGameType(bundle);
+        const active = gameType === activeBundleGame;
+        return `
+          <div
+            class="store-v2-bundle-reference-panel ${active ? 'active' : ''}"
+            data-store-v2-bundle-panel="${escapeAttr(gameType)}"
+            ${active ? '' : 'hidden'}
+          >
+            ${renderGameBundle(bundle)}
+          </div>
+        `;
+      }).join('')}
     </div>
   `;
 }
@@ -781,8 +805,22 @@ function activateBundleGame(gameType){
   const root = currentRoot();
   const panel = root?.querySelector('[data-store-v2-panel="bundles"]');
   if (!panel) return;
-  panel.innerHTML = renderBundlesTab();
-  bindPanelEvents(panel);
+
+  panel.querySelectorAll('[data-store-v2-bundle-game]').forEach(button => {
+    const active = String(button.dataset.storeV2BundleGame || '') === activeBundleGame;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+
+  const stage = panel.querySelector('[data-store-v2-bundle-stage]');
+  if (stage instanceof HTMLElement) stage.dataset.storeV2BundleStage = activeBundleGame;
+
+  panel.querySelectorAll('[data-store-v2-bundle-panel]').forEach(bundlePanel => {
+    if (!(bundlePanel instanceof HTMLElement)) return;
+    const active = String(bundlePanel.dataset.storeV2BundlePanel || '') === activeBundleGame;
+    bundlePanel.hidden = !active;
+    bundlePanel.classList.toggle('active', active);
+  });
 }
 
 function findOffer(offerId){
