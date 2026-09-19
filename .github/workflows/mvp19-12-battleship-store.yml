@@ -9,14 +9,9 @@ on:
       - 'app/assets/js/profile/mgw-profile-battleship-parity.js'
       - 'app/assets/css/screens/profile-battleship-store-parity-v1.css'
       - 'app/assets/js/profile/mgw-profile-chess-layout-v2.js'
-      - 'app/assets/js/profile/mgw-profile-battleship-parity.js'
-      - 'app/assets/css/screens/profile-battleship-store-parity-v1.css'
-      - 'app/assets/js/profile/mgw-profile-chess-layout-v2.js'
       - 'bot/database/migrations/20260919_0040_add_battleship_store_cosmetics.php'
       - 'bot/catalog/CosmeticStoreService.php'
       - 'bot/tests/Mvp19_12BattleshipStoreTest.php'
-      - 'bot/tests/Mvp19_12BattleshipProfileParityContractTest.mjs'
-      - 'bot/tests/Mvp19_12BattleshipProfileInventoryTest.php'
       - 'bot/tests/Mvp19_12BattleshipProfileParityContractTest.mjs'
       - 'bot/tests/Mvp19_12BattleshipProfileInventoryTest.php'
       - 'app/runtime/client/version-manifest.php'
@@ -29,14 +24,19 @@ on:
       - 'app/assets/js/screens/store-screen-battleship-store-v1.js'
       - 'app/assets/js/screens/store-screen-checkers-board-source-wrapper.js'
       - 'app/assets/css/games/battleship/store-cosmetics-v1.css'
+      - 'app/assets/js/profile/mgw-profile-battleship-parity.js'
+      - 'app/assets/css/screens/profile-battleship-store-parity-v1.css'
+      - 'app/assets/js/profile/mgw-profile-chess-layout-v2.js'
       - 'bot/database/migrations/20260919_0040_add_battleship_store_cosmetics.php'
       - 'bot/catalog/CosmeticStoreService.php'
       - 'bot/tests/Mvp19_12BattleshipStoreTest.php'
+      - 'bot/tests/Mvp19_12BattleshipProfileParityContractTest.mjs'
+      - 'bot/tests/Mvp19_12BattleshipProfileInventoryTest.php'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
 
 jobs:
-  battleship-store:
+  battleship-store-profile:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
