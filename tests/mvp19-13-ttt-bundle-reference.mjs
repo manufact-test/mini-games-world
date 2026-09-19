@@ -41,7 +41,7 @@ assert.match(store, /data-store-v2-bundle-confirm-clone/);
 assert.match(store, /function hydrateCheckersBundleConfirmFromVisibleCard\(\)/);
 assert.match(store, /cloneNode\(true\)/);
 assert.match(store, /store-v2-bundle-confirm-cloned-members/);
-assert.match(store, /data-mgw-checkers-frozen-snapshot/);
+assert.match(store, /mgwCheckersFrozenSnapshot/);
 assert.match(store, /getBoundingClientRect\(\)/);
 assert.match(store, /clone\.style\.width =/);
 assert.match(store, /clone\.style\.transform = `scale/);
