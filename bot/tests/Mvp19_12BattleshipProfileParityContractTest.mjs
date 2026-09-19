@@ -57,9 +57,9 @@ assert.ok(storeCss.includes('.mgw-battleship-preview.map-neon .mgw-bs-preview-sw
 assert.ok(storeCss.includes('.effect-shot .mgw-bs-fx-reticle') && storeCss.includes('.effect-hit .mgw-bs-fx-burst') && storeCss.includes('.effect-destroy .mgw-bs-fx-smoke'), 'Current Store/Profile effect concepts must remain shared until LIVE effects replace them');
 
 assert.ok(profile.includes('mgw-battleship-profile-tab-mark') && profile.includes('<svg viewBox="0 0 30 20"'), 'Battleship Profile tab must use a compact ship mark');
-assert.ok(profile.includes("title.style.display = 'none'"), 'Battleship detail sheet must not duplicate the item title in the top header');
-assert.ok(profile.includes("strong.textContent = battleshipDisplayName(item)"), 'Battleship detail sheet must show the item name below the preview');
-assert.ok(profile.includes("group.textContent = GROUP_TITLES[battleshipLayer(item)]"), 'Battleship detail sheet must show only the item group below the item name');
+assert.ok(profile.includes("title.style.removeProperty('display')"), 'Battleship detail sheet must keep the item title in the top header like Four in a Row');
+assert.ok(profile.includes("strong.textContent = 'Морской бой'"), 'Battleship detail sheet must show the game name below the preview like Four in a Row');
+assert.ok(profile.includes("group.textContent = GROUP_TITLES[battleshipLayer(item)]"), 'Battleship detail sheet must show the group below the game name');
 assert.ok(profile.includes('upgradeBattleshipSheet(itemId);') && profile.includes('queueMicrotask(() => upgradeBattleshipSheet(itemId))'), 'Battleship sheet copy repair must run immediately and after the shared sheet opens');
 assert.ok(css.includes('data-profile-game-tab="battleship"'), 'Battleship tab styling must be scoped');
 assert.ok(css.includes('data-profile-game-panel="battleship"'), 'Battleship card styling must be scoped');
@@ -67,15 +67,17 @@ assert.ok(css.includes('data-game-type="battleship"'), 'Battleship preview styli
 assert.ok(css.includes('aspect-ratio:1 / 1!important'), 'Profile cards and detail sheet must keep square board geometry');
 assert.ok(css.includes('width:min(100%,236px)!important'), 'Detail sheet must keep bounded preview size');
 assert.ok(css.includes('padding-bottom:16px!important'), 'Battleship Profile panel must retain bottom breathing room');
+assert.ok(css.includes('--mgw-profile-card-subtitle:"Карта"') && css.includes('--mgw-profile-card-subtitle:"Флот"') && css.includes('--mgw-profile-card-subtitle:"Эффект"'), 'Battleship cards must use Four-style singular category subtitles');
+assert.ok(css.includes('.profile-v2-game-card .profile-v2-game-card-name') && css.includes('display:none!important'), 'Battleship cards must delegate visible title placement to the same shared owner as Four in a Row');
 
-assert.ok(layout.includes("mgw-profile-battleship-parity.js?v=2&mvp19_12=profile-sheet-copy-v2&store=polish-v3&geometry=square&header=steel-ship&effects=unchanged-v2"), 'Active Profile owner must import Battleship sheet-copy v2');
+assert.ok(layout.includes("mgw-profile-battleship-parity.js?v=3&mvp19_12=profile-four-parity-v3&store=polish-v3&geometry=square&header=steel-ship&effects=unchanged-v2&copy=four-pattern"), 'Active Profile owner must import Battleship Four-parity v3');
 assert.ok(layout.includes('initProfileBattleshipParity();'), 'Active Profile owner must initialize Battleship parity');
 assert.ok(layout.indexOf('initProfileFourInARowParity();') < layout.indexOf('initProfileBattleshipParity();'), 'Battleship owner must be added after accepted Four owner without replacing it');
 
 const profileOwnerMatch = manifest.match(/mgw-profile-chess-layout-v2\.js\?v=(\d+)/);
-assert.ok(profileOwnerMatch && Number(profileOwnerMatch[1]) >= 30, 'Active Profile owner must publish Battleship sheet-copy cache revision');
-assert.ok(manifest.includes('battleship_profile=sheet-copy-v2') && manifest.includes('battleship_store=polish-v3') && manifest.includes('battleship_header=steel-ship-v1') && manifest.includes('battleship_neon_frame=outer-safe-v1'), 'Manifest must publish accepted Store/Profile parity and sheet-copy identity');
-assert.ok(launch.includes('battleship_profile=sheet-copy-v2'), 'Telegram launch must publish Battleship Profile sheet-copy identity');
+assert.ok(profileOwnerMatch && Number(profileOwnerMatch[1]) >= 31, 'Active Profile owner must publish Battleship Four-parity cache revision');
+assert.ok(manifest.includes('battleship_profile=four-parity-v3') && manifest.includes('battleship_store=polish-v3') && manifest.includes('battleship_header=steel-ship-v1') && manifest.includes('battleship_neon_frame=outer-safe-v1'), 'Manifest must publish accepted Store/Profile and Four-parity identity');
+assert.ok(launch.includes('battleship_profile=four-parity-v3'), 'Telegram launch must publish Battleship Profile Four-parity identity');
 
 assert.ok(profileApi.includes('(new ProductInventoryService($database))->snapshot($mgwId)'), 'Profile API must expose canonical inventory');
 assert.ok(!profile.includes('gameAction(') && !profile.includes('last_move'), 'Battleship Profile must not own live gameplay actions or hidden-state logic');
