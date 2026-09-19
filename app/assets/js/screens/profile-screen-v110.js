@@ -389,7 +389,7 @@ function renderProfileV2(){
       ${renderGameCosmeticsCollection()}
     </section>
     <section class="profile-v2-balance"><div><span>${escapeHtml(t('profile.balance'))}</span><small>${escapeHtml(t('profile.balance_note'))}</small></div><strong>${escapeHtml(formatNumber(balance))}</strong></section>
-    <section class="profile-v2-section">${sectionHead('profile.rating_title', ratingNoteKey(rating))}<div class="profile-v2-games-grid">${GAME_TYPES.map(gameType => gameRatingCard(gameType, rating?.by_game?.[gameType])).join('')}</div></section>
+    <section class="profile-v2-section profile-v2-rating-section">${sectionHead('profile.rating_title')}<div class="profile-v2-games-grid profile-v2-rating-grid">${GAME_TYPES.map(gameType => gameRatingCard(gameType, rating?.by_game?.[gameType])).join('')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.stats_title','profile.stats_note')}<div class="profile-v2-summary-grid">${summaryStat(stats?.games_played,'profile.games_played')}${summaryStat(stats?.wins,'profile.wins')}${summaryStat(stats?.losses,'profile.losses')}${summaryStat(stats?.draws,'profile.draws')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.by_game_title','profile.by_game_note')}<div class="profile-v2-games-grid">${GAME_TYPES.map(gameType => gameStatCard(gameType, stats?.by_game?.[gameType])).join('')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.history_title')}<div class="profile-v2-history">${matches.length ? matches.map(historyRow).join('') : emptyState('profile.history_empty')}</div></section>
@@ -401,7 +401,7 @@ function renderProfileV2(){
       <div class="profile-v2-linked-list">${identities.length ? identities.map(identityRow).join('') : emptyState('profile.linked_empty')}</div>
     </div></section>
   `;
-  lastProfileRenderSignature = profileRenderSignature(profile, user, stats, history);
+  lastProfileRenderSignature = profileRenderSignature(profile, user, stats, history, rating);
 }
 
 function ownedAvatarItems(activeAvatar = currentAvatarItemId()){
@@ -816,15 +816,9 @@ function ensureProfileRoot(){
 }
 function sectionHead(titleKey, noteKey = null){ return `<div class="profile-v2-section-head"><div><h2>${escapeHtml(t(titleKey))}</h2>${noteKey ? `<p>${escapeHtml(t(noteKey))}</p>` : ''}</div></div>`; }
 function summaryStat(value, labelKey){ const normalized = Number.isFinite(Number(value)) ? formatNumber(Number(value)) : '—'; return `<div class="profile-v2-summary-stat"><strong>${escapeHtml(normalized)}</strong><span>${escapeHtml(t(labelKey))}</span></div>`; }
-function ratingNoteKey(rating){
-  const competitionState = String(rating?.competition_state || 'off').toLowerCase();
-  if (competitionState === 'preseason') return 'profile.rating_note_preseason';
-  if (competitionState === 'active') return 'profile.rating_note_active';
-  return 'profile.rating_note_off';
-}
 function gameRatingCard(gameType, rating = null){
   const points = Math.max(0, Number(rating?.points || 0));
-  return `<article class="profile-v2-game-stat profile-v2-rating-card" aria-label="${escapeHtml(gameName(gameType))}: ${escapeHtml(formatNumber(points))} ${escapeHtml(t('profile.rating_points'))}"><div class="profile-v2-game-stat-head"><strong>${escapeHtml(gameName(gameType))}</strong><b>${escapeHtml(formatNumber(points))}</b></div><small>${escapeHtml(t('profile.rating_points'))}</small></article>`;
+  return `<article class="profile-v2-game-stat profile-v2-rating-card" aria-label="${escapeHtml(gameName(gameType))}: ${escapeHtml(t('profile.rating_points'))}: ${escapeHtml(formatNumber(points))}"><strong class="profile-v2-rating-game">${escapeHtml(gameName(gameType))}</strong><span class="profile-v2-rating-score"><span>${escapeHtml(t('profile.rating_points'))}:</span><b>${escapeHtml(formatNumber(points))}</b></span></article>`;
 }
 function gameStatCard(gameType, stats = null){
   const s = stats && typeof stats === 'object' ? stats : {};
