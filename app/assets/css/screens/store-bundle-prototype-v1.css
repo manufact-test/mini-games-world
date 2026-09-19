@@ -279,7 +279,7 @@
 /* Checkers bundle previews use the accepted Store product owner unchanged.
    Only the outer viewport sizes the slot; JS applies one uniform transform to the
    complete Store preview so circles, boards and pieces keep their original geometry. */
-[data-store-bundle-member-game="checkers"] .store-v2-bundle-reference-preview{
+.store-v2-bundle-reference-member:not([data-store-bundle-member-game="tictactoe"]) .store-v2-bundle-reference-preview{
   display:grid;
   place-items:center;
   overflow:hidden;
@@ -288,12 +288,12 @@
   background:linear-gradient(145deg,rgba(18,22,36,.90),rgba(9,12,21,.94));
 }
 
-[data-store-bundle-member-game="checkers"][data-store-bundle-member-layer="theme"] .store-v2-bundle-reference-preview,
-[data-store-bundle-member-game="checkers"][data-store-bundle-member-layer="elements"] .store-v2-bundle-reference-preview{
+.store-v2-bundle-native-store-viewport[data-store-v2-native-preview-layer="theme"],
+.store-v2-bundle-native-store-viewport[data-store-v2-native-preview-layer="elements"]{
   height:128px;
 }
 
-[data-store-bundle-member-game="checkers"][data-store-bundle-member-layer="effect"] .store-v2-bundle-reference-preview{
+.store-v2-bundle-native-store-viewport[data-store-v2-native-preview-layer="effect"]{
   height:88px;
 }
 
@@ -328,13 +328,18 @@
   grid-area:auto;
 }
 
-.store-v2-bundle-reference-members.is-sheet [data-store-bundle-member-game="checkers"][data-store-bundle-member-layer="theme"] .store-v2-bundle-reference-preview,
-.store-v2-bundle-reference-members.is-sheet [data-store-bundle-member-game="checkers"][data-store-bundle-member-layer="elements"] .store-v2-bundle-reference-preview{
+.store-v2-bundle-native-store-viewport.is-sheet[data-store-v2-native-preview-layer="theme"],
+.store-v2-bundle-native-store-viewport.is-sheet[data-store-v2-native-preview-layer="elements"]{
   height:108px;
 }
 
-.store-v2-bundle-reference-members.is-sheet [data-store-bundle-member-game="checkers"][data-store-bundle-member-layer="effect"] .store-v2-bundle-reference-preview{
+.store-v2-bundle-native-store-viewport.is-sheet[data-store-v2-native-preview-layer="effect"]{
   height:78px;
+}
+
+.store-v2-bundle-reference-panel:not(.active) .store-v2-game-preview,
+.store-v2-bundle-reference-panel:not(.active) .store-v2-game-preview *{
+  animation-play-state:paused!important;
 }
 
 .store-v2-bundle-owned-check{
