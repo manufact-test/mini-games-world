@@ -1,0 +1,147 @@
+/* MVP-19.12 Battleship LIVE — maps + fleets only.
+   This layer is presentation-only. It never changes board state, hit logic or hidden information. */
+
+#gameBoard[data-game-type="battleship"][data-mgw-battleship-live-cosmetics="maps-fleets-v1"] .battleship-coordinate-board{
+  isolation:isolate;
+  border-radius:14px;
+  transition:background .18s ease,box-shadow .18s ease;
+}
+
+/* MAP 1 — accepted paid "Бирюзовый фарватер".
+   Deliberately distinct from the free blue base. */
+#gameBoard[data-game-type="battleship"][data-battleship-map="sea"] .battleship-coordinate-board{
+  background:
+    repeating-linear-gradient(165deg,transparent 0 10px,rgba(153,255,246,.07) 11px 12px,transparent 13px 22px),
+    linear-gradient(145deg,rgba(11,142,168,.30),rgba(6,55,84,.22));
+}
+#gameBoard[data-game-type="battleship"][data-battleship-map="sea"] .battleship-cell:is(.water,.unknown){
+  background:linear-gradient(145deg,rgba(41,211,205,.64),rgba(5,91,125,.82));
+  border-color:rgba(183,255,249,.38);
+  box-shadow:inset 0 0 0 1px rgba(17,113,141,.24);
+}
+#gameBoard[data-game-type="battleship"][data-battleship-map="sea"] :is(.battleship-col-label,.battleship-row-label){
+  color:rgba(190,250,247,.78);
+}
+
+/* MAP 2 — Военный радар. */
+#gameBoard[data-game-type="battleship"][data-battleship-map="dark-military"] .battleship-coordinate-board{
+  background:
+    linear-gradient(90deg,transparent 49.8%,rgba(171,209,103,.06) 50%,transparent 50.2%),
+    linear-gradient(0deg,transparent 49.8%,rgba(171,209,103,.06) 50%,transparent 50.2%),
+    radial-gradient(circle at 50% 50%,transparent 0 28%,rgba(171,209,103,.055) 28.5% 29%,transparent 29.5%),
+    linear-gradient(145deg,rgba(28,40,31,.36),rgba(12,20,17,.24));
+}
+#gameBoard[data-game-type="battleship"][data-battleship-map="dark-military"] .battleship-cell:is(.water,.unknown){
+  background:rgba(22,39,31,.96);
+  border-color:rgba(158,192,91,.34);
+  box-shadow:inset 0 0 0 1px rgba(72,98,57,.28);
+}
+#gameBoard[data-game-type="battleship"][data-battleship-map="dark-military"] :is(.battleship-col-label,.battleship-row-label){
+  color:rgba(194,213,151,.74);
+}
+
+/* MAP 3 — Штормовая карта. */
+#gameBoard[data-game-type="battleship"][data-battleship-map="storm"] .battleship-coordinate-board{
+  background:
+    repeating-linear-gradient(115deg,transparent 0 13px,rgba(224,241,255,.075) 14px 15px,transparent 16px 27px),
+    linear-gradient(150deg,rgba(83,108,128,.34),rgba(20,31,44,.26));
+}
+#gameBoard[data-game-type="battleship"][data-battleship-map="storm"] .battleship-cell:is(.water,.unknown){
+  background:linear-gradient(145deg,rgba(112,142,164,.58),rgba(27,44,59,.88));
+  border-color:rgba(213,231,244,.24);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.035);
+}
+#gameBoard[data-game-type="battleship"][data-battleship-map="storm"] :is(.battleship-col-label,.battleship-row-label){
+  color:rgba(213,228,239,.72);
+}
+
+/* MAP 4 — Неоновый сектор.
+   One coherent cyan grid; no per-cell magenta patchwork. */
+#gameBoard[data-game-type="battleship"][data-battleship-map="neon"] .battleship-coordinate-board{
+  background:linear-gradient(145deg,rgba(5,9,20,.96),rgba(17,18,37,.96));
+  box-shadow:
+    inset 0 0 0 1px rgba(229,62,255,.24),
+    inset 0 0 18px rgba(48,236,255,.08),
+    0 0 16px rgba(48,236,255,.10);
+}
+#gameBoard[data-game-type="battleship"][data-battleship-map="neon"] .battleship-cell:is(.water,.unknown){
+  background:#081326;
+  border-color:rgba(63,234,255,.74);
+  box-shadow:
+    inset 0 0 5px rgba(52,229,255,.13),
+    0 0 4px rgba(47,229,255,.18);
+}
+#gameBoard[data-game-type="battleship"][data-battleship-map="neon"] :is(.battleship-col-label,.battleship-row-label){
+  color:rgba(103,239,255,.80);
+  text-shadow:0 0 5px rgba(64,231,255,.30);
+}
+
+/* Result states stay canonical and readable on every paid map. */
+#gameBoard[data-game-type="battleship"][data-battleship-map] .battleship-cell.miss{
+  background:linear-gradient(145deg,rgba(61,104,143,.84),rgba(20,43,70,.92));
+  border-color:rgba(207,235,255,.30);
+}
+#gameBoard[data-game-type="battleship"][data-battleship-map] .battleship-cell.hit{
+  background:linear-gradient(145deg,rgba(255,200,69,.98),rgba(190,120,19,.98));
+  border-color:rgba(255,238,163,.5);
+}
+#gameBoard[data-game-type="battleship"][data-battleship-map] .battleship-cell.sunk{
+  background:linear-gradient(145deg,rgba(220,45,64,.98),rgba(91,12,27,.98));
+  border-color:rgba(255,150,160,.45);
+}
+
+/* FLEET 1 — Адмиральский флот: ivory + brass, never the free gray. */
+#gameBoard[data-game-type="battleship"][data-battleship-fleet="classic"] .battleship-cell.ship,
+#gameBoard[data-game-type="battleship"][data-battleship-fleet="classic"] :is(.battleship-current-ship-dots,.battleship-ship-dots,.ship-shape) i{
+  background:radial-gradient(circle at 34% 28%,#fff7db 0 18%,#f3e2b8 36%,#9f7b42 100%);
+  border-color:#e8bf68;
+  box-shadow:0 0 0 1px rgba(74,48,17,.45),inset 0 0 0 1px rgba(255,255,255,.55);
+}
+
+/* FLEET 2 — Современный флот. */
+#gameBoard[data-game-type="battleship"][data-battleship-fleet="modern"] .battleship-cell.ship,
+#gameBoard[data-game-type="battleship"][data-battleship-fleet="modern"] :is(.battleship-current-ship-dots,.battleship-ship-dots,.ship-shape) i{
+  background:linear-gradient(145deg,#9bd7ea 0 18%,#426d82 20% 62%,#173444 64%);
+  border-color:#a8e9ff;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),0 0 7px rgba(76,181,218,.22);
+}
+
+/* FLEET 3 — Бронированный флот. */
+#gameBoard[data-game-type="battleship"][data-battleship-fleet="armored"] .battleship-cell.ship,
+#gameBoard[data-game-type="battleship"][data-battleship-fleet="armored"] :is(.battleship-current-ship-dots,.battleship-ship-dots,.ship-shape) i{
+  background:
+    radial-gradient(circle at 28% 28%,rgba(255,255,255,.58) 0 4%,transparent 5%),
+    linear-gradient(145deg,#8b959d 0 18%,#343c45 20% 58%,#161b21 60%);
+  border-color:#aeb8c0;
+  box-shadow:inset 0 0 0 1px #252c33,0 2px 4px rgba(0,0,0,.45);
+}
+
+/* FLEET 4 — Неоновый флот. */
+#gameBoard[data-game-type="battleship"][data-battleship-fleet="neon"] .battleship-cell.ship,
+#gameBoard[data-game-type="battleship"][data-battleship-fleet="neon"] :is(.battleship-current-ship-dots,.battleship-ship-dots,.ship-shape) i{
+  background:radial-gradient(circle,#122434 42%,#050912 68%);
+  border-color:#41f6ff;
+  box-shadow:
+    0 0 6px rgba(41,239,255,.88),
+    0 0 9px rgba(255,55,224,.34),
+    inset 0 0 5px rgba(255,61,227,.42);
+}
+
+/* Pending placement and shot-result semantics always win over fleet materials. */
+#gameBoard[data-game-type="battleship"][data-battleship-fleet] .battleship-cell.pending{
+  background:linear-gradient(145deg,rgba(151,121,255,.98),rgba(91,63,210,.98));
+  border-color:rgba(184,166,255,.52);
+  box-shadow:0 0 0 2px rgba(184,166,255,.52),0 0 16px rgba(124,92,255,.48);
+}
+#gameBoard[data-game-type="battleship"][data-battleship-fleet] .battleship-cell.invalid-pick{
+  background:linear-gradient(145deg,rgba(255,94,109,.98),rgba(150,24,43,.98));
+  border-color:rgba(255,123,135,.55);
+  box-shadow:0 0 0 2px rgba(255,123,135,.55),0 0 18px rgba(255,65,88,.45);
+}
+
+@media (prefers-reduced-motion:reduce){
+  #gameBoard[data-game-type="battleship"][data-mgw-battleship-live-cosmetics="maps-fleets-v1"] .battleship-coordinate-board,
+  #gameBoard[data-game-type="battleship"][data-mgw-battleship-live-cosmetics="maps-fleets-v1"] .battleship-cell{
+    transition:none!important;
+  }
+}
