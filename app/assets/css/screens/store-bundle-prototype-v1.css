@@ -583,6 +583,14 @@
   gap:9px;
 }
 
+.store-v2-bundle-confirm-clone-host{
+  min-width:0;
+}
+
+.store-v2-bundle-confirm-cloned-members{
+  margin:0;
+}
+
 .store-v2-bundle-confirm-reference-head{
   display:flex;
   align-items:center;
