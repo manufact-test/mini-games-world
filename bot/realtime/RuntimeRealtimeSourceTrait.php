@@ -128,6 +128,7 @@ trait RuntimeRealtimeSourceTrait
             'room' => $this->room($payload['room'] ?? 'match'),
             'bet' => $this->nonNegativeInt($payload['bet'] ?? 0, 'queue bet'),
             'board_size' => $this->positiveInt($payload['board_size'] ?? 3, 3),
+            'skill_band' => $this->requiredText($payload['skill_band'] ?? 'unrated', 64, 'queue skill band'),
             'status' => $this->requiredText($payload['status'] ?? 'waiting', 32, 'queue status'),
             'reserved_match_id' => $this->nullableText($payload['reserved_match_id'] ?? null, 96),
             'created_at_utc' => $createdAt,
