@@ -1,7 +1,40 @@
+.store-v2-game-product[data-store-game-product="battleship"] .store-v2-game-preview{
+  align-self:start;
+  width:100%;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1 / 1!important;
+}
+.store-v2-confirm-game .store-v2-game-preview[data-game-type="battleship"]{
+  width:100%;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1 / 1!important;
+  margin:0 auto;
+}
+.store-v2-game-product[data-store-game-product="battleship"] .store-v2-game-product-copy>span{
+  min-height:17px;
+  padding:0 6px;
+  font-size:7px;
+  letter-spacing:.03em;
+}
+.store-v2-game-product[data-store-game-product="battleship"] .store-v2-game-product-copy>strong{
+  margin-top:5px;
+  font-size:12px;
+  line-height:1.12;
+  letter-spacing:-.02em;
+}
+.store-v2-game-product[data-store-game-product="battleship"] .store-v2-game-product-copy>p{
+  margin-top:3px;
+  font-size:8.7px;
+  line-height:1.2;
+  letter-spacing:0;
+}
 .store-v2-game-preview[data-game-type="battleship"]{
   position:relative;
   overflow:hidden;
   isolation:isolate;
+  border-radius:14px;
 }
 .store-v2-game-preview[data-game-type="battleship"] .mgw-battleship-preview{
   position:absolute;
@@ -29,9 +62,7 @@
   background:rgba(9,29,53,.42);
   box-sizing:border-box;
 }
-.mgw-battleship-preview .mgw-bs-preview-board>span.ship{
-  z-index:2;
-}
+.mgw-battleship-preview .mgw-bs-preview-board>span.ship{z-index:2}
 .mgw-battleship-preview .mgw-bs-preview-sweep{
   position:absolute;
   inset:0;
@@ -39,12 +70,9 @@
   pointer-events:none;
 }
 
-/* Paid map #1 is intentionally NOT the free base blue map:
-   free LIVE water = rgba(51,94,162,.52) -> rgba(27,56,106,.52). */
+/* Maps: one square geometry for every card and purchase sheet. */
 .mgw-battleship-preview.map-sea{
-  background:
-    radial-gradient(circle at 18% 20%,rgba(111,245,239,.32),transparent 34%),
-    linear-gradient(145deg,#0b8ea8,#064f70 58%,#052c4a);
+  background:linear-gradient(145deg,#0b8ea8 0%,#075e78 55%,#063754 100%);
 }
 .mgw-battleship-preview.map-sea .mgw-bs-preview-board>span{
   background:linear-gradient(145deg,rgba(41,211,205,.52),rgba(5,91,125,.72));
@@ -55,25 +83,23 @@
   background:repeating-linear-gradient(165deg,transparent 0 10px,rgba(153,255,246,.09) 11px 12px,transparent 13px 22px);
 }
 .mgw-battleship-preview.map-sea .mgw-bs-preview-board>span.ship{
-  background:linear-gradient(145deg,#ecf4f0,#a7b9b8);
+  background:linear-gradient(145deg,#eef6f1,#a7b9b8);
   border-color:rgba(255,255,255,.48);
 }
 
 .mgw-battleship-preview.map-dark-military{
-  background:
-    radial-gradient(circle at 50% 50%,rgba(145,180,92,.12),transparent 45%),
-    linear-gradient(145deg,#19241d,#0a1110 72%);
+  background:linear-gradient(145deg,#1c281f,#0c1411 74%);
 }
 .mgw-battleship-preview.map-dark-military .mgw-bs-preview-board>span{
-  background:rgba(22,39,31,.9);
-  border-color:rgba(158,192,91,.3);
+  background:rgba(22,39,31,.92);
+  border-color:rgba(158,192,91,.32);
   box-shadow:inset 0 0 0 1px rgba(72,98,57,.25);
 }
 .mgw-battleship-preview.map-dark-military .mgw-bs-preview-sweep{
   background:
-    linear-gradient(90deg,transparent 49.7%,rgba(171,209,103,.15) 50%,transparent 50.3%),
-    linear-gradient(0deg,transparent 49.7%,rgba(171,209,103,.15) 50%,transparent 50.3%),
-    radial-gradient(circle at 50% 50%,transparent 0 24%,rgba(171,209,103,.08) 24.5% 25.2%,transparent 25.8% 43%,rgba(171,209,103,.06) 43.5% 44.2%,transparent 44.8%);
+    linear-gradient(90deg,transparent 49.7%,rgba(171,209,103,.14) 50%,transparent 50.3%),
+    linear-gradient(0deg,transparent 49.7%,rgba(171,209,103,.14) 50%,transparent 50.3%),
+    radial-gradient(circle at 50% 50%,transparent 0 27%,rgba(171,209,103,.08) 27.5% 28.2%,transparent 28.8% 44%,rgba(171,209,103,.06) 44.5% 45.2%,transparent 45.8%);
 }
 .mgw-battleship-preview.map-dark-military .mgw-bs-preview-board>span.ship{
   background:linear-gradient(145deg,#a8b18a,#5f6c52);
@@ -81,16 +107,14 @@
 }
 
 .mgw-battleship-preview.map-storm{
-  background:
-    radial-gradient(circle at 74% 12%,rgba(211,234,255,.18),transparent 18%),
-    linear-gradient(150deg,#52697b 0%,#263849 43%,#111c29 100%);
+  background:linear-gradient(150deg,#536c80 0%,#2c4254 42%,#141f2c 100%);
 }
 .mgw-battleship-preview.map-storm .mgw-bs-preview-board>span{
-  background:linear-gradient(145deg,rgba(112,142,164,.42),rgba(27,44,59,.76));
-  border-color:rgba(213,231,244,.2);
+  background:linear-gradient(145deg,rgba(112,142,164,.45),rgba(27,44,59,.8));
+  border-color:rgba(213,231,244,.21);
 }
 .mgw-battleship-preview.map-storm .mgw-bs-preview-sweep{
-  background:repeating-linear-gradient(115deg,transparent 0 13px,rgba(224,241,255,.1) 14px 15px,transparent 16px 27px);
+  background:repeating-linear-gradient(115deg,transparent 0 13px,rgba(224,241,255,.11) 14px 15px,transparent 16px 27px);
 }
 .mgw-battleship-preview.map-storm .mgw-bs-preview-board>span.ship{
   background:linear-gradient(145deg,#cbd6dd,#657784);
@@ -98,26 +122,30 @@
 }
 
 .mgw-battleship-preview.map-neon{
-  background:
-    radial-gradient(circle at 20% 18%,rgba(35,244,255,.19),transparent 30%),
-    radial-gradient(circle at 80% 80%,rgba(227,45,255,.18),transparent 32%),
-    #050713;
+  background:linear-gradient(145deg,#050914 0%,#0a0f20 58%,#111225 100%);
+  box-shadow:inset 0 0 22px rgba(48,236,255,.13),inset 0 0 0 1px rgba(61,235,255,.18);
+}
+.mgw-battleship-preview.map-neon .mgw-bs-preview-board{
+  filter:drop-shadow(0 0 5px rgba(47,229,255,.32));
 }
 .mgw-battleship-preview.map-neon .mgw-bs-preview-board>span{
-  background:rgba(5,12,27,.86);
-  border-color:rgba(51,235,255,.52);
-  box-shadow:0 0 5px rgba(27,216,255,.22),inset 0 0 5px rgba(206,45,255,.12);
+  background:#081326;
+  border-color:rgba(63,234,255,.68);
+  box-shadow:inset 0 0 5px rgba(52,229,255,.12);
 }
-.mgw-battleship-preview.map-neon .mgw-bs-preview-board>span:nth-child(3n){
-  border-color:rgba(230,53,255,.5);
+.mgw-battleship-preview.map-neon .mgw-bs-preview-sweep{
+  inset:5%;
+  border:1px solid rgba(229,62,255,.48);
+  border-radius:16px;
+  box-shadow:0 0 10px rgba(229,62,255,.22),inset 0 0 10px rgba(43,231,255,.08);
 }
 .mgw-battleship-preview.map-neon .mgw-bs-preview-board>span.ship{
-  background:#10142b;
-  border-color:#ff4eea;
-  box-shadow:0 0 7px rgba(255,50,225,.8),inset 0 0 6px rgba(57,241,255,.32);
+  background:linear-gradient(145deg,#164458,#0b2234);
+  border-color:#63f2ff;
+  box-shadow:0 0 5px rgba(61,239,255,.6);
 }
 
-/* Fleet previews keep one neutral sea so the hull material is the only changing variable. */
+/* Fleet: same neutral sea, only hull material changes. */
 .mgw-battleship-preview.elements{
   background:linear-gradient(145deg,#0b2740,#071827);
 }
@@ -125,8 +153,6 @@
   background:rgba(13,48,72,.62);
   border-color:rgba(129,190,220,.18);
 }
-/* Paid fleet #1 intentionally avoids the free gray hull
-   rgba(166,183,209,.96) -> rgba(87,105,136,.96). */
 .mgw-battleship-preview.fleet-classic .mgw-bs-preview-board>span.ship{
   background:radial-gradient(circle at 34% 28%,#fff7db 0 18%,#f3e2b8 36%,#9f7b42 100%);
   border-color:#e8bf68;
@@ -147,147 +173,230 @@
 .mgw-battleship-preview.fleet-neon .mgw-bs-preview-board>span.ship{
   background:radial-gradient(circle,#122434 42%,#050912 68%);
   border-color:#41f6ff;
-  box-shadow:0 0 6px #29efff,0 0 10px rgba(255,55,224,.48),inset 0 0 5px rgba(255,61,227,.55);
+  box-shadow:0 0 6px #29efff,0 0 9px rgba(255,55,224,.4),inset 0 0 5px rgba(255,61,227,.48);
 }
 .mgw-battleship-preview.fleet-neon .mgw-bs-preview-board>span.ship:nth-child(even){
   border-color:#ff45e6;
-  box-shadow:0 0 6px #ff45e6,0 0 10px rgba(54,239,255,.42);
 }
 
+/* Effects: three deliberately different events. */
 .mgw-battleship-preview.effect{
-  background:
-    radial-gradient(circle at 50% 50%,rgba(24,111,149,.22),transparent 48%),
-    linear-gradient(145deg,#071c31,#07111e);
+  background:linear-gradient(145deg,#071c31,#07111e);
 }
 .mgw-battleship-preview.effect .mgw-bs-preview-board>span{
   background:rgba(14,54,83,.52);
   border-color:rgba(91,169,205,.18);
 }
 .mgw-battleship-preview.effect .mgw-bs-preview-board>span.target{
-  border-color:rgba(255,255,255,.56);
+  border-color:rgba(255,255,255,.5);
 }
 .mgw-battleship-preview.effect .mgw-bs-preview-board>span.ship{
   background:linear-gradient(145deg,#d6e1e7,#687986);
+  border-color:rgba(255,255,255,.36);
 }
-.mgw-bs-fx-reticle,.mgw-bs-fx-tracer,.mgw-bs-fx-burst,.mgw-bs-fx-shock{
+.mgw-battleship-preview.effect .mgw-bs-preview-board>span.destroyed-ship{
+  background:linear-gradient(145deg,#823b43,#31141c);
+  border-color:#ff6a77;
+  box-shadow:inset 0 0 0 1px rgba(255,183,119,.28);
+}
+.mgw-bs-fx-reticle,.mgw-bs-fx-tracer,.mgw-bs-fx-burst,.mgw-bs-fx-shock,.mgw-bs-fx-smoke,.mgw-bs-fx-shards{
   position:absolute;
   z-index:5;
   pointer-events:none;
   display:none;
 }
+
+/* 1. Aim/shot: lightest animation. No explosion. */
 .effect-shot .mgw-bs-fx-reticle{
   display:block;
-  left:51.8%;
-  top:51.8%;
-  width:15%;
+  left:52%;
+  top:52%;
+  width:18%;
   aspect-ratio:1;
-  border:2px solid #62f5ff;
+  border:2px solid #69f5ff;
   border-radius:50%;
   transform:translate(-50%,-50%);
-  box-shadow:0 0 9px rgba(71,237,255,.72),inset 0 0 8px rgba(71,237,255,.28);
+  box-shadow:0 0 9px rgba(71,237,255,.64),inset 0 0 8px rgba(71,237,255,.2);
+  animation:mgwBsAim 1.9s ease-in-out infinite;
 }
 .effect-shot .mgw-bs-fx-reticle::before,.effect-shot .mgw-bs-fx-reticle::after{
   content:'';
   position:absolute;
-  background:#ff50dc;
-  box-shadow:0 0 7px rgba(255,61,218,.7);
+  background:#69f5ff;
+  box-shadow:0 0 6px rgba(72,238,255,.75);
 }
-.effect-shot .mgw-bs-fx-reticle::before{left:50%;top:-25%;bottom:-25%;width:1px}
-.effect-shot .mgw-bs-fx-reticle::after{top:50%;left:-25%;right:-25%;height:1px}
+.effect-shot .mgw-bs-fx-reticle::before{left:50%;top:-22%;bottom:-22%;width:1px}
+.effect-shot .mgw-bs-fx-reticle::after{top:50%;left:-22%;right:-22%;height:1px}
 .effect-shot .mgw-bs-fx-tracer{
   display:block;
-  left:14%;
+  left:16%;
   top:20%;
-  width:48%;
+  width:49%;
   height:3px;
   border-radius:999px;
-  transform:rotate(37deg);
+  transform:rotate(38deg);
   transform-origin:left center;
-  background:linear-gradient(90deg,transparent,#ffe772 25%,#ff54df 62%,#7cf8ff);
-  box-shadow:0 0 10px rgba(255,85,220,.62);
+  background:linear-gradient(90deg,transparent,#a9fbff 42%,#69f5ff);
+  box-shadow:0 0 8px rgba(95,241,255,.72);
+  animation:mgwBsShot 1.9s ease-in-out infinite;
 }
 
+/* 2. Hit: compact yellow/orange impact on a visible ship. */
 .effect-hit .mgw-bs-fx-burst{
   display:block;
   left:52%;
   top:52%;
-  width:22%;
+  width:23%;
   aspect-ratio:1;
-  transform:translate(-50%,-50%) rotate(12deg);
-  background:conic-gradient(from 0deg,transparent 0 8%,#fff5b0 9% 15%,transparent 16% 26%,#ff9a32 27% 36%,transparent 37% 51%,#ff3d7c 52% 61%,transparent 62% 77%,#fff 78% 84%,transparent 85%);
-  filter:drop-shadow(0 0 7px rgba(255,164,55,.78));
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle,#fff 0 10%,#fff3a1 11% 25%,#ffad39 26% 45%,rgba(255,92,54,.68) 46% 58%,transparent 59%);
+  filter:drop-shadow(0 0 7px rgba(255,170,66,.72));
+  animation:mgwBsHitBurst 2.1s ease-out infinite;
 }
 .effect-hit .mgw-bs-fx-shock{
   display:block;
   left:52%;
   top:52%;
-  width:29%;
+  width:25%;
   aspect-ratio:1;
   transform:translate(-50%,-50%);
-  border:3px solid rgba(255,211,85,.76);
+  border:3px solid rgba(255,210,83,.82);
   border-radius:50%;
-  box-shadow:0 0 12px rgba(255,87,72,.58);
+  box-shadow:0 0 12px rgba(255,111,55,.46);
+  animation:mgwBsHitRing 2.1s ease-out infinite;
 }
 
+/* 3. Destroy: full wreck event with red shockwave, debris and smoke. */
 .effect-destroy .mgw-bs-fx-burst{
   display:block;
   left:52%;
   top:52%;
-  width:31%;
+  width:36%;
   aspect-ratio:1;
-  transform:translate(-50%,-50%) rotate(-8deg);
-  background:conic-gradient(from 18deg,transparent 0 5%,#fff 6% 9%,transparent 10% 19%,#ffd15b 20% 29%,transparent 30% 39%,#ff4967 40% 50%,transparent 51% 62%,#ff9d32 63% 73%,transparent 74% 86%,#fff0a8 87% 92%,transparent 93%);
-  filter:drop-shadow(0 0 8px rgba(255,79,83,.82));
+  transform:translate(-50%,-50%);
+  background:conic-gradient(from 18deg,transparent 0 5%,#fff5c5 6% 11%,transparent 12% 21%,#ffcf55 22% 31%,transparent 32% 42%,#ff4d66 43% 55%,transparent 56% 68%,#ff8c32 69% 79%,transparent 80% 91%,#fff 92% 96%,transparent 97%);
+  filter:drop-shadow(0 0 10px rgba(255,72,81,.8));
+  animation:mgwBsDestroyBurst 2.6s ease-out infinite;
 }
 .effect-destroy .mgw-bs-fx-shock{
   display:block;
   left:52%;
   top:52%;
-  width:42%;
+  width:34%;
   aspect-ratio:1;
   transform:translate(-50%,-50%);
-  border:3px solid rgba(255,66,93,.8);
+  border:3px solid rgba(255,73,94,.86);
   border-radius:50%;
-  box-shadow:0 0 0 7px rgba(255,181,55,.12),0 0 16px rgba(255,56,84,.58);
+  box-shadow:0 0 0 7px rgba(255,181,55,.11),0 0 16px rgba(255,56,84,.54);
+  animation:mgwBsDestroyRing 2.6s ease-out infinite;
+}
+.effect-destroy .mgw-bs-fx-smoke{
+  display:block;
+  left:52%;
+  top:48%;
+  width:22%;
+  height:28%;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle at 50% 70%,rgba(160,169,178,.58),transparent 46%),radial-gradient(circle at 35% 38%,rgba(104,115,126,.5),transparent 40%),radial-gradient(circle at 68% 28%,rgba(74,83,94,.46),transparent 38%);
+  filter:blur(1px);
+  animation:mgwBsDestroySmoke 2.6s ease-out infinite;
+}
+.effect-destroy .mgw-bs-fx-shards{
+  display:block;
+  left:52%;
+  top:52%;
+  width:34%;
+  height:34%;
+  transform:translate(-50%,-50%);
+}
+.effect-destroy .mgw-bs-fx-shards i{
+  position:absolute;
+  width:5px;
+  height:12px;
+  border-radius:2px;
+  background:#ffc65d;
+  box-shadow:0 0 6px rgba(255,102,64,.6);
+  animation:mgwBsShard 2.6s ease-out infinite;
+}
+.effect-destroy .mgw-bs-fx-shards i:nth-child(1){left:12%;top:44%;--tx:-18px;--ty:-13px;transform:rotate(-28deg)}
+.effect-destroy .mgw-bs-fx-shards i:nth-child(2){right:14%;top:34%;--tx:20px;--ty:-16px;transform:rotate(30deg)}
+.effect-destroy .mgw-bs-fx-shards i:nth-child(3){left:33%;bottom:9%;--tx:-10px;--ty:22px;transform:rotate(68deg)}
+.effect-destroy .mgw-bs-fx-shards i:nth-child(4){right:28%;bottom:12%;--tx:13px;--ty:20px;transform:rotate(-61deg)}
+
+@keyframes mgwBsAim{
+  0%,18%,100%{opacity:.38;transform:translate(-50%,-50%) scale(.82)}
+  36%,70%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+}
+@keyframes mgwBsShot{
+  0%,44%,100%{opacity:0;transform:rotate(38deg) scaleX(.08)}
+  50%{opacity:1}
+  62%{opacity:.12;transform:rotate(38deg) scaleX(1)}
+}
+@keyframes mgwBsHitBurst{
+  0%,24%,100%{opacity:0;transform:translate(-50%,-50%) scale(.28)}
+  36%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  54%{opacity:.18;transform:translate(-50%,-50%) scale(1.25)}
+}
+@keyframes mgwBsHitRing{
+  0%,24%,100%{opacity:0;transform:translate(-50%,-50%) scale(.3)}
+  36%{opacity:.9}
+  60%{opacity:0;transform:translate(-50%,-50%) scale(1.55)}
+}
+@keyframes mgwBsDestroyBurst{
+  0%,20%,100%{opacity:0;transform:translate(-50%,-50%) scale(.22) rotate(-8deg)}
+  34%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(4deg)}
+  58%{opacity:.22;transform:translate(-50%,-50%) scale(1.3) rotate(9deg)}
+}
+@keyframes mgwBsDestroyRing{
+  0%,20%,100%{opacity:0;transform:translate(-50%,-50%) scale(.28)}
+  36%{opacity:.96}
+  72%{opacity:0;transform:translate(-50%,-50%) scale(1.9)}
+}
+@keyframes mgwBsDestroySmoke{
+  0%,28%,100%{opacity:0;transform:translate(-50%,-45%) scale(.55)}
+  45%{opacity:.78}
+  76%{opacity:0;transform:translate(-50%,-105%) scale(1.25)}
+}
+@keyframes mgwBsShard{
+  0%,26%,100%{opacity:0;margin:0 0}
+  38%{opacity:1}
+  70%{opacity:0;margin-left:var(--tx);margin-top:var(--ty)}
 }
 
-.mgw-bs-head-radar{
-  position:relative;
-  width:24px;
-  height:24px;
-  border:2px solid rgba(74,239,255,.78);
-  border-radius:50%;
-  background:radial-gradient(circle,rgba(69,240,255,.72) 0 7%,transparent 8% 40%,rgba(69,240,255,.18) 41% 45%,transparent 46%);
+/* One readable ship, instead of two abstract header tiles. */
+.store-v2-game-head[data-store-game-type="battleship"] .store-v2-game-head-marks{
+  min-width:82px;
+  justify-content:flex-end;
 }
-.mgw-bs-head-radar::after{
-  content:'';
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:44%;
-  height:2px;
-  transform-origin:left center;
-  transform:rotate(-35deg);
-  background:#66f5ff;
-  box-shadow:0 0 6px #4feeff;
+.store-v2-game-head[data-store-game-type="battleship"] .store-v2-game-head-marks .mgw-bs-head-vessel{
+  width:82px;
+  height:44px;
+  display:grid;
+  place-items:center;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  color:inherit;
+  text-shadow:none;
 }
-.mgw-bs-head-ship{
-  display:flex!important;
-  align-items:center;
-  gap:2px;
-  background:transparent!important;
-  box-shadow:none!important;
-  width:auto!important;
-}
-.mgw-bs-head-ship i{
-  display:block;
-  width:8px;
-  height:8px;
-  border-radius:50%;
-  background:linear-gradient(145deg,#f6e6bd,#9f7b42);
-  border:1px solid rgba(255,213,124,.8);
-}
+.mgw-bs-head-vessel svg{display:block;width:82px;height:44px;overflow:visible}
+.mgw-bs-head-vessel .hull{fill:#173649;stroke:#6af2ff;stroke-width:1.8}
+.mgw-bs-head-vessel .deck,.mgw-bs-head-vessel .mast{fill:none;stroke:#8beeff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgw-bs-head-vessel .port{fill:#f1c86e;filter:drop-shadow(0 0 3px rgba(241,200,110,.48))}
+.mgw-bs-head-vessel .wake{fill:none;stroke:rgba(100,236,255,.55);stroke-width:1.5;stroke-linecap:round}
 
 @media (max-width:420px){
   .mgw-battleship-preview .mgw-bs-preview-board{gap:1px}
+  .store-v2-game-product[data-store-game-product="battleship"] .store-v2-game-product-copy>strong{font-size:11.5px}
+  .store-v2-game-product[data-store-game-product="battleship"] .store-v2-game-product-copy>p{font-size:8.3px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .mgw-battleship-preview.effect *{animation:none!important}
+  .effect-shot .mgw-bs-fx-tracer{opacity:.78;transform:rotate(38deg) scaleX(1)}
+  .effect-shot .mgw-bs-fx-reticle{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .effect-hit .mgw-bs-fx-burst,.effect-hit .mgw-bs-fx-shock,
+  .effect-destroy .mgw-bs-fx-burst,.effect-destroy .mgw-bs-fx-shock,.effect-destroy .mgw-bs-fx-smoke{opacity:.82}
+  .effect-destroy .mgw-bs-fx-shards i{opacity:.8}
 }
