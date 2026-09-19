@@ -18,6 +18,10 @@ on:
       - 'bot/realtime/RuntimeRealtimeDatabaseTrait.php'
       - 'bot/tests/Mvp20_2HiddenSkillModelTest.php'
       - 'bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php'
+      - 'bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php'
+      - 'bot/tests/Mvp17ReliabilityRegressionTest.php'
+      - 'bot/tests/RealtimeDatabaseStoreTest.php'
+      - 'bot/tests/support/RuntimeRealtimeRepositoryFixture.php'
       - '.github/workflows/mvp20-2-hidden-skill.yml'
   workflow_dispatch:
 
@@ -68,6 +72,9 @@ jobs:
             bot/realtime/RuntimeRealtimeDatabaseTrait.php
             bot/tests/Mvp20_2HiddenSkillModelTest.php
             bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php
+            bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php
+            bot/tests/Mvp17ReliabilityRegressionTest.php
+            bot/tests/RealtimeDatabaseStoreTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
 
@@ -78,10 +85,15 @@ jobs:
         run: php bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php
 
       - name: Preserve MVP-17.1 queue contract
-        run: php bot/tests/Mvp17_1MatchmakingQueueTest.php
+        run: |
+          php bot/tests/Mvp17_1MatchmakingQueueTest.php
+          php bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php
 
       - name: Preserve MVP-17.2 progressive widening contract
         run: php bot/tests/Mvp17_2MatchmakingIntegrationContractTest.php
+
+      - name: Preserve realtime queue persistence
+        run: php bot/tests/RealtimeDatabaseStoreTest.php
 
       - name: Preserve visible rating separation
         run: |
@@ -110,7 +122,11 @@ jobs:
               bot/realtime/RealtimeDatabaseStore.php|\
               bot/realtime/RuntimeRealtimeDatabaseTrait.php|\
               bot/tests/Mvp20_2HiddenSkillModelTest.php|\
-              bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php)
+              bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php|\
+              bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php|\
+              bot/tests/Mvp17ReliabilityRegressionTest.php|\
+              bot/tests/RealtimeDatabaseStoreTest.php|\
+              bot/tests/support/RuntimeRealtimeRepositoryFixture.php)
                 ;;
               *)
                 echo "Unexpected MVP-20.2 path: $path" >&2
