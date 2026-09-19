@@ -748,7 +748,7 @@
     overflow-x:hidden!important;
     -webkit-overflow-scrolling:touch;
     overscroll-behavior-y:contain;
-    touch-action:pan-y;
+    touch-action:pan-x pan-y;
     scroll-padding-bottom:calc(76px + env(safe-area-inset-bottom));
   }
 
@@ -759,7 +759,10 @@
   }
 
   #screen-store .store-v2-shell,
-  #screen-store .store-v2-content[data-store-v2-panel="bundles"],
+  #screen-store .store-v2-content[data-store-v2-panel="bundles"]{
+    touch-action:pan-x pan-y;
+  }
+
   #screen-store .store-v2-bundle-reference-list,
   #screen-store .store-v2-bundle-reference{
     touch-action:pan-y;
