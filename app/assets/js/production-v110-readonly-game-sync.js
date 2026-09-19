@@ -169,6 +169,7 @@ function canWatchBusyTicTacToeTerminal(game, item, gameId){
 
 function canWatch(game, gameId, allowBusyRead = false){
   if (!gameId || String(game?.status || '') !== 'active') return false;
+  if (document.getElementById('confirmLeaveGame')) return false;
   const launchPhase = String(game?.launch_phase || '');
   if (launchPhase && !['preparing', 'countdown', 'active'].includes(launchPhase)) return false;
   if (game?.is_bot_game && !allowBusyRead) return false;
