@@ -18,6 +18,9 @@ assert.match(store, /bundle\?\.regular_missing_price_coins/);
 assert.match(store, /renderBundleConfirmVisual\(offer\)/);
 assert.match(store, /renderBundleConfirmPricing\(offer\)/);
 assert.match(store, /Покупка добавляет предметы в коллекцию, но ничего не выбирает автоматически/);
+assert.match(store, /\$\{allOwned \? '' : \`/);
+assert.equal(store.includes('store-v2-bundle-reference-owned">Комплект полностью собран'), false);
+assert.equal(store.includes("allOwned ? 'Комплект собран' : 'Посмотреть и купить'"), false);
 assert.match(store, /Оплачиваются только недостающие предметы/);
 
 const prototypeSection = store.slice(store.indexOf('function bundleGameType'), store.indexOf('function emptyState'));
@@ -37,8 +40,8 @@ assert.match(css, /\.store-v2-bundle-confirm-reference\{/);
 assert.match(css, /@media \(max-width:360px\)/);
 assert.match(css, /@media \(prefers-reduced-motion:reduce\)/);
 
-assert.match(manifest, /store-screen\.js\?v=55[^']*mvp19_13=ttt-bundle-reference-v1/);
-assert.match(launch, /bundles=ttt-reference-v1/);
+assert.match(manifest, /store-screen\.js\?v=55[^']*mvp19_13=ttt-bundle-reference-v2/);
+assert.match(launch, /bundles=ttt-reference-v2/);
 
 for (const itemId of [
   'game-ttt-field-neon',
