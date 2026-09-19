@@ -222,6 +222,10 @@ function maybePlayResultEffect({ game, me, container, players }){
   if (recent?.key === key) return;
   playedImpactByGame.set(gameId, { key, at:Date.now() });
 
+  // Once a paid result effect owns this event, suppress only the base cell-scale flash
+  // so the player sees one coherent impact. The authoritative hit/sunk cell state stays untouched.
+  targetCell.classList.remove('shot-impact');
+
   if (result === 'hit') {
     mountHitEffect({ targetCell, gameId, ownerId });
     return;
@@ -496,8 +500,8 @@ function mountDestroyEffect({ targetCells, gameId, ownerId }){
     animations.push(node.animate([
       { opacity:0, transform:'translate(-50%,-50%) scale(.48)' },
       { opacity:.62, transform:'translate(-50%,-50%) scale(.82)', offset:.26 },
-      { opacity:.48, transform:`translate(calc(-50% + ${(driftX * .4).toFixed(2)}px),calc(-50% + ${(driftY * .45).toFixed(2)}px)) scale(1.04)`, offset:.58 },
-      { opacity:0, transform:`translate(calc(-50% + ${driftX.toFixed(2)}px),calc(-50% + ${driftY.toFixed(2)}px)) scale(1.3)` },
+      { opacity:.48, transform:`translate(-50%,-50%) translate(${(driftX * .4).toFixed(2)}px,${(driftY * .45).toFixed(2)}px) scale(1.04)`, offset:.58 },
+      { opacity:0, transform:`translate(-50%,-50%) translate(${driftX.toFixed(2)}px,${driftY.toFixed(2)}px) scale(1.3)` },
     ], { duration:1200, delay:120 + index * 45, easing:'cubic-bezier(.18,.6,.24,1)', fill:'forwards' }));
   });
 
