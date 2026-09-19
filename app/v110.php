@@ -107,7 +107,7 @@ if (!isset($imports[$battleshipRendererImportKey])
     echo 'Mini Games World Battleship LIVE effects renderer is unavailable.';
     exit;
 }
-$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v6&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-layer-v3';
+$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v7&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-core-v4';
 
 // Battleship fire reliability review: refresh only the active game-screen owner so a
 // queued fire can drive the accepted Shot visual and reconcile a lost HTTP response.
