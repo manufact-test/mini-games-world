@@ -50,6 +50,23 @@ CREATE TABLE mgw_match_players (
 )
 SQL);
 $database->execute(<<<'SQL'
+CREATE TABLE mgw_match_queue (
+    queue_id TEXT NOT NULL PRIMARY KEY,
+    player_ref TEXT NOT NULL,
+    mgw_id TEXT NULL,
+    legacy_user_id TEXT NULL,
+    game_type TEXT NOT NULL,
+    room TEXT NOT NULL,
+    bet INTEGER NOT NULL DEFAULT 0,
+    board_size INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'waiting',
+    reserved_match_id TEXT NULL,
+    created_at_utc TEXT NOT NULL,
+    updated_at_utc TEXT NOT NULL,
+    expires_at_utc TEXT NULL
+)
+SQL);
+$database->execute(<<<'SQL'
 CREATE TABLE mgw_rating_control (
     control_key TEXT NOT NULL PRIMARY KEY,
     competition_state TEXT NOT NULL,
@@ -63,6 +80,17 @@ $database->execute(
 
 $migration = require $databaseDir . '/migrations/20260919_0043_create_hidden_skill_model.php';
 $migration->up($database);
+$queueColumns = array_map(
+    static fn(array $row): string => (string)($row['name'] ?? ''),
+    $database->fetchAll('PRAGMA table_info(mgw_match_queue)')
+);
+$assertTrue(in_array('skill_band', $queueColumns, true), 'MVP-20.2 migration must persist skill_band in the realtime queue schema.');
+$migration->up($database);
+$queueColumnsAfterRerun = array_map(
+    static fn(array $row): string => (string)($row['name'] ?? ''),
+    $database->fetchAll('PRAGMA table_info(mgw_match_queue)')
+);
+$assertSame(1, count(array_filter($queueColumnsAfterRerun, static fn(string $name): bool => $name === 'skill_band')), 'Queue skill_band migration must be idempotent.');
 $database->execute(
     "UPDATE mgw_hidden_skill_control
      SET tracking_started_at_utc = '2026-09-19 20:00:00.000000',
