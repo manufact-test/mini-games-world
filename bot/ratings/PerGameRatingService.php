@@ -347,7 +347,7 @@ final class PerGameRatingService
             return $this->finalDecision(0, 'invalid_players');
         }
 
-        if ($finishReason === 'draw' || $winnerPlayerRef === null) {
+        if ($finishReason === 'draw') {
             return [
                 'final' => true,
                 'points_delta' => 0,
@@ -357,6 +357,9 @@ final class PerGameRatingService
                 'rated_match' => true,
                 'participants' => $participants,
             ];
+        }
+        if ($winnerPlayerRef === null) {
+            return $this->finalDecision(0, 'invalid_winner');
         }
 
         $winner = null;
