@@ -24,7 +24,7 @@ import {
 import {
   installBattleshipStorePresentation,
   upgradeBattleshipStorePresentation,
-} from './store-screen-battleship-store-v1.js?v=1&mvp19_12=store-phase1&paid_default=distinct-v1';
+} from './store-screen-battleship-store-v1.js?v=2&mvp19_12=manual-corrective-v2&geometry=square&copy=human&effects=distinct';
 import {
   installPaidDefaultDedupV1,
   upgradePaidDefaultDedupV1,
