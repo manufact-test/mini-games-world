@@ -256,6 +256,10 @@ async function drainActions(gameId, item){
       state.activeGame = authoritative;
       state.selectedGame = gameTypeOf(authoritative);
       item.generation++;
+
+      // The authoritative result is already ready. Drop the temporary input lock
+      // before rendering the fresh board so a retained-turn hit can be tapped immediately.
+      document.getElementById('gameBoard')?.classList.remove('mgw-action-pending');
       renderGame(authoritative, item.viewer, false);
 
       if (String(authoritative.status || '') === 'finished') finishGame(authoritative, item.viewer);
@@ -292,6 +296,7 @@ async function reconcileBattleshipFireFailure(gameId, item, action){
     item.generation++;
 
     if (viewer) {
+      document.getElementById('gameBoard')?.classList.remove('mgw-action-pending');
       renderGame(game, viewer, false);
       if (String(game.status || '') === 'finished') finishGame(game, viewer);
     }
@@ -349,6 +354,7 @@ function renderGame(game, me, forceSurface){
 }
 
 function decoratePendingSurface(surface, game, type){
+  surface.classList.remove('mgw-action-pending');
   surface.querySelectorAll('.mgw-pending-shot,.mgw-pending-action').forEach(node => {
     node.classList.remove('mgw-pending-shot', 'mgw-pending-action');
   });
