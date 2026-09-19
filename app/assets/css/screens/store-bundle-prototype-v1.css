@@ -554,14 +554,14 @@
 
 /* Bundle detail / purchase sheet. */
 
-#sheet:has(> .store-v2-confirm.store-v2-confirm-bundle){
+#sheet:has(> .store-v2-confirm.store-v2-confirm-bundle-detail){
   height:86dvh;
   max-height:86dvh;
   min-height:min(560px,86dvh);
   border-radius:20px;
 }
 
-#sheet > .store-v2-confirm.store-v2-confirm-bundle{
+#sheet > .store-v2-confirm.store-v2-confirm-bundle-detail{
   min-height:0;
   flex:1 1 0;
   overflow-y:auto!important;
@@ -573,7 +573,7 @@
   padding:0 2px max(14px,env(safe-area-inset-bottom));
 }
 
-#sheet > .store-v2-confirm.store-v2-confirm-bundle::-webkit-scrollbar{
+#sheet > .store-v2-confirm.store-v2-confirm-bundle-detail::-webkit-scrollbar{
   display:none;
 }
 
