@@ -107,7 +107,7 @@ if (!isset($imports[$battleshipRendererImportKey])
     echo 'Mini Games World Battleship LIVE effects renderer is unavailable.';
     exit;
 }
-$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v2&fire=queued-v1';
+$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v3&fire=queued-v1&shot_motion=readable-v2';
 
 // Battleship fire reliability review: refresh only the active game-screen owner so a
 // queued fire can drive the accepted Shot visual and reconcile a lost HTTP response.

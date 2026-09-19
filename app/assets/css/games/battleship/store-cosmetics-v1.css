@@ -226,8 +226,8 @@
   will-change:transform,opacity;
 }
 .mgw-bs-preview-shot-reticle{
-  left:54%;
-  top:54%;
+  left:54.2%;
+  top:54.2%;
   width:19%;
   aspect-ratio:1;
   border:1.5px solid rgba(126,248,255,.96);
@@ -250,8 +250,8 @@
 .mgw-bs-preview-shot-reticle::before{width:145%;height:1px}
 .mgw-bs-preview-shot-reticle::after{width:1px;height:145%;background:linear-gradient(180deg,transparent,rgba(188,252,255,.98),transparent)}
 .mgw-bs-preview-shot-ping{
-  left:54%;
-  top:54%;
+  left:54.2%;
+  top:54.2%;
   width:14%;
   aspect-ratio:1;
   border:1px solid rgba(100,236,255,.7);
@@ -263,11 +263,11 @@
 .mgw-bs-preview-shot-tracer{
   left:12%;
   top:18%;
-  width:57%;
+  width:55.6%;
   height:2px;
   border-radius:999px;
   transform-origin:0 50%;
-  transform:rotate(41deg) scaleX(.04);
+  transform:rotate(40.62deg) scaleX(.04);
   background:linear-gradient(90deg,transparent 0%,rgba(97,224,255,.2) 14%,rgba(205,253,255,.98) 72%,rgba(101,239,255,.98) 100%);
   box-shadow:0 0 5px rgba(82,230,255,.72),0 0 10px rgba(67,193,255,.24);
   animation:mgwBsLivePreviewShotTracer 2.35s cubic-bezier(.18,.72,.2,1) infinite;
@@ -440,16 +440,16 @@
   25%{opacity:0;transform:translate(-50%,-50%) scale(1.24)}
 }
 @keyframes mgwBsLivePreviewShotTracer{
-  0%,4%,100%{opacity:0;transform:rotate(41deg) scaleX(.04)}
-  9%{opacity:.96;transform:rotate(41deg) scaleX(.16)}
-  16%{opacity:1;transform:rotate(41deg) scaleX(1)}
-  23%{opacity:0;transform:rotate(41deg) scaleX(1)}
+  0%,4%,100%{opacity:0;transform:rotate(40.62deg) scaleX(.04)}
+  9%{opacity:.96;transform:rotate(40.62deg) scaleX(.16)}
+  18%{opacity:1;transform:rotate(40.62deg) scaleX(1)}
+  27%{opacity:0;transform:rotate(40.62deg) scaleX(1)}
 }
 @keyframes mgwBsLivePreviewShotBolt{
-  0%,4%,100%{opacity:0;transform:translate(-50%,-50%) translateX(0) scale(.62)}
-  8%{opacity:1;transform:translate(-50%,-50%) translateX(4px) scale(1)}
-  17%{opacity:1;transform:translate(-50%,-50%) translateX(75px) scale(1.12)}
-  22%{opacity:0;transform:translate(-50%,-50%) translateX(84px) scale(.72)}
+  0%,4%,100%{left:0%;opacity:0;transform:translate(-50%,-50%) scale(.62)}
+  8%{left:0%;opacity:1;transform:translate(-50%,-50%) scale(1)}
+  20%{left:100%;opacity:1;transform:translate(-50%,-50%) scale(1.12)}
+  27%{left:100%;opacity:0;transform:translate(-50%,-50%) scale(.72)}
 }
 @keyframes mgwBsLivePreviewHitCore{
   0%,100%{opacity:0;transform:translate(-50%,-50%) scale(.22)}
@@ -515,8 +515,8 @@
   .mgw-battleship-preview.effect *{animation:none!important}
   .effect-shot .mgw-bs-preview-shot-reticle{opacity:.92;transform:translate(-50%,-50%) scale(1)}
   .effect-shot .mgw-bs-preview-shot-ping{opacity:.36;transform:translate(-50%,-50%) scale(1)}
-  .effect-shot .mgw-bs-preview-shot-tracer{opacity:.42;transform:rotate(41deg) scaleX(1)}
-  .effect-shot .mgw-bs-preview-shot-bolt{opacity:.8;transform:translate(-50%,-50%) translateX(78px)}
+  .effect-shot .mgw-bs-preview-shot-tracer{opacity:.42;transform:rotate(40.62deg) scaleX(1)}
+  .effect-shot .mgw-bs-preview-shot-bolt{left:100%;opacity:.8;transform:translate(-50%,-50%)}
   .effect-hit .mgw-bs-preview-hit-core{opacity:.9;transform:translate(-50%,-50%) scale(.9)}
   .effect-hit .mgw-bs-preview-hit-ring{opacity:.6;transform:translate(-50%,-50%) scale(1)}
   .effect-hit .mgw-bs-preview-hit-flare{opacity:.55;transform:translate(-50%,-50%) scale(.92)}

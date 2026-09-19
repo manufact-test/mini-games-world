@@ -53,7 +53,7 @@ assert.ok(backend.includes("if (isset(\$shots[\$cell])) throw new RuntimeExcepti
 
 assert.ok(entry.includes("\$battleshipGameScreenImportKey = './assets/js/screens/game-screen-v102.js?v=102'"), 'Active v110 must cache-bust the game-screen fire owner');
 assert.ok(entry.includes("&battleship_fire=queued-reconcile-v1"), 'Active v110 must publish queued-fire reconciliation module identity');
-assert.ok(entry.includes("&live_effects=accepted-three-v2&fire=queued-v1"), 'Active v110 must publish the accepted effect renderer with queued-fire ownership');
+assert.ok(entry.includes("&live_effects=accepted-three-v3&fire=queued-v1&shot_motion=readable-v2"), 'Active v110 must publish the accepted effect renderer with queued-fire ownership');
 assert.ok(entry.includes("&battleship_fire=pending-lock-v1"), 'Active v110 must refresh the main CSS pending-fire owner');
 assert.ok(launch.includes('battleship_fire=queued-reconcile-v1'), 'Telegram launch must expose the reliable-fire build identity');
 
