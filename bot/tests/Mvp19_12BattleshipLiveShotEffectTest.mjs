@@ -7,7 +7,8 @@ const live = fs.readFileSync(path.join(root, 'app/assets/js/games/battleship/ren
 const liveCss = fs.readFileSync(path.join(root, 'app/assets/css/games/battleship/live-cosmetics-v1.css'), 'utf8');
 const base = fs.readFileSync(path.join(root, 'app/assets/js/games/battleship/renderer.js'), 'utf8');
 const manifest = fs.readFileSync(path.join(root, 'app/runtime/client/version-manifest.php'), 'utf8');
-const launch = fs.readFileSync(path.join(root, 'bot/helpers/WebAppLaunchUrl.php'), 'utf8');\nconst entry = fs.readFileSync(path.join(root, 'app/v110.php'), 'utf8');
+const launch = fs.readFileSync(path.join(root, 'bot/helpers/WebAppLaunchUrl.php'), 'utf8');
+const entry = fs.readFileSync(path.join(root, 'app/v110.php'), 'utf8');
 
 assert.ok(live.includes("const EFFECT_SLOT = 'game_battleship_effect'"), 'Shot must use the canonical Battleship effect slot');
 assert.ok(live.includes("const SHOT_ID = 'game-battleship-effect-shot'"), 'Shot must use the catalog Shot item id');
