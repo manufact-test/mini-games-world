@@ -23,6 +23,29 @@ Seasonal ownership semantics stay unchanged: limited-time sale may end, purchase
 2. Re-read the refreshed master and verify exact staging/runtime before any code mutation.
 3. Start **MVP-20.1 — Per-game visible rating** only after that verification.
 
+## MVP-20 competition activation rule
+
+MVP-20 is built now, but official public competition is **not** activated automatically at launch.
+
+Canonical states:
+- `OFF`
+- `PRESEASON`
+- `ACTIVE`
+
+Launch/default target: `PRESEASON`.
+
+During PRESEASON the rating/MMR/season foundation may run and collect evidence, but there are no official seasonal places, no seasonal badge/frame grants, no yearly medal parts and no Hall-of-Fame season result.
+
+When the authoritative production user-count metric first reaches **500 users**:
+- create a durable one-time admin alert;
+- do **not** auto-activate competition;
+- Admin must later present a clear action **«Запустить официальные рейтинговые сезоны»** with a full explanation of consequences;
+- confirmed activation changes `PRESEASON → ACTIVE`, starts the first official season boundary and sends one global user notification;
+- no retroactive preseason awards;
+- activation and announcement must be idempotent and audit-recorded.
+
+Final admin UI/alert/action belongs to **MVP-22.5 System status / feature flags / admin messages**. MVP-20 must provide compatible state semantics from the start.
+
 ## MVP-20.1 target
 
 - Separate visible seasonal rating points for each of the 8 games.
@@ -41,7 +64,8 @@ Seasonal ownership semantics stay unchanged: limited-time sale may end, purchase
 4. Expose current per-game visible rating through the canonical API/profile surfaces required by MVP-20.1.
 5. Add focused tests for all result types and duplicate delivery.
 6. Deploy exact staging SHA and perform manual acceptance.
-7. Only after acceptance move to MVP-20.2 Hidden skill model.
+7. Verify MVP-20.1 respects OFF/PRESEASON/ACTIVE semantics and cannot create official season awards by itself.
+8. Only after acceptance move to MVP-20.2 Hidden skill model.
 
 ## Frozen / do not touch
 
