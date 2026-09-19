@@ -191,7 +191,7 @@ function upgradeCheckersHeader(root){
 
 function upgradeCheckersCopy(root){
   root.querySelectorAll('.store-v2-game-product[data-store-game-product="checkers"]').forEach(product => {
-    if (!(product instanceof HTMLElement)) return;
+    if (!(product instanceof HTMLElement) || product.closest('[data-mgw-checkers-frozen-snapshot="1"]')) return;
     const preview = product.querySelector('.store-v2-game-preview[data-game-type="checkers"]');
     const copy = product.querySelector('.store-v2-game-product-copy p');
     const name = product.querySelector('.store-v2-game-product-copy strong');
@@ -216,7 +216,7 @@ function upgradeCheckersCopy(root){
 
 function upgradeCheckersPieceBranding(root){
   root.querySelectorAll('.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"] .store-v2-mini-checkers-pieces>.king b').forEach(brand => {
-    if (!(brand instanceof HTMLElement) || brand.dataset.mgwCheckersPieceBrand === '1') return;
+    if (!(brand instanceof HTMLElement) || brand.closest('[data-mgw-checkers-frozen-snapshot="1"]') || brand.dataset.mgwCheckersPieceBrand === '1') return;
     brand.dataset.mgwCheckersPieceBrand = '1';
     brand.classList.add('mgw-checkers-piece-brand');
     brand.innerHTML = '<span class="mgw-checkers-piece-crown">♛</span><span class="mgw-checkers-piece-mark">MG</span>';
@@ -229,7 +229,7 @@ function removeInlineCheckersBundle(root){
 
 function makeCheckersEffectsPassive(root){
   root.querySelectorAll('.store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="effect"]').forEach(preview => {
-    if (!(preview instanceof HTMLElement)) return;
+    if (!(preview instanceof HTMLElement) || preview.closest('[data-mgw-checkers-frozen-snapshot="1"]')) return;
     preview.removeAttribute('tabindex');
     preview.removeAttribute('title');
     preview.classList.remove('is-playing');
