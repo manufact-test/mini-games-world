@@ -54,11 +54,11 @@ assert.ok(liveCss.includes('#f3e2b8') && liveCss.includes('#e8bf68'), 'Paid clas
 
 for (const token of [
   '#1c281f','#536c80','#081326',
-  '#9bd7ea','#8b959d','#41f6ff',
+  '#9bd7ea','#8b959d','#55f5ff',
 ]) {
   assert.ok(liveCss.includes(token), `LIVE map/fleet material must keep accepted Store identity token ${token}`);
 }
-for (const token of ['#0b8ea8','#f3e2b8','#e8bf68','#9bd7ea','#8b959d','#41f6ff']) {
+for (const token of ['#0b8ea8','#f3e2b8','#e8bf68','#9bd7ea','#8b959d','#55f5ff']) {
   assert.ok(storeCss.includes(token), `Store baseline must contain shared visual token ${token}`);
 }
 
