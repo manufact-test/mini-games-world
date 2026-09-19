@@ -24,7 +24,7 @@ import {
 import {
   installBattleshipStorePresentation,
   upgradeBattleshipStorePresentation,
-} from './store-screen-battleship-store-v1.js?v=9&mvp19_12=store-preview-parity-v9&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=filled-parity-v2&preview_geometry=cell-driven-v4&hydration=observer-v1&inline_owner=v3&effects=unchanged-v2';
+} from './store-screen-battleship-store-v1.js?v=10&mvp19_12=store-preview-parity-v10&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=svg-models-v3&preview_geometry=svg-circles-v5&hydration=observer-v1&inline_owner=svg-v4&effects=unchanged-v2';
 import {
   installPaidDefaultDedupV1,
   upgradePaidDefaultDedupV1,
