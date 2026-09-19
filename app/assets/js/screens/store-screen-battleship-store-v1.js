@@ -1,8 +1,8 @@
 import { api } from '../api/client.js?v=34';
 
-const API_HOOK = Symbol.for('mgw.store.battleship.preview-parity.v9');
-const INSTALL_KEY = '__mgwBattleshipStorePreviewParityV9Installed';
-const STYLE_MARK = 'mvp19-12-battleship-store-preview-parity-v9';
+const API_HOOK = Symbol.for('mgw.store.battleship.preview-parity.v10');
+const INSTALL_KEY = '__mgwBattleshipStorePreviewParityV10Installed';
+const STYLE_MARK = 'mvp19-12-battleship-store-preview-parity-v10';
 
 export function installBattleshipStorePresentation(){
   ensureStyles();
@@ -36,7 +36,7 @@ export function upgradeBattleshipStorePresentation(){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=9&mvp19_12=store-preview-parity-v9&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=filled-parity-v2&preview_geometry=cell-driven-v4&hydration=observer-v1&inline_owner=v3&effects=unchanged-v2', import.meta.url).href;
+  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=10&mvp19_12=store-preview-parity-v10&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=svg-models-v3&preview_geometry=svg-circles-v5&hydration=observer-v1&inline_owner=svg-v4&effects=unchanged-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -209,7 +209,7 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = safeVariant(preview.dataset.cosmeticVariant || 'sea');
-    const signature = `${layer}:${variant}:store-preview-parity-v9`;
+    const signature = `${layer}:${variant}:store-preview-parity-v10`;
 
     if (preview.dataset.mgwBattleshipPreview === signature) return;
     preview.dataset.mgwBattleshipPreview = signature;
@@ -261,20 +261,96 @@ export function battleshipPreviewMarkup(layer, variant){
 
 const PREVIEW_BOARD_STYLE = 'position:absolute;left:8%;top:50%;width:84%;height:auto;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));grid-template-rows:none;grid-auto-rows:auto;gap:2px;transform:translateY(-50%);z-index:2;';
 const PREVIEW_CELL_BASE_STYLE = 'position:relative;display:block;width:100%;height:auto;aspect-ratio:1 / 1;min-width:0;min-height:0;border-radius:999px;box-sizing:border-box;';
+const PREVIEW_SVG_STYLE = 'position:absolute;left:6%;top:50%;width:88%;height:88%;transform:translateY(-50%);overflow:visible;z-index:2;';
+
+const PREVIEW_SHIP_RUNS = [
+  [22,23,24,25],
+  [47,57,67],
+  [72,73],
+  [88],
+];
 
 function boardPreview(layer, variant){
-  const ships = new Set([22,23,24,25,47,57,67,72,73,88]);
-  const cells = Array.from({ length:100 }, (_, index) => {
-    const ship = ships.has(index);
-    return `<span class="${ship ? 'ship' : ''}" style="${previewCellInlineStyle(layer, variant, ship)}"></span>`;
-  }).join('');
-
   const kind = layer === 'theme' ? `map-${variant}` : `fleet-${variant}`;
+  const svg = layer === 'theme' ? mapSvgPreview(variant) : fleetSvgPreview(variant);
   return `
     <i class="mgw-battleship-preview ${kind} ${layer}" aria-hidden="true" style="${previewRootInlineStyle(layer, variant)}">
-      <span class="mgw-bs-preview-board" style="${PREVIEW_BOARD_STYLE}">${cells}</span>
+      ${svg}
       <b class="mgw-bs-preview-sweep" style="${previewSweepInlineStyle(layer, variant)}"></b>
     </i>
+  `;
+}
+
+function previewPoint(index){
+  const row = Math.floor(index / 10);
+  const col = index % 10;
+  return { x:10 + col * 11, y:10 + row * 11 };
+}
+
+function mapSvgPreview(variant){
+  const ships = new Set(PREVIEW_SHIP_RUNS.flat());
+  const palette = ({
+    sea:{ water:'#0a6d87', waterStroke:'#73d8df', ship:'#dce9e5', shipStroke:'#ffffff' },
+    'dark-military':{ water:'#18281f', waterStroke:'#718142', ship:'#a8b18a', shipStroke:'#dce9b5' },
+    storm:{ water:'#31485a', waterStroke:'#859bad', ship:'#cbd6dd', shipStroke:'#f1f7fa' },
+    neon:{ water:'#081326', waterStroke:'#3feaff', ship:'#164458', shipStroke:'#63f2ff' },
+  })[variant] || { water:'#102b42', waterStroke:'#47718c', ship:'#d5e0e6', shipStroke:'#ffffff' };
+
+  const circles = Array.from({ length:100 }, (_, index) => {
+    const { x, y } = previewPoint(index);
+    const ship = ships.has(index);
+    const fill = ship ? palette.ship : palette.water;
+    const stroke = ship ? palette.shipStroke : palette.waterStroke;
+    const opacity = ship ? '1' : '.88';
+    return `<circle cx="${x}" cy="${y}" r="4.15" fill="${fill}" fill-opacity="${opacity}" stroke="${stroke}" stroke-width="1.05"></circle>`;
+  }).join('');
+
+  return `<svg class="mgw-bs-preview-svg" viewBox="0 0 120 120" preserveAspectRatio="xMidYMid meet" style="${PREVIEW_SVG_STYLE}">${circles}</svg>`;
+}
+
+function fleetSvgPreview(variant){
+  const palette = ({
+    classic:{ hull:'#e7c56e', rim:'#ffe6a6', core:'#8a6228', glow:'rgba(231,197,110,.38)' },
+    modern:{ hull:'#4f7f96', rim:'#9ee9ff', core:'#1f4659', glow:'rgba(90,198,235,.34)' },
+    armored:{ hull:'#4b535b', rim:'#aab4bc', core:'#22282e', glow:'rgba(170,180,188,.22)' },
+    neon:{ hull:'#4937a5', rim:'#59f6ff', core:'#ff44de', glow:'rgba(89,246,255,.62)' },
+  })[variant] || { hull:'#718291', rim:'#d1e0ea', core:'#2f3c46', glow:'rgba(180,210,230,.22)' };
+
+  const water = Array.from({ length:100 }, (_, index) => {
+    const { x, y } = previewPoint(index);
+    return `<circle cx="${x}" cy="${y}" r="3.55" fill="#0b2134" fill-opacity=".42" stroke="#31536a" stroke-opacity=".78" stroke-width=".85"></circle>`;
+  }).join('');
+
+  const backbones = PREVIEW_SHIP_RUNS.map(run => {
+    if (run.length < 2) return '';
+    const a = previewPoint(run[0]);
+    const b = previewPoint(run[run.length - 1]);
+    const extra = variant === 'neon'
+      ? `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#ff44de" stroke-width="7.4" stroke-linecap="round" stroke-opacity=".30"></line>`
+      : '';
+    return `${extra}<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${palette.hull}" stroke-width="6.4" stroke-linecap="round" stroke-opacity=".96"></line>`;
+  }).join('');
+
+  const shipCells = PREVIEW_SHIP_RUNS.flat().map(index => {
+    const { x, y } = previewPoint(index);
+    if (variant === 'neon') {
+      return `
+        <circle cx="${x}" cy="${y}" r="5.0" fill="${palette.hull}" stroke="${palette.rim}" stroke-width="1.15" style="filter:drop-shadow(0 0 2.2px ${palette.glow})"></circle>
+        <circle cx="${x}" cy="${y}" r="3.45" fill="none" stroke="${palette.core}" stroke-width=".85" stroke-opacity=".92"></circle>
+      `;
+    }
+    return `
+      <circle cx="${x}" cy="${y}" r="4.9" fill="${palette.hull}" stroke="${palette.rim}" stroke-width="1.05" style="filter:drop-shadow(0 0 1.2px ${palette.glow})"></circle>
+      <circle cx="${x}" cy="${y}" r="2.5" fill="${palette.core}" fill-opacity=".28"></circle>
+    `;
+  }).join('');
+
+  return `
+    <svg class="mgw-bs-preview-svg mgw-bs-preview-fleet-svg" viewBox="0 0 120 120" preserveAspectRatio="xMidYMid meet" style="${PREVIEW_SVG_STYLE}">
+      ${water}
+      ${backbones}
+      ${shipCells}
+    </svg>
   `;
 }
 
@@ -287,36 +363,6 @@ function previewRootInlineStyle(layer, variant){
     storm:'background:linear-gradient(150deg,#536c80 0%,#2c4254 42%,#141f2c 100%);',
     neon:'background:linear-gradient(145deg,#050914 0%,#0a0f20 58%,#111225 100%);box-shadow:inset 0 0 22px rgba(48,236,255,.13),inset 0 0 0 1px rgba(61,235,255,.18);',
   }[variant] || 'background:#071525;');
-}
-
-function previewCellInlineStyle(layer, variant, ship){
-  let style = PREVIEW_CELL_BASE_STYLE;
-  if (layer === 'elements') {
-    style += 'background:rgba(13,48,72,.62);border:1px solid rgba(129,190,220,.18);';
-    if (!ship) return style;
-    return style + ({
-      classic:'background:#e7c56e;border:1px solid #ffe6a6;box-shadow:inset 0 0 0 1px rgba(133,83,26,.36),0 0 2px rgba(231,197,110,.28);',
-      modern:'background:#4f7f96;border:1px solid #9ee9ff;box-shadow:inset 0 0 0 1px rgba(17,48,63,.48),0 0 2px rgba(88,193,231,.24);',
-      armored:'background:#4b535b;border:1px solid #aab4bc;box-shadow:inset 0 0 0 1px #242b31,0 0 2px rgba(0,0,0,.34);',
-      neon:'background:#4937a5;border:1px solid #59f6ff;box-shadow:inset 0 0 0 1px rgba(255,68,222,.76),0 0 3px rgba(89,246,255,.68),0 0 5px rgba(255,68,222,.18);',
-    }[variant] || '');
-  }
-
-  const water = {
-    sea:'background:linear-gradient(145deg,rgba(41,211,205,.52),rgba(5,91,125,.72));border:1px solid rgba(183,255,249,.34);box-shadow:inset 0 0 0 1px rgba(17,113,141,.22);',
-    'dark-military':'background:rgba(22,39,31,.92);border:1px solid rgba(158,192,91,.32);box-shadow:inset 0 0 0 1px rgba(72,98,57,.25);',
-    storm:'background:linear-gradient(145deg,rgba(112,142,164,.45),rgba(27,44,59,.8));border:1px solid rgba(213,231,244,.21);',
-    neon:'background:#081326;border:1px solid rgba(63,234,255,.68);box-shadow:inset 0 0 5px rgba(52,229,255,.12);',
-  }[variant] || 'background:rgba(9,29,53,.42);border:1px solid rgba(255,255,255,.12);';
-  style += water;
-  if (!ship) return style;
-
-  return style + ({
-    sea:'background:linear-gradient(145deg,#eef6f1,#a7b9b8);border:1px solid rgba(255,255,255,.48);',
-    'dark-military':'background:linear-gradient(145deg,#a8b18a,#5f6c52);border:1px solid rgba(220,233,181,.3);',
-    storm:'background:linear-gradient(145deg,#cbd6dd,#657784);border:1px solid rgba(255,255,255,.32);',
-    neon:'background:linear-gradient(145deg,#164458,#0b2234);border:1px solid #63f2ff;box-shadow:0 0 5px rgba(61,239,255,.6);',
-  }[variant] || '');
 }
 
 function previewSweepInlineStyle(layer, variant){
