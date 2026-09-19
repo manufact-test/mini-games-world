@@ -1,15 +1,20 @@
 /* MVP-19.12 Battleship LIVE — maps + fleets only.
    This layer is presentation-only. It never changes board state, hit logic or hidden information. */
 
-#gameBoard[data-game-type="battleship"][data-mgw-battleship-live-cosmetics="maps-fleets-v1"] .battleship-coordinate-board{
+#gameBoard[data-game-type="battleship"][data-mgw-battleship-live-cosmetics="maps-fleets-v2"] .battleship-coordinate-board{
   isolation:isolate;
+  box-sizing:border-box;
+  padding:4px 7px 7px 4px;
+  border:1px solid rgba(151,190,215,.24);
   border-radius:14px;
-  transition:background .18s ease,box-shadow .18s ease;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.025);
+  transition:background .18s ease,box-shadow .18s ease,border-color .18s ease;
 }
 
 /* MAP 1 — accepted paid "Бирюзовый фарватер".
    Deliberately distinct from the free blue base. */
 #gameBoard[data-game-type="battleship"][data-battleship-map="sea"] .battleship-coordinate-board{
+  border-color:rgba(159,245,240,.30);
   background:
     repeating-linear-gradient(165deg,transparent 0 10px,rgba(153,255,246,.07) 11px 12px,transparent 13px 22px),
     linear-gradient(145deg,#0b8ea8 0%,#075e78 55%,#063754 100%);
@@ -25,6 +30,7 @@
 
 /* MAP 2 — Военный радар. */
 #gameBoard[data-game-type="battleship"][data-battleship-map="dark-military"] .battleship-coordinate-board{
+  border-color:rgba(158,192,91,.26);
   background:
     linear-gradient(90deg,transparent 49.8%,rgba(171,209,103,.06) 50%,transparent 50.2%),
     linear-gradient(0deg,transparent 49.8%,rgba(171,209,103,.06) 50%,transparent 50.2%),
@@ -42,6 +48,7 @@
 
 /* MAP 3 — Штормовая карта. */
 #gameBoard[data-game-type="battleship"][data-battleship-map="storm"] .battleship-coordinate-board{
+  border-color:rgba(213,231,244,.22);
   background:
     repeating-linear-gradient(115deg,transparent 0 13px,rgba(224,241,255,.075) 14px 15px,transparent 16px 27px),
     linear-gradient(150deg,#536c80 0%,#2c4254 42%,#141f2c 100%);
@@ -58,6 +65,7 @@
 /* MAP 4 — Неоновый сектор.
    One coherent cyan grid; no per-cell magenta patchwork. */
 #gameBoard[data-game-type="battleship"][data-battleship-map="neon"] .battleship-coordinate-board{
+  border-color:rgba(80,231,255,.42);
   background:linear-gradient(145deg,rgba(5,9,20,.96),rgba(17,18,37,.96));
   box-shadow:
     inset 0 0 0 1px rgba(229,62,255,.24),
@@ -116,15 +124,22 @@
   box-shadow:inset 0 0 0 1px #252c33,0 2px 4px rgba(0,0,0,.45);
 }
 
-/* FLEET 4 — Неоновый флот. */
+/* FLEET 4 — Неоновый флот.
+   Filled cores deliberately separate ships from the hollow neon water cells. */
 #gameBoard[data-game-type="battleship"][data-battleship-fleet="neon"] .battleship-cell.ship,
 #gameBoard[data-game-type="battleship"][data-battleship-fleet="neon"] :is(.battleship-current-ship-dots,.battleship-ship-dots,.ship-shape) i{
-  background:radial-gradient(circle,#122434 42%,#050912 68%);
+  background:
+    radial-gradient(circle at 32% 28%,
+      #d8feff 0 13%,
+      #60eef7 14% 33%,
+      #6650d8 34% 68%,
+      #271641 69% 100%);
   border-color:#41f6ff;
   box-shadow:
-    0 0 6px rgba(41,239,255,.88),
-    0 0 9px rgba(255,55,224,.34),
-    inset 0 0 5px rgba(255,61,227,.42);
+    0 0 0 1px rgba(255,103,232,.34),
+    0 0 8px rgba(45,235,255,.72),
+    0 0 12px rgba(255,73,224,.22),
+    inset 0 0 8px rgba(255,255,255,.18);
 }
 
 /* Pending placement and shot-result semantics always win over fleet materials. */
@@ -140,8 +155,8 @@
 }
 
 @media (prefers-reduced-motion:reduce){
-  #gameBoard[data-game-type="battleship"][data-mgw-battleship-live-cosmetics="maps-fleets-v1"] .battleship-coordinate-board,
-  #gameBoard[data-game-type="battleship"][data-mgw-battleship-live-cosmetics="maps-fleets-v1"] .battleship-cell{
+  #gameBoard[data-game-type="battleship"][data-mgw-battleship-live-cosmetics="maps-fleets-v2"] .battleship-coordinate-board,
+  #gameBoard[data-game-type="battleship"][data-mgw-battleship-live-cosmetics="maps-fleets-v2"] .battleship-cell{
     transition:none!important;
   }
 }
