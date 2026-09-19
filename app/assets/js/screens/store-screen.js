@@ -28,7 +28,7 @@ let bundlePreviewResizeBound = false;
 ensureBundlePrototypeStyles();
 
 function ensureBundlePrototypeStyles(){
-  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=7&mvp19_13=checkers-preview-fit-sheet-parity-v4', import.meta.url).href;
+  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=8&mvp19_13=checkers-sheet-clone-v5', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-store-bundle-prototype]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -36,7 +36,7 @@ function ensureBundlePrototypeStyles(){
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-checkers-preview-fit-sheet-parity-v4';
+  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-checkers-sheet-clone-v5';
   link.href = href;
   document.head.appendChild(link);
 }
@@ -712,13 +712,17 @@ function renderBundleConfirmVisual(bundle){
   const owned = Number(bundle?.owned_count || 0);
   const missing = Number(bundle?.missing_count || 0);
   const itemCount = Array.isArray(bundle?.item_ids) ? bundle.item_ids.length : 0;
+  const gameType = bundleGameType(bundle) || 'tictactoe';
+  const members = gameType === 'checkers'
+    ? '<div class="store-v2-bundle-confirm-clone-host" data-store-v2-bundle-confirm-clone></div>'
+    : renderBundleMembers(bundle, true);
   return `
     <div class="store-v2-bundle-confirm-reference">
       <div class="store-v2-bundle-confirm-reference-head">
         <span>В составе</span>
         <b>${owned > 0 ? `${missing} осталось · ${owned} уже есть` : `${itemCount || 5} предметов`}</b>
       </div>
-      ${renderBundleMembers(bundle, true)}
+      ${members}
       <p>Оплачиваются только недостающие предметы. После покупки они появятся в коллекции без автоматического выбора.</p>
     </div>
   `;
@@ -837,6 +841,24 @@ function activateBundleGame(gameType){
     bundlePanel.setAttribute('aria-hidden', active ? 'false' : 'true');
   });
   scheduleBundlePreviewFit(panel);
+}
+
+function hydrateCheckersBundleConfirmFromVisibleCard(){
+  const sheet = document.getElementById('sheet');
+  const target = sheet?.querySelector('[data-store-v2-bundle-confirm-clone]');
+  const root = currentRoot();
+  const source = root?.querySelector(
+    '[data-store-v2-bundle-panel="checkers"] .store-v2-bundle-reference-members'
+  );
+  if (!(target instanceof HTMLElement) || !(source instanceof HTMLElement)) return false;
+
+  const clone = source.cloneNode(true);
+  if (!(clone instanceof HTMLElement)) return false;
+  clone.classList.remove('is-sheet');
+  clone.classList.add('store-v2-bundle-confirm-cloned-members');
+  clone.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+  target.replaceChildren(clone);
+  return true;
 }
 
 function fitBundleNativePreviews(root){
@@ -1017,7 +1039,11 @@ function openPurchaseConfirm(offer){
     </div>
   `);
 
-  scheduleBundlePreviewFit(document.getElementById('sheet'));
+  if (isBundle && bundleGameType === 'checkers') {
+    hydrateCheckersBundleConfirmFromVisibleCard();
+  } else {
+    scheduleBundlePreviewFit(document.getElementById('sheet'));
+  }
 
   document.getElementById('storeV2ConfirmBuy')?.addEventListener('click', event => {
     void purchaseOffer(offer, token, event.currentTarget);
