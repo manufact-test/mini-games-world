@@ -278,6 +278,7 @@
   will-change:transform,opacity;
 }
 .mgw-bs-live-hit-core{
+  z-index:3;
   transform:translate(-50%,-50%);
   border-radius:50%;
   background:
@@ -290,12 +291,14 @@
   filter:drop-shadow(0 0 6px rgba(255,198,72,.9)) drop-shadow(0 0 12px rgba(255,98,40,.42));
 }
 .mgw-bs-live-hit-ring{
+  z-index:2;
   transform:translate(-50%,-50%);
   border:2px solid rgba(255,214,101,.9);
   border-radius:50%;
   box-shadow:0 0 8px rgba(255,174,49,.64),0 0 15px rgba(255,91,44,.28);
 }
 .mgw-bs-live-hit-flare{
+  z-index:5;
   transform:translate(-50%,-50%);
   background:
     linear-gradient(90deg,transparent 6%,rgba(255,244,176,.9) 45% 55%,transparent 94%),
@@ -304,13 +307,14 @@
   filter:drop-shadow(0 0 5px rgba(255,156,44,.62));
 }
 .mgw-bs-live-hit-spark{
-  width:3px;
-  height:15px;
-  margin-left:-1.5px;
-  margin-top:-7.5px;
+  z-index:4;
+  width:4px;
+  height:21px;
+  margin-left:-2px;
+  margin-top:-10.5px;
   border-radius:999px;
-  background:linear-gradient(180deg,#fff8ca,#ffc248 55%,rgba(255,92,45,.08));
-  box-shadow:0 0 5px rgba(255,171,54,.72);
+  background:linear-gradient(180deg,#fffdf0 0%,#ffe58a 28%,#ffc248 58%,rgba(255,92,45,.08) 100%);
+  box-shadow:0 0 5px rgba(255,225,134,.92),0 0 9px rgba(255,151,45,.64);
   transform-origin:50% 100%;
 }
 .mgw-bs-live-hit-fx.is-reduced-motion .mgw-bs-live-hit-core{
