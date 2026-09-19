@@ -97,6 +97,7 @@ trait RuntimeRealtimeDatabaseTrait
                 'room' => trim((string)($row['room'] ?? '')),
                 'bet' => (int)($row['bet'] ?? 0),
                 'board_size' => (int)($row['board_size'] ?? 0),
+                'skill_band' => trim((string)($row['skill_band'] ?? 'unrated')),
                 'status' => trim((string)($row['status'] ?? '')),
                 'reserved_match_id' => $this->nullableText($row['reserved_match_id'] ?? null, 96),
                 'created_at_utc' => $this->timestamp($row['created_at_utc'] ?? null),
