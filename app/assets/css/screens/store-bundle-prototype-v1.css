@@ -589,6 +589,7 @@
 
 .store-v2-bundle-confirm-cloned-members{
   margin:0;
+  contain:layout paint;
 }
 
 .store-v2-bundle-confirm-reference-head{
