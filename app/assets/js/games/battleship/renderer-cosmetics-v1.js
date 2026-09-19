@@ -25,9 +25,11 @@ const observedShotByGame = new Map();
 const playedShotByGame = new Map();
 const observedImpactByGame = new Map();
 const playedImpactByGame = new Map();
-const shotCaptureHandlers = new WeakMap();
+const localShotContextByGame = new Map();
+let shotQueueListenerInstalled = false;
 
 ensureLiveStyles();
+ensureShotQueueListener();
 
 export { battleshipMeta, battleshipPlayerMark, battleshipStatus };
 
@@ -54,7 +56,7 @@ export function renderBattleshipSurface(args){
   container.dataset.battleshipFleet = fleetVariant;
   container.dataset.battleshipEffect = viewerEffect || 'base';
 
-  installShotCapture({ game, me, container, viewerEffect });
+  rememberLocalShotContext({ gameId, myId, container, viewerEffect });
   maybePlayAuthoritativeShot({ game, me, container, players });
   maybePlayResultEffect({ game, me, container, players });
 }
@@ -114,48 +116,48 @@ function variantFromItem(value, prefix, allowed){
   return allowed.has(variant) ? variant : 'base';
 }
 
-function installShotCapture({ game, me, container, viewerEffect }){
-  const previous = shotCaptureHandlers.get(container);
-  if (previous) {
-    container.removeEventListener('click', previous, true);
-    shotCaptureHandlers.delete(container);
-  }
+function rememberLocalShotContext({ gameId, myId, container, viewerEffect }){
+  if (!gameId || !myId || !(container instanceof HTMLElement)) return;
+  localShotContextByGame.set(gameId, {
+    gameId,
+    myId,
+    container,
+    viewerEffect,
+  });
+}
 
-  const gameId = String(game?.id || '');
-  const myId = String(me?.id || '');
-  const canFire = viewerEffect === SHOT_ID
-    && String(game?.status || '') === 'active'
-    && String(game?.turn || '') === myId;
+function ensureShotQueueListener(){
+  if (shotQueueListenerInstalled || typeof document === 'undefined') return;
+  shotQueueListenerInstalled = true;
 
-  if (!gameId || !myId || !canFire) return;
+  document.addEventListener('mgw:battleship-fire-queued', event => {
+    const detail = event?.detail || {};
+    const gameId = String(detail.gameId || '');
+    const ownerId = String(detail.playerId || '');
+    const cell = Number(detail.cell);
+    const context = localShotContextByGame.get(gameId);
 
-  const handler = event => {
-    const target = event.target instanceof Element
-      ? event.target.closest('[data-battleship-cell]')
-      : null;
-    if (!(target instanceof HTMLButtonElement) || !container.contains(target)) return;
-    if (target.disabled || String(target.dataset.cellState || '') !== 'unknown') return;
-    if (!target.classList.contains('interactive')) return;
-
-    const cell = Number(target.dataset.battleshipCell);
+    if (!context || context.viewerEffect !== SHOT_ID) return;
+    if (!ownerId || ownerId !== context.myId) return;
     if (!Number.isInteger(cell) || cell < 0 || cell > 99) return;
+    if (!(context.container instanceof HTMLElement) || !context.container.isConnected) return;
 
-    const key = shotEventKeyFromParts(gameId, myId, cell);
+    const targetCell = context.container.querySelector(`.battleship-cell[data-battleship-cell="${cell}"]`);
+    if (!(targetCell instanceof HTMLElement)) return;
+
+    const key = shotEventKeyFromParts(gameId, ownerId, cell);
     const recent = playedShotByGame.get(gameId);
     if (recent?.key === key && Date.now() - Number(recent.at || 0) < 1200) return;
 
     playedShotByGame.set(gameId, { key, at:Date.now() });
     mountShotEffect({
-      targetCell:target,
-      container,
+      targetCell,
+      container:context.container,
       gameId,
-      ownerId:myId,
+      ownerId,
       source:'local-fire',
     });
-  };
-
-  container.addEventListener('click', handler, true);
-  shotCaptureHandlers.set(container, handler);
+  });
 }
 
 function maybePlayAuthoritativeShot({ game, me, container, players }){
@@ -643,7 +645,7 @@ function clamp(value, min, max){
 
 function ensureLiveStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/battleship/live-cosmetics-v1.css?v=6&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&effects=shot-hit-destroy-v1', import.meta.url).href;
+  const href = new URL('../../../css/games/battleship/live-cosmetics-v1.css?v=7&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&effects=accepted-three-v1&fire=queued-v1', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-live-cosmetics]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
