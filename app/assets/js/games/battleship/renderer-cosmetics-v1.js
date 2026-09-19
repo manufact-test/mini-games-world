@@ -35,7 +35,7 @@ export function renderBattleshipSurface(args){
   cachePlayerCosmetics(gameId, players);
 
   const viewer = players.find(player => String(player?.id || '') === myId) || null;
-  const slots = slotsForPlayer(gameId, viewer, me, game);
+  const slots = viewerPresentationSlots(game, me, viewer);
   const mapVariant = variantFromItem(slots[THEME_SLOT], MAP_PREFIX, MAP_VARIANTS);
   const fleetVariant = variantFromItem(slots[ELEMENTS_SLOT], FLEET_PREFIX, FLEET_VARIANTS);
   const viewerEffect = normalizedShotEffectId(slots[EFFECT_SLOT]);
@@ -63,27 +63,26 @@ function cachePlayerCosmetics(gameId, players){
   });
 }
 
-function localEquippedSlots(player, me){
-  const playerId = String(player?.id || '');
-  const myId = String(me?.id || '');
-  if (!playerId || !myId || playerId !== myId) return null;
-
+function viewerPresentationSlots(game, me, viewer){
   const local = state?.profileInventory?.equipped;
   if (local && typeof local === 'object') return local;
 
   const directMe = me?.game_cosmetics?.slots;
-  return directMe && typeof directMe === 'object' ? directMe : null;
+  if (directMe && typeof directMe === 'object') return directMe;
+
+  const directGame = game?.my_game_cosmetics?.slots;
+  if (directGame && typeof directGame === 'object') return directGame;
+
+  const playerSlots = viewer?.game_cosmetics?.slots;
+  return playerSlots && typeof playerSlots === 'object' ? playerSlots : {};
 }
 
-function slotsForPlayer(gameId, player, me, game){
-  const local = localEquippedSlots(player, me);
-  if (local) return local;
-
+function playerPresentationSlots(gameId, player, me, game){
   const playerId = String(player?.id || '');
   const myId = String(me?.id || '');
+
   if (playerId && myId && playerId === myId) {
-    const directGame = game?.my_game_cosmetics?.slots;
-    if (directGame && typeof directGame === 'object') return directGame;
+    return viewerPresentationSlots(game, me, player);
   }
 
   const directPlayer = player?.game_cosmetics?.slots;
@@ -94,7 +93,7 @@ function slotsForPlayer(gameId, player, me, game){
 }
 
 function effectForPlayer(gameId, player, me, game){
-  return normalizedShotEffectId(slotsForPlayer(gameId, player, me, game)[EFFECT_SLOT]);
+  return normalizedShotEffectId(playerPresentationSlots(gameId, player, me, game)[EFFECT_SLOT]);
 }
 
 function normalizedShotEffectId(value){
