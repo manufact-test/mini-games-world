@@ -17,11 +17,15 @@ assert.match(store, /data-store-v2-bundle-game=/);
 assert.equal(store.includes('data-store-v2-bundle-game="${escapeAttr(gameType)}"\n              data-store-v2-game='), false);
 assert.equal(store.includes("bundle?.already_owned ? 'Собран'"), false);
 assert.match(store, /store-v2-bundle-game-picker-track/);
-assert.match(store, /\$\{renderGameBundle\(activeBundle\)\}/);
-assert.equal(store.includes('${bundles.map(renderGameBundle).join(\'\')}'), false);
+assert.match(store, /data-store-v2-bundle-panel=/);
+assert.match(store, /bundles\.map\(bundle => \{/);
+assert.match(store, /bundlePanel\.hidden = !active/);
 assert.match(store, /function activateBundleGame\(gameType\)/);
 assert.match(store, /data-store-v2-game]:not\(\[data-store-v2-bundle-game\]\)/);
 assert.match(store, /const memberIds = new Set\(Array\.isArray\(bundle\?\.item_ids\)/);
+assert.match(store, /function renderBundleMemberStorePreview\(gameType, layer, variant, name, owned\)/);
+assert.match(store, /store-v2-bundle-native-store-product/);
+assert.match(store, /data-store-game-product="checkers"/);
 assert.match(store, /gameCosmeticPreview\(gameType, layer, variant, name\)/);
 assert.match(store, /bundle\?\.missing_item_ids/);
 assert.match(store, /bundle\?\.owned_count/);
@@ -72,17 +76,21 @@ assert.match(css, /flex:1 1 0/);
 assert.match(css, /overflow-y:auto!important/);
 assert.match(css, /border-radius:11px/);
 assert.match(css, /border-radius:8px/);
-assert.match(store, /store-bundle-prototype-v1\.css\?v=5&mvp19_13=bundle-selector-checkers-parity-v2/);
+assert.match(store, /store-bundle-prototype-v1\.css\?v=6&mvp19_13=native-checkers-preview-prewarm-v3/);
 assert.match(store, /data-store-bundle-member-game=/);
 assert.match(store, /data-store-bundle-member-layer=/);
 assert.match(css, /data-store-bundle-member-game="checkers"/);
+assert.match(css, /store-v2-game-product\.store-v2-bundle-native-store-product/);
+assert.equal(css.includes('[data-store-bundle-member-game="checkers"] .store-v2-game-preview{'), false);
+assert.equal(css.includes('[data-store-bundle-member-layer="theme"] .store-v2-mini-checkers-board'), false);
+assert.equal(css.includes('[data-store-bundle-member-layer="effect"] .store-v2-mini-checkers-effect'), false);
 assert.match(checkersWrapper, /\[data-store-v2-bundle-game\]/);
 assert.match(checkersWrapper, /data-store-v2-game="checkers"\]:not\(\[data-store-v2-bundle-game\]\)/);
 assert.match(checkersSourceWrapper, /store-screen-checkers-wrapper\.js\?v=5/);
 
 assert.match(manifest, /store-screen-checkers-board-source-wrapper\.js\?v=35[^']*parent=store-screen-checkers-wrapper\.js\?v=5/);
-assert.match(manifest, /store-screen\.js\?v=60[^']*mvp19_13=bundle-selector-checkers-parity-v2/);
-assert.match(launch, /bundles=selector-checkers-parity-v2/);
+assert.match(manifest, /store-screen\.js\?v=61[^']*mvp19_13=native-checkers-preview-prewarm-v3/);
+assert.match(launch, /bundles=native-checkers-preview-prewarm-v3/);
 
 for (const itemId of [
   'game-ttt-field-neon',
