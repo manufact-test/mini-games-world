@@ -6,6 +6,7 @@ require $databaseDir . '/DatabaseConnectionInterface.php';
 require $databaseDir . '/PdoDatabaseConnection.php';
 require $databaseDir . '/DatabaseMigrationInterface.php';
 require dirname(__DIR__) . '/services/MatchmakingQueue.php';
+require dirname(__DIR__) . '/realtime/RealtimeDatabaseStore.php';
 require dirname(__DIR__) . '/ratings/PerGameRatingService.php';
 require dirname(__DIR__) . '/ratings/HiddenSkillService.php';
 
@@ -91,6 +92,37 @@ $queueColumnsAfterRerun = array_map(
     $database->fetchAll('PRAGMA table_info(mgw_match_queue)')
 );
 $assertSame(1, count(array_filter($queueColumnsAfterRerun, static fn(string $name): bool => $name === 'skill_band')), 'Queue skill_band migration must be idempotent.');
+
+$queueStore = new RealtimeDatabaseStore($database);
+$queueRow = $queueStore->upsertQueueEntry([
+    'queue_id' => 'skill-queue-a',
+    'player_ref' => 'legacy:queue-a',
+    'mgw_id' => null,
+    'legacy_user_id' => 'queue-a',
+    'game_type' => 'tictactoe',
+    'room' => 'match',
+    'bet' => 10,
+    'board_size' => 3,
+    'skill_band' => 'band:15',
+    'created_at_utc' => '2026-09-19 20:00:00.000000',
+    'updated_at_utc' => '2026-09-19 20:00:00.000000',
+]);
+$assertSame('band:15', (string)$queueRow['skill_band'], 'Realtime queue insert must preserve the server-assigned hidden band.');
+$queueRow = $queueStore->upsertQueueEntry([
+    'queue_id' => 'ignored-new-queue-id',
+    'player_ref' => 'legacy:queue-a',
+    'mgw_id' => null,
+    'legacy_user_id' => 'queue-a',
+    'game_type' => 'tictactoe',
+    'room' => 'match',
+    'bet' => 10,
+    'board_size' => 3,
+    'skill_band' => 'band:16',
+    'updated_at_utc' => '2026-09-19 20:00:01.000000',
+]);
+$assertSame('band:16', (string)$queueRow['skill_band'], 'Realtime queue update must keep hidden-band parity across DB projection.');
+$assertSame('band:16', (string)$database->fetchValue("SELECT skill_band FROM mgw_match_queue WHERE player_ref = 'legacy:queue-a'"), 'Stored queue band must match the canonical JSON-side queue identity.');
+$queueStore->removeQueueEntry('legacy:queue-a');
 $database->execute(
     "UPDATE mgw_hidden_skill_control
      SET tracking_started_at_utc = '2026-09-19 20:00:00.000000',
