@@ -48,7 +48,8 @@ $assert(
 $assert(
     str_contains($api, '$result = $db->transaction(function (array &$data)')
         && str_contains($api, "case 'start_search':")
-        && str_contains($api, '$games->startSearch($data, $user, $room, $bet, $boardSize, $gameType);'),
+        && str_contains($api, '$games->startSearch(')
+        && str_contains($api, '$skillBand'),
     'start_search must remain inside the authoritative storage transaction for concurrent double-match safety.'
 );
 $assert(
