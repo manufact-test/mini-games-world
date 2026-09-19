@@ -16,6 +16,7 @@ assert.ok(live.includes("const EFFECT_IDS = new Set([SHOT_ID, HIT_ID, DESTROY_ID
 assert.ok(live.includes("const result = String(game?.last_result || '')"), 'Result effects must wait for the authoritative shot result');
 assert.ok(live.includes("result === 'hit' ? HIT_ID : (result === 'sunk' ? DESTROY_ID : '')"), 'Hit and Destroy must map only to their matching authoritative result');
 assert.ok(live.includes("effectForPlayer(gameId, shooter, me, game) !== requiredEffect"), 'Result animation must belong to the actual shooter cosmetic');
+assert.ok(live.includes("targetCell.classList.remove('shot-impact')"), 'Paid Hit/Destroy must suppress only the base cell-scale flash to keep one visual owner');
 assert.ok(live.includes("const cell = Number(game?.last_shot)"), 'Result effects must anchor to the canonical last-shot cell');
 assert.ok(live.includes("source:'local-fire'") && live.includes("source:'authoritative-shot'"), 'Accepted Shot paths must remain intact');
 
