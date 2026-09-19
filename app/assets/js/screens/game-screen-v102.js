@@ -160,7 +160,11 @@ function submitAction(gameId, action){
   const type = gameTypeOf(base);
   const optimistic = buildV100OptimisticGame(base, action, viewer.id, type);
   const localBattleshipSetup = type === 'battleship' && String(base?.phase || '') === 'setup';
-  if (localBattleshipSetup && !optimistic) return false;
+  const localBattleshipFire = type === 'battleship'
+    && String(base?.phase || '') === 'battle'
+    && String(action?.type || '') === 'fire';
+  if ((localBattleshipSetup || localBattleshipFire) && !optimistic) return false;
+  if (localBattleshipFire && item.queue.some(entry => String(entry?.action?.type || '') === 'fire')) return false;
 
   haptic('light');
   item.generation++;
@@ -287,7 +291,10 @@ async function reconcileBattleshipFireFailure(gameId, item, action){
     state.selectedGame = gameTypeOf(game);
     item.generation++;
 
-    if (viewer) renderGame(game, viewer, false);
+    if (viewer) {
+      renderGame(game, viewer, false);
+      if (String(game.status || '') === 'finished') finishGame(game, viewer);
+    }
 
     const cellState = String(game?.enemy_board?.[cell] || 'unknown');
     return ['miss','hit','sunk'].includes(cellState) ? 'committed' : 'reconciled-uncommitted';
