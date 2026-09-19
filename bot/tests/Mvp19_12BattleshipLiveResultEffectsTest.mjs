@@ -58,7 +58,7 @@ assert.ok(liveCss.includes('rgba(255,86,69,.92)') && liveCss.includes('rgba(239,
 assert.ok(live.includes("duration:720") && live.includes("duration:820") && live.includes("globalThis.setTimeout(cleanup, 1050)"), 'Hit must remain a compact bounded impact');
 assert.ok(live.includes("duration:1050") && live.includes("duration:1180") && live.includes("globalThis.setTimeout(cleanup, 1500)"), 'Destroy must remain visibly heavier but bounded');
 
-assert.ok(entry.includes("$imports[$battleshipRendererImportKey] .= '&live_effects=shot-hit-destroy-v1';"), 'Active v110 runtime must publish the three-effect manual-review module');
-assert.ok(launch.includes('battleship_shot=live-v1') && launch.includes('battleship_impacts=live-v1'), 'Telegram route must preserve accepted Shot while cache-busting Hit/Destroy review');
+assert.ok(entry.includes("$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v2&fire=queued-v1';"), 'Active v110 runtime must publish the accepted three-effect queued-fire module');
+assert.ok(launch.includes('battleship_shot=live-v1') && launch.includes('battleship_impacts=live-v1') && launch.includes('battleship_fire=queued-reconcile-v1'), 'Telegram route must publish all accepted effects plus reliable-fire identity');
 
 console.log('Battleship LIVE Hit/Destroy effect contract passed.');

@@ -183,7 +183,8 @@
   box-shadow:inset 0 0 0 1px rgba(255,68,222,.76),0 0 3px rgba(89,246,255,.68),0 0 5px rgba(255,68,222,.18);
 }
 
-/* Effects: three deliberately different events. */
+/* Accepted LIVE effect parity.
+   One shared preview owner feeds Store cards, purchase sheet, Profile cards and equip sheet. */
 .mgw-battleship-preview.effect{
   background:linear-gradient(145deg,#071c31,#07111e);
 }
@@ -203,168 +204,327 @@
   border-color:#ff6a77;
   box-shadow:inset 0 0 0 1px rgba(255,183,119,.28);
 }
-.mgw-bs-fx-reticle,.mgw-bs-fx-tracer,.mgw-bs-fx-burst,.mgw-bs-fx-shock,.mgw-bs-fx-smoke,.mgw-bs-fx-shards{
+.mgw-bs-preview-shot-fx,
+.mgw-bs-preview-hit-fx,
+.mgw-bs-preview-destroy-fx{
   position:absolute;
+  inset:0;
   z-index:5;
+  display:block;
   pointer-events:none;
-  display:none;
+  overflow:hidden;
 }
 
-/* 1. Aim/shot: lightest animation. No explosion. */
-.effect-shot .mgw-bs-fx-reticle{
+/* LIVE 1 parity — Plasma Shot: cyan/white reticle + ping + tracer + bolt, no impact language. */
+.mgw-bs-preview-shot-reticle,
+.mgw-bs-preview-shot-ping,
+.mgw-bs-preview-shot-tracer,
+.mgw-bs-preview-shot-bolt{
+  position:absolute;
   display:block;
-  left:52%;
-  top:52%;
-  width:18%;
+  box-sizing:border-box;
+  will-change:transform,opacity;
+}
+.mgw-bs-preview-shot-reticle{
+  left:54%;
+  top:54%;
+  width:19%;
   aspect-ratio:1;
-  border:2px solid #69f5ff;
+  border:1.5px solid rgba(126,248,255,.96);
   border-radius:50%;
   transform:translate(-50%,-50%);
-  box-shadow:0 0 9px rgba(71,237,255,.64),inset 0 0 8px rgba(71,237,255,.2);
-  animation:mgwBsAim 1.9s ease-in-out infinite;
+  background:radial-gradient(circle,rgba(238,254,255,.86) 0 3%,rgba(92,239,255,.22) 4% 7%,transparent 8% 100%);
+  box-shadow:0 0 0 1px rgba(46,208,255,.24),0 0 10px rgba(77,232,255,.58),inset 0 0 9px rgba(82,235,255,.18);
+  animation:mgwBsLivePreviewShotReticle 2.35s cubic-bezier(.18,.78,.18,1) infinite;
 }
-.effect-shot .mgw-bs-fx-reticle::before,.effect-shot .mgw-bs-fx-reticle::after{
+.mgw-bs-preview-shot-reticle::before,
+.mgw-bs-preview-shot-reticle::after{
   content:'';
   position:absolute;
-  background:#69f5ff;
-  box-shadow:0 0 6px rgba(72,238,255,.75);
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  background:linear-gradient(90deg,transparent,rgba(188,252,255,.98),transparent);
+  box-shadow:0 0 5px rgba(95,239,255,.62);
 }
-.effect-shot .mgw-bs-fx-reticle::before{left:50%;top:-22%;bottom:-22%;width:1px}
-.effect-shot .mgw-bs-fx-reticle::after{top:50%;left:-22%;right:-22%;height:1px}
-.effect-shot .mgw-bs-fx-tracer{
-  display:block;
-  left:16%;
-  top:20%;
-  width:49%;
-  height:3px;
+.mgw-bs-preview-shot-reticle::before{width:145%;height:1px}
+.mgw-bs-preview-shot-reticle::after{width:1px;height:145%;background:linear-gradient(180deg,transparent,rgba(188,252,255,.98),transparent)}
+.mgw-bs-preview-shot-ping{
+  left:54%;
+  top:54%;
+  width:14%;
+  aspect-ratio:1;
+  border:1px solid rgba(100,236,255,.7);
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+  box-shadow:0 0 8px rgba(77,225,255,.28);
+  animation:mgwBsLivePreviewShotPing 2.35s ease-out infinite;
+}
+.mgw-bs-preview-shot-tracer{
+  left:12%;
+  top:18%;
+  width:57%;
+  height:2px;
   border-radius:999px;
-  transform:rotate(38deg);
-  transform-origin:left center;
-  background:linear-gradient(90deg,transparent,#a9fbff 42%,#69f5ff);
-  box-shadow:0 0 8px rgba(95,241,255,.72);
-  animation:mgwBsShot 1.9s ease-in-out infinite;
+  transform-origin:0 50%;
+  transform:rotate(41deg) scaleX(.04);
+  background:linear-gradient(90deg,transparent 0%,rgba(97,224,255,.2) 14%,rgba(205,253,255,.98) 72%,rgba(101,239,255,.98) 100%);
+  box-shadow:0 0 5px rgba(82,230,255,.72),0 0 10px rgba(67,193,255,.24);
+  animation:mgwBsLivePreviewShotTracer 2.35s cubic-bezier(.18,.72,.2,1) infinite;
+}
+.mgw-bs-preview-shot-bolt{
+  left:0;
+  top:50%;
+  width:9px;
+  height:4px;
+  border-radius:999px;
+  transform:translate(-50%,-50%);
+  background:#f2feff;
+  box-shadow:0 0 4px #fff,0 0 8px rgba(88,241,255,.92),0 0 13px rgba(67,178,255,.55);
+  animation:mgwBsLivePreviewShotBolt 2.35s cubic-bezier(.12,.7,.12,1) infinite;
 }
 
-/* 2. Hit: compact yellow/orange impact on a visible ship. */
-.effect-hit .mgw-bs-fx-burst{
-  display:block;
-  left:52%;
-  top:52%;
-  width:23%;
-  aspect-ratio:1;
-  transform:translate(-50%,-50%);
-  background:radial-gradient(circle,#fff 0 10%,#fff3a1 11% 25%,#ffad39 26% 45%,rgba(255,92,54,.68) 46% 58%,transparent 59%);
-  filter:drop-shadow(0 0 7px rgba(255,170,66,.72));
-  animation:mgwBsHitBurst 2.1s ease-out infinite;
-}
-.effect-hit .mgw-bs-fx-shock{
-  display:block;
-  left:52%;
-  top:52%;
-  width:25%;
-  aspect-ratio:1;
-  transform:translate(-50%,-50%);
-  border:3px solid rgba(255,210,83,.82);
-  border-radius:50%;
-  box-shadow:0 0 12px rgba(255,111,55,.46);
-  animation:mgwBsHitRing 2.1s ease-out infinite;
-}
-
-/* 3. Destroy: full wreck event with red shockwave, debris and smoke. */
-.effect-destroy .mgw-bs-fx-burst{
-  display:block;
-  left:52%;
-  top:52%;
-  width:36%;
-  aspect-ratio:1;
-  transform:translate(-50%,-50%);
-  background:conic-gradient(from 18deg,transparent 0 5%,#fff5c5 6% 11%,transparent 12% 21%,#ffcf55 22% 31%,transparent 32% 42%,#ff4d66 43% 55%,transparent 56% 68%,#ff8c32 69% 79%,transparent 80% 91%,#fff 92% 96%,transparent 97%);
-  filter:drop-shadow(0 0 10px rgba(255,72,81,.8));
-  animation:mgwBsDestroyBurst 2.6s ease-out infinite;
-}
-.effect-destroy .mgw-bs-fx-shock{
-  display:block;
-  left:52%;
-  top:52%;
-  width:34%;
-  aspect-ratio:1;
-  transform:translate(-50%,-50%);
-  border:3px solid rgba(255,73,94,.86);
-  border-radius:50%;
-  box-shadow:0 0 0 7px rgba(255,181,55,.11),0 0 16px rgba(255,56,84,.54);
-  animation:mgwBsDestroyRing 2.6s ease-out infinite;
-}
-.effect-destroy .mgw-bs-fx-smoke{
-  display:block;
-  left:52%;
-  top:48%;
-  width:22%;
-  height:28%;
-  transform:translate(-50%,-50%);
-  background:radial-gradient(circle at 50% 70%,rgba(160,169,178,.58),transparent 46%),radial-gradient(circle at 35% 38%,rgba(104,115,126,.5),transparent 40%),radial-gradient(circle at 68% 28%,rgba(74,83,94,.46),transparent 38%);
-  filter:blur(1px);
-  animation:mgwBsDestroySmoke 2.6s ease-out infinite;
-}
-.effect-destroy .mgw-bs-fx-shards{
-  display:block;
-  left:52%;
-  top:52%;
-  width:34%;
-  height:34%;
-  transform:translate(-50%,-50%);
-}
-.effect-destroy .mgw-bs-fx-shards i{
+/* LIVE 2 parity — Impact Flash: compact amber/yellow confirmed-hit event. */
+.mgw-bs-preview-hit-core,
+.mgw-bs-preview-hit-ring,
+.mgw-bs-preview-hit-flare,
+.mgw-bs-preview-hit-sparks,
+.mgw-bs-preview-hit-sparks i{
   position:absolute;
-  width:5px;
-  height:12px;
-  border-radius:2px;
-  background:#ffc65d;
-  box-shadow:0 0 6px rgba(255,102,64,.6);
-  animation:mgwBsShard 2.6s ease-out infinite;
+  display:block;
+  pointer-events:none;
+  box-sizing:border-box;
+  will-change:transform,opacity;
 }
-.effect-destroy .mgw-bs-fx-shards i:nth-child(1){left:12%;top:44%;--tx:-18px;--ty:-13px;transform:rotate(-28deg)}
-.effect-destroy .mgw-bs-fx-shards i:nth-child(2){right:14%;top:34%;--tx:20px;--ty:-16px;transform:rotate(30deg)}
-.effect-destroy .mgw-bs-fx-shards i:nth-child(3){left:33%;bottom:9%;--tx:-10px;--ty:22px;transform:rotate(68deg)}
-.effect-destroy .mgw-bs-fx-shards i:nth-child(4){right:28%;bottom:12%;--tx:13px;--ty:20px;transform:rotate(-61deg)}
+.mgw-bs-preview-hit-core,
+.mgw-bs-preview-hit-ring,
+.mgw-bs-preview-hit-flare{
+  left:54%;
+  top:54%;
+  width:27%;
+  aspect-ratio:1;
+  transform:translate(-50%,-50%);
+}
+.mgw-bs-preview-hit-core{
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.98) 0 8%,rgba(255,244,177,.98) 9% 20%,rgba(255,178,55,.94) 21% 42%,rgba(255,96,41,.62) 43% 58%,transparent 59%);
+  filter:drop-shadow(0 0 6px rgba(255,198,72,.9)) drop-shadow(0 0 12px rgba(255,98,40,.42));
+  animation:mgwBsLivePreviewHitCore 2.55s cubic-bezier(.12,.8,.2,1) infinite;
+}
+.mgw-bs-preview-hit-ring{
+  border:2px solid rgba(255,214,101,.9);
+  border-radius:50%;
+  box-shadow:0 0 8px rgba(255,174,49,.64),0 0 15px rgba(255,91,44,.28);
+  animation:mgwBsLivePreviewHitRing 2.55s cubic-bezier(.14,.74,.18,1) infinite;
+}
+.mgw-bs-preview-hit-flare{
+  background:linear-gradient(90deg,transparent 6%,rgba(255,244,176,.9) 45% 55%,transparent 94%),linear-gradient(0deg,transparent 6%,rgba(255,169,57,.82) 45% 55%,transparent 94%);
+  clip-path:polygon(48% 0,54% 36%,100% 48%,62% 54%,52% 100%,45% 62%,0 53%,38% 45%);
+  filter:drop-shadow(0 0 5px rgba(255,156,44,.62));
+  animation:mgwBsLivePreviewHitFlare 2.55s ease-out infinite;
+}
+.mgw-bs-preview-hit-sparks{left:54%;top:54%;width:1px;height:1px}
+.mgw-bs-preview-hit-sparks i{
+  left:0;
+  top:0;
+  width:3px;
+  height:14px;
+  margin-left:-1.5px;
+  margin-top:-7px;
+  border-radius:999px;
+  background:linear-gradient(180deg,#fff8ca,#ffc248 55%,rgba(255,92,45,.08));
+  box-shadow:0 0 5px rgba(255,171,54,.72);
+  transform-origin:50% 100%;
+  animation:mgwBsLivePreviewHitSpark 2.55s cubic-bezier(.12,.72,.18,1) infinite;
+}
+.mgw-bs-preview-hit-sparks i:nth-child(1){--a:0deg;--x:0px;--y:-31px}
+.mgw-bs-preview-hit-sparks i:nth-child(2){--a:60deg;--x:27px;--y:-16px;animation-delay:.018s}
+.mgw-bs-preview-hit-sparks i:nth-child(3){--a:120deg;--x:27px;--y:16px;animation-delay:.036s}
+.mgw-bs-preview-hit-sparks i:nth-child(4){--a:180deg;--x:0px;--y:31px;animation-delay:.054s}
+.mgw-bs-preview-hit-sparks i:nth-child(5){--a:240deg;--x:-27px;--y:16px;animation-delay:.072s}
+.mgw-bs-preview-hit-sparks i:nth-child(6){--a:300deg;--x:-27px;--y:-16px;animation-delay:.09s}
 
-@keyframes mgwBsAim{
-  0%,18%,100%{opacity:.38;transform:translate(-50%,-50%) scale(.82)}
-  36%,70%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+/* LIVE 3 parity — Critical Sink: whole-ship red/orange blast, double shockwave, wreck, smoke and debris. */
+.mgw-bs-preview-destroy-flash,
+.mgw-bs-preview-destroy-ring,
+.mgw-bs-preview-destroy-wreck,
+.mgw-bs-preview-destroy-smoke,
+.mgw-bs-preview-destroy-smoke i,
+.mgw-bs-preview-destroy-shards,
+.mgw-bs-preview-destroy-shards i{
+  position:absolute;
+  display:block;
+  pointer-events:none;
+  box-sizing:border-box;
+  will-change:transform,opacity;
 }
-@keyframes mgwBsShot{
-  0%,44%,100%{opacity:0;transform:rotate(38deg) scaleX(.08)}
-  50%{opacity:1}
-  62%{opacity:.12;transform:rotate(38deg) scaleX(1)}
+.mgw-bs-preview-destroy-flash,
+.mgw-bs-preview-destroy-ring,
+.mgw-bs-preview-destroy-wreck{
+  left:54%;
+  top:54%;
+  width:43%;
+  aspect-ratio:1;
+  transform:translate(-50%,-50%);
 }
-@keyframes mgwBsHitBurst{
-  0%,24%,100%{opacity:0;transform:translate(-50%,-50%) scale(.28)}
-  36%{opacity:1;transform:translate(-50%,-50%) scale(1)}
-  54%{opacity:.18;transform:translate(-50%,-50%) scale(1.25)}
+.mgw-bs-preview-destroy-flash{
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,238,1) 0 5%,rgba(255,220,110,.98) 6% 14%,rgba(255,135,44,.96) 15% 28%,rgba(239,53,60,.88) 29% 46%,rgba(141,18,35,.42) 47% 61%,transparent 62%),conic-gradient(from 12deg,transparent 0 5%,rgba(255,238,151,.94) 6% 10%,transparent 11% 20%,rgba(255,105,48,.9) 21% 28%,transparent 29% 39%,rgba(255,212,83,.9) 40% 49%,transparent 50% 63%,rgba(225,40,55,.9) 64% 73%,transparent 74% 86%,rgba(255,244,190,.86) 87% 93%,transparent 94%);
+  filter:drop-shadow(0 0 9px rgba(255,105,48,.92)) drop-shadow(0 0 19px rgba(207,34,53,.46));
+  animation:mgwBsLivePreviewDestroyFlash 3.05s cubic-bezier(.1,.78,.16,1) infinite;
 }
-@keyframes mgwBsHitRing{
-  0%,24%,100%{opacity:0;transform:translate(-50%,-50%) scale(.3)}
-  36%{opacity:.9}
-  60%{opacity:0;transform:translate(-50%,-50%) scale(1.55)}
+.mgw-bs-preview-destroy-ring{
+  border:3px solid rgba(255,86,69,.92);
+  border-radius:50%;
+  box-shadow:0 0 0 5px rgba(255,185,65,.1),0 0 12px rgba(255,74,59,.62),0 0 22px rgba(182,27,54,.32);
+  animation:mgwBsLivePreviewDestroyRing 3.05s cubic-bezier(.12,.72,.18,1) infinite;
 }
-@keyframes mgwBsDestroyBurst{
-  0%,20%,100%{opacity:0;transform:translate(-50%,-50%) scale(.22) rotate(-8deg)}
-  34%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(4deg)}
-  58%{opacity:.22;transform:translate(-50%,-50%) scale(1.3) rotate(9deg)}
+.mgw-bs-preview-destroy-ring.secondary{
+  border-width:1.5px;
+  border-color:rgba(255,203,86,.76);
+  box-shadow:0 0 12px rgba(255,134,49,.38);
+  animation-name:mgwBsLivePreviewDestroyRingSecondary;
 }
-@keyframes mgwBsDestroyRing{
-  0%,20%,100%{opacity:0;transform:translate(-50%,-50%) scale(.28)}
-  36%{opacity:.96}
-  72%{opacity:0;transform:translate(-50%,-50%) scale(1.9)}
+.mgw-bs-preview-destroy-wreck{
+  border-radius:38% 62% 46% 54%;
+  background:linear-gradient(108deg,transparent 0 34%,rgba(255,239,171,.78) 35% 38%,transparent 39% 61%,rgba(255,88,53,.72) 62% 66%,transparent 67%),radial-gradient(ellipse at 50% 55%,rgba(75,14,24,.82) 0 18%,rgba(125,25,30,.46) 19% 34%,transparent 35%);
+  filter:drop-shadow(0 0 7px rgba(255,103,50,.55));
+  animation:mgwBsLivePreviewDestroyWreck 3.05s ease-out infinite;
 }
-@keyframes mgwBsDestroySmoke{
-  0%,28%,100%{opacity:0;transform:translate(-50%,-45%) scale(.55)}
-  45%{opacity:.78}
-  76%{opacity:0;transform:translate(-50%,-105%) scale(1.25)}
+.mgw-bs-preview-destroy-smoke{inset:0}
+.mgw-bs-preview-destroy-smoke i{
+  width:18%;
+  aspect-ratio:1;
+  border-radius:50%;
+  background:radial-gradient(circle at 38% 42%,rgba(191,188,181,.66) 0 18%,rgba(106,111,118,.56) 19% 42%,rgba(47,54,63,.28) 43% 62%,transparent 63%);
+  filter:blur(1.3px);
+  animation:mgwBsLivePreviewDestroySmoke 3.05s cubic-bezier(.18,.6,.24,1) infinite;
 }
-@keyframes mgwBsShard{
-  0%,26%,100%{opacity:0;margin:0 0}
-  38%{opacity:1}
-  70%{opacity:0;margin-left:var(--tx);margin-top:var(--ty)}
+.mgw-bs-preview-destroy-smoke i:nth-child(1){left:43%;top:49%;--sx:-13px;--sy:-42px}
+.mgw-bs-preview-destroy-smoke i:nth-child(2){left:55%;top:45%;width:22%;--sx:0px;--sy:-48px;animation-delay:.045s}
+.mgw-bs-preview-destroy-smoke i:nth-child(3){left:64%;top:53%;width:15%;--sx:14px;--sy:-39px;animation-delay:.09s}
+.mgw-bs-preview-destroy-shards{left:54%;top:54%;width:1px;height:1px}
+.mgw-bs-preview-destroy-shards i{
+  left:0;
+  top:0;
+  width:5px;
+  height:13px;
+  margin-left:-2.5px;
+  margin-top:-6.5px;
+  border-radius:2px;
+  background:linear-gradient(180deg,#ffd977,#ff7b3d 55%,#8d2031);
+  box-shadow:0 0 6px rgba(255,92,54,.68);
+  animation:mgwBsLivePreviewDestroyShard 3.05s cubic-bezier(.12,.72,.18,1) infinite;
+}
+.mgw-bs-preview-destroy-shards i:nth-child(1){--dx:-39px;--dy:-20px;--r:-28deg}
+.mgw-bs-preview-destroy-shards i:nth-child(2){--dx:-22px;--dy:-39px;--r:-10deg;animation-delay:.018s}
+.mgw-bs-preview-destroy-shards i:nth-child(3){--dx:2px;--dy:-46px;--r:18deg;animation-delay:.036s}
+.mgw-bs-preview-destroy-shards i:nth-child(4){--dx:30px;--dy:-35px;--r:42deg;animation-delay:.054s}
+.mgw-bs-preview-destroy-shards i:nth-child(5){--dx:44px;--dy:-8px;--r:72deg;animation-delay:.072s}
+.mgw-bs-preview-destroy-shards i:nth-child(6){--dx:39px;--dy:23px;--r:104deg;animation-delay:.09s}
+.mgw-bs-preview-destroy-shards i:nth-child(7){--dx:16px;--dy:42px;--r:132deg;animation-delay:.108s}
+.mgw-bs-preview-destroy-shards i:nth-child(8){--dx:-13px;--dy:43px;--r:166deg;animation-delay:.126s}
+.mgw-bs-preview-destroy-shards i:nth-child(9){--dx:-36px;--dy:29px;--r:198deg;animation-delay:.144s}
+.mgw-bs-preview-destroy-shards i:nth-child(10){--dx:-45px;--dy:2px;--r:224deg;animation-delay:.162s}
+
+@keyframes mgwBsLivePreviewShotReticle{
+  0%,100%{opacity:0;transform:translate(-50%,-50%) scale(1.42) rotate(-14deg)}
+  6%{opacity:1;transform:translate(-50%,-50%) scale(.92) rotate(0deg)}
+  15%{opacity:.96;transform:translate(-50%,-50%) scale(1.03)}
+  25%{opacity:0;transform:translate(-50%,-50%) scale(1.08)}
+}
+@keyframes mgwBsLivePreviewShotPing{
+  0%,100%{opacity:0;transform:translate(-50%,-50%) scale(.7)}
+  9%{opacity:.72;transform:translate(-50%,-50%) scale(.86)}
+  18%{opacity:.28;transform:translate(-50%,-50%) scale(1.1)}
+  25%{opacity:0;transform:translate(-50%,-50%) scale(1.24)}
+}
+@keyframes mgwBsLivePreviewShotTracer{
+  0%,4%,100%{opacity:0;transform:rotate(41deg) scaleX(.04)}
+  9%{opacity:.96;transform:rotate(41deg) scaleX(.16)}
+  16%{opacity:1;transform:rotate(41deg) scaleX(1)}
+  23%{opacity:0;transform:rotate(41deg) scaleX(1)}
+}
+@keyframes mgwBsLivePreviewShotBolt{
+  0%,4%,100%{opacity:0;transform:translate(-50%,-50%) translateX(0) scale(.62)}
+  8%{opacity:1;transform:translate(-50%,-50%) translateX(4px) scale(1)}
+  17%{opacity:1;transform:translate(-50%,-50%) translateX(75px) scale(1.12)}
+  22%{opacity:0;transform:translate(-50%,-50%) translateX(84px) scale(.72)}
+}
+@keyframes mgwBsLivePreviewHitCore{
+  0%,100%{opacity:0;transform:translate(-50%,-50%) scale(.22)}
+  7%{opacity:1;transform:translate(-50%,-50%) scale(.82)}
+  13%{opacity:.96;transform:translate(-50%,-50%) scale(1)}
+  29%{opacity:0;transform:translate(-50%,-50%) scale(1.28)}
+}
+@keyframes mgwBsLivePreviewHitRing{
+  0%,100%{opacity:0;transform:translate(-50%,-50%) scale(.3)}
+  7%{opacity:.92;transform:translate(-50%,-50%) scale(.62)}
+  16%{opacity:.64;transform:translate(-50%,-50%) scale(1)}
+  32%{opacity:0;transform:translate(-50%,-50%) scale(1.55)}
+}
+@keyframes mgwBsLivePreviewHitFlare{
+  0%,100%{opacity:0;transform:translate(-50%,-50%) rotate(-16deg) scale(.45)}
+  9%{opacity:.94;transform:translate(-50%,-50%) rotate(3deg) scale(1)}
+  26%{opacity:0;transform:translate(-50%,-50%) rotate(16deg) scale(1.2)}
+}
+@keyframes mgwBsLivePreviewHitSpark{
+  0%,100%{opacity:0;transform:translate(-50%,-50%) translate(0,0) rotate(var(--a)) scaleY(.45)}
+  7%{opacity:1;transform:translate(-50%,-50%) translate(0,0) rotate(var(--a)) scaleY(1)}
+  27%{opacity:0;transform:translate(-50%,-50%) translate(var(--x),var(--y)) rotate(var(--a)) scaleY(.68)}
+}
+@keyframes mgwBsLivePreviewDestroyFlash{
+  0%,100%{opacity:0;transform:translate(-50%,-50%) scale(.18) rotate(-10deg)}
+  6%{opacity:1;transform:translate(-50%,-50%) scale(.82) rotate(1deg)}
+  12%{opacity:.94;transform:translate(-50%,-50%) scale(1.08) rotate(6deg)}
+  23%{opacity:.2;transform:translate(-50%,-50%) scale(1.34) rotate(12deg)}
+  35%{opacity:0;transform:translate(-50%,-50%) scale(1.48) rotate(15deg)}
+}
+@keyframes mgwBsLivePreviewDestroyRing{
+  0%,100%{opacity:0;transform:translate(-50%,-50%) scale(.25)}
+  7%{opacity:.95;transform:translate(-50%,-50%) scale(.52)}
+  18%{opacity:.48;transform:translate(-50%,-50%) scale(1.08)}
+  38%{opacity:0;transform:translate(-50%,-50%) scale(1.78)}
+}
+@keyframes mgwBsLivePreviewDestroyRingSecondary{
+  0%,3%,100%{opacity:0;transform:translate(-50%,-50%) scale(.35)}
+  10%{opacity:.72;transform:translate(-50%,-50%) scale(.62)}
+  21%{opacity:.3;transform:translate(-50%,-50%) scale(1.25)}
+  41%{opacity:0;transform:translate(-50%,-50%) scale(1.98)}
+}
+@keyframes mgwBsLivePreviewDestroyWreck{
+  0%,1%,100%{opacity:0;transform:translate(-50%,-50%) scale(.72)}
+  9%{opacity:.9;transform:translate(-50%,-50%) scale(1)}
+  19%{opacity:.62;transform:translate(-50%,-50%) scale(1.08)}
+  34%{opacity:0;transform:translate(-50%,-50%) scale(1.18)}
+}
+@keyframes mgwBsLivePreviewDestroySmoke{
+  0%,4%,100%{opacity:0;transform:translate(-50%,-50%) scale(.48)}
+  12%{opacity:.62;transform:translate(-50%,-50%) scale(.82)}
+  25%{opacity:.48;transform:translate(-50%,-50%) translate(0,-12px) scale(1.04)}
+  44%{opacity:0;transform:translate(-50%,-50%) translate(var(--sx),var(--sy)) scale(1.3)}
+}
+@keyframes mgwBsLivePreviewDestroyShard{
+  0%,1%,100%{opacity:0;transform:translate(-50%,-50%) translate(0,0) rotate(var(--r)) scale(.55)}
+  8%{opacity:1;transform:translate(-50%,-50%) translate(0,0) rotate(var(--r)) scale(1)}
+  24%{opacity:.86;transform:translate(-50%,-50%) translate(var(--dx),var(--dy)) rotate(calc(var(--r) + 32deg)) scale(.86)}
+  36%{opacity:0;transform:translate(-50%,-50%) translate(var(--dx),var(--dy)) rotate(calc(var(--r) + 68deg)) scale(.62)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .mgw-battleship-preview.effect *{animation:none!important}
+  .effect-shot .mgw-bs-preview-shot-reticle{opacity:.92;transform:translate(-50%,-50%) scale(1)}
+  .effect-shot .mgw-bs-preview-shot-ping{opacity:.36;transform:translate(-50%,-50%) scale(1)}
+  .effect-shot .mgw-bs-preview-shot-tracer{opacity:.42;transform:rotate(41deg) scaleX(1)}
+  .effect-shot .mgw-bs-preview-shot-bolt{opacity:.8;transform:translate(-50%,-50%) translateX(78px)}
+  .effect-hit .mgw-bs-preview-hit-core{opacity:.9;transform:translate(-50%,-50%) scale(.9)}
+  .effect-hit .mgw-bs-preview-hit-ring{opacity:.6;transform:translate(-50%,-50%) scale(1)}
+  .effect-hit .mgw-bs-preview-hit-flare{opacity:.55;transform:translate(-50%,-50%) scale(.92)}
+  .effect-hit .mgw-bs-preview-hit-sparks{display:none}
+  .effect-destroy .mgw-bs-preview-destroy-flash{opacity:.86;transform:translate(-50%,-50%) scale(.88)}
+  .effect-destroy .mgw-bs-preview-destroy-ring{opacity:.65;transform:translate(-50%,-50%) scale(1)}
+  .effect-destroy .mgw-bs-preview-destroy-wreck{opacity:.62;transform:translate(-50%,-50%) scale(1)}
+  .effect-destroy :is(.mgw-bs-preview-destroy-smoke,.mgw-bs-preview-destroy-shards){display:none}
 }
 
 /* Compact neutral ship: metallic/volumetric, without neon treatment. */
@@ -436,11 +596,4 @@
   .store-v2-game-product[data-store-game-product="battleship"] .store-v2-game-product-copy>p{font-size:8.3px}
 }
 
-@media (prefers-reduced-motion:reduce){
-  .mgw-battleship-preview.effect *{animation:none!important}
-  .effect-shot .mgw-bs-fx-tracer{opacity:.78;transform:rotate(38deg) scaleX(1)}
-  .effect-shot .mgw-bs-fx-reticle{opacity:1;transform:translate(-50%,-50%) scale(1)}
-  .effect-hit .mgw-bs-fx-burst,.effect-hit .mgw-bs-fx-shock,
-  .effect-destroy .mgw-bs-fx-burst,.effect-destroy .mgw-bs-fx-shock,.effect-destroy .mgw-bs-fx-smoke{opacity:.82}
-  .effect-destroy .mgw-bs-fx-shards i{opacity:.8}
-}
+

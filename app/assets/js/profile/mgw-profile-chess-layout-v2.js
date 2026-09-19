@@ -7,7 +7,7 @@ import { initProfileGoHardSquare } from './mgw-profile-go-hard-square-v1.js?v=1&
 import { initProfileDominoParity } from './mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1';
 import { initProfileDominoHardRatio } from './mgw-profile-domino-hard-ratio-v1.js?v=1&mvp19_9=hard-8x5-v1';
 import { initProfileFourInARowParity } from './mgw-profile-four-in-a-row-parity.js?v=8&four_profile=live-previews-v3&four_module=export-v11&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&copy=compact-v3';
-import { initProfileBattleshipParity } from './mgw-profile-battleship-parity.js?v=11&mvp19_12=profile-four-parity-v3&store=preview-parity-v11&geometry=square&header=steel-ship&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=unchanged-v2&copy=four-pattern';
+import { initProfileBattleshipParity } from './mgw-profile-battleship-parity.js?v=12&mvp19_12=profile-four-parity-v3&store=preview-parity-v12&geometry=square&header=steel-ship&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=live-parity-v1&copy=four-pattern';
 
 const profileChessArtworkPrewarm = [];
 const PROFILE_GAME_TAB_DRAG_THRESHOLD = 5;
