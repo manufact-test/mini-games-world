@@ -58,8 +58,8 @@ foreach ([
 ] as $gameType) {
     $assertTrue(str_contains($leaderboard, "'{$gameType}'"), 'Leaderboard owner must support ' . $gameType . '.');
 }
-$assertTrue(str_contains($leaderboard, 'COUNT(*) >= :min_matches'), 'Eligibility must enforce minimum rated matches in the authoritative query.');
-$assertTrue(str_contains($leaderboard, '>= :min_wins'), 'Eligibility must enforce minimum human wins in the authoritative query.');
+$assertTrue(str_contains($leaderboard, "HAVING COUNT(*) >= ' . \$minMatches"), 'Eligibility must enforce minimum rated matches in the authoritative query.');
+$assertTrue(str_contains($leaderboard, ">= ' . \$minWins"), 'Eligibility must enforce minimum human wins in the authoritative query.');
 $assertTrue(str_contains($leaderboard, 'ORDER BY s.points DESC'), 'Leaderboard ordering must start with visible points descending.');
 $assertTrue(str_contains($leaderboard, 's.rated_wins DESC'), 'Credited wins must be the second tie-break.');
 $assertTrue(str_contains($leaderboard, 's.updated_at_utc ASC'), 'Earlier arrival at equal score must be the third tie-break.');
