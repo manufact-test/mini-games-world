@@ -54,8 +54,8 @@ assert.ok(
   manifest.includes("renderer-cosmetics-v1.js?v=4&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&base=v60-shot-miss-no-impact"),
   'Shot manual review must preserve the accepted Battleship manifest baseline'
 );
-assert.ok(entry.includes("$battleshipRendererImportKey = './assets/js/games/battleship/renderer.js?v=56'") && entry.includes("$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v4&fire=queue-gap-v2&shot_motion=readable-v2&hit=preview-parity-v2';"), 'Active v110 runtime must cache-bust the accepted three-effect module with queued-fire ownership');
+assert.ok(entry.includes("$battleshipRendererImportKey = './assets/js/games/battleship/renderer.js?v=56'") && entry.includes("$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v5&fire=pending-truth-v3&shot_motion=readable-v2&hit=preview-parity-v2&destroy=readable-centered-v2';"), 'Active v110 runtime must cache-bust the accepted three-effect module with queued-fire ownership');
 assert.ok(launch.includes('/app/v110.php?v=1233&'), 'Shot must preserve the accepted shared Telegram route version');
-assert.ok(launch.includes('battleship_shot=live-v2') && launch.includes('battleship_impacts=live-v2') && launch.includes('battleship_fire=queue-gap-v2'), 'Telegram route must preserve accepted effects and publish reliable-fire identity');
+assert.ok(launch.includes('battleship_shot=live-v2') && launch.includes('battleship_impacts=live-v2') && launch.includes('battleship_fire=pending-truth-v3'), 'Telegram route must preserve accepted effects and publish reliable-fire identity');
 
 console.log('Battleship LIVE Shot effect contract passed.');
