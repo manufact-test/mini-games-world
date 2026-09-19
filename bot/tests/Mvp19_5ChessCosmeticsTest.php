@@ -38,7 +38,7 @@ $assertSame(count(glob($databaseDir . '/migrations/*.php') ?: []), (int)$migrati
 
 $assertSame(11, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_catalog WHERE item_type = 'game' AND item_family = 'game_chess' AND catalog_status = 'active'"), 'Chess catalogue must contain eleven permanent items');
 $assertSame(11, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_type = 'item' AND category = 'games' AND subcategory = 'chess' AND offer_status = 'active'"), 'Store must expose eleven Chess item offers');
-$assertSame(0, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_type = 'bundle' AND subcategory = 'chess'"), 'Chess premium bundle composition must remain unpublished until the product-owner gate');
+$assertSame(1, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_type = 'bundle' AND subcategory = 'chess' AND offer_status = 'active'"), 'MVP-19.13 must publish exactly one active Chess premium bundle after the product-owner gate');
 
 $pricesForLayer = static function (string $layer) use ($database): array {
     return array_map('intval', array_column($database->fetchAll(
