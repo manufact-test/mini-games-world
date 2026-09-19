@@ -13,7 +13,7 @@ const STORE_TABS = Object.freeze([
   { id:'bundles', label:'Наборы' },
 ]);
 const GAME_CATALOG_ORDER = Object.freeze(['tictactoe','chess','checkers','domino']);
-const BUNDLE_PROTOTYPE_GAME = 'tictactoe';
+const BUNDLE_REFERENCE_GAMES = Object.freeze(['tictactoe','checkers']);
 
 let storeState = null;
 let storeSurface = 'tab';
@@ -26,7 +26,7 @@ let equipBusy = false;
 ensureBundlePrototypeStyles();
 
 function ensureBundlePrototypeStyles(){
-  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=2&mvp19_13=mobile-scroll-v1', import.meta.url).href;
+  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=3&mvp19_13=ttt-checkers-reference-v1', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-store-bundle-prototype]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -34,7 +34,7 @@ function ensureBundlePrototypeStyles(){
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-mobile-scroll-v1';
+  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-ttt-checkers-reference-v1';
   link.href = href;
   document.head.appendChild(link);
 }
@@ -522,11 +522,25 @@ function bundleMemberOffers(bundle, snapshot = storeState){
     .filter(offer => memberIds.has(String(offer?.item_ids?.[0] || '')));
 }
 
-function bundleMemberLabel(offer){
+function bundlePresentation(gameType){
+  if (gameType === 'checkers') {
+    return {
+      gameTitle:'Шашки',
+      description:'Неоновая доска, неоновые шашки и все три эффекта в одном комплекте.',
+      labels:{ theme:'Доска', elements:'Шашки', effect:'Эффект' },
+    };
+  }
+  return {
+    gameTitle:'Крестики-нолики',
+    description:'Лучшее оформление игры и все три эффекта в одном комплекте.',
+    labels:{ theme:'Поле', elements:'Знаки', effect:'Эффект' },
+  };
+}
+
+function bundleMemberLabel(gameType, offer){
   const layer = String(offer?.metadata?.layer || '');
-  if (layer === 'theme') return 'Поле';
-  if (layer === 'elements') return 'Знаки';
-  return 'Эффект';
+  const presentation = bundlePresentation(gameType);
+  return presentation.labels[layer] || 'Эффект';
 }
 
 function renderBundleMembers(bundle, sheet = false){
@@ -548,7 +562,7 @@ function renderBundleMembers(bundle, sheet = false){
               ${owned ? '<i class="store-v2-bundle-owned-check" aria-label="Уже в коллекции">✓</i>' : ''}
             </div>
             <div class="store-v2-bundle-reference-member-copy">
-              <span>${escapeHtml(bundleMemberLabel(offer))}</span>
+              <span>${escapeHtml(bundleMemberLabel(gameType, offer))}</span>
               <strong>${escapeHtml(name)}</strong>
             </div>
           </div>
@@ -559,8 +573,8 @@ function renderBundleMembers(bundle, sheet = false){
 }
 
 function renderBundlesTab(){
-  const bundles = gameBundlesFromSnapshot().filter(bundle => bundleGameType(bundle) === BUNDLE_PROTOTYPE_GAME);
-  if (!bundles.length) return emptyState('Набор пока недоступен');
+  const bundles = gameBundlesFromSnapshot().filter(bundle => BUNDLE_REFERENCE_GAMES.includes(bundleGameType(bundle)));
+  if (!bundles.length) return emptyState('Наборы пока недоступны');
   return `
     <div class="store-v2-bundle-reference-list">
       ${bundles.map(renderGameBundle).join('')}
@@ -579,19 +593,20 @@ function renderGameBundle(bundle){
   const regularFullPrice = Number(bundle?.regular_price_coins || regularMissingPrice || 0);
   const saving = Math.max(0, regularMissingPrice - currentPrice);
   const title = String(bundle?.display_name || 'Неоновый комплект');
+  const presentation = bundlePresentation(gameType);
   const progress = allOwned
     ? `${itemCount || 5} из ${itemCount || 5} уже в коллекции`
     : (owned > 0 ? `У вас ${owned} из ${itemCount || 5} · осталось ${missing}` : `${itemCount || 5} предметов · навсегда`);
   return `
     <article class="store-v2-bundle-reference ${allOwned ? 'owned' : ''}" data-store-bundle-game="${escapeAttr(gameType)}">
       <div class="store-v2-bundle-reference-topline">
-        <span>Крестики-нолики</span>
+        <span>${escapeHtml(presentation.gameTitle)}</span>
         <b>Премиум-набор</b>
       </div>
       <div class="store-v2-bundle-reference-hero">
         <div>
           <h2>${escapeHtml(title)}</h2>
-          <p>Лучшее оформление игры и все три эффекта в одном комплекте.</p>
+          <p>${escapeHtml(presentation.description)}</p>
         </div>
         <em>${itemCount || 5}</em>
       </div>
