@@ -1,12 +1,13 @@
 import { api } from '../api/client.js?v=34';
 
-const API_HOOK = Symbol.for('mgw.store.battleship.preview-parity.v5');
-const INSTALL_KEY = '__mgwBattleshipStorePreviewParityV5Installed';
-const STYLE_MARK = 'mvp19-12-battleship-store-preview-parity-v5';
+const API_HOOK = Symbol.for('mgw.store.battleship.preview-parity.v6');
+const INSTALL_KEY = '__mgwBattleshipStorePreviewParityV6Installed';
+const STYLE_MARK = 'mvp19-12-battleship-store-preview-parity-v6';
 
 export function installBattleshipStorePresentation(){
   ensureStyles();
   installApiHooks();
+  installHydrationRepair();
   if (globalThis[INSTALL_KEY]) return;
   globalThis[INSTALL_KEY] = true;
 
@@ -35,7 +36,7 @@ export function upgradeBattleshipStorePresentation(){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=5&mvp19_12=store-preview-parity-v5&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&preview_geometry=square-grid-v2&effects=unchanged-v2', import.meta.url).href;
+  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=6&mvp19_12=store-preview-parity-v6&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&preview_geometry=square-grid-v2&hydration=observer-v1&effects=unchanged-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -66,12 +67,52 @@ function installApiHooks(){
   });
 }
 
+let hydrationObserver = null;
+let hydrationUpgradeQueued = false;
+
+function installHydrationRepair(){
+  if (typeof MutationObserver === 'undefined' || hydrationObserver instanceof MutationObserver) return;
+  const root = document.documentElement;
+  if (!(root instanceof HTMLElement)) return;
+
+  hydrationObserver = new MutationObserver(records => {
+    let relevant = false;
+    for (const record of records) {
+      const target = record.target instanceof Element ? record.target : null;
+      if (target?.closest?.('.store-v2-game-preview[data-game-type="battleship"]')) {
+        relevant = true;
+        break;
+      }
+      for (const node of record.addedNodes) {
+        if (!(node instanceof Element)) continue;
+        if (
+          node.matches?.('.store-v2-game-preview[data-game-type="battleship"], [data-store-v2-game-product="battleship"], [data-store-v2-game="battleship"]')
+          || node.querySelector?.('.store-v2-game-preview[data-game-type="battleship"], [data-store-v2-game-product="battleship"], [data-store-v2-game="battleship"]')
+        ) {
+          relevant = true;
+          break;
+        }
+      }
+      if (relevant) break;
+    }
+    if (!relevant || hydrationUpgradeQueued) return;
+    hydrationUpgradeQueued = true;
+    queueMicrotask(() => {
+      hydrationUpgradeQueued = false;
+      upgradeBattleshipStorePresentation();
+    });
+  });
+  hydrationObserver.observe(root, { childList:true, subtree:true });
+}
+
 function scheduleUpgrade(){
   const run = () => upgradeBattleshipStorePresentation();
   queueMicrotask(run);
   if (typeof globalThis.requestAnimationFrame === 'function') globalThis.requestAnimationFrame(run);
   globalThis.setTimeout(run, 0);
   globalThis.setTimeout(run, 80);
+  globalThis.setTimeout(run, 240);
+  globalThis.setTimeout(run, 700);
 }
 
 function renameSelector(root){
@@ -168,7 +209,7 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = safeVariant(preview.dataset.cosmeticVariant || 'sea');
-    const signature = `${layer}:${variant}:store-preview-parity-v5`;
+    const signature = `${layer}:${variant}:store-preview-parity-v6`;
 
     if (preview.dataset.mgwBattleshipPreview === signature) return;
     preview.dataset.mgwBattleshipPreview = signature;

@@ -7,8 +7,10 @@ $gameCss = file_get_contents($root . '/app/assets/css/games/battleship/game.css'
 $renderer = file_get_contents($root . '/app/assets/js/games/battleship/renderer.js');
 $v110 = file_get_contents($root . '/app/v110.php');
 $launch = file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
+$readonlySync = file_get_contents($root . '/app/assets/js/production-v110-readonly-game-sync.js');
+$manifest = require $root . '/app/runtime/client/version-manifest.php';
 
-if (!is_string($fitCss) || !is_string($gameCss) || !is_string($renderer) || !is_string($v110) || !is_string($launch)) {
+if (!is_string($fitCss) || !is_string($gameCss) || !is_string($renderer) || !is_string($v110) || !is_string($launch) || !is_string($readonlySync)) {
     throw new RuntimeException('Battleship viewport corrective sources are unavailable.');
 }
 
@@ -78,6 +80,16 @@ if (!str_contains($v110, 'is_file($battleshipExitFitPath)')) {
 }
 if (!str_contains($launch, 'battleship_viewport=scroll-v1')) {
     throw new RuntimeException('Telegram launch must publish Battleship viewport scroll identity.');
+}
+if (!str_contains($readonlySync, "if (document.getElementById('confirmLeaveGame')) return false;")) {
+    throw new RuntimeException('Readonly game watch must pause while the leave confirmation sheet is open.');
+}
+$readonlyTarget = (string)($manifest['imports']['./assets/js/production-v110-readonly-game-sync.js?v=1107&b=bc9d7b435f1a'] ?? '');
+if (!str_contains($readonlyTarget, 'v=1117') || !str_contains($readonlyTarget, 'leave_confirm=preserve-v1')) {
+    throw new RuntimeException('Active runtime graph must publish the leave-confirm preservation revision.');
+}
+if (!str_contains($launch, 'battleship_leave_sheet=readonly-guard-v1')) {
+    throw new RuntimeException('Telegram launch must publish leave-sheet preservation identity.');
 }
 
 echo "battleship-bounded-screen-scroll-v1=ok\n";
