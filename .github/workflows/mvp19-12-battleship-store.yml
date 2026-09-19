@@ -16,6 +16,8 @@ on:
       - 'app/assets/css/games/battleship/live-cosmetics-v1.css'
       - 'app/assets/css/games/battleship/live-exit-fit-v1.css'
       - 'app/v110.php'
+      - 'bot/api.php'
+      - 'bot/games/battleship/BattleshipService.php'
       - 'app/assets/js/screens/game-screen-v102.js'
       - 'app/assets/css/main.css'
       - 'bot/database/migrations/20260919_0040_add_battleship_store_cosmetics.php'
@@ -48,6 +50,8 @@ on:
       - 'app/assets/css/games/battleship/live-cosmetics-v1.css'
       - 'app/assets/css/games/battleship/live-exit-fit-v1.css'
       - 'app/v110.php'
+      - 'bot/api.php'
+      - 'bot/games/battleship/BattleshipService.php'
       - 'app/assets/js/screens/game-screen-v102.js'
       - 'app/assets/css/main.css'
       - 'bot/database/migrations/20260919_0040_add_battleship_store_cosmetics.php'
@@ -83,6 +87,8 @@ jobs:
           php -l bot/tests/Mvp19_12BattleshipProfileInventoryTest.php
           php -l bot/tests/Mvp19_12BattleshipViewportScrollTest.php
           php -l app/v110.php
+          php -l bot/api.php
+          php -l bot/games/battleship/BattleshipService.php
           node --check bot/tests/Mvp19_12BattleshipProfileParityContractTest.mjs
           node --check bot/tests/Mvp19_12BattleshipLiveMapsFleetsTest.mjs
           node --check bot/tests/Mvp19_12BattleshipLiveShotEffectTest.mjs

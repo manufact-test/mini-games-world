@@ -410,7 +410,7 @@ function mountDestroyEffect({ targetCells, gameId, ownerId }){
 
   const root = document.createElement('span');
   root.className = 'mgw-bs-live-destroy-fx';
-  root.dataset.battleshipDestroyFx = 'critical-sink-v2';
+  root.dataset.battleshipDestroyFx = 'critical-sink-v3';
   root.dataset.battleshipDestroyGame = gameId;
   root.dataset.battleshipDestroyOwner = ownerId;
   root.dataset.battleshipDestroyCells = String(cells.length);
@@ -654,7 +654,7 @@ function clamp(value, min, max){
 
 function ensureLiveStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/battleship/live-cosmetics-v1.css?v=10&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&effects=accepted-three-v1&fire=pending-truth-v3&shot_motion=readable-v2&hit=preview-parity-v2&destroy=readable-centered-v2', import.meta.url).href;
+  const href = new URL('../../../css/games/battleship/live-cosmetics-v1.css?v=11&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&effects=accepted-three-v1&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-layer-v3', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-live-cosmetics]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;

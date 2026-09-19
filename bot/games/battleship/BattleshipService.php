@@ -320,6 +320,17 @@ final class BattleshipService
     {
         if (($game['phase'] ?? '') !== 'battle') throw new RuntimeException('Сначала завершите расстановку кораблей.');
         if ($cell < 0 || $cell >= 100) throw new RuntimeException('Выберите клетку для выстрела.');
+
+        // Battleship fire uses a latency-sensitive action fast path and therefore
+        // owns its turn-timeout check locally instead of depending on a full
+        // cross-game cleanup sweep before every shot.
+        if ($this->isTurnExpired($game)) {
+            $loserId = (string)($game['turn'] ?? '');
+            $winnerId = $this->otherPlayerId($game, $loserId);
+            $this->settlement->finish($db, $game, $winnerId, 'timeout', $loserId);
+            return $game;
+        }
+
         if ((string)($game['turn'] ?? '') !== $shooterId) throw new RuntimeException('Сейчас не ваш ход.');
 
         $shots = $this->normalizeShotMap($game['battleship_shots'][$shooterId] ?? []);
