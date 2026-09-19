@@ -13,7 +13,7 @@ const STORE_TABS = Object.freeze([
   { id:'bundles', label:'Наборы' },
 ]);
 const GAME_CATALOG_ORDER = Object.freeze(['tictactoe','chess','checkers','domino']);
-const BUNDLE_REFERENCE_GAMES = Object.freeze(['tictactoe','checkers']);
+const BUNDLE_REFERENCE_GAMES = Object.freeze(['tictactoe','chess','checkers','reversi','go','domino','four_in_a_row','battleship']);
 
 let storeState = null;
 let storeSurface = 'tab';
@@ -28,7 +28,7 @@ let bundlePreviewResizeBound = false;
 ensureBundlePrototypeStyles();
 
 function ensureBundlePrototypeStyles(){
-  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=10&mvp19_13=bundle-detail-class-separation-v7', import.meta.url).href;
+  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=11&mvp19_13=all-eight-bundles-v8', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-store-bundle-prototype]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -36,7 +36,7 @@ function ensureBundlePrototypeStyles(){
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-bundle-detail-class-separation-v7';
+  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-all-eight-bundles-v8';
   link.href = href;
   document.head.appendChild(link);
 }
@@ -531,17 +531,52 @@ function bundleMemberOffers(bundle, snapshot = storeState){
 }
 
 function bundlePresentation(gameType){
-  if (gameType === 'checkers') {
-    return {
+  const presentations = {
+    tictactoe:{
+      gameTitle:'Крестики-нолики',
+      description:'Лучшее оформление игры и все три эффекта в одном комплекте.',
+      labels:{ theme:'Поле', elements:'Знаки', effect:'Эффект' },
+    },
+    chess:{
+      gameTitle:'Шахматы',
+      description:'Неоновая доска, неоновые фигуры и все три эффекта в одном комплекте.',
+      labels:{ theme:'Доска', elements:'Фигуры', effect:'Эффект' },
+    },
+    checkers:{
       gameTitle:'Шашки',
       description:'Неоновая доска, неоновые шашки и все три эффекта в одном комплекте.',
       labels:{ theme:'Доска', elements:'Шашки', effect:'Эффект' },
-    };
-  }
-  return {
-    gameTitle:'Крестики-нолики',
-    description:'Лучшее оформление игры и все три эффекта в одном комплекте.',
-    labels:{ theme:'Поле', elements:'Знаки', effect:'Эффект' },
+    },
+    reversi:{
+      gameTitle:'Реверси',
+      description:'Неоновое поле, неоновые фишки и все три эффекта в одном комплекте.',
+      labels:{ theme:'Поле', elements:'Фишки', effect:'Эффект' },
+    },
+    go:{
+      gameTitle:'Го',
+      description:'Неоновая доска, неоновые камни и все три эффекта в одном комплекте.',
+      labels:{ theme:'Доска', elements:'Камни', effect:'Эффект' },
+    },
+    domino:{
+      gameTitle:'Домино',
+      description:'Неоновый стол, неоновые костяшки и все три эффекта в одном комплекте.',
+      labels:{ theme:'Стол', elements:'Костяшки', effect:'Эффект' },
+    },
+    four_in_a_row:{
+      gameTitle:'4 в ряд',
+      description:'Неоновое поле, неоновые фишки и все три эффекта в одном комплекте.',
+      labels:{ theme:'Поле', elements:'Фишки', effect:'Эффект' },
+    },
+    battleship:{
+      gameTitle:'Морской бой',
+      description:'Неоновая карта, неоновый флот и все три эффекта в одном комплекте.',
+      labels:{ theme:'Карта', elements:'Флот', effect:'Эффект' },
+    },
+  };
+  return presentations[gameType] || {
+    gameTitle:String(gameType || 'Игра'),
+    description:'Премиальное оформление и все три эффекта в одном комплекте.',
+    labels:{ theme:'Оформление', elements:'Элементы', effect:'Эффект' },
   };
 }
 
@@ -553,16 +588,17 @@ function bundleMemberLabel(gameType, offer){
 
 function renderBundleMemberStorePreview(gameType, layer, variant, name, owned, sheet = false){
   const preview = gameCosmeticPreview(gameType, layer, variant, name);
-  if (gameType !== 'checkers') return preview;
+  if (gameType === 'tictactoe') return preview;
   return `
     <div
       class="store-v2-bundle-native-store-viewport ${sheet ? 'is-sheet' : ''}"
       data-store-v2-native-preview-viewport
       data-store-v2-native-preview-layer="${escapeAttr(layer)}"
+      data-store-v2-native-preview-game="${escapeAttr(gameType)}"
     >
       <div
         class="store-v2-game-product store-v2-bundle-native-store-product ${owned ? 'owned' : ''}"
-        data-store-game-product="checkers"
+        data-store-game-product="${escapeAttr(gameType)}"
         data-store-v2-native-preview-source
         aria-hidden="true"
       >
