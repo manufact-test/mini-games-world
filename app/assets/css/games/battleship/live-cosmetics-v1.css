@@ -356,6 +356,7 @@
   will-change:transform,opacity;
 }
 .mgw-bs-live-destroy-flash{
+  z-index:6;
   transform:translate(-50%,-50%);
   border-radius:50%;
   background:
@@ -381,6 +382,7 @@
   filter:drop-shadow(0 0 9px rgba(255,105,48,.92)) drop-shadow(0 0 19px rgba(207,34,53,.46));
 }
 .mgw-bs-live-destroy-ring{
+  z-index:4;
   transform:translate(-50%,-50%);
   border:3px solid rgba(255,86,69,.92);
   border-radius:50%;
@@ -395,6 +397,7 @@
   box-shadow:0 0 12px rgba(255,134,49,.38);
 }
 .mgw-bs-live-destroy-wreck{
+  z-index:2;
   transform:translate(-50%,-50%);
   border-radius:38% 62% 46% 54%;
   background:
@@ -403,6 +406,7 @@
   filter:drop-shadow(0 0 7px rgba(255,103,50,.55));
 }
 .mgw-bs-live-destroy-smoke{
+  z-index:3;
   transform:translate(-50%,-50%);
   border-radius:50%;
   background:
@@ -410,6 +414,7 @@
   filter:blur(1.3px);
 }
 .mgw-bs-live-destroy-shard{
+  z-index:5;
   width:5px;
   height:14px;
   margin-left:-2.5px;
