@@ -410,7 +410,7 @@ function mountDestroyEffect({ targetCells, gameId, ownerId }){
 
   const root = document.createElement('span');
   root.className = 'mgw-bs-live-destroy-fx';
-  root.dataset.battleshipDestroyFx = 'critical-sink-v3';
+  root.dataset.battleshipDestroyFx = 'critical-sink-v4';
   root.dataset.battleshipDestroyGame = gameId;
   root.dataset.battleshipDestroyOwner = ownerId;
   root.dataset.battleshipDestroyCells = String(cells.length);
@@ -418,6 +418,8 @@ function mountDestroyEffect({ targetCells, gameId, ownerId }){
 
   const flash = document.createElement('i');
   flash.className = 'mgw-bs-live-destroy-flash';
+  const fireCore = document.createElement('i');
+  fireCore.className = 'mgw-bs-live-destroy-fire-core';
   const ring = document.createElement('i');
   ring.className = 'mgw-bs-live-destroy-ring';
   const ring2 = document.createElement('i');
@@ -431,6 +433,10 @@ function mountDestroyEffect({ targetCells, gameId, ownerId }){
     node.style.width = `${blastSize}px`;
     node.style.height = `${blastSize}px`;
   });
+  fireCore.style.left = `${x}px`;
+  fireCore.style.top = `${visualY}px`;
+  fireCore.style.width = `${blastSize * .48}px`;
+  fireCore.style.height = `${blastSize * .48}px`;
 
   const smokeNodes = [];
   const smokeOffsets = [
@@ -461,7 +467,7 @@ function mountDestroyEffect({ targetCells, gameId, ownerId }){
     shards.push({ node:shard, angle });
   }
 
-  root.append(flash, ring, ring2, wreck);
+  root.append(flash, fireCore, ring, ring2, wreck);
   document.body.appendChild(root);
 
   const reducedMotion = typeof globalThis.matchMedia === 'function'
@@ -475,6 +481,14 @@ function mountDestroyEffect({ targetCells, gameId, ownerId }){
   }
 
   const animations = [
+    fireCore.animate([
+      { opacity:0, transform:'translate(-50%,-50%) scale(.34) rotate(-18deg)' },
+      { opacity:1, transform:'translate(-50%,-50%) scale(.86) rotate(4deg)', offset:.12 },
+      { opacity:1, transform:'translate(-50%,-50%) scale(1.04) rotate(34deg)', offset:.38 },
+      { opacity:.96, transform:'translate(-50%,-50%) scale(.98) rotate(72deg)', offset:.68 },
+      { opacity:.62, transform:'translate(-50%,-50%) scale(.9) rotate(106deg)', offset:.84 },
+      { opacity:0, transform:'translate(-50%,-50%) scale(.78) rotate(138deg)' },
+    ], { duration:2050, easing:'cubic-bezier(.18,.7,.2,1)', fill:'forwards' }),
     flash.animate([
       { opacity:0, transform:'translate(-50%,-50%) scale(.18) rotate(-10deg)' },
       { opacity:1, transform:'translate(-50%,-50%) scale(.82) rotate(1deg)', offset:.18 },
@@ -530,7 +544,7 @@ function mountDestroyEffect({ targetCells, gameId, ownerId }){
   });
 
   Promise.allSettled(animations.map(animation => animation.finished)).then(cleanup);
-  globalThis.setTimeout(cleanup, 2250);
+  globalThis.setTimeout(cleanup, 2350);
 }
 
 function shotEventKey(game){
@@ -654,7 +668,7 @@ function clamp(value, min, max){
 
 function ensureLiveStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/battleship/live-cosmetics-v1.css?v=11&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&effects=accepted-three-v1&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-layer-v3', import.meta.url).href;
+  const href = new URL('../../../css/games/battleship/live-cosmetics-v1.css?v=12&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&effects=accepted-three-v1&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-core-v4', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-live-cosmetics]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
