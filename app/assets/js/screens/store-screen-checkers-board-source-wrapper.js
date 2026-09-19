@@ -6,11 +6,11 @@ import {
 import {
   installReversiStorePresentation,
   upgradeReversiStorePresentation,
-} from './store-screen-reversi-store-v1.js?v=4&mvp19_7=store-only&review=manual-corrective-v2&paid_default=copy-human-v1';
+} from './store-screen-reversi-store-v1.js?v=5&mvp19_7=store-only&review=manual-corrective-v2&paid_default=copy-human-v1&bundles=owner-v1';
 import {
   installGoStorePresentation,
   upgradeGoStorePresentation,
-} from './store-screen-go-store-v1.js?v=4&mvp19_8=effects-premium-v2&paid_default=copy-human-v1';
+} from './store-screen-go-store-v1.js?v=5&mvp19_8=effects-premium-v2&paid_default=copy-human-v1&bundles=owner-v1';
 import {
   installDominoStorePresentation,
   upgradeDominoStorePresentation,
@@ -20,11 +20,11 @@ import { installDominoStoreEffectsV9 } from './store-screen-domino-effects-v9.js
 import {
   installFourInARowStorePresentation,
   upgradeFourInARowStorePresentation,
-} from './store-screen-four-in-a-row-store-v1.js?v=11&four_store=live-previews-v3&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&export=profile-preview-v4&copy=compact-v3';
+} from './store-screen-four-in-a-row-store-v1.js?v=12&four_store=live-previews-v3&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&export=profile-preview-v4&copy=compact-v3&bundles=owner-v1';
 import {
   installBattleshipStorePresentation,
   upgradeBattleshipStorePresentation,
-} from './store-screen-battleship-store-v1.js?v=14&mvp19_12=store-preview-parity-v14&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=live-parity-destroy-v3';
+} from './store-screen-battleship-store-v1.js?v=15&mvp19_12=store-preview-parity-v14&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=live-parity-destroy-v3&bundles=owner-v1';
 import {
   installPaidDefaultDedupV1,
   upgradePaidDefaultDedupV1,
