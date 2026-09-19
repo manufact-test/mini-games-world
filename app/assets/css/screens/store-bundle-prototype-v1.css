@@ -232,7 +232,7 @@
   border:1px solid rgba(255,255,255,.055);
 }
 
-.store-v2-bundle-reference-preview .store-v2-game-preview{
+.store-v2-bundle-reference-member[data-store-bundle-member-game="tictactoe"] .store-v2-bundle-reference-preview .store-v2-game-preview{
   width:100%;
   height:auto;
   min-height:70px;
@@ -243,22 +243,22 @@
   box-shadow:none;
 }
 
-.store-v2-bundle-reference-preview .store-v2-game-preview[data-cosmetic-layer="theme"]{
+.store-v2-bundle-reference-member[data-store-bundle-member-game="tictactoe"] .store-v2-bundle-reference-preview .store-v2-game-preview[data-cosmetic-layer="theme"]{
   overflow:hidden;
   border:0;
   background:transparent;
 }
 
-.store-v2-bundle-reference-preview .store-v2-mini-board{
+.store-v2-bundle-reference-member[data-store-bundle-member-game="tictactoe"] .store-v2-bundle-reference-preview .store-v2-mini-board{
   width:64px;
   height:64px;
 }
 
-.store-v2-bundle-reference-preview .store-v2-mini-marks span{
+.store-v2-bundle-reference-member[data-store-bundle-member-game="tictactoe"] .store-v2-bundle-reference-preview .store-v2-mini-marks span{
   font-size:38px;
 }
 
-.store-v2-bundle-reference-preview .store-v2-mini-effect{
+.store-v2-bundle-reference-member[data-store-bundle-member-game="tictactoe"] .store-v2-bundle-reference-preview .store-v2-mini-effect{
   width:66px;
   height:62px;
 }
@@ -568,7 +568,7 @@
   border-radius:10px;
 }
 
-.store-v2-bundle-reference-members.is-sheet .store-v2-bundle-reference-preview .store-v2-game-preview{
+.store-v2-bundle-reference-members.is-sheet .store-v2-bundle-reference-member[data-store-bundle-member-game="tictactoe"] .store-v2-bundle-reference-preview .store-v2-game-preview{
   min-height:64px;
 }
 
