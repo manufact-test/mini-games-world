@@ -37,6 +37,11 @@ assert.match(store, /bundle\?\.owned_count/);
 assert.match(store, /bundle\?\.missing_count/);
 assert.match(store, /bundle\?\.regular_missing_price_coins/);
 assert.match(store, /renderBundleConfirmVisual\(offer\)/);
+assert.match(store, /data-store-v2-bundle-confirm-clone/);
+assert.match(store, /function hydrateCheckersBundleConfirmFromVisibleCard\(\)/);
+assert.match(store, /cloneNode\(true\)/);
+assert.match(store, /store-v2-bundle-confirm-cloned-members/);
+assert.match(store, /scheduleBundlePreviewFit\(sheet\)/);
 assert.match(store, /renderBundleConfirmPricing\(offer\)/);
 assert.match(store, /store-v2-confirm-bundle/);
 assert.match(store, /const itemCount = Array\.isArray\(bundle\?\.item_ids\)/);
@@ -81,7 +86,7 @@ assert.match(css, /flex:1 1 0/);
 assert.match(css, /overflow-y:auto!important/);
 assert.match(css, /border-radius:11px/);
 assert.match(css, /border-radius:8px/);
-assert.match(store, /store-bundle-prototype-v1\.css\?v=7&mvp19_13=checkers-preview-fit-sheet-parity-v4/);
+assert.match(store, /store-bundle-prototype-v1\.css\?v=8&mvp19_13=checkers-sheet-clone-v5/);
 assert.match(store, /data-store-bundle-member-game=/);
 assert.match(store, /data-store-bundle-member-layer=/);
 assert.match(css, /data-store-bundle-member-game="checkers"/);
@@ -103,8 +108,8 @@ assert.match(checkersWrapper, /inactiveBundlePanel/);
 assert.match(checkersWrapper, /checkersEffectObserver\.unobserve\(preview\)/);
 
 assert.match(manifest, /store-screen-checkers-board-source-wrapper\.js\?v=35[^']*bundle_fit=v4[^']*parent=store-screen-checkers-wrapper\.js\?v=5/);
-assert.match(manifest, /store-screen\.js\?v=62[^']*mvp19_13=checkers-preview-fit-sheet-parity-v4/);
-assert.match(launch, /bundles=checkers-preview-fit-sheet-parity-v4/);
+assert.match(manifest, /store-screen\.js\?v=63[^']*mvp19_13=checkers-sheet-clone-v5/);
+assert.match(launch, /bundles=checkers-sheet-clone-v5/);
 
 for (const itemId of [
   'game-ttt-field-neon',
