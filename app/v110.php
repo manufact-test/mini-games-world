@@ -96,18 +96,18 @@ $imports[$dominoRendererImportKey] .= '&gesture_owner=v27&precision_static=2';
 $imports[$dominoRendererImportKey] .= '&live_effects=v41';
 
 // Staging Battleship manual-review cache hook: keep the accepted manifest target intact
-// while giving the LIVE Shot acceptance build a fresh module URL. Fold the accepted
-// effect into the canonical manifest only after manual acceptance.
+// while giving the accepted Shot + Hit/Destroy review build a fresh module URL. Fold
+// the reviewed effects into the canonical manifest only after manual acceptance.
 $battleshipRendererImportKey = './assets/js/games/battleship/renderer.js?v=56';
 if (!isset($imports[$battleshipRendererImportKey])
     || !is_string($imports[$battleshipRendererImportKey])
     || $imports[$battleshipRendererImportKey] === '') {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Battleship LIVE Shot renderer is unavailable.';
+    echo 'Mini Games World Battleship LIVE effects renderer is unavailable.';
     exit;
 }
-$imports[$battleshipRendererImportKey] .= '&live_effects=shot-v1';
+$imports[$battleshipRendererImportKey] .= '&live_effects=shot-hit-destroy-v1';
 
 
 foreach (['main_css', 'consistency_css', 'bootstrap'] as $requiredAsset) {

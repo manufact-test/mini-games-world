@@ -1,5 +1,5 @@
-/* MVP-19.12 Battleship LIVE — maps + fleets only.
-   This layer is presentation-only. It never changes board state, hit logic or hidden information. */
+/* MVP-19.12 Battleship LIVE — maps + fleets + accepted Shot + Hit/Destroy review effects.
+   This layer is presentation-only. It never changes board state, shot logic or hidden information. */
 
 #gameBoard[data-game-type="battleship"][data-mgw-battleship-live-cosmetics="maps-fleets-v4"] .battleship-coordinate-board{
   isolation:isolate;
@@ -250,6 +250,195 @@
 
 @media (prefers-reduced-motion:reduce){
   .mgw-bs-live-shot-fx *{
+    animation:none!important;
+    transition:none!important;
+  }
+}
+
+
+/* LIVE EFFECT 2 — Impact Flash.
+   Confirmed hit only: compact amber/white impact on one revealed hit cell. */
+.mgw-bs-live-hit-fx{
+  position:fixed;
+  inset:0;
+  z-index:6210;
+  display:block;
+  pointer-events:none;
+  overflow:hidden;
+  contain:layout paint style;
+}
+.mgw-bs-live-hit-core,
+.mgw-bs-live-hit-ring,
+.mgw-bs-live-hit-flare,
+.mgw-bs-live-hit-spark{
+  position:absolute;
+  display:block;
+  pointer-events:none;
+  box-sizing:border-box;
+  will-change:transform,opacity;
+}
+.mgw-bs-live-hit-core{
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:
+    radial-gradient(circle,
+      rgba(255,255,255,.98) 0 8%,
+      rgba(255,244,177,.98) 9% 20%,
+      rgba(255,178,55,.94) 21% 42%,
+      rgba(255,96,41,.62) 43% 58%,
+      transparent 59%);
+  filter:drop-shadow(0 0 6px rgba(255,198,72,.9)) drop-shadow(0 0 12px rgba(255,98,40,.42));
+}
+.mgw-bs-live-hit-ring{
+  transform:translate(-50%,-50%);
+  border:2px solid rgba(255,214,101,.9);
+  border-radius:50%;
+  box-shadow:0 0 8px rgba(255,174,49,.64),0 0 15px rgba(255,91,44,.28);
+}
+.mgw-bs-live-hit-flare{
+  transform:translate(-50%,-50%);
+  background:
+    linear-gradient(90deg,transparent 6%,rgba(255,244,176,.9) 45% 55%,transparent 94%),
+    linear-gradient(0deg,transparent 6%,rgba(255,169,57,.82) 45% 55%,transparent 94%);
+  clip-path:polygon(48% 0,54% 36%,100% 48%,62% 54%,52% 100%,45% 62%,0 53%,38% 45%);
+  filter:drop-shadow(0 0 5px rgba(255,156,44,.62));
+}
+.mgw-bs-live-hit-spark{
+  width:3px;
+  height:15px;
+  margin-left:-1.5px;
+  margin-top:-7.5px;
+  border-radius:999px;
+  background:linear-gradient(180deg,#fff8ca,#ffc248 55%,rgba(255,92,45,.08));
+  box-shadow:0 0 5px rgba(255,171,54,.72);
+  transform-origin:50% 100%;
+}
+.mgw-bs-live-hit-fx.is-reduced-motion .mgw-bs-live-hit-core{
+  opacity:.9;
+  transform:translate(-50%,-50%) scale(.9);
+}
+.mgw-bs-live-hit-fx.is-reduced-motion .mgw-bs-live-hit-ring{
+  opacity:.6;
+  transform:translate(-50%,-50%) scale(1);
+}
+.mgw-bs-live-hit-fx.is-reduced-motion .mgw-bs-live-hit-flare{
+  opacity:.55;
+  transform:translate(-50%,-50%) scale(.92);
+}
+.mgw-bs-live-hit-fx.is-reduced-motion .mgw-bs-live-hit-spark{
+  display:none;
+}
+
+/* LIVE EFFECT 3 — Critical Sink.
+   Confirmed sunk only: larger red/orange wreck event spanning the visible sunk ship. */
+.mgw-bs-live-destroy-fx{
+  position:fixed;
+  inset:0;
+  z-index:6220;
+  display:block;
+  pointer-events:none;
+  overflow:hidden;
+  contain:layout paint style;
+}
+.mgw-bs-live-destroy-flash,
+.mgw-bs-live-destroy-ring,
+.mgw-bs-live-destroy-wreck,
+.mgw-bs-live-destroy-smoke,
+.mgw-bs-live-destroy-shard{
+  position:absolute;
+  display:block;
+  pointer-events:none;
+  box-sizing:border-box;
+  will-change:transform,opacity;
+}
+.mgw-bs-live-destroy-flash{
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:
+    radial-gradient(circle,
+      rgba(255,255,238,1) 0 5%,
+      rgba(255,220,110,.98) 6% 14%,
+      rgba(255,135,44,.96) 15% 28%,
+      rgba(239,53,60,.88) 29% 46%,
+      rgba(141,18,35,.42) 47% 61%,
+      transparent 62%),
+    conic-gradient(from 12deg,
+      transparent 0 5%,
+      rgba(255,238,151,.94) 6% 10%,
+      transparent 11% 20%,
+      rgba(255,105,48,.9) 21% 28%,
+      transparent 29% 39%,
+      rgba(255,212,83,.9) 40% 49%,
+      transparent 50% 63%,
+      rgba(225,40,55,.9) 64% 73%,
+      transparent 74% 86%,
+      rgba(255,244,190,.86) 87% 93%,
+      transparent 94%);
+  filter:drop-shadow(0 0 9px rgba(255,105,48,.92)) drop-shadow(0 0 19px rgba(207,34,53,.46));
+}
+.mgw-bs-live-destroy-ring{
+  transform:translate(-50%,-50%);
+  border:3px solid rgba(255,86,69,.92);
+  border-radius:50%;
+  box-shadow:
+    0 0 0 5px rgba(255,185,65,.1),
+    0 0 12px rgba(255,74,59,.62),
+    0 0 22px rgba(182,27,54,.32);
+}
+.mgw-bs-live-destroy-ring.secondary{
+  border-width:1.5px;
+  border-color:rgba(255,203,86,.76);
+  box-shadow:0 0 12px rgba(255,134,49,.38);
+}
+.mgw-bs-live-destroy-wreck{
+  transform:translate(-50%,-50%);
+  border-radius:38% 62% 46% 54%;
+  background:
+    linear-gradient(108deg,transparent 0 34%,rgba(255,239,171,.78) 35% 38%,transparent 39% 61%,rgba(255,88,53,.72) 62% 66%,transparent 67%),
+    radial-gradient(ellipse at 50% 55%,rgba(75,14,24,.82) 0 18%,rgba(125,25,30,.46) 19% 34%,transparent 35%);
+  filter:drop-shadow(0 0 7px rgba(255,103,50,.55));
+}
+.mgw-bs-live-destroy-smoke{
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:
+    radial-gradient(circle at 38% 42%,rgba(191,188,181,.66) 0 18%,rgba(106,111,118,.56) 19% 42%,rgba(47,54,63,.28) 43% 62%,transparent 63%);
+  filter:blur(1.3px);
+}
+.mgw-bs-live-destroy-shard{
+  width:5px;
+  height:14px;
+  margin-left:-2.5px;
+  margin-top:-7px;
+  border-radius:2px;
+  background:linear-gradient(180deg,#ffd977,#ff7b3d 55%,#8d2031);
+  box-shadow:0 0 6px rgba(255,92,54,.68);
+}
+.mgw-bs-live-destroy-shard:nth-of-type(3n){
+  width:7px;
+  height:8px;
+  border-radius:1px;
+  background:linear-gradient(145deg,#d9a85e,#78313a);
+}
+.mgw-bs-live-destroy-fx.is-reduced-motion .mgw-bs-live-destroy-flash{
+  opacity:.86;
+  transform:translate(-50%,-50%) scale(.88);
+}
+.mgw-bs-live-destroy-fx.is-reduced-motion .mgw-bs-live-destroy-ring{
+  opacity:.65;
+  transform:translate(-50%,-50%) scale(1);
+}
+.mgw-bs-live-destroy-fx.is-reduced-motion .mgw-bs-live-destroy-wreck{
+  opacity:.62;
+  transform:translate(-50%,-50%) scale(1);
+}
+.mgw-bs-live-destroy-fx.is-reduced-motion :is(.mgw-bs-live-destroy-smoke,.mgw-bs-live-destroy-shard){
+  display:none;
+}
+
+@media (prefers-reduced-motion:reduce){
+  .mgw-bs-live-hit-fx *,
+  .mgw-bs-live-destroy-fx *{
     animation:none!important;
     transition:none!important;
   }
