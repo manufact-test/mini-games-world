@@ -75,7 +75,7 @@ $assertSame(['game_four_in_a_row_effect'], array_values(array_unique($byLayer['e
 $assertSame(['drop'=>'drop','four'=>'placement_pulse','victory-wave'=>'victory_wave'], $events, 'Effect metadata must expose drop, mid-game pulse, and victory-wave semantics');
 
 $bundleCount = (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_type = 'bundle' AND subcategory = 'four_in_a_row'");
-$assertSame(0, $bundleCount, 'Four in a Row Phase 1 must not create a bundle');
+$assertSame(1, $bundleCount, 'MVP-19.13 must add exactly one Four in a Row premium bundle after the accepted Store slice');
 
 $accounts = new AccountIdentityService($database, 3600);
 $account = $accounts->resolveProviderIdentity('development', 'four-store-user', 'browser_dev', ['username'=>'four-store'], 'four-store-session');
@@ -146,7 +146,7 @@ $renderer = (string)file_get_contents($root . '/app/assets/js/games/four-in-a-ro
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
 
-$assertTrue(str_contains($outer, "store-screen-four-in-a-row-store-v1.js?v=11&four_store=live-previews-v3&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&export=profile-preview-v4&copy=compact-v3"), 'Active Store wrapper must install the accepted animated Four preview presentation');
+$assertTrue(str_contains($outer, "store-screen-four-in-a-row-store-v1.js?v=12&four_store=live-previews-v3&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&export=profile-preview-v4&copy=compact-v3&bundles=owner-v1"), 'Active Store wrapper must install the accepted animated Four preview presentation');
 $activeStore = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $wrapperVersionMatch = [];
 $assertTrue(preg_match('~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~', $activeStore, $wrapperVersionMatch) === 1 && (int)$wrapperVersionMatch[1] >= 21, 'Active Store graph must publish the Four animated-preview cache identity');

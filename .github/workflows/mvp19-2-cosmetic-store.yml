@@ -6,6 +6,7 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'bot/database/migrations/20260819_0013_create_cosmetic_store_offers_purchases.php'
+      - 'bot/database/migrations/20260919_0041_add_remaining_game_premium_bundles.php'
       - 'bot/catalog/CosmeticStoreService.php'
       - 'bot/catalog/CosmeticStoreRuntimePurchaseService.php'
       - 'bot/cosmetic-store.php'
@@ -51,6 +52,7 @@ jobs:
       - name: Lint Store backend
         run: |
           php -l bot/database/migrations/20260819_0013_create_cosmetic_store_offers_purchases.php
+          php -l bot/database/migrations/20260919_0041_add_remaining_game_premium_bundles.php
           php -l bot/catalog/CosmeticStoreService.php
           php -l bot/catalog/CosmeticStoreRuntimePurchaseService.php
           php -l bot/cosmetic-store.php
@@ -90,7 +92,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"store-screen-checkers-board-source-wrapper.js?v=35") || !str_contains($s,"store-screen-checkers-wrapper.js?v=5") || !str_contains($s,"bundle_selector=preserve-v1") || !str_contains($s,"mvp19_6=visual-corrective-v3")) exit(1); $c=$m["imports"]["./assets/js/api/client.js?v=34"]??""; if(!str_contains($c,"mvp19=store-v2")) exit(2); $css=$m["assets"]["main_css"]??""; if(!str_contains($css,"mvp19=store-v2") || !str_contains($css,"corrective=2")) exit(3);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"store-screen-checkers-board-source-wrapper.js?v=36") || !str_contains($s,"store-screen-checkers-wrapper.js?v=5") || !str_contains($s,"bundle_selector=preserve-v1") || !str_contains($s,"mvp19_6=visual-corrective-v3")) exit(1); $c=$m["imports"]["./assets/js/api/client.js?v=34"]??""; if(!str_contains($c,"mvp19=store-v2")) exit(2); $css=$m["assets"]["main_css"]??""; if(!str_contains($css,"mvp19=store-v2") || !str_contains($css,"corrective=2")) exit(3);'
           grep -F "from './store-screen-intent-wrapper.js?v=19&mvp19_6=accepted-base-preserved';" app/assets/js/screens/store-screen-checkers-wrapper.js
           grep -F "from './store-screen.js?v=44&intent_base=1';" app/assets/js/screens/store-screen-intent-wrapper.js
           grep -F 'void openStoreTab();' app/assets/js/screens/store-screen-intent-wrapper.js

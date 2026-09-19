@@ -59,7 +59,7 @@ foreach ($rows as $row) {
     if (($metadata['layer'] ?? '') === 'effect') $events[(string)$metadata['variant']] = (string)($metadata['event'] ?? '');
 }
 $assertSame(['precision-drop'=>'play','stock-pulse'=>'draw','chain-finale'=>'finish'], $events, 'Domino event semantics must remain stable');
-$assertSame(0, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_type = 'bundle' AND subcategory = 'domino'"), 'Domino must not create a bundle');
+$assertSame(1, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_type = 'bundle' AND subcategory = 'domino' AND offer_status = 'active'"), 'MVP-19.13 must add exactly one Domino premium bundle without changing the accepted Domino Store/Profile slice');
 
 $accounts = new AccountIdentityService($database, 3600);
 $account = $accounts->resolveProviderIdentity('development', 'mvp19-9-domino-user', 'browser_dev', ['username'=>'domino-store'], 'mvp19-9-session');
@@ -141,7 +141,7 @@ $assertTrue(str_contains($profileModule, "dominoPreviewMarkup } from '../screens
 $assertTrue(!str_contains($profileHardRatio, 'getBoundingClientRect') && !str_contains($profileHardRatio, 'setTimeout'), 'Profile must remain free of imperative geometry retries');
 $assertTrue(str_contains($storeCss, 'aspect-ratio:8 / 5!important') && str_contains($cardCss, 'width:3px!important'), 'Accepted static Domino geometry/pips must remain frozen');
 $assertTrue(str_contains($activeStore, 'domino_effects=svg-pips-v48') && str_contains($activeStore, 'domino_preview=svg-pips-v48') && str_contains($activeStore, 'domino_base=native-render-v2'), 'Active Store graph must publish v48 previews without changing the accepted base owner');
-$assertTrue(str_contains($baseStoreTarget, 'store-screen.js?v=54'), 'Base Store target must publish the canonical no-flicker copy revision over the accepted native base');
+$assertTrue(str_contains($baseStoreTarget, 'store-screen.js?v=66') && str_contains($baseStoreTarget, 'mvp19_13=all-eight-bundles-v8'), 'Base Store target must preserve the canonical Domino owner while publishing the current all-bundles revision');
 $assertTrue(str_contains($activeProfile, 'domino_effects=svg-pips-v48') && str_contains($activeProfile, 'domino_preview=shared-svg-pips-v48'), 'Active Profile graph must publish v48 parity');
 $assertTrue(str_contains($dominoSource, 'store-screen-domino-store-v1.js?v=16') && str_contains($dominoCachedSource, 'store-screen-domino-store-v1.js?v=16') && str_contains($dominoProfile, 'mgw-profile-domino-parity.js?v=14'), 'Import map must publish the current human-copy Store aliases while preserving accepted Profile v48 parity');
 $launchMatch = [];

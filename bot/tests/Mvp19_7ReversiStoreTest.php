@@ -71,7 +71,7 @@ $assertSame(['game_reversi_effect'], array_values(array_unique($byLayer['effect'
 $assertSame(['placement'=>'placement','line'=>'line','mass-flip'=>'mass_flip'], $events, 'Reversi effects must preserve placement, line, and mass flip semantics');
 
 $bundleCount = (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_type = 'bundle' AND subcategory = 'reversi'");
-$assertSame(0, $bundleCount, 'MVP-19.7 Reversi Store must not create a bundle');
+$assertSame(1, $bundleCount, 'MVP-19.13 must add exactly one Reversi premium bundle without changing the individual Store catalogue');
 
 $accounts = new AccountIdentityService($database, 3600);
 $account = $accounts->resolveProviderIdentity('development', 'mvp19-7-reversi-user', 'browser_dev', ['username'=>'reversi-store'], 'mvp19-7-session');
@@ -85,7 +85,7 @@ $assertSame(4, count($reversi['themes'] ?? []), 'Store snapshot must expose four
 $assertSame(4, count($reversi['elements'] ?? []), 'Store snapshot must expose four Reversi piece sets');
 $assertSame(3, count($reversi['effects'] ?? []), 'Store snapshot must expose three Reversi effects');
 $assertSame(false, $snapshot['purchase_rules']['auto_equip'] ?? true, 'Reversi purchases must never auto-equip');
-$assertSame(2, count($snapshot['bundles']['game_bundles'] ?? []), 'Reversi Store work must not add or alter game bundles');
+$assertSame(8, count($snapshot['bundles']['game_bundles'] ?? []), 'MVP-19.13 must expose all eight bundles while preserving the Reversi Store catalogue');
 
 $fieldQuote = $store->quote($mgwId, 'reversi-field-neon');
 $assertSame(12000, (int)$fieldQuote['price_coins'], 'Neon Reversi field must cost 12,000 coins');
@@ -126,7 +126,7 @@ $wrapper = (string)file_get_contents($root . '/app/assets/js/screens/store-scree
 $css = (string)file_get_contents($root . '/app/assets/css/games/reversi/store-cosmetics-v1.css');
 $topWrapper = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-checkers-board-source-wrapper.js');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
-$assertTrue(str_contains($topWrapper, 'store-screen-reversi-store-v1.js?v=4'), 'Active accepted Store entrypoint must install the Reversi presentation layer');
+$assertTrue(str_contains($topWrapper, 'store-screen-reversi-store-v1.js?v=5'), 'Active accepted Store entrypoint must install the Reversi presentation layer');
 $assertTrue(str_contains((string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? ''), 'mvp19_7=reversi-store-v1'), 'Active Store URL must be cache-busted for MVP-19.7');
 foreach (['green','dark','marble','neon'] as $variant) $assertTrue(str_contains($css, 'theme-' . $variant) || $variant === 'green', 'Reversi Store CSS must style field ' . $variant);
 foreach (['classic','marble','metal','neon'] as $variant) $assertTrue(str_contains($css, 'pieces-' . $variant) || $variant === 'classic', 'Reversi Store CSS must style piece set ' . $variant);

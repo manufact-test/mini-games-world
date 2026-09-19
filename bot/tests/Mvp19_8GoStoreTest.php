@@ -71,7 +71,7 @@ $assertSame(['game_go_effect'], array_values(array_unique($byLayer['effect'])), 
 $assertSame(['placement'=>'placement','group-capture'=>'group_capture','territory-finish'=>'territory_finish'], $events, 'Go effects must preserve placement, group capture, and territory finish semantics');
 
 $bundleCount = (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_product_offers WHERE offer_type = 'bundle' AND subcategory = 'go'");
-$assertSame(0, $bundleCount, 'MVP-19.8 Go Store must not create a bundle');
+$assertSame(1, $bundleCount, 'MVP-19.13 must add exactly one Go premium bundle without changing the individual Store catalogue');
 
 $accounts = new AccountIdentityService($database, 3600);
 $account = $accounts->resolveProviderIdentity('development', 'mvp19-8-go-user', 'browser_dev', ['username'=>'go-store'], 'mvp19-8-session');
@@ -85,7 +85,7 @@ $assertSame(4, count($go['themes'] ?? []), 'Store snapshot must expose four Go b
 $assertSame(4, count($go['elements'] ?? []), 'Store snapshot must expose four Go stone sets');
 $assertSame(3, count($go['effects'] ?? []), 'Store snapshot must expose three Go effects');
 $assertSame(false, $snapshot['purchase_rules']['auto_equip'] ?? true, 'Go purchases must never auto-equip');
-$assertSame(2, count($snapshot['bundles']['game_bundles'] ?? []), 'Go Store work must not add or alter game bundles');
+$assertSame(8, count($snapshot['bundles']['game_bundles'] ?? []), 'MVP-19.13 must expose all eight bundles while preserving the Go Store catalogue');
 
 $boardQuote = $store->quote($mgwId, 'go-board-neon');
 $assertSame(12000, (int)$boardQuote['price_coins'], 'Neon Go board must cost 12,000 coins');
@@ -127,7 +127,7 @@ $css = (string)file_get_contents($root . '/app/assets/css/games/go/store-cosmeti
 $topWrapper = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-checkers-board-source-wrapper.js');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
-$assertTrue(str_contains($topWrapper, 'store-screen-go-store-v1.js?v=4&mvp19_8=effects-premium-v2&paid_default=copy-human-v1'), 'Active Store entrypoint must install the fresh Go presentation layer');
+$assertTrue(str_contains($topWrapper, 'store-screen-go-store-v1.js?v=5&mvp19_8=effects-premium-v2&paid_default=copy-human-v1&bundles=owner-v1'), 'Active Store entrypoint must install the fresh Go presentation layer');
 $activeStoreTarget = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $wrapperVersionMatch = [];
 $assertTrue(preg_match('~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~', $activeStoreTarget, $wrapperVersionMatch) === 1 && (int)$wrapperVersionMatch[1] >= 7, 'Active Store outer wrapper must stay at or beyond the accepted Go corrective identity');

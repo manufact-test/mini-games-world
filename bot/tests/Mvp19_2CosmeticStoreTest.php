@@ -103,6 +103,21 @@ $assertSame(3, count($snapshot['games']['catalogs']['tictactoe']['effects'] ?? [
 $assertSame(3, count($snapshot['inventory']['items']), 'Inventory must expose the three starter ownership rows before purchases');
 $assertSame(null, $snapshot['bundles']['avatar_bundle'], 'Retired avatar bundle must not be exposed as an active Store offer');
 $assertSame(34000, $snapshot['bundles']['tictactoe_bundle']['price_coins'] ?? null, 'Tic Tac Toe premium bundle must preserve the canonical 34,000 price');
+$assertSame(
+    ['tictactoe','chess','checkers','reversi','go','domino','four_in_a_row','battleship'],
+    array_column($snapshot['bundles']['game_bundles'] ?? [], 'game_type'),
+    'Game bundles must be exposed in canonical eight-game order'
+);
+$assertSame(8, count($snapshot['bundles']['game_bundles'] ?? []), 'Store must expose exactly eight active game bundles');
+foreach (($snapshot['bundles']['game_bundles'] ?? []) as $bundle) {
+    $assertSame(5, count($bundle['item_ids'] ?? []), 'Every game bundle must contain exactly five members');
+    $assertSame(34000, $bundle['full_price_coins'] ?? null, 'Every full game bundle must cost exactly 34,000 coins');
+    $assertSame(39500, $bundle['regular_price_coins'] ?? null, 'Every game bundle must contain 39,500 coins of individual products');
+    $assertSame(false, $bundle['auto_equip'] ?? true, 'Game bundle purchase must never auto-equip');
+}
+$chessBundleQuote = $store->quote($mgwId, 'chess-premium-bundle');
+$assertSame(34000, $chessBundleQuote['price_coins'], 'Full Chess bundle quote must be capped at 34,000 coins');
+$assertSame(5, count($chessBundleQuote['item_ids']), 'Full Chess bundle quote must contain all five missing items');
 $assertSame(false, $snapshot['purchase_rules']['auto_equip'], 'Purchase must never auto-equip');
 $assertSame(false, $snapshot['coins']['billing_available'], 'Real billing callbacks must remain outside MVP-19.2');
 

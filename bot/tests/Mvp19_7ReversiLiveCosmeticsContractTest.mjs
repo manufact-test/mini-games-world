@@ -91,6 +91,7 @@ assert.ok(heightFit.includes('width:100%!important'), 'Reversi board must stay f
 assert.ok(heightFit.includes('#leaveGame{'), 'Leave/menu button must remain explicitly owned');
 
 assert.ok(manifest.includes("'./assets/js/games/reversi/renderer.js?v=66' => './assets/js/games/reversi/renderer-cosmetics-premium-v4.js?v=4&mvp19_7=line-mass-premium-v8&motion=single-transform-owner-v1&parent=live-parity-v3&footer=fullwidth-scroll-v2'"), 'Active import map must publish the single-transform Reversi owner');
-assert.ok(launch.includes('/app/v110.php?v=1137'), 'Telegram launch must force the v8 Reversi asset chain');
+const launchVersion = launch.match(/\/app\/v110\.php\?v=(\d+)/);
+assert.ok(launchVersion && Number(launchVersion[1]) >= 1137, 'Telegram launch must stay at or beyond the accepted v8 Reversi asset chain');
 
 console.log('MVP-19.7 Reversi v8 contract passed: base 255ms flip is the sole real-disc transform owner; paid Line/Mass layers are decorative only.');

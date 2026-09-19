@@ -126,6 +126,6 @@ assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './a
 assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&gesture_owner=v27&precision_static=2';"), 'active entry must remain canonical v110 and keep the accepted gesture owner');
 assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&live_effects=v41';"), 'v110 must force a fresh v41 Domino module URL');
 assert.ok(entry.includes("header('X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal');"), 'active entry must retain the existing Domino gesture diagnostic header');
-assert.match(launch, /\/app\/v110\.php\?v=1192&domino_stability=30&runtime_fix=1/);
+assert.match(launch, /\/app\/v110\.php\?v=1233&domino_stability=30&runtime_fix=1/);
 
 console.log('MVP-19.9 Domino legacy effects + v38 viewport particle contract: OK');
