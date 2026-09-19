@@ -55,17 +55,19 @@ assert.ok(drain.includes("document.getElementById('gameBoard')?.classList.remove
 
 assert.ok(gameCss.includes('#gameBoard[data-game-type="battleship"].mgw-action-pending .battleship-cell.interactive{pointer-events:none}'), 'Battleship board must reject extra taps while a fire is pending');
 assert.ok(gameCss.includes('.battleship-cell.mgw-pending-shot::before'), 'Pending fire must have a visible bounded marker');
-assert.ok(gameCss.includes('.battleship-cell.mgw-pending-shot i{') && gameCss.includes('background:#effcff'), 'Pending fire must show an immediate persistent neutral dot while the server result is in flight');
-assert.ok(!gameCss.includes('@keyframes battleship-pending-shot'), 'Pending fire feedback must not blink away or add a fake waiting animation');
-assert.ok(mainCss.includes("./games/battleship/game.css?v=58&fire=pending-continuity-v2"), 'Main CSS must publish the pending-fire lock');
+assert.ok(gameCss.includes('.battleship-cell.mgw-pending-shot i{') && gameCss.includes('display:none'), 'Pending fire must hide the ordinary cell dot so it can never impersonate a miss');
+assert.ok(gameCss.includes('border-left-color:rgba(103,236,255,.28)') && gameCss.includes('transform:translate(-50%,-50%) rotate(45deg)'), 'Pending fire must use one atomic cyan targeting diamond distinct from every result marker');
+assert.ok(!gameCss.includes('background:#effcff'), 'Pending fire must never reuse the white miss-like dot');
+assert.ok(!gameCss.includes('@keyframes battleship-pending-shot'), 'Pending fire feedback must stay atomic and must not build in visible animation stages');
+assert.ok(mainCss.includes("./games/battleship/game.css?v=59&fire=pending-truth-v3"), 'Main CSS must publish the pending-fire lock');
 
 assert.ok(backend.includes("if ((string)(\$game['turn'] ?? '') !== \$shooterId) throw new RuntimeException('Сейчас не ваш ход.');"), 'Backend turn ownership must stay authoritative');
 assert.ok(backend.includes("if (isset(\$shots[\$cell])) throw new RuntimeException('Вы уже стреляли в эту клетку.');"), 'Backend duplicate-shot protection must stay authoritative');
 
 assert.ok(entry.includes("\$battleshipGameScreenImportKey = './assets/js/screens/game-screen-v102.js?v=102'"), 'Active v110 must cache-bust the game-screen fire owner');
-assert.ok(entry.includes("&battleship_fire=queue-gap-v2"), 'Active v110 must publish queued-fire reconciliation module identity');
-assert.ok(entry.includes("&live_effects=accepted-three-v4&fire=queue-gap-v2&shot_motion=readable-v2&hit=preview-parity-v2"), 'Active v110 must publish the accepted effect renderer with queued-fire ownership');
-assert.ok(entry.includes("&battleship_fire=pending-continuity-v2"), 'Active v110 must refresh the main CSS pending-fire owner');
-assert.ok(launch.includes('battleship_fire=queue-gap-v2'), 'Telegram launch must expose the reliable-fire build identity');
+assert.ok(entry.includes("&battleship_fire=pending-truth-v3"), 'Active v110 must publish queued-fire reconciliation module identity');
+assert.ok(entry.includes("&live_effects=accepted-three-v5&fire=pending-truth-v3&shot_motion=readable-v2&hit=preview-parity-v2&destroy=readable-centered-v2"), 'Active v110 must publish the accepted effect renderer with queued-fire ownership');
+assert.ok(entry.includes("&battleship_fire=pending-truth-v3"), 'Active v110 must refresh the main CSS pending-fire owner');
+assert.ok(launch.includes('battleship_fire=pending-truth-v3'), 'Telegram launch must expose the reliable-fire build identity');
 
 console.log('Battleship fire reliability contract passed.');
