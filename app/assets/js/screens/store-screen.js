@@ -28,7 +28,7 @@ let bundlePreviewResizeBound = false;
 ensureBundlePrototypeStyles();
 
 function ensureBundlePrototypeStyles(){
-  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=9&mvp19_13=checkers-sheet-exact-snapshot-v6', import.meta.url).href;
+  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=10&mvp19_13=bundle-detail-class-separation-v7', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-store-bundle-prototype]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -36,7 +36,7 @@ function ensureBundlePrototypeStyles(){
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-checkers-sheet-exact-snapshot-v6';
+  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-bundle-detail-class-separation-v7';
   link.href = href;
   document.head.appendChild(link);
 }
@@ -1067,7 +1067,7 @@ function openPurchaseConfirm(offer){
 
   openSheet(`
     <div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="store-v2-confirm ${isBundle ? 'store-v2-confirm-bundle' : ''}">
+    <div class="store-v2-confirm ${isBundle ? 'store-v2-confirm-bundle-detail' : ''}">
       ${visual}
       <div class="store-v2-confirm-copy"><strong>${escapeHtml(title)}</strong></div>
       ${isBundle
@@ -1079,7 +1079,7 @@ function openPurchaseConfirm(offer){
   `);
 
   const sheetElement = document.getElementById('sheet');
-  const confirmElement = sheetElement?.querySelector('.store-v2-confirm-bundle');
+  const confirmElement = sheetElement?.querySelector('.store-v2-confirm-bundle-detail');
   if (sheetElement instanceof HTMLElement) sheetElement.scrollTop = 0;
   if (confirmElement instanceof HTMLElement) confirmElement.scrollTop = 0;
 
