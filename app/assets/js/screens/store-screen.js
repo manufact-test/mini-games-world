@@ -28,7 +28,7 @@ let bundlePreviewResizeBound = false;
 ensureBundlePrototypeStyles();
 
 function ensureBundlePrototypeStyles(){
-  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=8&mvp19_13=checkers-sheet-clone-v5', import.meta.url).href;
+  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=9&mvp19_13=checkers-sheet-exact-snapshot-v6', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-store-bundle-prototype]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -36,7 +36,7 @@ function ensureBundlePrototypeStyles(){
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-checkers-sheet-clone-v5';
+  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-checkers-sheet-exact-snapshot-v6';
   link.href = href;
   document.head.appendChild(link);
 }
@@ -852,13 +852,51 @@ function hydrateCheckersBundleConfirmFromVisibleCard(){
   );
   if (!(target instanceof HTMLElement) || !(source instanceof HTMLElement)) return false;
 
+  const rect = source.getBoundingClientRect();
+  if (!rect.width || !rect.height) return false;
+
   const clone = source.cloneNode(true);
   if (!(clone instanceof HTMLElement)) return false;
   clone.classList.remove('is-sheet');
   clone.classList.add('store-v2-bundle-confirm-cloned-members');
+  clone.dataset.mgwCheckersFrozenSnapshot = '1';
   clone.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+  clone.querySelectorAll('.is-previewing,.is-playing').forEach(node => {
+    node.classList.remove('is-previewing','is-playing');
+  });
+  clone.querySelectorAll('[data-mgw-checkers-fx-observed],[data-mgw-checkers-fx-visible],[data-mgw-checkers-fx-busy]').forEach(node => {
+    node.removeAttribute('data-mgw-checkers-fx-observed');
+    node.removeAttribute('data-mgw-checkers-fx-visible');
+    node.removeAttribute('data-mgw-checkers-fx-busy');
+  });
+
+  const sourceWidth = Math.round(rect.width * 100) / 100;
+  const sourceHeight = Math.round(rect.height * 100) / 100;
+  clone.style.width = `${sourceWidth}px`;
+  clone.style.maxWidth = 'none';
+  clone.style.position = 'absolute';
+  clone.style.left = '0';
+  clone.style.top = '0';
+  clone.style.transformOrigin = '0 0';
+
+  target.dataset.storeV2BundleConfirmSnapshot = 'checkers';
+  target.style.position = 'relative';
+  target.style.overflow = 'hidden';
   target.replaceChildren(clone);
-  scheduleBundlePreviewFit(sheet);
+
+  const fitSnapshot = () => {
+    const available = target.clientWidth;
+    if (!available) return;
+    const scale = Math.min(1, available / sourceWidth);
+    clone.style.transform = `scale(${scale})`;
+    target.style.height = `${Math.ceil(sourceHeight * scale)}px`;
+  };
+
+  fitSnapshot();
+  globalThis.requestAnimationFrame?.(() => {
+    fitSnapshot();
+    globalThis.requestAnimationFrame?.(fitSnapshot);
+  });
   return true;
 }
 
@@ -1040,11 +1078,21 @@ function openPurchaseConfirm(offer){
     </div>
   `);
 
+  const sheetElement = document.getElementById('sheet');
+  const confirmElement = sheetElement?.querySelector('.store-v2-confirm-bundle');
+  if (sheetElement instanceof HTMLElement) sheetElement.scrollTop = 0;
+  if (confirmElement instanceof HTMLElement) confirmElement.scrollTop = 0;
+
   if (isBundle && bundleGameType === 'checkers') {
     hydrateCheckersBundleConfirmFromVisibleCard();
   } else {
-    scheduleBundlePreviewFit(document.getElementById('sheet'));
+    scheduleBundlePreviewFit(sheetElement);
   }
+
+  globalThis.requestAnimationFrame?.(() => {
+    if (sheetElement instanceof HTMLElement) sheetElement.scrollTop = 0;
+    if (confirmElement instanceof HTMLElement) confirmElement.scrollTop = 0;
+  });
 
   document.getElementById('storeV2ConfirmBuy')?.addEventListener('click', event => {
     void purchaseOffer(offer, token, event.currentTarget);
