@@ -39,7 +39,9 @@ $pdo = new PDO('sqlite::memory:');
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $databaseDir . '/migrations');
-$assertSame(10, $runner->migrate(false)['executed_count'], 'Realtime store test must create all schemas');
+$migrationFiles = glob($databaseDir . '/migrations/*.php');
+$assertTrue(is_array($migrationFiles) && $migrationFiles !== [], 'Realtime store test must discover canonical migrations');
+$assertSame(count($migrationFiles), $runner->migrate(false)['executed_count'], 'Realtime store test must create every canonical schema');
 
 $now = '2026-07-16T20:00:00+00:00';
 foreach ([['mgw_a', 'Player A'], ['mgw_b', 'Player B']] as [$mgwId, $name]) {
@@ -145,10 +147,12 @@ $queue = $store->upsertQueueEntry([
     'room' => 'match',
     'bet' => 10,
     'board_size' => 8,
+    'skill_band' => 'band:15',
     'created_at_utc' => $now,
     'updated_at_utc' => $now,
 ]);
 $assertSame('queue-a', $queue['queue_id'], 'Queue insert must preserve its ID');
+$assertSame('band:15', $queue['skill_band'], 'Queue insert must preserve hidden skill band');
 $queueUpdated = $store->upsertQueueEntry([
     'queue_id' => 'ignored-new-id',
     'player_ref' => $playerA,
@@ -158,10 +162,12 @@ $queueUpdated = $store->upsertQueueEntry([
     'room' => 'match',
     'bet' => 10,
     'board_size' => 9,
+    'skill_band' => 'band:16',
     'updated_at_utc' => '2026-07-16T20:02:00+00:00',
 ]);
 $assertSame('queue-a', $queueUpdated['queue_id'], 'One player must keep one queue row');
 $assertSame('go', $queueUpdated['game_type'], 'Queue parameters must update atomically');
+$assertSame('band:16', $queueUpdated['skill_band'], 'Queue hidden skill band must update atomically');
 $assertSame(1, (int)$database->fetchValue('SELECT COUNT(*) FROM mgw_match_queue'), 'Queue uniqueness must prevent duplicates');
 $assertSame(1, $store->removeQueueEntry($playerA), 'Queue removal must delete the row');
 $assertSame(null, $store->findQueueEntry($playerA), 'Removed queue row must not return');
