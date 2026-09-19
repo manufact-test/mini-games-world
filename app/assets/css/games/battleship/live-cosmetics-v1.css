@@ -12,7 +12,7 @@
 #gameBoard[data-game-type="battleship"][data-battleship-map="sea"] .battleship-coordinate-board{
   background:
     repeating-linear-gradient(165deg,transparent 0 10px,rgba(153,255,246,.07) 11px 12px,transparent 13px 22px),
-    linear-gradient(145deg,rgba(11,142,168,.30),rgba(6,55,84,.22));
+    linear-gradient(145deg,#0b8ea8 0%,#075e78 55%,#063754 100%);
 }
 #gameBoard[data-game-type="battleship"][data-battleship-map="sea"] .battleship-cell:is(.water,.unknown){
   background:linear-gradient(145deg,rgba(41,211,205,.64),rgba(5,91,125,.82));
@@ -29,7 +29,7 @@
     linear-gradient(90deg,transparent 49.8%,rgba(171,209,103,.06) 50%,transparent 50.2%),
     linear-gradient(0deg,transparent 49.8%,rgba(171,209,103,.06) 50%,transparent 50.2%),
     radial-gradient(circle at 50% 50%,transparent 0 28%,rgba(171,209,103,.055) 28.5% 29%,transparent 29.5%),
-    linear-gradient(145deg,rgba(28,40,31,.36),rgba(12,20,17,.24));
+    linear-gradient(145deg,#1c281f,#0c1411 74%);
 }
 #gameBoard[data-game-type="battleship"][data-battleship-map="dark-military"] .battleship-cell:is(.water,.unknown){
   background:rgba(22,39,31,.96);
@@ -44,7 +44,7 @@
 #gameBoard[data-game-type="battleship"][data-battleship-map="storm"] .battleship-coordinate-board{
   background:
     repeating-linear-gradient(115deg,transparent 0 13px,rgba(224,241,255,.075) 14px 15px,transparent 16px 27px),
-    linear-gradient(150deg,rgba(83,108,128,.34),rgba(20,31,44,.26));
+    linear-gradient(150deg,#536c80 0%,#2c4254 42%,#141f2c 100%);
 }
 #gameBoard[data-game-type="battleship"][data-battleship-map="storm"] .battleship-cell:is(.water,.unknown){
   background:linear-gradient(145deg,rgba(112,142,164,.58),rgba(27,44,59,.88));
