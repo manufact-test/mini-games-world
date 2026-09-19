@@ -1,8 +1,8 @@
 import { api } from '../api/client.js?v=34';
 
-const API_HOOK = Symbol.for('mgw.store.battleship.preview-parity.v11');
-const INSTALL_KEY = '__mgwBattleshipStorePreviewParityV11Installed';
-const STYLE_MARK = 'mvp19-12-battleship-store-preview-parity-v11';
+const API_HOOK = Symbol.for('mgw.store.battleship.preview-parity.v12');
+const INSTALL_KEY = '__mgwBattleshipStorePreviewParityV12Installed';
+const STYLE_MARK = 'mvp19-12-battleship-store-preview-parity-v12';
 
 export function installBattleshipStorePresentation(){
   ensureStyles();
@@ -36,7 +36,7 @@ export function upgradeBattleshipStorePresentation(){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=11&mvp19_12=store-preview-parity-v11&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=unchanged-v2', import.meta.url).href;
+  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=12&mvp19_12=store-preview-parity-v12&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=live-parity-v1', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -209,11 +209,11 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = safeVariant(preview.dataset.cosmeticVariant || 'sea');
-    const signature = `${layer}:${variant}:store-preview-parity-v11`;
+    const signature = `${layer}:${variant}:store-preview-parity-v12`;
 
     if (preview.dataset.mgwBattleshipPreview === signature) return;
     preview.dataset.mgwBattleshipPreview = signature;
-    preview.dataset.mgwBattleshipPreviewMode = layer === 'effect' ? 'animated-concept' : 'static';
+    preview.dataset.mgwBattleshipPreviewMode = layer === 'effect' ? 'accepted-live-parity' : 'static';
     preview.innerHTML = battleshipPreviewMarkup(layer, variant);
   });
 }
@@ -386,15 +386,39 @@ function effectPreview(variant){
     return `<span class="${target}${ship}" style="${PREVIEW_CELL_BASE_STYLE}"></span>`;
   }).join('');
 
+  const shotFx = `
+    <span class="mgw-bs-preview-shot-fx">
+      <b class="mgw-bs-preview-shot-reticle"></b>
+      <b class="mgw-bs-preview-shot-ping"></b>
+      <b class="mgw-bs-preview-shot-tracer"><i class="mgw-bs-preview-shot-bolt"></i></b>
+    </span>`;
+
+  const hitSparks = Array.from({ length:6 }, () => '<i></i>').join('');
+  const hitFx = `
+    <span class="mgw-bs-preview-hit-fx">
+      <b class="mgw-bs-preview-hit-core"></b>
+      <b class="mgw-bs-preview-hit-ring"></b>
+      <b class="mgw-bs-preview-hit-flare"></b>
+      <span class="mgw-bs-preview-hit-sparks">${hitSparks}</span>
+    </span>`;
+
+  const destroyShards = Array.from({ length:10 }, () => '<i></i>').join('');
+  const destroyFx = `
+    <span class="mgw-bs-preview-destroy-fx">
+      <b class="mgw-bs-preview-destroy-flash"></b>
+      <b class="mgw-bs-preview-destroy-ring"></b>
+      <b class="mgw-bs-preview-destroy-ring secondary"></b>
+      <b class="mgw-bs-preview-destroy-wreck"></b>
+      <span class="mgw-bs-preview-destroy-smoke"><i></i><i></i><i></i></span>
+      <span class="mgw-bs-preview-destroy-shards">${destroyShards}</span>
+    </span>`;
+
+  const fx = safe === 'shot' ? shotFx : (safe === 'hit' ? hitFx : destroyFx);
+
   return `
-    <i class="mgw-battleship-preview effect effect-${safe}" aria-hidden="true">
+    <i class="mgw-battleship-preview effect effect-${safe}" data-battleship-effect-preview="accepted-live-parity-v1" aria-hidden="true">
       <span class="mgw-bs-preview-board" style="${PREVIEW_BOARD_STYLE}">${cells}</span>
-      <b class="mgw-bs-fx-reticle"></b>
-      <b class="mgw-bs-fx-tracer"></b>
-      <b class="mgw-bs-fx-burst"></b>
-      <b class="mgw-bs-fx-shock"></b>
-      <b class="mgw-bs-fx-smoke"></b>
-      <span class="mgw-bs-fx-shards"><i></i><i></i><i></i><i></i></span>
+      ${fx}
     </i>
   `;
 }
