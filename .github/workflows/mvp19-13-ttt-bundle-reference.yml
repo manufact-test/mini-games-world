@@ -1,4 +1,4 @@
-name: MVP-19.13 Bundle Reference TTT + Checkers
+name: MVP-19.13 All Game Bundles
 
 on:
   pull_request:
@@ -6,11 +6,17 @@ on:
       - 'app/assets/js/screens/store-screen.js'
       - 'app/assets/js/screens/store-screen-checkers-wrapper.js'
       - 'app/assets/js/screens/store-screen-checkers-board-source-wrapper.js'
+      - 'app/assets/js/screens/store-screen-reversi-store-v1.js'
+      - 'app/assets/js/screens/store-screen-go-store-v1.js'
+      - 'app/assets/js/screens/store-screen-four-in-a-row-store-v1.js'
+      - 'app/assets/js/screens/store-screen-battleship-store-v1.js'
       - 'app/assets/css/screens/store-bundle-prototype-v1.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/database/migrations/20260824_0015_create_tictactoe_game_cosmetics_pilot.php'
       - 'bot/database/migrations/20260912_0032_complete_checkers_store_cosmetics.php'
+      - 'bot/database/migrations/20260919_0041_add_remaining_game_premium_bundles.php'
+      - 'bot/catalog/CosmeticStoreService.php'
       - 'tests/mvp19-13-ttt-bundle-reference.mjs'
       - '.github/workflows/mvp19-13-ttt-bundle-reference.yml'
   workflow_dispatch:
@@ -28,9 +34,15 @@ jobs:
           node --check app/assets/js/screens/store-screen.js
           node --check app/assets/js/screens/store-screen-checkers-wrapper.js
           node --check app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+          node --check app/assets/js/screens/store-screen-reversi-store-v1.js
+          node --check app/assets/js/screens/store-screen-go-store-v1.js
+          node --check app/assets/js/screens/store-screen-four-in-a-row-store-v1.js
+          node --check app/assets/js/screens/store-screen-battleship-store-v1.js
       - name: PHP syntax
         run: |
           php -l bot/helpers/WebAppLaunchUrl.php
           php -l app/runtime/client/version-manifest.php
-      - name: Reference contract
+          php -l bot/catalog/CosmeticStoreService.php
+          php -l bot/database/migrations/20260919_0041_add_remaining_game_premium_bundles.php
+      - name: Eight-game bundle contract
         run: node tests/mvp19-13-ttt-bundle-reference.mjs
