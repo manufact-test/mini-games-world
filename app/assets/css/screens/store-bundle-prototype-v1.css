@@ -583,3 +583,38 @@
     transform:none;
   }
 }
+
+
+/* MVP-19.13 mobile corrective: the primary Store screen itself owns vertical
+   scrolling. Telegram/iOS WebViews must be able to pan through a tall bundle
+   card all the way past its purchase action, above the fixed bottom nav. */
+@media (max-width:719px), (pointer:coarse){
+  #screen-store > .content{
+    min-height:0!important;
+    height:100dvh!important;
+    max-height:100dvh!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-y:contain;
+    touch-action:pan-y;
+    scroll-padding-bottom:calc(76px + env(safe-area-inset-bottom));
+  }
+
+  #screen-store #storeTabSurface{
+    min-height:auto;
+    height:auto;
+    overflow:visible;
+  }
+
+  #screen-store .store-v2-shell,
+  #screen-store .store-v2-content[data-store-v2-panel="bundles"],
+  #screen-store .store-v2-bundle-reference-list,
+  #screen-store .store-v2-bundle-reference{
+    touch-action:pan-y;
+  }
+
+  #screen-store .store-v2-content[data-store-v2-panel="bundles"]{
+    padding-bottom:28px;
+  }
+}
