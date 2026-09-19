@@ -1,0 +1,118 @@
+name: MVP-20.1 Per-game visible rating
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260919_0042_create_per_game_visible_rating.php'
+      - 'bot/ratings/**'
+      - 'bot/core/bootstrap.php'
+      - 'bot/profile-v2.php'
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'bot/tests/Mvp20_1PerGameVisibleRatingTest.php'
+      - 'bot/tests/Mvp20_1VisibleRatingIntegrationContractTest.php'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/css/main.css'
+      - 'app/locales/ru.json'
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/v110.php'
+      - '.github/workflows/mvp20-1-per-game-visible-rating.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp20-1-rating-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Visible rating source, idempotency and Profile contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint MVP-20.1 server slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            bot/database/migrations/20260919_0042_create_per_game_visible_rating.php
+            bot/ratings/PerGameRatingService.php
+            bot/ratings/PerGameRatingRuntimeBridge.php
+            bot/core/bootstrap.php
+            bot/profile-v2.php
+            bot/helpers/WebAppLaunchUrl.php
+            bot/tests/Mvp20_1PerGameVisibleRatingTest.php
+            bot/tests/Mvp20_1VisibleRatingIntegrationContractTest.php
+            app/v110.php
+            app/runtime/client/version-manifest.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done
+          php -r 'json_decode(file_get_contents("app/locales/ru.json"), true, 512, JSON_THROW_ON_ERROR);'
+
+      - name: Check rating Profile module syntax
+        shell: bash
+        run: node --input-type=module --check < app/assets/js/screens/profile-screen-v110.js
+
+      - name: Run MVP-20.1 award and anti-duplicate contract
+        run: php bot/tests/Mvp20_1PerGameVisibleRatingTest.php
+
+      - name: Run MVP-20.1 integration contract
+        run: php bot/tests/Mvp20_1VisibleRatingIntegrationContractTest.php
+
+      - name: Run localization regression
+        run: php bot/tests/Mvp162LocalizationInfrastructureTest.php
+
+      - name: Run accepted Profile corrective regression
+        run: php bot/tests/ProfileV2CorrectiveStaticContractTest.php
+
+      - name: Guard MVP-20.1 scope and frozen game mechanics
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp20-1-per-game-visible-rating.yml|\
+              bot/database/migrations/20260919_0042_create_per_game_visible_rating.php|\
+              bot/ratings/PerGameRatingService.php|\
+              bot/ratings/PerGameRatingRuntimeBridge.php|\
+              bot/core/bootstrap.php|\
+              bot/profile-v2.php|\
+              bot/helpers/WebAppLaunchUrl.php|\
+              bot/tests/Mvp20_1PerGameVisibleRatingTest.php|\
+              bot/tests/Mvp20_1VisibleRatingIntegrationContractTest.php|\
+              app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/css/main.css|\
+              app/locales/ru.json|\
+              app/runtime/client/version-manifest.php|\
+              app/v110.php)
+                ;;
+              *)
+                echo "Unexpected MVP-20.1 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+          git diff --exit-code "$base" "$head" -- bot/games app/assets/js/games
