@@ -13,6 +13,9 @@ on:
       - 'bot/services/MatchmakingQueue.php'
       - 'bot/services/GameRuntimeService.php'
       - 'bot/services/ChessRuntimeService.php'
+      - 'bot/realtime/RuntimeRealtimeSourceTrait.php'
+      - 'bot/realtime/RealtimeDatabaseStore.php'
+      - 'bot/realtime/RuntimeRealtimeDatabaseTrait.php'
       - 'bot/tests/Mvp20_2HiddenSkillModelTest.php'
       - 'bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php'
       - '.github/workflows/mvp20-2-hidden-skill.yml'
@@ -60,6 +63,9 @@ jobs:
             bot/services/MatchmakingQueue.php
             bot/services/GameRuntimeService.php
             bot/services/ChessRuntimeService.php
+            bot/realtime/RuntimeRealtimeSourceTrait.php
+            bot/realtime/RealtimeDatabaseStore.php
+            bot/realtime/RuntimeRealtimeDatabaseTrait.php
             bot/tests/Mvp20_2HiddenSkillModelTest.php
             bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php
           )
@@ -100,6 +106,9 @@ jobs:
               bot/services/MatchmakingQueue.php|\
               bot/services/GameRuntimeService.php|\
               bot/services/ChessRuntimeService.php|\
+              bot/realtime/RuntimeRealtimeSourceTrait.php|\
+              bot/realtime/RealtimeDatabaseStore.php|\
+              bot/realtime/RuntimeRealtimeDatabaseTrait.php|\
               bot/tests/Mvp20_2HiddenSkillModelTest.php|\
               bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php)
                 ;;
