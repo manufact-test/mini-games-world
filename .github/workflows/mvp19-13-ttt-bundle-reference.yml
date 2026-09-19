@@ -1,4 +1,4 @@
-name: MVP-19.13 TTT Bundle Reference
+name: MVP-19.13 Bundle Reference TTT + Checkers
 
 on:
   pull_request:
@@ -8,12 +8,13 @@ on:
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/database/migrations/20260824_0015_create_tictactoe_game_cosmetics_pilot.php'
+      - 'bot/database/migrations/20260912_0032_complete_checkers_store_cosmetics.php'
       - 'tests/mvp19-13-ttt-bundle-reference.mjs'
       - '.github/workflows/mvp19-13-ttt-bundle-reference.yml'
   workflow_dispatch:
 
 jobs:
-  ttt-bundle-reference:
+  bundle-reference:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
