@@ -39,12 +39,12 @@ assert.match(css, /\.store-v2-bundle-reference-members\{/);
 assert.match(css, /\.store-v2-bundle-confirm-reference\{/);
 assert.match(css, /@media \(max-width:360px\)/);
 assert.match(css, /@media \(prefers-reduced-motion:reduce\)/);
-assert.match(css, /#screen-store > \\.content\\{/);
+assert.match(css, /#screen-store > \.content\{/);
 assert.match(css, /overflow-y:auto!important/);
 assert.match(css, /touch-action:pan-y/);
-assert.match(css, /store-v2-content\\[data-store-v2-panel="bundles"\\]\\{/);
+assert.match(css, /store-v2-content\[data-store-v2-panel="bundles"\]\{/);
 assert.match(css, /padding-bottom:28px/);
-assert.match(store, /store-bundle-prototype-v1\\.css\\?v=2&mvp19_13=mobile-scroll-v1/);
+assert.match(store, /store-bundle-prototype-v1\.css\?v=2&mvp19_13=mobile-scroll-v1/);
 
 assert.match(manifest, /store-screen\.js\?v=57[^']*mvp19_13=ttt-bundle-mobile-scroll-v1/);
 assert.match(launch, /bundles=ttt-mobile-scroll-v1/);
