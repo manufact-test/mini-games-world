@@ -102,7 +102,7 @@ assert.ok(css.includes('touch-action:pan-y!important'), 'vertical page scrolling
 
 assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25&visual_portal=v38&precision_geometry=v41'"), 'manifest must publish the fresh v41 Precision geometry cache identity');
 assert.ok(entry.includes("$imports[$dominoRendererImportKey] .= '&live_effects=v41';"), 'entry must force a fresh Domino module URL for Precision v41');
-assert.match(launch, /\/app\/v110\.php\?v=1192&domino_stability=30&runtime_fix=1/);
+assert.match(launch, /\/app\/v110\.php\?v=1233&domino_stability=30&runtime_fix=1/);
 
 assert.ok(store.includes('domino'), 'accepted Store source remains present');
 
