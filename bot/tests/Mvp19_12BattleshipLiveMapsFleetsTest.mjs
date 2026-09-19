@@ -24,7 +24,9 @@ const launch = fs.readFileSync(launchPath, 'utf8');
 for (const slot of ['game_battleship_theme','game_battleship_elements']) {
   assert.ok(live.includes(slot), `LIVE Battleship wrapper must read ${slot}`);
 }
-assert.ok(live.includes('game_battleship_effect'), 'LIVE wrapper must read the canonical Battleship effect slot for accepted effects');\nassert.ok(live.includes("'game-battleship-effect-shot'"), 'LIVE wrapper must activate Shot only in the current phase');\nassert.ok(!live.includes('game-battleship-effect-hit') && !live.includes('game-battleship-effect-destroy'), 'Hit and Destroy must remain inactive until their own manual acceptance phases');
+assert.ok(live.includes('game_battleship_effect'), 'LIVE wrapper must read the canonical Battleship effect slot for accepted effects');
+assert.ok(live.includes("'game-battleship-effect-shot'"), 'LIVE wrapper must activate Shot only in the current phase');
+assert.ok(!live.includes('game-battleship-effect-hit') && !live.includes('game-battleship-effect-destroy'), 'Hit and Destroy must remain inactive until their own manual acceptance phases');
 
 for (const variant of ['sea','dark-military','storm','neon']) {
   assert.ok(live.includes(`'${variant}'`), `LIVE map variants must include ${variant}`);
