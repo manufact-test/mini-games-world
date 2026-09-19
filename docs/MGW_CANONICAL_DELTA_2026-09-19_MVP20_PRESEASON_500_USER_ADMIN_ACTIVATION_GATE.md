@@ -97,3 +97,72 @@ This decision does not change NEXT.
 MVP-20 should be implemented with the future activation gate in mind, but official public competition stays PRESEASON until an administrator explicitly activates it.
 
 `main`, production, Cron and live DB remain separate explicit gates.
+
+## 8. Season calendar and admin preparation reminders
+
+Clarification: official rating seasons are **quarterly**, not monthly.
+
+Canonical calendar from MVP-20.4:
+- Season 1: January–March;
+- Season 2: April–June;
+- Season 3: July–September;
+- Season 4: October–December;
+- Moscow boundary remains authoritative.
+
+Once competition state is `ACTIVE`, every scheduled season end must create an operational preparation cycle for Admin.
+
+Reminder schedule:
+- **T-21 days** before season end: create a durable admin task/alert: **«Сезон заканчивается через 3 недели — подготовьте награды следующего сезона»**;
+- if readiness is incomplete, repeat/escalate at **T-14 days**;
+- if still incomplete, repeat/escalate at **T-7 days**;
+- reminders stop only when the required next-season reward package is marked `READY` or the season boundary has passed.
+
+The reminder must survive logout/restart and remain visible in Admin until completed/acknowledged according to the canonical admin task/message owner.
+
+## 9. Next-season reward readiness checklist
+
+The admin season-preparation task must show a clear checklist of what is required before the boundary.
+
+At minimum:
+- next season ID and exact start/end dates;
+- seasonal award assets required by MVP-20.5;
+- top-3 temporary frame assets/configuration if that season uses a new design;
+- the correct yearly medal design/fragments from MVP-20.6 when a new year or new quarter asset requires preparation;
+- localized names/descriptions/notification copy where applicable;
+- preview/validation that all required assets resolve correctly;
+- final explicit `READY` state.
+
+Important distinction:
+- the **yearly medal design is annual**;
+- each eligible season unlocks the corresponding quarter/fragment;
+- do not require an entirely new four-part medal design every quarter unless a later explicit product decision changes that contract.
+
+## 10. Automatic season-boundary behavior
+
+If competition state is `ACTIVE` and the required reward package is `READY`:
+- MVP-20.4 closes/finalizes the ending season automatically;
+- MVP-20.5 awards are issued automatically to eligible users;
+- MVP-20.6 medal-part eligibility is processed automatically;
+- the next official season starts according to the canonical calendar;
+- eligible user-facing reward/profile surfaces update without a manual grant step;
+- season-close and reward issuance remain idempotent.
+
+If required reward assets/config are **not READY** at the boundary:
+- standings/results must not be lost;
+- do not issue broken, placeholder or incomplete awards;
+- keep award finalization in a durable `FINALIZING / ASSETS_REQUIRED` state;
+- raise a high-priority durable admin alert;
+- once the approved package becomes READY, resume finalization idempotently without double grants.
+
+## 11. Ownership split for reminders and season operations
+
+- MVP-20.4 owns calendar boundaries, finalizing state and due-date semantics.
+- MVP-20.5 owns seasonal award eligibility/grant semantics.
+- MVP-20.6 owns yearly medal and quarter/fragment eligibility.
+- MVP-20.8 must rehearse season close, missing-assets behavior and idempotent recovery.
+- MVP-22.5 owns Admin alert/message presentation.
+- MVP-22.7 owns the recurring operational task/checklist surface for season preparation.
+- Existing notification/admin-message/task owners must be reused; do not create parallel reminder systems.
+
+This reminder/readiness requirement becomes active only for official `ACTIVE` seasons. It does not create official awards during `OFF` or `PRESEASON`.
+
