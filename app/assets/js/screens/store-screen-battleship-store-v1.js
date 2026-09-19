@@ -1,8 +1,8 @@
 import { api } from '../api/client.js?v=34';
 
-const API_HOOK = Symbol.for('mgw.store.battleship.preview-parity.v10');
-const INSTALL_KEY = '__mgwBattleshipStorePreviewParityV10Installed';
-const STYLE_MARK = 'mvp19-12-battleship-store-preview-parity-v10';
+const API_HOOK = Symbol.for('mgw.store.battleship.preview-parity.v11');
+const INSTALL_KEY = '__mgwBattleshipStorePreviewParityV11Installed';
+const STYLE_MARK = 'mvp19-12-battleship-store-preview-parity-v11';
 
 export function installBattleshipStorePresentation(){
   ensureStyles();
@@ -36,7 +36,7 @@ export function upgradeBattleshipStorePresentation(){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=10&mvp19_12=store-preview-parity-v10&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=svg-models-v3&preview_geometry=svg-circles-v5&hydration=observer-v1&inline_owner=svg-v4&effects=unchanged-v2', import.meta.url).href;
+  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=11&mvp19_12=store-preview-parity-v11&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=unchanged-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -209,7 +209,7 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = safeVariant(preview.dataset.cosmeticVariant || 'sea');
-    const signature = `${layer}:${variant}:store-preview-parity-v10`;
+    const signature = `${layer}:${variant}:store-preview-parity-v11`;
 
     if (preview.dataset.mgwBattleshipPreview === signature) return;
     preview.dataset.mgwBattleshipPreview = signature;
@@ -293,7 +293,7 @@ function mapSvgPreview(variant){
     sea:{ water:'#0a6d87', waterStroke:'#73d8df', ship:'#dce9e5', shipStroke:'#ffffff' },
     'dark-military':{ water:'#18281f', waterStroke:'#718142', ship:'#a8b18a', shipStroke:'#dce9b5' },
     storm:{ water:'#31485a', waterStroke:'#859bad', ship:'#cbd6dd', shipStroke:'#f1f7fa' },
-    neon:{ water:'#081326', waterStroke:'#3feaff', ship:'#164458', shipStroke:'#63f2ff' },
+    neon:{ water:'#081326', waterStroke:'#3feaff', ship:'#f4f7fb', shipStroke:'#ffffff' },
   })[variant] || { water:'#102b42', waterStroke:'#47718c', ship:'#d5e0e6', shipStroke:'#ffffff' };
 
   const circles = Array.from({ length:100 }, (_, index) => {
