@@ -119,8 +119,8 @@ jobs:
           grep -F 'store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions' "$profile"
           grep -F 'store-effects-preview-component-v44.css?v=4&mvp19_9=domino-svg-pips-v48' "$profile"
           grep -F 'domino_effects=svg-pips-v48' "$manifest"
-          grep -F "store-screen-domino-store-v1.js?v=8&mvp19_9=domino-native-render-v8' => './assets/js/screens/store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48" "$manifest"
-          grep -F 'store-screen.js?v=52&intent_base=1' "$manifest"
+          grep -F "store-screen-domino-store-v1.js?v=8&mvp19_9=domino-native-render-v8' => './assets/js/screens/store-screen-domino-store-v1.js?v=16&mvp19_9=domino-svg-pips-v48&copy=human-v1" "$manifest"
+          grep -F "store-screen.js?v=66&intent_base=1&mvp19_6=full-checkers-store&mvp19_9=domino-svg-pips-v48&paid_default=copy-human-v1&mvp19_13=all-eight-bundles-v8" "$manifest"
           php -r '$s=file_get_contents("bot/helpers/WebAppLaunchUrl.php"); if(!preg_match("~/app/v110\\.php\\?v=(\\d+)~", $s, $m) || (int)$m[1] < 1170) exit(1);'
 
       - name: Guard accepted static Domino and frozen live gameplay
