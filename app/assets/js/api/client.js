@@ -7,6 +7,7 @@ const RESULT_WATCH_URL = `${window.location.origin}/bot/game-watch.php`;
 const FRIENDS_URL = `${window.location.origin}/bot/friends.php`;
 const COSMETIC_STORE_URL = `${window.location.origin}/bot/cosmetic-store.php`;
 const PROFILE_V2_URL = `${window.location.origin}/bot/profile-v2.php`;
+const LEADERBOARD_URL = `${window.location.origin}/bot/leaderboard.php`;
 const GAME_REACTION_URL = `${window.location.origin}/bot/game-reaction.php`;
 
 let profileV2ReadPromise = null;
@@ -122,6 +123,7 @@ export const api = {
   profileReactionUnequip: () => requestUrl(GAME_REACTION_URL, { action:'unequip' }),
   profile: () => request('profile'),
   profileV2: (profileUpdate = null) => requestProfileV2(profileUpdate),
+  leaderboard: (gameType = 'tictactoe') => requestUrl(LEADERBOARD_URL, { game_type:gameType }),
   mgwProfile: () => requestMgwProfile(),
   friends: (payload = {}) => requestUrl(FRIENDS_URL, payload),
   history: () => requestHistory(),
