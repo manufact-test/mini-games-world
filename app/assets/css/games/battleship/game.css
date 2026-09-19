@@ -52,39 +52,6 @@
 #gameBoard[data-game-type="battleship"].mgw-action-pending .battleship-cell.interactive{pointer-events:none}
 .battleship-cell.mgw-pending-shot{
   cursor:wait;
-  box-shadow:inset 0 0 0 1px rgba(126,248,255,.22),0 0 0 1px rgba(77,232,255,.12),0 0 10px rgba(77,232,255,.16);
-}
-.battleship-cell.mgw-pending-shot i{
-  display:none;
-}
-.battleship-cell.mgw-pending-shot::before{
-  content:'';
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:38%;
-  aspect-ratio:1;
-  z-index:3;
-  border:2px solid rgba(103,236,255,.9);
-  border-left-color:rgba(103,236,255,.28);
-  border-bottom-color:rgba(103,236,255,.28);
-  border-radius:4px;
-  transform:translate(-50%,-50%) rotate(45deg);
-  box-shadow:0 0 7px rgba(77,232,255,.34);
-  opacity:.96;
-}
-.battleship-cell.mgw-pending-shot::after{
-  content:'';
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:8%;
-  height:8%;
-  z-index:4;
-  border-radius:50%;
-  background:#5fe9ff;
-  transform:translate(-50%,-50%);
-  box-shadow:0 0 5px rgba(95,233,255,.58);
 }
 .battleship-cell.ship{background:linear-gradient(145deg,rgba(166,183,209,.96),rgba(87,105,136,.96));box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
 .battleship-cell.pending{background:linear-gradient(145deg,rgba(151,121,255,.98),rgba(91,63,210,.98));box-shadow:0 0 0 2px rgba(184,166,255,.52),0 0 16px rgba(124,92,255,.48);animation:battleship-pending-pulse .75s ease-in-out infinite alternate}
