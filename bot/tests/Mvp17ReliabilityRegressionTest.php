@@ -119,7 +119,9 @@ $queuePdo = new PDO('sqlite::memory:');
 $queuePdo->exec('PRAGMA foreign_keys = ON');
 $queueDb = new PdoDatabaseConnection($queuePdo);
 $queueRunner = new MigrationRunner($queueDb, $projectRoot . '/bot/database/migrations');
-$assertSame(10, $queueRunner->migrate(false)['executed_count'], 'Reliability fixture must apply all ten canonical migrations');
+$migrationFiles = glob($projectRoot . '/bot/database/migrations/*.php');
+$assertTrue(is_array($migrationFiles) && $migrationFiles !== [], 'Reliability fixture must discover canonical migrations');
+$assertSame(count($migrationFiles), $queueRunner->migrate(false)['executed_count'], 'Reliability fixture must apply every canonical migration');
 
 final class Mvp17QueueCollisionDatabase implements DatabaseConnectionInterface
 {
