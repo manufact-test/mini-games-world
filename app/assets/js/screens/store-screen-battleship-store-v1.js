@@ -1,8 +1,8 @@
 import { api } from '../api/client.js?v=34';
 
-const API_HOOK = Symbol.for('mgw.store.battleship.preview-parity.v8');
-const INSTALL_KEY = '__mgwBattleshipStorePreviewParityV8Installed';
-const STYLE_MARK = 'mvp19-12-battleship-store-preview-parity-v8';
+const API_HOOK = Symbol.for('mgw.store.battleship.preview-parity.v9');
+const INSTALL_KEY = '__mgwBattleshipStorePreviewParityV9Installed';
+const STYLE_MARK = 'mvp19-12-battleship-store-preview-parity-v9';
 
 export function installBattleshipStorePresentation(){
   ensureStyles();
@@ -36,7 +36,7 @@ export function upgradeBattleshipStorePresentation(){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=8&mvp19_12=store-preview-parity-v8&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=scale-parity-v1&preview_geometry=inline-square-v3&hydration=observer-v1&inline_owner=v2&effects=unchanged-v2', import.meta.url).href;
+  const href = new URL('../../css/games/battleship/store-cosmetics-v1.css?v=9&mvp19_12=store-preview-parity-v9&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=filled-parity-v2&preview_geometry=cell-driven-v4&hydration=observer-v1&inline_owner=v3&effects=unchanged-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -209,7 +209,7 @@ function upgradePreviews(root){
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
     const variant = safeVariant(preview.dataset.cosmeticVariant || 'sea');
-    const signature = `${layer}:${variant}:store-preview-parity-v8`;
+    const signature = `${layer}:${variant}:store-preview-parity-v9`;
 
     if (preview.dataset.mgwBattleshipPreview === signature) return;
     preview.dataset.mgwBattleshipPreview = signature;
@@ -259,8 +259,8 @@ export function battleshipPreviewMarkup(layer, variant){
   return boardPreview(safeLayer, safe);
 }
 
-const PREVIEW_BOARD_STYLE = 'position:absolute;left:8%;top:50%;width:84%;height:auto;aspect-ratio:1 / 1;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));grid-template-rows:repeat(10,minmax(0,1fr));gap:2px;transform:translateY(-50%);z-index:2;';
-const PREVIEW_CELL_BASE_STYLE = 'position:relative;display:block;width:100%;height:100%;min-width:0;min-height:0;border-radius:50%;box-sizing:border-box;';
+const PREVIEW_BOARD_STYLE = 'position:absolute;left:8%;top:50%;width:84%;height:auto;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));grid-template-rows:none;grid-auto-rows:auto;gap:2px;transform:translateY(-50%);z-index:2;';
+const PREVIEW_CELL_BASE_STYLE = 'position:relative;display:block;width:100%;height:auto;aspect-ratio:1 / 1;min-width:0;min-height:0;border-radius:999px;box-sizing:border-box;';
 
 function boardPreview(layer, variant){
   const ships = new Set([22,23,24,25,47,57,67,72,73,88]);
@@ -295,10 +295,10 @@ function previewCellInlineStyle(layer, variant, ship){
     style += 'background:rgba(13,48,72,.62);border:1px solid rgba(129,190,220,.18);';
     if (!ship) return style;
     return style + ({
-      classic:'background:radial-gradient(circle at 38% 32%,#fff8dc 0 22%,#ead6a1 48%,#8d6934 100%);border:1px solid #d8ad52;box-shadow:0 0 0 1px rgba(92,58,16,.34),inset 0 0 0 1px rgba(255,255,255,.42);',
-      modern:'background:linear-gradient(145deg,#8fd0e4 0 24%,#3e7189 25% 62%,#163344 63% 100%);border:1px solid #9ce6ff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),0 0 3px rgba(76,181,218,.22);',
-      armored:'background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.48) 0 6%,transparent 7%),linear-gradient(145deg,#747f87 0 22%,#384149 24% 63%,#171c21 64% 100%);border:1px solid #9ea8b0;box-shadow:inset 0 0 0 1px #272e34,0 1px 2px rgba(0,0,0,.38);',
-      neon:'background:linear-gradient(145deg,#5a45bd 0%,#342778 58%,#171936 100%);border:1px solid #55f5ff;box-shadow:0 0 3px rgba(85,245,255,.78),0 0 5px rgba(85,245,255,.30),inset 0 0 0 1px rgba(255,70,223,.62),inset 0 0 3px rgba(123,92,255,.46);',
+      classic:'background:#e7c56e;border:1px solid #ffe6a6;box-shadow:inset 0 0 0 1px rgba(133,83,26,.36),0 0 2px rgba(231,197,110,.28);',
+      modern:'background:#4f7f96;border:1px solid #9ee9ff;box-shadow:inset 0 0 0 1px rgba(17,48,63,.48),0 0 2px rgba(88,193,231,.24);',
+      armored:'background:#4b535b;border:1px solid #aab4bc;box-shadow:inset 0 0 0 1px #242b31,0 0 2px rgba(0,0,0,.34);',
+      neon:'background:#4937a5;border:1px solid #59f6ff;box-shadow:inset 0 0 0 1px rgba(255,68,222,.76),0 0 3px rgba(89,246,255,.68),0 0 5px rgba(255,68,222,.18);',
     }[variant] || '');
   }
 

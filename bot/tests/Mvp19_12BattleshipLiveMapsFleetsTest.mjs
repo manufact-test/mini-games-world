@@ -58,8 +58,8 @@ for (const token of [
 ]) {
   assert.ok(liveCss.includes(token), `LIVE map/fleet material must keep accepted Store identity token ${token}`);
 }
-for (const token of ['#0b8ea8','#f3e2b8','#e8bf68','#9bd7ea','#8b959d','#55f5ff']) {
-  assert.ok(storeCss.includes(token), `Store baseline must contain shared visual token ${token}`);
+for (const token of ['#0b8ea8','#e7c56e','#ffe6a6','#4f7f96','#4b535b','#59f6ff']) {
+  assert.ok(storeCss.includes(token), `Store preview baseline must contain the current scale-appropriate visual token ${token}`);
 }
 
 assert.ok(liveCss.includes('.battleship-cell.ship'), 'Fleet materials must target already-visible ship cells');
@@ -76,7 +76,7 @@ assert.ok(
   manifest.includes("'./assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer-cosmetics-v1.js?v=4&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&base=v60-shot-miss-no-impact'"),
   'Active manifest must route canonical Battleship renderer import through LIVE maps/fleets wrapper'
 );
-assert.ok(launch.includes('battleship_live=maps-fleets-v4') && launch.includes('battleship_frame=full-v1') && launch.includes('battleship_neon_fleet=tube-v4') && launch.includes('battleship_preview_geometry=inline-square-v3') && launch.includes('battleship_preview_inline_owner=v2') && launch.includes('battleship_fleet_preview=scale-parity-v1'), 'Telegram launch must publish Battleship LIVE/preview parity identity');
+assert.ok(launch.includes('battleship_live=maps-fleets-v4') && launch.includes('battleship_frame=full-v1') && launch.includes('battleship_neon_fleet=tube-v4') && launch.includes('battleship_preview_geometry=cell-driven-v4') && launch.includes('battleship_preview_inline_owner=v3') && launch.includes('battleship_fleet_preview=filled-parity-v2'), 'Telegram launch must publish Battleship LIVE/preview parity identity');
 
 assert.ok(liveCss.includes('data-mgw-battleship-live-cosmetics="maps-fleets-v4"'), 'LIVE frame/reduced-motion selectors must match the renderer dataset identity');
 console.log('Battleship LIVE maps/fleets contract passed.');
