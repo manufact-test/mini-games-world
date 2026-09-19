@@ -13,6 +13,7 @@ const STORE_TABS = Object.freeze([
   { id:'bundles', label:'Наборы' },
 ]);
 const GAME_CATALOG_ORDER = Object.freeze(['tictactoe','chess','checkers','domino']);
+const BUNDLE_PROTOTYPE_GAME = 'tictactoe';
 
 let storeState = null;
 let storeSurface = 'tab';
@@ -21,6 +22,22 @@ let activeGameCatalog = 'tictactoe';
 let storeLoadPromise = null;
 let purchaseBusy = false;
 let equipBusy = false;
+
+ensureBundlePrototypeStyles();
+
+function ensureBundlePrototypeStyles(){
+  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=1&mvp19_13=ttt-reference-v1', import.meta.url).href;
+  const existing = document.querySelector('link[data-mgw-store-bundle-prototype]');
+  if (existing instanceof HTMLLinkElement) {
+    if (existing.href !== href) existing.href = href;
+    return;
+  }
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-ttt-reference-v1';
+  link.href = href;
+  document.head.appendChild(link);
+}
 
 export function initStoreScreen(){
   document.addEventListener('click', event => {
@@ -490,46 +507,152 @@ function gameBundlesFromSnapshot(snapshot = storeState){
   return [snapshot?.bundles?.tictactoe_bundle, snapshot?.bundles?.checkers_bundle].filter(Boolean);
 }
 
+function bundleGameType(bundle){
+  return String(bundle?.game_type || bundle?.subcategory || '');
+}
+
+function bundleMemberOffers(bundle, snapshot = storeState){
+  const gameType = bundleGameType(bundle);
+  const catalogs = snapshot?.games?.catalogs && typeof snapshot.games.catalogs === 'object' ? snapshot.games.catalogs : {};
+  const catalog = catalogs[gameType];
+  if (!catalog || typeof catalog !== 'object') return [];
+  const memberIds = new Set(Array.isArray(bundle?.item_ids) ? bundle.item_ids.map(String) : []);
+  return [catalog.themes, catalog.elements, catalog.effects]
+    .flatMap(group => Array.isArray(group) ? group : [])
+    .filter(offer => memberIds.has(String(offer?.item_ids?.[0] || '')));
+}
+
+function bundleMemberLabel(offer){
+  const layer = String(offer?.metadata?.layer || '');
+  if (layer === 'theme') return 'Поле';
+  if (layer === 'elements') return 'Знаки';
+  return 'Эффект';
+}
+
+function renderBundleMembers(bundle, sheet = false){
+  const gameType = bundleGameType(bundle) || 'tictactoe';
+  const missing = new Set(Array.isArray(bundle?.missing_item_ids) ? bundle.missing_item_ids.map(String) : []);
+  const members = bundleMemberOffers(bundle);
+  return `
+    <div class="store-v2-bundle-reference-members ${sheet ? 'is-sheet' : ''}">
+      ${members.map(offer => {
+        const itemId = String(offer?.item_ids?.[0] || '');
+        const owned = itemId !== '' && !missing.has(itemId);
+        const layer = String(offer?.metadata?.layer || 'theme');
+        const variant = String(offer?.metadata?.variant || 'base');
+        const name = String(offer?.display_name || itemId || 'Предмет');
+        return `
+          <div class="store-v2-bundle-reference-member layer-${escapeAttr(layer)} ${owned ? 'owned' : ''}">
+            <div class="store-v2-bundle-reference-preview">
+              ${gameCosmeticPreview(gameType, layer, variant, name)}
+              ${owned ? '<i class="store-v2-bundle-owned-check" aria-label="Уже в коллекции">✓</i>' : ''}
+            </div>
+            <div class="store-v2-bundle-reference-member-copy">
+              <span>${escapeHtml(bundleMemberLabel(offer))}</span>
+              <strong>${escapeHtml(name)}</strong>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
 function renderBundlesTab(){
-  const bundles = gameBundlesFromSnapshot();
-  if (!bundles.length) return emptyState('Наборы пока недоступны');
-  return `<div class="store-v2-game-bundles">${bundles.map(renderGameBundle).join('')}</div>`;
+  const bundles = gameBundlesFromSnapshot().filter(bundle => bundleGameType(bundle) === BUNDLE_PROTOTYPE_GAME);
+  if (!bundles.length) return emptyState('Набор пока недоступен');
+  return `
+    <div class="store-v2-bundle-reference-list">
+      ${bundles.map(renderGameBundle).join('')}
+    </div>
+  `;
 }
 
 function renderGameBundle(bundle){
-  const gameType = String(bundle?.game_type || bundle?.subcategory || 'tictactoe');
+  const gameType = bundleGameType(bundle) || 'tictactoe';
+  const itemCount = Array.isArray(bundle?.item_ids) ? bundle.item_ids.length : 0;
   const missing = Number(bundle?.missing_count || 0);
   const owned = Number(bundle?.owned_count || 0);
   const allOwned = Boolean(bundle?.already_owned);
+  const currentPrice = Number(bundle?.price_coins || 0);
   const regularMissingPrice = regularBundlePrice(bundle);
-  const saving = Math.max(0, regularMissingPrice - Number(bundle?.price_coins || 0));
-  const title = String(bundle?.display_name || (gameType === 'checkers' ? 'Неоновый комплект шашек' : 'Неоновый комплект'));
-  const description = gameType === 'checkers'
-    ? 'Неоновая доска, неоновые шашки и все три эффекта.'
-    : 'Поле, знаки и три эффекта для крестиков-ноликов.';
-  const visual = gameType === 'checkers'
-    ? `<div class="store-v2-bundle-visual checkers-bundle-visual" aria-hidden="true">${checkersMiniBoardMarkup(false)}<i class="store-v2-mini-checkers-pieces"><span class="black"></span><span class="white"></span></i><b>＋3</b></div>`
-    : '<div class="store-v2-bundle-visual" aria-hidden="true"><span>✕</span><span>○</span><span>＋</span><span>／</span><span>×</span></div>';
+  const regularFullPrice = Number(bundle?.regular_price_coins || regularMissingPrice || 0);
+  const saving = Math.max(0, regularMissingPrice - currentPrice);
+  const title = String(bundle?.display_name || 'Неоновый комплект');
+  const progress = allOwned
+    ? `${itemCount || 5} из ${itemCount || 5} уже в коллекции`
+    : (owned > 0 ? `У вас ${owned} из ${itemCount || 5} · осталось ${missing}` : `${itemCount || 5} предметов · навсегда`);
   return `
-    <article class="store-v2-bundle ${allOwned ? 'owned' : ''}" data-store-bundle-game="${escapeAttr(gameType)}">
-      ${visual}
-      <div class="store-v2-bundle-copy">
-        <h2>${escapeHtml(title)}</h2>
-        <p>${escapeHtml(description)}</p>
-        ${allOwned
-          ? '<p>Комплект уже собран.</p>'
-          : (owned ? `<p>Осталось ${missing} из 5.</p>` : '')}
-        ${!allOwned ? `<div class="store-v2-bundle-price"><strong>${formatNumber(bundle?.price_coins || 0)} коинов</strong>${saving > 0 ? `<span>−${formatNumber(saving)}</span>` : ''}</div>` : ''}
+    <article class="store-v2-bundle-reference ${allOwned ? 'owned' : ''}" data-store-bundle-game="${escapeAttr(gameType)}">
+      <div class="store-v2-bundle-reference-topline">
+        <span>Крестики-нолики</span>
+        <b>Премиум-набор</b>
       </div>
-      <button class="btn primary full" data-store-v2-buy="${escapeAttr(bundle?.offer_id || '')}" type="button" ${allOwned ? 'disabled' : ''}>
-        ${allOwned ? 'Комплект собран' : 'Купить комплект'}
+      <div class="store-v2-bundle-reference-hero">
+        <div>
+          <h2>${escapeHtml(title)}</h2>
+          <p>Лучшее оформление игры и все три эффекта в одном комплекте.</p>
+        </div>
+        <em>${itemCount || 5}</em>
+      </div>
+      ${renderBundleMembers(bundle)}
+      <div class="store-v2-bundle-reference-progress">
+        <span>${escapeHtml(progress)}</span>
+        <i><b style="width:${Math.max(0, Math.min(100, ((itemCount || 5) ? owned / (itemCount || 5) * 100 : 0)))}%"></b></i>
+      </div>
+      ${allOwned ? `
+        <div class="store-v2-bundle-reference-owned">Комплект полностью собран</div>
+      ` : `
+        <div class="store-v2-bundle-reference-pricing">
+          <div>
+            <span>${owned > 0 ? 'За оставшиеся предметы' : 'Цена набора'}</span>
+            <strong>${formatNumber(currentPrice)} <small>коинов</small></strong>
+          </div>
+          <div class="store-v2-bundle-reference-saving">
+            ${regularMissingPrice > currentPrice ? `<s>${formatNumber(regularMissingPrice)}</s><b>Экономия ${formatNumber(saving)}</b>` : ''}
+            ${owned === 0 && regularFullPrice > 0 ? `<small>По отдельности ${formatNumber(regularFullPrice)}</small>` : ''}
+          </div>
+        </div>
+      `}
+      <button class="store-v2-bundle-reference-buy" data-store-v2-buy="${escapeAttr(bundle?.offer_id || '')}" type="button" ${allOwned ? 'disabled' : ''}>
+        <span>${allOwned ? 'Комплект собран' : 'Посмотреть и купить'}</span>
+        ${!allOwned ? '<b>→</b>' : '<b>✓</b>'}
       </button>
+      <small class="store-v2-bundle-reference-note">Покупка добавляет предметы в коллекцию, но ничего не выбирает автоматически.</small>
     </article>
   `;
 }
 
 function regularBundlePrice(bundle){
   return Number(bundle?.regular_missing_price_coins || bundle?.regular_price_coins || 0);
+}
+
+function renderBundleConfirmVisual(bundle){
+  const owned = Number(bundle?.owned_count || 0);
+  const missing = Number(bundle?.missing_count || 0);
+  return `
+    <div class="store-v2-bundle-confirm-reference">
+      <div class="store-v2-bundle-confirm-reference-head">
+        <span>В составе</span>
+        <b>${owned > 0 ? `${missing} осталось · ${owned} уже есть` : '5 предметов'}</b>
+      </div>
+      ${renderBundleMembers(bundle, true)}
+      <p>Оплачиваются только недостающие предметы. После покупки они появятся в коллекции без автоматического выбора.</p>
+    </div>
+  `;
+}
+
+function renderBundleConfirmPricing(bundle){
+  const current = Number(bundle?.price_coins || 0);
+  const regular = regularBundlePrice(bundle);
+  const saving = Math.max(0, regular - current);
+  return `
+    <div class="store-v2-bundle-confirm-price">
+      <div><span>По отдельности</span><s>${formatNumber(regular)}</s></div>
+      <div><span>К оплате</span><strong>${formatNumber(current)} коинов</strong></div>
+      ${saving > 0 ? `<p>Вы экономите ${formatNumber(saving)} коинов</p>` : ''}
+    </div>
+  `;
 }
 
 function emptyState(title){
@@ -726,9 +849,7 @@ function openPurchaseConfirm(offer){
     : (isAvatar ? `Аватарка ${number}` : String(offer.display_name || (isNameColor ? 'Цвет имени' : 'Игровой предмет')));
   let visual;
   if (isBundle) {
-    visual = bundleGameType === 'checkers'
-      ? `<div class="store-v2-confirm-game-bundle checkers-bundle-visual">${checkersMiniBoardMarkup(false)}<i class="store-v2-mini-checkers-pieces"><span class="black"></span><span class="white"></span></i><b>＋3</b></div>`
-      : '<div class="store-v2-confirm-game-bundle"><span>✕</span><span>○</span><b>＋3</b></div>';
+    visual = renderBundleConfirmVisual(offer);
   } else if (isAvatar) {
     visual = `<div class="store-v2-confirm-avatar store-v2-avatar-preview" data-avatar-item-id="${escapeAttr(itemId)}" data-avatar-preview="${number}" role="img" aria-label="${escapeAttr(`Аватарка ${number}`)}"><span>${String(number).padStart(2,'0')}</span></div>`;
   } else if (isNameColor) {
@@ -744,7 +865,9 @@ function openPurchaseConfirm(offer){
     <div class="store-v2-confirm">
       ${visual}
       <div class="store-v2-confirm-copy"><strong>${escapeHtml(title)}</strong></div>
-      <div class="store-v2-confirm-price"><span>К оплате</span><strong>${formatNumber(price)} коинов</strong></div>
+      ${isBundle
+        ? renderBundleConfirmPricing(offer)
+        : `<div class="store-v2-confirm-price"><span>К оплате</span><strong>${formatNumber(price)} коинов</strong></div>`}
       <div class="store-v2-confirm-balance"><span>Останется</span><b>${formatNumber(Math.max(0, balance - price))}</b></div>
       <button class="btn primary full" id="storeV2ConfirmBuy" type="button" ${missing > 0 ? 'disabled' : ''}>${missing > 0 ? `Не хватает ${formatNumber(missing)}` : `Купить за ${formatNumber(price)}`}</button>
     </div>
