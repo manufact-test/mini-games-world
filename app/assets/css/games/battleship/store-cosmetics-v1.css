@@ -47,12 +47,13 @@
 .mgw-battleship-preview .mgw-bs-preview-board{
   position:absolute;
   left:8%;
-  right:8%;
   top:50%;
+  width:84%;
   height:auto;
+  aspect-ratio:1 / 1;
   display:grid;
   grid-template-columns:repeat(10,minmax(0,1fr));
-  grid-auto-rows:auto;
+  grid-template-rows:repeat(10,minmax(0,1fr));
   gap:2px;
   transform:translateY(-50%);
   z-index:2;
@@ -179,15 +180,14 @@
   box-shadow:inset 0 0 0 1px #252c33,0 2px 4px rgba(0,0,0,.45);
 }
 .mgw-battleship-preview.fleet-neon .mgw-bs-preview-board>span.ship{
-  background:
-    radial-gradient(circle at 50% 50%,rgba(255,73,224,.58) 0 22%,transparent 23% 100%),
-    linear-gradient(145deg,#5f46d8 0%,#3a2a86 58%,#171737 100%);
-  border-color:#41f6ff;
+  background:linear-gradient(145deg,#4d3aaa 0%,#2a205f 58%,#12152e 100%);
+  border:2px solid #55f5ff;
   box-shadow:
-    0 0 0 1px rgba(65,246,255,.24),
-    0 0 7px rgba(45,235,255,.58),
-    0 0 10px rgba(255,73,224,.18),
-    inset 0 0 0 1px rgba(255,255,255,.10);
+    0 0 5px rgba(85,245,255,.86),
+    0 0 10px rgba(85,245,255,.42),
+    0 0 15px rgba(255,70,223,.22),
+    inset 0 0 0 2px rgba(255,70,223,.34),
+    inset 0 0 9px rgba(123,92,255,.34);
 }
 
 /* Effects: three deliberately different events. */
