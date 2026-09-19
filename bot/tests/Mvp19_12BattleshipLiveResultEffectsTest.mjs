@@ -48,7 +48,7 @@ for (const token of [
   'mgw-bs-live-destroy-wreck',
   'mgw-bs-live-destroy-smoke',
   'mgw-bs-live-destroy-shard',
-  'critical-sink-v1',
+  'critical-sink-v2',
 ]) {
   assert.ok(live.includes(token) || liveCss.includes(token), `Destroy must publish visual token ${token}`);
 }
@@ -59,9 +59,11 @@ assert.ok(live.includes("duration:980") && live.includes("duration:1120") && liv
 assert.ok(live.includes("globalThis.setTimeout(cleanup, 1450)"), 'Hit must remain bounded while giving streaks time to read');
 assert.ok(live.includes("for (let index = 0; index < 6; index += 1)"), 'LIVE Hit must retain all six preview-parity streaks');
 assert.ok(liveCss.includes("height:21px") && liveCss.includes("z-index:4") && liveCss.includes("#fffdf0"), 'LIVE Hit streaks must be visibly longer, brighter and layered above the core');
-assert.ok(live.includes("duration:1050") && live.includes("duration:1180") && live.includes("globalThis.setTimeout(cleanup, 1500)"), 'Destroy must remain visibly heavier but bounded');
+assert.ok(live.includes("duration:1500") && live.includes("duration:1650") && live.includes("duration:1780") && live.includes("duration:1900") && live.includes("duration:1550"), 'Destroy must expose slower readable fire, shockwave, smoke and debris phases');
+assert.ok(live.includes("globalThis.setTimeout(cleanup, 2250)"), 'Destroy must remain bounded while keeping smoke/fire readable');
+assert.ok(live.includes("const visualY = y + Math.max(2, Math.min(5, cellHeight * .12))"), 'LIVE Destroy must apply the small optical downshift from the actual sunk-ship center');
 
-assert.ok(entry.includes("$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v4&fire=queue-gap-v2&shot_motion=readable-v2&hit=preview-parity-v2';"), 'Active v110 runtime must publish the accepted three-effect queued-fire module');
-assert.ok(launch.includes('battleship_shot=live-v2') && launch.includes('battleship_impacts=live-v2') && launch.includes('battleship_fire=queue-gap-v2'), 'Telegram route must publish all accepted effects plus reliable-fire identity');
+assert.ok(entry.includes("$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v5&fire=pending-truth-v3&shot_motion=readable-v2&hit=preview-parity-v2&destroy=readable-centered-v2';"), 'Active v110 runtime must publish the accepted three-effect queued-fire module');
+assert.ok(launch.includes('battleship_shot=live-v2') && launch.includes('battleship_impacts=live-v2') && launch.includes('battleship_destroy=live-v2') && launch.includes('battleship_fire=pending-truth-v3'), 'Telegram route must publish all accepted effects plus reliable-fire identity');
 
 console.log('Battleship LIVE Hit/Destroy effect contract passed.');
