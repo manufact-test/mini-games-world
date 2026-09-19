@@ -35,6 +35,8 @@ final class LeaderboardService
         $rules = $this->leaderboardControl();
         $seasonId = $competition['current_season_id'];
 
+        $minMatches = max(1, (int)$rules['min_rated_matches']);
+        $minWins = max(1, (int)$rules['min_human_wins']);
         $rows = $this->database->fetchAll(
             'SELECT s.mgw_id, s.points, s.rated_wins, s.updated_at_utc,
                     u.nickname, u.equipped_avatar_item_id,
@@ -44,13 +46,13 @@ final class LeaderboardService
              INNER JOIN (
                  SELECT mgw_id,
                         COUNT(*) AS rated_matches,
-                        SUM(CASE WHEN result_code = :win_code_a THEN 1 ELSE 0 END) AS human_wins
+                        SUM(CASE WHEN result_code = :win_code THEN 1 ELSE 0 END) AS human_wins
                  FROM mgw_game_rating_participation
                  WHERE season_id = :participation_season
                    AND game_type = :participation_game
                  GROUP BY mgw_id
-                 HAVING COUNT(*) >= :min_matches
-                    AND SUM(CASE WHEN result_code = :win_code_b THEN 1 ELSE 0 END) >= :min_wins
+                 HAVING COUNT(*) >= ' . $minMatches . '
+                    AND SUM(CASE WHEN result_code = :win_code_having THEN 1 ELSE 0 END) >= ' . $minWins . '
              ) p ON p.mgw_id = s.mgw_id
              WHERE s.season_id = :score_season
                AND s.game_type = :score_game
@@ -61,12 +63,10 @@ final class LeaderboardService
                       s.mgw_id ASC
              LIMIT ' . $limit,
             [
-                'win_code_a' => 'win',
+                'win_code' => 'win',
                 'participation_season' => $seasonId,
                 'participation_game' => $gameType,
-                'min_matches' => $rules['min_rated_matches'],
-                'win_code_b' => 'win',
-                'min_wins' => $rules['min_human_wins'],
+                'win_code_having' => 'win',
                 'score_season' => $seasonId,
                 'score_game' => $gameType,
                 'active_status' => 'active',
