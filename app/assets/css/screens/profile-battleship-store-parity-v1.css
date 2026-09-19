@@ -21,7 +21,6 @@
   filter:drop-shadow(0 2px 2px rgba(0,0,0,.36));
 }
 #screen-profile .profile-v2-game-tab[data-profile-game-tab="battleship"] .mgw-bs-tab-hull{
-  fill:linear-gradient(#d7dde5,#495461);
   fill:#737f8c!important;
   stroke:#b8c0c8!important;
   stroke-width:1!important;
