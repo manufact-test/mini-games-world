@@ -3,33 +3,22 @@
 
 
 .store-v2-bundle-game-picker{
-  position:relative;
   min-width:0;
   margin-bottom:10px;
-}
-
-.store-v2-bundle-game-picker::after{
-  content:"";
-  position:absolute;
-  top:0;
-  right:0;
-  width:18px;
-  height:100%;
-  pointer-events:none;
-  background:linear-gradient(90deg,transparent,rgba(12,16,27,.88));
-  opacity:.75;
+  overflow:hidden;
 }
 
 .store-v2-bundle-game-picker-track{
   display:flex;
+  align-items:center;
   gap:7px;
   min-width:0;
   overflow-x:auto;
   overflow-y:hidden;
-  padding:1px 18px 3px 1px;
-  scroll-snap-type:x proximity;
+  padding:1px 2px 4px;
   scrollbar-width:none;
   -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
   touch-action:pan-x;
 }
 
@@ -38,58 +27,45 @@
 }
 
 .store-v2-bundle-game-option{
-  flex:1 0 138px;
-  min-width:0;
-  height:42px;
-  padding:0 11px;
-  display:flex;
+  -webkit-appearance:none;
+  appearance:none;
+  flex:0 0 auto;
+  width:max-content;
+  min-width:max-content;
+  height:36px;
+  min-height:36px;
+  padding:0 13px;
+  display:inline-flex;
   align-items:center;
-  justify-content:space-between;
-  gap:9px;
-  scroll-snap-align:start;
-  border:1px solid rgba(255,255,255,.09);
-  border-radius:11px;
+  justify-content:center;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:10px;
   background:rgba(255,255,255,.035);
   color:var(--soft);
   box-shadow:none;
-  text-align:left;
+  font-family:inherit!important;
+  font-size:10px!important;
+  line-height:1!important;
+  font-weight:900!important;
+  letter-spacing:0!important;
+  text-transform:none!important;
+  white-space:nowrap;
 }
 
 .store-v2-bundle-game-option>span{
-  min-width:0;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  display:block;
+  overflow:visible;
+  text-overflow:clip;
   white-space:nowrap;
-  font-size:10px;
-  line-height:1;
-  font-weight:900;
-}
-
-.store-v2-bundle-game-option>small{
-  flex:0 0 auto;
-  min-width:32px;
-  height:22px;
-  padding:0 7px;
-  display:grid;
-  place-items:center;
-  border-radius:8px;
-  background:rgba(255,255,255,.055);
-  color:var(--muted);
-  font-size:8px;
-  line-height:1;
-  font-weight:900;
+  font:inherit!important;
+  line-height:1!important;
 }
 
 .store-v2-bundle-game-option.active{
-  border-color:rgba(126,102,255,.58);
-  background:linear-gradient(135deg,rgba(124,92,255,.24),rgba(69,213,240,.08));
+  border-color:rgba(126,102,255,.62);
+  background:linear-gradient(135deg,rgba(124,92,255,.25),rgba(69,213,240,.08));
   color:#fff;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 7px 18px rgba(41,31,101,.16);
-}
-
-.store-v2-bundle-game-option.active>small{
-  background:rgba(128,105,255,.20);
-  color:#cfc5ff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 6px 16px rgba(41,31,101,.13);
 }
 
 .store-v2-bundle-game-option:active{
@@ -250,24 +226,13 @@
 
 .store-v2-bundle-reference-preview .store-v2-game-preview{
   width:100%;
-  height:78px!important;
-  min-height:78px!important;
-  aspect-ratio:auto!important;
+  height:auto;
+  min-height:70px;
+  aspect-ratio:1.32;
   border:0;
   border-radius:8px!important;
   background:transparent;
   box-shadow:none;
-}
-
-
-.store-v2-bundle-reference-member.layer-theme .store-v2-bundle-reference-preview .store-v2-game-preview,
-.store-v2-bundle-reference-member.layer-elements .store-v2-bundle-reference-preview .store-v2-game-preview{
-  height:102px!important;
-  min-height:102px!important;
-}
-
-.store-v2-bundle-reference-preview .store-v2-game-preview[data-game-type="checkers"]{
-  overflow:hidden!important;
 }
 
 .store-v2-bundle-reference-preview .store-v2-game-preview[data-cosmetic-layer="theme"]{
@@ -288,6 +253,58 @@
 .store-v2-bundle-reference-preview .store-v2-mini-effect{
   width:66px;
   height:62px;
+}
+
+/* Checkers bundle previews must keep the accepted square Store geometry.
+   Only the selected bundle exists in DOM, so the live effect owner remains bounded. */
+[data-store-bundle-member-game="checkers"] .store-v2-bundle-reference-preview{
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  border-radius:8px;
+}
+
+[data-store-bundle-member-game="checkers"] .store-v2-game-preview{
+  box-sizing:border-box!important;
+  display:grid!important;
+  place-items:center!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:1!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border:0!important;
+  border-radius:8px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+[data-store-bundle-member-game="checkers"][data-store-bundle-member-layer="theme"] .store-v2-mini-checkers-board{
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:none!important;
+  height:auto!important;
+  aspect-ratio:1!important;
+  margin:0!important;
+  border-radius:8px!important;
+  transform:none!important;
+}
+
+[data-store-bundle-member-game="checkers"][data-store-bundle-member-layer="elements"] .store-v2-mini-checkers-pieces{
+  transform:scale(.86)!important;
+  transform-origin:50% 50%!important;
+}
+
+[data-store-bundle-member-game="checkers"][data-store-bundle-member-layer="effect"] .store-v2-mini-checkers-effect{
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:none!important;
+  height:auto!important;
+  aspect-ratio:1!important;
+  margin:0!important;
+  border-radius:8px!important;
+  transform:none!important;
 }
 
 .store-v2-bundle-owned-check{
@@ -507,16 +524,23 @@
 
 /* Bundle detail / purchase sheet. */
 
+#sheet:has(> .store-v2-confirm.store-v2-confirm-bundle){
+  height:86dvh;
+  max-height:86dvh;
+  min-height:min(560px,86dvh);
+  border-radius:20px;
+}
+
 #sheet > .store-v2-confirm.store-v2-confirm-bundle{
   min-height:0;
-  flex:1 1 auto;
+  flex:1 1 0;
   overflow-y:auto!important;
   overflow-x:hidden!important;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior-y:contain;
   touch-action:pan-y;
   scrollbar-width:none;
-  padding:0 2px max(8px,env(safe-area-inset-bottom));
+  padding:0 2px max(14px,env(safe-area-inset-bottom));
 }
 
 #sheet > .store-v2-confirm.store-v2-confirm-bundle::-webkit-scrollbar{
@@ -560,14 +584,12 @@
 }
 
 .store-v2-bundle-reference-members.is-sheet .store-v2-bundle-reference-preview .store-v2-game-preview{
-  height:68px!important;
-  min-height:68px!important;
+  min-height:64px;
 }
 
-.store-v2-bundle-reference-members.is-sheet .store-v2-bundle-reference-member.layer-theme .store-v2-game-preview,
-.store-v2-bundle-reference-members.is-sheet .store-v2-bundle-reference-member.layer-elements .store-v2-game-preview{
-  height:84px!important;
-  min-height:84px!important;
+.store-v2-bundle-reference-members.is-sheet [data-store-bundle-member-game="checkers"] .store-v2-game-preview{
+  min-height:0!important;
+  aspect-ratio:1!important;
 }
 
 .store-v2-bundle-reference-members.is-sheet .store-v2-bundle-reference-member-copy>strong{
@@ -644,17 +666,6 @@
     font-size:27px;
   }
 
-  .store-v2-bundle-reference-preview .store-v2-game-preview{
-    height:86px!important;
-    min-height:86px!important;
-  }
-
-  .store-v2-bundle-reference-member.layer-theme .store-v2-game-preview,
-  .store-v2-bundle-reference-member.layer-elements .store-v2-game-preview{
-    height:112px!important;
-    min-height:112px!important;
-  }
-
   .store-v2-bundle-reference-member-copy>strong{
     font-size:10px;
   }
@@ -695,17 +706,6 @@
   .store-v2-bundle-reference-member{
     padding:4px;
     border-radius:9px;
-  }
-
-  .store-v2-bundle-reference-preview .store-v2-game-preview{
-    height:68px!important;
-    min-height:68px!important;
-  }
-
-  .store-v2-bundle-reference-member.layer-theme .store-v2-game-preview,
-  .store-v2-bundle-reference-member.layer-elements .store-v2-game-preview{
-    height:88px!important;
-    min-height:88px!important;
   }
 
   .store-v2-bundle-reference-member-copy>strong{

@@ -7,11 +7,15 @@ const manifest = readFileSync('app/runtime/client/version-manifest.php', 'utf8')
 const launch = readFileSync('bot/helpers/WebAppLaunchUrl.php', 'utf8');
 const tttMigration = readFileSync('bot/database/migrations/20260824_0015_create_tictactoe_game_cosmetics_pilot.php', 'utf8');
 const checkersMigration = readFileSync('bot/database/migrations/20260912_0032_complete_checkers_store_cosmetics.php', 'utf8');
+const checkersWrapper = readFileSync('app/assets/js/screens/store-screen-checkers-wrapper.js', 'utf8');
+const checkersSourceWrapper = readFileSync('app/assets/js/screens/store-screen-checkers-board-source-wrapper.js', 'utf8');
 
 assert.match(store, /const BUNDLE_REFERENCE_GAMES = Object\.freeze\(\['tictactoe','checkers'\]\);/);
 assert.match(store, /gameBundlesFromSnapshot\(\)\.filter\(bundle => BUNDLE_REFERENCE_GAMES\.includes\(bundleGameType\(bundle\)\)\)/);
 assert.match(store, /let activeBundleGame = 'tictactoe';/);
 assert.match(store, /data-store-v2-bundle-game=/);
+assert.equal(store.includes('data-store-v2-bundle-game="${escapeAttr(gameType)}"\n              data-store-v2-game='), false);
+assert.equal(store.includes("bundle?.already_owned ? 'Собран'"), false);
 assert.match(store, /store-v2-bundle-game-picker-track/);
 assert.match(store, /\$\{renderGameBundle\(activeBundle\)\}/);
 assert.equal(store.includes('${bundles.map(renderGameBundle).join(\'\')}'), false);
@@ -46,6 +50,9 @@ for (const itemId of [
 
 assert.match(css, /\.store-v2-bundle-game-picker\{/);
 assert.match(css, /\.store-v2-bundle-game-option\.active\{/);
+assert.match(css, /width:max-content/);
+assert.match(css, /min-width:max-content/);
+assert.match(css, /font-size:10px!important/);
 assert.match(css, /touch-action:pan-x/);
 assert.match(css, /touch-action:pan-x pan-y/);
 assert.match(css, /\.store-v2-bundle-reference\{/);
@@ -58,15 +65,24 @@ assert.match(css, /overflow-y:auto!important/);
 assert.match(css, /touch-action:pan-y/);
 assert.match(css, /store-v2-content\[data-store-v2-panel="bundles"\]\{/);
 assert.match(css, /padding-bottom:28px/);
+assert.match(css, /#sheet:has\(> \.store-v2-confirm\.store-v2-confirm-bundle\)\{/);
+assert.match(css, /height:86dvh/);
 assert.match(css, /#sheet > \.store-v2-confirm\.store-v2-confirm-bundle\{/);
-assert.match(css, /flex:1 1 auto/);
+assert.match(css, /flex:1 1 0/);
 assert.match(css, /overflow-y:auto!important/);
 assert.match(css, /border-radius:11px/);
 assert.match(css, /border-radius:8px/);
-assert.match(store, /store-bundle-prototype-v1\.css\?v=4&mvp19_13=bundle-game-selector-sheet-scroll-v1/);
+assert.match(store, /store-bundle-prototype-v1\.css\?v=5&mvp19_13=bundle-selector-checkers-parity-v2/);
+assert.match(store, /data-store-bundle-member-game=/);
+assert.match(store, /data-store-bundle-member-layer=/);
+assert.match(css, /data-store-bundle-member-game="checkers"/);
+assert.match(checkersWrapper, /\[data-store-v2-bundle-game\]/);
+assert.match(checkersWrapper, /data-store-v2-game="checkers"\]:not\(\[data-store-v2-bundle-game\]\)/);
+assert.match(checkersSourceWrapper, /store-screen-checkers-wrapper\.js\?v=5/);
 
-assert.match(manifest, /store-screen\.js\?v=59[^']*mvp19_13=bundle-game-selector-sheet-scroll-v1/);
-assert.match(launch, /bundles=game-selector-sheet-scroll-v1/);
+assert.match(manifest, /store-screen-checkers-board-source-wrapper\.js\?v=35[^']*parent=store-screen-checkers-wrapper\.js\?v=5/);
+assert.match(manifest, /store-screen\.js\?v=60[^']*mvp19_13=bundle-selector-checkers-parity-v2/);
+assert.match(launch, /bundles=selector-checkers-parity-v2/);
 
 for (const itemId of [
   'game-ttt-field-neon',

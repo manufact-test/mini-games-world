@@ -21,7 +21,7 @@ function ok(value, label){
   console.log(`PASS ${label}`);
 }
 
-ok(manifest.includes('store-screen-checkers-board-source-wrapper.js?v=34') && manifest.includes('promotion_preview=king-readable-v2') && manifest.includes('final_centering=king-readable-v2'), 'active Store route preserves accepted Checkers effect preview and readable king corrective');
+ok(manifest.includes('store-screen-checkers-board-source-wrapper.js?v=35') && manifest.includes('store-screen-checkers-wrapper.js?v=5') && manifest.includes('bundle_selector=preserve-v1') && manifest.includes('promotion_preview=king-readable-v2') && manifest.includes('final_centering=king-readable-v2'), 'active Store route preserves accepted Checkers effect preview, selector markup and readable king corrective');
 ok(wrapper.includes('store-effects-live-board-v1.css?v=2&mvp19_6=effects-live-board-only'), 'accepted Checkers wrapper remains intact beneath the outer cache-bust owner');
 ok(sourceWrapper.includes('store-effects-live-board-v1.css?v=3&mvp19_6=promotion-destination-parity-v1'), 'outer Checkers Store owner keeps the accepted effect board stylesheet');
 ok(sourceWrapper.includes('store-effects-final-centering-v1.css?v=2&mvp19_6=king-readable-v2'), 'outer Checkers Store owner keeps the accepted final centering/readability stylesheet');

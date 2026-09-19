@@ -2,7 +2,7 @@ import {
   initStoreScreen as initAcceptedCheckersStore,
   openStoreTab as openAcceptedCheckersStoreTab,
   openStoreSheet as openAcceptedCheckersStoreSheet,
-} from './store-screen-checkers-wrapper.js?v=4&mvp19_6=visual-corrective-v3&base_rev=19&visual_rev=4&effects_live_board=v1&effects_loop=v1&boards_pieces=v1';
+} from './store-screen-checkers-wrapper.js?v=5&mvp19_6=visual-corrective-v3&base_rev=19&visual_rev=5&effects_live_board=v1&effects_loop=v1&boards_pieces=v1&bundle_selector=preserve-v1';
 import {
   installReversiStorePresentation,
   upgradeReversiStorePresentation,

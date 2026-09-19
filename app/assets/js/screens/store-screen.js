@@ -27,7 +27,7 @@ let equipBusy = false;
 ensureBundlePrototypeStyles();
 
 function ensureBundlePrototypeStyles(){
-  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=4&mvp19_13=bundle-game-selector-sheet-scroll-v1', import.meta.url).href;
+  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=5&mvp19_13=bundle-selector-checkers-parity-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-store-bundle-prototype]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -35,7 +35,7 @@ function ensureBundlePrototypeStyles(){
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-bundle-game-selector-sheet-scroll-v1';
+  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-bundle-selector-checkers-parity-v2';
   link.href = href;
   document.head.appendChild(link);
 }
@@ -557,7 +557,11 @@ function renderBundleMembers(bundle, sheet = false){
         const variant = String(offer?.metadata?.variant || 'base');
         const name = String(offer?.display_name || itemId || 'Предмет');
         return `
-          <div class="store-v2-bundle-reference-member layer-${escapeAttr(layer)} ${owned ? 'owned' : ''}">
+          <div
+            class="store-v2-bundle-reference-member layer-${escapeAttr(layer)} ${owned ? 'owned' : ''}"
+            data-store-bundle-member-game="${escapeAttr(gameType)}"
+            data-store-bundle-member-layer="${escapeAttr(layer)}"
+          >
             <div class="store-v2-bundle-reference-preview">
               ${gameCosmeticPreview(gameType, layer, variant, name)}
               ${owned ? '<i class="store-v2-bundle-owned-check" aria-label="Уже в коллекции">✓</i>' : ''}
@@ -587,8 +591,6 @@ function renderBundlesTab(){
         ${bundles.map(bundle => {
           const gameType = bundleGameType(bundle);
           const presentation = bundlePresentation(gameType);
-          const count = Array.isArray(bundle?.item_ids) ? bundle.item_ids.length : 0;
-          const owned = Math.max(0, Number(bundle?.owned_count || 0));
           const active = gameType === activeBundleGame;
           return `
             <button
@@ -597,10 +599,8 @@ function renderBundlesTab(){
               role="tab"
               aria-selected="${active ? 'true' : 'false'}"
               data-store-v2-bundle-game="${escapeAttr(gameType)}"
-              data-store-v2-game="${escapeAttr(gameType)}"
             >
               <span>${escapeHtml(presentation.gameTitle)}</span>
-              <small>${bundle?.already_owned ? 'Собран' : `${owned}/${count || 5}`}</small>
             </button>
           `;
         }).join('')}

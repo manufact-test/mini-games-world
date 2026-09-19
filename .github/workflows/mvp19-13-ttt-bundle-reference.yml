@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'app/assets/js/screens/store-screen.js'
+      - 'app/assets/js/screens/store-screen-checkers-wrapper.js'
+      - 'app/assets/js/screens/store-screen-checkers-board-source-wrapper.js'
       - 'app/assets/css/screens/store-bundle-prototype-v1.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/WebAppLaunchUrl.php'
@@ -22,7 +24,10 @@ jobs:
         with:
           node-version: '22'
       - name: JavaScript syntax
-        run: node --check app/assets/js/screens/store-screen.js
+        run: |
+          node --check app/assets/js/screens/store-screen.js
+          node --check app/assets/js/screens/store-screen-checkers-wrapper.js
+          node --check app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
       - name: PHP syntax
         run: |
           php -l bot/helpers/WebAppLaunchUrl.php

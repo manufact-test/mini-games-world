@@ -218,7 +218,7 @@ $assertTrue(str_contains($storeScreen, "bundleGameType === 'checkers'") && str_c
 $storeTarget = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $storeBaseTarget = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog'] ?? '');
 $checkersTarget = (string)($manifest['imports']['./assets/js/games/checkers/renderer.js?v=57'] ?? '');
-$assertTrue(str_contains($storeTarget, 'store-screen-checkers-wrapper.js?v=4') && str_contains($storeTarget, 'mvp19_6=visual-corrective-v3'), 'Active Store graph must select the second Checkers manual-review corrective');
+$assertTrue(str_contains($storeTarget, 'store-screen-checkers-board-source-wrapper.js?v=35') && str_contains($storeTarget, 'store-screen-checkers-wrapper.js?v=5') && str_contains($storeTarget, 'bundle_selector=preserve-v1') && str_contains($storeTarget, 'mvp19_6=visual-corrective-v3'), 'Active Store graph must select the accepted Checkers corrective with bundle-selector preservation');
 $assertTrue(str_contains($storeBaseTarget, 'mvp19_6=full-checkers-store'), 'Active import graph must preserve the native Store owner under the corrective wrapper');
 $assertTrue(
     str_contains($checkersTarget, 'renderer-real-flight-cascade-v1.js?v=2')
