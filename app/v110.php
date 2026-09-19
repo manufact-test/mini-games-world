@@ -302,6 +302,7 @@ $requiredRenderedTargets = [
     'unified_home_cache' => $imports['./assets/js/screens/home-screen.js?v=74'] ?? '',
     'match_shell_cache' => $imports['./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5'] ?? '',
     'unified_profile_cache' => $imports['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? '',
+    'visible_rating_profile' => $imports['./assets/js/screens/profile-screen-v110.js?v=1126&profile_base=accepted-game-cosmetics'] ?? '',
 ];
 foreach ($requiredRenderedTargets as $targetName => $target) {
     if ($target === '' || !str_contains($html, $target)) {
@@ -341,6 +342,7 @@ header('X-MGW-Profile-API: provider-neutral-mgw-v1');
 header('X-MGW-Profile-Consumer: unified-profile-avatar-v1');
 header('X-MGW-Balance-UI: unified-balance-v1');
 header('X-MGW-Match-Economy: server-config-v1');
+header('X-MGW-Visible-Rating: per-game-preseason-v1');
 header('X-MGW-Notification-Graph: v1139-three-state-scroll-stable');
 header('X-MGW-Notification-Palette: green-red-blue-v1');
 header('X-MGW-Invite-Graph: v1143-prepared-share-owner');

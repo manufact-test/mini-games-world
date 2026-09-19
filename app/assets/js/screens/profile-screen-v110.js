@@ -107,6 +107,7 @@ function applyProfileResponse(result, options = {}){
   const confirmedAvatar = canonicalAvatarItemId(state.mgwProfile?.avatar || { item_id:state.user?.avatar_item_id });
   if (confirmedAvatar) state.selectedAvatarId = confirmedAvatar;
   state.profileStats = result.stats || state.profileStats || null;
+  state.profileRating = result.rating || state.profileRating || null;
   state.profileHistory = result.history || state.profileHistory || null;
   state.profileAuth = result.auth || state.profileAuth || null;
   if (hasProfileStats(state.profileStats)) saveCachedProfileStats(state.profileStats);
@@ -349,8 +350,9 @@ function renderProfileV2(){
   const profile = state.mgwProfile && typeof state.mgwProfile === 'object' ? state.mgwProfile : {};
   const user = state.user && typeof state.user === 'object' ? state.user : {};
   const stats = state.profileStats && typeof state.profileStats === 'object' ? state.profileStats : loadCachedProfileStats();
+  const rating = state.profileRating && typeof state.profileRating === 'object' ? state.profileRating : {};
   const history = state.profileHistory && typeof state.profileHistory === 'object' ? state.profileHistory : {};
-  const renderSignature = profileRenderSignature(profile, user, stats, history);
+  const renderSignature = profileRenderSignature(profile, user, stats, history, rating);
   if (root.childElementCount > 0 && renderSignature === lastProfileRenderSignature) return;
   const nickname = String(profile.nickname || user.display_name || t('profile.player')).trim();
   const mgwId = publicMgwId(profile.public_mgw_id || profile.mgw_id || user.public_mgw_id || user.mgw_id);
@@ -387,6 +389,7 @@ function renderProfileV2(){
       ${renderGameCosmeticsCollection()}
     </section>
     <section class="profile-v2-balance"><div><span>${escapeHtml(t('profile.balance'))}</span><small>${escapeHtml(t('profile.balance_note'))}</small></div><strong>${escapeHtml(formatNumber(balance))}</strong></section>
+    <section class="profile-v2-section">${sectionHead('profile.rating_title', ratingNoteKey(rating))}<div class="profile-v2-games-grid">${GAME_TYPES.map(gameType => gameRatingCard(gameType, rating?.by_game?.[gameType])).join('')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.stats_title','profile.stats_note')}<div class="profile-v2-summary-grid">${summaryStat(stats?.games_played,'profile.games_played')}${summaryStat(stats?.wins,'profile.wins')}${summaryStat(stats?.losses,'profile.losses')}${summaryStat(stats?.draws,'profile.draws')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.by_game_title','profile.by_game_note')}<div class="profile-v2-games-grid">${GAME_TYPES.map(gameType => gameStatCard(gameType, stats?.by_game?.[gameType])).join('')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.history_title')}<div class="profile-v2-history">${matches.length ? matches.map(historyRow).join('') : emptyState('profile.history_empty')}</div></section>
@@ -783,7 +786,7 @@ function currentAvatarItemId(){
 }
 function normalizeNicknameInput(value){ return String(value || '').replace(/\s+/gu, ' ').trim(); }
 function cloneObject(value){ return value && typeof value === 'object' ? JSON.parse(JSON.stringify(value)) : value; }
-function profileRenderSignature(profile, user, stats, history){
+function profileRenderSignature(profile, user, stats, history, rating){
   return JSON.stringify({
     profile,
     inventory:state.profileInventory || null,
@@ -797,6 +800,7 @@ function profileRenderSignature(profile, user, stats, history){
       mgw_id:user?.mgw_id || '',
     },
     stats:stats || null,
+    rating:rating || null,
     history:history || null,
     auth:state.profileAuth || null,
     selected_avatar:String(state.selectedAvatarId || ''),
@@ -812,6 +816,16 @@ function ensureProfileRoot(){
 }
 function sectionHead(titleKey, noteKey = null){ return `<div class="profile-v2-section-head"><div><h2>${escapeHtml(t(titleKey))}</h2>${noteKey ? `<p>${escapeHtml(t(noteKey))}</p>` : ''}</div></div>`; }
 function summaryStat(value, labelKey){ const normalized = Number.isFinite(Number(value)) ? formatNumber(Number(value)) : '—'; return `<div class="profile-v2-summary-stat"><strong>${escapeHtml(normalized)}</strong><span>${escapeHtml(t(labelKey))}</span></div>`; }
+function ratingNoteKey(rating){
+  const competitionState = String(rating?.competition_state || 'off').toLowerCase();
+  if (competitionState === 'preseason') return 'profile.rating_note_preseason';
+  if (competitionState === 'active') return 'profile.rating_note_active';
+  return 'profile.rating_note_off';
+}
+function gameRatingCard(gameType, rating = null){
+  const points = Math.max(0, Number(rating?.points || 0));
+  return `<article class="profile-v2-game-stat profile-v2-rating-card" aria-label="${escapeHtml(gameName(gameType))}: ${escapeHtml(formatNumber(points))} ${escapeHtml(t('profile.rating_points'))}"><div class="profile-v2-game-stat-head"><strong>${escapeHtml(gameName(gameType))}</strong><b>${escapeHtml(formatNumber(points))}</b></div><small>${escapeHtml(t('profile.rating_points'))}</small></article>`;
+}
 function gameStatCard(gameType, stats = null){
   const s = stats && typeof stats === 'object' ? stats : {};
   return `<article class="profile-v2-game-stat"><div class="profile-v2-game-stat-head"><strong>${escapeHtml(gameName(gameType))}</strong><b>${escapeHtml(formatNumber(Number(s.games_played || 0)))}</b></div><div class="profile-v2-game-metrics"><span><b>${escapeHtml(formatNumber(Number(s.wins || 0)))}</b><small>${escapeHtml(t('profile.metric_wins'))}</small></span><span><b>${escapeHtml(formatNumber(Number(s.losses || 0)))}</b><small>${escapeHtml(t('profile.metric_losses'))}</small></span><span><b>${escapeHtml(formatNumber(Number(s.draws || 0)))}</b><small>${escapeHtml(t('profile.metric_draws'))}</small></span></div></article>`;
