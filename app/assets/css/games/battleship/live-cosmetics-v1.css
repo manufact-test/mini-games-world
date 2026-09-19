@@ -345,6 +345,7 @@
   contain:layout paint style;
 }
 .mgw-bs-live-destroy-flash,
+.mgw-bs-live-destroy-fire-core,
 .mgw-bs-live-destroy-ring,
 .mgw-bs-live-destroy-wreck,
 .mgw-bs-live-destroy-smoke,
@@ -380,6 +381,32 @@
       rgba(255,244,190,.86) 87% 93%,
       transparent 94%);
   filter:drop-shadow(0 0 9px rgba(255,105,48,.92)) drop-shadow(0 0 19px rgba(207,34,53,.46));
+}
+.mgw-bs-live-destroy-fire-core{
+  z-index:7;
+  transform:translate(-50%,-50%);
+  border-radius:44% 56% 52% 48%;
+  background:
+    radial-gradient(circle at 46% 48%,
+      rgba(255,255,244,1) 0 10%,
+      rgba(255,237,132,1) 11% 22%,
+      rgba(255,153,43,.98) 23% 39%,
+      rgba(255,71,39,.96) 40% 58%,
+      rgba(168,22,36,.62) 59% 72%,
+      transparent 73%),
+    conic-gradient(from 8deg,
+      rgba(255,246,169,.98) 0 12%,
+      rgba(255,102,40,.92) 13% 26%,
+      rgba(255,219,87,.96) 27% 39%,
+      rgba(230,45,48,.88) 40% 54%,
+      rgba(255,182,51,.96) 55% 69%,
+      rgba(255,78,42,.9) 70% 83%,
+      rgba(255,240,147,.94) 84% 100%);
+  box-shadow:
+    0 0 10px rgba(255,224,98,.9),
+    0 0 20px rgba(255,98,42,.86),
+    0 0 32px rgba(216,39,49,.5);
+  filter:saturate(1.16) brightness(1.08);
 }
 .mgw-bs-live-destroy-ring{
   z-index:4;
@@ -432,6 +459,10 @@
 .mgw-bs-live-destroy-fx.is-reduced-motion .mgw-bs-live-destroy-flash{
   opacity:.86;
   transform:translate(-50%,-50%) scale(.88);
+}
+.mgw-bs-live-destroy-fx.is-reduced-motion .mgw-bs-live-destroy-fire-core{
+  opacity:.94;
+  transform:translate(-50%,-50%) scale(.94);
 }
 .mgw-bs-live-destroy-fx.is-reduced-motion .mgw-bs-live-destroy-ring{
   opacity:.65;
