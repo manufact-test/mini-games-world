@@ -1,0 +1,30 @@
+name: MVP-19.13 TTT Bundle Reference
+
+on:
+  pull_request:
+    paths:
+      - 'app/assets/js/screens/store-screen.js'
+      - 'app/assets/css/screens/store-bundle-prototype-v1.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'bot/database/migrations/20260824_0015_create_tictactoe_game_cosmetics_pilot.php'
+      - 'tests/mvp19-13-ttt-bundle-reference.mjs'
+      - '.github/workflows/mvp19-13-ttt-bundle-reference.yml'
+  workflow_dispatch:
+
+jobs:
+  ttt-bundle-reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: node --check app/assets/js/screens/store-screen.js
+      - name: PHP syntax
+        run: |
+          php -l bot/helpers/WebAppLaunchUrl.php
+          php -l app/runtime/client/version-manifest.php
+      - name: Reference contract
+        run: node tests/mvp19-13-ttt-bundle-reference.mjs
