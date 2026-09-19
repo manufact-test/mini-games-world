@@ -104,10 +104,10 @@ if (!isset($imports[$battleshipRendererImportKey])
     || $imports[$battleshipRendererImportKey] === '') {
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Battleship LIVE Shot renderer is unavailable.';
+    echo 'Mini Games World Battleship LIVE effects renderer is unavailable.';
     exit;
 }
-$imports[$battleshipRendererImportKey] .= '&live_effects=shot-v1';
+$imports[$battleshipRendererImportKey] .= '&live_effects=shot-hit-destroy-v1';
 
 
 foreach (['main_css', 'consistency_css', 'bootstrap'] as $requiredAsset) {
