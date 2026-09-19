@@ -1,0 +1,63 @@
+/* MVP-19.12 Battleship viewport corrective.
+ * Mirrors the proven Checkers/Go bounded-screen scroll owner:
+ * keep the whole game screen inside Telegram/WebView height, make .content the
+ * vertical scroller, and keep all setup controls + the normal-flow leave button reachable.
+ * Presentation/layout only; no game logic or board geometry ownership. */
+.game-board-screen[data-game-type="battleship"]{
+  box-sizing:border-box!important;
+  height:100dvh!important;
+  max-height:100dvh!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+
+.game-board-screen[data-game-type="battleship"] .content{
+  box-sizing:border-box!important;
+  height:100%!important;
+  max-height:100%!important;
+  flex:1 1 0%!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  padding-bottom:calc(
+    56px + env(safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)
+  )!important;
+  scroll-padding-bottom:calc(
+    56px + env(safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)
+  );
+}
+
+.game-board-screen[data-game-type="battleship"] .board-wrap{
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:100%!important;
+}
+
+.game-board-screen[data-game-type="battleship"] .board.battleship-surface,
+.game-board-screen[data-game-type="battleship"] .battleship-panel,
+.game-board-screen[data-game-type="battleship"] #leaveGame{
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:100%!important;
+}
+
+.game-board-screen[data-game-type="battleship"] #leaveGame{
+  position:static!important;
+  inset:auto!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  visibility:visible!important;
+  opacity:1!important;
+  min-height:42px;
+}
+
+@media (max-height:680px){
+  .game-board-screen[data-game-type="battleship"] .board-wrap{
+    margin-top:2px!important;
+    margin-bottom:8px!important;
+  }
+}
