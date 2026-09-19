@@ -105,12 +105,13 @@ final class ChessRuntimeService
         string $room,
         int $bet,
         int $boardSize,
-        ?string $gameType = null
+        ?string $gameType = null,
+        ?string $skillBand = null
     ): array {
         $this->assertNoOpenInviteBeforeSearch($db, $user);
         $gameType = $this->catalog->normalizeGameType($gameType);
         if (!in_array($gameType, ['chess', 'go', 'domino'], true)) {
-            return $this->base->startSearch($db, $user, $room, $bet, $boardSize, $gameType);
+            return $this->base->startSearch($db, $user, $room, $bet, $boardSize, $gameType, $skillBand);
         }
 
         $room = UnifiedGameZonePolicy::storageRoom();
@@ -127,7 +128,7 @@ final class ChessRuntimeService
         }
         $this->matchmaking->purgeActiveGameQueueEntries($db);
 
-        $skillBand = $this->matchmaking->normalizeSkillBand($user['skill_band'] ?? null);
+        $skillBand = $this->matchmaking->normalizeSkillBand($skillBand ?? ($user['skill_band'] ?? null));
         $requestedBoardSize = match ($gameType) {
             'chess' => 8,
             'domino' => 7,
