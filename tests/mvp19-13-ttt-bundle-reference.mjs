@@ -47,6 +47,7 @@ for (const itemId of [
 assert.match(css, /\.store-v2-bundle-game-picker\{/);
 assert.match(css, /\.store-v2-bundle-game-option\.active\{/);
 assert.match(css, /touch-action:pan-x/);
+assert.match(css, /touch-action:pan-x pan-y/);
 assert.match(css, /\.store-v2-bundle-reference\{/);
 assert.match(css, /\.store-v2-bundle-reference-members\{/);
 assert.match(css, /\.store-v2-bundle-confirm-reference\{/);
