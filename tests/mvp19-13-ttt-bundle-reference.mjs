@@ -31,6 +31,9 @@ assert.match(store, /function activateBundleGame\(gameType\)/);
 assert.match(store, /function bindBundleGamePickerScroll\(root\)/);
 assert.match(store, /store-v2-bundle-game-picker-track/);
 assert.match(store, /mgwBundlePickerSuppressClickUntil/);
+assert.match(store, /if \(!drag\.captured\) \{[\s\S]*setPointerCapture/);
+assert.match(store, /picker\.classList\.toggle\('can-scroll-right', canScrollRight\)/);
+assert.match(store, /show-scroll-hint/);
 assert.match(store, /track\.scrollLeft = drag\.startScrollLeft - dx/);
 assert.match(store, /function centerBundlePickerOption\(panel, gameType\)/);
 assert.match(store, /data-store-v2-game]:not\(\[data-store-v2-bundle-game\]\)/);
@@ -83,6 +86,9 @@ for (const itemId of [
 
 assert.match(css, /\.store-v2-bundle-game-picker\{/);
 assert.match(css, /\.store-v2-bundle-game-option\.active\{/);
+assert.match(css, /\.store-v2-bundle-game-picker\.can-scroll-right::after/);
+assert.match(css, /@keyframes mgw-bundle-picker-hint/);
+assert.match(css, /cursor:pointer/);
 assert.match(css, /width:max-content/);
 assert.match(css, /min-width:max-content/);
 assert.match(css, /font-size:10px!important/);
@@ -105,7 +111,7 @@ assert.match(css, /flex:1 1 0/);
 assert.match(css, /overflow-y:auto!important/);
 assert.match(css, /border-radius:11px/);
 assert.match(css, /border-radius:8px/);
-assert.match(store, /store-bundle-prototype-v1\.css\?v=11&mvp19_13=all-eight-bundles-v8/);
+assert.match(store, /store-bundle-prototype-v1\.css\?v=12&mvp19_13=bundle-selector-click-hint-v10/);
 assert.match(store, /data-store-bundle-member-game=/);
 assert.match(store, /data-store-bundle-member-layer=/);
 assert.match(css, /store-v2-bundle-reference-member:not\(\[data-store-bundle-member-game="tictactoe"\]\)/);
@@ -129,8 +135,8 @@ assert.match(checkersWrapper, /checkersEffectObserver\.unobserve\(preview\)/);
 assert.match(checkersWrapper, /data-mgw-checkers-frozen-snapshot/);
 
 assert.match(manifest, /store-screen-checkers-board-source-wrapper\.js\?v=36[^']*bundle_fit=v4[^']*parent=store-screen-checkers-wrapper\.js\?v=5[^']*mvp19_13=all-eight-bundles-v8/);
-assert.match(manifest, /store-screen\.js\?v=67[^']*mvp19_13=bundle-selector-drag-v9/);
-assert.match(launch, /bundles=bundle-selector-drag-v9/);
+assert.match(manifest, /store-screen\.js\?v=68[^']*mvp19_13=bundle-selector-click-hint-v10/);
+assert.match(launch, /bundles=bundle-selector-click-hint-v10/);
 
 for (const itemId of [
   'game-ttt-field-neon',
