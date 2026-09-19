@@ -7,7 +7,7 @@
   flex:0 0 24px!important;
   width:24px!important;
   height:20px!important;
-  margin:0!important;
+  margin:2px 0 4px!important;
   padding:0!important;
   color:transparent!important;
   font-size:0!important;
@@ -55,6 +55,19 @@
   padding:0 2px!important;
 }
 
+/* Same accepted card-copy contract as Four in a Row:
+   item title is rendered by the shared Profile card title owner;
+   this per-item token supplies only the category subtitle. */
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="battleship"] [data-profile-game-cosmetic^="game-battleship-map-"]{
+  --mgw-profile-card-subtitle:"Карта";
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="battleship"] [data-profile-game-cosmetic^="game-battleship-fleet-"]{
+  --mgw-profile-card-subtitle:"Флот";
+}
+#screen-profile .profile-v2-game-panel[data-profile-game-panel="battleship"] [data-profile-game-cosmetic^="game-battleship-effect-"]{
+  --mgw-profile-card-subtitle:"Эффект";
+}
+
 #screen-profile .profile-v2-game-panel[data-profile-game-panel="battleship"] .profile-v2-game-card{
   box-sizing:border-box!important;
   display:flex!important;
@@ -65,7 +78,7 @@
   height:auto!important;
   min-height:0!important;
   max-height:none!important;
-  padding:6px!important;
+  padding:8px!important;
   gap:5px!important;
   overflow:visible!important;
 }
@@ -95,16 +108,7 @@
   height:100%!important;
 }
 #screen-profile .profile-v2-game-panel[data-profile-game-panel="battleship"] .profile-v2-game-card .profile-v2-game-card-name{
-  position:relative!important;
-  z-index:2!important;
-  display:block!important;
-  flex:0 0 auto!important;
-  margin:6px 2px 1px!important;
-  font-size:11px!important;
-  line-height:1.2!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
-  white-space:nowrap!important;
+  display:none!important;
 }
 
 .profile-v2-game-preview-wrap .store-v2-game-preview[data-game-type="battleship"]{
