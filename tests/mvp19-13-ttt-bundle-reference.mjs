@@ -5,10 +5,11 @@ const store = readFileSync('app/assets/js/screens/store-screen.js', 'utf8');
 const css = readFileSync('app/assets/css/screens/store-bundle-prototype-v1.css', 'utf8');
 const manifest = readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 const launch = readFileSync('bot/helpers/WebAppLaunchUrl.php', 'utf8');
-const migration = readFileSync('bot/database/migrations/20260824_0015_create_tictactoe_game_cosmetics_pilot.php', 'utf8');
+const tttMigration = readFileSync('bot/database/migrations/20260824_0015_create_tictactoe_game_cosmetics_pilot.php', 'utf8');
+const checkersMigration = readFileSync('bot/database/migrations/20260912_0032_complete_checkers_store_cosmetics.php', 'utf8');
 
-assert.match(store, /const BUNDLE_PROTOTYPE_GAME = 'tictactoe';/);
-assert.match(store, /gameBundlesFromSnapshot\(\)\.filter\(bundle => bundleGameType\(bundle\) === BUNDLE_PROTOTYPE_GAME\)/);
+assert.match(store, /const BUNDLE_REFERENCE_GAMES = Object\.freeze\(\['tictactoe','checkers'\]\);/);
+assert.match(store, /gameBundlesFromSnapshot\(\)\.filter\(bundle => BUNDLE_REFERENCE_GAMES\.includes\(bundleGameType\(bundle\)\)\)/);
 assert.match(store, /const memberIds = new Set\(Array\.isArray\(bundle\?\.item_ids\)/);
 assert.match(store, /gameCosmeticPreview\(gameType, layer, variant, name\)/);
 assert.match(store, /bundle\?\.missing_item_ids/);
@@ -44,10 +45,10 @@ assert.match(css, /overflow-y:auto!important/);
 assert.match(css, /touch-action:pan-y/);
 assert.match(css, /store-v2-content\[data-store-v2-panel="bundles"\]\{/);
 assert.match(css, /padding-bottom:28px/);
-assert.match(store, /store-bundle-prototype-v1\.css\?v=2&mvp19_13=mobile-scroll-v1/);
+assert.match(store, /store-bundle-prototype-v1\.css\?v=3&mvp19_13=ttt-checkers-reference-v1/);
 
-assert.match(manifest, /store-screen\.js\?v=57[^']*mvp19_13=ttt-bundle-mobile-scroll-v1/);
-assert.match(launch, /bundles=ttt-mobile-scroll-v1/);
+assert.match(manifest, /store-screen\.js\?v=58[^']*mvp19_13=ttt-checkers-bundle-reference-v1/);
+assert.match(launch, /bundles=ttt-checkers-reference-v1/);
 
 for (const itemId of [
   'game-ttt-field-neon',
@@ -56,8 +57,25 @@ for (const itemId of [
   'game-ttt-effect-winning-line',
   'game-ttt-effect-strike',
 ]) {
-  assert.ok(migration.includes(`'${itemId}'`), `canonical TTT bundle member missing: ${itemId}`);
+  assert.ok(tttMigration.includes(`'${itemId}'`), `canonical TTT bundle member missing: ${itemId}`);
 }
-assert.match(migration, /'price_coins' => 34000/);
+assert.match(tttMigration, /'price_coins' => 34000/);
 
-console.log('MVP-19.13 TTT bundle reference contract: OK');
+
+assert.match(store, /gameTitle:'Шашки'/);
+assert.match(store, /labels:\{ theme:'Доска', elements:'Шашки', effect:'Эффект' \}/);
+assert.match(store, /Неоновая доска, неоновые шашки и все три эффекта в одном комплекте\./);
+
+for (const itemId of [
+  'game-checkers-board-neon',
+  'game-checkers-pieces-neon',
+  'game-checkers-effect-move',
+  'game-checkers-effect-capture',
+  'game-checkers-effect-promotion',
+]) {
+  assert.ok(checkersMigration.includes(`'${itemId}'`), `canonical Checkers bundle member missing: ${itemId}`);
+  assert.equal(prototypeSection.includes(itemId), false, `bundle UI must not hardcode Checkers member id ${itemId}`);
+}
+assert.match(checkersMigration, /'price_coins' => 34000/);
+
+console.log('MVP-19.13 TTT + Checkers bundle reference contract: OK');

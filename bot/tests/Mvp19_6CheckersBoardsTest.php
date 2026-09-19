@@ -220,6 +220,11 @@ $storeBaseTarget = (string)($manifest['imports']['./assets/js/screens/store-scre
 $checkersTarget = (string)($manifest['imports']['./assets/js/games/checkers/renderer.js?v=57'] ?? '');
 $assertTrue(str_contains($storeTarget, 'store-screen-checkers-wrapper.js?v=4') && str_contains($storeTarget, 'mvp19_6=visual-corrective-v3'), 'Active Store graph must select the second Checkers manual-review corrective');
 $assertTrue(str_contains($storeBaseTarget, 'mvp19_6=full-checkers-store'), 'Active import graph must preserve the native Store owner under the corrective wrapper');
-$assertTrue(str_contains($checkersTarget, 'renderer-board-themes.js') && str_contains($checkersTarget, 'mvp19_6=board-themes'), 'Phase A must keep live Checkers on the existing board-only wrapper');
+$assertTrue(
+    str_contains($checkersTarget, 'renderer-real-flight-cascade-v1.js?v=2')
+    && str_contains($checkersTarget, 'mvp19_6=all-paid-real-flight-v1')
+    && str_contains($checkersTarget, 'parent=single-flight-dom-v2'),
+    'Active live Checkers graph must preserve the accepted real-flight cascade wrapper'
+);
 
 fwrite(STDOUT, "PASS: MVP-19.6 complete Checkers Store ({$assertions} assertions)\n");
