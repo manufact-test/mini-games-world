@@ -36,6 +36,9 @@ export function initProfileBattleshipParity(){
     if (card instanceof HTMLElement) {
       const itemId = String(card.dataset.profileGameCosmetic || '');
       if (battleshipItemById(itemId)) {
+        // The base Profile listener opens the shared sheet first. Repair it
+        // immediately on the same click, then once more after the event turn.
+        upgradeBattleshipSheet(itemId);
         queueMicrotask(() => upgradeBattleshipSheet(itemId));
         scheduleProfileBattleshipRepair();
       }
@@ -232,10 +235,13 @@ function upgradeBattleshipSheet(itemId){
   if (previewWrap instanceof HTMLElement) previewWrap.innerHTML = battleshipPreview(item);
 
   const title = sheet.querySelector('.sheet-head h2');
-  if (title instanceof HTMLElement) title.textContent = battleshipDisplayName(item);
+  if (title instanceof HTMLElement) {
+    title.textContent = battleshipDisplayName(item);
+    title.style.display = 'none';
+  }
 
   const strong = sheet.querySelector('.profile-v2-game-preview-meta strong');
-  if (strong instanceof HTMLElement) strong.textContent = 'Морской бой';
+  if (strong instanceof HTMLElement) strong.textContent = battleshipDisplayName(item);
 
   const group = sheet.querySelector('.profile-v2-game-preview-meta small');
   if (group instanceof HTMLElement) group.textContent = GROUP_TITLES[battleshipLayer(item)] || 'Оформление';
