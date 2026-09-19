@@ -28,7 +28,7 @@ let bundlePreviewResizeBound = false;
 ensureBundlePrototypeStyles();
 
 function ensureBundlePrototypeStyles(){
-  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=11&mvp19_13=all-eight-bundles-v8', import.meta.url).href;
+  const href = new URL('../../css/screens/store-bundle-prototype-v1.css?v=12&mvp19_13=bundle-selector-click-hint-v10', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-store-bundle-prototype]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
@@ -36,7 +36,7 @@ function ensureBundlePrototypeStyles(){
   }
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-all-eight-bundles-v8';
+  link.dataset.mgwStoreBundlePrototype = 'mvp19-13-bundle-selector-click-hint-v10';
   link.href = href;
   document.head.appendChild(link);
 }
@@ -794,22 +794,35 @@ function bindBundleGamePickerScroll(root){
   root.querySelectorAll('.store-v2-bundle-game-picker-track').forEach(track => {
     if (!(track instanceof HTMLElement) || track.dataset.mgwBundlePickerBound === '1') return;
     track.dataset.mgwBundlePickerBound = '1';
-    track.style.cursor = 'grab';
-    track.style.userSelect = 'none';
-    track.style.webkitUserSelect = 'none';
 
+    const picker = track.closest('.store-v2-bundle-game-picker');
     let drag = null;
+
+    const updateAffordance = () => {
+      if (!(picker instanceof HTMLElement)) return;
+      const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+      const canScrollLeft = track.scrollLeft > 3;
+      const canScrollRight = track.scrollLeft < maxScroll - 3;
+      picker.classList.toggle('can-scroll-left', canScrollLeft);
+      picker.classList.toggle('can-scroll-right', canScrollRight);
+      if (canScrollRight && !picker.dataset.mgwBundleHintShown) {
+        picker.dataset.mgwBundleHintShown = '1';
+        picker.classList.add('show-scroll-hint');
+        globalThis.setTimeout?.(() => picker.classList.remove('show-scroll-hint'), 3600);
+      }
+    };
+
     const finishDrag = event => {
       if (!drag || (event && event.pointerId !== drag.pointerId)) return;
       if (drag.moved) {
-        track.dataset.mgwBundlePickerSuppressClickUntil = String(Date.now() + 360);
+        track.dataset.mgwBundlePickerSuppressClickUntil = String(Date.now() + 260);
       }
       track.classList.remove('is-dragging');
-      track.style.cursor = 'grab';
       try {
         if (track.hasPointerCapture?.(drag.pointerId)) track.releasePointerCapture(drag.pointerId);
       } catch (_) {}
       drag = null;
+      updateAffordance();
     };
 
     track.addEventListener('pointerdown', event => {
@@ -821,8 +834,8 @@ function bindBundleGamePickerScroll(root){
         startScrollLeft:track.scrollLeft,
         axis:null,
         moved:false,
+        captured:false,
       };
-      try { track.setPointerCapture?.(event.pointerId); } catch (_) {}
     });
 
     track.addEventListener('pointermove', event => {
@@ -830,14 +843,19 @@ function bindBundleGamePickerScroll(root){
       const dx = event.clientX - drag.startX;
       const dy = event.clientY - drag.startY;
       if (drag.axis === null) {
-        if (Math.max(Math.abs(dx), Math.abs(dy)) < 7) return;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 8) return;
         drag.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
       }
       if (drag.axis !== 'x') return;
+
+      if (!drag.captured) {
+        drag.captured = true;
+        try { track.setPointerCapture?.(event.pointerId); } catch (_) {}
+      }
       drag.moved = true;
       track.classList.add('is-dragging');
-      track.style.cursor = 'grabbing';
       track.scrollLeft = drag.startScrollLeft - dx;
+      updateAffordance();
       if (event.cancelable) event.preventDefault();
     }, { passive:false });
 
@@ -857,8 +875,12 @@ function bindBundleGamePickerScroll(root){
       if (!delta) return;
       const before = track.scrollLeft;
       track.scrollLeft += delta;
+      updateAffordance();
       if (track.scrollLeft !== before && event.cancelable) event.preventDefault();
     }, { passive:false });
+
+    track.addEventListener('scroll', updateAffordance, { passive:true });
+    globalThis.requestAnimationFrame?.(updateAffordance);
   });
 }
 
