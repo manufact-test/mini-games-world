@@ -478,8 +478,9 @@ function mountDestroyEffect({ targetCells, gameId, ownerId }){
     flash.animate([
       { opacity:0, transform:'translate(-50%,-50%) scale(.18) rotate(-10deg)' },
       { opacity:1, transform:'translate(-50%,-50%) scale(.82) rotate(1deg)', offset:.18 },
-      { opacity:.94, transform:'translate(-50%,-50%) scale(1.08) rotate(6deg)', offset:.34 },
-      { opacity:.2, transform:'translate(-50%,-50%) scale(1.34) rotate(12deg)', offset:.64 },
+      { opacity:.96, transform:'translate(-50%,-50%) scale(1.08) rotate(6deg)', offset:.3 },
+      { opacity:.58, transform:'translate(-50%,-50%) scale(1.22) rotate(9deg)', offset:.58 },
+      { opacity:.24, transform:'translate(-50%,-50%) scale(1.36) rotate(12deg)', offset:.78 },
       { opacity:0, transform:'translate(-50%,-50%) scale(1.48) rotate(15deg)' },
     ], { duration:1500, easing:'cubic-bezier(.1,.78,.16,1)', fill:'forwards' }),
     ring.animate([
