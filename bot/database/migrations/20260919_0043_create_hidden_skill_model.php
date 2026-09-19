@@ -24,6 +24,8 @@ return new class implements DatabaseMigrationInterface {
             return;
         }
 
+        $this->ensureQueueSkillBand($database);
+
         $database->execute(<<<'SQL'
 CREATE TABLE IF NOT EXISTS mgw_hidden_skill_control (
     control_key VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL PRIMARY KEY,
@@ -85,6 +87,8 @@ SQL);
 
     private function upSqlite(DatabaseConnectionInterface $database): void
     {
+        $this->ensureQueueSkillBand($database);
+
         $database->execute(<<<'SQL'
 CREATE TABLE IF NOT EXISTS mgw_hidden_skill_control (
     control_key TEXT NOT NULL PRIMARY KEY,
@@ -143,5 +147,45 @@ CREATE TABLE IF NOT EXISTS mgw_hidden_skill_outcomes (
 SQL);
         $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_hidden_skill_outcomes_players ON mgw_hidden_skill_outcomes (player_a_mgw_id, player_b_mgw_id, processed_at_utc)');
         $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_hidden_skill_outcomes_game ON mgw_hidden_skill_outcomes (game_type, processed_at_utc)');
+    }
+
+    private function ensureQueueSkillBand(DatabaseConnectionInterface $database): void
+    {
+        if ($this->columnExists($database, 'mgw_match_queue', 'skill_band')) return;
+
+        if ($database->driver() === 'sqlite') {
+            $database->execute(
+                "ALTER TABLE mgw_match_queue ADD COLUMN skill_band TEXT NOT NULL DEFAULT 'unrated'"
+            );
+            return;
+        }
+
+        $database->execute(
+            "ALTER TABLE mgw_match_queue
+             ADD COLUMN skill_band VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin
+             NOT NULL DEFAULT 'unrated' AFTER board_size"
+        );
+    }
+
+    private function columnExists(
+        DatabaseConnectionInterface $database,
+        string $table,
+        string $column
+    ): bool {
+        if ($database->driver() === 'sqlite') {
+            foreach ($database->fetchAll('PRAGMA table_info(' . $table . ')') as $row) {
+                if (is_array($row) && (string)($row['name'] ?? '') === $column) return true;
+            }
+            return false;
+        }
+
+        return (int)$database->fetchValue(
+            'SELECT COUNT(*)
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = :table_name
+               AND COLUMN_NAME = :column_name',
+            ['table_name' => $table, 'column_name' => $column]
+        ) > 0;
     }
 };
