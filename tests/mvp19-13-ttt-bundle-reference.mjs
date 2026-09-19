@@ -10,6 +10,13 @@ const checkersMigration = readFileSync('bot/database/migrations/20260912_0032_co
 
 assert.match(store, /const BUNDLE_REFERENCE_GAMES = Object\.freeze\(\['tictactoe','checkers'\]\);/);
 assert.match(store, /gameBundlesFromSnapshot\(\)\.filter\(bundle => BUNDLE_REFERENCE_GAMES\.includes\(bundleGameType\(bundle\)\)\)/);
+assert.match(store, /let activeBundleGame = 'tictactoe';/);
+assert.match(store, /data-store-v2-bundle-game=/);
+assert.match(store, /store-v2-bundle-game-picker-track/);
+assert.match(store, /\$\{renderGameBundle\(activeBundle\)\}/);
+assert.equal(store.includes('${bundles.map(renderGameBundle).join(\'\')}'), false);
+assert.match(store, /function activateBundleGame\(gameType\)/);
+assert.match(store, /data-store-v2-game]:not\(\[data-store-v2-bundle-game\]\)/);
 assert.match(store, /const memberIds = new Set\(Array\.isArray\(bundle\?\.item_ids\)/);
 assert.match(store, /gameCosmeticPreview\(gameType, layer, variant, name\)/);
 assert.match(store, /bundle\?\.missing_item_ids/);
@@ -18,6 +25,8 @@ assert.match(store, /bundle\?\.missing_count/);
 assert.match(store, /bundle\?\.regular_missing_price_coins/);
 assert.match(store, /renderBundleConfirmVisual\(offer\)/);
 assert.match(store, /renderBundleConfirmPricing\(offer\)/);
+assert.match(store, /store-v2-confirm-bundle/);
+assert.match(store, /const itemCount = Array\.isArray\(bundle\?\.item_ids\)/);
 assert.match(store, /Покупка добавляет предметы в коллекцию, но ничего не выбирает автоматически/);
 assert.match(store, /\$\{allOwned \? '' : \`/);
 assert.equal(store.includes('store-v2-bundle-reference-owned">Комплект полностью собран'), false);
@@ -35,6 +44,9 @@ for (const itemId of [
   assert.equal(prototypeSection.includes(itemId), false, `bundle UI must not hardcode member id ${itemId}`);
 }
 
+assert.match(css, /\.store-v2-bundle-game-picker\{/);
+assert.match(css, /\.store-v2-bundle-game-option\.active\{/);
+assert.match(css, /touch-action:pan-x/);
 assert.match(css, /\.store-v2-bundle-reference\{/);
 assert.match(css, /\.store-v2-bundle-reference-members\{/);
 assert.match(css, /\.store-v2-bundle-confirm-reference\{/);
@@ -45,10 +57,15 @@ assert.match(css, /overflow-y:auto!important/);
 assert.match(css, /touch-action:pan-y/);
 assert.match(css, /store-v2-content\[data-store-v2-panel="bundles"\]\{/);
 assert.match(css, /padding-bottom:28px/);
-assert.match(store, /store-bundle-prototype-v1\.css\?v=3&mvp19_13=ttt-checkers-reference-v1/);
+assert.match(css, /#sheet > \.store-v2-confirm\.store-v2-confirm-bundle\{/);
+assert.match(css, /flex:1 1 auto/);
+assert.match(css, /overflow-y:auto!important/);
+assert.match(css, /border-radius:11px/);
+assert.match(css, /border-radius:8px/);
+assert.match(store, /store-bundle-prototype-v1\.css\?v=4&mvp19_13=bundle-game-selector-sheet-scroll-v1/);
 
-assert.match(manifest, /store-screen\.js\?v=58[^']*mvp19_13=ttt-checkers-bundle-reference-v1/);
-assert.match(launch, /bundles=ttt-checkers-reference-v1/);
+assert.match(manifest, /store-screen\.js\?v=59[^']*mvp19_13=bundle-game-selector-sheet-scroll-v1/);
+assert.match(launch, /bundles=game-selector-sheet-scroll-v1/);
 
 for (const itemId of [
   'game-ttt-field-neon',
