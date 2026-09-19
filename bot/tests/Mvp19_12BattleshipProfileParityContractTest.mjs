@@ -72,7 +72,7 @@ assert.ok(css.includes('padding-bottom:16px!important'), 'Battleship Profile pan
 assert.ok(css.includes('--mgw-profile-card-subtitle:"Карта"') && css.includes('--mgw-profile-card-subtitle:"Флот"') && css.includes('--mgw-profile-card-subtitle:"Эффект"'), 'Battleship cards must use Four-style singular category subtitles');
 assert.ok(css.includes('.profile-v2-game-card .profile-v2-game-card-name') && css.includes('display:none!important'), 'Battleship cards must delegate visible title placement to the same shared owner as Four in a Row');
 
-assert.ok(layout.includes("mgw-profile-battleship-parity.js?v=3&mvp19_12=profile-four-parity-v3&store=polish-v3&geometry=square&header=steel-ship&effects=unchanged-v2&copy=four-pattern"), 'Active Profile owner must import Battleship Four-parity v3');
+assert.ok(layout.includes("mgw-profile-battleship-parity.js?v=4&mvp19_12=profile-four-parity-v3&store=preview-parity-v4&geometry=square&header=steel-ship&neon_fleet=flat-v3&preview_geometry=equal-cells-v1&effects=unchanged-v2&copy=four-pattern"), 'Active Profile owner must import Battleship Four-parity v3 with current preview parity');
 assert.ok(layout.includes('initProfileBattleshipParity();'), 'Active Profile owner must initialize Battleship parity');
 assert.ok(layout.indexOf('initProfileFourInARowParity();') < layout.indexOf('initProfileBattleshipParity();'), 'Battleship owner must be added after accepted Four owner without replacing it');
 
