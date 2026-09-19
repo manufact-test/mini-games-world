@@ -113,6 +113,15 @@ if (!is_file($checkersTelegramHeightFitPath)) {
 }
 $checkersTelegramHeightFitTarget = './assets/css/games/checkers/telegram-height-fit-v1.css?v=5&checkers=bounded-screen-scroll-c15';
 
+$battleshipExitFitPath = __DIR__ . '/assets/css/games/battleship/live-exit-fit-v1.css';
+if (!is_file($battleshipExitFitPath)) {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World Battleship viewport scroll stylesheet is unavailable.';
+    exit;
+}
+$battleshipExitFitTarget = './assets/css/games/battleship/live-exit-fit-v1.css?v=1&mvp19_12=bounded-screen-scroll-v1';
+
 $chessCaptureParityPath = __DIR__ . '/assets/css/games/chess/capture-preview-parity-v1.css';
 if (!is_file($chessCaptureParityPath)) {
     http_response_code(500);
@@ -213,6 +222,7 @@ $consistencyCssTarget = $assets['consistency_css'];
 $bootstrapTarget = $assets['bootstrap'];
 $bootstrapTag = '  <script type="module" src="' . $bootstrapTarget . '"></script>';
 $checkersTelegramHeightFitTag = '  <link rel="stylesheet" href="' . $checkersTelegramHeightFitTarget . '" />';
+$battleshipExitFitTag = '  <link rel="stylesheet" data-mgw-battleship-exit-fit="mvp19-12-bounded-screen-scroll-v1" href="' . $battleshipExitFitTarget . '" />';
 $chessCaptureParityTag = '  <link rel="stylesheet" href="' . $chessCaptureParityTarget . '" />';
 $goExitFitTag = '  <link rel="stylesheet" data-mgw-go-live-exit-fit="mvp19-8-full-width-scroll-v3" href="' . $goExitFitTarget . '" />';
 $goEffectsV7Tag = '  <link rel="stylesheet" data-mgw-go-live-effects-v7="mvp19-8-effect2-single-pass-territory-final-v7" href="' . $goEffectsV7Target . '" />';
@@ -222,7 +232,7 @@ $goRulesAlignmentTag = '  <link rel="stylesheet" data-mgw-go-rules-alignment="mv
 
 $html = str_replace($cssAnchor, $cssTarget, $html);
 $html = str_replace('./assets/css/production-v95-consistency.css?v=95', $consistencyCssTarget, $html);
-$html = str_replace($headClose, $checkersTelegramHeightFitTag . "\n" . $chessCaptureParityTag . "\n" . $goExitFitTag . "\n" . $goEffectsV7Tag . "\n" . $goCaptureOverlayV8Tag . "\n" . $goCaptureOverlayV9Tag . "\n" . $goRulesAlignmentTag . "\n" . $headClose, $html);
+$html = str_replace($headClose, $checkersTelegramHeightFitTag . "\n" . $battleshipExitFitTag . "\n" . $chessCaptureParityTag . "\n" . $goExitFitTag . "\n" . $goEffectsV7Tag . "\n" . $goCaptureOverlayV8Tag . "\n" . $goCaptureOverlayV9Tag . "\n" . $goRulesAlignmentTag . "\n" . $headClose, $html);
 $html = str_replace(
     '<p>Готовим игровую комнату</p>',
     '<p>Те самые игры. То самое чувство.</p>',
@@ -242,6 +252,7 @@ $requiredRenderedTargets = [
     'localization_i18n' => $imports['@mgw/i18n'],
     'shield_king_css' => $cssTarget,
     'checkers_telegram_height_fit' => $checkersTelegramHeightFitTarget,
+    'battleship_viewport_scroll' => $battleshipExitFitTarget,
     'chess_capture_store_parity' => $chessCaptureParityTarget,
     'go_full_width_scroll' => $goExitFitTarget,
     'go_effect2_single_pass_territory_final' => $goEffectsV7Target,
