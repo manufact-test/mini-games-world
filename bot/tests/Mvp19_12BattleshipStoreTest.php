@@ -129,9 +129,18 @@ foreach (['map-sea','map-dark-military','map-storm','map-neon','fleet-classic','
 }
 $assertTrue(str_contains($wrapper, 'Array.from({ length:100 }'), 'Battleship previews must preserve real 10x10 geometry');
 $assertTrue(str_contains($wrapper, "theme:['Карты'") && str_contains($wrapper, "elements:['Флот'"), 'Battleship Store must use player-facing map/fleet group names');
-$assertTrue(str_contains($outer, 'store-screen-battleship-store-v1.js?v=1&mvp19_12=store-phase1&paid_default=distinct-v1'), 'Active Store wrapper must install Battleship Phase 1 presentation');
+$assertTrue(str_contains($wrapper, 'mgw-bs-head-vessel') && str_contains($wrapper, '<svg viewBox="0 0 92 48"'), 'Battleship header must use one readable ship icon instead of two abstract tiles');
+$assertTrue(str_contains($css, 'aspect-ratio:1 / 1!important') && str_contains($css, '.store-v2-confirm-game .store-v2-game-preview[data-game-type="battleship"]'), 'Battleship cards and purchase confirmation must use the same square board geometry');
+$assertTrue(!str_contains($wrapper, 'не повторяет бесплатное') && !str_contains($wrapper, 'не серые стандартные') && str_contains($wrapper, 'Бирюзовая вода, светлый фарватер') && str_contains($wrapper, 'Тёмный тактический радар с военным характером'), 'Battleship Store copy must stay short, human and product-facing without technical free-vs-paid commentary');
+$assertTrue(str_contains($wrapper, "shot:'Прицел'") && str_contains($wrapper, "hit:'Попадание'") && str_contains($wrapper, "destroy:'Потопление'"), 'Effect labels must clearly distinguish aim, hit and destroy semantics');
+foreach (['@keyframes mgwBsAim','@keyframes mgwBsHitBurst','@keyframes mgwBsDestroyBurst'] as $keyframe) {
+    $assertTrue(str_contains($css, $keyframe), 'Store effect preview must animate ' . $keyframe);
+}
+$assertTrue(str_contains($css, '.effect-shot .mgw-bs-fx-reticle') && str_contains($css, '.effect-hit .mgw-bs-fx-burst') && str_contains($css, '.effect-destroy .mgw-bs-fx-smoke'), 'Shot, hit and destroy previews must use visibly different visual primitives');
+$assertTrue(!str_contains($css, '.mgw-battleship-preview.map-neon .mgw-bs-preview-board>span:nth-child(3n)'), 'Neon map must use one coherent grid glow instead of patchy alternating cells');
+$assertTrue(str_contains($outer, 'store-screen-battleship-store-v1.js?v=2&mvp19_12=manual-corrective-v2&geometry=square&copy=human&effects=distinct'), 'Active Store wrapper must install Battleship manual corrective v2');
 $activeStore = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
-$assertTrue(str_contains($activeStore, 'battleship_store=static-v1') && str_contains($activeStore, 'paid_default=distinct-v1'), 'Active Store graph must publish Battleship static preview identity');
-$assertTrue(str_contains($launch, 'battleship_store=static-v1') && str_contains($launch, 'battleship_paid_default=distinct-v1'), 'Telegram launch must publish Battleship Store Phase 1 graph');
+$assertTrue(str_contains($activeStore, 'battleship_store=corrective-v2') && str_contains($activeStore, 'battleship_geometry=square') && str_contains($activeStore, 'battleship_copy=human-v1') && str_contains($activeStore, 'battleship_effects=distinct-v2'), 'Active Store graph must publish Battleship corrective geometry/copy/effect identities');
+$assertTrue(str_contains($launch, 'battleship_store=corrective-v2') && str_contains($launch, 'battleship_geometry=square') && str_contains($launch, 'battleship_effects=distinct-v2'), 'Telegram launch must publish Battleship Store corrective graph');
 
 echo "Battleship Store Phase 1 contract passed ({$assertions} assertions).";
