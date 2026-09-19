@@ -3,9 +3,58 @@
 
 
 .store-v2-bundle-game-picker{
+  position:relative;
   min-width:0;
   margin-bottom:10px;
   overflow:hidden;
+}
+
+.store-v2-bundle-game-picker::before,
+.store-v2-bundle-game-picker::after{
+  position:absolute;
+  z-index:6;
+  top:1px;
+  width:30px;
+  height:36px;
+  display:grid;
+  place-items:center;
+  pointer-events:none;
+  opacity:0;
+  color:#c7c0ff;
+  font-size:21px;
+  line-height:1;
+  font-weight:900;
+  transition:opacity .16s ease;
+}
+
+.store-v2-bundle-game-picker::before{
+  content:"‹";
+  left:0;
+  justify-items:start;
+  padding-left:4px;
+  background:linear-gradient(90deg,rgba(14,15,25,.98) 28%,rgba(14,15,25,.72) 58%,transparent);
+}
+
+.store-v2-bundle-game-picker::after{
+  content:"›";
+  right:0;
+  justify-items:end;
+  padding-right:4px;
+  background:linear-gradient(270deg,rgba(14,15,25,.98) 28%,rgba(14,15,25,.72) 58%,transparent);
+}
+
+.store-v2-bundle-game-picker.can-scroll-left::before,
+.store-v2-bundle-game-picker.can-scroll-right::after{
+  opacity:1;
+}
+
+.store-v2-bundle-game-picker.show-scroll-hint.can-scroll-right::after{
+  animation:mgw-bundle-picker-hint .9s ease-in-out 3;
+}
+
+@keyframes mgw-bundle-picker-hint{
+  0%,100%{ transform:translateX(0); opacity:1; }
+  50%{ transform:translateX(4px); opacity:.58; }
 }
 
 .store-v2-bundle-game-picker-track{
@@ -20,6 +69,14 @@
   -webkit-overflow-scrolling:touch;
   overscroll-behavior-x:contain;
   touch-action:pan-x;
+  -webkit-user-select:none;
+  user-select:none;
+  cursor:default;
+}
+
+.store-v2-bundle-game-picker-track.is-dragging,
+.store-v2-bundle-game-picker-track.is-dragging .store-v2-bundle-game-option{
+  cursor:grabbing;
 }
 
 .store-v2-bundle-game-picker-track::-webkit-scrollbar{
@@ -50,6 +107,7 @@
   letter-spacing:0!important;
   text-transform:none!important;
   white-space:nowrap;
+  cursor:pointer;
 }
 
 .store-v2-bundle-game-option>span{
@@ -761,6 +819,10 @@
 }
 
 @media (prefers-reduced-motion:reduce){
+  .store-v2-bundle-game-picker.show-scroll-hint.can-scroll-right::after{
+    animation:none;
+  }
+
   .store-v2-bundle-reference-progress>i>b{
     transition:none;
   }
