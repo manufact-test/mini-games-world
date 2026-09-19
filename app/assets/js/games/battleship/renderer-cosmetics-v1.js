@@ -319,7 +319,7 @@ function mountHitEffect({ targetCell, gameId, ownerId }){
 
   [core, ring, flare].forEach(node => {
     node.style.left = `${x}px`;
-    node.style.top = `${visualY}px`;
+    node.style.top = `${y}px`;
     node.style.width = `${size}px`;
     node.style.height = `${size}px`;
   });
