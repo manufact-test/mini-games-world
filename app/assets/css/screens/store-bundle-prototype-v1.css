@@ -250,7 +250,6 @@
 
 .store-v2-bundle-reference-preview .store-v2-game-preview{
   width:100%;
-  height:auto;
   height:78px!important;
   min-height:78px!important;
   aspect-ratio:auto!important;
@@ -335,6 +334,7 @@
   font-size:9px;
   line-height:1.18;
   text-overflow:ellipsis;
+  white-space:nowrap;
 }
 
 .store-v2-bundle-reference-progress{
@@ -629,9 +629,11 @@
 }
 
 @media (min-width:720px){
+  .store-v2-bundle-game-picker,
   .store-v2-bundle-reference-list{
     max-width:760px;
-    margin:0 auto;
+    margin-left:auto;
+    margin-right:auto;
   }
 
   .store-v2-bundle-reference{
