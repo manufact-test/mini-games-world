@@ -46,6 +46,26 @@ When the authoritative production user-count metric first reaches **500 users**:
 
 Final admin UI/alert/action belongs to **MVP-22.5 System status / feature flags / admin messages**. MVP-20 must provide compatible state semantics from the start.
 
+
+## Season-end preparation and reminders
+
+Clarification: official rating seasons are **quarterly**: Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec.
+
+After competition reaches `ACTIVE`:
+- T-21 days before each season end: durable Admin reminder to prepare the next-season reward package;
+- if incomplete: repeat/escalate at T-14 and T-7;
+- Admin checklist covers next-season dates, MVP-20.5 award assets, top-3 frames if applicable, yearly-medal quarter/fragments when due, localization/copy, preview/validation and explicit `READY`;
+- yearly medal design is annual; each season unlocks its quarter/fragment rather than requiring a brand-new four-part medal every quarter;
+- if assets are READY, season close, eligible rewards and next-season start run automatically and idempotently;
+- if assets are missing at the boundary, keep results safe in `FINALIZING / ASSETS_REQUIRED`, issue a high-priority admin alert and resume after readiness without duplicate grants.
+
+Implementation ownership:
+- MVP-20.4 = calendar/finalizing;
+- MVP-20.5/20.6 = reward and medal semantics;
+- MVP-20.8 = close/recovery rehearsal;
+- MVP-22.5 = Admin alerts/messages;
+- MVP-22.7 = recurring season-preparation task/checklist.
+
 ## MVP-20.1 target
 
 - Separate visible seasonal rating points for each of the 8 games.
