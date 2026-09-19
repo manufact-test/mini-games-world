@@ -204,6 +204,7 @@ final class RealtimeDatabaseStore
                 'room' => $this->required($entry, 'room', 16),
                 'bet' => max(0, (int)($entry['bet'] ?? 0)),
                 'board_size' => max(1, (int)($entry['board_size'] ?? 0)),
+                'skill_band' => $this->nullable($entry['skill_band'] ?? 'unrated', 64) ?? 'unrated',
                 'status' => $this->nullable($entry['status'] ?? 'waiting', 32) ?? 'waiting',
                 'reserved_match_id' => $this->nullable($entry['reserved_match_id'] ?? null, 96),
                 'created_at_utc' => (string)($existing[0]['created_at_utc'] ?? $createdAt),
@@ -216,10 +217,10 @@ final class RealtimeDatabaseStore
                     $db->execute(
                         'INSERT INTO mgw_match_queue (
                             queue_id, player_ref, mgw_id, legacy_user_id, game_type, room, bet, board_size,
-                            status, reserved_match_id, created_at_utc, updated_at_utc, expires_at_utc
+                            skill_band, status, reserved_match_id, created_at_utc, updated_at_utc, expires_at_utc
                          ) VALUES (
                             :queue_id, :player_ref, :mgw_id, :legacy_user_id, :game_type, :room, :bet, :board_size,
-                            :status, :reserved_match_id, :created_at_utc, :updated_at_utc, :expires_at_utc
+                            :skill_band, :status, :reserved_match_id, :created_at_utc, :updated_at_utc, :expires_at_utc
                          )',
                         $params
                     );
@@ -494,8 +495,8 @@ final class RealtimeDatabaseStore
         $db->execute(
             'UPDATE mgw_match_queue SET
                 mgw_id = :mgw_id, legacy_user_id = :legacy_user_id, game_type = :game_type,
-                room = :room, bet = :bet, board_size = :board_size, status = :status,
-                reserved_match_id = :reserved_match_id, updated_at_utc = :updated_at_utc,
+                room = :room, bet = :bet, board_size = :board_size, skill_band = :skill_band,
+                status = :status, reserved_match_id = :reserved_match_id, updated_at_utc = :updated_at_utc,
                 expires_at_utc = :expires_at_utc
              WHERE player_ref = :player_ref',
             $update

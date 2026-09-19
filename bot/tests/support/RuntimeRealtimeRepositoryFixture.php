@@ -5,7 +5,8 @@ $pdo = new PDO('sqlite::memory:');
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec('PRAGMA foreign_keys = ON');
 $db = new PdoDatabaseConnection($pdo);
-$assertSame(7, (new MigrationRunner($db, $root . '/database/migrations'))->migrate(false)['executed_count'], 'All migrations');
+$migrationFiles = glob($root . '/database/migrations/*.php');
+$assertSame(count($migrationFiles), (new MigrationRunner($db, $root . '/database/migrations'))->migrate(false)['executed_count'], 'All migrations');
 
 $now = '2026-07-18 19:20:00.000000';
 $db->execute(
@@ -85,6 +86,7 @@ $data = [
         'room' => 'match',
         'bet' => 10,
         'board_size' => 3,
+        'skill_band' => 'band:15',
         'status' => 'waiting',
         'created_at' => '2026-07-18T19:20:00+00:00',
         'updated_at' => '2026-07-18T19:20:00+00:00',

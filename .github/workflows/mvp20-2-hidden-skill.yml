@@ -1,0 +1,138 @@
+name: MVP-20.2 Hidden skill model
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260919_0043_create_hidden_skill_model.php'
+      - 'bot/ratings/HiddenSkillService.php'
+      - 'bot/ratings/HiddenSkillRuntimeBridge.php'
+      - 'bot/core/bootstrap.php'
+      - 'bot/api.php'
+      - 'bot/services/MatchmakingQueue.php'
+      - 'bot/services/GameRuntimeService.php'
+      - 'bot/services/ChessRuntimeService.php'
+      - 'bot/realtime/RuntimeRealtimeSourceTrait.php'
+      - 'bot/realtime/RealtimeDatabaseStore.php'
+      - 'bot/realtime/RuntimeRealtimeDatabaseTrait.php'
+      - 'bot/tests/Mvp20_2HiddenSkillModelTest.php'
+      - 'bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php'
+      - 'bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php'
+      - 'bot/tests/Mvp17ReliabilityRegressionTest.php'
+      - 'bot/tests/RealtimeDatabaseStoreTest.php'
+      - 'bot/tests/support/RuntimeRealtimeRepositoryFixture.php'
+      - '.github/workflows/mvp20-2-hidden-skill.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp20-2-hidden-skill-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Hidden skill, progressive bands and privacy contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint MVP-20.2 server slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            bot/database/migrations/20260919_0043_create_hidden_skill_model.php
+            bot/ratings/HiddenSkillService.php
+            bot/ratings/HiddenSkillRuntimeBridge.php
+            bot/core/bootstrap.php
+            bot/api.php
+            bot/services/MatchmakingQueue.php
+            bot/services/GameRuntimeService.php
+            bot/services/ChessRuntimeService.php
+            bot/realtime/RuntimeRealtimeSourceTrait.php
+            bot/realtime/RealtimeDatabaseStore.php
+            bot/realtime/RuntimeRealtimeDatabaseTrait.php
+            bot/tests/Mvp20_2HiddenSkillModelTest.php
+            bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php
+            bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php
+            bot/tests/Mvp17ReliabilityRegressionTest.php
+            bot/tests/RealtimeDatabaseStoreTest.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done
+
+      - name: Run MVP-20.2 hidden skill model
+        run: php bot/tests/Mvp20_2HiddenSkillModelTest.php
+
+      - name: Run MVP-20.2 runtime/privacy contract
+        run: php bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php
+
+      - name: Preserve MVP-17.1 queue contract
+        run: |
+          php bot/tests/Mvp17_1MatchmakingQueueTest.php
+          php bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php
+
+      - name: Preserve MVP-17.2 progressive widening contract
+        run: php bot/tests/Mvp17_2MatchmakingIntegrationContractTest.php
+
+      - name: Preserve realtime queue persistence
+        run: php bot/tests/RealtimeDatabaseStoreTest.php
+
+      - name: Preserve visible rating separation
+        run: |
+          php bot/tests/Mvp20_1PerGameVisibleRatingTest.php
+          php bot/tests/Mvp20_1VisibleRatingIntegrationContractTest.php
+
+      - name: Guard MVP-20.2 scope and frozen game mechanics
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp20-2-hidden-skill.yml|\
+              bot/database/migrations/20260919_0043_create_hidden_skill_model.php|\
+              bot/ratings/HiddenSkillService.php|\
+              bot/ratings/HiddenSkillRuntimeBridge.php|\
+              bot/core/bootstrap.php|\
+              bot/api.php|\
+              bot/services/MatchmakingQueue.php|\
+              bot/services/GameRuntimeService.php|\
+              bot/services/ChessRuntimeService.php|\
+              bot/realtime/RuntimeRealtimeSourceTrait.php|\
+              bot/realtime/RealtimeDatabaseStore.php|\
+              bot/realtime/RuntimeRealtimeDatabaseTrait.php|\
+              bot/tests/Mvp20_2HiddenSkillModelTest.php|\
+              bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php|\
+              bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php|\
+              bot/tests/Mvp17ReliabilityRegressionTest.php|\
+              bot/tests/RealtimeDatabaseStoreTest.php|\
+              bot/tests/support/RuntimeRealtimeRepositoryFixture.php)
+                ;;
+              *)
+                echo "Unexpected MVP-20.2 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+          git diff --exit-code "$base" "$head" -- bot/games app/assets/js/games app/assets/css/games

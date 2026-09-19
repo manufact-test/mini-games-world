@@ -107,6 +107,9 @@ final class GameRuntimeService
         if (!is_array($game)) return null;
 
         $this->matchmaking->observeWaitFromQueueItem($db, !empty($game['is_bot_game']) ? $queueItem : $candidate);
+        if (empty($game['is_bot_game'])) {
+            $this->matchmaking->observeSkillMatchQuality($db, $candidate, $skillBand);
+        }
 
         $gameId = (string)($game['id'] ?? '');
         if ($gameId === '' || !isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
@@ -177,6 +180,7 @@ final class GameRuntimeService
 
         if (isset($result['game']) && is_array($result['game'])) {
             $this->matchmaking->observeWaitFromQueueItem($db, $candidate);
+            $this->matchmaking->observeSkillMatchQuality($db, $candidate, $skillBand);
             $gameId = (string)($result['game']['id'] ?? '');
             if ($gameId !== '' && isset($db['games'][$gameId]) && is_array($db['games'][$gameId])) {
                 $db['games'][$gameId]['game_type'] = $gameType;

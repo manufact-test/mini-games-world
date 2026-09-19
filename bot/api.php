@@ -96,7 +96,7 @@ try {
         }
     }
 
-    $result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $gameActions, $matchPreparationRuntime, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $sessionId, $deviceId, $config) {
+    $result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $gameCatalog, $gameActions, $matchPreparationRuntime, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $runtimeHiddenSkillBridge, $sessionId, $deviceId, $config) {
         $user = $users->ensureUser($data, $tgUser);
         $userId = (string)$user['id'];
         $data['users'][$userId] = $user;
@@ -202,13 +202,27 @@ try {
                 $room = UnifiedGameZonePolicy::storageRoom();
                 $bet = UnifiedGameZonePolicy::entryCost($config);
                 $boardSize = (int)($payload['boardSize'] ?? 3);
-                $gameType = clean_string($payload['gameType'] ?? 'tictactoe', 60);
+                $gameType = $gameCatalog->normalizeGameType(
+                    clean_string($payload['gameType'] ?? 'tictactoe', 60)
+                );
+                $skillBand = $runtimeHiddenSkillBridge->skillBandForUser(
+                    trim((string)($user['mgw_id'] ?? '')),
+                    $gameType
+                );
                 mgw_mark_matchmaking_presence($user, $gameType, $boardSize);
 
                 $existingGameIdBeforeSearch = ($user['status'] ?? '') === 'playing'
                     ? trim((string)($user['current_game_id'] ?? ''))
                     : '';
-                $search = $games->startSearch($data, $user, $room, $bet, $boardSize, $gameType);
+                $search = $games->startSearch(
+                    $data,
+                    $user,
+                    $room,
+                    $bet,
+                    $boardSize,
+                    $gameType,
+                    $skillBand
+                );
 
                 if (!empty($search['game']['id'])) {
                     $gameId = (string)$search['game']['id'];

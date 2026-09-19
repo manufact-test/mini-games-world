@@ -104,6 +104,46 @@ final class MatchmakingQueue
         );
     }
 
+    public function skillBandDistance(string $left, string $right): ?int
+    {
+        $leftRank = $this->skillBandRank($this->normalizeSkillBand($left));
+        $rightRank = $this->skillBandRank($this->normalizeSkillBand($right));
+        if ($leftRank === null || $rightRank === null) return null;
+        return abs($leftRank - $rightRank);
+    }
+
+    public function observeSkillMatchQuality(array &$db, ?array $candidate, string $requestedBand): void
+    {
+        if (!$candidate) return;
+
+        $candidateBand = $this->normalizeSkillBand($candidate['skill_band'] ?? null);
+        $requestedBand = $this->normalizeSkillBand($requestedBand);
+        $distance = $this->skillBandDistance($candidateBand, $requestedBand);
+        if ($distance === null) return;
+
+        $waitMs = $this->queueWaitSeconds($candidate) * 1000;
+        $this->ensureTelemetry($db);
+        $telemetry =& $db['system']['telemetry'];
+        $telemetry['matchmaking_skill_match_total'] = (int)($telemetry['matchmaking_skill_match_total'] ?? 0) + 1;
+        $telemetry['matchmaking_skill_band_gap_sum'] = (int)($telemetry['matchmaking_skill_band_gap_sum'] ?? 0) + $distance;
+        $telemetry['matchmaking_skill_band_gap_max'] = max(
+            (int)($telemetry['matchmaking_skill_band_gap_max'] ?? 0),
+            $distance
+        );
+        $telemetry['matchmaking_skill_wait_ms_sum'] = (int)($telemetry['matchmaking_skill_wait_ms_sum'] ?? 0) + $waitMs;
+        $telemetry['matchmaking_skill_wait_ms_max'] = max(
+            (int)($telemetry['matchmaking_skill_wait_ms_max'] ?? 0),
+            $waitMs
+        );
+        $telemetry['matchmaking_skill_last_band_gap'] = $distance;
+        $telemetry['matchmaking_skill_last_wait_ms'] = $waitMs;
+        $key = $distance === 0
+            ? 'matchmaking_skill_exact_band_total'
+            : 'matchmaking_skill_widened_match_total';
+        $telemetry[$key] = (int)($telemetry[$key] ?? 0) + 1;
+        unset($telemetry);
+    }
+
     public function activeGameForUser(array $db, string $userId): ?array
     {
         if ($userId === '') return null;
@@ -187,6 +227,15 @@ final class MatchmakingQueue
             'matchmaking_duplicate_match_prevented_total' => (int)($telemetry['matchmaking_duplicate_match_prevented_total'] ?? 0),
             'matchmaking_human_match_total' => (int)($telemetry['matchmaking_human_match_total'] ?? 0),
             'matchmaking_bot_match_total' => (int)($telemetry['matchmaking_bot_match_total'] ?? 0),
+            'matchmaking_skill_match_total' => (int)($telemetry['matchmaking_skill_match_total'] ?? 0),
+            'matchmaking_skill_exact_band_total' => (int)($telemetry['matchmaking_skill_exact_band_total'] ?? 0),
+            'matchmaking_skill_widened_match_total' => (int)($telemetry['matchmaking_skill_widened_match_total'] ?? 0),
+            'matchmaking_skill_band_gap_sum' => (int)($telemetry['matchmaking_skill_band_gap_sum'] ?? 0),
+            'matchmaking_skill_band_gap_max' => (int)($telemetry['matchmaking_skill_band_gap_max'] ?? 0),
+            'matchmaking_skill_wait_ms_sum' => (int)($telemetry['matchmaking_skill_wait_ms_sum'] ?? 0),
+            'matchmaking_skill_wait_ms_max' => (int)($telemetry['matchmaking_skill_wait_ms_max'] ?? 0),
+            'matchmaking_skill_last_band_gap' => (int)($telemetry['matchmaking_skill_last_band_gap'] ?? 0),
+            'matchmaking_skill_last_wait_ms' => (int)($telemetry['matchmaking_skill_last_wait_ms'] ?? 0),
         ];
     }
 
