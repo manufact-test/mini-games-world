@@ -301,11 +301,11 @@ function mountHitEffect({ targetCell, gameId, ownerId }){
 
   const x = rect.left + rect.width / 2;
   const y = rect.top + rect.height / 2;
-  const size = Math.max(34, Math.min(68, Math.max(rect.width, rect.height) * 2.1));
+  const size = Math.max(42, Math.min(86, Math.max(rect.width, rect.height) * 2.5));
 
   const root = document.createElement('span');
   root.className = 'mgw-bs-live-hit-fx';
-  root.dataset.battleshipHitFx = 'impact-flash-v1';
+  root.dataset.battleshipHitFx = 'impact-flash-v2';
   root.dataset.battleshipHitGame = gameId;
   root.dataset.battleshipHitOwner = ownerId;
   root.setAttribute('aria-hidden', 'true');
@@ -345,44 +345,48 @@ function mountHitEffect({ targetCell, gameId, ownerId }){
 
   if (reducedMotion || typeof core.animate !== 'function') {
     root.classList.add('is-reduced-motion');
-    globalThis.setTimeout(cleanup, reducedMotion ? 260 : 760);
+    globalThis.setTimeout(cleanup, reducedMotion ? 320 : 1050);
     return;
   }
 
   const animations = [
     core.animate([
       { opacity:0, transform:'translate(-50%,-50%) scale(.22)' },
-      { opacity:1, transform:'translate(-50%,-50%) scale(.82)', offset:.24 },
-      { opacity:.96, transform:'translate(-50%,-50%) scale(1)', offset:.42 },
-      { opacity:0, transform:'translate(-50%,-50%) scale(1.28)' },
-    ], { duration:720, easing:'cubic-bezier(.12,.8,.2,1)', fill:'forwards' }),
+      { opacity:1, transform:'translate(-50%,-50%) scale(.82)', offset:.2 },
+      { opacity:.98, transform:'translate(-50%,-50%) scale(1)', offset:.44 },
+      { opacity:.42, transform:'translate(-50%,-50%) scale(1.14)', offset:.72 },
+      { opacity:0, transform:'translate(-50%,-50%) scale(1.3)' },
+    ], { duration:980, easing:'cubic-bezier(.12,.8,.2,1)', fill:'forwards' }),
     ring.animate([
       { opacity:0, transform:'translate(-50%,-50%) scale(.3)' },
-      { opacity:.92, transform:'translate(-50%,-50%) scale(.62)', offset:.22 },
-      { opacity:.64, transform:'translate(-50%,-50%) scale(1)', offset:.48 },
-      { opacity:0, transform:'translate(-50%,-50%) scale(1.55)' },
-    ], { duration:820, easing:'cubic-bezier(.14,.74,.18,1)', fill:'forwards' }),
+      { opacity:.96, transform:'translate(-50%,-50%) scale(.62)', offset:.18 },
+      { opacity:.72, transform:'translate(-50%,-50%) scale(1)', offset:.48 },
+      { opacity:.28, transform:'translate(-50%,-50%) scale(1.34)', offset:.72 },
+      { opacity:0, transform:'translate(-50%,-50%) scale(1.62)' },
+    ], { duration:1120, easing:'cubic-bezier(.14,.74,.18,1)', fill:'forwards' }),
     flare.animate([
       { opacity:0, transform:'translate(-50%,-50%) rotate(-16deg) scale(.45)' },
-      { opacity:.94, transform:'translate(-50%,-50%) rotate(3deg) scale(1)', offset:.28 },
-      { opacity:0, transform:'translate(-50%,-50%) rotate(16deg) scale(1.2)' },
-    ], { duration:650, easing:'ease-out', fill:'forwards' }),
+      { opacity:.98, transform:'translate(-50%,-50%) rotate(3deg) scale(1)', offset:.22 },
+      { opacity:.68, transform:'translate(-50%,-50%) rotate(9deg) scale(1.08)', offset:.56 },
+      { opacity:0, transform:'translate(-50%,-50%) rotate(18deg) scale(1.24)' },
+    ], { duration:900, easing:'ease-out', fill:'forwards' }),
   ];
 
   sparks.forEach(({ node, angle }, index) => {
     const radians = angle * Math.PI / 180;
-    const distance = size * (.56 + (index % 2) * .08);
+    const distance = size * (.72 + (index % 2) * .09);
     const dx = Math.cos(radians) * distance;
     const dy = Math.sin(radians) * distance;
     animations.push(node.animate([
-      { opacity:0, transform:`translate(-50%,-50%) translate(0px,0px) rotate(${angle + 90}deg) scaleY(.45)` },
-      { opacity:1, transform:`translate(-50%,-50%) translate(${(dx * .15).toFixed(2)}px,${(dy * .15).toFixed(2)}px) rotate(${angle + 90}deg) scaleY(1)`, offset:.2 },
-      { opacity:0, transform:`translate(-50%,-50%) translate(${dx.toFixed(2)}px,${dy.toFixed(2)}px) rotate(${angle + 98}deg) scaleY(.68)` },
-    ], { duration:650, delay:index * 18, easing:'cubic-bezier(.12,.72,.18,1)', fill:'forwards' }));
+      { opacity:0, transform:`translate(-50%,-50%) translate(0px,0px) rotate(${angle + 90}deg) scaleY(.5)` },
+      { opacity:1, transform:`translate(-50%,-50%) translate(${(dx * .12).toFixed(2)}px,${(dy * .12).toFixed(2)}px) rotate(${angle + 90}deg) scaleY(1.08)`, offset:.16 },
+      { opacity:.96, transform:`translate(-50%,-50%) translate(${(dx * .56).toFixed(2)}px,${(dy * .56).toFixed(2)}px) rotate(${angle + 94}deg) scaleY(1)`, offset:.58 },
+      { opacity:0, transform:`translate(-50%,-50%) translate(${dx.toFixed(2)}px,${dy.toFixed(2)}px) rotate(${angle + 102}deg) scaleY(.7)` },
+    ], { duration:1080, delay:index * 22, easing:'cubic-bezier(.12,.72,.18,1)', fill:'forwards' }));
   });
 
   Promise.allSettled(animations.map(animation => animation.finished)).then(cleanup);
-  globalThis.setTimeout(cleanup, 1050);
+  globalThis.setTimeout(cleanup, 1450);
 }
 
 function mountDestroyEffect({ targetCells, gameId, ownerId }){
@@ -645,7 +649,7 @@ function clamp(value, min, max){
 
 function ensureLiveStyles(){
   if (typeof document === 'undefined') return;
-  const href = new URL('../../../css/games/battleship/live-cosmetics-v1.css?v=8&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&effects=accepted-three-v1&fire=queued-v1&shot_motion=readable-v2', import.meta.url).href;
+  const href = new URL('../../../css/games/battleship/live-cosmetics-v1.css?v=9&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&effects=accepted-three-v1&fire=queue-gap-v2&shot_motion=readable-v2&hit=preview-parity-v2', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-battleship-live-cosmetics]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;
