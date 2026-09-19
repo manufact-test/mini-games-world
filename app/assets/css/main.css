@@ -371,3 +371,23 @@
   background:radial-gradient(90% 38% at 4% 67%,transparent 43%,rgba(211,218,230,.22) 45% 47%,transparent 49%),linear-gradient(28deg,transparent 0 24%,rgba(236,240,247,.19) 25% 27%,transparent 28% 53%,rgba(196,204,216,.13) 54% 56%,transparent 57%),linear-gradient(112deg,transparent 0 38%,rgba(255,255,255,.18) 39% 40%,transparent 41% 69%,rgba(227,232,240,.12) 70% 72%,transparent 73%),linear-gradient(145deg,#7d8796,#343b48)!important;
   border-color:rgba(218,226,238,.22)!important;
 }
+
+/* MVP-20.1 visible per-game rating: intentionally reuses the accepted Profile
+   game-card grid while keeping the new points label visually subordinate. */
+#screen-profile .profile-v2-rating-card{
+  min-height:72px;
+  justify-content:center;
+}
+#screen-profile .profile-v2-rating-card .profile-v2-game-stat-head>b{
+  color:var(--sk-brand-purple-light,#b274ff);
+  font-size:18px;
+  line-height:1;
+}
+#screen-profile .profile-v2-rating-card>small{
+  display:block;
+  margin-top:6px;
+  color:var(--muted);
+  font-size:9px;
+  font-weight:750;
+  line-height:1.15;
+}
