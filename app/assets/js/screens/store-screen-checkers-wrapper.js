@@ -137,7 +137,7 @@ function installStoreRepairIntents(){
       return;
     }
 
-    if (!target.closest('[data-store-v2-tab="games"], [data-store-v2-tab="bundles"], [data-store-v2-game], [data-store-v2-buy], #storeV2ConfirmBuy, [data-store-v2-equip], [data-store-v2-unequip]')) return;
+    if (!target.closest('[data-store-v2-tab="games"], [data-store-v2-tab="bundles"], [data-store-v2-game], [data-store-v2-bundle-game], [data-store-v2-buy], #storeV2ConfirmBuy, [data-store-v2-equip], [data-store-v2-unequip]')) return;
     scheduleCheckersStoreRepair();
   });
 }
@@ -168,7 +168,7 @@ function upgradeCheckersStorePresentation(){
 }
 
 function renameCheckersSelector(root){
-  root.querySelectorAll('[data-store-v2-game="checkers"]').forEach(button => {
+  root.querySelectorAll('[data-store-v2-game="checkers"]:not([data-store-v2-bundle-game])').forEach(button => {
     if (button instanceof HTMLElement && button.textContent !== 'Шашки') button.textContent = 'Шашки';
   });
 }
