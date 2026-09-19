@@ -187,7 +187,7 @@ jobs:
           grep -F "&live_effects=v41" app/v110.php
           grep -F "X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal" app/v110.php
           grep -F "/app/v110.php?v=1233&domino_stability=30&runtime_fix=1" bot/helpers/WebAppLaunchUrl.php
-          grep -F "bundles=all-eight-bundles-v8" bot/helpers/WebAppLaunchUrl.php
+          grep -F "bundles=bundle-selector-drag-v9" bot/helpers/WebAppLaunchUrl.php
 
       - name: Wait for exact Hostinger staging fingerprint
         id: readiness
