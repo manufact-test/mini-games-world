@@ -1,0 +1,585 @@
+/* MVP-19.13 — Tic-Tac-Toe premium bundle reference card.
+   Scoped bundle-only presentation. Accepted individual Store/Profile cards remain untouched. */
+
+.store-v2-bundle-reference-list{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:12px;
+  min-width:0;
+}
+
+.store-v2-bundle-reference{
+  position:relative;
+  overflow:hidden;
+  min-width:0;
+  padding:14px;
+  border:1px solid rgba(139,116,255,.42);
+  border-radius:24px;
+  background:
+    radial-gradient(circle at 94% 3%,rgba(68,232,255,.14),transparent 34%),
+    radial-gradient(circle at 5% 96%,rgba(234,91,255,.10),transparent 38%),
+    linear-gradient(150deg,rgba(124,92,255,.15),rgba(255,255,255,.042) 54%,rgba(255,255,255,.024));
+  box-shadow:0 14px 34px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.store-v2-bundle-reference::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(115deg,transparent 0 46%,rgba(255,255,255,.035) 50%,transparent 54% 100%);
+}
+
+.store-v2-bundle-reference.owned{
+  border-color:rgba(96,214,147,.50);
+  background:
+    radial-gradient(circle at 92% 4%,rgba(96,214,147,.12),transparent 34%),
+    linear-gradient(150deg,rgba(96,214,147,.08),rgba(255,255,255,.03));
+}
+
+.store-v2-bundle-reference-topline{
+  position:relative;
+  z-index:1;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px;
+}
+
+.store-v2-bundle-reference-topline>span,
+.store-v2-bundle-reference-topline>b{
+  display:inline-flex;
+  align-items:center;
+  min-height:22px;
+  padding:0 8px;
+  border-radius:999px;
+  font-size:8px;
+  line-height:1;
+  font-weight:950;
+  letter-spacing:.055em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+
+.store-v2-bundle-reference-topline>span{
+  color:#9cefff;
+  border:1px solid rgba(87,225,255,.20);
+  background:rgba(57,200,230,.075);
+}
+
+.store-v2-bundle-reference-topline>b{
+  color:#ffe39a;
+  border:1px solid rgba(255,218,112,.22);
+  background:rgba(242,197,75,.075);
+}
+
+.store-v2-bundle-reference-hero{
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:12px;
+  margin-bottom:13px;
+}
+
+.store-v2-bundle-reference-hero h2{
+  margin:0;
+  font-size:22px;
+  line-height:1.02;
+  letter-spacing:-.045em;
+}
+
+.store-v2-bundle-reference-hero p{
+  margin:6px 0 0;
+  max-width:390px;
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.35;
+}
+
+.store-v2-bundle-reference-hero>em{
+  width:48px;
+  height:48px;
+  border-radius:16px;
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  color:#fff;
+  background:linear-gradient(145deg,rgba(132,98,255,.78),rgba(77,49,166,.82));
+  border:1px solid rgba(205,193,255,.28);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 8px 18px rgba(49,32,110,.30);
+  font-size:20px;
+  line-height:1;
+  font-style:normal;
+  font-weight:1000;
+}
+
+.store-v2-bundle-reference-members{
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:7px;
+  min-width:0;
+}
+
+.store-v2-bundle-reference-member{
+  grid-column:span 2;
+  min-width:0;
+  padding:6px;
+  border:1px solid rgba(255,255,255,.105);
+  border-radius:16px;
+  background:linear-gradient(155deg,rgba(255,255,255,.055),rgba(255,255,255,.022));
+}
+
+.store-v2-bundle-reference-member.layer-theme,
+.store-v2-bundle-reference-member.layer-elements{
+  grid-column:span 3;
+}
+
+.store-v2-bundle-reference-member.owned{
+  border-color:rgba(96,214,147,.32);
+  background:linear-gradient(155deg,rgba(96,214,147,.075),rgba(255,255,255,.022));
+}
+
+.store-v2-bundle-reference-preview{
+  position:relative;
+  min-width:0;
+  overflow:hidden;
+  border-radius:12px;
+  background:linear-gradient(145deg,rgba(18,22,36,.90),rgba(9,12,21,.94));
+  border:1px solid rgba(255,255,255,.055);
+}
+
+.store-v2-bundle-reference-preview .store-v2-game-preview{
+  width:100%;
+  height:auto;
+  min-height:70px;
+  aspect-ratio:1.32;
+  border:0;
+  border-radius:12px;
+  background:transparent;
+  box-shadow:none;
+}
+
+.store-v2-bundle-reference-preview .store-v2-game-preview[data-cosmetic-layer="theme"]{
+  overflow:hidden;
+  border:0;
+  background:transparent;
+}
+
+.store-v2-bundle-reference-preview .store-v2-mini-board{
+  width:64px;
+  height:64px;
+}
+
+.store-v2-bundle-reference-preview .store-v2-mini-marks span{
+  font-size:38px;
+}
+
+.store-v2-bundle-reference-preview .store-v2-mini-effect{
+  width:66px;
+  height:62px;
+}
+
+.store-v2-bundle-owned-check{
+  position:absolute;
+  z-index:5;
+  top:5px;
+  right:5px;
+  width:20px;
+  height:20px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:#63dc98;
+  border:2px solid rgba(8,12,18,.88);
+  color:#07120c;
+  box-shadow:0 4px 11px rgba(0,0,0,.28);
+  font-size:11px;
+  line-height:1;
+  font-style:normal;
+  font-weight:1000;
+}
+
+.store-v2-bundle-reference-member-copy{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:0;
+  padding:6px 2px 1px;
+}
+
+.store-v2-bundle-reference-member-copy>span{
+  color:#8ee9ff;
+  font-size:7px;
+  line-height:1.1;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.055em;
+}
+
+.store-v2-bundle-reference-member-copy>strong{
+  min-width:0;
+  overflow:hidden;
+  color:var(--text);
+  font-size:9px;
+  line-height:1.18;
+  text-overflow:ellipsis;
+}
+
+.store-v2-bundle-reference-progress{
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:auto minmax(78px,1fr);
+  align-items:center;
+  gap:10px;
+  margin-top:11px;
+  padding:9px 10px;
+  border:1px solid rgba(255,255,255,.085);
+  border-radius:13px;
+  background:rgba(255,255,255,.027);
+}
+
+.store-v2-bundle-reference-progress>span{
+  color:var(--soft);
+  font-size:9px;
+  line-height:1.2;
+  font-weight:850;
+}
+
+.store-v2-bundle-reference-progress>i{
+  overflow:hidden;
+  height:5px;
+  border-radius:999px;
+  background:rgba(255,255,255,.09);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.20);
+}
+
+.store-v2-bundle-reference-progress>i>b{
+  display:block;
+  width:0;
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,#7b5cff,#52e6f7,#63dc98);
+  box-shadow:0 0 10px rgba(83,228,240,.30);
+  transition:width .25s ease;
+}
+
+.store-v2-bundle-reference-pricing{
+  position:relative;
+  z-index:1;
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 1px 9px;
+}
+
+.store-v2-bundle-reference-pricing>div:first-child{
+  min-width:0;
+}
+
+.store-v2-bundle-reference-pricing>div:first-child>span{
+  display:block;
+  margin-bottom:4px;
+  color:var(--muted);
+  font-size:8.5px;
+  font-weight:850;
+}
+
+.store-v2-bundle-reference-pricing>div:first-child>strong{
+  display:block;
+  color:#fff;
+  font-size:20px;
+  line-height:1;
+  letter-spacing:-.04em;
+  font-variant-numeric:tabular-nums;
+}
+
+.store-v2-bundle-reference-pricing>div:first-child>strong small{
+  font-size:9px;
+  letter-spacing:0;
+  color:var(--soft);
+}
+
+.store-v2-bundle-reference-saving{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:2px;
+  text-align:right;
+  white-space:nowrap;
+}
+
+.store-v2-bundle-reference-saving>s{
+  color:var(--muted);
+  font-size:9px;
+}
+
+.store-v2-bundle-reference-saving>b{
+  color:#63dc98;
+  font-size:9px;
+  line-height:1.15;
+}
+
+.store-v2-bundle-reference-saving>small{
+  color:var(--muted);
+  font-size:7.5px;
+}
+
+.store-v2-bundle-reference-buy{
+  position:relative;
+  z-index:1;
+  width:100%;
+  min-height:44px;
+  padding:0 13px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  border:1px solid rgba(150,121,255,.58);
+  border-radius:13px;
+  color:#fff;
+  background:linear-gradient(135deg,rgba(124,92,255,.72),rgba(182,91,224,.43));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 9px 22px rgba(68,43,151,.22);
+  font-size:11px;
+  font-weight:950;
+}
+
+.store-v2-bundle-reference-buy>b{
+  width:25px;
+  height:25px;
+  display:grid;
+  place-items:center;
+  border-radius:9px;
+  background:rgba(255,255,255,.10);
+  font-size:15px;
+  line-height:1;
+}
+
+.store-v2-bundle-reference-buy:active{
+  transform:translateY(1px);
+}
+
+.store-v2-bundle-reference-buy:disabled{
+  opacity:.68;
+  border-color:rgba(96,214,147,.35);
+  background:rgba(96,214,147,.12);
+  color:#b8f3d0;
+  box-shadow:none;
+}
+
+.store-v2-bundle-reference-note{
+  position:relative;
+  z-index:1;
+  display:block;
+  margin:7px 2px 0;
+  color:var(--muted);
+  font-size:7.5px;
+  line-height:1.3;
+  text-align:center;
+}
+
+.store-v2-bundle-reference-owned{
+  position:relative;
+  z-index:1;
+  margin:11px 0 9px;
+  padding:10px 12px;
+  border:1px solid rgba(96,214,147,.24);
+  border-radius:13px;
+  background:rgba(96,214,147,.08);
+  color:#aef2c8;
+  font-size:10px;
+  font-weight:900;
+  text-align:center;
+}
+
+/* Bundle detail / purchase sheet. */
+.store-v2-bundle-confirm-reference{
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+}
+
+.store-v2-bundle-confirm-reference-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:9px;
+  padding:0 2px;
+}
+
+.store-v2-bundle-confirm-reference-head>span{
+  color:var(--muted);
+  font-size:9px;
+  font-weight:850;
+  text-transform:uppercase;
+  letter-spacing:.055em;
+}
+
+.store-v2-bundle-confirm-reference-head>b{
+  color:#8ee9ff;
+  font-size:9px;
+}
+
+.store-v2-bundle-reference-members.is-sheet{
+  gap:6px;
+}
+
+.store-v2-bundle-reference-members.is-sheet .store-v2-bundle-reference-member{
+  padding:5px;
+  border-radius:14px;
+}
+
+.store-v2-bundle-reference-members.is-sheet .store-v2-bundle-reference-preview .store-v2-game-preview{
+  min-height:62px;
+}
+
+.store-v2-bundle-reference-members.is-sheet .store-v2-bundle-reference-member-copy>strong{
+  font-size:8px;
+}
+
+.store-v2-bundle-confirm-reference>p{
+  margin:0;
+  padding:9px 10px;
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:12px;
+  background:rgba(255,255,255,.025);
+  color:var(--muted);
+  font-size:8.5px;
+  line-height:1.35;
+  text-align:center;
+}
+
+.store-v2-bundle-confirm-price{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+}
+
+.store-v2-bundle-confirm-price>div{
+  min-width:0;
+  padding:9px 10px;
+  border:1px solid var(--stroke);
+  border-radius:13px;
+  background:rgba(255,255,255,.03);
+}
+
+.store-v2-bundle-confirm-price span{
+  display:block;
+  margin-bottom:4px;
+  color:var(--muted);
+  font-size:8.5px;
+  font-weight:850;
+}
+
+.store-v2-bundle-confirm-price s{
+  color:var(--soft);
+  font-size:12px;
+}
+
+.store-v2-bundle-confirm-price strong{
+  color:#fff;
+  font-size:13px;
+  line-height:1.1;
+}
+
+.store-v2-bundle-confirm-price>p{
+  grid-column:1/-1;
+  margin:0;
+  color:#63dc98;
+  font-size:9px;
+  font-weight:900;
+  text-align:center;
+}
+
+@media (min-width:720px){
+  .store-v2-bundle-reference-list{
+    max-width:760px;
+    margin:0 auto;
+  }
+
+  .store-v2-bundle-reference{
+    padding:18px;
+  }
+
+  .store-v2-bundle-reference-hero h2{
+    font-size:27px;
+  }
+
+  .store-v2-bundle-reference-preview .store-v2-game-preview{
+    min-height:92px;
+  }
+
+  .store-v2-bundle-reference-member-copy>strong{
+    font-size:10px;
+  }
+
+  .store-v2-bundle-reference-pricing>div:first-child>strong{
+    font-size:24px;
+  }
+}
+
+@media (max-width:360px){
+  .store-v2-bundle-reference{
+    padding:11px;
+    border-radius:20px;
+  }
+
+  .store-v2-bundle-reference-topline>span,
+  .store-v2-bundle-reference-topline>b{
+    min-height:20px;
+    padding:0 6px;
+    font-size:7px;
+  }
+
+  .store-v2-bundle-reference-hero h2{
+    font-size:19px;
+  }
+
+  .store-v2-bundle-reference-hero>em{
+    width:42px;
+    height:42px;
+    border-radius:14px;
+    font-size:18px;
+  }
+
+  .store-v2-bundle-reference-members{
+    gap:5px;
+  }
+
+  .store-v2-bundle-reference-member{
+    padding:4px;
+    border-radius:13px;
+  }
+
+  .store-v2-bundle-reference-preview .store-v2-game-preview{
+    min-height:62px;
+  }
+
+  .store-v2-bundle-reference-member-copy>strong{
+    font-size:8px;
+  }
+
+  .store-v2-bundle-reference-pricing{
+    gap:8px;
+  }
+
+  .store-v2-bundle-reference-pricing>div:first-child>strong{
+    font-size:18px;
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .store-v2-bundle-reference-progress>i>b{
+    transition:none;
+  }
+
+  .store-v2-bundle-reference-buy:active{
+    transform:none;
+  }
+}
