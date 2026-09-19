@@ -235,7 +235,7 @@ function makeCheckersEffectsPassive(root){
     preview.classList.remove('is-playing');
     upgradeCheckersEffectMarkup(preview);
 
-    const inBundleSheet = Boolean(preview.closest('.store-v2-confirm-bundle'));
+    const inBundleSheet = Boolean(preview.closest('.store-v2-confirm-bundle-detail'));
     const inactiveBundlePanel = Boolean(preview.closest('.store-v2-bundle-reference-panel:not(.active)'));
     if (inBundleSheet || inactiveBundlePanel) {
       if (checkersEffectObserver) checkersEffectObserver.unobserve(preview);
