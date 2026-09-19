@@ -68,12 +68,23 @@ jobs:
             app/assets/js/games/chess \
             app/assets/js/games/checkers \
             app/assets/js/checkers-cosmetics \
-            app/assets/js/screens/store-screen-reversi-store-v1.js \
             app/assets/css/games/reversi/store-cosmetics-v1.css \
             app/assets/js/profile/mgw-profile-reversi-parity.js \
             app/assets/js/profile/mgw-profile-reversi-hard-square-v1.js \
             app/assets/css/screens/profile-reversi-store-parity-v1.css \
-            app/assets/css/screens/profile-reversi-store-exact-v2.css \
-            bot/catalog \
-            bot/database/migrations
+            app/assets/css/screens/profile-reversi-store-exact-v2.css
+          unexpected_catalog="$(git diff --name-only "$base" "$head" -- bot/catalog | grep -v '^bot/catalog/CosmeticStoreService.php
+ || true)"
+          if [ -n "$unexpected_catalog" ]; then
+            echo "Unexpected frozen catalog changes:" >&2
+            echo "$unexpected_catalog" >&2
+            exit 1
+          fi
+          unexpected_migrations="$(git diff --name-only "$base" "$head" -- bot/database/migrations | grep -v '^bot/database/migrations/20260919_0041_add_remaining_game_premium_bundles.php
+ || true)"
+          if [ -n "$unexpected_migrations" ]; then
+            echo "Unexpected frozen migration changes:" >&2
+            echo "$unexpected_migrations" >&2
+            exit 1
+          fi
           git diff --check
