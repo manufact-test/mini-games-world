@@ -42,6 +42,25 @@ function mgw_observe_matchmaking_source(array &$data, array $game): void
     $data['system']['telemetry'][$key] = (int)($data['system']['telemetry'][$key] ?? 0) + 1;
 }
 
+function mgw_is_battleship_fire_fast_path(array $data, string $action, array $payload): bool
+{
+    if ($action !== 'game_action') return false;
+
+    $gameId = clean_string($payload['gameId'] ?? '', 80);
+    if ($gameId === '' || !isset($data['games'][$gameId]) || !is_array($data['games'][$gameId])) {
+        return false;
+    }
+
+    $gameAction = $payload['gameAction'] ?? null;
+    $actionType = is_array($gameAction)
+        ? trim((string)($gameAction['type'] ?? ''))
+        : trim((string)($payload['actionType'] ?? ''));
+
+    return $actionType === 'fire'
+        && (string)($data['games'][$gameId]['game_type'] ?? '') === 'battleship'
+        && (string)($data['games'][$gameId]['phase'] ?? '') === 'battle';
+}
+
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) {
@@ -93,8 +112,9 @@ try {
         // game_state owns a new session-first ordering below: its polling may
         // refresh search, create a bot game or advance Phase B lifecycle, so even
         // the bounded cleanup must wait until active session ownership is checked.
+        $battleshipFireFastPath = mgw_is_battleship_fire_fast_path($data, $action, $payload);
         $forceCleanup = in_array($action, ['start_search', 'leave_search', 'game_action', 'make_move'], true);
-        if ($action !== 'game_state') {
+        if ($action !== 'game_state' && !$battleshipFireFastPath) {
             mgw_cleanup_games_if_due($data, $games, $forceCleanup);
         }
 
