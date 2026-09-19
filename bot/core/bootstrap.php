@@ -92,6 +92,7 @@ require_once __DIR__ . '/../ratings/PerGameRatingService.php';
 require_once __DIR__ . '/../ratings/PerGameRatingRuntimeBridge.php';
 require_once __DIR__ . '/../ratings/HiddenSkillService.php';
 require_once __DIR__ . '/../ratings/HiddenSkillRuntimeBridge.php';
+require_once __DIR__ . '/../ratings/LeaderboardService.php';
 require_once __DIR__ . '/../notifications/RuntimeNotificationRepository.php';
 require_once __DIR__ . '/../invites/RuntimeInviteRepository.php';
 require_once __DIR__ . '/../ledger/LedgerIntegrity.php';

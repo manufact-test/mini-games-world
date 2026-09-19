@@ -52,6 +52,7 @@ expect(profile.includes("const panel = collection?.querySelector('.profile-v2-ga
 expect(profile.includes("button.setAttribute('aria-selected', active ? 'true' : 'false');"), 'bounded game switch must keep tab accessibility state in sync');
 expect(profile.includes('panel.innerHTML = renderGameCosmeticGroups(activeGame);'), 'bounded game switch must replace only the active game panel contents');
 expect(!profile.includes('active_collection_game'), 'game-tab selection must not participate in the full Profile render signature');
+expect(profile.includes('data-open-leaderboard') && profile.includes('function openLeaderboardSheet('), 'Later Profile rating UI may compose a lazy leaderboard sheet without replacing the accepted game-cosmetics collection owner');
 
 const openProfileStart = profile.indexOf('export function openProfile()');
 const visibleProfile = profile.indexOf('showProfileImmediately();', openProfileStart);

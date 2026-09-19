@@ -39,5 +39,7 @@ jobs:
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
-          git diff --exit-code "$base" "$head" -- app/assets/js/profile/mgw-profile-name-colors.js bot/tests/Mvp19_3ProfileNameColorsTest.php
+          git diff --exit-code "$base" "$head" -- app/assets/js/profile/mgw-profile-name-colors.js
+          # The contract file may migrate when later shared Profile/API composition
+          # changes while this workflow itself still proves the frozen owner.
           git diff --check

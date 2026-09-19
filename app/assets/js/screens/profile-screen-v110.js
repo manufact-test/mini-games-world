@@ -35,6 +35,8 @@ let avatarSaving = false;
 let nameColorSaving = false;
 let gameCosmeticSaving = false;
 let activeCollectionGame = 'tictactoe';
+let activeLeaderboardGame = 'tictactoe';
+let leaderboardRequestToken = 0;
 let lastProfileRenderSignature = '';
 let deferredProfileRender = false;
 
@@ -216,6 +218,12 @@ function bindProfileActions(){
       if (nextGame && nextGame !== activeCollectionGame) switchProfileGameCollection(nextGame);
       return;
     }
+    const leaderboardButton = event.target.closest('[data-open-leaderboard]');
+    if (leaderboardButton) {
+      const gameType = String(leaderboardButton.dataset.openLeaderboard || activeLeaderboardGame || 'tictactoe').trim();
+      openLeaderboardSheet(GAME_TYPES.includes(gameType) ? gameType : 'tictactoe');
+      return;
+    }
     const gameCosmeticCard = event.target.closest('[data-profile-game-cosmetic]');
     if (gameCosmeticCard) {
       openGameCosmeticPreview(String(gameCosmeticCard.dataset.profileGameCosmetic || ''));
@@ -390,6 +398,7 @@ function renderProfileV2(){
     </section>
     <section class="profile-v2-balance"><div><span>${escapeHtml(t('profile.balance'))}</span><small>${escapeHtml(t('profile.balance_note'))}</small></div><strong>${escapeHtml(formatNumber(balance))}</strong></section>
     <section class="profile-v2-section profile-v2-rating-section">${sectionHead('profile.rating_title')}<div class="profile-v2-games-grid profile-v2-rating-grid">${GAME_TYPES.map(gameType => gameRatingCard(gameType, rating?.by_game?.[gameType])).join('')}</div></section>
+    <button class="profile-v2-leaderboard-launch" type="button" data-open-leaderboard="${escapeHtml(activeLeaderboardGame)}"><span><strong>${escapeHtml(t('profile.leaderboard_title'))}</strong><small>${escapeHtml(t('profile.leaderboard_open_note'))}</small></span><b aria-hidden="true">›</b></button>
     <section class="profile-v2-section">${sectionHead('profile.stats_title','profile.stats_note')}<div class="profile-v2-summary-grid">${summaryStat(stats?.games_played,'profile.games_played')}${summaryStat(stats?.wins,'profile.wins')}${summaryStat(stats?.losses,'profile.losses')}${summaryStat(stats?.draws,'profile.draws')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.by_game_title','profile.by_game_note')}<div class="profile-v2-games-grid">${GAME_TYPES.map(gameType => gameStatCard(gameType, stats?.by_game?.[gameType])).join('')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.history_title')}<div class="profile-v2-history">${matches.length ? matches.map(historyRow).join('') : emptyState('profile.history_empty')}</div></section>
@@ -819,6 +828,99 @@ function summaryStat(value, labelKey){ const normalized = Number.isFinite(Number
 function gameRatingCard(gameType, rating = null){
   const points = Math.max(0, Number(rating?.points || 0));
   return `<article class="profile-v2-game-stat profile-v2-rating-card" aria-label="${escapeHtml(gameName(gameType))}: ${escapeHtml(t('profile.rating_points'))}: ${escapeHtml(formatNumber(points))}"><strong class="profile-v2-rating-game">${escapeHtml(gameName(gameType))}</strong><span class="profile-v2-rating-score"><span>${escapeHtml(t('profile.rating_points'))}:</span><b>${escapeHtml(formatNumber(points))}</b></span></article>`;
+}
+
+function openLeaderboardSheet(gameType = 'tictactoe'){
+  activeLeaderboardGame = GAME_TYPES.includes(gameType) ? gameType : 'tictactoe';
+  openSheet(`
+    <div class="sheet-head"><div><h2>${escapeHtml(t('profile.leaderboard_title'))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="profile-v2-leaderboard-tabs" id="profileLeaderboardTabs" aria-label="${escapeHtml(t('profile.leaderboard_title'))}">
+      ${GAME_TYPES.map(type => leaderboardTab(type, activeLeaderboardGame)).join('')}
+    </div>
+    <div class="profile-v2-leaderboard-body" id="profileLeaderboardBody">${leaderboardLoadingMarkup()}</div>
+  `);
+
+  document.querySelectorAll('#sheet [data-leaderboard-game]').forEach(button => {
+    button.addEventListener('click', () => {
+      const nextGame = String(button.dataset.leaderboardGame || '').trim();
+      if (!GAME_TYPES.includes(nextGame) || nextGame === activeLeaderboardGame) return;
+      activeLeaderboardGame = nextGame;
+      document.querySelectorAll('#sheet [data-leaderboard-game]').forEach(candidate => {
+        candidate.classList.toggle('active', String(candidate.dataset.leaderboardGame || '') === activeLeaderboardGame);
+      });
+      void loadLeaderboard(activeLeaderboardGame);
+    });
+  });
+
+  void loadLeaderboard(activeLeaderboardGame);
+}
+
+function leaderboardTab(gameType, activeGame){
+  return `<button class="profile-v2-leaderboard-tab${gameType === activeGame ? ' active' : ''}" type="button" data-leaderboard-game="${escapeHtml(gameType)}">${escapeHtml(gameName(gameType))}</button>`;
+}
+
+async function loadLeaderboard(gameType){
+  const body = document.getElementById('profileLeaderboardBody');
+  if (!body) return;
+  const token = ++leaderboardRequestToken;
+  body.innerHTML = leaderboardLoadingMarkup();
+
+  try {
+    const result = await api.leaderboard(gameType);
+    if (token !== leaderboardRequestToken || activeLeaderboardGame !== gameType) return;
+    const target = document.getElementById('profileLeaderboardBody');
+    if (!target) return;
+    target.innerHTML = leaderboardMarkup(result?.leaderboard);
+  } catch (error) {
+    if (token !== leaderboardRequestToken || activeLeaderboardGame !== gameType) return;
+    const target = document.getElementById('profileLeaderboardBody');
+    if (!target) return;
+    target.innerHTML = `<div class="profile-v2-leaderboard-empty">${escapeHtml(error?.message || t('profile.leaderboard_error'))}</div>`;
+  }
+}
+
+function leaderboardMarkup(board){
+  const data = board && typeof board === 'object' ? board : {};
+  const entries = Array.isArray(data.entries) ? data.entries : [];
+  const viewer = data.viewer && typeof data.viewer === 'object' ? data.viewer : {};
+  const official = data.official === true;
+  const minMatches = Math.max(1, Number(data?.eligibility?.min_rated_matches || 5));
+  const minWins = Math.max(1, Number(data?.eligibility?.min_human_wins || 1));
+  const ratedMatches = Math.max(0, Number(viewer.rated_matches || 0));
+  const humanWins = Math.max(0, Number(viewer.human_wins || 0));
+
+  const stateChip = official
+    ? ''
+    : `<span class="profile-v2-leaderboard-state">${escapeHtml(t('profile.leaderboard_preseason'))}</span>`;
+  const progress = viewer.eligible === true
+    ? ''
+    : `<div class="profile-v2-leaderboard-progress">${escapeHtml(t('profile.leaderboard_progress', { matches:Math.min(ratedMatches,minMatches), minMatches, wins:Math.min(humanWins,minWins), minWins }))}</div>`;
+
+  const rows = entries.length
+    ? entries.map(leaderboardRow).join('')
+    : `<div class="profile-v2-leaderboard-empty">${escapeHtml(t('profile.leaderboard_empty'))}</div>`;
+
+  return `
+    <div class="profile-v2-leaderboard-meta">
+      <strong>${escapeHtml(gameName(String(data.game_type || activeLeaderboardGame)))}</strong>
+      ${stateChip}
+    </div>
+    ${progress}
+    <div class="profile-v2-leaderboard-list">${rows}</div>
+  `;
+}
+
+function leaderboardRow(entry){
+  const rank = Math.max(1, Number(entry?.rank || 1));
+  const nickname = String(entry?.nickname || t('profile.player')).trim() || t('profile.player');
+  const avatar = String(entry?.avatar_item_id || 'starter-default-01').trim() || 'starter-default-01';
+  const points = Math.max(0, Number(entry?.points || 0));
+  const rankClass = rank <= 3 ? ` top-${rank}` : '';
+  return `<div class="profile-v2-leaderboard-row${rankClass}"><b class="profile-v2-leaderboard-rank">${escapeHtml(formatNumber(rank))}</b><span class="profile-v2-leaderboard-avatar" data-avatar-item-id="${escapeHtml(avatar)}" aria-hidden="true">MG</span><strong class="profile-v2-leaderboard-name">${escapeHtml(nickname)}</strong><span class="profile-v2-leaderboard-points">${escapeHtml(formatNumber(points))}</span></div>`;
+}
+
+function leaderboardLoadingMarkup(){
+  return `<div class="profile-v2-leaderboard-empty">${escapeHtml(t('common.loading'))}</div>`;
 }
 function gameStatCard(gameType, stats = null){
   const s = stats && typeof stats === 'object' ? stats : {};

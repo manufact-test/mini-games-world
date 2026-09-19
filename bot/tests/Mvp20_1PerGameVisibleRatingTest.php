@@ -35,6 +35,7 @@ CREATE TABLE mgw_matches (
     match_source TEXT NULL,
     winner_player_ref TEXT NULL,
     finish_reason TEXT NULL,
+    started_at_utc TEXT NULL,
     finished_at_utc TEXT NULL
 )
 SQL);
@@ -51,6 +52,8 @@ SQL);
 
 $migration = require $databaseDir . '/migrations/20260919_0042_create_per_game_visible_rating.php';
 $migration->up($database);
+$leaderboardMigration = require $databaseDir . '/migrations/20260919_0044_create_leaderboards_and_antifarming.php';
+$leaderboardMigration->up($database);
 $database->execute(
     'UPDATE mgw_rating_control
      SET tracking_started_at_utc = :tracking, updated_at_utc = :tracking
@@ -78,10 +81,10 @@ $addMatch = static function (
     $database->execute(
         'INSERT INTO mgw_matches (
             match_id, game_type, status, match_source,
-            winner_player_ref, finish_reason, finished_at_utc
+            winner_player_ref, finish_reason, started_at_utc, finished_at_utc
          ) VALUES (
             :match_id, :game_type, :status, :match_source,
-            :winner_player_ref, :finish_reason, :finished_at_utc
+            :winner_player_ref, :finish_reason, :started_at_utc, :finished_at_utc
          )',
         [
             'match_id' => $matchId,
@@ -90,6 +93,7 @@ $addMatch = static function (
             'match_source' => $matchSource,
             'winner_player_ref' => $winnerRef,
             'finish_reason' => $finishReason,
+            'started_at_utc' => $finishedAt,
             'finished_at_utc' => $finishedAt,
         ]
     );

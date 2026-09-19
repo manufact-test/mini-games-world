@@ -27,10 +27,11 @@ final class PerGameRatingService
     {
         $limit = max(1, min(500, $limit));
         $control = $this->control();
+        $leaderboard = $this->leaderboardControl();
 
         $matches = $this->database->fetchAll(
             'SELECT m.match_id, m.game_type, m.status, m.match_source, m.winner_player_ref,
-                    m.finish_reason, m.finished_at_utc
+                    m.finish_reason, m.started_at_utc, m.finished_at_utc
              FROM mgw_matches m
              WHERE m.status = :status
                AND m.finished_at_utc IS NOT NULL
@@ -51,13 +52,14 @@ final class PerGameRatingService
             'recorded' => 0,
             'rated' => 0,
             'points_awarded' => 0,
+            'anti_farming_limited' => 0,
             'duplicates' => 0,
             'deferred' => 0,
         ];
 
         foreach ($matches as $match) {
             if (!is_array($match)) continue;
-            $result = $this->processMatch($match, $control);
+            $result = $this->processMatch($match, $control, $leaderboard);
             if ($result['status'] === 'deferred') {
                 $summary['deferred']++;
                 continue;
@@ -71,6 +73,9 @@ final class PerGameRatingService
             if ($points > 0) {
                 $summary['rated']++;
                 $summary['points_awarded'] += $points;
+            }
+            if (!empty($result['anti_farming_limited'])) {
+                $summary['anti_farming_limited']++;
             }
         }
 
@@ -119,7 +124,7 @@ final class PerGameRatingService
         ];
     }
 
-    private function processMatch(array $match, array $control): array
+    private function processMatch(array $match, array $control, array $leaderboard): array
     {
         $matchId = trim((string)($match['match_id'] ?? ''));
         if ($matchId === '') return ['status' => 'deferred', 'points_delta' => 0];
@@ -127,6 +132,7 @@ final class PerGameRatingService
         $gameType = trim((string)($match['game_type'] ?? ''));
         $matchSource = $this->nullableText($match['match_source'] ?? null);
         $finishReason = $this->nullableText($match['finish_reason'] ?? null);
+        $startedAt = $this->nullableText($match['started_at_utc'] ?? null);
         $finishedAt = $this->nullableText($match['finished_at_utc'] ?? null);
         $winnerPlayerRef = $this->nullableText($match['winner_player_ref'] ?? null);
 
@@ -137,15 +143,12 @@ final class PerGameRatingService
             && $control['activated_at'] !== null
             && $finishedAt !== null
             && $this->before($finishedAt, $control['activated_at'])) {
-            // A late projector may see a pre-activation result only after the
-            // official switch. Keep it in the preseason bucket so it can never
-            // become a retroactive official-season award.
             $effectiveState = self::STATE_PRESEASON;
             $seasonId = self::PRESEASON_ID;
         }
 
         $players = $this->database->fetchAll(
-            'SELECT player_ref, mgw_id, player_type
+            'SELECT seat, player_ref, mgw_id, player_type
              FROM mgw_match_players
              WHERE match_id = :match_id
              ORDER BY seat ASC',
@@ -165,8 +168,14 @@ final class PerGameRatingService
             return ['status' => 'deferred', 'points_delta' => 0];
         }
 
-        $pointsDelta = (int)$decision['points_delta'];
+        $pointsRequested = (int)$decision['points_delta'];
         $winnerMgwId = $decision['winner_mgw_id'];
+        $opponentMgwId = $decision['opponent_mgw_id'];
+        $ratedMatch = !empty($decision['rated_match']);
+        $daySource = $startedAt ?? $finishedAt;
+        $ratingDay = $ratedMatch && $daySource !== null
+            ? $this->ratingDay($daySource, $leaderboard['day_timezone'])
+            : null;
 
         return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
             $matchId,
@@ -174,27 +183,103 @@ final class PerGameRatingService
             $gameType,
             $effectiveState,
             $winnerMgwId,
-            $pointsDelta,
+            $opponentMgwId,
+            $pointsRequested,
             $decision,
             $matchSource,
             $finishReason,
-            $finishedAt
+            $startedAt,
+            $finishedAt,
+            $ratingDay,
+            $ratedMatch,
+            $leaderboard
         ): array {
+            $antiFarmingLimited = false;
+            $pointsDelta = $pointsRequested;
+            $outcomeCode = (string)$decision['outcome_code'];
+
+            if ($pointsRequested > 0
+                && is_string($winnerMgwId) && $winnerMgwId !== ''
+                && is_string($opponentMgwId) && $opponentMgwId !== ''
+                && is_string($ratingDay) && $ratingDay !== ''
+                && $this->antiFarmingApplies($startedAt ?? $finishedAt, $leaderboard['anti_farming_started_at'])) {
+                $slot = $this->reserveDailyWinSlot(
+                    $database,
+                    $ratingDay,
+                    $gameType,
+                    $winnerMgwId,
+                    $opponentMgwId,
+                    $leaderboard['max_credited_wins_same_opponent_day'],
+                    $matchId
+                );
+
+                if ($slot === 'duplicate') {
+                    return [
+                        'status' => 'duplicate',
+                        'points_delta' => 0,
+                        'anti_farming_limited' => false,
+                    ];
+                }
+
+                if ($slot === 'limited') {
+                    $antiFarmingLimited = true;
+                    $pointsDelta = 0;
+                    $outcomeCode = 'anti_farming_cap';
+                }
+            }
+
             $inserted = $this->insertOutcomeIfNew($database, [
                 'match_id' => $matchId,
                 'season_id' => $seasonId,
                 'game_type' => $gameType !== '' ? $gameType : 'unknown',
                 'competition_state' => $effectiveState,
                 'winner_mgw_id' => $winnerMgwId,
+                'opponent_mgw_id' => $opponentMgwId,
                 'points_delta' => $pointsDelta,
-                'outcome_code' => $decision['outcome_code'],
+                'points_requested' => $pointsRequested,
+                'anti_farming_limited' => $antiFarmingLimited ? 1 : 0,
+                'outcome_code' => $outcomeCode,
                 'match_source' => $matchSource,
                 'finish_reason' => $finishReason,
+                'rating_day_moscow' => $ratingDay,
                 'finished_at_utc' => $finishedAt,
                 'processed_at_utc' => $this->timestamp(),
             ]);
             if (!$inserted) {
-                return ['status' => 'duplicate', 'points_delta' => 0];
+                if ($pointsRequested > 0
+                    && !$antiFarmingLimited
+                    && is_string($winnerMgwId) && $winnerMgwId !== ''
+                    && is_string($opponentMgwId) && $opponentMgwId !== ''
+                    && is_string($ratingDay) && $ratingDay !== ''
+                    && $this->antiFarmingApplies($startedAt ?? $finishedAt, $leaderboard['anti_farming_started_at'])) {
+                    $this->releaseDailyWinSlot(
+                        $database,
+                        $ratingDay,
+                        $gameType,
+                        $winnerMgwId,
+                        $opponentMgwId
+                    );
+                }
+                return [
+                    'status' => 'duplicate',
+                    'points_delta' => 0,
+                    'anti_farming_limited' => false,
+                ];
+            }
+
+            if ($ratedMatch && count($decision['participants']) === 2 && is_string($ratingDay)) {
+                $this->recordParticipation(
+                    $database,
+                    $matchId,
+                    $seasonId,
+                    $gameType,
+                    $decision['participants'],
+                    $winnerMgwId,
+                    $pointsDelta,
+                    $ratingDay,
+                    $startedAt,
+                    $finishedAt
+                );
             }
 
             if ($pointsDelta > 0 && is_string($winnerMgwId) && $winnerMgwId !== '') {
@@ -207,7 +292,11 @@ final class PerGameRatingService
                 );
             }
 
-            return ['status' => 'recorded', 'points_delta' => $pointsDelta];
+            return [
+                'status' => 'recorded',
+                'points_delta' => $pointsDelta,
+                'anti_farming_limited' => $antiFarmingLimited,
+            ];
         });
     }
 
@@ -225,38 +314,62 @@ final class PerGameRatingService
         if ($competitionState === self::STATE_OFF) {
             return $this->finalDecision(0, 'competition_off');
         }
-        if ($winnerPlayerRef === null || $finishReason === 'draw') {
-            return $this->finalDecision(0, 'draw');
-        }
-        if ($finishReason !== 'normal_win') {
+        if ($finishReason !== 'normal_win' && $finishReason !== 'draw') {
             return $this->finalDecision(0, 'technical_result');
         }
-        if (count($players) < 2) {
+        if (count($players) !== 2) {
             return $this->finalDecision(0, 'invalid_players');
         }
 
-        $winnerMgwId = null;
+        $participants = [];
         foreach ($players as $player) {
             if (!is_array($player)) return $this->finalDecision(0, 'invalid_players');
             if (strtolower(trim((string)($player['player_type'] ?? 'human'))) !== 'human') {
                 return $this->finalDecision(0, 'bot_game');
             }
-            if (trim((string)($player['player_ref'] ?? '')) === $winnerPlayerRef) {
-                $candidate = trim((string)($player['mgw_id'] ?? ''));
-                if ($candidate !== '') $winnerMgwId = $candidate;
+            $playerRef = trim((string)($player['player_ref'] ?? ''));
+            $mgwId = trim((string)($player['mgw_id'] ?? ''));
+            if ($playerRef === '' || $mgwId === '') {
+                return [
+                    'final' => false,
+                    'points_delta' => 0,
+                    'outcome_code' => 'pending_player_identity',
+                    'winner_mgw_id' => null,
+                    'opponent_mgw_id' => null,
+                    'rated_match' => false,
+                    'participants' => [],
+                ];
             }
+            $participants[] = ['player_ref' => $playerRef, 'mgw_id' => $mgwId];
         }
 
-        // A normal human win without a canonical account identity is not a
-        // zero-point result: identity projection may still catch up. Leave it
-        // pending instead of permanently discarding a legitimate point.
-        if ($winnerMgwId === null) {
+        if ($participants[0]['mgw_id'] === $participants[1]['mgw_id']) {
+            return $this->finalDecision(0, 'invalid_players');
+        }
+
+        if ($finishReason === 'draw') {
             return [
-                'final' => false,
+                'final' => true,
                 'points_delta' => 0,
-                'outcome_code' => 'pending_winner_identity',
+                'outcome_code' => 'draw',
                 'winner_mgw_id' => null,
+                'opponent_mgw_id' => null,
+                'rated_match' => true,
+                'participants' => $participants,
             ];
+        }
+        if ($winnerPlayerRef === null) {
+            return $this->finalDecision(0, 'invalid_winner');
+        }
+
+        $winner = null;
+        $opponent = null;
+        foreach ($participants as $participant) {
+            if ($participant['player_ref'] === $winnerPlayerRef) $winner = $participant;
+            else $opponent = $participant;
+        }
+        if (!is_array($winner) || !is_array($opponent)) {
+            return $this->finalDecision(0, 'invalid_winner');
         }
 
         $isTournament = $matchSource === self::TOURNAMENT_MATCH_SOURCE;
@@ -264,7 +377,10 @@ final class PerGameRatingService
             'final' => true,
             'points_delta' => $isTournament ? 2 : 1,
             'outcome_code' => $isTournament ? 'rated_tournament_win' : 'rated_normal_win',
-            'winner_mgw_id' => $winnerMgwId,
+            'winner_mgw_id' => $winner['mgw_id'],
+            'opponent_mgw_id' => $opponent['mgw_id'],
+            'rated_match' => true,
+            'participants' => $participants,
         ];
     }
 
@@ -275,16 +391,184 @@ final class PerGameRatingService
             'points_delta' => $points,
             'outcome_code' => $code,
             'winner_mgw_id' => null,
+            'opponent_mgw_id' => null,
+            'rated_match' => false,
+            'participants' => [],
         ];
+    }
+
+    private function reserveDailyWinSlot(
+        DatabaseConnectionInterface $database,
+        string $ratingDay,
+        string $gameType,
+        string $winnerMgwId,
+        string $opponentMgwId,
+        int $maxWins,
+        string $matchId
+    ): string {
+        $params = [
+            'rating_day' => $ratingDay,
+            'game_type' => $gameType,
+            'winner_mgw_id' => $winnerMgwId,
+            'opponent_mgw_id' => $opponentMgwId,
+            'updated_at' => $this->timestamp(),
+        ];
+
+        if ($database->driver() === 'sqlite') {
+            $database->execute(
+                'INSERT OR IGNORE INTO mgw_rating_daily_pair_wins (
+                    rating_day_moscow, game_type, winner_mgw_id,
+                    opponent_mgw_id, credited_wins, updated_at_utc
+                 ) VALUES (
+                    :rating_day, :game_type, :winner_mgw_id,
+                    :opponent_mgw_id, 0, :updated_at
+                 )',
+                $params
+            );
+        } else {
+            $database->execute(
+                'INSERT IGNORE INTO mgw_rating_daily_pair_wins (
+                    rating_day_moscow, game_type, winner_mgw_id,
+                    opponent_mgw_id, credited_wins, updated_at_utc
+                 ) VALUES (
+                    :rating_day, :game_type, :winner_mgw_id,
+                    :opponent_mgw_id, 0, :updated_at
+                 )',
+                $params
+            );
+        }
+
+        $select = 'SELECT credited_wins
+                   FROM mgw_rating_daily_pair_wins
+                   WHERE rating_day_moscow = :rating_day
+                     AND game_type = :game_type
+                     AND winner_mgw_id = :winner_mgw_id
+                     AND opponent_mgw_id = :opponent_mgw_id';
+        if ($database->driver() !== 'sqlite') $select .= ' FOR UPDATE';
+
+        $rows = $database->fetchAll($select, [
+            'rating_day' => $ratingDay,
+            'game_type' => $gameType,
+            'winner_mgw_id' => $winnerMgwId,
+            'opponent_mgw_id' => $opponentMgwId,
+        ]);
+        if (count($rows) !== 1 || !is_array($rows[0])) {
+            throw new RuntimeException('MVP-20.3 anti-farming counter is unavailable.');
+        }
+
+        if ((int)$database->fetchValue(
+            'SELECT COUNT(*) FROM mgw_game_rating_outcomes WHERE match_id = :match_id',
+            ['match_id' => $matchId]
+        ) > 0) {
+            return 'duplicate';
+        }
+
+        $creditedWins = max(0, (int)($rows[0]['credited_wins'] ?? 0));
+        if ($creditedWins >= $maxWins) return 'limited';
+
+        $database->execute(
+            'UPDATE mgw_rating_daily_pair_wins
+             SET credited_wins = :credited_wins, updated_at_utc = :updated_at
+             WHERE rating_day_moscow = :rating_day
+               AND game_type = :game_type
+               AND winner_mgw_id = :winner_mgw_id
+               AND opponent_mgw_id = :opponent_mgw_id',
+            [
+                'credited_wins' => $creditedWins + 1,
+                'updated_at' => $this->timestamp(),
+                'rating_day' => $ratingDay,
+                'game_type' => $gameType,
+                'winner_mgw_id' => $winnerMgwId,
+                'opponent_mgw_id' => $opponentMgwId,
+            ]
+        );
+
+        return 'credited';
+    }
+
+    private function releaseDailyWinSlot(
+        DatabaseConnectionInterface $database,
+        string $ratingDay,
+        string $gameType,
+        string $winnerMgwId,
+        string $opponentMgwId
+    ): void {
+        $database->execute(
+            'UPDATE mgw_rating_daily_pair_wins
+             SET credited_wins = CASE WHEN credited_wins > 0 THEN credited_wins - 1 ELSE 0 END,
+                 updated_at_utc = :updated_at
+             WHERE rating_day_moscow = :rating_day
+               AND game_type = :game_type
+               AND winner_mgw_id = :winner_mgw_id
+               AND opponent_mgw_id = :opponent_mgw_id',
+            [
+                'updated_at' => $this->timestamp(),
+                'rating_day' => $ratingDay,
+                'game_type' => $gameType,
+                'winner_mgw_id' => $winnerMgwId,
+                'opponent_mgw_id' => $opponentMgwId,
+            ]
+        );
+    }
+
+    private function recordParticipation(
+        DatabaseConnectionInterface $database,
+        string $matchId,
+        string $seasonId,
+        string $gameType,
+        array $participants,
+        ?string $winnerMgwId,
+        int $pointsDelta,
+        string $ratingDay,
+        ?string $startedAt,
+        ?string $finishedAt
+    ): void {
+        foreach ($participants as $index => $participant) {
+            if (!is_array($participant)) continue;
+            $mgwId = trim((string)($participant['mgw_id'] ?? ''));
+            $opponent = $participants[1 - $index] ?? null;
+            $opponentMgwId = is_array($opponent) ? trim((string)($opponent['mgw_id'] ?? '')) : '';
+            if ($mgwId === '' || $opponentMgwId === '') continue;
+
+            $resultCode = $winnerMgwId === null
+                ? 'draw'
+                : ($mgwId === $winnerMgwId ? 'win' : 'loss');
+            $pointsAwarded = $mgwId === $winnerMgwId ? max(0, $pointsDelta) : 0;
+
+            $columns = '(match_id, mgw_id, season_id, game_type, opponent_mgw_id,
+                         result_code, points_awarded, rating_day_moscow,
+                         match_started_at_utc, match_finished_at_utc, created_at_utc)';
+            $values = '(:match_id, :mgw_id, :season_id, :game_type, :opponent_mgw_id,
+                        :result_code, :points_awarded, :rating_day_moscow,
+                        :match_started_at_utc, :match_finished_at_utc, :created_at_utc)';
+            $sql = $database->driver() === 'sqlite'
+                ? 'INSERT OR IGNORE INTO mgw_game_rating_participation ' . $columns . ' VALUES ' . $values
+                : 'INSERT IGNORE INTO mgw_game_rating_participation ' . $columns . ' VALUES ' . $values;
+            $database->execute($sql, [
+                'match_id' => $matchId,
+                'mgw_id' => $mgwId,
+                'season_id' => $seasonId,
+                'game_type' => $gameType,
+                'opponent_mgw_id' => $opponentMgwId,
+                'result_code' => $resultCode,
+                'points_awarded' => $pointsAwarded,
+                'rating_day_moscow' => $ratingDay,
+                'match_started_at_utc' => $startedAt,
+                'match_finished_at_utc' => $finishedAt,
+                'created_at_utc' => $this->timestamp(),
+            ]);
+        }
     }
 
     private function insertOutcomeIfNew(DatabaseConnectionInterface $database, array $row): bool
     {
         $columns = '(match_id, season_id, game_type, competition_state, winner_mgw_id,
-                     points_delta, outcome_code, match_source, finish_reason,
+                     opponent_mgw_id, points_delta, points_requested, anti_farming_limited,
+                     outcome_code, match_source, finish_reason, rating_day_moscow,
                      finished_at_utc, processed_at_utc)';
         $values = '(:match_id, :season_id, :game_type, :competition_state, :winner_mgw_id,
-                    :points_delta, :outcome_code, :match_source, :finish_reason,
+                    :opponent_mgw_id, :points_delta, :points_requested, :anti_farming_limited,
+                    :outcome_code, :match_source, :finish_reason, :rating_day_moscow,
                     :finished_at_utc, :processed_at_utc)';
 
         $sql = $database->driver() === 'sqlite'
@@ -345,6 +629,43 @@ final class PerGameRatingService
         );
     }
 
+    private function leaderboardControl(): array
+    {
+        $rows = $this->database->fetchAll(
+            'SELECT anti_farming_started_at_utc, day_timezone,
+                    min_rated_matches, min_human_wins,
+                    max_credited_wins_same_opponent_day
+             FROM mgw_leaderboard_control
+             WHERE control_key = :control_key',
+            ['control_key' => self::CONTROL_KEY]
+        );
+        if (count($rows) !== 1 || !is_array($rows[0])) {
+            throw new RuntimeException('MVP-20.3 leaderboard control is unavailable.');
+        }
+
+        $row = $rows[0];
+        $startedAt = trim((string)($row['anti_farming_started_at_utc'] ?? ''));
+        $timezone = trim((string)($row['day_timezone'] ?? ''));
+        $maxWins = max(1, (int)($row['max_credited_wins_same_opponent_day'] ?? 3));
+        if ($startedAt === '' || $timezone === '') {
+            throw new RuntimeException('MVP-20.3 leaderboard control is invalid.');
+        }
+
+        try {
+            new DateTimeZone($timezone);
+        } catch (Exception $error) {
+            throw new RuntimeException('MVP-20.3 leaderboard timezone is invalid.', 0, $error);
+        }
+
+        return [
+            'anti_farming_started_at' => $startedAt,
+            'day_timezone' => $timezone,
+            'min_rated_matches' => max(1, (int)($row['min_rated_matches'] ?? 5)),
+            'min_human_wins' => max(1, (int)($row['min_human_wins'] ?? 1)),
+            'max_credited_wins_same_opponent_day' => $maxWins,
+        ];
+    }
+
     private function control(): array
     {
         $rows = $this->database->fetchAll(
@@ -380,6 +701,25 @@ final class PerGameRatingService
             'tracking_started_at' => $trackingStartedAt,
             'activated_at' => $activatedAt,
         ];
+    }
+
+    private function antiFarmingApplies(?string $matchTime, string $startedAt): bool
+    {
+        if ($matchTime === null || trim($matchTime) === '') return false;
+        $matchTs = strtotime($matchTime);
+        $startTs = strtotime($startedAt);
+        if ($matchTs === false || $startTs === false) {
+            throw new RuntimeException('MVP-20.3 anti-farming timestamp is invalid.');
+        }
+        return $matchTs >= $startTs;
+    }
+
+    private function ratingDay(string $utcTimestamp, string $timezone): string
+    {
+        $utc = new DateTimeZone('UTC');
+        $target = new DateTimeZone($timezone);
+        $date = new DateTimeImmutable($utcTimestamp, $utc);
+        return $date->setTimezone($target)->format('Y-m-d');
     }
 
     private function before(string $left, string $right): bool
