@@ -600,9 +600,7 @@ function renderGameBundle(bundle){
         <span>${escapeHtml(progress)}</span>
         <i><b style="width:${Math.max(0, Math.min(100, ((itemCount || 5) ? owned / (itemCount || 5) * 100 : 0)))}%"></b></i>
       </div>
-      ${allOwned ? `
-        <div class="store-v2-bundle-reference-owned">Комплект полностью собран</div>
-      ` : `
+      ${allOwned ? '' : `
         <div class="store-v2-bundle-reference-pricing">
           <div>
             <span>${owned > 0 ? 'За оставшиеся предметы' : 'Цена набора'}</span>
@@ -613,12 +611,12 @@ function renderGameBundle(bundle){
             ${owned === 0 && regularFullPrice > 0 ? `<small>По отдельности ${formatNumber(regularFullPrice)}</small>` : ''}
           </div>
         </div>
+        <button class="store-v2-bundle-reference-buy" data-store-v2-buy="${escapeAttr(bundle?.offer_id || '')}" type="button">
+          <span>Посмотреть и купить</span>
+          <b>→</b>
+        </button>
+        <small class="store-v2-bundle-reference-note">Покупка добавляет предметы в коллекцию, но ничего не выбирает автоматически.</small>
       `}
-      <button class="store-v2-bundle-reference-buy" data-store-v2-buy="${escapeAttr(bundle?.offer_id || '')}" type="button" ${allOwned ? 'disabled' : ''}>
-        <span>${allOwned ? 'Комплект собран' : 'Посмотреть и купить'}</span>
-        ${!allOwned ? '<b>→</b>' : '<b>✓</b>'}
-      </button>
-      <small class="store-v2-bundle-reference-note">Покупка добавляет предметы в коллекцию, но ничего не выбирает автоматически.</small>
     </article>
   `;
 }
