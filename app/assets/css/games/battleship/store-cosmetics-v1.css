@@ -299,8 +299,8 @@
 .mgw-bs-preview-hit-core,
 .mgw-bs-preview-hit-ring,
 .mgw-bs-preview-hit-flare{
-  left:54.2%;
-  top:54.2%;
+  left:54%;
+  top:54%;
   width:27%;
   aspect-ratio:1;
   transform:translate(-50%,-50%);
@@ -361,8 +361,8 @@
 .mgw-bs-preview-destroy-flash,
 .mgw-bs-preview-destroy-ring,
 .mgw-bs-preview-destroy-wreck{
-  left:54.2%;
-  top:54.2%;
+  left:54%;
+  top:54%;
   width:43%;
   aspect-ratio:1;
   transform:translate(-50%,-50%);
