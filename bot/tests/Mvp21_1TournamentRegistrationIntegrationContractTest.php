@@ -134,7 +134,7 @@ $assertTrue(str_contains($sources['admin_client'], "action:'create_draft'"), 'Ad
 $assertTrue(str_contains($sources['admin_client'], "action:'open_registration'"), 'Admin client must open registration explicitly.');
 $assertTrue(str_contains($sources['admin_css'], '.mgw-admin__tournament'), 'Tournament Admin must have bounded styling.');
 
-$assertTrue(str_contains($sources['manifest'], 'mvp21_1=tournament-registration-runtime-fix-v3'), 'Version manifest must publish tournament runtime-fix client identity.');
+$assertTrue(str_contains($sources['manifest'], 'mvp21_1=tournament-registration-diagnostic-v4'), 'Version manifest must publish the accepted tournament diagnostic client identity.');
 $assertTrue(str_contains($sources['entry'], "X-MGW-Tournaments: official-registration-v1"), 'Rendered runtime must expose tournament fingerprint.');
 
 $assertTrue(str_contains($sources['live_probe'], "action: 'tournament_register'"), 'Blocking staging probe must call the real tournament_register API action.');
