@@ -42,6 +42,11 @@ try {
     );
     $migrationResult = $migrationController->run();
 
+    $tournamentSnapshot = (new TournamentRegistrationService(
+        $db,
+        new LedgerWriteService($db)
+    ))->snapshot();
+
     $events = $db->fetchAll(
         'SELECT state_revision, status, attempt_count, last_error, projection_version
          FROM mgw_runtime_primary_projection_outbox
@@ -63,23 +68,6 @@ try {
         ];
     }
 
-    $tournament = $db->fetchAll(
-        "SELECT tournament_id, tournament_state, game_type, capacity
-         FROM mgw_tournaments
-         WHERE active_slot='official'
-         ORDER BY created_at_utc DESC
-         LIMIT 1"
-    );
-    $activeRegistrations = 0;
-    if ($tournament !== []) {
-        $activeRegistrations = (int)$db->fetchValue(
-            "SELECT COUNT(*) FROM mgw_tournament_registrations
-             WHERE tournament_id=:tournament_id
-               AND registration_state='registered'",
-            ['tournament_id'=>(string)$tournament[0]['tournament_id']]
-        );
-    }
-
     json_response([
         'ok'=>true,
         'service'=>'staging-projection-diagnostic',
@@ -89,8 +77,15 @@ try {
             'pending_after'=>(int)($migrationResult['after']['pending_count'] ?? -1),
         ],
         'failures'=>$failures,
-        'tournament'=>$tournament[0] ?? null,
-        'registered_count'=>$activeRegistrations,
+        'tournament'=>$tournamentSnapshot['tournament'] ?? null,
+        'registered_count'=>(int)($tournamentSnapshot['tournament']['registered_count'] ?? 0),
+        'rules'=>isset($tournamentSnapshot['tournament']['rules']) && is_array($tournamentSnapshot['tournament']['rules'])
+            ? [
+                'version'=>(string)($tournamentSnapshot['tournament']['rules']['version'] ?? ''),
+                'language'=>(string)($tournamentSnapshot['tournament']['rules']['language'] ?? ''),
+                'sha256'=>(string)($tournamentSnapshot['tournament']['rules']['sha256'] ?? ''),
+            ]
+            : null,
         'generated_at'=>gmdate(DATE_ATOM),
     ]);
 } catch (Throwable $error) {
