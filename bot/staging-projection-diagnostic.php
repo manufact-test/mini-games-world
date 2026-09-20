@@ -54,7 +54,7 @@ try {
     }
 
     $tournament = $db->fetchAll(
-        "SELECT tournament_id, state, game_type, capacity
+        "SELECT tournament_id, tournament_state, game_type, capacity
          FROM mgw_tournaments
          WHERE active_slot='official'
          ORDER BY created_at_utc DESC
