@@ -32,6 +32,16 @@ try {
     }
     $db = PdoConnectionFactory::create($databaseConfig);
 
+    // Exact staging deploys may introduce additive schema that is required by
+    // the just-deployed runtime. Apply only the repository's managed pending
+    // migrations after GitHub OIDC has authenticated this exact staging push.
+    // This endpoint is staging-only and cannot authorize production migration.
+    $migrationController = new ManagedMigrationController(
+        new MigrationRunner($db, __DIR__ . '/database/migrations'),
+        ManagedMigrationConfig::fromApplicationConfig($config)
+    );
+    $migrationResult = $migrationController->run();
+
     $events = $db->fetchAll(
         'SELECT state_revision, status, attempt_count, last_error, projection_version
          FROM mgw_runtime_primary_projection_outbox
@@ -73,6 +83,11 @@ try {
     json_response([
         'ok'=>true,
         'service'=>'staging-projection-diagnostic',
+        'managed_migrations'=>[
+            'action'=>(string)($migrationResult['action'] ?? ''),
+            'executed_count'=>(int)($migrationResult['executed_count'] ?? 0),
+            'pending_after'=>(int)($migrationResult['after']['pending_count'] ?? -1),
+        ],
         'failures'=>$failures,
         'tournament'=>$tournament[0] ?? null,
         'registered_count'=>$activeRegistrations,
