@@ -218,8 +218,8 @@ $assertTrue(
     'Corrective release must force fresh Tournament schedule CSS.'
 );
 $assertTrue(
-    str_contains($source['admin'], 'admin-tournaments.js?v=4&mvp21_3=schedule-countdown-reminders'),
-    'Tournament Admin must force the fresh MVP-21.3 schedule client.'
+    str_contains($source['admin'], 'admin-tournaments.js?v=5&mvp21_3=manual-acceptance-roster'),
+    'Tournament Admin must force the fresh MVP-21.3 manual-acceptance client.'
 );
 
 foreach ([
@@ -227,6 +227,9 @@ foreach ([
     'data-tournament-start',
     'data-tournament-assign-date',
     'перенос и задержка не входят в MVP-21.3',
+    'data-tournament-manual-panel',
+    'data-tournament-prepare-manual',
+    'Последнее место всегда остаётся живому аккаунту',
 ] as $needle) {
     $assertTrue(str_contains($source['admin'], $needle), 'Tournament Admin schedule UI missing: ' . $needle);
 }
@@ -235,6 +238,9 @@ foreach ([
     "action:'assign_date'",
     'start.toISOString()',
     'напоминания за день, час и 15 минут',
+    "action:'prepare_manual_acceptance'",
+    "manualReason === 'manual_last_seat_ready'",
+    'Осталось одно живое место',
 ] as $needle) {
     $assertTrue(str_contains($source['admin_js'], $needle), 'Tournament Admin schedule client missing: ' . $needle);
 }
@@ -253,7 +259,7 @@ $assertTrue(
     'Tournament schedule/countdown styling must be present.'
 );
 
-if ($assertions < 55) {
+if ($assertions < 61) {
     throw new RuntimeException('MVP-21.1 manual acceptance contract coverage is incomplete.');
 }
 fwrite(STDOUT, "Mvp21_1TournamentManualAcceptanceContractTest: {$assertions} assertions passed\n");

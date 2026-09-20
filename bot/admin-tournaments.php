@@ -9,6 +9,7 @@ header('Referrer-Policy: no-referrer');
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/helpers/AdminWebAuth.php';
 require_once __DIR__ . '/tournaments/TournamentParticipantNotificationBridge.php';
+require_once __DIR__ . '/tournaments/StagingTournamentManualAcceptanceService.php';
 
 try {
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
@@ -35,6 +36,7 @@ try {
     $ledger = new LedgerWriteService($database);
     $service = new TournamentRegistrationService($database, $ledger);
     $catalog = new GameCatalogService($config);
+    $manualAcceptance = new StagingTournamentManualAcceptanceService($config, $database, $ledger, $service);
     $actorRef = 'telegram:' . $telegramId;
     $action = strtolower(trim((string)($payload['action'] ?? 'snapshot')));
 
@@ -68,6 +70,13 @@ try {
             ),
             'games'=>$catalog->publicCatalog(),
         ];
+    } elseif ($action === 'prepare_manual_acceptance') {
+        $fixture = $manualAcceptance->fillToOneManualSeat($_SERVER);
+        $result = [
+            'snapshot'=>$fixture['snapshot'],
+            'games'=>$catalog->publicCatalog(),
+            'manual_acceptance_fixture'=>$fixture,
+        ];
     } else {
         json_response(['ok'=>false,'error'=>'Неизвестное действие Tournament Admin.'], 422);
     }
@@ -100,10 +109,13 @@ try {
         }
     }
 
+    $manualAvailability = $manualAcceptance->availability($_SERVER);
+
     json_response([
         'ok'=>true,
         'generated_at'=>gmdate(DATE_ATOM),
         'notifications'=>$notifications,
+        'manual_acceptance'=>$manualAvailability,
     ] + $result);
 } catch (AdminWebAuthException $error) {
     json_response(['ok'=>false,'error'=>$error->publicMessage()], $error->httpStatus());
