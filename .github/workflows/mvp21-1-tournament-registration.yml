@@ -7,7 +7,10 @@ on:
     paths:
       - 'bot/database/migrations/20260920_0049_create_official_tournaments.php'
       - 'bot/tournaments/TournamentRegistrationService.php'
-      - 'bot/tournaments.php'
+      - 'bot/api.php'
+      - 'bot/economy/UnifiedEconomyRuntimeSyncService.php'
+      - 'bot/ledger/RuntimeEconomyRepository.php'
+      - 'bot/services/UserService.php'
       - 'bot/admin-tournaments.php'
       - 'bot/core/bootstrap.php'
       - 'app/assets/js/api/client.js'
@@ -20,6 +23,7 @@ on:
       - 'app/assets/css/admin-shell.css'
       - 'bot/tests/Mvp21_1TournamentRegistrationTest.php'
       - 'bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php'
+      - 'bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php'
       - '.github/workflows/mvp21-1-tournament-registration.yml'
   workflow_dispatch:
 
@@ -59,13 +63,17 @@ jobs:
           files=(
             bot/database/migrations/20260920_0049_create_official_tournaments.php
             bot/tournaments/TournamentRegistrationService.php
-            bot/tournaments.php
+            bot/api.php
+            bot/economy/UnifiedEconomyRuntimeSyncService.php
+            bot/ledger/RuntimeEconomyRepository.php
+            bot/services/UserService.php
             bot/admin-tournaments.php
             bot/core/bootstrap.php
             app/v110.php
             app/admin.php
             bot/tests/Mvp21_1TournamentRegistrationTest.php
             bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
+            bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
           node --check app/assets/js/api/client.js
@@ -77,6 +85,9 @@ jobs:
 
       - name: Run MVP-21.1 integration and ownership contract
         run: php bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
+
+      - name: Run MVP-21.1 runtime reservation compatibility
+        run: php bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php
 
       - name: Preserve MVP-20 rating and season stack
         run: |
@@ -110,7 +121,10 @@ jobs:
               .github/workflows/mvp21-1-tournament-registration.yml|\
               bot/database/migrations/20260920_0049_create_official_tournaments.php|\
               bot/tournaments/TournamentRegistrationService.php|\
-              bot/tournaments.php|\
+              bot/api.php|\
+              bot/economy/UnifiedEconomyRuntimeSyncService.php|\
+              bot/ledger/RuntimeEconomyRepository.php|\
+              bot/services/UserService.php|\
               bot/admin-tournaments.php|\
               bot/core/bootstrap.php|\
               app/assets/js/api/client.js|\
@@ -122,7 +136,8 @@ jobs:
               app/assets/js/admin-tournaments.js|\
               app/assets/css/admin-shell.css|\
               bot/tests/Mvp21_1TournamentRegistrationTest.php|\
-              bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php)
+              bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php|\
+              bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php)
                 ;;
               *)
                 echo "Unexpected MVP-21.1 path: $path" >&2
@@ -134,5 +149,5 @@ jobs:
 
           git diff --exit-code "$base" "$head" -- \
             bot/games app/assets/js/games app/assets/css/games \
-            bot/economy bot/ledger bot/shop \
+            bot/shop bot/ledger/LedgerWriteService.php \
             bot/runtime/ProductionPrimaryApplicationEntrypoints.php
