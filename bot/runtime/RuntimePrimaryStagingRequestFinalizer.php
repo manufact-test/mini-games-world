@@ -70,16 +70,29 @@ final class RuntimePrimaryStagingRequestFinalizer
 
             if (($tick['ok'] ?? false) === true
                 && ($tick['claimed'] ?? false) !== true
-                && in_array($action, ['projection_busy', 'projection_noop'], true)) {
-                // Concurrent API requests may legitimately race on the same
-                // projection revision. One request owns the lease while the
-                // other must wait for that exact revision to become completed
-                // instead of turning an otherwise healthy API response into a
-                // transient 5xx.
-                $event = $this->waitForConcurrentCompletion(
-                    $currentRevision,
-                    $currentSha
-                );
+                && $action === 'projection_busy') {
+                // Another request owns the oldest outstanding projection. Wait
+                // for the revision reported by the worker (which may be older
+                // than this request's own revision), then continue draining the
+                // queue until this request's exact revision is completed.
+                $busyRevision = (int)($tick['state_revision'] ?? 0);
+                if ($busyRevision < 1 || $busyRevision > $currentRevision) {
+                    throw new RuntimeException('Concurrent projection reported an unexpected revision.');
+                }
+                $busyEvent = $this->waitForConcurrentCompletion($busyRevision);
+                if (($busyEvent['status'] ?? '') === 'completed') {
+                    $event = $this->eventForRevision($currentRevision);
+                    continue;
+                }
+            }
+
+            if (($tick['ok'] ?? false) === true
+                && ($tick['claimed'] ?? false) !== true
+                && $action === 'projection_noop') {
+                // A concurrent worker may have completed the queue between our
+                // pre-check and claim attempt. Re-read the exact current event
+                // before deciding that no progress was made.
+                $event = $this->eventForRevision($currentRevision);
                 if (($event['status'] ?? '') === 'completed') {
                     continue;
                 }
@@ -162,12 +175,11 @@ final class RuntimePrimaryStagingRequestFinalizer
         ];
     }
 
-    private function waitForConcurrentCompletion(
-        int $revision,
-        string $stateSha
-    ): array {
+    private function waitForConcurrentCompletion(int $revision): array
+    {
         $attempts = 0;
         $event = $this->eventForRevision($revision);
+        $expectedSha = strtolower(trim((string)($event['state_sha256'] ?? '')));
         while (($event['status'] ?? '') !== 'completed' && $attempts < 20) {
             if (($event['status'] ?? '') === 'failed') {
                 break;
@@ -178,7 +190,7 @@ final class RuntimePrimaryStagingRequestFinalizer
         }
 
         if (($event['status'] ?? '') === 'completed') {
-            $this->assertCompletedEvent($event, $revision, $stateSha);
+            $this->assertCompletedEvent($event, $revision, $expectedSha);
         }
         return $event;
     }
