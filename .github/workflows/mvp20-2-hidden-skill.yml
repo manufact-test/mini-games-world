@@ -119,6 +119,7 @@ jobs:
               bot/ratings/YearlyMedalService.php|\
               bot/tests/Mvp20_6YearlyMedalTest.php|\
               bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
               bot/profile-v2.php|\
               app/assets/js/screens/profile-screen-v110.js|\
               app/assets/css/main.css|\
