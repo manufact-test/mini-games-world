@@ -241,29 +241,33 @@ async function mutateTournament(action){
     const responseSnapshot = result?.snapshot && typeof result.snapshot === 'object'
       ? result.snapshot
       : {};
-    tournamentSnapshot = responseSnapshot;
+    const responseUser = result?.user && typeof result.user === 'object'
+      ? result.user
+      : null;
 
-    if (result?.user && typeof result.user === 'object') {
-      state.user = result.user;
-      renderBalances(state.user);
-    }
-
-    // Paint the committed write response immediately. The fresh status read stays
-    // authoritative, but no longer leaves the button looking frozen while it runs.
+    // Keep the visible tournament state and header balance unchanged until the
+    // authoritative follow-up read confirms the write. The user sees only a
+    // pending spinner during this window, then the seat + balance switch together.
     tournamentPendingAction = 'verify';
     renderTournamentSnapshot();
 
     const verified = await api.tournamentStatus();
-    tournamentSnapshot = verified?.snapshot && typeof verified.snapshot === 'object'
+    const verifiedSnapshot = verified?.snapshot && typeof verified.snapshot === 'object'
       ? verified.snapshot
       : responseSnapshot;
 
-    const registrationState = String(tournamentSnapshot?.registration?.state || '');
+    const registrationState = String(verifiedSnapshot?.registration?.state || '');
     if (action === 'register' && registrationState !== 'registered') {
       throw new Error('Регистрация не сохранилась. Попробуйте ещё раз.');
     }
     if (action === 'leave' && registrationState === 'registered') {
       throw new Error('Отмена регистрации не сохранилась. Попробуйте ещё раз.');
+    }
+
+    tournamentSnapshot = verifiedSnapshot;
+    if (responseUser) {
+      state.user = responseUser;
+      renderBalances(state.user);
     }
   } catch (error) {
     errorMessage = humanizeTournamentError(error?.message || 'Не удалось изменить регистрацию.');
