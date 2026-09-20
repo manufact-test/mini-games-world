@@ -728,8 +728,9 @@
   gap:7px;
   overflow-x:auto;
   overflow-y:hidden;
-  padding:1px 34px 4px 0;
+  padding:1px 0 4px 0;
   box-sizing:border-box;
+  scroll-padding-inline:34px;
   scrollbar-width:none;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior-x:contain;
@@ -935,7 +936,7 @@
     width:26px;
   }
   #screen-tournaments .tournaments-v2-tabs{
-    padding-right:32px;
+    scroll-padding-inline:32px;
   }
   #screen-tournaments .tournaments-v2-row{
     grid-template-columns:24px 34px minmax(0,1fr) auto;
