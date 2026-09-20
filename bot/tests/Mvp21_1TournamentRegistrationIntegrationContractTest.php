@@ -73,8 +73,11 @@ $assertTrue(str_contains($sources['player_api'], '$auth->getUserFromRequest($pay
 $assertTrue(str_contains($sources['player_api'], "case 'tournament_register':"), 'Canonical API must expose tournament register.');
 $assertTrue(str_contains($sources['player_api'], "case 'tournament_leave':"), 'Canonical API must expose tournament leave.');
 $assertTrue(str_contains($sources['player_api'], "['mgw_account_ref']"), 'Tournament runtime must use attached canonical account_ref.');
-$assertTrue(str_contains($sources['player_api'], '$runtimeStorageDriver !== \'database\''), 'Tournament writes must fail closed outside DB-primary runtime state.');
-$assertTrue(str_contains($sources['player_api'], '$user[UnifiedBalanceRuntimeState::FIELD] = $available'), 'Tournament writes must atomically project spendable balance into runtime state.');
+$assertTrue(!str_contains($sources['player_api'], 'Tournament registration requires canonical DB-primary runtime state.'), 'Tournament registration must remain available during the normal JSON-first runtime.');
+$assertTrue(!str_contains($sources['player_api'], 'Staging tournament balance control requires canonical DB-primary runtime state.'), 'Live staging acceptance must exercise the same JSON-first tournament path as real players.');
+$assertTrue(!str_contains($sources['player_api'], '$runtimeStorageDriver'), 'MVP-21.1 must not depend on the bounded DB-primary rehearsal latch.');
+$assertTrue(str_contains($sources['player_api'], '$user[UnifiedBalanceRuntimeState::FIELD] = $available'), 'Tournament writes must mirror canonical spendable balance into current runtime state.');
+$assertTrue(str_contains($sources['player_api'], 'EconomyRuntimeBridge then verifies'), 'Tournament API must document post-write JSON/ledger parity ownership.');
 $assertTrue(str_contains($sources['player_api'], 'new TournamentRegistrationService('), 'Canonical API must delegate registration ownership to TournamentRegistrationService.');
 $assertTrue(str_contains($sources['player_api'], "case 'staging_test_tournament_balance':"), 'Live staging acceptance must have a bounded test-balance action.');
 $assertTrue(str_contains($sources['player_api'], "['stg_test_player_a', 'stg_test_player_b']"), 'Test-balance action must be restricted to dedicated A/B identities.');
@@ -96,6 +99,8 @@ foreach (["action === 'snapshot'","action === 'create_draft'","action === 'open_
 }
 
 $assertTrue(str_contains($sources['bootstrap'], "tournaments/TournamentRegistrationService.php"), 'Runtime bootstrap must load tournament registration service.');
+$assertTrue(str_contains($sources['bootstrap'], 'new EconomyRuntimeBridge($config, $runtimeStorageRouter)'), 'Normal API runtime must retain the canonical JSON-to-ledger economy bridge.');
+$assertTrue(str_contains($sources['bootstrap'], '$runtimeEconomyBridge->synchronizeCurrentJson();'), 'Successful JSON-first API writes must retain economy parity synchronization.');
 $assertTrue(str_contains($sources['ledger'], 'public function createReservation'), 'Canonical ledger reservation owner must remain present.');
 $assertTrue(str_contains($sources['ledger'], 'public function releaseReservation'), 'Canonical ledger release owner must remain present.');
 
@@ -139,5 +144,5 @@ foreach ([
     $assertTrue(!str_contains($sources['service'], $forbiddenOwner), 'Tournament service must not become a game-engine owner: ' . $forbiddenOwner);
 }
 
-$assertTrue($assertions >= 74, 'MVP-21.1 integration contract must cover ownership, ledger, runtime reservation compatibility, UI, live staging acceptance and concurrency boundaries.');
+$assertTrue($assertions >= 79, 'MVP-21.1 integration contract must cover ownership, ledger, JSON-first runtime reservation compatibility, UI, live staging acceptance and concurrency boundaries.');
 fwrite(STDOUT, "Mvp21_1TournamentRegistrationIntegrationContractTest: {$assertions} assertions passed\n");
