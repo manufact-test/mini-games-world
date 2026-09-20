@@ -76,7 +76,7 @@ foreach ([
     'В турнире участвуют ',
     'Регистрация закроется, когда все места будут заняты.',
     'tournaments-v2-tournament-participants',
-    'state.user = result.user;',
+    'state.user = responseUser;',
     'renderBalances(state.user);',
 ] as $needle) {
     $assertTrue(str_contains($source['screen'], $needle), 'Player Tournament corrective missing: ' . $needle);
