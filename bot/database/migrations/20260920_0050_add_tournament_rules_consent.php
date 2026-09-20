@@ -95,11 +95,32 @@ SQL);
                     'rules_version'=>self::RULES_VERSION,
                     'rules_language'=>self::RULES_LANGUAGE,
                     'rules_snapshot_json'=>$json,
-                    'rules_sha256'=>hash('sha256', $json),
+                    'rules_sha256'=>$this->rulesSha256FromJson($json),
                     'tournament_id'=>(string)$row['tournament_id'],
                 ]
             );
         }
+    }
+
+    private function rulesSha256FromJson(string $json): string
+    {
+        $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        $canonical = $this->canonicalizeJsonValue($decoded);
+        $encoded = json_encode(
+            $canonical,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+        );
+        return hash('sha256', $encoded);
+    }
+
+    private function canonicalizeJsonValue(mixed $value): mixed
+    {
+        if (!is_array($value)) return $value;
+        if (!array_is_list($value)) ksort($value, SORT_STRING);
+        foreach ($value as $key=>$item) {
+            $value[$key] = $this->canonicalizeJsonValue($item);
+        }
+        return $value;
     }
 
     private function rulesSnapshot(string $gameType, int $capacity): array
