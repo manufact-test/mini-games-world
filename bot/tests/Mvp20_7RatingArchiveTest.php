@@ -33,6 +33,24 @@ $db = new PdoDatabaseConnection($pdo);
 
 $db->execute('CREATE TABLE mgw_users (mgw_id TEXT PRIMARY KEY, status TEXT NOT NULL, nickname TEXT NOT NULL, equipped_avatar_item_id TEXT NULL)');
 $db->execute('CREATE TABLE mgw_identities (identity_id INTEGER PRIMARY KEY AUTOINCREMENT, mgw_id TEXT NOT NULL, provider TEXT NOT NULL, provider_subject TEXT NOT NULL)');
+$db->execute('CREATE TABLE mgw_matches (
+    match_id TEXT NOT NULL PRIMARY KEY,
+    game_type TEXT NOT NULL,
+    status TEXT NOT NULL,
+    match_source TEXT NULL,
+    winner_player_ref TEXT NULL,
+    finish_reason TEXT NULL,
+    started_at_utc TEXT NULL,
+    finished_at_utc TEXT NULL
+)');
+$db->execute('CREATE TABLE mgw_match_players (
+    match_id TEXT NOT NULL,
+    seat INTEGER NOT NULL,
+    player_ref TEXT NOT NULL,
+    mgw_id TEXT NULL,
+    player_type TEXT NOT NULL,
+    PRIMARY KEY (match_id, seat)
+)');
 
 (require $databaseDir . '/migrations/20260919_0042_create_per_game_visible_rating.php')->up($db);
 (require $databaseDir . '/migrations/20260919_0044_create_leaderboards_and_antifarming.php')->up($db);
