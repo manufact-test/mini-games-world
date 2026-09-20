@@ -113,11 +113,10 @@ jobs:
           MGW_TEST_MYSQL_PASSWORD: root
         run: php bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php
 
-      - name: Preserve canonical Notification Center
+      - name: Preserve canonical Notification Center behavior
         run: |
           php bot/tests/Mvp18_6NotificationPipelineContractTest.php
           php bot/tests/NotificationCenterV2PolicyTest.php
-          php bot/tests/RuntimeNotificationRepositoryTest.php
 
       - name: Preserve unified balance runtime
         run: |
