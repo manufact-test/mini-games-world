@@ -15,13 +15,10 @@ const DRAFT_WARM_DELAY_MS = 60;
 let initialized = false;
 let networkFetch = null;
 let historySnapshot = null;
-let notificationsSnapshot = null;
 let opponentsCache = null;
 let historyRefreshPromise = null;
-let notificationsRefreshPromise = null;
 let opponentsRefreshPromise = null;
 let lastHistoryRefreshAt = 0;
-let lastNotificationsRefreshAt = 0;
 let lastOpponentsRefreshAt = 0;
 let draftWarmTimer = null;
 let draftSerial = Promise.resolve();
@@ -46,14 +43,9 @@ export function initFirstInteractionReadinessEarly(){
     refreshHistorySnapshot(true);
   });
 
-  document.addEventListener('mgw:notifications-refresh', () => {
-    refreshNotificationsSnapshot(false, true);
-  });
-
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
     refreshHistorySnapshot(false);
-    refreshNotificationsSnapshot(false, false);
     refreshOpponentsNetwork(false);
   });
 }
@@ -93,9 +85,9 @@ async function warmHistorySnapshot(){
 }
 
 async function warmNotificationsSnapshot(){
-  const result = await api.notifications(false);
-  notificationsSnapshot = result;
-  return result;
+  // Notifications are warmed for readiness only. The canonical notifications
+  // screen is the sole owner of bell clicks, mark-read requests and sheet HTML.
+  return api.notifications(false);
 }
 
 async function warmShopOrders(){
@@ -124,16 +116,6 @@ function handleEarlyClick(event){
   if (!(origin instanceof Element)) return;
   const target = origin.closest('button, [role="button"]');
   if (!target) return;
-
-  if (target.id === 'notificationsOpen' && notificationsSnapshot) {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    haptic('light');
-    renderNotificationsSheet(notificationsSnapshot.items || []);
-    setUnreadCount(0);
-    refreshNotificationsSnapshot(true, true);
-    return;
-  }
 
   if (target.id === 'balanceHistoryBtn' && historySnapshot) {
     event.preventDefault();
@@ -312,29 +294,6 @@ function refreshHistorySnapshot(force = false){
   return historyRefreshPromise;
 }
 
-function refreshNotificationsSnapshot(markRead, force = false){
-  const now = Date.now();
-  if (notificationsRefreshPromise) return notificationsRefreshPromise;
-  if (!force && now - lastNotificationsRefreshAt < SNAPSHOT_REFRESH_GAP_MS) {
-    return Promise.resolve(notificationsSnapshot);
-  }
-
-  lastNotificationsRefreshAt = now;
-  notificationsRefreshPromise = api.notifications(Boolean(markRead))
-    .then(result => {
-      notificationsSnapshot = result;
-      if (sheetTitle() === 'Уведомления') {
-        renderNotificationsSheet(result.items || []);
-      }
-      if (markRead) setUnreadCount(0);
-      return result;
-    })
-    .catch(() => notificationsSnapshot)
-    .finally(() => { notificationsRefreshPromise = null; });
-
-  return notificationsRefreshPromise;
-}
-
 function refreshOpponentsNetwork(force = false){
   const now = Date.now();
   if (opponentsRefreshPromise) return opponentsRefreshPromise;
@@ -434,43 +393,6 @@ function renderMatchHistorySheet(matches = []){
   `);
 }
 
-function renderNotificationsSheet(items = []){
-  const body = items.length
-    ? `<div class="notifications-list">${items.map(renderNotification).join('')}</div>`
-    : '<div class="notifications-empty"><div>🔔</div><strong>Пока уведомлений нет</strong></div>';
-
-  openSheet(`
-    <div class="sheet-head"><div><h2>Уведомления</h2></div><button class="close" data-close-sheet type="button">×</button></div>
-    ${body}
-  `);
-}
-
-function renderNotification(item){
-  const tone = ['success', 'danger', 'info', 'warning'].includes(String(item?.tone || ''))
-    ? String(item.tone)
-    : 'info';
-  const message = notificationMessage(item);
-  const token = String(item?.invite_token || '');
-  const actions = Array.isArray(item?.actions) ? item.actions : [];
-  const actionHtml = token && actions.length
-    ? `<div class="notification-actions invite-actions">${actions.map(action => {
-      const primary = action === 'accept' || action === 'start';
-      return `<button class="btn ${primary ? 'primary' : 'ghost'} full" data-invite-action="${escapeHtml(action)}" data-invite-token="${escapeHtml(token)}" type="button">${escapeHtml(actionLabel(action))}</button>`;
-    }).join('')}</div>`
-    : '';
-
-  return `
-    <article class="notification-card ${tone}">
-      <div class="notification-icon">${notificationIcon(tone, item?.type)}</div>
-      <div class="notification-copy">
-        <div class="notification-head"><strong>${escapeHtml(item?.title || 'Уведомление')}</strong><span>${escapeHtml(formatDate(item?.created_at))}</span></div>
-        ${message ? `<p>${escapeHtml(message)}</p>` : ''}
-        ${actionHtml}
-      </div>
-    </article>
-  `;
-}
-
 function bindHistoryTabs(){
   const tabs = document.querySelectorAll('[data-v92-history-tab]');
   const panels = document.querySelectorAll('[data-v92-history-panel]');
@@ -543,50 +465,12 @@ function jsonResponse(data){
   });
 }
 
-function notificationMessage(item){
-  let message = String(item?.message || '').trim();
-  const patterns = [
-    /\s*Баланс уже обновлён\.?/giu,
-    /\s*Баланс не изменён\.?/giu,
-    /\s*Баланс:\s*-?[\d\s]+\s*→\s*-?[\d\s]+\.?/giu,
-    /\s*Статус (?:уже )?обновлён[^.]*\.?/giu,
-    /\s*Откройте Mini App[^.]*\.?/giu,
-  ];
-  patterns.forEach(pattern => { message = message.replace(pattern, ' '); });
-  return message.replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').trim();
-}
-
-function notificationIcon(tone, type = ''){
-  if (String(type).startsWith('invite_')) return '🎮';
-  if (tone === 'success') return '✓';
-  if (tone === 'danger' || tone === 'warning') return '!';
-  return 'i';
-}
-
-function actionLabel(action){
-  return {
-    accept:'Принять приглашение',
-    decline:'Отклонить',
-    start:'Начать игру',
-    cancel:'Отменить',
-  }[String(action || '')] || 'Открыть';
-}
-
 function topupStatusText(status){
   if (status === 'paid') return 'Пополнение начислено';
   if (status === 'rejected') return 'Заявка отклонена';
   if (status === 'cancelled') return 'Заявка отменена';
   if (status === 'pending') return 'Ожидает оплаты';
   return 'Заявка на пополнение';
-}
-
-function setUnreadCount(count){
-  const button = document.getElementById('notificationsOpen');
-  if (!button) return;
-  const safe = Math.max(0, Math.trunc(Number(count || 0)));
-  button.dataset.unread = safe > 99 ? '99+' : String(safe);
-  button.classList.toggle('has-unread', safe > 0);
-  button.setAttribute('aria-label', safe > 0 ? `Уведомления: ${safe} новых` : 'Уведомления');
 }
 
 function sheetTitle(){

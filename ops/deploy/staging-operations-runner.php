@@ -10,6 +10,7 @@ if (PHP_SAPI !== 'cli') {
 
 $projectRoot = dirname(__DIR__, 2);
 require $projectRoot . '/bot/core/bootstrap.php';
+require_once $projectRoot . '/bot/helpers/StagingCronHeartbeat.php';
 require_once $projectRoot . '/bot/storage/RuntimeModuleActivationController.php';
 require_once $projectRoot . '/bot/cutover/FreezeDrainRehearsalService.php';
 require_once $projectRoot . '/bot/cutover/seal/SealedSnapshotControlService.php';
@@ -43,6 +44,51 @@ $print = static function (array $result, int $code = 0): void {
         $result,
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR
     ) . PHP_EOL);
+};
+$runWeeklyMatchCron = static function (
+    array $config,
+    StorageAdapterInterface $storage,
+    mixed $runtimeWeeklyBonusBridge
+): array {
+    $service = new WeeklyMatchEconomyService($config, new NotificationService());
+    $weeklyMatch = $storage->transaction(
+        static fn(array &$data): array => $service->runDue($data)
+    );
+
+    $runtimeSync = null;
+    if (RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()
+        && $runtimeWeeklyBonusBridge instanceof WeeklyBonusRuntimeBridge
+        && $runtimeWeeklyBonusBridge->enabled()) {
+        $sync = $runtimeWeeklyBonusBridge->synchronizeCurrentJson();
+        if (!is_array($sync) || empty($sync['ok'])) {
+            throw new RuntimeException('Weekly Match runtime synchronization failed.');
+        }
+        $runtimeSync = [
+            'ok' => true,
+            'weekly_user_count' => (int)($sync['weekly_states']['source_user_count'] ?? 0),
+            'weekly_mismatch_count' => (int)($sync['audit']['mismatch_count'] ?? 0),
+            'economy_planned_delta_count' => (int)($sync['economy']['planned_delta_count'] ?? 0),
+        ];
+        if ($runtimeSync['weekly_mismatch_count'] !== 0) {
+            throw new RuntimeException('Weekly Match runtime synchronization reported parity mismatches.');
+        }
+    }
+
+    if (!StagingCronHeartbeat::recordSuccessfulRun($config, true)) {
+        throw new RuntimeException('Unable to record the staging weekly Match heartbeat.');
+    }
+
+    return [
+        'ok' => true,
+        'started' => !empty($weeklyMatch['started']),
+        'cycle_key' => $weeklyMatch['cycle_key'] ?? null,
+        'checked' => max(0, (int)($weeklyMatch['checked'] ?? 0)),
+        'awarded' => max(0, (int)($weeklyMatch['awarded'] ?? 0)),
+        'runtime_sync' => $runtimeSync,
+        'heartbeat_written' => true,
+        'production_changed' => false,
+        'sensitive_identifiers_exposed' => false,
+    ];
 };
 
 try {
@@ -146,6 +192,14 @@ try {
             $result['schema_current'] = true;
             $result['applied_migrations'] = (int)($migrationStatus['applied_count'] ?? 0);
             $result['state_file_private'] = true;
+
+            if ($executionMode === 'run' && ($result['ok'] ?? false) === true) {
+                $result['weekly_match_cron'] = $runWeeklyMatchCron(
+                    $config,
+                    $storage,
+                    $runtimeWeeklyBonusBridge ?? null
+                );
+            }
 
             $print($result, (($result['ok'] ?? false) === true || $executionMode === 'status') ? 0 : 2);
             if (($result['ok'] ?? false) !== true && $executionMode === 'run') $exitCode = 2;
