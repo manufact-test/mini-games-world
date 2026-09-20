@@ -204,3 +204,121 @@ test('MVP-21.1 LIVE TOURNAMENT: real API reserves and releases 50,000', async ({
     await player.context.close();
   }
 });
+
+
+test('MVP-21.2 UI BALANCE FREEZE: visible coins change only after verification spinner ends', async ({ browser }) => {
+  await resetPlayers();
+  const player = await openPlayer(browser);
+  const setupToken = `ui-freeze-setup-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const restoreToken = `ui-freeze-restore-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  let registered = false;
+
+  const setVisibleBalance = async value => {
+    await player.page.evaluate(next => {
+      for (const id of ['balanceUnified', 'topbarBalanceUnified']) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = String(next);
+      }
+    }, value);
+  };
+
+  const visibleBalance = async id => String(await player.page.locator(`#${id}`).textContent() || '').trim();
+
+  try {
+    const setup = await post(player.page, '/bot/api.php', {
+      action:'staging_test_tournament_balance',
+      targetBalance:100000,
+      requestToken:setupToken,
+    });
+    expect(setup.status, `UI freeze balance setup: ${describeFailure(setup)}`).toBe(200);
+    expect(setup.payload?.ok).toBe(true);
+
+    const before = await post(player.page, '/bot/tournament-status.php', {});
+    expect(before.status, `UI freeze tournament status: ${describeFailure(before)}`).toBe(200);
+    const tournament = before.payload?.snapshot?.tournament || null;
+    if (!tournament || tournament.state !== 'registration_open' || tournament.is_full === true) {
+      test.skip(true, 'No open official tournament with a free seat is available on staging.');
+    }
+    if (Number(tournament.remaining_count || 0) <= 1) {
+      test.skip(true, 'UI balance freeze requires at least two free seats so it does not auto-close the staging tournament.');
+    }
+
+    if (String(before.payload?.snapshot?.registration?.state || '') === 'registered') {
+      const cleanup = await post(player.page, '/bot/api.php', { action:'tournament_leave' });
+      expect(cleanup.status, `UI freeze pre-cleanup leave: ${describeFailure(cleanup)}`).toBe(200);
+    }
+
+    await setVisibleBalance(100000);
+    await player.page.locator('[data-shell-nav="tournaments"]').click();
+    await expect(player.page.locator('#screen-tournaments')).toHaveClass(/active/, { timeout:20_000 });
+    await player.page.locator('[data-competition-mode="tournaments"]').click();
+
+    const action = player.page.locator('[data-tournament-action="register"]');
+    await expect(action).toBeVisible({ timeout:20_000 });
+    const consent = player.page.locator('[data-tournament-rules-consent]');
+    await expect(consent).toBeVisible();
+    await consent.check();
+
+    let releaseVerification = null;
+    let verificationGate = null;
+    await player.page.route('**/bot/tournament-status.php', async route => {
+      if (verificationGate) await verificationGate;
+      await route.continue();
+    });
+
+    verificationGate = new Promise(resolve => { releaseVerification = resolve; });
+    player.page.once('dialog', dialog => dialog.accept());
+    await action.click();
+    await expect(action).toHaveAttribute('aria-busy', 'true');
+    await expect(action).toContainText('Проверяем', { timeout:20_000 });
+
+    // Simulate any unrelated runtime owner learning the already-committed server
+    // balance while the tournament verification is still pending. The visible
+    // header must remain frozen until the spinner is gone.
+    await setVisibleBalance(50000);
+    await player.page.waitForTimeout(100);
+    expect(await visibleBalance('balanceUnified')).toBe('100000');
+    expect(await visibleBalance('topbarBalanceUnified')).toBe('100000');
+
+    releaseVerification?.();
+    verificationGate = null;
+    registered = true;
+    const leaveAction = player.page.locator('[data-tournament-action="leave"]');
+    await expect(leaveAction).toBeVisible({ timeout:20_000 });
+    await expect(player.page.locator('#balanceUnified')).toHaveText('50000', { timeout:10_000 });
+    await expect(player.page.locator('#topbarBalanceUnified')).toHaveText('50000', { timeout:10_000 });
+
+    verificationGate = new Promise(resolve => { releaseVerification = resolve; });
+    player.page.once('dialog', dialog => dialog.accept());
+    await leaveAction.click();
+    await expect(leaveAction).toHaveAttribute('aria-busy', 'true');
+    await expect(leaveAction).toContainText('Проверяем', { timeout:20_000 });
+
+    await setVisibleBalance(100000);
+    await player.page.waitForTimeout(100);
+    expect(await visibleBalance('balanceUnified')).toBe('50000');
+    expect(await visibleBalance('topbarBalanceUnified')).toBe('50000');
+
+    releaseVerification?.();
+    verificationGate = null;
+    registered = false;
+    await expect(player.page.locator('[data-tournament-action="register"]')).toBeVisible({ timeout:20_000 });
+    await expect(player.page.locator('#balanceUnified')).toHaveText('100000', { timeout:10_000 });
+    await expect(player.page.locator('#topbarBalanceUnified')).toHaveText('100000', { timeout:10_000 });
+
+    console.log('[MGW_TOURNAMENT_VISIBLE_BALANCE_FREEZE]', JSON.stringify({ register:'held_until_verified', leave:'held_until_verified' }));
+  } finally {
+    releaseVerification?.();
+    if (registered) {
+      const cleanupLeave = await post(player.page, '/bot/api.php', { action:'tournament_leave' }).catch(() => null);
+      console.log('[MGW_TOURNAMENT_UI_FREEZE_CLEANUP_LEAVE]', cleanupLeave ? describeFailure(cleanupLeave) : 'transport_failure');
+    }
+    const restore = await post(player.page, '/bot/api.php', {
+      action:'staging_test_tournament_balance',
+      targetBalance:100,
+      requestToken:restoreToken,
+    }).catch(() => null);
+    console.log('[MGW_TOURNAMENT_UI_FREEZE_BALANCE_RESTORE]', restore ? describeFailure(restore) : 'transport_failure');
+    await player.context.close();
+  }
+});

@@ -80,6 +80,10 @@ foreach ([
     'В турнире участвуют ',
     'Регистрация закроется, когда все места будут заняты.',
     'tournaments-v2-tournament-participants',
+    'const releaseVisibleBalance = lockVisibleBalance();',
+    'releaseVisibleBalance();',
+    "const ids = ['balanceUnified', 'topbarBalanceUnified'];",
+    'new MutationObserver(restore);',
     'state.user = verifiedUser;',
     'renderBalances(state.user);',
     'data-tournament-rules-consent',
@@ -98,18 +102,21 @@ $verifyPos = strpos($source['screen'], 'const verified = await api.tournamentSta
 $pendingEndPos = strpos($source['screen'], "tournamentBusy = false;\n    tournamentPendingAction = '';", $verifyPos ?: 0);
 $commitSnapshotPos = strpos($source['screen'], 'tournamentSnapshot = verifiedCommit;');
 $finalVerifiedRenderPos = strpos($source['screen'], 'renderTournamentSnapshot(errorMessage);', $commitSnapshotPos ?: 0);
+$balanceReleasePos = strpos($source['screen'], 'releaseVisibleBalance();', $finalVerifiedRenderPos ?: 0);
 $balanceCommitPos = strpos($source['screen'], 'state.user = verifiedUser;');
 $assertTrue(
     $verifyPos !== false
     && $pendingEndPos !== false
     && $commitSnapshotPos !== false
     && $finalVerifiedRenderPos !== false
+    && $balanceReleasePos !== false
     && $balanceCommitPos !== false
     && $verifyPos < $pendingEndPos
     && $pendingEndPos < $commitSnapshotPos
     && $commitSnapshotPos < $finalVerifiedRenderPos
-    && $finalVerifiedRenderPos < $balanceCommitPos,
-    'Tournament pending spinner must end before verified seat state and visible header balance are published.'
+    && $finalVerifiedRenderPos < $balanceReleasePos
+    && $balanceReleasePos < $balanceCommitPos,
+    'Tournament pending spinner must end before the visible balance freeze is released and the verified balance is painted.'
 );
 $assertTrue(
     !str_contains(
@@ -198,8 +205,9 @@ $assertTrue(
     'Corrective release must force a fresh API client module.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=13')
-    && str_contains($source['manifest'], 'mvp21_2=tournament-rules-copy-v2'),
+    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=14')
+    && str_contains($source['manifest'], 'mvp21_2=tournament-rules-copy-v2')
+    && str_contains($source['manifest'], 'balance=visible-freeze-v2'),
     'Corrective release must force a fresh Tournament screen module.'
 );
 $assertTrue(
