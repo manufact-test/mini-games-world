@@ -1732,3 +1732,59 @@
     animation:none!important;
   }
 }
+
+
+/* MVP-21.3 official tournament final schedule */
+.tournaments-v2-tournament-schedule{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin:14px 0;
+  padding:14px 16px;
+  border:1px solid rgba(117,91,255,.34);
+  border-radius:16px;
+  background:linear-gradient(135deg,rgba(117,91,255,.12),rgba(255,255,255,.025));
+}
+.tournaments-v2-tournament-schedule>span{
+  color:rgba(255,255,255,.68);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.tournaments-v2-tournament-schedule>strong{
+  flex:1;
+  color:#fff;
+  font-size:15px;
+  line-height:1.35;
+}
+.tournaments-v2-tournament-countdown{
+  min-width:132px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:2px;
+}
+.tournaments-v2-tournament-countdown small{
+  color:rgba(255,255,255,.6);
+  font-size:11px;
+}
+.tournaments-v2-tournament-countdown b{
+  color:#ded6ff;
+  font-size:15px;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+@media (max-width:640px){
+  .tournaments-v2-tournament-schedule{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .tournaments-v2-tournament-countdown{
+    width:100%;
+    align-items:flex-start;
+    padding-top:8px;
+    border-top:1px solid rgba(255,255,255,.08);
+  }
+}
