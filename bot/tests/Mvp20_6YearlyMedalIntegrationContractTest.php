@@ -44,8 +44,8 @@ $assertTrue(!str_contains($medal, 'CosmeticStoreService'), 'Yearly fragments mus
 $assertTrue(!str_contains(strtolower($medal), 'buy'), 'There must be no medal-fragment purchase path.');
 
 $readinessPos = strpos($lifecycle, '$medalReadiness = $medalService->boundaryReadiness');
-$seasonalAwardPos = strpos($lifecycle, "new SeasonalAwardService($database)");
-$fragmentPos = strpos($lifecycle, "new YearlyMedalService($database))->reconcileSeasonFragment");
+$seasonalAwardPos = strpos($lifecycle, 'new SeasonalAwardService($database)');
+$fragmentPos = strpos($lifecycle, 'new YearlyMedalService($database))->reconcileSeasonFragment');
 $closePos = strpos($lifecycle, "'state' => self::SEASON_CLOSED");
 $assertTrue($readinessPos !== false && $seasonalAwardPos !== false && $readinessPos < $seasonalAwardPos, 'Annual medal asset readiness must be checked before any partial season-close awards.');
 $assertTrue($fragmentPos !== false && $closePos !== false && $fragmentPos < $closePos, 'Quarter fragment eligibility must finish before the ending season becomes CLOSED.');
@@ -59,7 +59,7 @@ $assertTrue(
 );
 
 $assertTrue(str_contains($profileApi, '$yearlyMedals = (new YearlyMedalService($database))->userSnapshot($mgwId);'), 'Profile API must expose the canonical yearly-medal snapshot.');
-$assertTrue(str_contains($profileApi, "'yearly_medals'=>$yearlyMedals"), 'Profile payload must carry yearly_medals.');
+$assertTrue(str_contains($profileApi, "'yearly_medals'=>\$yearlyMedals"), 'Profile payload must carry yearly_medals.');
 
 $assertTrue(str_contains($profileJs, 'state.profileYearlyMedals'), 'Profile client must retain the yearly-medal snapshot.');
 $assertTrue(str_contains($profileJs, 'renderYearlyMedalSection'), 'Profile must own one compact yearly-medal renderer.');
