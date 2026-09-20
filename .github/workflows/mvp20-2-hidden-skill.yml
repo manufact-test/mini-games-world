@@ -110,6 +110,17 @@ jobs:
           while IFS= read -r path; do
             case "$path" in
               .github/workflows/mvp20-2-hidden-skill.yml|\
+              .github/workflows/mvp20-1-per-game-visible-rating.yml|\
+              .github/workflows/mvp20-3-leaderboards-antifarming.yml|\
+              .github/workflows/mvp20-4-quarterly-seasons.yml|\
+              bot/database/migrations/20260920_0045_create_quarterly_season_lifecycle.php|\
+              bot/ratings/PerGameRatingService.php|\
+              bot/ratings/PerGameRatingRuntimeBridge.php|\
+              bot/ratings/SeasonCalendar.php|\
+              bot/ratings/SeasonAssignmentResolver.php|\
+              bot/ratings/SeasonLifecycleService.php|\
+              bot/tests/Mvp20_4QuarterlySeasonLifecycleTest.php|\
+              bot/tests/Mvp20_4SeasonLifecycleIntegrationContractTest.php|\
               bot/database/migrations/20260919_0043_create_hidden_skill_model.php|\
               bot/ratings/HiddenSkillService.php|\
               bot/ratings/HiddenSkillRuntimeBridge.php|\
