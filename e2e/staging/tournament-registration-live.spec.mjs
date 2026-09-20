@@ -129,8 +129,8 @@ test('MVP-21.1 LIVE TOURNAMENT: real API reserves and releases 50,000', async ({
     });
     expect(setup.status, `test balance setup: ${describeFailure(setup)}`).toBe(200);
     expect(setup.payload?.ok, `test balance setup: ${describeFailure(setup)}`).toBe(true);
-    expect(Number(setup.payload?.balance?.available_amount || -1)).toBe(100000);
-    expect(Number(setup.payload?.balance?.reserved_amount || -1)).toBe(0);
+    expect(Number(setup.payload?.balance?.available_amount ?? -1)).toBe(100000);
+    expect(Number(setup.payload?.balance?.reserved_amount ?? -1)).toBe(0);
 
     const before = await post(player.page, '/bot/tournament-status.php', {});
     expect(before.status, `tournament status before: ${describeFailure(before)}`).toBe(200);
@@ -142,8 +142,8 @@ test('MVP-21.1 LIVE TOURNAMENT: real API reserves and releases 50,000', async ({
     }
 
     const beforeCount = Number(tournament.registered_count || 0);
-    expect(Number(before.payload?.snapshot?.balance?.available_amount || -1)).toBe(100000);
-    expect(Number(before.payload?.snapshot?.balance?.reserved_amount || -1)).toBe(0);
+    expect(Number(before.payload?.snapshot?.balance?.available_amount ?? -1)).toBe(100000);
+    expect(Number(before.payload?.snapshot?.balance?.reserved_amount ?? -1)).toBe(0);
 
     const register = await post(player.page, '/bot/api.php', { action:'tournament_register' });
     console.log('[MGW_TOURNAMENT_REGISTER_LIVE]', describeFailure(register));
@@ -154,15 +154,15 @@ test('MVP-21.1 LIVE TOURNAMENT: real API reserves and releases 50,000', async ({
     const registeredSnapshot = register.payload?.snapshot || {};
     expect(registeredSnapshot?.registration?.state).toBe('registered');
     expect(Number(registeredSnapshot?.tournament?.registered_count || 0)).toBe(beforeCount + 1);
-    expect(Number(registeredSnapshot?.balance?.available_amount || -1)).toBe(50000);
-    expect(Number(registeredSnapshot?.balance?.reserved_amount || -1)).toBe(50000);
-    expect(Number(register.payload?.user?.balance || -1)).toBe(50000);
+    expect(Number(registeredSnapshot?.balance?.available_amount ?? -1)).toBe(50000);
+    expect(Number(registeredSnapshot?.balance?.reserved_amount ?? -1)).toBe(50000);
+    expect(Number(register.payload?.user?.balance ?? -1)).toBe(50000);
 
     const confirmed = await post(player.page, '/bot/tournament-status.php', {});
     expect(confirmed.status, `tournament status after register: ${describeFailure(confirmed)}`).toBe(200);
     expect(confirmed.payload?.snapshot?.registration?.state).toBe('registered');
-    expect(Number(confirmed.payload?.snapshot?.balance?.available_amount || -1)).toBe(50000);
-    expect(Number(confirmed.payload?.snapshot?.balance?.reserved_amount || -1)).toBe(50000);
+    expect(Number(confirmed.payload?.snapshot?.balance?.available_amount ?? -1)).toBe(50000);
+    expect(Number(confirmed.payload?.snapshot?.balance?.reserved_amount ?? -1)).toBe(50000);
 
     const leave = await post(player.page, '/bot/api.php', { action:'tournament_leave' });
     console.log('[MGW_TOURNAMENT_LEAVE_LIVE]', describeFailure(leave));
@@ -172,9 +172,9 @@ test('MVP-21.1 LIVE TOURNAMENT: real API reserves and releases 50,000', async ({
 
     expect(leave.payload?.snapshot?.registration?.state).toBe('withdrawn');
     expect(Number(leave.payload?.snapshot?.tournament?.registered_count || 0)).toBe(beforeCount);
-    expect(Number(leave.payload?.snapshot?.balance?.available_amount || -1)).toBe(100000);
-    expect(Number(leave.payload?.snapshot?.balance?.reserved_amount || -1)).toBe(0);
-    expect(Number(leave.payload?.user?.balance || -1)).toBe(100000);
+    expect(Number(leave.payload?.snapshot?.balance?.available_amount ?? -1)).toBe(100000);
+    expect(Number(leave.payload?.snapshot?.balance?.reserved_amount ?? -1)).toBe(0);
+    expect(Number(leave.payload?.user?.balance ?? -1)).toBe(100000);
   } finally {
     if (registered) {
       const cleanupLeave = await post(player.page, '/bot/api.php', { action:'tournament_leave' }).catch(() => null);
