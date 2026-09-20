@@ -103,7 +103,8 @@ jobs:
           done
           test "$ready" = '1'
 
-      - name: Diagnose pending projection failures
+      - name: Apply managed staging migrations and diagnose projections
+        id: projection
         if: steps.readiness.outcome == 'success'
         continue-on-error: true
         shell: bash
@@ -125,7 +126,7 @@ jobs:
 
       - name: Set up Node.js on Linux route
         id: setup-node
-        if: steps.readiness.outcome == 'success'
+        if: steps.readiness.outcome == 'success' && steps.projection.outcome == 'success'
         continue-on-error: true
         uses: actions/setup-node@v4
         with:
@@ -171,6 +172,7 @@ jobs:
         shell: bash
         env:
           READINESS_OUTCOME: ${{ steps.readiness.outcome }}
+          PROJECTION_OUTCOME: ${{ steps.projection.outcome }}
           SETUP_OUTCOME: ${{ steps.setup-node.outcome }}
           PREFLIGHT_OUTCOME: ${{ steps.preflight.outcome }}
           INSTALL_OUTCOME: ${{ steps.install.outcome }}
@@ -179,6 +181,8 @@ jobs:
           set -Eeuo pipefail
           if [[ "${READINESS_OUTCOME}" != 'success' ]]; then
             result='network_unavailable'
+          elif [[ "${PROJECTION_OUTCOME}" != 'success' ]]; then
+            result='application_failure'
           elif [[ "${SETUP_OUTCOME}" != 'success' ]]; then
             result='runner_infrastructure_failure'
           elif [[ "${PREFLIGHT_OUTCOME}" != 'success' ]]; then
