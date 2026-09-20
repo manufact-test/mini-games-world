@@ -19,9 +19,12 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     if (!$condition) throw new RuntimeException($message);
 };
 
-$assert(str_contains($currentConfig, "testMatch: 'current-core-final.spec.mjs'")
+$assert(str_contains($currentConfig, "'current-core-final.spec.mjs'")
+    && str_contains($currentConfig, "'checkers-layout-diagnostic.spec.mjs'")
+    && str_contains($currentConfig, "'go-store-live-catalog.spec.mjs'")
+    && str_contains($currentConfig, "'tournament-registration-live.spec.mjs'")
     && !str_contains($currentConfig, 'supersededScenarios'),
-    'Blocking staging Playwright must run only the final current core.');
+    'Blocking staging Playwright must run the current v110 core plus the active staging acceptance diagnostics.');
 $assert(str_contains($legacyConfig, "testIgnore: ['current-core-final.spec.mjs']")
     && str_contains($legacyConfig, 'supersededScenarios'),
     'Historical and superseded current-core scenarios must remain in the legacy config.');
@@ -47,8 +50,11 @@ $assert(str_contains($currentSpec, 'A.profile.user.balance')
     'Final core must validate unified balance rather than retired balance_match.');
 $assert(str_contains($currentSpec, 'async function observedAction(')
     && str_contains($currentSpec, 'page.waitForResponse(')
-    && str_contains($currentSpec, "'start', 'start invite'"),
-    'Write-action assertions must observe the actual browser HTTP response in Node rather than trust page.evaluate serialization.');
+    && str_contains($currentSpec, 'async function transportAction(')
+    && str_contains($currentSpec, 'player.context.request.post(')
+    && str_contains($currentSpec, "transportAction(A, '/bot/invites.php'")
+    && str_contains($currentSpec, "action: 'start'"),
+    'Synthetic invite setup must use authenticated Node transport while real browser write assertions remain response-observed.');
 $assert(str_contains($currentSpec, 'async function firstUiTap(')
     && str_contains($currentSpec, 'await button.click();')
     && str_contains($currentSpec, "expect(String(payload?.game?.board || '')[cell]).not.toBe('-');"),
