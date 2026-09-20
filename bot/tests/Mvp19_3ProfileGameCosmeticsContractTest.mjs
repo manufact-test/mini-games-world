@@ -53,6 +53,9 @@ expect(profile.includes("button.setAttribute('aria-selected', active ? 'true' : 
 expect(profile.includes('panel.innerHTML = renderGameCosmeticGroups(activeGame);'), 'bounded game switch must replace only the active game panel contents');
 expect(!profile.includes('active_collection_game'), 'game-tab selection must not participate in the full Profile render signature');
 expect(!profile.includes('data-open-leaderboard') && !profile.includes('function openLeaderboardSheet('), 'Arena corrective must keep the full global leaderboard out of Profile without replacing the accepted game-cosmetics collection owner');
+expect(profile.includes('renderYearlyMedalSection(yearlyMedals)'), 'MVP-20.6 may compose the compact yearly medal after personal rating without replacing the game-cosmetics collection owner');
+expect(profile.includes('function renderYearlyMedalSection('), 'MVP-20.6 yearly medal must remain a bounded Profile section renderer');
+expect(!profile.includes('ProductInventoryService') && !profile.includes('CosmeticStoreService'), 'yearly medal Profile composition must not create a second cosmetics inventory/store owner');
 
 const openProfileStart = profile.indexOf('export function openProfile()');
 const visibleProfile = profile.indexOf('showProfileImmediately();', openProfileStart);
