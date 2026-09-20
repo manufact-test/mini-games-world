@@ -60,7 +60,9 @@ foreach ([
     "tournamentPendingAction = 'verify';",
     'renderTournamentSnapshot();',
     'const verified = await api.tournamentStatus();',
-    "const registrationState = String(tournamentSnapshot?.registration?.state || '');",
+    'const verifiedSnapshot = verified?.snapshot',
+    "const registrationState = String(verifiedSnapshot?.registration?.state || '');",
+    'tournamentSnapshot = verifiedSnapshot;',
     "if (action === 'register' && registrationState !== 'registered')",
     "if (action === 'leave' && registrationState === 'registered')",
     'errorMessage = humanizeTournamentError',
@@ -83,9 +85,23 @@ $assertTrue(
     !str_contains($source['screen'], "const state = String(tournamentSnapshot?.registration?.state || '');"),
     'Tournament mutation must not shadow imported app state and trigger a temporal-dead-zone error.'
 );
+$verifyPos = strpos($source['screen'], 'const verified = await api.tournamentStatus();');
+$commitSnapshotPos = strpos($source['screen'], 'tournamentSnapshot = verifiedSnapshot;');
+$balanceCommitPos = strpos($source['screen'], 'state.user = responseUser;');
 $assertTrue(
-    str_contains($source['screen'], "tournamentPendingAction = 'verify';\n    renderTournamentSnapshot();\n\n    const verified = await api.tournamentStatus();"),
-    'Successful tournament writes must paint immediately before the verification read finishes.'
+    $verifyPos !== false
+    && $commitSnapshotPos !== false
+    && $balanceCommitPos !== false
+    && $verifyPos < $commitSnapshotPos
+    && $verifyPos < $balanceCommitPos,
+    'Tournament seat state and visible header balance must not change before authoritative verification completes.'
+);
+$assertTrue(
+    !str_contains(
+        $source['screen'],
+        "tournamentSnapshot = responseSnapshot;\n\n    if (result?.user && typeof result.user === 'object')"
+    ),
+    'Tournament write response must not optimistically publish seat/balance before verification.'
 );
 $assertTrue(
     !str_contains($source['screen'], 'Зарезервировано:'),
@@ -146,8 +162,8 @@ $assertTrue(
     'Corrective release must force a fresh API client module.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=10')
-    && str_contains($source['manifest'], 'tournament-registration-manual-fix-v3'),
+    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=11')
+    && str_contains($source['manifest'], 'tournament-registration-manual-fix-v4'),
     'Corrective release must force a fresh Tournament screen module.'
 );
 $assertTrue(
