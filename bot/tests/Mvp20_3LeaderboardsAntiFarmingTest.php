@@ -311,9 +311,8 @@ foreach ([
         );
     }
 }
-// A staging development identity can have perfectly valid durable rating rows.
-// Do not silently remove it from the board: staging acceptance needs to see the
-// same eligible rows that were visible before the Arena UI move.
+// A staging E2E account can have perfectly valid durable rating rows but must
+// never appear in the public player-facing leaderboard.
 $database->execute(
     'INSERT INTO mgw_game_rating_scores (
         season_id, mgw_id, game_type, points, rated_wins, updated_at_utc
@@ -355,13 +354,12 @@ for ($n = 1; $n <= 5; $n++) {
 }
 
 $tied = $leaderboard->snapshot('go', $userD);
-$assertSame(3, count($tied['entries']), 'Eligible development-provider staging accounts must remain visible for staging acceptance.');
-$assertSame('Player9999999', $tied['entries'][0]['nickname'], 'Higher visible rating must remain first regardless of identity provider.');
-$assertSame('Epsilon', $tied['entries'][1]['nickname'], 'Equal points/wins must prefer the player who reached the score earlier.');
-$assertSame('Delta', $tied['entries'][2]['nickname'], 'Later equal-score player must follow the earlier one.');
+$assertSame(2, count($tied['entries']), 'Development-provider test accounts must stay out of the public leaderboard even when otherwise eligible.');
+$assertSame('Epsilon', $tied['entries'][0]['nickname'], 'Equal points/wins must prefer the player who reached the score earlier.');
+$assertSame('Delta', $tied['entries'][1]['nickname'], 'Later equal-score player must follow the earlier one.');
 $assertTrue(
-    in_array('Player9999999', array_column($tied['entries'], 'nickname'), true),
-    'Staging leaderboard must not silently hide an otherwise eligible development identity.'
+    !in_array('Player9999999', array_column($tied['entries'], 'nickname'), true),
+    'Generated staging E2E nickname must never leak into the public leaderboard.'
 );
 $assertSame(
     ['points_desc','credited_wins_desc','score_reached_at_asc','mgw_id_asc'],

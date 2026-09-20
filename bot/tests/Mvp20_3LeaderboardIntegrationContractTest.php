@@ -69,9 +69,10 @@ $assertTrue(str_contains($leaderboard, 's.mgw_id ASC'), 'Stable MGW id must be t
 $assertTrue(str_contains($leaderboard, 'MgwIdGenerator::toPublic'), 'Leaderboard must expose public MGW id rather than internal identifiers.');
 $assertTrue(!str_contains($leaderboard, 'HiddenSkillService') && !str_contains($leaderboard, 'skill_score'), 'Leaderboard must not expose hidden skill.');
 $assertTrue(
-    !str_contains($leaderboard, 'development_provider')
-        && !str_contains($leaderboard, 'mgw_identities'),
-    'Leaderboard must not silently hide otherwise eligible staging identities by provider.'
+    str_contains($leaderboard, 'mgw_identities')
+        && str_contains($leaderboard, "dev_identity.provider = :development_provider")
+        && str_contains($leaderboard, "'development_provider' => 'development'"),
+    'Public leaderboard must exclude staging development identities while preserving their audit history.'
 );
 
 $assertTrue(str_contains($endpoint, 'PerGameRatingRuntimeBridge'), 'Leaderboard endpoint must reuse the canonical rating projection owner.');
@@ -88,7 +89,7 @@ $assertTrue(!str_contains($profile, 'openLeaderboardSheet'), 'Profile must not o
 $assertTrue(str_contains($profile, "profile.rating_title"), 'Profile must preserve personal visible rating.');
 
 $assertTrue(str_contains($mainShell, "initTournamentsScreen"), 'Main shell must initialize the competition screen owner.');
-$assertTrue(str_contains($mainShell, "tournaments-screen-v1.js?v=3&arena=manual-polish-v2"), 'Main shell must load the manually accepted Arena polish identity.');
+$assertTrue(str_contains($mainShell, "tournaments-screen-v1.js?v=4&arena=final-table-polish-v1"), 'Main shell must load the final Arena table polish identity.');
 $assertTrue(str_contains($arena, 'data-competition-mode="rating"'), 'Arena must expose Rating as a primary competition tab.');
 $assertTrue(str_contains($arena, 'data-competition-mode="tournaments"'), 'Arena must expose Tournaments as a separate primary competition tab.');
 $assertTrue(!str_contains($arena, "t('shell.tournaments_note')"), 'Arena heading must not repeat the redundant rating/tournaments subtitle.');
@@ -96,6 +97,8 @@ $assertTrue(str_contains($arena, 'data-tournaments-game'), 'Arena must own the p
 $assertTrue(str_contains($arena, "addEventListener('wheel'"), 'Arena game selector must support mouse-wheel overflow.');
 $assertTrue(str_contains($arena, "addEventListener('pointermove'"), 'Arena game selector must support mouse drag overflow.');
 $assertTrue(str_contains($arena, 'data-tournaments-scroll'), 'Arena game selector must expose explicit left/right overflow controls.');
+$assertTrue(str_contains($arena, 'tournaments-v2-table-head') && str_contains($arena, '>Игрок<') && str_contains($arena, '>Очки<'), 'Arena leaderboard must label rank, player and points columns.');
+$assertTrue(str_contains($arena, 'tournaments-v2-scroll-icon') && str_contains($arena, '<svg'), 'Arena overflow controls must use centered SVG chevrons rather than font glyph baselines.');
 $assertTrue(str_contains($mainCss, '#screen-tournaments .tournaments-v2-tabs-shell{') && str_contains($mainCss, 'display:block;'), 'Arena game strip must start at the board content edge instead of reserving a left arrow column.');
 $assertTrue(str_contains($mainCss, '.tournaments-v2-scroll--left{left:0}') && str_contains($mainCss, '.tournaments-v2-scroll--right{right:0}'), 'Arena overflow arrows must be centered overlays rather than layout columns.');
 $assertTrue(str_contains($mainCss, '#screen-profile .profile-v2-rating-score>b{') && str_contains($mainCss, 'font-size:12px;'), 'Personal Profile rating numerals must stay compact for three-digit values.');
@@ -129,7 +132,7 @@ $assertTrue(
 );
 
 $assertTrue(str_contains($manifest, 'mvp20_3=leaderboards-v1'), 'Version manifest must preserve the accepted leaderboard runtime identity.');
-$assertTrue(str_contains($manifest, 'arena=competition-rating-v2'), 'Version manifest must publish the manual Arena polish cache identity.');
+$assertTrue(str_contains($manifest, 'arena=competition-rating-v3'), 'Version manifest must publish the final Arena table cache identity.');
 $assertTrue(str_contains($manifest, 'mvp20_1=visible-rating-v2'), 'MVP-20.1 visible-rating identity must remain frozen.');
 
 fwrite(STDOUT, "Mvp20_3LeaderboardIntegrationContractTest: {$assertions} assertions passed\n");
