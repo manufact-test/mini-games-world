@@ -556,7 +556,9 @@ function renderTournamentSnapshot(errorMessage = ''){
   if (scheduled && scheduledStart) {
     const countdown = body.querySelector('[data-tournament-countdown]');
     const updateCountdown = () => {
-      if (!(countdown instanceof HTMLElement) || !countdown.isConnected) {
+      if (currentScreen() !== 'tournaments'
+          || !(countdown instanceof HTMLElement)
+          || !countdown.isConnected) {
         if (tournamentCountdownTimer) window.clearInterval(tournamentCountdownTimer);
         tournamentCountdownTimer = null;
         return;
