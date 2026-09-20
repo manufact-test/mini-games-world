@@ -12,6 +12,7 @@ final class RatingArchiveService
 {
     private const CONTROL_KEY = 'global';
     private const MAX_PROFILE_SEASONS = 12;
+    private const SEASON_CLOSED = 'closed';
 
     public function __construct(
         private DatabaseConnectionInterface $database,
@@ -86,7 +87,7 @@ final class RatingArchiveService
     public function seasonArchive(string $seasonId, string $gameType): array
     {
         $season = $this->season($seasonId);
-        if ((string)$season['season_state'] !== SeasonLifecycleService::SEASON_CLOSED) {
+        if ((string)$season['season_state'] !== self::SEASON_CLOSED) {
             throw new InvalidArgumentException('Only closed official seasons can be opened from the archive.');
         }
 
@@ -152,7 +153,7 @@ final class RatingArchiveService
                       a.mgw_id ASC",
             [
                 'award_state'=>SeasonalAwardService::AWARD_ACTIVE,
-                'season_state'=>SeasonLifecycleService::SEASON_CLOSED,
+                'season_state'=>self::SEASON_CLOSED,
                 'user_status'=>'active',
                 'development_provider'=>'development',
             ]
@@ -325,7 +326,7 @@ final class RatingArchiveService
              WHERE season_state = :state
              ORDER BY calendar_end_at_utc DESC, season_id DESC
              LIMIT $limit",
-            ['state'=>SeasonLifecycleService::SEASON_CLOSED]
+            ['state'=>self::SEASON_CLOSED]
         );
     }
 
