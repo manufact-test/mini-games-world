@@ -17,6 +17,8 @@ on:
       - 'bot/tests/Mvp20_6YearlyMedalTest.php'
       - 'bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php'
       - 'bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs'
+      - 'bot/tests/Mvp19_3ProfileFramesTest.php'
+      - '.github/workflows/mvp19-3-profile-avatars.yml'
       - '.github/workflows/mvp20-1-per-game-visible-rating.yml'
       - '.github/workflows/mvp20-2-hidden-skill.yml'
       - '.github/workflows/mvp20-3-leaderboards-antifarming.yml'
@@ -102,6 +104,7 @@ jobs:
           php bot/tests/Mvp162LocalizationInfrastructureTest.php
           php bot/tests/ProfileV2CorrectiveStaticContractTest.php
           node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
+          php bot/tests/Mvp19_3ProfileFramesTest.php
 
       - name: Guard MVP-20.6 scope and frozen mechanics
         shell: bash
@@ -129,7 +132,9 @@ jobs:
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp20_6YearlyMedalTest.php|\
               bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php|\
-              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs)
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
+              bot/tests/Mvp19_3ProfileFramesTest.php|\
+              .github/workflows/mvp19-3-profile-avatars.yml)
                 ;;
               *)
                 echo "Unexpected MVP-20.6 path: $path" >&2
