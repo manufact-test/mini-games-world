@@ -66,12 +66,31 @@ final class RuntimePrimaryStagingRequestFinalizer
             }
             $tick = $this->worker->runOnce();
             $ticks[] = $this->normalizeTick($tick);
+            $action = (string)($tick['action'] ?? 'projection_unknown');
+
+            if (($tick['ok'] ?? false) === true
+                && ($tick['claimed'] ?? false) !== true
+                && in_array($action, ['projection_busy', 'projection_noop'], true)) {
+                // Concurrent API requests may legitimately race on the same
+                // projection revision. One request owns the lease while the
+                // other must wait for that exact revision to become completed
+                // instead of turning an otherwise healthy API response into a
+                // transient 5xx.
+                $event = $this->waitForConcurrentCompletion(
+                    $currentRevision,
+                    $currentSha
+                );
+                if (($event['status'] ?? '') === 'completed') {
+                    continue;
+                }
+            }
+
             if (($tick['ok'] ?? false) !== true
-                || ($tick['action'] ?? '') !== 'projection_completed'
+                || $action !== 'projection_completed'
                 || ($tick['claimed'] ?? false) !== true) {
                 throw new RuntimeException(
                     'Staging request projection did not complete: '
-                    . $this->safeAction((string)($tick['action'] ?? 'projection_unknown'))
+                    . $this->safeAction($action)
                     . '.'
                 );
             }
@@ -141,6 +160,27 @@ final class RuntimePrimaryStagingRequestFinalizer
             'sensitive_identifiers_exposed' => false,
             'generated_at_utc' => gmdate(DATE_ATOM, $this->timestamp()),
         ];
+    }
+
+    private function waitForConcurrentCompletion(
+        int $revision,
+        string $stateSha
+    ): array {
+        $attempts = 0;
+        $event = $this->eventForRevision($revision);
+        while (($event['status'] ?? '') !== 'completed' && $attempts < 20) {
+            if (($event['status'] ?? '') === 'failed') {
+                break;
+            }
+            usleep(50000);
+            $attempts++;
+            $event = $this->eventForRevision($revision);
+        }
+
+        if (($event['status'] ?? '') === 'completed') {
+            $this->assertCompletedEvent($event, $revision, $stateSha);
+        }
+        return $event;
     }
 
     private function eventForRevision(int $revision): array
