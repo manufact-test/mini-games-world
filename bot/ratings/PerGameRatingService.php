@@ -136,16 +136,9 @@ final class PerGameRatingService
         $finishedAt = $this->nullableText($match['finished_at_utc'] ?? null);
         $winnerPlayerRef = $this->nullableText($match['winner_player_ref'] ?? null);
 
-        $effectiveState = $control['competition_state'];
-        $seasonId = $control['current_season_id'];
-
-        if ($effectiveState === self::STATE_ACTIVE
-            && $control['activated_at'] !== null
-            && $finishedAt !== null
-            && $this->before($finishedAt, $control['activated_at'])) {
-            $effectiveState = self::STATE_PRESEASON;
-            $seasonId = self::PRESEASON_ID;
-        }
+        $assignment = $this->seasonAssignment($finishedAt, $control);
+        $effectiveState = $assignment['competition_state'];
+        $seasonId = $assignment['season_id'];
 
         $players = $this->database->fetchAll(
             'SELECT seat, player_ref, mgw_id, player_type
@@ -701,6 +694,24 @@ final class PerGameRatingService
             'tracking_started_at' => $trackingStartedAt,
             'activated_at' => $activatedAt,
         ];
+    }
+
+    private function seasonAssignment(?string $finishedAt, array $control): array
+    {
+        if (class_exists('SeasonAssignmentResolver')) {
+            return (new SeasonAssignmentResolver($this->database))->resolve($finishedAt, $control);
+        }
+
+        $effectiveState = $control['competition_state'];
+        $seasonId = $control['current_season_id'];
+        if ($effectiveState === self::STATE_ACTIVE
+            && $control['activated_at'] !== null
+            && $finishedAt !== null
+            && $this->before($finishedAt, $control['activated_at'])) {
+            $effectiveState = self::STATE_PRESEASON;
+            $seasonId = self::PRESEASON_ID;
+        }
+        return ['competition_state' => $effectiveState, 'season_id' => $seasonId];
     }
 
     private function antiFarmingApplies(?string $matchTime, string $startedAt): bool
