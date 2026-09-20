@@ -197,7 +197,17 @@ final class SeasonLifecycleService
                      ready_at_utc = :ready_at_utc,
                      updated_at_utc = :updated_at_utc
                  WHERE target_season_id = :target_season_id',
-                $row
+                [
+                    'package_state' => $row['package_state'],
+                    'seasonal_awards_state' => $row['seasonal_awards_state'],
+                    'top3_frames_state' => $row['top3_frames_state'],
+                    'yearly_medal_state' => $row['yearly_medal_state'],
+                    'localization_state' => $row['localization_state'],
+                    'preview_validation_state' => $row['preview_validation_state'],
+                    'ready_at_utc' => $row['ready_at_utc'],
+                    'updated_at_utc' => $row['updated_at_utc'],
+                    'target_season_id' => $targetSeasonId,
+                ]
             );
 
             return $this->rewardPackage($database, $targetSeasonId, true);
