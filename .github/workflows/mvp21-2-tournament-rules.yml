@@ -22,6 +22,7 @@ on:
       - 'bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php'
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
       - 'bot/tests/Mvp21_2TournamentRulesTest.php'
+      - 'bot/tests/RuntimeNotificationRepositoryTest.php'
       - 'e2e/staging/tournament-registration-live.spec.mjs'
       - '.github/workflows/mvp21-1-tournament-registration.yml'
       - '.github/workflows/mvp21-2-tournament-rules.yml'
@@ -87,6 +88,7 @@ jobs:
             bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php
             bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
             bot/tests/Mvp21_2TournamentRulesTest.php
+            bot/tests/RuntimeNotificationRepositoryTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
           node --check app/assets/js/api/client.js
@@ -164,6 +166,7 @@ jobs:
               bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php|\
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
               bot/tests/Mvp21_2TournamentRulesTest.php|\
+              bot/tests/RuntimeNotificationRepositoryTest.php|\
               e2e/staging/tournament-registration-live.spec.mjs)
                 ;;
               *)
