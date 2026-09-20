@@ -126,11 +126,11 @@ $assertTrue(
     'Normal leaderboard copy must not surface PRESEASON.'
 );
 
-$assertTrue(str_contains($manifest, 'mvp20_3=arena-rating-v2'), 'Version manifest must publish fresh Arena leaderboard client assets.');
+$assertTrue(str_contains($manifest, 'mvp20_3=leaderboards-v1'), 'Version manifest must preserve the accepted leaderboard runtime identity.');
 $assertTrue(str_contains($manifest, 'arena=competition-rating-v1'), 'Version manifest must publish the competition shell cache identity.');
-$assertTrue(str_contains($v110, 'X-MGW-Leaderboards: arena-per-game-antifarming-v2'), 'Active v110 entry must identify the corrected leaderboard runtime.');
+$assertTrue(str_contains($v110, 'X-MGW-Leaderboards: per-game-antifarming-v1'), 'Active v110 entry must preserve the accepted leaderboard runtime identity.');
 $assertTrue(str_contains($v110, 'X-MGW-Competition-UI: arena-rating-tournaments-v1'), 'Active v110 entry must identify the Arena competition UI.');
-$assertTrue(str_contains($launch, 'leaderboards=arena-per-game-antifarming-v2'), 'Telegram launch identity must include the corrected leaderboard runtime.');
+$assertTrue(str_contains($launch, 'leaderboards=per-game-antifarming-v1'), 'Telegram launch identity must preserve the accepted leaderboard runtime identity.');
 $assertTrue(str_contains($launch, 'arena=competition-rating-v1'), 'Telegram launch identity must include the Arena UI identity.');
 $assertTrue(str_contains($manifest, 'mvp20_1=visible-rating-v2'), 'MVP-20.1 visible-rating identity must remain frozen.');
 $assertTrue(str_contains($v110, 'X-MGW-Visible-Rating: per-game-preseason-v2'), 'Existing internal visible-rating state must remain frozen.');
