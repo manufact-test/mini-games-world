@@ -19,14 +19,15 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <script src="./assets/js/admin-shell.js?v=4&replay=17-6&test-coins=staging" defer></script>
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
+  <script src="./assets/js/admin-rating.js?v=1&mvp20_8=rating-admin" defer></script>
 </head>
 <body>
-  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-notifications-api="../bot/admin-notifications.php">
+  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php">
     <header class="mgw-admin__header">
       <div>
         <p class="mgw-admin__eyebrow">MINI GAMES WORLD</p>
         <h1>Web Admin</h1>
-        <p class="mgw-admin__subtitle">Системный обзор, bell events, экономика, replay storage и очередь жалоб.</p>
+        <p class="mgw-admin__subtitle">Системный обзор, рейтинг, bell events, экономика, replay storage и очередь жалоб.</p>
       </div>
       <button class="mgw-admin__refresh" type="button" data-admin-refresh>Обновить</button>
     </header>
@@ -56,6 +57,78 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           <span>read-only</span>
         </div>
         <pre data-admin-system-check>—</pre>
+      </article>
+
+      <article class="mgw-admin__card mgw-admin__card--wide" data-rating-admin>
+        <div class="mgw-admin__card-head">
+          <h2>Rating Admin</h2>
+          <span>MVP-20.8 · reviewed corrections</span>
+        </div>
+        <div class="mgw-admin__rating">
+          <div class="mgw-admin__rating-status" data-rating-status>Rating Admin ещё не загружен.</div>
+
+          <div class="mgw-admin__rating-metrics" data-rating-metrics></div>
+
+          <div class="mgw-admin__rating-actions">
+            <button type="button" data-rating-refresh>Обновить рейтинг</button>
+            <button type="button" data-rating-rehearsal>Репетиция закрытия сезона</button>
+          </div>
+
+          <div class="mgw-admin__rating-grid">
+            <section class="mgw-admin__rating-panel">
+              <h3>Reviewed exclusion</h3>
+              <label class="mgw-admin__field">
+                <span>Season ID</span>
+                <input data-rating-season-id type="text" maxlength="64" autocomplete="off" placeholder="2026-q4">
+              </label>
+              <label class="mgw-admin__field">
+                <span>MGW-ID игрока</span>
+                <input data-rating-mgw-id type="text" maxlength="64" autocomplete="off" placeholder="MGW-ID-…">
+              </label>
+              <label class="mgw-admin__field">
+                <span>Причина</span>
+                <select data-rating-reason-code>
+                  <option value="fraud">fraud</option>
+                  <option value="automation">automation</option>
+                  <option value="duplicate_identity">duplicate_identity</option>
+                  <option value="match_manipulation">match_manipulation</option>
+                  <option value="manual_review">manual_review</option>
+                </select>
+              </label>
+              <label class="mgw-admin__field">
+                <span>Комментарий проверки</span>
+                <input data-rating-review-note type="text" maxlength="500" autocomplete="off" placeholder="Что проверено и почему игрок исключается">
+              </label>
+              <div class="mgw-admin__rating-actions">
+                <button type="button" data-rating-exclude>Исключить после review</button>
+              </div>
+              <small>Exclusion не переписывает match history или rating score. После review отдельный recalculation пересобирает награды и медаль.</small>
+            </section>
+
+            <section class="mgw-admin__rating-panel">
+              <h3>Recalculation</h3>
+              <label class="mgw-admin__field">
+                <span>Причина пересчёта</span>
+                <input data-rating-recalc-reason type="text" maxlength="500" autocomplete="off" placeholder="Reviewed fraud correction">
+              </label>
+              <div class="mgw-admin__rating-actions">
+                <button type="button" data-rating-recalculate>Пересчитать закрытый сезон</button>
+              </div>
+              <small>Разрешено только для FINALIZING/CLOSED. Используются действующие review exclusions и существующие award owners.</small>
+              <pre class="mgw-admin__rating-rehearsal" data-rating-rehearsal-output>Репетиция ещё не запускалась.</pre>
+            </section>
+          </div>
+
+          <section class="mgw-admin__rating-panel">
+            <h3>Активные exclusions</h3>
+            <div class="mgw-admin__history" data-rating-exclusions></div>
+          </section>
+
+          <section class="mgw-admin__rating-panel">
+            <h3>Последние recalculation jobs</h3>
+            <div class="mgw-admin__history" data-rating-jobs></div>
+          </section>
+        </div>
       </article>
 
       <article class="mgw-admin__card mgw-admin__card--wide" data-admin-notifications>
