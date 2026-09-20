@@ -95,9 +95,7 @@ export function initTournamentsScreen(){
       <div class="tournaments-v2-panel" data-competition-panel="tournaments" hidden>
         <section class="tournaments-v2-board tournaments-v2-tournament-card">
           <div class="tournaments-v2-board-head">
-            <div>
-              <h2>Официальный турнир</h2>
-              <p>Регистрация, зарезервированный взнос и текущий состав турнира.</p>
+            <div>              <h2>Официальный турнир</h2>
             </div>
           </div>
           <div class="tournaments-v2-tournament-body" id="officialTournamentBody" aria-live="polite">
@@ -291,9 +289,11 @@ function renderTournamentSnapshot(errorMessage = ''){
   const second = rewards?.placements?.['2'] || {};
   const third = rewards?.placements?.['3'] || {};
 
+  const insufficient = !registered && available < fee;
   let action = '';
   if (open && !registered && !full) {
-    action = `<button type="button" class="tournaments-v2-tournament-action" data-tournament-action="register"${tournamentBusy ? ' disabled' : ''}>Зарегистрироваться · ${escapeHtml(formatNumber(fee))}</button>`;
+    const disabled = tournamentBusy || insufficient;
+    action = `<button type="button" class="tournaments-v2-tournament-action" data-tournament-action="register"${disabled ? ' disabled' : ''}>${insufficient ? 'Недостаточно коинов' : `Зарегистрироваться · ${escapeHtml(formatNumber(fee))}`}</button>`;
   } else if (open && registered && !full) {
     action = `<button type="button" class="tournaments-v2-tournament-action tournaments-v2-tournament-action--secondary" data-tournament-action="leave"${tournamentBusy ? ' disabled' : ''}>Отменить регистрацию</button>`;
   }
@@ -307,11 +307,11 @@ function renderTournamentSnapshot(errorMessage = ''){
   const ownStatus = registered
     ? (full
       ? 'Вы в составе. Турнир заполнен — место зафиксировано.'
-      : `Вы зарегистрированы. ${formatNumber(fee)} коинов зарезервировано, но не списано.`)
+      : 'Вы зарегистрированы. Место закреплено за вами.')
     : full
       ? 'Свободных мест больше нет.'
       : open
-        ? 'Взнос резервируется до дальнейшего этапа турнира.'
+        ? (insufficient ? 'Недостаточно коинов для регистрации.' : 'Можно регистрироваться.')
         : 'Ожидайте открытия регистрации.';
 
   body.innerHTML = `
@@ -336,11 +336,8 @@ function renderTournamentSnapshot(errorMessage = ''){
       <div><b>3 место</b><strong>${escapeHtml(formatNumber(Number(third.total || 50000)))}</strong><span>возврат взноса</span></div>
     </div>
 
-    <div class="tournaments-v2-tournament-own${registered ? ' is-registered' : ''}">
+    <div class="tournaments-v2-tournament-own${registered ? ' is-registered' : ''}${insufficient ? ' is-insufficient' : ''}">
       <strong>${escapeHtml(ownStatus)}</strong>
-      <span>${registered
-        ? `Доступно после резерва: ${escapeHtml(formatNumber(available))} коинов · В резерве турнира: ${escapeHtml(formatNumber(fee))} коинов`
-        : `Доступно коинов: ${escapeHtml(formatNumber(available))}`}</span>
     </div>
     ${action}
   `;
