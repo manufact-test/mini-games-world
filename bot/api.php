@@ -72,6 +72,7 @@ try {
     $deviceId = clean_string($payload['deviceId'] ?? '', 120);
 
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
+    $runtimeStorageDriver = $db->driver();
     $auth = new AuthService($config);
     $users = new UserService($config);
     $gameCatalog = new GameCatalogService($config);
@@ -96,7 +97,7 @@ try {
         }
     }
 
-    $result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $gameCatalog, $gameActions, $matchPreparationRuntime, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $runtimeHiddenSkillBridge, $sessionId, $deviceId, $config) {
+    $result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $gameCatalog, $gameActions, $matchPreparationRuntime, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $runtimeHiddenSkillBridge, $sessionId, $deviceId, $config, $runtimeStorageDriver) {
         $user = $users->ensureUser($data, $tgUser);
         $userId = (string)$user['id'];
         $data['users'][$userId] = $user;
@@ -168,6 +169,52 @@ try {
                 return [
                     'user' => $users->publicUser($user),
                     'shop' => $shop->status($user),
+                    'session' => $sessions->publicState($user, $sessionId),
+                ];
+
+            case 'tournament_status':
+            case 'tournament_register':
+            case 'tournament_leave':
+                $mgwId = trim((string)($user['mgw_id'] ?? ''));
+                $accountRef = trim((string)($user['mgw_account_ref'] ?? ''));
+                if ($mgwId === '' || $accountRef === '') {
+                    throw new RuntimeException('Регистрация турниров требует канонической MGW account identity.');
+                }
+
+                $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+                if (!$databaseConfig->enabled()) {
+                    throw new RuntimeException('Турниры временно недоступны.');
+                }
+                $database = PdoConnectionFactory::create($databaseConfig);
+                $tournaments = new TournamentRegistrationService(
+                    $database,
+                    new LedgerWriteService($database)
+                );
+
+                if ($action === 'tournament_status') {
+                    $snapshot = $tournaments->snapshot($mgwId, $accountRef);
+                } else {
+                    if ($runtimeStorageDriver !== 'database') {
+                        throw new RuntimeException('Tournament registration requires canonical DB-primary runtime state.');
+                    }
+                    $snapshot = $action === 'tournament_register'
+                        ? $tournaments->register($mgwId, $accountRef)
+                        : $tournaments->leave($mgwId, $accountRef);
+
+                    $available = (int)($snapshot['balance']['available_amount'] ?? -1);
+                    $reserved = (int)($snapshot['balance']['reserved_amount'] ?? -1);
+                    if ($available < 0 || $reserved < 0) {
+                        throw new RuntimeException('Tournament balance result is invalid.');
+                    }
+                    // Runtime balance is the spendable amount. Keep DB-primary
+                    // state in the same transaction as the ledger reservation so
+                    // normal matches can never spend tournament-held coins.
+                    $user[UnifiedBalanceRuntimeState::FIELD] = $available;
+                }
+
+                return [
+                    'snapshot' => $snapshot,
+                    'user' => $users->publicUser($user),
                     'session' => $sessions->publicState($user, $sessionId),
                 ];
 
