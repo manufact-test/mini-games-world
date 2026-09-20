@@ -63,7 +63,8 @@ foreach ([
     'renderTournamentSnapshot(errorMessage);',
     'const insufficient = !registered && available < fee;',
     'Недостаточно коинов',
-    'Можно регистрироваться.',
+    'В турнире участвуют ',
+    'Регистрация закроется, когда все места будут заняты.',
     'state.user = result.user;',
     'renderBalances(state.user);',
 ] as $needle) {
@@ -84,6 +85,10 @@ $assertTrue(
 $assertTrue(
     !str_contains($source['screen'], 'В резерве турнира:'),
     'Player Tournament must not repeat reservation money copy under the prizes.'
+);
+$assertTrue(
+    !str_contains($source['screen'], 'Можно регистрироваться.'),
+    'Player Tournament must not render a meaningless ready-to-register status card.'
 );
 $assertTrue(
     !str_contains(
@@ -109,11 +114,11 @@ $assertTrue(
 
 $assertTrue(
     str_contains($source['manifest'], 'client.js?v=1141')
-    && str_contains($source['manifest'], 'tournament-registration-runtime-fix-v3'),
+    && str_contains($source['manifest'], 'tournament-registration-diagnostic-v4'),
     'Corrective release must force a fresh API client module.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=8'),
+    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=9'),
     'Corrective release must force a fresh Tournament screen module.'
 );
 $assertTrue(
@@ -121,7 +126,7 @@ $assertTrue(
     'Corrective release must force a fresh Tournament Admin script.'
 );
 
-if ($assertions < 33) {
+if ($assertions < 35) {
     throw new RuntimeException('MVP-21.1 manual acceptance contract coverage is incomplete.');
 }
 fwrite(STDOUT, "Mvp21_1TournamentManualAcceptanceContractTest: {$assertions} assertions passed\n");

@@ -76,6 +76,12 @@ $assertTrue(str_contains($sources['player_api'], "['mgw_account_ref']"), 'Tourna
 $assertTrue(str_contains($sources['player_api'], '$runtimeStorageDriver !== \'database\''), 'Tournament writes must fail closed outside DB-primary runtime state.');
 $assertTrue(str_contains($sources['player_api'], '$user[UnifiedBalanceRuntimeState::FIELD] = $available'), 'Tournament writes must atomically project spendable balance into runtime state.');
 $assertTrue(str_contains($sources['player_api'], 'new TournamentRegistrationService('), 'Canonical API must delegate registration ownership to TournamentRegistrationService.');
+$assertTrue(str_contains($sources['player_api'], "case 'staging_test_tournament_balance':"), 'Live staging acceptance must have a bounded test-balance action.');
+$assertTrue(str_contains($sources['player_api'], "['stg_test_player_a', 'stg_test_player_b']"), 'Test-balance action must be restricted to dedicated A/B identities.');
+$assertTrue(str_contains($sources['player_api'], "['is_staging_test_user']"), 'Test-balance action must require staging-test authentication metadata.');
+$assertTrue(str_contains($sources['player_api'], "environment'] ?? ''))) !== 'staging'"), 'Test-balance action must fail closed outside staging.');
+$assertTrue(str_contains($sources['player_api'], 'Staging tournament balance control refuses an active reservation.'), 'Test-balance setup must never rewrite through an active reservation.');
+$assertTrue(str_contains($sources['player_api'], "'debug_error'=>substr(\$e->getMessage(), 0, 1800)"), 'Raw tournament debug error must exist only for the staging test path.');
 
 $assertTrue(str_contains($sources['status_endpoint'], 'getUserFromRequest($payload)'), 'Tournament status endpoint must authenticate the player.');
 $assertTrue(str_contains($sources['status_endpoint'], '$service->snapshot($mgwId, $accountRef)'), 'Tournament status endpoint must remain read-only and use canonical snapshot ownership.');
@@ -123,7 +129,7 @@ $assertTrue(str_contains($sources['admin_client'], "action:'create_draft'"), 'Ad
 $assertTrue(str_contains($sources['admin_client'], "action:'open_registration'"), 'Admin client must open registration explicitly.');
 $assertTrue(str_contains($sources['admin_css'], '.mgw-admin__tournament'), 'Tournament Admin must have bounded styling.');
 
-$assertTrue(str_contains($sources['manifest'], 'mvp21_1=tournament-registration-runtime-fix-v3'), 'Version manifest must publish tournament runtime-fix client identity.');
+$assertTrue(str_contains($sources['manifest'], 'mvp21_1=tournament-registration-diagnostic-v4'), 'Version manifest must publish the current tournament client identity.');
 $assertTrue(str_contains($sources['entry'], "X-MGW-Tournaments: official-registration-v1"), 'Rendered runtime must expose tournament fingerprint.');
 
 foreach ([
@@ -133,5 +139,5 @@ foreach ([
     $assertTrue(!str_contains($sources['service'], $forbiddenOwner), 'Tournament service must not become a game-engine owner: ' . $forbiddenOwner);
 }
 
-$assertTrue($assertions >= 68, 'MVP-21.1 integration contract must cover ownership, ledger, runtime reservation compatibility, UI and concurrency boundaries.');
+$assertTrue($assertions >= 74, 'MVP-21.1 integration contract must cover ownership, ledger, runtime reservation compatibility, UI, live staging acceptance and concurrency boundaries.');
 fwrite(STDOUT, "Mvp21_1TournamentRegistrationIntegrationContractTest: {$assertions} assertions passed\n");
