@@ -16,6 +16,7 @@ import { showHomeActivity, showBootFailure, dispatchAppReady } from './component
 import { initTypography } from './utils/typography.js?v=39';
 import { renderUser, renderBalances, clearTimer } from './ui.js?v=89';
 import { initHomeScreen, setRoom } from './screens/home-screen.js?v=74';
+import { initTournamentsScreen } from './screens/tournaments-screen-v1.js?v=1';
 import { initStoreScreen, openStoreTab } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
@@ -52,6 +53,7 @@ initTypography();
 initSheet();
 initUserCopy();
 initAppShellChrome();
+initTournamentsScreen();
 initShieldKingVisuals();
 initGameCardCopy();
 initNotificationsScreen();
