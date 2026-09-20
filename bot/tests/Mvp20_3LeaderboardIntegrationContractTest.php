@@ -20,10 +20,10 @@ $endpoint = $read('bot/leaderboard.php');
 $bootstrap = $read('bot/core/bootstrap.php');
 $client = $read('app/assets/js/api/client.js');
 $profile = $read('app/assets/js/screens/profile-screen-v110.js');
+$arena = $read('app/assets/js/screens/tournaments-screen-v1.js');
+$mainShell = $read('app/assets/js/main-v110-handoff-shell.js');
 $locale = json_decode($read('app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 $manifest = $read('app/runtime/client/version-manifest.php');
-$v110 = $read('app/v110.php');
-$launch = $read('bot/helpers/WebAppLaunchUrl.php');
 
 $assertTrue(str_contains($bootstrap, "../ratings/LeaderboardService.php"), 'Bootstrap must load one leaderboard owner.');
 $assertTrue(str_contains($migration, 'min_rated_matches') && str_contains($migration, 'DEFAULT 5'), 'Leaderboard minimum must stay five rated matches.');
@@ -57,6 +57,7 @@ foreach ([
     'domino',
 ] as $gameType) {
     $assertTrue(str_contains($leaderboard, "'{$gameType}'"), 'Leaderboard owner must support ' . $gameType . '.');
+    $assertTrue(str_contains($arena, "'{$gameType}'"), 'Arena rating selector must expose ' . $gameType . '.');
 }
 $assertTrue(str_contains($leaderboard, "HAVING COUNT(*) >= ' . \$minMatches"), 'Eligibility must enforce minimum rated matches in the authoritative query.');
 $assertTrue(str_contains($leaderboard, ">= ' . \$minWins"), 'Eligibility must enforce minimum human wins in the authoritative query.');
@@ -66,25 +67,49 @@ $assertTrue(str_contains($leaderboard, 's.updated_at_utc ASC'), 'Earlier arrival
 $assertTrue(str_contains($leaderboard, 's.mgw_id ASC'), 'Stable MGW id must be the final deterministic tie-break.');
 $assertTrue(str_contains($leaderboard, 'MgwIdGenerator::toPublic'), 'Leaderboard must expose public MGW id rather than internal identifiers.');
 $assertTrue(!str_contains($leaderboard, 'HiddenSkillService') && !str_contains($leaderboard, 'skill_score'), 'Leaderboard must not expose hidden skill.');
+$assertTrue(
+    str_contains($leaderboard, 'mgw_identities')
+        && str_contains($leaderboard, "dev_identity.provider = :development_provider")
+        && str_contains($leaderboard, "'development_provider' => 'development'"),
+    'Public leaderboard must exclude development-provider staging identities without deleting their audit history.'
+);
 
-$assertTrue(str_contains($endpoint, 'PerGameRatingRuntimeBridge'), 'Leaderboard endpoint must reuse the canonical rating projection before reads.');
+$assertTrue(str_contains($endpoint, 'PerGameRatingRuntimeBridge'), 'Leaderboard endpoint must reuse the canonical rating projection owner.');
+$assertTrue(str_contains($endpoint, 'processProjectedMatches(50)'), 'Leaderboard endpoint must use bounded projected-match catch-up.');
+$assertTrue(!str_contains($endpoint, 'snapshotForProfile('), 'Leaderboard reads must not invoke the heavy Profile synchronization path.');
 $assertTrue(str_contains($endpoint, 'new LeaderboardService'), 'Leaderboard endpoint must read through the single leaderboard owner.');
 $assertTrue(!str_contains($endpoint, 'HiddenSkillService') && !str_contains($endpoint, 'skill_score'), 'Endpoint must not expose hidden skill.');
 
 $assertTrue(str_contains($client, 'LEADERBOARD_URL'), 'Client must use one dedicated leaderboard endpoint.');
 $assertTrue(str_contains($client, 'leaderboard: (gameType'), 'Client API must expose lazy per-game leaderboard loading.');
-$assertTrue(str_contains($profile, "data-open-leaderboard"), 'Profile must provide one user-facing leaderboard launcher.');
-$assertTrue(str_contains($profile, 'openLeaderboardSheet'), 'Leaderboard UI must load only after the user opens it.');
-$assertTrue(str_contains($profile, 'GAME_TYPES.map(type => leaderboardTab'), 'Leaderboard sheet must expose all eight game tabs.');
-$assertTrue(str_contains($profile, "profile.leaderboard_preseason"), 'PRESEASON board must be visibly marked as non-official.');
-$assertTrue(!str_contains($profile, 'skill_score') && !str_contains($profile, 'hidden_skill'), 'Profile leaderboard must not display hidden skill.');
 
+$assertTrue(!str_contains($profile, 'data-open-leaderboard'), 'Profile must not own the global leaderboard launcher after the Arena corrective.');
+$assertTrue(!str_contains($profile, 'openLeaderboardSheet'), 'Profile must not own the global leaderboard sheet after the Arena corrective.');
+$assertTrue(str_contains($profile, "profile.rating_title"), 'Profile must preserve personal visible rating.');
+
+$assertTrue(str_contains($mainShell, "initTournamentsScreen"), 'Main shell must initialize the competition screen owner.');
+$assertTrue(str_contains($mainShell, "tournaments-screen-v1.js?v=2&arena=rating-tournaments-v1"), 'Main shell must load the fresh Arena module identity.');
+$assertTrue(str_contains($arena, 'data-competition-mode="rating"'), 'Arena must expose Rating as a primary competition tab.');
+$assertTrue(str_contains($arena, 'data-competition-mode="tournaments"'), 'Arena must expose Tournaments as a separate primary competition tab.');
+$assertTrue(str_contains($arena, 'data-tournaments-game'), 'Arena must own the per-game rating selector.');
+$assertTrue(str_contains($arena, "addEventListener('wheel'"), 'Arena game selector must support mouse-wheel overflow.');
+$assertTrue(str_contains($arena, "addEventListener('pointermove'"), 'Arena game selector must support mouse drag overflow.');
+$assertTrue(str_contains($arena, 'data-tournaments-scroll'), 'Arena game selector must expose explicit left/right overflow controls.');
+$assertTrue(str_contains($arena, 'CACHE_TTL_MS'), 'Arena must cache recent per-game boards instead of refetching every tab activation.');
+$assertTrue(!str_contains($arena, 'leaderboard_preseason'), 'Arena must not render a PRESEASON badge.');
+$assertTrue(!str_contains($arena, 'leaderboard_progress'), 'Arena must not render the rejected eligibility progress strip above the board.');
+$assertTrue(!str_contains($arena, 'skill_score') && !str_contains($arena, 'hidden_skill'), 'Arena must not display hidden skill.');
+
+$nav = $locale['nav'] ?? [];
+$shell = $locale['shell'] ?? [];
 $profileKeys = $locale['profile'] ?? [];
+$assertTrue(($nav['tournaments'] ?? null) === 'Арена', 'Bottom navigation label must be Арена.');
+$assertTrue(($shell['tournaments_title'] ?? null) === 'Соревнования', 'Arena page heading must be Соревнования.');
+$assertTrue(($shell['competition_rating'] ?? null) === 'Рейтинг', 'Competition primary tab must include Рейтинг.');
+$assertTrue(($shell['competition_tournaments'] ?? null) === 'Турниры', 'Competition primary tab must include Турниры.');
 foreach ([
     'leaderboard_title',
     'leaderboard_open_note',
-    'leaderboard_preseason',
-    'leaderboard_progress',
     'leaderboard_empty',
     'leaderboard_error',
 ] as $key) {
@@ -93,11 +118,14 @@ foreach ([
         'Russian locale must define profile.' . $key
     );
 }
+$assertTrue(
+    !str_contains(strtolower((string)($profileKeys['leaderboard_open_note'] ?? '')), 'предсезон')
+        && !str_contains(strtolower((string)($profileKeys['leaderboard_empty'] ?? '')), 'предсезон'),
+    'Normal leaderboard copy must not surface PRESEASON.'
+);
 
-$assertTrue(str_contains($manifest, 'mvp20_3=leaderboards-v1'), 'Version manifest must publish fresh leaderboard client assets.');
-$assertTrue(str_contains($v110, 'X-MGW-Leaderboards: per-game-antifarming-v1'), 'Active v110 entry must identify the leaderboard runtime.');
-$assertTrue(str_contains($launch, 'leaderboards=per-game-antifarming-v1'), 'Telegram launch identity must include MVP-20.3.');
+$assertTrue(str_contains($manifest, 'mvp20_3=leaderboards-v1'), 'Version manifest must preserve the accepted leaderboard runtime identity.');
+$assertTrue(str_contains($manifest, 'arena=competition-rating-v1'), 'Version manifest must publish the competition shell cache identity.');
 $assertTrue(str_contains($manifest, 'mvp20_1=visible-rating-v2'), 'MVP-20.1 visible-rating identity must remain frozen.');
-$assertTrue(str_contains($v110, 'X-MGW-Visible-Rating: per-game-preseason-v2'), 'Existing visible-rating header must remain frozen.');
 
 fwrite(STDOUT, "Mvp20_3LeaderboardIntegrationContractTest: {$assertions} assertions passed\n");

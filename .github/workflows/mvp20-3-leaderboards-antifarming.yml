@@ -19,6 +19,8 @@ on:
       - '.github/workflows/mvp19-3-profile-game-cosmetics.yml'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/js/screens/tournaments-screen-v1.js'
+      - 'app/assets/js/main-v110-handoff-shell.js'
       - 'app/assets/css/main.css'
       - 'app/locales/ru.json'
       - 'app/runtime/client/version-manifest.php'
@@ -81,6 +83,8 @@ jobs:
         run: |
           node --input-type=module --check < app/assets/js/api/client.js
           node --input-type=module --check < app/assets/js/screens/profile-screen-v110.js
+          node --input-type=module --check < app/assets/js/screens/tournaments-screen-v1.js
+          node --input-type=module --check < app/assets/js/main-v110-handoff-shell.js
 
       - name: Run MVP-20.3 anti-farming and leaderboard model
         run: php bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php
@@ -119,6 +123,7 @@ jobs:
           while IFS= read -r path; do
             case "$path" in
               .github/workflows/mvp20-3-leaderboards-antifarming.yml|\
+              .github/workflows/mvp20-1-per-game-visible-rating.yml|\
               bot/database/migrations/20260919_0044_create_leaderboards_and_antifarming.php|\
               bot/ratings/PerGameRatingService.php|\
               bot/ratings/LeaderboardService.php|\
@@ -133,11 +138,15 @@ jobs:
               .github/workflows/mvp19-3-profile-game-cosmetics.yml|\
               app/assets/js/api/client.js|\
               app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/js/main-v110-handoff-shell.js|\
               app/assets/css/main.css|\
               app/locales/ru.json|\
               app/runtime/client/version-manifest.php|\
               app/v110.php|\
-              bot/helpers/WebAppLaunchUrl.php)
+              bot/helpers/WebAppLaunchUrl.php|\
+              docs/MGW_SMALL_CANONICAL_2026-09-20_MVP20_3_ARENA_LEADERBOARD_CORRECTIVE_CHECKPOINT.md|\
+              docs/MGW_CURRENT_SHORT_ROADMAP_2026-09-20_MVP20_3_ARENA_CORRECTIVE_IN_PROGRESS.md)
                 ;;
               *)
                 echo "Unexpected MVP-20.3 path: $path" >&2
