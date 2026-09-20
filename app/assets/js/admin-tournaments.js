@@ -1,0 +1,173 @@
+(() => {
+  'use strict';
+
+  const root = document.querySelector('.mgw-admin');
+  const card = document.querySelector('[data-tournament-admin]');
+  if (!root || !card) return;
+
+  const endpoint = String(root.dataset.tournamentApi || '');
+  const telegram = window.Telegram?.WebApp || null;
+  const status = card.querySelector('[data-tournament-admin-status]');
+  const summary = card.querySelector('[data-tournament-admin-summary]');
+  const current = card.querySelector('[data-tournament-current]');
+  const rewards = card.querySelector('[data-tournament-rewards]');
+  const title = card.querySelector('[data-tournament-title]');
+  const game = card.querySelector('[data-tournament-game]');
+  const capacity = card.querySelector('[data-tournament-capacity]');
+  const create = card.querySelector('[data-tournament-create]');
+  const open = card.querySelector('[data-tournament-open]');
+  const refresh = card.querySelector('[data-tournament-refresh]');
+  let busy = false;
+  let snapshot = null;
+
+  const format = value => new Intl.NumberFormat('ru-RU').format(Number(value || 0));
+
+  const setBusy = value => {
+    busy = value;
+    card.querySelectorAll('button, input, select').forEach(control => {
+      control.disabled = value || control === open && open.dataset.available !== '1';
+    });
+  };
+
+  const setStatus = (message, state = '') => {
+    status.textContent = message;
+    if (state) status.dataset.state = state;
+    else delete status.dataset.state;
+  };
+
+  const post = async payload => {
+    if (!telegram?.initData) throw new Error('Откройте Web Admin из Telegram.');
+    const response = await fetch(endpoint, {
+      method:'POST',
+      cache:'no-store',
+      credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({...payload, initData:telegram.initData})
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.ok !== true) {
+      throw new Error(String(data.error || 'Tournament Admin request failed.'));
+    }
+    return data;
+  };
+
+  const summaryCard = (label, value) => {
+    const node = document.createElement('div');
+    const span = document.createElement('span');
+    const strong = document.createElement('strong');
+    span.textContent = label;
+    strong.textContent = value;
+    node.append(span, strong);
+    return node;
+  };
+
+  const render = value => {
+    snapshot = value && typeof value === 'object' ? value : {};
+    const tournament = snapshot.tournament && typeof snapshot.tournament === 'object'
+      ? snapshot.tournament
+      : null;
+
+    summary.replaceChildren();
+    if (!tournament) {
+      summary.append(
+        summaryCard('Статус', 'нет активного турнира'),
+        summaryCard('Entry', '50 000'),
+        summaryCard('Участники', '8 / 16 / 32 / 64 / 128')
+      );
+      current.textContent = 'Официальный турнир ещё не создан.';
+      rewards.textContent = 'Reward snapshot появится после создания draft.';
+      create.disabled = busy;
+      open.disabled = true;
+      open.dataset.available = '0';
+      return;
+    }
+
+    const state = String(tournament.state || '—');
+    const count = Number(tournament.registered_count || 0);
+    const cap = Number(tournament.capacity || 0);
+    const fee = Number(tournament?.entry_fee?.amount || 50000);
+
+    summary.append(
+      summaryCard('Статус', state),
+      summaryCard('Игра', String(tournament.game_type || '—')),
+      summaryCard('Участники', `${format(count)} / ${format(cap)}`),
+      summaryCard('Entry', format(fee))
+    );
+
+    current.textContent = `${tournament.title || 'Официальный турнир'} · ${tournament.game_type || '—'} · ${format(count)}/${format(cap)}`;
+    rewards.textContent = JSON.stringify(tournament.reward_snapshot || {}, null, 2);
+
+    create.disabled = true;
+    const canOpen = state === 'draft';
+    open.dataset.available = canOpen ? '1' : '0';
+    open.disabled = busy || !canOpen;
+  };
+
+  const withBusy = async (message, action) => {
+    if (busy) return null;
+    setBusy(true);
+    setStatus(message);
+    try {
+      const data = await action();
+      render(data.snapshot || {});
+      return data;
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Tournament Admin operation failed.', 'error');
+      throw error;
+    } finally {
+      busy = false;
+      setBusy(false);
+      render(snapshot || {});
+    }
+  };
+
+  const load = async () => {
+    try {
+      await withBusy('Загружаю Tournament Admin…', () => post({action:'snapshot'}));
+      setStatus('Tournament Admin загружен.', 'ok');
+    } catch (_) {}
+  };
+
+  const createDraft = async () => {
+    const selectedGame = String(game.value || '').trim();
+    const selectedCapacity = Number(capacity.value || 0);
+    const selectedTitle = String(title.value || '').trim() || 'Официальный турнир';
+    if (!selectedGame || ![8,16,32,64,128].includes(selectedCapacity)) {
+      setStatus('Выберите игру и допустимый размер турнира.', 'error');
+      return;
+    }
+    if (!window.confirm(`Создать официальный tournament draft на ${selectedCapacity} участников? Reward snapshot и entry 50 000 будут зафиксированы.`)) return;
+
+    try {
+      await withBusy('Создаю tournament draft…', () => post({
+        action:'create_draft',
+        game_type:selectedGame,
+        capacity:selectedCapacity,
+        title:selectedTitle,
+      }));
+      setStatus('Tournament draft создан. Проверьте snapshot и откройте регистрацию.', 'ok');
+    } catch (_) {}
+  };
+
+  const openRegistration = async () => {
+    const tournamentId = String(snapshot?.tournament?.tournament_id || '');
+    if (!tournamentId) return;
+    if (!window.confirm('Открыть регистрацию? Игроки смогут резервировать 50 000 коинов и занимать места.')) return;
+
+    try {
+      await withBusy('Открываю регистрацию…', () => post({
+        action:'open_registration',
+        tournament_id:tournamentId,
+      }));
+      setStatus('Регистрация официального турнира открыта.', 'ok');
+    } catch (_) {}
+  };
+
+  refresh?.addEventListener('click', load);
+  create?.addEventListener('click', createDraft);
+  open?.addEventListener('click', openRegistration);
+
+  if (telegram?.initData) {
+    window.setTimeout(load, 180);
+  }
+})();
