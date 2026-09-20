@@ -3,7 +3,7 @@ declare(strict_types=1);
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/services/GameLaunchFinalizationService.php';
 require_once __DIR__ . '/services/MatchPreparationRuntimeService.php';
-require_once __DIR__ . '/notifications/AdminNotificationEventService.php';
+require_once __DIR__ . '/tournaments/TournamentAdminNotificationBridge.php';
 
 function mgw_cleanup_games_if_due(array &$data, ChessRuntimeService $games, bool $force = false): void
 {
@@ -67,51 +67,14 @@ function mgw_emit_tournament_full_admin_event(
     array $config,
     array $snapshot
 ): void {
-    $tournament = $snapshot['tournament'] ?? null;
-    if (!is_array($tournament)
-        || empty($tournament['waiting_for_date'])
-        || (string)($tournament['registration_closed_reason'] ?? '') !== 'full') {
-        return;
-    }
-
-    $tournamentId = trim((string)($tournament['tournament_id'] ?? ''));
-    if ($tournamentId === '') return;
     $adminIds = is_array($config['admin_ids'] ?? null) ? $config['admin_ids'] : [];
     if ($adminIds === []) return;
 
-    $db->transaction(function (array &$data) use ($tournament, $tournamentId, $adminIds): void {
-        $recipientMgwIds = [];
-        foreach ($data['users'] ?? [] as $userKey=>$user) {
-            if (!is_array($user)) continue;
-            $legacyId = (string)($user['id'] ?? $userKey);
-            $isAdmin = false;
-            foreach ($adminIds as $adminId) {
-                if ((string)$adminId === $legacyId) {
-                    $isAdmin = true;
-                    break;
-                }
-            }
-            if (!$isAdmin) continue;
-            $mgwId = trim((string)($user['mgw_id'] ?? ''));
-            if ($mgwId !== '') $recipientMgwIds[$mgwId] = $mgwId;
-        }
-        if ($recipientMgwIds === []) return;
-
-        $title = trim((string)($tournament['title'] ?? 'Официальный турнир'));
-        $count = (int)($tournament['registered_count'] ?? 0);
-        $capacity = (int)($tournament['capacity'] ?? 0);
-        (new AdminNotificationEventService())->createEvent(
+    $db->transaction(function (array &$data) use ($adminIds, $snapshot): void {
+        (new TournamentAdminNotificationBridge())->emitRegistrationFull(
             $data,
-            [
-                'source_type'=>'system',
-                'audience_type'=>'segment',
-                'audience_ref'=>'official-tournament-full:' . $tournamentId,
-                'recipient_mgw_ids'=>array_values($recipientMgwIds),
-                'title'=>'Состав турнира набран',
-                'text'=>"«{$title}»: {$count}/{$capacity}. Регистрация закрыта. Турнир ожидает назначения даты.",
-                'request_id'=>'official-tournament.' . $tournamentId . '.registration-full.admin',
-            ],
-            'system:tournament'
+            $adminIds,
+            $snapshot
         );
     });
 }
