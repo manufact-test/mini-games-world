@@ -74,6 +74,7 @@ try {
     }
     $inventory = (new ProductInventoryService($database))->snapshot($mgwId);
     $rating = (new PerGameRatingRuntimeBridge($configRef, $router, $database))->snapshotForProfile($mgwId);
+    $yearlyMedals = (new YearlyMedalService($database))->userSnapshot($mgwId);
 
     $users = new UserService($configRef);
     $historyService = new HistoryService($configRef, $users);
@@ -95,6 +96,7 @@ try {
         'profile'=>$canonicalProfile,
         'inventory'=>$inventory,
         'rating'=>$rating,
+        'yearly_medals'=>$yearlyMedals,
         'user'=>$runtime['user'] ?? null,
         'stats'=>$runtime['stats'] ?? null,
         'history'=>$runtime['history'] ?? ['matches'=>[],'operations'=>[]],
