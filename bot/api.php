@@ -172,6 +172,89 @@ try {
                     'session' => $sessions->publicState($user, $sessionId),
                 ];
 
+            case 'staging_test_tournament_balance':
+                if (strtolower(trim((string)($config['environment'] ?? ''))) !== 'staging'
+                    || empty($tgUser['is_staging_test_user'])
+                    || !in_array($userId, ['stg_test_player_a', 'stg_test_player_b'], true)) {
+                    throw new RuntimeException('Staging tournament balance control is unavailable.');
+                }
+                if ($runtimeStorageDriver !== 'database') {
+                    throw new RuntimeException('Staging tournament balance control requires canonical DB-primary runtime state.');
+                }
+
+                $targetBalance = filter_var(
+                    $payload['targetBalance'] ?? null,
+                    FILTER_VALIDATE_INT
+                );
+                if ($targetBalance === false || $targetBalance < 0 || $targetBalance > 250000) {
+                    throw new InvalidArgumentException('Staging tournament target balance is invalid.');
+                }
+                $requestToken = trim((string)($payload['requestToken'] ?? ''));
+                if (preg_match('/^[A-Za-z0-9._:-]{12,96}$/', $requestToken) !== 1) {
+                    throw new InvalidArgumentException('Staging tournament request token is invalid.');
+                }
+
+                $mgwId = trim((string)($user['mgw_id'] ?? ''));
+                $accountRef = trim((string)($user['mgw_account_ref'] ?? ''));
+                if ($mgwId === '' || $accountRef === '') {
+                    throw new RuntimeException('Staging tournament balance control requires canonical account identity.');
+                }
+
+                $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+                if (!$databaseConfig->enabled()) {
+                    throw new RuntimeException('Staging tournament balance control requires an enabled database.');
+                }
+                $database = PdoConnectionFactory::create($databaseConfig);
+                $ledger = new LedgerWriteService($database);
+                $balance = $ledger->getBalance(
+                    $accountRef,
+                    TournamentRegistrationService::ENTRY_ASSET
+                );
+                if (!is_array($balance)) {
+                    throw new RuntimeException('Staging tournament balance is unavailable.');
+                }
+                if ((int)($balance['reserved_amount'] ?? 0) !== 0) {
+                    throw new RuntimeException('Staging tournament balance control refuses an active reservation.');
+                }
+
+                $available = (int)($balance['available_amount'] ?? 0);
+                $delta = (int)$targetBalance - $available;
+                if ($delta !== 0) {
+                    $ledger->postAvailableDelta([
+                        'operation_key'=>'staging-tournament-e2e:' . $userId . ':' . $requestToken,
+                        'account_ref'=>$accountRef,
+                        'mgw_id'=>$mgwId,
+                        'legacy_user_id'=>$userId,
+                        'asset_code'=>TournamentRegistrationService::ENTRY_ASSET,
+                        'available_delta'=>$delta,
+                        'category'=>'staging_test_adjustment',
+                        'source_type'=>'staging_test',
+                        'source_ref'=>'mvp21_1_live_e2e',
+                        'metadata'=>[
+                            'test_only'=>true,
+                            'target_balance'=>(int)$targetBalance,
+                        ],
+                    ]);
+                }
+
+                $balance = $ledger->getBalance(
+                    $accountRef,
+                    TournamentRegistrationService::ENTRY_ASSET
+                );
+                if (!is_array($balance)
+                    || (int)($balance['available_amount'] ?? -1) !== (int)$targetBalance
+                    || (int)($balance['reserved_amount'] ?? -1) !== 0) {
+                    throw new RuntimeException('Staging tournament balance control did not reach the requested state.');
+                }
+                $user[UnifiedBalanceRuntimeState::FIELD] = (int)$targetBalance;
+
+                return [
+                    'test_only'=>true,
+                    'balance'=>$balance,
+                    'user'=>$users->publicUser($user),
+                    'session'=>$sessions->publicState($user, $sessionId),
+                ];
+
             case 'tournament_status':
             case 'tournament_register':
             case 'tournament_leave':
@@ -511,5 +594,29 @@ try {
 
     api_ok($result);
 } catch (Throwable $e) {
+    $isStagingTournamentTest = strtolower(trim((string)($config['environment'] ?? ''))) === 'staging'
+        && in_array(
+            (string)($action ?? ''),
+            ['staging_test_tournament_balance', 'tournament_register', 'tournament_leave'],
+            true
+        )
+        && is_array($tgUser ?? null)
+        && !empty($tgUser['is_staging_test_user'])
+        && in_array(
+            (string)($tgUser['id'] ?? ''),
+            ['stg_test_player_a', 'stg_test_player_b'],
+            true
+        );
+
+    if ($isStagingTournamentTest) {
+        json_response([
+            'ok'=>false,
+            'error'=>mgw_public_api_error($e->getMessage()),
+            'debug_error'=>substr($e->getMessage(), 0, 1800),
+            'debug_exception'=>get_class($e),
+            'test_only'=>true,
+        ], 400);
+    }
+
     api_error($e->getMessage());
 }
