@@ -159,10 +159,13 @@ jobs:
             case "$path" in
               .github/workflows/mvp21-1-tournament-registration.yml|\
               .github/workflows/mvp21-2-tournament-rules.yml|\
+              .github/workflows/mvp21-3-tournament-schedule.yml|\
               bot/database/migrations/20260920_0050_add_tournament_rules_consent.php|\
               bot/database/migrations/20260920_0051_refresh_tournament_rules_copy.php|\
+              bot/database/migrations/20260921_0052_add_tournament_schedule.php|\
               bot/tournaments/TournamentRegistrationService.php|\
               bot/tournaments/TournamentAdminNotificationBridge.php|\
+              bot/tournaments/TournamentParticipantNotificationBridge.php|\
               bot/api.php|\
               bot/tournament-status.php|\
               app/assets/js/api/client.js|\
@@ -178,6 +181,7 @@ jobs:
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
               bot/tests/Mvp21_2TournamentRulesTest.php|\
               bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php|\
+              bot/tests/Mvp21_3TournamentScheduleTest.php|\
               bot/tests/RuntimeNotificationRepositoryTest.php|\
               e2e/staging/tournament-registration-live.spec.mjs|\
               bot/staging-projection-diagnostic.php|\
