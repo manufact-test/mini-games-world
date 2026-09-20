@@ -123,7 +123,8 @@ $user1Account = 'legacy:tg-1';
 $registered = $service->register(
     $ids[1],
     $user1Account,
-    new DateTimeImmutable('2026-09-20T13:03:00Z')
+    new DateTimeImmutable('2026-09-20T13:03:00Z'),
+    $rulesConsent
 );
 $assertSame('registered', $registered['registration']['state'], 'Player must become registered.');
 $assertSame(1, $registered['registration']['attempt_no'], 'First registration must use attempt 1.');
