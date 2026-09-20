@@ -60,6 +60,7 @@ SQL);
 
 (require $root . '/database/migrations/20260717_0005_create_balances_ledger_reservations.php')->up($db);
 (require $root . '/database/migrations/20260920_0049_create_official_tournaments.php')->up($db);
+(require $root . '/database/migrations/20260920_0050_add_tournament_rules_consent.php')->up($db);
 
 $db->execute(<<<'SQL'
 CREATE TABLE mgw_runtime_primary_state (
@@ -115,11 +116,17 @@ $draft = $service->createDraft(
     new DateTimeImmutable('2026-09-20T14:01:00Z')
 );
 $tournamentId = (string)$draft['tournament']['tournament_id'];
-$service->openRegistration(
+$opened = $service->openRegistration(
     $tournamentId,
     'test:mysql',
     new DateTimeImmutable('2026-09-20T14:02:00Z')
 );
+$rulesConsent = [
+    'accepted'=>true,
+    'version'=>(string)$opened['tournament']['rules']['version'],
+    'language'=>(string)$opened['tournament']['rules']['language'],
+    'sha256'=>(string)$opened['tournament']['rules']['sha256'],
+];
 
 $storage = new DatabasePrimaryStateStorageAdapter($db);
 $storage->initializeFromSnapshot([
@@ -139,12 +146,14 @@ $result = $storage->transaction(function (array &$state) use (
     $service,
     $mgwId,
     $accountRef,
-    $legacyUserId
+    $legacyUserId,
+    $rulesConsent
 ): array {
     $snapshot = $service->register(
         $mgwId,
         $accountRef,
-        new DateTimeImmutable('2026-09-20T14:03:00Z')
+        new DateTimeImmutable('2026-09-20T14:03:00Z'),
+        $rulesConsent
     );
     $state['users'][$legacyUserId]['balance'] = (int)$snapshot['balance']['available_amount'];
     return $snapshot;
@@ -170,9 +179,10 @@ $duplicate = $storage->transaction(function (array &$state) use (
     $service,
     $mgwId,
     $accountRef,
-    $legacyUserId
+    $legacyUserId,
+    $rulesConsent
 ): array {
-    $snapshot = $service->register($mgwId, $accountRef);
+    $snapshot = $service->register($mgwId, $accountRef, null, $rulesConsent);
     $state['users'][$legacyUserId]['balance'] = (int)$snapshot['balance']['available_amount'];
     return $snapshot;
 });
