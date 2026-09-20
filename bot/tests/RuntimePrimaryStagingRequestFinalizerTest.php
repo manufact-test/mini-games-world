@@ -127,11 +127,14 @@ final class RuntimePrimaryStagingRequestFinalizerTestWorker implements RuntimePr
         $this->calls++;
         foreach ($this->database->events as $revision => &$event) {
             if ((string)$event['status'] === 'completed') continue;
-            if ($this->mode === 'busy' || $this->mode === 'busy_then_complete') {
-                if ($this->mode === 'busy_then_complete') {
+            if ($this->mode === 'busy'
+                || $this->mode === 'busy_then_complete'
+                || ($this->mode === 'busy_once_then_normal' && $this->calls === 1)) {
+                if ($this->mode === 'busy_then_complete'
+                    || $this->mode === 'busy_once_then_normal') {
                     // Simulate another request owning the projection lease and
-                    // completing this exact revision while the current request
-                    // observes projection_busy.
+                    // completing the reported revision while the current
+                    // request observes projection_busy.
                     $event['status'] = 'completed';
                     $event['attempt_count'] = max(1, (int)$event['attempt_count'] + 1);
                     $event['lease_token'] = '';
@@ -311,6 +314,30 @@ $assertTrue(
 $assertTrue(
     ($db->events[2]['status'] ?? '') === 'completed',
     'Concurrent owner must leave the current revision completed.'
+);
+
+$storage = new DatabasePrimaryStateStorageAdapter(3, ['mode' => 'busy_older_then_current']);
+$db = new RuntimePrimaryStagingRequestFinalizerTestDatabase([
+    $event(1, str_repeat('1', 64), 'completed', 1),
+    $event(2, str_repeat('2', 64), 'pending', 0),
+    $event(3, $storage->sha(), 'pending', 0),
+]);
+$worker = new RuntimePrimaryStagingRequestFinalizerTestWorker($db, 'busy_once_then_normal');
+$report = (new RuntimePrimaryStagingRequestFinalizer(
+    $db,
+    $worker,
+    new RuntimePrimaryStagingRequestFinalizerTestAuditor(),
+    $session,
+    $now
+))->finalize($storage, $resolution);
+$assertTrue(
+    ($report['worker_tick_count'] ?? 0) === 2,
+    'Busy older revision must be waited out before projecting the current revision.'
+);
+$assertTrue(
+    ($db->events[2]['status'] ?? '') === 'completed'
+    && ($db->events[3]['status'] ?? '') === 'completed',
+    'Concurrent older completion must still drain through the current revision.'
 );
 
 $storage = new DatabasePrimaryStateStorageAdapter(3, ['sequence' => 3]);
