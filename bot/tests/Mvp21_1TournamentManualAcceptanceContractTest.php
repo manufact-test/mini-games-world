@@ -26,6 +26,7 @@ foreach ([
     'Официальный турнир',
     'Управление турниром ещё не загружено.',
     'Создать черновик',
+    'Правила турнира',
     'Снимок наград',
     'Взнос фиксирован: 50 000 коинов MGW.',
 ] as $needle) {
@@ -44,10 +45,12 @@ foreach ([
 foreach ([
     "draft:'черновик'",
     "registration_open:'регистрация открыта'",
+    "waiting_for_date:'состав набран · ожидает дату'",
     "summaryCard('Взнос'",
     "'Крестики-нолики'",
     'Снимок наград появится после создания черновика.',
     'Золотой билет нельзя продать или передать другому игроку.',
+    'Правила являются снимком этого турнира.',
 ] as $needle) {
     $assertTrue(str_contains($source['admin_js'], $needle), 'Tournament Admin client must localize: ' . $needle);
 }
@@ -78,6 +81,9 @@ foreach ([
     'tournaments-v2-tournament-participants',
     'state.user = responseUser;',
     'renderBalances(state.user);',
+    'data-tournament-rules-consent',
+    'Я прочитал(а) и принимаю правила этого турнира.',
+    'Состав набран · ожидаем назначения даты',
 ] as $needle) {
     $assertTrue(str_contains($source['screen'], $needle), 'Player Tournament corrective missing: ' . $needle);
 }
@@ -152,31 +158,33 @@ foreach ([
     'justify-content:space-between;',
     '.tournaments-v2-tournament-action.is-pending{',
     'mgw-tournament-pending-spin',
+    '.tournaments-v2-tournament-rules{',
+    '.tournaments-v2-tournament-consent{',
 ] as $needle) {
     $assertTrue(str_contains($source['css'], $needle), 'Tournament manual UX CSS missing: ' . $needle);
 }
 
 $assertTrue(
-    str_contains($source['manifest'], 'client.js?v=1141')
-    && str_contains($source['manifest'], 'tournament-registration-diagnostic-v4'),
+    str_contains($source['manifest'], 'client.js?v=1142')
+    && str_contains($source['manifest'], 'mvp21_2=tournament-rules-consent-v1'),
     'Corrective release must force a fresh API client module.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=11')
-    && str_contains($source['manifest'], 'tournament-registration-manual-fix-v4'),
+    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=12')
+    && str_contains($source['manifest'], 'mvp21_2=tournament-rules-consent-v1'),
     'Corrective release must force a fresh Tournament screen module.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'main.css?v=195')
-    && str_contains($source['manifest'], 'mvp21_1_ux=manual-v3'),
+    str_contains($source['manifest'], 'main.css?v=196')
+    && str_contains($source['manifest'], 'mvp21_2=tournament-rules-consent-v1'),
     'Corrective release must force fresh Tournament CSS.'
 );
 $assertTrue(
-    str_contains($source['admin'], 'admin-tournaments.js?v=2&mvp21_1=manual-acceptance-fix'),
+    str_contains($source['admin'], 'admin-tournaments.js?v=3&mvp21_2=rules-consent-autoclose'),
     'Corrective release must force a fresh Tournament Admin script.'
 );
 
-if ($assertions < 35) {
+if ($assertions < 42) {
     throw new RuntimeException('MVP-21.1 manual acceptance contract coverage is incomplete.');
 }
 fwrite(STDOUT, "Mvp21_1TournamentManualAcceptanceContractTest: {$assertions} assertions passed\n");
