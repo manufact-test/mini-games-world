@@ -43,7 +43,7 @@ foreach (["action === 'exclude'","action === 'restore'","action === 'recalculate
     $assertTrue(str_contains($sources['endpoint'], $needle), 'Rating Admin endpoint missing action: ' . $needle);
 }
 $assertTrue(str_contains($sources['bootstrap'], "ratings/RatingAdminService.php"), 'Runtime bootstrap must load RatingAdminService.');
-$assertTrue(str_contains($sources['visible'], "return $this->finalDecision(0, 'bot_game')"), 'Visible rating must keep bot games unrated.');
+$assertTrue(str_contains($sources['visible'], "return \$this->finalDecision(0, 'bot_game')"), 'Visible rating must keep bot games unrated.');
 $assertTrue(str_contains($sources['hidden'], "'bot_game'"), 'Hidden skill must keep bot games excluded.');
 
 $assertTrue(str_contains($sources['admin'], 'data-rating-api="../bot/admin-rating.php"'), 'Web Admin must publish Rating Admin endpoint.');
