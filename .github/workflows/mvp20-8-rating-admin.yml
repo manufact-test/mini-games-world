@@ -1,0 +1,124 @@
+name: MVP-20.8 Rating admin, metrics and regression
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260920_0048_create_rating_admin_review.php'
+      - 'bot/ratings/RatingAdminService.php'
+      - 'bot/admin-rating.php'
+      - 'bot/core/bootstrap.php'
+      - 'app/admin.php'
+      - 'app/assets/js/admin-rating.js'
+      - 'app/assets/css/admin-shell.css'
+      - 'bot/tests/Mvp20_8RatingAdminTest.php'
+      - 'bot/tests/Mvp20_8RatingAdminIntegrationContractTest.php'
+      - 'bot/tests/Mvp20_8RatingLoadTest.php'
+      - '.github/workflows/mvp20-8-rating-admin.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp20-8-rating-admin-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Review exclusions, recalculation, rehearsal and load
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint MVP-20.8 server and Admin slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            bot/database/migrations/20260920_0048_create_rating_admin_review.php
+            bot/ratings/RatingAdminService.php
+            bot/admin-rating.php
+            bot/core/bootstrap.php
+            app/admin.php
+            bot/tests/Mvp20_8RatingAdminTest.php
+            bot/tests/Mvp20_8RatingAdminIntegrationContractTest.php
+            bot/tests/Mvp20_8RatingLoadTest.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done
+          node --check app/assets/js/admin-rating.js
+
+      - name: Run MVP-20.8 reviewed correction model
+        run: php bot/tests/Mvp20_8RatingAdminTest.php
+
+      - name: Run MVP-20.8 integration contract
+        run: php bot/tests/Mvp20_8RatingAdminIntegrationContractTest.php
+
+      - name: Run MVP-20.8 focused load regression
+        run: php bot/tests/Mvp20_8RatingLoadTest.php
+
+      - name: Preserve MVP-20.7 rating archives
+        run: |
+          php bot/tests/Mvp20_7RatingArchiveTest.php
+          php bot/tests/Mvp20_7RatingArchiveIntegrationContractTest.php
+
+      - name: Preserve MVP-20.6 yearly medal
+        run: |
+          php bot/tests/Mvp20_6YearlyMedalTest.php
+          php bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php
+
+      - name: Preserve MVP-20.5 seasonal awards
+        run: |
+          php bot/tests/Mvp20_5SeasonalAwardsTest.php
+          php bot/tests/Mvp20_5SeasonalAwardsIntegrationContractTest.php
+
+      - name: Preserve MVP-20.4 season lifecycle
+        run: |
+          php bot/tests/Mvp20_4QuarterlySeasonLifecycleTest.php
+          php bot/tests/Mvp20_4SeasonLifecycleIntegrationContractTest.php
+
+      - name: Preserve MVP-20.1 through MVP-20.3 rating stack
+        run: |
+          php bot/tests/Mvp20_1PerGameVisibleRatingTest.php
+          php bot/tests/Mvp20_1VisibleRatingIntegrationContractTest.php
+          php bot/tests/Mvp20_2HiddenSkillModelTest.php
+          php bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php
+          php bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php
+          php bot/tests/Mvp20_3LeaderboardIntegrationContractTest.php
+
+      - name: Guard MVP-20.8 scope and frozen mechanics
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp20-8-rating-admin.yml|              bot/database/migrations/20260920_0048_create_rating_admin_review.php|              bot/ratings/RatingAdminService.php|              bot/admin-rating.php|              bot/core/bootstrap.php|              app/admin.php|              app/assets/js/admin-rating.js|              app/assets/css/admin-shell.css|              bot/tests/Mvp20_8RatingAdminTest.php|              bot/tests/Mvp20_8RatingAdminIntegrationContractTest.php|              bot/tests/Mvp20_8RatingLoadTest.php)
+                ;;
+              *)
+                echo "Unexpected MVP-20.8 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+          git diff --exit-code "$base" "$head" --             bot/games app/assets/js/games app/assets/css/games             bot/catalog bot/economy bot/ledger bot/shop             bot/runtime/ProductionPrimaryApplicationEntrypoints.php
