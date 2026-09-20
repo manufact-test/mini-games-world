@@ -16,6 +16,11 @@ const DEFAULT_GAME = 'tictactoe';
 const CACHE_TTL_MS = 45_000;
 const cache = new Map();
 const inFlight = new Map();
+const archiveSeasonCache = new Map();
+let archiveOverviewCache = null;
+let archiveOverviewLoadedAt = 0;
+let archiveOverviewPromise = null;
+let selectedArchiveSeasonId = '';
 let activeGame = DEFAULT_GAME;
 let initialized = false;
 let dragState = null;
@@ -28,7 +33,7 @@ export function initTournamentsScreen(){
   if (!(screen instanceof HTMLElement) || !(content instanceof HTMLElement)) return;
 
   initialized = true;
-  screen.dataset.mgwTournaments = 'leaderboards-v2';
+  screen.dataset.mgwTournaments = 'leaderboards-v2 rating-archive-v1';
   content.innerHTML = `
     <div class="tournaments-v2" id="tournamentsV2Root">
       <div class="page-head app-shell-page-head tournaments-v2-page-head">
@@ -63,6 +68,25 @@ export function initTournamentsScreen(){
           ${loadingMarkup()}
         </div>
       </section>
+
+      <section class="tournaments-v2-board tournaments-v2-archive" aria-labelledby="ratingArchiveTitle">
+        <div class="tournaments-v2-board-head">
+          <div>
+            <h2 id="ratingArchiveTitle">${escapeHtml(t('shell.competition_archive_title'))}</h2>
+            <p>${escapeHtml(t('shell.competition_archive_note'))}</p>
+          </div>
+        </div>
+        <div class="tournaments-v2-archive-tabs" role="tablist" aria-label="${escapeHtml(t('shell.competition_archive_title'))}">
+          <button class="tournaments-v2-mode-tab active" type="button" role="tab" aria-selected="true" data-rating-history-mode="seasons">${escapeHtml(t('shell.competition_archive_seasons'))}</button>
+          <button class="tournaments-v2-mode-tab" type="button" role="tab" aria-selected="false" data-rating-history-mode="tournaments">${escapeHtml(t('shell.competition_archive_tournaments'))}</button>
+        </div>
+        <div data-rating-history-panel="seasons">
+          <div class="tournaments-v2-archive-body" id="ratingArchiveBody">${loadingMarkup()}</div>
+        </div>
+        <div data-rating-history-panel="tournaments" hidden>
+          <div class="tournaments-v2-empty">${escapeHtml(t('shell.competition_archive_tournaments_empty'))}</div>
+        </div>
+      </section>
       </div>
 
       <div class="tournaments-v2-panel" data-competition-panel="tournaments" hidden>
@@ -79,18 +103,55 @@ export function initTournamentsScreen(){
   `;
 
   bindModeTabs(screen);
+  bindArchiveModeTabs(screen);
+  bindArchiveSeasonClicks(screen);
   bindTabs(screen);
   bindScrollButtons(screen);
   onScreenEnter('tournaments', () => {
     void activateGame(activeGame);
+    void loadArchiveOverview();
   });
 
   document.addEventListener('mgw:app-ready', () => {
     window.setTimeout(() => { void warmLeaderboard(DEFAULT_GAME); }, 260);
+    window.setTimeout(() => { void warmArchiveOverview(); }, 520);
   }, { once:true });
 
-  if (currentScreen() === 'tournaments') void activateGame(activeGame);
+  if (currentScreen() === 'tournaments') {
+    void activateGame(activeGame);
+    void loadArchiveOverview();
+  }
   window.requestAnimationFrame(updateScrollAffordances);
+}
+
+function bindArchiveModeTabs(screen){
+  screen.querySelectorAll('[data-rating-history-mode]').forEach(button => {
+    button.addEventListener('click', () => {
+      const mode = String(button.dataset.ratingHistoryMode || '');
+      if (!['seasons','tournaments'].includes(mode)) return;
+      screen.querySelectorAll('[data-rating-history-mode]').forEach(candidate => {
+        const active = String(candidate.dataset.ratingHistoryMode || '') === mode;
+        candidate.classList.toggle('active', active);
+        candidate.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      screen.querySelectorAll('[data-rating-history-panel]').forEach(panel => {
+        panel.hidden = String(panel.dataset.ratingHistoryPanel || '') !== mode;
+      });
+      if (mode === 'seasons') void loadArchiveOverview();
+    });
+  });
+}
+
+function bindArchiveSeasonClicks(screen){
+  screen.addEventListener('click', event => {
+    const button = event.target instanceof Element ? event.target.closest('[data-rating-archive-season]') : null;
+    if (!(button instanceof HTMLButtonElement)) return;
+    const seasonId = String(button.dataset.ratingArchiveSeason || '').trim();
+    if (!seasonId) return;
+    selectedArchiveSeasonId = seasonId;
+    syncArchiveSeasonButtons();
+    void loadArchiveSeason(seasonId, activeGame);
+  });
 }
 
 function bindModeTabs(screen){
@@ -196,6 +257,7 @@ async function activateGame(gameType){
   const cached = currentCache(next);
   if (cached) {
     renderBoard(cached.board);
+    void refreshArchiveForActiveGame();
   } else {
     const body = document.getElementById('tournamentsLeaderboardBody');
     if (body) body.innerHTML = loadingMarkup();
@@ -205,6 +267,7 @@ async function activateGame(gameType){
     const board = await warmLeaderboard(next);
     if (activeGame !== next || currentScreen() !== 'tournaments') return;
     renderBoard(board);
+    void refreshArchiveForActiveGame();
   } catch (error) {
     if (activeGame !== next || currentScreen() !== 'tournaments') return;
     const body = document.getElementById('tournamentsLeaderboardBody');
@@ -231,6 +294,133 @@ async function warmLeaderboard(gameType){
 
   inFlight.set(gameType, request);
   return request;
+}
+
+async function warmArchiveOverview(){
+  if (archiveOverviewCache && Date.now() - archiveOverviewLoadedAt <= CACHE_TTL_MS * 2) return archiveOverviewCache;
+  if (archiveOverviewPromise) return archiveOverviewPromise;
+  archiveOverviewPromise = api.ratingArchiveOverview()
+    .then(result => {
+      const archive = result?.archive && typeof result.archive === 'object' ? result.archive : {};
+      archiveOverviewCache = archive;
+      archiveOverviewLoadedAt = Date.now();
+      return archive;
+    })
+    .finally(() => { archiveOverviewPromise = null; });
+  return archiveOverviewPromise;
+}
+
+async function loadArchiveOverview(){
+  const body = document.getElementById('ratingArchiveBody');
+  if (!(body instanceof HTMLElement)) return;
+  try {
+    const overview = await warmArchiveOverview();
+    if (currentScreen() !== 'tournaments') return;
+    const seasons = Array.isArray(overview?.seasons) ? overview.seasons : [];
+    if (!seasons.length) {
+      selectedArchiveSeasonId = '';
+      body.innerHTML = `<div class="tournaments-v2-empty">${escapeHtml(t('shell.competition_archive_empty'))}</div>`;
+      return;
+    }
+    if (!seasons.some(season => String(season?.season_id || '') === selectedArchiveSeasonId)) {
+      selectedArchiveSeasonId = String(seasons[0]?.season_id || '');
+    }
+    body.innerHTML = archiveSeasonSelectorMarkup(seasons) + '<div id="ratingArchiveSeasonBoard"></div>';
+    syncArchiveSeasonButtons();
+    await loadArchiveSeason(selectedArchiveSeasonId, activeGame);
+  } catch (error) {
+    body.innerHTML = `<div class="tournaments-v2-empty">${escapeHtml(error?.message || t('profile.leaderboard_error'))}</div>`;
+  }
+}
+
+async function loadArchiveSeason(seasonId, gameType){
+  if (!seasonId) return;
+  const target = document.getElementById('ratingArchiveSeasonBoard');
+  if (!(target instanceof HTMLElement)) return;
+  const key = seasonId + '|' + gameType;
+  const cached = archiveSeasonCache.get(key);
+  if (cached && Date.now() - Number(cached.loadedAt || 0) <= CACHE_TTL_MS * 2) {
+    renderArchiveSeason(cached.archive);
+    return;
+  }
+  target.innerHTML = loadingMarkup();
+  try {
+    const result = await api.ratingArchiveSeason(seasonId, gameType);
+    const archive = result?.archive && typeof result.archive === 'object' ? result.archive : {};
+    archiveSeasonCache.set(key, { archive, loadedAt:Date.now() });
+    if (seasonId !== selectedArchiveSeasonId || gameType !== activeGame) return;
+    renderArchiveSeason(archive);
+  } catch (error) {
+    if (seasonId !== selectedArchiveSeasonId || gameType !== activeGame) return;
+    target.innerHTML = `<div class="tournaments-v2-empty">${escapeHtml(error?.message || t('profile.leaderboard_error'))}</div>`;
+  }
+}
+
+async function refreshArchiveForActiveGame(){
+  if (!selectedArchiveSeasonId || currentScreen() !== 'tournaments') return;
+  const panel = document.querySelector('[data-rating-history-panel="seasons"]');
+  if (!(panel instanceof HTMLElement) || panel.hidden) return;
+  await loadArchiveSeason(selectedArchiveSeasonId, activeGame);
+}
+
+function archiveSeasonSelectorMarkup(seasons){
+  return `<div class="tournaments-v2-archive-season-tabs" role="tablist" aria-label="${escapeHtml(t('shell.competition_archive_seasons'))}">
+    ${seasons.map(season => {
+      const seasonId = String(season?.season_id || '');
+      const label = seasonLabel(season);
+      const active = seasonId === selectedArchiveSeasonId;
+      return `<button type="button" class="tournaments-v2-archive-season-tab${active ? ' active' : ''}" data-rating-archive-season="${escapeHtml(seasonId)}" role="tab" aria-selected="${active ? 'true' : 'false'}">${escapeHtml(label)}</button>`;
+    }).join('')}
+  </div>`;
+}
+
+function syncArchiveSeasonButtons(){
+  document.querySelectorAll('[data-rating-archive-season]').forEach(button => {
+    const active = String(button.dataset.ratingArchiveSeason || '') === selectedArchiveSeasonId;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+}
+
+function renderArchiveSeason(archive){
+  const target = document.getElementById('ratingArchiveSeasonBoard');
+  if (!(target instanceof HTMLElement)) return;
+  const entries = Array.isArray(archive?.entries) ? archive.entries : [];
+  const season = archive?.season && typeof archive.season === 'object' ? archive.season : {};
+  const top3 = hallOfFameForArchive(String(season?.season_id || ''), activeGame, archive);
+  target.innerHTML = `
+    <div class="tournaments-v2-archive-season-head">
+      <div><strong>${escapeHtml(seasonLabel(season))}</strong><span>${escapeHtml(gameName(activeGame))}</span></div>
+      <small>${escapeHtml(t('shell.competition_archive_top100'))}</small>
+    </div>
+    ${top3.length ? `<div class="tournaments-v2-hof"><div class="tournaments-v2-hof-title">${escapeHtml(t('shell.competition_hall_of_fame'))}</div><div class="tournaments-v2-hof-grid">${top3.map(hallOfFameCard).join('')}</div></div>` : ''}
+    <div class="tournaments-v2-table-head" aria-hidden="true"><span>№</span><span>Игрок</span><span>Очки</span></div>
+    <div class="tournaments-v2-list">
+      ${entries.length ? entries.map(leaderboardRow).join('') : `<div class="tournaments-v2-empty">${escapeHtml(t('profile.leaderboard_empty'))}</div>`}
+    </div>
+  `;
+}
+
+function hallOfFameForArchive(seasonId, gameType, archive){
+  const overview = archiveOverviewCache && typeof archiveOverviewCache === 'object' ? archiveOverviewCache : {};
+  const durable = Array.isArray(overview.hall_of_fame)
+    ? overview.hall_of_fame.filter(item => String(item?.season_id || '') === seasonId && String(item?.game_type || '') === gameType)
+    : [];
+  if (durable.length) return durable.slice(0, 3);
+  return Array.isArray(archive?.top3) ? archive.top3.slice(0, 3) : [];
+}
+
+function hallOfFameCard(entry){
+  const rank = Math.max(1, Number(entry?.rank || 1));
+  const nickname = String(entry?.nickname || t('profile.player')).trim() || t('profile.player');
+  const avatar = String(entry?.avatar_item_id || 'starter-default-01').trim() || 'starter-default-01';
+  return `<article class="tournaments-v2-hof-card top-${rank}"><b>#${escapeHtml(formatNumber(rank))}</b><span class="tournaments-v2-avatar" data-avatar-item-id="${escapeHtml(avatar)}" aria-hidden="true">MG</span><strong>${escapeHtml(nickname)}</strong></article>`;
+}
+
+function seasonLabel(season){
+  const year = Math.max(0, Number(season?.calendar_year || 0));
+  const quarter = Math.max(1, Number(season?.quarter || 1));
+  return year > 0 ? `Q${quarter} · ${year}` : String(season?.season_id || '');
 }
 
 function currentCache(gameType){
