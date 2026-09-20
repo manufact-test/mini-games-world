@@ -123,6 +123,7 @@ jobs:
           while IFS= read -r path; do
             case "$path" in
               .github/workflows/mvp20-3-leaderboards-antifarming.yml|\
+              .github/workflows/mvp20-1-per-game-visible-rating.yml|\
               bot/database/migrations/20260919_0044_create_leaderboards_and_antifarming.php|\
               bot/ratings/PerGameRatingService.php|\
               bot/ratings/LeaderboardService.php|\
