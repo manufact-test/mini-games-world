@@ -175,7 +175,7 @@ $assertSame(1, $profile['previous_seasons'][0]['games']['tictactoe']['rank'], 'H
 $overview = $service->publicOverview();
 $assertSame(2, count($overview['seasons']), 'Public archive catalog must contain closed official seasons only.');
 $assertSame(false, $overview['tournaments']['available'], 'Tournament archive must stay reserved until official tournaments exist.');
-$assertSame(2, count($overview['hall_of_fame']), 'Hall of Fame must exclude technical development identities.');
+$assertSame(3, count($overview['hall_of_fame']), 'Hall of Fame must keep all real top3 entries across closed seasons while excluding development identities.');
 $assertSame('Alpha', $overview['hall_of_fame'][0]['nickname'], 'Hall of Fame must expose canonical MGW nickname.');
 
 $archive = $service->seasonArchive('2026-q3','tictactoe');
