@@ -8,6 +8,7 @@ const FRIENDS_URL = `${window.location.origin}/bot/friends.php`;
 const COSMETIC_STORE_URL = `${window.location.origin}/bot/cosmetic-store.php`;
 const PROFILE_V2_URL = `${window.location.origin}/bot/profile-v2.php`;
 const LEADERBOARD_URL = `${window.location.origin}/bot/leaderboard.php`;
+const RATING_ARCHIVE_URL = `${window.location.origin}/bot/rating-archive.php`;
 const GAME_REACTION_URL = `${window.location.origin}/bot/game-reaction.php`;
 
 let profileV2ReadPromise = null;
@@ -124,6 +125,8 @@ export const api = {
   profile: () => request('profile'),
   profileV2: (profileUpdate = null) => requestProfileV2(profileUpdate),
   leaderboard: (gameType = 'tictactoe') => requestUrl(LEADERBOARD_URL, { game_type:gameType }),
+  ratingArchiveOverview: () => requestUrl(RATING_ARCHIVE_URL, { mode:'overview' }),
+  ratingArchiveSeason: (seasonId, gameType = 'tictactoe') => requestUrl(RATING_ARCHIVE_URL, { mode:'season', season_id:seasonId, game_type:gameType }),
   mgwProfile: () => requestMgwProfile(),
   friends: (payload = {}) => requestUrl(FRIENDS_URL, payload),
   history: () => requestHistory(),

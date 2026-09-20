@@ -1,0 +1,126 @@
+name: MVP-20.7 Rating profile, archives and Hall of Fame
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/ratings/RatingArchiveService.php'
+      - 'bot/rating-archive.php'
+      - 'bot/core/bootstrap.php'
+      - 'bot/profile-v2.php'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/js/screens/tournaments-screen-v1.js'
+      - 'app/assets/css/main.css'
+      - 'app/locales/ru.json'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp20_7RatingArchiveTest.php'
+      - 'bot/tests/Mvp20_7RatingArchiveIntegrationContractTest.php'
+      - '.github/workflows/mvp20-7-rating-archives.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp20-7-rating-archives-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Profile history, frozen archives and Hall of Fame
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint MVP-20.7 server and client slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            bot/ratings/RatingArchiveService.php
+            bot/rating-archive.php
+            bot/core/bootstrap.php
+            bot/profile-v2.php
+            app/runtime/client/version-manifest.php
+            bot/tests/Mvp20_7RatingArchiveTest.php
+            bot/tests/Mvp20_7RatingArchiveIntegrationContractTest.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done
+          php -r 'json_decode(file_get_contents("app/locales/ru.json"), true, 512, JSON_THROW_ON_ERROR);'
+          node --input-type=module --check < app/assets/js/api/client.js
+          node --input-type=module --check < app/assets/js/screens/profile-screen-v110.js
+          node --input-type=module --check < app/assets/js/screens/tournaments-screen-v1.js
+
+      - name: Run MVP-20.7 archive model
+        run: php bot/tests/Mvp20_7RatingArchiveTest.php
+
+      - name: Run MVP-20.7 integration contract
+        run: php bot/tests/Mvp20_7RatingArchiveIntegrationContractTest.php
+
+      - name: Preserve MVP-20.6 yearly medal
+        run: |
+          php bot/tests/Mvp20_6YearlyMedalTest.php
+          php bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php
+
+      - name: Preserve MVP-20.5 seasonal awards
+        run: |
+          php bot/tests/Mvp20_5SeasonalAwardsTest.php
+          php bot/tests/Mvp20_5SeasonalAwardsIntegrationContractTest.php
+
+      - name: Preserve MVP-20.4 season lifecycle
+        run: |
+          php bot/tests/Mvp20_4QuarterlySeasonLifecycleTest.php
+          php bot/tests/Mvp20_4SeasonLifecycleIntegrationContractTest.php
+
+      - name: Preserve visible rating, hidden skill and leaderboard
+        run: |
+          php bot/tests/Mvp20_1PerGameVisibleRatingTest.php
+          php bot/tests/Mvp20_1VisibleRatingIntegrationContractTest.php
+          php bot/tests/Mvp20_2HiddenSkillModelTest.php
+          php bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php
+          php bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php
+          php bot/tests/Mvp20_3LeaderboardIntegrationContractTest.php
+
+      - name: Preserve Profile foundation
+        run: |
+          php bot/tests/ProfileV2CorrectiveStaticContractTest.php
+          node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
+          php bot/tests/Mvp19_3ProfileFramesTest.php
+
+      - name: Guard MVP-20.7 scope and frozen mechanics
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              bot/ratings/RatingArchiveService.php|              bot/rating-archive.php|              bot/core/bootstrap.php|              bot/profile-v2.php|              app/assets/js/api/client.js|              app/assets/js/screens/profile-screen-v110.js|              app/assets/js/screens/tournaments-screen-v1.js|              app/assets/css/main.css|              app/locales/ru.json|              app/runtime/client/version-manifest.php|              bot/tests/Mvp20_7RatingArchiveTest.php|              bot/tests/Mvp20_7RatingArchiveIntegrationContractTest.php|              .github/workflows/mvp20-7-rating-archives.yml)
+                ;;
+              *)
+                echo "Unexpected MVP-20.7 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+          git diff --exit-code "$base" "$head" --             bot/games app/assets/js/games app/assets/css/games             bot/catalog bot/economy bot/ledger bot/shop
