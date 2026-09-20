@@ -174,7 +174,8 @@ final class TournamentRegistrationService
 
             $registrationRows = $db->fetchAll(
                 'SELECT * FROM mgw_tournament_registrations
-                 WHERE tournament_id=:tournament_id AND mgw_id=:mgw_id' . $this->forUpdate($db),
+                 WHERE tournament_id=:tournament_id AND mgw_id=:mgw_id
+                 ORDER BY attempt_no DESC LIMIT 1' . $this->forUpdate($db),
                 ['tournament_id'=>$tournament['tournament_id'],'mgw_id'=>$mgwId]
             );
             $existing = $registrationRows[0] ?? null;
@@ -210,58 +211,28 @@ final class TournamentRegistrationService
                 ],
             ]);
 
-            if (is_array($existing)) {
-                $updated = $db->execute(
-                    'UPDATE mgw_tournament_registrations
-                     SET registration_id=:registration_id,
-                         account_ref=:account_ref,
-                         attempt_no=:attempt_no,
-                         registration_state=:registration_state,
-                         reservation_id=:reservation_id,
-                         registered_at_utc=:registered_at_utc,
-                         withdrawn_at_utc=NULL,
-                         updated_at_utc=:updated_at_utc
-                     WHERE tournament_id=:tournament_id
-                       AND mgw_id=:mgw_id
-                       AND registration_state=:expected_state',
-                    [
-                        'registration_id'=>$registrationId,
-                        'account_ref'=>$accountRef,
-                        'attempt_no'=>$attempt,
-                        'registration_state'=>self::REGISTRATION_REGISTERED,
-                        'reservation_id'=>$reservation['reservation_id'],
-                        'registered_at_utc'=>$registeredAt,
-                        'updated_at_utc'=>$registeredAt,
-                        'tournament_id'=>$tournament['tournament_id'],
-                        'mgw_id'=>$mgwId,
-                        'expected_state'=>self::REGISTRATION_WITHDRAWN,
-                    ]
-                );
-                if ($updated !== 1) throw new RuntimeException('Tournament registration changed concurrently.');
-            } else {
-                $db->execute(
-                    'INSERT INTO mgw_tournament_registrations (
-                        registration_id,tournament_id,mgw_id,account_ref,attempt_no,
-                        registration_state,reservation_id,registered_at_utc,
-                        withdrawn_at_utc,updated_at_utc
-                     ) VALUES (
-                        :registration_id,:tournament_id,:mgw_id,:account_ref,:attempt_no,
-                        :registration_state,:reservation_id,:registered_at_utc,
-                        NULL,:updated_at_utc
-                     )',
-                    [
-                        'registration_id'=>$registrationId,
-                        'tournament_id'=>$tournament['tournament_id'],
-                        'mgw_id'=>$mgwId,
-                        'account_ref'=>$accountRef,
-                        'attempt_no'=>$attempt,
-                        'registration_state'=>self::REGISTRATION_REGISTERED,
-                        'reservation_id'=>$reservation['reservation_id'],
-                        'registered_at_utc'=>$registeredAt,
-                        'updated_at_utc'=>$registeredAt,
-                    ]
-                );
-            }
+            $db->execute(
+                'INSERT INTO mgw_tournament_registrations (
+                    registration_id,tournament_id,mgw_id,account_ref,attempt_no,
+                    registration_state,reservation_id,registered_at_utc,
+                    withdrawn_at_utc,updated_at_utc
+                 ) VALUES (
+                    :registration_id,:tournament_id,:mgw_id,:account_ref,:attempt_no,
+                    :registration_state,:reservation_id,:registered_at_utc,
+                    NULL,:updated_at_utc
+                 )',
+                [
+                    'registration_id'=>$registrationId,
+                    'tournament_id'=>$tournament['tournament_id'],
+                    'mgw_id'=>$mgwId,
+                    'account_ref'=>$accountRef,
+                    'attempt_no'=>$attempt,
+                    'registration_state'=>self::REGISTRATION_REGISTERED,
+                    'reservation_id'=>$reservation['reservation_id'],
+                    'registered_at_utc'=>$registeredAt,
+                    'updated_at_utc'=>$registeredAt,
+                ]
+            );
 
             return $this->snapshotForRow($db, $tournament, $mgwId, $accountRef);
         });
@@ -288,7 +259,8 @@ final class TournamentRegistrationService
 
             $rows = $db->fetchAll(
                 'SELECT * FROM mgw_tournament_registrations
-                 WHERE tournament_id=:tournament_id AND mgw_id=:mgw_id' . $this->forUpdate($db),
+                 WHERE tournament_id=:tournament_id AND mgw_id=:mgw_id
+                 ORDER BY attempt_no DESC LIMIT 1' . $this->forUpdate($db),
                 ['tournament_id'=>$tournament['tournament_id'],'mgw_id'=>$mgwId]
             );
             if ($rows === [] || !is_array($rows[0])
@@ -403,7 +375,8 @@ final class TournamentRegistrationService
                         registration_state,reservation_id,registered_at_utc,
                         withdrawn_at_utc,updated_at_utc
                  FROM mgw_tournament_registrations
-                 WHERE tournament_id=:tournament_id AND mgw_id=:mgw_id',
+                 WHERE tournament_id=:tournament_id AND mgw_id=:mgw_id
+                 ORDER BY attempt_no DESC LIMIT 1',
                 ['tournament_id'=>$row['tournament_id'],'mgw_id'=>$mgwId]
             );
             if ($rows !== [] && is_array($rows[0])) $registration = $this->publicRegistration($rows[0]);
