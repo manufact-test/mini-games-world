@@ -34,7 +34,6 @@ export function initTournamentsScreen(){
       <div class="page-head app-shell-page-head tournaments-v2-page-head">
         <div>
           <h1 class="page-title">${escapeHtml(t('shell.tournaments_title'))}</h1>
-          <p class="page-sub">${escapeHtml(t('shell.tournaments_note'))}</p>
         </div>
       </div>
 
