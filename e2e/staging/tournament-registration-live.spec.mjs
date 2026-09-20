@@ -143,8 +143,12 @@ test('MVP-21.1 LIVE — real API reserves and releases official tournament entry
       await tournamentAction(player.page, 'tournament_leave');
     }
 
-    const preparedPayload = await setProbeBalance(player.page, 'prepare');
+    // Mark cleanup as required before the request: the DB-primary write can
+    // commit before a later response/finalizer failure becomes visible to the
+    // browser. Cleanup must therefore run even when prepare itself reports an
+    // error after committing.
     prepared = true;
+    const preparedPayload = await setProbeBalance(player.page, 'prepare');
     expect(preparedPayload?.staging_tournament_test_balance?.available_after).toBe(60000);
     expect(preparedPayload?.staging_tournament_test_balance?.reserved_after).toBe(0);
 
