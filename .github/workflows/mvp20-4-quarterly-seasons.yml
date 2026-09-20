@@ -104,6 +104,20 @@ jobs:
               .github/workflows/mvp20-3-leaderboards-antifarming.yml|\
               .github/workflows/mvp20-4-quarterly-seasons.yml|\
               .github/workflows/mvp20-5-seasonal-awards.yml|\
+              .github/workflows/mvp20-6-yearly-medal.yml|\
+              bot/database/migrations/20260920_0047_create_yearly_medals.php|\
+              bot/ratings/YearlyMedalService.php|\
+              bot/tests/Mvp20_6YearlyMedalTest.php|\
+              bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
+              bot/tests/Mvp19_3ProfileFramesTest.php|\
+              .github/workflows/mvp19-3-profile-avatars.yml|\
+              .github/workflows/mvp19-3-profile-frames.yml|\
+              bot/profile-v2.php|\
+              app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/css/main.css|\
+              app/locales/ru.json|\
+              app/runtime/client/version-manifest.php|\
               bot/database/migrations/20260920_0046_create_seasonal_awards.php|\
               bot/ratings/SeasonalAwardService.php|\
               bot/tests/Mvp20_5SeasonalAwardsTest.php|\
@@ -126,4 +140,4 @@ jobs:
             esac
           done < <(git diff --name-only "$base" "$head")
           test "$bad" -eq 0
-          git diff --exit-code "$base" "$head" -- bot/games app/assets/js/games app/assets/css/games app/assets/js/screens app/assets/css/main.css app/locales
+          git diff --exit-code "$base" "$head" -- bot/games app/assets/js/games app/assets/css/games

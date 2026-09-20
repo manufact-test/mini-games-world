@@ -129,7 +129,10 @@ $assertTrue(!str_contains($frameSource, 'mgw-profile-frame-preview') && !str_con
 $assertTrue(str_contains($frameCss, '@media (prefers-reduced-motion:reduce)') && str_contains($frameCss, 'animation:none!important'), 'Animated frame must be reduced-motion safe');
 $assertTrue(str_contains($cleanEntry, 'initMgwProfileFrames') && str_contains($cleanEntry, 'mgw-profile-frames.js?v=4&mvp19_3=profile-frame-avatar-card-parity'), 'Active clean entry must initialize the canonical avatar-card frame build');
 $assertTrue(str_contains($apiClient, 'let profileV2ReadPromise = null;') && str_contains($apiClient, 'if (profileV2ReadPromise) return profileV2ReadPromise;') && str_contains($apiClient, '.finally(() => { profileV2ReadPromise = null; });'), 'Concurrent read-only Profile v2 hydration must coalesce to one in-flight request');
-$assertTrue(str_contains($apiClient, "return requestUrl(PROFILE_V2_URL, { profile_update:profileUpdate });"), 'Profile mutations must bypass the read-only hydration coalescer');
+$assertTrue(
+    str_contains($apiClient, "return requestUrl(PROFILE_V2_URL, { profile_update:profileUpdate }).then(publishProfileV2);"),
+    'Profile mutations must bypass the read-only hydration coalescer while publishing authoritative inventory state'
+);
 $assertTrue(str_contains($mainCss, 'mgw-profile-frames.css?v=2&mvp19_3=profile-frame-preview-polish') && str_contains($manifest, 'mvp19_3_12=profile-frame-avatar-card-parity') && str_contains($manifest, 'mvp19_3_11=profile-badge-avatar-shape') && str_contains($manifest, 'mvp19_3_7=profile-v2-read-coalesce'), 'Active delivery graph must publish canonical frame preview parity while preserving the accepted badge and Profile hydration identities');
 
 fwrite(STDOUT, "MVP-19.3 profile frames passed ({$assertions} assertions).\n");

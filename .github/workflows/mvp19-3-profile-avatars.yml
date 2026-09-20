@@ -44,7 +44,7 @@ jobs:
           git diff --exit-code "$base" "$head" -- \
             bot/database/migrations/20260831_0020_add_profile_avatars.php \
             app/assets/js/profile/mgw-profile-avatars.js
-          grep -F "store-screen-checkers-board-source-wrapper.js?v=35" bot/tests/Mvp19_3ProfileAvatarsTest.php
+          grep -F "store-screen-checkers-board-source-wrapper.js?v=36" bot/tests/Mvp19_3ProfileAvatarsTest.php
           grep -F "store-screen-checkers-wrapper.js?v=5" bot/tests/Mvp19_3ProfileAvatarsTest.php
           grep -F "bundle_selector=preserve-v1" bot/tests/Mvp19_3ProfileAvatarsTest.php
           grep -F "mvp19_6=visual-corrective-v3" bot/tests/Mvp19_3ProfileAvatarsTest.php

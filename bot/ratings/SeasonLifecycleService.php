@@ -507,6 +507,27 @@ final class SeasonLifecycleService
         DateTimeImmutable $now
     ): array {
         $awards = null;
+        $yearlyMedal = null;
+
+        if (class_exists('YearlyMedalService')) {
+            $medalService = new YearlyMedalService($database);
+            $medalReadiness = $medalService->boundaryReadiness($endingSeasonId, $targetSeasonId);
+            if (($medalReadiness['ready'] ?? false) !== true) {
+                $this->blockFinalizationForAssets(
+                    $database,
+                    $endingSeasonId,
+                    $targetSeasonId,
+                    $boundary,
+                    $now
+                );
+                return [
+                    'state' => self::OP_ASSETS_REQUIRED,
+                    'reason' => self::OP_ASSETS_REQUIRED,
+                    'medal_readiness' => $medalReadiness,
+                ];
+            }
+        }
+
         if (class_exists('SeasonalAwardService')) {
             $awards = (new SeasonalAwardService($database))->finalizeSeason(
                 $endingSeasonId,
@@ -527,6 +548,31 @@ final class SeasonLifecycleService
                     'state' => self::OP_FINALIZING,
                     'reason' => 'rating_projection_pending',
                     'awards' => $awards,
+                ];
+            }
+        }
+
+        if (class_exists('YearlyMedalService')) {
+            $yearlyMedal = (new YearlyMedalService($database))->reconcileSeasonFragment(
+                $endingSeasonId,
+                [],
+                'season_close',
+                'system:season_finalization',
+                $now
+            );
+            if (!in_array(($yearlyMedal['status'] ?? null), ['reconciled', 'unchanged'], true)) {
+                $this->blockFinalizationForAssets(
+                    $database,
+                    $endingSeasonId,
+                    $targetSeasonId,
+                    $boundary,
+                    $now
+                );
+                return [
+                    'state' => self::OP_ASSETS_REQUIRED,
+                    'reason' => self::OP_ASSETS_REQUIRED,
+                    'awards' => $awards,
+                    'yearly_medal' => $yearlyMedal,
                 ];
             }
         }
@@ -566,7 +612,12 @@ final class SeasonLifecycleService
             ]
         );
 
-        return ['state' => self::OP_COMPLETED, 'reason' => null, 'awards' => $awards];
+        return [
+            'state' => self::OP_COMPLETED,
+            'reason' => null,
+            'awards' => $awards,
+            'yearly_medal' => $yearlyMedal,
+        ];
     }
 
     private function markFinalizationPending(

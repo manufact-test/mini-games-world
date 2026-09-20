@@ -1,35 +1,43 @@
-name: MVP-20.5 Seasonal awards
+name: MVP-20.6 Yearly medal fragments
 
 on:
   pull_request:
     branches:
       - agent/mvp-13-2-staging
     paths:
-      - 'bot/database/migrations/20260920_0046_create_seasonal_awards.php'
-      - 'bot/ratings/SeasonalAwardService.php'
-      - 'bot/ratings/LeaderboardService.php'
+      - 'bot/database/migrations/20260920_0047_create_yearly_medals.php'
+      - 'bot/ratings/YearlyMedalService.php'
       - 'bot/ratings/SeasonLifecycleService.php'
-      - 'bot/ratings/PerGameRatingRuntimeBridge.php'
       - 'bot/core/bootstrap.php'
-      - 'bot/tests/Mvp20_5SeasonalAwardsTest.php'
-      - 'bot/tests/Mvp20_5SeasonalAwardsIntegrationContractTest.php'
+      - 'bot/profile-v2.php'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/css/main.css'
+      - 'app/locales/ru.json'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp20_6YearlyMedalTest.php'
+      - 'bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php'
+      - 'bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs'
+      - 'bot/tests/Mvp19_3ProfileFramesTest.php'
+      - '.github/workflows/mvp19-3-profile-avatars.yml'
+      - '.github/workflows/mvp19-3-profile-frames.yml'
       - '.github/workflows/mvp20-1-per-game-visible-rating.yml'
       - '.github/workflows/mvp20-2-hidden-skill.yml'
       - '.github/workflows/mvp20-3-leaderboards-antifarming.yml'
       - '.github/workflows/mvp20-4-quarterly-seasons.yml'
       - '.github/workflows/mvp20-5-seasonal-awards.yml'
+      - '.github/workflows/mvp20-6-yearly-medal.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: mgw-mvp20-5-seasonal-awards-${{ github.workflow }}-${{ github.ref }}
+  group: mgw-mvp20-6-yearly-medal-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   focused:
-    name: Seasonal badge, temporary frame and correction contract
+    name: Annual design, quarter eligibility and Profile contract
     runs-on: ubuntu-24.04
     timeout-minutes: 20
 
@@ -49,52 +57,57 @@ jobs:
           extensions: pdo_sqlite, mbstring
           coverage: none
 
-      - name: Lint MVP-20.5 server slice
+      - name: Lint MVP-20.6 server and Profile slice
         shell: bash
         run: |
           set -euo pipefail
           files=(
-            bot/database/migrations/20260920_0046_create_seasonal_awards.php
-            bot/ratings/SeasonalAwardService.php
-            bot/ratings/LeaderboardService.php
+            bot/database/migrations/20260920_0047_create_yearly_medals.php
+            bot/ratings/YearlyMedalService.php
             bot/ratings/SeasonLifecycleService.php
-            bot/ratings/PerGameRatingRuntimeBridge.php
             bot/core/bootstrap.php
-            bot/tests/Mvp20_5SeasonalAwardsTest.php
-            bot/tests/Mvp20_5SeasonalAwardsIntegrationContractTest.php
+            bot/profile-v2.php
+            app/runtime/client/version-manifest.php
+            bot/tests/Mvp20_6YearlyMedalTest.php
+            bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
+          php -r 'json_decode(file_get_contents("app/locales/ru.json"), true, 512, JSON_THROW_ON_ERROR);'
+          node --input-type=module --check < app/assets/js/screens/profile-screen-v110.js
 
-      - name: Run MVP-20.5 award and correction model
-        run: php bot/tests/Mvp20_5SeasonalAwardsTest.php
+      - name: Run MVP-20.6 yearly medal model
+        run: php bot/tests/Mvp20_6YearlyMedalTest.php
 
-      - name: Run MVP-20.5 integration contract
-        run: php bot/tests/Mvp20_5SeasonalAwardsIntegrationContractTest.php
+      - name: Run MVP-20.6 integration contract
+        run: php bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php
+
+      - name: Preserve MVP-20.5 seasonal awards
+        run: |
+          php bot/tests/Mvp20_5SeasonalAwardsTest.php
+          php bot/tests/Mvp20_5SeasonalAwardsIntegrationContractTest.php
 
       - name: Preserve MVP-20.4 season lifecycle
         run: |
           php bot/tests/Mvp20_4QuarterlySeasonLifecycleTest.php
           php bot/tests/Mvp20_4SeasonLifecycleIntegrationContractTest.php
 
-      - name: Preserve MVP-20.1 visible rating
+      - name: Preserve visible rating, hidden skill and leaderboard
         run: |
           php bot/tests/Mvp20_1PerGameVisibleRatingTest.php
           php bot/tests/Mvp20_1VisibleRatingIntegrationContractTest.php
-
-      - name: Preserve MVP-20.2 hidden skill and widening
-        run: |
           php bot/tests/Mvp20_2HiddenSkillModelTest.php
           php bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php
-          php bot/tests/Mvp17_1MatchmakingQueueTest.php
-          php bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php
-          php bot/tests/Mvp17_2MatchmakingIntegrationContractTest.php
-
-      - name: Preserve MVP-20.3 leaderboard and anti-farming
-        run: |
           php bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php
           php bot/tests/Mvp20_3LeaderboardIntegrationContractTest.php
 
-      - name: Guard MVP-20.5 scope and frozen runtime
+      - name: Preserve Profile and localization foundation
+        run: |
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+          php bot/tests/ProfileV2CorrectiveStaticContractTest.php
+          node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
+          php bot/tests/Mvp19_3ProfileFramesTest.php
+
+      - name: Guard MVP-20.6 scope and frozen mechanics
         shell: bash
         run: |
           set -euo pipefail
@@ -111,28 +124,22 @@ jobs:
               .github/workflows/mvp20-6-yearly-medal.yml|\
               bot/database/migrations/20260920_0047_create_yearly_medals.php|\
               bot/ratings/YearlyMedalService.php|\
-              bot/tests/Mvp20_6YearlyMedalTest.php|\
-              bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php|\
-              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
-              bot/tests/Mvp19_3ProfileFramesTest.php|\
-              .github/workflows/mvp19-3-profile-avatars.yml|\
-              .github/workflows/mvp19-3-profile-frames.yml|\
+              bot/ratings/SeasonLifecycleService.php|\
+              bot/core/bootstrap.php|\
               bot/profile-v2.php|\
               app/assets/js/screens/profile-screen-v110.js|\
               app/assets/css/main.css|\
               app/locales/ru.json|\
               app/runtime/client/version-manifest.php|\
-              bot/database/migrations/20260920_0046_create_seasonal_awards.php|\
-              bot/ratings/SeasonalAwardService.php|\
-              bot/ratings/LeaderboardService.php|\
-              bot/ratings/SeasonLifecycleService.php|\
-              bot/ratings/PerGameRatingRuntimeBridge.php|\
-              bot/core/bootstrap.php|\
-              bot/tests/Mvp20_5SeasonalAwardsTest.php|\
-              bot/tests/Mvp20_5SeasonalAwardsIntegrationContractTest.php)
+              bot/tests/Mvp20_6YearlyMedalTest.php|\
+              bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
+              bot/tests/Mvp19_3ProfileFramesTest.php|\
+              .github/workflows/mvp19-3-profile-avatars.yml|\
+              .github/workflows/mvp19-3-profile-frames.yml)
                 ;;
               *)
-                echo "Unexpected MVP-20.5 path: $path" >&2
+                echo "Unexpected MVP-20.6 path: $path" >&2
                 bad=1
                 ;;
             esac
