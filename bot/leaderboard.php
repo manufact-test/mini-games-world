@@ -40,11 +40,13 @@ try {
 
     $database = PdoConnectionFactory::create($databaseConfig);
 
-    // Reuse the exact visible-rating projection owner before reading the board.
-    // This keeps leaderboard data on the same normalized DB result source as
-    // Profile rating and never invents a second result writer.
+    // Leaderboards are a read-heavy public surface. Catch up only already
+    // normalized DB match rows here; do not run the heavier JSON->DB realtime
+    // synchronization used by Profile. Realtime projection already owns match
+    // publication on API success, so this keeps the board fresh without making
+    // every tab switch pay a full runtime synchronization.
     (new PerGameRatingRuntimeBridge($configRef, $router, $database))
-        ->snapshotForProfile($mgwId);
+        ->processProjectedMatches(50);
 
     $leaderboard = (new LeaderboardService($database))->snapshot(
         $gameType,
