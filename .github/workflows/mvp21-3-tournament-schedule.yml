@@ -149,7 +149,8 @@ jobs:
               app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp21_3TournamentScheduleTest.php|\
-              bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php)
+              bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
+              bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php)
                 ;;
               *)
                 echo "Unexpected MVP-21.3 path: $path" >&2
