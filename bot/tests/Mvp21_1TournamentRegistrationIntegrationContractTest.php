@@ -5,6 +5,7 @@ $root = dirname(__DIR__, 2);
 $paths = [
     'migration'=>'bot/database/migrations/20260920_0049_create_official_tournaments.php',
     'rules_migration'=>'bot/database/migrations/20260920_0050_add_tournament_rules_consent.php',
+    'rules_copy_migration'=>'bot/database/migrations/20260920_0051_refresh_tournament_rules_copy.php',
     'service'=>'bot/tournaments/TournamentRegistrationService.php',
     'notification_bridge'=>'bot/tournaments/TournamentAdminNotificationBridge.php',
     'player_api'=>'bot/api.php',
@@ -49,6 +50,8 @@ $assertTrue(str_contains($sources['rules_migration'], 'rules_version'), 'MVP-21.
 $assertTrue(str_contains($sources['rules_migration'], 'rules_language'), 'MVP-21.2 must persist tournament rules language.');
 $assertTrue(str_contains($sources['rules_migration'], 'rules_accepted_at_utc'), 'MVP-21.2 must persist server-authored consent time.');
 $assertTrue(!str_contains($sources['rules_migration'], 'CREATE TABLE IF NOT EXISTS mgw_notifications'), 'MVP-21.2 must not create a second notification store.');
+$assertTrue(str_contains($sources['rules_copy_migration'], 'TournamentRegistrationService::canonicalRulesSnapshot'), 'Rules copy migration must reuse the canonical tournament rules owner.');
+$assertTrue(str_contains($sources['rules_copy_migration'], 'TournamentRegistrationService::canonicalRulesSha256'), 'Rules copy migration must publish the canonical revised rules identity.');
 
 $assertTrue(str_contains($sources['service'], "public const ENTRY_ASSET = 'mgw_coin'"), 'Tournament entry must use canonical mgw_coin.');
 $assertTrue(str_contains($sources['service'], 'public const ENTRY_FEE = 50000'), 'Tournament entry must be exactly 50,000.');
@@ -62,7 +65,7 @@ $assertTrue(str_contains($sources['service'], "'total'=>80000"), 'Reward snapsho
 $assertTrue(str_contains($sources['service'], "'total'=>50000"), 'Reward snapshot must freeze third-place total.');
 $assertTrue(str_contains($sources['service'], "'golden_ticket'=>true"), 'Reward snapshot must freeze Golden Ticket ownership.');
 $assertTrue(str_contains($sources['service'], "public const STATE_WAITING_FOR_DATE = 'waiting_for_date'"), 'MVP-21.2 must expose wait-for-date state.');
-$assertTrue(str_contains($sources['service'], "public const RULES_VERSION = 'official-tournament-rules-v1'"), 'MVP-21.2 must freeze a rules version.');
+$assertTrue(str_contains($sources['service'], "public const RULES_VERSION = 'official-tournament-rules-v2'"), 'MVP-21.2 must freeze the current rules copy revision.');
 $assertTrue(str_contains($sources['service'], 'validatedRulesConsent('), 'Registration must validate exact rules consent server-side.');
 $assertTrue(str_contains($sources['service'], 'closeRegistrationIfReady('), 'Registration owner must auto-close at full.');
 
@@ -154,7 +157,7 @@ $assertTrue(str_contains($sources['admin'], 'data-tournament-rules'), 'Tournamen
 $assertTrue(str_contains($sources['notification_bridge'], 'AdminNotificationEventService'), 'Tournament admin alert must reuse the existing notification producer.');
 $assertTrue(str_contains($sources['notification_bridge'], "'request_id'=>'official-tournament.'"), 'Tournament full alert must use stable idempotent request identity.');
 
-$assertTrue(str_contains($sources['manifest'], 'mvp21_2=tournament-rules-consent-v1'), 'Version manifest must publish the current tournament client identity.');
+$assertTrue(str_contains($sources['manifest'], 'mvp21_2=tournament-rules-copy-v2'), 'Version manifest must publish the current tournament client identity.');
 $assertTrue(str_contains($sources['entry'], "X-MGW-Tournaments: official-registration-v2-rules"), 'Rendered runtime must expose tournament fingerprint.');
 
 foreach ([

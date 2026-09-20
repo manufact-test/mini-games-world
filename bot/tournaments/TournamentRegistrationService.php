@@ -9,7 +9,7 @@ final class TournamentRegistrationService
     public const STATE_DRAFT = 'draft';
     public const STATE_REGISTRATION_OPEN = 'registration_open';
     public const STATE_WAITING_FOR_DATE = 'waiting_for_date';
-    public const RULES_VERSION = 'official-tournament-rules-v1';
+    public const RULES_VERSION = 'official-tournament-rules-v2';
     public const RULES_LANGUAGE = 'ru';
     public const REGISTRATION_REGISTERED = 'registered';
     public const REGISTRATION_WITHDRAWN = 'withdrawn';
@@ -207,7 +207,14 @@ final class TournamentRegistrationService
 
             if (is_array($existing) && (string)$existing['registration_state'] === self::REGISTRATION_REGISTERED) {
                 $acceptedAt = trim((string)($existing['rules_accepted_at_utc'] ?? ''));
-                if ($acceptedAt === '') {
+                $acceptedSha256 = trim((string)($existing['rules_sha256'] ?? ''));
+                $currentSha256 = trim((string)($tournament['rules_sha256'] ?? ''));
+                $needsConsentRefresh = $acceptedAt === ''
+                    || $acceptedSha256 === ''
+                    || $currentSha256 === ''
+                    || !hash_equals($currentSha256, $acceptedSha256);
+
+                if ($needsConsentRefresh) {
                     $consent = $this->validatedRulesConsent($tournament, $rulesConsent);
                     $updated = $db->execute(
                         'UPDATE mgw_tournament_registrations
@@ -217,7 +224,7 @@ final class TournamentRegistrationService
                              rules_accepted_at_utc=:rules_accepted_at_utc,
                              updated_at_utc=:updated_at_utc
                          WHERE registration_id=:registration_id
-                           AND rules_accepted_at_utc IS NULL',
+                           AND registration_state=:registration_state',
                         [
                             'rules_version'=>$consent['version'],
                             'rules_language'=>$consent['language'],
@@ -225,6 +232,7 @@ final class TournamentRegistrationService
                             'rules_accepted_at_utc'=>$registeredAt,
                             'updated_at_utc'=>$registeredAt,
                             'registration_id'=>(string)$existing['registration_id'],
+                            'registration_state'=>self::REGISTRATION_REGISTERED,
                         ]
                     );
                     if ($updated !== 1) {
@@ -478,7 +486,7 @@ final class TournamentRegistrationService
                     'id'=>'schedule',
                     'title'=>'Дата и участие',
                     'items'=>[
-                        'После набора состава администратор назначает дату и время турнира.',
+                        'После набора состава назначается дата и время турнира.',
                         'Участникам предусмотрены напоминания за день, за час и за 15 минут до начала.',
                         'Турнирный зал открывается за 15 минут до старта. Сетка формируется случайно точно в момент начала.',
                         'Отсутствующий участник остаётся в сетке и получает техническое поражение по турнирным правилам.',
@@ -507,29 +515,28 @@ final class TournamentRegistrationService
                     'id'=>'technical',
                     'title'=>'Отключения и технические исходы',
                     'items'=>[
-                        'При отключении одного игрока действует окно восстановления 60 секунд.',
-                        'При отключении обоих игроков предусмотрена отдельная ветка восстановления длительностью до 3 минут.',
-                        'Ручной выход, отсутствие обоих игроков и серверная/игровая неисправность обрабатываются отдельными техническими исходами турнира.',
-                        'При отмене или аварийной остановке турнира предусмотрен полный возврат взноса; результаты аннулируются с аудитом.',
+                        'Если один игрок отключился, у него есть 60 секунд, чтобы вернуться в игру.',
+                        'Если отключились оба игрока, им даётся до 3 минут, чтобы вернуться в игру.',
+                        'Если игрок выходит сам, оба игрока не появляются или возникает техническая ошибка, результат определяется по правилам турнира.',
+                        'Если турнир отменён или остановлен из-за технической проблемы, взнос участникам возвращается полностью, а результаты аннулируются.',
                     ],
                 ],
                 [
                     'id'=>'rewards',
                     'title'=>'Награды',
                     'items'=>[
-                        '1 место: 200 000 коинов всего — возврат 50 000 взноса + 150 000 приз; Golden Ticket; корона чемпиона на 30 дней; постоянный значок победителя; чемпионская косметика; Зал славы; золотой кубок.',
-                        '2 место: 80 000 коинов всего — возврат 50 000 взноса + 30 000 приз; серебряная рамка на 30 дней; постоянный результат финалиста; серебряный кубок.',
-                        '3 место: возврат 50 000 взноса; бронзовая отметка на 30 дней; постоянный результат третьего места; бронзовый кубок.',
-                        'Остальным участникам взнос не возвращается, кроме предусмотренных веток отмены или аварийной остановки.',
-                        'Golden Ticket нельзя продать или передать. Он сохраняется до будущего Большого турнира; заранее не обещаются фиксированная дата или фиксированное число участников.',
+                        '1 место: 200 000 коинов; Golden Ticket; корона чемпиона на 30 дней; постоянный значок победителя; эксклюзивный чемпионский набор оформления игр; Зал славы; золотой кубок.',
+                        '2 место: 80 000 коинов; серебряная рамка на 30 дней; постоянная отметка финалиста; серебряный кубок.',
+                        '3 место: 50 000 коинов; бронзовая отметка на 30 дней; постоянная отметка за третье место; бронзовый кубок.',
+                        'Для остальных участников денежная награда не предусмотрена.',
+                        'Golden Ticket нельзя продать или передать другому игроку. Он даёт право участия в будущем Большом турнире и действует до его проведения. Дата и число участников Большого турнира будут определены позже.',
                     ],
                 ],
                 [
-                    'id'=>'immutability',
-                    'title'=>'Версия правил',
+                    'id'=>'rule_changes',
+                    'title'=>'Изменение правил',
                     'items'=>[
-                        'Согласие сохраняется вместе с точной версией правил, языком и временем принятия.',
-                        'Существенные изменения правил не применяются к уже открытому турниру молча: для них требуется отмена текущего турнира и создание нового.',
+                        'После открытия регистрации условия этого турнира не меняются незаметно для участников. Если правила потребуется существенно изменить, текущий турнир будет отменён и создан новый.',
                     ],
                 ],
             ],

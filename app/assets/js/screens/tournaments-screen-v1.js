@@ -264,8 +264,13 @@ async function mutateTournament(action){
       renderTournamentSnapshot('Перед регистрацией прочитайте правила и подтвердите согласие.');
       return;
     }
-    const fee = formatNumber(Math.max(0, Number(tournament?.entry_fee?.amount || 50000)));
-    if (!window.confirm(`Подтвердить правила и зарезервировать ${fee} коинов для участия в официальном турнире?`)) return;
+    const alreadyRegistered = String(tournamentSnapshot?.registration?.state || '') === 'registered';
+    if (alreadyRegistered) {
+      if (!window.confirm('Подтвердить обновлённые правила турнира?')) return;
+    } else {
+      const fee = formatNumber(Math.max(0, Number(tournament?.entry_fee?.amount || 50000)));
+      if (!window.confirm(`Подтвердить правила и зарезервировать ${fee} коинов для участия в официальном турнире?`)) return;
+    }
   } else if (action === 'leave') {
     if (!window.confirm('Отменить регистрацию? Зарезервированные 50 000 коинов вернутся в доступный баланс.')) return;
   }
@@ -273,6 +278,8 @@ async function mutateTournament(action){
   tournamentBusy = true;
   tournamentPendingAction = action;
   let errorMessage = '';
+  let verifiedCommit = null;
+  let verifiedUser = null;
   renderTournamentSnapshot();
 
   try {
@@ -292,9 +299,9 @@ async function mutateTournament(action){
       ? result.user
       : null;
 
-    // Keep the visible tournament state and header balance unchanged until the
-    // authoritative follow-up read confirms the write. The user sees only a
-    // pending spinner during this window, then the seat + balance switch together.
+    // The write may already be committed on the server, but the visible seat and
+    // balance stay on their last confirmed values until the independent status
+    // read finishes. Do not publish the write response while the spinner is active.
     tournamentPendingAction = 'verify';
     renderTournamentSnapshot();
 
@@ -311,18 +318,34 @@ async function mutateTournament(action){
       throw new Error('Отмена регистрации не сохранилась. Попробуйте ещё раз.');
     }
 
-    tournamentSnapshot = verifiedSnapshot;
-    syncTournamentRulesConsent();
-    if (responseUser) {
-      state.user = responseUser;
-      renderBalances(state.user);
-    }
+    const verifiedAvailable = Number(verifiedSnapshot?.balance?.available_amount);
+    verifiedCommit = verifiedSnapshot;
+    verifiedUser = responseUser
+      ? {
+          ...responseUser,
+          ...(Number.isFinite(verifiedAvailable) ? { balance:verifiedAvailable } : {}),
+        }
+      : (state.user && typeof state.user === 'object' && Number.isFinite(verifiedAvailable)
+          ? { ...state.user, balance:verifiedAvailable }
+          : null);
   } catch (error) {
     errorMessage = humanizeTournamentError(error?.message || 'Не удалось изменить регистрацию.');
   } finally {
+    // End the pending state first. Only then publish the verified tournament
+    // snapshot and balance, so the user never sees money move under a live spinner.
     tournamentBusy = false;
     tournamentPendingAction = '';
+
+    if (!errorMessage && verifiedCommit) {
+      tournamentSnapshot = verifiedCommit;
+      syncTournamentRulesConsent();
+    }
     renderTournamentSnapshot(errorMessage);
+
+    if (!errorMessage && verifiedUser) {
+      state.user = verifiedUser;
+      renderBalances(state.user);
+    }
   }
 }
 
@@ -338,7 +361,6 @@ function renderTournamentSnapshot(errorMessage = ''){
 
   const registration = snapshot.registration && typeof snapshot.registration === 'object' ? snapshot.registration : null;
   const registered = String(registration?.state || '') === 'registered';
-  const consentAccepted = registration?.rules_consent?.accepted === true;
   const state = String(tournament.state || '');
   const open = state === 'registration_open';
   const waitingForDate = state === 'waiting_for_date' || tournament.waiting_for_date === true;
@@ -358,12 +380,11 @@ function renderTournamentSnapshot(errorMessage = ''){
   const rulesSnapshot = rules.snapshot && typeof rules.snapshot === 'object' ? rules.snapshot : {};
   const rulesSections = Array.isArray(rulesSnapshot.sections) ? rulesSnapshot.sections : [];
   const rulesReady = Boolean(rules.version && rules.language && rules.sha256 && rulesSections.length);
-  const rulesLabel = rulesReady
-    ? `${escapeHtml(String(rules.version))} · ${escapeHtml(String(rules.language).toUpperCase())}`
-    : 'Правила недоступны';
+  const consentAccepted = registration?.rules_consent?.accepted === true
+    && String(registration?.rules_consent?.sha256 || '') === String(rules.sha256 || '');
   const rulesMarkup = rulesReady
-    ? `<details class="tournaments-v2-tournament-rules"${!registered ? ' open' : ''}>
-        <summary><span>Правила турнира</span><small>${rulesLabel}</small></summary>
+    ? `<details class="tournaments-v2-tournament-rules">
+        <summary><span>Правила турнира</span></summary>
         <div class="tournaments-v2-tournament-rules-body">
           ${rulesSections.map(section => `
             <section>
@@ -379,10 +400,10 @@ function renderTournamentSnapshot(errorMessage = ''){
   const consentMarkup = needsConsent && rulesReady
     ? `<label class="tournaments-v2-tournament-consent">
         <input type="checkbox" data-tournament-rules-consent${tournamentRulesAccepted ? ' checked' : ''}${tournamentBusy ? ' disabled' : ''}>
-        <span>Я прочитал(а) и принимаю правила этого турнира.<small>Сохраняются версия, язык и время согласия.</small></span>
+        <span>Я прочитал(а) и принимаю правила этого турнира.</span>
       </label>`
     : consentAccepted
-      ? `<div class="tournaments-v2-tournament-consent-proof">Правила ${escapeHtml(String(registration?.rules_consent?.version || rules.version || ''))} приняты${registration?.rules_consent?.accepted_at_utc ? ` · ${escapeHtml(formatConsentTime(registration.rules_consent.accepted_at_utc))}` : ''}.</div>`
+      ? `<div class="tournaments-v2-tournament-consent-proof">Правила турнира приняты${registration?.rules_consent?.accepted_at_utc ? ` · ${escapeHtml(formatConsentTime(registration.rules_consent.accepted_at_utc))}` : ''}.</div>`
       : '';
 
   const insufficient = !registered && available < fee;
@@ -448,7 +469,7 @@ function renderTournamentSnapshot(errorMessage = ''){
     <div class="tournaments-v2-tournament-prizes">
       <div><b>1 место</b><strong>${escapeHtml(formatNumber(Number(first.total || 200000)))}</strong><span>+ Golden Ticket</span></div>
       <div><b>2 место</b><strong>${escapeHtml(formatNumber(Number(second.total || 80000)))}</strong><span>серебряная награда</span></div>
-      <div><b>3 место</b><strong>${escapeHtml(formatNumber(Number(third.total || 50000)))}</strong><span>возврат взноса</span></div>
+      <div><b>3 место</b><strong>${escapeHtml(formatNumber(Number(third.total || 50000)))}</strong><span>бронзовая награда</span></div>
     </div>
 
     ${rulesMarkup}
