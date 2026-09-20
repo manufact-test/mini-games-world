@@ -71,8 +71,18 @@ $assertTrue(
     'Player Tournament must not expose ambiguous global reserved copy.'
 );
 $assertTrue(
-    substr_count($source['screen'], 'void loadTournamentSnapshot();') === 1,
+    !str_contains(
+        $source['screen'],
+        "void loadTournamentSnapshot();\n    void loadTournamentSnapshot();"
+    ),
     'Tournament screen enter must not issue duplicate snapshot loads.'
+);
+$assertTrue(
+    str_contains(
+        $source['screen'],
+        "onScreenEnter('tournaments', () => {\n    void activateGame(activeGame);\n    void loadArchiveOverview();\n    void loadTournamentSnapshot();\n  });"
+    ),
+    'Tournament screen enter must load one fresh tournament snapshot.'
 );
 
 $catchPos = strpos($source['screen'], 'errorMessage = humanizeTournamentError');
