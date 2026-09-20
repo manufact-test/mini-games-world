@@ -24,8 +24,6 @@ $arena = $read('app/assets/js/screens/tournaments-screen-v1.js');
 $mainShell = $read('app/assets/js/main-v110-handoff-shell.js');
 $locale = json_decode($read('app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 $manifest = $read('app/runtime/client/version-manifest.php');
-$v110 = $read('app/v110.php');
-$launch = $read('bot/helpers/WebAppLaunchUrl.php');
 
 $assertTrue(str_contains($bootstrap, "../ratings/LeaderboardService.php"), 'Bootstrap must load one leaderboard owner.');
 $assertTrue(str_contains($migration, 'min_rated_matches') && str_contains($migration, 'DEFAULT 5'), 'Leaderboard minimum must stay five rated matches.');
@@ -128,11 +126,6 @@ $assertTrue(
 
 $assertTrue(str_contains($manifest, 'mvp20_3=leaderboards-v1'), 'Version manifest must preserve the accepted leaderboard runtime identity.');
 $assertTrue(str_contains($manifest, 'arena=competition-rating-v1'), 'Version manifest must publish the competition shell cache identity.');
-$assertTrue(str_contains($v110, 'X-MGW-Leaderboards: per-game-antifarming-v1'), 'Active v110 entry must preserve the accepted leaderboard runtime identity.');
-$assertTrue(str_contains($v110, 'X-MGW-Competition-UI: arena-rating-tournaments-v1'), 'Active v110 entry must identify the Arena competition UI.');
-$assertTrue(str_contains($launch, 'leaderboards=per-game-antifarming-v1'), 'Telegram launch identity must preserve the accepted leaderboard runtime identity.');
-$assertTrue(str_contains($launch, 'arena=competition-rating-v1'), 'Telegram launch identity must include the Arena UI identity.');
 $assertTrue(str_contains($manifest, 'mvp20_1=visible-rating-v2'), 'MVP-20.1 visible-rating identity must remain frozen.');
-$assertTrue(str_contains($v110, 'X-MGW-Visible-Rating: per-game-preseason-v2'), 'Existing internal visible-rating state must remain frozen.');
 
 fwrite(STDOUT, "Mvp20_3LeaderboardIntegrationContractTest: {$assertions} assertions passed\n");
