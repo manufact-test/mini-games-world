@@ -1,6 +1,8 @@
 import { api } from '../api/client.js?v=47';
 import { currentScreen, onScreenEnter } from '../router.js?v=27';
 import { t, formatNumber } from '@mgw/i18n';
+import { state } from '../state.js?v=27';
+import { renderBalances } from '../ui.js?v=90-wallet-15-3';
 
 const GAME_TYPES = Object.freeze([
   'tictactoe',
@@ -238,6 +240,11 @@ async function mutateTournament(action){
       ? result.snapshot
       : {};
     tournamentSnapshot = responseSnapshot;
+
+    if (result?.user && typeof result.user === 'object') {
+      state.user = result.user;
+      renderBalances(state.user);
+    }
 
     // Confirm the committed server state with a fresh read. This prevents a
     // successful write from looking like a no-op if any intermediate response
