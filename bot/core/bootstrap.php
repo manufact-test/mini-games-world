@@ -95,6 +95,7 @@ require_once __DIR__ . '/../ratings/LeaderboardService.php';
 require_once __DIR__ . '/../ratings/SeasonalAwardService.php';
 require_once __DIR__ . '/../ratings/YearlyMedalService.php';
 require_once __DIR__ . '/../ratings/RatingArchiveService.php';
+require_once __DIR__ . '/../ratings/RatingAdminService.php';
 require_once __DIR__ . '/../ratings/SeasonLifecycleService.php';
 require_once __DIR__ . '/../ratings/PerGameRatingRuntimeBridge.php';
 require_once __DIR__ . '/../ratings/HiddenSkillService.php';
