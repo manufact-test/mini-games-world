@@ -37,7 +37,7 @@ return new class implements DatabaseMigrationInterface {
 ALTER TABLE mgw_tournaments
     ADD COLUMN rules_version VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER reward_snapshot_json,
     ADD COLUMN rules_language VARCHAR(12) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER rules_version,
-    ADD COLUMN rules_snapshot_json JSON NULL AFTER rules_language,
+    ADD COLUMN rules_snapshot_json LONGTEXT NULL AFTER rules_language,
     ADD COLUMN rules_sha256 CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER rules_snapshot_json,
     ADD COLUMN registration_closed_at_utc DATETIME(6) NULL AFTER registration_opened_at_utc,
     ADD COLUMN registration_closed_reason VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER registration_closed_at_utc
