@@ -62,11 +62,11 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
 
       <article class="mgw-admin__card mgw-admin__card--wide" data-tournament-admin>
         <div class="mgw-admin__card-head">
-          <h2>Official Tournament</h2>
-          <span>MVP-21.1 · registration reservation</span>
+          <h2>Официальный турнир</h2>
+          <span>MVP-21.1 · регистрация и резерв взноса</span>
         </div>
         <div class="mgw-admin__tournament">
-          <div class="mgw-admin__tournament-status" data-tournament-admin-status>Tournament Admin ещё не загружен.</div>
+          <div class="mgw-admin__tournament-status" data-tournament-admin-status>Управление турниром ещё не загружено.</div>
 
           <div class="mgw-admin__tournament-summary" data-tournament-admin-summary></div>
 
@@ -101,10 +101,10 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
                 </select>
               </label>
               <div class="mgw-admin__tournament-actions">
-                <button type="button" data-tournament-create>Создать draft</button>
+                <button type="button" data-tournament-create>Создать черновик</button>
                 <button type="button" data-tournament-refresh>Обновить</button>
               </div>
-              <small>Вход фиксирован каноном: 50 000 MGW coins. При регистрации сумма только резервируется.</small>
+              <small>Взнос фиксирован: 50 000 коинов MGW. При регистрации сумма резервируется и пока не списывается.</small>
             </section>
 
             <section class="mgw-admin__tournament-panel">
@@ -113,12 +113,12 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               <div class="mgw-admin__tournament-actions">
                 <button type="button" data-tournament-open disabled>Открыть регистрацию</button>
               </div>
-              <small>Одновременно может существовать только один активный официальный турнир. Reward snapshot фиксируется в момент создания draft.</small>
+              <small>Одновременно может существовать только один активный официальный турнир. Снимок наград фиксируется в момент создания черновика.</small>
             </section>
           </div>
 
           <section class="mgw-admin__tournament-panel">
-            <h3>Reward snapshot</h3>
+            <h3>Снимок наград</h3>
             <pre class="mgw-admin__tournament-rewards" data-tournament-rewards>—</pre>
           </section>
         </div>
