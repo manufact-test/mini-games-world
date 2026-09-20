@@ -31,6 +31,7 @@ on:
       - 'bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php'
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
       - 'bot/tests/Mvp21_2TournamentRulesTest.php'
+      - 'bot/tests/RuntimeNotificationRepositoryTest.php'
       - 'bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php'
       - 'e2e/staging/tournament-registration-live.spec.mjs'
       - 'e2e/playwright.config.mjs'
@@ -106,6 +107,7 @@ jobs:
             bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php
             bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
             bot/tests/Mvp21_2TournamentRulesTest.php
+            bot/tests/RuntimeNotificationRepositoryTest.php
             bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
@@ -205,6 +207,7 @@ jobs:
               bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php|\
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
               bot/tests/Mvp21_2TournamentRulesTest.php|\
+              bot/tests/RuntimeNotificationRepositoryTest.php|\
               bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php|\
               e2e/staging/tournament-registration-live.spec.mjs|\
               e2e/playwright.config.mjs)
