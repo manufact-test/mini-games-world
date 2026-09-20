@@ -22,6 +22,8 @@ $profileJs = $read('app/assets/js/screens/profile-screen-v110.js');
 $css = $read('app/assets/css/main.css');
 $locale = $read('app/locales/ru.json');
 $manifest = $read('app/runtime/client/version-manifest.php');
+$apiClient = $read('app/assets/js/api/client.js');
+$avatarWorkflow = $read('.github/workflows/mvp19-3-profile-avatars.yml');
 
 $assertTrue(str_contains($migration, 'mgw_yearly_medal_designs'), 'MVP-20.6 must persist one annual design owner.');
 $assertTrue(str_contains($migration, 'calendar_year') && str_contains($migration, 'PRIMARY KEY'), 'Annual design must be keyed by year, not by quarter.');
@@ -78,6 +80,15 @@ $assertTrue(str_contains((string)($decodedLocale['profile']['yearly_medal_note']
 
 $assertTrue(str_contains($manifest, 'mvp20_6=yearly-medal-v1'), 'Version manifest must publish the fresh yearly-medal Profile/CSS identity.');
 
-$assertTrue($assertions >= 35, 'MVP-20.6 integration contract must protect annual design, eligibility, lifecycle and Profile presentation.');
+$assertTrue(
+    str_contains($apiClient, "return requestUrl(PROFILE_V2_URL, { profile_update:profileUpdate }).then(publishProfileV2);"),
+    'Yearly-medal Profile composition must preserve the accepted Profile mutation publisher.'
+);
+$assertTrue(
+    str_contains($avatarWorkflow, 'store-screen-checkers-board-source-wrapper.js?v=36'),
+    'Profile avatar guard must track the already-accepted Checkers wrapper v36.'
+);
+
+$assertTrue($assertions >= 37, 'MVP-20.6 integration contract must protect annual design, eligibility, lifecycle and Profile presentation.');
 
 fwrite(STDOUT, "Mvp20_6YearlyMedalIntegrationContractTest: {$assertions} assertions passed\n");
