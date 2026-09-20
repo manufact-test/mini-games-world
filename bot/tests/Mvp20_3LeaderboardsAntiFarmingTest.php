@@ -38,6 +38,14 @@ CREATE TABLE mgw_users (
 )
 SQL);
 $database->execute(<<<'SQL'
+CREATE TABLE mgw_identities (
+    identity_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    mgw_id TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    provider_subject TEXT NOT NULL
+)
+SQL);
+$database->execute(<<<'SQL'
 CREATE TABLE mgw_matches (
     match_id TEXT NOT NULL PRIMARY KEY,
     game_type TEXT NOT NULL,
@@ -85,6 +93,7 @@ $userB = 'MGW-000000000000000B';
 $userC = 'MGW-000000000000000C';
 $userD = 'MGW-000000000000000D';
 $userE = 'MGW-000000000000000E';
+$userF = 'MGW-000000000000000F';
 
 foreach ([
     [$userA, 'Alpha'],
@@ -92,6 +101,7 @@ foreach ([
     [$userC, 'Gamma'],
     [$userD, 'Delta'],
     [$userE, 'Epsilon'],
+    [$userF, 'Player9999999'],
 ] as [$mgwId, $nickname]) {
     $database->execute(
         'INSERT INTO mgw_users (mgw_id, status, nickname, equipped_avatar_item_id)
@@ -104,6 +114,15 @@ foreach ([
         ]
     );
 }
+$database->execute(
+    'INSERT INTO mgw_identities (mgw_id, provider, provider_subject)
+     VALUES (:mgw_id, :provider, :provider_subject)',
+    [
+        'mgw_id' => $userF,
+        'provider' => 'development',
+        'provider_subject' => 'stg_e2e_player_f',
+    ]
+);
 
 $addMatch = static function (
     DatabaseConnectionInterface $database,
@@ -292,9 +311,56 @@ foreach ([
         );
     }
 }
+// A staging E2E account can have perfectly valid durable rating rows but must
+// never appear in the public board.
+$database->execute(
+    'INSERT INTO mgw_game_rating_scores (
+        season_id, mgw_id, game_type, points, rated_wins, updated_at_utc
+     ) VALUES (
+        :season_id, :mgw_id, :game_type, 99, 5, :updated_at
+     )',
+    [
+        'season_id' => 'preseason',
+        'mgw_id' => $userF,
+        'game_type' => 'go',
+        'updated_at' => '2026-09-19 05:00:00.000000',
+    ]
+);
+for ($n = 1; $n <= 5; $n++) {
+    $database->execute(
+        'INSERT INTO mgw_game_rating_participation (
+            match_id, mgw_id, season_id, game_type, opponent_mgw_id,
+            result_code, points_awarded, rating_day_moscow,
+            match_started_at_utc, match_finished_at_utc, created_at_utc
+         ) VALUES (
+            :match_id, :mgw_id, :season_id, :game_type, :opponent,
+            :result_code, :points_awarded, :day,
+            :started, :finished, :created
+         )',
+        [
+            'match_id' => 'dev-tie-' . $n,
+            'mgw_id' => $userF,
+            'season_id' => 'preseason',
+            'game_type' => 'go',
+            'opponent' => $userC,
+            'result_code' => $n === 1 ? 'win' : 'loss',
+            'points_awarded' => $n === 1 ? 1 : 0,
+            'day' => '2026-09-19',
+            'started' => '2026-09-19 05:00:00.000000',
+            'finished' => '2026-09-19 05:00:00.000000',
+            'created' => '2026-09-19 05:00:00.000000',
+        ]
+    );
+}
+
 $tied = $leaderboard->snapshot('go', $userD);
+$assertSame(2, count($tied['entries']), 'Development-provider accounts must be excluded from the public leaderboard even when otherwise eligible.');
 $assertSame('Epsilon', $tied['entries'][0]['nickname'], 'Equal points/wins must prefer the player who reached the score earlier.');
 $assertSame('Delta', $tied['entries'][1]['nickname'], 'Later equal-score player must follow the earlier one.');
+$assertTrue(
+    !in_array('Player9999999', array_column($tied['entries'], 'nickname'), true),
+    'Generated staging E2E nickname must never leak into the public leaderboard.'
+);
 $assertSame(
     ['points_desc','credited_wins_desc','score_reached_at_asc','mgw_id_asc'],
     $tied['tie_break'],
