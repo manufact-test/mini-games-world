@@ -127,7 +127,17 @@ final class RuntimePrimaryStagingRequestFinalizerTestWorker implements RuntimePr
         $this->calls++;
         foreach ($this->database->events as $revision => &$event) {
             if ((string)$event['status'] === 'completed') continue;
-            if ($this->mode === 'busy') {
+            if ($this->mode === 'busy' || $this->mode === 'busy_then_complete') {
+                if ($this->mode === 'busy_then_complete') {
+                    // Simulate another request owning the projection lease and
+                    // completing this exact revision while the current request
+                    // observes projection_busy.
+                    $event['status'] = 'completed';
+                    $event['attempt_count'] = max(1, (int)$event['attempt_count'] + 1);
+                    $event['lease_token'] = '';
+                    $event['lease_expires_at_utc'] = '';
+                    $event['last_error'] = '';
+                }
                 return [
                     'ok' => true,
                     'action' => 'projection_busy',
@@ -276,6 +286,32 @@ $assertTrue(($report['action'] ?? '') === 'request_state_projected_and_audited',
 $assertTrue(($report['worker_tick_count'] ?? 0) === 1, 'One pending revision must use one worker tick');
 $assertTrue(($db->events[2]['status'] ?? '') === 'completed', 'Pending revision must become completed');
 $assertTrue(($report['remaining_session_revisions'] ?? -1) === 3, 'Finalizer must report remaining bounded revisions');
+
+$storage = new DatabasePrimaryStateStorageAdapter(2, ['mode' => 'busy_then_complete']);
+$db = new RuntimePrimaryStagingRequestFinalizerTestDatabase([
+    $event(1, str_repeat('1', 64), 'completed', 1),
+    $event(2, $storage->sha(), 'pending', 0),
+]);
+$worker = new RuntimePrimaryStagingRequestFinalizerTestWorker($db, 'busy_then_complete');
+$report = (new RuntimePrimaryStagingRequestFinalizer(
+    $db,
+    $worker,
+    new RuntimePrimaryStagingRequestFinalizerTestAuditor(),
+    $session,
+    $now
+))->finalize($storage, $resolution);
+$assertTrue(
+    ($report['action'] ?? '') === 'request_state_projected_and_audited',
+    'Concurrent projection completion must finalize successfully.'
+);
+$assertTrue(
+    ($report['worker_tick_count'] ?? 0) === 1,
+    'Concurrent completion should keep one observed busy worker tick.'
+);
+$assertTrue(
+    ($db->events[2]['status'] ?? '') === 'completed',
+    'Concurrent owner must leave the current revision completed.'
+);
 
 $storage = new DatabasePrimaryStateStorageAdapter(3, ['sequence' => 3]);
 $db = new RuntimePrimaryStagingRequestFinalizerTestDatabase([
