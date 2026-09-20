@@ -72,6 +72,7 @@ jobs:
             bot/tournaments/TournamentParticipantNotificationBridge.php
             bot/admin-tournaments.php
             app/admin.php
+            app/runtime/client/version-manifest.php
             bot/tests/Mvp21_3TournamentScheduleTest.php
             bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
           )
