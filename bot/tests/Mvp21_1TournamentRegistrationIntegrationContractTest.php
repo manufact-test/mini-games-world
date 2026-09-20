@@ -22,6 +22,8 @@ $paths = [
     'admin_css'=>'app/assets/css/admin-shell.css',
     'manifest'=>'app/runtime/client/version-manifest.php',
     'entry'=>'app/v110.php',
+    'live_probe'=>'e2e/staging/tournament-registration-live.spec.mjs',
+    'playwright'=>'e2e/playwright.config.mjs',
 ];
 $sources = [];
 foreach ($paths as $key=>$path) {
@@ -77,6 +79,15 @@ $assertTrue(str_contains($sources['player_api'], '$runtimeStorageDriver !== \'da
 $assertTrue(str_contains($sources['player_api'], '$user[UnifiedBalanceRuntimeState::FIELD] = $available'), 'Tournament writes must atomically project spendable balance into runtime state.');
 $assertTrue(str_contains($sources['player_api'], 'new TournamentRegistrationService('), 'Canonical API must delegate registration ownership to TournamentRegistrationService.');
 
+$assertTrue(str_contains($sources['player_api'], "case 'staging_test_tournament_balance':"), 'Real staging probe must have a fixed DB-primary balance harness.');
+$assertTrue(str_contains($sources['player_api'], "!== 'staging'"), 'Staging probe balance harness must fail closed outside staging.');
+$assertTrue(str_contains($sources['player_api'], "empty(\$tgUser['is_staging_test_user'])"), 'Staging probe balance harness must require the technical staging identity.');
+$assertTrue(str_contains($sources['player_api'], "['staging_test_slot'] ?? ''"), 'Staging probe balance harness must be restricted to a fixed test-player slot.');
+$assertTrue(str_contains($sources['player_api'], "'prepare' => 60000"), 'Staging probe prepare balance must be fixed at 60,000.');
+$assertTrue(str_contains($sources['player_api'], "'cleanup' => 100"), 'Staging probe cleanup balance must restore the canonical A/B test balance.');
+$assertTrue(str_contains($sources['player_api'], "'diagnostic'=>["), 'Technical staging tournament failures must expose a test-only diagnostic payload.');
+
+
 $assertTrue(str_contains($sources['status_endpoint'], 'getUserFromRequest($payload)'), 'Tournament status endpoint must authenticate the player.');
 $assertTrue(str_contains($sources['status_endpoint'], '$service->snapshot($mgwId, $accountRef)'), 'Tournament status endpoint must remain read-only and use canonical snapshot ownership.');
 $assertTrue(!str_contains($sources['status_endpoint'], 'register($mgwId'), 'Tournament status endpoint must not own registration writes.');
@@ -126,6 +137,14 @@ $assertTrue(str_contains($sources['admin_css'], '.mgw-admin__tournament'), 'Tour
 $assertTrue(str_contains($sources['manifest'], 'mvp21_1=tournament-registration-runtime-fix-v3'), 'Version manifest must publish tournament runtime-fix client identity.');
 $assertTrue(str_contains($sources['entry'], "X-MGW-Tournaments: official-registration-v1"), 'Rendered runtime must expose tournament fingerprint.');
 
+$assertTrue(str_contains($sources['live_probe'], "action: 'tournament_register'"), 'Blocking staging probe must call the real tournament_register API action.');
+$assertTrue(str_contains($sources['live_probe'], "action: 'tournament_leave'"), 'Blocking staging probe must call the real tournament_leave API action.');
+$assertTrue(str_contains($sources['live_probe'], "available_amount || 0)).toBe(10000)"), 'Blocking staging probe must verify 60,000 -> 10,000 available after the 50,000 hold.');
+$assertTrue(str_contains($sources['live_probe'], "reserved_amount || 0)).toBe(50000)"), 'Blocking staging probe must verify the exact 50,000 reservation.');
+$assertTrue(str_contains($sources['live_probe'], "mode: 'cleanup'"), 'Blocking staging probe must restore the technical balance after itself.');
+$assertTrue(str_contains($sources['playwright'], "'tournament-registration-live.spec.mjs'"), 'Tournament real-API probe must be part of blocking staging Playwright.');
+
+
 foreach ([
     'bot/games/',
     'app/assets/js/games/',
@@ -133,5 +152,5 @@ foreach ([
     $assertTrue(!str_contains($sources['service'], $forbiddenOwner), 'Tournament service must not become a game-engine owner: ' . $forbiddenOwner);
 }
 
-$assertTrue($assertions >= 68, 'MVP-21.1 integration contract must cover ownership, ledger, runtime reservation compatibility, UI and concurrency boundaries.');
+$assertTrue($assertions >= 81, 'MVP-21.1 integration contract must cover ownership, ledger, runtime reservation compatibility, real staging API acceptance, UI and concurrency boundaries.');
 fwrite(STDOUT, "Mvp21_1TournamentRegistrationIntegrationContractTest: {$assertions} assertions passed\n");
