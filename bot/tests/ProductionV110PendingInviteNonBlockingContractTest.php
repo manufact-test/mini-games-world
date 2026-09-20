@@ -64,9 +64,10 @@ $assert(
     'Opening a Telegram link may paint one opened_invite sheet but must not restore current or tracked client invite state.'
 );
 $assert(
-    str_contains($notifications, "return in_array(\$status, ['pending', 'accepted'], true);")
-        && str_contains($notifications, "if (\$status === 'pending' && \$invitee) return ['accept', 'decline'];"),
-    'Notification actions must remain available while the invitation is pending.'
+    str_contains($notifications, "return in_array(\$status, ['pending', 'accepted', 'declined'], true);")
+        && str_contains($notifications, "if (\$status === 'pending' && \$invitee) return ['accept', 'decline'];")
+        && !str_contains($notifications, "if (\$status === 'declined' && \$invitee) return ['accept', 'decline'];"),
+    'Notification actions must remain available only while pending; a later declined card is read history without actions.'
 );
 $assert(
     str_contains($actions, '$this->assertAvailableForStart($db, $invitee, $token, \'Сначала завершите текущий поиск или игру.\');')

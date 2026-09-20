@@ -9,12 +9,14 @@ use Mgw\CleanRuntime\Server\Match\RuntimeMatchService;
 use Mgw\CleanRuntime\Server\Match\TicTacToeRules;
 use Mgw\CleanRuntime\Server\RuntimeApplicationService;
 use Mgw\CleanRuntime\Server\RuntimeConfig;
+use Mgw\CleanRuntime\Server\RuntimeEnvironmentGuard;
 use Mgw\CleanRuntime\Server\RuntimeKernel;
 use Mgw\CleanRuntime\Server\Session\RuntimeSessionService;
 use Mgw\CleanRuntime\Server\Storage\JsonFileRuntimeStore;
 
 require_once __DIR__ . '/server/contracts/RuntimeStateStore.php';
 require_once __DIR__ . '/server/RuntimeConfig.php';
+require_once __DIR__ . '/server/RuntimeEnvironmentGuard.php';
 require_once __DIR__ . '/server/auth/AuthenticationException.php';
 require_once __DIR__ . '/server/auth/AuthenticatedIdentity.php';
 require_once __DIR__ . '/server/auth/TelegramInitDataVerifier.php';
@@ -33,6 +35,15 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
+
+try {
+    $config = RuntimeConfig::fromEnvironment();
+    RuntimeEnvironmentGuard::assertAvailable($config, $_SERVER);
+} catch (Throwable $error) {
+    http_response_code(404);
+    echo json_encode(['ok' => false, 'error' => 'Not found.'], JSON_THROW_ON_ERROR);
+    exit;
+}
 
 try {
     $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
@@ -55,7 +66,6 @@ try {
         $payload = $decoded;
     }
 
-    $config = RuntimeConfig::fromEnvironment();
     $store = new JsonFileRuntimeStore($config->dataDirectory);
     $telegramVerifier = new TelegramInitDataVerifier(
         $config->botToken,
