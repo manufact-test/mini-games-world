@@ -21,6 +21,20 @@
   let snapshot = null;
 
   const format = value => new Intl.NumberFormat('ru-RU').format(Number(value || 0));
+  const stateLabel = value => ({
+    draft:'черновик',
+    registration_open:'регистрация открыта',
+  })[String(value || '')] || String(value || '—');
+  const gameLabel = value => ({
+    tictactoe:'Крестики-нолики',
+    four_in_a_row:'Четыре в ряд',
+    battleship:'Морской бой',
+    checkers:'Русские шашки',
+    reversi:'Реверси',
+    chess:'Шахматы',
+    go:'Го',
+    domino:'Домино',
+  })[String(value || '')] || String(value || '—');
 
   const setBusy = value => {
     busy = value;
@@ -46,7 +60,7 @@
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.ok !== true) {
-      throw new Error(String(data.error || 'Tournament Admin request failed.'));
+      throw new Error(String(data.error || 'Не удалось выполнить запрос управления турниром.'));
     }
     return data;
   };
@@ -71,11 +85,11 @@
     if (!tournament) {
       summary.append(
         summaryCard('Статус', 'нет активного турнира'),
-        summaryCard('Entry', '50 000'),
+        summaryCard('Взнос', '50 000'),
         summaryCard('Участники', '8 / 16 / 32 / 64 / 128')
       );
       current.textContent = 'Официальный турнир ещё не создан.';
-      rewards.textContent = 'Reward snapshot появится после создания draft.';
+      rewards.textContent = 'Снимок наград появится после создания черновика.';
       create.disabled = busy;
       open.disabled = true;
       open.dataset.available = '0';
@@ -88,13 +102,13 @@
     const fee = Number(tournament?.entry_fee?.amount || 50000);
 
     summary.append(
-      summaryCard('Статус', state),
-      summaryCard('Игра', String(tournament.game_type || '—')),
+      summaryCard('Статус', stateLabel(state)),
+      summaryCard('Игра', gameLabel(tournament.game_type)),
       summaryCard('Участники', `${format(count)} / ${format(cap)}`),
-      summaryCard('Entry', format(fee))
+      summaryCard('Взнос', format(fee))
     );
 
-    current.textContent = `${tournament.title || 'Официальный турнир'} · ${tournament.game_type || '—'} · ${format(count)}/${format(cap)}`;
+    current.textContent = `${tournament.title || 'Официальный турнир'} · ${gameLabel(tournament.game_type)} · ${format(count)}/${format(cap)}`;
     rewards.textContent = JSON.stringify(tournament.reward_snapshot || {}, null, 2);
 
     create.disabled = true;
@@ -112,7 +126,7 @@
       render(data.snapshot || {});
       return data;
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Tournament Admin operation failed.', 'error');
+      setStatus(error instanceof Error ? error.message : 'Не удалось выполнить операцию с турниром.', 'error');
       throw error;
     } finally {
       busy = false;
@@ -123,8 +137,8 @@
 
   const load = async () => {
     try {
-      await withBusy('Загружаю Tournament Admin…', () => post({action:'snapshot'}));
-      setStatus('Tournament Admin загружен.', 'ok');
+      await withBusy('Загружаю управление турниром…', () => post({action:'snapshot'}));
+      setStatus('Управление турниром загружено.', 'ok');
     } catch (_) {}
   };
 
@@ -136,16 +150,16 @@
       setStatus('Выберите игру и допустимый размер турнира.', 'error');
       return;
     }
-    if (!window.confirm(`Создать официальный tournament draft на ${selectedCapacity} участников? Reward snapshot и entry 50 000 будут зафиксированы.`)) return;
+    if (!window.confirm(`Создать черновик официального турнира на ${selectedCapacity} участников? Взнос 50 000 и снимок наград будут зафиксированы.`)) return;
 
     try {
-      await withBusy('Создаю tournament draft…', () => post({
+      await withBusy('Создаю черновик турнира…', () => post({
         action:'create_draft',
         game_type:selectedGame,
         capacity:selectedCapacity,
         title:selectedTitle,
       }));
-      setStatus('Tournament draft создан. Проверьте snapshot и откройте регистрацию.', 'ok');
+      setStatus('Черновик турнира создан. Проверьте снимок наград и откройте регистрацию.', 'ok');
     } catch (_) {}
   };
 
