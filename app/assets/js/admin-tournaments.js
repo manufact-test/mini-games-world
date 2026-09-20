@@ -35,6 +35,24 @@
     go:'Го',
     domino:'Домино',
   })[String(value || '')] || String(value || '—');
+  const rewardSummary = snapshot => {
+    const placements = snapshot?.placements && typeof snapshot.placements === 'object'
+      ? snapshot.placements
+      : {};
+    const first = placements['1'] || {};
+    const second = placements['2'] || {};
+    const third = placements['3'] || {};
+    const entry = Number(snapshot?.entry?.amount || 50000);
+    return [
+      `Взнос: ${format(entry)} коинов — при регистрации только резервируется.`,
+      '',
+      `1 место: ${format(first.total || 200000)} коинов · Золотой билет · корона чемпиона на 30 дней · постоянный значок победителя · эксклюзивная косметика · Зал славы · золотой кубок.`,
+      `2 место: ${format(second.total || 80000)} коинов · серебряная рамка на 30 дней · постоянный результат финалиста · серебряный кубок.`,
+      `3 место: ${format(third.total || 50000)} коинов · возврат взноса · бронзовая отметка на 30 дней · постоянный результат третьего места · бронзовый кубок.`,
+      '',
+      'Золотой билет нельзя продать или передать другому игроку.',
+    ].join('\n');
+  };
 
   const setBusy = value => {
     busy = value;
@@ -109,7 +127,7 @@
     );
 
     current.textContent = `${tournament.title || 'Официальный турнир'} · ${gameLabel(tournament.game_type)} · ${format(count)}/${format(cap)}`;
-    rewards.textContent = JSON.stringify(tournament.reward_snapshot || {}, null, 2);
+    rewards.textContent = rewardSummary(tournament.reward_snapshot || {});
 
     create.disabled = true;
     const canOpen = state === 'draft';
