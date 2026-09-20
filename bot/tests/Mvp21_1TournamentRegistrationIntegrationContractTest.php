@@ -62,7 +62,7 @@ $reservePosition = strpos($registerSlice, '$this->ledger->createReservation([');
 $assertTrue($lockPosition !== false, 'Registration must lock the tournament row.');
 $assertTrue($countPosition !== false && $lockPosition < $countPosition, 'Capacity must be counted only after the tournament row lock.');
 $assertTrue($reservePosition !== false && $countPosition < $reservePosition, 'Capacity must be checked before reserving coins.');
-$assertTrue(str_contains($registerSlice, "if ($registeredCount >= $capacity)"), 'Full tournament must reject a later contender before reservation.');
+$assertTrue(str_contains($registerSlice, "if (\$registeredCount >= \$capacity)"), 'Full tournament must reject a later contender before reservation.');
 
 $assertTrue(str_contains($sources['player_endpoint'], 'getUserFromRequest($payload)'), 'Player tournament API must reuse canonical authentication.');
 $assertTrue(str_contains($sources['player_endpoint'], "['mgw_account_ref']"), 'Player tournament API must use attached canonical account_ref.');
