@@ -274,8 +274,17 @@ async function historyItem(player, gameId) {
 }
 
 function assertDiagnostics(player) {
-  expect(player.report.pageErrors, `${player.report.slot} page errors`).toEqual([]);
-  expect(player.report.serverErrors, `${player.report.slot} server 5xx`).toEqual([]);
+  if (player.report.pageErrors.length || player.report.serverErrors.length) {
+    console.log('[MGW_STAGING_PLAYER_DIAGNOSTICS]', JSON.stringify(player.report));
+  }
+  expect(
+    player.report.serverErrors,
+    `${player.report.slot} server 5xx: ${JSON.stringify(player.report.serverErrors)}`
+  ).toEqual([]);
+  expect(
+    player.report.pageErrors,
+    `${player.report.slot} page errors: ${JSON.stringify(player.report.pageErrors)}`
+  ).toEqual([]);
   for (const status of player.report.presenceStatuses) expect(status).toBeLessThan(500);
 }
 
