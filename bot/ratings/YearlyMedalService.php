@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * MVP-20.6 authoritative yearly-medal owner.
  *
- * One real rated human match in an official quarter unlocks exactly that
- * quarter's fragment. Missing quarters stay missing. Fragments are not Store
+ * At least five rated human matches plus at least one human win in an official
+ * quarter unlock exactly that quarter's fragment. Missing quarters stay missing. Fragments are not Store
  * inventory and there is no purchase/backfill path.
  */
 final class YearlyMedalService
@@ -431,7 +431,7 @@ final class YearlyMedalService
         }
 
         $rows = $this->database->fetchAll(
-            'SELECT DISTINCT p.mgw_id
+            'SELECT p.mgw_id
              FROM mgw_game_rating_participation p
              INNER JOIN mgw_users u ON u.mgw_id = p.mgw_id
              WHERE p.season_id = :season_id
@@ -443,7 +443,10 @@ final class YearlyMedalService
                      AND dev_identity.provider = :development_provider
                )'
                . $excludeSql .
-            ' ORDER BY p.mgw_id ASC',
+            " GROUP BY p.mgw_id
+              HAVING COUNT(DISTINCT p.match_id) >= 5
+                 AND SUM(CASE WHEN p.result_code = 'win' THEN 1 ELSE 0 END) >= 1
+              ORDER BY p.mgw_id ASC",
             $params
         );
 
