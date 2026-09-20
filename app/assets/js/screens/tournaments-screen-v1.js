@@ -30,6 +30,7 @@ let suppressClickUntil = 0;
 let tournamentSnapshot = null;
 let tournamentRequest = null;
 let tournamentBusy = false;
+let tournamentPendingAction = '';
 
 export function initTournamentsScreen(){
   if (initialized) return;
@@ -228,6 +229,7 @@ async function mutateTournament(action){
   }
 
   tournamentBusy = true;
+  tournamentPendingAction = action;
   let errorMessage = '';
   renderTournamentSnapshot();
 
@@ -246,25 +248,28 @@ async function mutateTournament(action){
       renderBalances(state.user);
     }
 
-    // Confirm the committed server state with a fresh read. This prevents a
-    // successful write from looking like a no-op if any intermediate response
-    // is stale and makes registration failures explicit instead of blinking.
+    // Paint the committed write response immediately. The fresh status read stays
+    // authoritative, but no longer leaves the button looking frozen while it runs.
+    tournamentPendingAction = 'verify';
+    renderTournamentSnapshot();
+
     const verified = await api.tournamentStatus();
     tournamentSnapshot = verified?.snapshot && typeof verified.snapshot === 'object'
       ? verified.snapshot
       : responseSnapshot;
 
-    const state = String(tournamentSnapshot?.registration?.state || '');
-    if (action === 'register' && state !== 'registered') {
+    const registrationState = String(tournamentSnapshot?.registration?.state || '');
+    if (action === 'register' && registrationState !== 'registered') {
       throw new Error('Регистрация не сохранилась. Попробуйте ещё раз.');
     }
-    if (action === 'leave' && state === 'registered') {
+    if (action === 'leave' && registrationState === 'registered') {
       throw new Error('Отмена регистрации не сохранилась. Попробуйте ещё раз.');
     }
   } catch (error) {
     errorMessage = humanizeTournamentError(error?.message || 'Не удалось изменить регистрацию.');
   } finally {
     tournamentBusy = false;
+    tournamentPendingAction = '';
     renderTournamentSnapshot(errorMessage);
   }
 }
@@ -300,9 +305,17 @@ function renderTournamentSnapshot(errorMessage = ''){
   let action = '';
   if (open && !registered && !full) {
     const disabled = tournamentBusy || insufficient;
-    action = `<button type="button" class="tournaments-v2-tournament-action" data-tournament-action="register"${disabled ? ' disabled' : ''}>${insufficient ? 'Недостаточно коинов' : `Зарегистрироваться · ${escapeHtml(formatNumber(fee))}`}</button>`;
+    const label = insufficient
+      ? 'Недостаточно коинов'
+      : tournamentBusy
+        ? (tournamentPendingAction === 'register' ? 'Регистрируем…' : 'Проверяем…')
+        : `Зарегистрироваться · ${escapeHtml(formatNumber(fee))}`;
+    action = `<button type="button" class="tournaments-v2-tournament-action${tournamentBusy ? ' is-pending' : ''}" data-tournament-action="register"${disabled ? ' disabled' : ''}${tournamentBusy ? ' aria-busy="true"' : ''}>${label}</button>`;
   } else if (open && registered && !full) {
-    action = `<button type="button" class="tournaments-v2-tournament-action tournaments-v2-tournament-action--secondary" data-tournament-action="leave"${tournamentBusy ? ' disabled' : ''}>Отменить регистрацию</button>`;
+    const label = tournamentBusy
+      ? (tournamentPendingAction === 'leave' ? 'Отменяем…' : 'Проверяем…')
+      : 'Отменить регистрацию';
+    action = `<button type="button" class="tournaments-v2-tournament-action tournaments-v2-tournament-action--secondary${tournamentBusy ? ' is-pending' : ''}" data-tournament-action="leave"${tournamentBusy ? ' disabled aria-busy="true"' : ''}>${label}</button>`;
   }
 
   const statusText = state === 'draft'
@@ -334,7 +347,7 @@ function renderTournamentSnapshot(errorMessage = ''){
 
     <div class="tournaments-v2-tournament-progress">
       <p class="tournaments-v2-tournament-capacity-copy">В турнире участвуют ${escapeHtml(formatNumber(capacity))} игроков. Регистрация закроется, когда все места будут заняты.</p>
-      <div><span>Участники</span><strong>${escapeHtml(formatNumber(count))} / ${escapeHtml(formatNumber(capacity))}</strong></div>
+      <div class="tournaments-v2-tournament-participants"><span>Участники</span><strong>${escapeHtml(formatNumber(count))} / ${escapeHtml(formatNumber(capacity))}</strong></div>
       <div class="tournaments-v2-tournament-progress-track"><i style="width:${pct}%"></i></div>
     </div>
 
