@@ -1,10 +1,10 @@
 # MGW CURRENT SHORT ROADMAP — 2026-09-20 — MVP-20.3 ARENA CORRECTIVE IN PROGRESS
 
-**Repo:** `manufact-test/mini-games-world`  
-**Accepted staging:** `agent/mvp-13-2-staging` @ `cabe14ec7a6efb9a8d8399a4d916859ca8f91b18`  
-**Current working branch:** `agent/mvp20-3-leaderboard-ux-corrective-v2`  
-**Working head at checkpoint:** `325bb138508a1fbef8ebdaa94f05ad66cc5d6e52`  
-**Branch relation:** 10 commits ahead of staging, 0 behind at checkpoint.  
+**Repo:** `manufact-test/mini-games-world`
+**Accepted staging:** `agent/mvp-13-2-staging` @ `cabe14ec7a6efb9a8d8399a4d916859ca8f91b18`
+**Current working branch:** `agent/mvp20-3-leaderboard-ux-corrective-v2`
+**Working head at checkpoint:** `325bb138508a1fbef8ebdaa94f05ad66cc5d6e52`
+**Branch relation:** 10 commits ahead of staging, 0 behind at checkpoint.
 **Current task:** finish and accept MVP-20.3 leaderboard corrective before MVP-20.4.
 
 ---
