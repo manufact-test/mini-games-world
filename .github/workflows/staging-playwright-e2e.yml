@@ -103,6 +103,26 @@ jobs:
           done
           test "$ready" = '1'
 
+      - name: Diagnose pending projection failures
+        if: steps.readiness.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          oidc_json="$(curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=mini-games-world-staging-e2e")"
+          oidc_token="$(printf '%s' "${oidc_json}" | jq -r '.value // empty')"
+          test -n "${oidc_token}"
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${oidc_token}" \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            "${MGW_STAGING_ORIGIN}/bot/staging-projection-diagnostic.php" \
+            --data '{}' | tee staging-projection-diagnostic.json
+          printf '\n'
+
       - name: Set up Node.js on Linux route
         id: setup-node
         if: steps.readiness.outcome == 'success'
@@ -181,6 +201,7 @@ jobs:
           path: |
             e2e/artifacts/playwright
             staging-e2e-readiness-linux.json
+            staging-projection-diagnostic.json
           if-no-files-found: warn
           retention-days: 7
 

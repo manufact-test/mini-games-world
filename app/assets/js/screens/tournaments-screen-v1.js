@@ -317,9 +317,9 @@ function renderTournamentSnapshot(errorMessage = ''){
       : 'Вы зарегистрированы. Место закреплено за вами.')
     : full
       ? 'Свободных мест больше нет.'
-      : open
-        ? (insufficient ? 'Недостаточно коинов для регистрации.' : 'Можно регистрироваться.')
-        : 'Ожидайте открытия регистрации.';
+      : insufficient
+        ? 'Недостаточно коинов для регистрации.'
+        : '';
 
   body.innerHTML = `
     ${errorMessage ? `<div class="tournaments-v2-tournament-error">${escapeHtml(errorMessage)}</div>` : ''}
@@ -333,6 +333,7 @@ function renderTournamentSnapshot(errorMessage = ''){
     </div>
 
     <div class="tournaments-v2-tournament-progress">
+      <p class="tournaments-v2-tournament-capacity-copy">В турнире участвуют ${escapeHtml(formatNumber(capacity))} игроков. Регистрация закроется, когда все места будут заняты.</p>
       <div><span>Участники</span><strong>${escapeHtml(formatNumber(count))} / ${escapeHtml(formatNumber(capacity))}</strong></div>
       <div class="tournaments-v2-tournament-progress-track"><i style="width:${pct}%"></i></div>
     </div>
@@ -343,9 +344,7 @@ function renderTournamentSnapshot(errorMessage = ''){
       <div><b>3 место</b><strong>${escapeHtml(formatNumber(Number(third.total || 50000)))}</strong><span>возврат взноса</span></div>
     </div>
 
-    <div class="tournaments-v2-tournament-own${registered ? ' is-registered' : ''}${insufficient ? ' is-insufficient' : ''}">
-      <strong>${escapeHtml(ownStatus)}</strong>
-    </div>
+    ${ownStatus ? `<div class="tournaments-v2-tournament-own${registered ? ' is-registered' : ''}${insufficient ? ' is-insufficient' : ''}"><strong>${escapeHtml(ownStatus)}</strong></div>` : ''}
     ${action}
   `;
 }
