@@ -487,23 +487,40 @@ function renderTournamentSnapshot(errorMessage = ''){
 
   const statusText = state === 'draft'
     ? 'Турнир готовится · регистрация ещё не открыта'
-    : waitingForDate
-      ? 'Состав набран · ожидаем назначения даты'
-      : full
-        ? 'Состав заполнен'
-        : 'Регистрация открыта';
+    : scheduled
+      ? 'Дата назначена · готовимся к старту'
+      : waitingForDate
+        ? 'Состав набран · ожидаем назначения даты'
+        : full
+          ? 'Состав заполнен'
+          : 'Регистрация открыта';
 
   const ownStatus = registered
-    ? (waitingForDate
-      ? 'Вы в составе. Регистрация закрыта — ожидайте назначения даты турнира.'
-      : full
-        ? 'Вы в составе. Турнир заполнен — место зафиксировано.'
-        : 'Вы зарегистрированы. Место закреплено за вами.')
-    : waitingForDate || full
-      ? 'Регистрация завершена. Свободных мест больше нет.'
-      : insufficient
-        ? 'Недостаточно коинов для регистрации.'
-        : '';
+    ? (scheduled
+      ? `Вы в составе. Турнир начнётся ${scheduledStart ? formatTournamentDateTime(scheduledStart) : 'в назначенное время'}.`
+      : waitingForDate
+        ? 'Вы в составе. Регистрация закрыта — ожидайте назначения даты турнира.'
+        : full
+          ? 'Вы в составе. Турнир заполнен — место зафиксировано.'
+          : 'Вы зарегистрированы. Место закреплено за вами.')
+    : scheduled
+      ? 'Состав турнира зафиксирован. Регистрация завершена.'
+      : waitingForDate || full
+        ? 'Регистрация завершена. Свободных мест больше нет.'
+        : insufficient
+          ? 'Недостаточно коинов для регистрации.'
+          : '';
+
+  const scheduleMarkup = scheduled && scheduledStart
+    ? `<section class="tournaments-v2-tournament-schedule" aria-label="Дата и время турнира">
+        <span>Начало турнира</span>
+        <strong>${escapeHtml(formatTournamentDateTime(scheduledStart))}</strong>
+        <div class="tournaments-v2-tournament-countdown">
+          <small>До старта</small>
+          <b data-tournament-countdown>${escapeHtml(formatTournamentCountdown(scheduledStart.getTime() - Date.now()))}</b>
+        </div>
+      </section>`
+    : '';
 
   body.innerHTML = `
     ${errorMessage ? `<div class="tournaments-v2-tournament-error">${escapeHtml(errorMessage)}</div>` : ''}
@@ -516,8 +533,10 @@ function renderTournamentSnapshot(errorMessage = ''){
       <div class="tournaments-v2-tournament-entry"><small>Вход</small><strong>${escapeHtml(formatNumber(fee))}</strong><span>коинов</span></div>
     </div>
 
+    ${scheduleMarkup}
+
     <div class="tournaments-v2-tournament-progress">
-      <p class="tournaments-v2-tournament-capacity-copy">${waitingForDate ? 'Состав турнира набран. Регистрация закрыта.' : `В турнире участвуют ${escapeHtml(formatNumber(capacity))} игроков. Регистрация закроется, когда все места будут заняты.`}</p>
+      <p class="tournaments-v2-tournament-capacity-copy">${scheduled ? 'Состав турнира зафиксирован. Дата назначена.' : waitingForDate ? 'Состав турнира набран. Регистрация закрыта.' : `В турнире участвуют ${escapeHtml(formatNumber(capacity))} игроков. Регистрация закроется, когда все места будут заняты.`}</p>
       <div class="tournaments-v2-tournament-participants"><span>Участники</span><strong>${escapeHtml(formatNumber(count))} / ${escapeHtml(formatNumber(capacity))}</strong></div>
       <div class="tournaments-v2-tournament-progress-track"><i style="width:${pct}%"></i></div>
     </div>
