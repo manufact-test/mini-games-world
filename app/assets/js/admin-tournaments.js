@@ -22,8 +22,12 @@
   const scheduleStart = card.querySelector('[data-tournament-start]');
   const assignDate = card.querySelector('[data-tournament-assign-date]');
   const scheduleInfo = card.querySelector('[data-tournament-schedule-info]');
+  const manualPanel = card.querySelector('[data-tournament-manual-panel]');
+  const manualInfo = card.querySelector('[data-tournament-manual-info]');
+  const prepareManual = card.querySelector('[data-tournament-prepare-manual]');
   let busy = false;
   let snapshot = null;
+  let manualAcceptance = null;
 
   const format = value => new Intl.NumberFormat('ru-RU').format(Number(value || 0));
   const stateLabel = value => ({
@@ -125,6 +129,10 @@
         control.disabled = scheduleStart.dataset.locked === '1';
         return;
       }
+      if (control === prepareManual) {
+        control.disabled = prepareManual.dataset.available !== '1';
+        return;
+      }
       control.disabled = false;
     });
   };
@@ -191,6 +199,12 @@
         scheduleStart.dataset.locked = '0';
       }
       if (scheduleInfo instanceof HTMLElement) scheduleInfo.textContent = 'Дата ещё не назначена.';
+      if (manualPanel instanceof HTMLElement) manualPanel.hidden = true;
+      if (prepareManual instanceof HTMLButtonElement) {
+        prepareManual.disabled = true;
+        prepareManual.dataset.available = '0';
+      }
+      if (manualInfo instanceof HTMLElement) manualInfo.textContent = 'Ручная проверка staging недоступна.';
       return;
     }
 
@@ -240,6 +254,31 @@
           ? 'Состав набран. Назначьте финальную дату и время начала турнира.'
           : 'Дата ещё не назначена.';
     }
+
+    const manual = manualAcceptance && typeof manualAcceptance === 'object'
+      ? manualAcceptance
+      : {};
+    const manualReason = String(manual.reason || '');
+    const manualVisible = state === 'registration_open'
+      && (manualReason === 'ready' || manualReason === 'manual_last_seat_ready');
+    if (manualPanel instanceof HTMLElement) manualPanel.hidden = !manualVisible;
+    if (prepareManual instanceof HTMLButtonElement) {
+      const canPrepare = manual.available === true;
+      prepareManual.dataset.available = canPrepare ? '1' : '0';
+      prepareManual.disabled = busy || !canPrepare;
+      const target = Number(manual.target_registered_count || Math.max(0, cap - 1));
+      prepareManual.textContent = `Подготовить ${format(target)}/${format(cap)} для ручной проверки`;
+    }
+    if (manualInfo instanceof HTMLElement) {
+      if (manualReason === 'manual_last_seat_ready') {
+        manualInfo.textContent = `Готово: ${format(count)}/${format(cap)}. Осталось одно живое место — зайдите обычным аккаунтом и зарегистрируйтесь последним.`;
+      } else if (manualReason === 'ready') {
+        const fixtureCount = Number(manual.remaining_fixture_slots || 0);
+        manualInfo.textContent = `Staging: можно добавить ${format(fixtureCount)} тестовых участников и оставить последнее место живому аккаунту.`;
+      } else {
+        manualInfo.textContent = 'Ручная проверка staging недоступна.';
+      }
+    }
   };
 
   const withBusy = async (message, action) => {
@@ -248,6 +287,9 @@
     setStatus(message);
     try {
       const data = await action();
+      manualAcceptance = data?.manual_acceptance && typeof data.manual_acceptance === 'object'
+        ? data.manual_acceptance
+        : manualAcceptance;
       render(data.snapshot || {});
       return data;
     } catch (error) {
@@ -302,6 +344,26 @@
     } catch (_) {}
   };
 
+  const prepareManualAcceptance = async () => {
+    const tournament = snapshot?.tournament;
+    const count = Number(tournament?.registered_count || 0);
+    const cap = Number(tournament?.capacity || 0);
+    const target = Number(manualAcceptance?.target_registered_count || Math.max(0, cap - 1));
+    if (!tournament || cap < 2 || target <= count) return;
+    if (!window.confirm(`Только staging: добавить тестовых участников до ${target}/${cap} и оставить последнее место живому аккаунту?`)) return;
+
+    try {
+      const data = await withBusy('Готовлю турнир для ручной проверки…', () => post({
+        action:'prepare_manual_acceptance',
+      }));
+      const fixture = data?.manual_acceptance_fixture || {};
+      setStatus(
+        `Готово: ${format(fixture.registered_count || target)}/${format(fixture.capacity || cap)}. Теперь последнее место займите обычным аккаунтом.`,
+        'ok'
+      );
+    } catch (_) {}
+  };
+
   const assignFinalDate = async () => {
     const tournamentId = String(snapshot?.tournament?.tournament_id || '');
     if (!tournamentId || !(scheduleStart instanceof HTMLInputElement)) return;
@@ -335,6 +397,7 @@
   refresh?.addEventListener('click', load);
   create?.addEventListener('click', createDraft);
   open?.addEventListener('click', openRegistration);
+  prepareManual?.addEventListener('click', prepareManualAcceptance);
   assignDate?.addEventListener('click', assignFinalDate);
 
   if (telegram?.initData) {
