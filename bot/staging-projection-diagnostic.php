@@ -54,7 +54,7 @@ try {
     }
 
     $tournament = $db->fetchAll(
-        "SELECT tournament_id, state, game_type, capacity
+        "SELECT tournament_id, tournament_state, game_type, capacity
          FROM mgw_tournaments
          WHERE active_slot='official'
          ORDER BY created_at_utc DESC
@@ -79,6 +79,11 @@ try {
         'generated_at'=>gmdate(DATE_ATOM),
     ]);
 } catch (Throwable $error) {
-    error_log('[MiniGamesWorld staging projection diagnostic] ' . $error->getMessage());
-    json_response(['ok'=>false,'error'=>'diagnostic_failed'], 500);
+    $message = trim($error->getMessage());
+    error_log('[MiniGamesWorld staging projection diagnostic] ' . $message);
+    json_response([
+        'ok'=>false,
+        'error'=>'diagnostic_failed',
+        'reason'=>substr($message, 0, 500),
+    ], 500);
 }
