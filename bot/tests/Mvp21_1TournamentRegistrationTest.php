@@ -48,6 +48,7 @@ $db->execute('CREATE TABLE mgw_users (
 
 (require $root . '/database/migrations/20260717_0005_create_balances_ledger_reservations.php')->up($db);
 (require $root . '/database/migrations/20260920_0049_create_official_tournaments.php')->up($db);
+(require $root . '/database/migrations/20260920_0050_add_tournament_rules_consent.php')->up($db);
 
 $ids = [];
 for ($i = 1; $i <= 10; $i++) {
@@ -78,6 +79,15 @@ for ($i = 1; $i <= 10; $i++) {
 }
 
 $service = new TournamentRegistrationService($db, $ledger);
+$consentFor = static function (array $snapshot): array {
+    $rules = $snapshot['tournament']['rules'] ?? [];
+    return [
+        'accepted'=>true,
+        'version'=>(string)($rules['version'] ?? ''),
+        'language'=>(string)($rules['language'] ?? ''),
+        'sha256'=>(string)($rules['sha256'] ?? ''),
+    ];
+};
 
 $draft = $service->createDraft(
     'tictactoe',
@@ -107,12 +117,14 @@ $opened = $service->openRegistration(
     new DateTimeImmutable('2026-09-20T13:02:00Z')
 );
 $assertSame('registration_open', $opened['tournament']['state'], 'Admin must explicitly open registration.');
+$rulesConsent = $consentFor($opened);
 
 $user1Account = 'legacy:tg-1';
 $registered = $service->register(
     $ids[1],
     $user1Account,
-    new DateTimeImmutable('2026-09-20T13:03:00Z')
+    new DateTimeImmutable('2026-09-20T13:03:00Z'),
+    $rulesConsent
 );
 $assertSame('registered', $registered['registration']['state'], 'Player must become registered.');
 $assertSame(1, $registered['registration']['attempt_no'], 'First registration must use attempt 1.');
@@ -126,7 +138,8 @@ $assertSame(1, (int)$db->fetchValue(
 $duplicate = $service->register(
     $ids[1],
     $user1Account,
-    new DateTimeImmutable('2026-09-20T13:03:30Z')
+    new DateTimeImmutable('2026-09-20T13:03:30Z'),
+    $rulesConsent
 );
 $assertSame(1, $duplicate['tournament']['registered_count'], 'Duplicate register must not occupy a second place.');
 $assertSame(1, (int)$db->fetchValue(
@@ -151,7 +164,8 @@ $assertSame('released', (string)$db->fetchValue(
 $reregistered = $service->register(
     $ids[1],
     $user1Account,
-    new DateTimeImmutable('2026-09-20T13:05:00Z')
+    new DateTimeImmutable('2026-09-20T13:05:00Z'),
+    $rulesConsent
 );
 $assertSame(2, $reregistered['registration']['attempt_no'], 'Re-registration after withdrawal must create attempt 2.');
 $assertSame(2, (int)$db->fetchValue(
@@ -168,7 +182,8 @@ for ($i = 2; $i <= 8; $i++) {
     $service->register(
         $ids[$i],
         'legacy:tg-' . $i,
-        new DateTimeImmutable('2026-09-20T13:' . sprintf('%02d', 5 + $i) . ':00Z')
+        new DateTimeImmutable('2026-09-20T13:' . sprintf('%02d', 5 + $i) . ':00Z'),
+        $rulesConsent
     );
 }
 
@@ -176,12 +191,12 @@ $full = $service->snapshot($ids[8], 'legacy:tg-8');
 $assertSame(8, $full['tournament']['registered_count'], 'Eight-player tournament must stop at eight active registrations.');
 $assertSame(true, $full['tournament']['is_full'], 'Capacity must be reported as full.');
 $assertSame(0, $full['tournament']['remaining_count'], 'Full tournament must expose zero remaining places.');
-$assertSame('registration_open', $full['tournament']['state'], 'MVP-21.1 must not steal MVP-21.2 automatic-close ownership.');
+$assertSame('waiting_for_date', $full['tournament']['state'], 'MVP-21.2 must auto-close a full tournament after all registered players accepted rules.');
 
 $assertThrows(
-    fn() => $service->register($ids[9], 'legacy:tg-9', new DateTimeImmutable('2026-09-20T13:20:00Z')),
-    'заняты',
-    'The ninth player must lose the concurrent-last-place boundary.'
+    fn() => $service->register($ids[9], 'legacy:tg-9', new DateTimeImmutable('2026-09-20T13:20:00Z'), $rulesConsent),
+    'закрыта',
+    'The ninth player must lose the concurrent-last-place boundary after auto-close.'
 );
 $balance9 = $ledger->getBalance('legacy:tg-9', 'mgw_coin');
 $assertSame(100000, $balance9['available_amount'], 'Rejected last-place contender must not lose available coins.');
@@ -193,8 +208,8 @@ $assertSame(0, (int)$db->fetchValue(
 
 $assertThrows(
     fn() => $service->leave($ids[1], $user1Account, new DateTimeImmutable('2026-09-20T13:21:00Z')),
-    'заполнения',
-    'Once full, MVP-21.1 registration must be locked against voluntary leave.'
+    'текущего состояния',
+    'Once full, registration must be locked against voluntary leave.'
 );
 $assertSame(8, (int)$db->fetchValue(
     "SELECT COUNT(*) FROM mgw_tournament_registrations

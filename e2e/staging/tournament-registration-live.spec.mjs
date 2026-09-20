@@ -140,12 +140,26 @@ test('MVP-21.1 LIVE TOURNAMENT: real API reserves and releases 50,000', async ({
     if (!tournament || tournament.state !== 'registration_open' || tournament.is_full === true) {
       test.skip(true, 'No open official tournament with a free seat is available on staging.');
     }
+    if (Number(tournament.remaining_count || 0) <= 1) {
+      test.skip(true, 'Live reserve/release smoke requires at least two free seats so it does not auto-close the staging tournament.');
+    }
+
+    const rules = tournament.rules || {};
+    expect(rules.version, 'tournament rules version').toBeTruthy();
+    expect(rules.language, 'tournament rules language').toBeTruthy();
+    expect(rules.sha256, 'tournament rules sha256').toMatch(/^[a-f0-9]{64}$/);
 
     const beforeCount = Number(tournament.registered_count || 0);
     expect(Number(before.payload?.snapshot?.balance?.available_amount ?? -1)).toBe(100000);
     expect(Number(before.payload?.snapshot?.balance?.reserved_amount ?? -1)).toBe(0);
 
-    const register = await post(player.page, '/bot/api.php', { action:'tournament_register' });
+    const register = await post(player.page, '/bot/api.php', {
+      action:'tournament_register',
+      tournamentRulesAccepted:true,
+      tournamentRulesVersion:String(rules.version),
+      tournamentRulesLanguage:String(rules.language),
+      tournamentRulesSha256:String(rules.sha256),
+    });
     console.log('[MGW_TOURNAMENT_REGISTER_LIVE]', describeFailure(register));
     expect(register.status, `tournament_register: ${describeFailure(register)}`).toBe(200);
     expect(register.payload?.ok, `tournament_register: ${describeFailure(register)}`).toBe(true);

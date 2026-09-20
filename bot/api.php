@@ -3,6 +3,7 @@ declare(strict_types=1);
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/services/GameLaunchFinalizationService.php';
 require_once __DIR__ . '/services/MatchPreparationRuntimeService.php';
+require_once __DIR__ . '/tournaments/TournamentAdminNotificationBridge.php';
 
 function mgw_cleanup_games_if_due(array &$data, ChessRuntimeService $games, bool $force = false): void
 {
@@ -59,6 +60,23 @@ function mgw_is_battleship_fire_fast_path(array $data, string $action, array $pa
     return $actionType === 'fire'
         && (string)($data['games'][$gameId]['game_type'] ?? '') === 'battleship'
         && (string)($data['games'][$gameId]['phase'] ?? '') === 'battle';
+}
+
+function mgw_emit_tournament_full_admin_event(
+    JsonDatabase $db,
+    array $config,
+    array $snapshot
+): void {
+    $adminIds = is_array($config['admin_ids'] ?? null) ? $config['admin_ids'] : [];
+    if ($adminIds === []) return;
+
+    $db->transaction(function (array &$data) use ($adminIds, $snapshot): void {
+        (new TournamentAdminNotificationBridge())->emitRegistrationFull(
+            $data,
+            $adminIds,
+            $snapshot
+        );
+    });
 }
 
 try {
@@ -280,8 +298,17 @@ try {
                     // current runtime user. EconomyRuntimeBridge then verifies
                     // JSON/ledger parity after the successful API transaction
                     // while preserving reserved_amount as a held balance.
+                    $rulesConsent = null;
+                    if ($action === 'tournament_register') {
+                        $rulesConsent = [
+                            'accepted'=>($payload['tournamentRulesAccepted'] ?? false) === true,
+                            'version'=>clean_string($payload['tournamentRulesVersion'] ?? '', 64),
+                            'language'=>clean_string($payload['tournamentRulesLanguage'] ?? '', 12),
+                            'sha256'=>clean_string($payload['tournamentRulesSha256'] ?? '', 64),
+                        ];
+                    }
                     $snapshot = $action === 'tournament_register'
-                        ? $tournaments->register($mgwId, $accountRef)
+                        ? $tournaments->register($mgwId, $accountRef, null, $rulesConsent)
                         : $tournaments->leave($mgwId, $accountRef);
 
                     $available = (int)($snapshot['balance']['available_amount'] ?? -1);
@@ -577,6 +604,17 @@ try {
                 throw new RuntimeException('Неизвестное действие.');
         }
     });
+
+    if ($action === 'tournament_register'
+        && !empty($result['snapshot']['transition']['registration_closed_now'])) {
+        try {
+            mgw_emit_tournament_full_admin_event($db, $config, (array)$result['snapshot']);
+        } catch (Throwable $notifyError) {
+            // Registration is already authoritative DB state. Notification
+            // failure must never roll back or misreport the successful last seat.
+            error_log('Mini Games World tournament-full admin notification failed: ' . $notifyError->getMessage());
+        }
+    }
 
     if ($action === 'payment_create_draft'
         && !empty($result['saved'])

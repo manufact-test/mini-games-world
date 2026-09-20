@@ -1,22 +1,15 @@
-name: MVP-21.1 Tournament registration reservation
+name: MVP-21.2 Tournament rules consent and auto-close
 
 on:
   pull_request:
     branches:
       - agent/mvp-13-2-staging
     paths:
-      - 'bot/database/migrations/20260920_0049_create_official_tournaments.php'
       - 'bot/database/migrations/20260920_0050_add_tournament_rules_consent.php'
       - 'bot/tournaments/TournamentRegistrationService.php'
       - 'bot/tournaments/TournamentAdminNotificationBridge.php'
       - 'bot/api.php'
       - 'bot/tournament-status.php'
-      - 'bot/runtime/RuntimePrimaryStagingRequestFinalizer.php'
-      - 'bot/economy/UnifiedEconomyRuntimeSyncService.php'
-      - 'bot/ledger/RuntimeEconomyRepository.php'
-      - 'bot/services/UserService.php'
-      - 'bot/admin-tournaments.php'
-      - 'bot/core/bootstrap.php'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/tournaments-screen-v1.js'
       - 'app/assets/css/main.css'
@@ -24,17 +17,13 @@ on:
       - 'app/v110.php'
       - 'app/admin.php'
       - 'app/assets/js/admin-tournaments.js'
-      - 'app/assets/css/admin-shell.css'
       - 'bot/tests/Mvp21_1TournamentRegistrationTest.php'
       - 'bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php'
-      - 'bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php'
       - 'bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php'
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
       - 'bot/tests/Mvp21_2TournamentRulesTest.php'
       - 'bot/tests/RuntimeNotificationRepositoryTest.php'
-      - 'bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php'
       - 'e2e/staging/tournament-registration-live.spec.mjs'
-      - 'e2e/playwright.config.mjs'
       - '.github/workflows/mvp21-1-tournament-registration.yml'
       - '.github/workflows/mvp21-2-tournament-rules.yml'
   workflow_dispatch:
@@ -43,12 +32,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: mgw-mvp21-1-tournament-registration-${{ github.workflow }}-${{ github.ref }}
+  group: mgw-mvp21-2-tournament-rules-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   focused:
-    name: Draft, reserve, leave and last-seat boundary
+    name: Rules consent, last-seat close and admin alert
     runs-on: ubuntu-24.04
     timeout-minutes: 25
 
@@ -82,51 +71,42 @@ jobs:
           extensions: pdo_sqlite, pdo_mysql, mbstring
           coverage: none
 
-      - name: Lint MVP-21.1 server and client slice
+      - name: Lint MVP-21.2 slice
         shell: bash
         run: |
           set -euo pipefail
           files=(
-            bot/database/migrations/20260920_0049_create_official_tournaments.php
             bot/database/migrations/20260920_0050_add_tournament_rules_consent.php
             bot/tournaments/TournamentRegistrationService.php
             bot/tournaments/TournamentAdminNotificationBridge.php
             bot/api.php
             bot/tournament-status.php
-            bot/runtime/RuntimePrimaryStagingRequestFinalizer.php
-            bot/economy/UnifiedEconomyRuntimeSyncService.php
-            bot/ledger/RuntimeEconomyRepository.php
-            bot/services/UserService.php
-            bot/admin-tournaments.php
-            bot/core/bootstrap.php
             app/v110.php
             app/admin.php
             bot/tests/Mvp21_1TournamentRegistrationTest.php
             bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
-            bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php
             bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php
             bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
             bot/tests/Mvp21_2TournamentRulesTest.php
             bot/tests/RuntimeNotificationRepositoryTest.php
-            bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
           node --check app/assets/js/api/client.js
           node --check app/assets/js/screens/tournaments-screen-v1.js
           node --check app/assets/js/admin-tournaments.js
           node --check e2e/staging/tournament-registration-live.spec.mjs
-          node --check e2e/playwright.config.mjs
 
-      - name: Run MVP-21.1 tournament registration model
-        run: php bot/tests/Mvp21_1TournamentRegistrationTest.php
+      - name: Run MVP-21.2 model
+        run: php bot/tests/Mvp21_2TournamentRulesTest.php
 
-      - name: Run MVP-21.1 integration and ownership contract
-        run: php bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
+      - name: Preserve MVP-21.1 tournament model
+        run: |
+          php bot/tests/Mvp21_1TournamentRegistrationTest.php
+          php bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
+          php bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php
+          php bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
 
-      - name: Run MVP-21.1 runtime reservation compatibility
-        run: php bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php
-
-      - name: Run MVP-21.1 MySQL DB-primary registration acceptance
+      - name: Preserve MySQL registration runtime
         env:
           MGW_TEST_MYSQL_HOST: 127.0.0.1
           MGW_TEST_MYSQL_PORT: 3306
@@ -135,14 +115,11 @@ jobs:
           MGW_TEST_MYSQL_PASSWORD: root
         run: php bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php
 
-      - name: Run MVP-21.1 manual acceptance UX contract
-        run: php bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
-
-      - name: Preserve MVP-21.2 rules and auto-close extension
-        run: php bot/tests/Mvp21_2TournamentRulesTest.php
-
-      - name: Preserve concurrent staging request finalization
-        run: php bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php
+      - name: Preserve canonical Notification Center behavior
+        run: |
+          php bot/tests/Mvp18_6NotificationPipelineContractTest.php
+          php bot/tests/NotificationCenterV2PolicyTest.php
+          php bot/tests/RuntimeNotificationRepositoryTest.php
 
       - name: Preserve unified balance runtime
         run: |
@@ -150,26 +127,18 @@ jobs:
           php bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php
           php bot/tests/UnifiedEconomyUninitializedRuntimeHydrationTest.php
 
-      - name: Preserve MVP-20 rating and season stack
+      - name: Preserve MVP-20 competition stack
         run: |
           php bot/tests/Mvp20_1PerGameVisibleRatingTest.php
-          php bot/tests/Mvp20_1VisibleRatingIntegrationContractTest.php
           php bot/tests/Mvp20_2HiddenSkillModelTest.php
-          php bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php
           php bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php
-          php bot/tests/Mvp20_3LeaderboardIntegrationContractTest.php
           php bot/tests/Mvp20_4QuarterlySeasonLifecycleTest.php
-          php bot/tests/Mvp20_4SeasonLifecycleIntegrationContractTest.php
           php bot/tests/Mvp20_5SeasonalAwardsTest.php
-          php bot/tests/Mvp20_5SeasonalAwardsIntegrationContractTest.php
           php bot/tests/Mvp20_6YearlyMedalTest.php
-          php bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php
           php bot/tests/Mvp20_7RatingArchiveTest.php
-          php bot/tests/Mvp20_7RatingArchiveIntegrationContractTest.php
           php bot/tests/Mvp20_8RatingAdminTest.php
-          php bot/tests/Mvp20_8RatingAdminIntegrationContractTest.php
 
-      - name: Guard MVP-21.1 scope and frozen owners
+      - name: Guard MVP-21.2 scope and frozen owners
         if: github.event_name == 'pull_request'
         shell: bash
         run: |
@@ -181,18 +150,11 @@ jobs:
             case "$path" in
               .github/workflows/mvp21-1-tournament-registration.yml|\
               .github/workflows/mvp21-2-tournament-rules.yml|\
-              bot/database/migrations/20260920_0049_create_official_tournaments.php|\
               bot/database/migrations/20260920_0050_add_tournament_rules_consent.php|\
               bot/tournaments/TournamentRegistrationService.php|\
               bot/tournaments/TournamentAdminNotificationBridge.php|\
               bot/api.php|\
               bot/tournament-status.php|\
-              bot/runtime/RuntimePrimaryStagingRequestFinalizer.php|\
-              bot/economy/UnifiedEconomyRuntimeSyncService.php|\
-              bot/ledger/RuntimeEconomyRepository.php|\
-              bot/services/UserService.php|\
-              bot/admin-tournaments.php|\
-              bot/core/bootstrap.php|\
               app/assets/js/api/client.js|\
               app/assets/js/screens/tournaments-screen-v1.js|\
               app/assets/css/main.css|\
@@ -200,20 +162,16 @@ jobs:
               app/v110.php|\
               app/admin.php|\
               app/assets/js/admin-tournaments.js|\
-              app/assets/css/admin-shell.css|\
               bot/tests/Mvp21_1TournamentRegistrationTest.php|\
               bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php|\
-              bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php|\
               bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php|\
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
               bot/tests/Mvp21_2TournamentRulesTest.php|\
               bot/tests/RuntimeNotificationRepositoryTest.php|\
-              bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php|\
-              e2e/staging/tournament-registration-live.spec.mjs|\
-              e2e/playwright.config.mjs)
+              e2e/staging/tournament-registration-live.spec.mjs)
                 ;;
               *)
-                echo "Unexpected MVP-21.1 path: $path" >&2
+                echo "Unexpected MVP-21.2 path: $path" >&2
                 bad=1
                 ;;
             esac

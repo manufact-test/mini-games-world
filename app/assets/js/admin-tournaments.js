@@ -11,6 +11,7 @@
   const summary = card.querySelector('[data-tournament-admin-summary]');
   const current = card.querySelector('[data-tournament-current]');
   const rewards = card.querySelector('[data-tournament-rewards]');
+  const rules = card.querySelector('[data-tournament-rules]');
   const title = card.querySelector('[data-tournament-title]');
   const game = card.querySelector('[data-tournament-game]');
   const capacity = card.querySelector('[data-tournament-capacity]');
@@ -24,6 +25,7 @@
   const stateLabel = value => ({
     draft:'черновик',
     registration_open:'регистрация открыта',
+    waiting_for_date:'состав набран · ожидает дату',
   })[String(value || '')] || String(value || '—');
   const gameLabel = value => ({
     tictactoe:'Крестики-нолики',
@@ -52,6 +54,29 @@
       '',
       'Золотой билет нельзя продать или передать другому игроку.',
     ].join('\n');
+  };
+
+  const rulesSummary = rulesProjection => {
+    const snapshot = rulesProjection?.snapshot && typeof rulesProjection.snapshot === 'object'
+      ? rulesProjection.snapshot
+      : {};
+    const sections = Array.isArray(snapshot.sections) ? snapshot.sections : [];
+    if (!rulesProjection?.version || !rulesProjection?.language || !rulesProjection?.sha256 || !sections.length) {
+      return 'Правила турнира ещё не подготовлены.';
+    }
+    const lines = [
+      `Версия: ${rulesProjection.version}`,
+      `Язык: ${String(rulesProjection.language).toUpperCase()}`,
+      `SHA-256: ${rulesProjection.sha256}`,
+      '',
+    ];
+    sections.forEach(section => {
+      lines.push(String(section?.title || 'Раздел'));
+      (Array.isArray(section?.items) ? section.items : []).forEach(item => lines.push(`• ${String(item || '')}`));
+      lines.push('');
+    });
+    lines.push('Правила являются снимком этого турнира. Существенная правка требует отмены и нового турнира, а не редактирования текущего.');
+    return lines.join('\n').trim();
   };
 
   const setBusy = value => {
@@ -107,6 +132,7 @@
         summaryCard('Участники', '8 / 16 / 32 / 64 / 128')
       );
       current.textContent = 'Официальный турнир ещё не создан.';
+      rules.textContent = 'Снимок правил появится после создания черновика.';
       rewards.textContent = 'Снимок наград появится после создания черновика.';
       create.disabled = busy;
       open.disabled = true;
@@ -127,6 +153,7 @@
     );
 
     current.textContent = `${tournament.title || 'Официальный турнир'} · ${gameLabel(tournament.game_type)} · ${format(count)}/${format(cap)}`;
+    rules.textContent = rulesSummary(tournament.rules || {});
     rewards.textContent = rewardSummary(tournament.reward_snapshot || {});
 
     create.disabled = true;
@@ -168,7 +195,7 @@
       setStatus('Выберите игру и допустимый размер турнира.', 'error');
       return;
     }
-    if (!window.confirm(`Создать черновик официального турнира на ${selectedCapacity} участников? Взнос 50 000 и снимок наград будут зафиксированы.`)) return;
+    if (!window.confirm(`Создать черновик официального турнира на ${selectedCapacity} участников? Взнос 50 000, правила и снимок наград будут зафиксированы.`)) return;
 
     try {
       await withBusy('Создаю черновик турнира…', () => post({
@@ -177,7 +204,7 @@
         capacity:selectedCapacity,
         title:selectedTitle,
       }));
-      setStatus('Черновик турнира создан. Проверьте снимок наград и откройте регистрацию.', 'ok');
+      setStatus('Черновик турнира создан. Проверьте правила и снимок наград, затем откройте регистрацию.', 'ok');
     } catch (_) {}
   };
 

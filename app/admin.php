@@ -20,7 +20,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
   <script src="./assets/js/admin-rating.js?v=1&mvp20_8=rating-admin" defer></script>
-  <script src="./assets/js/admin-tournaments.js?v=2&mvp21_1=manual-acceptance-fix" defer></script>
+  <script src="./assets/js/admin-tournaments.js?v=3&mvp21_2=rules-consent-autoclose" defer></script>
 </head>
 <body>
   <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php">
@@ -63,7 +63,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
       <article class="mgw-admin__card mgw-admin__card--wide" data-tournament-admin>
         <div class="mgw-admin__card-head">
           <h2>Официальный турнир</h2>
-          <span>MVP-21.1 · регистрация и резерв взноса</span>
+          <span>MVP-21.2 · правила, согласие и автозакрытие</span>
         </div>
         <div class="mgw-admin__tournament">
           <div class="mgw-admin__tournament-status" data-tournament-admin-status>Управление турниром ещё не загружено.</div>
@@ -113,9 +113,14 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               <div class="mgw-admin__tournament-actions">
                 <button type="button" data-tournament-open disabled>Открыть регистрацию</button>
               </div>
-              <small>Одновременно может существовать только один активный официальный турнир. Снимок наград фиксируется в момент создания черновика.</small>
+              <small>Одновременно может существовать только один активный официальный турнир. Правила и снимок наград фиксируются при создании. Существенно изменить правила у уже открытого турнира нельзя — для этого нужен новый турнир.</small>
             </section>
           </div>
+
+          <section class="mgw-admin__tournament-panel">
+            <h3>Правила турнира</h3>
+            <pre class="mgw-admin__tournament-rewards" data-tournament-rules>—</pre>
+          </section>
 
           <section class="mgw-admin__tournament-panel">
             <h3>Снимок наград</h3>

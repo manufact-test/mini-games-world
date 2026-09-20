@@ -129,7 +129,12 @@ export const api = {
   ratingArchiveOverview: () => requestUrl(RATING_ARCHIVE_URL, { mode:'overview' }),
   ratingArchiveSeason: (seasonId, gameType = 'tictactoe') => requestUrl(RATING_ARCHIVE_URL, { mode:'season', season_id:seasonId, game_type:gameType }),
   tournamentStatus: () => requestUrl(TOURNAMENT_STATUS_URL, {}),
-  tournamentRegister: () => request('tournament_register'),
+  tournamentRegister: rules => request('tournament_register', {
+    tournamentRulesAccepted:rules?.accepted === true,
+    tournamentRulesVersion:String(rules?.version || ''),
+    tournamentRulesLanguage:String(rules?.language || ''),
+    tournamentRulesSha256:String(rules?.sha256 || ''),
+  }),
   tournamentLeave: () => request('tournament_leave'),
   mgwProfile: () => requestMgwProfile(),
   friends: (payload = {}) => requestUrl(FRIENDS_URL, payload),

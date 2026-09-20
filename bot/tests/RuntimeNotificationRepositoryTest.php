@@ -47,7 +47,18 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec('PRAGMA foreign_keys = ON');
 $database = new PdoDatabaseConnection($pdo);
 $runner = new MigrationRunner($database, $root . '/database/migrations');
-$assertSame(7, $runner->migrate(false)['executed_count'], 'Notification runtime test must apply all migrations');
+$migrationStatus = $runner->status();
+$migrationResult = $runner->migrate(false);
+$assertSame(
+    (int)$migrationStatus['pending_count'],
+    (int)$migrationResult['executed_count'],
+    'Notification runtime test must apply every currently pending migration'
+);
+$assertSame(
+    (int)$migrationStatus['available_count'],
+    (int)$runner->status()['applied_count'],
+    'Notification runtime test must finish with the full current migration set applied'
+);
 
 $legacyUserId = '972585905';
 $mgwId = 'MGW-NOTIFYTEST00001';

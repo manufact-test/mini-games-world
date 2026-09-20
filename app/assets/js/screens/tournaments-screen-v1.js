@@ -31,6 +31,8 @@ let tournamentSnapshot = null;
 let tournamentRequest = null;
 let tournamentBusy = false;
 let tournamentPendingAction = '';
+let tournamentRulesAccepted = false;
+let tournamentRulesSha256 = '';
 
 export function initTournamentsScreen(){
   if (initialized) return;
@@ -39,7 +41,7 @@ export function initTournamentsScreen(){
   if (!(screen instanceof HTMLElement) || !(content instanceof HTMLElement)) return;
 
   initialized = true;
-  screen.dataset.mgwTournaments = 'leaderboards-v2 rating-archive-v1 official-tournament-registration-v1';
+  screen.dataset.mgwTournaments = 'leaderboards-v2 rating-archive-v1 official-tournament-registration-v2-rules';
   content.innerHTML = `
     <div class="tournaments-v2" id="tournamentsV2Root">
       <div class="page-head app-shell-page-head tournaments-v2-page-head">
@@ -184,6 +186,22 @@ function bindModeTabs(screen){
 }
 
 function bindTournamentActions(screen){
+  screen.addEventListener('change', event => {
+    const input = event.target instanceof Element
+      ? event.target.closest('[data-tournament-rules-consent]')
+      : null;
+    if (!(input instanceof HTMLInputElement)) return;
+    tournamentRulesAccepted = input.checked;
+    const button = screen.querySelector('[data-tournament-action="register"]');
+    if (button instanceof HTMLButtonElement) {
+      const tournament = tournamentSnapshot?.tournament;
+      const registered = String(tournamentSnapshot?.registration?.state || '') === 'registered';
+      const fee = Math.max(0, Number(tournament?.entry_fee?.amount || 50000));
+      const available = Math.max(0, Number(tournamentSnapshot?.balance?.available_amount || 0));
+      button.disabled = tournamentBusy || (!registered && available < fee) || !tournamentRulesAccepted;
+    }
+  });
+
   screen.addEventListener('click', event => {
     const button = event.target instanceof Element ? event.target.closest('[data-tournament-action]') : null;
     if (!(button instanceof HTMLButtonElement) || tournamentBusy) return;
@@ -198,10 +216,25 @@ async function warmTournamentStatus(){
   tournamentRequest = api.tournamentStatus()
     .then(result => {
       tournamentSnapshot = result?.snapshot && typeof result.snapshot === 'object' ? result.snapshot : {};
+      syncTournamentRulesConsent();
       return tournamentSnapshot;
     })
     .finally(() => { tournamentRequest = null; });
   return tournamentRequest;
+}
+
+function syncTournamentRulesConsent(){
+  const tournament = tournamentSnapshot?.tournament;
+  const registration = tournamentSnapshot?.registration;
+  const rules = tournament?.rules;
+  const nextSha = String(rules?.sha256 || '');
+  if (nextSha !== tournamentRulesSha256) {
+    tournamentRulesSha256 = nextSha;
+    tournamentRulesAccepted = false;
+  }
+  const accepted = registration?.rules_consent?.accepted === true
+    && String(registration?.rules_consent?.sha256 || '') === nextSha;
+  if (accepted) tournamentRulesAccepted = true;
 }
 
 async function loadTournamentSnapshot(){
@@ -222,8 +255,17 @@ async function mutateTournament(action){
   if (!tournament || typeof tournament !== 'object') return;
 
   if (action === 'register') {
+    const rules = tournament?.rules;
+    if (!tournamentRulesAccepted
+        || !rules
+        || !rules.version
+        || !rules.language
+        || !rules.sha256) {
+      renderTournamentSnapshot('Перед регистрацией прочитайте правила и подтвердите согласие.');
+      return;
+    }
     const fee = formatNumber(Math.max(0, Number(tournament?.entry_fee?.amount || 50000)));
-    if (!window.confirm(`Зарезервировать ${fee} коинов и зарегистрироваться на официальный турнир?`)) return;
+    if (!window.confirm(`Подтвердить правила и зарезервировать ${fee} коинов для участия в официальном турнире?`)) return;
   } else if (action === 'leave') {
     if (!window.confirm('Отменить регистрацию? Зарезервированные 50 000 коинов вернутся в доступный баланс.')) return;
   }
@@ -235,7 +277,12 @@ async function mutateTournament(action){
 
   try {
     const result = action === 'register'
-      ? await api.tournamentRegister()
+      ? await api.tournamentRegister({
+          accepted:true,
+          version:String(tournament?.rules?.version || ''),
+          language:String(tournament?.rules?.language || ''),
+          sha256:String(tournament?.rules?.sha256 || ''),
+        })
       : await api.tournamentLeave();
 
     const responseSnapshot = result?.snapshot && typeof result.snapshot === 'object'
@@ -265,6 +312,7 @@ async function mutateTournament(action){
     }
 
     tournamentSnapshot = verifiedSnapshot;
+    syncTournamentRulesConsent();
     if (responseUser) {
       state.user = responseUser;
       renderBalances(state.user);
@@ -290,8 +338,10 @@ function renderTournamentSnapshot(errorMessage = ''){
 
   const registration = snapshot.registration && typeof snapshot.registration === 'object' ? snapshot.registration : null;
   const registered = String(registration?.state || '') === 'registered';
+  const consentAccepted = registration?.rules_consent?.accepted === true;
   const state = String(tournament.state || '');
   const open = state === 'registration_open';
+  const waitingForDate = state === 'waiting_for_date' || tournament.waiting_for_date === true;
   const full = tournament.is_full === true;
   const capacity = Math.max(1, Number(tournament.capacity || 0));
   const count = Math.max(0, Number(tournament.registered_count || 0));
@@ -304,16 +354,52 @@ function renderTournamentSnapshot(errorMessage = ''){
   const first = rewards?.placements?.['1'] || {};
   const second = rewards?.placements?.['2'] || {};
   const third = rewards?.placements?.['3'] || {};
+  const rules = tournament.rules && typeof tournament.rules === 'object' ? tournament.rules : {};
+  const rulesSnapshot = rules.snapshot && typeof rules.snapshot === 'object' ? rules.snapshot : {};
+  const rulesSections = Array.isArray(rulesSnapshot.sections) ? rulesSnapshot.sections : [];
+  const rulesReady = Boolean(rules.version && rules.language && rules.sha256 && rulesSections.length);
+  const rulesLabel = rulesReady
+    ? `${escapeHtml(String(rules.version))} · ${escapeHtml(String(rules.language).toUpperCase())}`
+    : 'Правила недоступны';
+  const rulesMarkup = rulesReady
+    ? `<details class="tournaments-v2-tournament-rules"${!registered ? ' open' : ''}>
+        <summary><span>Правила турнира</span><small>${rulesLabel}</small></summary>
+        <div class="tournaments-v2-tournament-rules-body">
+          ${rulesSections.map(section => `
+            <section>
+              <h4>${escapeHtml(String(section?.title || ''))}</h4>
+              <ul>${(Array.isArray(section?.items) ? section.items : []).map(item => `<li>${escapeHtml(String(item || ''))}</li>`).join('')}</ul>
+            </section>
+          `).join('')}
+        </div>
+      </details>`
+    : '<div class="tournaments-v2-tournament-error">Правила турнира временно недоступны.</div>';
+
+  const needsConsent = open && (!registered || !consentAccepted);
+  const consentMarkup = needsConsent && rulesReady
+    ? `<label class="tournaments-v2-tournament-consent">
+        <input type="checkbox" data-tournament-rules-consent${tournamentRulesAccepted ? ' checked' : ''}${tournamentBusy ? ' disabled' : ''}>
+        <span>Я прочитал(а) и принимаю правила этого турнира.<small>Сохраняются версия, язык и время согласия.</small></span>
+      </label>`
+    : consentAccepted
+      ? `<div class="tournaments-v2-tournament-consent-proof">Правила ${escapeHtml(String(registration?.rules_consent?.version || rules.version || ''))} приняты${registration?.rules_consent?.accepted_at_utc ? ` · ${escapeHtml(formatConsentTime(registration.rules_consent.accepted_at_utc))}` : ''}.</div>`
+      : '';
 
   const insufficient = !registered && available < fee;
   let action = '';
   if (open && !registered && !full) {
-    const disabled = tournamentBusy || insufficient;
+    const disabled = tournamentBusy || insufficient || !tournamentRulesAccepted || !rulesReady;
     const label = insufficient
       ? 'Недостаточно коинов'
       : tournamentBusy
         ? (tournamentPendingAction === 'register' ? 'Регистрируем…' : 'Проверяем…')
         : `Зарегистрироваться · ${escapeHtml(formatNumber(fee))}`;
+    action = `<button type="button" class="tournaments-v2-tournament-action${tournamentBusy ? ' is-pending' : ''}" data-tournament-action="register"${disabled ? ' disabled' : ''}${tournamentBusy ? ' aria-busy="true"' : ''}>${label}</button>`;
+  } else if (open && registered && !consentAccepted) {
+    const disabled = tournamentBusy || !tournamentRulesAccepted || !rulesReady;
+    const label = tournamentBusy
+      ? (tournamentPendingAction === 'register' ? 'Сохраняем согласие…' : 'Проверяем…')
+      : 'Подтвердить правила';
     action = `<button type="button" class="tournaments-v2-tournament-action${tournamentBusy ? ' is-pending' : ''}" data-tournament-action="register"${disabled ? ' disabled' : ''}${tournamentBusy ? ' aria-busy="true"' : ''}>${label}</button>`;
   } else if (open && registered && !full) {
     const label = tournamentBusy
@@ -324,16 +410,20 @@ function renderTournamentSnapshot(errorMessage = ''){
 
   const statusText = state === 'draft'
     ? 'Турнир готовится · регистрация ещё не открыта'
-    : full
-      ? 'Состав заполнен'
-      : 'Регистрация открыта';
+    : waitingForDate
+      ? 'Состав набран · ожидаем назначения даты'
+      : full
+        ? 'Состав заполнен'
+        : 'Регистрация открыта';
 
   const ownStatus = registered
-    ? (full
-      ? 'Вы в составе. Турнир заполнен — место зафиксировано.'
-      : 'Вы зарегистрированы. Место закреплено за вами.')
-    : full
-      ? 'Свободных мест больше нет.'
+    ? (waitingForDate
+      ? 'Вы в составе. Регистрация закрыта — ожидайте назначения даты турнира.'
+      : full
+        ? 'Вы в составе. Турнир заполнен — место зафиксировано.'
+        : 'Вы зарегистрированы. Место закреплено за вами.')
+    : waitingForDate || full
+      ? 'Регистрация завершена. Свободных мест больше нет.'
       : insufficient
         ? 'Недостаточно коинов для регистрации.'
         : '';
@@ -350,7 +440,7 @@ function renderTournamentSnapshot(errorMessage = ''){
     </div>
 
     <div class="tournaments-v2-tournament-progress">
-      <p class="tournaments-v2-tournament-capacity-copy">В турнире участвуют ${escapeHtml(formatNumber(capacity))} игроков. Регистрация закроется, когда все места будут заняты.</p>
+      <p class="tournaments-v2-tournament-capacity-copy">${waitingForDate ? 'Состав турнира набран. Регистрация закрыта.' : `В турнире участвуют ${escapeHtml(formatNumber(capacity))} игроков. Регистрация закроется, когда все места будут заняты.`}</p>
       <div class="tournaments-v2-tournament-participants"><span>Участники</span><strong>${escapeHtml(formatNumber(count))} / ${escapeHtml(formatNumber(capacity))}</strong></div>
       <div class="tournaments-v2-tournament-progress-track"><i style="width:${pct}%"></i></div>
     </div>
@@ -361,9 +451,19 @@ function renderTournamentSnapshot(errorMessage = ''){
       <div><b>3 место</b><strong>${escapeHtml(formatNumber(Number(third.total || 50000)))}</strong><span>возврат взноса</span></div>
     </div>
 
+    ${rulesMarkup}
+    ${consentMarkup}
     ${ownStatus ? `<div class="tournaments-v2-tournament-own${registered ? ' is-registered' : ''}${insufficient ? ' is-insufficient' : ''}"><strong>${escapeHtml(ownStatus)}</strong></div>` : ''}
     ${action}
   `;
+}
+
+function formatConsentTime(value){
+  const date = new Date(String(value || '').replace(' ', 'T') + (String(value || '').includes('Z') ? '' : 'Z'));
+  if (Number.isNaN(date.getTime())) return String(value || '');
+  return new Intl.DateTimeFormat('ru-RU', {
+    day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit',
+  }).format(date);
 }
 
 function humanizeTournamentError(message){
