@@ -97,6 +97,11 @@ jobs:
               .github/workflows/mvp20-3-leaderboards-antifarming.yml|\
               .github/workflows/mvp20-2-hidden-skill.yml|\
               .github/workflows/mvp20-4-quarterly-seasons.yml|\
+              .github/workflows/mvp20-5-seasonal-awards.yml|\
+              bot/database/migrations/20260920_0046_create_seasonal_awards.php|\
+              bot/ratings/SeasonalAwardService.php|\
+              bot/tests/Mvp20_5SeasonalAwardsTest.php|\
+              bot/tests/Mvp20_5SeasonalAwardsIntegrationContractTest.php|\
               bot/database/migrations/20260920_0045_create_quarterly_season_lifecycle.php|\
               bot/ratings/SeasonCalendar.php|\
               bot/ratings/SeasonAssignmentResolver.php|\
