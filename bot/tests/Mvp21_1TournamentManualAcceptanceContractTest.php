@@ -6,6 +6,7 @@ $files = [
     'admin'=>$root . '/app/admin.php',
     'admin_js'=>$root . '/app/assets/js/admin-tournaments.js',
     'screen'=>$root . '/app/assets/js/screens/tournaments-screen-v1.js',
+    'css'=>$root . '/app/assets/css/main.css',
     'manifest'=>$root . '/app/runtime/client/version-manifest.php',
 ];
 $source = [];
@@ -56,20 +57,36 @@ $assertTrue(
 );
 
 foreach ([
+    "tournamentPendingAction = 'verify';",
+    'renderTournamentSnapshot();',
     'const verified = await api.tournamentStatus();',
-    "if (action === 'register' && state !== 'registered')",
-    "if (action === 'leave' && state === 'registered')",
+    "const registrationState = String(tournamentSnapshot?.registration?.state || '');",
+    "if (action === 'register' && registrationState !== 'registered')",
+    "if (action === 'leave' && registrationState === 'registered')",
     'errorMessage = humanizeTournamentError',
     'renderTournamentSnapshot(errorMessage);',
     'const insufficient = !registered && available < fee;',
     'Недостаточно коинов',
+    'Регистрируем…',
+    'Отменяем…',
+    'Проверяем…',
+    'aria-busy="true"',
     'В турнире участвуют ',
     'Регистрация закроется, когда все места будут заняты.',
+    'tournaments-v2-tournament-participants',
     'state.user = result.user;',
     'renderBalances(state.user);',
 ] as $needle) {
     $assertTrue(str_contains($source['screen'], $needle), 'Player Tournament corrective missing: ' . $needle);
 }
+$assertTrue(
+    !str_contains($source['screen'], "const state = String(tournamentSnapshot?.registration?.state || '');"),
+    'Tournament mutation must not shadow imported app state and trigger a temporal-dead-zone error.'
+);
+$assertTrue(
+    str_contains($source['screen'], "tournamentPendingAction = 'verify';\n    renderTournamentSnapshot();\n\n    const verified = await api.tournamentStatus();"),
+    'Successful tournament writes must paint immediately before the verification read finishes.'
+);
 $assertTrue(
     !str_contains($source['screen'], 'Зарезервировано:'),
     'Player Tournament must not expose ambiguous global reserved copy.'
@@ -112,14 +129,31 @@ $assertTrue(
     'Registration error must survive through the final render instead of being cleared.'
 );
 
+foreach ([
+    '.tournaments-v2-tournament-capacity-copy{',
+    'font-size:12px;',
+    '.tournaments-v2-tournament-participants{',
+    'justify-content:space-between;',
+    '.tournaments-v2-tournament-action.is-pending{',
+    'mgw-tournament-pending-spin',
+] as $needle) {
+    $assertTrue(str_contains($source['css'], $needle), 'Tournament manual UX CSS missing: ' . $needle);
+}
+
 $assertTrue(
     str_contains($source['manifest'], 'client.js?v=1141')
     && str_contains($source['manifest'], 'tournament-registration-diagnostic-v4'),
     'Corrective release must force a fresh API client module.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=9'),
+    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=10')
+    && str_contains($source['manifest'], 'tournament-registration-manual-fix-v3'),
     'Corrective release must force a fresh Tournament screen module.'
+);
+$assertTrue(
+    str_contains($source['manifest'], 'main.css?v=195')
+    && str_contains($source['manifest'], 'mvp21_1_ux=manual-v3'),
+    'Corrective release must force fresh Tournament CSS.'
 );
 $assertTrue(
     str_contains($source['admin'], 'admin-tournaments.js?v=2&mvp21_1=manual-acceptance-fix'),
