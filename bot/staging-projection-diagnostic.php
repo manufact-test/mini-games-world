@@ -80,5 +80,10 @@ try {
     ]);
 } catch (Throwable $error) {
     error_log('[MiniGamesWorld staging projection diagnostic] ' . $error->getMessage());
-    json_response(['ok'=>false,'error'=>'diagnostic_failed'], 500);
+    json_response([
+        'ok'=>false,
+        'error'=>'diagnostic_failed',
+        'exception'=>get_class($error),
+        'detail'=>substr($error->getMessage(), 0, 1600),
+    ], 500);
 }
