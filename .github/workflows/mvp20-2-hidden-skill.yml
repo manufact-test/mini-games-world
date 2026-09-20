@@ -122,6 +122,7 @@ jobs:
               bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
               bot/tests/Mvp19_3ProfileFramesTest.php|\
               .github/workflows/mvp19-3-profile-avatars.yml|\
+              .github/workflows/mvp19-3-profile-frames.yml|\
               bot/profile-v2.php|\
               app/assets/js/screens/profile-screen-v110.js|\
               app/assets/css/main.css|\
