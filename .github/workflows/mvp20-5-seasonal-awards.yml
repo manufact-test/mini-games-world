@@ -108,6 +108,16 @@ jobs:
               .github/workflows/mvp20-3-leaderboards-antifarming.yml|\
               .github/workflows/mvp20-4-quarterly-seasons.yml|\
               .github/workflows/mvp20-5-seasonal-awards.yml|\
+              .github/workflows/mvp20-6-yearly-medal.yml|\
+              bot/database/migrations/20260920_0047_create_yearly_medals.php|\
+              bot/ratings/YearlyMedalService.php|\
+              bot/tests/Mvp20_6YearlyMedalTest.php|\
+              bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php|\
+              bot/profile-v2.php|\
+              app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/css/main.css|\
+              app/locales/ru.json|\
+              app/runtime/client/version-manifest.php|\
               bot/database/migrations/20260920_0046_create_seasonal_awards.php|\
               bot/ratings/SeasonalAwardService.php|\
               bot/ratings/LeaderboardService.php|\
@@ -126,5 +136,4 @@ jobs:
           test "$bad" -eq 0
           git diff --exit-code "$base" "$head" -- \
             bot/games app/assets/js/games app/assets/css/games \
-            app/assets/js/screens app/assets/css/main.css app/locales \
             bot/catalog bot/economy bot/ledger bot/shop
