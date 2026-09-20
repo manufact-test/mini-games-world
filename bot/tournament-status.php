@@ -43,5 +43,15 @@ try {
     ]);
 } catch (Throwable $error) {
     error_log('[MiniGamesWorld tournament status] ' . $error->getMessage());
-    json_response(['ok'=>false,'error'=>'Не удалось загрузить турнир.'], 500);
+
+    $response = ['ok'=>false,'error'=>'Не удалось загрузить турнир.'];
+    if (strtolower(trim((string)($config['environment'] ?? ''))) === 'staging'
+        && isset($user)
+        && is_array($user)
+        && !empty($user['is_staging_test_user'])) {
+        $response['debug_error'] = substr($error->getMessage(), 0, 1200);
+        $response['debug_exception'] = get_class($error);
+    }
+
+    json_response($response, 500);
 }
