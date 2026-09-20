@@ -89,6 +89,12 @@ jobs:
       - name: Run MVP-21.1 runtime reservation compatibility
         run: php bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php
 
+      - name: Preserve unified balance runtime
+        run: |
+          php bot/tests/UnifiedEconomyRuntimeSyncTest.php
+          php bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php
+          php bot/tests/UnifiedEconomyUninitializedRuntimeHydrationTest.php
+
       - name: Preserve MVP-20 rating and season stack
         run: |
           php bot/tests/Mvp20_1PerGameVisibleRatingTest.php
