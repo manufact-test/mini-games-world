@@ -20,7 +20,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
   <script src="./assets/js/admin-rating.js?v=1&mvp20_8=rating-admin" defer></script>
-  <script src="./assets/js/admin-tournaments.js?v=3&mvp21_2=rules-consent-autoclose" defer></script>
+  <script src="./assets/js/admin-tournaments.js?v=4&mvp21_3=schedule-countdown-reminders" defer></script>
 </head>
 <body>
   <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php">
@@ -63,7 +63,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
       <article class="mgw-admin__card mgw-admin__card--wide" data-tournament-admin>
         <div class="mgw-admin__card-head">
           <h2>Официальный турнир</h2>
-          <span>MVP-21.2 · правила, согласие и автозакрытие</span>
+          <span>MVP-21.3 · дата, отсчёт и уведомления</span>
         </div>
         <div class="mgw-admin__tournament">
           <div class="mgw-admin__tournament-status" data-tournament-admin-status>Управление турниром ещё не загружено.</div>
@@ -112,6 +112,17 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               <div class="mgw-admin__tournament-current" data-tournament-current>Официальный турнир ещё не создан.</div>
               <div class="mgw-admin__tournament-actions">
                 <button type="button" data-tournament-open disabled>Открыть регистрацию</button>
+              </div>
+              <div class="mgw-admin__tournament-schedule" data-tournament-schedule-panel hidden>
+                <label class="mgw-admin__field">
+                  <span>Финальная дата и время начала</span>
+                  <input data-tournament-start type="datetime-local" step="60">
+                </label>
+                <div class="mgw-admin__tournament-actions">
+                  <button type="button" data-tournament-assign-date disabled>Назначить дату</button>
+                </div>
+                <div class="mgw-admin__tournament-current" data-tournament-schedule-info>Дата ещё не назначена.</div>
+                <small>Время вводится в часовом поясе этого устройства и сохраняется как UTC. После назначения дата фиксируется: перенос и задержка не входят в MVP-21.3. Игроки увидят время в своём часовом поясе и обратный отсчёт.</small>
               </div>
               <small>Одновременно может существовать только один активный официальный турнир. Правила и снимок наград фиксируются при создании. Существенно изменить правила у уже открытого турнира нельзя — для этого нужен новый турнир.</small>
             </section>
