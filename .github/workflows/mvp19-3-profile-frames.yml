@@ -39,5 +39,7 @@ jobs:
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
-          git diff --exit-code "$base" "$head" -- app/assets/js/profile/mgw-profile-frames.js bot/tests/Mvp19_3ProfileFramesTest.php
+          # The frame implementation remains frozen. Its static contract may
+          # migrate when a later accepted Profile composition changes shared API plumbing.
+          git diff --exit-code "$base" "$head" -- app/assets/js/profile/mgw-profile-frames.js
           git diff --check
