@@ -57,6 +57,12 @@ final class LeaderboardService
              WHERE s.season_id = :score_season
                AND s.game_type = :score_game
                AND u.status = :active_status
+               AND NOT EXISTS (
+                   SELECT 1
+                   FROM mgw_identities dev_identity
+                   WHERE dev_identity.mgw_id = s.mgw_id
+                     AND dev_identity.provider = :development_provider
+               )
              ORDER BY s.points DESC,
                       s.rated_wins DESC,
                       s.updated_at_utc ASC,
@@ -70,6 +76,7 @@ final class LeaderboardService
                 'score_season' => $seasonId,
                 'score_game' => $gameType,
                 'active_status' => 'active',
+                'development_provider' => 'development',
             ]
         );
 
