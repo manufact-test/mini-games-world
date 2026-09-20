@@ -1,0 +1,164 @@
+name: MVP-21.3 Tournament final schedule and reminders
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260921_0052_add_tournament_schedule.php'
+      - 'bot/tournaments/TournamentRegistrationService.php'
+      - 'bot/tournaments/TournamentParticipantNotificationBridge.php'
+      - 'bot/admin-tournaments.php'
+      - 'app/admin.php'
+      - 'app/assets/js/admin-tournaments.js'
+      - 'app/assets/js/screens/tournaments-screen-v1.js'
+      - 'app/assets/css/main.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp21_3TournamentScheduleTest.php'
+      - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
+      - '.github/workflows/mvp21-3-tournament-schedule.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp21-3-tournament-schedule-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Final date, countdown and participant reminders
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, pdo_mysql, mbstring
+          coverage: none
+
+      - name: Lint MVP-21.3 slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            bot/database/migrations/20260921_0052_add_tournament_schedule.php
+            bot/tournaments/TournamentRegistrationService.php
+            bot/tournaments/TournamentParticipantNotificationBridge.php
+            bot/admin-tournaments.php
+            app/admin.php
+            bot/tests/Mvp21_3TournamentScheduleTest.php
+            bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done
+          node --check app/assets/js/admin-tournaments.js
+          node --check app/assets/js/screens/tournaments-screen-v1.js
+
+      - name: Run MVP-21.3 schedule model
+        run: php bot/tests/Mvp21_3TournamentScheduleTest.php
+
+      - name: Preserve MVP-21.2 rules and registration close
+        run: |
+          php bot/tests/Mvp21_2TournamentRulesTest.php
+          php bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php
+          php bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
+
+      - name: Preserve MVP-21.1 reservation runtime
+        run: |
+          php bot/tests/Mvp21_1TournamentRegistrationTest.php
+          php bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
+          php bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php
+
+      - name: Preserve MySQL registration runtime
+        env:
+          MGW_TEST_MYSQL_HOST: 127.0.0.1
+          MGW_TEST_MYSQL_PORT: 3306
+          MGW_TEST_MYSQL_DATABASE: mgw_test
+          MGW_TEST_MYSQL_USER: root
+          MGW_TEST_MYSQL_PASSWORD: root
+        run: php bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php
+
+      - name: Preserve canonical Notification Center behavior
+        run: |
+          php bot/tests/Mvp18_6NotificationPipelineContractTest.php
+          php bot/tests/NotificationCenterV2PolicyTest.php
+          php bot/tests/RuntimeNotificationRepositoryTest.php
+
+      - name: Preserve unified balance runtime
+        run: |
+          php bot/tests/UnifiedEconomyRuntimeSyncTest.php
+          php bot/tests/UnifiedEconomyDevUserSyncRegressionTest.php
+          php bot/tests/UnifiedEconomyUninitializedRuntimeHydrationTest.php
+
+      - name: Preserve MVP-20 competition stack
+        run: |
+          php bot/tests/Mvp20_1PerGameVisibleRatingTest.php
+          php bot/tests/Mvp20_2HiddenSkillModelTest.php
+          php bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php
+          php bot/tests/Mvp20_4QuarterlySeasonLifecycleTest.php
+          php bot/tests/Mvp20_5SeasonalAwardsTest.php
+          php bot/tests/Mvp20_6YearlyMedalTest.php
+          php bot/tests/Mvp20_7RatingArchiveTest.php
+          php bot/tests/Mvp20_8RatingAdminTest.php
+
+      - name: Guard MVP-21.3 scope and frozen owners
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp21-3-tournament-schedule.yml|\
+              bot/database/migrations/20260921_0052_add_tournament_schedule.php|\
+              bot/tournaments/TournamentRegistrationService.php|\
+              bot/tournaments/TournamentParticipantNotificationBridge.php|\
+              bot/admin-tournaments.php|\
+              app/admin.php|\
+              app/assets/js/admin-tournaments.js|\
+              app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/css/main.css|\
+              app/runtime/client/version-manifest.php|\
+              bot/tests/Mvp21_3TournamentScheduleTest.php|\
+              bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php)
+                ;;
+              *)
+                echo "Unexpected MVP-21.3 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+
+          git diff --exit-code "$base" "$head" -- \
+            bot/games app/assets/js/games app/assets/css/games \
+            bot/shop bot/ledger/LedgerWriteService.php \
+            bot/runtime/ProductionPrimaryApplicationEntrypoints.php \
+            bot/cron
