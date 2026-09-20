@@ -29,6 +29,8 @@ on:
       - 'bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php'
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
       - 'bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php'
+      - 'e2e/staging/tournament-registration-live.spec.mjs'
+      - 'e2e/playwright.config.mjs'
       - '.github/workflows/mvp21-1-tournament-registration.yml'
   workflow_dispatch:
 
@@ -103,6 +105,8 @@ jobs:
           node --check app/assets/js/api/client.js
           node --check app/assets/js/screens/tournaments-screen-v1.js
           node --check app/assets/js/admin-tournaments.js
+          node --check e2e/staging/tournament-registration-live.spec.mjs
+          node --check e2e/playwright.config.mjs
 
       - name: Run MVP-21.1 tournament registration model
         run: php bot/tests/Mvp21_1TournamentRegistrationTest.php
@@ -187,7 +191,9 @@ jobs:
               bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php|\
               bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php|\
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
-              bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php)
+              bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php|\
+              e2e/staging/tournament-registration-live.spec.mjs|\
+              e2e/playwright.config.mjs)
                 ;;
               *)
                 echo "Unexpected MVP-21.1 path: $path" >&2
