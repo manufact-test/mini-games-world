@@ -1474,7 +1474,13 @@
   flex-direction:column;
   gap:7px;
 }
-#screen-tournaments .tournaments-v2-tournament-progress>div:first-child{
+#screen-tournaments .tournaments-v2-tournament-capacity-copy{
+  margin:0 0 2px;
+  color:var(--text);
+  font-size:12px;
+  line-height:1.35;
+}
+#screen-tournaments .tournaments-v2-tournament-participants{
   display:flex;
   align-items:center;
   justify-content:space-between;
@@ -1482,7 +1488,7 @@
   color:var(--muted);
   font-size:10px;
 }
-#screen-tournaments .tournaments-v2-tournament-progress strong{
+#screen-tournaments .tournaments-v2-tournament-participants strong{
   color:var(--text);
   font-variant-numeric:tabular-nums;
 }
@@ -1580,6 +1586,25 @@
   opacity:.48;
   cursor:default;
 }
+#screen-tournaments .tournaments-v2-tournament-action.is-pending{
+  opacity:.82;
+  cursor:wait;
+}
+#screen-tournaments .tournaments-v2-tournament-action.is-pending::after{
+  content:'';
+  display:inline-block;
+  width:10px;
+  height:10px;
+  margin-left:7px;
+  border:2px solid rgba(255,255,255,.28);
+  border-top-color:currentColor;
+  border-radius:50%;
+  vertical-align:-2px;
+  animation:mgw-tournament-pending-spin .65s linear infinite;
+}
+@keyframes mgw-tournament-pending-spin{
+  to{ transform:rotate(360deg); }
+}
 @media (max-width:360px){
   #screen-tournaments .tournaments-v2-tournament-hero{
     grid-template-columns:minmax(0,1fr) 78px;
@@ -1601,5 +1626,8 @@
 @media (prefers-reduced-motion:reduce){
   #screen-tournaments .tournaments-v2-tournament-action{
     transition:none!important;
+  }
+  #screen-tournaments .tournaments-v2-tournament-action.is-pending::after{
+    animation:none!important;
   }
 }
