@@ -1,0 +1,138 @@
+name: MVP-21.1 Tournament registration reservation
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260920_0049_create_official_tournaments.php'
+      - 'bot/tournaments/TournamentRegistrationService.php'
+      - 'bot/tournaments.php'
+      - 'bot/admin-tournaments.php'
+      - 'bot/core/bootstrap.php'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/screens/tournaments-screen-v1.js'
+      - 'app/assets/css/main.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/v110.php'
+      - 'app/admin.php'
+      - 'app/assets/js/admin-tournaments.js'
+      - 'app/assets/css/admin-shell.css'
+      - 'bot/tests/Mvp21_1TournamentRegistrationTest.php'
+      - 'bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php'
+      - '.github/workflows/mvp21-1-tournament-registration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp21-1-tournament-registration-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Draft, reserve, leave and last-seat boundary
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint MVP-21.1 server and client slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            bot/database/migrations/20260920_0049_create_official_tournaments.php
+            bot/tournaments/TournamentRegistrationService.php
+            bot/tournaments.php
+            bot/admin-tournaments.php
+            bot/core/bootstrap.php
+            app/v110.php
+            app/admin.php
+            bot/tests/Mvp21_1TournamentRegistrationTest.php
+            bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done
+          node --check app/assets/js/api/client.js
+          node --check app/assets/js/screens/tournaments-screen-v1.js
+          node --check app/assets/js/admin-tournaments.js
+
+      - name: Run MVP-21.1 tournament registration model
+        run: php bot/tests/Mvp21_1TournamentRegistrationTest.php
+
+      - name: Run MVP-21.1 integration and ownership contract
+        run: php bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
+
+      - name: Preserve MVP-20 rating and season stack
+        run: |
+          php bot/tests/Mvp20_1PerGameVisibleRatingTest.php
+          php bot/tests/Mvp20_1VisibleRatingIntegrationContractTest.php
+          php bot/tests/Mvp20_2HiddenSkillModelTest.php
+          php bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php
+          php bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php
+          php bot/tests/Mvp20_3LeaderboardIntegrationContractTest.php
+          php bot/tests/Mvp20_4QuarterlySeasonLifecycleTest.php
+          php bot/tests/Mvp20_4SeasonLifecycleIntegrationContractTest.php
+          php bot/tests/Mvp20_5SeasonalAwardsTest.php
+          php bot/tests/Mvp20_5SeasonalAwardsIntegrationContractTest.php
+          php bot/tests/Mvp20_6YearlyMedalTest.php
+          php bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php
+          php bot/tests/Mvp20_7RatingArchiveTest.php
+          php bot/tests/Mvp20_7RatingArchiveIntegrationContractTest.php
+          php bot/tests/Mvp20_8RatingAdminTest.php
+          php bot/tests/Mvp20_8RatingAdminIntegrationContractTest.php
+
+      - name: Guard MVP-21.1 scope and frozen owners
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp21-1-tournament-registration.yml|\
+              bot/database/migrations/20260920_0049_create_official_tournaments.php|\
+              bot/tournaments/TournamentRegistrationService.php|\
+              bot/tournaments.php|\
+              bot/admin-tournaments.php|\
+              bot/core/bootstrap.php|\
+              app/assets/js/api/client.js|\
+              app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/css/main.css|\
+              app/runtime/client/version-manifest.php|\
+              app/v110.php|\
+              app/admin.php|\
+              app/assets/js/admin-tournaments.js|\
+              app/assets/css/admin-shell.css|\
+              bot/tests/Mvp21_1TournamentRegistrationTest.php|\
+              bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php)
+                ;;
+              *)
+                echo "Unexpected MVP-21.1 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+
+          git diff --exit-code "$base" "$head" -- \
+            bot/games app/assets/js/games app/assets/css/games \
+            bot/economy bot/ledger bot/shop \
+            bot/runtime/ProductionPrimaryApplicationEntrypoints.php
