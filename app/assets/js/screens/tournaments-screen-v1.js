@@ -552,6 +552,51 @@ function renderTournamentSnapshot(errorMessage = ''){
     ${ownStatus ? `<div class="tournaments-v2-tournament-own${registered ? ' is-registered' : ''}${insufficient ? ' is-insufficient' : ''}"><strong>${escapeHtml(ownStatus)}</strong></div>` : ''}
     ${action}
   `;
+
+  if (scheduled && scheduledStart) {
+    const countdown = body.querySelector('[data-tournament-countdown]');
+    const updateCountdown = () => {
+      if (!(countdown instanceof HTMLElement) || !countdown.isConnected) {
+        if (tournamentCountdownTimer) window.clearInterval(tournamentCountdownTimer);
+        tournamentCountdownTimer = null;
+        return;
+      }
+      countdown.textContent = formatTournamentCountdown(scheduledStart.getTime() - Date.now());
+    };
+    updateCountdown();
+    tournamentCountdownTimer = window.setInterval(updateCountdown, 1000);
+  }
+}
+
+function parseTournamentUtc(value){
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  let normalized = raw.replace(' ', 'T');
+  normalized = normalized.replace(/(\.\d{3})\d+/, '$1');
+  if (!/[zZ]|[+-]\d{2}:?\d{2}$/.test(normalized)) normalized += 'Z';
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatTournamentDateTime(value){
+  const date = value instanceof Date ? value : parseTournamentUtc(value);
+  if (!date) return String(value || '');
+  return new Intl.DateTimeFormat('ru-RU', {
+    day:'2-digit', month:'2-digit', year:'numeric',
+    hour:'2-digit', minute:'2-digit', timeZoneName:'short',
+  }).format(date);
+}
+
+function formatTournamentCountdown(remainingMs){
+  const remaining = Math.max(0, Number(remainingMs || 0));
+  if (remaining <= 0) return 'Время старта наступило';
+  const totalSeconds = Math.ceil(remaining / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const time = `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+  return days > 0 ? `${days} дн. ${time}` : time;
 }
 
 function formatConsentTime(value){
