@@ -101,6 +101,7 @@ $assertTrue(str_contains($arena, 'tournaments-v2-table-head') && str_contains($a
 $assertTrue(str_contains($arena, 'tournaments-v2-scroll-icon') && str_contains($arena, '<svg'), 'Arena overflow controls must use centered SVG chevrons rather than font glyph baselines.');
 $assertTrue(str_contains($mainCss, '#screen-tournaments .tournaments-v2-tabs-shell{') && str_contains($mainCss, 'display:block;'), 'Arena game strip must start at the board content edge instead of reserving a left arrow column.');
 $assertTrue(str_contains($mainCss, '.tournaments-v2-scroll--left{left:0}') && str_contains($mainCss, '.tournaments-v2-scroll--right{right:0}'), 'Arena overflow arrows must be centered overlays rather than layout columns.');
+$assertTrue(str_contains($mainCss, 'padding:1px 0 4px 0;') && str_contains($mainCss, 'scroll-padding-inline:34px;'), 'Arena game strip must align its final tab with the right content edge without a permanent arrow spacer.');
 $assertTrue(str_contains($mainCss, '#screen-profile .profile-v2-rating-score>b{') && str_contains($mainCss, 'font-size:12px;'), 'Personal Profile rating numerals must stay compact for three-digit values.');
 $assertTrue(str_contains($arena, 'CACHE_TTL_MS'), 'Arena must cache recent per-game boards instead of refetching every tab activation.');
 $assertTrue(!str_contains($arena, 'leaderboard_preseason'), 'Arena must not render a PRESEASON badge.');
@@ -132,7 +133,7 @@ $assertTrue(
 );
 
 $assertTrue(str_contains($manifest, 'mvp20_3=leaderboards-v1'), 'Version manifest must preserve the accepted leaderboard runtime identity.');
-$assertTrue(str_contains($manifest, 'arena=competition-rating-v3'), 'Version manifest must publish the final Arena table cache identity.');
+$assertTrue(str_contains($manifest, 'arena=competition-rating-v4'), 'Version manifest must publish the final Arena edge-alignment cache identity.');
 $assertTrue(str_contains($manifest, 'mvp20_1=visible-rating-v2'), 'MVP-20.1 visible-rating identity must remain frozen.');
 
 fwrite(STDOUT, "Mvp20_3LeaderboardIntegrationContractTest: {$assertions} assertions passed\n");
