@@ -1,7 +1,7 @@
 {
-  "_meta": {"locale":"ru","version":13},
+  "_meta": {"locale":"ru","version":14},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
-  "nav": {"home":"Главная","tournaments":"Соревнования","store":"Магазин","profile":"Профиль"},
+  "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
   "topbar": {"balance":"Баланс","notifications":"Уведомления"},
   "notifications": {"title":"Уведомления","mark_all":"Прочитать все","open":"Открыть","delete":"Удалить","empty":"Пока уведомлений нет","loading":"Загружаем…","item_fallback":"Уведомление","load_error":"Не удалось открыть уведомления","try_again":"Попробуйте ещё раз.","open_center":"Открыть уведомления","unread_count":"Уведомления: {count} новых"},
   "shell": {"navigation_label":"Основная навигация","tournaments_title":"Соревнования","tournaments_note":"Рейтинг игроков и турниры Mini Games World.","competition_rating":"Рейтинг","competition_tournaments":"Турниры","competition_tournaments_note":"Здесь будут отдельные турнирные события, расписание и их собственные результаты.","store_title":"Магазин","store_note":"Откройте текущую витрину Mini Games World.","store_open":"Открыть магазин"},
