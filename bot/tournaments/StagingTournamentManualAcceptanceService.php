@@ -7,12 +7,17 @@ final class StagingTournamentManualAcceptanceService
 {
     private const STAGING_HOST = 'seashell-okapi-889488.hostingersite.com';
 
+    private $runtimeUserWriter;
+
     public function __construct(
         private array $config,
         private DatabaseConnectionInterface $database,
         private LedgerWriteService $ledger,
-        private TournamentRegistrationService $tournaments
-    ) {}
+        private TournamentRegistrationService $tournaments,
+        ?callable $runtimeUserWriter = null
+    ) {
+        $this->runtimeUserWriter = $runtimeUserWriter;
+    }
 
     public function availability(array $server): array
     {
@@ -236,6 +241,11 @@ final class StagingTournamentManualAcceptanceService
 
     private function ensureRuntimeUser(array $identity, int $slot): void
     {
+        if ($this->runtimeUserWriter !== null) {
+            ($this->runtimeUserWriter)($identity, $slot);
+            return;
+        }
+
         $storage = StorageFactory::createJson((string)($this->config['data_dir'] ?? (__DIR__ . '/../data')));
         $config = $this->config;
         $database = $this->database;
