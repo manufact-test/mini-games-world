@@ -118,7 +118,6 @@ export function initTournamentsScreen(){
     void activateGame(activeGame);
     void loadArchiveOverview();
     void loadTournamentSnapshot();
-    void loadTournamentSnapshot();
   });
 
   document.addEventListener('mgw:app-ready', () => {
@@ -229,18 +228,39 @@ async function mutateTournament(action){
   }
 
   tournamentBusy = true;
+  let errorMessage = '';
   renderTournamentSnapshot();
+
   try {
     const result = action === 'register'
       ? await api.tournamentRegister()
       : await api.tournamentLeave();
-    tournamentSnapshot = result?.snapshot && typeof result.snapshot === 'object' ? result.snapshot : {};
-    renderTournamentSnapshot();
+
+    const responseSnapshot = result?.snapshot && typeof result.snapshot === 'object'
+      ? result.snapshot
+      : {};
+    tournamentSnapshot = responseSnapshot;
+
+    // Confirm the committed server state with a fresh read. This prevents a
+    // successful write from looking like a no-op if any intermediate response
+    // is stale and makes registration failures explicit instead of blinking.
+    const verified = await api.tournamentStatus();
+    tournamentSnapshot = verified?.snapshot && typeof verified.snapshot === 'object'
+      ? verified.snapshot
+      : responseSnapshot;
+
+    const state = String(tournamentSnapshot?.registration?.state || '');
+    if (action === 'register' && state !== 'registered') {
+      throw new Error('Регистрация не сохранилась. Попробуйте ещё раз.');
+    }
+    if (action === 'leave' && state === 'registered') {
+      throw new Error('Отмена регистрации не сохранилась. Попробуйте ещё раз.');
+    }
   } catch (error) {
-    renderTournamentSnapshot(error?.message || 'Не удалось изменить регистрацию.');
+    errorMessage = humanizeTournamentError(error?.message || 'Не удалось изменить регистрацию.');
   } finally {
     tournamentBusy = false;
-    renderTournamentSnapshot();
+    renderTournamentSnapshot(errorMessage);
   }
 }
 
@@ -264,7 +284,6 @@ function renderTournamentSnapshot(errorMessage = ''){
   const pct = Math.max(0, Math.min(100, Math.round((count / capacity) * 100)));
   const fee = Math.max(0, Number(tournament?.entry_fee?.amount || 50000));
   const available = Math.max(0, Number(snapshot?.balance?.available_amount || 0));
-  const reserved = Math.max(0, Number(snapshot?.balance?.reserved_amount || 0));
   const rewards = tournament.reward_snapshot && typeof tournament.reward_snapshot === 'object'
     ? tournament.reward_snapshot
     : {};
@@ -319,10 +338,25 @@ function renderTournamentSnapshot(errorMessage = ''){
 
     <div class="tournaments-v2-tournament-own${registered ? ' is-registered' : ''}">
       <strong>${escapeHtml(ownStatus)}</strong>
-      <span>Доступно: ${escapeHtml(formatNumber(available))} · Зарезервировано: ${escapeHtml(formatNumber(reserved))}</span>
+      <span>${registered
+        ? `Доступно после резерва: ${escapeHtml(formatNumber(available))} коинов · В резерве турнира: ${escapeHtml(formatNumber(fee))} коинов`
+        : `Доступно коинов: ${escapeHtml(formatNumber(available))}`}</span>
     </div>
     ${action}
   `;
+}
+
+function humanizeTournamentError(message){
+  const raw = String(message || '').trim();
+  const known = new Map([
+    ['Insufficient available balance.', 'Недостаточно доступных коинов для взноса 50 000.'],
+    ['Tournament registration requires canonical DB-primary runtime state.', 'Регистрация временно недоступна: игровое состояние ещё не переключено на основной сервер.'],
+    ['Tournament registration changed concurrently.', 'Регистрация изменилась одновременно с вашим запросом. Обновите турнир и попробуйте ещё раз.'],
+    ['Concurrent balance update was detected.', 'Баланс изменился одновременно с регистрацией. Попробуйте ещё раз.'],
+    ['Balance identity does not match the account reference.', 'Не удалось подтвердить игровой баланс аккаунта.'],
+    ['Canonical tournament account_ref is required.', 'Не удалось подтвердить игровой аккаунт для регистрации.'],
+  ]);
+  return known.get(raw) || raw || 'Не удалось изменить регистрацию.';
 }
 
 function bindTabs(screen){
