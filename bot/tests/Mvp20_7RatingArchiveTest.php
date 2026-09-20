@@ -39,9 +39,9 @@ $db->execute('CREATE TABLE mgw_identities (identity_id INTEGER PRIMARY KEY AUTOI
 (require $databaseDir . '/migrations/20260920_0045_create_quarterly_season_lifecycle.php')->up($db);
 (require $databaseDir . '/migrations/20260920_0046_create_seasonal_awards.php')->up($db);
 
-$userA = 'U00000000000000000000001';
-$userB = 'U00000000000000000000002';
-$dev = 'U00000000000000000000003';
+$userA = 'MGW-0000000000000001';
+$userB = 'MGW-0000000000000002';
+$dev = 'MGW-0000000000000003';
 foreach ([[$userA,'Alpha','avatar-a'],[$userB,'Beta','avatar-b'],[$dev,'Dev','avatar-dev']] as [$id,$nickname,$avatar]) {
     $db->execute(
         'INSERT INTO mgw_users (mgw_id,status,nickname,equipped_avatar_item_id) VALUES (:id,:status,:nickname,:avatar)',
@@ -109,7 +109,7 @@ $addParticipation = static function (
                 'mgw_id'=>$mgwId,
                 'season_id'=>$season,
                 'game_type'=>$game,
-                'opponent'=>'U99999999999999999999999',
+                'opponent'=>'MGW-9999999999999999',
                 'result_code'=>$result,
                 'points'=>$result === 'win' ? 1 : 0,
                 'day'=>'2026-01-01',
