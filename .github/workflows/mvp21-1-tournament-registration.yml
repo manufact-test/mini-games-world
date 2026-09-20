@@ -24,6 +24,8 @@ on:
       - 'bot/tests/Mvp21_1TournamentRegistrationTest.php'
       - 'bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php'
       - 'bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php'
+      - 'bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php'
+      - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
       - '.github/workflows/mvp21-1-tournament-registration.yml'
   workflow_dispatch:
 
@@ -40,6 +42,20 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
 
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
     steps:
       - name: Checkout exact candidate revision
         uses: actions/checkout@v4
@@ -53,7 +69,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: pdo_sqlite, mbstring
+          extensions: pdo_sqlite, pdo_mysql, mbstring
           coverage: none
 
       - name: Lint MVP-21.1 server and client slice
@@ -74,6 +90,8 @@ jobs:
             bot/tests/Mvp21_1TournamentRegistrationTest.php
             bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
             bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php
+            bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php
+            bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
           node --check app/assets/js/api/client.js
@@ -88,6 +106,18 @@ jobs:
 
       - name: Run MVP-21.1 runtime reservation compatibility
         run: php bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php
+
+      - name: Run MVP-21.1 MySQL DB-primary registration acceptance
+        env:
+          MGW_TEST_MYSQL_HOST: 127.0.0.1
+          MGW_TEST_MYSQL_PORT: 3306
+          MGW_TEST_MYSQL_DATABASE: mgw_test
+          MGW_TEST_MYSQL_USER: root
+          MGW_TEST_MYSQL_PASSWORD: root
+        run: php bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php
+
+      - name: Run MVP-21.1 manual acceptance UX contract
+        run: php bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
 
       - name: Preserve unified balance runtime
         run: |
@@ -143,7 +173,9 @@ jobs:
               app/assets/css/admin-shell.css|\
               bot/tests/Mvp21_1TournamentRegistrationTest.php|\
               bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php|\
-              bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php)
+              bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php|\
+              bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php|\
+              bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php)
                 ;;
               *)
                 echo "Unexpected MVP-21.1 path: $path" >&2

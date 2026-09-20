@@ -1,0 +1,112 @@
+<?php
+declare(strict_types=1);
+
+$root = dirname(__DIR__, 2);
+$files = [
+    'admin'=>$root . '/app/admin.php',
+    'admin_js'=>$root . '/app/assets/js/admin-tournaments.js',
+    'screen'=>$root . '/app/assets/js/screens/tournaments-screen-v1.js',
+    'manifest'=>$root . '/app/runtime/client/version-manifest.php',
+];
+$source = [];
+foreach ($files as $key=>$path) {
+    $value = file_get_contents($path);
+    if (!is_string($value)) throw new RuntimeException('Missing manual acceptance source: ' . $path);
+    $source[$key] = $value;
+}
+
+$assertions = 0;
+$assertTrue = static function (bool $condition, string $message) use (&$assertions): void {
+    $assertions++;
+    if (!$condition) throw new RuntimeException($message);
+};
+
+foreach ([
+    'Официальный турнир',
+    'Управление турниром ещё не загружено.',
+    'Создать черновик',
+    'Снимок наград',
+    'Взнос фиксирован: 50 000 коинов MGW.',
+] as $needle) {
+    $assertTrue(str_contains($source['admin'], $needle), 'Tournament Admin must expose Russian copy: ' . $needle);
+}
+
+foreach ([
+    '>Official Tournament<',
+    '>Создать draft<',
+    '>Reward snapshot<',
+    'Tournament Admin ещё не загружен.',
+] as $needle) {
+    $assertTrue(!str_contains($source['admin'], $needle), 'Tournament Admin must not expose mixed-language copy: ' . $needle);
+}
+
+foreach ([
+    "draft:'черновик'",
+    "registration_open:'регистрация открыта'",
+    "summaryCard('Взнос'",
+    "'Крестики-нолики'",
+    'Снимок наград появится после создания черновика.',
+    'Золотой билет нельзя продать или передать другому игроку.',
+] as $needle) {
+    $assertTrue(str_contains($source['admin_js'], $needle), 'Tournament Admin client must localize: ' . $needle);
+}
+$assertTrue(
+    !str_contains($source['admin_js'], "rewards.textContent = JSON.stringify"),
+    'Tournament Admin must not dump raw reward JSON to operators.'
+);
+
+foreach ([
+    'const verified = await api.tournamentStatus();',
+    "if (action === 'register' && state !== 'registered')",
+    "if (action === 'leave' && state === 'registered')",
+    'errorMessage = humanizeTournamentError',
+    'renderTournamentSnapshot(errorMessage);',
+    'Доступно коинов:',
+    'В резерве турнира:',
+] as $needle) {
+    $assertTrue(str_contains($source['screen'], $needle), 'Player Tournament corrective missing: ' . $needle);
+}
+$assertTrue(
+    !str_contains($source['screen'], 'Зарезервировано:'),
+    'Player Tournament must not expose ambiguous global reserved copy.'
+);
+$assertTrue(
+    !str_contains(
+        $source['screen'],
+        "void loadTournamentSnapshot();\n    void loadTournamentSnapshot();"
+    ),
+    'Tournament screen enter must not issue duplicate snapshot loads.'
+);
+$assertTrue(
+    str_contains(
+        $source['screen'],
+        "onScreenEnter('tournaments', () => {\n    void activateGame(activeGame);\n    void loadArchiveOverview();\n    void loadTournamentSnapshot();\n  });"
+    ),
+    'Tournament screen enter must load one fresh tournament snapshot.'
+);
+
+$catchPos = strpos($source['screen'], 'errorMessage = humanizeTournamentError');
+$finalRenderPos = strpos($source['screen'], 'renderTournamentSnapshot(errorMessage);');
+$assertTrue(
+    $catchPos !== false && $finalRenderPos !== false && $catchPos < $finalRenderPos,
+    'Registration error must survive through the final render instead of being cleared.'
+);
+
+$assertTrue(
+    str_contains($source['manifest'], 'client.js?v=1140')
+    && str_contains($source['manifest'], 'tournament-registration-manual-fix-v2'),
+    'Corrective release must force a fresh API client module.'
+);
+$assertTrue(
+    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=7'),
+    'Corrective release must force a fresh Tournament screen module.'
+);
+$assertTrue(
+    str_contains($source['admin'], 'admin-tournaments.js?v=2&mvp21_1=manual-acceptance-fix'),
+    'Corrective release must force a fresh Tournament Admin script.'
+);
+
+if ($assertions < 28) {
+    throw new RuntimeException('MVP-21.1 manual acceptance contract coverage is incomplete.');
+}
+fwrite(STDOUT, "Mvp21_1TournamentManualAcceptanceContractTest: {$assertions} assertions passed\n");
