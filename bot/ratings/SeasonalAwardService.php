@@ -136,7 +136,7 @@ final class SeasonalAwardService
             self::MAX_REWARDED_RANK,
             $excludedMgwIds
         );
-        $desired = $this->desiredAwards($standings, $target);
+        $desired = $this->desiredAwards($seasonId, $gameType, $standings, $target);
         $fingerprint = hash(
             'sha256',
             json_encode(array_values($desired), JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)
@@ -374,7 +374,12 @@ final class SeasonalAwardService
         ];
     }
 
-    private function desiredAwards(array $standings, array $targetSeason): array
+    private function desiredAwards(
+        string $seasonId,
+        string $gameType,
+        array $standings,
+        array $targetSeason
+    ): array
     {
         $desired = [];
         foreach ($standings as $row) {
@@ -385,8 +390,8 @@ final class SeasonalAwardService
 
             $framePlace = $rank <= self::MAX_FRAME_RANK ? $rank : null;
             $desired[$mgwId] = [
-                'season_id' => trim((string)($row['season_id'] ?? '')),
-                'game_type' => trim((string)($row['game_type'] ?? '')),
+                'season_id' => $seasonId,
+                'game_type' => $gameType,
                 'mgw_id' => $mgwId,
                 'rank_position' => $rank,
                 'badge_tier' => $this->badgeTierForRank($rank),
@@ -397,13 +402,6 @@ final class SeasonalAwardService
             ];
         }
 
-        // Leaderboard rows intentionally do not duplicate scope metadata.
-        // Fill it exactly once here so the durable award rows are self-contained.
-        foreach ($desired as &$award) {
-            if ($award['season_id'] === '') $award['season_id'] = '__scope__';
-            if ($award['game_type'] === '') $award['game_type'] = '__scope__';
-        }
-        unset($award);
         return $desired;
     }
 
