@@ -1,0 +1,140 @@
+name: MVP-20.6 Yearly medal fragments
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260920_0047_create_yearly_medals.php'
+      - 'bot/ratings/YearlyMedalService.php'
+      - 'bot/ratings/SeasonLifecycleService.php'
+      - 'bot/core/bootstrap.php'
+      - 'bot/profile-v2.php'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/css/main.css'
+      - 'app/locales/ru.json'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp20_6YearlyMedalTest.php'
+      - 'bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php'
+      - '.github/workflows/mvp20-1-per-game-visible-rating.yml'
+      - '.github/workflows/mvp20-2-hidden-skill.yml'
+      - '.github/workflows/mvp20-3-leaderboards-antifarming.yml'
+      - '.github/workflows/mvp20-4-quarterly-seasons.yml'
+      - '.github/workflows/mvp20-5-seasonal-awards.yml'
+      - '.github/workflows/mvp20-6-yearly-medal.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp20-6-yearly-medal-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Annual design, quarter eligibility and Profile contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint MVP-20.6 server and Profile slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            bot/database/migrations/20260920_0047_create_yearly_medals.php
+            bot/ratings/YearlyMedalService.php
+            bot/ratings/SeasonLifecycleService.php
+            bot/core/bootstrap.php
+            bot/profile-v2.php
+            app/runtime/client/version-manifest.php
+            bot/tests/Mvp20_6YearlyMedalTest.php
+            bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done
+          php -r 'json_decode(file_get_contents("app/locales/ru.json"), true, 512, JSON_THROW_ON_ERROR);'
+          node --input-type=module --check < app/assets/js/screens/profile-screen-v110.js
+
+      - name: Run MVP-20.6 yearly medal model
+        run: php bot/tests/Mvp20_6YearlyMedalTest.php
+
+      - name: Run MVP-20.6 integration contract
+        run: php bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php
+
+      - name: Preserve MVP-20.5 seasonal awards
+        run: |
+          php bot/tests/Mvp20_5SeasonalAwardsTest.php
+          php bot/tests/Mvp20_5SeasonalAwardsIntegrationContractTest.php
+
+      - name: Preserve MVP-20.4 season lifecycle
+        run: |
+          php bot/tests/Mvp20_4QuarterlySeasonLifecycleTest.php
+          php bot/tests/Mvp20_4SeasonLifecycleIntegrationContractTest.php
+
+      - name: Preserve visible rating, hidden skill and leaderboard
+        run: |
+          php bot/tests/Mvp20_1PerGameVisibleRatingTest.php
+          php bot/tests/Mvp20_1VisibleRatingIntegrationContractTest.php
+          php bot/tests/Mvp20_2HiddenSkillModelTest.php
+          php bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php
+          php bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php
+          php bot/tests/Mvp20_3LeaderboardIntegrationContractTest.php
+
+      - name: Preserve Profile and localization foundation
+        run: |
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+          php bot/tests/ProfileV2CorrectiveStaticContractTest.php
+
+      - name: Guard MVP-20.6 scope and frozen mechanics
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp20-1-per-game-visible-rating.yml|\
+              .github/workflows/mvp20-2-hidden-skill.yml|\
+              .github/workflows/mvp20-3-leaderboards-antifarming.yml|\
+              .github/workflows/mvp20-4-quarterly-seasons.yml|\
+              .github/workflows/mvp20-5-seasonal-awards.yml|\
+              .github/workflows/mvp20-6-yearly-medal.yml|\
+              bot/database/migrations/20260920_0047_create_yearly_medals.php|\
+              bot/ratings/YearlyMedalService.php|\
+              bot/ratings/SeasonLifecycleService.php|\
+              bot/core/bootstrap.php|\
+              bot/profile-v2.php|\
+              app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/css/main.css|\
+              app/locales/ru.json|\
+              app/runtime/client/version-manifest.php|\
+              bot/tests/Mvp20_6YearlyMedalTest.php|\
+              bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php)
+                ;;
+              *)
+                echo "Unexpected MVP-20.6 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+          git diff --exit-code "$base" "$head" -- \
+            bot/games app/assets/js/games app/assets/css/games \
+            bot/catalog bot/economy bot/ledger bot/shop
