@@ -62,6 +62,7 @@ SQL);
 (require $root . '/database/migrations/20260920_0049_create_official_tournaments.php')->up($db);
 (require $root . '/database/migrations/20260920_0050_add_tournament_rules_consent.php')->up($db);
 (require $root . '/database/migrations/20260920_0051_refresh_tournament_rules_copy.php')->up($db);
+(require $root . '/database/migrations/20260921_0052_add_tournament_schedule.php')->up($db);
 
 $db->execute(<<<'SQL'
 CREATE TABLE mgw_runtime_primary_state (

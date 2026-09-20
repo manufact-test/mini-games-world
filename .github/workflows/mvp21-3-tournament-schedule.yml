@@ -1,48 +1,34 @@
-name: MVP-21.2 Tournament rules consent and auto-close
+name: MVP-21.3 Tournament final schedule and reminders
 
 on:
   pull_request:
     branches:
       - agent/mvp-13-2-staging
     paths:
-      - 'bot/database/migrations/20260920_0050_add_tournament_rules_consent.php'
-      - 'bot/database/migrations/20260920_0051_refresh_tournament_rules_copy.php'
+      - 'bot/database/migrations/20260921_0052_add_tournament_schedule.php'
       - 'bot/tournaments/TournamentRegistrationService.php'
-      - 'bot/tournaments/TournamentAdminNotificationBridge.php'
+      - 'bot/tournaments/TournamentParticipantNotificationBridge.php'
       - 'bot/admin-tournaments.php'
-      - 'bot/api.php'
-      - 'bot/tournament-status.php'
-      - 'app/assets/js/api/client.js'
+      - 'app/admin.php'
+      - 'app/assets/js/admin-tournaments.js'
       - 'app/assets/js/screens/tournaments-screen-v1.js'
       - 'app/assets/css/main.css'
       - 'app/runtime/client/version-manifest.php'
-      - 'app/v110.php'
-      - 'app/admin.php'
-      - 'app/assets/js/admin-tournaments.js'
-      - 'bot/tests/Mvp21_1TournamentRegistrationTest.php'
-      - 'bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php'
-      - 'bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php'
+      - 'bot/tests/Mvp21_3TournamentScheduleTest.php'
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
-      - 'bot/tests/Mvp21_2TournamentRulesTest.php'
-      - 'bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php'
-      - 'bot/tests/RuntimeNotificationRepositoryTest.php'
-      - 'e2e/staging/tournament-registration-live.spec.mjs'
-      - 'bot/staging-projection-diagnostic.php'
-      - '.github/workflows/staging-playwright-e2e.yml'
-      - '.github/workflows/mvp21-1-tournament-registration.yml'
-      - '.github/workflows/mvp21-2-tournament-rules.yml'
+      - '.github/workflows/mvp21-3-tournament-schedule.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: mgw-mvp21-2-tournament-rules-${{ github.workflow }}-${{ github.ref }}
+  group: mgw-mvp21-3-tournament-schedule-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   focused:
-    name: Rules consent, last-seat close and admin alert
+    name: Final date, countdown and participant reminders
     runs-on: ubuntu-24.04
     timeout-minutes: 25
 
@@ -76,45 +62,37 @@ jobs:
           extensions: pdo_sqlite, pdo_mysql, mbstring
           coverage: none
 
-      - name: Lint MVP-21.2 slice
+      - name: Lint MVP-21.3 slice
         shell: bash
         run: |
           set -euo pipefail
           files=(
-            bot/database/migrations/20260920_0050_add_tournament_rules_consent.php
-            bot/database/migrations/20260920_0051_refresh_tournament_rules_copy.php
+            bot/database/migrations/20260921_0052_add_tournament_schedule.php
             bot/tournaments/TournamentRegistrationService.php
-            bot/tournaments/TournamentAdminNotificationBridge.php
-            bot/api.php
-            bot/tournament-status.php
-            bot/staging-projection-diagnostic.php
-            app/v110.php
+            bot/tournaments/TournamentParticipantNotificationBridge.php
+            bot/admin-tournaments.php
             app/admin.php
-            bot/tests/Mvp21_1TournamentRegistrationTest.php
-            bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
-            bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php
+            bot/tests/Mvp21_3TournamentScheduleTest.php
             bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
-            bot/tests/Mvp21_2TournamentRulesTest.php
-            bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php
-            bot/tests/RuntimeNotificationRepositoryTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
-          node --check app/assets/js/api/client.js
-          node --check app/assets/js/screens/tournaments-screen-v1.js
           node --check app/assets/js/admin-tournaments.js
-          node --check e2e/staging/tournament-registration-live.spec.mjs
+          node --check app/assets/js/screens/tournaments-screen-v1.js
 
-      - name: Run MVP-21.2 model
+      - name: Run MVP-21.3 schedule model
+        run: php bot/tests/Mvp21_3TournamentScheduleTest.php
+
+      - name: Preserve MVP-21.2 rules and registration close
         run: |
           php bot/tests/Mvp21_2TournamentRulesTest.php
           php bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php
+          php bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
 
-      - name: Preserve MVP-21.1 tournament model
+      - name: Preserve MVP-21.1 reservation runtime
         run: |
           php bot/tests/Mvp21_1TournamentRegistrationTest.php
           php bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
           php bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php
-          php bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
 
       - name: Preserve MySQL registration runtime
         env:
@@ -148,7 +126,7 @@ jobs:
           php bot/tests/Mvp20_7RatingArchiveTest.php
           php bot/tests/Mvp20_8RatingAdminTest.php
 
-      - name: Guard MVP-21.2 scope and frozen owners
+      - name: Guard MVP-21.3 scope and frozen owners
         if: github.event_name == 'pull_request'
         shell: bash
         run: |
@@ -161,36 +139,21 @@ jobs:
               .github/workflows/mvp21-1-tournament-registration.yml|\
               .github/workflows/mvp21-2-tournament-rules.yml|\
               .github/workflows/mvp21-3-tournament-schedule.yml|\
-              bot/database/migrations/20260920_0050_add_tournament_rules_consent.php|\
-              bot/database/migrations/20260920_0051_refresh_tournament_rules_copy.php|\
               bot/database/migrations/20260921_0052_add_tournament_schedule.php|\
               bot/tournaments/TournamentRegistrationService.php|\
-              bot/tournaments/TournamentAdminNotificationBridge.php|\
               bot/tournaments/TournamentParticipantNotificationBridge.php|\
               bot/admin-tournaments.php|\
-              bot/api.php|\
-              bot/tournament-status.php|\
-              app/assets/js/api/client.js|\
+              app/admin.php|\
+              app/assets/js/admin-tournaments.js|\
               app/assets/js/screens/tournaments-screen-v1.js|\
               app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
-              app/v110.php|\
-              app/admin.php|\
-              app/assets/js/admin-tournaments.js|\
-              bot/tests/Mvp21_1TournamentRegistrationTest.php|\
-              bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php|\
-              bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php|\
-              bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
-              bot/tests/Mvp21_2TournamentRulesTest.php|\
-              bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php|\
               bot/tests/Mvp21_3TournamentScheduleTest.php|\
-              bot/tests/RuntimeNotificationRepositoryTest.php|\
-              e2e/staging/tournament-registration-live.spec.mjs|\
-              bot/staging-projection-diagnostic.php|\
-              .github/workflows/staging-playwright-e2e.yml)
+              bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
+              bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php)
                 ;;
               *)
-                echo "Unexpected MVP-21.2 path: $path" >&2
+                echo "Unexpected MVP-21.3 path: $path" >&2
                 bad=1
                 ;;
             esac
@@ -200,4 +163,5 @@ jobs:
           git diff --exit-code "$base" "$head" -- \
             bot/games app/assets/js/games app/assets/css/games \
             bot/shop bot/ledger/LedgerWriteService.php \
-            bot/runtime/ProductionPrimaryApplicationEntrypoints.php
+            bot/runtime/ProductionPrimaryApplicationEntrypoints.php \
+            bot/cron

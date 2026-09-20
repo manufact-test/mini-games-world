@@ -33,6 +33,7 @@ let tournamentBusy = false;
 let tournamentPendingAction = '';
 let tournamentRulesAccepted = false;
 let tournamentRulesSha256 = '';
+let tournamentCountdownTimer = null;
 
 function lockVisibleBalance(){
   const ids = ['balanceUnified', 'topbarBalanceUnified'];
@@ -399,6 +400,10 @@ async function mutateTournament(action){
 }
 
 function renderTournamentSnapshot(errorMessage = ''){
+  if (tournamentCountdownTimer) {
+    window.clearInterval(tournamentCountdownTimer);
+    tournamentCountdownTimer = null;
+  }
   const body = document.getElementById('officialTournamentBody');
   if (!(body instanceof HTMLElement)) return;
   const snapshot = tournamentSnapshot && typeof tournamentSnapshot === 'object' ? tournamentSnapshot : {};
@@ -413,6 +418,8 @@ function renderTournamentSnapshot(errorMessage = ''){
   const state = String(tournament.state || '');
   const open = state === 'registration_open';
   const waitingForDate = state === 'waiting_for_date' || tournament.waiting_for_date === true;
+  const scheduled = state === 'scheduled' && Boolean(tournament.scheduled_start_at_utc);
+  const scheduledStart = scheduled ? parseTournamentUtc(tournament.scheduled_start_at_utc) : null;
   const full = tournament.is_full === true;
   const capacity = Math.max(1, Number(tournament.capacity || 0));
   const count = Math.max(0, Number(tournament.registered_count || 0));
@@ -480,23 +487,40 @@ function renderTournamentSnapshot(errorMessage = ''){
 
   const statusText = state === 'draft'
     ? 'Турнир готовится · регистрация ещё не открыта'
-    : waitingForDate
-      ? 'Состав набран · ожидаем назначения даты'
-      : full
-        ? 'Состав заполнен'
-        : 'Регистрация открыта';
+    : scheduled
+      ? 'Дата назначена · готовимся к старту'
+      : waitingForDate
+        ? 'Состав набран · ожидаем назначения даты'
+        : full
+          ? 'Состав заполнен'
+          : 'Регистрация открыта';
 
   const ownStatus = registered
-    ? (waitingForDate
-      ? 'Вы в составе. Регистрация закрыта — ожидайте назначения даты турнира.'
-      : full
-        ? 'Вы в составе. Турнир заполнен — место зафиксировано.'
-        : 'Вы зарегистрированы. Место закреплено за вами.')
-    : waitingForDate || full
-      ? 'Регистрация завершена. Свободных мест больше нет.'
-      : insufficient
-        ? 'Недостаточно коинов для регистрации.'
-        : '';
+    ? (scheduled
+      ? `Вы в составе. Турнир начнётся ${scheduledStart ? formatTournamentDateTime(scheduledStart) : 'в назначенное время'}.`
+      : waitingForDate
+        ? 'Вы в составе. Регистрация закрыта — ожидайте назначения даты турнира.'
+        : full
+          ? 'Вы в составе. Турнир заполнен — место зафиксировано.'
+          : 'Вы зарегистрированы. Место закреплено за вами.')
+    : scheduled
+      ? 'Состав турнира зафиксирован. Регистрация завершена.'
+      : waitingForDate || full
+        ? 'Регистрация завершена. Свободных мест больше нет.'
+        : insufficient
+          ? 'Недостаточно коинов для регистрации.'
+          : '';
+
+  const scheduleMarkup = scheduled && scheduledStart
+    ? `<section class="tournaments-v2-tournament-schedule" aria-label="Дата и время турнира">
+        <span>Начало турнира</span>
+        <strong>${escapeHtml(formatTournamentDateTime(scheduledStart))}</strong>
+        <div class="tournaments-v2-tournament-countdown">
+          <small>До старта</small>
+          <b data-tournament-countdown>${escapeHtml(formatTournamentCountdown(scheduledStart.getTime() - Date.now()))}</b>
+        </div>
+      </section>`
+    : '';
 
   body.innerHTML = `
     ${errorMessage ? `<div class="tournaments-v2-tournament-error">${escapeHtml(errorMessage)}</div>` : ''}
@@ -509,8 +533,10 @@ function renderTournamentSnapshot(errorMessage = ''){
       <div class="tournaments-v2-tournament-entry"><small>Вход</small><strong>${escapeHtml(formatNumber(fee))}</strong><span>коинов</span></div>
     </div>
 
+    ${scheduleMarkup}
+
     <div class="tournaments-v2-tournament-progress">
-      <p class="tournaments-v2-tournament-capacity-copy">${waitingForDate ? 'Состав турнира набран. Регистрация закрыта.' : `В турнире участвуют ${escapeHtml(formatNumber(capacity))} игроков. Регистрация закроется, когда все места будут заняты.`}</p>
+      <p class="tournaments-v2-tournament-capacity-copy">${scheduled ? 'Состав турнира зафиксирован. Дата назначена.' : waitingForDate ? 'Состав турнира набран. Регистрация закрыта.' : `В турнире участвуют ${escapeHtml(formatNumber(capacity))} игроков. Регистрация закроется, когда все места будут заняты.`}</p>
       <div class="tournaments-v2-tournament-participants"><span>Участники</span><strong>${escapeHtml(formatNumber(count))} / ${escapeHtml(formatNumber(capacity))}</strong></div>
       <div class="tournaments-v2-tournament-progress-track"><i style="width:${pct}%"></i></div>
     </div>
@@ -526,6 +552,53 @@ function renderTournamentSnapshot(errorMessage = ''){
     ${ownStatus ? `<div class="tournaments-v2-tournament-own${registered ? ' is-registered' : ''}${insufficient ? ' is-insufficient' : ''}"><strong>${escapeHtml(ownStatus)}</strong></div>` : ''}
     ${action}
   `;
+
+  if (scheduled && scheduledStart) {
+    const countdown = body.querySelector('[data-tournament-countdown]');
+    const updateCountdown = () => {
+      if (currentScreen() !== 'tournaments'
+          || !(countdown instanceof HTMLElement)
+          || !countdown.isConnected) {
+        if (tournamentCountdownTimer) window.clearInterval(tournamentCountdownTimer);
+        tournamentCountdownTimer = null;
+        return;
+      }
+      countdown.textContent = formatTournamentCountdown(scheduledStart.getTime() - Date.now());
+    };
+    updateCountdown();
+    tournamentCountdownTimer = window.setInterval(updateCountdown, 1000);
+  }
+}
+
+function parseTournamentUtc(value){
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  let normalized = raw.replace(' ', 'T');
+  normalized = normalized.replace(/(\.\d{3})\d+/, '$1');
+  if (!/[zZ]|[+-]\d{2}:?\d{2}$/.test(normalized)) normalized += 'Z';
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatTournamentDateTime(value){
+  const date = value instanceof Date ? value : parseTournamentUtc(value);
+  if (!date) return String(value || '');
+  return new Intl.DateTimeFormat('ru-RU', {
+    day:'2-digit', month:'2-digit', year:'numeric',
+    hour:'2-digit', minute:'2-digit', timeZoneName:'short',
+  }).format(date);
+}
+
+function formatTournamentCountdown(remainingMs){
+  const remaining = Math.max(0, Number(remainingMs || 0));
+  if (remaining <= 0) return 'Время старта наступило';
+  const totalSeconds = Math.ceil(remaining / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const time = `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+  return days > 0 ? `${days} дн. ${time}` : time;
 }
 
 function formatConsentTime(value){

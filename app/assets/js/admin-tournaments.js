@@ -18,6 +18,10 @@
   const create = card.querySelector('[data-tournament-create]');
   const open = card.querySelector('[data-tournament-open]');
   const refresh = card.querySelector('[data-tournament-refresh]');
+  const schedulePanel = card.querySelector('[data-tournament-schedule-panel]');
+  const scheduleStart = card.querySelector('[data-tournament-start]');
+  const assignDate = card.querySelector('[data-tournament-assign-date]');
+  const scheduleInfo = card.querySelector('[data-tournament-schedule-info]');
   let busy = false;
   let snapshot = null;
 
@@ -26,7 +30,30 @@
     draft:'черновик',
     registration_open:'регистрация открыта',
     waiting_for_date:'состав набран · ожидает дату',
+    scheduled:'дата назначена',
   })[String(value || '')] || String(value || '—');
+  const parseUtc = value => {
+    const raw = String(value || '').trim();
+    if (!raw) return null;
+    let normalized = raw.replace(' ', 'T');
+    normalized = normalized.replace(/(\.\d{3})\d+/, '$1');
+    if (!/[zZ]|[+-]\d{2}:?\d{2}$/.test(normalized)) normalized += 'Z';
+    const date = new Date(normalized);
+    return Number.isNaN(date.getTime()) ? null : date;
+  };
+  const formatDateTime = value => {
+    const date = value instanceof Date ? value : parseUtc(value);
+    if (!date) return '—';
+    return new Intl.DateTimeFormat('ru-RU', {
+      day:'2-digit',
+      month:'2-digit',
+      year:'numeric',
+      hour:'2-digit',
+      minute:'2-digit',
+      timeZoneName:'short',
+    }).format(date);
+  };
+
   const gameLabel = value => ({
     tictactoe:'Крестики-нолики',
     four_in_a_row:'Четыре в ряд',
@@ -82,7 +109,23 @@
   const setBusy = value => {
     busy = value;
     card.querySelectorAll('button, input, select').forEach(control => {
-      control.disabled = value || control === open && open.dataset.available !== '1';
+      if (value) {
+        control.disabled = true;
+        return;
+      }
+      if (control === open) {
+        control.disabled = open.dataset.available !== '1';
+        return;
+      }
+      if (control === assignDate) {
+        control.disabled = assignDate.dataset.available !== '1';
+        return;
+      }
+      if (control === scheduleStart) {
+        control.disabled = scheduleStart.dataset.locked === '1';
+        return;
+      }
+      control.disabled = false;
     });
   };
 
@@ -137,6 +180,17 @@
       create.disabled = busy;
       open.disabled = true;
       open.dataset.available = '0';
+      if (schedulePanel instanceof HTMLElement) schedulePanel.hidden = true;
+      if (assignDate instanceof HTMLButtonElement) {
+        assignDate.disabled = true;
+        assignDate.dataset.available = '0';
+      }
+      if (scheduleStart instanceof HTMLInputElement) {
+        scheduleStart.value = '';
+        scheduleStart.disabled = false;
+        scheduleStart.dataset.locked = '0';
+      }
+      if (scheduleInfo instanceof HTMLElement) scheduleInfo.textContent = 'Дата ещё не назначена.';
       return;
     }
 
@@ -160,6 +214,32 @@
     const canOpen = state === 'draft';
     open.dataset.available = canOpen ? '1' : '0';
     open.disabled = busy || !canOpen;
+
+    const waitingForDate = state === 'waiting_for_date';
+    const scheduled = state === 'scheduled' && Boolean(tournament.scheduled_start_at_utc);
+    if (schedulePanel instanceof HTMLElement) schedulePanel.hidden = !(waitingForDate || scheduled);
+    if (scheduleStart instanceof HTMLInputElement) {
+      scheduleStart.dataset.locked = scheduled ? '1' : '0';
+      scheduleStart.disabled = busy || scheduled;
+      if (scheduled) {
+        const startDate = parseUtc(tournament.scheduled_start_at_utc);
+        if (startDate) {
+          const offset = startDate.getTimezoneOffset() * 60000;
+          scheduleStart.value = new Date(startDate.getTime() - offset).toISOString().slice(0,16);
+        }
+      }
+    }
+    if (assignDate instanceof HTMLButtonElement) {
+      assignDate.dataset.available = waitingForDate ? '1' : '0';
+      assignDate.disabled = busy || !waitingForDate;
+    }
+    if (scheduleInfo instanceof HTMLElement) {
+      scheduleInfo.textContent = scheduled
+        ? `Начало: ${formatDateTime(tournament.scheduled_start_at_utc)}. Дата зафиксирована.`
+        : waitingForDate
+          ? 'Состав набран. Назначьте финальную дату и время начала турнира.'
+          : 'Дата ещё не назначена.';
+    }
   };
 
   const withBusy = async (message, action) => {
@@ -222,9 +302,40 @@
     } catch (_) {}
   };
 
+  const assignFinalDate = async () => {
+    const tournamentId = String(snapshot?.tournament?.tournament_id || '');
+    if (!tournamentId || !(scheduleStart instanceof HTMLInputElement)) return;
+    const localValue = String(scheduleStart.value || '').trim();
+    if (!localValue) {
+      setStatus('Укажите финальную дату и время начала турнира.', 'error');
+      return;
+    }
+    const start = new Date(localValue);
+    if (Number.isNaN(start.getTime()) || start.getTime() <= Date.now()) {
+      setStatus('Дата начала турнира должна быть в будущем.', 'error');
+      return;
+    }
+    const label = formatDateTime(start);
+    if (!window.confirm(`Назначить старт турнира на ${label}? После сохранения перенести дату в MVP-21.3 нельзя.`)) return;
+
+    try {
+      const data = await withBusy('Назначаю финальную дату и создаю напоминания…', () => post({
+        action:'assign_date',
+        tournament_id:tournamentId,
+        start_at_utc:start.toISOString(),
+      }));
+      if (data?.notifications?.ok === false) {
+        setStatus(String(data.notifications.warning || 'Дата сохранена, но напоминания требуют повторной синхронизации.'), 'error');
+      } else {
+        setStatus('Дата турнира назначена. Участникам подготовлены напоминания за день, час и 15 минут.', 'ok');
+      }
+    } catch (_) {}
+  };
+
   refresh?.addEventListener('click', load);
   create?.addEventListener('click', createDraft);
   open?.addEventListener('click', openRegistration);
+  assignDate?.addEventListener('click', assignFinalDate);
 
   if (telegram?.initData) {
     window.setTimeout(load, 180);

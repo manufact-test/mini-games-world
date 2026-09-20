@@ -8,6 +8,7 @@ header('Referrer-Policy: no-referrer');
 
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/helpers/AdminWebAuth.php';
+require_once __DIR__ . '/tournaments/TournamentParticipantNotificationBridge.php';
 
 try {
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
@@ -58,13 +59,51 @@ try {
             ),
             'games'=>$catalog->publicCatalog(),
         ];
+    } elseif ($action === 'assign_date') {
+        $result = [
+            'snapshot'=>$service->assignFinalDate(
+                clean_string($payload['tournament_id'] ?? '', 64),
+                clean_string($payload['start_at_utc'] ?? '', 80),
+                $actorRef
+            ),
+            'games'=>$catalog->publicCatalog(),
+        ];
     } else {
         json_response(['ok'=>false,'error'=>'Неизвестное действие Tournament Admin.'], 422);
+    }
+
+    $notifications = null;
+    $scheduledTournament = $result['snapshot']['tournament'] ?? null;
+    if (is_array($scheduledTournament)
+        && (string)($scheduledTournament['state'] ?? '') === TournamentRegistrationService::STATE_SCHEDULED) {
+        try {
+            $tournamentId = (string)($scheduledTournament['tournament_id'] ?? '');
+            $participantMgwIds = $service->registeredParticipantMgwIds($tournamentId);
+            $storage = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
+            $bridge = new TournamentParticipantNotificationBridge();
+            $notifications = $storage->transaction(
+                static function (array &$data) use ($bridge, $result, $participantMgwIds): array {
+                    return $bridge->ensureScheduleNotifications(
+                        $data,
+                        $result['snapshot'],
+                        $participantMgwIds
+                    );
+                }
+            );
+            $notifications = ['ok'=>true] + $notifications;
+        } catch (Throwable $notificationError) {
+            error_log('[MiniGamesWorld tournament schedule notifications] ' . $notificationError->getMessage());
+            $notifications = [
+                'ok'=>false,
+                'warning'=>'Дата сохранена. Напоминания будут повторно синхронизированы при следующем открытии Tournament Admin.',
+            ];
+        }
     }
 
     json_response([
         'ok'=>true,
         'generated_at'=>gmdate(DATE_ATOM),
+        'notifications'=>$notifications,
     ] + $result);
 } catch (AdminWebAuthException $error) {
     json_response(['ok'=>false,'error'=>$error->publicMessage()], $error->httpStatus());
