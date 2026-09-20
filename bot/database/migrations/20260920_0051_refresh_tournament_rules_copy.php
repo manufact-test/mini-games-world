@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 2) . '/tournaments/TournamentRegistrationService.php';
+
 return new class implements DatabaseMigrationInterface {
     public function version(): string
     {
