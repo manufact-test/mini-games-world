@@ -22,7 +22,7 @@ $assert(
     !file_exists($wrapperPath)
         && !str_contains($shell, 'production-v110-opponent-picker-stability.js')
         && !str_contains($shell, 'initV110OpponentPickerStability'),
-    'Opponent loading must not install a global fetch wrapper or a second runtime owner.'
+    'Opponent loading must not install a legacy second runtime owner.'
 );
 $assert(
     str_contains($invites, 'async function openPlayerPicker(context)')
@@ -39,22 +39,30 @@ $assert(
 $assert(
     str_contains($endpoint, 'new PresenceService()')
         && str_contains($endpoint, 'onlineAccountIds()')
+        && str_contains($endpoint, "StorageFactory::createJson((string)(\$config['data_dir']")
         && str_contains($endpoint, 'str_starts_with($candidateId, \'bot_\')')
-        && str_contains($endpoint, 'array_slice($result, 0, 10)'),
-    'The endpoint must use shared presence, exclude bots and return one bounded authoritative list.'
+        && str_contains($endpoint, 'array_slice($items, 0, 10)'),
+    'The endpoint must use canonical JSON profiles plus shared presence, exclude bots and remain bounded.'
 );
 $assert(
-    str_contains($endpoint, '$presenceOnline = isset($onlineIds[$candidateId]);')
+    str_contains($endpoint, '$presenceOnline = isset($onlineOpponentIds[$candidateId]);')
         && str_contains($endpoint, '$hasHistory = isset($lastGameAt[$candidateId]);')
         && str_contains($endpoint, 'time() - $lastSeen > 86400 * 30'),
-    'The authoritative list must include online users and bounded recent known human users without requiring a finished match.'
+    'The authoritative list must include online users and bounded recent known humans without requiring a finished match.'
+);
+$assert(
+    str_contains($endpoint, '$unresolvedOnlineCount')
+        && str_contains($endpoint, "'authoritative' => \$complete")
+        && str_contains($endpoint, "'complete' => \$complete")
+        && !str_contains($endpoint, 'DatabasePrimaryStateStorageAdapter'),
+    'Final empty must require complete live-presence resolution against the canonical profile catalog.'
 );
 $assert(
     !str_contains($shell, 'window.fetch =')
         && !str_contains($invites, 'window.fetch =')
         && !str_contains($endpoint, 'sleep(')
         && !str_contains($endpoint, 'usleep('),
-    'The fix must not hide latency with global interception or server-side retry delays.'
+    'The endpoint and canonical UI owner must not hide latency with server sleeps or a legacy wrapper.'
 );
 
 fwrite(STDOUT, "ProductionV110OpponentPickerStabilityContractTest: {$assertions} assertions passed\n");

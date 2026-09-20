@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/StagingTestAuthService.php';
+
 final class AuthService
 {
     public function __construct(private array $config) {}
@@ -13,6 +15,18 @@ final class AuthService
             if ($user) {
                 return $this->attachMgwIdentity($user, (string)($payload['sessionId'] ?? ''));
             }
+        }
+
+        $stagingTestUser = (new StagingTestAuthService($this->config))->authenticate(
+            $payload,
+            $_COOKIE,
+            $_SERVER
+        );
+        if (is_array($stagingTestUser)) {
+            return $this->attachMgwIdentity(
+                $stagingTestUser,
+                (string)($payload['sessionId'] ?? '')
+            );
         }
 
         if ($this->browserDevUserAllowed()) {
