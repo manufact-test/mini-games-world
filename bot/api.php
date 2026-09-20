@@ -61,6 +61,9 @@ function mgw_is_battleship_fire_fast_path(array $data, string $action, array $pa
         && (string)($data['games'][$gameId]['phase'] ?? '') === 'battle';
 }
 
+$stagingTournamentDiagnostic = false;
+$stagingTournamentDiagnosticAction = '';
+
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) {
@@ -89,6 +92,15 @@ try {
     $weeklyMatch = new WeeklyMatchEconomyService($config, new NotificationService());
 
     $tgUser = $auth->getUserFromRequest($payload);
+    $stagingTournamentDiagnostic = strtolower(trim((string)($config['environment'] ?? ''))) === 'staging'
+        && !empty($tgUser['is_staging_test_user'])
+        && in_array($action, [
+            'tournament_register',
+            'tournament_leave',
+            'staging_test_tournament_balance',
+        ], true);
+    $stagingTournamentDiagnosticAction = $stagingTournamentDiagnostic ? $action : '';
+
     if ($action === 'bootstrap' && $sessionId !== '') {
         try {
             $presenceService->touch((string)($tgUser['id'] ?? ''), $sessionId);
@@ -170,6 +182,88 @@ try {
                     'user' => $users->publicUser($user),
                     'shop' => $shop->status($user),
                     'session' => $sessions->publicState($user, $sessionId),
+                ];
+
+            case 'staging_test_tournament_balance':
+                if (strtolower(trim((string)($config['environment'] ?? ''))) !== 'staging'
+                    || empty($tgUser['is_staging_test_user'])
+                    || strtoupper(trim((string)($tgUser['staging_test_slot'] ?? ''))) !== 'A') {
+                    throw new RuntimeException('Staging tournament test balance action is unavailable.');
+                }
+                if ($runtimeStorageDriver !== 'database') {
+                    throw new RuntimeException('Staging tournament test balance requires DB-primary runtime state.');
+                }
+
+                $mode = strtolower(trim((string)($payload['mode'] ?? '')));
+                $target = match ($mode) {
+                    'prepare' => 60000,
+                    'cleanup' => 100,
+                    default => throw new InvalidArgumentException('Unknown staging tournament balance mode.'),
+                };
+                $mgwId = trim((string)($user['mgw_id'] ?? ''));
+                $accountRef = trim((string)($user['mgw_account_ref'] ?? ''));
+                if ($mgwId === '' || $accountRef === '') {
+                    throw new RuntimeException('Staging tournament test identity is incomplete.');
+                }
+
+                $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+                if (!$databaseConfig->enabled()) {
+                    throw new RuntimeException('Staging tournament test database is unavailable.');
+                }
+                $database = PdoConnectionFactory::create($databaseConfig);
+                $ledger = new LedgerWriteService($database);
+                $before = $ledger->getBalance($accountRef, TournamentRegistrationService::ENTRY_ASSET);
+                $beforeAvailable = (int)($before['available_amount'] ?? 0);
+                $beforeReserved = (int)($before['reserved_amount'] ?? 0);
+                $beforeVersion = (int)($before['version'] ?? 0);
+                if ($beforeReserved !== 0) {
+                    throw new RuntimeException('Staging tournament test balance refuses an active reservation.');
+                }
+
+                $delta = $target - $beforeAvailable;
+                if ($delta !== 0) {
+                    $ledger->postAvailableDelta([
+                        'operation_key'=>implode(':', [
+                            'staging-tournament-probe',
+                            $mode,
+                            $mgwId,
+                            (string)$beforeVersion,
+                            (string)$beforeAvailable,
+                            (string)$target,
+                        ]),
+                        'account_ref'=>$accountRef,
+                        'mgw_id'=>$mgwId,
+                        'legacy_user_id'=>$userId,
+                        'asset_code'=>TournamentRegistrationService::ENTRY_ASSET,
+                        'available_delta'=>$delta,
+                        'category'=>'staging_tournament_probe',
+                        'source_type'=>'staging_test',
+                        'source_ref'=>'mvp21_1_real_api_probe',
+                        'metadata'=>[
+                            'mode'=>$mode,
+                            'target_available'=>$target,
+                            'technical_player'=>'A',
+                        ],
+                    ]);
+                }
+
+                $after = $ledger->getBalance($accountRef, TournamentRegistrationService::ENTRY_ASSET);
+                $afterAvailable = (int)($after['available_amount'] ?? -1);
+                $afterReserved = (int)($after['reserved_amount'] ?? -1);
+                if ($afterAvailable !== $target || $afterReserved !== 0) {
+                    throw new RuntimeException('Staging tournament test balance did not reach the fixed target.');
+                }
+                $user[UnifiedBalanceRuntimeState::FIELD] = $target;
+
+                return [
+                    'staging_tournament_test_balance'=>[
+                        'mode'=>$mode,
+                        'available_before'=>$beforeAvailable,
+                        'available_after'=>$afterAvailable,
+                        'reserved_after'=>$afterReserved,
+                    ],
+                    'user'=>$users->publicUser($user),
+                    'session'=>$sessions->publicState($user, $sessionId),
                 ];
 
             case 'tournament_status':
@@ -511,5 +605,16 @@ try {
 
     api_ok($result);
 } catch (Throwable $e) {
+    if ($stagingTournamentDiagnostic) {
+        json_response([
+            'ok'=>false,
+            'error'=>mgw_public_api_error($e->getMessage()),
+            'diagnostic'=>[
+                'action'=>$stagingTournamentDiagnosticAction,
+                'exception'=>get_class($e),
+                'message'=>mb_substr(trim($e->getMessage()), 0, 1600),
+            ],
+        ], 400);
+    }
     api_error($e->getMessage());
 }
