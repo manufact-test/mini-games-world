@@ -33,6 +33,7 @@ let tournamentBusy = false;
 let tournamentPendingAction = '';
 let tournamentRulesAccepted = false;
 let tournamentRulesSha256 = '';
+let tournamentCountdownTimer = null;
 
 function lockVisibleBalance(){
   const ids = ['balanceUnified', 'topbarBalanceUnified'];
@@ -399,6 +400,10 @@ async function mutateTournament(action){
 }
 
 function renderTournamentSnapshot(errorMessage = ''){
+  if (tournamentCountdownTimer) {
+    window.clearInterval(tournamentCountdownTimer);
+    tournamentCountdownTimer = null;
+  }
   const body = document.getElementById('officialTournamentBody');
   if (!(body instanceof HTMLElement)) return;
   const snapshot = tournamentSnapshot && typeof tournamentSnapshot === 'object' ? tournamentSnapshot : {};
@@ -413,6 +418,8 @@ function renderTournamentSnapshot(errorMessage = ''){
   const state = String(tournament.state || '');
   const open = state === 'registration_open';
   const waitingForDate = state === 'waiting_for_date' || tournament.waiting_for_date === true;
+  const scheduled = state === 'scheduled' && Boolean(tournament.scheduled_start_at_utc);
+  const scheduledStart = scheduled ? parseTournamentUtc(tournament.scheduled_start_at_utc) : null;
   const full = tournament.is_full === true;
   const capacity = Math.max(1, Number(tournament.capacity || 0));
   const count = Math.max(0, Number(tournament.registered_count || 0));
