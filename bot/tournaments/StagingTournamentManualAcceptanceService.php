@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../services/UserService.php';
 
+/** Staging-only fixture that stops one seat before full so the final transition stays manual. */
 final class StagingTournamentManualAcceptanceService
 {
     private const STAGING_HOST = 'seashell-okapi-889488.hostingersite.com';
