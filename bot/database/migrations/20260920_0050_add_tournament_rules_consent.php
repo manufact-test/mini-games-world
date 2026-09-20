@@ -33,116 +33,38 @@ return new class implements DatabaseMigrationInterface {
 
     private function upMysql(DatabaseConnectionInterface $database): void
     {
-        $this->ensureMysqlColumn(
-            $database,
-            'mgw_tournaments',
-            'rules_version',
-            'VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER reward_snapshot_json'
-        );
-        $this->ensureMysqlColumn(
-            $database,
-            'mgw_tournaments',
-            'rules_language',
-            'VARCHAR(12) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER rules_version'
-        );
-        $this->ensureMysqlColumn(
-            $database,
-            'mgw_tournaments',
-            'rules_snapshot_json',
-            'LONGTEXT NULL AFTER rules_language'
-        );
-        $this->ensureMysqlColumn(
-            $database,
-            'mgw_tournaments',
-            'rules_sha256',
-            'CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER rules_snapshot_json'
-        );
-        $this->ensureMysqlColumn(
-            $database,
-            'mgw_tournaments',
-            'registration_closed_at_utc',
-            'DATETIME(6) NULL AFTER registration_opened_at_utc'
-        );
-        $this->ensureMysqlColumn(
-            $database,
-            'mgw_tournaments',
-            'registration_closed_reason',
-            'VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER registration_closed_at_utc'
-        );
+        $database->execute(<<<'SQL'
+ALTER TABLE mgw_tournaments
+    ADD COLUMN rules_version VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER reward_snapshot_json,
+    ADD COLUMN rules_language VARCHAR(12) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER rules_version,
+    ADD COLUMN rules_snapshot_json LONGTEXT NULL AFTER rules_language,
+    ADD COLUMN rules_sha256 CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER rules_snapshot_json,
+    ADD COLUMN registration_closed_at_utc DATETIME(6) NULL AFTER registration_opened_at_utc,
+    ADD COLUMN registration_closed_reason VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER registration_closed_at_utc
+SQL);
 
-        $this->ensureMysqlColumn(
-            $database,
-            'mgw_tournament_registrations',
-            'rules_version',
-            'VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER reservation_id'
-        );
-        $this->ensureMysqlColumn(
-            $database,
-            'mgw_tournament_registrations',
-            'rules_language',
-            'VARCHAR(12) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER rules_version'
-        );
-        $this->ensureMysqlColumn(
-            $database,
-            'mgw_tournament_registrations',
-            'rules_sha256',
-            'CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER rules_language'
-        );
-        $this->ensureMysqlColumn(
-            $database,
-            'mgw_tournament_registrations',
-            'rules_accepted_at_utc',
-            'DATETIME(6) NULL AFTER rules_sha256'
-        );
+        $database->execute(<<<'SQL'
+ALTER TABLE mgw_tournament_registrations
+    ADD COLUMN rules_version VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER reservation_id,
+    ADD COLUMN rules_language VARCHAR(12) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER rules_version,
+    ADD COLUMN rules_sha256 CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL AFTER rules_language,
+    ADD COLUMN rules_accepted_at_utc DATETIME(6) NULL AFTER rules_sha256
+SQL);
     }
 
     private function upSqlite(DatabaseConnectionInterface $database): void
     {
-        $this->ensureSqliteColumn($database, 'mgw_tournaments', 'rules_version', 'TEXT NULL');
-        $this->ensureSqliteColumn($database, 'mgw_tournaments', 'rules_language', 'TEXT NULL');
-        $this->ensureSqliteColumn($database, 'mgw_tournaments', 'rules_snapshot_json', 'TEXT NULL');
-        $this->ensureSqliteColumn($database, 'mgw_tournaments', 'rules_sha256', 'TEXT NULL');
-        $this->ensureSqliteColumn($database, 'mgw_tournaments', 'registration_closed_at_utc', 'TEXT NULL');
-        $this->ensureSqliteColumn($database, 'mgw_tournaments', 'registration_closed_reason', 'TEXT NULL');
+        $database->execute('ALTER TABLE mgw_tournaments ADD COLUMN rules_version TEXT NULL');
+        $database->execute('ALTER TABLE mgw_tournaments ADD COLUMN rules_language TEXT NULL');
+        $database->execute('ALTER TABLE mgw_tournaments ADD COLUMN rules_snapshot_json TEXT NULL');
+        $database->execute('ALTER TABLE mgw_tournaments ADD COLUMN rules_sha256 TEXT NULL');
+        $database->execute('ALTER TABLE mgw_tournaments ADD COLUMN registration_closed_at_utc TEXT NULL');
+        $database->execute('ALTER TABLE mgw_tournaments ADD COLUMN registration_closed_reason TEXT NULL');
 
-        $this->ensureSqliteColumn($database, 'mgw_tournament_registrations', 'rules_version', 'TEXT NULL');
-        $this->ensureSqliteColumn($database, 'mgw_tournament_registrations', 'rules_language', 'TEXT NULL');
-        $this->ensureSqliteColumn($database, 'mgw_tournament_registrations', 'rules_sha256', 'TEXT NULL');
-        $this->ensureSqliteColumn($database, 'mgw_tournament_registrations', 'rules_accepted_at_utc', 'TEXT NULL');
-    }
-
-    private function ensureMysqlColumn(
-        DatabaseConnectionInterface $database,
-        string $table,
-        string $column,
-        string $definition
-    ): void {
-        $exists = (int)$database->fetchValue(
-            'SELECT COUNT(*) FROM information_schema.COLUMNS
-             WHERE TABLE_SCHEMA=DATABASE()
-               AND TABLE_NAME=:table_name
-               AND COLUMN_NAME=:column_name',
-            ['table_name'=>$table,'column_name'=>$column]
-        ) > 0;
-        if ($exists) return;
-
-        $database->execute(
-            'ALTER TABLE ' . $table . ' ADD COLUMN ' . $column . ' ' . $definition
-        );
-    }
-
-    private function ensureSqliteColumn(
-        DatabaseConnectionInterface $database,
-        string $table,
-        string $column,
-        string $definition
-    ): void {
-        foreach ($database->fetchAll('PRAGMA table_info(' . $table . ')') as $row) {
-            if (is_array($row) && (string)($row['name'] ?? '') === $column) return;
-        }
-        $database->execute(
-            'ALTER TABLE ' . $table . ' ADD COLUMN ' . $column . ' ' . $definition
-        );
+        $database->execute('ALTER TABLE mgw_tournament_registrations ADD COLUMN rules_version TEXT NULL');
+        $database->execute('ALTER TABLE mgw_tournament_registrations ADD COLUMN rules_language TEXT NULL');
+        $database->execute('ALTER TABLE mgw_tournament_registrations ADD COLUMN rules_sha256 TEXT NULL');
+        $database->execute('ALTER TABLE mgw_tournament_registrations ADD COLUMN rules_accepted_at_utc TEXT NULL');
     }
 
     private function backfillExistingTournaments(DatabaseConnectionInterface $database): void
