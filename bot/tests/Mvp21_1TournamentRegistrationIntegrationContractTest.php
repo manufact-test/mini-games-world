@@ -72,8 +72,8 @@ $assertTrue(str_contains($sources['player_api'], "case 'tournament_status':"), '
 $assertTrue(str_contains($sources['player_api'], "case 'tournament_register':"), 'Canonical API must expose tournament register.');
 $assertTrue(str_contains($sources['player_api'], "case 'tournament_leave':"), 'Canonical API must expose tournament leave.');
 $assertTrue(str_contains($sources['player_api'], "['mgw_account_ref']"), 'Tournament runtime must use attached canonical account_ref.');
-$assertTrue(str_contains($sources['player_api'], "$runtimeStorageDriver !== 'database'"), 'Tournament writes must fail closed outside DB-primary runtime state.');
-$assertTrue(str_contains($sources['player_api'], "$user[UnifiedBalanceRuntimeState::FIELD] = $available"), 'Tournament writes must atomically project spendable balance into runtime state.');
+$assertTrue(str_contains($sources['player_api'], '$runtimeStorageDriver !== \'database\''), 'Tournament writes must fail closed outside DB-primary runtime state.');
+$assertTrue(str_contains($sources['player_api'], '$user[UnifiedBalanceRuntimeState::FIELD] = $available'), 'Tournament writes must atomically project spendable balance into runtime state.');
 $assertTrue(str_contains($sources['player_api'], 'new TournamentRegistrationService('), 'Canonical API must delegate registration ownership to TournamentRegistrationService.');
 
 $assertTrue(str_contains($sources['admin_endpoint'], 'AdminWebAuth::authorize'), 'Tournament Admin must reuse Telegram AdminWebAuth.');
