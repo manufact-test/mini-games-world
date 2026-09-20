@@ -205,22 +205,55 @@ $assertTrue(
     'Corrective release must force a fresh API client module.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=14')
+    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=15')
     && str_contains($source['manifest'], 'mvp21_2=tournament-rules-copy-v2')
-    && str_contains($source['manifest'], 'balance=visible-freeze-v2'),
-    'Corrective release must force a fresh Tournament screen module.'
+    && str_contains($source['manifest'], 'balance=visible-freeze-v2')
+    && str_contains($source['manifest'], 'mvp21_3=schedule-countdown-v1'),
+    'Corrective release must preserve the balance-freeze owner while forcing the fresh Tournament schedule module.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'main.css?v=197')
-    && str_contains($source['manifest'], 'mvp21_2=tournament-rules-copy-v2'),
-    'Corrective release must force fresh Tournament CSS.'
+    str_contains($source['manifest'], 'main.css?v=198')
+    && str_contains($source['manifest'], 'mvp21_2=tournament-rules-copy-v2')
+    && str_contains($source['manifest'], 'mvp21_3=tournament-schedule-v1'),
+    'Corrective release must force fresh Tournament schedule CSS.'
 );
 $assertTrue(
-    str_contains($source['admin'], 'admin-tournaments.js?v=3&mvp21_2=rules-consent-autoclose'),
-    'Corrective release must force a fresh Tournament Admin script.'
+    str_contains($source['admin'], 'admin-tournaments.js?v=4&mvp21_3=schedule-countdown-reminders'),
+    'Tournament Admin must force the fresh MVP-21.3 schedule client.'
 );
 
-if ($assertions < 42) {
+foreach ([
+    'MVP-21.3 · дата, отсчёт и уведомления',
+    'data-tournament-start',
+    'data-tournament-assign-date',
+    'перенос и задержка не входят в MVP-21.3',
+] as $needle) {
+    $assertTrue(str_contains($source['admin'], $needle), 'Tournament Admin schedule UI missing: ' . $needle);
+}
+foreach ([
+    "scheduled:'дата назначена'",
+    "action:'assign_date'",
+    'start.toISOString()',
+    'напоминания за день, час и 15 минут',
+] as $needle) {
+    $assertTrue(str_contains($source['admin_js'], $needle), 'Tournament Admin schedule client missing: ' . $needle);
+}
+foreach ([
+    "const scheduled = state === 'scheduled'",
+    'tournaments-v2-tournament-schedule',
+    'data-tournament-countdown',
+    'formatTournamentCountdown',
+    'Время старта наступило',
+] as $needle) {
+    $assertTrue(str_contains($source['screen'], $needle), 'Player tournament schedule/countdown missing: ' . $needle);
+}
+$assertTrue(
+    str_contains($source['css'], '.tournaments-v2-tournament-schedule{')
+    && str_contains($source['css'], '.tournaments-v2-tournament-countdown{'),
+    'Tournament schedule/countdown styling must be present.'
+);
+
+if ($assertions < 55) {
     throw new RuntimeException('MVP-21.1 manual acceptance contract coverage is incomplete.');
 }
 fwrite(STDOUT, "Mvp21_1TournamentManualAcceptanceContractTest: {$assertions} assertions passed\n");
