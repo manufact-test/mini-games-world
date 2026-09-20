@@ -8,6 +8,8 @@ on:
       - 'bot/database/migrations/20260920_0049_create_official_tournaments.php'
       - 'bot/tournaments/TournamentRegistrationService.php'
       - 'bot/api.php'
+      - 'bot/tournament-status.php'
+      - 'bot/runtime/RuntimePrimaryStagingRequestFinalizer.php'
       - 'bot/economy/UnifiedEconomyRuntimeSyncService.php'
       - 'bot/ledger/RuntimeEconomyRepository.php'
       - 'bot/services/UserService.php'
@@ -26,6 +28,7 @@ on:
       - 'bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php'
       - 'bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php'
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
+      - 'bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php'
       - '.github/workflows/mvp21-1-tournament-registration.yml'
   workflow_dispatch:
 
@@ -80,6 +83,8 @@ jobs:
             bot/database/migrations/20260920_0049_create_official_tournaments.php
             bot/tournaments/TournamentRegistrationService.php
             bot/api.php
+            bot/tournament-status.php
+            bot/runtime/RuntimePrimaryStagingRequestFinalizer.php
             bot/economy/UnifiedEconomyRuntimeSyncService.php
             bot/ledger/RuntimeEconomyRepository.php
             bot/services/UserService.php
@@ -92,6 +97,7 @@ jobs:
             bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php
             bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php
             bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
+            bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
           node --check app/assets/js/api/client.js
@@ -118,6 +124,9 @@ jobs:
 
       - name: Run MVP-21.1 manual acceptance UX contract
         run: php bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
+
+      - name: Preserve concurrent staging request finalization
+        run: php bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php
 
       - name: Preserve unified balance runtime
         run: |
@@ -158,6 +167,8 @@ jobs:
               bot/database/migrations/20260920_0049_create_official_tournaments.php|\
               bot/tournaments/TournamentRegistrationService.php|\
               bot/api.php|\
+              bot/tournament-status.php|\
+              bot/runtime/RuntimePrimaryStagingRequestFinalizer.php|\
               bot/economy/UnifiedEconomyRuntimeSyncService.php|\
               bot/ledger/RuntimeEconomyRepository.php|\
               bot/services/UserService.php|\
@@ -175,7 +186,8 @@ jobs:
               bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php|\
               bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php|\
               bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php|\
-              bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php)
+              bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
+              bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php)
                 ;;
               *)
                 echo "Unexpected MVP-21.1 path: $path" >&2

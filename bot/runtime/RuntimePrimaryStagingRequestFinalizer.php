@@ -66,12 +66,44 @@ final class RuntimePrimaryStagingRequestFinalizer
             }
             $tick = $this->worker->runOnce();
             $ticks[] = $this->normalizeTick($tick);
+            $action = (string)($tick['action'] ?? 'projection_unknown');
+
+            if (($tick['ok'] ?? false) === true
+                && ($tick['claimed'] ?? false) !== true
+                && $action === 'projection_busy') {
+                // Another request owns the oldest outstanding projection. Wait
+                // for the revision reported by the worker (which may be older
+                // than this request's own revision), then continue draining the
+                // queue until this request's exact revision is completed.
+                $busyRevision = (int)($tick['state_revision'] ?? 0);
+                if ($busyRevision < 1 || $busyRevision > $currentRevision) {
+                    throw new RuntimeException('Concurrent projection reported an unexpected revision.');
+                }
+                $busyEvent = $this->waitForConcurrentCompletion($busyRevision);
+                if (($busyEvent['status'] ?? '') === 'completed') {
+                    $event = $this->eventForRevision($currentRevision);
+                    continue;
+                }
+            }
+
+            if (($tick['ok'] ?? false) === true
+                && ($tick['claimed'] ?? false) !== true
+                && $action === 'projection_noop') {
+                // A concurrent worker may have completed the queue between our
+                // pre-check and claim attempt. Re-read the exact current event
+                // before deciding that no progress was made.
+                $event = $this->eventForRevision($currentRevision);
+                if (($event['status'] ?? '') === 'completed') {
+                    continue;
+                }
+            }
+
             if (($tick['ok'] ?? false) !== true
-                || ($tick['action'] ?? '') !== 'projection_completed'
+                || $action !== 'projection_completed'
                 || ($tick['claimed'] ?? false) !== true) {
                 throw new RuntimeException(
                     'Staging request projection did not complete: '
-                    . $this->safeAction((string)($tick['action'] ?? 'projection_unknown'))
+                    . $this->safeAction($action)
                     . '.'
                 );
             }
@@ -141,6 +173,26 @@ final class RuntimePrimaryStagingRequestFinalizer
             'sensitive_identifiers_exposed' => false,
             'generated_at_utc' => gmdate(DATE_ATOM, $this->timestamp()),
         ];
+    }
+
+    private function waitForConcurrentCompletion(int $revision): array
+    {
+        $attempts = 0;
+        $event = $this->eventForRevision($revision);
+        $expectedSha = strtolower(trim((string)($event['state_sha256'] ?? '')));
+        while (($event['status'] ?? '') !== 'completed' && $attempts < 20) {
+            if (($event['status'] ?? '') === 'failed') {
+                break;
+            }
+            usleep(50000);
+            $attempts++;
+            $event = $this->eventForRevision($revision);
+        }
+
+        if (($event['status'] ?? '') === 'completed') {
+            $this->assertCompletedEvent($event, $revision, $expectedSha);
+        }
+        return $event;
     }
 
     private function eventForRevision(int $revision): array

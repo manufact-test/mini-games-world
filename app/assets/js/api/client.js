@@ -9,6 +9,7 @@ const COSMETIC_STORE_URL = `${window.location.origin}/bot/cosmetic-store.php`;
 const PROFILE_V2_URL = `${window.location.origin}/bot/profile-v2.php`;
 const LEADERBOARD_URL = `${window.location.origin}/bot/leaderboard.php`;
 const RATING_ARCHIVE_URL = `${window.location.origin}/bot/rating-archive.php`;
+const TOURNAMENT_STATUS_URL = `${window.location.origin}/bot/tournament-status.php`;
 const GAME_REACTION_URL = `${window.location.origin}/bot/game-reaction.php`;
 
 let profileV2ReadPromise = null;
@@ -127,7 +128,7 @@ export const api = {
   leaderboard: (gameType = 'tictactoe') => requestUrl(LEADERBOARD_URL, { game_type:gameType }),
   ratingArchiveOverview: () => requestUrl(RATING_ARCHIVE_URL, { mode:'overview' }),
   ratingArchiveSeason: (seasonId, gameType = 'tictactoe') => requestUrl(RATING_ARCHIVE_URL, { mode:'season', season_id:seasonId, game_type:gameType }),
-  tournamentStatus: () => request('tournament_status'),
+  tournamentStatus: () => requestUrl(TOURNAMENT_STATUS_URL, {}),
   tournamentRegister: () => request('tournament_register'),
   tournamentLeave: () => request('tournament_leave'),
   mgwProfile: () => requestMgwProfile(),
