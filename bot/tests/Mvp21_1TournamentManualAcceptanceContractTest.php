@@ -197,13 +197,13 @@ $assertTrue(
     'Corrective release must force a fresh API client module.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=12')
-    && str_contains($source['manifest'], 'mvp21_2=tournament-rules-consent-v1'),
+    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=13')
+    && str_contains($source['manifest'], 'mvp21_2=tournament-rules-copy-v2'),
     'Corrective release must force a fresh Tournament screen module.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'main.css?v=196')
-    && str_contains($source['manifest'], 'mvp21_2=tournament-rules-consent-v1'),
+    str_contains($source['manifest'], 'main.css?v=197')
+    && str_contains($source['manifest'], 'mvp21_2=tournament-rules-copy-v2'),
     'Corrective release must force fresh Tournament CSS.'
 );
 $assertTrue(
