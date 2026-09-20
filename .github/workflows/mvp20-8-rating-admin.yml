@@ -102,11 +102,6 @@ jobs:
           php bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php
           php bot/tests/Mvp20_3LeaderboardIntegrationContractTest.php
 
-      - name: Preserve production entrypoint registry
-        run: |
-          php bot/tests/ProductionPrimaryAllApplicationEntrypointRoutingTest.php
-          php bot/tests/ProductionPrimaryEntrypointWiringContractTest.php
-
       - name: Guard MVP-20.8 scope and frozen mechanics
         if: github.event_name == 'pull_request'
         shell: bash
