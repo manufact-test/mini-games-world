@@ -443,7 +443,7 @@ final class RatingAdminService
             ['season_id'=>$seasonId,'code'=>'bot_game']
         );
         $violations = (int)$this->database->fetchValue(
-            "SELECT COUNT(DISTINCT p.match_id || ':' || p.mgw_id)
+            "SELECT COUNT(*)
              FROM mgw_game_rating_participation p
              WHERE p.season_id=:season_id
                AND EXISTS (
