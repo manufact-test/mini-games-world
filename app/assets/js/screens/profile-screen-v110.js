@@ -109,6 +109,7 @@ function applyProfileResponse(result, options = {}){
   state.profileStats = result.stats || state.profileStats || null;
   state.profileRating = result.rating || state.profileRating || null;
   state.profileYearlyMedals = result.yearly_medals || state.profileYearlyMedals || null;
+  state.profileRatingArchive = result.rating_archive || state.profileRatingArchive || null;
   state.profileHistory = result.history || state.profileHistory || null;
   state.profileAuth = result.auth || state.profileAuth || null;
   if (hasProfileStats(state.profileStats)) saveCachedProfileStats(state.profileStats);
@@ -353,8 +354,9 @@ function renderProfileV2(){
   const stats = state.profileStats && typeof state.profileStats === 'object' ? state.profileStats : loadCachedProfileStats();
   const rating = state.profileRating && typeof state.profileRating === 'object' ? state.profileRating : {};
   const yearlyMedals = state.profileYearlyMedals && typeof state.profileYearlyMedals === 'object' ? state.profileYearlyMedals : {};
+  const ratingArchive = state.profileRatingArchive && typeof state.profileRatingArchive === 'object' ? state.profileRatingArchive : {};
   const history = state.profileHistory && typeof state.profileHistory === 'object' ? state.profileHistory : {};
-  const renderSignature = profileRenderSignature(profile, user, stats, history, rating, yearlyMedals);
+  const renderSignature = profileRenderSignature(profile, user, stats, history, rating, yearlyMedals, ratingArchive);
   if (root.childElementCount > 0 && renderSignature === lastProfileRenderSignature) return;
   const nickname = String(profile.nickname || user.display_name || t('profile.player')).trim();
   const mgwId = publicMgwId(profile.public_mgw_id || profile.mgw_id || user.public_mgw_id || user.mgw_id);
@@ -391,7 +393,7 @@ function renderProfileV2(){
       ${renderGameCosmeticsCollection()}
     </section>
     <section class="profile-v2-balance"><div><span>${escapeHtml(t('profile.balance'))}</span><small>${escapeHtml(t('profile.balance_note'))}</small></div><strong>${escapeHtml(formatNumber(balance))}</strong></section>
-    <section class="profile-v2-section profile-v2-rating-section">${sectionHead('profile.rating_title')}<div class="profile-v2-games-grid profile-v2-rating-grid">${GAME_TYPES.map(gameType => gameRatingCard(gameType, rating?.by_game?.[gameType])).join('')}</div></section>
+    ${renderRatingProfileSection(rating, ratingArchive, stats)}
     ${renderYearlyMedalSection(yearlyMedals)}
     <section class="profile-v2-section">${sectionHead('profile.stats_title','profile.stats_note')}<div class="profile-v2-summary-grid">${summaryStat(stats?.games_played,'profile.games_played')}${summaryStat(stats?.wins,'profile.wins')}${summaryStat(stats?.losses,'profile.losses')}${summaryStat(stats?.draws,'profile.draws')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.by_game_title','profile.by_game_note')}<div class="profile-v2-games-grid">${GAME_TYPES.map(gameType => gameStatCard(gameType, stats?.by_game?.[gameType])).join('')}</div></section>
@@ -404,7 +406,7 @@ function renderProfileV2(){
       <div class="profile-v2-linked-list">${identities.length ? identities.map(identityRow).join('') : emptyState('profile.linked_empty')}</div>
     </div></section>
   `;
-  lastProfileRenderSignature = profileRenderSignature(profile, user, stats, history, rating, yearlyMedals);
+  lastProfileRenderSignature = profileRenderSignature(profile, user, stats, history, rating, yearlyMedals, ratingArchive);
 }
 
 function ownedAvatarItems(activeAvatar = currentAvatarItemId()){
@@ -789,7 +791,7 @@ function currentAvatarItemId(){
 }
 function normalizeNicknameInput(value){ return String(value || '').replace(/\s+/gu, ' ').trim(); }
 function cloneObject(value){ return value && typeof value === 'object' ? JSON.parse(JSON.stringify(value)) : value; }
-function profileRenderSignature(profile, user, stats, history, rating, yearlyMedals){
+function profileRenderSignature(profile, user, stats, history, rating, yearlyMedals, ratingArchive){
   return JSON.stringify({
     profile,
     inventory:state.profileInventory || null,
@@ -805,6 +807,7 @@ function profileRenderSignature(profile, user, stats, history, rating, yearlyMed
     stats:stats || null,
     rating:rating || null,
     yearly_medals:yearlyMedals || null,
+    rating_archive:ratingArchive || null,
     history:history || null,
     auth:state.profileAuth || null,
     selected_avatar:String(state.selectedAvatarId || ''),
@@ -863,9 +866,61 @@ function renderYearlyMedalSection(snapshot){
   `;
 }
 
-function gameRatingCard(gameType, rating = null){
-  const points = Math.max(0, Number(rating?.points || 0));
-  return `<article class="profile-v2-game-stat profile-v2-rating-card" aria-label="${escapeHtml(gameName(gameType))}: ${escapeHtml(t('profile.rating_points'))}: ${escapeHtml(formatNumber(points))}"><strong class="profile-v2-rating-game">${escapeHtml(gameName(gameType))}</strong><span class="profile-v2-rating-score"><span>${escapeHtml(t('profile.rating_points'))}:</span><b>${escapeHtml(formatNumber(points))}</b></span></article>`;
+function renderRatingProfileSection(rating, archive, stats){
+  const source = archive && typeof archive === 'object' ? archive : {};
+  const currentCards = source.current_cards && typeof source.current_cards === 'object' ? source.current_cards : {};
+  const previousSeasons = Array.isArray(source.previous_seasons) ? source.previous_seasons : [];
+  const currentSeason = source.current_season && typeof source.current_season === 'object' ? source.current_season : null;
+  const seasonLabel = currentSeason
+    ? t('profile.rating_season_label', { quarter:Math.max(1, Number(currentSeason.quarter || 1)), year:Number(currentSeason.calendar_year || 0) })
+    : t('profile.rating_current');
+  const allTimeWins = Math.max(0, Number(stats?.wins || 0));
+
+  return `<section class="profile-v2-section profile-v2-rating-section">
+    ${sectionHead('profile.rating_title', source.official === true ? 'profile.rating_note_active' : 'profile.rating_note_preseason')}
+    <div class="profile-v2-rating-overview">
+      <div><span>${escapeHtml(t('profile.rating_current'))}</span><strong>${escapeHtml(seasonLabel)}</strong></div>
+      <div><span>${escapeHtml(t('profile.rating_all_time_wins'))}</span><strong>${escapeHtml(formatNumber(allTimeWins))}</strong></div>
+    </div>
+    <div class="profile-v2-games-grid profile-v2-rating-grid">
+      ${GAME_TYPES.map(gameType => gameRatingCard(gameType, rating?.by_game?.[gameType], currentCards?.[gameType])).join('')}
+    </div>
+    ${renderPreviousRatingSeasons(previousSeasons)}
+  </section>`;
+}
+
+function renderPreviousRatingSeasons(seasons){
+  if (!Array.isArray(seasons) || seasons.length === 0) return '';
+  return `<div class="profile-v2-rating-history">
+    <div class="profile-v2-rating-history-title">${escapeHtml(t('profile.rating_previous_seasons'))}</div>
+    ${seasons.map(season => {
+      const games = season?.games && typeof season.games === 'object' ? season.games : {};
+      const entries = GAME_TYPES.filter(gameType => games[gameType]);
+      if (!entries.length) return '';
+      const label = t('profile.rating_season_label', { quarter:Math.max(1, Number(season?.quarter || 1)), year:Number(season?.calendar_year || 0) });
+      return `<article class="profile-v2-rating-season-card">
+        <div class="profile-v2-rating-season-head"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(t('profile.rating_season_closed'))}</span></div>
+        <div class="profile-v2-rating-season-games">
+          ${entries.map(gameType => {
+            const item = games[gameType] || {};
+            const rank = Number(item.rank || 0);
+            return `<div class="profile-v2-rating-season-game"><span>${escapeHtml(gameName(gameType))}</span><b>${escapeHtml(formatNumber(Math.max(0, Number(item.points || 0))))}</b>${rank > 0 ? `<small>#${escapeHtml(formatNumber(rank))}</small>` : ''}</div>`;
+          }).join('')}
+        </div>
+      </article>`;
+    }).join('')}
+  </div>`;
+}
+
+function gameRatingCard(gameType, rating = null, archiveCard = null){
+  const points = Math.max(0, Number(rating?.points ?? archiveCard?.points ?? 0));
+  const matches = Math.max(0, Number(archiveCard?.rated_matches || 0));
+  const wins = Math.max(0, Number(archiveCard?.human_wins || 0));
+  return `<article class="profile-v2-game-stat profile-v2-rating-card" aria-label="${escapeHtml(gameName(gameType))}: ${escapeHtml(t('profile.rating_points'))}: ${escapeHtml(formatNumber(points))}">
+    <strong class="profile-v2-rating-game">${escapeHtml(gameName(gameType))}</strong>
+    <span class="profile-v2-rating-score"><span>${escapeHtml(t('profile.rating_points'))}:</span><b>${escapeHtml(formatNumber(points))}</b></span>
+    <span class="profile-v2-rating-progress"><small>${escapeHtml(t('profile.rating_matches_short'))} ${escapeHtml(formatNumber(matches))}</small><small>${escapeHtml(t('profile.rating_wins_short'))} ${escapeHtml(formatNumber(wins))}</small></span>
+  </article>`;
 }
 
 function gameStatCard(gameType, stats = null){
