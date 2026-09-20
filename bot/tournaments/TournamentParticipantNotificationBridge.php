@@ -48,9 +48,6 @@ final class TournamentParticipantNotificationBridge
         $now = ($now ?? new DateTimeImmutable('now', $utc))->setTimezone($utc);
         $start = (new DateTimeImmutable($startRaw, $utc))->setTimezone($utc);
         $assignedAt = (new DateTimeImmutable($assignedRaw, $utc))->setTimezone($utc);
-        if ($start <= $now) {
-            throw new RuntimeException('Scheduled tournament start time is already in the past.');
-        }
 
         $title = trim((string)($tournament['title'] ?? 'Официальный турнир'));
         if ($title === '') $title = 'Официальный турнир';
