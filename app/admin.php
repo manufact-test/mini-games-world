@@ -63,7 +63,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
       <article class="mgw-admin__card mgw-admin__card--wide" data-tournament-admin>
         <div class="mgw-admin__card-head">
           <h2>Официальный турнир</h2>
-          <span>MVP-21.1 · регистрация и резерв взноса</span>
+          <span>MVP-21.2 · правила, согласие и автозакрытие</span>
         </div>
         <div class="mgw-admin__tournament">
           <div class="mgw-admin__tournament-status" data-tournament-admin-status>Управление турниром ещё не загружено.</div>
@@ -113,9 +113,14 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               <div class="mgw-admin__tournament-actions">
                 <button type="button" data-tournament-open disabled>Открыть регистрацию</button>
               </div>
-              <small>Одновременно может существовать только один активный официальный турнир. Снимок наград фиксируется в момент создания черновика.</small>
+              <small>Одновременно может существовать только один активный официальный турнир. Правила и снимок наград фиксируются при создании. Существенно изменить правила у уже открытого турнира нельзя — для этого нужен новый турнир.</small>
             </section>
           </div>
+
+          <section class="mgw-admin__tournament-panel">
+            <h3>Правила турнира</h3>
+            <pre class="mgw-admin__tournament-rewards" data-tournament-rules>—</pre>
+          </section>
 
           <section class="mgw-admin__tournament-panel">
             <h3>Снимок наград</h3>
