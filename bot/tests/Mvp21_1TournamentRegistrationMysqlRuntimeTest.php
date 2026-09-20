@@ -2,11 +2,14 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
+require $root . '/storage/contracts/StorageTransactionInterface.php';
+require $root . '/storage/contracts/StorageAdapterInterface.php';
 require $root . '/database/DatabaseConnectionInterface.php';
 require $root . '/database/PdoDatabaseConnection.php';
 require $root . '/database/DatabaseMigrationInterface.php';
 require $root . '/ledger/LedgerIntegrity.php';
 require $root . '/ledger/LedgerWriteService.php';
+require $root . '/runtime/RuntimePrimaryStateSchemaInstaller.php';
 require $root . '/runtime/RuntimeMatchEventContext.php';
 require $root . '/runtime/RuntimeMatchEventLogWriter.php';
 require $root . '/runtime/DatabasePrimaryStateStorageAdapter.php';
