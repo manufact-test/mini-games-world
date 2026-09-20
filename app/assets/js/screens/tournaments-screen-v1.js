@@ -52,11 +52,11 @@ export function initTournamentsScreen(){
         </div>
 
         <div class="tournaments-v2-tabs-shell">
-          <button class="tournaments-v2-scroll tournaments-v2-scroll--left" type="button" data-tournaments-scroll="-1" aria-label="Прокрутить игры влево">‹</button>
+          <button class="tournaments-v2-scroll tournaments-v2-scroll--left" type="button" data-tournaments-scroll="-1" aria-label="Прокрутить игры влево">${scrollIcon('left')}</button>
           <div class="tournaments-v2-tabs" id="tournamentsLeaderboardTabs" aria-label="${escapeHtml(t('profile.leaderboard_title'))}">
             ${GAME_TYPES.map(type => tabMarkup(type, activeGame)).join('')}
           </div>
-          <button class="tournaments-v2-scroll tournaments-v2-scroll--right" type="button" data-tournaments-scroll="1" aria-label="Прокрутить игры вправо">›</button>
+          <button class="tournaments-v2-scroll tournaments-v2-scroll--right" type="button" data-tournaments-scroll="1" aria-label="Прокрутить игры вправо">${scrollIcon('right')}</button>
         </div>
 
         <div class="tournaments-v2-body" id="tournamentsLeaderboardBody" aria-live="polite">
@@ -279,6 +279,11 @@ function renderBoard(board){
 
   body.innerHTML = `
     <div class="tournaments-v2-current-game">${escapeHtml(gameName(gameType))}</div>
+    <div class="tournaments-v2-table-head" aria-hidden="true">
+      <span>№</span>
+      <span>Игрок</span>
+      <span>Очки</span>
+    </div>
     <div class="tournaments-v2-list">
       ${entries.length
         ? entries.map(leaderboardRow).join('')
@@ -299,6 +304,11 @@ function leaderboardRow(entry){
     <strong class="tournaments-v2-name">${escapeHtml(nickname)}</strong>
     <span class="tournaments-v2-points" aria-label="${escapeHtml(t('profile.rating_points'))}: ${escapeHtml(formatNumber(points))}">${escapeHtml(formatNumber(points))}</span>
   </div>`;
+}
+
+function scrollIcon(direction){
+  const path = direction === 'left' ? 'M9.5 3.5 5 8l4.5 4.5' : 'M6.5 3.5 11 8l-4.5 4.5';
+  return `<svg class="tournaments-v2-scroll-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="${path}"/></svg>`;
 }
 
 function tabMarkup(gameType, current){
