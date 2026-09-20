@@ -108,9 +108,9 @@ $ledger->postAvailableDelta([
 
 $service = new TournamentRegistrationService($db, $ledger);
 $draft = $service->createDraft(
-    'Проверка MySQL',
     'tictactoe',
     8,
+    'Проверка MySQL',
     'test:mysql',
     new DateTimeImmutable('2026-09-20T14:01:00Z')
 );
