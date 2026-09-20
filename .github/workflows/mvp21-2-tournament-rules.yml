@@ -9,6 +9,7 @@ on:
       - 'bot/database/migrations/20260920_0051_refresh_tournament_rules_copy.php'
       - 'bot/tournaments/TournamentRegistrationService.php'
       - 'bot/tournaments/TournamentAdminNotificationBridge.php'
+      - 'bot/admin-tournaments.php'
       - 'bot/api.php'
       - 'bot/tournament-status.php'
       - 'app/assets/js/api/client.js'
@@ -166,6 +167,7 @@ jobs:
               bot/tournaments/TournamentRegistrationService.php|\
               bot/tournaments/TournamentAdminNotificationBridge.php|\
               bot/tournaments/TournamentParticipantNotificationBridge.php|\
+              bot/admin-tournaments.php|\
               bot/api.php|\
               bot/tournament-status.php|\
               app/assets/js/api/client.js|\
