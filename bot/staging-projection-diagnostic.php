@@ -75,6 +75,23 @@ try {
         new LedgerWriteService($db)
     ))->snapshot();
 
+    // The canonical browser shell can preload the public rating archive while
+    // an unrelated game test is running. Prove that read owner here so an HTTP
+    // 500 becomes an exact OIDC-protected staging diagnostic instead of a
+    // generic browser "Ошибка API: 500".
+    try {
+        $ratingArchiveOverview = (new RatingArchiveService($db))->publicOverview();
+    } catch (Throwable $ratingArchiveError) {
+        throw new RuntimeException(
+            'rating_archive_probe_failed: '
+            . get_class($ratingArchiveError)
+            . ': '
+            . $ratingArchiveError->getMessage(),
+            0,
+            $ratingArchiveError
+        );
+    }
+
     $events = $db->fetchAll(
         'SELECT state_revision, status, attempt_count, last_error, projection_version
          FROM mgw_runtime_primary_projection_outbox
@@ -107,6 +124,12 @@ try {
         'failures'=>$failures,
         'tournament'=>$tournamentSnapshot['tournament'] ?? null,
         'registered_count'=>(int)($tournamentSnapshot['tournament']['registered_count'] ?? 0),
+        'rating_archive'=>[
+            'competition_state'=>(string)($ratingArchiveOverview['competition_state'] ?? ''),
+            'current_season_id'=>(string)($ratingArchiveOverview['current_season_id'] ?? ''),
+            'season_count'=>count(is_array($ratingArchiveOverview['seasons'] ?? null) ? $ratingArchiveOverview['seasons'] : []),
+            'hall_of_fame_count'=>count(is_array($ratingArchiveOverview['hall_of_fame'] ?? null) ? $ratingArchiveOverview['hall_of_fame'] : []),
+        ],
         'rules'=>isset($tournamentSnapshot['tournament']['rules']) && is_array($tournamentSnapshot['tournament']['rules'])
             ? [
                 'version'=>(string)($tournamentSnapshot['tournament']['rules']['version'] ?? ''),
