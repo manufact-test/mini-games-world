@@ -59,7 +59,7 @@ $assertTrue(str_contains($leaderboard, 's.mgw_id ASC'), 'Awards must preserve st
 $assertTrue(str_contains($lifecycle, "class_exists('SeasonalAwardService')"), 'MVP-20.4 lifecycle must compose with the MVP-20.5 award owner.');
 $assertTrue(str_contains($lifecycle, 'rating_projection_pending'), 'Lifecycle must remain FINALIZING while old-season projection is incomplete.');
 $assertTrue(
-    str_contains($lifecycle, "new SeasonalAwardService($database)")
+    str_contains($lifecycle, 'new SeasonalAwardService($database)')
     && str_contains($lifecycle, '->finalizeSeason('),
     'Lifecycle must finalize awards before marking the season closed.'
 );
