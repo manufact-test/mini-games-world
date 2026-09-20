@@ -108,6 +108,7 @@ function applyProfileResponse(result, options = {}){
   if (confirmedAvatar) state.selectedAvatarId = confirmedAvatar;
   state.profileStats = result.stats || state.profileStats || null;
   state.profileRating = result.rating || state.profileRating || null;
+  state.profileYearlyMedals = result.yearly_medals || state.profileYearlyMedals || null;
   state.profileHistory = result.history || state.profileHistory || null;
   state.profileAuth = result.auth || state.profileAuth || null;
   if (hasProfileStats(state.profileStats)) saveCachedProfileStats(state.profileStats);
@@ -351,8 +352,9 @@ function renderProfileV2(){
   const user = state.user && typeof state.user === 'object' ? state.user : {};
   const stats = state.profileStats && typeof state.profileStats === 'object' ? state.profileStats : loadCachedProfileStats();
   const rating = state.profileRating && typeof state.profileRating === 'object' ? state.profileRating : {};
+  const yearlyMedals = state.profileYearlyMedals && typeof state.profileYearlyMedals === 'object' ? state.profileYearlyMedals : {};
   const history = state.profileHistory && typeof state.profileHistory === 'object' ? state.profileHistory : {};
-  const renderSignature = profileRenderSignature(profile, user, stats, history, rating);
+  const renderSignature = profileRenderSignature(profile, user, stats, history, rating, yearlyMedals);
   if (root.childElementCount > 0 && renderSignature === lastProfileRenderSignature) return;
   const nickname = String(profile.nickname || user.display_name || t('profile.player')).trim();
   const mgwId = publicMgwId(profile.public_mgw_id || profile.mgw_id || user.public_mgw_id || user.mgw_id);
@@ -390,6 +392,7 @@ function renderProfileV2(){
     </section>
     <section class="profile-v2-balance"><div><span>${escapeHtml(t('profile.balance'))}</span><small>${escapeHtml(t('profile.balance_note'))}</small></div><strong>${escapeHtml(formatNumber(balance))}</strong></section>
     <section class="profile-v2-section profile-v2-rating-section">${sectionHead('profile.rating_title')}<div class="profile-v2-games-grid profile-v2-rating-grid">${GAME_TYPES.map(gameType => gameRatingCard(gameType, rating?.by_game?.[gameType])).join('')}</div></section>
+    ${renderYearlyMedalSection(yearlyMedals)}
     <section class="profile-v2-section">${sectionHead('profile.stats_title','profile.stats_note')}<div class="profile-v2-summary-grid">${summaryStat(stats?.games_played,'profile.games_played')}${summaryStat(stats?.wins,'profile.wins')}${summaryStat(stats?.losses,'profile.losses')}${summaryStat(stats?.draws,'profile.draws')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.by_game_title','profile.by_game_note')}<div class="profile-v2-games-grid">${GAME_TYPES.map(gameType => gameStatCard(gameType, stats?.by_game?.[gameType])).join('')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.history_title')}<div class="profile-v2-history">${matches.length ? matches.map(historyRow).join('') : emptyState('profile.history_empty')}</div></section>
@@ -401,7 +404,7 @@ function renderProfileV2(){
       <div class="profile-v2-linked-list">${identities.length ? identities.map(identityRow).join('') : emptyState('profile.linked_empty')}</div>
     </div></section>
   `;
-  lastProfileRenderSignature = profileRenderSignature(profile, user, stats, history, rating);
+  lastProfileRenderSignature = profileRenderSignature(profile, user, stats, history, rating, yearlyMedals);
 }
 
 function ownedAvatarItems(activeAvatar = currentAvatarItemId()){
@@ -786,7 +789,7 @@ function currentAvatarItemId(){
 }
 function normalizeNicknameInput(value){ return String(value || '').replace(/\s+/gu, ' ').trim(); }
 function cloneObject(value){ return value && typeof value === 'object' ? JSON.parse(JSON.stringify(value)) : value; }
-function profileRenderSignature(profile, user, stats, history, rating){
+function profileRenderSignature(profile, user, stats, history, rating, yearlyMedals){
   return JSON.stringify({
     profile,
     inventory:state.profileInventory || null,
@@ -801,6 +804,7 @@ function profileRenderSignature(profile, user, stats, history, rating){
     },
     stats:stats || null,
     rating:rating || null,
+    yearly_medals:yearlyMedals || null,
     history:history || null,
     auth:state.profileAuth || null,
     selected_avatar:String(state.selectedAvatarId || ''),
@@ -816,6 +820,49 @@ function ensureProfileRoot(){
 }
 function sectionHead(titleKey, noteKey = null){ return `<div class="profile-v2-section-head"><div><h2>${escapeHtml(t(titleKey))}</h2>${noteKey ? `<p>${escapeHtml(t(noteKey))}</p>` : ''}</div></div>`; }
 function summaryStat(value, labelKey){ const normalized = Number.isFinite(Number(value)) ? formatNumber(Number(value)) : '—'; return `<div class="profile-v2-summary-stat"><strong>${escapeHtml(normalized)}</strong><span>${escapeHtml(t(labelKey))}</span></div>`; }
+function renderYearlyMedalSection(snapshot){
+  const source = snapshot && typeof snapshot === 'object' ? snapshot : null;
+  const medal = source?.visible === true
+    ? (source.featured && typeof source.featured === 'object' ? source.featured : source.current)
+    : null;
+  if (!medal || typeof medal !== 'object') return '';
+
+  const year = Math.trunc(Number(medal.calendar_year || 0));
+  if (year < 2000 || year > 9999) return '';
+
+  const quarters = new Set(
+    (Array.isArray(medal.unlocked_quarters) ? medal.unlocked_quarters : [])
+      .map(value => Math.trunc(Number(value)))
+      .filter(value => value >= 1 && value <= 4)
+  );
+  const count = quarters.size;
+  const complete = medal.complete === true || count === 4;
+  const theme = String(medal.theme_key || 'yearly-medal').toLowerCase().replace(/[^a-z0-9-]/g, '');
+  const title = t('profile.yearly_medal_label', { year });
+  const progress = complete
+    ? t('profile.yearly_medal_complete')
+    : t('profile.yearly_medal_progress', { count });
+
+  return `
+    <section class="profile-v2-section profile-v2-yearly-medal-section">
+      ${sectionHead('profile.yearly_medal_title','profile.yearly_medal_note')}
+      <article class="profile-v2-yearly-medal-card${complete ? ' is-complete' : ''}" data-medal-theme="${escapeHtml(theme)}" aria-label="${escapeHtml(title)}: ${escapeHtml(progress)}">
+        <div class="profile-v2-yearly-medal-visual${complete ? ' is-complete' : ''}" aria-hidden="true">
+          ${[1,2,3,4].map(quarter => `<span class="profile-v2-yearly-medal-piece q${quarter} ${quarters.has(quarter) ? 'is-unlocked' : 'is-locked'}" data-medal-quarter="${quarter}"></span>`).join('')}
+          <span class="profile-v2-yearly-medal-core"><b>${escapeHtml(String(year))}</b><small>MGW</small></span>
+        </div>
+        <div class="profile-v2-yearly-medal-meta">
+          <strong>${escapeHtml(title)}</strong>
+          <span>${escapeHtml(progress)}</span>
+          <div class="profile-v2-yearly-medal-quarters" aria-label="${escapeHtml(progress)}">
+            ${[1,2,3,4].map(quarter => `<i class="${quarters.has(quarter) ? 'is-unlocked' : 'is-locked'}">Q${quarter}</i>`).join('')}
+          </div>
+        </div>
+      </article>
+    </section>
+  `;
+}
+
 function gameRatingCard(gameType, rating = null){
   const points = Math.max(0, Number(rating?.points || 0));
   return `<article class="profile-v2-game-stat profile-v2-rating-card" aria-label="${escapeHtml(gameName(gameType))}: ${escapeHtml(t('profile.rating_points'))}: ${escapeHtml(formatNumber(points))}"><strong class="profile-v2-rating-game">${escapeHtml(gameName(gameType))}</strong><span class="profile-v2-rating-score"><span>${escapeHtml(t('profile.rating_points'))}:</span><b>${escapeHtml(formatNumber(points))}</b></span></article>`;
