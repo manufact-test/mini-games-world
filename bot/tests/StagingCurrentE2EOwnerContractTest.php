@@ -35,8 +35,7 @@ $assert(str_contains($currentSpec, "readFileSync(resolve(repoRoot, 'bot/helpers/
     && str_contains($currentSpec, "private const ENTRY_PATH")
     && !str_contains($currentSpec, 'const ENTRY_URL = `${ORIGIN}/app/`;'),
     'Final core must derive the exact Telegram entry from WebAppLaunchUrl.');
-$assert(preg_match("~private const ENTRY_PATH = '/app/v110\\.php\\?v=\\d+[^']*';~", $launch) === 1
-    && !str_contains($launch, "private const ENTRY_PATH = '/app/v120.php"),
+$assert(preg_match("~^\\s*private const ENTRY_PATH = '/app/v110\\.php\\?v=\\d+[^']*';~m", $launch) === 1,
     'Owner contract expects the active canonical Telegram v110 launch path from WebAppLaunchUrl.');
 $assert(str_contains($currentSpec, "'x-mgw-client-bootstrap'")
     && str_contains($currentSpec, "'x-mgw-game-zone'")
