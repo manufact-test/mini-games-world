@@ -32,6 +32,34 @@ try {
     }
     $db = PdoConnectionFactory::create($databaseConfig);
 
+    $migrationVersion = '20260920_0050_add_tournament_rules_consent';
+    $migrationPath = __DIR__ . '/database/migrations/' . $migrationVersion . '.php';
+    $currentMigrationChecksum = hash_file('sha256', $migrationPath);
+    $appliedMigration = $db->fetchAll(
+        'SELECT version,checksum,applied_at_utc
+         FROM mgw_schema_migrations
+         WHERE version=:version
+         LIMIT 1',
+        ['version'=>$migrationVersion]
+    );
+    $appliedMigrationChecksum = trim((string)($appliedMigration[0]['checksum'] ?? ''));
+    if (!is_string($currentMigrationChecksum) || $currentMigrationChecksum === '') {
+        throw new RuntimeException('Could not calculate current tournament migration checksum.');
+    }
+    if ($appliedMigrationChecksum !== ''
+        && !hash_equals(strtolower($appliedMigrationChecksum), strtolower($currentMigrationChecksum))) {
+        json_response([
+            'ok'=>false,
+            'error'=>'migration_checksum_mismatch',
+            'migration'=>[
+                'version'=>$migrationVersion,
+                'applied_checksum'=>$appliedMigrationChecksum,
+                'current_checksum'=>$currentMigrationChecksum,
+                'applied_at_utc'=>(string)($appliedMigration[0]['applied_at_utc'] ?? ''),
+            ],
+        ], 409);
+    }
+
     // Exact staging deploys may introduce additive schema that is required by
     // the just-deployed runtime. Apply only the repository's managed pending
     // migrations after GitHub OIDC has authenticated this exact staging push.
