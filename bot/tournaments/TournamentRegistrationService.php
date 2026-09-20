@@ -8,6 +8,9 @@ final class TournamentRegistrationService
     public const ENTRY_FEE = 50000;
     public const STATE_DRAFT = 'draft';
     public const STATE_REGISTRATION_OPEN = 'registration_open';
+    public const STATE_WAITING_FOR_DATE = 'waiting_for_date';
+    public const RULES_VERSION = 'official-tournament-rules-v1';
+    public const RULES_LANGUAGE = 'ru';
     public const REGISTRATION_REGISTERED = 'registered';
     public const REGISTRATION_WITHDRAWN = 'withdrawn';
     public const ALLOWED_CAPACITIES = [8, 16, 32, 64, 128];
@@ -51,18 +54,24 @@ final class TournamentRegistrationService
 
             $tournamentId = $this->newTournamentId($actorRef, $createdAt);
             $snapshot = self::canonicalRewardSnapshot();
+            $rulesSnapshot = self::canonicalRulesSnapshot($gameType, $capacity);
+            $rulesJson = $this->encodeJson($rulesSnapshot);
+            $rulesSha256 = hash('sha256', $rulesJson);
 
             $db->execute(
                 'INSERT INTO mgw_tournaments (
                     tournament_id,active_slot,title,game_type,capacity,
                     entry_fee_amount,entry_asset_code,reward_snapshot_json,
+                    rules_version,rules_language,rules_snapshot_json,rules_sha256,
                     tournament_state,created_by_ref,opened_by_ref,
-                    created_at_utc,registration_opened_at_utc,updated_at_utc
+                    created_at_utc,registration_opened_at_utc,
+                    registration_closed_at_utc,registration_closed_reason,updated_at_utc
                  ) VALUES (
                     :tournament_id,:active_slot,:title,:game_type,:capacity,
                     :entry_fee_amount,:entry_asset_code,:reward_snapshot_json,
+                    :rules_version,:rules_language,:rules_snapshot_json,:rules_sha256,
                     :tournament_state,:created_by_ref,NULL,
-                    :created_at_utc,NULL,:updated_at_utc
+                    :created_at_utc,NULL,NULL,NULL,:updated_at_utc
                  )',
                 [
                     'tournament_id'=>$tournamentId,
@@ -73,6 +82,10 @@ final class TournamentRegistrationService
                     'entry_fee_amount'=>self::ENTRY_FEE,
                     'entry_asset_code'=>self::ENTRY_ASSET,
                     'reward_snapshot_json'=>$this->encodeJson($snapshot),
+                    'rules_version'=>self::RULES_VERSION,
+                    'rules_language'=>self::RULES_LANGUAGE,
+                    'rules_snapshot_json'=>$rulesJson,
+                    'rules_sha256'=>$rulesSha256,
                     'tournament_state'=>self::STATE_DRAFT,
                     'created_by_ref'=>$actorRef,
                     'created_at_utc'=>$createdAt,
@@ -102,6 +115,7 @@ final class TournamentRegistrationService
             if ((string)$row['active_slot'] !== self::ACTIVE_SLOT) {
                 throw new RuntimeException('Tournament is not the active official tournament.');
             }
+            $this->assertTournamentRules($row);
             if ((string)$row['tournament_state'] === self::STATE_REGISTRATION_OPEN) {
                 return $this->snapshotForRow($db, $row, null, null);
             }
@@ -156,7 +170,8 @@ final class TournamentRegistrationService
     public function register(
         string $mgwId,
         string $accountRef,
-        ?DateTimeImmutable $now = null
+        ?DateTimeImmutable $now = null,
+        ?array $rulesConsent = null
     ): array {
         $mgwId = $this->requiredText($mgwId, 24, 'MGW-ID');
         $accountRef = $this->requiredText($accountRef, 255, 'account ref');
@@ -165,12 +180,11 @@ final class TournamentRegistrationService
         return $this->database->transaction(function (DatabaseConnectionInterface $db) use (
             $mgwId,
             $accountRef,
-            $registeredAt
+            $registeredAt,
+            $rulesConsent
         ): array {
             $tournament = $this->activeTournamentRow($db, true);
-            if ((string)$tournament['tournament_state'] !== self::STATE_REGISTRATION_OPEN) {
-                throw new RuntimeException('Регистрация на официальный турнир сейчас закрыта.');
-            }
+            $this->assertTournamentRules($tournament);
 
             $registrationRows = $db->fetchAll(
                 'SELECT * FROM mgw_tournament_registrations
@@ -179,8 +193,55 @@ final class TournamentRegistrationService
                 ['tournament_id'=>$tournament['tournament_id'],'mgw_id'=>$mgwId]
             );
             $existing = $registrationRows[0] ?? null;
+
+            if ((string)$tournament['tournament_state'] === self::STATE_WAITING_FOR_DATE) {
+                if (is_array($existing)
+                    && (string)$existing['registration_state'] === self::REGISTRATION_REGISTERED) {
+                    return $this->snapshotForRow($db, $tournament, $mgwId, $accountRef);
+                }
+                throw new RuntimeException('Регистрация на официальный турнир уже закрыта. Состав набран.');
+            }
+            if ((string)$tournament['tournament_state'] !== self::STATE_REGISTRATION_OPEN) {
+                throw new RuntimeException('Регистрация на официальный турнир сейчас закрыта.');
+            }
+
             if (is_array($existing) && (string)$existing['registration_state'] === self::REGISTRATION_REGISTERED) {
-                return $this->snapshotForRow($db, $tournament, $mgwId, $accountRef);
+                $acceptedAt = trim((string)($existing['rules_accepted_at_utc'] ?? ''));
+                if ($acceptedAt === '') {
+                    $consent = $this->validatedRulesConsent($tournament, $rulesConsent);
+                    $updated = $db->execute(
+                        'UPDATE mgw_tournament_registrations
+                         SET rules_version=:rules_version,
+                             rules_language=:rules_language,
+                             rules_sha256=:rules_sha256,
+                             rules_accepted_at_utc=:rules_accepted_at_utc,
+                             updated_at_utc=:updated_at_utc
+                         WHERE registration_id=:registration_id
+                           AND rules_accepted_at_utc IS NULL',
+                        [
+                            'rules_version'=>$consent['version'],
+                            'rules_language'=>$consent['language'],
+                            'rules_sha256'=>$consent['sha256'],
+                            'rules_accepted_at_utc'=>$registeredAt,
+                            'updated_at_utc'=>$registeredAt,
+                            'registration_id'=>(string)$existing['registration_id'],
+                        ]
+                    );
+                    if ($updated !== 1) {
+                        throw new RuntimeException('Согласие с правилами изменилось одновременно. Повторите попытку.');
+                    }
+                    $existing['rules_version'] = $consent['version'];
+                    $existing['rules_language'] = $consent['language'];
+                    $existing['rules_sha256'] = $consent['sha256'];
+                    $existing['rules_accepted_at_utc'] = $registeredAt;
+                }
+
+                [$tournament, $closedNow] = $this->closeRegistrationIfReady($db, $tournament, $registeredAt);
+                $snapshot = $this->snapshotForRow($db, $tournament, $mgwId, $accountRef);
+                if ($closedNow) {
+                    $snapshot['transition'] = ['registration_closed_now'=>true,'reason'=>'full'];
+                }
+                return $snapshot;
             }
 
             $registeredCount = $this->registeredCount($db, (string)$tournament['tournament_id']);
@@ -189,6 +250,7 @@ final class TournamentRegistrationService
                 throw new RuntimeException('Все места в турнире уже заняты.');
             }
 
+            $consent = $this->validatedRulesConsent($tournament, $rulesConsent);
             $attempt = is_array($existing) ? ((int)$existing['attempt_no'] + 1) : 1;
             $registrationId = $this->registrationId((string)$tournament['tournament_id'], $mgwId, $attempt);
             $operationKey = $this->operationKey('register', (string)$tournament['tournament_id'], $mgwId, $attempt);
@@ -208,18 +270,23 @@ final class TournamentRegistrationService
                     'registration_id'=>$registrationId,
                     'attempt_no'=>$attempt,
                     'purpose'=>'registration_entry_reservation',
+                    'rules_version'=>$consent['version'],
+                    'rules_language'=>$consent['language'],
+                    'rules_sha256'=>$consent['sha256'],
                 ],
             ]);
 
             $db->execute(
                 'INSERT INTO mgw_tournament_registrations (
                     registration_id,tournament_id,mgw_id,account_ref,attempt_no,
-                    registration_state,reservation_id,registered_at_utc,
-                    withdrawn_at_utc,updated_at_utc
+                    registration_state,reservation_id,
+                    rules_version,rules_language,rules_sha256,rules_accepted_at_utc,
+                    registered_at_utc,withdrawn_at_utc,updated_at_utc
                  ) VALUES (
                     :registration_id,:tournament_id,:mgw_id,:account_ref,:attempt_no,
-                    :registration_state,:reservation_id,:registered_at_utc,
-                    NULL,:updated_at_utc
+                    :registration_state,:reservation_id,
+                    :rules_version,:rules_language,:rules_sha256,:rules_accepted_at_utc,
+                    :registered_at_utc,NULL,:updated_at_utc
                  )',
                 [
                     'registration_id'=>$registrationId,
@@ -229,12 +296,21 @@ final class TournamentRegistrationService
                     'attempt_no'=>$attempt,
                     'registration_state'=>self::REGISTRATION_REGISTERED,
                     'reservation_id'=>$reservation['reservation_id'],
+                    'rules_version'=>$consent['version'],
+                    'rules_language'=>$consent['language'],
+                    'rules_sha256'=>$consent['sha256'],
+                    'rules_accepted_at_utc'=>$registeredAt,
                     'registered_at_utc'=>$registeredAt,
                     'updated_at_utc'=>$registeredAt,
                 ]
             );
 
-            return $this->snapshotForRow($db, $tournament, $mgwId, $accountRef);
+            [$tournament, $closedNow] = $this->closeRegistrationIfReady($db, $tournament, $registeredAt);
+            $snapshot = $this->snapshotForRow($db, $tournament, $mgwId, $accountRef);
+            if ($closedNow) {
+                $snapshot['transition'] = ['registration_closed_now'=>true,'reason'=>'full'];
+            }
+            return $snapshot;
         });
     }
 
@@ -361,6 +437,114 @@ final class TournamentRegistrationService
         ];
     }
 
+    public static function canonicalRulesSnapshot(string $gameType, int $capacity): array
+    {
+        $gameType = trim($gameType);
+        $gameTitle = match ($gameType) {
+            'tictactoe' => 'Крестики-нолики',
+            'four_in_a_row' => 'Четыре в ряд',
+            'battleship' => 'Морской бой',
+            'checkers' => 'Русские шашки',
+            'reversi' => 'Реверси',
+            'chess' => 'Шахматы',
+            'go' => 'Го',
+            'domino' => 'Домино',
+            default => $gameType !== '' ? $gameType : 'Игра',
+        };
+
+        return [
+            'version'=>self::RULES_VERSION,
+            'language'=>self::RULES_LANGUAGE,
+            'title'=>'Правила официального турнира',
+            'tournament'=>[
+                'game_type'=>$gameType,
+                'game_title'=>$gameTitle,
+                'capacity'=>$capacity,
+                'entry_fee'=>self::ENTRY_FEE,
+                'entry_asset_code'=>self::ENTRY_ASSET,
+            ],
+            'sections'=>[
+                [
+                    'id'=>'registration',
+                    'title'=>'Регистрация и взнос',
+                    'items'=>[
+                        "Турнир проходит по игре «{$gameTitle}». Количество участников: {$capacity}.",
+                        'Взнос — 50 000 коинов. При регистрации сумма резервируется, а не списывается.',
+                        'До заполнения турнира участник может отменить регистрацию: место освобождается, резерв 50 000 полностью снимается.',
+                        'Когда все места заняты, регистрация закрывается автоматически, состав фиксируется и ожидает назначения даты.',
+                    ],
+                ],
+                [
+                    'id'=>'schedule',
+                    'title'=>'Дата и участие',
+                    'items'=>[
+                        'После набора состава администратор назначает дату и время турнира.',
+                        'Участникам предусмотрены напоминания за день, за час и за 15 минут до начала.',
+                        'Турнирный зал открывается за 15 минут до старта. Сетка формируется случайно точно в момент начала.',
+                        'Отсутствующий участник остаётся в сетке и получает техническое поражение по турнирным правилам.',
+                    ],
+                ],
+                [
+                    'id'=>'start',
+                    'title'=>'Готовность и старт матча',
+                    'items'=>[
+                        'Перед первым матчем даётся 2 минуты на подтверждение «Я готов».',
+                        'После готовности обоих игроков поле блокируется до общего 10-секундного визуального, звукового и вибрационного отсчёта.',
+                        'Игровой таймер начинается только после окончания этого отсчёта.',
+                    ],
+                ],
+                [
+                    'id'=>'rounds',
+                    'title'=>'Раунды и ничьи',
+                    'items'=>[
+                        'Следующий раунд начинается после завершения всех матчей текущего раунда.',
+                        'Между раундами предусмотрен перерыв 5 минут.',
+                        'При ничьей повторный матч начинается через 1 минуту, стороны меняются, повторный взнос не резервируется.',
+                        'Турнир включает финал и отдельный матч за третье место.',
+                    ],
+                ],
+                [
+                    'id'=>'technical',
+                    'title'=>'Отключения и технические исходы',
+                    'items'=>[
+                        'При отключении одного игрока действует окно восстановления 60 секунд.',
+                        'При отключении обоих игроков предусмотрена отдельная ветка восстановления длительностью до 3 минут.',
+                        'Ручной выход, отсутствие обоих игроков и серверная/игровая неисправность обрабатываются отдельными техническими исходами турнира.',
+                        'При отмене или аварийной остановке турнира предусмотрен полный возврат взноса; результаты аннулируются с аудитом.',
+                    ],
+                ],
+                [
+                    'id'=>'rewards',
+                    'title'=>'Награды',
+                    'items'=>[
+                        '1 место: 200 000 коинов всего — возврат 50 000 взноса + 150 000 приз; Golden Ticket; корона чемпиона на 30 дней; постоянный значок победителя; чемпионская косметика; Зал славы; золотой кубок.',
+                        '2 место: 80 000 коинов всего — возврат 50 000 взноса + 30 000 приз; серебряная рамка на 30 дней; постоянный результат финалиста; серебряный кубок.',
+                        '3 место: возврат 50 000 взноса; бронзовая отметка на 30 дней; постоянный результат третьего места; бронзовый кубок.',
+                        'Остальным участникам взнос не возвращается, кроме предусмотренных веток отмены или аварийной остановки.',
+                        'Golden Ticket нельзя продать или передать. Он сохраняется до будущего Большого турнира; заранее не обещаются фиксированная дата или фиксированное число участников.',
+                    ],
+                ],
+                [
+                    'id'=>'immutability',
+                    'title'=>'Версия правил',
+                    'items'=>[
+                        'Согласие сохраняется вместе с точной версией правил, языком и временем принятия.',
+                        'Существенные изменения правил не применяются к уже открытому турниру молча: для них требуется отмена текущего турнира и создание нового.',
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    public static function canonicalRulesSha256(string $gameType, int $capacity): string
+    {
+        $json = json_encode(
+            self::canonicalRulesSnapshot($gameType, $capacity),
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+        );
+        return hash('sha256', $json);
+    }
+
     private function snapshotForRow(
         DatabaseConnectionInterface $db,
         array $row,
@@ -372,8 +556,9 @@ final class TournamentRegistrationService
         if ($mgwId !== null && trim($mgwId) !== '') {
             $rows = $db->fetchAll(
                 'SELECT registration_id,tournament_id,mgw_id,account_ref,attempt_no,
-                        registration_state,reservation_id,registered_at_utc,
-                        withdrawn_at_utc,updated_at_utc
+                        registration_state,reservation_id,
+                        rules_version,rules_language,rules_sha256,rules_accepted_at_utc,
+                        registered_at_utc,withdrawn_at_utc,updated_at_utc
                  FROM mgw_tournament_registrations
                  WHERE tournament_id=:tournament_id AND mgw_id=:mgw_id
                  ORDER BY attempt_no DESC LIMIT 1',
@@ -405,9 +590,18 @@ final class TournamentRegistrationService
                 'amount'=>(int)$row['entry_fee_amount'],
             ],
             'reward_snapshot'=>$this->decodeJson((string)$row['reward_snapshot_json']),
+            'rules'=>[
+                'version'=>(string)($row['rules_version'] ?? ''),
+                'language'=>(string)($row['rules_language'] ?? ''),
+                'sha256'=>(string)($row['rules_sha256'] ?? ''),
+                'snapshot'=>$this->decodeJson((string)($row['rules_snapshot_json'] ?? '')),
+            ],
             'state'=>(string)$row['tournament_state'],
+            'waiting_for_date'=>(string)$row['tournament_state'] === self::STATE_WAITING_FOR_DATE,
             'created_at_utc'=>(string)$row['created_at_utc'],
             'registration_opened_at_utc'=>$this->nullableText($row['registration_opened_at_utc'] ?? null, 32),
+            'registration_closed_at_utc'=>$this->nullableText($row['registration_closed_at_utc'] ?? null, 32),
+            'registration_closed_reason'=>$this->nullableText($row['registration_closed_reason'] ?? null, 32),
             'updated_at_utc'=>(string)$row['updated_at_utc'],
         ];
     }
@@ -419,6 +613,13 @@ final class TournamentRegistrationService
             'state'=>(string)$row['registration_state'],
             'attempt_no'=>(int)$row['attempt_no'],
             'reservation_id'=>(string)$row['reservation_id'],
+            'rules_consent'=>[
+                'accepted'=>trim((string)($row['rules_accepted_at_utc'] ?? '')) !== '',
+                'version'=>$this->nullableText($row['rules_version'] ?? null, 64),
+                'language'=>$this->nullableText($row['rules_language'] ?? null, 12),
+                'sha256'=>$this->nullableText($row['rules_sha256'] ?? null, 64),
+                'accepted_at_utc'=>$this->nullableText($row['rules_accepted_at_utc'] ?? null, 32),
+            ],
             'registered_at_utc'=>(string)$row['registered_at_utc'],
             'withdrawn_at_utc'=>$this->nullableText($row['withdrawn_at_utc'] ?? null, 32),
             'updated_at_utc'=>(string)$row['updated_at_utc'],
@@ -440,6 +641,99 @@ final class TournamentRegistrationService
             'available_amount'=>(int)$balance['available_amount'],
             'reserved_amount'=>(int)$balance['reserved_amount'],
         ];
+    }
+
+    private function assertTournamentRules(array $tournament): void
+    {
+        $version = trim((string)($tournament['rules_version'] ?? ''));
+        $language = trim((string)($tournament['rules_language'] ?? ''));
+        $json = trim((string)($tournament['rules_snapshot_json'] ?? ''));
+        $sha256 = trim((string)($tournament['rules_sha256'] ?? ''));
+        if ($version === '' || $language === '' || $json === '' || $sha256 === '') {
+            throw new RuntimeException('Правила турнира ещё не подготовлены.');
+        }
+        if (!hash_equals(hash('sha256', $json), $sha256)) {
+            throw new RuntimeException('Снимок правил турнира повреждён.');
+        }
+        $snapshot = $this->decodeJson($json);
+        if ((string)($snapshot['version'] ?? '') !== $version
+            || (string)($snapshot['language'] ?? '') !== $language) {
+            throw new RuntimeException('Версия правил турнира не совпадает со снимком.');
+        }
+    }
+
+    private function validatedRulesConsent(array $tournament, ?array $consent): array
+    {
+        $this->assertTournamentRules($tournament);
+        if (!is_array($consent) || empty($consent['accepted'])) {
+            throw new RuntimeException('Перед регистрацией подтвердите согласие с правилами турнира.');
+        }
+
+        $expected = [
+            'version'=>(string)$tournament['rules_version'],
+            'language'=>(string)$tournament['rules_language'],
+            'sha256'=>(string)$tournament['rules_sha256'],
+        ];
+        $actual = [
+            'version'=>trim((string)($consent['version'] ?? '')),
+            'language'=>trim((string)($consent['language'] ?? '')),
+            'sha256'=>trim((string)($consent['sha256'] ?? '')),
+        ];
+        foreach ($expected as $key=>$value) {
+            if ($actual[$key] === '' || !hash_equals($value, $actual[$key])) {
+                throw new RuntimeException('Правила турнира обновились. Откройте их заново и подтвердите актуальную версию.');
+            }
+        }
+        return $expected;
+    }
+
+    private function closeRegistrationIfReady(
+        DatabaseConnectionInterface $db,
+        array $tournament,
+        string $closedAt
+    ): array {
+        if ((string)$tournament['tournament_state'] !== self::STATE_REGISTRATION_OPEN) {
+            return [$tournament, false];
+        }
+
+        $tournamentId = (string)$tournament['tournament_id'];
+        $registeredCount = $this->registeredCount($db, $tournamentId);
+        if ($registeredCount < (int)$tournament['capacity']) {
+            return [$tournament, false];
+        }
+
+        $acceptedCount = (int)$db->fetchValue(
+            'SELECT COUNT(*) FROM mgw_tournament_registrations
+             WHERE tournament_id=:tournament_id
+               AND registration_state=:state
+               AND rules_accepted_at_utc IS NOT NULL',
+            ['tournament_id'=>$tournamentId,'state'=>self::REGISTRATION_REGISTERED]
+        );
+        if ($acceptedCount !== $registeredCount) {
+            return [$tournament, false];
+        }
+
+        $updated = $db->execute(
+            'UPDATE mgw_tournaments
+             SET tournament_state=:state,
+                 registration_closed_at_utc=:closed_at,
+                 registration_closed_reason=:reason,
+                 updated_at_utc=:updated_at
+             WHERE tournament_id=:tournament_id
+               AND tournament_state=:expected_state',
+            [
+                'state'=>self::STATE_WAITING_FOR_DATE,
+                'closed_at'=>$closedAt,
+                'reason'=>'full',
+                'updated_at'=>$closedAt,
+                'tournament_id'=>$tournamentId,
+                'expected_state'=>self::STATE_REGISTRATION_OPEN,
+            ]
+        );
+        if ($updated !== 1) {
+            throw new RuntimeException('Состояние регистрации изменилось одновременно.');
+        }
+        return [$this->tournamentRow($db, $tournamentId, false), true];
     }
 
     private function activeTournamentRow(DatabaseConnectionInterface $db, bool $lock): array
