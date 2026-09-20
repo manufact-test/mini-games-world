@@ -64,6 +64,8 @@ foreach ([
     'const insufficient = !registered && available < fee;',
     'Недостаточно коинов',
     'Можно регистрироваться.',
+    'state.user = result.user;',
+    'renderBalances(state.user);',
 ] as $needle) {
     $assertTrue(str_contains($source['screen'], $needle), 'Player Tournament corrective missing: ' . $needle);
 }
@@ -119,7 +121,7 @@ $assertTrue(
     'Corrective release must force a fresh Tournament Admin script.'
 );
 
-if ($assertions < 31) {
+if ($assertions < 33) {
     throw new RuntimeException('MVP-21.1 manual acceptance contract coverage is incomplete.');
 }
 fwrite(STDOUT, "Mvp21_1TournamentManualAcceptanceContractTest: {$assertions} assertions passed\n");
