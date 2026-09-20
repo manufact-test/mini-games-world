@@ -40,11 +40,11 @@ final class SeasonLifecycleService
         $this->calendar ??= new SeasonCalendar();
     }
 
-    public function reconcile(?DateTimeImmutable $now = null): array
+    public function reconcile(?DateTimeImmutable $now = null, bool $allowCompletion = true): array
     {
         $now = $this->utcNow($now);
 
-        return $this->database->transaction(function (DatabaseConnectionInterface $database) use ($now): array {
+        return $this->database->transaction(function (DatabaseConnectionInterface $database) use ($now, $allowCompletion): array {
             $control = $this->controlForUpdate($database);
             $summary = [
                 'competition_state' => $control['competition_state'],
@@ -106,11 +106,20 @@ final class SeasonLifecycleService
                 $this->setCurrentSeason($database, $nextSeasonId, $now);
 
                 if ($readiness['package_state'] === self::PACKAGE_READY) {
-                    $this->completeFinalization($database, (string)$current['season_id'], $nextSeasonId, $boundary, $now);
+                    $completion = $allowCompletion
+                        ? $this->completeFinalization(
+                            $database,
+                            (string)$current['season_id'],
+                            $nextSeasonId,
+                            $boundary,
+                            $now
+                        )
+                        : ['state' => self::OP_FINALIZING, 'reason' => 'projection_catch_up'];
                     $summary['boundaries'][] = [
                         'ending_season_id' => (string)$current['season_id'],
                         'target_season_id' => $nextSeasonId,
-                        'state' => self::OP_COMPLETED,
+                        'state' => (string)$completion['state'],
+                        'reason' => $completion['reason'] ?? null,
                     ];
                 } else {
                     $this->blockFinalizationForAssets($database, (string)$current['season_id'], $nextSeasonId, $boundary, $now);
@@ -133,7 +142,7 @@ final class SeasonLifecycleService
                 $now
             );
             $summary['reminders_due'] = $this->refreshReminders($database, $current, $now);
-            $summary['recovered'] = $this->recoverReadyFinalizations($database, $now);
+            $summary['recovered'] = $this->recoverReadyFinalizations($database, $now, $allowCompletion);
             $summary['current_season_id'] = $control['current_season_id'];
 
             return $summary + ['status' => 'active'];
@@ -354,14 +363,22 @@ final class SeasonLifecycleService
         return $due;
     }
 
-    private function recoverReadyFinalizations(DatabaseConnectionInterface $database, DateTimeImmutable $now): array
-    {
+    private function recoverReadyFinalizations(
+        DatabaseConnectionInterface $database,
+        DateTimeImmutable $now,
+        bool $allowCompletion
+    ): array {
+        if (!$allowCompletion) return [];
+
         $rows = $database->fetchAll(
-            'SELECT ending_season_id, target_season_id, boundary_at_utc
+            'SELECT ending_season_id, target_season_id, boundary_at_utc, operation_state
              FROM mgw_season_boundary_operations
-             WHERE operation_state = :state
+             WHERE operation_state IN (:assets_required, :finalizing)
              ORDER BY boundary_at_utc ASC',
-            ['state' => self::OP_ASSETS_REQUIRED]
+            [
+                'assets_required' => self::OP_ASSETS_REQUIRED,
+                'finalizing' => self::OP_FINALIZING,
+            ]
         );
 
         $recovered = [];
@@ -371,14 +388,16 @@ final class SeasonLifecycleService
             $package = $this->rewardPackage($database, $targetSeasonId, true);
             if ($package['package_state'] !== self::PACKAGE_READY) continue;
 
-            $this->completeFinalization(
+            $completion = $this->completeFinalization(
                 $database,
                 (string)$row['ending_season_id'],
                 $targetSeasonId,
                 (string)$row['boundary_at_utc'],
                 $now
             );
-            $recovered[] = (string)$row['ending_season_id'];
+            if (($completion['state'] ?? null) === self::OP_COMPLETED) {
+                $recovered[] = (string)$row['ending_season_id'];
+            }
         }
         return $recovered;
     }
@@ -486,7 +505,32 @@ final class SeasonLifecycleService
         string $targetSeasonId,
         string $boundary,
         DateTimeImmutable $now
-    ): void {
+    ): array {
+        $awards = null;
+        if (class_exists('SeasonalAwardService')) {
+            $awards = (new SeasonalAwardService($database))->finalizeSeason(
+                $endingSeasonId,
+                $targetSeasonId,
+                'season_close',
+                'system:season_finalization',
+                $now
+            );
+            if (($awards['status'] ?? null) !== 'completed') {
+                $this->markFinalizationPending(
+                    $database,
+                    $endingSeasonId,
+                    $targetSeasonId,
+                    'rating_projection_pending',
+                    $now
+                );
+                return [
+                    'state' => self::OP_FINALIZING,
+                    'reason' => 'rating_projection_pending',
+                    'awards' => $awards,
+                ];
+            }
+        }
+
         $nowText = $now->format('Y-m-d H:i:s.u');
         $database->execute(
             'UPDATE mgw_rating_seasons
@@ -517,6 +561,47 @@ final class SeasonLifecycleService
                 'target_season_id' => $targetSeasonId,
                 'state' => self::OP_COMPLETED,
                 'completed_at' => $nowText,
+                'updated_at' => $nowText,
+                'ending_season_id' => $endingSeasonId,
+            ]
+        );
+
+        return ['state' => self::OP_COMPLETED, 'reason' => null, 'awards' => $awards];
+    }
+
+    private function markFinalizationPending(
+        DatabaseConnectionInterface $database,
+        string $endingSeasonId,
+        string $targetSeasonId,
+        string $reason,
+        DateTimeImmutable $now
+    ): void {
+        $nowText = $now->format('Y-m-d H:i:s.u');
+        $database->execute(
+            'UPDATE mgw_rating_seasons
+             SET season_state = :state,
+                 finalization_reason = :reason,
+                 updated_at_utc = :updated_at
+             WHERE season_id = :season_id',
+            [
+                'state' => self::SEASON_FINALIZING,
+                'reason' => $reason,
+                'updated_at' => $nowText,
+                'season_id' => $endingSeasonId,
+            ]
+        );
+        $database->execute(
+            'UPDATE mgw_season_boundary_operations
+             SET target_season_id = :target_season_id,
+                 operation_state = :state,
+                 block_reason = :reason,
+                 completed_at_utc = NULL,
+                 updated_at_utc = :updated_at
+             WHERE ending_season_id = :ending_season_id',
+            [
+                'target_season_id' => $targetSeasonId,
+                'state' => self::OP_FINALIZING,
+                'reason' => $reason,
                 'updated_at' => $nowText,
                 'ending_season_id' => $endingSeasonId,
             ]
