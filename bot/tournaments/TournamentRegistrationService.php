@@ -56,7 +56,7 @@ final class TournamentRegistrationService
             $snapshot = self::canonicalRewardSnapshot();
             $rulesSnapshot = self::canonicalRulesSnapshot($gameType, $capacity);
             $rulesJson = $this->encodeJson($rulesSnapshot);
-            $rulesSha256 = hash('sha256', $rulesJson);
+            $rulesSha256 = self::rulesSha256FromJson($rulesJson);
 
             $db->execute(
                 'INSERT INTO mgw_tournaments (
@@ -542,7 +542,28 @@ final class TournamentRegistrationService
             self::canonicalRulesSnapshot($gameType, $capacity),
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
         );
-        return hash('sha256', $json);
+        return self::rulesSha256FromJson($json);
+    }
+
+    private static function rulesSha256FromJson(string $json): string
+    {
+        $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        $canonical = self::canonicalizeJsonValue($decoded);
+        $encoded = json_encode(
+            $canonical,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+        );
+        return hash('sha256', $encoded);
+    }
+
+    private static function canonicalizeJsonValue(mixed $value): mixed
+    {
+        if (!is_array($value)) return $value;
+        if (!array_is_list($value)) ksort($value, SORT_STRING);
+        foreach ($value as $key=>$item) {
+            $value[$key] = self::canonicalizeJsonValue($item);
+        }
+        return $value;
     }
 
     private function snapshotForRow(
@@ -652,7 +673,7 @@ final class TournamentRegistrationService
         if ($version === '' || $language === '' || $json === '' || $sha256 === '') {
             throw new RuntimeException('Правила турнира ещё не подготовлены.');
         }
-        if (!hash_equals(hash('sha256', $json), $sha256)) {
+        if (!hash_equals(self::rulesSha256FromJson($json), $sha256)) {
             throw new RuntimeException('Снимок правил турнира повреждён.');
         }
         $snapshot = $this->decodeJson($json);
