@@ -61,14 +61,27 @@ foreach ([
     "if (action === 'leave' && state === 'registered')",
     'errorMessage = humanizeTournamentError',
     'renderTournamentSnapshot(errorMessage);',
-    'Доступно коинов:',
-    'В резерве турнира:',
+    'const insufficient = !registered && available < fee;',
+    'Недостаточно коинов',
+    'Можно регистрироваться.',
 ] as $needle) {
     $assertTrue(str_contains($source['screen'], $needle), 'Player Tournament corrective missing: ' . $needle);
 }
 $assertTrue(
     !str_contains($source['screen'], 'Зарезервировано:'),
     'Player Tournament must not expose ambiguous global reserved copy.'
+);
+$assertTrue(
+    !str_contains($source['screen'], 'Регистрация, зарезервированный взнос и текущий состав турнира.'),
+    'Player Tournament must not repeat the removed subtitle.'
+);
+$assertTrue(
+    !str_contains($source['screen'], 'Доступно коинов:'),
+    'Player Tournament must not duplicate the global coin balance.'
+);
+$assertTrue(
+    !str_contains($source['screen'], 'В резерве турнира:'),
+    'Player Tournament must not repeat reservation money copy under the prizes.'
 );
 $assertTrue(
     !str_contains(
@@ -93,12 +106,12 @@ $assertTrue(
 );
 
 $assertTrue(
-    str_contains($source['manifest'], 'client.js?v=1140')
-    && str_contains($source['manifest'], 'tournament-registration-manual-fix-v2'),
+    str_contains($source['manifest'], 'client.js?v=1141')
+    && str_contains($source['manifest'], 'tournament-registration-runtime-fix-v3'),
     'Corrective release must force a fresh API client module.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=7'),
+    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=8'),
     'Corrective release must force a fresh Tournament screen module.'
 );
 $assertTrue(
@@ -106,7 +119,7 @@ $assertTrue(
     'Corrective release must force a fresh Tournament Admin script.'
 );
 
-if ($assertions < 28) {
+if ($assertions < 31) {
     throw new RuntimeException('MVP-21.1 manual acceptance contract coverage is incomplete.');
 }
 fwrite(STDOUT, "Mvp21_1TournamentManualAcceptanceContractTest: {$assertions} assertions passed\n");
