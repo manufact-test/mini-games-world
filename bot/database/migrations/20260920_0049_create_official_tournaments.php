@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS mgw_tournament_registrations (
     registered_at_utc DATETIME(6) NOT NULL,
     withdrawn_at_utc DATETIME(6) NULL,
     updated_at_utc DATETIME(6) NOT NULL,
-    UNIQUE KEY uq_mgw_tournament_registration_user (tournament_id, mgw_id),
+    UNIQUE KEY uq_mgw_tournament_registration_attempt (tournament_id, mgw_id, attempt_no),
     UNIQUE KEY uq_mgw_tournament_registration_reservation (reservation_id),
     INDEX idx_mgw_tournament_registration_state (tournament_id, registration_state, registered_at_utc),
     INDEX idx_mgw_tournament_registration_user_state (mgw_id, registration_state, updated_at_utc),
@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS mgw_tournament_registrations (
     registered_at_utc TEXT NOT NULL,
     withdrawn_at_utc TEXT NULL,
     updated_at_utc TEXT NOT NULL,
-    UNIQUE (tournament_id, mgw_id),
+    UNIQUE (tournament_id, mgw_id, attempt_no),
     FOREIGN KEY (tournament_id) REFERENCES mgw_tournaments (tournament_id) ON DELETE RESTRICT ON UPDATE RESTRICT,
     FOREIGN KEY (mgw_id) REFERENCES mgw_users (mgw_id) ON DELETE RESTRICT ON UPDATE RESTRICT,
     FOREIGN KEY (reservation_id) REFERENCES mgw_reservations (reservation_id) ON DELETE RESTRICT ON UPDATE RESTRICT
