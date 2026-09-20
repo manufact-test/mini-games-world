@@ -169,12 +169,24 @@ $addParticipation = static function (
     );
 };
 
-// One rated human match is sufficient; a win is deliberately NOT required.
-$addParticipation($database,'a-q1-loss',$userA,'2026-q1','tictactoe','loss');
-$addParticipation($database,'b-q2-loss',$userB,'2026-q2','chess','loss');
-$addParticipation($database,'a-q3-draw',$userA,'2026-q3','go','draw');
-$addParticipation($database,'a-q4-win',$userA,'2026-q4','domino','win');
-$addParticipation($database,'dev-q1',$dev,'2026-q1','tictactoe','win');
+// Canonical yearly-fragment eligibility is season-wide: at least five rated
+// human matches plus at least one human win in that official quarter.
+foreach (range(1,5) as $i) {
+    $addParticipation($database,'a-q1-' . $i,$userA,'2026-q1','tictactoe',$i === 5 ? 'win' : 'loss');
+}
+foreach (range(1,5) as $i) {
+    $addParticipation($database,'b-q2-' . $i,$userB,'2026-q2','chess','loss');
+}
+foreach (range(1,5) as $i) {
+    $addParticipation($database,'a-q3-' . $i,$userA,'2026-q3','go',$i === 5 ? 'win' : 'draw');
+}
+$addParticipation($database,'b-q3-one-win',$userB,'2026-q3','go','win');
+foreach (range(1,5) as $i) {
+    $addParticipation($database,'a-q4-' . $i,$userA,'2026-q4','domino',$i === 5 ? 'win' : 'loss');
+}
+foreach (range(1,5) as $i) {
+    $addParticipation($database,'dev-q1-' . $i,$dev,'2026-q1','tictactoe',$i === 5 ? 'win' : 'loss');
+}
 
 $service = new YearlyMedalService($database);
 
@@ -189,7 +201,7 @@ $q1 = $service->reconcileSeasonFragment(
 );
 $assertSame('reconciled', $q1['status'], 'Q1 fragment reconciliation must succeed.');
 $assertSame(1, $q1['eligible_count'], 'Exactly one real player must qualify in Q1.');
-$assertSame(1, $q1['granted'], 'One rated loss must still unlock the quarter fragment.');
+$assertSame(1, $q1['granted'], 'Five rated matches with at least one win must unlock the quarter fragment.');
 $assertSame(0, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_yearly_medal_fragments WHERE mgw_id='{$dev}'"), 'Development identity must never receive an official medal fragment.');
 
 $q1Repeat = $service->reconcileSeasonFragment(
@@ -204,7 +216,7 @@ $q2 = $service->reconcileSeasonFragment(
     '2026-q2', [], 'season_close', 'system:test',
     new DateTimeImmutable('2026-07-01 00:00:00', new DateTimeZone('UTC'))
 );
-$assertSame(1, $q2['eligible_count'], 'Q2 must award only the player who actually participated in Q2.');
+$assertSame(0, $q2['eligible_count'], 'Five rated matches without a win must not unlock Q2.');
 
 $q3 = $service->reconcileSeasonFragment(
     '2026-q3', [], 'season_close', 'system:test',
@@ -214,8 +226,8 @@ $q4 = $service->reconcileSeasonFragment(
     '2026-q4', [], 'season_close', 'system:test',
     new DateTimeImmutable('2027-01-01 00:00:00', new DateTimeZone('UTC'))
 );
-$assertSame(1, $q3['eligible_count'], 'A Q3 rated draw must unlock Q3 for the participating player.');
-$assertSame(1, $q4['eligible_count'], 'A Q4 rated win must unlock Q4 for the participating player.');
+$assertSame(1, $q3['eligible_count'], 'Q3 must include only the player with five matches and a win; one win alone is insufficient.');
+$assertSame(1, $q4['eligible_count'], 'Q4 five-match participation with a win must unlock Q4.');
 
 $userAView = $service->userSnapshot($userA, new DateTimeImmutable('2026-12-15 00:00:00', new DateTimeZone('UTC')));
 $assertSame(true, $userAView['visible'], 'ACTIVE player with fragments must have a Profile medal surface.');
@@ -224,11 +236,11 @@ $assertSame(3, $userAView['featured']['fragment_count'], 'Missing season must le
 $assertSame(false, $userAView['featured']['complete'], 'Annual medal is incomplete while any quarter is missing.');
 
 $userBView = $service->userSnapshot($userB, new DateTimeImmutable('2026-12-15 00:00:00', new DateTimeZone('UTC')));
-$assertSame([2], $userBView['featured']['unlocked_quarters'], 'A player with only Q2 participation must own only Q2 fragment.');
+$assertSame([], $userBView['featured']['unlocked_quarters'], 'A player who never reaches both season thresholds must own no yearly fragment.');
 
 // The service has no Store/purchase path. A genuine late projection/correction can
 // reconcile historical participation, but a purchase can never fabricate a part.
-$assertSame(0, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_yearly_medal_fragments WHERE mgw_id='{$userA}' AND quarter=2"), 'Missing Q2 cannot appear without Q2 rated participation.');
+$assertSame(0, (int)$database->fetchValue("SELECT COUNT(*) FROM mgw_yearly_medal_fragments WHERE mgw_id='{$userA}' AND quarter=2"), 'Missing Q2 cannot appear without qualifying Q2 participation.');
 
 // Cross-year finalization requires the annual design for the new year as part of
 // readiness; one design is annual, not one new four-part design per quarter.
@@ -270,6 +282,6 @@ $assertTrue(
         && !str_contains((string)$serviceSource, 'mgw_inventory_items'),
     'There must be no retroactive medal-part purchase path.'
 );
-$assertTrue($assertions >= 25, 'MVP-20.6 focused test must cover one-match unlock, holes, annual readiness, PRESEASON and idempotency.');
+$assertTrue($assertions >= 25, 'MVP-20.6 focused test must cover five-match/one-win eligibility, holes, annual readiness, PRESEASON and idempotency.');
 
 fwrite(STDOUT, "Mvp20_6YearlyMedalTest: {$assertions} assertions passed\n");

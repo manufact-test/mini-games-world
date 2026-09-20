@@ -34,8 +34,8 @@ $assertTrue(str_contains($migration, 'mgw_yearly_medal_audit'), 'Fragment correc
 $assertTrue(str_contains($migration, 'annual-2026-neon-orbit'), 'The first annual medal must have a stable 2026 identity/design.');
 
 $assertTrue(str_contains($medal, 'mgw_game_rating_participation'), 'Exactly real rated-human participation must drive fragment eligibility.');
-$assertTrue(str_contains($medal, 'SELECT DISTINCT p.mgw_id'), 'One rated match in any game must be sufficient for the quarter.');
-$assertTrue(!str_contains($medal, "result_code = 'win'"), 'A win must not be required for yearly medal fragment eligibility.');
+$assertTrue(str_contains($medal, 'COUNT(DISTINCT p.match_id) >= 5'), 'Yearly fragment eligibility must require at least five rated human matches in the season.');
+$assertTrue(str_contains($medal, "p.result_code = 'win'"), 'Yearly fragment eligibility must require at least one human win in the season.');
 $assertTrue(str_contains($medal, "dev_identity.provider = :development_provider"), 'Staging development identities must be excluded from official fragments.');
 $assertTrue(str_contains($medal, 'eligibility_fingerprint'), 'Repeated eligibility reconciliation must be idempotent.');
 $assertTrue(str_contains($medal, "FRAGMENT_REVOKED = 'revoked'"), 'Reviewed corrections must be able to revoke invalid fragment eligibility.');
@@ -76,7 +76,7 @@ $assertTrue(str_contains($css, 'profile-v2-yearly-medal-piece.q1') && str_contai
 
 $decodedLocale = json_decode($locale, true, 512, JSON_THROW_ON_ERROR);
 $assertTrue(($decodedLocale['profile']['yearly_medal_title'] ?? null) === 'Годовая медаль', 'Russian Profile copy must name the yearly medal.');
-$assertTrue(str_contains((string)($decodedLocale['profile']['yearly_medal_note'] ?? ''), 'рейтинговый матч'), 'Profile copy must explain the one-rated-match unlock rule.');
+$assertTrue(str_contains((string)($decodedLocale['profile']['yearly_medal_note'] ?? ''), '5 рейтинговых матчей') && str_contains((string)($decodedLocale['profile']['yearly_medal_note'] ?? ''), '1 побед'), 'Profile copy must explain the five-match/one-win unlock rule.');
 
 $assertTrue(str_contains($manifest, 'mvp20_6=yearly-medal-v1'), 'Version manifest must publish the fresh yearly-medal Profile/CSS identity.');
 
