@@ -94,18 +94,28 @@ jobs:
           while IFS= read -r path; do
             case "$path" in
               .github/workflows/mvp20-1-per-game-visible-rating.yml|\
+              .github/workflows/mvp20-3-leaderboards-antifarming.yml|\
               bot/database/migrations/20260919_0042_create_per_game_visible_rating.php|\
               bot/ratings/PerGameRatingService.php|\
               bot/ratings/PerGameRatingRuntimeBridge.php|\
               bot/core/bootstrap.php|\
               bot/profile-v2.php|\
+              bot/leaderboard.php|\
+              bot/ratings/LeaderboardService.php|\
               bot/helpers/WebAppLaunchUrl.php|\
               bot/tests/Mvp20_1PerGameVisibleRatingTest.php|\
               bot/tests/Mvp20_1VisibleRatingIntegrationContractTest.php|\
+              bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php|\
+              bot/tests/Mvp20_3LeaderboardIntegrationContractTest.php|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
               app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/js/main-v110-handoff-shell.js|\
               app/assets/css/main.css|\
               app/locales/ru.json|\
               app/runtime/client/version-manifest.php|\
+              docs/MGW_SMALL_CANONICAL_2026-09-20_MVP20_3_ARENA_LEADERBOARD_CORRECTIVE_CHECKPOINT.md|\
+              docs/MGW_CURRENT_SHORT_ROADMAP_2026-09-20_MVP20_3_ARENA_CORRECTIVE_IN_PROGRESS.md|\
               app/v110.php)
                 ;;
               *)
