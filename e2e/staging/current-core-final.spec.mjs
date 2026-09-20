@@ -111,12 +111,18 @@ async function testProbePost(player, path, data) {
     data: { ...data, initData: '', ...transport },
     timeout: 15_000,
   });
-  return { status: response.status(), payload: await response.json().catch(() => null) };
+  const raw = await response.text();
+  let payload = null;
+  try { payload = raw !== '' ? JSON.parse(raw) : null; } catch {}
+  return { status: response.status(), payload, raw };
 }
 
 async function transportAction(player, path, data, label) {
   const result = await testProbePost(player, path, data);
-  expect(result.status, `${label}: ${result.payload?.error || 'no error'}`).toBe(200);
+  const detail = result.payload?.error
+    || result.raw?.replace(/\s+/g, ' ').slice(0, 500)
+    || 'empty response';
+  expect(result.status, `${label}: ${detail}`).toBe(200);
   expect(result.payload?.ok, label).toBe(true);
   return result.payload;
 }
