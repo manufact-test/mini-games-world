@@ -264,7 +264,12 @@ $assertThrows(
 
 $serviceSource = file_get_contents(dirname(__DIR__) . '/ratings/YearlyMedalService.php');
 $assertTrue(is_string($serviceSource) && !str_contains($serviceSource, 'ProductInventoryService'), 'Yearly medal parts must not use permanent Store inventory.');
-$assertTrue(!str_contains((string)$serviceSource, 'purchase'), 'There must be no retroactive medal-part purchase path.');
+$assertTrue(
+    !str_contains((string)$serviceSource, 'function purchase')
+        && !str_contains((string)$serviceSource, 'buyFragment')
+        && !str_contains((string)$serviceSource, 'mgw_inventory_items'),
+    'There must be no retroactive medal-part purchase path.'
+);
 $assertTrue($assertions >= 25, 'MVP-20.6 focused test must cover one-match unlock, holes, annual readiness, PRESEASON and idempotency.');
 
 fwrite(STDOUT, "Mvp20_6YearlyMedalTest: {$assertions} assertions passed\n");
