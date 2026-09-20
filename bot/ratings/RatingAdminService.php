@@ -45,7 +45,7 @@ final class RatingAdminService
             'competition' => $control,
             'current_season' => $season === null ? null : $this->publicSeason($season),
             'metrics' => $season === null ? $this->emptyMetrics($seasonId) : $this->seasonMetrics($seasonId),
-            'active_exclusions' => $this->activeExclusions($seasonId === PerGameRatingService::PRESEASON_ID ? null : $seasonId),
+            'active_exclusions' => $this->activeExclusions(null),
             'recent_jobs' => $this->recentJobs(20),
             'reason_codes' => self::REASON_CODES,
         ];
