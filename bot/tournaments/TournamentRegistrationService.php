@@ -9,6 +9,7 @@ final class TournamentRegistrationService
     public const STATE_DRAFT = 'draft';
     public const STATE_REGISTRATION_OPEN = 'registration_open';
     public const STATE_WAITING_FOR_DATE = 'waiting_for_date';
+    public const STATE_SCHEDULED = 'scheduled';
     public const RULES_VERSION = 'official-tournament-rules-v2';
     public const RULES_LANGUAGE = 'ru';
     public const REGISTRATION_REGISTERED = 'registered';
@@ -144,6 +145,125 @@ final class TournamentRegistrationService
 
             return $this->snapshotForRow($db, $this->tournamentRow($db, $tournamentId, false), null, null);
         });
+    }
+
+    public function assignFinalDate(
+        string $tournamentId,
+        string $startAtUtc,
+        string $actorRef,
+        ?DateTimeImmutable $now = null
+    ): array {
+        $tournamentId = $this->requiredText($tournamentId, 64, 'tournament id');
+        $actorRef = $this->requiredText($actorRef, 191, 'actor');
+        $startAtUtc = trim($startAtUtc);
+        if ($startAtUtc === '') {
+            throw new InvalidArgumentException('Укажите дату и время начала турнира.');
+        }
+
+        $utc = new DateTimeZone('UTC');
+        $assignedMoment = ($now ?? new DateTimeImmutable('now', $utc))->setTimezone($utc);
+        try {
+            $startMoment = (new DateTimeImmutable($startAtUtc, $utc))->setTimezone($utc);
+        } catch (Throwable) {
+            throw new InvalidArgumentException('Некорректная дата или время начала турнира.');
+        }
+        if ($startMoment <= $assignedMoment) {
+            throw new InvalidArgumentException('Дата начала турнира должна быть в будущем.');
+        }
+
+        $assignedAt = $assignedMoment->format('Y-m-d H:i:s.u');
+        $scheduledStartAt = $startMoment->format('Y-m-d H:i:s.u');
+
+        return $this->database->transaction(function (DatabaseConnectionInterface $db) use (
+            $tournamentId,
+            $actorRef,
+            $assignedAt,
+            $scheduledStartAt
+        ): array {
+            $row = $this->tournamentRow($db, $tournamentId, true);
+            if ((string)$row['active_slot'] !== self::ACTIVE_SLOT) {
+                throw new RuntimeException('Tournament is not the active official tournament.');
+            }
+
+            $state = (string)$row['tournament_state'];
+            $existingStart = $this->nullableText($row['scheduled_start_at_utc'] ?? null, 32);
+            if ($state === self::STATE_SCHEDULED || $existingStart !== null) {
+                if ($state === self::STATE_SCHEDULED
+                    && $existingStart !== null
+                    && hash_equals($existingStart, $scheduledStartAt)) {
+                    return $this->snapshotForRow($db, $row, null, null);
+                }
+                throw new RuntimeException('Дата турнира уже назначена. Перенос или задержка не входят в MVP-21.3.');
+            }
+            if ($state !== self::STATE_WAITING_FOR_DATE) {
+                throw new RuntimeException('Назначить дату можно только после полного набора состава.');
+            }
+
+            $registeredCount = $this->registeredCount($db, $tournamentId);
+            if ($registeredCount !== (int)$row['capacity']) {
+                throw new RuntimeException('Дата турнира назначается только для полностью набранного состава.');
+            }
+            $acceptedCount = (int)$db->fetchValue(
+                'SELECT COUNT(*) FROM mgw_tournament_registrations
+                 WHERE tournament_id=:tournament_id
+                   AND registration_state=:state
+                   AND rules_accepted_at_utc IS NOT NULL',
+                ['tournament_id'=>$tournamentId,'state'=>self::REGISTRATION_REGISTERED]
+            );
+            if ($acceptedCount !== $registeredCount) {
+                throw new RuntimeException('Не у всех участников зафиксировано согласие с правилами турнира.');
+            }
+
+            $updated = $db->execute(
+                'UPDATE mgw_tournaments
+                 SET tournament_state=:state,
+                     scheduled_start_at_utc=:scheduled_start_at_utc,
+                     scheduled_by_ref=:scheduled_by_ref,
+                     scheduled_at_utc=:scheduled_at_utc,
+                     updated_at_utc=:updated_at_utc
+                 WHERE tournament_id=:tournament_id
+                   AND tournament_state=:expected_state
+                   AND scheduled_start_at_utc IS NULL',
+                [
+                    'state'=>self::STATE_SCHEDULED,
+                    'scheduled_start_at_utc'=>$scheduledStartAt,
+                    'scheduled_by_ref'=>$actorRef,
+                    'scheduled_at_utc'=>$assignedAt,
+                    'updated_at_utc'=>$assignedAt,
+                    'tournament_id'=>$tournamentId,
+                    'expected_state'=>self::STATE_WAITING_FOR_DATE,
+                ]
+            );
+            if ($updated !== 1) {
+                throw new RuntimeException('Дата турнира изменилась одновременно с запросом.');
+            }
+
+            return $this->snapshotForRow(
+                $db,
+                $this->tournamentRow($db, $tournamentId, false),
+                null,
+                null
+            );
+        });
+    }
+
+    public function registeredParticipantMgwIds(string $tournamentId): array
+    {
+        $tournamentId = $this->requiredText($tournamentId, 64, 'tournament id');
+        $this->tournamentRow($this->database, $tournamentId, false);
+        $rows = $this->database->fetchAll(
+            'SELECT mgw_id FROM mgw_tournament_registrations
+             WHERE tournament_id=:tournament_id AND registration_state=:state
+             ORDER BY registered_at_utc ASC, registration_id ASC',
+            ['tournament_id'=>$tournamentId,'state'=>self::REGISTRATION_REGISTERED]
+        );
+        $ids = [];
+        foreach ($rows as $row) {
+            if (!is_array($row)) continue;
+            $mgwId = trim((string)($row['mgw_id'] ?? ''));
+            if ($mgwId !== '') $ids[$mgwId] = $mgwId;
+        }
+        return array_values($ids);
     }
 
     public function snapshot(?string $mgwId = null, ?string $accountRef = null): array
@@ -626,6 +746,10 @@ final class TournamentRegistrationService
             ],
             'state'=>(string)$row['tournament_state'],
             'waiting_for_date'=>(string)$row['tournament_state'] === self::STATE_WAITING_FOR_DATE,
+            'scheduled'=>(string)$row['tournament_state'] === self::STATE_SCHEDULED,
+            'scheduled_start_at_utc'=>$this->nullableText($row['scheduled_start_at_utc'] ?? null, 32),
+            'scheduled_by_ref'=>$this->nullableText($row['scheduled_by_ref'] ?? null, 191),
+            'scheduled_at_utc'=>$this->nullableText($row['scheduled_at_utc'] ?? null, 32),
             'created_at_utc'=>(string)$row['created_at_utc'],
             'registration_opened_at_utc'=>$this->nullableText($row['registration_opened_at_utc'] ?? null, 32),
             'registration_closed_at_utc'=>$this->nullableText($row['registration_closed_at_utc'] ?? null, 32),
