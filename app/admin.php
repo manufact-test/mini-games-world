@@ -14,7 +14,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Admin</title>
-  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=3&replay=17-6">
+  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=4&replay=17-6&mvp20_8=rating-admin">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="./assets/js/admin-shell.js?v=4&replay=17-6&test-coins=staging" defer></script>
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
