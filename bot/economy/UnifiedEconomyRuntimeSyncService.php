@@ -71,7 +71,9 @@ final class UnifiedEconomyRuntimeSyncService
             throw new RuntimeException('Unified economy runtime sync did not converge to the canonical balance.');
         }
         foreach ($verification['items'] as $item) {
-            if ((int)$item['source_amount'] === 0 && (int)$item['database_amount'] === 0) continue;
+            if ((int)$item['source_amount'] === 0
+                && (int)$item['database_amount'] === 0
+                && (int)($item['database_reserved_amount'] ?? 0) === 0) continue;
             $integrity = $this->integrity->verifyAccountAsset(
                 (string)$item['account_ref'],
                 UnifiedBalanceMigrationRule::TARGET_ASSET
@@ -88,6 +90,7 @@ final class UnifiedEconomyRuntimeSyncService
             'source_user_count' => $verification['source_user_count'],
             'source_total' => $verification['source_total'],
             'database_total' => $verification['database_total'],
+            'database_reserved_total' => $verification['database_reserved_total'],
             'planned_delta_count' => $plan['planned_delta_count'],
             'applied_delta_count' => $applied,
             'replayed_delta_count' => $replayed,
@@ -114,6 +117,7 @@ final class UnifiedEconomyRuntimeSyncService
         $fingerprintParts = [];
         $sourceTotal = 0;
         $databaseTotal = 0;
+        $databaseReservedTotal = 0;
         $plannedDeltaCount = 0;
         $sourceUsers = 0;
 
@@ -155,6 +159,7 @@ final class UnifiedEconomyRuntimeSyncService
             }
 
             $databaseAmount = 0;
+            $databaseReservedAmount = 0;
             $databaseVersion = 0;
             if ($rows !== []) {
                 $row = $rows[0];
@@ -167,22 +172,24 @@ final class UnifiedEconomyRuntimeSyncService
                     continue;
                 }
                 $databaseAmount = (int)($row['available_amount'] ?? -1);
-                $reserved = (int)($row['reserved_amount'] ?? -1);
+                $databaseReservedAmount = (int)($row['reserved_amount'] ?? -1);
                 $databaseVersion = (int)($row['version'] ?? -1);
-                if ($databaseAmount < 0 || $reserved < 0 || $databaseVersion < 0) {
+                if ($databaseAmount < 0 || $databaseReservedAmount < 0 || $databaseVersion < 0) {
                     $blocking[] = 'Unified target balance contains an invalid state.';
                     continue;
                 }
-                if ($reserved !== 0) {
-                    $blocking[] = 'Unified runtime sync requires zero reserved balance before MVP-15.5.';
-                    continue;
-                }
+                // Runtime users[*].balance is the spendable amount. Canonical
+                // ledger reservations intentionally live in reserved_amount and
+                // must not be re-added to runtime availability or treated as
+                // projection drift. Normal runtime debits/credits remain deltas
+                // against available_amount while the reservation stays held.
             }
 
             $delta = $sourceAmount - $databaseAmount;
             if ($delta !== 0) $plannedDeltaCount++;
             $sourceTotal += $sourceAmount;
             $databaseTotal += $databaseAmount;
+            $databaseReservedTotal += $databaseReservedAmount;
             $fingerprintParts[] = $legacyUserId . "\0" . $sourceAmount;
             $items[] = [
                 'legacy_user_id' => $legacyUserId,
@@ -190,6 +197,7 @@ final class UnifiedEconomyRuntimeSyncService
                 'mgw_id' => $ownership['mgw_id'],
                 'source_amount' => $sourceAmount,
                 'database_amount' => $databaseAmount,
+                'database_reserved_amount' => $databaseReservedAmount,
                 'database_version' => $databaseVersion,
                 'delta' => $delta,
             ];
@@ -215,6 +223,7 @@ final class UnifiedEconomyRuntimeSyncService
             'source_user_count' => $sourceUsers,
             'source_total' => $sourceTotal,
             'database_total' => $databaseTotal,
+            'database_reserved_total' => $databaseReservedTotal,
             'planned_delta_count' => $plannedDeltaCount,
             'blocking_reasons' => array_values(array_unique($blocking)),
             'items' => $items,
@@ -231,6 +240,7 @@ final class UnifiedEconomyRuntimeSyncService
             'source_user_count' => $plan['source_user_count'],
             'source_total' => $plan['source_total'],
             'database_total' => $plan['database_total'],
+            'database_reserved_total' => $plan['database_reserved_total'],
             'planned_delta_count' => $plan['planned_delta_count'],
             'reconciled' => $plan['blocking_reasons'] === [] && $plan['planned_delta_count'] === 0,
             'blocking_reasons' => $plan['blocking_reasons'],
