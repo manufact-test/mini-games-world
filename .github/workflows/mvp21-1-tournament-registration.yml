@@ -6,7 +6,9 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'bot/database/migrations/20260920_0049_create_official_tournaments.php'
+      - 'bot/database/migrations/20260920_0050_add_tournament_rules_consent.php'
       - 'bot/tournaments/TournamentRegistrationService.php'
+      - 'bot/tournaments/TournamentAdminNotificationBridge.php'
       - 'bot/api.php'
       - 'bot/tournament-status.php'
       - 'bot/runtime/RuntimePrimaryStagingRequestFinalizer.php'
@@ -28,10 +30,12 @@ on:
       - 'bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php'
       - 'bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php'
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
+      - 'bot/tests/Mvp21_2TournamentRulesTest.php'
       - 'bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php'
       - 'e2e/staging/tournament-registration-live.spec.mjs'
       - 'e2e/playwright.config.mjs'
       - '.github/workflows/mvp21-1-tournament-registration.yml'
+      - '.github/workflows/mvp21-2-tournament-rules.yml'
   workflow_dispatch:
 
 permissions:
@@ -83,7 +87,9 @@ jobs:
           set -euo pipefail
           files=(
             bot/database/migrations/20260920_0049_create_official_tournaments.php
+            bot/database/migrations/20260920_0050_add_tournament_rules_consent.php
             bot/tournaments/TournamentRegistrationService.php
+            bot/tournaments/TournamentAdminNotificationBridge.php
             bot/api.php
             bot/tournament-status.php
             bot/runtime/RuntimePrimaryStagingRequestFinalizer.php
@@ -99,6 +105,7 @@ jobs:
             bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php
             bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php
             bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
+            bot/tests/Mvp21_2TournamentRulesTest.php
             bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
@@ -128,6 +135,9 @@ jobs:
 
       - name: Run MVP-21.1 manual acceptance UX contract
         run: php bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
+
+      - name: Preserve MVP-21.2 rules and auto-close extension
+        run: php bot/tests/Mvp21_2TournamentRulesTest.php
 
       - name: Preserve concurrent staging request finalization
         run: php bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php
@@ -168,8 +178,11 @@ jobs:
           while IFS= read -r path; do
             case "$path" in
               .github/workflows/mvp21-1-tournament-registration.yml|\
+              .github/workflows/mvp21-2-tournament-rules.yml|\
               bot/database/migrations/20260920_0049_create_official_tournaments.php|\
+              bot/database/migrations/20260920_0050_add_tournament_rules_consent.php|\
               bot/tournaments/TournamentRegistrationService.php|\
+              bot/tournaments/TournamentAdminNotificationBridge.php|\
               bot/api.php|\
               bot/tournament-status.php|\
               bot/runtime/RuntimePrimaryStagingRequestFinalizer.php|\
@@ -191,6 +204,7 @@ jobs:
               bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php|\
               bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php|\
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
+              bot/tests/Mvp21_2TournamentRulesTest.php|\
               bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php|\
               e2e/staging/tournament-registration-live.spec.mjs|\
               e2e/playwright.config.mjs)
