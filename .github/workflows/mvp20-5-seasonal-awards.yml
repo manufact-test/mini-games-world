@@ -1,0 +1,130 @@
+name: MVP-20.5 Seasonal awards
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260920_0046_create_seasonal_awards.php'
+      - 'bot/ratings/SeasonalAwardService.php'
+      - 'bot/ratings/LeaderboardService.php'
+      - 'bot/ratings/SeasonLifecycleService.php'
+      - 'bot/ratings/PerGameRatingRuntimeBridge.php'
+      - 'bot/core/bootstrap.php'
+      - 'bot/tests/Mvp20_5SeasonalAwardsTest.php'
+      - 'bot/tests/Mvp20_5SeasonalAwardsIntegrationContractTest.php'
+      - '.github/workflows/mvp20-1-per-game-visible-rating.yml'
+      - '.github/workflows/mvp20-2-hidden-skill.yml'
+      - '.github/workflows/mvp20-3-leaderboards-antifarming.yml'
+      - '.github/workflows/mvp20-4-quarterly-seasons.yml'
+      - '.github/workflows/mvp20-5-seasonal-awards.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp20-5-seasonal-awards-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Seasonal badge, temporary frame and correction contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint MVP-20.5 server slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            bot/database/migrations/20260920_0046_create_seasonal_awards.php
+            bot/ratings/SeasonalAwardService.php
+            bot/ratings/LeaderboardService.php
+            bot/ratings/SeasonLifecycleService.php
+            bot/ratings/PerGameRatingRuntimeBridge.php
+            bot/core/bootstrap.php
+            bot/tests/Mvp20_5SeasonalAwardsTest.php
+            bot/tests/Mvp20_5SeasonalAwardsIntegrationContractTest.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done
+
+      - name: Run MVP-20.5 award and correction model
+        run: php bot/tests/Mvp20_5SeasonalAwardsTest.php
+
+      - name: Run MVP-20.5 integration contract
+        run: php bot/tests/Mvp20_5SeasonalAwardsIntegrationContractTest.php
+
+      - name: Preserve MVP-20.4 season lifecycle
+        run: |
+          php bot/tests/Mvp20_4QuarterlySeasonLifecycleTest.php
+          php bot/tests/Mvp20_4SeasonLifecycleIntegrationContractTest.php
+
+      - name: Preserve MVP-20.1 visible rating
+        run: |
+          php bot/tests/Mvp20_1PerGameVisibleRatingTest.php
+          php bot/tests/Mvp20_1VisibleRatingIntegrationContractTest.php
+
+      - name: Preserve MVP-20.2 hidden skill and widening
+        run: |
+          php bot/tests/Mvp20_2HiddenSkillModelTest.php
+          php bot/tests/Mvp20_2HiddenSkillIntegrationContractTest.php
+          php bot/tests/Mvp17_1MatchmakingQueueTest.php
+          php bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php
+          php bot/tests/Mvp17_2MatchmakingIntegrationContractTest.php
+
+      - name: Preserve MVP-20.3 leaderboard and anti-farming
+        run: |
+          php bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php
+          php bot/tests/Mvp20_3LeaderboardIntegrationContractTest.php
+
+      - name: Guard MVP-20.5 scope and frozen runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp20-1-per-game-visible-rating.yml|\
+              .github/workflows/mvp20-2-hidden-skill.yml|\
+              .github/workflows/mvp20-3-leaderboards-antifarming.yml|\
+              .github/workflows/mvp20-4-quarterly-seasons.yml|\
+              .github/workflows/mvp20-5-seasonal-awards.yml|\
+              bot/database/migrations/20260920_0046_create_seasonal_awards.php|\
+              bot/ratings/SeasonalAwardService.php|\
+              bot/ratings/LeaderboardService.php|\
+              bot/ratings/SeasonLifecycleService.php|\
+              bot/ratings/PerGameRatingRuntimeBridge.php|\
+              bot/core/bootstrap.php|\
+              bot/tests/Mvp20_5SeasonalAwardsTest.php|\
+              bot/tests/Mvp20_5SeasonalAwardsIntegrationContractTest.php)
+                ;;
+              *)
+                echo "Unexpected MVP-20.5 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+          git diff --exit-code "$base" "$head" -- \
+            bot/games app/assets/js/games app/assets/css/games \
+            app/assets/js/screens app/assets/css/main.css app/locales \
+            bot/catalog bot/economy bot/ledger bot/shop
