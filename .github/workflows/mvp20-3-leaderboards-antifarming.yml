@@ -160,6 +160,7 @@ jobs:
               bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
               bot/tests/Mvp19_3ProfileFramesTest.php|\
               .github/workflows/mvp19-3-profile-avatars.yml|\
+              .github/workflows/mvp19-3-profile-frames.yml|\
               .github/workflows/mvp19-3-profile-name-colors.yml|\
               .github/workflows/mvp19-3-profile-game-cosmetics.yml|\
               app/assets/js/api/client.js|\
