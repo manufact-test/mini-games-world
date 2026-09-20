@@ -28,7 +28,8 @@ final class TournamentParticipantNotificationBridge
 
         $tournamentId = trim((string)($tournament['tournament_id'] ?? ''));
         $startRaw = trim((string)($tournament['scheduled_start_at_utc'] ?? ''));
-        if ($tournamentId === '' || $startRaw === '') {
+        $assignedRaw = trim((string)($tournament['scheduled_at_utc'] ?? ''));
+        if ($tournamentId === '' || $startRaw === '' || $assignedRaw === '') {
             throw new RuntimeException('Scheduled tournament is missing immutable schedule identity.');
         }
 
@@ -46,6 +47,7 @@ final class TournamentParticipantNotificationBridge
         $utc = new DateTimeZone('UTC');
         $now = ($now ?? new DateTimeImmutable('now', $utc))->setTimezone($utc);
         $start = (new DateTimeImmutable($startRaw, $utc))->setTimezone($utc);
+        $assignedAt = (new DateTimeImmutable($assignedRaw, $utc))->setTimezone($utc);
         if ($start <= $now) {
             throw new RuntimeException('Scheduled tournament start time is already in the past.');
         }
@@ -66,7 +68,7 @@ final class TournamentParticipantNotificationBridge
                 'recipient_mgw_ids'=>$participants,
                 'title'=>'Дата турнира назначена',
                 'text'=>"«{$title}» начнётся {$startLabel}. В разделе турниров уже доступен точный обратный отсчёт.",
-                'scheduled_at'=>$now->format(DATE_ATOM),
+                'scheduled_at'=>$assignedAt->format(DATE_ATOM),
                 'request_id'=>$base . 'assigned',
             ],
             'system:tournament',
