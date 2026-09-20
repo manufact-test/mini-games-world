@@ -181,6 +181,8 @@ jobs:
             case "$path" in
               .github/workflows/mvp21-1-tournament-registration.yml|\
               .github/workflows/mvp21-2-tournament-rules.yml|\
+              .github/workflows/staging-playwright-e2e.yml|\
+              bot/staging-projection-diagnostic.php|\
               bot/database/migrations/20260920_0049_create_official_tournaments.php|\
               bot/database/migrations/20260920_0050_add_tournament_rules_consent.php|\
               bot/tournaments/TournamentRegistrationService.php|\

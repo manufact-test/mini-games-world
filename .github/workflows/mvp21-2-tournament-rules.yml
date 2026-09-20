@@ -24,6 +24,8 @@ on:
       - 'bot/tests/Mvp21_2TournamentRulesTest.php'
       - 'bot/tests/RuntimeNotificationRepositoryTest.php'
       - 'e2e/staging/tournament-registration-live.spec.mjs'
+      - 'bot/staging-projection-diagnostic.php'
+      - '.github/workflows/staging-playwright-e2e.yml'
       - '.github/workflows/mvp21-1-tournament-registration.yml'
       - '.github/workflows/mvp21-2-tournament-rules.yml'
   workflow_dispatch:
@@ -81,6 +83,7 @@ jobs:
             bot/tournaments/TournamentAdminNotificationBridge.php
             bot/api.php
             bot/tournament-status.php
+            bot/staging-projection-diagnostic.php
             app/v110.php
             app/admin.php
             bot/tests/Mvp21_1TournamentRegistrationTest.php
@@ -168,7 +171,9 @@ jobs:
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
               bot/tests/Mvp21_2TournamentRulesTest.php|\
               bot/tests/RuntimeNotificationRepositoryTest.php|\
-              e2e/staging/tournament-registration-live.spec.mjs)
+              e2e/staging/tournament-registration-live.spec.mjs|\
+              bot/staging-projection-diagnostic.php|\
+              .github/workflows/staging-playwright-e2e.yml)
                 ;;
               *)
                 echo "Unexpected MVP-21.2 path: $path" >&2

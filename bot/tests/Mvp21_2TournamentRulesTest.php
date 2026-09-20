@@ -83,7 +83,9 @@ $db->execute(
     ]
 );
 
-(require $root . '/database/migrations/20260920_0050_add_tournament_rules_consent.php')->up($db);
+$rulesMigration = require $root . '/database/migrations/20260920_0050_add_tournament_rules_consent.php';
+$rulesMigration->up($db);
+$rulesMigration->up($db);
 
 $expectedRules = TournamentRegistrationService::canonicalRulesSnapshot('tictactoe', 8);
 $expectedRulesJson = json_encode(
