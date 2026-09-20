@@ -797,6 +797,20 @@
   opacity:0;
   visibility:hidden;
 }
+#screen-tournaments .tournaments-v2-scroll-icon{
+  width:14px;
+  height:14px;
+  display:block;
+  overflow:visible;
+}
+#screen-tournaments .tournaments-v2-scroll-icon path{
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.7;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  vector-effect:non-scaling-stroke;
+}
 #screen-tournaments .tournaments-v2-body{
   min-height:210px;
   display:flex;
@@ -808,6 +822,24 @@
   font-size:13px;
   font-weight:900;
   line-height:1.2;
+}
+#screen-tournaments .tournaments-v2-table-head{
+  display:grid;
+  grid-template-columns:28px 36px minmax(0,1fr) 44px;
+  align-items:center;
+  gap:8px;
+  padding:0 10px;
+  color:var(--muted);
+  font-size:9px;
+  font-weight:850;
+  line-height:1;
+}
+#screen-tournaments .tournaments-v2-table-head>span:nth-child(2){
+  grid-column:2 / 4;
+}
+#screen-tournaments .tournaments-v2-table-head>span:last-child{
+  grid-column:4;
+  text-align:center;
 }
 #screen-tournaments .tournaments-v2-list{
   display:flex;
