@@ -315,11 +315,22 @@ final class YearlyMedalService
             }
         }
 
+        $featured = $current;
+        if ($featured === null || (int)($featured['fragment_count'] ?? 0) === 0) {
+            foreach ($years as $entry) {
+                if ((int)($entry['fragment_count'] ?? 0) > 0) {
+                    $featured = $entry;
+                    break;
+                }
+            }
+        }
+
         return [
             'competition_state' => $control['competition_state'],
-            'visible' => $current !== null,
+            'visible' => $featured !== null,
             'current_season_id' => $control['current_season_id'],
             'current' => $current,
+            'featured' => $featured,
             'years' => $years,
         ];
     }
