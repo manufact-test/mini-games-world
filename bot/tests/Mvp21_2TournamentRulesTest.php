@@ -96,7 +96,7 @@ $assertSame(
     'Migration must backfill the current rules version into the existing staging tournament.'
 );
 $assertSame(
-    hash('sha256', $expectedRulesJson),
+    TournamentRegistrationService::canonicalRulesSha256('tictactoe', 8),
     (string)$db->fetchValue('SELECT rules_sha256 FROM mgw_tournaments WHERE tournament_id=:id', ['id'=>'tour_mvp21_2_backfill']),
     'Backfilled rules hash must equal the canonical immutable rules snapshot.'
 );
