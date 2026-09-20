@@ -100,6 +100,7 @@ require_once __DIR__ . '/../ratings/SeasonLifecycleService.php';
 require_once __DIR__ . '/../ratings/PerGameRatingRuntimeBridge.php';
 require_once __DIR__ . '/../ratings/HiddenSkillService.php';
 require_once __DIR__ . '/../ratings/HiddenSkillRuntimeBridge.php';
+require_once __DIR__ . '/../tournaments/TournamentRegistrationService.php';
 require_once __DIR__ . '/../notifications/RuntimeNotificationRepository.php';
 require_once __DIR__ . '/../invites/RuntimeInviteRepository.php';
 require_once __DIR__ . '/../ledger/LedgerIntegrity.php';

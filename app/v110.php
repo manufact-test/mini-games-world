@@ -344,6 +344,7 @@ header('X-MGW-Balance-UI: unified-balance-v1');
 header('X-MGW-Match-Economy: server-config-v1');
 header('X-MGW-Visible-Rating: per-game-preseason-v2');
 header('X-MGW-Leaderboards: per-game-antifarming-v1');
+header('X-MGW-Tournaments: official-registration-v1');
 header('X-MGW-Notification-Graph: v1139-three-state-scroll-stable');
 header('X-MGW-Notification-Palette: green-red-blue-v1');
 header('X-MGW-Invite-Graph: v1143-prepared-share-owner');

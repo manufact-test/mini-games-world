@@ -302,10 +302,13 @@ final class UserService
         }
         $available = (int)($row['available_amount'] ?? -1);
         $reserved = (int)($row['reserved_amount'] ?? -1);
-        if ($available < 0 || $reserved !== 0) {
+        if ($available < 0 || $reserved < 0) {
             throw new RuntimeException('Canonical runtime balance state is not safe for rehydration.');
         }
 
+        // Runtime balance is the spendable amount. Active canonical
+        // reservations are valid post-cutover and remain isolated in
+        // mgw_balances.reserved_amount.
         $user[UnifiedBalanceRuntimeState::FIELD] = $available;
     }
 

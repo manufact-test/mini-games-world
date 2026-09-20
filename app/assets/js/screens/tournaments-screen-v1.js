@@ -25,6 +25,9 @@ let activeGame = DEFAULT_GAME;
 let initialized = false;
 let dragState = null;
 let suppressClickUntil = 0;
+let tournamentSnapshot = null;
+let tournamentRequest = null;
+let tournamentBusy = false;
 
 export function initTournamentsScreen(){
   if (initialized) return;
@@ -33,7 +36,7 @@ export function initTournamentsScreen(){
   if (!(screen instanceof HTMLElement) || !(content instanceof HTMLElement)) return;
 
   initialized = true;
-  screen.dataset.mgwTournaments = 'leaderboards-v2 rating-archive-v1';
+  screen.dataset.mgwTournaments = 'leaderboards-v2 rating-archive-v1 official-tournament-registration-v1';
   content.innerHTML = `
     <div class="tournaments-v2" id="tournamentsV2Root">
       <div class="page-head app-shell-page-head tournaments-v2-page-head">
@@ -90,12 +93,15 @@ export function initTournamentsScreen(){
       </div>
 
       <div class="tournaments-v2-panel" data-competition-panel="tournaments" hidden>
-        <section class="tournaments-v2-board tournaments-v2-tournament-placeholder">
+        <section class="tournaments-v2-board tournaments-v2-tournament-card">
           <div class="tournaments-v2-board-head">
             <div>
-              <h2>${escapeHtml(t('shell.competition_tournaments'))}</h2>
-              <p>${escapeHtml(t('shell.competition_tournaments_note'))}</p>
+              <h2>Официальный турнир</h2>
+              <p>Регистрация, зарезервированный взнос и текущий состав турнира.</p>
             </div>
+          </div>
+          <div class="tournaments-v2-tournament-body" id="officialTournamentBody" aria-live="polite">
+            ${loadingMarkup()}
           </div>
         </section>
       </div>
@@ -107,14 +113,18 @@ export function initTournamentsScreen(){
   bindArchiveSeasonClicks(screen);
   bindTabs(screen);
   bindScrollButtons(screen);
+  bindTournamentActions(screen);
   onScreenEnter('tournaments', () => {
     void activateGame(activeGame);
     void loadArchiveOverview();
+    void loadTournamentSnapshot();
+    void loadTournamentSnapshot();
   });
 
   document.addEventListener('mgw:app-ready', () => {
     window.setTimeout(() => { void warmLeaderboard(DEFAULT_GAME); }, 260);
     window.setTimeout(() => { void warmArchiveOverview(); }, 520);
+    window.setTimeout(() => { void warmTournamentStatus(); }, 760);
   }, { once:true });
 
   if (currentScreen() === 'tournaments') {
@@ -168,8 +178,151 @@ function bindModeTabs(screen){
         panel.hidden = String(panel.dataset.competitionPanel || '') !== mode;
       });
       if (mode === 'rating') void activateGame(activeGame);
+      if (mode === 'tournaments') void loadTournamentSnapshot();
     });
   });
+}
+
+function bindTournamentActions(screen){
+  screen.addEventListener('click', event => {
+    const button = event.target instanceof Element ? event.target.closest('[data-tournament-action]') : null;
+    if (!(button instanceof HTMLButtonElement) || tournamentBusy) return;
+    const action = String(button.dataset.tournamentAction || '');
+    if (action === 'register') void mutateTournament('register');
+    if (action === 'leave') void mutateTournament('leave');
+  });
+}
+
+async function warmTournamentStatus(){
+  if (tournamentRequest) return tournamentRequest;
+  tournamentRequest = api.tournamentStatus()
+    .then(result => {
+      tournamentSnapshot = result?.snapshot && typeof result.snapshot === 'object' ? result.snapshot : {};
+      return tournamentSnapshot;
+    })
+    .finally(() => { tournamentRequest = null; });
+  return tournamentRequest;
+}
+
+async function loadTournamentSnapshot(){
+  const body = document.getElementById('officialTournamentBody');
+  if (!(body instanceof HTMLElement)) return;
+  if (!tournamentSnapshot) body.innerHTML = loadingMarkup();
+  try {
+    await warmTournamentStatus();
+    renderTournamentSnapshot();
+  } catch (error) {
+    body.innerHTML = `<div class="tournaments-v2-empty">${escapeHtml(error?.message || 'Не удалось загрузить турнир.')}</div>`;
+  }
+}
+
+async function mutateTournament(action){
+  if (tournamentBusy) return;
+  const tournament = tournamentSnapshot?.tournament;
+  if (!tournament || typeof tournament !== 'object') return;
+
+  if (action === 'register') {
+    const fee = formatNumber(Math.max(0, Number(tournament?.entry_fee?.amount || 50000)));
+    if (!window.confirm(`Зарезервировать ${fee} коинов и зарегистрироваться на официальный турнир?`)) return;
+  } else if (action === 'leave') {
+    if (!window.confirm('Отменить регистрацию? Зарезервированные 50 000 коинов вернутся в доступный баланс.')) return;
+  }
+
+  tournamentBusy = true;
+  renderTournamentSnapshot();
+  try {
+    const result = action === 'register'
+      ? await api.tournamentRegister()
+      : await api.tournamentLeave();
+    tournamentSnapshot = result?.snapshot && typeof result.snapshot === 'object' ? result.snapshot : {};
+    renderTournamentSnapshot();
+  } catch (error) {
+    renderTournamentSnapshot(error?.message || 'Не удалось изменить регистрацию.');
+  } finally {
+    tournamentBusy = false;
+    renderTournamentSnapshot();
+  }
+}
+
+function renderTournamentSnapshot(errorMessage = ''){
+  const body = document.getElementById('officialTournamentBody');
+  if (!(body instanceof HTMLElement)) return;
+  const snapshot = tournamentSnapshot && typeof tournamentSnapshot === 'object' ? tournamentSnapshot : {};
+  const tournament = snapshot.tournament && typeof snapshot.tournament === 'object' ? snapshot.tournament : null;
+  if (!tournament) {
+    body.innerHTML = `<div class="tournaments-v2-empty">Официальный турнир пока не создан или не открыт для участников.</div>`;
+    return;
+  }
+
+  const registration = snapshot.registration && typeof snapshot.registration === 'object' ? snapshot.registration : null;
+  const registered = String(registration?.state || '') === 'registered';
+  const state = String(tournament.state || '');
+  const open = state === 'registration_open';
+  const full = tournament.is_full === true;
+  const capacity = Math.max(1, Number(tournament.capacity || 0));
+  const count = Math.max(0, Number(tournament.registered_count || 0));
+  const pct = Math.max(0, Math.min(100, Math.round((count / capacity) * 100)));
+  const fee = Math.max(0, Number(tournament?.entry_fee?.amount || 50000));
+  const available = Math.max(0, Number(snapshot?.balance?.available_amount || 0));
+  const reserved = Math.max(0, Number(snapshot?.balance?.reserved_amount || 0));
+  const rewards = tournament.reward_snapshot && typeof tournament.reward_snapshot === 'object'
+    ? tournament.reward_snapshot
+    : {};
+  const first = rewards?.placements?.['1'] || {};
+  const second = rewards?.placements?.['2'] || {};
+  const third = rewards?.placements?.['3'] || {};
+
+  let action = '';
+  if (open && !registered && !full) {
+    action = `<button type="button" class="tournaments-v2-tournament-action" data-tournament-action="register"${tournamentBusy ? ' disabled' : ''}>Зарегистрироваться · ${escapeHtml(formatNumber(fee))}</button>`;
+  } else if (open && registered && !full) {
+    action = `<button type="button" class="tournaments-v2-tournament-action tournaments-v2-tournament-action--secondary" data-tournament-action="leave"${tournamentBusy ? ' disabled' : ''}>Отменить регистрацию</button>`;
+  }
+
+  const statusText = state === 'draft'
+    ? 'Турнир готовится · регистрация ещё не открыта'
+    : full
+      ? 'Состав заполнен'
+      : 'Регистрация открыта';
+
+  const ownStatus = registered
+    ? (full
+      ? 'Вы в составе. Турнир заполнен — место зафиксировано.'
+      : `Вы зарегистрированы. ${formatNumber(fee)} коинов зарезервировано, но не списано.`)
+    : full
+      ? 'Свободных мест больше нет.'
+      : open
+        ? 'Взнос резервируется до дальнейшего этапа турнира.'
+        : 'Ожидайте открытия регистрации.';
+
+  body.innerHTML = `
+    ${errorMessage ? `<div class="tournaments-v2-tournament-error">${escapeHtml(errorMessage)}</div>` : ''}
+    <div class="tournaments-v2-tournament-hero">
+      <div>
+        <span class="tournaments-v2-tournament-state${open && !full ? ' is-open' : ''}">${escapeHtml(statusText)}</span>
+        <h3>${escapeHtml(String(tournament.title || 'Официальный турнир'))}</h3>
+        <p>${escapeHtml(gameName(String(tournament.game_type || DEFAULT_GAME)))}</p>
+      </div>
+      <div class="tournaments-v2-tournament-entry"><small>Вход</small><strong>${escapeHtml(formatNumber(fee))}</strong><span>коинов</span></div>
+    </div>
+
+    <div class="tournaments-v2-tournament-progress">
+      <div><span>Участники</span><strong>${escapeHtml(formatNumber(count))} / ${escapeHtml(formatNumber(capacity))}</strong></div>
+      <div class="tournaments-v2-tournament-progress-track"><i style="width:${pct}%"></i></div>
+    </div>
+
+    <div class="tournaments-v2-tournament-prizes">
+      <div><b>1 место</b><strong>${escapeHtml(formatNumber(Number(first.total || 200000)))}</strong><span>+ Golden Ticket</span></div>
+      <div><b>2 место</b><strong>${escapeHtml(formatNumber(Number(second.total || 80000)))}</strong><span>серебряная награда</span></div>
+      <div><b>3 место</b><strong>${escapeHtml(formatNumber(Number(third.total || 50000)))}</strong><span>возврат взноса</span></div>
+    </div>
+
+    <div class="tournaments-v2-tournament-own${registered ? ' is-registered' : ''}">
+      <strong>${escapeHtml(ownStatus)}</strong>
+      <span>Доступно: ${escapeHtml(formatNumber(available))} · Зарезервировано: ${escapeHtml(formatNumber(reserved))}</span>
+    </div>
+    ${action}
+  `;
 }
 
 function bindTabs(screen){

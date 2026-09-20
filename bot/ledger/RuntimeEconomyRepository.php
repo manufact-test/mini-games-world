@@ -177,6 +177,12 @@ final class RuntimeEconomyRepository
                 static fn(string $value): bool => $value !== ''
             )));
 
+            $activeReservationCount = (int)$database->fetchValue(
+                "SELECT COUNT(*) FROM mgw_reservations
+                 WHERE status = 'active' AND asset_code = :asset_code",
+                ['asset_code'=>UnifiedBalanceMigrationRule::TARGET_ASSET]
+            );
+
             $result = [
                 'ok' => $blockers === [],
                 'read_only' => true,
@@ -190,7 +196,7 @@ final class RuntimeEconomyRepository
                 'planned_delta_count' => (int)($unified['planned_delta_count'] ?? 0),
                 'integrity_failure_count' => 0,
                 'ledger_entry_count' => 0,
-                'active_reservation_count' => 0,
+                'active_reservation_count' => max(0, $activeReservationCount),
                 'shadow_delta_count' => 0,
                 'shadow' => $this->skippedLegacyStage('shadow'),
                 'migration' => [
@@ -407,6 +413,7 @@ final class RuntimeEconomyRepository
             'source_user_count' => (int)($report['source_user_count'] ?? 0),
             'source_total' => (int)($report['source_total'] ?? 0),
             'database_total' => (int)($report['database_total'] ?? 0),
+            'database_reserved_total' => (int)($report['database_reserved_total'] ?? 0),
             'planned_delta_count' => (int)($report['planned_delta_count'] ?? 0),
             'applied_delta_count' => (int)($report['applied_delta_count'] ?? 0),
             'replayed_delta_count' => (int)($report['replayed_delta_count'] ?? 0),
