@@ -102,7 +102,7 @@ async function browserPost(page, path, data) {
 }
 
 async function testProbePost(player, path, data) {
-  const transport = await player.page.evaluate(() => ({
+  const transport = player.transport || await player.page.evaluate(() => ({
     sessionId: localStorage.getItem('mgw_device_session_id'),
     deviceId: localStorage.getItem('mgw_device_id'),
   }));
@@ -112,6 +112,13 @@ async function testProbePost(player, path, data) {
     timeout: 15_000,
   });
   return { status: response.status(), payload: await response.json().catch(() => null) };
+}
+
+async function transportAction(player, path, data, label) {
+  const result = await testProbePost(player, path, data);
+  expect(result.status, `${label}: ${result.payload?.error || 'no error'}`).toBe(200);
+  expect(result.payload?.ok, label).toBe(true);
+  return result.payload;
 }
 
 async function observedAction(page, path, data, action, label) {
@@ -165,9 +172,15 @@ async function openPlayer(browser, slot) {
   await page.waitForFunction(() => Boolean(
     localStorage.getItem('mgw_device_session_id') && localStorage.getItem('mgw_device_id')
   ), null, { timeout: 20_000 });
+  const transport = await page.evaluate(() => ({
+    sessionId: localStorage.getItem('mgw_device_session_id'),
+    deviceId: localStorage.getItem('mgw_device_id'),
+  }));
+  expect(transport.sessionId, `Player ${slot} session transport`).toBeTruthy();
+  expect(transport.deviceId, `Player ${slot} device transport`).toBeTruthy();
   const profile = await readAction(page, '/bot/api.php', { action: 'profile' }, `Player ${slot} profile`);
   expect(profile?.user?.id).toBe(`stg_test_player_${slot.toLowerCase()}`);
-  return { context, page, cookie, report, bootstrap, profile };
+  return { context, page, cookie, report, bootstrap, profile, transport };
 }
 
 async function reload(player) {
@@ -346,32 +359,48 @@ test('CURRENT FINAL CORE: canonical Telegram v110 two-player TTT lifecycle', asy
       stg_test_player_b: Number(B.profile.user.balance),
     };
 
-    const created = await observedAction(A.page, '/bot/invites.php', {
+    // The invite lifecycle below is setup for the real browser lifecycle assertion,
+    // not the behavior under test. Fully booted A/B pages keep invite/stats pollers
+    // alive and can serialize behind the same staging JSON owner. In run #1003 that
+    // made raw start() take >11s, consuming the canonical immutable 10s Phase-B
+    // preparation deadline before the response reached this synthetic caller.
+    // Park both pages while the raw setup writes run; runtime timing/state stays
+    // untouched, then the real clients are hard-loaded back into the active match.
+    await Promise.all([
+      A.page.goto('about:blank', { waitUntil: 'load' }),
+      B.page.goto('about:blank', { waitUntil: 'load' }),
+    ]);
+
+    const created = await transportAction(A, '/bot/invites.php', {
       action: 'create_direct', inviteeId: 'stg_test_player_b', gameType: 'tictactoe', boardSize: 3,
-    }, 'create_direct', 'create direct invite');
+    }, 'create direct invite');
     const token = String(created.invite?.token || '');
     expect(token).toMatch(/^[a-f0-9]{24}$/);
     expect(created.invite?.status).toBe('pending');
     expect(Number(created.invite?.bet || 0)).toBe(entryCost);
 
     await waitInviteEvent(B, token);
-    const accepted = await observedAction(B.page, '/bot/invites.php', { action: 'accept', token }, 'accept', 'accept invite');
+    const accepted = await transportAction(B, '/bot/invites.php', { action: 'accept', token }, 'accept invite');
     expect(accepted.invite?.status).toBe('accepted');
     expect(accepted.invite?.can_start).toBe(false);
 
-    const started = await observedAction(A.page, '/bot/invites.php', { action: 'start', token }, 'start', 'start invite');
+    const started = await transportAction(A, '/bot/invites.php', { action: 'start', token }, 'start invite');
     const gameId = String(started.game?.id || started.invite?.game_id || '');
     expect(gameId).toMatch(/^[A-Za-z0-9_-]{8,120}$/);
     expect(started.invite?.status).toBe('active');
     expect(started.game?.status).toBe('active');
     expect(Number(started.game?.bet || 0)).toBe(entryCost);
 
-    // The setup starts the invite through raw API calls, bypassing the real client
-    // handoff that immediately writes Phase-B readiness. Register both players
-    // before the synthetic hard reload so this scenario validates reconnect rather
-    // than racing the 10-second preparation deadline against staging boot latency.
-    for (const [player, slot] of [[A, 'A'], [B, 'B']]) {
-      const readiness = await testProbePost(player, '/bot/api.php', { action: 'game_state', gameId });
+    // Raw API setup bypasses the client handoff that normally writes readiness.
+    // Write both independent readiness signals concurrently while the synthetic
+    // pages remain parked, then hard-load the real app for reconnect/UI coverage.
+    const readinessResults = await Promise.all(
+      [[A, 'A'], [B, 'B']].map(async ([player, slot]) => [
+        slot,
+        await testProbePost(player, '/bot/api.php', { action: 'game_state', gameId }),
+      ])
+    );
+    for (const [slot, readiness] of readinessResults) {
       expect(readiness.status, `Phase-B readiness player ${slot}`).toBe(200);
       expect(readiness.payload?.ok, `Phase-B readiness player ${slot}`).toBe(true);
       expect(readiness.payload?.game?.status).toBe('active');

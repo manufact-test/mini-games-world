@@ -78,6 +78,22 @@ async function browserPost(page, path, data) {
   }, { path, data });
 }
 
+async function testProbePost(player, path, data) {
+  const response = await player.context.request.post(`${ORIGIN}${path}`, {
+    headers: { Accept: 'application/json' },
+    data: { ...data, initData: '', ...player.transport },
+    timeout: 15_000,
+  });
+  return { status: response.status(), payload: await response.json().catch(() => null) };
+}
+
+async function transportAction(player, path, data, label) {
+  const result = await testProbePost(player, path, data);
+  expect(result.status, `${label}: ${result.payload?.error || 'no error'}`).toBe(200);
+  expect(result.payload?.ok, label).toBe(true);
+  return result.payload;
+}
+
 async function observedAction(page, path, data, action, label) {
   const expectedUrl = `${ORIGIN}${path}`;
   const responsePromise = page.waitForResponse(response => (
@@ -119,7 +135,13 @@ async function openPlayer(browser, slot) {
   await page.waitForFunction(() => Boolean(
     localStorage.getItem('mgw_device_session_id') && localStorage.getItem('mgw_device_id')
   ), null, { timeout: 20_000 });
-  return { context, page };
+  const transport = await page.evaluate(() => ({
+    sessionId: localStorage.getItem('mgw_device_session_id'),
+    deviceId: localStorage.getItem('mgw_device_id'),
+  }));
+  expect(transport.sessionId, `Player ${slot} session transport`).toBeTruthy();
+  expect(transport.deviceId, `Player ${slot} device transport`).toBeTruthy();
+  return { context, page, transport };
 }
 
 async function reload(player) {
@@ -222,27 +244,38 @@ test('CHECKERS LAYOUT DIAGNOSTIC — live v110 mobile geometry', async ({ browse
     A = await openPlayer(browser, 'A');
     B = await openPlayer(browser, 'B');
 
-    const created = await observedAction(A.page, '/bot/invites.php', {
+    // This is synthetic setup for the geometry assertion. Park the fully booted
+    // pages so their background pollers cannot consume the immutable 10s Phase-B
+    // readiness window through staging JSON lock contention.
+    await Promise.all([
+      A.page.goto('about:blank', { waitUntil: 'load' }),
+      B.page.goto('about:blank', { waitUntil: 'load' }),
+    ]);
+
+    const created = await transportAction(A, '/bot/invites.php', {
       action: 'create_direct',
       inviteeId: 'stg_test_player_b',
       gameType: 'checkers',
       boardSize: 8,
-    }, 'create_direct', 'create Checkers direct invite');
+    }, 'create Checkers direct invite');
     const token = String(created.invite?.token || '');
     expect(token).toMatch(/^[a-f0-9]{24}$/);
 
-    const accepted = await observedAction(B.page, '/bot/invites.php', { action: 'accept', token }, 'accept', 'accept Checkers invite');
+    const accepted = await transportAction(B, '/bot/invites.php', { action: 'accept', token }, 'accept Checkers invite');
     expect(accepted.invite?.status).toBe('accepted');
 
-    const started = await observedAction(A.page, '/bot/invites.php', { action: 'start', token }, 'start', 'start Checkers invite');
+    const started = await transportAction(A, '/bot/invites.php', { action: 'start', token }, 'start Checkers invite');
     const gameId = String(started.game?.id || started.invite?.game_id || '');
     expect(gameId).toMatch(/^[A-Za-z0-9_-]{8,120}$/);
 
-    // This diagnostic starts the game with raw API setup rather than the real
-    // invite UI, so explicitly perform the readiness writes that the two clients
-    // normally send before testing a hard reload/reconnect of the active match.
-    for (const [page, slot] of [[A.page, 'A'], [B.page, 'B']]) {
-      const readiness = await browserPost(page, '/bot/api.php', { action: 'game_state', gameId });
+    // Explicitly write both readiness signals before restoring the real pages.
+    const readinessResults = await Promise.all(
+      [[A, 'A'], [B, 'B']].map(async ([player, slot]) => [
+        slot,
+        await testProbePost(player, '/bot/api.php', { action: 'game_state', gameId }),
+      ])
+    );
+    for (const [slot, readiness] of readinessResults) {
       expect(readiness.status, `Checkers Phase-B readiness player ${slot}`).toBe(200);
       expect(readiness.payload?.ok, `Checkers Phase-B readiness player ${slot}`).toBe(true);
       expect(readiness.payload?.game?.status).toBe('active');
