@@ -6,6 +6,7 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'bot/database/migrations/20260920_0050_add_tournament_rules_consent.php'
+      - 'bot/database/migrations/20260920_0051_refresh_tournament_rules_copy.php'
       - 'bot/tournaments/TournamentRegistrationService.php'
       - 'bot/tournaments/TournamentAdminNotificationBridge.php'
       - 'bot/api.php'
@@ -22,6 +23,7 @@ on:
       - 'bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php'
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
       - 'bot/tests/Mvp21_2TournamentRulesTest.php'
+      - 'bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php'
       - 'bot/tests/RuntimeNotificationRepositoryTest.php'
       - 'e2e/staging/tournament-registration-live.spec.mjs'
       - 'bot/staging-projection-diagnostic.php'
@@ -79,6 +81,7 @@ jobs:
           set -euo pipefail
           files=(
             bot/database/migrations/20260920_0050_add_tournament_rules_consent.php
+            bot/database/migrations/20260920_0051_refresh_tournament_rules_copy.php
             bot/tournaments/TournamentRegistrationService.php
             bot/tournaments/TournamentAdminNotificationBridge.php
             bot/api.php
@@ -91,6 +94,7 @@ jobs:
             bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php
             bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
             bot/tests/Mvp21_2TournamentRulesTest.php
+            bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php
             bot/tests/RuntimeNotificationRepositoryTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
@@ -100,7 +104,9 @@ jobs:
           node --check e2e/staging/tournament-registration-live.spec.mjs
 
       - name: Run MVP-21.2 model
-        run: php bot/tests/Mvp21_2TournamentRulesTest.php
+        run: |
+          php bot/tests/Mvp21_2TournamentRulesTest.php
+          php bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php
 
       - name: Preserve MVP-21.1 tournament model
         run: |
@@ -154,6 +160,7 @@ jobs:
               .github/workflows/mvp21-1-tournament-registration.yml|\
               .github/workflows/mvp21-2-tournament-rules.yml|\
               bot/database/migrations/20260920_0050_add_tournament_rules_consent.php|\
+              bot/database/migrations/20260920_0051_refresh_tournament_rules_copy.php|\
               bot/tournaments/TournamentRegistrationService.php|\
               bot/tournaments/TournamentAdminNotificationBridge.php|\
               bot/api.php|\
@@ -170,6 +177,7 @@ jobs:
               bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php|\
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
               bot/tests/Mvp21_2TournamentRulesTest.php|\
+              bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php|\
               bot/tests/RuntimeNotificationRepositoryTest.php|\
               e2e/staging/tournament-registration-live.spec.mjs|\
               bot/staging-projection-diagnostic.php|\
