@@ -1,11 +1,11 @@
 # MGW SMALL CANONICAL — MVP-20.3 ARENA / LEADERBOARD CORRECTIVE CHECKPOINT
 
-**Date:** 2026-09-20  
-**Repository:** `manufact-test/mini-games-world`  
-**Authoritative staging branch:** `agent/mvp-13-2-staging`  
-**Accepted MVP-20.3 staging base:** `cabe14ec7a6efb9a8d8399a4d916859ca8f91b18` (PR #1578 merged)  
-**Current corrective work branch:** `agent/mvp20-3-leaderboard-ux-corrective-v2`  
-**Corrective branch head at this checkpoint:** `325bb138508a1fbef8ebdaa94f05ad66cc5d6e52`  
+**Date:** 2026-09-20
+**Repository:** `manufact-test/mini-games-world`
+**Authoritative staging branch:** `agent/mvp-13-2-staging`
+**Accepted MVP-20.3 staging base:** `cabe14ec7a6efb9a8d8399a4d916859ca8f91b18` (PR #1578 merged)
+**Current corrective work branch:** `agent/mvp20-3-leaderboard-ux-corrective-v2`
+**Corrective branch head at this checkpoint:** `325bb138508a1fbef8ebdaa94f05ad66cc5d6e52`
 **Status:** design decision is authoritative; corrective implementation is IN PROGRESS and is **not yet merged to staging**.
 
 ---
@@ -145,7 +145,7 @@ This rule remains authoritative.
 
 What changes is presentation:
 
-- do **not** show the rejected large line above the public list such as  
+- do **not** show the rejected large line above the public list such as
   `До таблицы: 1/5 матчей · 1/1 побед`;
 - eligibility should be applied automatically;
 - if the product later needs to explain it, put it behind a compact info/help affordance or next to the player’s own status, not as a dominant line above the global list.
