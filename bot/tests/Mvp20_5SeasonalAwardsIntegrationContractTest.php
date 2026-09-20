@@ -31,8 +31,8 @@ $assertTrue(str_contains($awards, "BADGE_SILVER = 'silver'"), 'Rank 2-10 silver 
 $assertTrue(str_contains($awards, "BADGE_BRONZE = 'bronze'"), 'Rank 11-100 bronze badge tier must be explicit.');
 $assertTrue(str_contains($awards, 'MAX_REWARDED_RANK = 100'), 'Seasonal badges must stop at top 100.');
 $assertTrue(str_contains($awards, 'MAX_FRAME_RANK = 3'), 'Temporary frames must stop at top 3.');
-$assertTrue(str_contains($awards, "if ($rank === 1)"), 'Gold tier boundary must start only at rank 1.');
-$assertTrue(str_contains($awards, "if ($rank <= 10)"), 'Silver tier boundary must cover through rank 10.');
+$assertTrue(str_contains($awards, 'if ($rank === 1)'), 'Gold tier boundary must start only at rank 1.');
+$assertTrue(str_contains($awards, 'if ($rank <= 10)'), 'Silver tier boundary must cover through rank 10.');
 $assertTrue(str_contains($awards, 'frame_valid_from_at_utc'), 'Top-3 frame entitlement must have a next-season start.');
 $assertTrue(str_contains($awards, 'frame_valid_until_at_utc'), 'Top-3 frame entitlement must have a next-season end.');
 $assertTrue(str_contains($awards, 'projection_pending'), 'Awards must wait for rating projection before freezing results.');
