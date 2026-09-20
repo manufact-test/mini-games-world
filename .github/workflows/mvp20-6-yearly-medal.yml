@@ -19,6 +19,7 @@ on:
       - 'bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs'
       - 'bot/tests/Mvp19_3ProfileFramesTest.php'
       - '.github/workflows/mvp19-3-profile-avatars.yml'
+      - '.github/workflows/mvp19-3-profile-frames.yml'
       - '.github/workflows/mvp20-1-per-game-visible-rating.yml'
       - '.github/workflows/mvp20-2-hidden-skill.yml'
       - '.github/workflows/mvp20-3-leaderboards-antifarming.yml'
@@ -134,7 +135,8 @@ jobs:
               bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php|\
               bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
               bot/tests/Mvp19_3ProfileFramesTest.php|\
-              .github/workflows/mvp19-3-profile-avatars.yml)
+              .github/workflows/mvp19-3-profile-avatars.yml|\
+              .github/workflows/mvp19-3-profile-frames.yml)
                 ;;
               *)
                 echo "Unexpected MVP-20.6 path: $path" >&2
