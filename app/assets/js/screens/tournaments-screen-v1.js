@@ -34,6 +34,48 @@ let tournamentPendingAction = '';
 let tournamentRulesAccepted = false;
 let tournamentRulesSha256 = '';
 
+function lockVisibleBalance(){
+  const ids = ['balanceUnified', 'topbarBalanceUnified'];
+  const snapshots = new Map();
+  const elements = [];
+
+  for (const id of ids) {
+    const element = document.getElementById(id);
+    if (!(element instanceof HTMLElement)) continue;
+    snapshots.set(element, String(element.textContent || '—'));
+    elements.push(element);
+  }
+
+  if (elements.length === 0 || typeof MutationObserver !== 'function') {
+    return () => {};
+  }
+
+  let restoring = false;
+  const restore = () => {
+    if (restoring) return;
+    restoring = true;
+    try {
+      for (const element of elements) {
+        const expected = snapshots.get(element);
+        if (expected !== undefined && String(element.textContent || '') !== expected) {
+          element.textContent = expected;
+        }
+      }
+    } finally {
+      restoring = false;
+    }
+  };
+
+  const observer = new MutationObserver(restore);
+  for (const element of elements) {
+    observer.observe(element, { childList:true, subtree:true, characterData:true });
+  }
+
+  return () => {
+    observer.disconnect();
+  };
+}
+
 export function initTournamentsScreen(){
   if (initialized) return;
   const screen = document.getElementById('screen-tournaments');
@@ -275,6 +317,7 @@ async function mutateTournament(action){
     if (!window.confirm('Отменить регистрацию? Зарезервированные 50 000 коинов вернутся в доступный баланс.')) return;
   }
 
+  const releaseVisibleBalance = lockVisibleBalance();
   tournamentBusy = true;
   tournamentPendingAction = action;
   let errorMessage = '';
@@ -341,6 +384,12 @@ async function mutateTournament(action){
       syncTournamentRulesConsent();
     }
     renderTournamentSnapshot(errorMessage);
+
+    // Release the visible balance only after the pending button has already
+    // been removed from the DOM. Any unrelated runtime poll that learned about
+    // the server-side reservation while verification was still running was
+    // prevented from repainting the header balance early.
+    releaseVisibleBalance();
 
     if (!errorMessage && verifiedUser) {
       state.user = verifiedUser;
