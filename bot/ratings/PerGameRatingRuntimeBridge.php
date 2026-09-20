@@ -53,8 +53,13 @@ final class PerGameRatingRuntimeBridge
     public function processProjectedMatches(int $limit = 100): ?array
     {
         if (!$this->enabled()) return null;
-        $this->reconcileSeasonLifecycle();
-        return $this->service()->processPendingFinishedMatches($limit);
+
+        // Advance the calendar first, but do not close/award the previous
+        // season until every finished match has been projected by finish time.
+        $this->reconcileSeasonLifecycle(false);
+        $summary = $this->service()->processPendingFinishedMatches($limit);
+        $this->reconcileSeasonLifecycle(true);
+        return $summary;
     }
 
     public function snapshotForProfile(string $mgwId): array
@@ -81,16 +86,17 @@ final class PerGameRatingRuntimeBridge
             ))->synchronizeCurrentJson();
         }
 
-        $this->reconcileSeasonLifecycle();
+        $this->reconcileSeasonLifecycle(false);
         $service = $this->service();
         $service->processPendingFinishedMatches(200);
+        $this->reconcileSeasonLifecycle(true);
         return $service->snapshot($mgwId);
     }
 
-    private function reconcileSeasonLifecycle(): void
+    private function reconcileSeasonLifecycle(bool $allowCompletion): void
     {
         if (!class_exists('SeasonLifecycleService')) return;
-        (new SeasonLifecycleService($this->database()))->reconcile();
+        (new SeasonLifecycleService($this->database()))->reconcile(null, $allowCompletion);
     }
 
     private function service(): PerGameRatingService
