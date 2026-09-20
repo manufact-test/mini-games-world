@@ -79,10 +79,12 @@ foreach ([
     'В турнире участвуют ',
     'Регистрация закроется, когда все места будут заняты.',
     'tournaments-v2-tournament-participants',
-    'state.user = responseUser;',
+    'state.user = verifiedUser;',
     'renderBalances(state.user);',
     'data-tournament-rules-consent',
     'Я прочитал(а) и принимаю правила этого турнира.',
+    'Правила турнира приняты',
+    'бронзовая награда',
     'Состав набран · ожидаем назначения даты',
 ] as $needle) {
     $assertTrue(str_contains($source['screen'], $needle), 'Player Tournament corrective missing: ' . $needle);
@@ -92,15 +94,21 @@ $assertTrue(
     'Tournament mutation must not shadow imported app state and trigger a temporal-dead-zone error.'
 );
 $verifyPos = strpos($source['screen'], 'const verified = await api.tournamentStatus();');
-$commitSnapshotPos = strpos($source['screen'], 'tournamentSnapshot = verifiedSnapshot;');
-$balanceCommitPos = strpos($source['screen'], 'state.user = responseUser;');
+$pendingEndPos = strpos($source['screen'], "tournamentBusy = false;\n    tournamentPendingAction = '';", $verifyPos ?: 0);
+$commitSnapshotPos = strpos($source['screen'], 'tournamentSnapshot = verifiedCommit;');
+$finalVerifiedRenderPos = strpos($source['screen'], 'renderTournamentSnapshot(errorMessage);', $commitSnapshotPos ?: 0);
+$balanceCommitPos = strpos($source['screen'], 'state.user = verifiedUser;');
 $assertTrue(
     $verifyPos !== false
+    && $pendingEndPos !== false
     && $commitSnapshotPos !== false
+    && $finalVerifiedRenderPos !== false
     && $balanceCommitPos !== false
-    && $verifyPos < $commitSnapshotPos
-    && $verifyPos < $balanceCommitPos,
-    'Tournament seat state and visible header balance must not change before authoritative verification completes.'
+    && $verifyPos < $pendingEndPos
+    && $pendingEndPos < $commitSnapshotPos
+    && $commitSnapshotPos < $finalVerifiedRenderPos
+    && $finalVerifiedRenderPos < $balanceCommitPos,
+    'Tournament pending spinner must end before verified seat state and visible header balance are published.'
 );
 $assertTrue(
     !str_contains(
@@ -108,6 +116,22 @@ $assertTrue(
         "tournamentSnapshot = responseSnapshot;\n\n    if (result?.user && typeof result.user === 'object')"
     ),
     'Tournament write response must not optimistically publish seat/balance before verification.'
+);
+$assertTrue(
+    !str_contains($source['screen'], 'official-tournament-rules-v1')
+    && !str_contains($source['screen'], 'official-tournament-rules-v2')
+    && !str_contains($source['screen'], 'Сохраняются версия, язык и время согласия.'),
+    'Player Tournament must not expose internal rules identifiers or consent-storage implementation copy.'
+);
+$assertTrue(
+    str_contains($source['screen'], '<details class="tournaments-v2-tournament-rules">')
+    && !str_contains($source['screen'], '<details class="tournaments-v2-tournament-rules"${!registered'),
+    'Tournament rules must render collapsed by default.'
+);
+$assertTrue(
+    !str_contains($source['screen'], 'rules_consent?.version || rules.version')
+    && str_contains($source['screen'], 'Правила турнира приняты'),
+    'Accepted-rules notice must use human copy without the internal version token.'
 );
 $assertTrue(
     !str_contains($source['screen'], 'Зарезервировано:'),
@@ -159,7 +183,10 @@ foreach ([
     '.tournaments-v2-tournament-action.is-pending{',
     'mgw-tournament-pending-spin',
     '.tournaments-v2-tournament-rules{',
+    'linear-gradient(135deg,rgba(117,91,255,.09),rgba(255,255,255,.025))',
+    'border-right:2px solid rgba(222,214,255,.9);',
     '.tournaments-v2-tournament-consent{',
+    'align-items:center;',
 ] as $needle) {
     $assertTrue(str_contains($source['css'], $needle), 'Tournament manual UX CSS missing: ' . $needle);
 }
