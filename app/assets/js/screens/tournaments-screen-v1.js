@@ -38,6 +38,12 @@ export function initTournamentsScreen(){
         </div>
       </div>
 
+      <div class="tournaments-v2-mode-tabs" role="tablist" aria-label="${escapeHtml(t('shell.tournaments_title'))}">
+        <button class="tournaments-v2-mode-tab active" type="button" role="tab" aria-selected="true" data-competition-mode="rating">${escapeHtml(t('shell.competition_rating'))}</button>
+        <button class="tournaments-v2-mode-tab" type="button" role="tab" aria-selected="false" data-competition-mode="tournaments">${escapeHtml(t('shell.competition_tournaments'))}</button>
+      </div>
+
+      <div class="tournaments-v2-panel" data-competition-panel="rating">
       <section class="tournaments-v2-board" aria-labelledby="tournamentsLeaderboardTitle">
         <div class="tournaments-v2-board-head">
           <div>
@@ -58,9 +64,22 @@ export function initTournamentsScreen(){
           ${loadingMarkup()}
         </div>
       </section>
+      </div>
+
+      <div class="tournaments-v2-panel" data-competition-panel="tournaments" hidden>
+        <section class="tournaments-v2-board tournaments-v2-tournament-placeholder">
+          <div class="tournaments-v2-board-head">
+            <div>
+              <h2>${escapeHtml(t('shell.competition_tournaments'))}</h2>
+              <p>${escapeHtml(t('shell.competition_tournaments_note'))}</p>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   `;
 
+  bindModeTabs(screen);
   bindTabs(screen);
   bindScrollButtons(screen);
   onScreenEnter('tournaments', () => {
@@ -73,6 +92,24 @@ export function initTournamentsScreen(){
 
   if (currentScreen() === 'tournaments') void activateGame(activeGame);
   window.requestAnimationFrame(updateScrollAffordances);
+}
+
+function bindModeTabs(screen){
+  screen.querySelectorAll('[data-competition-mode]').forEach(button => {
+    button.addEventListener('click', () => {
+      const mode = String(button.dataset.competitionMode || '');
+      if (!['rating','tournaments'].includes(mode)) return;
+      screen.querySelectorAll('[data-competition-mode]').forEach(candidate => {
+        const active = String(candidate.dataset.competitionMode || '') === mode;
+        candidate.classList.toggle('active', active);
+        candidate.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      screen.querySelectorAll('[data-competition-panel]').forEach(panel => {
+        panel.hidden = String(panel.dataset.competitionPanel || '') !== mode;
+      });
+      if (mode === 'rating') void activateGame(activeGame);
+    });
+  });
 }
 
 function bindTabs(screen){
