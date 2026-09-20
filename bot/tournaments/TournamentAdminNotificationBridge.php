@@ -56,6 +56,10 @@ final class TournamentAdminNotificationBridge
         $title = trim((string)($tournament['title'] ?? 'Официальный турнир'));
         $count = (int)($tournament['registered_count'] ?? 0);
         $capacity = (int)($tournament['capacity'] ?? 0);
+        $closedAt = trim((string)($tournament['registration_closed_at_utc'] ?? ''));
+        if ($closedAt === '') {
+            throw new RuntimeException('Full tournament is missing registration close time.');
+        }
 
         return $this->events->createEvent(
             $data,
@@ -66,6 +70,7 @@ final class TournamentAdminNotificationBridge
                 'recipient_mgw_ids'=>array_values($recipientMgwIds),
                 'title'=>'Состав турнира набран',
                 'text'=>"«{$title}»: {$count}/{$capacity}. Регистрация закрыта. Турнир ожидает назначения даты.",
+                'scheduled_at'=>$closedAt,
                 'request_id'=>'official-tournament.' . $tournamentId . '.registration-full.admin',
             ],
             'system:tournament',
