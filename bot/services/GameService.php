@@ -478,8 +478,12 @@ final class GameService
             'board' => str_repeat('-', $boardSize * $boardSize),
             'player_ids' => [$aId, $bId],
             'player_names' => [
-                $aId => (string)($a['username'] ?: $a['first_name']),
-                $bId => (string)($b['username'] ?: $b['first_name']),
+                $aId => trim((string)($a['username'] ?? '')) !== ''
+                    ? (string)$a['username']
+                    : (string)($a['first_name'] ?? $aId),
+                $bId => trim((string)($b['username'] ?? '')) !== ''
+                    ? (string)$b['username']
+                    : (string)($b['first_name'] ?? $bId),
             ],
             'symbols' => [$aId => 'X', $bId => 'O'],
             'turn' => $aId,
