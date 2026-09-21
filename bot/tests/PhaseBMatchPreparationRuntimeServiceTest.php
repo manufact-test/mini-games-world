@@ -149,14 +149,11 @@ $assert(!str_contains(json_encode($readyGame['preparation_ready_devices'], JSON_
     && !str_contains(json_encode($readyGame['preparation_ready_devices'], JSON_UNESCAPED_SLASHES) ?: '', 'device-a'),
     'Raw session and device identifiers must not be stored in readiness state.');
 $startsAt = strtotime((string)($readyGame['starts_at'] ?? '')) ?: 0;
-$turnStartsAt = strtotime((string)($readyGame['turn_starts_at'] ?? '')) ?: 0;
-$deadlineAt = strtotime((string)($readyGame['turn_deadline_at'] ?? '')) ?: 0;
-$assert($startsAt > 0 && $turnStartsAt === $startsAt,
-    'Countdown and first authoritative turn must share the same starts_at.');
-$assert($deadlineAt - $turnStartsAt === MatchPreparationClockService::MOVE_TIMEOUT_SEC,
-    'The first turn must receive the full sixty-second authoritative window.');
-$assert((int)($readyGame['clock_revision'] ?? 0) === 1,
-    'The first synchronized turn must create exactly revision one.');
+$assert($startsAt > 0, 'Countdown must publish one authoritative future starts_at.');
+$assert(empty($readyGame['turn_starts_at']) && empty($readyGame['turn_deadline_at']),
+    'Tic-Tac-Toe must not spend the first sixty-second turn behind the launch countdown.');
+$assert((int)($readyGame['clock_revision'] ?? 0) === 0,
+    'Tic-Tac-Toe first-turn clock revision must remain zero until countdown completes.');
 unset($user);
 
 // Elapsed preparation is advanced and settled by this one owner, exactly once.
@@ -207,6 +204,7 @@ $db = [
         'observed' => [
             'id' => 'observed',
             'status' => 'active',
+            'game_type' => 'checkers',
             'launch_phase' => 'active',
             'player_ids' => ['u1', 'u2'],
             'turn' => 'u2',
