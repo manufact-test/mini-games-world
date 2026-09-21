@@ -133,6 +133,7 @@ export const api = {
   tournamentHallStatus: () => requestUrl(TOURNAMENT_HALL_URL, { action:'status' }),
   tournamentHallEnter: () => requestUrl(TOURNAMENT_HALL_URL, { action:'enter' }),
   tournamentHallHeartbeat: () => requestUrl(TOURNAMENT_HALL_URL, { action:'heartbeat' }),
+  tournamentHallPresence: () => requestUrl(TOURNAMENT_HALL_URL, { action:'heartbeat' }),
   tournamentRegister: rules => request('tournament_register', {
     tournamentRulesAccepted:rules?.accepted === true,
     tournamentRulesVersion:String(rules?.version || ''),
@@ -140,9 +141,6 @@ export const api = {
     tournamentRulesSha256:String(rules?.sha256 || ''),
   }),
   tournamentLeave: () => request('tournament_leave'),
-  tournamentHallStatus: () => request('tournament_hall_status'),
-  tournamentHallEnter: () => request('tournament_hall_enter'),
-  tournamentHallPresence: () => request('tournament_hall_presence'),
   mgwProfile: () => requestMgwProfile(),
   friends: (payload = {}) => requestUrl(FRIENDS_URL, payload),
   history: () => requestHistory(),
