@@ -192,8 +192,10 @@ final class StorageFactory
                 if (!is_array($notification)) continue;
                 $userId = trim((string)($notification['user_id'] ?? ''));
                 $eventKey = trim((string)($notification['event_key'] ?? ''));
-                if ($userId === '' || $eventKey === '') continue;
-                $events[$userId][$eventKey] = true;
+                $notificationId = trim((string)($notification['id'] ?? ''));
+                $identity = $eventKey !== '' ? $eventKey : $notificationId;
+                if ($userId === '' || $identity === '') continue;
+                $events[$userId][$identity] = true;
             }
             return $events;
         };
@@ -204,8 +206,8 @@ final class StorageFactory
             $primaryUserEvents = is_array($primaryEvents[$userId] ?? null)
                 ? $primaryEvents[$userId]
                 : [];
-            foreach ($events as $eventKey=>$_present) {
-                if (!isset($primaryUserEvents[$eventKey])) return true;
+            foreach ($events as $notificationIdentity=>$_present) {
+                if (!isset($primaryUserEvents[$notificationIdentity])) return true;
             }
         }
         return false;
