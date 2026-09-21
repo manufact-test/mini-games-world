@@ -21,7 +21,7 @@ try {
 
     $action = strtolower(trim((string)($payload['action'] ?? 'status')));
     if (!in_array($action, ['status','enter','heartbeat'], true)) {
-        json_response(['ok'=>false,'error'=>'Некорректное действие Tournament Hall.'], 400);
+        json_response(['ok'=>false,'error'=>'Некорректное действие Турнирный зал.'], 400);
     }
 
     $user = (new AuthService($config))->getUserFromRequest($payload);
@@ -34,7 +34,7 @@ try {
 
     $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
     if (!$databaseConfig->enabled()) {
-        json_response(['ok'=>false,'error'=>'Tournament Hall временно недоступен.'], 503);
+        json_response(['ok'=>false,'error'=>'Турнирный зал временно недоступен.'], 503);
     }
 
     $database = PdoConnectionFactory::create($databaseConfig);
@@ -58,10 +58,10 @@ try {
 } catch (Throwable $error) {
     $message = trim($error->getMessage());
     $public = [
-        'Tournament Hall доступен только зарегистрированным участникам.',
-        'Tournament Hall откроется после назначения даты турнира.',
-        'Tournament Hall откроется за 15 минут до старта.',
-        'Сначала войдите в Tournament Hall.',
+        'Турнирный зал доступен только зарегистрированным участникам.',
+        'Турнирный зал откроется после назначения даты турнира.',
+        'Турнирный зал откроется за 15 минут до старта.',
+        'Сначала войдите в Турнирный зал.',
         'Дата старта турнира не назначена.',
     ];
     if (in_array($message, $public, true)) {
@@ -69,7 +69,7 @@ try {
     }
 
     error_log('[MiniGamesWorld tournament hall] ' . $message);
-    $response = ['ok'=>false,'error'=>'Не удалось загрузить Tournament Hall.'];
+    $response = ['ok'=>false,'error'=>'Не удалось загрузить Турнирный зал.'];
     if (strtolower(trim((string)($config['environment'] ?? ''))) === 'staging'
         && isset($user)
         && is_array($user)
