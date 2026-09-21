@@ -25,6 +25,10 @@ on:
       - 'bot/tests/PhaseBClientLaunchUxContractTest.php'
       - 'bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php'
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
+      - '.github/workflows/mvp21-1-tournament-registration.yml'
+      - '.github/workflows/mvp21-2-tournament-rules.yml'
+      - '.github/workflows/mvp21-3-tournament-schedule.yml'
+      - '.github/workflows/mvp21-4-tournament-hall.yml'
       - '.github/workflows/mvp21-5-tournament-ready.yml'
   workflow_dispatch:
 
@@ -126,6 +130,10 @@ jobs:
           bad=0
           while IFS= read -r path; do
             case "$path" in
+              .github/workflows/mvp21-1-tournament-registration.yml|\
+              .github/workflows/mvp21-2-tournament-rules.yml|\
+              .github/workflows/mvp21-3-tournament-schedule.yml|\
+              .github/workflows/mvp21-4-tournament-hall.yml|\
               .github/workflows/mvp21-5-tournament-ready.yml|\
               bot/database/migrations/20260921_0054_create_tournament_match_readiness.php|\
               bot/tournaments/TournamentMatchReadinessService.php|\
