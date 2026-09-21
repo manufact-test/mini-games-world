@@ -337,7 +337,7 @@ async function enterTournamentHall(){
       ? result.snapshot
       : null;
   } catch (error) {
-    tournamentHallError = String(error?.message || 'Не удалось войти в Tournament Hall.');
+    tournamentHallError = String(error?.message || 'Не удалось войти в Турнирный зал.');
   } finally {
     tournamentHallBusy = false;
     renderTournamentSnapshot();
@@ -360,7 +360,7 @@ function startTournamentHallHeartbeat(){
         : tournamentHallSnapshot;
       tournamentHallError = '';
     } catch (error) {
-      tournamentHallError = String(error?.message || 'Не удалось обновить присутствие в Tournament Hall.');
+      tournamentHallError = String(error?.message || 'Не удалось обновить присутствие в Турнирный зал.');
     }
     renderTournamentSnapshot();
     startTournamentHallHeartbeat();
@@ -529,14 +529,14 @@ function tournamentHallMarkup(registered, scheduled, scheduledStart){
     const buttonLabel = tournamentHallBusy
       ? 'Входим в зал…'
       : started
-        ? 'Открыть Tournament Hall'
+        ? 'Открыть Турнирный зал'
         : openByClock
-          ? 'Войти в Tournament Hall'
+          ? 'Войти в Турнирный зал'
           : 'Зал откроется за 15 минут';
     return `
       <section class="tournaments-v2-hall-gate">
         <div>
-          <span>Tournament Hall</span>
+          <span>Турнирный зал</span>
           <strong>${started ? 'Турнир стартовал' : openByClock ? 'Зал открыт' : 'Откроется за 15 минут до старта'}</strong>
           <small>В зал допускаются только участники этого турнира. Сетка появится в момент старта.</small>
         </div>
@@ -579,7 +579,7 @@ function tournamentHallMarkup(registered, scheduled, scheduledStart){
     <section class="tournaments-v2-hall">
       <div class="tournaments-v2-hall-head">
         <div>
-          <span>Tournament Hall</span>
+          <span>Турнирный зал</span>
           <h3>${bracket ? 'Стартовая сетка сформирована' : 'Вы в турнирном зале'}</h3>
         </div>
         <b>${bracket ? 'СТАРТ' : 'LIVE'}</b>
@@ -809,9 +809,9 @@ function renderTournamentSnapshot(errorMessage = ''){
         const openNow = opensAt > 0 && Date.now() >= opensAt;
         hallButton.disabled = !openNow;
         hallButton.textContent = startAt > 0 && Date.now() >= startAt
-          ? 'Открыть Tournament Hall'
+          ? 'Открыть Турнирный зал'
           : openNow
-            ? 'Войти в Tournament Hall'
+            ? 'Войти в Турнирный зал'
             : 'Зал откроется за 15 минут';
       }
     };
