@@ -88,6 +88,32 @@ final class MatchPreparationClockService
         $game['updated_at'] = now_iso();
     }
 
+    public function markTournamentPairReady(array &$game): void
+    {
+        if ((string)($game['match_source'] ?? '') !== 'tournament') {
+            throw new RuntimeException('Tournament launch confirmation requires a tournament match.');
+        }
+        if ((string)($game['launch_phase'] ?? '') !== 'preparing') return;
+
+        $players = array_values(array_filter(
+            array_map('strval', $game['player_ids'] ?? []),
+            static fn(string $playerId): bool => $playerId !== ''
+        ));
+        if (count(array_unique($players)) !== 2) {
+            throw new RuntimeException('Tournament match requires exactly two players.');
+        }
+
+        $readyAt = now_iso();
+        $game['preparation_ready_devices'] = [];
+        foreach ($players as $playerId) {
+            $game['preparation_ready_devices'][$playerId] = [
+                'device_hash' => 'server-tournament-ready',
+                'ready_at' => $readyAt,
+            ];
+        }
+        $game['updated_at'] = $readyAt;
+    }
+
     public function advance(array &$game): void
     {
         $phase = (string)($game['launch_phase'] ?? '');
@@ -102,7 +128,7 @@ final class MatchPreparationClockService
 
             if ($this->allReady($game)) {
                 if ($this->isTicTacToe($game)) {
-                    $startsAtMs = $this->nowMs() + (self::COUNTDOWN_SEC * 1000);
+                    $startsAtMs = $this->nowMs() + ($this->countdownSeconds($game) * 1000);
                     $startsAtSec = intdiv($startsAtMs, 1000);
 
                     // The countdown owns only launch synchronization. The first
@@ -124,7 +150,7 @@ final class MatchPreparationClockService
                     return;
                 }
 
-                $startsAt = time() + self::COUNTDOWN_SEC;
+                $startsAt = time() + $this->countdownSeconds($game);
                 $game['launch_phase'] = 'countdown';
                 $game['starts_at'] = gmdate('c', $startsAt);
                 $game['turn_started_at'] = gmdate('c', $startsAt);
@@ -254,6 +280,7 @@ final class MatchPreparationClockService
             'ready_required' => count($game['player_ids'] ?? []),
             'time_left' => $timeLeft,
             'move_timeout_sec' => self::MOVE_TIMEOUT_SEC,
+            'launch_countdown_sec' => $this->countdownSeconds($game),
         ]);
     }
 
@@ -312,6 +339,12 @@ final class MatchPreparationClockService
     private function isTicTacToe(array $game): bool
     {
         return (string)($game['game_type'] ?? 'tictactoe') === 'tictactoe';
+    }
+
+    private function countdownSeconds(array $game): int
+    {
+        $seconds = (int)($game['launch_countdown_sec'] ?? self::COUNTDOWN_SEC);
+        return max(1, min(30, $seconds));
     }
 
     private function nowMs(): int

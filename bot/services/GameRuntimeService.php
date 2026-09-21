@@ -197,6 +197,52 @@ final class GameRuntimeService
         return $result;
     }
 
+    public function createTournamentGame(
+        array &$db,
+        array &$a,
+        array &$b,
+        string $gameType,
+        int $boardSize,
+        string $gameId,
+        array $metadata
+    ): array {
+        $this->normalizeDatabaseGameTypes($db);
+        $gameType = $this->catalog->normalizeGameType($gameType);
+        $boardSize = $this->catalog->normalizeBoardSize($gameType, $boardSize);
+        $definition = $this->catalog->get($gameType);
+        $engine = (string)($definition['engine'] ?? '');
+
+        if (!in_array($engine, ['tictactoe', 'four_in_a_row', 'battleship', 'checkers', 'reversi'], true)) {
+            throw new RuntimeException('Tournament runtime is not connected for this game.');
+        }
+
+        $legacyBoardSize = $engine === 'tictactoe'
+            ? $boardSize
+            : $this->legacyProxyBoardSize($boardSize);
+        $alreadyExists = isset($db['games'][$gameId]) && is_array($db['games'][$gameId]);
+        $game = $this->legacyGame->createTournamentGame(
+            $db,
+            $a,
+            $b,
+            UnifiedGameZonePolicy::storageRoom(),
+            $legacyBoardSize,
+            $gameId,
+            $metadata
+        );
+
+        if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
+            throw new RuntimeException('Tournament runtime did not persist the created game.');
+        }
+        if ($alreadyExists) return $db['games'][$gameId];
+
+        $db['games'][$gameId]['game_type'] = $gameType;
+        $this->applyRequestedBoardMetadata($db['games'][$gameId], $gameType, $boardSize);
+        $this->initializeEngineGame($db['games'][$gameId]);
+        $this->syncGameMetadataTransactions($db, $gameId);
+
+        return $db['games'][$gameId];
+    }
+
     public function leaveSearch(array &$db, array &$user): void
     {
         $this->legacyGame->leaveSearch($db, $user);

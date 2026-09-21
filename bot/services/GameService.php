@@ -408,6 +408,105 @@ final class GameService
         return null;
     }
 
+    public function createTournamentGame(
+        array &$db,
+        array &$a,
+        array &$b,
+        string $room,
+        int $boardSize,
+        string $gameId,
+        array $metadata
+    ): array {
+        $gameId = trim($gameId);
+        if ($gameId === '') throw new InvalidArgumentException('Tournament game id is required.');
+
+        $aId = trim((string)($a['id'] ?? ''));
+        $bId = trim((string)($b['id'] ?? ''));
+        if ($aId === '' || $bId === '' || $aId === $bId) {
+            throw new RuntimeException('Tournament game requires two distinct runtime players.');
+        }
+
+        $tournamentId = trim((string)($metadata['tournament_id'] ?? ''));
+        $roundNo = max(1, (int)($metadata['tournament_round_no'] ?? 1));
+        $pairNo = max(1, (int)($metadata['tournament_pair_no'] ?? 1));
+        if ($tournamentId === '') throw new RuntimeException('Tournament id is required for tournament game.');
+
+        $existing = $db['games'][$gameId] ?? null;
+        if (is_array($existing)) {
+            $existingPlayers = array_values(array_map('strval', $existing['player_ids'] ?? []));
+            sort($existingPlayers);
+            $expectedPlayers = [$aId, $bId];
+            sort($expectedPlayers);
+            if ((string)($existing['match_source'] ?? '') !== 'tournament'
+                || (string)($existing['tournament_id'] ?? '') !== $tournamentId
+                || (int)($existing['tournament_round_no'] ?? 0) !== $roundNo
+                || (int)($existing['tournament_pair_no'] ?? 0) !== $pairNo
+                || $existingPlayers !== $expectedPlayers) {
+                throw new RuntimeException('Tournament game id conflicts with an existing game.');
+            }
+            $a['status'] = 'playing';
+            $b['status'] = 'playing';
+            $a['current_game_id'] = $gameId;
+            $b['current_game_id'] = $gameId;
+            return $existing;
+        }
+
+        foreach ([&$a, &$b] as &$player) {
+            $currentGameId = trim((string)($player['current_game_id'] ?? ''));
+            if ($currentGameId !== '' && $currentGameId !== $gameId) {
+                $current = $db['games'][$currentGameId] ?? null;
+                if (is_array($current) && (string)($current['status'] ?? '') === 'active') {
+                    throw new RuntimeException('Игрок уже участвует в другом активном матче.');
+                }
+            }
+        }
+        unset($player);
+
+        $a['status'] = 'playing';
+        $b['status'] = 'playing';
+        $a['current_game_id'] = $gameId;
+        $b['current_game_id'] = $gameId;
+
+        $now = now_iso();
+        $game = [
+            'id' => $gameId,
+            'game_type' => 'tictactoe',
+            'room' => $room,
+            'bet' => 0,
+            'bank' => 0,
+            'board_size' => $boardSize,
+            'board' => str_repeat('-', $boardSize * $boardSize),
+            'player_ids' => [$aId, $bId],
+            'player_names' => [
+                $aId => trim((string)($a['username'] ?? '')) !== ''
+                    ? (string)$a['username']
+                    : (string)($a['first_name'] ?? $aId),
+                $bId => trim((string)($b['username'] ?? '')) !== ''
+                    ? (string)$b['username']
+                    : (string)($b['first_name'] ?? $bId),
+            ],
+            'symbols' => [$aId => 'X', $bId => 'O'],
+            'turn' => $aId,
+            'status' => 'active',
+            'winner_id' => null,
+            'loser_id' => null,
+            'finish_reason' => null,
+            'payout_done' => false,
+            'match_source' => 'tournament',
+            'tournament_id' => $tournamentId,
+            'tournament_round_no' => $roundNo,
+            'tournament_pair_no' => $pairNo,
+            'source_match_id' => $tournamentId . ':r' . $roundNo . ':p' . $pairNo,
+            'created_at' => $now,
+            'updated_at' => $now,
+            'last_move_at' => $now,
+            'turn_started_at' => $now,
+        ];
+
+        $db['games'][$gameId] = $game;
+        return $db['games'][$gameId];
+    }
+
     private function createGame(array &$db, array &$a, array &$b, string $room, int $bet, int $boardSize): array
     {
         $balanceKey = UnifiedBalanceRuntimeState::FIELD;

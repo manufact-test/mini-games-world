@@ -149,14 +149,11 @@ $assert(!str_contains(json_encode($readyGame['preparation_ready_devices'], JSON_
     && !str_contains(json_encode($readyGame['preparation_ready_devices'], JSON_UNESCAPED_SLASHES) ?: '', 'device-a'),
     'Raw session and device identifiers must not be stored in readiness state.');
 $startsAt = strtotime((string)($readyGame['starts_at'] ?? '')) ?: 0;
-$turnStartsAt = strtotime((string)($readyGame['turn_starts_at'] ?? '')) ?: 0;
-$deadlineAt = strtotime((string)($readyGame['turn_deadline_at'] ?? '')) ?: 0;
-$assert($startsAt > 0 && $turnStartsAt === $startsAt,
-    'Countdown and first authoritative turn must share the same starts_at.');
-$assert($deadlineAt - $turnStartsAt === MatchPreparationClockService::MOVE_TIMEOUT_SEC,
-    'The first turn must receive the full sixty-second authoritative window.');
-$assert((int)($readyGame['clock_revision'] ?? 0) === 1,
-    'The first synchronized turn must create exactly revision one.');
+$assert($startsAt > 0, 'Countdown must publish one authoritative future starts_at.');
+$assert(empty($readyGame['turn_starts_at']) && empty($readyGame['turn_deadline_at']),
+    'Tic-Tac-Toe must not spend the first sixty-second turn behind the launch countdown.');
+$assert((int)($readyGame['clock_revision'] ?? 0) === 0,
+    'Tic-Tac-Toe first-turn clock revision must remain zero until countdown completes.');
 unset($user);
 
 // Elapsed preparation is advanced and settled by this one owner, exactly once.
@@ -177,9 +174,9 @@ $assert(($timeoutGame['status'] ?? '') === 'finished'
     && ($timeoutGame['launch_phase'] ?? '') === 'cancelled'
     && ($timeoutGame['finish_reason'] ?? '') === 'preparation_timeout',
     'Elapsed preparation must become the dedicated cancelled preparation result.');
-$assert(($db['users']['u1']['balance_match'] ?? 0) === 100
-    && ($db['users']['u2']['balance_match'] ?? 0) === 100,
-    'Preparation timeout must restore each human stake exactly once.');
+$assert(($db['users']['u1']['balance'] ?? 0) === 100
+    && ($db['users']['u2']['balance'] ?? 0) === 100,
+    'Preparation timeout must restore each human stake exactly once to the canonical unified balance.');
 $assert(($db['users']['u1']['stats'] ?? []) === $stats && ($db['users']['u2']['stats'] ?? []) === $stats,
     'A match that never started must not alter game or weekly result statistics.');
 $assert(($db['system']['fees_match'] ?? null) === 77,
@@ -193,9 +190,9 @@ $assert(count($finishRows) === 1,
 $transactionCount = count($db['transactions']);
 $service->synchronizeCurrentGame($db, $user, 'timeout', 'timeout', 'sess-a', 'device-a');
 $assert(count($db['transactions']) === $transactionCount
-    && ($db['users']['u1']['balance_match'] ?? 0) === 100
-    && ($db['users']['u2']['balance_match'] ?? 0) === 100,
-    'Repeated stale timeout observation must not duplicate settlement or refund.');
+    && ($db['users']['u1']['balance'] ?? 0) === 100
+    && ($db['users']['u2']['balance'] ?? 0) === 100,
+    'Repeated stale timeout observation must not duplicate settlement or unified-balance refund.');
 unset($user);
 
 // Active observations synchronize an externally changed turn through the same
@@ -207,6 +204,7 @@ $db = [
         'observed' => [
             'id' => 'observed',
             'status' => 'active',
+            'game_type' => 'checkers',
             'launch_phase' => 'active',
             'player_ids' => ['u1', 'u2'],
             'turn' => 'u2',

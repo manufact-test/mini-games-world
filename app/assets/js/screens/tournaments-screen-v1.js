@@ -3,6 +3,7 @@ import { currentScreen, onScreenEnter } from '../router.js?v=27';
 import { t, formatNumber } from '@mgw/i18n';
 import { state } from '../state.js?v=27';
 import { renderBalances } from '../ui.js?v=90-wallet-15-3';
+import { enterGame } from './game-screen-v102-safe.js?v=102';
 
 const GAME_TYPES = Object.freeze([
   'tictactoe',
@@ -39,6 +40,10 @@ let tournamentHallRequest = null;
 let tournamentHallBusy = false;
 let tournamentHallError = '';
 let tournamentHallTimer = null;
+let tournamentMatchSnapshot = null;
+let tournamentMatchRequest = null;
+let tournamentMatchBusy = false;
+let tournamentMatchError = '';
 
 function lockVisibleBalance(){
   const ids = ['balanceUnified', 'topbarBalanceUnified'];
@@ -266,6 +271,14 @@ function bindTournamentActions(screen){
   });
 
   screen.addEventListener('click', event => {
+    const readyButton = event.target instanceof Element
+      ? event.target.closest('[data-tournament-ready]')
+      : null;
+    if (readyButton instanceof HTMLButtonElement) {
+      if (!readyButton.disabled) void markTournamentReady();
+      return;
+    }
+
     const hallButton = event.target instanceof Element
       ? event.target.closest('[data-tournament-hall-enter]')
       : null;
@@ -292,6 +305,8 @@ async function warmTournamentStatus(){
       if (previousTournamentId && nextTournamentId !== previousTournamentId) {
         tournamentHallSnapshot = null;
         tournamentHallError = '';
+        tournamentMatchSnapshot = null;
+        tournamentMatchError = '';
         stopTournamentHallHeartbeat();
       }
       syncTournamentRulesConsent();
@@ -324,6 +339,46 @@ async function warmTournamentHallStatus(){
     })
     .finally(() => { tournamentHallRequest = null; });
   return tournamentHallRequest;
+}
+
+async function refreshTournamentMatchState(){
+  if (tournamentMatchRequest) return tournamentMatchRequest;
+  tournamentMatchRequest = api.tournamentMatchState()
+    .then(result => {
+      tournamentMatchSnapshot = result?.snapshot && typeof result.snapshot === 'object'
+        ? result.snapshot
+        : null;
+      tournamentMatchError = '';
+      if (result?.game?.id && String(result.game.status || '') === 'active') {
+        enterGame(result.game);
+      }
+      return tournamentMatchSnapshot;
+    })
+    .finally(() => { tournamentMatchRequest = null; });
+  return tournamentMatchRequest;
+}
+
+async function markTournamentReady(){
+  if (tournamentMatchBusy) return;
+  document.dispatchEvent(new CustomEvent('mgw:prime-launch-feedback'));
+  tournamentMatchBusy = true;
+  tournamentMatchError = '';
+  renderTournamentSnapshot();
+  try {
+    const result = await api.tournamentMatchReady();
+    tournamentMatchSnapshot = result?.snapshot && typeof result.snapshot === 'object'
+      ? result.snapshot
+      : tournamentMatchSnapshot;
+    if (result?.game?.id && String(result.game.status || '') === 'active') {
+      enterGame(result.game);
+      return;
+    }
+  } catch (error) {
+    tournamentMatchError = String(error?.message || 'Не удалось подтвердить готовность.');
+  } finally {
+    tournamentMatchBusy = false;
+    if (currentScreen() === 'tournaments') renderTournamentSnapshot();
+  }
 }
 
 async function enterTournamentHall(){
@@ -359,6 +414,11 @@ function startTournamentHallHeartbeat(){
         ? result.snapshot
         : tournamentHallSnapshot;
       tournamentHallError = '';
+      if (tournamentHallSnapshot?.bracket) {
+        try { await refreshTournamentMatchState(); } catch (error) {
+          tournamentMatchError = String(error?.message || 'Не удалось обновить готовность пары.');
+        }
+      }
     } catch (error) {
       tournamentHallError = String(error?.message || 'Не удалось обновить присутствие в Турнирный зал.');
     }
@@ -391,10 +451,15 @@ async function loadTournamentSnapshot(){
     const scheduled = String(tournamentSnapshot?.tournament?.state || '') === 'scheduled'
       && Boolean(tournamentSnapshot?.tournament?.scheduled_start_at_utc);
     if (registered && scheduled) {
-      try { await warmTournamentHallStatus(); } catch (_) {}
+      try {
+        await warmTournamentHallStatus();
+        if (tournamentHallSnapshot?.bracket) await refreshTournamentMatchState();
+      } catch (_) {}
     } else {
       tournamentHallSnapshot = null;
       tournamentHallError = '';
+      tournamentMatchSnapshot = null;
+      tournamentMatchError = '';
       stopTournamentHallHeartbeat();
     }
     renderTournamentSnapshot();
@@ -624,7 +689,54 @@ function tournamentBracketMarkup(bracket){
   return `<div class="tournaments-v2-bracket">
     <div class="tournaments-v2-hall-section-title"><strong>Первый раунд</strong><span>случайная сетка</span></div>
     <div class="tournaments-v2-bracket-grid">${cards}</div>
+    ${tournamentMatchMarkup()}
   </div>`;
+}
+
+function tournamentMatchMarkup(){
+  const match = tournamentMatchSnapshot?.match && typeof tournamentMatchSnapshot.match === 'object'
+    ? tournamentMatchSnapshot.match
+    : null;
+  if (!match) return '';
+
+  const players = Array.isArray(match.players) ? match.players : [];
+  const playerRows = players.map(player => `
+    <div class="tournaments-v2-ready-player${player?.ready === true ? ' is-ready' : ''}">
+      <strong>${escapeHtml(String(player?.nickname || 'Игрок'))}${player?.self === true ? ' · вы' : ''}</strong>
+      <span>${player?.ready === true ? 'Готов' : 'Ожидаем'}</span>
+    </div>
+  `).join('');
+  const deadline = parseTournamentUtc(match.readiness_deadline_at_utc);
+  const expired = String(match.launch_state || '') === 'readiness_expired';
+  const launched = String(match.launch_state || '') === 'launched' || Boolean(match.game_id);
+  const bothReady = match.both_ready === true;
+  const selfReady = match.self_ready === true;
+  const canReady = match.can_ready === true && !tournamentMatchBusy;
+
+  let message = 'Подтвердите готовность в течение двух минут.';
+  if (expired) message = 'Двухминутное окно готовности завершено.';
+  else if (launched) message = 'Матч запущен.';
+  else if (bothReady) message = 'Оба готовы · запускаем матч.';
+  else if (selfReady) message = 'Вы готовы · ждём соперника.';
+
+  const action = !selfReady && !expired && !launched
+    ? `<button type="button" class="tournaments-v2-tournament-action tournaments-v2-ready-action"
+        data-tournament-ready ${canReady ? '' : 'disabled'} ${tournamentMatchBusy ? 'aria-busy="true"' : ''}>
+        ${tournamentMatchBusy ? 'Подтверждаем…' : 'Я готов'}
+      </button>`
+    : '';
+
+  return `
+    <section class="tournaments-v2-ready">
+      <div class="tournaments-v2-ready-head">
+        <div><span>Первый матч · пара ${escapeHtml(String(match.pair_no || ''))}</span><strong>${escapeHtml(message)}</strong></div>
+        ${deadline && !launched ? `<b data-tournament-ready-countdown data-ready-deadline="${deadline.getTime()}">${escapeHtml(formatReadyCountdown(deadline.getTime() - Date.now()))}</b>` : ''}
+      </div>
+      <div class="tournaments-v2-ready-players">${playerRows}</div>
+      ${tournamentMatchError ? `<div class="tournaments-v2-tournament-error">${escapeHtml(tournamentMatchError)}</div>` : ''}
+      ${action}
+    </section>
+  `;
 }
 
 function renderTournamentSnapshot(errorMessage = ''){
@@ -801,6 +913,11 @@ function renderTournamentSnapshot(errorMessage = ''){
       countdown.textContent = startedNow ? 'Турнир начался' : formatTournamentCountdown(remainingMs);
       if (countdownLabel instanceof HTMLElement) countdownLabel.hidden = startedNow;
       countdown.parentElement?.classList.toggle('is-started', startedNow);
+      const readyCountdown = body.querySelector('[data-tournament-ready-countdown]');
+      if (readyCountdown instanceof HTMLElement) {
+        const readyDeadline = Number(readyCountdown.dataset.readyDeadline || 0);
+        readyCountdown.textContent = formatReadyCountdown(readyDeadline - Date.now());
+      }
       const hallButton = body.querySelector('[data-tournament-hall-enter]');
       if (hallButton instanceof HTMLButtonElement && !tournamentHallBusy) {
         const opensAt = Number(hallButton.dataset.hallOpensAt || 0);
@@ -847,6 +964,13 @@ function formatTournamentCountdown(remainingMs){
   const seconds = totalSeconds % 60;
   const time = `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
   return days > 0 ? `${days} дн. ${time}` : time;
+}
+
+function formatReadyCountdown(remainingMs){
+  const seconds = Math.max(0, Math.ceil(Number(remainingMs || 0) / 1000));
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return `${String(minutes).padStart(2,'0')}:${String(rest).padStart(2,'0')}`;
 }
 
 function formatConsentTime(value){

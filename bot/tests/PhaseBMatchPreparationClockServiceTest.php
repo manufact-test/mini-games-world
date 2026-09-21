@@ -51,20 +51,21 @@ $assert(($game['launch_phase'] ?? '') === 'preparing', 'Countdown must wait for 
 $clock->markReady($game, 'player_b', 'raw-session-b', 'raw-device-b');
 $clock->advance($game);
 $assert(($game['launch_phase'] ?? '') === 'countdown', 'Both ready players must create one shared countdown.');
-$assert((int)($game['clock_revision'] ?? 0) === 1, 'First turn must own clock revision one.');
+$assert((int)($game['clock_revision'] ?? 0) === 0, 'Tic-Tac-Toe first-turn clock must not start behind the launch overlay.');
 $startsAt = strtotime((string)($game['starts_at'] ?? '')) ?: 0;
-$turnStartsAt = strtotime((string)($game['turn_starts_at'] ?? '')) ?: 0;
-$deadlineAt = strtotime((string)($game['turn_deadline_at'] ?? '')) ?: 0;
 $assert($startsAt > time(), 'Shared starts_at must be in the future.');
-$assert($turnStartsAt === $startsAt, 'First turn must start at the exact shared match start.');
-$assert($deadlineAt - $turnStartsAt === MatchPreparationClockService::MOVE_TIMEOUT_SEC, 'First player must receive the full move timeout.');
+$assert(empty($game['turn_starts_at']), 'Tic-Tac-Toe turn start must remain unset during countdown.');
+$assert(empty($game['turn_deadline_at']), 'Tic-Tac-Toe turn deadline must remain unset during countdown.');
 
 $game['starts_at'] = gmdate('c', time() - 1);
-$game['turn_started_at'] = $game['starts_at'];
-$game['turn_starts_at'] = $game['starts_at'];
-$game['turn_deadline_at'] = gmdate('c', time() - 1 + MatchPreparationClockService::MOVE_TIMEOUT_SEC);
+$game['starts_epoch_ms'] = (time() - 1) * 1000;
 $clock->advance($game);
 $assert(($game['launch_phase'] ?? '') === 'active', 'Countdown must activate only after starts_at.');
+$assert((int)($game['clock_revision'] ?? 0) === 1, 'First playable turn must own clock revision one after countdown.');
+$turnStartsAt = strtotime((string)($game['turn_starts_at'] ?? '')) ?: 0;
+$deadlineAt = strtotime((string)($game['turn_deadline_at'] ?? '')) ?: 0;
+$assert($turnStartsAt > 0, 'First playable turn must receive an authoritative start after countdown.');
+$assert($deadlineAt - $turnStartsAt === MatchPreparationClockService::MOVE_TIMEOUT_SEC, 'First player must receive the full move timeout after countdown.');
 $clock->assertActionAllowed($game);
 
 $previousTurn = 'player_a';
@@ -73,14 +74,19 @@ $handoffRequestedAt = time();
 $clock->synchronizeTurnHandoff($game, $previousTurn);
 $handoffStart = strtotime((string)($game['turn_starts_at'] ?? '')) ?: 0;
 $handoffDeadline = strtotime((string)($game['turn_deadline_at'] ?? '')) ?: 0;
-$assert($handoffStart >= $handoffRequestedAt + MatchPreparationClockService::TURN_HANDOFF_SEC, 'Turn handoff must use one future server start.');
+$assert(
+    $handoffStart >= $handoffRequestedAt && $handoffStart <= $handoffRequestedAt + 1,
+    'Tic-Tac-Toe handoff must start immediately from the authoritative server commit without an artificial pause.'
+);
 $assert($handoffDeadline - $handoffStart === MatchPreparationClockService::MOVE_TIMEOUT_SEC, 'Receiving player must receive a fresh full timeout.');
 $assert((int)($game['clock_revision'] ?? 0) === 2, 'Turn handoff must advance the authoritative clock revision once.');
 
 $guardStart = time() + 3;
 $game['turn_started_at'] = gmdate('c', $guardStart);
 $game['turn_starts_at'] = gmdate('c', $guardStart);
+$game['turn_starts_epoch_ms'] = $guardStart * 1000;
 $game['turn_deadline_at'] = gmdate('c', $guardStart + MatchPreparationClockService::MOVE_TIMEOUT_SEC);
+$game['turn_deadline_epoch_ms'] = ($guardStart + MatchPreparationClockService::MOVE_TIMEOUT_SEC) * 1000;
 $handoffBlocked = false;
 try {
     $clock->assertActionAllowed($game);
@@ -95,9 +101,12 @@ $assert((int)($public['move_timeout_sec'] ?? 0) === MatchPreparationClockService
 $assert((int)($public['time_left'] ?? 0) === MatchPreparationClockService::MOVE_TIMEOUT_SEC, 'Future handoff must display the full timeout, not legacy elapsed time.');
 $assert(isset($public['server_now_ms'], $public['turn_starts_at_ms'], $public['turn_deadline_ms']), 'Public state must expose one server time anchor and turn timestamps.');
 
-$game['turn_started_at'] = gmdate('c', time() - 1);
+$pastTurnStart = time() - 1;
+$game['turn_started_at'] = gmdate('c', $pastTurnStart);
 $game['turn_starts_at'] = $game['turn_started_at'];
-$game['turn_deadline_at'] = gmdate('c', time() - 1 + MatchPreparationClockService::MOVE_TIMEOUT_SEC);
+$game['turn_starts_epoch_ms'] = $pastTurnStart * 1000;
+$game['turn_deadline_at'] = gmdate('c', $pastTurnStart + MatchPreparationClockService::MOVE_TIMEOUT_SEC);
+$game['turn_deadline_epoch_ms'] = ($pastTurnStart + MatchPreparationClockService::MOVE_TIMEOUT_SEC) * 1000;
 $clock->assertActionAllowed($game);
 
 $legacy = [
@@ -109,6 +118,55 @@ $legacy = [
 $clock->normalizeExisting($legacy);
 $assert(($legacy['launch_phase'] ?? '') === 'active', 'Existing accepted games must not be reset into preparation.');
 $assert((int)($legacy['clock_revision'] ?? 0) === 1, 'Existing games must receive a stable clock anchor without restart.');
+
+$tournamentGame = [
+    'id' => 'game_tournament_phase_b_test',
+    'status' => 'active',
+    'game_type' => 'tictactoe',
+    'match_source' => 'tournament',
+    'launch_countdown_sec' => 10,
+    'player_ids' => ['tour_a', 'tour_b'],
+    'turn' => 'tour_a',
+    'created_at' => now_iso(),
+    'updated_at' => now_iso(),
+    'turn_started_at' => now_iso(),
+];
+$clock->initializeNewGame($tournamentGame);
+$clock->markTournamentPairReady($tournamentGame);
+$clock->advance($tournamentGame);
+$assert(($tournamentGame['launch_phase'] ?? '') === 'countdown', 'Tournament both-ready handoff must reuse the shared countdown owner.');
+$assert(count($tournamentGame['preparation_ready_devices'] ?? []) === 2, 'Tournament readiness must mark exactly both paired players server-side.');
+$tournamentStartsAtMs = (int)($tournamentGame['starts_epoch_ms'] ?? 0);
+$nowMs = (int)round(microtime(true) * 1000);
+$assert($tournamentStartsAtMs >= $nowMs + 9000, 'Tournament countdown must remain approximately ten seconds, not ordinary three seconds.');
+$assert($tournamentStartsAtMs <= $nowMs + 11000, 'Tournament countdown must not exceed the bounded ten-second launch window.');
+$tournamentPublic = $clock->enrichPublicGame($tournamentGame, []);
+$assert((int)($tournamentPublic['launch_countdown_sec'] ?? 0) === 10, 'Public tournament game must expose the authoritative ten-second countdown.');
+$assert((int)($tournamentPublic['time_left'] ?? 0) === MatchPreparationClockService::MOVE_TIMEOUT_SEC, 'Move timer must remain full while tournament countdown is running.');
+$tournamentBlocked = false;
+try {
+    $clock->assertActionAllowed($tournamentGame);
+} catch (RuntimeException $e) {
+    $tournamentBlocked = str_contains($e->getMessage(), 'обратного отсчёта');
+}
+$assert($tournamentBlocked, 'Tournament field must stay locked until the countdown ends.');
+
+$ordinaryCountdown = [
+    'id' => 'game_ordinary_countdown_regression',
+    'status' => 'active',
+    'game_type' => 'tictactoe',
+    'player_ids' => ['ordinary_a', 'ordinary_b'],
+    'turn' => 'ordinary_a',
+    'created_at' => now_iso(),
+    'updated_at' => now_iso(),
+    'turn_started_at' => now_iso(),
+];
+$clock->initializeNewGame($ordinaryCountdown);
+$clock->markReady($ordinaryCountdown, 'ordinary_a', 's-a', 'd-a');
+$clock->markReady($ordinaryCountdown, 'ordinary_b', 's-b', 'd-b');
+$clock->advance($ordinaryCountdown);
+$ordinaryPublic = $clock->enrichPublicGame($ordinaryCountdown, []);
+$assert((int)($ordinaryPublic['launch_countdown_sec'] ?? 0) === MatchPreparationClockService::COUNTDOWN_SEC, 'Ordinary matches must preserve the accepted three-second countdown.');
 
 $botGame = [
     'status' => 'active',
