@@ -40,6 +40,7 @@ let tournamentHallRequest = null;
 let tournamentHallBusy = false;
 let tournamentHallError = '';
 let tournamentHallTimer = null;
+let tournamentVisibleRefreshTimer = null;
 let tournamentMatchSnapshot = null;
 let tournamentProgressionSnapshot = null;
 let tournamentMatchRequest = null;
@@ -186,10 +187,14 @@ export function initTournamentsScreen(){
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') {
       stopTournamentHallHeartbeat();
+      stopTournamentVisibleRefresh();
       return;
     }
     if (tournamentHallSnapshot?.hall?.entered === true && tournamentHallPanelVisible()) {
+      stopTournamentVisibleRefresh();
       startTournamentHallHeartbeat();
+    } else if (tournamentHallPanelVisible()) {
+      startTournamentVisibleRefresh();
     }
   });
 
@@ -245,6 +250,7 @@ function bindModeTabs(screen){
       });
       if (mode === 'rating') {
         stopTournamentHallHeartbeat();
+        stopTournamentVisibleRefresh();
         void activateGame(activeGame);
       }
       if (mode === 'tournaments') {
@@ -310,6 +316,7 @@ async function warmTournamentStatus(){
         tournamentProgressionSnapshot = null;
         tournamentMatchError = '';
         stopTournamentHallHeartbeat();
+        stopTournamentVisibleRefresh();
       }
       syncTournamentRulesConsent();
       return tournamentSnapshot;
@@ -327,6 +334,41 @@ function tournamentHallPanelVisible(){
 function stopTournamentHallHeartbeat(){
   if (tournamentHallTimer) window.clearTimeout(tournamentHallTimer);
   tournamentHallTimer = null;
+}
+
+function stopTournamentVisibleRefresh(){
+  if (tournamentVisibleRefreshTimer) window.clearTimeout(tournamentVisibleRefreshTimer);
+  tournamentVisibleRefreshTimer = null;
+}
+
+function startTournamentVisibleRefresh(){
+  if (tournamentVisibleRefreshTimer || !tournamentHallPanelVisible()) return;
+  const registered = String(tournamentSnapshot?.registration?.state || '') === 'registered';
+  const scheduled = String(tournamentSnapshot?.tournament?.state || '') === 'scheduled'
+    && Boolean(tournamentSnapshot?.tournament?.scheduled_start_at_utc);
+  if (!registered || !scheduled || tournamentHallSnapshot?.hall?.entered === true) {
+    stopTournamentVisibleRefresh();
+    return;
+  }
+
+  tournamentVisibleRefreshTimer = window.setTimeout(async () => {
+    tournamentVisibleRefreshTimer = null;
+    if (!tournamentHallPanelVisible()) return;
+    try {
+      await warmTournamentHallStatus();
+      if (tournamentHallSnapshot?.bracket) {
+        try {
+          await refreshTournamentMatchState();
+        } catch (error) {
+          tournamentMatchError = String(error?.message || 'Не удалось обновить готовность пары.');
+        }
+      }
+    } catch (error) {
+      tournamentHallError = String(error?.message || 'Не удалось обновить Турнирный зал.');
+    }
+    renderTournamentSnapshot();
+    startTournamentVisibleRefresh();
+  }, 2500);
 }
 
 async function warmTournamentHallStatus(){
@@ -404,7 +446,10 @@ async function enterTournamentHall(){
   } finally {
     tournamentHallBusy = false;
     renderTournamentSnapshot();
-    if (tournamentHallSnapshot?.hall?.entered === true) startTournamentHallHeartbeat();
+    if (tournamentHallSnapshot?.hall?.entered === true) {
+      stopTournamentVisibleRefresh();
+      startTournamentHallHeartbeat();
+    }
   }
 }
 
@@ -472,7 +517,12 @@ async function loadTournamentSnapshot(){
       stopTournamentHallHeartbeat();
     }
     renderTournamentSnapshot();
-    if (tournamentHallSnapshot?.hall?.entered === true) startTournamentHallHeartbeat();
+    if (tournamentHallSnapshot?.hall?.entered === true) {
+      stopTournamentVisibleRefresh();
+      startTournamentHallHeartbeat();
+    } else {
+      startTournamentVisibleRefresh();
+    }
   } catch (error) {
     body.innerHTML = `<div class="tournaments-v2-empty">${escapeHtml(error?.message || 'Не удалось загрузить турнир.')}</div>`;
   }
@@ -643,14 +693,29 @@ function tournamentHallMarkup(registered, scheduled, scheduledStart){
         <span>Она сформируется случайно ровно на старте турнира.</span>
       </div>`;
 
+  if (bracket) {
+    return `
+      <section class="tournaments-v2-hall tournaments-v2-hall--started">
+        <div class="tournaments-v2-hall-head">
+          <div>
+            <span>Турнирный зал</span>
+            <h3>Стартовая сетка</h3>
+          </div>
+          <b>СТАРТ</b>
+        </div>
+        ${tournamentHallError ? `<div class="tournaments-v2-tournament-error">${escapeHtml(tournamentHallError)}</div>` : ''}
+        ${bracketMarkup}
+      </section>`;
+  }
+
   return `
     <section class="tournaments-v2-hall">
       <div class="tournaments-v2-hall-head">
         <div>
           <span>Турнирный зал</span>
-          <h3>${bracket ? 'Стартовая сетка сформирована' : 'Вы в турнирном зале'}</h3>
+          <h3>Вы в турнирном зале</h3>
         </div>
-        <b>${bracket ? 'СТАРТ' : 'LIVE'}</b>
+        <b>LIVE</b>
       </div>
       ${tournamentHallError ? `<div class="tournaments-v2-tournament-error">${escapeHtml(tournamentHallError)}</div>` : ''}
       <div class="tournaments-v2-hall-roster">
@@ -695,10 +760,11 @@ function tournamentBracketMarkup(bracket){
       </article>`;
     }).join('');
 
+  const matchMarkup = tournamentMatchMarkup();
   return `<div class="tournaments-v2-bracket">
+    ${matchMarkup}
     <div class="tournaments-v2-hall-section-title"><strong>Первый раунд</strong><span>случайная сетка</span></div>
     <div class="tournaments-v2-bracket-grid">${cards}</div>
-    ${tournamentMatchMarkup()}
   </div>`;
 }
 
@@ -724,7 +790,18 @@ function tournamentMatchMarkup(){
   const match = tournamentMatchSnapshot?.match && typeof tournamentMatchSnapshot.match === 'object'
     ? tournamentMatchSnapshot.match
     : null;
-  if (!match) return '';
+  if (!match) {
+    if (tournamentMatchError) {
+      return `<section class="tournaments-v2-ready">
+        <div class="tournaments-v2-tournament-error">${escapeHtml(tournamentMatchError)}</div>
+      </section>`;
+    }
+    return `<section class="tournaments-v2-ready">
+      <div class="tournaments-v2-ready-head">
+        <div><span>Первый матч</span><strong>Загружаем готовность вашей пары…</strong></div>
+      </div>
+    </section>`;
+  }
 
   const players = Array.isArray(match.players) ? match.players : [];
   const playerRows = players.map(player => `
@@ -958,6 +1035,21 @@ function renderTournamentSnapshot(errorMessage = ''){
 
   const hallMarkup = tournamentHallMarkup(registered, scheduled, scheduledStart);
 
+  if (tournamentStarted && registered) {
+    body.innerHTML = `
+      ${errorMessage ? `<div class="tournaments-v2-tournament-error">${escapeHtml(errorMessage)}</div>` : ''}
+      ${hallMarkup}
+    `;
+    if (tournamentHallSnapshot?.hall?.entered === true) {
+      stopTournamentVisibleRefresh();
+      startTournamentHallHeartbeat();
+    } else {
+      stopTournamentHallHeartbeat();
+      startTournamentVisibleRefresh();
+    }
+    return;
+  }
+
   body.innerHTML = `
     ${errorMessage ? `<div class="tournaments-v2-tournament-error">${escapeHtml(errorMessage)}</div>` : ''}
     <div class="tournaments-v2-tournament-hero">
@@ -1029,8 +1121,13 @@ function renderTournamentSnapshot(errorMessage = ''){
     tournamentCountdownTimer = window.setInterval(updateCountdown, 1000);
   }
 
-  if (tournamentHallSnapshot?.hall?.entered === true) startTournamentHallHeartbeat();
-  else stopTournamentHallHeartbeat();
+  if (tournamentHallSnapshot?.hall?.entered === true) {
+    stopTournamentVisibleRefresh();
+    startTournamentHallHeartbeat();
+  } else {
+    stopTournamentHallHeartbeat();
+    startTournamentVisibleRefresh();
+  }
 }
 
 function parseTournamentUtc(value){
