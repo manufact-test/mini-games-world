@@ -21,7 +21,7 @@ $assert(str_contains($service, 'final class GameLaunchFinalizationService'), 'On
 $assert(substr_count($service, 'random_int(') === 1, 'TTT X/O randomness must have exactly one implementation owner.');
 $assert(!str_contains($api, 'function mgw_randomize_symbols_for_new_game'), 'Primary API must not keep a second TTT randomizer function.');
 $assert(!str_contains($inviteStorage, 'function randomizeTicTacToe'), 'Invite/rematch storage must not keep a second TTT randomizer method.');
-$assert(substr_count($api, $call) === 2, 'Primary API must use the finalizer for created search games and game_state compatibility/bot fallback.');
+$assert(substr_count($api, $call) === 3, 'Primary API must use the finalizer for tournament launch, created search games and game_state compatibility/bot fallback.');
 $assert(substr_count($inviteStorage, $call) === 1, 'Invite/rematch creation must use the same finalizer exactly once.');
 $assert(!str_contains($api, 'random_int(') && !str_contains($inviteStorage, 'random_int('), 'No caller may own X/O randomness.');
 
@@ -78,6 +78,17 @@ $assert(str_contains($startSearchSource, '$existingGameIdBeforeSearch ='),
     'start_search must remember any already-active game before matchmaking mutates user state.');
 $assert(str_contains($startSearchSource, "\$existingGameIdBeforeSearch === '' || \$existingGameIdBeforeSearch !== \$gameId"),
     'start_search must grant Phase B activation only when the returned game id is new to that request.');
+
+$tournamentReadyPos = strpos($api, "case 'tournament_match_ready':");
+$paymentStatusPos = strpos($api, "case 'payment_status':");
+$assert($tournamentReadyPos !== false && $paymentStatusPos !== false && $tournamentReadyPos < $paymentStatusPos,
+    'Tournament match source boundary must be available for launch-finalization ownership checks.');
+$tournamentSource = substr($api, $tournamentReadyPos, $paymentStatusPos - $tournamentReadyPos);
+$assert(substr_count($tournamentSource, $call) === 1,
+    'Tournament readiness launch must pass through the shared post-create finalizer exactly once.');
+$assert(str_contains($tournamentSource, "\$data['games'][\$gameId]['launch_countdown_sec'] = 10;")
+    && strpos($tournamentSource, "\$data['games'][\$gameId]['launch_countdown_sec'] = 10;") < strpos($tournamentSource, $call),
+    'Tournament launch must publish the ten-second countdown before shared finalization activates the match.');
 
 $assert(str_contains($inviteStorage, "['match_source']") && strpos($inviteStorage, "['match_source']") < strpos($inviteStorage, $call),
     'Invite/rematch game-specific metadata must be stored before the shared post-create finalizer runs.');
