@@ -8,6 +8,12 @@ on:
       - 'bot/database/migrations/20260920_0049_create_official_tournaments.php'
       - 'bot/database/migrations/20260920_0050_add_tournament_rules_consent.php'
       - 'bot/database/migrations/20260920_0051_refresh_tournament_rules_copy.php'
+      - 'bot/database/migrations/20260921_0053_create_tournament_hall_bracket.php'
+      - 'bot/tournaments/TournamentHallService.php'
+      - 'bot/tournament-hall.php'
+      - 'bot/tests/Mvp21_4TournamentHallBracketTest.php'
+      - 'bot/tests/Mvp21_4TournamentHallUxContractTest.php'
+      - '.github/workflows/mvp21-4-tournament-hall.yml'
       - 'bot/tournaments/TournamentRegistrationService.php'
       - 'bot/tournaments/TournamentAdminNotificationBridge.php'
       - 'bot/tournaments/StagingTournamentManualAcceptanceService.php'
@@ -206,6 +212,12 @@ jobs:
               bot/database/migrations/20260920_0050_add_tournament_rules_consent.php|\
               bot/database/migrations/20260920_0051_refresh_tournament_rules_copy.php|\
               bot/database/migrations/20260921_0052_add_tournament_schedule.php|\
+              bot/database/migrations/20260921_0053_create_tournament_hall_bracket.php|\
+              bot/tournaments/TournamentHallService.php|\
+              bot/tournament-hall.php|\
+              bot/tests/Mvp21_4TournamentHallBracketTest.php|\
+              bot/tests/Mvp21_4TournamentHallUxContractTest.php|\
+              .github/workflows/mvp21-4-tournament-hall.yml|\
               bot/tournaments/TournamentRegistrationService.php|\
               bot/tournaments/TournamentAdminNotificationBridge.php|\
               bot/tournaments/TournamentParticipantNotificationBridge.php|\

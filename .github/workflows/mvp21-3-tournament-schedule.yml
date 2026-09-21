@@ -6,6 +6,12 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'bot/database/migrations/20260921_0052_add_tournament_schedule.php'
+      - 'bot/database/migrations/20260921_0053_create_tournament_hall_bracket.php'
+      - 'bot/tournaments/TournamentHallService.php'
+      - 'bot/tournament-hall.php'
+      - 'bot/tests/Mvp21_4TournamentHallBracketTest.php'
+      - 'bot/tests/Mvp21_4TournamentHallUxContractTest.php'
+      - '.github/workflows/mvp21-4-tournament-hall.yml'
       - 'bot/tournaments/TournamentRegistrationService.php'
       - 'bot/tournaments/TournamentParticipantNotificationBridge.php'
       - 'bot/tournaments/StagingTournamentManualAcceptanceService.php'
@@ -14,6 +20,7 @@ on:
       - 'bot/admin-tournaments.php'
       - 'app/admin.php'
       - 'app/assets/js/admin-tournaments.js'
+      - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/tournaments-screen-v1.js'
       - 'app/assets/js/screens/notifications-screen-v110r13.js'
       - 'app/assets/css/main.css'
@@ -160,6 +167,12 @@ jobs:
               .github/workflows/mvp21-2-tournament-rules.yml|\
               .github/workflows/mvp21-3-tournament-schedule.yml|\
               bot/database/migrations/20260921_0052_add_tournament_schedule.php|\
+              bot/database/migrations/20260921_0053_create_tournament_hall_bracket.php|\
+              bot/tournaments/TournamentHallService.php|\
+              bot/tournament-hall.php|\
+              bot/tests/Mvp21_4TournamentHallBracketTest.php|\
+              bot/tests/Mvp21_4TournamentHallUxContractTest.php|\
+              .github/workflows/mvp21-4-tournament-hall.yml|\
               bot/tournaments/TournamentRegistrationService.php|\
               bot/tournaments/TournamentParticipantNotificationBridge.php|\
               bot/tournaments/StagingTournamentManualAcceptanceService.php|\
@@ -168,6 +181,7 @@ jobs:
               bot/admin-tournaments.php|\
               app/admin.php|\
               app/assets/js/admin-tournaments.js|\
+              app/assets/js/api/client.js|\
               app/assets/js/screens/tournaments-screen-v1.js|\
               app/assets/js/screens/notifications-screen-v110r13.js|\
               app/assets/css/main.css|\
