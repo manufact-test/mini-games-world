@@ -570,7 +570,9 @@ final class StagingTournamentManualAcceptanceService
 
             $runtimeResult = $this->applyRuntimeReset(
                 $runtimeBalances,
-                array_keys($fixtureLegacyIds)
+                array_keys($fixtureLegacyIds),
+                $tournamentId,
+                $resetAt
             );
 
             return [
@@ -581,6 +583,7 @@ final class StagingTournamentManualAcceptanceService
                 'real_accounts_released'=>$realReleased,
                 'runtime_balances_updated'=>(int)($runtimeResult['updated_balances'] ?? 0),
                 'runtime_fixture_users_removed'=>(int)($runtimeResult['removed_fixture_users'] ?? 0),
+                'tournament_notifications_hidden'=>(int)($runtimeResult['hidden_tournament_notifications'] ?? 0),
             ];
         });
     }
@@ -606,17 +609,28 @@ final class StagingTournamentManualAcceptanceService
         return $legacyFixture || $v2Fixture;
     }
 
-    private function applyRuntimeReset(array $runtimeBalances, array $fixtureLegacyIds): array
-    {
+    private function applyRuntimeReset(
+        array $runtimeBalances,
+        array $fixtureLegacyIds,
+        string $tournamentId,
+        string $resetAt
+    ): array {
         if ($this->runtimeResetWriter !== null) {
-            $result = ($this->runtimeResetWriter)($runtimeBalances, $fixtureLegacyIds);
+            $result = ($this->runtimeResetWriter)(
+                $runtimeBalances,
+                $fixtureLegacyIds,
+                $tournamentId,
+                $resetAt
+            );
             return is_array($result) ? $result : [];
         }
 
         $storage = StorageFactory::createJson((string)($this->config['data_dir'] ?? (__DIR__ . '/../data')));
         return $storage->transaction(static function (array &$data) use (
             $runtimeBalances,
-            $fixtureLegacyIds
+            $fixtureLegacyIds,
+            $tournamentId,
+            $resetAt
         ): array {
             if (!isset($data['users']) || !is_array($data['users'])) {
                 $data['users'] = [];
@@ -638,9 +652,26 @@ final class StagingTournamentManualAcceptanceService
                 }
             }
 
+            $hiddenNotifications = 0;
+            $audienceRef = 'official-tournament:' . $tournamentId;
+            if (isset($data['notifications']) && is_array($data['notifications'])) {
+                foreach ($data['notifications'] as &$notification) {
+                    if (!is_array($notification)) continue;
+                    if ((string)($notification['audience_type'] ?? '') !== 'tournament') continue;
+                    if ((string)($notification['audience_ref'] ?? '') !== $audienceRef) continue;
+                    if ((string)($notification['source_type'] ?? '') !== 'system') continue;
+                    if (!empty($notification['hidden_at'])) continue;
+                    if (empty($notification['read_at'])) $notification['read_at'] = $resetAt;
+                    $notification['hidden_at'] = $resetAt;
+                    $hiddenNotifications++;
+                }
+                unset($notification);
+            }
+
             return [
                 'updated_balances'=>$updated,
                 'removed_fixture_users'=>$removed,
+                'hidden_tournament_notifications'=>$hiddenNotifications,
             ];
         });
     }
