@@ -20,7 +20,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
   <script src="./assets/js/admin-rating.js?v=1&mvp20_8=rating-admin" defer></script>
-  <script src="./assets/js/admin-tournaments.js?v=8&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=two-live-acceptance-v1" defer></script>
+  <script src="./assets/js/admin-tournaments.js?v=9&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v2" defer></script>
 </head>
 <body>
   <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php">
@@ -75,7 +75,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               <h3>Новый официальный турнир</h3>
               <label class="mgw-admin__field">
                 <span>Название</span>
-                <input data-tournament-title type="text" maxlength="160" autocomplete="off" value="Официальный турнир">
+                <input data-tournament-title type="text" maxlength="160" autocomplete="off" placeholder="Официальный турнир">
               </label>
               <label class="mgw-admin__field">
                 <span>Игра</span>
