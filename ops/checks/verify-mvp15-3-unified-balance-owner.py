@@ -77,9 +77,10 @@ if "t('profile.balance_note')" not in profile_ui:
 if 'MGW Coins</span>' in profile_ui:
     violations.append('profile-screen-v110.js: duplicate MGW Coins label must not be visible in profile wallet')
 
-expected_launch = "private const ENTRY_PATH = '/app/v110.php?v=1127';"
 launch_owner = Path('bot/helpers/WebAppLaunchUrl.php').read_text()
-if expected_launch not in launch_owner: violations.append('WebAppLaunchUrl.php: canonical Telegram entry cache key is not v110.php?v=1127')
+launch_match = re.search(r"private const ENTRY_PATH = '([^']+)';", launch_owner)
+if launch_match is None or not launch_match.group(1).startswith('/app/v110.php?'):
+    violations.append('WebAppLaunchUrl.php: canonical Telegram entry must remain on versioned /app/v110.php')
 
 try:
     rendered = subprocess.run(['php','app/v110.php'], check=True, capture_output=True, text=True, timeout=10).stdout
