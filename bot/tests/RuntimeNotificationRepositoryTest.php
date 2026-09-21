@@ -139,7 +139,7 @@ $data = [
         'message' => 'DB runtime сохраняет текущий контракт.',
         'tone' => 'info',
         'invite_token' => '',
-        'created_at' => '2026-07-18T17:30:00+00:00',
+        'created_at' => '2026-07-18T17:30:00.123456+00:00',
         'read_at' => null,
     ]],
 ];
@@ -151,6 +151,16 @@ $assertSame(1, $first['summary']['created_count'], 'First sync must create one D
 $assertSame(true, $first['summary']['parity'], 'First sync must prove parity');
 $assertSame('notification-runtime-1', $first['items'][0]['id'] ?? null, 'DB reader must preserve notification ID');
 $assertSame(false, !empty($first['items'][0]['read_at']), 'Fresh notification must remain unread');
+$assertSame(
+    '2026-07-18T17:30:00+00:00',
+    $first['items'][0]['created_at'] ?? null,
+    'Public notification timestamps must keep the established DATE_ATOM response shape'
+);
+$assertSame(
+    $first['summary']['source_fingerprint'],
+    $first['summary']['database_fingerprint'],
+    'Non-zero source microseconds must not create a false notification parity failure'
+);
 
 $repeat = $repository->synchronizeAndList($data, $legacyUserId, $mgwId);
 $assertSame(0, $repeat['summary']['created_count'], 'Repeat sync must create nothing');
@@ -173,11 +183,11 @@ $assertSame(
     'Audit fingerprints must match'
 );
 
-$data['notifications'][0]['read_at'] = '2026-07-18T17:31:00+00:00';
+$data['notifications'][0]['read_at'] = '2026-07-18T17:31:00.654321+00:00';
 $read = $repository->synchronizeAndList($data, $legacyUserId, $mgwId);
 $assertTrue(!empty($read['items'][0]['read_at']), 'JSON read state must propagate to DB');
 $assertSame(
-    '2026-07-18 17:31:00.000000',
+    '2026-07-18 17:31:00.654321',
     (string)$database->fetchValue(
         'SELECT read_at_utc FROM mgw_notifications WHERE notification_id = :notification_id',
         ['notification_id' => 'notification-runtime-1']
@@ -186,6 +196,11 @@ $assertSame(
 );
 $readAudit = $repository->auditParity($data, $legacyUserId, $mgwId);
 $assertSame(true, $readAudit['ok'], 'Read-only audit must pass after mark-read synchronization');
+$assertSame(
+    $readAudit['source_fingerprint'],
+    $readAudit['database_fingerprint'],
+    'Read-state microseconds must remain exact in the parity fingerprint'
+);
 
 $conflict = $data;
 $conflict['notifications'][0]['title'] = 'Conflicting title';
