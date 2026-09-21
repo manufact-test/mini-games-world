@@ -158,10 +158,10 @@ foreach ([
 $assert(str_contains($source['manifest'], 'client.js?v=1143')
         && str_contains($source['manifest'], 'mvp21_5=ready-v1'),
     'API client must publish a fresh MVP-21.5 cache identity.');
-$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=20')
-        && str_contains($source['manifest'], 'mvp21_5=ready-first-match-v1')
-        && str_contains($source['manifest'], 'mvp21_5=manual-acceptance-fixes-v3'),
-    'Tournament screen must publish the fresh manual-acceptance corrective cache identity.');
+$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=21')
+        && str_contains($source['manifest'], 'mvp21_5=corrective-v4')
+        && str_contains($source['manifest'], 'ready=launch-watch-350ms'),
+    'Tournament screen must publish the fresh corrective-v4 launch/registration cache identity.');
 $assert(str_contains($source['manifest'], 'production-v110-acceptance-runtime.js?v=131')
         && str_contains($source['manifest'], 'mvp21_5=countdown-10-av-v1'),
     'Shared Phase-B presentation must publish a fresh countdown cache identity.');
