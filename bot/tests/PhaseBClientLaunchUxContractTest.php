@@ -80,9 +80,11 @@ $assert(strpos($safe, "new CustomEvent('mgw:phase-b-game-entering'") < strpos($s
 $assert(str_contains($readonly, "const WATCH_INTERVAL_MS = 250;"), 'Read-only cross-device freshness must remain bounded at 250ms.');
 $assert(str_contains($readonly, "['preparing', 'countdown', 'active'].includes(launchPhase)"), 'Read-only freshness must cover preparation, countdown and active phases.');
 $assert(
-    str_contains($readonly, 'Frequent cross-device freshness reads only games.json')
-        && str_contains($readonly, 'global write transaction lock'),
-    'Read-only owner must document the pre-start lock-isolation contract.'
+    str_contains($readonly, '/bot/game-watch.php')
+        && !str_contains($readonly, '/bot/api.php')
+        && str_contains($readonly, 'adoptClockProjection(game);')
+        && str_contains($readonly, 'if (actionIsBusy(currentItem))'),
+    'Read-only owner must use the dedicated watch endpoint and project authoritative clock snapshots without action writes.'
 );
 
 $assert(str_contains($acceptance, "document.addEventListener('mgw:phase-b-game-entering', primeLaunchState);"), 'Acceptance runtime must own the synchronous global launch-gate event.');
