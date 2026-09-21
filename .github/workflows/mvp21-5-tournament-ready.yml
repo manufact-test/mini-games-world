@@ -24,6 +24,7 @@ on:
       - 'bot/tests/PhaseBMatchPreparationClockServiceTest.php'
       - 'bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php'
       - 'bot/tests/PhaseBClientLaunchUxContractTest.php'
+      - 'bot/tests/GameLaunchFinalizationOwnerContractTest.php'
       - 'bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php'
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
       - '.github/workflows/mvp20-1-per-game-visible-rating.yml'
@@ -83,6 +84,7 @@ jobs:
             bot/tests/PhaseBMatchPreparationClockServiceTest.php
             bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php
             bot/tests/PhaseBClientLaunchUxContractTest.php
+            bot/tests/GameLaunchFinalizationOwnerContractTest.php
             bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
             bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
           )
@@ -158,6 +160,7 @@ jobs:
               bot/tests/PhaseBMatchPreparationClockServiceTest.php|\
               bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php|\
               bot/tests/PhaseBClientLaunchUxContractTest.php|\
+              bot/tests/GameLaunchFinalizationOwnerContractTest.php|\
               bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php|\
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php)
                 ;;
