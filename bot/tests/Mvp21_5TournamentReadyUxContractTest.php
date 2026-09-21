@@ -87,7 +87,7 @@ $assert(str_contains($source['clock'], 'self::COUNTDOWN_SEC')
 foreach (['tournament_match_state','tournament_match_ready'] as $needle) {
     $assert(str_contains($source['api'], $needle), 'Tournament API action missing: ' . $needle);
 }
-$assert(str_contains($source['api'], "$data['games'][$gameId]['launch_countdown_sec'] = 10")
+$assert(str_contains($source['api'], '$data[\'games\'][$gameId][\'launch_countdown_sec\'] = 10')
         && str_contains($source['api'], 'markTournamentPairReady($tournamentGame)')
         && str_contains($source['api'], 'attachGame('),
     'Both-ready API path must create one ten-second locked game and durably attach it.');
