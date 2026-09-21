@@ -2015,3 +2015,97 @@
     grid-template-columns:1fr;
   }
 }
+
+
+/* MVP-21.5 — first tournament match readiness */
+#screen-tournaments .tournaments-v2-ready{
+  margin-top:12px;
+  padding:12px;
+  border:1px solid rgba(112,224,170,.28);
+  border-radius:15px;
+  background:
+    radial-gradient(circle at 92% 0,rgba(112,224,170,.09),transparent 42%),
+    rgba(255,255,255,.025);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045);
+}
+#screen-tournaments .tournaments-v2-ready-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+}
+#screen-tournaments .tournaments-v2-ready-head>div{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+#screen-tournaments .tournaments-v2-ready-head span{
+  color:#8de5b7;
+  font-size:8.5px;
+  font-weight:900;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+#screen-tournaments .tournaments-v2-ready-head strong{
+  color:var(--text);
+  font-size:12px;
+  line-height:1.35;
+}
+#screen-tournaments .tournaments-v2-ready-head>b{
+  flex:0 0 auto;
+  min-width:54px;
+  padding:7px 8px;
+  border:1px solid rgba(112,224,170,.28);
+  border-radius:10px;
+  background:rgba(112,224,170,.07);
+  color:#b8f5d3;
+  font-size:14px;
+  line-height:1;
+  text-align:center;
+  font-variant-numeric:tabular-nums;
+}
+#screen-tournaments .tournaments-v2-ready-players{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+  margin-top:10px;
+}
+#screen-tournaments .tournaments-v2-ready-player{
+  min-width:0;
+  padding:9px 10px;
+  border:1px solid rgba(233,236,244,.11);
+  border-radius:11px;
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  background:rgba(255,255,255,.02);
+}
+#screen-tournaments .tournaments-v2-ready-player strong{
+  overflow:hidden;
+  color:var(--text);
+  font-size:10px;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+#screen-tournaments .tournaments-v2-ready-player span{
+  color:var(--muted);
+  font-size:8.5px;
+  font-weight:800;
+}
+#screen-tournaments .tournaments-v2-ready-player.is-ready{
+  border-color:rgba(78,210,137,.30);
+  background:rgba(78,210,137,.06);
+}
+#screen-tournaments .tournaments-v2-ready-player.is-ready span{
+  color:#9cebc0;
+}
+#screen-tournaments .tournaments-v2-ready-action{
+  width:100%;
+  margin-top:10px;
+}
+@media (max-width:420px){
+  #screen-tournaments .tournaments-v2-ready-players{
+    grid-template-columns:1fr;
+  }
+}
