@@ -9,6 +9,7 @@ $files = [
     'css'=>$root . '/app/assets/css/main.css',
     'manifest'=>$root . '/app/runtime/client/version-manifest.php',
     'api'=>$root . '/bot/api.php',
+    'storage_factory'=>$root . '/bot/storage/StorageFactory.php',
 ];
 $source = [];
 foreach ($files as $key=>$path) {
@@ -70,6 +71,21 @@ $assertTrue(
     str_contains($source['api'], "'debug_error'=>substr(\$e->getMessage(), 0, 1800)")
     && str_contains($source['api'], "'test_only'=>true"),
     'Staging A/B bootstrap diagnostic must remain explicitly test-only.'
+);
+
+
+$assertTrue(
+    str_contains($source['storage_factory'], "stagingApiPrimaryNotificationSnapshotIsBehind(\$config)")
+    && str_contains($source['storage_factory'], "\$environment === 'staging'")
+    && str_contains($source['storage_factory'], "\$script === 'api.php'")
+    && str_contains($source['storage_factory'], 'using JSON storage for this API request.'),
+    'Stale DB-primary notification rehearsal must fall back only for staging api.php.'
+);
+$assertTrue(
+    str_contains($source['storage_factory'], "if (!isset(\$primaryUserEvents[\$eventKey])) return true;")
+    && str_contains($source['storage_factory'], 'Do not weaken the selector on an unclassified readiness failure.')
+    && str_contains($source['storage_factory'], "\$failures[\$entrypoint] = \$error;"),
+    'Staging fallback must require proven missing notification events and preserve strict selector failures.'
 );
 
 
@@ -273,7 +289,7 @@ $assertTrue(
     'Tournament schedule/countdown styling must be present.'
 );
 
-if ($assertions < 61) {
+if ($assertions < 63) {
     throw new RuntimeException('MVP-21.1 manual acceptance contract coverage is incomplete.');
 }
 fwrite(STDOUT, "Mvp21_1TournamentManualAcceptanceContractTest: {$assertions} assertions passed\n");

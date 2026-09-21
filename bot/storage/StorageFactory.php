@@ -120,6 +120,23 @@ final class StorageFactory
         if (isset($attempted[$entrypoint])) return;
         $attempted[$entrypoint] = true;
 
+        // The DB-primary API selector is a bounded staging rehearsal, while
+        // JSON remains the rollback/live source outside that rehearsal. If the
+        // retained DB-primary snapshot is missing notification events that are
+        // already present in rollback JSON, routing a new API request into that
+        // stale snapshot makes the projection finalizer fail after otherwise
+        // successful application work. Fail open only for this proven staging
+        // API drift: keep production and every other selector failure strict.
+        if ($environment === 'staging'
+            && $script === 'api.php'
+            && self::stagingApiPrimaryNotificationSnapshotIsBehind($config)) {
+            error_log(
+                '[MiniGamesWorld staging DB-primary] notification snapshot is behind rollback JSON; '
+                . 'using JSON storage for this API request.'
+            );
+            return;
+        }
+
         try {
             if ($environment === 'production') {
                 require_once __DIR__ . '/../runtime/ProductionPrimaryEntrypointBootstrap.php';
@@ -143,6 +160,55 @@ final class StorageFactory
             $failures[$entrypoint] = $error;
             throw $error;
         }
+    }
+
+    private static function stagingApiPrimaryNotificationSnapshotIsBehind(array $config): bool
+    {
+        $dataDir = trim((string)($config['data_dir'] ?? ''));
+        if ($dataDir === '') return false;
+
+        try {
+            $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+            if (!$databaseConfig->enabled()) return false;
+
+            $rollback = (new JsonStorageAdapter($dataDir))->readOnly(
+                static fn(array $data): array => $data
+            );
+            $primary = (new DatabasePrimaryStateStorageAdapter(
+                PdoConnectionFactory::create($databaseConfig)
+            ))->readOnly(static fn(array $data): array => $data);
+        } catch (Throwable) {
+            // Do not weaken the selector on an unclassified readiness failure.
+            // Only a positively proven stale notification inventory may fall
+            // back to JSON; all other failures remain owned by the selector.
+            return false;
+        }
+
+        $inventory = static function (array $snapshot): array {
+            $events = [];
+            foreach (is_array($snapshot['notifications'] ?? null)
+                ? $snapshot['notifications']
+                : [] as $notification) {
+                if (!is_array($notification)) continue;
+                $userId = trim((string)($notification['user_id'] ?? ''));
+                $eventKey = trim((string)($notification['event_key'] ?? ''));
+                if ($userId === '' || $eventKey === '') continue;
+                $events[$userId][$eventKey] = true;
+            }
+            return $events;
+        };
+
+        $rollbackEvents = $inventory($rollback);
+        $primaryEvents = $inventory($primary);
+        foreach ($rollbackEvents as $userId=>$events) {
+            $primaryUserEvents = is_array($primaryEvents[$userId] ?? null)
+                ? $primaryEvents[$userId]
+                : [];
+            foreach ($events as $eventKey=>$_present) {
+                if (!isset($primaryUserEvents[$eventKey])) return true;
+            }
+        }
+        return false;
     }
 
     private static function strictBool(mixed $value, string $label): bool
