@@ -353,6 +353,15 @@ final class StagingTournamentManualAcceptanceService
             }
         }
 
+        if ($this->runtimeUserWriter !== null) {
+            return [
+                'expected_active_fixture_users'=>count($expected),
+                'runtime_fixture_users_removed'=>0,
+                'runtime_fixture_users_ensured'=>count($expected),
+                'external_runtime_writer'=>true,
+            ];
+        }
+
         $fixturePattern = static fn(string $legacyUserId): bool =>
             preg_match('/^stg_tour_(?:v2_)?[a-f0-9]{12}$/', $legacyUserId) === 1;
 
