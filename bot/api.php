@@ -632,7 +632,7 @@ try {
     $isStagingTournamentTest = strtolower(trim((string)($config['environment'] ?? ''))) === 'staging'
         && in_array(
             (string)($action ?? ''),
-            ['staging_test_tournament_balance', 'tournament_register', 'tournament_leave'],
+            ['bootstrap', 'staging_test_tournament_balance', 'tournament_register', 'tournament_leave'],
             true
         )
         && is_array($tgUser ?? null)
