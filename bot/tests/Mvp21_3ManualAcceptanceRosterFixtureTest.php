@@ -5,6 +5,8 @@ $root = dirname(__DIR__);
 require $root . '/database/DatabaseConnectionInterface.php';
 require $root . '/database/PdoDatabaseConnection.php';
 require $root . '/database/DatabaseMigrationInterface.php';
+require $root . '/accounts/MgwIdGenerator.php';
+require $root . '/accounts/RuntimeAccountOwnershipService.php';
 require $root . '/ledger/LedgerIntegrity.php';
 require $root . '/ledger/LedgerWriteService.php';
 require $root . '/tournaments/TournamentRegistrationService.php';
@@ -43,6 +45,7 @@ $db = new PdoDatabaseConnection($pdo);
 
 (require $root . '/database/migrations/20260716_0002_create_accounts_identities_sessions.php')->up($db);
 (require $root . '/database/migrations/20260717_0005_create_balances_ledger_reservations.php')->up($db);
+(require $root . '/database/migrations/20260718_0007_create_account_ownership.php')->up($db);
 (require $root . '/database/migrations/20260920_0049_create_official_tournaments.php')->up($db);
 (require $root . '/database/migrations/20260920_0050_add_tournament_rules_consent.php')->up($db);
 (require $root . '/database/migrations/20260920_0051_refresh_tournament_rules_copy.php')->up($db);
@@ -103,14 +106,71 @@ $assertSame('ready', $availability['reason'], 'Fixture readiness reason must be 
 $assertSame(7, $availability['target_registered_count'], 'Eight-player manual acceptance must leave the eighth seat live.');
 $assertSame(7, $availability['remaining_fixture_slots'], 'Empty tournament must require seven synthetic seats.');
 
+$legacyBrokenMgwId = 'MGW-STG-a1b2c3d4e5f6';
+$legacyBrokenUserId = 'stg_tour_a1b2c3d4e5f6';
+$legacyBrokenAccountRef = 'legacy:' . $legacyBrokenUserId;
+$legacyNow = '2026-09-21 00:05:00.000000';
+$db->execute(
+    'INSERT INTO mgw_users (
+        mgw_id,status,display_name,username,
+        avatar_provider,avatar_external_ref,avatar_storage_key,avatar_mime_type,
+        avatar_width,avatar_height,
+        created_at_utc,updated_at_utc,last_seen_at_utc
+     ) VALUES (
+        :mgw_id,:status,:display_name,NULL,
+        NULL,NULL,NULL,NULL,
+        NULL,NULL,
+        :created_at_utc,:updated_at_utc,:last_seen_at_utc
+     )',
+    [
+        'mgw_id'=>$legacyBrokenMgwId,
+        'status'=>'active',
+        'display_name'=>'Legacy broken staging fixture',
+        'created_at_utc'=>$legacyNow,
+        'updated_at_utc'=>$legacyNow,
+        'last_seen_at_utc'=>$legacyNow,
+    ]
+);
+$ledger->postAvailableDelta([
+    'operation_key'=>'legacy-broken-fixture:grant',
+    'account_ref'=>$legacyBrokenAccountRef,
+    'mgw_id'=>$legacyBrokenMgwId,
+    'legacy_user_id'=>$legacyBrokenUserId,
+    'asset_code'=>TournamentRegistrationService::ENTRY_ASSET,
+    'available_delta'=>50000,
+    'category'=>'test_grant',
+    'source_type'=>'test',
+]);
+$tournaments->register(
+    $legacyBrokenMgwId,
+    $legacyBrokenAccountRef,
+    new DateTimeImmutable('2026-09-21T00:06:00Z'),
+    $consent
+);
+$repair = $fixture->repairLegacyFixtureOwnership($server);
+$assertSame(1, $repair['repaired'], 'Legacy staging fixture ownership must be repaired exactly once.');
+$assertSame(1, $repair['scanned'], 'Legacy staging fixture repair must scan only the matching registered fixture.');
+$legacyOwnership = $db->fetchAll(
+    'SELECT account_ref,mgw_id,legacy_user_id,ownership_status,source_type
+     FROM mgw_account_ownership WHERE account_ref=:account_ref',
+    ['account_ref'=>$legacyBrokenAccountRef]
+);
+$assertSame(1, count($legacyOwnership), 'Legacy fixture repair must create one ownership row.');
+$assertSame('active', (string)$legacyOwnership[0]['ownership_status'], 'Repaired legacy fixture ownership must be active.');
+$assertSame('staging_fixture_repair', (string)$legacyOwnership[0]['source_type'], 'Repair source must stay explicitly staging-scoped.');
+
+$afterRepairAvailability = $fixture->availability($server);
+$assertSame(1, $afterRepairAvailability['registered_count'], 'Legacy fixture registration must remain canonical after ownership repair.');
+$assertSame(6, $afterRepairAvailability['remaining_fixture_slots'], 'One legacy participant means six v2 fixture seats remain.');
+
 $prepared = $fixture->fillToOneManualSeat($server);
 $assertSame('prepared', $prepared['status'], 'Fixture must prepare the live last-seat boundary.');
-$assertSame(7, $prepared['created_count'], 'Fixture must synthesize seven participants for an empty eight-seat tournament.');
+$assertSame(6, $prepared['created_count'], 'Fixture must add six v2 participants after repairing one legacy staging participant.');
 $assertSame(7, $prepared['registered_count'], 'Prepared tournament must be exactly 7/8.');
 $assertSame(8, $prepared['capacity'], 'Fixture must never shrink the canonical tournament capacity.');
 $assertSame(1, $prepared['manual_seats_left'], 'Exactly one seat must remain for a real account.');
 $assertSame('registration_open', $prepared['snapshot']['tournament']['state'], 'Registration must stay open at 7/8.');
-$assertSame(7, count($runtimeUsers), 'Every synthetic participant must also receive a runtime notification identity.');
+$assertSame(6, count($runtimeUsers), 'Every newly-created v2 participant must also receive a runtime notification identity.');
 
 $participantIds = $tournaments->registeredParticipantMgwIds($tournamentId);
 $assertSame(7, count($participantIds), 'Canonical participant owner must contain seven synthetic registrations.');
@@ -122,9 +182,21 @@ foreach ($prepared['created_participants'] as $index => $participant) {
     $assertSame(0, (int)$balance['available_amount'], 'Synthetic seat must reserve, not spend, its 50,000 entry.');
     $assertSame(50000, (int)$balance['reserved_amount'], 'Synthetic seat must use the canonical 50,000 reservation.');
     $assertTrue(
-        str_starts_with($mgwId, 'MGW-STG-'),
-        'Synthetic fixture identities must stay visibly staging-scoped.'
+        MgwIdGenerator::isValid($mgwId),
+        'Synthetic fixture identities must use the canonical internal MGW-ID format.'
     );
+    $assertTrue(
+        str_starts_with((string)$runtimeUsers[$mgwId]['legacy_user_id'], 'stg_tour_v2_'),
+        'Synthetic fixture legacy identities must stay visibly staging-scoped.'
+    );
+    $ownership = $db->fetchAll(
+        'SELECT account_ref,mgw_id,legacy_user_id,ownership_status
+         FROM mgw_account_ownership WHERE account_ref=:account_ref',
+        ['account_ref'=>$accountRef]
+    );
+    $assertSame(1, count($ownership), 'Each v2 synthetic participant must have exactly one ownership row.');
+    $assertSame($mgwId, (string)$ownership[0]['mgw_id'], 'Ownership must point to the synthetic participant MGW-ID.');
+    $assertSame('active', (string)$ownership[0]['ownership_status'], 'Synthetic participant ownership must be active.');
 }
 
 $again = $fixture->fillToOneManualSeat($server);
@@ -136,7 +208,7 @@ $ready = $fixture->availability($server);
 $assertSame(false, $ready['available'], 'Fixture button must disable after 7/8 is prepared.');
 $assertSame('manual_last_seat_ready', $ready['reason'], 'Admin must be told that the live last seat is ready.');
 
-$manualMgwId = 'MGW-MANUAL-000001';
+$manualMgwId = 'MGW-1234567890ABCDEF';
 $manualLegacy = 'manual_fixture_user';
 $now = '2026-09-21 00:10:00.000000';
 $db->execute(
@@ -160,6 +232,7 @@ $db->execute(
         'last_seen_at_utc'=>$now,
     ]
 );
+(new RuntimeAccountOwnershipService($db))->ensure('development', $manualLegacy, $manualMgwId);
 $ledger->postAvailableDelta([
     'operation_key'=>'manual-fixture:grant',
     'account_ref'=>'legacy:' . $manualLegacy,

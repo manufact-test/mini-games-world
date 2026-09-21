@@ -2,6 +2,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../services/UserService.php';
+require_once __DIR__ . '/../accounts/MgwIdGenerator.php';
+require_once __DIR__ . '/../accounts/RuntimeAccountOwnershipService.php';
 
 /** Staging-only fixture that stops one seat before full so the final transition stays manual. */
 final class StagingTournamentManualAcceptanceService
@@ -62,6 +64,7 @@ final class StagingTournamentManualAcceptanceService
     public function fillToOneManualSeat(array $server): array
     {
         $this->assertAvailableEnvironment($server);
+        $repair = $this->repairLegacyFixtureOwnership($server);
 
         $snapshot = $this->tournaments->snapshot();
         $tournament = $snapshot['tournament'] ?? null;
@@ -121,6 +124,7 @@ final class StagingTournamentManualAcceptanceService
             if (isset($registeredIds[$identity['mgw_id']])) continue;
 
             $this->ensureCanonicalUser($identity);
+            $this->ensureCanonicalOwnership($identity);
             $this->ensureEntryBalance($identity, $tournamentId, $slot);
             $registration = $this->tournaments->register(
                 $identity['mgw_id'],
@@ -160,8 +164,135 @@ final class StagingTournamentManualAcceptanceService
             'capacity'=>$capacity,
             'target_registered_count'=>$target,
             'manual_seats_left'=>1,
+            'legacy_ownership_repair'=>$repair,
             'snapshot'=>$final,
         ];
+    }
+
+    public function repairLegacyFixtureOwnership(array $server): array
+    {
+        $this->assertAvailableEnvironment($server);
+
+        $snapshot = $this->tournaments->snapshot();
+        $tournament = $snapshot['tournament'] ?? null;
+        if (!is_array($tournament)) {
+            return ['repaired'=>0,'already_ok'=>0,'scanned'=>0];
+        }
+
+        $tournamentId = trim((string)($tournament['tournament_id'] ?? ''));
+        if ($tournamentId === '') {
+            throw new RuntimeException('Идентификатор турнира недоступен для восстановления staging fixture.');
+        }
+
+        $rows = $this->database->fetchAll(
+            'SELECT r.mgw_id,r.account_ref,r.registration_state,u.status
+             FROM mgw_tournament_registrations r
+             INNER JOIN mgw_users u ON u.mgw_id = r.mgw_id
+             WHERE r.tournament_id=:tournament_id
+               AND r.registration_state=:registration_state
+             ORDER BY r.registration_id ASC',
+            [
+                'tournament_id'=>$tournamentId,
+                'registration_state'=>TournamentRegistrationService::REGISTRATION_REGISTERED,
+            ]
+        );
+
+        $repaired = 0;
+        $alreadyOk = 0;
+        $scanned = 0;
+        foreach ($rows as $row) {
+            if (!is_array($row)) continue;
+            $mgwId = trim((string)($row['mgw_id'] ?? ''));
+            $accountRef = trim((string)($row['account_ref'] ?? ''));
+            if (preg_match('/^MGW-STG-[a-f0-9]{12}$/', $mgwId) !== 1) continue;
+            if (preg_match('/^legacy:(stg_tour_[a-f0-9]{12})$/', $accountRef, $match) !== 1) continue;
+            if ((string)($row['status'] ?? '') !== 'active') {
+                throw new RuntimeException('Legacy staging fixture user is not active.');
+            }
+            $legacyUserId = (string)$match[1];
+            $scanned++;
+
+            $ownershipRows = $this->database->fetchAll(
+                'SELECT account_ref,mgw_id,legacy_user_id,ownership_status
+                 FROM mgw_account_ownership
+                 WHERE account_ref=:account_ref OR mgw_id=:mgw_id OR legacy_user_id=:legacy_user_id',
+                [
+                    'account_ref'=>$accountRef,
+                    'mgw_id'=>$mgwId,
+                    'legacy_user_id'=>$legacyUserId,
+                ]
+            );
+            if ($ownershipRows !== []) {
+                if (count($ownershipRows) !== 1
+                    || (string)($ownershipRows[0]['account_ref'] ?? '') !== $accountRef
+                    || (string)($ownershipRows[0]['mgw_id'] ?? '') !== $mgwId
+                    || (string)($ownershipRows[0]['legacy_user_id'] ?? '') !== $legacyUserId
+                    || (string)($ownershipRows[0]['ownership_status'] ?? '') !== 'active') {
+                    throw new RuntimeException('Legacy staging fixture ownership conflicts with existing ownership.');
+                }
+                $alreadyOk++;
+                continue;
+            }
+
+            $balance = $this->ledger->getBalance($accountRef, TournamentRegistrationService::ENTRY_ASSET);
+            if (!is_array($balance)
+                || (string)($balance['mgw_id'] ?? '') !== $mgwId
+                || (int)($balance['reserved_amount'] ?? -1) !== TournamentRegistrationService::ENTRY_FEE) {
+                throw new RuntimeException('Legacy staging fixture balance cannot be proven safe for ownership repair.');
+            }
+
+            $now = (new DateTimeImmutable('now', new DateTimeZone('UTC')))
+                ->format('Y-m-d H:i:s.u');
+            $sourceRef = 'manual-acceptance:' . $tournamentId . ':' . $legacyUserId;
+            $this->database->execute(
+                'INSERT INTO mgw_account_ownership (
+                    account_ref,mgw_id,legacy_user_id,ownership_status,
+                    source_type,source_ref,source_sha256,created_at_utc,verified_at_utc
+                 ) VALUES (
+                    :account_ref,:mgw_id,:legacy_user_id,:ownership_status,
+                    :source_type,:source_ref,:source_sha256,:created_at_utc,:verified_at_utc
+                 )',
+                [
+                    'account_ref'=>$accountRef,
+                    'mgw_id'=>$mgwId,
+                    'legacy_user_id'=>$legacyUserId,
+                    'ownership_status'=>'active',
+                    'source_type'=>'staging_fixture_repair',
+                    'source_ref'=>$sourceRef,
+                    'source_sha256'=>hash('sha256', implode('|', [
+                        'staging_fixture_repair',
+                        $tournamentId,
+                        $legacyUserId,
+                        $mgwId,
+                        $accountRef,
+                    ])),
+                    'created_at_utc'=>$now,
+                    'verified_at_utc'=>$now,
+                ]
+            );
+            $repaired++;
+        }
+
+        return [
+            'repaired'=>$repaired,
+            'already_ok'=>$alreadyOk,
+            'scanned'=>$scanned,
+        ];
+    }
+
+    private function ensureCanonicalOwnership(array $identity): void
+    {
+        if (!MgwIdGenerator::isValid((string)$identity['mgw_id'])) {
+            throw new RuntimeException('Тестовый MGW-ID не соответствует каноническому формату.');
+        }
+        $ownership = (new RuntimeAccountOwnershipService($this->database))->ensure(
+            'development',
+            (string)$identity['legacy_user_id'],
+            (string)$identity['mgw_id']
+        );
+        if ((string)($ownership['account_ref'] ?? '') !== (string)$identity['account_ref']) {
+            throw new RuntimeException('Тестовый account ownership не совпадает с fixture identity.');
+        }
     }
 
     private function ensureCanonicalUser(array $identity): void
@@ -279,10 +410,11 @@ final class StagingTournamentManualAcceptanceService
 
     private function fixtureIdentity(string $tournamentId, int $slot): array
     {
-        $token = substr(hash('sha256', $tournamentId . '|manual-acceptance|' . $slot), 0, 12);
-        $legacyUserId = 'stg_tour_' . $token;
+        $token = substr(hash('sha256', $tournamentId . '|manual-acceptance-v2|' . $slot), 0, 12);
+        $legacyUserId = 'stg_tour_v2_' . $token;
+        $mgwToken = strtoupper(substr(hash('sha256', $tournamentId . '|manual-acceptance-mgw-v2|' . $slot), 0, 16));
         return [
-            'mgw_id'=>'MGW-STG-' . $token,
+            'mgw_id'=>'MGW-' . $mgwToken,
             'legacy_user_id'=>$legacyUserId,
             'account_ref'=>'legacy:' . $legacyUserId,
             'display_name'=>'Тестовый участник ' . $slot,
