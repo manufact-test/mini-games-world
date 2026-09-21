@@ -503,6 +503,7 @@ function buildOptimisticSurrender(game, viewerId){
 
 function openResultSheet(game, me, options = {}){
   if (options.notify !== false) notifyWeeklyProgress(game);
+  const tournamentMatch = String(game?.match_source || '') === 'tournament';
   let title = 'Ничья';
   let text = chessDrawText(game) || 'Матч завершён вничью.';
 
@@ -541,6 +542,8 @@ function openResultSheet(game, me, options = {}){
     options.pending ? 'подтверждаем…' : 'считаем…'
   );
 
+  if (tournamentMatch) text += ' Турнирный результат сохранён в сетке.';
+
   openSheet(`
     <div class="sheet-head">
       <div><h2>${title}</h2><p>${text}</p></div>
@@ -548,11 +551,21 @@ function openResultSheet(game, me, options = {}){
     </div>
     <div class="small-note" id="resultSummary" data-result-game-id="${escapeHtml(game?.id || '')}">${summaryMarkup}</div>
     <div class="stack">
-      <button class="btn primary full" id="newOpponent" type="button" ${disabled}>Найти нового соперника</button>
-      <button class="btn ghost full" id="goHome" type="button" ${disabled}>В меню</button>
+      ${tournamentMatch
+        ? `<button class="btn primary full" id="goTournament" type="button" ${disabled}>Вернуться в турнир</button>`
+        : `<button class="btn primary full" id="newOpponent" type="button" ${disabled}>Найти нового соперника</button>
+           <button class="btn ghost full" id="goHome" type="button" ${disabled}>В меню</button>`}
     </div>
   `);
 
+  document.getElementById('goTournament')?.addEventListener('click', () => {
+    closeSheet();
+    state.activeGame = null;
+    clearGameView();
+    showScreen('tournaments');
+    document.dispatchEvent(new CustomEvent('mgw:tournament-progression-open'));
+    document.dispatchEvent(new CustomEvent('mgw:game-dismissed'));
+  });
   document.getElementById('newOpponent')?.addEventListener('click', () => {
     const detail = searchContextFromGame(game);
     closeSheet();
@@ -570,7 +583,7 @@ function openResultSheet(game, me, options = {}){
 }
 
 function setResultActionsDisabled(disabled){
-  for (const selector of ['#sheet [data-close-sheet]', '#newOpponent', '#goHome']) {
+  for (const selector of ['#sheet [data-close-sheet]', '#newOpponent', '#goHome', '#goTournament']) {
     const button = document.querySelector(selector);
     if (!(button instanceof HTMLButtonElement)) continue;
     button.disabled = Boolean(disabled);
