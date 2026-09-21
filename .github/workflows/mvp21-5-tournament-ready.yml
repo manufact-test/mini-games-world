@@ -22,6 +22,7 @@ on:
       - 'bot/tests/Mvp21_5TournamentMatchReadinessTest.php'
       - 'bot/tests/Mvp21_5TournamentReadyUxContractTest.php'
       - 'bot/tests/PhaseBMatchPreparationClockServiceTest.php'
+      - 'bot/tests/PhaseBClientLaunchUxContractTest.php'
       - 'bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php'
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
       - '.github/workflows/mvp21-5-tournament-ready.yml'
@@ -74,6 +75,7 @@ jobs:
             bot/tests/Mvp21_5TournamentMatchReadinessTest.php
             bot/tests/Mvp21_5TournamentReadyUxContractTest.php
             bot/tests/PhaseBMatchPreparationClockServiceTest.php
+            bot/tests/PhaseBClientLaunchUxContractTest.php
             bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
             bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
           )
@@ -142,6 +144,7 @@ jobs:
               bot/tests/Mvp21_5TournamentMatchReadinessTest.php|\
               bot/tests/Mvp21_5TournamentReadyUxContractTest.php|\
               bot/tests/PhaseBMatchPreparationClockServiceTest.php|\
+              bot/tests/PhaseBClientLaunchUxContractTest.php|\
               bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php|\
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php)
                 ;;
