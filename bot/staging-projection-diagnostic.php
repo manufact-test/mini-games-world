@@ -101,6 +101,58 @@ try {
         );
     }
 
+    $notificationParityFailures = [];
+    $notificationParityChecked = 0;
+    $notificationRepository = new RuntimeNotificationRepository(
+        $config,
+        $runtimeStorageRouter,
+        $db
+    );
+    foreach (is_array($runtimeSnapshot['users'] ?? null) ? $runtimeSnapshot['users'] : [] as $key=>$runtimeUser) {
+        if (!is_array($runtimeUser)) continue;
+        $legacyUserId = trim((string)($runtimeUser['id'] ?? $key));
+        if ($legacyUserId === '') continue;
+        $notificationParityChecked++;
+        $classification = in_array($legacyUserId, ['stg_test_player_a','stg_test_player_b'], true)
+            ? 'technical_ab'
+            : (preg_match('/^stg_tour_(?:v2_)?[a-f0-9]{12}$/', $legacyUserId) === 1
+                ? 'tournament_fixture'
+                : 'runtime_user');
+        try {
+            $report = $notificationRepository->auditParity($runtimeSnapshot, $legacyUserId);
+            if (($report['ok'] ?? false) === true) continue;
+            $notificationParityFailures[] = [
+                'user_ref_sha256'=>substr(hash('sha256', $legacyUserId), 0, 16),
+                'classification'=>$classification,
+                'source_count'=>(int)($report['source_count'] ?? 0),
+                'database_count'=>(int)($report['database_count'] ?? 0),
+                'source_fingerprint'=>(string)($report['source_fingerprint'] ?? ''),
+                'database_fingerprint'=>(string)($report['database_fingerprint'] ?? ''),
+                'blockers'=>array_values(array_map(
+                    static fn(mixed $value): string => substr(trim((string)$value), 0, 240),
+                    is_array($report['blockers'] ?? null) ? $report['blockers'] : []
+                )),
+            ];
+        } catch (Throwable $notificationParityError) {
+            $notificationParityFailures[] = [
+                'user_ref_sha256'=>substr(hash('sha256', $legacyUserId), 0, 16),
+                'classification'=>$classification,
+                'source_count'=>null,
+                'database_count'=>null,
+                'source_fingerprint'=>'',
+                'database_fingerprint'=>'',
+                'blockers'=>['audit_exception:' . get_class($notificationParityError)],
+            ];
+        }
+    }
+    $notificationParity = [
+        'ok'=>$notificationParityFailures === [],
+        'checked_user_count'=>$notificationParityChecked,
+        'failure_count'=>count($notificationParityFailures),
+        'failures'=>$notificationParityFailures,
+        'sensitive_identifiers_exposed'=>false,
+    ];
+
     // The canonical browser shell can preload the public rating archive while
     // an unrelated game test is running. Prove that read owner here so an HTTP
     // 500 becomes an exact OIDC-protected staging diagnostic instead of a
@@ -161,6 +213,7 @@ try {
                 ? array_values($economyPreview['blocking_reasons'])
                 : [],
         ],
+        'notification_runtime_parity'=>$notificationParity,
         'rating_archive'=>[
             'competition_state'=>(string)($ratingArchiveOverview['competition_state'] ?? ''),
             'current_season_id'=>(string)($ratingArchiveOverview['current_season_id'] ?? ''),
