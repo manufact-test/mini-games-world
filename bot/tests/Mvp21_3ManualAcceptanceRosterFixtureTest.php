@@ -401,6 +401,42 @@ $assertTrue(
     'Fresh tournament must have a new durable identity instead of rewriting the reset tournament.'
 );
 
+$freshTournamentId = (string)$freshDraft['tournament']['tournament_id'];
+$freshOpened = $tournaments->openRegistration(
+    $freshTournamentId,
+    'test:admin',
+    new DateTimeImmutable('2026-09-21T00:15:00Z')
+);
+$assertSame(
+    TournamentRegistrationService::STATE_REGISTRATION_OPEN,
+    (string)$freshOpened['tournament']['state'],
+    'Fresh post-reset tournament must reopen registration normally.'
+);
+
+$freshPrepared = $fixture->fillToOneManualSeat($server);
+$assertSame('prepared', $freshPrepared['status'], 'Fresh post-reset tournament must support a second manual 7/8 preparation.');
+$assertSame(7, $freshPrepared['created_count'], 'Second tournament must create seven new synthetic fixture participants.');
+$assertSame(7, $freshPrepared['registered_count'], 'Second tournament must stop at the exact 7/8 boundary.');
+$assertSame(8, $freshPrepared['capacity'], 'Second tournament must preserve canonical capacity.');
+$assertSame(1, $freshPrepared['manual_seats_left'], 'Second tournament must keep the eighth seat live.');
+$assertSame(
+    7,
+    (int)($freshPrepared['runtime_fixture_parity']['expected_active_fixture_users'] ?? -1),
+    'Second preparation must verify exactly seven active tournament fixture runtime identities.'
+);
+$assertSame(
+    7,
+    count($runtimeUsers),
+    'Runtime fixture callback state must contain only the seven identities for the new tournament after reset/reseed.'
+);
+$freshParticipantIds = $tournaments->registeredParticipantMgwIds($freshTournamentId);
+$assertSame(7, count($freshParticipantIds), 'Second tournament must own exactly seven registered synthetic participants.');
+$assertSame(
+    0,
+    count(array_intersect($fixtureIdsAfterReset, $freshParticipantIds)),
+    'Reset/reseed must never reuse the retired fixture MGW identities from the previous tournament.'
+);
+
 $productionFixture = new StagingTournamentManualAcceptanceService(
     ['environment'=>'production','base_url'=>'https://example.com'],
     $db,
@@ -425,7 +461,7 @@ $assertThrows(
     'Production must never be allowed to reset an official tournament.'
 );
 
-if ($assertions < 98) {
+if ($assertions < 108) {
     throw new RuntimeException('MVP-21.3 manual acceptance fixture coverage is incomplete.');
 }
 
