@@ -253,15 +253,14 @@ final class StagingTestPlayerStateResetService
     {
         $databaseConfig = DatabaseConfig::fromApplicationConfig($this->config);
         if (!$databaseConfig->enabled()) {
-            return ['withdrawn' => 0, 'parity' => true];
+            return ['withdrawn' => 0, 'reopened' => 0, 'parity' => true];
         }
 
         $database = PdoConnectionFactory::create($databaseConfig);
-        $service = new TournamentRegistrationService(
-            $database,
-            new LedgerWriteService($database)
-        );
+        $ledger = new LedgerWriteService($database);
+        $service = new TournamentRegistrationService($database, $ledger);
         $withdrawn = 0;
+        $reopened = 0;
 
         foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
             $rows = $database->fetchAll(
@@ -295,12 +294,31 @@ final class StagingTestPlayerStateResetService
             $tournament = is_array($snapshot['tournament'] ?? null)
                 ? $snapshot['tournament']
                 : null;
-            if ($tournament === null
-                || (string)($tournament['state'] ?? '') !== TournamentRegistrationService::STATE_REGISTRATION_OPEN) {
+            if ($tournament === null) {
+                throw new RuntimeException('Staging test tournament cleanup active tournament is unavailable.');
+            }
+
+            $state = (string)($tournament['state'] ?? '');
+            if ($state === TournamentRegistrationService::STATE_REGISTRATION_OPEN) {
+                $after = $service->leave($mgwId, $accountRef);
+            } elseif ($state === TournamentRegistrationService::STATE_WAITING_FOR_DATE
+                && (string)($tournament['registration_closed_reason'] ?? '') === 'full'
+                && empty($tournament['scheduled_start_at_utc'])) {
+                $after = $this->withdrawAutoClosedTestTournamentRegistration(
+                    $database,
+                    $ledger,
+                    $service,
+                    $legacyUserId,
+                    $accountRef,
+                    $mgwId,
+                    $tournament,
+                    $registration
+                );
+                $reopened++;
+            } else {
                 throw new RuntimeException('Staging test tournament cleanup refuses a registered test player after registration close.');
             }
 
-            $after = $service->leave($mgwId, $accountRef);
             if ((string)($after['registration']['state'] ?? '') !== TournamentRegistrationService::REGISTRATION_WITHDRAWN
                 || (int)($after['balance']['reserved_amount'] ?? -1) !== 0) {
                 throw new RuntimeException('Staging test tournament cleanup did not release the reservation.');
@@ -330,7 +348,176 @@ final class StagingTestPlayerStateResetService
             }
         }
 
-        return ['withdrawn' => $withdrawn, 'parity' => true];
+        return ['withdrawn' => $withdrawn, 'reopened' => $reopened, 'parity' => true];
+    }
+
+    private function withdrawAutoClosedTestTournamentRegistration(
+        DatabaseConnectionInterface $database,
+        LedgerWriteService $ledger,
+        TournamentRegistrationService $service,
+        string $legacyUserId,
+        string $accountRef,
+        string $mgwId,
+        array $tournament,
+        array $registration
+    ): array {
+        $tournamentId = trim((string)($tournament['tournament_id'] ?? ''));
+        $registrationId = trim((string)($registration['registration_id'] ?? ''));
+        $reservationId = trim((string)($registration['reservation_id'] ?? ''));
+        if ($tournamentId === '' || $registrationId === '' || $reservationId === '') {
+            throw new RuntimeException('Staging test tournament cleanup auto-close identity is incomplete.');
+        }
+
+        $now = (new DateTimeImmutable('now', new DateTimeZone('UTC')))
+            ->format('Y-m-d H:i:s.u');
+
+        $database->transaction(function (DatabaseConnectionInterface $db) use (
+            $ledger,
+            $legacyUserId,
+            $accountRef,
+            $mgwId,
+            $tournamentId,
+            $registrationId,
+            $reservationId,
+            $now
+        ): void {
+            $lock = $db->driver() === 'mysql' ? ' FOR UPDATE' : '';
+            $tournamentRows = $db->fetchAll(
+                'SELECT tournament_id,tournament_state,capacity,registration_closed_reason,
+                        scheduled_start_at_utc,bracket_generated_at_utc
+                 FROM mgw_tournaments
+                 WHERE tournament_id=:tournament_id' . $lock,
+                ['tournament_id'=>$tournamentId]
+            );
+            if (count($tournamentRows) !== 1 || !is_array($tournamentRows[0])) {
+                throw new RuntimeException('Staging test tournament cleanup cannot lock the auto-closed tournament.');
+            }
+            $lockedTournament = $tournamentRows[0];
+            if ((string)($lockedTournament['tournament_state'] ?? '') !== TournamentRegistrationService::STATE_WAITING_FOR_DATE
+                || (string)($lockedTournament['registration_closed_reason'] ?? '') !== 'full'
+                || trim((string)($lockedTournament['scheduled_start_at_utc'] ?? '')) !== ''
+                || trim((string)($lockedTournament['bracket_generated_at_utc'] ?? '')) !== '') {
+                throw new RuntimeException('Staging test tournament cleanup refuses to reopen a progressed tournament.');
+            }
+
+            $registrationRows = $db->fetchAll(
+                'SELECT r.registration_id,r.tournament_id,r.mgw_id,r.account_ref,r.registration_state,r.reservation_id,
+                        z.status AS reservation_status,z.amount AS reservation_amount,
+                        z.asset_code AS reservation_asset,z.source_type AS reservation_source_type,
+                        z.source_ref AS reservation_source_ref
+                 FROM mgw_tournament_registrations r
+                 INNER JOIN mgw_reservations z ON z.reservation_id=r.reservation_id
+                 WHERE r.registration_id=:registration_id' . $lock,
+                ['registration_id'=>$registrationId]
+            );
+            if (count($registrationRows) !== 1 || !is_array($registrationRows[0])) {
+                throw new RuntimeException('Staging test tournament cleanup registration is unavailable.');
+            }
+            $row = $registrationRows[0];
+            if ((string)($row['tournament_id'] ?? '') !== $tournamentId
+                || (string)($row['mgw_id'] ?? '') !== $mgwId
+                || (string)($row['account_ref'] ?? '') !== $accountRef
+                || (string)($row['registration_state'] ?? '') !== TournamentRegistrationService::REGISTRATION_REGISTERED
+                || (string)($row['reservation_id'] ?? '') !== $reservationId
+                || (string)($row['reservation_status'] ?? '') !== 'active'
+                || (int)($row['reservation_amount'] ?? -1) !== TournamentRegistrationService::ENTRY_FEE
+                || (string)($row['reservation_asset'] ?? '') !== TournamentRegistrationService::ENTRY_ASSET
+                || (string)($row['reservation_source_type'] ?? '') !== 'official_tournament'
+                || (string)($row['reservation_source_ref'] ?? '') !== $tournamentId) {
+                throw new RuntimeException('Staging test tournament cleanup refuses an unproven auto-close registration.');
+            }
+
+            $ownershipCount = (int)$db->fetchValue(
+                'SELECT COUNT(*) FROM mgw_account_ownership
+                 WHERE legacy_user_id=:legacy_user_id
+                   AND account_ref=:account_ref
+                   AND mgw_id=:mgw_id
+                   AND ownership_status=:ownership_status',
+                [
+                    'legacy_user_id'=>$legacyUserId,
+                    'account_ref'=>$accountRef,
+                    'mgw_id'=>$mgwId,
+                    'ownership_status'=>'active',
+                ]
+            );
+            if ($ownershipCount !== 1) {
+                throw new RuntimeException('Staging test tournament cleanup cannot prove A/B ownership.');
+            }
+
+            $ledger->releaseReservation([
+                'operation_key'=>'staging:test-player-reset:tournament-release:'
+                    . substr(hash('sha256', $tournamentId . '|' . $registrationId), 0, 48),
+                'reservation_id'=>$reservationId,
+                'metadata'=>[
+                    'tournament_id'=>$tournamentId,
+                    'registration_id'=>$registrationId,
+                    'legacy_user_id'=>$legacyUserId,
+                    'reason'=>'staging_test_player_cleanup_after_auto_close',
+                ],
+                'occurred_at_utc'=>$now,
+            ]);
+
+            $updated = $db->execute(
+                'UPDATE mgw_tournament_registrations
+                 SET registration_state=:state,
+                     withdrawn_at_utc=:withdrawn_at_utc,
+                     updated_at_utc=:updated_at_utc
+                 WHERE registration_id=:registration_id
+                   AND registration_state=:expected_state',
+                [
+                    'state'=>TournamentRegistrationService::REGISTRATION_WITHDRAWN,
+                    'withdrawn_at_utc'=>$now,
+                    'updated_at_utc'=>$now,
+                    'registration_id'=>$registrationId,
+                    'expected_state'=>TournamentRegistrationService::REGISTRATION_REGISTERED,
+                ]
+            );
+            if ($updated !== 1) {
+                throw new RuntimeException('Staging test tournament cleanup registration changed concurrently.');
+            }
+
+            $remaining = (int)$db->fetchValue(
+                'SELECT COUNT(*) FROM mgw_tournament_registrations
+                 WHERE tournament_id=:tournament_id
+                   AND registration_state=:registration_state',
+                [
+                    'tournament_id'=>$tournamentId,
+                    'registration_state'=>TournamentRegistrationService::REGISTRATION_REGISTERED,
+                ]
+            );
+            if ($remaining >= (int)($lockedTournament['capacity'] ?? 0)) {
+                throw new RuntimeException('Staging test tournament cleanup did not free the technical seat.');
+            }
+
+            $reopened = $db->execute(
+                'UPDATE mgw_tournaments
+                 SET tournament_state=:state,
+                     registration_closed_at_utc=NULL,
+                     registration_closed_reason=NULL,
+                     updated_at_utc=:updated_at_utc
+                 WHERE tournament_id=:tournament_id
+                   AND tournament_state=:expected_state
+                   AND registration_closed_reason=:expected_reason
+                   AND scheduled_start_at_utc IS NULL',
+                [
+                    'state'=>TournamentRegistrationService::STATE_REGISTRATION_OPEN,
+                    'updated_at_utc'=>$now,
+                    'tournament_id'=>$tournamentId,
+                    'expected_state'=>TournamentRegistrationService::STATE_WAITING_FOR_DATE,
+                    'expected_reason'=>'full',
+                ]
+            );
+            if ($reopened !== 1) {
+                throw new RuntimeException('Staging test tournament cleanup could not reopen the technical auto-close.');
+            }
+        });
+
+        $after = $service->snapshot($mgwId, $accountRef);
+        if ((string)($after['tournament']['state'] ?? '') !== TournamentRegistrationService::STATE_REGISTRATION_OPEN
+            || (int)($after['tournament']['remaining_count'] ?? 0) < 1) {
+            throw new RuntimeException('Staging test tournament cleanup did not restore the manual seat.');
+        }
+        return $after;
     }
 
     private function testOnlyInviteParticipants(array $invite, array $testIds): ?array
