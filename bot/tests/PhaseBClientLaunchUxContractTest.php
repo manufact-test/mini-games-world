@@ -90,7 +90,7 @@ $assert(
 $assert(str_contains($acceptance, "document.addEventListener('mgw:phase-b-game-entering', primeLaunchState);"), 'Acceptance runtime must own the synchronous global launch-gate event.');
 $assert(str_contains($acceptance, "owner = document.getElementById('app')"), 'Launch overlay must be owned by the application root, not the board.');
 $assert(!str_contains($acceptance, "querySelector('#screen-game .board-wrap')"), 'Launch overlay must never be mounted inside the game board wrapper.');
-$assert(str_contains($acceptance, 'z-index:140') && str_contains($acceptance, 'inset:0'), 'Launch overlay must cover the complete application above game UI.');
+$assert(str_contains($acceptance, 'z-index:10000') && str_contains($acceptance, 'inset:0'), 'Launch overlay must cover the complete application above game UI.');
 $assert(str_contains($acceptance, "title.textContent = 'Матч скоро начнётся'"), 'Preparing/countdown state must use user-facing launch copy.');
 $assert(str_contains($acceptance, "title.textContent = 'Всё готово'"), 'Final launch handoff must use user-facing ready copy.');
 $assert(str_contains($acceptance, 'launchCountdownSeconds(game)')
@@ -102,8 +102,17 @@ $assert(!str_contains($acceptance, 'Готово устройств:'), 'Technic
 
 $assert(str_contains($acceptance, "window.addEventListener('click', guardPhaseBPreStartControls, true);"), 'Generic pre-start capture guard must remain active.');
 $assert(str_contains($acceptance, "return !phase || phase === 'active';"), 'Explicit surrender must remain blocked until authoritative active phase.');
-$assert(str_contains($acceptance, 'candidateDeadline + 700 < runtime.clock.deadline'), 'Same-turn snapshots must never extend the local deadline.');
-$assert(str_contains($acceptance, 'candidateStart + 250 < runtime.clock.start'), 'Same-turn snapshots must never extend the local start anchor.');
+$assert(
+    str_contains($acceptance, 'if (!runtime.clock || runtime.clock.signature !== signature)')
+        && str_contains($acceptance, 'immutable local projection of the authoritative server')
+        && !str_contains($acceptance, 'runtime.clock.deadline = candidateDeadline'),
+    'Same-turn snapshots must never retarget the local authoritative deadline.'
+);
+$assert(
+    str_contains($acceptance, 'start:candidateStart')
+        && !str_contains($acceptance, 'runtime.clock.start = candidateStart'),
+    'Same-turn snapshots must never retarget the local start anchor.'
+);
 $assert(str_contains($acceptance, "phase === 'countdown' && !launchStartReached(game)"), 'Countdown actions must remain blocked until the shared start anchor.');
 $assert(str_contains($acceptance, "phase === 'preparing' || phase === 'preparation_timeout' || phase === 'cancelled'"), 'Pre-start and cancelled actions must be blocked before optimistic state.');
 
