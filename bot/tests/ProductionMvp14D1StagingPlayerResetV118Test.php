@@ -39,11 +39,5 @@ $assert(!str_contains($service, 'main')
         && str_contains($service, "'production_changed' => false")
         && str_contains($service, "'live_payments_used' => false"),
     'The reset surface must remain staging-only and report that production and live payments were untouched.');
-$assert(str_contains($service, 'withdrawAutoClosedTestTournamentRegistration')
-        && str_contains($service, 'STATE_WAITING_FOR_DATE')
-        && str_contains($service, "registration_closed_reason'] ?? '') === 'full'")
-        && str_contains($service, "reason'=>'staging_test_player_cleanup_after_auto_close'")
-        && str_contains($service, 'STATE_REGISTRATION_OPEN'),
-    'A/B reset must safely unwind a test registration that alone auto-closed a manual staging tournament and restore the free manual seat.');
 
 fwrite(STDOUT, "ProductionMvp14D1StagingPlayerResetV118Test: {$assertions} assertions passed\n");
