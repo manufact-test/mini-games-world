@@ -41,6 +41,7 @@ let tournamentHallBusy = false;
 let tournamentHallError = '';
 let tournamentHallTimer = null;
 let tournamentMatchSnapshot = null;
+let tournamentProgressionSnapshot = null;
 let tournamentMatchRequest = null;
 let tournamentMatchBusy = false;
 let tournamentMatchError = '';
@@ -306,6 +307,8 @@ async function warmTournamentStatus(){
         tournamentHallSnapshot = null;
         tournamentHallError = '';
         tournamentMatchSnapshot = null;
+      tournamentProgressionSnapshot = null;
+        tournamentProgressionSnapshot = null;
         tournamentMatchError = '';
         stopTournamentHallHeartbeat();
       }
@@ -348,6 +351,9 @@ async function refreshTournamentMatchState(){
       tournamentMatchSnapshot = result?.snapshot && typeof result.snapshot === 'object'
         ? result.snapshot
         : null;
+      tournamentProgressionSnapshot = result?.progression && typeof result.progression === 'object'
+        ? result.progression
+        : null;
       tournamentMatchError = '';
       if (result?.game?.id && String(result.game.status || '') === 'active') {
         enterGame(result.game);
@@ -369,6 +375,9 @@ async function markTournamentReady(){
     tournamentMatchSnapshot = result?.snapshot && typeof result.snapshot === 'object'
       ? result.snapshot
       : tournamentMatchSnapshot;
+    tournamentProgressionSnapshot = result?.progression && typeof result.progression === 'object'
+      ? result.progression
+      : tournamentProgressionSnapshot;
     if (result?.game?.id && String(result.game.status || '') === 'active') {
       enterGame(result.game);
       return;
@@ -459,6 +468,7 @@ async function loadTournamentSnapshot(){
       tournamentHallSnapshot = null;
       tournamentHallError = '';
       tournamentMatchSnapshot = null;
+      tournamentProgressionSnapshot = null;
       tournamentMatchError = '';
       stopTournamentHallHeartbeat();
     }
@@ -694,6 +704,24 @@ function tournamentBracketMarkup(bracket){
 }
 
 function tournamentMatchMarkup(){
+  const progression = tournamentProgressionSnapshot && typeof tournamentProgressionSnapshot === 'object'
+    ? tournamentProgressionSnapshot
+    : null;
+  const currentProgression = progression?.current_match && typeof progression.current_match === 'object'
+    ? progression.current_match
+    : null;
+  const latestProgression = progression?.latest_match && typeof progression.latest_match === 'object'
+    ? progression.latest_match
+    : null;
+  const progressedBeyondFirstReady = currentProgression
+    && (Number(currentProgression.round_no || 0) > 1
+      || Number(currentProgression.attempt_no || 1) > 1
+      || String(currentProgression.wait_kind || 'initial_ready') !== 'initial_ready');
+  if (progressedBeyondFirstReady) return tournamentProgressionMarkup(currentProgression, progression);
+  if (!currentProgression && latestProgression?.completed_at_utc) {
+    return tournamentProgressionMarkup(null, progression);
+  }
+
   const match = tournamentMatchSnapshot?.match && typeof tournamentMatchSnapshot.match === 'object'
     ? tournamentMatchSnapshot.match
     : null;
@@ -735,6 +763,72 @@ function tournamentMatchMarkup(){
       <div class="tournaments-v2-ready-players">${playerRows}</div>
       ${tournamentMatchError ? `<div class="tournaments-v2-tournament-error">${escapeHtml(tournamentMatchError)}</div>` : ''}
       ${action}
+    </section>
+  `;
+}
+
+function tournamentProgressionMarkup(match, progression){
+  const tournamentComplete = progression?.tournament_complete === true;
+  if (tournamentComplete) {
+    return `
+      <section class="tournaments-v2-ready">
+        <div class="tournaments-v2-ready-head">
+          <div><span>Турнирная сетка</span><strong>Все матчи турнира завершены.</strong></div>
+        </div>
+      </section>
+    `;
+  }
+
+  if (!match) {
+    const latest = progression?.latest_match && typeof progression.latest_match === 'object'
+      ? progression.latest_match
+      : {};
+    return `
+      <section class="tournaments-v2-ready">
+        <div class="tournaments-v2-ready-head">
+          <div>
+            <span>Раунд ${escapeHtml(String(latest.round_no || ''))}</span>
+            <strong>Ваш матч завершён · ждём остальные матчи раунда.</strong>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  const roundNo = Number(match.round_no || 0);
+  const pairNo = Number(match.pair_no || 0);
+  const attemptNo = Math.max(1, Number(match.attempt_no || 1));
+  const waitKind = String(match.wait_kind || '');
+  const matchKind = String(match.match_kind || 'elimination');
+  const opensAt = parseTournamentUtc(match.opens_at_utc);
+  const waiting = opensAt instanceof Date && opensAt.getTime() > Date.now();
+  let stage = `Раунд ${roundNo} · пара ${pairNo}`;
+  if (matchKind === 'final') stage = 'Финал';
+  else if (matchKind === 'third_place') stage = 'Матч за 3-е место';
+
+  let message = 'Следующий матч готовится к запуску.';
+  if (waitKind === 'draw_replay') {
+    message = waiting
+      ? 'Ничья · переигровка начнётся через минуту. Стороны меняются.'
+      : 'Переигровка готова · запускаем матч.';
+  } else if (waitKind === 'round_break') {
+    message = waiting
+      ? 'Раунд завершён · перерыв перед следующим матчем.'
+      : 'Перерыв завершён · запускаем следующий матч.';
+  }
+  if (attemptNo > 1 && waitKind !== 'draw_replay') {
+    message = waiting ? 'Повторный матч готовится.' : 'Повторный матч готов · запускаем.';
+  }
+
+  return `
+    <section class="tournaments-v2-ready">
+      <div class="tournaments-v2-ready-head">
+        <div>
+          <span>${escapeHtml(stage)}${attemptNo > 1 ? ` · попытка ${attemptNo}` : ''}</span>
+          <strong>${escapeHtml(message)}</strong>
+        </div>
+        ${opensAt && waiting ? `<b data-tournament-progression-countdown data-progression-opens-at="${opensAt.getTime()}">${escapeHtml(formatReadyCountdown(opensAt.getTime() - Date.now()))}</b>` : ''}
+      </div>
     </section>
   `;
 }
@@ -917,6 +1011,11 @@ function renderTournamentSnapshot(errorMessage = ''){
       if (readyCountdown instanceof HTMLElement) {
         const readyDeadline = Number(readyCountdown.dataset.readyDeadline || 0);
         readyCountdown.textContent = formatReadyCountdown(readyDeadline - Date.now());
+      }
+      const progressionCountdown = body.querySelector('[data-tournament-progression-countdown]');
+      if (progressionCountdown instanceof HTMLElement) {
+        const opensAt = Number(progressionCountdown.dataset.progressionOpensAt || 0);
+        progressionCountdown.textContent = formatReadyCountdown(opensAt - Date.now());
       }
       const hallButton = body.querySelector('[data-tournament-hall-enter]');
       if (hallButton instanceof HTMLButtonElement && !tournamentHallBusy) {
