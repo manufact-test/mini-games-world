@@ -20,7 +20,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
   <script src="./assets/js/admin-rating.js?v=1&mvp20_8=rating-admin" defer></script>
-  <script src="./assets/js/admin-tournaments.js?v=7&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2" defer></script>
+  <script src="./assets/js/admin-tournaments.js?v=8&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=two-live-acceptance-v1" defer></script>
 </head>
 <body>
   <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php">
@@ -115,10 +115,17 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               </div>
               <div class="mgw-admin__tournament-schedule" data-tournament-manual-panel hidden>
                 <div class="mgw-admin__tournament-current" data-tournament-manual-info>Ручная проверка staging недоступна.</div>
+                <label class="mgw-admin__field">
+                  <span>Живых аккаунтов для ручной проверки</span>
+                  <select data-tournament-manual-live-seats>
+                    <option value="2" selected>2 живых аккаунта · подготовить 6/8</option>
+                    <option value="1">1 живой аккаунт · подготовить 7/8</option>
+                  </select>
+                </label>
                 <div class="mgw-admin__tournament-actions">
-                  <button type="button" data-tournament-prepare-manual disabled>Подготовить 7/8 для ручной проверки</button>
+                  <button type="button" data-tournament-prepare-manual disabled>Подготовить 6/8 для двух живых аккаунтов</button>
                 </div>
-                <small>Только staging: свободные места заполняются синтетическими участниками через тот же канонический сервис регистрации и резерв 50 000. Последнее место всегда остаётся живому аккаунту, чтобы вручную проверить реальный переход 7/8 → 8/8.</small>
+                <small>Только staging: синтетические участники регистрируются через тот же канонический сервис и резерв 50 000. Режим 6/8 оставляет два места для двух живых аккаунтов; в стартовой сетке staging они гарантированно образуют одну пару, чтобы вручную проверить MVP-21.5.</small>
               </div>
               <div class="mgw-admin__tournament-schedule" data-tournament-reset-panel hidden>
                 <div class="mgw-admin__tournament-current" data-tournament-reset-info>Сброс staging-турнира недоступен.</div>
