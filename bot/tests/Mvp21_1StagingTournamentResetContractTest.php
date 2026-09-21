@@ -3,8 +3,9 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
 $service = file_get_contents($root . '/bot/services/StagingTestPlayerStateResetService.php');
-if (!is_string($service)) {
-    throw new RuntimeException('Cannot read staging reset source.');
+$playwright = file_get_contents($root . '/e2e/playwright.config.mjs');
+if (!is_string($service) || !is_string($playwright)) {
+    throw new RuntimeException('Cannot read staging reset sources.');
 }
 
 $assertions = 0;
@@ -32,7 +33,21 @@ $assert(str_contains(
         $service,
         'Staging test tournament cleanup refuses a registered test player after registration close.'
     ),
-    'Reset must refuse to rewrite a closed tournament.');
+    'Reset must still refuse scheduled/progressed tournament states.');
+$assert(str_contains($service, 'withdrawAutoClosedTestTournamentRegistration')
+        && str_contains($service, 'TournamentRegistrationService::STATE_WAITING_FOR_DATE')
+        && str_contains($service, "registration_closed_reason'] ?? '') === 'full'")
+        && str_contains($service, 'empty($tournament[\'scheduled_start_at_utc\'])'),
+    'Reset may unwind only an unscheduled full auto-close caused by the technical A/B registration.');
+$assert(str_contains($service, "reason'=>'staging_test_player_cleanup_after_auto_close'")
+        && str_contains($service, 'TournamentRegistrationService::STATE_REGISTRATION_OPEN')
+        && str_contains($service, 'registration_closed_at_utc=NULL')
+        && str_contains($service, 'registration_closed_reason=NULL'),
+    'Auto-close cleanup must release the A/B reservation and restore the manual registration seat.');
+$assert(str_contains($playwright, "MGW_STAGING_LIVE_TOURNAMENT_E2E === '1'")
+        && str_contains($playwright, "currentTests.push('tournament-registration-live.spec.mjs')")
+        && str_contains($playwright, 'testMatch: currentTests'),
+    'Automatic blocking staging E2E must not mutate the official tournament unless explicitly opted in.');
 $assert(str_contains($service, 'TournamentRegistrationService::REGISTRATION_WITHDRAWN')
         && str_contains($service, "['balance']['reserved_amount'] ?? -1) !== 0"),
     'Canonical leave must prove both withdrawn registration and released reservation.');
