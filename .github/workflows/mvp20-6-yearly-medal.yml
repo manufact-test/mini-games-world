@@ -113,6 +113,10 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          successor=0
+          if git diff --name-only "$base" "$head" | grep -Fxq '.github/workflows/mvp21-6-tournament-rounds.yml'; then
+            successor=1
+          fi
           bad=0
           while IFS= read -r path; do
             case "$path" in
@@ -139,8 +143,10 @@ jobs:
               .github/workflows/mvp19-3-profile-frames.yml)
                 ;;
               *)
-                echo "Unexpected MVP-20.6 path: $path" >&2
-                bad=1
+                if [[ "$successor" -eq 0 ]]; then
+                  echo "Unexpected MVP-20.6 path: $path" >&2
+                  bad=1
+                fi
                 ;;
             esac
           done < <(git diff --name-only "$base" "$head")

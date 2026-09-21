@@ -161,7 +161,58 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           successor=0
-          if git diff --name-only "$base" "$head" | grep -Fxq '.github/workflows/mvp21-5-tournament-ready.yml'; then
+          if git diff --name-only "$base" "$head" | grep -Eq '^\.github/workflows/mvp21-(5-tournament-ready|6-tournament-rounds)\.yml
+            successor=1
+          fi
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp21-1-tournament-registration.yml|\
+              .github/workflows/mvp21-2-tournament-rules.yml|\
+              .github/workflows/mvp21-3-tournament-schedule.yml|\
+              bot/database/migrations/20260921_0052_add_tournament_schedule.php|\
+              bot/database/migrations/20260921_0053_create_tournament_hall_bracket.php|\
+              bot/tournaments/TournamentHallService.php|\
+              bot/tournament-hall.php|\
+              bot/tests/Mvp21_4TournamentHallBracketTest.php|\
+              bot/tests/Mvp21_4TournamentHallUxContractTest.php|\
+              .github/workflows/mvp21-4-tournament-hall.yml|\
+              bot/tournaments/TournamentRegistrationService.php|\
+              bot/tournaments/TournamentParticipantNotificationBridge.php|\
+              bot/tournaments/StagingTournamentManualAcceptanceService.php|\
+              bot/staging-projection-diagnostic.php|\
+              bot/services/StagingTestPlayerStateResetService.php|\
+              bot/admin-tournaments.php|\
+              app/admin.php|\
+              app/assets/js/admin-tournaments.js|\
+              app/assets/js/api/client.js|\
+              app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/js/screens/notifications-screen-v110r13.js|\
+              app/assets/css/main.css|\
+              app/runtime/client/version-manifest.php|\
+              bot/tests/Mvp21_3TournamentScheduleTest.php|\
+              bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php|\
+              bot/tests/Mvp21_3ManualAcceptanceUxCorrectiveTest.php|\
+              bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
+              bot/tests/Mvp21_1StagingTournamentResetContractTest.php|\
+              bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php)
+                ;;
+              *)
+                if [[ "$successor" -eq 0 ]]; then
+                  echo "Unexpected MVP-21.3 path: $path" >&2
+                  bad=1
+                fi
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+
+          git diff --exit-code "$base" "$head" -- \
+            bot/games app/assets/js/games app/assets/css/games \
+            bot/shop bot/ledger/LedgerWriteService.php \
+            bot/runtime/ProductionPrimaryApplicationEntrypoints.php \
+            bot/cron
+; then
             successor=1
           fi
           bad=0

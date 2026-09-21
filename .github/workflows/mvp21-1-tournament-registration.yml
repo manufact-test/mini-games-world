@@ -201,7 +201,80 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           successor=0
-          if git diff --name-only "$base" "$head" | grep -Fxq '.github/workflows/mvp21-5-tournament-ready.yml'; then
+          if git diff --name-only "$base" "$head" | grep -Eq '^\.github/workflows/mvp21-(5-tournament-ready|6-tournament-rounds)\.yml
+            successor=1
+          fi
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp21-1-tournament-registration.yml|\
+              .github/workflows/mvp21-2-tournament-rules.yml|\
+              .github/workflows/mvp21-3-tournament-schedule.yml|\
+              .github/workflows/staging-playwright-e2e.yml|\
+              bot/staging-projection-diagnostic.php|\
+              bot/database/migrations/20260920_0049_create_official_tournaments.php|\
+              bot/database/migrations/20260920_0050_add_tournament_rules_consent.php|\
+              bot/database/migrations/20260920_0051_refresh_tournament_rules_copy.php|\
+              bot/database/migrations/20260921_0052_add_tournament_schedule.php|\
+              bot/database/migrations/20260921_0053_create_tournament_hall_bracket.php|\
+              bot/tournaments/TournamentHallService.php|\
+              bot/tournament-hall.php|\
+              bot/tests/Mvp21_4TournamentHallBracketTest.php|\
+              bot/tests/Mvp21_4TournamentHallUxContractTest.php|\
+              .github/workflows/mvp21-4-tournament-hall.yml|\
+              bot/tournaments/TournamentRegistrationService.php|\
+              bot/tournaments/TournamentAdminNotificationBridge.php|\
+              bot/tournaments/TournamentParticipantNotificationBridge.php|\
+              bot/tournaments/StagingTournamentManualAcceptanceService.php|\
+              bot/api.php|\
+              bot/tournament-status.php|\
+              bot/runtime/RuntimePrimaryStagingRequestFinalizer.php|\
+              bot/economy/UnifiedEconomyRuntimeSyncService.php|\
+              bot/ledger/RuntimeEconomyRepository.php|\
+              bot/services/UserService.php|\
+              bot/services/StagingTestPlayerStateResetService.php|\
+              bot/admin-tournaments.php|\
+              bot/core/bootstrap.php|\
+              app/assets/js/api/client.js|\
+              app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/js/screens/notifications-screen-v110r13.js|\
+              app/assets/css/main.css|\
+              app/runtime/client/version-manifest.php|\
+              app/v110.php|\
+              app/admin.php|\
+              app/assets/js/admin-tournaments.js|\
+              app/assets/css/admin-shell.css|\
+              bot/tests/Mvp21_1TournamentRegistrationTest.php|\
+              bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php|\
+              bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php|\
+              bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php|\
+              bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
+              bot/tests/Mvp21_1StagingTournamentResetContractTest.php|\
+              bot/tests/Mvp21_2TournamentRulesTest.php|\
+              bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php|\
+              bot/tests/Mvp21_3TournamentScheduleTest.php|\
+              bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php|\
+              bot/tests/Mvp21_3ManualAcceptanceUxCorrectiveTest.php|\
+              bot/tests/RuntimeNotificationRepositoryTest.php|\
+              bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php|\
+              e2e/staging/tournament-registration-live.spec.mjs|\
+              e2e/playwright.config.mjs)
+                ;;
+              *)
+                if [[ "$successor" -eq 0 ]]; then
+                  echo "Unexpected MVP-21.1 path: $path" >&2
+                  bad=1
+                fi
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+
+          git diff --exit-code "$base" "$head" -- \
+            bot/games app/assets/js/games app/assets/css/games \
+            bot/shop bot/ledger/LedgerWriteService.php \
+            bot/runtime/ProductionPrimaryApplicationEntrypoints.php
+; then
             successor=1
           fi
           bad=0

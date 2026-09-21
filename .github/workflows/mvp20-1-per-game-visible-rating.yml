@@ -91,7 +91,74 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           successor=0
-          if git diff --name-only "$base" "$head" | grep -Fxq '.github/workflows/mvp21-5-tournament-ready.yml'; then
+          if git diff --name-only "$base" "$head" | grep -Eq '^\.github/workflows/mvp21-(5-tournament-ready|6-tournament-rounds)\.yml
+            successor=1
+          fi
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp20-1-per-game-visible-rating.yml|\
+              .github/workflows/mvp20-3-leaderboards-antifarming.yml|\
+              .github/workflows/mvp20-2-hidden-skill.yml|\
+              .github/workflows/mvp20-4-quarterly-seasons.yml|\
+              .github/workflows/mvp20-5-seasonal-awards.yml|\
+              .github/workflows/mvp20-6-yearly-medal.yml|\
+              bot/database/migrations/20260920_0047_create_yearly_medals.php|\
+              bot/ratings/YearlyMedalService.php|\
+              bot/tests/Mvp20_6YearlyMedalTest.php|\
+              bot/tests/Mvp20_6YearlyMedalIntegrationContractTest.php|\
+              bot/profile-v2.php|\
+              app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/css/main.css|\
+              app/locales/ru.json|\
+              app/runtime/client/version-manifest.php|\
+              bot/database/migrations/20260920_0046_create_seasonal_awards.php|\
+              bot/ratings/SeasonalAwardService.php|\
+              bot/tests/Mvp20_5SeasonalAwardsTest.php|\
+              bot/tests/Mvp20_5SeasonalAwardsIntegrationContractTest.php|\
+              bot/database/migrations/20260920_0045_create_quarterly_season_lifecycle.php|\
+              bot/ratings/SeasonCalendar.php|\
+              bot/ratings/SeasonAssignmentResolver.php|\
+              bot/ratings/SeasonLifecycleService.php|\
+              bot/tests/Mvp20_4QuarterlySeasonLifecycleTest.php|\
+              bot/tests/Mvp20_4SeasonLifecycleIntegrationContractTest.php|\
+              bot/database/migrations/20260919_0042_create_per_game_visible_rating.php|\
+              bot/ratings/PerGameRatingService.php|\
+              bot/ratings/PerGameRatingRuntimeBridge.php|\
+              bot/core/bootstrap.php|\
+              bot/profile-v2.php|\
+              bot/leaderboard.php|\
+              bot/ratings/LeaderboardService.php|\
+              bot/helpers/WebAppLaunchUrl.php|\
+              bot/tests/Mvp20_1PerGameVisibleRatingTest.php|\
+              bot/tests/Mvp20_1VisibleRatingIntegrationContractTest.php|\
+              bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php|\
+              bot/tests/Mvp20_3LeaderboardIntegrationContractTest.php|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
+              bot/tests/Mvp19_3ProfileFramesTest.php|\
+              .github/workflows/mvp19-3-profile-avatars.yml|\
+              .github/workflows/mvp19-3-profile-frames.yml|\
+              app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/js/main-v110-handoff-shell.js|\
+              app/assets/css/main.css|\
+              app/locales/ru.json|\
+              app/runtime/client/version-manifest.php|\
+              docs/MGW_SMALL_CANONICAL_2026-09-20_MVP20_3_ARENA_LEADERBOARD_CORRECTIVE_CHECKPOINT.md|\
+              docs/MGW_CURRENT_SHORT_ROADMAP_2026-09-20_MVP20_3_ARENA_CORRECTIVE_IN_PROGRESS.md|\
+              app/v110.php)
+                ;;
+              *)
+                if [[ "$successor" -eq 0 ]]; then
+                  echo "Unexpected MVP-20.1 path: $path" >&2
+                  bad=1
+                fi
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+          git diff --exit-code "$base" "$head" -- bot/games app/assets/js/games
+; then
             successor=1
           fi
           bad=0

@@ -109,14 +109,20 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          successor=0
+          if git diff --name-only "$base" "$head" | grep -Fxq '.github/workflows/mvp21-6-tournament-rounds.yml'; then
+            successor=1
+          fi
           bad=0
           while IFS= read -r path; do
             case "$path" in
               .github/workflows/mvp20-8-rating-admin.yml|              bot/database/migrations/20260920_0048_create_rating_admin_review.php|              bot/ratings/RatingAdminService.php|              bot/admin-rating.php|              bot/core/bootstrap.php|              app/admin.php|              app/assets/js/admin-rating.js|              app/assets/css/admin-shell.css|              bot/tests/Mvp20_8RatingAdminTest.php|              bot/tests/Mvp20_8RatingAdminIntegrationContractTest.php|              bot/tests/Mvp20_8RatingLoadTest.php)
                 ;;
               *)
-                echo "Unexpected MVP-20.8 path: $path" >&2
-                bad=1
+                if [[ "$successor" -eq 0 ]]; then
+                  echo "Unexpected MVP-20.8 path: $path" >&2
+                  bad=1
+                fi
                 ;;
             esac
           done < <(git diff --name-only "$base" "$head")
