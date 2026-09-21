@@ -11,15 +11,18 @@ final class StagingTournamentManualAcceptanceService
     private const STAGING_HOST = 'seashell-okapi-889488.hostingersite.com';
 
     private $runtimeUserWriter;
+    private $runtimeResetWriter;
 
     public function __construct(
         private array $config,
         private DatabaseConnectionInterface $database,
         private LedgerWriteService $ledger,
         private TournamentRegistrationService $tournaments,
-        ?callable $runtimeUserWriter = null
+        ?callable $runtimeUserWriter = null,
+        ?callable $runtimeResetWriter = null
     ) {
         $this->runtimeUserWriter = $runtimeUserWriter;
+        $this->runtimeResetWriter = $runtimeResetWriter;
     }
 
     public function availability(array $server): array
@@ -278,6 +281,368 @@ final class StagingTournamentManualAcceptanceService
             'already_ok'=>$alreadyOk,
             'scanned'=>$scanned,
         ];
+    }
+
+    public function resetAvailability(array $server): array
+    {
+        if (!$this->isAvailableEnvironment($server)) {
+            return ['available'=>false,'reason'=>'staging_only'];
+        }
+
+        $snapshot = $this->tournaments->snapshot();
+        $tournament = $snapshot['tournament'] ?? null;
+        if (!is_array($tournament)) {
+            return ['available'=>false,'reason'=>'no_active_tournament'];
+        }
+
+        $state = (string)($tournament['state'] ?? '');
+        $allowed = in_array($state, [
+            TournamentRegistrationService::STATE_DRAFT,
+            TournamentRegistrationService::STATE_REGISTRATION_OPEN,
+            TournamentRegistrationService::STATE_WAITING_FOR_DATE,
+            TournamentRegistrationService::STATE_SCHEDULED,
+        ], true);
+
+        return [
+            'available'=>$allowed,
+            'reason'=>$allowed ? 'ready' : 'state_not_resettable',
+            'tournament_id'=>(string)($tournament['tournament_id'] ?? ''),
+            'state'=>$state,
+            'registered_count'=>(int)($tournament['registered_count'] ?? 0),
+            'capacity'=>(int)($tournament['capacity'] ?? 0),
+        ];
+    }
+
+    public function resetForFreshManualAcceptance(
+        array $server,
+        string $actorRef,
+        ?DateTimeImmutable $now = null
+    ): array {
+        $this->assertAvailableEnvironment($server);
+        $actorRef = trim($actorRef);
+        if ($actorRef === '' || strlen($actorRef) > 191) {
+            throw new InvalidArgumentException('Staging tournament reset actor is invalid.');
+        }
+
+        $snapshot = $this->tournaments->snapshot();
+        $tournament = $snapshot['tournament'] ?? null;
+        if (!is_array($tournament)) {
+            return [
+                'status'=>'already_reset',
+                'released_reservations'=>0,
+                'fixture_accounts_retired'=>0,
+                'real_accounts_released'=>0,
+                'runtime_balances_updated'=>0,
+            ];
+        }
+
+        $tournamentId = trim((string)($tournament['tournament_id'] ?? ''));
+        $state = (string)($tournament['state'] ?? '');
+        if ($tournamentId === '' || !in_array($state, [
+            TournamentRegistrationService::STATE_DRAFT,
+            TournamentRegistrationService::STATE_REGISTRATION_OPEN,
+            TournamentRegistrationService::STATE_WAITING_FOR_DATE,
+            TournamentRegistrationService::STATE_SCHEDULED,
+        ], true)) {
+            throw new RuntimeException('Текущий staging-турнир нельзя безопасно сбросить из этого состояния.');
+        }
+
+        $resetAt = ($now ?? new DateTimeImmutable('now', new DateTimeZone('UTC')))
+            ->setTimezone(new DateTimeZone('UTC'))
+            ->format('Y-m-d H:i:s.u');
+
+        return $this->database->transaction(function (DatabaseConnectionInterface $db) use (
+            $tournamentId,
+            $actorRef,
+            $resetAt
+        ): array {
+            $lock = $db->driver() === 'sqlite' ? '' : ' FOR UPDATE';
+            $tournamentRows = $db->fetchAll(
+                'SELECT tournament_id,active_slot,tournament_state
+                 FROM mgw_tournaments
+                 WHERE tournament_id=:tournament_id' . $lock,
+                ['tournament_id'=>$tournamentId]
+            );
+            if (count($tournamentRows) !== 1 || !is_array($tournamentRows[0])) {
+                throw new RuntimeException('Staging tournament reset could not lock the active tournament.');
+            }
+            $lockedTournament = $tournamentRows[0];
+            if ((string)($lockedTournament['active_slot'] ?? '') !== TournamentRegistrationService::ACTIVE_SLOT) {
+                throw new RuntimeException('Staging tournament reset refuses a non-active tournament.');
+            }
+            if (!in_array((string)($lockedTournament['tournament_state'] ?? ''), [
+                TournamentRegistrationService::STATE_DRAFT,
+                TournamentRegistrationService::STATE_REGISTRATION_OPEN,
+                TournamentRegistrationService::STATE_WAITING_FOR_DATE,
+                TournamentRegistrationService::STATE_SCHEDULED,
+            ], true)) {
+                throw new RuntimeException('Staging tournament reset refuses the current tournament state.');
+            }
+
+            $registrations = $db->fetchAll(
+                'SELECT r.registration_id,r.mgw_id,r.account_ref,r.reservation_id,
+                        z.status AS reservation_status,z.amount AS reservation_amount,
+                        z.asset_code AS reservation_asset,z.source_type AS reservation_source_type,
+                        z.source_ref AS reservation_source_ref
+                 FROM mgw_tournament_registrations r
+                 INNER JOIN mgw_reservations z ON z.reservation_id=r.reservation_id
+                 WHERE r.tournament_id=:tournament_id
+                   AND r.registration_state=:registration_state
+                 ORDER BY r.registration_id ASC' . $lock,
+                [
+                    'tournament_id'=>$tournamentId,
+                    'registration_state'=>TournamentRegistrationService::REGISTRATION_REGISTERED,
+                ]
+            );
+
+            $fixtureLegacyIds = [];
+            $runtimeBalances = [];
+            $released = 0;
+            $fixtureRetired = 0;
+            $realReleased = 0;
+
+            foreach ($registrations as $registration) {
+                if (!is_array($registration)) continue;
+                $registrationId = trim((string)($registration['registration_id'] ?? ''));
+                $mgwId = trim((string)($registration['mgw_id'] ?? ''));
+                $accountRef = trim((string)($registration['account_ref'] ?? ''));
+                $reservationId = trim((string)($registration['reservation_id'] ?? ''));
+                if ($registrationId === '' || $mgwId === '' || $accountRef === '' || $reservationId === '') {
+                    throw new RuntimeException('Staging tournament reset found an incomplete registration.');
+                }
+                if ((string)($registration['reservation_status'] ?? '') !== 'active'
+                    || (int)($registration['reservation_amount'] ?? -1) !== TournamentRegistrationService::ENTRY_FEE
+                    || (string)($registration['reservation_asset'] ?? '') !== TournamentRegistrationService::ENTRY_ASSET
+                    || (string)($registration['reservation_source_type'] ?? '') !== 'official_tournament'
+                    || (string)($registration['reservation_source_ref'] ?? '') !== $tournamentId) {
+                    throw new RuntimeException('Staging tournament reset refuses an unproven tournament reservation.');
+                }
+
+                $ownershipRows = $db->fetchAll(
+                    'SELECT account_ref,mgw_id,legacy_user_id,ownership_status,source_type,source_ref
+                     FROM mgw_account_ownership
+                     WHERE account_ref=:account_ref AND mgw_id=:mgw_id' . $lock,
+                    ['account_ref'=>$accountRef,'mgw_id'=>$mgwId]
+                );
+                if (count($ownershipRows) !== 1
+                    || (string)($ownershipRows[0]['ownership_status'] ?? '') !== 'active') {
+                    throw new RuntimeException('Staging tournament reset requires one active account ownership row.');
+                }
+                $ownership = $ownershipRows[0];
+                $legacyUserId = trim((string)($ownership['legacy_user_id'] ?? ''));
+
+                $isFixture = $this->isSyntheticFixtureIdentity(
+                    $mgwId,
+                    $accountRef,
+                    $legacyUserId,
+                    (string)($ownership['source_type'] ?? ''),
+                    (string)($ownership['source_ref'] ?? '')
+                );
+
+                $this->ledger->releaseReservation([
+                    'operation_key'=>'staging:tournament-reset:release:'
+                        . substr(hash('sha256', $tournamentId . '|' . $registrationId), 0, 48),
+                    'reservation_id'=>$reservationId,
+                    'metadata'=>[
+                        'tournament_id'=>$tournamentId,
+                        'registration_id'=>$registrationId,
+                        'reason'=>'staging_manual_acceptance_reset',
+                        'actor_ref'=>$actorRef,
+                    ],
+                    'occurred_at_utc'=>$resetAt,
+                ]);
+                $released++;
+
+                $balance = $this->ledger->getBalance(
+                    $accountRef,
+                    TournamentRegistrationService::ENTRY_ASSET
+                );
+                if (!is_array($balance) || (int)($balance['reserved_amount'] ?? -1) !== 0) {
+                    throw new RuntimeException('Staging tournament reset did not release the canonical reservation.');
+                }
+
+                if ($isFixture) {
+                    if ((int)($balance['available_amount'] ?? -1) !== TournamentRegistrationService::ENTRY_FEE) {
+                        throw new RuntimeException('Synthetic staging fixture balance is not the exact disposable test grant.');
+                    }
+                    $this->ledger->postAvailableDelta([
+                        'operation_key'=>'staging:tournament-reset:fixture-revoke:'
+                            . substr(hash('sha256', $tournamentId . '|' . $registrationId), 0, 48),
+                        'account_ref'=>$accountRef,
+                        'mgw_id'=>$mgwId,
+                        'legacy_user_id'=>$legacyUserId,
+                        'asset_code'=>TournamentRegistrationService::ENTRY_ASSET,
+                        'available_delta'=>-TournamentRegistrationService::ENTRY_FEE,
+                        'category'=>'staging_test_cleanup',
+                        'source_type'=>'staging_test',
+                        'source_ref'=>$tournamentId,
+                        'metadata'=>[
+                            'purpose'=>'retire_staging_tournament_fixture',
+                            'registration_id'=>$registrationId,
+                            'actor_ref'=>$actorRef,
+                        ],
+                        'occurred_at_utc'=>$resetAt,
+                    ]);
+                    $db->execute(
+                        'UPDATE mgw_users
+                         SET status=:status,updated_at_utc=:updated_at_utc
+                         WHERE mgw_id=:mgw_id AND status=:expected_status',
+                        [
+                            'status'=>'staging_fixture_retired',
+                            'updated_at_utc'=>$resetAt,
+                            'mgw_id'=>$mgwId,
+                            'expected_status'=>'active',
+                        ]
+                    );
+                    if ($legacyUserId !== '') $fixtureLegacyIds[$legacyUserId] = true;
+                    $fixtureRetired++;
+                } else {
+                    if ($legacyUserId !== '') {
+                        $runtimeBalances[$legacyUserId] = (int)$balance['available_amount'];
+                    }
+                    $realReleased++;
+                }
+
+                $updated = $db->execute(
+                    'UPDATE mgw_tournament_registrations
+                     SET registration_state=:state,
+                         withdrawn_at_utc=:withdrawn_at_utc,
+                         updated_at_utc=:updated_at_utc
+                     WHERE registration_id=:registration_id
+                       AND registration_state=:expected_state',
+                    [
+                        'state'=>TournamentRegistrationService::REGISTRATION_WITHDRAWN,
+                        'withdrawn_at_utc'=>$resetAt,
+                        'updated_at_utc'=>$resetAt,
+                        'registration_id'=>$registrationId,
+                        'expected_state'=>TournamentRegistrationService::REGISTRATION_REGISTERED,
+                    ]
+                );
+                if ($updated !== 1) {
+                    throw new RuntimeException('Staging tournament registration changed during reset.');
+                }
+            }
+
+            $remaining = (int)$db->fetchValue(
+                'SELECT COUNT(*) FROM mgw_tournament_registrations
+                 WHERE tournament_id=:tournament_id AND registration_state=:state',
+                [
+                    'tournament_id'=>$tournamentId,
+                    'state'=>TournamentRegistrationService::REGISTRATION_REGISTERED,
+                ]
+            );
+            if ($remaining !== 0) {
+                throw new RuntimeException('Staging tournament reset left active registrations behind.');
+            }
+
+            $activeReservations = (int)$db->fetchValue(
+                "SELECT COUNT(*) FROM mgw_reservations
+                 WHERE source_type='official_tournament'
+                   AND source_ref=:tournament_id
+                   AND status='active'",
+                ['tournament_id'=>$tournamentId]
+            );
+            if ($activeReservations !== 0) {
+                throw new RuntimeException('Staging tournament reset left active entry reservations behind.');
+            }
+
+            $updatedTournament = $db->execute(
+                'UPDATE mgw_tournaments
+                 SET active_slot=NULL,
+                     tournament_state=:state,
+                     registration_closed_at_utc=COALESCE(registration_closed_at_utc,:closed_at_utc),
+                     registration_closed_reason=:closed_reason,
+                     updated_at_utc=:updated_at_utc
+                 WHERE tournament_id=:tournament_id
+                   AND active_slot=:active_slot',
+                [
+                    'state'=>'staging_reset',
+                    'closed_at_utc'=>$resetAt,
+                    'closed_reason'=>'staging_reset',
+                    'updated_at_utc'=>$resetAt,
+                    'tournament_id'=>$tournamentId,
+                    'active_slot'=>TournamentRegistrationService::ACTIVE_SLOT,
+                ]
+            );
+            if ($updatedTournament !== 1) {
+                throw new RuntimeException('Staging tournament reset could not release the official active slot.');
+            }
+
+            $runtimeResult = $this->applyRuntimeReset(
+                $runtimeBalances,
+                array_keys($fixtureLegacyIds)
+            );
+
+            return [
+                'status'=>'reset',
+                'tournament_id'=>$tournamentId,
+                'released_reservations'=>$released,
+                'fixture_accounts_retired'=>$fixtureRetired,
+                'real_accounts_released'=>$realReleased,
+                'runtime_balances_updated'=>(int)($runtimeResult['updated_balances'] ?? 0),
+                'runtime_fixture_users_removed'=>(int)($runtimeResult['removed_fixture_users'] ?? 0),
+            ];
+        });
+    }
+
+    private function isSyntheticFixtureIdentity(
+        string $mgwId,
+        string $accountRef,
+        string $legacyUserId,
+        string $sourceType,
+        string $sourceRef
+    ): bool {
+        $legacyFixture = preg_match('/^MGW-STG-[a-f0-9]{12}$/', $mgwId) === 1
+            && preg_match('/^legacy:stg_tour_[a-f0-9]{12}$/', $accountRef) === 1
+            && preg_match('/^stg_tour_[a-f0-9]{12}$/', $legacyUserId) === 1
+            && $sourceType === 'staging_fixture_repair';
+
+        $v2Fixture = MgwIdGenerator::isValid($mgwId)
+            && preg_match('/^legacy:stg_tour_v2_[a-f0-9]{12}$/', $accountRef) === 1
+            && preg_match('/^stg_tour_v2_[a-f0-9]{12}$/', $legacyUserId) === 1
+            && $sourceType === 'runtime_identity'
+            && $sourceRef === 'development:' . $legacyUserId;
+
+        return $legacyFixture || $v2Fixture;
+    }
+
+    private function applyRuntimeReset(array $runtimeBalances, array $fixtureLegacyIds): array
+    {
+        if ($this->runtimeResetWriter !== null) {
+            $result = ($this->runtimeResetWriter)($runtimeBalances, $fixtureLegacyIds);
+            return is_array($result) ? $result : [];
+        }
+
+        $storage = StorageFactory::createJson((string)($this->config['data_dir'] ?? (__DIR__ . '/../data')));
+        return $storage->transaction(static function (array &$data) use (
+            $runtimeBalances,
+            $fixtureLegacyIds
+        ): array {
+            if (!isset($data['users']) || !is_array($data['users'])) {
+                $data['users'] = [];
+            }
+            $updated = 0;
+            foreach ($runtimeBalances as $legacyUserId=>$available) {
+                if (!isset($data['users'][$legacyUserId]) || !is_array($data['users'][$legacyUserId])) {
+                    continue;
+                }
+                $data['users'][$legacyUserId][UnifiedBalanceRuntimeState::FIELD] = (int)$available;
+                $updated++;
+            }
+
+            $removed = 0;
+            foreach ($fixtureLegacyIds as $legacyUserId) {
+                if (isset($data['users'][$legacyUserId])) {
+                    unset($data['users'][$legacyUserId]);
+                    $removed++;
+                }
+            }
+
+            return [
+                'updated_balances'=>$updated,
+                'removed_fixture_users'=>$removed,
+            ];
+        });
     }
 
     private function ensureCanonicalOwnership(array $identity): void
