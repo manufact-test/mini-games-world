@@ -218,18 +218,21 @@ $assertTrue(
     'Corrective release must force fresh Tournament schedule CSS.'
 );
 $assertTrue(
-    str_contains($source['admin'], 'admin-tournaments.js?v=6&mvp21_3=local-time-copy-v2'),
-    'Tournament Admin must force the fresh MVP-21.3 manual-acceptance client.'
+    str_contains($source['admin'], 'admin-tournaments.js?v=7&mvp21_4=staging-reset-v1'),
+    'Tournament Admin must force the fresh staging reset client.'
 );
 
 foreach ([
-    'MVP-21.3 · дата, отсчёт и уведомления',
+    'MVP-21.4 prep · staging reset + accepted schedule',
     'data-tournament-start',
     'data-tournament-assign-date',
     'перенос и задержка не входят в MVP-21.3',
     'data-tournament-manual-panel',
     'data-tournament-prepare-manual',
     'Последнее место всегда остаётся живому аккаунту',
+    'data-tournament-reset-panel',
+    'data-tournament-reset-manual',
+    'все турнирные резервы освобождаются через канонический ledger',
 ] as $needle) {
     $assertTrue(str_contains($source['admin'], $needle), 'Tournament Admin schedule UI missing: ' . $needle);
 }
@@ -241,6 +244,8 @@ foreach ([
     "action:'prepare_manual_acceptance'",
     "manualReason === 'manual_last_seat_ready'",
     'Осталось одно живое место',
+    "action:'reset_manual_acceptance'",
+    'Безопасно сбрасываю staging-турнир и освобождаю резервы',
 ] as $needle) {
     $assertTrue(str_contains($source['admin_js'], $needle), 'Tournament Admin schedule client missing: ' . $needle);
 }
