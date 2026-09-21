@@ -118,6 +118,11 @@ $assert(str_contains($source['diagnostic'], "'mismatch_field_counts'")
         && str_contains($source['diagnostic'], "'event_ref_sha256'")
         && !str_contains($source['diagnostic'], "'event_key'=>\$eventKey"),
     'Notification mismatch diagnostic must expose only field names and hashed event references.');
+$assert(str_contains($source['diagnostic'], "'notification_primary_parity'")
+        && str_contains($source['diagnostic'], "'rollback_vs_primary'")
+        && str_contains($source['diagnostic'], "'primary_revision'")
+        && str_contains($source['diagnostic'], 'new DatabasePrimaryStateStorageAdapter($db)'),
+    'Staging diagnostic must compare the active DB-primary notification snapshot with module DB and rollback JSON.');
 $assert(str_contains($source['admin'], '{ lockDraftControls:false }')
         && str_contains($source['admin'], 'control === title || control === game || control === capacity'),
     'Read-only Tournament Admin refresh must not freeze draft title/game/capacity controls.');
@@ -125,5 +130,5 @@ $assert(str_contains($source['admin_page'], 'admin-tournaments.js?v=7')
         && str_contains($source['admin_page'], 'mvp21_4=staging-reset-reseed-v2'),
     'Tournament Admin corrective must publish a fresh cache identity.');
 
-if ($assertions < 29) throw new RuntimeException('MVP-21.4 UX contract is too shallow.');
+if ($assertions < 30) throw new RuntimeException('MVP-21.4 UX contract is too shallow.');
 fwrite(STDOUT, "Mvp21_4TournamentHallUxContractTest: {$assertions} assertions passed\n");
