@@ -44,7 +44,7 @@ $assert(strlen($mainPrefix) === 12, 'Main v110 must expose a valid computed cont
 
 $assert(
     str_contains($v110, "runtime/client/version-manifest.php")
-        && str_contains($v110, 'type="importmap"'),
+        && str_contains($v110, 'type=\\"importmap\\"'),
     'v110 entrypoint must build its active import graph from the canonical version manifest.'
 );
 $assert(
