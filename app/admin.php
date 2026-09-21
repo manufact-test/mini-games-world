@@ -116,9 +116,9 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               <div class="mgw-admin__tournament-schedule" data-tournament-manual-panel hidden>
                 <div class="mgw-admin__tournament-current" data-tournament-manual-info>Ручная проверка staging недоступна.</div>
                 <div class="mgw-admin__tournament-actions">
-                  <button type="button" data-tournament-prepare-manual disabled>Подготовить 7/8 для ручной проверки</button>
+                  <button type="button" data-tournament-prepare-manual disabled>Подготовить 6/8 для двух живых аккаунтов</button>
                 </div>
-                <small>Только staging: свободные места заполняются синтетическими участниками через тот же канонический сервис регистрации и резерв 50 000. Последнее место всегда остаётся живому аккаунту, чтобы вручную проверить реальный переход 7/8 → 8/8.</small>
+                <small>Только staging: 6 мест заполняются синтетическими участниками через тот же канонический сервис регистрации и резерв 50 000. Два места остаются двум живым аккаунтам для ручной проверки первого матча.</small>
               </div>
               <div class="mgw-admin__tournament-schedule" data-tournament-reset-panel hidden>
                 <div class="mgw-admin__tournament-current" data-tournament-reset-info>Сброс staging-турнира недоступен.</div>
