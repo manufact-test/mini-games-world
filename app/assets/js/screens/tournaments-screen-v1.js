@@ -624,7 +624,6 @@ function tournamentBracketMarkup(bracket){
   return `<div class="tournaments-v2-bracket">
     <div class="tournaments-v2-hall-section-title"><strong>Первый раунд</strong><span>случайная сетка</span></div>
     <div class="tournaments-v2-bracket-grid">${cards}</div>
-    <small>Сетка зафиксирована и больше не перетасовывается. Этап «Я готов» и запуск матча относятся к MVP-21.5.</small>
   </div>`;
 }
 
