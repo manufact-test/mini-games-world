@@ -82,6 +82,14 @@ $assert(!str_contains($source['screen'], 'data-tournament-ready')
 $assert(!str_contains($source['screen'], 'относятся к MVP-21.5')
         && !str_contains($source['screen'], 'Этап «Я готов»'),
     'Hall UI must not expose internal roadmap/MVP copy to players.');
+$assert(str_contains($source['screen'], 'Она сформируется случайно ровно на старте турнира.')
+        && !str_contains($source['screen'], 'статус присутствия участников'),
+    'Pre-start Hall copy must stay player-facing and omit technical presence explanation.');
+$assert(str_contains($source['screen'], "'Турнир начался'")
+        && !str_contains($source['screen'], 'Время старта наступило')
+        && str_contains($source['screen'], 'data-tournament-countdown-label')
+        && str_contains($source['screen'], 'countdownLabel.hidden = startedNow'),
+    'Post-start schedule card must collapse to a clean Турнир начался state without stale До старта copy.');
 $assert(str_contains($source['screen'], "const buttonLabel = tournamentHallBusy ? 'Входим в зал…' : 'Вход';")
         && str_contains($source['screen'], "hallButton.textContent = 'Вход';"),
     'Hall CTA must stay concise: timing belongs to the Hall status copy, button label is simply Вход.');
@@ -101,8 +109,9 @@ $assert(str_contains($source['manifest'], 'client.js?v=1142')
     'Hall release must preserve the accepted API cache contract and publish the direct-endpoint corrective identity.');
 $assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=16')
         && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v2')
-        && str_contains($source['manifest'], 'hall_cta=entry-v1'),
-    'Hall release must preserve the accepted Tournament screen base version and publish the concise CTA identity.');
+        && str_contains($source['manifest'], 'hall_cta=entry-v1')
+        && str_contains($source['manifest'], 'copy_polish=final-v1'),
+    'Hall release must preserve the accepted Tournament screen base version and publish the final copy-polish identity.');
 $assert(str_contains($source['manifest'], 'main.css?v=198')
         && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v2'),
     'Hall release must preserve accepted CSS base version and add a fresh Hall identity.');
