@@ -51,7 +51,6 @@ final class TournamentParticipantNotificationBridge
 
         $title = trim((string)($tournament['title'] ?? 'Официальный турнир'));
         if ($title === '') $title = 'Официальный турнир';
-        $startLabel = $start->format('d.m.Y H:i') . ' UTC';
         $audienceRef = 'official-tournament:' . $tournamentId;
         $base = 'official-tournament.' . $tournamentId . '.schedule.';
         $events = [];
@@ -64,7 +63,7 @@ final class TournamentParticipantNotificationBridge
                 'audience_ref'=>$audienceRef,
                 'recipient_mgw_ids'=>$participants,
                 'title'=>'Дата турнира назначена',
-                'text'=>"«{$title}» начнётся {$startLabel}. В разделе турниров уже доступен точный обратный отсчёт.",
+                'text'=>"«{$title}»: дата и время турнира назначены. Откройте раздел турниров — там показаны ваше местное время и точный обратный отсчёт.",
                 'scheduled_at'=>$assignedAt->format(DATE_ATOM),
                 'request_id'=>$base . 'assigned',
             ],
