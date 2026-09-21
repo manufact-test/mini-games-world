@@ -354,8 +354,13 @@ function startTournamentVisibleRefresh(){
       const registered = String(tournamentSnapshot?.registration?.state || '') === 'registered';
       const scheduled = String(tournamentSnapshot?.tournament?.state || '') === 'scheduled'
         && Boolean(tournamentSnapshot?.tournament?.scheduled_start_at_utc);
+      const scheduledStart = scheduled
+        ? parseTournamentUtc(tournamentSnapshot?.tournament?.scheduled_start_at_utc)
+        : null;
+      const hallOpenByClock = scheduledStart instanceof Date
+        && Date.now() >= scheduledStart.getTime() - (15 * 60 * 1000);
 
-      if (registered && scheduled && tournamentHallSnapshot?.hall?.entered !== true) {
+      if (registered && scheduled && hallOpenByClock && tournamentHallSnapshot?.hall?.entered !== true) {
         try {
           await warmTournamentHallStatus();
           if (tournamentHallSnapshot?.bracket) {
@@ -364,6 +369,8 @@ function startTournamentVisibleRefresh(){
         } catch (error) {
           tournamentHallError = String(error?.message || 'Не удалось обновить Турнирный зал.');
         }
+      } else if (!hallOpenByClock && tournamentHallSnapshot?.hall?.entered !== true) {
+        tournamentHallError = '';
       }
     } catch (error) {
       tournamentHallError = String(error?.message || 'Не удалось обновить турнир.');
