@@ -121,6 +121,7 @@ final class StagingTournamentManualAcceptanceService
         );
         $needed = $target - $registered;
         $created = [];
+        $runtimeBatch = [];
 
         for ($slot = 1; count($created) < $needed && $slot <= 256; $slot++) {
             $identity = $this->fixtureIdentity($tournamentId, $slot);
@@ -135,7 +136,7 @@ final class StagingTournamentManualAcceptanceService
                 null,
                 $consent
             );
-            $this->ensureRuntimeUser($identity, $slot);
+            $runtimeBatch[] = ['identity'=>$identity,'slot'=>$slot];
 
             $registeredIds[$identity['mgw_id']] = true;
             $created[] = [
@@ -144,6 +145,9 @@ final class StagingTournamentManualAcceptanceService
                 'registration_id'=>(string)($registration['registration']['registration_id'] ?? ''),
             ];
         }
+
+        $this->ensureRuntimeUsers($runtimeBatch);
+        $runtimeParity = $this->repairFixtureRuntimeParity($server);
 
         $final = $this->tournaments->snapshot();
         $finalTournament = $final['tournament'] ?? null;
@@ -168,6 +172,7 @@ final class StagingTournamentManualAcceptanceService
             'target_registered_count'=>$target,
             'manual_seats_left'=>1,
             'legacy_ownership_repair'=>$repair,
+            'runtime_fixture_parity'=>$runtimeParity,
             'snapshot'=>$final,
         ];
     }
@@ -207,12 +212,27 @@ final class StagingTournamentManualAcceptanceService
             if (!is_array($row)) continue;
             $mgwId = trim((string)($row['mgw_id'] ?? ''));
             $accountRef = trim((string)($row['account_ref'] ?? ''));
-            if (preg_match('/^MGW-STG-[a-f0-9]{12}$/', $mgwId) !== 1) continue;
-            if (preg_match('/^legacy:(stg_tour_[a-f0-9]{12})$/', $accountRef, $match) !== 1) continue;
-            if ((string)($row['status'] ?? '') !== 'active') {
-                throw new RuntimeException('Legacy staging fixture user is not active.');
+            $legacyUserId = '';
+            $repairSourceType = '';
+            $repairSourceRef = '';
+
+            if (preg_match('/^MGW-STG-[a-f0-9]{12}$/', $mgwId) === 1
+                && preg_match('/^legacy:(stg_tour_[a-f0-9]{12})$/', $accountRef, $match) === 1) {
+                $legacyUserId = (string)$match[1];
+                $repairSourceType = 'staging_fixture_repair';
+                $repairSourceRef = 'manual-acceptance:' . $tournamentId . ':' . $legacyUserId;
+            } elseif (MgwIdGenerator::isValid($mgwId)
+                && preg_match('/^legacy:(stg_tour_v2_[a-f0-9]{12})$/', $accountRef, $match) === 1) {
+                $legacyUserId = (string)$match[1];
+                $repairSourceType = 'runtime_identity';
+                $repairSourceRef = 'development:' . $legacyUserId;
+            } else {
+                continue;
             }
-            $legacyUserId = (string)$match[1];
+
+            if ((string)($row['status'] ?? '') !== 'active') {
+                throw new RuntimeException('Registered staging fixture user is not active.');
+            }
             $scanned++;
 
             $ownershipRows = $this->database->fetchAll(
@@ -246,7 +266,6 @@ final class StagingTournamentManualAcceptanceService
 
             $now = (new DateTimeImmutable('now', new DateTimeZone('UTC')))
                 ->format('Y-m-d H:i:s.u');
-            $sourceRef = 'manual-acceptance:' . $tournamentId . ':' . $legacyUserId;
             $this->database->execute(
                 'INSERT INTO mgw_account_ownership (
                     account_ref,mgw_id,legacy_user_id,ownership_status,
@@ -260,10 +279,10 @@ final class StagingTournamentManualAcceptanceService
                     'mgw_id'=>$mgwId,
                     'legacy_user_id'=>$legacyUserId,
                     'ownership_status'=>'active',
-                    'source_type'=>'staging_fixture_repair',
-                    'source_ref'=>$sourceRef,
+                    'source_type'=>$repairSourceType,
+                    'source_ref'=>$repairSourceRef,
                     'source_sha256'=>hash('sha256', implode('|', [
-                        'staging_fixture_repair',
+                        $repairSourceType,
                         $tournamentId,
                         $legacyUserId,
                         $mgwId,
@@ -281,6 +300,123 @@ final class StagingTournamentManualAcceptanceService
             'already_ok'=>$alreadyOk,
             'scanned'=>$scanned,
         ];
+    }
+
+    public function repairFixtureRuntimeParity(array $server): array
+    {
+        $this->assertAvailableEnvironment($server);
+
+        $expected = [];
+        $snapshot = $this->tournaments->snapshot();
+        $tournament = $snapshot['tournament'] ?? null;
+        if (is_array($tournament)) {
+            $tournamentId = trim((string)($tournament['tournament_id'] ?? ''));
+            if ($tournamentId !== '') {
+                $rows = $this->database->fetchAll(
+                    'SELECT r.mgw_id,r.account_ref,
+                            o.legacy_user_id,o.ownership_status,o.source_type,o.source_ref,
+                            u.status,u.display_name
+                     FROM mgw_tournament_registrations r
+                     INNER JOIN mgw_users u ON u.mgw_id=r.mgw_id
+                     INNER JOIN mgw_account_ownership o
+                       ON o.mgw_id=r.mgw_id AND o.account_ref=r.account_ref
+                     WHERE r.tournament_id=:tournament_id
+                       AND r.registration_state=:registration_state',
+                    [
+                        'tournament_id'=>$tournamentId,
+                        'registration_state'=>TournamentRegistrationService::REGISTRATION_REGISTERED,
+                    ]
+                );
+                foreach ($rows as $row) {
+                    if (!is_array($row)) continue;
+                    $mgwId = trim((string)($row['mgw_id'] ?? ''));
+                    $accountRef = trim((string)($row['account_ref'] ?? ''));
+                    $legacyUserId = trim((string)($row['legacy_user_id'] ?? ''));
+                    if ((string)($row['ownership_status'] ?? '') !== 'active'
+                        || (string)($row['status'] ?? '') !== 'active'
+                        || !$this->isSyntheticFixtureIdentity(
+                            $mgwId,
+                            $accountRef,
+                            $legacyUserId,
+                            (string)($row['source_type'] ?? ''),
+                            (string)($row['source_ref'] ?? '')
+                        )) {
+                        continue;
+                    }
+                    $expected[$legacyUserId] = [
+                        'mgw_id'=>$mgwId,
+                        'legacy_user_id'=>$legacyUserId,
+                        'account_ref'=>$accountRef,
+                        'display_name'=>trim((string)($row['display_name'] ?? '')) ?: 'Тестовый участник',
+                    ];
+                }
+            }
+        }
+
+        if ($this->runtimeUserWriter !== null) {
+            return [
+                'expected_active_fixture_users'=>count($expected),
+                'runtime_fixture_users_removed'=>0,
+                'runtime_fixture_users_ensured'=>count($expected),
+                'external_runtime_writer'=>true,
+            ];
+        }
+
+        $fixturePattern = static fn(string $legacyUserId): bool =>
+            preg_match('/^stg_tour_(?:v2_)?[a-f0-9]{12}$/', $legacyUserId) === 1;
+
+        $storage = StorageFactory::createJson((string)($this->config['data_dir'] ?? (__DIR__ . '/../data')));
+        $config = $this->config;
+        $database = $this->database;
+        return $storage->transaction(function (array &$data) use (
+            $expected,
+            $fixturePattern,
+            $config,
+            $database
+        ): array {
+            if (!isset($data['users']) || !is_array($data['users'])) {
+                $data['users'] = [];
+            }
+
+            $removed = 0;
+            foreach (array_keys($data['users']) as $key) {
+                $user = $data['users'][$key] ?? null;
+                if (!is_array($user)) continue;
+                $legacyUserId = trim((string)($user['id'] ?? $key));
+                if (!$fixturePattern($legacyUserId) || isset($expected[$legacyUserId])) continue;
+                unset($data['users'][$key]);
+                $removed++;
+            }
+
+            $ensured = 0;
+            if ($expected !== []) {
+                $users = new UserService($config, $database);
+                $slot = 1;
+                foreach ($expected as $identity) {
+                    $users->ensureUser($data, [
+                        'id'=>$identity['legacy_user_id'],
+                        'first_name'=>$identity['display_name'],
+                        'username'=>'',
+                        'language_code'=>'ru',
+                        'is_dev_user'=>true,
+                        'is_staging_test_user'=>true,
+                        'staging_test_slot'=>'TOURNAMENT-' . $slot,
+                        'mgw_id'=>$identity['mgw_id'],
+                        'mgw_account_ref'=>$identity['account_ref'],
+                        'mgw_identity_provider'=>'staging_fixture',
+                        'mgw_nickname'=>'Тест ' . $slot,
+                    ]);
+                    $slot++;
+                    $ensured++;
+                }
+            }
+
+            return [
+                'expected_active_fixture_users'=>count($expected),
+                'runtime_fixture_users_removed'=>$removed,
+                'runtime_fixture_users_ensured'=>$ensured,
+            ];
+        });
     }
 
     public function resetAvailability(array $server): array
@@ -767,10 +903,15 @@ final class StagingTournamentManualAcceptanceService
         }
     }
 
-    private function ensureRuntimeUser(array $identity, int $slot): void
+    private function ensureRuntimeUsers(array $batch): void
     {
+        if ($batch === []) return;
+
         if ($this->runtimeUserWriter !== null) {
-            ($this->runtimeUserWriter)($identity, $slot);
+            foreach ($batch as $entry) {
+                if (!is_array($entry) || !is_array($entry['identity'] ?? null)) continue;
+                ($this->runtimeUserWriter)($entry['identity'], (int)($entry['slot'] ?? 0));
+            }
             return;
         }
 
@@ -778,8 +919,7 @@ final class StagingTournamentManualAcceptanceService
         $config = $this->config;
         $database = $this->database;
         $storage->transaction(static function (array &$data) use (
-            $identity,
-            $slot,
+            $batch,
             $config,
             $database
         ): array {
@@ -787,19 +927,24 @@ final class StagingTournamentManualAcceptanceService
                 $data['users'] = [];
             }
             $users = new UserService($config, $database);
-            $users->ensureUser($data, [
-                'id'=>$identity['legacy_user_id'],
-                'first_name'=>$identity['display_name'],
-                'username'=>'',
-                'language_code'=>'ru',
-                'is_dev_user'=>true,
-                'is_staging_test_user'=>true,
-                'staging_test_slot'=>'TOURNAMENT-' . $slot,
-                'mgw_id'=>$identity['mgw_id'],
-                'mgw_account_ref'=>$identity['account_ref'],
-                'mgw_identity_provider'=>'staging_fixture',
-                'mgw_nickname'=>'Тест ' . $slot,
-            ]);
+            foreach ($batch as $entry) {
+                if (!is_array($entry) || !is_array($entry['identity'] ?? null)) continue;
+                $identity = $entry['identity'];
+                $slot = (int)($entry['slot'] ?? 0);
+                $users->ensureUser($data, [
+                    'id'=>$identity['legacy_user_id'],
+                    'first_name'=>$identity['display_name'],
+                    'username'=>'',
+                    'language_code'=>'ru',
+                    'is_dev_user'=>true,
+                    'is_staging_test_user'=>true,
+                    'staging_test_slot'=>'TOURNAMENT-' . $slot,
+                    'mgw_id'=>$identity['mgw_id'],
+                    'mgw_account_ref'=>$identity['account_ref'],
+                    'mgw_identity_provider'=>'staging_fixture',
+                    'mgw_nickname'=>'Тест ' . $slot,
+                ]);
+            }
             return $data;
         });
     }

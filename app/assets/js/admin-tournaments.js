@@ -113,10 +113,13 @@
     return lines.join('\n').trim();
   };
 
-  const setBusy = value => {
+  const setBusy = (value, { lockDraftControls = true } = {}) => {
     busy = value;
     card.querySelectorAll('button, input, select').forEach(control => {
       if (value) {
+        if (!lockDraftControls && (control === title || control === game || control === capacity)) {
+          return;
+        }
         control.disabled = true;
         return;
       }
@@ -307,9 +310,9 @@
     }
   };
 
-  const withBusy = async (message, action) => {
+  const withBusy = async (message, action, options = {}) => {
     if (busy) return null;
-    setBusy(true);
+    setBusy(true, options);
     setStatus(message);
     try {
       const data = await action();
@@ -333,7 +336,11 @@
 
   const load = async () => {
     try {
-      await withBusy('Загружаю управление турниром…', () => post({action:'snapshot'}));
+      await withBusy(
+        'Загружаю управление турниром…',
+        () => post({action:'snapshot'}),
+        { lockDraftControls:false }
+      );
       setStatus('Управление турниром загружено.', 'ok');
     } catch (_) {}
   };

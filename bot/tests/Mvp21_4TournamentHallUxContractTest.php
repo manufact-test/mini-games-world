@@ -15,6 +15,10 @@ $source = [
     'screen'=>$read('app/assets/js/screens/tournaments-screen-v1.js'),
     'css'=>$read('app/assets/css/main.css'),
     'manifest'=>$read('app/runtime/client/version-manifest.php'),
+    'manual_fixture'=>$read('bot/tournaments/StagingTournamentManualAcceptanceService.php'),
+    'diagnostic'=>$read('bot/staging-projection-diagnostic.php'),
+    'admin'=>$read('app/assets/js/admin-tournaments.js'),
+    'admin_page'=>$read('app/admin.php'),
 ];
 
 $assertions = 0;
@@ -27,8 +31,8 @@ $assert(str_contains($source['service'], 'HALL_OPEN_BEFORE_SECONDS = 900'),
     'Hall must open exactly 15 minutes before tournament start.');
 $assert(str_contains($source['service'], 'HALL_PRESENCE_FRESHNESS_SECONDS = 8'),
     'Hall must reuse the accepted gameplay foreground freshness window.');
-$assert(str_contains($source['service'], 'Tournament Hall доступен только зарегистрированным участникам.'),
-    'Hall service must reject spectators/nonparticipants.');
+$assert(str_contains($source['service'], 'Турнирный зал доступен только зарегистрированным участникам.'),
+    'Hall service must reject spectators/nonparticipants with localized copy.');
 $assert(str_contains($source['service'], 'random_int(')
         && str_contains($source['service'], 'bracket_generated_at_utc'),
     'Bracket must have a server-side random immutable generation owner.');
@@ -55,13 +59,17 @@ foreach ([
 foreach ([
     'data-tournament-hall-enter',
     'tournamentHallHeartbeat',
-    'Tournament Hall',
+    'Турнирный зал',
     'Сетка ещё скрыта',
     'случайная сетка',
     'tournamentBracketMarkup',
 ] as $needle) {
     $assert(str_contains($source['screen'], $needle), 'Tournament Hall UI missing: ' . $needle);
 }
+$assert(!str_contains($source['screen'], 'Tournament Hall')
+        && !str_contains($source['endpoint'], 'Tournament Hall')
+        && !str_contains($source['service'], 'Tournament Hall'),
+    'User-facing Hall copy must be localized to Russian.');
 $assert(!str_contains($source['screen'], 'data-tournament-ready')
         && !str_contains($source['client'], 'tournamentReady'),
     'MVP-21.4 must not expose a Ready action before MVP-21.5.');
@@ -79,11 +87,29 @@ $assert(str_contains($source['manifest'], 'client.js?v=1142')
         && str_contains($source['manifest'], 'mvp21_4=tournament-hall-v1'),
     'Hall release must preserve the accepted API cache contract and add a fresh Hall identity.');
 $assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=16')
-        && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v1'),
+        && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v2'),
     'Hall release must preserve the accepted Tournament screen base version and add a fresh Hall identity.');
 $assert(str_contains($source['manifest'], 'main.css?v=198')
-        && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v1'),
+        && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v2'),
     'Hall release must preserve accepted CSS base version and add a fresh Hall identity.');
 
-if ($assertions < 20) throw new RuntimeException('MVP-21.4 UX contract is too shallow.');
+$assert(str_contains($source['manual_fixture'], '$runtimeBatch')
+        && str_contains($source['manual_fixture'], 'ensureRuntimeUsers($runtimeBatch)')
+        && str_contains($source['manual_fixture'], 'repairFixtureRuntimeParity($server)'),
+    'Manual 7/8 preparation must batch runtime writes and verify fixture parity after reseed.');
+$assert(str_contains($source['manual_fixture'], "preg_match('/^stg_tour_(?:v2_)?[a-f0-9]{12}$/', \$legacyUserId)")
+        && str_contains($source['manual_fixture'], "'runtime_fixture_users_removed'"),
+    'Fixture parity repair must remain narrowly scoped to tournament test identities.');
+$assert(str_contains($source['diagnostic'], 'unified_economy_probe_failed')
+        && str_contains($source['diagnostic'], "'unified_economy_preview'")
+        && str_contains($source['diagnostic'], 'repairFixtureRuntimeParity($_SERVER)'),
+    'Staging deploy diagnostic must repair fixture parity and prove unified-economy readiness.');
+$assert(str_contains($source['admin'], '{ lockDraftControls:false }')
+        && str_contains($source['admin'], 'control === title || control === game || control === capacity'),
+    'Read-only Tournament Admin refresh must not freeze draft title/game/capacity controls.');
+$assert(str_contains($source['admin_page'], 'admin-tournaments.js?v=7')
+        && str_contains($source['admin_page'], 'mvp21_4=staging-reset-reseed-v2'),
+    'Tournament Admin corrective must publish a fresh cache identity.');
+
+if ($assertions < 26) throw new RuntimeException('MVP-21.4 UX contract is too shallow.');
 fwrite(STDOUT, "Mvp21_4TournamentHallUxContractTest: {$assertions} assertions passed\n");
