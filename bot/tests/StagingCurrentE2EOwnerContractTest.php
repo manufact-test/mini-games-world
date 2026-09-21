@@ -3,13 +3,12 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
 $currentConfig = file_get_contents($root . '/e2e/playwright.config.mjs');
-$tournamentConfig = file_get_contents($root . '/e2e/playwright.tournament-live.config.mjs');
 $legacyConfig = file_get_contents($root . '/e2e/playwright.legacy.config.mjs');
 $currentSpec = file_get_contents($root . '/e2e/staging/current-core-final.spec.mjs');
 $package = file_get_contents($root . '/package.json');
 $launch = file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
 
-if (!is_string($currentConfig) || !is_string($tournamentConfig) || !is_string($legacyConfig)
+if (!is_string($currentConfig) || !is_string($legacyConfig)
     || !is_string($currentSpec) || !is_string($package) || !is_string($launch)) {
     throw new RuntimeException('Cannot read current staging E2E ownership sources.');
 }
@@ -23,13 +22,9 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 $assert(str_contains($currentConfig, "'current-core-final.spec.mjs'")
     && str_contains($currentConfig, "'checkers-layout-diagnostic.spec.mjs'")
     && str_contains($currentConfig, "'go-store-live-catalog.spec.mjs'")
-    && !str_contains($currentConfig, "'tournament-registration-live.spec.mjs'")
+    && str_contains($currentConfig, "'tournament-registration-live.spec.mjs'")
     && !str_contains($currentConfig, 'supersededScenarios'),
-    'Blocking staging Playwright must cover current product diagnostics without mutating the live official tournament.');
-$assert(str_contains($tournamentConfig, "'tournament-registration-live.spec.mjs'")
-    && str_contains($package, 'test:e2e:staging:tournament-live')
-    && str_contains($package, 'playwright.tournament-live.config.mjs'),
-    'Live tournament mutation coverage must remain explicitly runnable through the isolated opt-in config.');
+    'Blocking staging Playwright must run the current v110 core plus the active staging acceptance diagnostics.');
 $assert(str_contains($legacyConfig, "testIgnore: ['current-core-final.spec.mjs']")
     && str_contains($legacyConfig, 'supersededScenarios'),
     'Historical and superseded current-core scenarios must remain in the legacy config.');
