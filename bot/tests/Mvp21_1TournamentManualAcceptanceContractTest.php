@@ -8,6 +8,7 @@ $files = [
     'screen'=>$root . '/app/assets/js/screens/tournaments-screen-v1.js',
     'css'=>$root . '/app/assets/css/main.css',
     'manifest'=>$root . '/app/runtime/client/version-manifest.php',
+    'api'=>$root . '/bot/api.php',
 ];
 $source = [];
 foreach ($files as $key=>$path) {
@@ -58,6 +59,19 @@ $assertTrue(
     !str_contains($source['admin_js'], "rewards.textContent = JSON.stringify"),
     'Tournament Admin must not dump raw reward JSON to operators.'
 );
+
+$assertTrue(
+    str_contains($source['api'], "['bootstrap', 'staging_test_tournament_balance', 'tournament_register', 'tournament_leave']")
+    && str_contains($source['api'], "!empty(\$tgUser['is_staging_test_user'])")
+    && str_contains($source['api'], "['stg_test_player_a', 'stg_test_player_b']"),
+    'Staging A/B bootstrap diagnostics must expose exact errors only for bounded technical test identities.'
+);
+$assertTrue(
+    str_contains($source['api'], "'debug_error'=>substr(\$e->getMessage(), 0, 1800)")
+    && str_contains($source['api'], "'test_only'=>true"),
+    'Staging A/B bootstrap diagnostic must remain explicitly test-only.'
+);
+
 
 foreach ([
     "tournamentPendingAction = 'verify';",
