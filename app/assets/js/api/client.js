@@ -10,6 +10,7 @@ const PROFILE_V2_URL = `${window.location.origin}/bot/profile-v2.php`;
 const LEADERBOARD_URL = `${window.location.origin}/bot/leaderboard.php`;
 const RATING_ARCHIVE_URL = `${window.location.origin}/bot/rating-archive.php`;
 const TOURNAMENT_STATUS_URL = `${window.location.origin}/bot/tournament-status.php`;
+const TOURNAMENT_HALL_URL = `${window.location.origin}/bot/tournament-hall.php`;
 const GAME_REACTION_URL = `${window.location.origin}/bot/game-reaction.php`;
 
 let profileV2ReadPromise = null;
@@ -129,6 +130,9 @@ export const api = {
   ratingArchiveOverview: () => requestUrl(RATING_ARCHIVE_URL, { mode:'overview' }),
   ratingArchiveSeason: (seasonId, gameType = 'tictactoe') => requestUrl(RATING_ARCHIVE_URL, { mode:'season', season_id:seasonId, game_type:gameType }),
   tournamentStatus: () => requestUrl(TOURNAMENT_STATUS_URL, {}),
+  tournamentHallStatus: () => requestUrl(TOURNAMENT_HALL_URL, { action:'status' }),
+  tournamentHallEnter: () => requestUrl(TOURNAMENT_HALL_URL, { action:'enter' }),
+  tournamentHallHeartbeat: () => requestUrl(TOURNAMENT_HALL_URL, { action:'heartbeat' }),
   tournamentRegister: rules => request('tournament_register', {
     tournamentRulesAccepted:rules?.accepted === true,
     tournamentRulesVersion:String(rules?.version || ''),
