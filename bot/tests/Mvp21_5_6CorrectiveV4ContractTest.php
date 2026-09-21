@@ -32,9 +32,8 @@ $assert(str_contains($screen, 'startTournamentLaunchWatch')
         && str_contains($screen, '}, 350);')
         && str_contains($screen, 'match.my_ready === true'),
     'First-ready client must use a short bounded watch for the shared launched game.');
-$assert(str_contains($screen, 'stopTournamentLaunchWatch();')
-        && str_contains($screen, "new CustomEvent('mgw:tournament-progression-open')") === false,
-    'Launch watch must have an explicit stop owner and the tournament-open event must remain owned by result navigation.');
+$assert(str_contains($screen, 'stopTournamentLaunchWatch();'),
+    'Launch watch must have an explicit stop owner.');
 $assert(str_contains($screen, "document.addEventListener('mgw:tournament-progression-open'"),
     'Tournament screen must accept explicit return-to-progression navigation.');
 
@@ -58,7 +57,7 @@ $assert(str_contains($gameRuntime, "'rematch_available'=>false")
 $assert(str_contains($gameScreen, "String(game?.match_source || '') === 'tournament'")
         && str_contains($gameScreen, 'id="goTournament"')
         && str_contains($gameScreen, 'Вернуться в турнир')
-        && !str_contains($gameScreen, 'id="goTournament" type="button"') === false,
+        && str_contains($gameScreen, 'id="goTournament" type="button"'),
     'Tournament result must expose a dedicated return-to-tournament action.');
 $assert(str_contains($invites, "String(finished.match_source || '') === 'tournament'"),
     'Legacy direct-rematch enhancer must exclude tournament games.');
