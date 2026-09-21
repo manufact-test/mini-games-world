@@ -77,6 +77,13 @@ try {
             'games'=>$catalog->publicCatalog(),
             'manual_acceptance_fixture'=>$fixture,
         ];
+    } elseif ($action === 'complete_fixture_pairs') {
+        $completion = $manualAcceptance->completeFixtureOnlyPairs($_SERVER, $actorRef);
+        $result = [
+            'snapshot'=>$service->snapshot(),
+            'games'=>$catalog->publicCatalog(),
+            'manual_progression_result'=>$completion,
+        ];
     } elseif ($action === 'reset_manual_acceptance') {
         $reset = $manualAcceptance->resetForFreshManualAcceptance(
             $_SERVER,
@@ -121,6 +128,7 @@ try {
 
     $manualAvailability = $manualAcceptance->availability($_SERVER);
     $manualResetAvailability = $manualAcceptance->resetAvailability($_SERVER);
+    $manualProgressionAvailability = $manualAcceptance->progressionAcceptanceAvailability($_SERVER);
 
     json_response([
         'ok'=>true,
@@ -128,6 +136,7 @@ try {
         'notifications'=>$notifications,
         'manual_acceptance'=>$manualAvailability,
         'manual_reset'=>$manualResetAvailability,
+        'manual_progression'=>$manualProgressionAvailability,
     ] + $result);
 } catch (AdminWebAuthException $error) {
     json_response(['ok'=>false,'error'=>$error->publicMessage()], $error->httpStatus());
