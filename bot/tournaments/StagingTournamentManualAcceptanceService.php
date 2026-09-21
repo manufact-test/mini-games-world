@@ -32,7 +32,6 @@ final class StagingTournamentManualAcceptanceService
             ];
         }
 
-        $repair = $this->repairLegacyFixtureOwnership($server);
         $snapshot = $this->tournaments->snapshot();
         $tournament = $snapshot['tournament'] ?? null;
         if (!is_array($tournament)) {
@@ -65,6 +64,7 @@ final class StagingTournamentManualAcceptanceService
     public function fillToOneManualSeat(array $server): array
     {
         $this->assertAvailableEnvironment($server);
+        $repair = $this->repairLegacyFixtureOwnership($server);
 
         $snapshot = $this->tournaments->snapshot();
         $tournament = $snapshot['tournament'] ?? null;
