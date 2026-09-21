@@ -16,6 +16,7 @@ on:
       - 'app/assets/js/screens/tournaments-screen-v1.js'
       - 'app/assets/css/main.css'
       - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
       - 'bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php'
       - 'bot/tests/Mvp21_4TournamentHallBracketTest.php'
       - 'bot/tests/Mvp21_4TournamentHallUxContractTest.php'
@@ -66,6 +67,7 @@ jobs:
             bot/staging-projection-diagnostic.php
             app/runtime/client/version-manifest.php
             app/admin.php
+            bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
             bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php
             bot/tests/Mvp21_4TournamentHallBracketTest.php
             bot/tests/Mvp21_4TournamentHallUxContractTest.php
@@ -148,6 +150,7 @@ jobs:
               app/assets/js/screens/tournaments-screen-v1.js|\
               app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
+              bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
               bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php|\
               bot/tests/Mvp21_4TournamentHallBracketTest.php|\
               bot/tests/Mvp21_4TournamentHallUxContractTest.php)
