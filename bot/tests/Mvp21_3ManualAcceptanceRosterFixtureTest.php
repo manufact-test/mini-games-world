@@ -98,13 +98,20 @@ $fixture = new StagingTournamentManualAcceptanceService(
             'account_ref'=>$identity['account_ref'],
         ];
     },
-    static function (array $runtimeBalances, array $fixtureLegacyIds) use (
+    static function (
+        array $runtimeBalances,
+        array $fixtureLegacyIds,
+        string $resetTournamentId,
+        string $resetAt
+    ) use (
         &$runtimeResetEvidence,
         &$runtimeUsers
     ): array {
         $runtimeResetEvidence = [
             'balances'=>$runtimeBalances,
             'fixture_legacy_ids'=>$fixtureLegacyIds,
+            'tournament_id'=>$resetTournamentId,
+            'reset_at'=>$resetAt,
         ];
         $removed = 0;
         foreach ($fixtureLegacyIds as $legacyUserId) {
@@ -118,6 +125,7 @@ $fixture = new StagingTournamentManualAcceptanceService(
         return [
             'updated_balances'=>count($runtimeBalances),
             'removed_fixture_users'=>$removed,
+            'hidden_tournament_notifications'=>4,
         ];
     }
 );
@@ -307,6 +315,9 @@ $assertSame(7, $reset['fixture_accounts_retired'], 'Reset must retire only the s
 $assertSame(1, $reset['real_accounts_released'], 'Reset must release the one real manual participant without retiring it.');
 $assertSame(1, $reset['runtime_balances_updated'], 'Reset must publish the released real balance back to runtime state.');
 $assertSame(6, $reset['runtime_fixture_users_removed'], 'Reset must remove the six v2 fixture runtime users created by this test.');
+$assertSame(4, $reset['tournament_notifications_hidden'], 'Reset must retire old tournament bell events through the runtime notification source.');
+$assertSame($tournamentId, $runtimeResetEvidence['tournament_id'], 'Runtime cleanup must target the exact reset tournament notification audience.');
+$assertSame('2026-09-21 00:13:00.000000', $runtimeResetEvidence['reset_at'], 'Runtime cleanup must use the exact reset timestamp for read/hidden authority.');
 
 $afterReset = $tournaments->snapshot();
 $assertSame(null, $afterReset['tournament'], 'Reset must release the official active tournament slot.');
@@ -414,7 +425,7 @@ $assertThrows(
     'Production must never be allowed to reset an official tournament.'
 );
 
-if ($assertions < 95) {
+if ($assertions < 98) {
     throw new RuntimeException('MVP-21.3 manual acceptance fixture coverage is incomplete.');
 }
 
