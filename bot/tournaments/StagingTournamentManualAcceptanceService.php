@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../services/UserService.php';
 require_once __DIR__ . '/../accounts/MgwIdGenerator.php';
 require_once __DIR__ . '/../accounts/RuntimeAccountOwnershipService.php';
+require_once __DIR__ . '/TournamentRoundProgressionService.php';
 
 /** Staging-only fixture that stops one seat before full so the final transition stays manual. */
 final class StagingTournamentManualAcceptanceService
@@ -456,6 +457,137 @@ final class StagingTournamentManualAcceptanceService
         });
     }
 
+
+    public function progressionAcceptanceAvailability(array $server): array
+    {
+        if (!$this->isAvailableEnvironment($server)) {
+            return ['available'=>false,'reason'=>'staging_only','fixture_pair_count'=>0];
+        }
+
+        $snapshot = $this->tournaments->snapshot();
+        $tournament = $snapshot['tournament'] ?? null;
+        if (!is_array($tournament)) {
+            return ['available'=>false,'reason'=>'no_active_tournament','fixture_pair_count'=>0];
+        }
+
+        $tournamentId = trim((string)($tournament['tournament_id'] ?? ''));
+        if ($tournamentId === '') {
+            return ['available'=>false,'reason'=>'missing_tournament_id','fixture_pair_count'=>0];
+        }
+
+        $rows = $this->database->fetchAll(
+            'SELECT * FROM mgw_tournament_round_matches
+             WHERE tournament_id=:tournament_id AND completed_at_utc IS NULL
+             ORDER BY round_no ASC,pair_no ASC',
+            ['tournament_id'=>$tournamentId]
+        );
+        if ($rows === []) {
+            return [
+                'available'=>false,
+                'reason'=>'no_unresolved_pairs',
+                'tournament_id'=>$tournamentId,
+                'fixture_pair_count'=>0,
+            ];
+        }
+
+        $roundNo = max(1, (int)($rows[0]['round_no'] ?? 1));
+        $fixturePairs = 0;
+        foreach ($rows as $row) {
+            if (!is_array($row) || (int)($row['round_no'] ?? 0) !== $roundNo) continue;
+            if ($this->fixtureRuntimeIdentityForMgw((string)($row['player_a_mgw_id'] ?? '')) !== null
+                && $this->fixtureRuntimeIdentityForMgw((string)($row['player_b_mgw_id'] ?? '')) !== null) {
+                $fixturePairs++;
+            }
+        }
+
+        return [
+            'available'=>$fixturePairs > 0,
+            'reason'=>$fixturePairs > 0 ? 'ready' : 'no_fixture_only_pairs',
+            'tournament_id'=>$tournamentId,
+            'round_no'=>$roundNo,
+            'fixture_pair_count'=>$fixturePairs,
+        ];
+    }
+
+    public function completeFixtureOnlyPairs(
+        array $server,
+        string $actorRef,
+        ?DateTimeImmutable $now = null
+    ): array {
+        $this->assertAvailableEnvironment($server);
+        $actorRef = trim($actorRef);
+        if ($actorRef === '' || strlen($actorRef) > 191) {
+            throw new InvalidArgumentException('Staging progression actor is invalid.');
+        }
+
+        $availability = $this->progressionAcceptanceAvailability($server);
+        if (($availability['reason'] ?? '') === 'no_unresolved_pairs') {
+            return ['status'=>'nothing_to_complete','completed_pairs'=>0] + $availability;
+        }
+        if (empty($availability['available'])) {
+            throw new RuntimeException('Сейчас нет fixture-only пар, которые можно канонически завершить.');
+        }
+
+        $tournamentId = (string)$availability['tournament_id'];
+        $roundNo = (int)$availability['round_no'];
+        $moment = $now ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        $rows = $this->database->fetchAll(
+            'SELECT * FROM mgw_tournament_round_matches
+             WHERE tournament_id=:tournament_id
+               AND round_no=:round_no
+               AND completed_at_utc IS NULL
+             ORDER BY pair_no ASC',
+            ['tournament_id'=>$tournamentId,'round_no'=>$roundNo]
+        );
+
+        $progression = new TournamentRoundProgressionService($this->database);
+        $completed = 0;
+        foreach ($rows as $row) {
+            if (!is_array($row)) continue;
+            $a = $this->fixtureRuntimeIdentityForMgw((string)($row['player_a_mgw_id'] ?? ''));
+            $b = $this->fixtureRuntimeIdentityForMgw((string)($row['player_b_mgw_id'] ?? ''));
+            if ($a === null || $b === null) continue;
+
+            $attemptNo = max(1, (int)($row['attempt_no'] ?? 1));
+            $pairNo = max(1, (int)($row['pair_no'] ?? 1));
+            $gameId = trim((string)($row['game_id'] ?? ''));
+            if ($gameId === '') {
+                $gameId = 'stg_tour_fixture_' . substr(
+                    hash('sha256', $tournamentId . '|' . $roundNo . '|' . $pairNo . '|' . $attemptNo),
+                    0,
+                    48
+                );
+            }
+
+            // Explicit staging acceptance result. It reuses the production progression
+            // result owner, creates the durable attempt row and never creates a game,
+            // charges another entry fee or changes production auto-advance semantics.
+            $progression->observeFinishedGame([
+                'id'=>$gameId,
+                'match_source'=>'tournament',
+                'status'=>'finished',
+                'tournament_id'=>$tournamentId,
+                'tournament_round_no'=>$roundNo,
+                'tournament_pair_no'=>$pairNo,
+                'tournament_attempt_no'=>$attemptNo,
+                'player_ids'=>[(string)$a['legacy_user_id'], (string)$b['legacy_user_id']],
+                'winner_id'=>(string)$a['legacy_user_id'],
+                'finish_reason'=>'staging_fixture_acceptance',
+                'finished_at'=>$moment->format(DATE_ATOM),
+                'staging_acceptance_actor'=>$actorRef,
+            ], $moment);
+            $completed++;
+        }
+
+        return [
+            'status'=>'completed',
+            'tournament_id'=>$tournamentId,
+            'round_no'=>$roundNo,
+            'completed_pairs'=>$completed,
+            'availability'=>$this->progressionAcceptanceAvailability($server),
+        ];
+    }
+
     public function resetAvailability(array $server): array
     {
         if (!$this->isAvailableEnvironment($server)) {
@@ -759,6 +891,38 @@ final class StagingTournamentManualAcceptanceService
                 'tournament_notifications_hidden'=>(int)($runtimeResult['hidden_tournament_notifications'] ?? 0),
             ];
         });
+    }
+
+
+    private function fixtureRuntimeIdentityForMgw(string $mgwId): ?array
+    {
+        $mgwId = trim($mgwId);
+        if ($mgwId === '') return null;
+
+        $rows = $this->database->fetchAll(
+            'SELECT account_ref,mgw_id,legacy_user_id,ownership_status,source_type,source_ref
+             FROM mgw_account_ownership
+             WHERE mgw_id=:mgw_id AND ownership_status=:ownership_status
+             LIMIT 2',
+            ['mgw_id'=>$mgwId,'ownership_status'=>'active']
+        );
+        if (count($rows) !== 1 || !is_array($rows[0])) return null;
+        $row = $rows[0];
+        $accountRef = trim((string)($row['account_ref'] ?? ''));
+        $legacyUserId = trim((string)($row['legacy_user_id'] ?? ''));
+        if (!$this->isSyntheticFixtureIdentity(
+            $mgwId,
+            $accountRef,
+            $legacyUserId,
+            (string)($row['source_type'] ?? ''),
+            (string)($row['source_ref'] ?? '')
+        )) return null;
+
+        return [
+            'mgw_id'=>$mgwId,
+            'account_ref'=>$accountRef,
+            'legacy_user_id'=>$legacyUserId,
+        ];
     }
 
     private function isSyntheticFixtureIdentity(
