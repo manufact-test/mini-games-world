@@ -9,6 +9,7 @@ on:
       - 'bot/tournaments/TournamentRegistrationService.php'
       - 'bot/tournaments/TournamentParticipantNotificationBridge.php'
       - 'bot/tournaments/StagingTournamentManualAcceptanceService.php'
+      - 'bot/services/StagingTestPlayerStateResetService.php'
       - 'bot/admin-tournaments.php'
       - 'app/admin.php'
       - 'app/assets/js/admin-tournaments.js'
@@ -18,6 +19,8 @@ on:
       - 'bot/tests/Mvp21_3TournamentScheduleTest.php'
       - 'bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php'
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
+      - 'bot/tests/Mvp21_1StagingTournamentResetContractTest.php'
+      - '.github/workflows/mvp21-2-tournament-rules.yml'
       - '.github/workflows/mvp21-3-tournament-schedule.yml'
   workflow_dispatch:
 
@@ -73,12 +76,14 @@ jobs:
             bot/tournaments/TournamentRegistrationService.php
             bot/tournaments/TournamentParticipantNotificationBridge.php
             bot/tournaments/StagingTournamentManualAcceptanceService.php
+            bot/services/StagingTestPlayerStateResetService.php
             bot/admin-tournaments.php
             app/admin.php
             app/runtime/client/version-manifest.php
             bot/tests/Mvp21_3TournamentScheduleTest.php
             bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php
             bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
+            bot/tests/Mvp21_1StagingTournamentResetContractTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
           node --check app/assets/js/admin-tournaments.js
@@ -94,6 +99,7 @@ jobs:
           php bot/tests/Mvp21_2TournamentRulesTest.php
           php bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php
           php bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
+          php bot/tests/Mvp21_1StagingTournamentResetContractTest.php
 
       - name: Preserve MVP-21.1 reservation runtime
         run: |
@@ -150,6 +156,7 @@ jobs:
               bot/tournaments/TournamentRegistrationService.php|\
               bot/tournaments/TournamentParticipantNotificationBridge.php|\
               bot/tournaments/StagingTournamentManualAcceptanceService.php|\
+              bot/services/StagingTestPlayerStateResetService.php|\
               bot/admin-tournaments.php|\
               app/admin.php|\
               app/assets/js/admin-tournaments.js|\
@@ -159,6 +166,7 @@ jobs:
               bot/tests/Mvp21_3TournamentScheduleTest.php|\
               bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php|\
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
+              bot/tests/Mvp21_1StagingTournamentResetContractTest.php|\
               bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php)
                 ;;
               *)
