@@ -98,9 +98,10 @@ foreach (['tournamentMatchState','tournamentMatchReady'] as $needle) {
     $assert(str_contains($source['client'], $needle), 'Tournament client transport missing: ' . $needle);
 }
 $assert(str_contains($source['screen'], 'data-tournament-ready')
-        && str_contains($source['screen'], '>Я готов<')
-        && str_contains($source['screen'], 'ready_window_seconds'),
-    'Hall must expose the explicit Ready interaction and two-minute readiness state.');
+        && str_contains($source['screen'], "'Я готов'")
+        && str_contains($source['screen'], 'readiness_deadline_at_utc')
+        && str_contains($source['screen'], 'formatReadyCountdown'),
+    'Hall must expose the explicit Ready interaction and authoritative readiness deadline countdown.');
 $assert(str_contains($source['screen'], "new CustomEvent('mgw:prime-launch-feedback')")
         && str_contains($source['screen'], 'enterGame(result.game)')
         && str_contains($source['screen'], 'refreshTournamentMatchState'),
