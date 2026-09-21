@@ -4,7 +4,7 @@ declare(strict_types=1);
 final class TournamentHallService
 {
     public const HALL_OPEN_BEFORE_SECONDS = 900;
-    public const HALL_PRESENCE_FRESHNESS_SECONDS = 6;
+    public const HALL_PRESENCE_FRESHNESS_SECONDS = 8;
     public const BRACKET_VERSION = 'mvp21-4-random-v1';
 
     private $presenceResolver;
@@ -295,10 +295,25 @@ final class TournamentHallService
             ]
         );
 
+        $frozenPresence = [];
+        if ($bracketGenerated) {
+            foreach ($this->database->fetchAll(
+                'SELECT mgw_id,present_at_start
+                 FROM mgw_tournament_bracket_seeds
+                 WHERE tournament_id=:tournament_id',
+                ['tournament_id'=>$tournamentId]
+            ) as $row) {
+                if (!is_array($row)) continue;
+                $id = trim((string)($row['mgw_id'] ?? ''));
+                if ($id !== '') $frozenPresence[$id] = (int)($row['present_at_start'] ?? 0) === 1;
+            }
+        }
+
         $freshFrom = $moment->modify('-' . self::HALL_PRESENCE_FRESHNESS_SECONDS . ' seconds');
         $roster = [];
         foreach ($rosterRows as $row) {
             if (!is_array($row)) continue;
+            $id = (string)($row['mgw_id'] ?? '');
             $seenRaw = trim((string)($row['last_presence_at_utc'] ?? ''));
             $presentNow = false;
             if ($seenRaw !== '' && !$bracketGenerated) {
@@ -306,11 +321,13 @@ final class TournamentHallService
                 $presentNow = $seen >= $freshFrom && $seen <= $moment;
             }
             $roster[] = [
-                'mgw_id'=>(string)($row['mgw_id'] ?? ''),
+                'mgw_id'=>$id,
                 'nickname'=>$this->playerName($row),
                 'avatar_item_id'=>$this->avatar($row),
                 'entered'=>trim((string)($row['entered_at_utc'] ?? '')) !== '',
-                'present'=>$bracketGenerated ? null : $presentNow,
+                'present'=>$bracketGenerated
+                    ? ($frozenPresence[$id] ?? false)
+                    : $presentNow,
             ];
         }
 
