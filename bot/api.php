@@ -339,11 +339,47 @@ try {
                 }
                 $database = PdoConnectionFactory::create($databaseConfig);
                 $readiness = new TournamentMatchReadinessService($database);
+                $progression = new TournamentRoundProgressionService($database);
+
+                // DB progression observes the canonical finished JSON game lazily
+                // from the participant heartbeat. This keeps game engines frozen
+                // while making tournament advancement durable and idempotent.
+                $progressionSnapshot = $progression->statusForParticipant(
+                    $mgwId,
+                    $accountRef,
+                    $userId
+                );
+                $latestProgressionMatch = is_array($progressionSnapshot['latest_match'] ?? null)
+                    ? $progressionSnapshot['latest_match']
+                    : null;
+                $finishedTournamentGameId = trim((string)($latestProgressionMatch['game_id'] ?? ''));
+                if ($finishedTournamentGameId !== ''
+                    && isset($data['games'][$finishedTournamentGameId])
+                    && is_array($data['games'][$finishedTournamentGameId])
+                    && (string)($data['games'][$finishedTournamentGameId]['status'] ?? '') === 'finished') {
+                    $progression->observeFinishedGame($data['games'][$finishedTournamentGameId]);
+                    $progressionSnapshot = $progression->statusForParticipant(
+                        $mgwId,
+                        $accountRef,
+                        $userId
+                    );
+                }
+
                 $snapshot = $action === 'tournament_match_ready'
                     ? $readiness->markReady($mgwId, $accountRef, $userId)
                     : $readiness->status($mgwId, $accountRef, $userId);
 
                 $launch = $readiness->launchContext($mgwId, $accountRef, $userId);
+                $progressionOwnsLaunch = false;
+                if (!is_array($launch)) {
+                    $launch = $progression->launchContextForParticipant(
+                        $mgwId,
+                        $accountRef,
+                        $userId
+                    );
+                    $progressionOwnsLaunch = is_array($launch);
+                }
+
                 $publicGame = null;
                 if (is_array($launch)) {
                     $gameId = (string)$launch['game_id'];
@@ -381,6 +417,10 @@ try {
                             'tournament_id'=>(string)$launch['tournament_id'],
                             'tournament_round_no'=>(int)$launch['round_no'],
                             'tournament_pair_no'=>(int)$launch['pair_no'],
+                            'tournament_attempt_no'=>(int)($launch['attempt_no'] ?? 1),
+                            'tournament_match_kind'=>(string)($launch['match_kind'] ?? 'elimination'),
+                            'tournament_wait_kind'=>(string)($launch['wait_kind'] ?? 'initial_ready'),
+                            'tournament_side_swap'=>!empty($launch['side_swap']),
                         ]
                     );
                     if (!isset($data['games'][$gameId]) || !is_array($data['games'][$gameId])) {
@@ -396,13 +436,28 @@ try {
                         $clock->advance($tournamentGame);
                     }
 
-                    $readiness->attachGame(
-                        (string)$launch['tournament_id'],
-                        (int)$launch['round_no'],
-                        (int)$launch['pair_no'],
-                        $gameId
-                    );
+                    if ($progressionOwnsLaunch) {
+                        $progression->attachGame(
+                            (string)$launch['tournament_id'],
+                            (int)$launch['round_no'],
+                            (int)$launch['pair_no'],
+                            (int)($launch['attempt_no'] ?? 1),
+                            $gameId
+                        );
+                    } else {
+                        $readiness->attachGame(
+                            (string)$launch['tournament_id'],
+                            (int)$launch['round_no'],
+                            (int)$launch['pair_no'],
+                            $gameId
+                        );
+                    }
                     $snapshot = $readiness->status($mgwId, $accountRef, $userId);
+                    $progressionSnapshot = $progression->statusForParticipant(
+                        $mgwId,
+                        $accountRef,
+                        $userId
+                    );
                     $publicGame = in_array($userId, array_map('strval', $tournamentGame['player_ids'] ?? []), true)
                         ? $games->publicGame($tournamentGame, $userId)
                         : null;
@@ -419,6 +474,7 @@ try {
 
                 return [
                     'snapshot'=>$snapshot,
+                    'progression'=>$progressionSnapshot,
                     'game'=>$publicGame,
                     'user'=>$users->publicUser($user),
                     'session'=>$sessions->publicState($user, $sessionId),
