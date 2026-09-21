@@ -97,7 +97,7 @@ $assert(str_contains($source['manual_fixture'], '$runtimeBatch')
         && str_contains($source['manual_fixture'], 'ensureRuntimeUsers($runtimeBatch)')
         && str_contains($source['manual_fixture'], 'repairFixtureRuntimeParity($server)'),
     'Manual 7/8 preparation must batch runtime writes and verify fixture parity after reseed.');
-$assert(str_contains($source['manual_fixture'], "preg_match('/^stg_tour_(?:v2_)?[a-f0-9]{12}$/', $legacyUserId)")
+$assert(str_contains($source['manual_fixture'], "preg_match('/^stg_tour_(?:v2_)?[a-f0-9]{12}$/', \$legacyUserId)")
         && str_contains($source['manual_fixture'], "'runtime_fixture_users_removed'"),
     'Fixture parity repair must remain narrowly scoped to tournament test identities.');
 $assert(str_contains($source['diagnostic'], 'unified_economy_probe_failed')
