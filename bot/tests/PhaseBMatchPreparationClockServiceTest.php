@@ -110,6 +110,55 @@ $clock->normalizeExisting($legacy);
 $assert(($legacy['launch_phase'] ?? '') === 'active', 'Existing accepted games must not be reset into preparation.');
 $assert((int)($legacy['clock_revision'] ?? 0) === 1, 'Existing games must receive a stable clock anchor without restart.');
 
+$tournamentGame = [
+    'id' => 'game_tournament_phase_b_test',
+    'status' => 'active',
+    'game_type' => 'tictactoe',
+    'match_source' => 'tournament',
+    'launch_countdown_sec' => 10,
+    'player_ids' => ['tour_a', 'tour_b'],
+    'turn' => 'tour_a',
+    'created_at' => now_iso(),
+    'updated_at' => now_iso(),
+    'turn_started_at' => now_iso(),
+];
+$clock->initializeNewGame($tournamentGame);
+$clock->markTournamentPairReady($tournamentGame);
+$clock->advance($tournamentGame);
+$assert(($tournamentGame['launch_phase'] ?? '') === 'countdown', 'Tournament both-ready handoff must reuse the shared countdown owner.');
+$assert(count($tournamentGame['preparation_ready_devices'] ?? []) === 2, 'Tournament readiness must mark exactly both paired players server-side.');
+$tournamentStartsAtMs = (int)($tournamentGame['starts_epoch_ms'] ?? 0);
+$nowMs = (int)round(microtime(true) * 1000);
+$assert($tournamentStartsAtMs >= $nowMs + 9000, 'Tournament countdown must remain approximately ten seconds, not ordinary three seconds.');
+$assert($tournamentStartsAtMs <= $nowMs + 11000, 'Tournament countdown must not exceed the bounded ten-second launch window.');
+$tournamentPublic = $clock->enrichPublicGame($tournamentGame, []);
+$assert((int)($tournamentPublic['launch_countdown_sec'] ?? 0) === 10, 'Public tournament game must expose the authoritative ten-second countdown.');
+$assert((int)($tournamentPublic['time_left'] ?? 0) === MatchPreparationClockService::MOVE_TIMEOUT_SEC, 'Move timer must remain full while tournament countdown is running.');
+$tournamentBlocked = false;
+try {
+    $clock->assertActionAllowed($tournamentGame);
+} catch (RuntimeException $e) {
+    $tournamentBlocked = str_contains($e->getMessage(), 'обратного отсчёта');
+}
+$assert($tournamentBlocked, 'Tournament field must stay locked until the countdown ends.');
+
+$ordinaryCountdown = [
+    'id' => 'game_ordinary_countdown_regression',
+    'status' => 'active',
+    'game_type' => 'tictactoe',
+    'player_ids' => ['ordinary_a', 'ordinary_b'],
+    'turn' => 'ordinary_a',
+    'created_at' => now_iso(),
+    'updated_at' => now_iso(),
+    'turn_started_at' => now_iso(),
+];
+$clock->initializeNewGame($ordinaryCountdown);
+$clock->markReady($ordinaryCountdown, 'ordinary_a', 's-a', 'd-a');
+$clock->markReady($ordinaryCountdown, 'ordinary_b', 's-b', 'd-b');
+$clock->advance($ordinaryCountdown);
+$ordinaryPublic = $clock->enrichPublicGame($ordinaryCountdown, []);
+$assert((int)($ordinaryPublic['launch_countdown_sec'] ?? 0) === MatchPreparationClockService::COUNTDOWN_SEC, 'Ordinary matches must preserve the accepted three-second countdown.');
+
 $botGame = [
     'status' => 'active',
     'player_ids' => ['player_a', 'bot_test'],
