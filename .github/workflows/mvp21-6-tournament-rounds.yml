@@ -18,6 +18,19 @@ on:
       - 'bot/tests/Mvp21_6TournamentRoundProgressionTest.php'
       - 'bot/tests/Mvp21_5TournamentMatchReadinessTest.php'
       - 'bot/tests/Mvp21_5TournamentReadyUxContractTest.php'
+      - '.github/workflows/mvp20-1-per-game-visible-rating.yml'
+      - '.github/workflows/mvp20-2-hidden-skill.yml'
+      - '.github/workflows/mvp20-3-leaderboards-antifarming.yml'
+      - '.github/workflows/mvp20-4-quarterly-seasons.yml'
+      - '.github/workflows/mvp20-5-seasonal-awards.yml'
+      - '.github/workflows/mvp20-6-yearly-medal.yml'
+      - '.github/workflows/mvp20-7-rating-archives.yml'
+      - '.github/workflows/mvp20-8-rating-admin.yml'
+      - '.github/workflows/mvp21-1-tournament-registration.yml'
+      - '.github/workflows/mvp21-2-tournament-rules.yml'
+      - '.github/workflows/mvp21-3-tournament-schedule.yml'
+      - '.github/workflows/mvp21-4-tournament-hall.yml'
+      - '.github/workflows/mvp21-5-tournament-ready.yml'
       - '.github/workflows/mvp21-6-tournament-rounds.yml'
   workflow_dispatch:
 
@@ -106,6 +119,19 @@ jobs:
           bad=0
           while IFS= read -r path; do
             case "$path" in
+              .github/workflows/mvp20-1-per-game-visible-rating.yml|\
+              .github/workflows/mvp20-2-hidden-skill.yml|\
+              .github/workflows/mvp20-3-leaderboards-antifarming.yml|\
+              .github/workflows/mvp20-4-quarterly-seasons.yml|\
+              .github/workflows/mvp20-5-seasonal-awards.yml|\
+              .github/workflows/mvp20-6-yearly-medal.yml|\
+              .github/workflows/mvp20-7-rating-archives.yml|\
+              .github/workflows/mvp20-8-rating-admin.yml|\
+              .github/workflows/mvp21-1-tournament-registration.yml|\
+              .github/workflows/mvp21-2-tournament-rules.yml|\
+              .github/workflows/mvp21-3-tournament-schedule.yml|\
+              .github/workflows/mvp21-4-tournament-hall.yml|\
+              .github/workflows/mvp21-5-tournament-ready.yml|\
               .github/workflows/mvp21-6-tournament-rounds.yml|\
               bot/database/migrations/20260921_0055_add_tournament_round_progression.php|\
               bot/tournaments/TournamentRoundProgressionService.php|\
