@@ -1,4 +1,5 @@
 import { state } from './state.js?v=27';
+import { haptic } from './telegram/telegram-app.js?v=27';
 
 const LAUNCH_COUNTDOWN_STEP_MS = 1000;
 const LAUNCH_READY_HOLD_MS = 260;
@@ -8,11 +9,13 @@ const runtime = window.__MGW_V110_ACCEPTANCE__ ||= {
   initialized:false,
   pending:null, pendingFrame:0, clock:null, timer:null, observer:null,
   launchPresentation:null,
+  launchAudio:null,
   pendingClockSnapshot:null,
   lastClockLabel:null,
   deferredTap:null,
 };
 if (!('launchPresentation' in runtime)) runtime.launchPresentation = null;
+if (!('launchAudio' in runtime)) runtime.launchAudio = null;
 if (!('pendingClockSnapshot' in runtime)) runtime.pendingClockSnapshot = null;
 if (!('lastClockLabel' in runtime)) runtime.lastClockLabel = null;
 if (!('deferredTap' in runtime)) runtime.deferredTap = null;
@@ -21,6 +24,7 @@ export function initV110AcceptanceRuntime(){
   if (runtime.initialized) return;
   runtime.initialized = true;
   document.addEventListener('mgw:phase-b-game-entering', primeLaunchState);
+  document.addEventListener('mgw:prime-launch-feedback', primeLaunchFeedback);
   document.addEventListener('mgw:v110-ttt-clock-snapshot', acceptPendingClockSnapshot);
   window.addEventListener('click', guardPhaseBPreStartControls, true);
   window.addEventListener('click', guardAndTrackTicTacToe, true);
@@ -413,14 +417,17 @@ function syncLaunchPresentation(game, phase){
     presentation = runtime.launchPresentation = {
       gameId,
       countdownStartedAt:null,
+      countdownSeconds:launchCountdownSeconds(game),
+      lastCue:'',
       readyStartedAt:null,
       complete:false,
     };
   }
 
+  presentation.countdownSeconds = launchCountdownSeconds(game);
   const now = performance.now();
   if (phase === 'countdown' && presentation.countdownStartedAt === null) {
-    const numbersDuration = LAUNCH_COUNTDOWN_STEP_MS * 3;
+    const numbersDuration = LAUNCH_COUNTDOWN_STEP_MS * presentation.countdownSeconds;
     const startsAtMs = finiteNumber(game?.starts_at_ms);
     const serverNowMs = finiteNumber(game?.server_now_ms);
     const remainingToStart = startsAtMs !== null && serverNowMs !== null
@@ -430,9 +437,10 @@ function syncLaunchPresentation(game, phase){
       ? 0
       : Math.max(0, Math.min(numbersDuration, numbersDuration - remainingToStart));
 
-    // The visible 3-2-1 consumes the same three seconds as the authoritative
-    // server launch. Any remaining synchronization stays in the sync state;
-    // Ready is reserved for the final handoff immediately before gameplay.
+    // The visible sequence consumes the exact authoritative server countdown.
+    // Ordinary matches remain 3-2-1; tournament matches publish 10 seconds.
+    // Any remaining synchronization stays in the sync state; Ready is reserved
+    // for the final handoff immediately before gameplay.
     presentation.countdownStartedAt = now - elapsedAtReceipt;
   }
 
@@ -444,7 +452,7 @@ function syncLaunchPresentation(game, phase){
 
   if (presentation.countdownStartedAt === null) return presentation;
 
-  const numbersDuration = LAUNCH_COUNTDOWN_STEP_MS * 3;
+  const numbersDuration = LAUNCH_COUNTDOWN_STEP_MS * presentation.countdownSeconds;
   const numbersComplete = now - presentation.countdownStartedAt >= numbersDuration;
   const serverReady = phase === 'active' || (phase === 'countdown' && launchStartReached(game));
   if (numbersComplete && serverReady && presentation.readyStartedAt === null) {
@@ -461,12 +469,53 @@ function launchPresentationStage(presentation, phase){
   if (!presentation || presentation.countdownStartedAt === null) return { type:'prepare' };
 
   const elapsed = Math.max(0, performance.now() - presentation.countdownStartedAt);
-  if (elapsed < LAUNCH_COUNTDOWN_STEP_MS) return { type:'number', value:'3' };
-  if (elapsed < LAUNCH_COUNTDOWN_STEP_MS * 2) return { type:'number', value:'2' };
-  if (elapsed < LAUNCH_COUNTDOWN_STEP_MS * 3) return { type:'number', value:'1' };
+  const total = Math.max(1, Number(presentation.countdownSeconds || 3));
+  const index = Math.floor(elapsed / LAUNCH_COUNTDOWN_STEP_MS);
+  if (index < total) return { type:'number', value:String(total - index) };
   if (presentation.readyStartedAt !== null) return { type:'ready' };
   return { type:'sync' };
 }
+function launchCountdownSeconds(game){
+  const seconds = Number(game?.launch_countdown_sec ?? 3);
+  return Number.isFinite(seconds) ? Math.max(1, Math.min(30, Math.round(seconds))) : 3;
+}
+function primeLaunchFeedback(){
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  if (typeof AudioContextCtor !== 'function') return;
+  try {
+    if (!runtime.launchAudio || runtime.launchAudio.state === 'closed') {
+      runtime.launchAudio = new AudioContextCtor();
+    }
+    if (runtime.launchAudio.state === 'suspended') void runtime.launchAudio.resume();
+  } catch (_) {}
+}
+function cueLaunchCountdown(value, presentation){
+  if (!presentation || presentation.lastCue === value) return;
+  presentation.lastCue = value;
+  const finalBeat = value === '1';
+  try { haptic(finalBeat ? 'medium' : 'light'); } catch (_) {}
+  try {
+    if (typeof navigator.vibrate === 'function') navigator.vibrate(finalBeat ? 45 : 24);
+  } catch (_) {}
+
+  const audio = runtime.launchAudio;
+  if (!audio || audio.state !== 'running') return;
+  try {
+    const oscillator = audio.createOscillator();
+    const gain = audio.createGain();
+    const now = audio.currentTime;
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(finalBeat ? 880 : 660, now);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(finalBeat ? 0.09 : 0.055, now + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + (finalBeat ? 0.095 : 0.065));
+    oscillator.connect(gain);
+    gain.connect(audio.destination);
+    oscillator.start(now);
+    oscillator.stop(now + (finalBeat ? 0.11 : 0.08));
+  } catch (_) {}
+}
+
 function primeLaunchState(event){
   const game = event?.detail?.game || null;
   const phase = String(game?.launch_phase || '');
@@ -517,6 +566,7 @@ function renderLaunchOverlay(overlay, game, phase, presentation){
   const gameLabel = overlay.querySelector('[data-phase-b-game]');
   const stage = launchPresentationStage(presentation, phase);
   overlay.dataset.stage = stage.type;
+  if (stage.type === 'number') cueLaunchCountdown(stage.value, presentation);
   if (gameLabel) gameLabel.textContent = gameTitleFromGame(game);
 
   if (stage.type === 'timeout') {
