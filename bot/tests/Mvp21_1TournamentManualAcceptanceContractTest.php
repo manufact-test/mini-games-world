@@ -82,7 +82,8 @@ $assertTrue(
     'Stale DB-primary notification rehearsal must fall back only for staging api.php.'
 );
 $assertTrue(
-    str_contains($source['storage_factory'], "if (!isset(\$primaryUserEvents[\$eventKey])) return true;")
+    str_contains($source['storage_factory'], "\$identity = \$eventKey !== '' ? \$eventKey : \$notificationId;")
+    && str_contains($source['storage_factory'], "if (!isset(\$primaryUserEvents[\$notificationIdentity])) return true;")
     && str_contains($source['storage_factory'], 'Do not weaken the selector on an unclassified readiness failure.')
     && str_contains($source['storage_factory'], "\$failures[\$entrypoint] = \$error;"),
     'Staging fallback must require proven missing notification events and preserve strict selector failures.'
