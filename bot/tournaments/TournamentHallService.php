@@ -42,7 +42,7 @@ final class TournamentHallService
         $opensAt = $start->modify('-' . self::HALL_OPEN_BEFORE_SECONDS . ' seconds');
 
         if ($moment < $opensAt) {
-            throw new RuntimeException('Tournament Hall откроется за 15 минут до старта.');
+            throw new RuntimeException('Турнирный зал откроется за 15 минут до старта.');
         }
 
         // A late participant can still open the participant Hall, but must never
@@ -87,7 +87,7 @@ final class TournamentHallService
             }
             if (count($existing) !== 1
                 || (string)($existing[0]['registration_id'] ?? '') !== (string)$participant['registration_id']) {
-                throw new RuntimeException('Tournament Hall entry conflicts with the canonical registration.');
+                throw new RuntimeException('Турнирный зал entry conflicts with the canonical registration.');
             }
         });
 
@@ -111,7 +111,7 @@ final class TournamentHallService
 
         $entry = $this->hallEntry((string)$participant['tournament_id'], $mgwId);
         if ($entry === null) {
-            throw new RuntimeException('Сначала войдите в Tournament Hall.');
+            throw new RuntimeException('Сначала войдите в Турнирный зал.');
         }
 
         $this->recordForegroundPresence($participant, $moment);
@@ -136,7 +136,7 @@ final class TournamentHallService
             $tournament = $rows[0];
             if ((string)($tournament['active_slot'] ?? '') !== TournamentRegistrationService::ACTIVE_SLOT
                 || (string)($tournament['tournament_state'] ?? '') !== TournamentRegistrationService::STATE_SCHEDULED) {
-                throw new RuntimeException('Tournament Hall is available only for the active scheduled tournament.');
+                throw new RuntimeException('Турнирный зал is available only for the active scheduled tournament.');
             }
 
             $start = $this->scheduledStart($tournament);
@@ -400,7 +400,7 @@ final class TournamentHallService
         $accountRef = trim($accountRef);
         $legacyUserId = trim($legacyUserId);
         if ($mgwId === '' || $accountRef === '' || $legacyUserId === '') {
-            throw new RuntimeException('Tournament Hall requires canonical participant identity.');
+            throw new RuntimeException('Турнирный зал requires canonical participant identity.');
         }
 
         $rows = $this->database->fetchAll(
@@ -429,10 +429,10 @@ final class TournamentHallService
             ]
         );
         if (count($rows) !== 1 || !is_array($rows[0])) {
-            throw new RuntimeException('Tournament Hall доступен только зарегистрированным участникам.');
+            throw new RuntimeException('Турнирный зал доступен только зарегистрированным участникам.');
         }
         if ((string)($rows[0]['tournament_state'] ?? '') !== TournamentRegistrationService::STATE_SCHEDULED) {
-            throw new RuntimeException('Tournament Hall откроется после назначения даты турнира.');
+            throw new RuntimeException('Турнирный зал откроется после назначения даты турнира.');
         }
         $this->scheduledStart($rows[0]);
         return $rows[0];
@@ -448,7 +448,7 @@ final class TournamentHallService
         );
         if ($rows === []) return null;
         if (count($rows) !== 1 || !is_array($rows[0])) {
-            throw new RuntimeException('Tournament Hall participant state is ambiguous.');
+            throw new RuntimeException('Турнирный зал participant state is ambiguous.');
         }
         return $rows[0];
     }
