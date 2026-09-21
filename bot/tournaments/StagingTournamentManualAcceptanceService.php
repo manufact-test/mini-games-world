@@ -83,7 +83,9 @@ final class StagingTournamentManualAcceptanceService
 
     public function fillToOneManualSeat(array $server): array
     {
-        return $this->fillToManualSeats($server, 1);
+        $requested = (int)($server['HTTP_X_MGW_MANUAL_LIVE_SEATS'] ?? 1);
+        if (!in_array($requested, [1, 2], true)) $requested = 1;
+        return $this->fillToManualSeats($server, $requested);
     }
 
     public function fillToManualSeats(array $server, int $manualSeats): array
