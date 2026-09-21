@@ -270,9 +270,30 @@ jobs:
           done
           test "$ready" = '1'
 
+      - name: Apply managed staging migrations and diagnose projections on macOS fallback route
+        id: projection
+        if: steps.readiness.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          oidc_json="$(curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=mini-games-world-staging-e2e")"
+          oidc_token="$(printf '%s' "${oidc_json}" | jq -r '.value // empty')"
+          test -n "${oidc_token}"
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${oidc_token}" \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            "${MGW_STAGING_ORIGIN}/bot/staging-projection-diagnostic.php" \
+            --data '{}' | tee staging-projection-diagnostic.json
+          printf '\n'
+
       - name: Set up Node.js on macOS fallback route
         id: setup-node
-        if: steps.readiness.outcome == 'success'
+        if: steps.readiness.outcome == 'success' && steps.projection.outcome == 'success'
         continue-on-error: true
         uses: actions/setup-node@v4
         with:
@@ -315,6 +336,7 @@ jobs:
         shell: bash
         env:
           READINESS_OUTCOME: ${{ steps.readiness.outcome }}
+          PROJECTION_OUTCOME: ${{ steps.projection.outcome }}
           SETUP_OUTCOME: ${{ steps.setup-node.outcome }}
           PREFLIGHT_OUTCOME: ${{ steps.preflight.outcome }}
           INSTALL_OUTCOME: ${{ steps.install.outcome }}
@@ -323,6 +345,8 @@ jobs:
           set -Eeuo pipefail
           if [[ "${READINESS_OUTCOME}" != 'success' ]]; then
             result='network_unavailable'
+          elif [[ "${PROJECTION_OUTCOME}" != 'success' ]]; then
+            result='application_failure'
           elif [[ "${SETUP_OUTCOME}" != 'success' ]]; then
             result='runner_infrastructure_failure'
           elif [[ "${PREFLIGHT_OUTCOME}" != 'success' ]]; then
@@ -345,6 +369,7 @@ jobs:
           path: |
             e2e/artifacts/playwright
             staging-e2e-readiness-macos.json
+            staging-projection-diagnostic.json
           if-no-files-found: warn
           retention-days: 7
 
