@@ -54,7 +54,6 @@
       year:'numeric',
       hour:'2-digit',
       minute:'2-digit',
-      timeZoneName:'short',
     }).format(date);
   };
 
@@ -249,7 +248,7 @@
     }
     if (scheduleInfo instanceof HTMLElement) {
       scheduleInfo.textContent = scheduled
-        ? `Начало: ${formatDateTime(tournament.scheduled_start_at_utc)}. Дата зафиксирована.`
+        ? `Начало: ${formatDateTime(tournament.scheduled_start_at_utc)} по времени этого устройства. Дата зафиксирована.`
         : waitingForDate
           ? 'Состав набран. Назначьте финальную дату и время начала турнира.'
           : 'Дата ещё не назначена.';

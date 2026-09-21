@@ -221,6 +221,7 @@ jobs:
               bot/core/bootstrap.php|\
               app/assets/js/api/client.js|\
               app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/js/screens/notifications-screen-v110r13.js|\
               app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
               app/v110.php|\
@@ -237,6 +238,7 @@ jobs:
               bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php|\
               bot/tests/Mvp21_3TournamentScheduleTest.php|\
               bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php|\
+              bot/tests/Mvp21_3ManualAcceptanceUxCorrectiveTest.php|\
               bot/tests/RuntimeNotificationRepositoryTest.php|\
               bot/tests/RuntimePrimaryStagingRequestFinalizerTest.php|\
               e2e/staging/tournament-registration-live.spec.mjs|\

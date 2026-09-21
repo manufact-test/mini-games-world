@@ -15,10 +15,12 @@ on:
       - 'app/admin.php'
       - 'app/assets/js/admin-tournaments.js'
       - 'app/assets/js/screens/tournaments-screen-v1.js'
+      - 'app/assets/js/screens/notifications-screen-v110r13.js'
       - 'app/assets/css/main.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp21_3TournamentScheduleTest.php'
       - 'bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php'
+      - 'bot/tests/Mvp21_3ManualAcceptanceUxCorrectiveTest.php'
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
       - 'bot/tests/Mvp21_1StagingTournamentResetContractTest.php'
       - '.github/workflows/mvp21-2-tournament-rules.yml'
@@ -84,17 +86,20 @@ jobs:
             app/runtime/client/version-manifest.php
             bot/tests/Mvp21_3TournamentScheduleTest.php
             bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php
+            bot/tests/Mvp21_3ManualAcceptanceUxCorrectiveTest.php
             bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
             bot/tests/Mvp21_1StagingTournamentResetContractTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
           node --check app/assets/js/admin-tournaments.js
           node --check app/assets/js/screens/tournaments-screen-v1.js
+          node --check app/assets/js/screens/notifications-screen-v110r13.js
 
       - name: Run MVP-21.3 schedule model
         run: |
           php bot/tests/Mvp21_3TournamentScheduleTest.php
           php bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php
+          php bot/tests/Mvp21_3ManualAcceptanceUxCorrectiveTest.php
 
       - name: Preserve MVP-21.2 rules and registration close
         run: |
@@ -164,10 +169,12 @@ jobs:
               app/admin.php|\
               app/assets/js/admin-tournaments.js|\
               app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/js/screens/notifications-screen-v110r13.js|\
               app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp21_3TournamentScheduleTest.php|\
               bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php|\
+              bot/tests/Mvp21_3ManualAcceptanceUxCorrectiveTest.php|\
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
               bot/tests/Mvp21_1StagingTournamentResetContractTest.php|\
               bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php)

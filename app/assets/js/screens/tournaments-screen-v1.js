@@ -497,7 +497,7 @@ function renderTournamentSnapshot(errorMessage = ''){
 
   const ownStatus = registered
     ? (scheduled
-      ? `Вы в составе. Турнир начнётся ${scheduledStart ? formatTournamentDateTime(scheduledStart) : 'в назначенное время'}.`
+      ? `Вы в составе. Турнир начнётся ${scheduledStart ? formatTournamentDateTime(scheduledStart) + ' по вашему времени' : 'в назначенное время'}.`
       : waitingForDate
         ? 'Вы в составе. Регистрация закрыта — ожидайте назначения даты турнира.'
         : full
@@ -513,7 +513,7 @@ function renderTournamentSnapshot(errorMessage = ''){
 
   const scheduleMarkup = scheduled && scheduledStart
     ? `<section class="tournaments-v2-tournament-schedule" aria-label="Дата и время турнира">
-        <span>Начало турнира</span>
+        <span>Начало турнира · по вашему времени</span>
         <strong>${escapeHtml(formatTournamentDateTime(scheduledStart))}</strong>
         <div class="tournaments-v2-tournament-countdown">
           <small>До старта</small>
@@ -585,7 +585,7 @@ function formatTournamentDateTime(value){
   if (!date) return String(value || '');
   return new Intl.DateTimeFormat('ru-RU', {
     day:'2-digit', month:'2-digit', year:'numeric',
-    hour:'2-digit', minute:'2-digit', timeZoneName:'short',
+    hour:'2-digit', minute:'2-digit',
   }).format(date);
 }
 
