@@ -55,6 +55,12 @@ foreach ([
 ] as $needle) {
     $assert(str_contains($source['client'], $needle), 'Hall client transport missing: ' . $needle);
 }
+$assert(substr_count($source['client'], 'tournamentHallStatus:') === 1
+        && substr_count($source['client'], 'tournamentHallEnter:') === 1,
+    'Hall client must expose exactly one status/enter owner so dedicated endpoint actions cannot be overwritten.');
+$assert(str_contains($source['client'], "requestUrl(TOURNAMENT_HALL_URL, { action:'enter' })")
+        && !str_contains($source['client'], "request('tournament_hall_enter')"),
+    'Hall entry must use the dedicated tournament-hall endpoint instead of the generic action router.');
 
 foreach ([
     'data-tournament-hall-enter',
@@ -73,6 +79,9 @@ $assert(!str_contains($source['screen'], 'Tournament Hall')
 $assert(!str_contains($source['screen'], 'data-tournament-ready')
         && !str_contains($source['client'], 'tournamentReady'),
     'MVP-21.4 must not expose a Ready action before MVP-21.5.');
+$assert(str_contains($source['screen'], "const buttonLabel = tournamentHallBusy ? 'Входим в зал…' : 'Вход';")
+        && str_contains($source['screen'], "hallButton.textContent = 'Вход';"),
+    'Hall CTA must stay concise: timing belongs to the Hall status copy, button label is simply Вход.');
 
 foreach ([
     '.tournaments-v2-hall-gate',
@@ -84,11 +93,13 @@ foreach ([
 }
 
 $assert(str_contains($source['manifest'], 'client.js?v=1142')
-        && str_contains($source['manifest'], 'mvp21_4=tournament-hall-v1'),
-    'Hall release must preserve the accepted API cache contract and add a fresh Hall identity.');
+        && str_contains($source['manifest'], 'mvp21_4=tournament-hall-v1')
+        && str_contains($source['manifest'], 'hall_transport=direct-endpoint-v2'),
+    'Hall release must preserve the accepted API cache contract and publish the direct-endpoint corrective identity.');
 $assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=16')
-        && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v2'),
-    'Hall release must preserve the accepted Tournament screen base version and add a fresh Hall identity.');
+        && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v2')
+        && str_contains($source['manifest'], 'hall_cta=entry-v1'),
+    'Hall release must preserve the accepted Tournament screen base version and publish the concise CTA identity.');
 $assert(str_contains($source['manifest'], 'main.css?v=198')
         && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v2'),
     'Hall release must preserve accepted CSS base version and add a fresh Hall identity.');
