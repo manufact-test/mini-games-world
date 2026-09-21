@@ -4,7 +4,6 @@ require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/services/GameLaunchFinalizationService.php';
 require_once __DIR__ . '/services/MatchPreparationRuntimeService.php';
 require_once __DIR__ . '/tournaments/TournamentAdminNotificationBridge.php';
-require_once __DIR__ . '/tournaments/TournamentHallService.php';
 
 function mgw_cleanup_games_if_due(array &$data, ChessRuntimeService $games, bool $force = false): void
 {
@@ -115,7 +114,7 @@ try {
         }
     }
 
-    $result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $gameCatalog, $gameActions, $matchPreparationRuntime, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $runtimeHiddenSkillBridge, $presenceService, $sessionId, $deviceId, $config) {
+    $result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $gameCatalog, $gameActions, $matchPreparationRuntime, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $runtimeHiddenSkillBridge, $sessionId, $deviceId, $config) {
         $user = $users->ensureUser($data, $tgUser);
         $userId = (string)$user['id'];
         $data['users'][$userId] = $user;
@@ -322,56 +321,6 @@ try {
 
                 return [
                     'snapshot' => $snapshot,
-                    'user' => $users->publicUser($user),
-                    'session' => $sessions->publicState($user, $sessionId),
-                ];
-
-            case 'tournament_hall_status':
-            case 'tournament_hall_enter':
-            case 'tournament_hall_presence':
-                $mgwId = trim((string)($user['mgw_id'] ?? ''));
-                $accountRef = trim((string)($user['mgw_account_ref'] ?? ''));
-                if ($mgwId === '' || $accountRef === '' || $userId === '') {
-                    throw new RuntimeException('Tournament Hall requires canonical participant identity.');
-                }
-
-                $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
-                if (!$databaseConfig->enabled()) {
-                    throw new RuntimeException('Tournament Hall временно недоступен.');
-                }
-                $database = PdoConnectionFactory::create($databaseConfig);
-                $hall = new TournamentHallService(
-                    $database,
-                    static fn(string $legacyUserId): array => $presenceService->gameplaySnapshot($legacyUserId)
-                );
-
-                if ($action === 'tournament_hall_enter' && $sessionId !== '') {
-                    // One immediate foreground touch makes the explicit Hall entry
-                    // responsive without changing the canonical recurring 4s
-                    // application heartbeat cadence.
-                    $presenceService->touch($userId, $sessionId);
-                }
-
-                $hallSnapshot = match ($action) {
-                    'tournament_hall_enter' => $hall->enter(
-                        $mgwId,
-                        $accountRef,
-                        $userId
-                    ),
-                    'tournament_hall_presence' => $hall->heartbeat(
-                        $mgwId,
-                        $accountRef,
-                        $userId
-                    ),
-                    default => $hall->status(
-                        $mgwId,
-                        $accountRef,
-                        $userId
-                    ),
-                };
-
-                return [
-                    'hall' => $hallSnapshot,
                     'user' => $users->publicUser($user),
                     'session' => $sessions->publicState($user, $sessionId),
                 ];
