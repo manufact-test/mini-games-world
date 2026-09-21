@@ -111,7 +111,7 @@ $assert(str_contains($source['screen'], "tournamentHallSnapshot?.bracket")
     'Hall heartbeat must let the first-ready player discover the exact game launched by the second.');
 $assert(str_contains($source['screen'], 'startTournamentVisibleRefresh')
         && str_contains($source['screen'], '2500')
-        && str_contains($source['screen'], 'tournamentHallStatus'),
+        && str_contains($source['screen'], 'warmTournamentHallStatus'),
     'Visible Tournament screen must refresh Hall state before entry instead of requiring navigation away and back.');
 $assert(str_contains($source['screen'], 'Загружаем готовность вашей пары…')
         && str_contains($source['screen'], 'tournamentMatchError')
