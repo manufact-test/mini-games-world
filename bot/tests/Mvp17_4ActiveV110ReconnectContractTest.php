@@ -24,8 +24,8 @@ $presence = $read($repoRoot . '/app/assets/js/production-v110-presence.js');
 $clock = $read($repoRoot . '/bot/services/MatchPreparationClockService.php');
 
 $assert(
-    str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1127';"),
-    'The Telegram/Test WebApp launch owner must be recognized as v110; reconnect tests must not target an inactive entry graph.'
+    preg_match("/private const ENTRY_PATH = '\\/app\\/v110\\.php\\?v=\\d+[^']*';/", $launch) === 1,
+    'The Telegram/Test WebApp launch owner must remain the active v110 route; cache revisions must not make reconnect tests target an inactive entry graph.'
 );
 $assert(
     str_contains($v110, "'@mgw/main'") && str_contains($v110, "runtime/client/version-manifest.php"),
