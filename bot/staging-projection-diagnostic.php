@@ -83,6 +83,23 @@ try {
     $fixtureRuntimeParity = $fixture->repairFixtureRuntimeParity($_SERVER);
     $tournamentSnapshot = $tournaments->snapshot();
 
+    $selectorFallbackCheck = [
+        'available'=>false,
+        'would_fallback_to_json'=>false,
+        'helper'=>'stagingApiPrimaryNotificationSnapshotIsBehind',
+    ];
+    try {
+        $selectorMethod = new ReflectionMethod(
+            StorageFactory::class,
+            'stagingApiPrimaryNotificationSnapshotIsBehind'
+        );
+        $selectorMethod->setAccessible(true);
+        $selectorFallbackCheck['available'] = true;
+        $selectorFallbackCheck['would_fallback_to_json'] = (bool)$selectorMethod->invoke(null, $config);
+    } catch (Throwable $selectorError) {
+        $selectorFallbackCheck['error_class'] = get_class($selectorError);
+    }
+
     $runtimeStorage = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $runtimeSnapshot = $runtimeStorage->transaction(
         static fn(array &$data): array => $data
@@ -473,6 +490,7 @@ try {
         'registered_count'=>(int)($tournamentSnapshot['tournament']['registered_count'] ?? 0),
         'tournament_fixture_ownership_repair'=>$fixtureOwnershipRepair,
         'tournament_fixture_runtime_parity'=>$fixtureRuntimeParity,
+        'storage_selector_notification_fallback'=>$selectorFallbackCheck,
         'unified_economy_preview'=>[
             'ready'=>(bool)($economyPreview['ready'] ?? false),
             'reconciled'=>(bool)($economyPreview['reconciled'] ?? false),
