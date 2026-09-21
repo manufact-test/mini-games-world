@@ -25,7 +25,7 @@
   const manualPanel = card.querySelector('[data-tournament-manual-panel]');
   const manualInfo = card.querySelector('[data-tournament-manual-info]');
   const prepareManual = card.querySelector('[data-tournament-prepare-manual]');
-  const manualLiveSeats = card.querySelector('[data-tournament-manual-live-seats]');
+  const manualNote = manualPanel?.querySelector('small') || null;
   const resetPanel = card.querySelector('[data-tournament-reset-panel]');
   const resetInfo = card.querySelector('[data-tournament-reset-info]');
   const resetManual = card.querySelector('[data-tournament-reset-manual]');
@@ -281,15 +281,13 @@
       ? manualAcceptance
       : {};
     const modes = manual.modes && typeof manual.modes === 'object' ? manual.modes : {};
-    const selectedLiveSeats = manualLiveSeats instanceof HTMLSelectElement
-      ? Math.max(1, Math.min(2, Number(manualLiveSeats.value || 2)))
-      : 2;
+    const selectedLiveSeats = 2;
     const selectedMode = modes[String(selectedLiveSeats)] || {};
     const manualVisible = state === 'registration_open'
       && (Object.keys(modes).length > 0 || manual.available === true);
     if (manualPanel instanceof HTMLElement) manualPanel.hidden = !manualVisible;
-    if (manualLiveSeats instanceof HTMLSelectElement) {
-      manualLiveSeats.disabled = busy;
+    if (manualNote instanceof HTMLElement) {
+      manualNote.textContent = 'Только staging: для ручной проверки MVP-21.5 добавляются 6 синтетических участников, а два места остаются двум живым аккаунтам. После заполнения 8/8 эти два живых аккаунта гарантированно попадут в одну пару первого раунда.';
     }
     if (prepareManual instanceof HTMLButtonElement) {
       const canPrepare = selectedMode.available === true;
@@ -404,9 +402,7 @@
     const tournament = snapshot?.tournament;
     const count = Number(tournament?.registered_count || 0);
     const cap = Number(tournament?.capacity || 0);
-    const liveSeats = manualLiveSeats instanceof HTMLSelectElement
-      ? Math.max(1, Math.min(2, Number(manualLiveSeats.value || 2)))
-      : 2;
+    const liveSeats = 2;
     const mode = manualAcceptance?.modes?.[String(liveSeats)] || {};
     const target = Number(mode.target_registered_count || Math.max(0, cap - liveSeats));
     if (!tournament || cap < 2 || target <= count) return;
@@ -481,7 +477,6 @@
   create?.addEventListener('click', createDraft);
   open?.addEventListener('click', openRegistration);
   prepareManual?.addEventListener('click', prepareManualAcceptance);
-  manualLiveSeats?.addEventListener('change', () => render(snapshot || {}));
   resetManual?.addEventListener('click', resetManualAcceptance);
   assignDate?.addEventListener('click', assignFinalDate);
 
