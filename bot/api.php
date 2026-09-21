@@ -644,11 +644,34 @@ try {
         );
 
     if ($isStagingTournamentTest) {
+        $storageContext = class_exists('RuntimePrimaryEntrypointStorageContext', false)
+            ? RuntimePrimaryEntrypointStorageContext::safeReport()
+            : ['installed'=>false,'storage_driver'=>'json'];
+        $selectorFallback = null;
+        try {
+            $selectorMethod = new ReflectionMethod(
+                StorageFactory::class,
+                'stagingApiPrimaryNotificationSnapshotIsBehind'
+            );
+            $selectorMethod->setAccessible(true);
+            $selectorFallback = (bool)$selectorMethod->invoke(null, $config);
+        } catch (Throwable) {
+            $selectorFallback = null;
+        }
+
         json_response([
             'ok'=>false,
             'error'=>mgw_public_api_error($e->getMessage()),
             'debug_error'=>substr($e->getMessage(), 0, 1800),
             'debug_exception'=>get_class($e),
+            'debug_storage'=>[
+                'adapter_class'=>isset($db) && is_object($db) ? get_class($db) : '',
+                'driver'=>isset($db) && is_object($db) && method_exists($db, 'driver')
+                    ? (string)$db->driver()
+                    : '',
+                'primary_context'=>$storageContext,
+                'stale_notification_fallback'=>$selectorFallback,
+            ],
             'test_only'=>true,
         ], 400);
     }
