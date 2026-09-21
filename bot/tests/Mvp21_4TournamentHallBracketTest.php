@@ -246,14 +246,22 @@ $presentNow = array_values(array_filter(
 $assertSame(4, count($presentNow), 'Hall roster must show four fresh foreground participants before start.');
 $assertSame(null, $preStart['bracket'], 'Bracket must remain absent one second before start.');
 
-$started = $hall->status(
+$readOnlyAtStart = $hall->status(
     $players[1]['mgw_id'],
     $players[1]['account_ref'],
     $players[1]['legacy_user_id'],
     new DateTimeImmutable('2026-09-21T01:00:00Z')
 );
-$assertSame(true, $started['hall']['started'], 'Hall must cross the start boundary at the exact scheduled instant.');
-$assertTrue(is_array($started['bracket']), 'Bracket must materialize at the start boundary.');
+$assertSame(true, $readOnlyAtStart['hall']['started'], 'Hall status must cross the start boundary at the exact scheduled instant.');
+$assertSame(null, $readOnlyAtStart['bracket'], 'Read-only Hall status must never create the bracket by itself.');
+
+$started = $hall->heartbeat(
+    $players[1]['mgw_id'],
+    $players[1]['account_ref'],
+    $players[1]['legacy_user_id'],
+    new DateTimeImmutable('2026-09-21T01:00:00Z')
+);
+$assertTrue(is_array($started['bracket']), 'Participant Hall heartbeat must materialize the bracket at the start boundary.');
 $assertSame(TournamentHallService::BRACKET_VERSION, $started['bracket']['version'], 'Bracket version must be explicit and durable.');
 $assertSame('2026-09-21 01:00:00.000000', $started['bracket']['effective_at_utc'], 'Bracket effective time must equal exact scheduled start.');
 $assertSame('2026-09-21 01:00:00.000000', $started['bracket']['generated_at_utc'], 'Exact-boundary request must record exact bracket generation time.');
@@ -326,7 +334,7 @@ $storedSeeds = (int)$db->fetchValue(
 $assertSame(8, $storedSeeds, 'Exactly eight durable bracket seeds must exist after repeated Hall calls.');
 $assertTrue($randomCalls > 0, 'Bracket generation must exercise the randomizer.');
 
-if ($assertions < 45) {
+if ($assertions < 46) {
     throw new RuntimeException('MVP-21.4 Hall/bracket test is too shallow: ' . $assertions);
 }
 
