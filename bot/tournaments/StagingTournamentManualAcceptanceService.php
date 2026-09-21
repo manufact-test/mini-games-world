@@ -147,6 +147,7 @@ final class StagingTournamentManualAcceptanceService
         }
 
         $this->ensureRuntimeUsers($runtimeBatch);
+        $runtimeParity = $this->repairFixtureRuntimeParity($server);
 
         $final = $this->tournaments->snapshot();
         $finalTournament = $final['tournament'] ?? null;
@@ -171,6 +172,7 @@ final class StagingTournamentManualAcceptanceService
             'target_registered_count'=>$target,
             'manual_seats_left'=>1,
             'legacy_ownership_repair'=>$repair,
+            'runtime_fixture_parity'=>$runtimeParity,
             'snapshot'=>$final,
         ];
     }
