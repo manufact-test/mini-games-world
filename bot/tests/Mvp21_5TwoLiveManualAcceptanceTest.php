@@ -112,7 +112,7 @@ $assertSame(6, count($runtimeUsers), 'All six fixture users must exist in runtim
 
 $live = [];
 for ($i = 1; $i <= 2; $i++) {
-    $mgwId = 'MGW-LIVE' . str_pad((string)$i, 12, '0', STR_PAD_LEFT);
+    $mgwId = $i === 1 ? 'MGW-AAAABBBBCCCC0001' : 'MGW-AAAABBBBCCCC0002';
     $legacyId = 'manual_live_' . $i;
     $accountRef = 'legacy:' . $legacyId;
     $timestamp = sprintf('2026-09-21 00:%02d:00.000000', 10 + $i);
