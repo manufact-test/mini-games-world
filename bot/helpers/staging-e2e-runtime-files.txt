@@ -219,6 +219,7 @@ app/assets/js/screens/notifications-screen-v99.js
 # must be fingerprinted so the browser suite cannot start against a partially
 # deployed setup graph.
 bot/staging-e2e-readiness.php
+bot/staging-projection-diagnostic.php
 bot/staging-test-auth.php
 bot/services/StagingTestAuthService.php
 bot/services/StagingTestInviteResidualRecoveryService.php
