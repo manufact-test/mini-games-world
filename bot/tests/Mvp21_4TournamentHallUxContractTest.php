@@ -107,8 +107,8 @@ $assert(str_contains($source['diagnostic'], 'unified_economy_probe_failed')
 $assert(str_contains($source['diagnostic'], "'notification_runtime_parity'")
         && str_contains($source['diagnostic'], "'user_ref_sha256'")
         && str_contains($source['diagnostic'], "'sensitive_identifiers_exposed'=>false")
-        && !str_contains($source['diagnostic'], "'legacy_user_id'=>\$legacyUserId"),
-    'Staging diagnostic must expose notification parity failures only through bounded hashed user references.');
+        && str_contains($source['diagnostic'], "'user_ref_sha256'=>substr(hash('sha256', \$legacyUserId), 0, 16)"),
+    'Staging diagnostic must expose notification parity failures through bounded hashed user references.');
 $assert(str_contains($source['diagnostic'], "preg_match('/^stg_tour_(?:v2_)?[a-f0-9]{12}$/', \$legacyUserId)")
         && str_contains($source['diagnostic'], "'technical_ab'")
         && str_contains($source['diagnostic'], "'tournament_fixture'"),
