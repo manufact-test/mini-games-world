@@ -84,7 +84,9 @@ $assert((int)($game['clock_revision'] ?? 0) === 2, 'Turn handoff must advance th
 $guardStart = time() + 3;
 $game['turn_started_at'] = gmdate('c', $guardStart);
 $game['turn_starts_at'] = gmdate('c', $guardStart);
+$game['turn_starts_epoch_ms'] = $guardStart * 1000;
 $game['turn_deadline_at'] = gmdate('c', $guardStart + MatchPreparationClockService::MOVE_TIMEOUT_SEC);
+$game['turn_deadline_epoch_ms'] = ($guardStart + MatchPreparationClockService::MOVE_TIMEOUT_SEC) * 1000;
 $handoffBlocked = false;
 try {
     $clock->assertActionAllowed($game);
@@ -99,9 +101,12 @@ $assert((int)($public['move_timeout_sec'] ?? 0) === MatchPreparationClockService
 $assert((int)($public['time_left'] ?? 0) === MatchPreparationClockService::MOVE_TIMEOUT_SEC, 'Future handoff must display the full timeout, not legacy elapsed time.');
 $assert(isset($public['server_now_ms'], $public['turn_starts_at_ms'], $public['turn_deadline_ms']), 'Public state must expose one server time anchor and turn timestamps.');
 
-$game['turn_started_at'] = gmdate('c', time() - 1);
+$pastTurnStart = time() - 1;
+$game['turn_started_at'] = gmdate('c', $pastTurnStart);
 $game['turn_starts_at'] = $game['turn_started_at'];
-$game['turn_deadline_at'] = gmdate('c', time() - 1 + MatchPreparationClockService::MOVE_TIMEOUT_SEC);
+$game['turn_starts_epoch_ms'] = $pastTurnStart * 1000;
+$game['turn_deadline_at'] = gmdate('c', $pastTurnStart + MatchPreparationClockService::MOVE_TIMEOUT_SEC);
+$game['turn_deadline_epoch_ms'] = ($pastTurnStart + MatchPreparationClockService::MOVE_TIMEOUT_SEC) * 1000;
 $clock->assertActionAllowed($game);
 
 $legacy = [
