@@ -104,6 +104,15 @@ $assert(str_contains($source['diagnostic'], 'unified_economy_probe_failed')
         && str_contains($source['diagnostic'], "'unified_economy_preview'")
         && str_contains($source['diagnostic'], 'repairFixtureRuntimeParity($_SERVER)'),
     'Staging deploy diagnostic must repair fixture parity and prove unified-economy readiness.');
+$assert(str_contains($source['diagnostic'], "'notification_runtime_parity'")
+        && str_contains($source['diagnostic'], "'user_ref_sha256'")
+        && str_contains($source['diagnostic'], "'sensitive_identifiers_exposed'=>false")
+        && !str_contains($source['diagnostic'], "'legacy_user_id'=>\$legacyUserId"),
+    'Staging diagnostic must expose notification parity failures only through bounded hashed user references.');
+$assert(str_contains($source['diagnostic'], "preg_match('/^stg_tour_(?:v2_)?[a-f0-9]{12}$/', \$legacyUserId)")
+        && str_contains($source['diagnostic'], "'technical_ab'")
+        && str_contains($source['diagnostic'], "'tournament_fixture'"),
+    'Notification diagnostic must classify technical staging identities without publishing raw identifiers.');
 $assert(str_contains($source['admin'], '{ lockDraftControls:false }')
         && str_contains($source['admin'], 'control === title || control === game || control === capacity'),
     'Read-only Tournament Admin refresh must not freeze draft title/game/capacity controls.');
@@ -111,5 +120,5 @@ $assert(str_contains($source['admin_page'], 'admin-tournaments.js?v=7')
         && str_contains($source['admin_page'], 'mvp21_4=staging-reset-reseed-v2'),
     'Tournament Admin corrective must publish a fresh cache identity.');
 
-if ($assertions < 26) throw new RuntimeException('MVP-21.4 UX contract is too shallow.');
+if ($assertions < 28) throw new RuntimeException('MVP-21.4 UX contract is too shallow.');
 fwrite(STDOUT, "Mvp21_4TournamentHallUxContractTest: {$assertions} assertions passed\n");
