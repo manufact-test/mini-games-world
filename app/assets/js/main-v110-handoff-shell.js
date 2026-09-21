@@ -20,7 +20,7 @@ import { initTournamentsScreen } from './screens/tournaments-screen-v1.js?v=4&ar
 import { initStoreScreen, openStoreTab } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
-import { initNotificationsScreen } from './screens/notifications-screen-v110r13.js?v=1162&mvp18=friend-request-lifecycle';
+import { initNotificationsScreen } from './screens/notifications-screen-v110r13.js?v=1163&mvp21_3=read-authority-local-time';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=79&complete=green';
 import { initSearchScreen } from './screens/search-screen-v102.js?v=103';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
