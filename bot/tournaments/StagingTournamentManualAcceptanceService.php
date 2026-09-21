@@ -32,6 +32,7 @@ final class StagingTournamentManualAcceptanceService
                 'available'=>false,
                 'reason'=>'staging_only',
                 'target_registered_count'=>null,
+                'modes'=>[],
             ];
         }
 
@@ -42,31 +43,56 @@ final class StagingTournamentManualAcceptanceService
                 'available'=>false,
                 'reason'=>'no_active_tournament',
                 'target_registered_count'=>null,
+                'modes'=>[],
             ];
         }
 
         $capacity = (int)($tournament['capacity'] ?? 0);
         $registered = (int)($tournament['registered_count'] ?? 0);
-        $target = max(0, $capacity - 1);
         $state = (string)($tournament['state'] ?? '');
+        $modes = [];
+        foreach ([1, 2] as $liveSeats) {
+            $target = max(0, $capacity - $liveSeats);
+            $modes[(string)$liveSeats] = [
+                'live_seats'=>$liveSeats,
+                'target_registered_count'=>$target,
+                'registered_count'=>$registered,
+                'capacity'=>$capacity,
+                'available'=>$state === TournamentRegistrationService::STATE_REGISTRATION_OPEN
+                    && $capacity > $liveSeats
+                    && $registered < $target,
+                'ready'=>$state === TournamentRegistrationService::STATE_REGISTRATION_OPEN
+                    && $registered === $target,
+                'remaining_fixture_slots'=>max(0, $target - $registered),
+            ];
+        }
 
+        $oneLive = $modes['1'];
         return [
-            'available'=>$state === TournamentRegistrationService::STATE_REGISTRATION_OPEN
-                && $capacity >= 2
-                && $registered < $target,
+            'available'=>$oneLive['available'],
             'reason'=>$state !== TournamentRegistrationService::STATE_REGISTRATION_OPEN
                 ? 'registration_not_open'
-                : ($registered >= $target ? 'manual_last_seat_ready' : 'ready'),
-            'target_registered_count'=>$target,
+                : ($registered >= (int)$oneLive['target_registered_count'] ? 'manual_last_seat_ready' : 'ready'),
+            'target_registered_count'=>$oneLive['target_registered_count'],
             'registered_count'=>$registered,
             'capacity'=>$capacity,
-            'remaining_fixture_slots'=>max(0, $target - $registered),
+            'remaining_fixture_slots'=>$oneLive['remaining_fixture_slots'],
+            'modes'=>$modes,
         ];
     }
 
     public function fillToOneManualSeat(array $server): array
     {
+        return $this->fillToManualSeats($server, 1);
+    }
+
+    public function fillToManualSeats(array $server, int $manualSeats): array
+    {
         $this->assertAvailableEnvironment($server);
+        if (!in_array($manualSeats, [1, 2], true)) {
+            throw new InvalidArgumentException('Для ручной проверки поддерживается одно или два живых места.');
+        }
+
         $repair = $this->repairLegacyFixtureOwnership($server);
 
         $snapshot = $this->tournaments->snapshot();
@@ -80,18 +106,26 @@ final class StagingTournamentManualAcceptanceService
 
         $capacity = (int)($tournament['capacity'] ?? 0);
         $registered = (int)($tournament['registered_count'] ?? 0);
-        if ($capacity < 2) {
+        if ($capacity <= $manualSeats) {
             throw new RuntimeException('Некорректная вместимость турнира для ручной проверки.');
         }
-        $target = $capacity - 1;
-        if ($registered >= $target) {
+
+        $target = $capacity - $manualSeats;
+        if ($registered > $target) {
+            throw new RuntimeException(
+                'Для выбранного режима уже зарегистрировано слишком много участников. '
+                . 'Сбросьте staging-турнир и подготовьте его заново.'
+            );
+        }
+        if ($registered === $target) {
             return [
                 'status'=>'already_ready',
                 'created_count'=>0,
                 'registered_count'=>$registered,
                 'capacity'=>$capacity,
                 'target_registered_count'=>$target,
-                'manual_seats_left'=>max(0, $capacity - $registered),
+                'manual_seats_left'=>$manualSeats,
+                'requested_live_seats'=>$manualSeats,
                 'snapshot'=>$snapshot,
             ];
         }
@@ -160,7 +194,7 @@ final class StagingTournamentManualAcceptanceService
 
         if ($finalRegistered !== $target
             || $finalState !== TournamentRegistrationService::STATE_REGISTRATION_OPEN) {
-            throw new RuntimeException('Не удалось безопасно подготовить турнир с одним свободным местом.');
+            throw new RuntimeException('Не удалось безопасно подготовить турнир с нужным числом живых мест.');
         }
 
         return [
@@ -170,7 +204,8 @@ final class StagingTournamentManualAcceptanceService
             'registered_count'=>$finalRegistered,
             'capacity'=>$capacity,
             'target_registered_count'=>$target,
-            'manual_seats_left'=>1,
+            'manual_seats_left'=>$manualSeats,
+            'requested_live_seats'=>$manualSeats,
             'legacy_ownership_repair'=>$repair,
             'runtime_fixture_parity'=>$runtimeParity,
             'snapshot'=>$final,
