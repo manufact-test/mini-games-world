@@ -429,6 +429,10 @@ final class GameService
         $tournamentId = trim((string)($metadata['tournament_id'] ?? ''));
         $roundNo = max(1, (int)($metadata['tournament_round_no'] ?? 1));
         $pairNo = max(1, (int)($metadata['tournament_pair_no'] ?? 1));
+        $attemptNo = max(1, (int)($metadata['tournament_attempt_no'] ?? 1));
+        $matchKind = trim((string)($metadata['tournament_match_kind'] ?? 'elimination'));
+        $waitKind = trim((string)($metadata['tournament_wait_kind'] ?? 'initial_ready'));
+        $sideSwap = !empty($metadata['tournament_side_swap']);
         if ($tournamentId === '') throw new RuntimeException('Tournament id is required for tournament game.');
 
         $existing = $db['games'][$gameId] ?? null;
@@ -441,6 +445,7 @@ final class GameService
                 || (string)($existing['tournament_id'] ?? '') !== $tournamentId
                 || (int)($existing['tournament_round_no'] ?? 0) !== $roundNo
                 || (int)($existing['tournament_pair_no'] ?? 0) !== $pairNo
+                || (int)($existing['tournament_attempt_no'] ?? 1) !== $attemptNo
                 || $existingPlayers !== $expectedPlayers) {
                 throw new RuntimeException('Tournament game id conflicts with an existing game.');
             }
@@ -496,7 +501,12 @@ final class GameService
             'tournament_id' => $tournamentId,
             'tournament_round_no' => $roundNo,
             'tournament_pair_no' => $pairNo,
-            'source_match_id' => $tournamentId . ':r' . $roundNo . ':p' . $pairNo,
+            'tournament_attempt_no' => $attemptNo,
+            'tournament_match_kind' => $matchKind !== '' ? $matchKind : 'elimination',
+            'tournament_wait_kind' => $waitKind !== '' ? $waitKind : 'initial_ready',
+            'tournament_side_swap' => $sideSwap,
+            'source_match_id' => $tournamentId . ':r' . $roundNo . ':p' . $pairNo
+                . ($attemptNo > 1 ? ':a' . $attemptNo : ''),
             'created_at' => $now,
             'updated_at' => $now,
             'last_move_at' => $now,
