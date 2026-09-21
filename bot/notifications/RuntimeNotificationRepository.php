@@ -47,9 +47,10 @@ final class RuntimeNotificationRepository
             $existing === [] ? $created++ : $unchanged++;
         }
 
-        $items = $this->databaseItems($database, $ownership['account_ref']);
+        $databaseSnapshot = $this->databaseSnapshot($database, $ownership['account_ref']);
+        $items = $databaseSnapshot['items'];
         $sourceFingerprint = $this->fingerprint($source);
-        $databaseFingerprint = $this->fingerprint($items);
+        $databaseFingerprint = $this->fingerprint($databaseSnapshot['fingerprint_items']);
         if (count($source) !== count($items) || !hash_equals($sourceFingerprint, $databaseFingerprint)) {
             throw new RuntimeException('Notification JSON and DB runtime parity check failed.');
         }
@@ -82,9 +83,10 @@ final class RuntimeNotificationRepository
         $database = $this->database();
         $ownership = $this->ownership($database, $legacyUserId, $authenticatedMgwId);
         $source = $this->sourceNotifications($jsonData, $legacyUserId);
-        $items = $this->databaseItems($database, $ownership['account_ref']);
+        $databaseSnapshot = $this->databaseSnapshot($database, $ownership['account_ref']);
+        $items = $databaseSnapshot['items'];
         $sourceFingerprint = $this->fingerprint($source);
-        $databaseFingerprint = $this->fingerprint($items);
+        $databaseFingerprint = $this->fingerprint($databaseSnapshot['fingerprint_items']);
         $blockers = [];
         if (count($source) !== count($items)) {
             $blockers[] = 'Notification JSON and DB counts differ.';
@@ -178,7 +180,7 @@ final class RuntimeNotificationRepository
         return $items;
     }
 
-    private function databaseItems(DatabaseConnectionInterface $database, string $accountRef): array
+    private function databaseSnapshot(DatabaseConnectionInterface $database, string $accountRef): array
     {
         $rows = $database->fetchAll(
             'SELECT * FROM mgw_notifications
@@ -186,7 +188,22 @@ final class RuntimeNotificationRepository
              ORDER BY created_at_utc DESC, notification_id DESC',
             ['recipient_ref' => $accountRef]
         );
-        return array_map(fn(array $row): array => $this->legacyNotification($row), $rows);
+
+        return [
+            // Preserve the established public ISO response shape.
+            'items' => array_map(
+                fn(array $row): array => $this->legacyNotification($row, true),
+                $rows
+            ),
+            // Fingerprints must compare the exact canonical DB timestamps.
+            // DATE_ATOM intentionally omits fractional seconds, so hashing the
+            // public representation can create false parity failures whenever
+            // the stored runtime timestamp has non-zero microseconds.
+            'fingerprint_items' => array_map(
+                fn(array $row): array => $this->legacyNotification($row, false),
+                $rows
+            ),
+        ];
     }
 
     private function databaseNotification(array $notification, array $ownership): array
@@ -300,7 +317,7 @@ final class RuntimeNotificationRepository
         }
     }
 
-    private function legacyNotification(array $row): array
+    private function legacyNotification(array $row, bool $publicTimestamps = true): array
     {
         $legacy = $this->decodePayload($row['payload_json'] ?? null);
         $legacy['id'] = (string)($row['notification_id'] ?? '');
@@ -315,6 +332,10 @@ final class RuntimeNotificationRepository
         $legacy['read_at'] = $this->nullableTimestamp($row['read_at_utc'] ?? null);
         $legacy['hidden_at'] = $this->nullableTimestamp($row['hidden_at_utc'] ?? null);
         $normalized = $this->normalizeLegacyNotification($legacy);
+        if (!$publicTimestamps) {
+            return $normalized;
+        }
+
         $normalized['created_at'] = $this->isoTimestamp($normalized['created_at']);
         $normalized['read_at'] = $normalized['read_at'] === null ? null : $this->isoTimestamp($normalized['read_at']);
         $normalized['hidden_at'] = $normalized['hidden_at'] === null ? null : $this->isoTimestamp($normalized['hidden_at']);
