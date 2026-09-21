@@ -12,7 +12,12 @@ require $root . '/ledger/LedgerWriteService.php';
 require $root . '/tournaments/TournamentRegistrationService.php';
 require $root . '/tournaments/TournamentHallService.php';
 
-if (!extension_loaded('pdo_sqlite')) {
+$mysqlHost = trim((string)(getenv('MGW_TEST_MYSQL_HOST') ?: ''));
+$useMysql = $mysqlHost !== '';
+if ($useMysql && !extension_loaded('pdo_mysql')) {
+    throw new RuntimeException('Mvp21_4TournamentHallBracketTest requires pdo_mysql for MySQL mode.');
+}
+if (!$useMysql && !extension_loaded('pdo_sqlite')) {
     throw new RuntimeException('Mvp21_4TournamentHallBracketTest requires pdo_sqlite.');
 }
 
@@ -39,9 +44,22 @@ $assertThrows = static function (callable $callback, string $contains, string $m
     throw new RuntimeException($message . ': no error was thrown');
 };
 
-$pdo = new PDO('sqlite::memory:');
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$pdo->exec('PRAGMA foreign_keys = ON');
+if ($useMysql) {
+    $mysqlPort = (int)(getenv('MGW_TEST_MYSQL_PORT') ?: 3306);
+    $mysqlDatabase = trim((string)(getenv('MGW_TEST_MYSQL_DATABASE') ?: 'mgw_test'));
+    $mysqlUser = (string)(getenv('MGW_TEST_MYSQL_USER') ?: 'root');
+    $mysqlPassword = (string)(getenv('MGW_TEST_MYSQL_PASSWORD') ?: 'root');
+    $pdo = new PDO(
+        "mysql:host={$mysqlHost};port={$mysqlPort};dbname={$mysqlDatabase};charset=utf8mb4",
+        $mysqlUser,
+        $mysqlPassword,
+        [PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]
+    );
+} else {
+    $pdo = new PDO('sqlite::memory:');
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo->exec('PRAGMA foreign_keys = ON');
+}
 $db = new PdoDatabaseConnection($pdo);
 
 foreach ([
@@ -338,4 +356,4 @@ if ($assertions < 46) {
     throw new RuntimeException('MVP-21.4 Hall/bracket test is too shallow: ' . $assertions);
 }
 
-echo 'MVP-21.4 Tournament Hall + bracket assertions passed: ' . $assertions . PHP_EOL;
+echo 'MVP-21.4 Tournament Hall + bracket (' . ($useMysql ? 'mysql' : 'sqlite') . ') assertions passed: ' . $assertions . PHP_EOL;
