@@ -133,7 +133,91 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           successor=0
-          if git diff --name-only "$base" "$head" | grep -Fxq '.github/workflows/mvp21-5-tournament-ready.yml'; then
+          if git diff --name-only "$base" "$head" | grep -Eq '^\.github/workflows/mvp21-(5-tournament-ready|6-tournament-rounds)\.yml
+            successor=1
+          fi
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp21-1-tournament-registration.yml|\
+              .github/workflows/mvp21-2-tournament-rules.yml|\
+              .github/workflows/mvp21-3-tournament-schedule.yml|\
+              .github/workflows/mvp21-4-tournament-hall.yml|\
+              bot/database/migrations/20260921_0053_create_tournament_hall_bracket.php|\
+              bot/tournaments/TournamentHallService.php|\
+              bot/tournaments/StagingTournamentManualAcceptanceService.php|\
+              bot/tournament-hall.php|\
+              bot/staging-projection-diagnostic.php|\
+              app/admin.php|\
+              app/assets/js/admin-tournaments.js|\
+              app/assets/js/api/client.js|\
+              app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/css/main.css|\
+              app/runtime/client/version-manifest.php|\
+              bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
+              bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php|\
+              bot/tests/Mvp21_4TournamentHallBracketTest.php|\
+              bot/tests/Mvp21_4TournamentHallUxContractTest.php)
+                ;;
+              *)
+                if [[ "$successor" -eq 0 ]]; then
+                  echo "Unexpected MVP-21.4 path: $path" >&2
+                  bad=1
+                fi
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+
+          git diff --exit-code "$base" "$head" -- \
+            bot/games app/assets/js/games app/assets/css/games \
+            bot/shop bot/ledger/LedgerWriteService.php \
+            bot/runtime/ProductionPrimaryApplicationEntrypoints.php \
+            bot/cron
+
+  mysql:
+    name: Hall model on MySQL 8.4
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring
+          coverage: none
+
+      - name: Run exact Hall/bracket model on MySQL
+        env:
+          MGW_TEST_MYSQL_HOST: 127.0.0.1
+          MGW_TEST_MYSQL_PORT: 3306
+          MGW_TEST_MYSQL_DATABASE: mgw_test
+          MGW_TEST_MYSQL_USER: root
+          MGW_TEST_MYSQL_PASSWORD: root
+        run: php bot/tests/Mvp21_4TournamentHallBracketTest.php
+; then
             successor=1
           fi
           bad=0
