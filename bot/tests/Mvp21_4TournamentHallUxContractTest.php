@@ -79,6 +79,9 @@ $assert(!str_contains($source['screen'], 'Tournament Hall')
 $assert(!str_contains($source['screen'], 'data-tournament-ready')
         && !str_contains($source['client'], 'tournamentReady'),
     'MVP-21.4 must not expose a Ready action before MVP-21.5.');
+$assert(!str_contains($source['screen'], 'относятся к MVP-21.5')
+        && !str_contains($source['screen'], 'Этап «Я готов»'),
+    'Hall UI must not expose internal roadmap/MVP copy to players.');
 $assert(str_contains($source['screen'], "const buttonLabel = tournamentHallBusy ? 'Входим в зал…' : 'Вход';")
         && str_contains($source['screen'], "hallButton.textContent = 'Вход';"),
     'Hall CTA must stay concise: timing belongs to the Hall status copy, button label is simply Вход.');
