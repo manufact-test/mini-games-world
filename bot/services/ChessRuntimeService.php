@@ -194,6 +194,59 @@ final class ChessRuntimeService
         return $result;
     }
 
+    public function createTournamentGame(
+        array &$db,
+        array &$a,
+        array &$b,
+        string $gameType,
+        int $boardSize,
+        string $gameId,
+        array $metadata
+    ): array {
+        $gameType = $this->catalog->normalizeGameType($gameType);
+        if (!in_array($gameType, ['chess', 'go', 'domino'], true)) {
+            return $this->base->createTournamentGame(
+                $db,
+                $a,
+                $b,
+                $gameType,
+                $boardSize,
+                $gameId,
+                $metadata
+            );
+        }
+
+        $requestedBoardSize = $this->catalog->normalizeBoardSize($gameType, $boardSize);
+        $legacyBoardSize = match ($gameType) {
+            'chess' => 9,
+            'domino' => 3,
+            default => $requestedBoardSize === 9 ? 9 : 5,
+        };
+
+        $this->legacyGame->createTournamentGame(
+            $db,
+            $a,
+            $b,
+            UnifiedGameZonePolicy::storageRoom(),
+            $legacyBoardSize,
+            $gameId,
+            $metadata
+        );
+        if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
+            throw new RuntimeException('Tournament runtime did not persist the created game.');
+        }
+
+        if ($gameType === 'chess') {
+            $this->prepareStoredChessGame($db, $gameId);
+        } elseif ($gameType === 'go') {
+            $this->prepareStoredGoGame($db, $gameId, $requestedBoardSize);
+        } else {
+            $this->prepareStoredDominoGame($db, $gameId);
+        }
+
+        return $db['games'][$gameId];
+    }
+
     public function leaveSearch(array &$db, array &$user): void
     {
         $userId = trim((string)($user['id'] ?? ''));
