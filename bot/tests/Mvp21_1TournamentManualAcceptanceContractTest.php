@@ -244,7 +244,7 @@ $assertTrue(
     'Corrective release must force a fresh API client module.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=17')
+    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=19')
     && str_contains($source['manifest'], 'mvp21_2=tournament-rules-copy-v2')
     && str_contains($source['manifest'], 'balance=visible-freeze-v2')
     && str_contains($source['manifest'], 'mvp21_3=schedule-local-time-v2'),
@@ -257,7 +257,7 @@ $assertTrue(
     'Corrective release must force fresh Tournament schedule CSS.'
 );
 $assertTrue(
-    str_contains($source['admin'], 'admin-tournaments.js?v=7&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2'),
+    str_contains($source['admin'], 'admin-tournaments.js?v=9&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v2'),
     'Tournament Admin must force the fresh MVP-21.3 manual-acceptance client.'
 );
 
@@ -268,7 +268,7 @@ foreach ([
     'перенос и задержка не входят в MVP-21.3',
     'data-tournament-manual-panel',
     'data-tournament-prepare-manual',
-    'Последнее место всегда остаётся живому аккаунту',
+    'Два места остаются двум живым аккаунтам',
 ] as $needle) {
     $assertTrue(str_contains($source['admin'], $needle), 'Tournament Admin schedule UI missing: ' . $needle);
 }
@@ -278,8 +278,8 @@ foreach ([
     'start.toISOString()',
     'напоминания за день, час и 15 минут',
     "action:'prepare_manual_acceptance'",
-    "manualReason === 'manual_last_seat_ready'",
-    'Осталось одно живое место',
+    "const selectedLiveSeats = 2;",
+    'Оставлены два живых места',
 ] as $needle) {
     $assertTrue(str_contains($source['admin_js'], $needle), 'Tournament Admin schedule client missing: ' . $needle);
 }

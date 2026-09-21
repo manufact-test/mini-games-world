@@ -13,6 +13,8 @@ on:
       - 'bot/services/MatchPreparationClockService.php'
       - 'bot/core/bootstrap.php'
       - 'bot/api.php'
+      - 'app/admin.php'
+      - 'app/assets/js/admin-tournaments.js'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/tournaments-screen-v1.js'
       - 'app/assets/js/production-v110-acceptance-runtime.js'
@@ -21,6 +23,7 @@ on:
       - 'bot/tests/Mvp21_4TournamentHallUxContractTest.php'
       - 'bot/tests/Mvp21_5TournamentMatchReadinessTest.php'
       - 'bot/tests/Mvp21_5TournamentReadyUxContractTest.php'
+      - 'bot/tests/Mvp21_6TournamentProgressionUxContractTest.php'
       - 'bot/tests/PhaseBMatchPreparationClockServiceTest.php'
       - 'bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php'
       - 'bot/tests/PhaseBClientLaunchUxContractTest.php'
@@ -33,6 +36,7 @@ on:
       - '.github/workflows/mvp21-3-tournament-schedule.yml'
       - '.github/workflows/mvp21-4-tournament-hall.yml'
       - '.github/workflows/mvp21-5-tournament-ready.yml'
+      - '.github/workflows/mvp21-6-tournament-rounds.yml'
   workflow_dispatch:
 
 permissions:
@@ -77,10 +81,12 @@ jobs:
             bot/services/MatchPreparationClockService.php
             bot/core/bootstrap.php
             bot/api.php
+            app/admin.php
             app/runtime/client/version-manifest.php
             bot/tests/Mvp21_4TournamentHallUxContractTest.php
             bot/tests/Mvp21_5TournamentMatchReadinessTest.php
             bot/tests/Mvp21_5TournamentReadyUxContractTest.php
+            bot/tests/Mvp21_6TournamentProgressionUxContractTest.php
             bot/tests/PhaseBMatchPreparationClockServiceTest.php
             bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php
             bot/tests/PhaseBClientLaunchUxContractTest.php
@@ -89,6 +95,7 @@ jobs:
             bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
+          node --check app/assets/js/admin-tournaments.js
           node --check app/assets/js/api/client.js
           node --check app/assets/js/screens/tournaments-screen-v1.js
           node --check app/assets/js/production-v110-acceptance-runtime.js
@@ -112,6 +119,7 @@ jobs:
         run: |
           php bot/tests/Mvp21_4TournamentHallBracketTest.php
           php bot/tests/Mvp21_4TournamentHallUxContractTest.php
+          php bot/tests/Mvp21_6TournamentProgressionUxContractTest.php
 
       - name: Preserve all-game runtime baseline
         run: |
@@ -132,10 +140,6 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          successor=0
-          if git diff --name-only "$base" "$head" | grep -Fxq '.github/workflows/mvp21-6-tournament-rounds.yml'; then
-            successor=1
-          fi
           bad=0
           while IFS= read -r path; do
             case "$path" in
@@ -145,6 +149,7 @@ jobs:
               .github/workflows/mvp21-3-tournament-schedule.yml|\
               .github/workflows/mvp21-4-tournament-hall.yml|\
               .github/workflows/mvp21-5-tournament-ready.yml|\
+              .github/workflows/mvp21-6-tournament-rounds.yml|\
               bot/database/migrations/20260921_0054_create_tournament_match_readiness.php|\
               bot/tournaments/TournamentMatchReadinessService.php|\
               bot/services/GameService.php|\
@@ -153,6 +158,8 @@ jobs:
               bot/services/MatchPreparationClockService.php|\
               bot/core/bootstrap.php|\
               bot/api.php|\
+              app/admin.php|\
+              app/assets/js/admin-tournaments.js|\
               app/assets/js/api/client.js|\
               app/assets/js/screens/tournaments-screen-v1.js|\
               app/assets/js/production-v110-acceptance-runtime.js|\
@@ -161,6 +168,7 @@ jobs:
               bot/tests/Mvp21_4TournamentHallUxContractTest.php|\
               bot/tests/Mvp21_5TournamentMatchReadinessTest.php|\
               bot/tests/Mvp21_5TournamentReadyUxContractTest.php|\
+              bot/tests/Mvp21_6TournamentProgressionUxContractTest.php|\
               bot/tests/PhaseBMatchPreparationClockServiceTest.php|\
               bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php|\
               bot/tests/PhaseBClientLaunchUxContractTest.php|\
@@ -169,10 +177,8 @@ jobs:
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php)
                 ;;
               *)
-                if [[ "$successor" -eq 0 ]]; then
-                  echo "Unexpected MVP-21.5 path: $path" >&2
-                  bad=1
-                fi
+                echo "Unexpected MVP-21.5 path: $path" >&2
+                bad=1
                 ;;
             esac
           done < <(git diff --name-only "$base" "$head")

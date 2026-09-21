@@ -341,6 +341,13 @@ try {
                 $readiness = new TournamentMatchReadinessService($database);
                 $progression = new TournamentRoundProgressionService($database);
 
+                // MVP-21.5 owns the first-round Ready row. Resolve readiness first
+                // so two live clients reaching T0 together cannot be blocked by the
+                // later-round progression materializer racing to create the same row.
+                $snapshot = $action === 'tournament_match_ready'
+                    ? $readiness->markReady($mgwId, $accountRef, $userId)
+                    : $readiness->status($mgwId, $accountRef, $userId);
+
                 // DB progression observes the canonical finished JSON game lazily
                 // from the participant heartbeat. This keeps game engines frozen
                 // while making tournament advancement durable and idempotent.
@@ -364,10 +371,6 @@ try {
                         $userId
                     );
                 }
-
-                $snapshot = $action === 'tournament_match_ready'
-                    ? $readiness->markReady($mgwId, $accountRef, $userId)
-                    : $readiness->status($mgwId, $accountRef, $userId);
 
                 $launch = $readiness->launchContext($mgwId, $accountRef, $userId);
                 $progressionOwnsLaunch = false;

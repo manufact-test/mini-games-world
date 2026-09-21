@@ -114,13 +114,14 @@
     return lines.join('\n').trim();
   };
 
-  const setBusy = (value, { lockDraftControls = true } = {}) => {
+  const setBusy = (value) => {
     busy = value;
     card.querySelectorAll('button, input, select').forEach(control => {
       if (value) {
-        if (!lockDraftControls && (control === title || control === game || control === capacity)) {
-          return;
-        }
+        // Draft form controls must remain editable even while background admin
+        // reads/resets are running. Disabling a focused Telegram WebView input
+        // can strand the soft keyboard until the app is backgrounded.
+        if (control === title || control === game || control === capacity) return;
         control.disabled = true;
         return;
       }
@@ -328,9 +329,9 @@
     }
   };
 
-  const withBusy = async (message, action, options = {}) => {
+  const withBusy = async (message, action) => {
     if (busy) return null;
-    setBusy(true, options);
+    setBusy(true);
     setStatus(message);
     try {
       const data = await action();
@@ -356,8 +357,7 @@
     try {
       await withBusy(
         'Загружаю управление турниром…',
-        () => post({action:'snapshot'}),
-        { lockDraftControls:false }
+        () => post({action:'snapshot'})
       );
       setStatus('Управление турниром загружено.', 'ok');
     } catch (_) {}

@@ -82,11 +82,10 @@ $assert(!str_contains($source['screen'], 'относятся к MVP-21.5')
 $assert(str_contains($source['screen'], 'Она сформируется случайно ровно на старте турнира.')
         && !str_contains($source['screen'], 'статус присутствия участников'),
     'Pre-start Hall copy must stay player-facing and omit technical presence explanation.');
-$assert(str_contains($source['screen'], "'Турнир начался'")
-        && !str_contains($source['screen'], 'Время старта наступило')
-        && str_contains($source['screen'], 'data-tournament-countdown-label')
-        && str_contains($source['screen'], 'countdownLabel.hidden = startedNow'),
-    'Post-start schedule card must collapse to a clean Турнир начался state without stale До старта copy.');
+$assert(str_contains($source['screen'], 'if (tournamentStarted && registered)')
+        && str_contains($source['screen'], 'tournaments-v2-hall--started')
+        && !str_contains($source['screen'], 'Время старта наступило'),
+    'Started participant view must drop obsolete schedule/registration chrome and promote the Hall bracket.');
 $assert(str_contains($source['screen'], "const buttonLabel = tournamentHallBusy ? 'Входим в зал…' : 'Вход';")
         && str_contains($source['screen'], "hallButton.textContent = 'Вход';"),
     'Hall CTA must stay concise: timing belongs to the Hall status copy, button label is simply Вход.');
@@ -104,7 +103,7 @@ $assert(str_contains($source['manifest'], 'client.js?v=1143')
         && str_contains($source['manifest'], 'mvp21_4=tournament-hall-v1')
         && str_contains($source['manifest'], 'hall_transport=direct-endpoint-v2'),
     'Hall release must preserve the accepted API cache contract and publish the direct-endpoint corrective identity.');
-$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=18')
+$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=19')
         && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v2')
         && str_contains($source['manifest'], 'hall_cta=entry-v1')
         && str_contains($source['manifest'], 'copy_polish=final-v1'),
@@ -143,12 +142,13 @@ $assert(str_contains($source['diagnostic'], "'notification_primary_parity'")
         && str_contains($source['diagnostic'], "'primary_revision'")
         && str_contains($source['diagnostic'], 'new DatabasePrimaryStateStorageAdapter($db)'),
     'Staging diagnostic must compare the active DB-primary notification snapshot with module DB and rollback JSON.');
-$assert(str_contains($source['admin'], '{ lockDraftControls:false }')
-        && str_contains($source['admin'], 'control === title || control === game || control === capacity'),
-    'Read-only Tournament Admin refresh must not freeze draft title/game/capacity controls.');
-$assert(str_contains($source['admin_page'], 'admin-tournaments.js?v=7')
-        && str_contains($source['admin_page'], 'mvp21_4=staging-reset-reseed-v2'),
-    'Tournament Admin corrective must publish a fresh cache identity.');
+$assert(str_contains($source['admin'], 'control === title || control === game || control === capacity')
+        && str_contains($source['admin'], 'Draft form controls must remain editable'),
+    'Tournament Admin background operations must never disable focused draft title/game/capacity controls.');
+$assert(str_contains($source['admin_page'], 'admin-tournaments.js?v=9')
+        && str_contains($source['admin_page'], 'mvp21_5=manual-acceptance-fixes-v2')
+        && str_contains($source['admin_page'], 'placeholder="Официальный турнир"'),
+    'Tournament Admin must publish the fresh cache identity and use a placeholder instead of a destructive default title value.');
 
 if ($assertions < 30) throw new RuntimeException('MVP-21.4 UX contract is too shallow.');
 fwrite(STDOUT, "Mvp21_4TournamentHallUxContractTest: {$assertions} assertions passed\n");

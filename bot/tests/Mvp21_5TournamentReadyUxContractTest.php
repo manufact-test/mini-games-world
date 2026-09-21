@@ -109,6 +109,24 @@ $assert(str_contains($source['screen'], "new CustomEvent('mgw:prime-launch-feedb
 $assert(str_contains($source['screen'], "tournamentHallSnapshot?.bracket")
         && str_contains($source['screen'], 'await refreshTournamentMatchState()'),
     'Hall heartbeat must let the first-ready player discover the exact game launched by the second.');
+$assert(str_contains($source['screen'], 'startTournamentVisibleRefresh')
+        && str_contains($source['screen'], '2500')
+        && str_contains($source['screen'], 'warmTournamentHallStatus'),
+    'Visible Tournament screen must refresh Hall state before entry instead of requiring navigation away and back.');
+$assert(str_contains($source['screen'], 'Загружаем готовность вашей пары…')
+        && str_contains($source['screen'], 'tournamentMatchError')
+        && str_contains($source['screen'], 'const matchMarkup = tournamentMatchMarkup();'),
+    'Ready UI must be prominent above the bracket and must not silently disappear when match-state loading fails.');
+$assert(str_contains($source['screen'], 'if (tournamentStarted && registered)')
+        && str_contains($source['screen'], 'tournaments-v2-hall--started'),
+    'Started participant view must collapse obsolete pre-start metadata into the bracket-first Hall view.');
+$assert(
+    strpos($source['api'], "\$snapshot = \$action === 'tournament_match_ready'") !== false
+    && strpos($source['api'], "\$progressionSnapshot = \$progression->statusForParticipant") !== false
+    && strpos($source['api'], "\$snapshot = \$action === 'tournament_match_ready'")
+        < strpos($source['api'], "\$progressionSnapshot = \$progression->statusForParticipant"),
+    'MVP-21.5 Ready owner must materialize the first-round pair before later-round progression observes it.'
+);
 
 $assert(str_contains($source['launch'], 'launchCountdownSeconds(game)')
         && str_contains($source['launch'], 'String(total - index)'),
@@ -133,14 +151,15 @@ foreach ([
 $assert(str_contains($source['manifest'], 'client.js?v=1143')
         && str_contains($source['manifest'], 'mvp21_5=ready-v1'),
     'API client must publish a fresh MVP-21.5 cache identity.');
-$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=18')
-        && str_contains($source['manifest'], 'mvp21_5=ready-first-match-v1'),
-    'Tournament screen must publish a fresh MVP-21.5 cache identity.');
+$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=19')
+        && str_contains($source['manifest'], 'mvp21_5=ready-first-match-v1')
+        && str_contains($source['manifest'], 'mvp21_5=manual-acceptance-fixes-v2'),
+    'Tournament screen must publish the fresh manual-acceptance corrective cache identity.');
 $assert(str_contains($source['manifest'], 'production-v110-acceptance-runtime.js?v=131')
         && str_contains($source['manifest'], 'mvp21_5=countdown-10-av-v1'),
     'Shared Phase-B presentation must publish a fresh countdown cache identity.');
 $assert(str_contains($source['manifest'], 'main.css?v=199'),
     'Readiness presentation CSS must publish a fresh cache identity.');
 
-if ($assertions < 32) throw new RuntimeException('MVP-21.5 UX contract is too shallow.');
+if ($assertions < 36) throw new RuntimeException('MVP-21.5 UX contract is too shallow.');
 fwrite(STDOUT, "Mvp21_5TournamentReadyUxContractTest: {$assertions} assertions passed\n");
