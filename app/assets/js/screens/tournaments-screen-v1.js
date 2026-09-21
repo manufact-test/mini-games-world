@@ -190,11 +190,11 @@ export function initTournamentsScreen(){
       stopTournamentVisibleRefresh();
       return;
     }
-    if (tournamentHallSnapshot?.hall?.entered === true && tournamentHallPanelVisible()) {
-      stopTournamentVisibleRefresh();
-      startTournamentHallHeartbeat();
-    } else if (tournamentHallPanelVisible()) {
+    if (tournamentHallPanelVisible()) {
       startTournamentVisibleRefresh();
+      if (tournamentHallSnapshot?.hall?.entered === true) {
+        startTournamentHallHeartbeat();
+      }
     }
   });
 
@@ -343,32 +343,38 @@ function stopTournamentVisibleRefresh(){
 
 function startTournamentVisibleRefresh(){
   if (tournamentVisibleRefreshTimer || !tournamentHallPanelVisible()) return;
-  const registered = String(tournamentSnapshot?.registration?.state || '') === 'registered';
-  const scheduled = String(tournamentSnapshot?.tournament?.state || '') === 'scheduled'
-    && Boolean(tournamentSnapshot?.tournament?.scheduled_start_at_utc);
-  if (!registered || !scheduled || tournamentHallSnapshot?.hall?.entered === true) {
-    stopTournamentVisibleRefresh();
-    return;
-  }
 
   tournamentVisibleRefreshTimer = window.setTimeout(async () => {
     tournamentVisibleRefreshTimer = null;
     if (!tournamentHallPanelVisible()) return;
+
     try {
-      await warmTournamentHallStatus();
-      if (tournamentHallSnapshot?.bracket) {
+      await warmTournamentStatus();
+
+      const registered = String(tournamentSnapshot?.registration?.state || '') === 'registered';
+      const scheduled = String(tournamentSnapshot?.tournament?.state || '') === 'scheduled'
+        && Boolean(tournamentSnapshot?.tournament?.scheduled_start_at_utc);
+
+      if (registered && scheduled && tournamentHallSnapshot?.hall?.entered !== true) {
         try {
-          await refreshTournamentMatchState();
+          await warmTournamentHallStatus();
+          if (tournamentHallSnapshot?.bracket) {
+            await refreshTournamentMatchState();
+          }
         } catch (error) {
-          tournamentMatchError = String(error?.message || 'Не удалось обновить готовность пары.');
+          tournamentHallError = String(error?.message || 'Не удалось обновить Турнирный зал.');
         }
       }
     } catch (error) {
-      tournamentHallError = String(error?.message || 'Не удалось обновить Турнирный зал.');
+      tournamentHallError = String(error?.message || 'Не удалось обновить турнир.');
     }
+
     renderTournamentSnapshot();
+    if (tournamentHallSnapshot?.hall?.entered === true) {
+      startTournamentHallHeartbeat();
+    }
     startTournamentVisibleRefresh();
-  }, 2500);
+  }, 2000);
 }
 
 async function warmTournamentHallStatus(){
@@ -447,8 +453,8 @@ async function enterTournamentHall(){
     tournamentHallBusy = false;
     renderTournamentSnapshot();
     if (tournamentHallSnapshot?.hall?.entered === true) {
-      stopTournamentVisibleRefresh();
       startTournamentHallHeartbeat();
+      startTournamentVisibleRefresh();
     }
   }
 }
@@ -517,11 +523,9 @@ async function loadTournamentSnapshot(){
       stopTournamentHallHeartbeat();
     }
     renderTournamentSnapshot();
+    startTournamentVisibleRefresh();
     if (tournamentHallSnapshot?.hall?.entered === true) {
-      stopTournamentVisibleRefresh();
       startTournamentHallHeartbeat();
-    } else {
-      startTournamentVisibleRefresh();
     }
   } catch (error) {
     body.innerHTML = `<div class="tournaments-v2-empty">${escapeHtml(error?.message || 'Не удалось загрузить турнир.')}</div>`;
@@ -1121,12 +1125,11 @@ function renderTournamentSnapshot(errorMessage = ''){
     tournamentCountdownTimer = window.setInterval(updateCountdown, 1000);
   }
 
+  startTournamentVisibleRefresh();
   if (tournamentHallSnapshot?.hall?.entered === true) {
-    stopTournamentVisibleRefresh();
     startTournamentHallHeartbeat();
   } else {
     stopTournamentHallHeartbeat();
-    startTournamentVisibleRefresh();
   }
 }
 
