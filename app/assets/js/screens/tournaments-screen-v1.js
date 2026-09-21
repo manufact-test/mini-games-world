@@ -566,7 +566,7 @@ function tournamentHallMarkup(registered, scheduled, scheduledStart){
     ? tournamentBracketMarkup(bracket)
     : `<div class="tournaments-v2-hall-waiting">
         <strong>Сетка ещё скрыта</strong>
-        <span>Она сформируется случайно ровно на старте турнира. До этого виден только статус присутствия участников.</span>
+        <span>Она сформируется случайно ровно на старте турнира.</span>
       </div>`;
 
   return `
@@ -739,13 +739,14 @@ function renderTournamentSnapshot(errorMessage = ''){
           ? 'Недостаточно коинов для регистрации.'
           : '';
 
+  const tournamentStarted = Boolean(scheduledStart && scheduledStart.getTime() <= Date.now());
   const scheduleMarkup = scheduled && scheduledStart
     ? `<section class="tournaments-v2-tournament-schedule" aria-label="Дата и время турнира">
         <span>Начало турнира · по вашему времени</span>
         <strong>${escapeHtml(formatTournamentDateTime(scheduledStart))}</strong>
-        <div class="tournaments-v2-tournament-countdown">
-          <small>До старта</small>
-          <b data-tournament-countdown>${escapeHtml(formatTournamentCountdown(scheduledStart.getTime() - Date.now()))}</b>
+        <div class="tournaments-v2-tournament-countdown${tournamentStarted ? ' is-started' : ''}">
+          <small data-tournament-countdown-label ${tournamentStarted ? 'hidden' : ''}>До старта</small>
+          <b data-tournament-countdown>${escapeHtml(tournamentStarted ? 'Турнир начался' : formatTournamentCountdown(scheduledStart.getTime() - Date.now()))}</b>
         </div>
       </section>`
     : '';
@@ -786,6 +787,7 @@ function renderTournamentSnapshot(errorMessage = ''){
 
   if (scheduled && scheduledStart) {
     const countdown = body.querySelector('[data-tournament-countdown]');
+    const countdownLabel = body.querySelector('[data-tournament-countdown-label]');
     const updateCountdown = () => {
       if (currentScreen() !== 'tournaments'
           || !(countdown instanceof HTMLElement)
@@ -794,7 +796,11 @@ function renderTournamentSnapshot(errorMessage = ''){
         tournamentCountdownTimer = null;
         return;
       }
-      countdown.textContent = formatTournamentCountdown(scheduledStart.getTime() - Date.now());
+      const remainingMs = scheduledStart.getTime() - Date.now();
+      const startedNow = remainingMs <= 0;
+      countdown.textContent = startedNow ? 'Турнир начался' : formatTournamentCountdown(remainingMs);
+      if (countdownLabel instanceof HTMLElement) countdownLabel.hidden = startedNow;
+      countdown.parentElement?.classList.toggle('is-started', startedNow);
       const hallButton = body.querySelector('[data-tournament-hall-enter]');
       if (hallButton instanceof HTMLButtonElement && !tournamentHallBusy) {
         const opensAt = Number(hallButton.dataset.hallOpensAt || 0);
@@ -833,7 +839,7 @@ function formatTournamentDateTime(value){
 
 function formatTournamentCountdown(remainingMs){
   const remaining = Math.max(0, Number(remainingMs || 0));
-  if (remaining <= 0) return 'Время старта наступило';
+  if (remaining <= 0) return 'Турнир начался';
   const totalSeconds = Math.ceil(remaining / 1000);
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
