@@ -218,7 +218,7 @@ $assertTrue(
     'Corrective release must force fresh Tournament schedule CSS.'
 );
 $assertTrue(
-    str_contains($source['admin'], 'admin-tournaments.js?v=6&mvp21_3=local-time-copy-v2'),
+    str_contains($source['admin'], 'admin-tournaments.js?v=7&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2'),
     'Tournament Admin must force the fresh MVP-21.3 manual-acceptance client.'
 );
 
