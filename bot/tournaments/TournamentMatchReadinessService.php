@@ -370,6 +370,20 @@ final class TournamentMatchReadinessService
             $deadlineAt,
             $createdAt
         ): void {
+            // Serialize first-round pair materialization on the tournament row.
+            // Two live clients request match state at almost the same T0 instant;
+            // without one shared lock both can observe a missing pair and race the
+            // same PRIMARY KEY insert, surfacing a SQLSTATE to the player.
+            $tournamentLock = $db->fetchAll(
+                'SELECT tournament_id FROM mgw_tournaments
+                 WHERE tournament_id=:tournament_id'
+                 . $this->forUpdate($db),
+                ['tournament_id'=>$tournamentId]
+            );
+            if (count($tournamentLock) !== 1) {
+                throw new RuntimeException('Tournament readiness owner is unavailable.');
+            }
+
             $existing = $db->fetchAll(
                 'SELECT tournament_id FROM mgw_tournament_round_matches
                  WHERE tournament_id=:tournament_id AND round_no=:round_no AND pair_no=:pair_no'

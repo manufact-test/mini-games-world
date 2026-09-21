@@ -33,6 +33,8 @@
   let snapshot = null;
   let manualAcceptance = null;
   let manualReset = null;
+  let resetConfirmUntil = 0;
+  let resetConfirmTimer = null;
 
   const format = value => new Intl.NumberFormat('ru-RU').format(Number(value || 0));
   const stateLabel = value => ({
@@ -153,6 +155,36 @@
     status.textContent = message;
     if (state) status.dataset.state = state;
     else delete status.dataset.state;
+  };
+
+  const restoreDraftControls = () => {
+    for (const control of [title, game, capacity]) {
+      if (!(control instanceof HTMLElement)) continue;
+      control.removeAttribute('disabled');
+      control.removeAttribute('readonly');
+    }
+  };
+
+  const disarmResetConfirmation = () => {
+    resetConfirmUntil = 0;
+    if (resetConfirmTimer) window.clearTimeout(resetConfirmTimer);
+    resetConfirmTimer = null;
+    if (resetManual instanceof HTMLButtonElement) {
+      resetManual.textContent = 'Сбросить staging-турнир';
+    }
+  };
+
+  const armResetConfirmation = warning => {
+    resetConfirmUntil = Date.now() + 8000;
+    if (resetManual instanceof HTMLButtonElement) {
+      resetManual.textContent = 'Подтвердить сброс';
+    }
+    setStatus(warning, 'error');
+    if (resetConfirmTimer) window.clearTimeout(resetConfirmTimer);
+    resetConfirmTimer = window.setTimeout(() => {
+      disarmResetConfirmation();
+      if (!busy) setStatus('Сброс staging-турнира не подтверждён.');
+    }, 8000);
   };
 
   const post = async payload => {
@@ -428,19 +460,27 @@
 
     const count = Number(tournament?.registered_count || 0);
     const cap = Number(tournament?.capacity || 0);
-    const warning = `Сбросить ТОЛЬКО staging-турнир «${tournament.title || 'Официальный турнир'}» (${format(count)}/${format(cap)})? Все его активные резервы будут освобождены через ledger, fixture accounts будут выведены из тестового runtime, а active slot освободится для нового турнира.`;
-    if (!window.confirm(warning)) return;
+    const warning = `Сбросить ТОЛЬКО staging-турнир «${tournament.title || 'Официальный турнир'}» (${format(count)}/${format(cap)})? Нажмите «Подтвердить сброс» ещё раз в течение 8 секунд.`;
+
+    if (Date.now() > resetConfirmUntil) {
+      armResetConfirmation(warning);
+      return;
+    }
+    disarmResetConfirmation();
 
     try {
       const data = await withBusy('Безопасно сбрасываю staging-турнир и освобождаю резервы…', () => post({
         action:'reset_manual_acceptance',
       }));
       const reset = data?.manual_reset_result || {};
+      restoreDraftControls();
       setStatus(
-        `Staging-турнир сброшен: освобождено резервов — ${format(reset.released_reservations || 0)}, fixture accounts retired — ${format(reset.fixture_accounts_retired || 0)}. Можно создать новый турнир для MVP-21.4.`,
+        `Staging-турнир сброшен: освобождено резервов — ${format(reset.released_reservations || 0)}, fixture accounts retired — ${format(reset.fixture_accounts_retired || 0)}. Можно сразу создать новый турнир.`,
         'ok'
       );
-    } catch (_) {}
+    } catch (_) {
+      restoreDraftControls();
+    }
   };
 
   const assignFinalDate = async () => {

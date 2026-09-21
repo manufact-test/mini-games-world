@@ -177,6 +177,23 @@ $assertSame(false, $statusA['match']['self_ready'], 'Player A must begin not rea
 $assertSame(false, $statusA['match']['opponent_ready'], 'Opponent must begin not ready.');
 $assertSame(true, $statusA['match']['can_ready'], 'Player A must be able to press Ready during the window.');
 
+$statusB = $service->status(
+    $players[1]['mgw_id'],
+    $players[1]['account_ref'],
+    $players[1]['legacy_user_id'],
+    $now
+);
+$assertSame(1, (int)$statusB['match']['pair_no'], 'Second live client must resolve the same first-round pair.');
+$assertSame(
+    1,
+    (int)$db->fetchValue(
+        'SELECT COUNT(*) FROM mgw_tournament_round_matches
+         WHERE tournament_id=:tournament_id AND round_no=1 AND pair_no=1',
+        ['tournament_id'=>'tour-ready']
+    ),
+    'Repeated two-client state reads must materialize exactly one durable Ready row.'
+);
+
 $technical = $service->status(
     $players[2]['mgw_id'],
     $players[2]['account_ref'],
@@ -284,7 +301,7 @@ $assertSame(
     'Only both-present playable pairs must own readiness rows.'
 );
 
-if ($assertions < 20) {
+if ($assertions < 22) {
     throw new RuntimeException('MVP-21.5 readiness test is too shallow: ' . $assertions);
 }
 fwrite(STDOUT, "Mvp21_5TournamentMatchReadinessTest: {$assertions} assertions passed\n");
