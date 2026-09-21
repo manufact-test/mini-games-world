@@ -22,6 +22,7 @@ on:
       - 'bot/tests/Mvp21_5TournamentMatchReadinessTest.php'
       - 'bot/tests/Mvp21_5TournamentReadyUxContractTest.php'
       - 'bot/tests/PhaseBMatchPreparationClockServiceTest.php'
+      - 'bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php'
       - '.github/workflows/mvp21-5-tournament-ready.yml'
   workflow_dispatch:
 
@@ -72,6 +73,7 @@ jobs:
             bot/tests/Mvp21_5TournamentMatchReadinessTest.php
             bot/tests/Mvp21_5TournamentReadyUxContractTest.php
             bot/tests/PhaseBMatchPreparationClockServiceTest.php
+            bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
           node --check app/assets/js/api/client.js
@@ -137,7 +139,8 @@ jobs:
               bot/tests/Mvp21_4TournamentHallUxContractTest.php|\
               bot/tests/Mvp21_5TournamentMatchReadinessTest.php|\
               bot/tests/Mvp21_5TournamentReadyUxContractTest.php|\
-              bot/tests/PhaseBMatchPreparationClockServiceTest.php)
+              bot/tests/PhaseBMatchPreparationClockServiceTest.php|\
+              bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php)
                 ;;
               *)
                 echo "Unexpected MVP-21.5 path: $path" >&2
