@@ -30,6 +30,7 @@ on:
       - 'bot/tests/Mvp21_6TournamentRuntimeContractTest.php'
       - 'bot/tests/Mvp21_6TournamentProgressionUxContractTest.php'
       - 'bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php'
+      - 'bot/tests/PhaseBMatchPreparationClockServiceTest.php'
       - 'bot/tests/Mvp21_4TournamentHallBracketTest.php'
       - 'bot/tests/Mvp21_4TournamentHallUxContractTest.php'
       - 'bot/tests/Mvp21_5TournamentMatchReadinessTest.php'
@@ -103,6 +104,7 @@ jobs:
             bot/tests/Mvp21_6TournamentRuntimeContractTest.php
             bot/tests/Mvp21_6TournamentProgressionUxContractTest.php
             bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php
+            bot/tests/PhaseBMatchPreparationClockServiceTest.php
             app/runtime/client/version-manifest.php
             bot/tests/Mvp21_4TournamentHallBracketTest.php
             bot/tests/Mvp21_4TournamentHallUxContractTest.php
@@ -198,6 +200,7 @@ jobs:
               bot/tests/Mvp21_6TournamentRuntimeContractTest.php|\
               bot/tests/Mvp21_6TournamentProgressionUxContractTest.php|\
               bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php|\
+              bot/tests/PhaseBMatchPreparationClockServiceTest.php|\
               bot/tests/Mvp21_4TournamentHallBracketTest.php|\
               bot/tests/Mvp21_4TournamentHallUxContractTest.php|\
               bot/tests/Mvp21_5TournamentMatchReadinessTest.php|\
