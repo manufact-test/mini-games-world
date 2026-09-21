@@ -156,11 +156,16 @@
 
   const post = async payload => {
     if (!telegram?.initData) throw new Error('Откройте Web Admin из Telegram.');
+    const headers = {'Content-Type':'application/json'};
+    const requestedLiveSeats = Number(payload?.live_seats || 0);
+    if ([1,2].includes(requestedLiveSeats)) {
+      headers['X-MGW-Manual-Live-Seats'] = String(requestedLiveSeats);
+    }
     const response = await fetch(endpoint, {
       method:'POST',
       cache:'no-store',
       credentials:'same-origin',
-      headers:{'Content-Type':'application/json'},
+      headers,
       body:JSON.stringify({...payload, initData:telegram.initData})
     });
     const data = await response.json().catch(() => ({}));
