@@ -325,6 +325,105 @@ try {
                     'session' => $sessions->publicState($user, $sessionId),
                 ];
 
+            case 'tournament_match_state':
+            case 'tournament_match_ready':
+                $mgwId = trim((string)($user['mgw_id'] ?? ''));
+                $accountRef = trim((string)($user['mgw_account_ref'] ?? ''));
+                if ($mgwId === '' || $accountRef === '' || $userId === '') {
+                    throw new RuntimeException('Турнирный матч требует канонической MGW account identity.');
+                }
+
+                $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+                if (!$databaseConfig->enabled()) {
+                    throw new RuntimeException('Турнирные матчи временно недоступны.');
+                }
+                $database = PdoConnectionFactory::create($databaseConfig);
+                $readiness = new TournamentMatchReadinessService($database);
+                $snapshot = $action === 'tournament_match_ready'
+                    ? $readiness->markReady($mgwId, $accountRef, $userId)
+                    : $readiness->status($mgwId, $accountRef, $userId);
+
+                $launch = $readiness->launchContext($mgwId, $accountRef, $userId);
+                $publicGame = null;
+                if (is_array($launch)) {
+                    $gameId = (string)$launch['game_id'];
+                    $attachedGameId = trim((string)($launch['attached_game_id'] ?? ''));
+                    if ($attachedGameId !== '' && $attachedGameId !== $gameId) {
+                        throw new RuntimeException('Tournament pair is attached to an unexpected game.');
+                    }
+
+                    $launchPlayers = is_array($launch['players'] ?? null) ? $launch['players'] : [];
+                    if (count($launchPlayers) !== 2) {
+                        throw new RuntimeException('Tournament launch requires exactly two runtime players.');
+                    }
+                    $aId = trim((string)($launchPlayers[0]['legacy_user_id'] ?? ''));
+                    $bId = trim((string)($launchPlayers[1]['legacy_user_id'] ?? ''));
+                    if ($aId === '' || $bId === '' || $aId === $bId
+                        || !isset($data['users'][$aId]) || !is_array($data['users'][$aId])
+                        || !isset($data['users'][$bId]) || !is_array($data['users'][$bId])) {
+                        throw new RuntimeException('Один из игроков ещё не синхронизировал игровой клиент.');
+                    }
+
+                    $gameType = $gameCatalog->normalizeGameType((string)$launch['game_type']);
+                    $definition = $gameCatalog->get($gameType);
+                    $boardSize = (int)($definition['default_board_size'] ?? 3);
+                    $a =& $data['users'][$aId];
+                    $b =& $data['users'][$bId];
+
+                    $games->createTournamentGame(
+                        $data,
+                        $a,
+                        $b,
+                        $gameType,
+                        $boardSize,
+                        $gameId,
+                        [
+                            'tournament_id'=>(string)$launch['tournament_id'],
+                            'tournament_round_no'=>(int)$launch['round_no'],
+                            'tournament_pair_no'=>(int)$launch['pair_no'],
+                        ]
+                    );
+                    if (!isset($data['games'][$gameId]) || !is_array($data['games'][$gameId])) {
+                        throw new RuntimeException('Tournament game was not persisted.');
+                    }
+
+                    $data['games'][$gameId]['launch_countdown_sec'] = 10;
+                    GameLaunchFinalizationService::finalizeStoredGame($data, $gameId, true);
+                    $clock = new MatchPreparationClockService();
+                    $tournamentGame =& $data['games'][$gameId];
+                    if ((string)($tournamentGame['launch_phase'] ?? '') === 'preparing') {
+                        $clock->markTournamentPairReady($tournamentGame);
+                        $clock->advance($tournamentGame);
+                    }
+
+                    $readiness->attachGame(
+                        (string)$launch['tournament_id'],
+                        (int)$launch['round_no'],
+                        (int)$launch['pair_no'],
+                        $gameId
+                    );
+                    $snapshot = $readiness->status($mgwId, $accountRef, $userId);
+                    $publicGame = in_array($userId, array_map('strval', $tournamentGame['player_ids'] ?? []), true)
+                        ? $games->publicGame($tournamentGame, $userId)
+                        : null;
+                    unset($a, $b, $tournamentGame);
+                }
+
+                if ($publicGame === null) {
+                    $currentGame = $games->findActiveGameForUser($data, $userId);
+                    if (is_array($currentGame)
+                        && (string)($currentGame['match_source'] ?? '') === 'tournament') {
+                        $publicGame = $games->publicGame($currentGame, $userId);
+                    }
+                }
+
+                return [
+                    'snapshot'=>$snapshot,
+                    'game'=>$publicGame,
+                    'user'=>$users->publicUser($user),
+                    'session'=>$sessions->publicState($user, $sessionId),
+                ];
+
             case 'payment_status':
                 return [
                     'user' => $users->publicUser($user),
