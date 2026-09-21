@@ -5,6 +5,7 @@ final class TournamentHallService
 {
     public const HALL_OPEN_BEFORE_SECONDS = 900;
     public const HALL_PRESENCE_FRESHNESS_SECONDS = 8;
+    public const START_BOUNDARY_REQUEST_GRACE_SECONDS = 4;
     public const BRACKET_VERSION = 'mvp21-4-random-v1';
 
     private $presenceResolver;
@@ -91,7 +92,15 @@ final class TournamentHallService
             }
         });
 
-        $this->recordForegroundPresence($participant, $moment);
+        $boundaryFrom = $start->modify('-' . self::HALL_PRESENCE_FRESHNESS_SECONDS . ' seconds');
+        if ($moment >= $boundaryFrom && $moment < $start) {
+            // An authenticated Hall entry request in the final freshness window is
+            // direct evidence that the participant is actively in this foreground
+            // Hall. Do not wait for the separate gameplay-presence projection.
+            $this->recordHallRequestPresence($participant, $moment);
+        } else {
+            $this->recordForegroundPresence($participant, $moment);
+        }
         return $this->status($mgwId, $accountRef, $legacyUserId, $moment);
     }
 
@@ -105,16 +114,29 @@ final class TournamentHallService
         $moment = $this->moment($now);
         $start = $this->scheduledStart($participant);
 
-        if ($moment >= $start) {
-            $this->ensureBracketGenerated((string)$participant['tournament_id'], $moment);
-        }
-
         $entry = $this->hallEntry((string)$participant['tournament_id'], $mgwId);
         if ($entry === null) {
             throw new RuntimeException('Сначала войдите в Турнирный зал.');
         }
 
-        $this->recordForegroundPresence($participant, $moment);
+        $boundaryFrom = $start->modify('-' . self::HALL_PRESENCE_FRESHNESS_SECONDS . ' seconds');
+        $boundaryGraceUntil = $start->modify('+' . self::START_BOUNDARY_REQUEST_GRACE_SECONDS . ' seconds');
+        if ($moment >= $boundaryFrom && $moment <= $boundaryGraceUntil) {
+            // Heartbeat is emitted only while the Tournament Hall panel is visible.
+            // If transport scheduling lands a final heartbeat just after T0, anchor
+            // it to T0 before the immutable bracket is frozen. This is allowed only
+            // for an entry that already existed before start; enter() after T0 still
+            // freezes the bracket first and cannot retroactively recover presence.
+            $effectivePresenceMoment = $moment > $start ? $start : $moment;
+            $this->recordHallRequestPresence($participant, $effectivePresenceMoment);
+        } else {
+            $this->recordForegroundPresence($participant, $moment);
+        }
+
+        if ($moment >= $start) {
+            $this->ensureBracketGenerated((string)$participant['tournament_id'], $moment);
+        }
+
         return $this->status($mgwId, $accountRef, $legacyUserId, $moment);
     }
 
@@ -266,6 +288,24 @@ final class TournamentHallService
         if (count($fixtures) !== 6 || count($live) !== 2) return $registrations;
 
         return array_merge($fixtures, $live);
+    }
+
+    private function recordHallRequestPresence(array $participant, DateTimeImmutable $moment): void
+    {
+        $timestamp = $this->utc($moment);
+        $this->database->execute(
+            'UPDATE mgw_tournament_hall_entries
+             SET last_presence_at_utc=:last_presence_at_utc,
+                 updated_at_utc=:updated_at_utc
+             WHERE tournament_id=:tournament_id
+               AND mgw_id=:mgw_id',
+            [
+                'last_presence_at_utc'=>$timestamp,
+                'updated_at_utc'=>$timestamp,
+                'tournament_id'=>$participant['tournament_id'],
+                'mgw_id'=>$participant['mgw_id'],
+            ]
+        );
     }
 
     private function recordForegroundPresence(array $participant, DateTimeImmutable $moment): void
