@@ -17,6 +17,7 @@ on:
       - 'bot/economy/UnifiedEconomyRuntimeSyncService.php'
       - 'bot/ledger/RuntimeEconomyRepository.php'
       - 'bot/services/UserService.php'
+      - 'bot/services/StagingTestPlayerStateResetService.php'
       - 'bot/admin-tournaments.php'
       - 'bot/core/bootstrap.php'
       - 'app/assets/js/api/client.js'
@@ -32,6 +33,7 @@ on:
       - 'bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php'
       - 'bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php'
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
+      - 'bot/tests/Mvp21_1StagingTournamentResetContractTest.php'
       - 'bot/tests/Mvp21_2TournamentRulesTest.php'
       - 'bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php'
       - 'bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php'
@@ -103,6 +105,7 @@ jobs:
             bot/economy/UnifiedEconomyRuntimeSyncService.php
             bot/ledger/RuntimeEconomyRepository.php
             bot/services/UserService.php
+            bot/services/StagingTestPlayerStateResetService.php
             bot/admin-tournaments.php
             bot/core/bootstrap.php
             app/v110.php
@@ -112,6 +115,7 @@ jobs:
             bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php
             bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php
             bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
+            bot/tests/Mvp21_1StagingTournamentResetContractTest.php
             bot/tests/Mvp21_2TournamentRulesTest.php
             bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php
             bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php
@@ -145,6 +149,9 @@ jobs:
 
       - name: Run MVP-21.1 manual acceptance UX contract
         run: php bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
+
+      - name: Prove staging reset releases stale A/B tournament reservations
+        run: php bot/tests/Mvp21_1StagingTournamentResetContractTest.php
 
       - name: Preserve MVP-21.2 rules and auto-close extension
         run: |
@@ -209,6 +216,7 @@ jobs:
               bot/economy/UnifiedEconomyRuntimeSyncService.php|\
               bot/ledger/RuntimeEconomyRepository.php|\
               bot/services/UserService.php|\
+              bot/services/StagingTestPlayerStateResetService.php|\
               bot/admin-tournaments.php|\
               bot/core/bootstrap.php|\
               app/assets/js/api/client.js|\
@@ -224,6 +232,7 @@ jobs:
               bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php|\
               bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php|\
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
+              bot/tests/Mvp21_1StagingTournamentResetContractTest.php|\
               bot/tests/Mvp21_2TournamentRulesTest.php|\
               bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php|\
               bot/tests/Mvp21_3TournamentScheduleTest.php|\

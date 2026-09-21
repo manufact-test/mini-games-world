@@ -10,6 +10,7 @@ on:
       - 'bot/tournaments/TournamentRegistrationService.php'
       - 'bot/tournaments/TournamentAdminNotificationBridge.php'
       - 'bot/tournaments/StagingTournamentManualAcceptanceService.php'
+      - 'bot/services/StagingTestPlayerStateResetService.php'
       - 'bot/admin-tournaments.php'
       - 'bot/api.php'
       - 'bot/tournament-status.php'
@@ -24,6 +25,7 @@ on:
       - 'bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php'
       - 'bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php'
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
+      - 'bot/tests/Mvp21_1StagingTournamentResetContractTest.php'
       - 'bot/tests/Mvp21_2TournamentRulesTest.php'
       - 'bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php'
       - 'bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php'
@@ -88,6 +90,7 @@ jobs:
             bot/tournaments/TournamentRegistrationService.php
             bot/tournaments/TournamentAdminNotificationBridge.php
             bot/tournaments/StagingTournamentManualAcceptanceService.php
+            bot/services/StagingTestPlayerStateResetService.php
             bot/api.php
             bot/tournament-status.php
             bot/staging-projection-diagnostic.php
@@ -97,6 +100,7 @@ jobs:
             bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
             bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php
             bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
+            bot/tests/Mvp21_1StagingTournamentResetContractTest.php
             bot/tests/Mvp21_2TournamentRulesTest.php
             bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php
             bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php
@@ -120,6 +124,7 @@ jobs:
           php bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
           php bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php
           php bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
+          php bot/tests/Mvp21_1StagingTournamentResetContractTest.php
 
       - name: Preserve MySQL registration runtime
         env:
@@ -173,6 +178,7 @@ jobs:
               bot/tournaments/TournamentAdminNotificationBridge.php|\
               bot/tournaments/TournamentParticipantNotificationBridge.php|\
               bot/tournaments/StagingTournamentManualAcceptanceService.php|\
+              bot/services/StagingTestPlayerStateResetService.php|\
               bot/admin-tournaments.php|\
               bot/api.php|\
               bot/tournament-status.php|\
@@ -187,6 +193,7 @@ jobs:
               bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php|\
               bot/tests/Mvp21_1TournamentRegistrationMysqlRuntimeTest.php|\
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
+              bot/tests/Mvp21_1StagingTournamentResetContractTest.php|\
               bot/tests/Mvp21_2TournamentRulesTest.php|\
               bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php|\
               bot/tests/Mvp21_3TournamentScheduleTest.php|\
