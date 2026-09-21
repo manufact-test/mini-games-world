@@ -103,7 +103,7 @@ $assert(str_contains($source['manifest'], 'client.js?v=1143')
         && str_contains($source['manifest'], 'mvp21_4=tournament-hall-v1')
         && str_contains($source['manifest'], 'hall_transport=direct-endpoint-v2'),
     'Hall release must preserve the accepted API cache contract and publish the direct-endpoint corrective identity.');
-$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=19')
+$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=20')
         && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v2')
         && str_contains($source['manifest'], 'hall_cta=entry-v1')
         && str_contains($source['manifest'], 'copy_polish=final-v1'),
@@ -143,10 +143,12 @@ $assert(str_contains($source['diagnostic'], "'notification_primary_parity'")
         && str_contains($source['diagnostic'], 'new DatabasePrimaryStateStorageAdapter($db)'),
     'Staging diagnostic must compare the active DB-primary notification snapshot with module DB and rollback JSON.');
 $assert(str_contains($source['admin'], 'control === title || control === game || control === capacity')
-        && str_contains($source['admin'], 'Draft form controls must remain editable'),
-    'Tournament Admin background operations must never disable focused draft title/game/capacity controls.');
-$assert(str_contains($source['admin_page'], 'admin-tournaments.js?v=9')
-        && str_contains($source['admin_page'], 'mvp21_5=manual-acceptance-fixes-v2')
+        && str_contains($source['admin'], 'Draft form controls must remain editable')
+        && str_contains($source['admin'], 'Подтвердить сброс')
+        && !str_contains($source['admin'], 'if (!window.confirm(warning)) return;'),
+    'Tournament Admin reset must stay editable and avoid native confirm focus poisoning in Telegram WebView.');
+$assert(str_contains($source['admin_page'], 'admin-tournaments.js?v=10')
+        && str_contains($source['admin_page'], 'mvp21_5=manual-acceptance-fixes-v3')
         && str_contains($source['admin_page'], 'placeholder="Официальный турнир"'),
     'Tournament Admin must publish the fresh cache identity and use a placeholder instead of a destructive default title value.');
 
