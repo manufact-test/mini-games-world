@@ -526,13 +526,7 @@ function tournamentHallMarkup(registered, scheduled, scheduledStart){
   const entered = hall?.entered === true;
 
   if (!entered) {
-    const buttonLabel = tournamentHallBusy
-      ? 'Входим в зал…'
-      : started
-        ? 'Открыть Турнирный зал'
-        : openByClock
-          ? 'Войти в Турнирный зал'
-          : 'Зал откроется за 15 минут';
+    const buttonLabel = tournamentHallBusy ? 'Входим в зал…' : 'Вход';
     return `
       <section class="tournaments-v2-hall-gate">
         <div>
@@ -808,11 +802,7 @@ function renderTournamentSnapshot(errorMessage = ''){
         const startAt = Number(hallButton.dataset.hallStartAt || 0);
         const openNow = opensAt > 0 && Date.now() >= opensAt;
         hallButton.disabled = !openNow;
-        hallButton.textContent = startAt > 0 && Date.now() >= startAt
-          ? 'Открыть Турнирный зал'
-          : openNow
-            ? 'Войти в Турнирный зал'
-            : 'Зал откроется за 15 минут';
+        hallButton.textContent = 'Вход';
       }
     };
     updateCountdown();
