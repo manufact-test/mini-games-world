@@ -77,6 +77,16 @@ try {
             'games'=>$catalog->publicCatalog(),
             'manual_acceptance_fixture'=>$fixture,
         ];
+    } elseif ($action === 'reset_manual_acceptance') {
+        $reset = $manualAcceptance->resetForFreshManualAcceptance(
+            $_SERVER,
+            $actorRef
+        );
+        $result = [
+            'snapshot'=>$service->snapshot(),
+            'games'=>$catalog->publicCatalog(),
+            'manual_reset_result'=>$reset,
+        ];
     } else {
         json_response(['ok'=>false,'error'=>'Неизвестное действие Tournament Admin.'], 422);
     }
@@ -110,12 +120,14 @@ try {
     }
 
     $manualAvailability = $manualAcceptance->availability($_SERVER);
+    $manualResetAvailability = $manualAcceptance->resetAvailability($_SERVER);
 
     json_response([
         'ok'=>true,
         'generated_at'=>gmdate(DATE_ATOM),
         'notifications'=>$notifications,
         'manual_acceptance'=>$manualAvailability,
+        'manual_reset'=>$manualResetAvailability,
     ] + $result);
 } catch (AdminWebAuthException $error) {
     json_response(['ok'=>false,'error'=>$error->publicMessage()], $error->httpStatus());

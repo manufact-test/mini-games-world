@@ -76,6 +76,7 @@ $consent = [
 ];
 
 $runtimeUsers = [];
+$runtimeResetEvidence = [];
 $config = [
     'environment'=>'staging',
     'base_url'=>'https://seashell-okapi-889488.hostingersite.com',
@@ -95,6 +96,28 @@ $fixture = new StagingTournamentManualAcceptanceService(
             'slot'=>$slot,
             'legacy_user_id'=>$identity['legacy_user_id'],
             'account_ref'=>$identity['account_ref'],
+        ];
+    },
+    static function (array $runtimeBalances, array $fixtureLegacyIds) use (
+        &$runtimeResetEvidence,
+        &$runtimeUsers
+    ): array {
+        $runtimeResetEvidence = [
+            'balances'=>$runtimeBalances,
+            'fixture_legacy_ids'=>$fixtureLegacyIds,
+        ];
+        $removed = 0;
+        foreach ($fixtureLegacyIds as $legacyUserId) {
+            foreach ($runtimeUsers as $mgwId=>$runtimeUser) {
+                if ((string)($runtimeUser['legacy_user_id'] ?? '') === (string)$legacyUserId) {
+                    unset($runtimeUsers[$mgwId]);
+                    $removed++;
+                }
+            }
+        }
+        return [
+            'updated_balances'=>count($runtimeBalances),
+            'removed_fixture_users'=>$removed,
         ];
     }
 );
@@ -261,6 +284,112 @@ $afterClose = $fixture->availability($server);
 $assertSame(false, $afterClose['available'], 'Fixture must be unavailable once registration closes.');
 $assertSame('registration_not_open', $afterClose['reason'], 'Closed roster must not expose synthetic fill action.');
 
+
+$scheduled = $tournaments->assignFinalDate(
+    $tournamentId,
+    '2026-09-21T01:00:00Z',
+    'test:admin',
+    new DateTimeImmutable('2026-09-21T00:12:00Z')
+);
+$assertSame('scheduled', $scheduled['tournament']['state'], 'Manual acceptance tournament must reach scheduled before reset coverage.');
+$resetAvailability = $fixture->resetAvailability($server);
+$assertSame(true, $resetAvailability['available'], 'Scheduled staging tournament must expose the bounded reset action.');
+$assertSame('scheduled', $resetAvailability['state'], 'Reset availability must report the exact active state.');
+
+$reset = $fixture->resetForFreshManualAcceptance(
+    $server,
+    'test:admin',
+    new DateTimeImmutable('2026-09-21T00:13:00Z')
+);
+$assertSame('reset', $reset['status'], 'Scheduled staging tournament must reset through the bounded owner.');
+$assertSame(8, $reset['released_reservations'], 'Reset must release every one of the eight tournament reservations.');
+$assertSame(7, $reset['fixture_accounts_retired'], 'Reset must retire only the seven synthetic fixture accounts.');
+$assertSame(1, $reset['real_accounts_released'], 'Reset must release the one real manual participant without retiring it.');
+$assertSame(1, $reset['runtime_balances_updated'], 'Reset must publish the released real balance back to runtime state.');
+$assertSame(6, $reset['runtime_fixture_users_removed'], 'Reset must remove the six v2 fixture runtime users created by this test.');
+
+$afterReset = $tournaments->snapshot();
+$assertSame(null, $afterReset['tournament'], 'Reset must release the official active tournament slot.');
+$assertSame(
+    0,
+    (int)$db->fetchValue(
+        'SELECT COUNT(*) FROM mgw_tournament_registrations
+         WHERE tournament_id=:tournament_id AND registration_state=:state',
+        ['tournament_id'=>$tournamentId,'state'=>TournamentRegistrationService::REGISTRATION_REGISTERED]
+    ),
+    'Reset must leave no active tournament registrations.'
+);
+$assertSame(
+    8,
+    (int)$db->fetchValue(
+        'SELECT COUNT(*) FROM mgw_tournament_registrations
+         WHERE tournament_id=:tournament_id AND registration_state=:state',
+        ['tournament_id'=>$tournamentId,'state'=>TournamentRegistrationService::REGISTRATION_WITHDRAWN]
+    ),
+    'Reset must preserve all eight registrations as withdrawn audit rows.'
+);
+$assertSame(
+    0,
+    (int)$db->fetchValue(
+        "SELECT COUNT(*) FROM mgw_reservations
+         WHERE source_type='official_tournament' AND source_ref=:tournament_id AND status='active'",
+        ['tournament_id'=>$tournamentId]
+    ),
+    'Reset must leave no active tournament reservations.'
+);
+$manualBalanceAfterReset = $ledger->getBalance(
+    'legacy:' . $manualLegacy,
+    TournamentRegistrationService::ENTRY_ASSET
+);
+$assertSame(50000, (int)$manualBalanceAfterReset['available_amount'], 'Real participant must receive the exact reserved 50,000 back.');
+$assertSame(0, (int)$manualBalanceAfterReset['reserved_amount'], 'Real participant must have no tournament hold after reset.');
+$assertSame(
+    50000,
+    (int)($runtimeResetEvidence['balances'][$manualLegacy] ?? -1),
+    'Runtime reset projection must carry the real participant released balance.'
+);
+$assertSame(
+    'active',
+    (string)$db->fetchValue('SELECT status FROM mgw_users WHERE mgw_id=:mgw_id', ['mgw_id'=>$manualMgwId]),
+    'Reset must not deactivate the real participant account.'
+);
+
+$fixtureIdsAfterReset = array_merge(
+    [$legacyBrokenMgwId],
+    array_map(static fn(array $participant): string => (string)$participant['mgw_id'], $prepared['created_participants'])
+);
+foreach ($fixtureIdsAfterReset as $fixtureMgwId) {
+    $fixtureRows = $db->fetchAll(
+        'SELECT u.status,o.account_ref,o.legacy_user_id,o.ownership_status
+         FROM mgw_users u
+         INNER JOIN mgw_account_ownership o ON o.mgw_id=u.mgw_id
+         WHERE u.mgw_id=:mgw_id',
+        ['mgw_id'=>$fixtureMgwId]
+    );
+    $assertSame(1, count($fixtureRows), 'Retired fixture account must preserve one canonical ownership row for ledger audit.');
+    $assertSame('staging_fixture_retired', (string)$fixtureRows[0]['status'], 'Only fixture MGW users must be retired.');
+    $assertSame('active', (string)$fixtureRows[0]['ownership_status'], 'Fixture ledger ownership must remain active so zero balances never become orphaned.');
+    $fixtureBalanceAfterReset = $ledger->getBalance(
+        (string)$fixtureRows[0]['account_ref'],
+        TournamentRegistrationService::ENTRY_ASSET
+    );
+    $assertSame(0, (int)$fixtureBalanceAfterReset['available_amount'], 'Disposable fixture grant must be revoked after reservation release.');
+    $assertSame(0, (int)$fixtureBalanceAfterReset['reserved_amount'], 'Retired fixture account must have no reserved balance.');
+}
+
+$freshDraft = $tournaments->createDraft(
+    'tictactoe',
+    8,
+    'Fresh MVP-21.4 acceptance tournament',
+    'test:admin',
+    new DateTimeImmutable('2026-09-21T00:14:00Z')
+);
+$assertSame('draft', $freshDraft['tournament']['state'], 'Reset must allow a fresh official tournament to be created immediately.');
+$assertTrue(
+    (string)$freshDraft['tournament']['tournament_id'] !== $tournamentId,
+    'Fresh tournament must have a new durable identity instead of rewriting the reset tournament.'
+);
+
 $productionFixture = new StagingTournamentManualAcceptanceService(
     ['environment'=>'production','base_url'=>'https://example.com'],
     $db,
@@ -271,13 +400,21 @@ $productionFixture = new StagingTournamentManualAcceptanceService(
 $prodAvailability = $productionFixture->availability($server);
 $assertSame(false, $prodAvailability['available'], 'Fixture must be hard-disabled outside staging.');
 $assertSame('staging_only', $prodAvailability['reason'], 'Production denial reason must be explicit.');
+$prodResetAvailability = $productionFixture->resetAvailability($server);
+$assertSame(false, $prodResetAvailability['available'], 'Tournament reset must be hard-disabled outside staging.');
+$assertSame('staging_only', $prodResetAvailability['reason'], 'Production reset denial reason must be explicit.');
 $assertThrows(
     fn() => $productionFixture->fillToOneManualSeat($server),
     'только в staging',
     'Production must never be allowed to synthesize tournament participants.'
 );
+$assertThrows(
+    fn() => $productionFixture->resetForFreshManualAcceptance($server, 'test:admin'),
+    'только в staging',
+    'Production must never be allowed to reset an official tournament.'
+);
 
-if ($assertions < 50) {
+if ($assertions < 95) {
     throw new RuntimeException('MVP-21.3 manual acceptance fixture coverage is incomplete.');
 }
 

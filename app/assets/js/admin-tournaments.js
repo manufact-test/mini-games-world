@@ -25,9 +25,13 @@
   const manualPanel = card.querySelector('[data-tournament-manual-panel]');
   const manualInfo = card.querySelector('[data-tournament-manual-info]');
   const prepareManual = card.querySelector('[data-tournament-prepare-manual]');
+  const resetPanel = card.querySelector('[data-tournament-reset-panel]');
+  const resetInfo = card.querySelector('[data-tournament-reset-info]');
+  const resetManual = card.querySelector('[data-tournament-reset-manual]');
   let busy = false;
   let snapshot = null;
   let manualAcceptance = null;
+  let manualReset = null;
 
   const format = value => new Intl.NumberFormat('ru-RU').format(Number(value || 0));
   const stateLabel = value => ({
@@ -132,6 +136,10 @@
         control.disabled = prepareManual.dataset.available !== '1';
         return;
       }
+      if (control === resetManual) {
+        control.disabled = resetManual.dataset.available !== '1';
+        return;
+      }
       control.disabled = false;
     });
   };
@@ -204,6 +212,12 @@
         prepareManual.dataset.available = '0';
       }
       if (manualInfo instanceof HTMLElement) manualInfo.textContent = 'Ручная проверка staging недоступна.';
+      if (resetPanel instanceof HTMLElement) resetPanel.hidden = true;
+      if (resetManual instanceof HTMLButtonElement) {
+        resetManual.disabled = true;
+        resetManual.dataset.available = '0';
+      }
+      if (resetInfo instanceof HTMLElement) resetInfo.textContent = 'Сброс staging-турнира недоступен.';
       return;
     }
 
@@ -278,6 +292,19 @@
         manualInfo.textContent = 'Ручная проверка staging недоступна.';
       }
     }
+
+    const reset = manualReset && typeof manualReset === 'object' ? manualReset : {};
+    const canReset = reset.available === true;
+    if (resetPanel instanceof HTMLElement) resetPanel.hidden = !canReset;
+    if (resetManual instanceof HTMLButtonElement) {
+      resetManual.dataset.available = canReset ? '1' : '0';
+      resetManual.disabled = busy || !canReset;
+    }
+    if (resetInfo instanceof HTMLElement) {
+      resetInfo.textContent = canReset
+        ? `Staging cleanup: освободить все активные резервы и снять текущий турнир «${tournament.title || 'Официальный турнир'}» с active slot.`
+        : 'Сброс staging-турнира недоступен.';
+    }
   };
 
   const withBusy = async (message, action) => {
@@ -289,6 +316,9 @@
       manualAcceptance = data?.manual_acceptance && typeof data.manual_acceptance === 'object'
         ? data.manual_acceptance
         : manualAcceptance;
+      manualReset = data?.manual_reset && typeof data.manual_reset === 'object'
+        ? data.manual_reset
+        : manualReset;
       render(data.snapshot || {});
       return data;
     } catch (error) {
@@ -363,6 +393,28 @@
     } catch (_) {}
   };
 
+  const resetManualAcceptance = async () => {
+    const tournament = snapshot?.tournament;
+    const tournamentId = String(tournament?.tournament_id || '');
+    if (!tournamentId || manualReset?.available !== true) return;
+
+    const count = Number(tournament?.registered_count || 0);
+    const cap = Number(tournament?.capacity || 0);
+    const warning = `Сбросить ТОЛЬКО staging-турнир «${tournament.title || 'Официальный турнир'}» (${format(count)}/${format(cap)})? Все его активные резервы будут освобождены через ledger, fixture accounts будут выведены из тестового runtime, а active slot освободится для нового турнира.`;
+    if (!window.confirm(warning)) return;
+
+    try {
+      const data = await withBusy('Безопасно сбрасываю staging-турнир и освобождаю резервы…', () => post({
+        action:'reset_manual_acceptance',
+      }));
+      const reset = data?.manual_reset_result || {};
+      setStatus(
+        `Staging-турнир сброшен: освобождено резервов — ${format(reset.released_reservations || 0)}, fixture accounts retired — ${format(reset.fixture_accounts_retired || 0)}. Можно создать новый турнир для MVP-21.4.`,
+        'ok'
+      );
+    } catch (_) {}
+  };
+
   const assignFinalDate = async () => {
     const tournamentId = String(snapshot?.tournament?.tournament_id || '');
     if (!tournamentId || !(scheduleStart instanceof HTMLInputElement)) return;
@@ -397,6 +449,7 @@
   create?.addEventListener('click', createDraft);
   open?.addEventListener('click', openRegistration);
   prepareManual?.addEventListener('click', prepareManualAcceptance);
+  resetManual?.addEventListener('click', resetManualAcceptance);
   assignDate?.addEventListener('click', assignFinalDate);
 
   if (telegram?.initData) {
