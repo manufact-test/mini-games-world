@@ -16,6 +16,7 @@ on:
       - 'app/assets/js/screens/tournaments-screen-v1.js'
       - 'app/assets/css/main.css'
       - 'bot/tests/Mvp21_6TournamentRoundProgressionTest.php'
+      - 'bot/tests/Mvp21_6TournamentRuntimeContractTest.php'
       - 'bot/tests/Mvp21_5TournamentMatchReadinessTest.php'
       - 'bot/tests/Mvp21_5TournamentReadyUxContractTest.php'
       - '.github/workflows/mvp20-1-per-game-visible-rating.yml'
@@ -76,6 +77,7 @@ jobs:
             bot/services/GameService.php
             bot/services/GameLaunchFinalizationService.php
             bot/tests/Mvp21_6TournamentRoundProgressionTest.php
+            bot/tests/Mvp21_6TournamentRuntimeContractTest.php
             bot/tests/Mvp21_5TournamentMatchReadinessTest.php
             bot/tests/Mvp21_5TournamentReadyUxContractTest.php
           )
@@ -84,7 +86,9 @@ jobs:
           node --check app/assets/js/screens/tournaments-screen-v1.js
 
       - name: Run MVP-21.6 progression model
-        run: php bot/tests/Mvp21_6TournamentRoundProgressionTest.php
+        run: |
+          php bot/tests/Mvp21_6TournamentRoundProgressionTest.php
+          php bot/tests/Mvp21_6TournamentRuntimeContractTest.php
 
       - name: Preserve MVP-21.5 ready/countdown owner
         run: |
@@ -144,6 +148,7 @@ jobs:
               app/assets/js/screens/tournaments-screen-v1.js|\
               app/assets/css/main.css|\
               bot/tests/Mvp21_6TournamentRoundProgressionTest.php|\
+              bot/tests/Mvp21_6TournamentRuntimeContractTest.php|\
               bot/tests/Mvp21_5TournamentMatchReadinessTest.php|\
               bot/tests/Mvp21_5TournamentReadyUxContractTest.php|\
               bot/tests/GameLaunchFinalizationOwnerContractTest.php)
