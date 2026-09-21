@@ -219,6 +219,7 @@ final class GameRuntimeService
         $legacyBoardSize = $engine === 'tictactoe'
             ? $boardSize
             : $this->legacyProxyBoardSize($boardSize);
+        $alreadyExists = isset($db['games'][$gameId]) && is_array($db['games'][$gameId]);
         $game = $this->legacyGame->createTournamentGame(
             $db,
             $a,
@@ -232,6 +233,7 @@ final class GameRuntimeService
         if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
             throw new RuntimeException('Tournament runtime did not persist the created game.');
         }
+        if ($alreadyExists) return $db['games'][$gameId];
 
         $db['games'][$gameId]['game_type'] = $gameType;
         $this->applyRequestedBoardMetadata($db['games'][$gameId], $gameType, $boardSize);
