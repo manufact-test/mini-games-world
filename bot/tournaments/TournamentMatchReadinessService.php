@@ -47,6 +47,11 @@ final class TournamentMatchReadinessService
         if ($row === null) {
             throw new RuntimeException('Для этой пары подтверждение готовности не требуется.');
         }
+        if ((int)($row['attempt_no'] ?? 1) !== 1
+            || (string)($row['wait_kind'] ?? 'initial_ready') !== 'initial_ready'
+            || trim((string)($row['completed_at_utc'] ?? '')) !== '') {
+            throw new RuntimeException('Ручное подтверждение готовности для этой стадии уже завершено.');
+        }
 
         $openedAt = $this->parseUtc((string)$row['readiness_opened_at_utc']);
         $deadline = $this->parseUtc((string)$row['readiness_deadline_at_utc']);
