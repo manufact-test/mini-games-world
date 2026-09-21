@@ -36,7 +36,7 @@ if (!str_contains($block, 'if (optimisticSurfaceOpen && rollbackHtml) openSheet(
 
 // MVP-17.5 inserts one bot-opaque presentation owner in the real v110 import
 // graph. The accepted optimistic rematch lifecycle remains the underlying owner.
-if (!str_contains($manifest, "game-invites-v110-rematch-policy-v175.js?v=1")) {
+if (!str_contains($manifest, "game-invites-v110-rematch-policy-v175.js?v=2&fp=2&mvp21_6=tournament-exclusion-v1")) {
     throw new RuntimeException('Bot-opaque rematch presentation cache-bust missing.');
 }
 if (!str_contains($policy, "./game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent")) {
