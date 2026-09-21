@@ -352,6 +352,46 @@ $storedSeeds = (int)$db->fetchValue(
 $assertSame(8, $storedSeeds, 'Exactly eight durable bracket seeds must exist after repeated Hall calls.');
 $assertTrue($randomCalls > 0, 'Bracket generation must exercise the randomizer.');
 
+$manualPairing = Closure::bind(
+    function (array $registrations): array {
+        return $this->pairTwoLiveManualAcceptancePlayers($registrations);
+    },
+    $hall,
+    TournamentHallService::class
+);
+$manualRoster = [];
+for ($i = 1; $i <= 6; $i++) {
+    $manualRoster[] = [
+        'mgw_id'=>'MGW-' . strtoupper(str_pad(dechex(100 + $i), 16, '0', STR_PAD_LEFT)),
+        'account_ref'=>'legacy:stg_tour_v2_' . str_pad(dechex($i), 12, '0', STR_PAD_LEFT),
+    ];
+}
+$manualRoster[] = ['mgw_id'=>'MGW-AAAABBBBCCCC0001','account_ref'=>'legacy:manual-live-1'];
+$manualRoster[] = ['mgw_id'=>'MGW-AAAABBBBCCCC0002','account_ref'=>'legacy:manual-live-2'];
+
+$pairedManualRoster = $manualPairing($manualRoster);
+$assertSame(
+    ['legacy:manual-live-1','legacy:manual-live-2'],
+    array_map(
+        static fn(array $row): string => (string)$row['account_ref'],
+        array_slice($pairedManualRoster, -2)
+    ),
+    'Exactly six staging fixtures plus two live accounts must place the two live accounts into one first-round pair.'
+);
+
+$ordinaryRoster = [];
+for ($i = 1; $i <= 8; $i++) {
+    $ordinaryRoster[] = [
+        'mgw_id'=>'MGW-' . strtoupper(str_pad(dechex(200 + $i), 16, '0', STR_PAD_LEFT)),
+        'account_ref'=>'legacy:ordinary-' . $i,
+    ];
+}
+$assertSame(
+    $ordinaryRoster,
+    $manualPairing($ordinaryRoster),
+    'Ordinary all-live tournament rosters must not be rewritten by the staging manual-acceptance pairing helper.'
+);
+
 if ($assertions < 46) {
     throw new RuntimeException('MVP-21.4 Hall/bracket test is too shallow: ' . $assertions);
 }
