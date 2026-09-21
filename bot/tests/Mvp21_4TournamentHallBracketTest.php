@@ -234,7 +234,12 @@ $assertSame(false, $backgroundRoster[0]['present'], 'Background generic presence
 
 $presentIndexes = [1,3,5,7];
 foreach ($presentIndexes as $index) {
-    $presence[$players[$index]['legacy_user_id']] = ['state'=>'foreground','last_foreground_at'=>0];
+    // Player 7 deliberately keeps the generic gameplay presence stale/background.
+    // The final visible Hall heartbeat itself must still prove T0 presence.
+    $presence[$players[$index]['legacy_user_id']] = [
+        'state'=>$index === 7 ? 'background' : 'foreground',
+        'last_foreground_at'=>0,
+    ];
     if ($index !== 1) {
         $hall->enter(
             $players[$index]['mgw_id'],
@@ -262,6 +267,11 @@ $presentNow = array_values(array_filter(
     static fn(array $row): bool => $row['present'] === true
 ));
 $assertSame(4, count($presentNow), 'Hall roster must show four fresh foreground participants before start.');
+$boundaryPlayer = array_values(array_filter(
+    $preStart['hall']['roster'],
+    fn(array $row): bool => $row['mgw_id'] === $players[7]['mgw_id']
+));
+$assertSame(true, $boundaryPlayer[0]['present'] ?? false, 'Final visible Hall heartbeat must count at T0 even when generic gameplay presence is stale.');
 $assertSame(null, $preStart['bracket'], 'Bracket must remain absent one second before start.');
 
 $readOnlyAtStart = $hall->status(
@@ -284,6 +294,11 @@ $assertSame(TournamentHallService::BRACKET_VERSION, $started['bracket']['version
 $assertSame('2026-09-21 01:00:00.000000', $started['bracket']['effective_at_utc'], 'Bracket effective time must equal exact scheduled start.');
 $assertSame('2026-09-21 01:00:00.000000', $started['bracket']['generated_at_utc'], 'Exact-boundary request must record exact bracket generation time.');
 $assertSame(8, count($started['bracket']['seeds']), 'Every registered participant must remain in the bracket.');
+$boundarySeed = array_values(array_filter(
+    $started['bracket']['seeds'],
+    fn(array $seed): bool => $seed['mgw_id'] === $players[7]['mgw_id']
+));
+$assertSame(false, $boundarySeed[0]['technical_loss'] ?? true, 'Last-seconds Hall heartbeat must not freeze a false technical loss.');
 
 $seedIds = array_map(static fn(array $seed): string => $seed['mgw_id'], $started['bracket']['seeds']);
 $assertSame(8, count(array_unique($seedIds)), 'Random bracket must contain every participant exactly once.');
