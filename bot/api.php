@@ -348,33 +348,53 @@ try {
                     ? $readiness->markReady($mgwId, $accountRef, $userId)
                     : $readiness->status($mgwId, $accountRef, $userId);
 
-                // DB progression observes the canonical finished JSON game lazily
-                // from the participant heartbeat. This keeps game engines frozen
-                // while making tournament advancement durable and idempotent.
-                $progressionSnapshot = $progression->statusForParticipant(
-                    $mgwId,
-                    $accountRef,
-                    $userId
-                );
-                $latestProgressionMatch = is_array($progressionSnapshot['latest_match'] ?? null)
-                    ? $progressionSnapshot['latest_match']
+                $readyMatch = is_array($snapshot['match'] ?? null)
+                    ? $snapshot['match']
                     : null;
-                $finishedTournamentGameId = trim((string)($latestProgressionMatch['game_id'] ?? ''));
-                if ($finishedTournamentGameId !== ''
-                    && isset($data['games'][$finishedTournamentGameId])
-                    && is_array($data['games'][$finishedTournamentGameId])
-                    && (string)($data['games'][$finishedTournamentGameId]['status'] ?? '') === 'finished') {
-                    $progression->observeFinishedGame($data['games'][$finishedTournamentGameId]);
+                $initialReadyOwnsWindow = is_array($readyMatch)
+                    && (int)($readyMatch['round_no'] ?? 0) === 1
+                    && trim((string)($readyMatch['game_id'] ?? '')) === ''
+                    && in_array(
+                        (string)($readyMatch['launch_state'] ?? ''),
+                        [
+                            TournamentMatchReadinessService::STATE_WAITING_READY,
+                            TournamentMatchReadinessService::STATE_READY,
+                        ],
+                        true
+                    );
+
+                // MVP-21.6 progression is intentionally dormant while MVP-21.5
+                // owns the initial two-minute Ready window. This avoids a second
+                // first-round materializer touching the same pair at T0. Once a
+                // game is attached (or readiness does not own this participant),
+                // progression resumes and can observe finishes / later rounds.
+                $progressionSnapshot = null;
+                if (!$initialReadyOwnsWindow) {
                     $progressionSnapshot = $progression->statusForParticipant(
                         $mgwId,
                         $accountRef,
                         $userId
                     );
+                    $latestProgressionMatch = is_array($progressionSnapshot['latest_match'] ?? null)
+                        ? $progressionSnapshot['latest_match']
+                        : null;
+                    $finishedTournamentGameId = trim((string)($latestProgressionMatch['game_id'] ?? ''));
+                    if ($finishedTournamentGameId !== ''
+                        && isset($data['games'][$finishedTournamentGameId])
+                        && is_array($data['games'][$finishedTournamentGameId])
+                        && (string)($data['games'][$finishedTournamentGameId]['status'] ?? '') === 'finished') {
+                        $progression->observeFinishedGame($data['games'][$finishedTournamentGameId]);
+                        $progressionSnapshot = $progression->statusForParticipant(
+                            $mgwId,
+                            $accountRef,
+                            $userId
+                        );
+                    }
                 }
 
                 $launch = $readiness->launchContext($mgwId, $accountRef, $userId);
                 $progressionOwnsLaunch = false;
-                if (!is_array($launch)) {
+                if (!is_array($launch) && !$initialReadyOwnsWindow) {
                     $launch = $progression->launchContextForParticipant(
                         $mgwId,
                         $accountRef,
