@@ -4,7 +4,6 @@
   "type": "module",
   "scripts": {
     "test:e2e:staging": "playwright test --config=e2e/playwright.config.mjs",
-    "test:e2e:staging:legacy": "playwright test --config=e2e/playwright.legacy.config.mjs",
-    "test:e2e:staging:tournament-live": "playwright test --config=e2e/playwright.tournament-live.config.mjs"
+    "test:e2e:staging:legacy": "playwright test --config=e2e/playwright.legacy.config.mjs"
   }
 }
