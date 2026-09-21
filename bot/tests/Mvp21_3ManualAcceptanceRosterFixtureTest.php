@@ -134,8 +134,11 @@ $server = ['HTTP_HOST'=>'seashell-okapi-889488.hostingersite.com'];
 $availability = $fixture->availability($server);
 $assertSame(true, $availability['available'], 'Open empty staging tournament must expose the manual roster fixture.');
 $assertSame('ready', $availability['reason'], 'Fixture readiness reason must be explicit.');
-$assertSame(7, $availability['target_registered_count'], 'Eight-player manual acceptance must leave the eighth seat live.');
-$assertSame(7, $availability['remaining_fixture_slots'], 'Empty tournament must require seven synthetic seats.');
+$assertSame(7, $availability['target_registered_count'], 'Eight-player one-live manual acceptance must leave the eighth seat live.');
+$assertSame(7, $availability['remaining_fixture_slots'], 'Empty one-live tournament must require seven synthetic seats.');
+$assertSame(true, (bool)$availability['modes']['2']['available'], 'Two-live staging mode must be available on an empty tournament.');
+$assertSame(6, (int)$availability['modes']['2']['target_registered_count'], 'Two-live staging mode must target 6/8.');
+$assertSame(6, (int)$availability['modes']['2']['remaining_fixture_slots'], 'Two-live staging mode must require six synthetic seats.');
 
 $legacyBrokenMgwId = 'MGW-STG-a1b2c3d4e5f6';
 $legacyBrokenUserId = 'stg_tour_a1b2c3d4e5f6';
@@ -413,24 +416,27 @@ $assertSame(
     'Fresh post-reset tournament must reopen registration normally.'
 );
 
-$freshPrepared = $fixture->fillToOneManualSeat($server);
-$assertSame('prepared', $freshPrepared['status'], 'Fresh post-reset tournament must support a second manual 7/8 preparation.');
-$assertSame(7, $freshPrepared['created_count'], 'Second tournament must create seven new synthetic fixture participants.');
-$assertSame(7, $freshPrepared['registered_count'], 'Second tournament must stop at the exact 7/8 boundary.');
-$assertSame(8, $freshPrepared['capacity'], 'Second tournament must preserve canonical capacity.');
-$assertSame(1, $freshPrepared['manual_seats_left'], 'Second tournament must keep the eighth seat live.');
+$twoLiveServer = $server;
+$twoLiveServer['HTTP_X_MGW_MANUAL_LIVE_SEATS'] = '2';
+$freshPrepared = $fixture->fillToOneManualSeat($twoLiveServer);
+$assertSame('prepared', $freshPrepared['status'], 'Fresh post-reset tournament must support two-live 6/8 preparation.');
+$assertSame(6, $freshPrepared['created_count'], 'Two-live tournament must create six new synthetic fixture participants.');
+$assertSame(6, $freshPrepared['registered_count'], 'Two-live tournament must stop at the exact 6/8 boundary.');
+$assertSame(8, $freshPrepared['capacity'], 'Two-live tournament must preserve canonical capacity.');
+$assertSame(2, $freshPrepared['manual_seats_left'], 'Two-live tournament must keep exactly two live seats.');
+$assertSame(2, $freshPrepared['requested_live_seats'], 'Two-live staging header must reach the existing fixture owner.');
 $assertSame(
-    7,
+    6,
     (int)($freshPrepared['runtime_fixture_parity']['expected_active_fixture_users'] ?? -1),
-    'Second preparation must verify exactly seven active tournament fixture runtime identities.'
+    'Two-live preparation must verify exactly six active tournament fixture runtime identities.'
 );
 $assertSame(
-    7,
+    6,
     count($runtimeUsers),
-    'Runtime fixture callback state must contain only the seven identities for the new tournament after reset/reseed.'
+    'Runtime fixture callback state must contain only the six identities for the new tournament after reset/reseed.'
 );
 $freshParticipantIds = $tournaments->registeredParticipantMgwIds($freshTournamentId);
-$assertSame(7, count($freshParticipantIds), 'Second tournament must own exactly seven registered synthetic participants.');
+$assertSame(6, count($freshParticipantIds), 'Two-live tournament must own exactly six registered synthetic participants.');
 $assertSame(
     0,
     count(array_intersect($fixtureIdsAfterReset, $freshParticipantIds)),
