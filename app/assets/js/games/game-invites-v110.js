@@ -1401,7 +1401,11 @@ function enhanceResultSheet(){
   const game = state.activeGame;
   if (game && String(game.status || '') === 'finished') lastFinishedGame = game;
   const finished = game && String(game.status || '') === 'finished' ? game : lastFinishedGame;
-  if (!finished?.id || finished.is_bot_game || !Array.isArray(finished.players) || finished.players.length !== 2) return;
+  if (!finished?.id
+      || String(finished.match_source || '') === 'tournament'
+      || finished.is_bot_game
+      || !Array.isArray(finished.players)
+      || finished.players.length !== 2) return;
 
   const button = document.createElement('button');
   button.className = 'btn primary full';
