@@ -51,20 +51,21 @@ $assert(($game['launch_phase'] ?? '') === 'preparing', 'Countdown must wait for 
 $clock->markReady($game, 'player_b', 'raw-session-b', 'raw-device-b');
 $clock->advance($game);
 $assert(($game['launch_phase'] ?? '') === 'countdown', 'Both ready players must create one shared countdown.');
-$assert((int)($game['clock_revision'] ?? 0) === 1, 'First turn must own clock revision one.');
+$assert((int)($game['clock_revision'] ?? 0) === 0, 'Tic-Tac-Toe first-turn clock must not start behind the launch overlay.');
 $startsAt = strtotime((string)($game['starts_at'] ?? '')) ?: 0;
-$turnStartsAt = strtotime((string)($game['turn_starts_at'] ?? '')) ?: 0;
-$deadlineAt = strtotime((string)($game['turn_deadline_at'] ?? '')) ?: 0;
 $assert($startsAt > time(), 'Shared starts_at must be in the future.');
-$assert($turnStartsAt === $startsAt, 'First turn must start at the exact shared match start.');
-$assert($deadlineAt - $turnStartsAt === MatchPreparationClockService::MOVE_TIMEOUT_SEC, 'First player must receive the full move timeout.');
+$assert(empty($game['turn_starts_at']), 'Tic-Tac-Toe turn start must remain unset during countdown.');
+$assert(empty($game['turn_deadline_at']), 'Tic-Tac-Toe turn deadline must remain unset during countdown.');
 
 $game['starts_at'] = gmdate('c', time() - 1);
-$game['turn_started_at'] = $game['starts_at'];
-$game['turn_starts_at'] = $game['starts_at'];
-$game['turn_deadline_at'] = gmdate('c', time() - 1 + MatchPreparationClockService::MOVE_TIMEOUT_SEC);
+$game['starts_epoch_ms'] = (time() - 1) * 1000;
 $clock->advance($game);
 $assert(($game['launch_phase'] ?? '') === 'active', 'Countdown must activate only after starts_at.');
+$assert((int)($game['clock_revision'] ?? 0) === 1, 'First playable turn must own clock revision one after countdown.');
+$turnStartsAt = strtotime((string)($game['turn_starts_at'] ?? '')) ?: 0;
+$deadlineAt = strtotime((string)($game['turn_deadline_at'] ?? '')) ?: 0;
+$assert($turnStartsAt > 0, 'First playable turn must receive an authoritative start after countdown.');
+$assert($deadlineAt - $turnStartsAt === MatchPreparationClockService::MOVE_TIMEOUT_SEC, 'First player must receive the full move timeout after countdown.');
 $clock->assertActionAllowed($game);
 
 $previousTurn = 'player_a';
