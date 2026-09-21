@@ -27,11 +27,6 @@ final class TournamentHallService
     ): array {
         $participant = $this->participant($mgwId, $accountRef, $legacyUserId);
         $moment = $this->moment($now);
-        $start = $this->scheduledStart($participant);
-        if ($moment >= $start) {
-            $this->ensureBracketGenerated((string)$participant['tournament_id'], $moment);
-            $participant = $this->participant($mgwId, $accountRef, $legacyUserId);
-        }
         return $this->snapshot($participant, $moment);
     }
 
