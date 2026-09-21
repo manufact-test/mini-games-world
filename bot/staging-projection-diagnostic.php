@@ -7,6 +7,7 @@ header('X-Content-Type-Options: nosniff');
 
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/services/GitHubActionsOidcVerifier.php';
+require_once __DIR__ . '/tournaments/StagingTournamentManualAcceptanceService.php';
 
 try {
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
@@ -70,10 +71,16 @@ try {
     );
     $migrationResult = $migrationController->run();
 
-    $tournamentSnapshot = (new TournamentRegistrationService(
+    $ledger = new LedgerWriteService($db);
+    $tournaments = new TournamentRegistrationService($db, $ledger);
+    $fixture = new StagingTournamentManualAcceptanceService(
+        $config,
         $db,
-        new LedgerWriteService($db)
-    ))->snapshot();
+        $ledger,
+        $tournaments
+    );
+    $fixtureOwnershipRepair = $fixture->repairLegacyFixtureOwnership($_SERVER);
+    $tournamentSnapshot = $tournaments->snapshot();
 
     // The canonical browser shell can preload the public rating archive while
     // an unrelated game test is running. Prove that read owner here so an HTTP
@@ -124,6 +131,7 @@ try {
         'failures'=>$failures,
         'tournament'=>$tournamentSnapshot['tournament'] ?? null,
         'registered_count'=>(int)($tournamentSnapshot['tournament']['registered_count'] ?? 0),
+        'tournament_fixture_ownership_repair'=>$fixtureOwnershipRepair,
         'rating_archive'=>[
             'competition_state'=>(string)($ratingArchiveOverview['competition_state'] ?? ''),
             'current_season_id'=>(string)($ratingArchiveOverview['current_season_id'] ?? ''),
