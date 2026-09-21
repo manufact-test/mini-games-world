@@ -239,12 +239,12 @@ foreach ([
 }
 
 $assertTrue(
-    str_contains($source['manifest'], 'client.js?v=1142')
+    str_contains($source['manifest'], 'client.js?v=1143')
     && str_contains($source['manifest'], 'mvp21_2=tournament-rules-consent-v1'),
     'Corrective release must force a fresh API client module.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=16')
+    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=17')
     && str_contains($source['manifest'], 'mvp21_2=tournament-rules-copy-v2')
     && str_contains($source['manifest'], 'balance=visible-freeze-v2')
     && str_contains($source['manifest'], 'mvp21_3=schedule-local-time-v2'),
