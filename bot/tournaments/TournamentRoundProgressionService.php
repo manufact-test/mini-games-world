@@ -366,11 +366,12 @@ final class TournamentRoundProgressionService
             );
             if ($exists > 0) return;
 
-            $completedAt = $moment;
+            $completedAt = null;
             foreach ($rows as $row) {
                 $candidate = $this->parseUtc((string)$row['completed_at_utc']);
-                if ($candidate > $completedAt) $completedAt = $candidate;
+                if ($completedAt === null || $candidate > $completedAt) $completedAt = $candidate;
             }
+            if (!$completedAt instanceof DateTimeImmutable) return;
             $opens = $completedAt->modify('+' . self::ROUND_BREAK_SECONDS . ' seconds');
 
             if (count($rows) === 2) {
