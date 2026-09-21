@@ -133,7 +133,7 @@ foreach ([
 $assert(str_contains($source['manifest'], 'client.js?v=1143')
         && str_contains($source['manifest'], 'mvp21_5=ready-v1'),
     'API client must publish a fresh MVP-21.5 cache identity.');
-$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=17')
+$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=18')
         && str_contains($source['manifest'], 'mvp21_5=ready-first-match-v1'),
     'Tournament screen must publish a fresh MVP-21.5 cache identity.');
 $assert(str_contains($source['manifest'], 'production-v110-acceptance-runtime.js?v=131')
