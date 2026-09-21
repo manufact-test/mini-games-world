@@ -80,7 +80,26 @@ try {
         $tournaments
     );
     $fixtureOwnershipRepair = $fixture->repairLegacyFixtureOwnership($_SERVER);
+    $fixtureRuntimeParity = $fixture->repairFixtureRuntimeParity($_SERVER);
     $tournamentSnapshot = $tournaments->snapshot();
+
+    $runtimeStorage = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
+    $runtimeSnapshot = $runtimeStorage->transaction(
+        static fn(array &$data): array => $data
+    );
+    $economyPreview = (new UnifiedEconomyRuntimeSyncService(
+        $db,
+        $ledger,
+        new LedgerIntegrityVerifier($db)
+    ))->preview($runtimeSnapshot);
+    if (($economyPreview['ready'] ?? false) !== true) {
+        throw new RuntimeException(
+            'unified_economy_probe_failed: '
+            . implode('; ', is_array($economyPreview['blocking_reasons'] ?? null)
+                ? $economyPreview['blocking_reasons']
+                : [])
+        );
+    }
 
     // The canonical browser shell can preload the public rating archive while
     // an unrelated game test is running. Prove that read owner here so an HTTP
@@ -132,6 +151,16 @@ try {
         'tournament'=>$tournamentSnapshot['tournament'] ?? null,
         'registered_count'=>(int)($tournamentSnapshot['tournament']['registered_count'] ?? 0),
         'tournament_fixture_ownership_repair'=>$fixtureOwnershipRepair,
+        'tournament_fixture_runtime_parity'=>$fixtureRuntimeParity,
+        'unified_economy_preview'=>[
+            'ready'=>(bool)($economyPreview['ready'] ?? false),
+            'reconciled'=>(bool)($economyPreview['reconciled'] ?? false),
+            'source_user_count'=>(int)($economyPreview['source_user_count'] ?? 0),
+            'planned_delta_count'=>(int)($economyPreview['planned_delta_count'] ?? 0),
+            'blocking_reasons'=>is_array($economyPreview['blocking_reasons'] ?? null)
+                ? array_values($economyPreview['blocking_reasons'])
+                : [],
+        ],
         'rating_archive'=>[
             'competition_state'=>(string)($ratingArchiveOverview['competition_state'] ?? ''),
             'current_season_id'=>(string)($ratingArchiveOverview['current_season_id'] ?? ''),
