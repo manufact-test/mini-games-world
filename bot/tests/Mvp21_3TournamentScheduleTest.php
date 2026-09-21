@@ -207,6 +207,16 @@ foreach ($notificationData['notifications'] as $notification) {
     $assertSame('official-tournament:' . $tournamentId, (string)$notification['audience_ref'], 'Tournament reminder audience must remain bound to one tournament.');
 }
 $assertTrue(isset($titles['Дата турнира назначена']), 'Participants must receive immediate date-assigned notice.');
+$assignmentRows = array_values(array_filter(
+    $notificationData['notifications'],
+    static fn(array $row): bool => (string)($row['title'] ?? '') === 'Дата турнира назначена'
+));
+$assertSame(8, count($assignmentRows), 'Date assignment must have exactly one immediate row per participant.');
+$assertTrue(
+    str_contains((string)$assignmentRows[0]['message'], 'ваше местное время')
+        && !str_contains((string)$assignmentRows[0]['message'], ' UTC'),
+    'Immediate assignment notice must never present the canonical UTC timestamp as the player clock.'
+);
 $assertTrue(isset($titles['Турнир начнётся через день']), 'Participants must receive 24-hour reminder.');
 $assertTrue(isset($titles['Турнир начнётся через час']), 'Participants must receive one-hour reminder.');
 $assertTrue(isset($titles['Турнир начнётся через 15 минут']), 'Participants must receive 15-minute reminder.');
