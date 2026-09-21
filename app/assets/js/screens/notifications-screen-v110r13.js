@@ -318,6 +318,7 @@ async function refreshNotifications({ announce = false } = {}){
 }
 
 async function markAllNotificationsRead(){
+  invalidateNotificationReads();
   const unread = currentItems().filter(item => !item.read);
   if (!unread.length) return;
   markAllReadLocally();
@@ -335,6 +336,7 @@ async function markAllNotificationsRead(){
 }
 
 async function markOneNotificationRead(id){
+  invalidateNotificationReads();
   const item = itemById(id);
   if (!item?.id || item.read) return;
   setItemReadLocally(id);
@@ -352,6 +354,7 @@ async function markOneNotificationRead(id){
 }
 
 async function deleteNotification(id){
+  invalidateNotificationReads();
   const item = itemById(id);
   if (!item?.id) return;
   const backup = cloneItem(item);
@@ -535,13 +538,37 @@ function setItemReadLocally(id){
   for (const [key, item] of sheetState.pinned.entries()) {
     if (String(item?.id || '') === targetId) sheetState.pinned.set(key, { ...item, read:true });
   }
+  for (const [key, entry] of localAuthority.entries()) {
+    if (String(entry?.item?.id || '') !== targetId) continue;
+    localAuthority.set(key, {
+      ...entry,
+      item:{ ...entry.item, read:true },
+      expiresAt:Date.now() + LOCAL_AUTHORITY_MS,
+    });
+  }
+  if (String(toastItem?.id || '') === targetId && toastItem) toastItem = { ...toastItem, read:true };
+  if (String(pressedToastItem?.id || '') === targetId && pressedToastItem) pressedToastItem = { ...pressedToastItem, read:true };
   persistItems();
 }
 
 function markAllReadLocally(){
   for (const [id, item] of items.entries()) items.set(id, { ...item, read:true });
   for (const [key, item] of sheetState.pinned.entries()) sheetState.pinned.set(key, { ...item, read:true });
+  for (const [key, entry] of localAuthority.entries()) {
+    if (!entry?.item) continue;
+    localAuthority.set(key, {
+      ...entry,
+      item:{ ...entry.item, read:true },
+      expiresAt:Date.now() + LOCAL_AUTHORITY_MS,
+    });
+  }
+  if (toastItem) toastItem = { ...toastItem, read:true };
+  if (pressedToastItem) pressedToastItem = { ...pressedToastItem, read:true };
   persistItems();
+}
+
+function invalidateNotificationReads(){
+  notificationReadGeneration += 1;
 }
 
 function removeItemById(id){
@@ -1128,6 +1155,7 @@ function notificationIcon(tone, type){
 
 function notificationMessage(item){
   let message = String(item?.message || '').trim();
+  message = localizeLegacyTournamentAssignedMessage(item, message);
   if (!message) return terminalNotificationFallback(item);
   if (item?.type === 'friend_request' && !message.includes('Откройте заявку')) {
     message += ' Откройте заявку, чтобы посмотреть профиль и принять или отклонить её.';
@@ -1144,6 +1172,23 @@ function notificationMessage(item){
   ];
   for (const pattern of technical) message = message.replace(pattern, ' ');
   return message.replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').replace(/\.{2,}/g, '.').trim();
+}
+
+function localizeLegacyTournamentAssignedMessage(item, message){
+  if (String(item?.title || '') !== 'Дата турнира назначена' || !message) return message;
+  const match = message.match(/начнётся\s+(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})\s+UTC/iu);
+  if (!match) return message;
+  const [, day, month, year, hour, minute] = match;
+  const date = new Date(`${year}-${month}-${day}T${hour}:${minute}:00Z`);
+  if (Number.isNaN(date.getTime())) return message;
+  const local = new Intl.DateTimeFormat('ru-RU', {
+    day:'2-digit',
+    month:'2-digit',
+    year:'numeric',
+    hour:'2-digit',
+    minute:'2-digit',
+  }).format(date);
+  return message.replace(match[0], `начнётся ${local} по вашему времени`);
 }
 
 function terminalNotificationFallback(item){
