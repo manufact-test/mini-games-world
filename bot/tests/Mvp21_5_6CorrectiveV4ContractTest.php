@@ -38,7 +38,7 @@ $assert(str_contains($screen, "document.addEventListener('mgw:tournament-progres
     'Tournament screen must accept explicit return-to-progression navigation.');
 
 $assert(str_contains($gameRuntime, "new MatchPreparationClockService())->enrichPublicGame")
-        && str_contains($specialRuntime, "return $this->matchPreparationClock->enrichPublicGame"),
+        && str_contains($specialRuntime, 'return $this->matchPreparationClock->enrichPublicGame'),
     'All runtime families must project the authoritative Phase-B clock.');
 $assert(str_contains($clock, "'turn_deadline_epoch_ms'] = null")
         && str_contains($clock, '$this->assignTurnClock($game, $turn)')
