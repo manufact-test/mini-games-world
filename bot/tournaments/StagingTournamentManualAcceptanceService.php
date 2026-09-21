@@ -121,6 +121,7 @@ final class StagingTournamentManualAcceptanceService
         );
         $needed = $target - $registered;
         $created = [];
+        $runtimeBatch = [];
 
         for ($slot = 1; count($created) < $needed && $slot <= 256; $slot++) {
             $identity = $this->fixtureIdentity($tournamentId, $slot);
@@ -135,7 +136,7 @@ final class StagingTournamentManualAcceptanceService
                 null,
                 $consent
             );
-            $this->ensureRuntimeUser($identity, $slot);
+            $runtimeBatch[] = ['identity'=>$identity,'slot'=>$slot];
 
             $registeredIds[$identity['mgw_id']] = true;
             $created[] = [
@@ -144,6 +145,8 @@ final class StagingTournamentManualAcceptanceService
                 'registration_id'=>(string)($registration['registration']['registration_id'] ?? ''),
             ];
         }
+
+        $this->ensureRuntimeUsers($runtimeBatch);
 
         $final = $this->tournaments->snapshot();
         $finalTournament = $final['tournament'] ?? null;
@@ -767,10 +770,15 @@ final class StagingTournamentManualAcceptanceService
         }
     }
 
-    private function ensureRuntimeUser(array $identity, int $slot): void
+    private function ensureRuntimeUsers(array $batch): void
     {
+        if ($batch === []) return;
+
         if ($this->runtimeUserWriter !== null) {
-            ($this->runtimeUserWriter)($identity, $slot);
+            foreach ($batch as $entry) {
+                if (!is_array($entry) || !is_array($entry['identity'] ?? null)) continue;
+                ($this->runtimeUserWriter)($entry['identity'], (int)($entry['slot'] ?? 0));
+            }
             return;
         }
 
@@ -778,8 +786,7 @@ final class StagingTournamentManualAcceptanceService
         $config = $this->config;
         $database = $this->database;
         $storage->transaction(static function (array &$data) use (
-            $identity,
-            $slot,
+            $batch,
             $config,
             $database
         ): array {
@@ -787,19 +794,24 @@ final class StagingTournamentManualAcceptanceService
                 $data['users'] = [];
             }
             $users = new UserService($config, $database);
-            $users->ensureUser($data, [
-                'id'=>$identity['legacy_user_id'],
-                'first_name'=>$identity['display_name'],
-                'username'=>'',
-                'language_code'=>'ru',
-                'is_dev_user'=>true,
-                'is_staging_test_user'=>true,
-                'staging_test_slot'=>'TOURNAMENT-' . $slot,
-                'mgw_id'=>$identity['mgw_id'],
-                'mgw_account_ref'=>$identity['account_ref'],
-                'mgw_identity_provider'=>'staging_fixture',
-                'mgw_nickname'=>'Тест ' . $slot,
-            ]);
+            foreach ($batch as $entry) {
+                if (!is_array($entry) || !is_array($entry['identity'] ?? null)) continue;
+                $identity = $entry['identity'];
+                $slot = (int)($entry['slot'] ?? 0);
+                $users->ensureUser($data, [
+                    'id'=>$identity['legacy_user_id'],
+                    'first_name'=>$identity['display_name'],
+                    'username'=>'',
+                    'language_code'=>'ru',
+                    'is_dev_user'=>true,
+                    'is_staging_test_user'=>true,
+                    'staging_test_slot'=>'TOURNAMENT-' . $slot,
+                    'mgw_id'=>$identity['mgw_id'],
+                    'mgw_account_ref'=>$identity['account_ref'],
+                    'mgw_identity_provider'=>'staging_fixture',
+                    'mgw_nickname'=>'Тест ' . $slot,
+                ]);
+            }
             return $data;
         });
     }
