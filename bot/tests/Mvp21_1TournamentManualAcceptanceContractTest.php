@@ -251,7 +251,7 @@ $assertTrue(
     'Corrective release must preserve the balance-freeze owner while forcing the fresh Tournament schedule module.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'main.css?v=198')
+    str_contains($source['manifest'], 'main.css?v=199')
     && str_contains($source['manifest'], 'mvp21_2=tournament-rules-copy-v2')
     && str_contains($source['manifest'], 'mvp21_3=tournament-schedule-v1'),
     'Corrective release must force fresh Tournament schedule CSS.'
