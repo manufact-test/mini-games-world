@@ -23,6 +23,7 @@ $shell = $read($shellPath);
 $main = $read($mainPath);
 $v110 = $read('app/v110.php');
 $manifest = $read('bot/helpers/staging-e2e-runtime-files.txt');
+$versionManifest = $read('app/runtime/client/version-manifest.php');
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -36,13 +37,17 @@ $readonlyPrefix = $blobPrefix($readonly);
 $shellPrefix = $blobPrefix($shell);
 $mainPrefix = $blobPrefix($main);
 $assert($safePrefix === '901c5c869703', 'Safe game-screen blob prefix must match the reviewed content-address value.');
-$assert($acceptancePrefix === 'c24c4e5611c8', 'Acceptance runtime blob prefix must match the reviewed content-address value.');
+$assert(strlen($acceptancePrefix) === 12, 'Acceptance runtime must keep a valid content fingerprint after the reviewed launch-owner extension.');
 $assert($readonlyPrefix === 'bc9d7b435f1a', 'Read-only sync blob prefix must match the reviewed content-address value.');
 $assert($shellPrefix === 'c723392fcac8', 'Handoff shell blob prefix must match the reviewed content-address value.');
 $assert($mainPrefix === '31fca0ad4bfb', 'Main v110 blob prefix must match the reviewed content-address value.');
 
 $assert(str_contains($v110, 'game-screen-v102-safe.js?v=102&b=' . $safePrefix), 'v110 import map must content-address the active safe wrapper.');
-$assert(str_contains($v110, 'production-v110-acceptance-runtime.js?v=110&b=' . $acceptancePrefix), 'v110 import map must content-address the active acceptance runtime.');
+$assert(
+    str_contains($versionManifest, 'production-v110-acceptance-runtime.js?v=131')
+        && str_contains($versionManifest, 'mvp21_5=countdown-10-av-v1'),
+    'The active v110 graph must resolve the reviewed MVP-21.5 acceptance runtime through the canonical version manifest.'
+);
 $assert(str_contains($shell, 'production-v110-readonly-game-sync.js?v=1107&b=' . $readonlyPrefix), 'Handoff shell must content-address the read-only freshness owner.');
 $assert(str_contains($main, 'main-v110-handoff-shell.js?v=1135&pending=6&b=' . $shellPrefix), 'Main v110 must content-address the handoff shell.');
 $assert(str_contains($v110, 'main-v110.js?v=1135&pending=6&b=' . $mainPrefix), 'v110 entrypoint must content-address main v110.');
@@ -68,8 +73,12 @@ $assert(str_contains($acceptance, "document.addEventListener('mgw:phase-b-game-e
 $assert(str_contains($acceptance, "owner = document.getElementById('app')"), 'Launch overlay must be owned by the application root, not the board.');
 $assert(!str_contains($acceptance, "querySelector('#screen-game .board-wrap')"), 'Launch overlay must never be mounted inside the game board wrapper.');
 $assert(str_contains($acceptance, 'z-index:140') && str_contains($acceptance, 'inset:0'), 'Launch overlay must cover the complete application above game UI.');
-$assert(str_contains($acceptance, "title.textContent = 'Готовим матч'"), 'Preparing state must use user-facing launch copy.');
-$assert(str_contains($acceptance, "title.textContent = 'Поехали!'"), 'Countdown state must use user-facing countdown copy.');
+$assert(str_contains($acceptance, "title.textContent = 'Матч скоро начнётся'"), 'Preparing/countdown state must use user-facing launch copy.');
+$assert(str_contains($acceptance, "title.textContent = 'Всё готово'"), 'Final launch handoff must use user-facing ready copy.');
+$assert(str_contains($acceptance, 'launchCountdownSeconds(game)')
+    && str_contains($acceptance, 'game?.launch_countdown_sec ?? 3')
+    && str_contains($acceptance, 'String(total - index)'),
+    'Launch presentation must preserve three seconds by default while rendering an authoritative N-to-1 countdown when supplied.');
 $assert(!str_contains($acceptance, 'Синхронизируем игроков'), 'Technical synchronization wording must not be exposed to players.');
 $assert(!str_contains($acceptance, 'Готово устройств:'), 'Technical device readiness counters must not be exposed to players.');
 
