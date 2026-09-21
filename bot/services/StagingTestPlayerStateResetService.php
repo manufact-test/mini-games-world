@@ -10,6 +10,7 @@ final class StagingTestPlayerResetStageException extends RuntimeException
         'json_state',
         'notification_cleanup',
         'invite_cleanup',
+        'tournament_cleanup',
         'economy',
     ];
 
@@ -197,6 +198,12 @@ final class StagingTestPlayerStateResetService
         }
 
         try {
+            $tournamentCleanup = $this->cleanupRuntimeTournamentRegistrations();
+        } catch (Throwable $error) {
+            throw new StagingTestPlayerResetStageException('tournament_cleanup', $error);
+        }
+
+        try {
             $economy = new RuntimeEconomyRepository($this->config, $this->router);
             $synchronized = $economy->synchronize($snapshot);
             $audit = $economy->auditParity($snapshot);
@@ -232,12 +239,98 @@ final class StagingTestPlayerStateResetService
             'invite_event_db_rows_removed' => (int)($inviteCleanup['invite_event_rows'] ?? 0),
             'notification_db_rows_removed' => (int)($notificationCleanup['notification_rows'] ?? 0)
                 + (int)($inviteCleanup['notification_rows'] ?? 0),
+            'tournament_registrations_withdrawn' => (int)($tournamentCleanup['withdrawn'] ?? 0),
+            'tournament_parity' => ($tournamentCleanup['parity'] ?? false) === true,
             'invite_parity' => ($inviteCleanup['parity'] ?? false) === true,
             'notification_parity' => ($notificationCleanup['parity'] ?? false) === true,
             'economy_parity' => true,
             'production_changed' => false,
             'live_payments_used' => false,
         ];
+    }
+
+    private function cleanupRuntimeTournamentRegistrations(): array
+    {
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($this->config);
+        if (!$databaseConfig->enabled()) {
+            return ['withdrawn' => 0, 'parity' => true];
+        }
+
+        $database = PdoConnectionFactory::create($databaseConfig);
+        $service = new TournamentRegistrationService(
+            $database,
+            new LedgerWriteService($database)
+        );
+        $withdrawn = 0;
+
+        foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
+            $rows = $database->fetchAll(
+                'SELECT account_ref, mgw_id, ownership_status
+                 FROM mgw_account_ownership
+                 WHERE legacy_user_id = :legacy_user_id',
+                ['legacy_user_id' => $legacyUserId]
+            );
+            if ($rows === []) {
+                continue;
+            }
+            if (count($rows) !== 1 || (string)($rows[0]['ownership_status'] ?? '') !== 'active') {
+                throw new RuntimeException('Staging test tournament cleanup ownership is unavailable.');
+            }
+
+            $accountRef = trim((string)($rows[0]['account_ref'] ?? ''));
+            $mgwId = trim((string)($rows[0]['mgw_id'] ?? ''));
+            if ($accountRef === '' || $mgwId === '') {
+                throw new RuntimeException('Staging test tournament cleanup ownership is incomplete.');
+            }
+
+            $snapshot = $service->snapshot($mgwId, $accountRef);
+            $registration = is_array($snapshot['registration'] ?? null)
+                ? $snapshot['registration']
+                : null;
+            if ($registration === null
+                || (string)($registration['state'] ?? '') !== TournamentRegistrationService::REGISTRATION_REGISTERED) {
+                continue;
+            }
+
+            $tournament = is_array($snapshot['tournament'] ?? null)
+                ? $snapshot['tournament']
+                : null;
+            if ($tournament === null
+                || (string)($tournament['state'] ?? '') !== TournamentRegistrationService::STATE_REGISTRATION_OPEN) {
+                throw new RuntimeException('Staging test tournament cleanup refuses a registered test player after registration close.');
+            }
+
+            $after = $service->leave($mgwId, $accountRef);
+            if ((string)($after['registration']['state'] ?? '') !== TournamentRegistrationService::REGISTRATION_WITHDRAWN
+                || (int)($after['balance']['reserved_amount'] ?? -1) !== 0) {
+                throw new RuntimeException('Staging test tournament cleanup did not release the reservation.');
+            }
+            $withdrawn++;
+        }
+
+        foreach (self::TEST_PLAYER_IDS as $legacyUserId) {
+            $rows = $database->fetchAll(
+                'SELECT account_ref, mgw_id, ownership_status
+                 FROM mgw_account_ownership
+                 WHERE legacy_user_id = :legacy_user_id',
+                ['legacy_user_id' => $legacyUserId]
+            );
+            if ($rows === []) continue;
+            if (count($rows) !== 1 || (string)($rows[0]['ownership_status'] ?? '') !== 'active') {
+                throw new RuntimeException('Staging test tournament cleanup parity ownership is unavailable.');
+            }
+
+            $snapshot = $service->snapshot(
+                trim((string)($rows[0]['mgw_id'] ?? '')),
+                trim((string)($rows[0]['account_ref'] ?? ''))
+            );
+            if ((string)($snapshot['registration']['state'] ?? '') === TournamentRegistrationService::REGISTRATION_REGISTERED
+                || (int)($snapshot['balance']['reserved_amount'] ?? 0) !== 0) {
+                throw new RuntimeException('Staging test tournament cleanup did not restore A/B tournament parity.');
+            }
+        }
+
+        return ['withdrawn' => $withdrawn, 'parity' => true];
     }
 
     private function testOnlyInviteParticipants(array $invite, array $testIds): ?array
