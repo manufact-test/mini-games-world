@@ -134,6 +134,8 @@ export const api = {
   tournamentHallEnter: () => requestUrl(TOURNAMENT_HALL_URL, { action:'enter' }),
   tournamentHallHeartbeat: () => requestUrl(TOURNAMENT_HALL_URL, { action:'heartbeat' }),
   tournamentHallPresence: () => requestUrl(TOURNAMENT_HALL_URL, { action:'heartbeat' }),
+  tournamentMatchState: () => request('tournament_match_state'),
+  tournamentMatchReady: () => request('tournament_match_ready'),
   tournamentRegister: rules => request('tournament_register', {
     tournamentRulesAccepted:rules?.accepted === true,
     tournamentRulesVersion:String(rules?.version || ''),
