@@ -10,6 +10,7 @@ require_once dirname(__DIR__) . '/games/reversi/ReversiService.php';
 require_once dirname(__DIR__) . '/runtime/UnifiedGameZonePolicy.php';
 require_once __DIR__ . '/MatchmakingQueue.php';
 require_once __DIR__ . '/BotProfilePolicy.php';
+require_once __DIR__ . '/MatchPreparationClockService.php';
 
 final class GameRuntimeService
 {
@@ -331,6 +332,27 @@ final class GameRuntimeService
             default => $this->legacyGame->publicGame($game, $viewerId),
         };
         $public = $this->botProfiles->sanitizePublicGame($public, $game);
+
+        // Phase-B owns the public launch/turn clock for every supported engine.
+        // Engine-specific legacy time_left values are fallback data only and must
+        // not spend the first turn behind a tournament launch countdown.
+        if (array_key_exists('launch_phase', $game)) {
+            $public = (new MatchPreparationClockService())->enrichPublicGame($game, $public);
+        }
+
+        if ((string)($game['match_source'] ?? '') === 'tournament') {
+            $public = array_replace($public, [
+                'match_source'=>'tournament',
+                'tournament_id'=>(string)($game['tournament_id'] ?? ''),
+                'tournament_round_no'=>(int)($game['tournament_round_no'] ?? 0),
+                'tournament_pair_no'=>(int)($game['tournament_pair_no'] ?? 0),
+                'tournament_attempt_no'=>max(1, (int)($game['tournament_attempt_no'] ?? 1)),
+                'tournament_match_kind'=>(string)($game['tournament_match_kind'] ?? 'elimination'),
+                'tournament_wait_kind'=>(string)($game['tournament_wait_kind'] ?? 'initial_ready'),
+                'tournament_side_swap'=>!empty($game['tournament_side_swap']),
+                'rematch_available'=>false,
+            ]);
+        }
 
         return [
             'game_type' => $gameType,
