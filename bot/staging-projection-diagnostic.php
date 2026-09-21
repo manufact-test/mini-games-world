@@ -298,6 +298,130 @@ try {
         'sensitive_identifiers_exposed'=>false,
     ];
 
+    $primaryStorage = new DatabasePrimaryStateStorageAdapter($db);
+    $primaryStatus = $primaryStorage->status();
+    $primarySnapshot = $primaryStorage->readOnly(
+        static fn(array $data): array => $data
+    );
+
+    $snapshotNotificationDiff = static function (
+        array $leftSnapshot,
+        array $rightSnapshot,
+        string $legacyUserId
+    ) use ($normalizeDiagnosticNotification): array {
+        $index = static function (array $snapshot) use (
+            $legacyUserId,
+            $normalizeDiagnosticNotification
+        ): array {
+            $result = [];
+            foreach (is_array($snapshot['notifications'] ?? null) ? $snapshot['notifications'] : [] as $notification) {
+                if (!is_array($notification)
+                    || trim((string)($notification['user_id'] ?? '')) !== $legacyUserId) {
+                    continue;
+                }
+                $eventKey = trim((string)($notification['event_key'] ?? ''));
+                if ($eventKey === '') continue;
+                $result[$eventKey] = $normalizeDiagnosticNotification($notification);
+            }
+            return $result;
+        };
+
+        $left = $index($leftSnapshot);
+        $right = $index($rightSnapshot);
+        $leftOnly = array_values(array_diff(array_keys($left), array_keys($right)));
+        $rightOnly = array_values(array_diff(array_keys($right), array_keys($left)));
+        sort($leftOnly, SORT_STRING);
+        sort($rightOnly, SORT_STRING);
+        $fieldCounts = [];
+        $samples = [];
+        foreach (array_intersect(array_keys($left), array_keys($right)) as $eventKey) {
+            $different = [];
+            foreach ($left[$eventKey] as $field=>$leftValue) {
+                if (($right[$eventKey][$field] ?? null) === $leftValue) continue;
+                $different[] = (string)$field;
+                $fieldCounts[$field] = (int)($fieldCounts[$field] ?? 0) + 1;
+            }
+            if ($different === [] || count($samples) >= 12) continue;
+            sort($different, SORT_STRING);
+            $samples[] = [
+                'event_ref_sha256'=>substr(hash('sha256', $eventKey), 0, 16),
+                'notification_type'=>(string)($left[$eventKey]['type'] ?? ''),
+                'source_type'=>(string)($left[$eventKey]['source_type'] ?? ''),
+                'audience_type'=>(string)($left[$eventKey]['audience_type'] ?? ''),
+                'differing_fields'=>$different,
+            ];
+        }
+        ksort($fieldCounts, SORT_STRING);
+        return [
+            'left_count'=>count($left),
+            'right_count'=>count($right),
+            'left_only_event_refs'=>array_map(
+                static fn(string $eventKey): string => substr(hash('sha256', $eventKey), 0, 16),
+                array_slice($leftOnly, 0, 12)
+            ),
+            'right_only_event_refs'=>array_map(
+                static fn(string $eventKey): string => substr(hash('sha256', $eventKey), 0, 16),
+                array_slice($rightOnly, 0, 12)
+            ),
+            'mismatch_field_counts'=>$fieldCounts,
+            'mismatch_samples'=>$samples,
+        ];
+    };
+
+    $primaryNotificationFailures = [];
+    $primaryNotificationChecked = 0;
+    foreach (is_array($primarySnapshot['users'] ?? null) ? $primarySnapshot['users'] : [] as $key=>$primaryUser) {
+        if (!is_array($primaryUser)) continue;
+        $legacyUserId = trim((string)($primaryUser['id'] ?? $key));
+        if ($legacyUserId === '') continue;
+        $primaryNotificationChecked++;
+        $classification = in_array($legacyUserId, ['stg_test_player_a','stg_test_player_b'], true)
+            ? 'technical_ab'
+            : (preg_match('/^stg_tour_(?:v2_)?[a-f0-9]{12}$/', $legacyUserId) === 1
+                ? 'tournament_fixture'
+                : 'runtime_user');
+        try {
+            $report = $notificationRepository->auditParity($primarySnapshot, $legacyUserId);
+            if (($report['ok'] ?? false) === true) continue;
+            $primaryNotificationFailures[] = [
+                'user_ref_sha256'=>substr(hash('sha256', $legacyUserId), 0, 16),
+                'classification'=>$classification,
+                'source_count'=>(int)($report['source_count'] ?? 0),
+                'database_count'=>(int)($report['database_count'] ?? 0),
+                'source_fingerprint'=>(string)($report['source_fingerprint'] ?? ''),
+                'database_fingerprint'=>(string)($report['database_fingerprint'] ?? ''),
+                'blockers'=>array_values(array_map(
+                    static fn(mixed $value): string => substr(trim((string)$value), 0, 240),
+                    is_array($report['blockers'] ?? null) ? $report['blockers'] : []
+                )),
+                'rollback_vs_primary'=>$snapshotNotificationDiff(
+                    $runtimeSnapshot,
+                    $primarySnapshot,
+                    $legacyUserId
+                ),
+            ];
+        } catch (Throwable $primaryNotificationError) {
+            $primaryNotificationFailures[] = [
+                'user_ref_sha256'=>substr(hash('sha256', $legacyUserId), 0, 16),
+                'classification'=>$classification,
+                'source_count'=>null,
+                'database_count'=>null,
+                'source_fingerprint'=>'',
+                'database_fingerprint'=>'',
+                'blockers'=>['audit_exception:' . get_class($primaryNotificationError)],
+            ];
+        }
+    }
+    $primaryNotificationParity = [
+        'ok'=>$primaryNotificationFailures === [],
+        'checked_user_count'=>$primaryNotificationChecked,
+        'failure_count'=>count($primaryNotificationFailures),
+        'primary_revision'=>(int)($primaryStatus['revision'] ?? 0),
+        'primary_state_sha256'=>(string)($primaryStatus['state_sha256'] ?? ''),
+        'failures'=>$primaryNotificationFailures,
+        'sensitive_identifiers_exposed'=>false,
+    ];
+
     // The canonical browser shell can preload the public rating archive while
     // an unrelated game test is running. Prove that read owner here so an HTTP
     // 500 becomes an exact OIDC-protected staging diagnostic instead of a
@@ -359,6 +483,7 @@ try {
                 : [],
         ],
         'notification_runtime_parity'=>$notificationParity,
+        'notification_primary_parity'=>$primaryNotificationParity,
         'rating_archive'=>[
             'competition_state'=>(string)($ratingArchiveOverview['competition_state'] ?? ''),
             'current_season_id'=>(string)($ratingArchiveOverview['current_season_id'] ?? ''),
