@@ -288,10 +288,14 @@ foreach ([
     'tournaments-v2-tournament-schedule',
     'data-tournament-countdown',
     'formatTournamentCountdown',
-    'Время старта наступило',
+    'Турнир начался',
 ] as $needle) {
     $assertTrue(str_contains($source['screen'], $needle), 'Player tournament schedule/countdown missing: ' . $needle);
 }
+$assertTrue(
+    !str_contains($source['screen'], 'Время старта наступило'),
+    'Player tournament post-start state must not retain stale pre-start wording.'
+);
 $assertTrue(
     str_contains($source['css'], '.tournaments-v2-tournament-schedule{')
     && str_contains($source['css'], '.tournaments-v2-tournament-countdown{'),
