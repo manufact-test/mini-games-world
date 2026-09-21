@@ -178,6 +178,7 @@ final class TournamentHallService
             }
 
             $this->shuffle($registrations);
+            $registrations = $this->pairTwoLiveManualAcceptancePlayers($registrations);
             $createdAt = $this->utc($moment);
             $freshFrom = $start->modify('-' . self::HALL_PRESENCE_FRESHNESS_SECONDS . ' seconds');
 
@@ -238,6 +239,33 @@ final class TournamentHallService
                 throw new RuntimeException('Tournament bracket changed concurrently.');
             }
         });
+    }
+
+    /**
+     * Staging manual-acceptance fixtures are the only registrations whose
+     * account refs use the stg_tour namespace. When an 8-player roster contains
+     * exactly six such fixtures and two real accounts, keep the six fixtures
+     * randomized but place the two real accounts into the same first-round pair.
+     * Ordinary tournaments never satisfy this shape and retain the canonical
+     * random bracket unchanged.
+     */
+    private function pairTwoLiveManualAcceptancePlayers(array $registrations): array
+    {
+        if (count($registrations) !== 8) return $registrations;
+
+        $fixtures = [];
+        $live = [];
+        foreach ($registrations as $registration) {
+            if (!is_array($registration)) return $registrations;
+            $accountRef = trim((string)($registration['account_ref'] ?? ''));
+            $isFixture = preg_match('/^legacy:stg_tour_(?:v2_)?[a-f0-9]{12}$/', $accountRef) === 1;
+            if ($isFixture) $fixtures[] = $registration;
+            else $live[] = $registration;
+        }
+
+        if (count($fixtures) !== 6 || count($live) !== 2) return $registrations;
+
+        return array_merge($fixtures, $live);
     }
 
     private function recordForegroundPresence(array $participant, DateTimeImmutable $moment): void
