@@ -101,6 +101,149 @@ try {
         );
     }
 
+    $notificationTimestamp = static function (mixed $value): ?string {
+        $value = trim((string)($value ?? ''));
+        if ($value === '') return null;
+        try {
+            return (new DateTimeImmutable($value))
+                ->setTimezone(new DateTimeZone('UTC'))
+                ->format('Y-m-d H:i:s.u');
+        } catch (Throwable) {
+            return 'invalid_timestamp';
+        }
+    };
+    $normalizeDiagnosticNotification = static function (array $notification) use ($notificationTimestamp): array {
+        return [
+            'id'=>trim((string)($notification['id'] ?? '')),
+            'event_key'=>trim((string)($notification['event_key'] ?? '')),
+            'notification_event_id'=>trim((string)($notification['notification_event_id'] ?? '')),
+            'event_fingerprint'=>trim((string)($notification['event_fingerprint'] ?? '')),
+            'user_id'=>trim((string)($notification['user_id'] ?? '')),
+            'type'=>trim((string)($notification['type'] ?? '')),
+            'source_type'=>trim((string)($notification['source_type'] ?? '')),
+            'audience_type'=>trim((string)($notification['audience_type'] ?? '')),
+            'audience_ref'=>trim((string)($notification['audience_ref'] ?? '')),
+            'title'=>(string)($notification['title'] ?? 'Уведомление'),
+            'message'=>(string)($notification['message'] ?? ''),
+            'text'=>(string)($notification['text'] ?? $notification['message'] ?? ''),
+            'tone'=>trim((string)($notification['tone'] ?? 'info')) ?: 'info',
+            'order_id'=>trim((string)($notification['order_id'] ?? '')),
+            'payment_id'=>trim((string)($notification['payment_id'] ?? '')),
+            'transaction_id'=>trim((string)($notification['transaction_id'] ?? '')),
+            'invite_token'=>trim((string)($notification['invite_token'] ?? '')),
+            'cycle_key'=>trim((string)($notification['cycle_key'] ?? '')),
+            'deep_link'=>trim((string)($notification['deep_link'] ?? '')),
+            'created_by'=>trim((string)($notification['created_by'] ?? '')),
+            'created_at'=>$notificationTimestamp($notification['created_at'] ?? null),
+            'scheduled_at'=>$notificationTimestamp($notification['scheduled_at'] ?? null),
+            'delivered_at'=>$notificationTimestamp($notification['delivered_at'] ?? null),
+            'read_at'=>$notificationTimestamp($notification['read_at'] ?? null),
+            'hidden_at'=>$notificationTimestamp($notification['hidden_at'] ?? null),
+            'expires_at'=>$notificationTimestamp($notification['expires_at'] ?? null),
+        ];
+    };
+    $notificationFieldDiff = static function (string $legacyUserId) use (
+        $db,
+        $runtimeSnapshot,
+        $normalizeDiagnosticNotification
+    ): array {
+        $ownershipRows = $db->fetchAll(
+            'SELECT account_ref
+             FROM mgw_account_ownership
+             WHERE legacy_user_id=:legacy_user_id
+               AND ownership_status=:ownership_status',
+            ['legacy_user_id'=>$legacyUserId,'ownership_status'=>'active']
+        );
+        if (count($ownershipRows) !== 1) {
+            return [
+                'source_only_event_refs'=>[],
+                'database_only_event_refs'=>[],
+                'mismatch_field_counts'=>['ownership_scope'=>1],
+                'mismatch_samples'=>[],
+            ];
+        }
+        $accountRef = trim((string)($ownershipRows[0]['account_ref'] ?? ''));
+        $sourceByEvent = [];
+        foreach (is_array($runtimeSnapshot['notifications'] ?? null) ? $runtimeSnapshot['notifications'] : [] as $notification) {
+            if (!is_array($notification)
+                || trim((string)($notification['user_id'] ?? '')) !== $legacyUserId) {
+                continue;
+            }
+            $eventKey = trim((string)($notification['event_key'] ?? ''));
+            if ($eventKey === '') continue;
+            $sourceByEvent[$eventKey] = $normalizeDiagnosticNotification($notification);
+        }
+
+        $databaseByEvent = [];
+        foreach ($db->fetchAll(
+            'SELECT notification_id,event_key,legacy_user_id,type,title,message,tone,invite_token,
+                    payload_json,created_at_utc,read_at_utc,hidden_at_utc
+             FROM mgw_notifications
+             WHERE recipient_ref=:recipient_ref',
+            ['recipient_ref'=>$accountRef]
+        ) as $row) {
+            if (!is_array($row)) continue;
+            $eventKey = trim((string)($row['event_key'] ?? ''));
+            if ($eventKey === '') continue;
+            $payload = [];
+            try {
+                $decoded = json_decode((string)($row['payload_json'] ?? ''), true, 512, JSON_THROW_ON_ERROR);
+                if (is_array($decoded)) $payload = $decoded;
+            } catch (Throwable) {
+                $payload = [];
+            }
+            $payload['id'] = (string)($row['notification_id'] ?? '');
+            $payload['event_key'] = $eventKey;
+            $payload['user_id'] = (string)($row['legacy_user_id'] ?? '');
+            $payload['type'] = (string)($row['type'] ?? '');
+            $payload['title'] = (string)($row['title'] ?? 'Уведомление');
+            $payload['message'] = (string)($row['message'] ?? '');
+            $payload['tone'] = trim((string)($row['tone'] ?? '')) ?: 'info';
+            $payload['invite_token'] = (string)($row['invite_token'] ?? '');
+            $payload['created_at'] = $row['created_at_utc'] ?? null;
+            $payload['read_at'] = $row['read_at_utc'] ?? null;
+            $payload['hidden_at'] = $row['hidden_at_utc'] ?? null;
+            $databaseByEvent[$eventKey] = $normalizeDiagnosticNotification($payload);
+        }
+
+        $sourceOnly = array_values(array_diff(array_keys($sourceByEvent), array_keys($databaseByEvent)));
+        $databaseOnly = array_values(array_diff(array_keys($databaseByEvent), array_keys($sourceByEvent)));
+        sort($sourceOnly, SORT_STRING);
+        sort($databaseOnly, SORT_STRING);
+        $fieldCounts = [];
+        $samples = [];
+        foreach (array_intersect(array_keys($sourceByEvent), array_keys($databaseByEvent)) as $eventKey) {
+            $different = [];
+            foreach ($sourceByEvent[$eventKey] as $field=>$sourceValue) {
+                if (($databaseByEvent[$eventKey][$field] ?? null) === $sourceValue) continue;
+                $different[] = (string)$field;
+                $fieldCounts[$field] = (int)($fieldCounts[$field] ?? 0) + 1;
+            }
+            if ($different === [] || count($samples) >= 12) continue;
+            sort($different, SORT_STRING);
+            $samples[] = [
+                'event_ref_sha256'=>substr(hash('sha256', $eventKey), 0, 16),
+                'notification_type'=>(string)($sourceByEvent[$eventKey]['type'] ?? ''),
+                'source_type'=>(string)($sourceByEvent[$eventKey]['source_type'] ?? ''),
+                'audience_type'=>(string)($sourceByEvent[$eventKey]['audience_type'] ?? ''),
+                'differing_fields'=>$different,
+            ];
+        }
+        ksort($fieldCounts, SORT_STRING);
+        return [
+            'source_only_event_refs'=>array_map(
+                static fn(string $eventKey): string => substr(hash('sha256', $eventKey), 0, 16),
+                array_slice($sourceOnly, 0, 12)
+            ),
+            'database_only_event_refs'=>array_map(
+                static fn(string $eventKey): string => substr(hash('sha256', $eventKey), 0, 16),
+                array_slice($databaseOnly, 0, 12)
+            ),
+            'mismatch_field_counts'=>$fieldCounts,
+            'mismatch_samples'=>$samples,
+        ];
+    };
+
     $notificationParityFailures = [];
     $notificationParityChecked = 0;
     $notificationRepository = new RuntimeNotificationRepository(
@@ -121,6 +264,7 @@ try {
         try {
             $report = $notificationRepository->auditParity($runtimeSnapshot, $legacyUserId);
             if (($report['ok'] ?? false) === true) continue;
+            $fieldDiff = $notificationFieldDiff($legacyUserId);
             $notificationParityFailures[] = [
                 'user_ref_sha256'=>substr(hash('sha256', $legacyUserId), 0, 16),
                 'classification'=>$classification,
@@ -132,6 +276,7 @@ try {
                     static fn(mixed $value): string => substr(trim((string)$value), 0, 240),
                     is_array($report['blockers'] ?? null) ? $report['blockers'] : []
                 )),
+                'field_diff'=>$fieldDiff,
             ];
         } catch (Throwable $notificationParityError) {
             $notificationParityFailures[] = [
