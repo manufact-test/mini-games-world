@@ -1,0 +1,154 @@
+name: MVP-21.5 Tournament ready and first match
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/database/migrations/20260921_0054_create_tournament_match_readiness.php'
+      - 'bot/tournaments/TournamentMatchReadinessService.php'
+      - 'bot/services/GameService.php'
+      - 'bot/services/GameRuntimeService.php'
+      - 'bot/services/ChessRuntimeService.php'
+      - 'bot/services/MatchPreparationClockService.php'
+      - 'bot/core/bootstrap.php'
+      - 'bot/api.php'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/screens/tournaments-screen-v1.js'
+      - 'app/assets/js/production-v110-acceptance-runtime.js'
+      - 'app/assets/css/main.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp21_4TournamentHallUxContractTest.php'
+      - 'bot/tests/Mvp21_5TournamentMatchReadinessTest.php'
+      - 'bot/tests/Mvp21_5TournamentReadyUxContractTest.php'
+      - 'bot/tests/PhaseBMatchPreparationClockServiceTest.php'
+      - '.github/workflows/mvp21-5-tournament-ready.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp21-5-tournament-ready-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Ready window, countdown and first match
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint MVP-21.5 slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            bot/database/migrations/20260921_0054_create_tournament_match_readiness.php
+            bot/tournaments/TournamentMatchReadinessService.php
+            bot/services/GameService.php
+            bot/services/GameRuntimeService.php
+            bot/services/ChessRuntimeService.php
+            bot/services/MatchPreparationClockService.php
+            bot/core/bootstrap.php
+            bot/api.php
+            app/runtime/client/version-manifest.php
+            bot/tests/Mvp21_4TournamentHallUxContractTest.php
+            bot/tests/Mvp21_5TournamentMatchReadinessTest.php
+            bot/tests/Mvp21_5TournamentReadyUxContractTest.php
+            bot/tests/PhaseBMatchPreparationClockServiceTest.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done
+          node --check app/assets/js/api/client.js
+          node --check app/assets/js/screens/tournaments-screen-v1.js
+          node --check app/assets/js/production-v110-acceptance-runtime.js
+
+      - name: Run MVP-21.5 readiness model
+        run: php bot/tests/Mvp21_5TournamentMatchReadinessTest.php
+
+      - name: Run MVP-21.5 UI and ownership contract
+        run: php bot/tests/Mvp21_5TournamentReadyUxContractTest.php
+
+      - name: Preserve shared Phase-B countdown/action lock
+        run: |
+          php bot/tests/PhaseBMatchPreparationClockServiceTest.php
+          php bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php
+          php bot/tests/PhaseBActionGuardHandoffContractTest.php
+          php bot/tests/PhaseBClientLaunchUxContractTest.php
+          php bot/tests/GameLaunchFinalizationServiceTest.php
+          php bot/tests/GameLaunchFinalizationOwnerContractTest.php
+
+      - name: Preserve MVP-21.4 bracket and Hall
+        run: |
+          php bot/tests/Mvp21_4TournamentHallBracketTest.php
+          php bot/tests/Mvp21_4TournamentHallUxContractTest.php
+
+      - name: Preserve all-game runtime baseline
+        run: |
+          php bot/tests/Mvp167AllGamesRegressionContractTest.php
+          php bot/tests/Mvp14r2GamesBaselineTest.php
+          php bot/tests/Mvp14r2GamesContractTest.php
+
+      - name: Preserve MVP-20 rating source semantics
+        run: |
+          php bot/tests/Mvp20_1PerGameVisibleRatingTest.php
+          php bot/tests/Mvp20_2HiddenSkillModelTest.php
+          php bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php
+
+      - name: Guard MVP-21.5 scope and frozen game engines
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp21-5-tournament-ready.yml|\
+              bot/database/migrations/20260921_0054_create_tournament_match_readiness.php|\
+              bot/tournaments/TournamentMatchReadinessService.php|\
+              bot/services/GameService.php|\
+              bot/services/GameRuntimeService.php|\
+              bot/services/ChessRuntimeService.php|\
+              bot/services/MatchPreparationClockService.php|\
+              bot/core/bootstrap.php|\
+              bot/api.php|\
+              app/assets/js/api/client.js|\
+              app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/js/production-v110-acceptance-runtime.js|\
+              app/assets/css/main.css|\
+              app/runtime/client/version-manifest.php|\
+              bot/tests/Mvp21_4TournamentHallUxContractTest.php|\
+              bot/tests/Mvp21_5TournamentMatchReadinessTest.php|\
+              bot/tests/Mvp21_5TournamentReadyUxContractTest.php|\
+              bot/tests/PhaseBMatchPreparationClockServiceTest.php)
+                ;;
+              *)
+                echo "Unexpected MVP-21.5 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+
+          git diff --exit-code "$base" "$head" -- \
+            bot/games app/assets/js/games app/assets/css/games \
+            bot/shop bot/ledger/LedgerWriteService.php \
+            bot/runtime/ProductionPrimaryApplicationEntrypoints.php \
+            bot/cron
