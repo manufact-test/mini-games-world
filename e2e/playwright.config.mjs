@@ -3,11 +3,12 @@ import { defineConfig } from '@playwright/test';
 const outputRoot = 'artifacts/playwright';
 
 // Blocking staging acceptance follows the exact Telegram launch entry and the
-// current v110 product contract. Historical version-pinned suites remain in the
-// separate playwright.legacy.config.mjs archive.
+// current v110 product contract. It must not mutate the live official tournament:
+// tournament-registration-live.spec.mjs is isolated in an explicit opt-in config.
+// Historical version-pinned suites remain in the separate legacy config.
 export default defineConfig({
   testDir: './staging',
-  testMatch: ['current-core-final.spec.mjs', 'checkers-layout-diagnostic.spec.mjs', 'go-store-live-catalog.spec.mjs', 'tournament-registration-live.spec.mjs'],
+  testMatch: ['current-core-final.spec.mjs', 'checkers-layout-diagnostic.spec.mjs', 'go-store-live-catalog.spec.mjs'],
   globalSetup: './staging-global-setup.mjs',
   outputDir: `${outputRoot}/test-results`,
   fullyParallel: false,
