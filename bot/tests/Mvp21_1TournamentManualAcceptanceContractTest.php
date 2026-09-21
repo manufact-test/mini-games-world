@@ -268,7 +268,7 @@ foreach ([
     'перенос и задержка не входят в MVP-21.3',
     'data-tournament-manual-panel',
     'data-tournament-prepare-manual',
-    'два места остаются двум живым аккаунтам',
+    'Два места остаются двум живым аккаунтам',
 ] as $needle) {
     $assertTrue(str_contains($source['admin'], $needle), 'Tournament Admin schedule UI missing: ' . $needle);
 }
