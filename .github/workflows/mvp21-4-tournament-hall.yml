@@ -7,7 +7,11 @@ on:
     paths:
       - 'bot/database/migrations/20260921_0053_create_tournament_hall_bracket.php'
       - 'bot/tournaments/TournamentHallService.php'
+      - 'bot/tournaments/StagingTournamentManualAcceptanceService.php'
       - 'bot/tournament-hall.php'
+      - 'bot/staging-projection-diagnostic.php'
+      - 'app/admin.php'
+      - 'app/assets/js/admin-tournaments.js'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/tournaments-screen-v1.js'
       - 'app/assets/css/main.css'
@@ -56,14 +60,18 @@ jobs:
           files=(
             bot/database/migrations/20260921_0053_create_tournament_hall_bracket.php
             bot/tournaments/TournamentHallService.php
+            bot/tournaments/StagingTournamentManualAcceptanceService.php
             bot/tournament-hall.php
+            bot/staging-projection-diagnostic.php
             app/runtime/client/version-manifest.php
+            app/admin.php
             bot/tests/Mvp21_4TournamentHallBracketTest.php
             bot/tests/Mvp21_4TournamentHallUxContractTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
           node --check app/assets/js/api/client.js
           node --check app/assets/js/screens/tournaments-screen-v1.js
+          node --check app/assets/js/admin-tournaments.js
 
       - name: Run MVP-21.4 Hall and bracket model
         run: php bot/tests/Mvp21_4TournamentHallBracketTest.php
@@ -129,7 +137,11 @@ jobs:
               .github/workflows/mvp21-4-tournament-hall.yml|\
               bot/database/migrations/20260921_0053_create_tournament_hall_bracket.php|\
               bot/tournaments/TournamentHallService.php|\
+              bot/tournaments/StagingTournamentManualAcceptanceService.php|\
               bot/tournament-hall.php|\
+              bot/staging-projection-diagnostic.php|\
+              app/admin.php|\
+              app/assets/js/admin-tournaments.js|\
               app/assets/js/api/client.js|\
               app/assets/js/screens/tournaments-screen-v1.js|\
               app/assets/css/main.css|\
