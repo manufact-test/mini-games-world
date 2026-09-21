@@ -42,15 +42,31 @@ $assert(strlen($readonlyPrefix) === 12, 'Read-only sync must expose a valid comp
 $assert(strlen($shellPrefix) === 12, 'Handoff shell must expose a valid computed content-address prefix.');
 $assert(strlen($mainPrefix) === 12, 'Main v110 must expose a valid computed content-address prefix.');
 
-$assert(str_contains($v110, 'game-screen-v102-safe.js?v=102&b=' . $safePrefix), 'v110 import map must content-address the active safe wrapper.');
 $assert(
-    str_contains($versionManifest, 'production-v110-acceptance-runtime.js?v=131')
+    str_contains($v110, "runtime/client/version-manifest.php")
+        && str_contains($v110, 'type="importmap"'),
+    'v110 entrypoint must build its active import graph from the canonical version manifest.'
+);
+$assert(
+    str_contains($shell, "./screens/game-screen-v102-safe.js?v=102")
+        && str_contains($versionManifest, "'./assets/js/screens/game-screen-v102-safe.js?v=102' => './assets/js/screens/game-screen-v102-safe.js?v=105"),
+    'Safe game-screen import key must resolve through the canonical version manifest.'
+);
+$assert(
+    str_contains($versionManifest, "'./assets/js/production-v110-acceptance-runtime.js?v=110' => './assets/js/production-v110-acceptance-runtime.js?v=131")
         && str_contains($versionManifest, 'mvp21_5=countdown-10-av-v1'),
     'The active v110 graph must resolve the reviewed MVP-21.5 acceptance runtime through the canonical version manifest.'
 );
-$assert(str_contains($shell, 'production-v110-readonly-game-sync.js?v=1107&b=' . $readonlyPrefix), 'Handoff shell must content-address the read-only freshness owner.');
-$assert(str_contains($main, 'main-v110-handoff-shell.js?v=1135&pending=6&b=' . $shellPrefix), 'Main v110 must content-address the handoff shell.');
-$assert(str_contains($v110, 'main-v110.js?v=1135&pending=6&b=' . $mainPrefix), 'v110 entrypoint must content-address main v110.');
+$assert(
+    str_contains($shell, "./production-v110-readonly-game-sync.js?v=1107&b=bc9d7b435f1a")
+        && str_contains($versionManifest, "'./assets/js/production-v110-readonly-game-sync.js?v=1107&b=bc9d7b435f1a' => './assets/js/production-v110-readonly-game-sync.js?v=1117"),
+    'Read-only freshness import key must resolve through the canonical version manifest.'
+);
+$assert(
+    str_contains($main, "./main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5")
+        && str_contains($versionManifest, "'./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1156"),
+    'Main v110 shell import key must resolve through the canonical version manifest.'
+);
 
 foreach ([$safePath, $acceptancePath, $readonlyPath, $shellPath, $mainPath] as $path) {
     $assert(str_contains($manifest, $path), $path . ' must be included in exact staging fingerprint coverage.');
