@@ -174,9 +174,9 @@ $assert(($timeoutGame['status'] ?? '') === 'finished'
     && ($timeoutGame['launch_phase'] ?? '') === 'cancelled'
     && ($timeoutGame['finish_reason'] ?? '') === 'preparation_timeout',
     'Elapsed preparation must become the dedicated cancelled preparation result.');
-$assert(($db['users']['u1']['balance_match'] ?? 0) === 100
-    && ($db['users']['u2']['balance_match'] ?? 0) === 100,
-    'Preparation timeout must restore each human stake exactly once.');
+$assert(($db['users']['u1']['balance'] ?? 0) === 100
+    && ($db['users']['u2']['balance'] ?? 0) === 100,
+    'Preparation timeout must restore each human stake exactly once to the canonical unified balance.');
 $assert(($db['users']['u1']['stats'] ?? []) === $stats && ($db['users']['u2']['stats'] ?? []) === $stats,
     'A match that never started must not alter game or weekly result statistics.');
 $assert(($db['system']['fees_match'] ?? null) === 77,
@@ -190,9 +190,9 @@ $assert(count($finishRows) === 1,
 $transactionCount = count($db['transactions']);
 $service->synchronizeCurrentGame($db, $user, 'timeout', 'timeout', 'sess-a', 'device-a');
 $assert(count($db['transactions']) === $transactionCount
-    && ($db['users']['u1']['balance_match'] ?? 0) === 100
-    && ($db['users']['u2']['balance_match'] ?? 0) === 100,
-    'Repeated stale timeout observation must not duplicate settlement or refund.');
+    && ($db['users']['u1']['balance'] ?? 0) === 100
+    && ($db['users']['u2']['balance'] ?? 0) === 100,
+    'Repeated stale timeout observation must not duplicate settlement or unified-balance refund.');
 unset($user);
 
 // Active observations synchronize an externally changed turn through the same
