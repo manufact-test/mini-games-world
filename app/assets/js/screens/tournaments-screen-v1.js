@@ -307,7 +307,6 @@ async function warmTournamentStatus(){
         tournamentHallSnapshot = null;
         tournamentHallError = '';
         tournamentMatchSnapshot = null;
-      tournamentProgressionSnapshot = null;
         tournamentProgressionSnapshot = null;
         tournamentMatchError = '';
         stopTournamentHallHeartbeat();
