@@ -74,7 +74,10 @@ $handoffRequestedAt = time();
 $clock->synchronizeTurnHandoff($game, $previousTurn);
 $handoffStart = strtotime((string)($game['turn_starts_at'] ?? '')) ?: 0;
 $handoffDeadline = strtotime((string)($game['turn_deadline_at'] ?? '')) ?: 0;
-$assert($handoffStart >= $handoffRequestedAt + MatchPreparationClockService::TURN_HANDOFF_SEC, 'Turn handoff must use one future server start.');
+$assert(
+    $handoffStart >= $handoffRequestedAt && $handoffStart <= $handoffRequestedAt + 1,
+    'Tic-Tac-Toe handoff must start immediately from the authoritative server commit without an artificial pause.'
+);
 $assert($handoffDeadline - $handoffStart === MatchPreparationClockService::MOVE_TIMEOUT_SEC, 'Receiving player must receive a fresh full timeout.');
 $assert((int)($game['clock_revision'] ?? 0) === 2, 'Turn handoff must advance the authoritative clock revision once.');
 
