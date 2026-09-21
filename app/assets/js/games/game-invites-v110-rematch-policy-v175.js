@@ -50,11 +50,14 @@ function queueResultPolicySync(){
 
 function syncResultActions(){
   const game = state.activeGame;
-  const directRematchAvailable = String(game?.status || '') === 'finished'
+  const tournamentMatch = String(game?.match_source || '') === 'tournament';
+  const directRematchAvailable = !tournamentMatch
+    && String(game?.status || '') === 'finished'
     && game?.rematch_available === true;
 
   const playAgain = document.getElementById('newOpponent');
-  if (playAgain) {
+  if (playAgain && tournamentMatch) playAgain.remove();
+  if (playAgain && !tournamentMatch) {
     if (playAgain.textContent !== 'Сыграть ещё') playAgain.textContent = 'Сыграть ещё';
 
     // The legacy result enhancer inserts direct rematch 40 ms later and changes
