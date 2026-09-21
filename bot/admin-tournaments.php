@@ -71,7 +71,8 @@ try {
             'games'=>$catalog->publicCatalog(),
         ];
     } elseif ($action === 'prepare_manual_acceptance') {
-        $fixture = $manualAcceptance->fillToOneManualSeat($_SERVER);
+        $liveSeats = (int)($payload['live_seats'] ?? 1);
+        $fixture = $manualAcceptance->fillToManualSeats($_SERVER, $liveSeats);
         $result = [
             'snapshot'=>$fixture['snapshot'],
             'games'=>$catalog->publicCatalog(),
