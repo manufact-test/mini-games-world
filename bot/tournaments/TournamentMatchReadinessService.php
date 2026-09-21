@@ -164,7 +164,8 @@ final class TournamentMatchReadinessService
         string $legacyUserId,
         ?DateTimeImmutable $now = null
     ): ?array {
-        $snapshot = $this->status($mgwId, $accountRef, $legacyUserId, $now);
+        $moment = $this->moment($now);
+        $snapshot = $this->status($mgwId, $accountRef, $legacyUserId, $moment);
         $match = is_array($snapshot['match'] ?? null) ? $snapshot['match'] : null;
         if ($match === null || empty($match['both_ready'])) return null;
 
@@ -188,6 +189,13 @@ final class TournamentMatchReadinessService
             throw new RuntimeException('Tournament launch context is unavailable.');
         }
         $row = $rows[0];
+        if ((int)($row['attempt_no'] ?? 1) !== 1
+            || (string)($row['wait_kind'] ?? 'initial_ready') !== 'initial_ready'
+            || !in_array((string)($row['launch_state'] ?? ''), [self::STATE_READY, self::STATE_LAUNCHED], true)) {
+            return null;
+        }
+        $opensAt = $this->parseUtc((string)$row['readiness_opened_at_utc']);
+        if ($moment < $opensAt) return null;
 
         $identities = $this->database->fetchAll(
             'SELECT r.mgw_id,o.legacy_user_id
