@@ -223,6 +223,7 @@ final class ChessRuntimeService
             default => $requestedBoardSize === 9 ? 9 : 5,
         };
 
+        $alreadyExists = isset($db['games'][$gameId]) && is_array($db['games'][$gameId]);
         $this->legacyGame->createTournamentGame(
             $db,
             $a,
@@ -235,6 +236,7 @@ final class ChessRuntimeService
         if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
             throw new RuntimeException('Tournament runtime did not persist the created game.');
         }
+        if ($alreadyExists) return $db['games'][$gameId];
 
         if ($gameType === 'chess') {
             $this->prepareStoredChessGame($db, $gameId);
