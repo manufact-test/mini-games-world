@@ -46,10 +46,10 @@ $assert(str_contains($screen, 'formatReadyCountdown(opensAt.getTime() - Date.now
 $assert(str_contains($screen, 'await refreshTournamentMatchState()'),
     'Existing Hall heartbeat must remain the automatic progression polling owner.');
 
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=20')
-        && str_contains($manifest, 'mvp21_6=rounds-replays-v1')
-        && str_contains($manifest, 'mvp21_5=manual-acceptance-fixes-v3'),
-    'Tournament screen must preserve MVP-21.6 while publishing the later MVP-21.5 manual-acceptance corrective identity.');
+$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=21')
+        && str_contains($manifest, 'mvp21_6=progression-return-v1')
+        && str_contains($manifest, 'mvp21_5=corrective-v4'),
+    'Tournament screen must publish the corrective-v4 identity while preserving progression ownership.');
 
 $assert(str_contains($api, "'progression'=>\$progressionSnapshot"),
     'Tournament API must expose the durable progression snapshot.');
