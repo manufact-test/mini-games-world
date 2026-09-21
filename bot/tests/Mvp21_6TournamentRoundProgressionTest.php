@@ -154,7 +154,7 @@ $assertSame('2026-09-21 10:15:00.000000',(string)$finals[0]['readiness_opened_at
 $completeRound(3,['player_a_mgw_id','player_a_mgw_id'],'2026-09-21T10:16:00Z');
 $finalStatus=$progress->statusForParticipant($players[1]['mgw'],$players[1]['account'],$players[1]['legacy'],new DateTimeImmutable('2026-09-21T10:16:01Z'));
 $assertSame(true,$finalStatus['tournament_complete'],'Tournament becomes complete only after both final and third-place match finish.');
-$assertSame(8,(int)$db->fetchValue('SELECT COUNT(*) FROM mgw_tournament_match_attempts WHERE tournament_id=:t',['t'=>$tournament]),'Eight-player tournament with one draw replay must keep eight played attempts.');
+$assertSame(9,(int)$db->fetchValue('SELECT COUNT(*) FROM mgw_tournament_match_attempts WHERE tournament_id=:t',['t'=>$tournament]),'Eight-player tournament with one draw replay must keep all nine played attempts.');
 
 if($assertions<22) throw new RuntimeException('MVP-21.6 progression test is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_6TournamentRoundProgressionTest: {$assertions} assertions passed\n");
