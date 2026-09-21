@@ -46,6 +46,7 @@ let tournamentProgressionSnapshot = null;
 let tournamentMatchRequest = null;
 let tournamentMatchBusy = false;
 let tournamentMatchError = '';
+let tournamentLaunchWatchTimer = null;
 
 function lockVisibleBalance(){
   const ids = ['balanceUnified', 'topbarBalanceUnified'];
@@ -178,6 +179,20 @@ export function initTournamentsScreen(){
     void loadTournamentSnapshot();
   });
 
+  document.addEventListener('mgw:tournament-progression-open', () => {
+    const tournamentScreen = document.getElementById('screen-tournaments');
+    if (!(tournamentScreen instanceof HTMLElement)) return;
+    tournamentScreen.querySelectorAll('[data-competition-mode]').forEach(candidate => {
+      const active = String(candidate.dataset.competitionMode || '') === 'tournaments';
+      candidate.classList.toggle('active', active);
+      candidate.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    tournamentScreen.querySelectorAll('[data-competition-panel]').forEach(panel => {
+      panel.hidden = String(panel.dataset.competitionPanel || '') !== 'tournaments';
+    });
+    void loadTournamentSnapshot();
+  });
+
   document.addEventListener('mgw:app-ready', () => {
     window.setTimeout(() => { void warmLeaderboard(DEFAULT_GAME); }, 260);
     window.setTimeout(() => { void warmArchiveOverview(); }, 520);
@@ -188,6 +203,7 @@ export function initTournamentsScreen(){
     if (document.visibilityState !== 'visible') {
       stopTournamentHallHeartbeat();
       stopTournamentVisibleRefresh();
+      stopTournamentLaunchWatch();
       return;
     }
     if (tournamentHallPanelVisible()) {
@@ -251,6 +267,7 @@ function bindModeTabs(screen){
       if (mode === 'rating') {
         stopTournamentHallHeartbeat();
         stopTournamentVisibleRefresh();
+        stopTournamentLaunchWatch();
         void activateGame(activeGame);
       }
       if (mode === 'tournaments') {
@@ -307,7 +324,12 @@ async function warmTournamentStatus(){
   const previousTournamentId = String(tournamentSnapshot?.tournament?.tournament_id || '');
   tournamentRequest = api.tournamentStatus()
     .then(result => {
-      tournamentSnapshot = result?.snapshot && typeof result.snapshot === 'object' ? result.snapshot : {};
+      const nextSnapshot = result?.snapshot && typeof result.snapshot === 'object' ? result.snapshot : {};
+      // Registration mutation owns visible commit while its independent verification is pending.
+      // A background status poll may observe the already committed DB seat, but must never publish
+      // it before the mutation verifies balance + registration + capacity atomically.
+      if (tournamentBusy) return tournamentSnapshot;
+      tournamentSnapshot = nextSnapshot;
       const nextTournamentId = String(tournamentSnapshot?.tournament?.tournament_id || '');
       if (previousTournamentId && nextTournamentId !== previousTournamentId) {
         tournamentHallSnapshot = null;
@@ -339,6 +361,33 @@ function stopTournamentHallHeartbeat(){
 function stopTournamentVisibleRefresh(){
   if (tournamentVisibleRefreshTimer) window.clearTimeout(tournamentVisibleRefreshTimer);
   tournamentVisibleRefreshTimer = null;
+}
+
+function stopTournamentLaunchWatch(){
+  if (tournamentLaunchWatchTimer) window.clearTimeout(tournamentLaunchWatchTimer);
+  tournamentLaunchWatchTimer = null;
+}
+
+function startTournamentLaunchWatch(){
+  if (tournamentLaunchWatchTimer || !tournamentHallPanelVisible()) return;
+  const match = tournamentMatchSnapshot?.match;
+  const waitingForSharedGame = match
+    && match.my_ready === true
+    && !String(match.game_id || '').trim();
+  if (!waitingForSharedGame) return;
+
+  tournamentLaunchWatchTimer = window.setTimeout(async () => {
+    tournamentLaunchWatchTimer = null;
+    if (!tournamentHallPanelVisible()) return;
+    try {
+      await refreshTournamentMatchState();
+    } catch (error) {
+      tournamentMatchError = String(error?.message || 'Не удалось синхронизировать запуск матча.');
+    }
+    if (!tournamentHallPanelVisible()) return;
+    renderTournamentSnapshot();
+    startTournamentLaunchWatch();
+  }, 350);
 }
 
 function startTournamentVisibleRefresh(){
@@ -410,6 +459,7 @@ async function refreshTournamentMatchState(){
         : null;
       tournamentMatchError = '';
       if (result?.game?.id && String(result.game.status || '') === 'active') {
+        stopTournamentLaunchWatch();
         enterGame(result.game);
       }
       return tournamentMatchSnapshot;
@@ -433,14 +483,17 @@ async function markTournamentReady(){
       ? result.progression
       : tournamentProgressionSnapshot;
     if (result?.game?.id && String(result.game.status || '') === 'active') {
+      stopTournamentLaunchWatch();
       enterGame(result.game);
       return;
     }
+    startTournamentLaunchWatch();
   } catch (error) {
     tournamentMatchError = String(error?.message || 'Не удалось подтвердить готовность.');
   } finally {
     tournamentMatchBusy = false;
     if (currentScreen() === 'tournaments') renderTournamentSnapshot();
+    startTournamentLaunchWatch();
   }
 }
 
