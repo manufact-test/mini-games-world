@@ -73,6 +73,14 @@ $assertTrue(
     'Staging A/B bootstrap diagnostic must remain explicitly test-only.'
 );
 
+$assertTrue(
+    str_contains($source['api'], "'debug_storage'=>[")
+    && str_contains($source['api'], "'primary_context'=>\$storageContext")
+    && str_contains($source['api'], "'stale_notification_fallback'=>\$selectorFallback")
+    && str_contains($source['api'], "['stg_test_player_a', 'stg_test_player_b']"),
+    'Staging A/B bootstrap storage diagnostics must remain bounded to the two technical identities.'
+);
+
 
 $assertTrue(
     str_contains($source['storage_factory'], "stagingApiPrimaryNotificationSnapshotIsBehind(\$config)")
