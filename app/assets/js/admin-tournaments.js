@@ -25,6 +25,7 @@
   const manualPanel = card.querySelector('[data-tournament-manual-panel]');
   const manualInfo = card.querySelector('[data-tournament-manual-info]');
   const prepareManual = card.querySelector('[data-tournament-prepare-manual]');
+  const manualLiveSeats = card.querySelector('[data-tournament-manual-live-seats]');
   const resetPanel = card.querySelector('[data-tournament-reset-panel]');
   const resetInfo = card.querySelector('[data-tournament-reset-info]');
   const resetManual = card.querySelector('[data-tournament-reset-manual]');
@@ -274,23 +275,37 @@
     const manual = manualAcceptance && typeof manualAcceptance === 'object'
       ? manualAcceptance
       : {};
-    const manualReason = String(manual.reason || '');
+    const modes = manual.modes && typeof manual.modes === 'object' ? manual.modes : {};
+    const selectedLiveSeats = manualLiveSeats instanceof HTMLSelectElement
+      ? Math.max(1, Math.min(2, Number(manualLiveSeats.value || 2)))
+      : 2;
+    const selectedMode = modes[String(selectedLiveSeats)] || {};
     const manualVisible = state === 'registration_open'
-      && (manualReason === 'ready' || manualReason === 'manual_last_seat_ready');
+      && (Object.keys(modes).length > 0 || manual.available === true);
     if (manualPanel instanceof HTMLElement) manualPanel.hidden = !manualVisible;
+    if (manualLiveSeats instanceof HTMLSelectElement) {
+      manualLiveSeats.disabled = busy;
+    }
     if (prepareManual instanceof HTMLButtonElement) {
-      const canPrepare = manual.available === true;
+      const canPrepare = selectedMode.available === true;
       prepareManual.dataset.available = canPrepare ? '1' : '0';
       prepareManual.disabled = busy || !canPrepare;
-      const target = Number(manual.target_registered_count || Math.max(0, cap - 1));
-      prepareManual.textContent = `Подготовить ${format(target)}/${format(cap)} для ручной проверки`;
+      const target = Number(selectedMode.target_registered_count || Math.max(0, cap - selectedLiveSeats));
+      prepareManual.textContent = selectedLiveSeats === 2
+        ? `Подготовить ${format(target)}/${format(cap)} для двух живых аккаунтов`
+        : `Подготовить ${format(target)}/${format(cap)} для одного живого аккаунта`;
     }
     if (manualInfo instanceof HTMLElement) {
-      if (manualReason === 'manual_last_seat_ready') {
-        manualInfo.textContent = `Готово: ${format(count)}/${format(cap)}. Осталось одно живое место — зайдите обычным аккаунтом и зарегистрируйтесь последним.`;
-      } else if (manualReason === 'ready') {
-        const fixtureCount = Number(manual.remaining_fixture_slots || 0);
-        manualInfo.textContent = `Staging: можно добавить ${format(fixtureCount)} тестовых участников и оставить последнее место живому аккаунту.`;
+      const target = Number(selectedMode.target_registered_count || Math.max(0, cap - selectedLiveSeats));
+      if (selectedMode.ready === true) {
+        manualInfo.textContent = selectedLiveSeats === 2
+          ? `Готово: ${format(count)}/${format(cap)}. Оставлены два живых места — зарегистрируйтесь двумя обычными аккаунтами.`
+          : `Готово: ${format(count)}/${format(cap)}. Осталось одно живое место — зарегистрируйтесь обычным аккаунтом.`;
+      } else if (selectedMode.available === true) {
+        const fixtureCount = Number(selectedMode.remaining_fixture_slots || 0);
+        manualInfo.textContent = `Staging: будет добавлено ${format(fixtureCount)} тестовых участников; живых мест останется — ${format(selectedLiveSeats)}.`;
+      } else if (count > target && state === 'registration_open') {
+        manualInfo.textContent = 'Для выбранного режима уже занято слишком много мест. Используйте другой режим или сбросьте staging-турнир.';
       } else {
         manualInfo.textContent = 'Ручная проверка staging недоступна.';
       }
@@ -384,17 +399,22 @@
     const tournament = snapshot?.tournament;
     const count = Number(tournament?.registered_count || 0);
     const cap = Number(tournament?.capacity || 0);
-    const target = Number(manualAcceptance?.target_registered_count || Math.max(0, cap - 1));
+    const liveSeats = manualLiveSeats instanceof HTMLSelectElement
+      ? Math.max(1, Math.min(2, Number(manualLiveSeats.value || 2)))
+      : 2;
+    const mode = manualAcceptance?.modes?.[String(liveSeats)] || {};
+    const target = Number(mode.target_registered_count || Math.max(0, cap - liveSeats));
     if (!tournament || cap < 2 || target <= count) return;
-    if (!window.confirm(`Только staging: добавить тестовых участников до ${target}/${cap} и оставить последнее место живому аккаунту?`)) return;
+    if (!window.confirm(`Только staging: добавить тестовых участников до ${target}/${cap} и оставить живых мест — ${liveSeats}?`)) return;
 
     try {
       const data = await withBusy('Готовлю турнир для ручной проверки…', () => post({
         action:'prepare_manual_acceptance',
+        live_seats:liveSeats,
       }));
       const fixture = data?.manual_acceptance_fixture || {};
       setStatus(
-        `Готово: ${format(fixture.registered_count || target)}/${format(fixture.capacity || cap)}. Теперь последнее место займите обычным аккаунтом.`,
+        `Готово: ${format(fixture.registered_count || target)}/${format(fixture.capacity || cap)}. Живых мест осталось — ${format(fixture.manual_seats_left || liveSeats)}.`,
         'ok'
       );
     } catch (_) {}
@@ -456,6 +476,7 @@
   create?.addEventListener('click', createDraft);
   open?.addEventListener('click', openRegistration);
   prepareManual?.addEventListener('click', prepareManualAcceptance);
+  manualLiveSeats?.addEventListener('change', () => render(snapshot || {}));
   resetManual?.addEventListener('click', resetManualAcceptance);
   assignDate?.addEventListener('click', assignFinalDate);
 
