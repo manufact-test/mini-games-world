@@ -121,10 +121,10 @@ $assert(str_contains($source['screen'], 'if (tournamentStarted && registered)')
         && str_contains($source['screen'], 'tournaments-v2-hall--started'),
     'Started participant view must collapse obsolete pre-start metadata into the bracket-first Hall view.');
 $assert(
-    strpos($source['api'], "$snapshot = $action === 'tournament_match_ready'") !== false
-    && strpos($source['api'], "$progressionSnapshot = $progression->statusForParticipant") !== false
-    && strpos($source['api'], "$snapshot = $action === 'tournament_match_ready'")
-        < strpos($source['api'], "$progressionSnapshot = $progression->statusForParticipant"),
+    strpos($source['api'], "\$snapshot = \$action === 'tournament_match_ready'") !== false
+    && strpos($source['api'], "\$progressionSnapshot = \$progression->statusForParticipant") !== false
+    && strpos($source['api'], "\$snapshot = \$action === 'tournament_match_ready'")
+        < strpos($source['api'], "\$progressionSnapshot = \$progression->statusForParticipant"),
     'MVP-21.5 Ready owner must materialize the first-round pair before later-round progression observes it.'
 );
 
