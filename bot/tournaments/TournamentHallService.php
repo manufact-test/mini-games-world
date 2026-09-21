@@ -122,7 +122,7 @@ final class TournamentHallService
         $boundaryFrom = $start->modify('-' . self::HALL_PRESENCE_FRESHNESS_SECONDS . ' seconds');
         $boundaryGraceUntil = $start->modify('+' . self::START_BOUNDARY_REQUEST_GRACE_SECONDS . ' seconds');
         if ($moment >= $boundaryFrom && $moment <= $boundaryGraceUntil) {
-            // Heartbeat is emitted only while the Tournament Hall panel is visible.
+            // Heartbeat is emitted only while the participant tournament panel is visible.
             // If transport scheduling lands a final heartbeat just after T0, anchor
             // it to T0 before the immutable bracket is frozen. This is allowed only
             // for an entry that already existed before start; enter() after T0 still
