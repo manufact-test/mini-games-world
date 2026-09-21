@@ -151,6 +151,21 @@ try {
 }
 $assert($tournamentBlocked, 'Tournament field must stay locked until the countdown ends.');
 
+// Corrective v4: the 10-second launch countdown and first turn are separate clocks.
+// Advance the same tournament game across T0 without waiting in real time and prove
+// the first playable public frame receives a fresh full 60-second deadline.
+$tournamentGame['starts_epoch_ms'] = (int)round(microtime(true) * 1000) - 1;
+$tournamentGame['starts_at'] = gmdate('c', time() - 1);
+$clock->advance($tournamentGame);
+$assert(($tournamentGame['launch_phase'] ?? '') === 'active', 'Tournament countdown must promote to active at the shared server anchor.');
+$tournamentActivePublic = $clock->enrichPublicGame($tournamentGame, []);
+$assert((int)($tournamentActivePublic['time_left'] ?? 0) === MatchPreparationClockService::MOVE_TIMEOUT_SEC,
+    'First playable tournament frame must receive the full 60-second turn.');
+$turnStartMs = (int)($tournamentActivePublic['turn_starts_at_ms'] ?? 0);
+$turnDeadlineMs = (int)($tournamentActivePublic['turn_deadline_ms'] ?? 0);
+$assert($turnStartMs > 0 && $turnDeadlineMs - $turnStartMs === MatchPreparationClockService::MOVE_TIMEOUT_SEC * 1000,
+    'Fresh active turn deadline must be exactly 60 seconds after its own start, independent of launch countdown.');
+
 $ordinaryCountdown = [
     'id' => 'game_ordinary_countdown_regression',
     'status' => 'active',
