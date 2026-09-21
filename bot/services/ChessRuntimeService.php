@@ -353,6 +353,20 @@ final class ChessRuntimeService
             $public = $this->botProfiles->sanitizePublicGame($public, $game);
         }
 
+        if ((string)($game['match_source'] ?? '') === 'tournament') {
+            $public = array_replace($public, [
+                'match_source'=>'tournament',
+                'tournament_id'=>(string)($game['tournament_id'] ?? ''),
+                'tournament_round_no'=>(int)($game['tournament_round_no'] ?? 0),
+                'tournament_pair_no'=>(int)($game['tournament_pair_no'] ?? 0),
+                'tournament_attempt_no'=>max(1, (int)($game['tournament_attempt_no'] ?? 1)),
+                'tournament_match_kind'=>(string)($game['tournament_match_kind'] ?? 'elimination'),
+                'tournament_wait_kind'=>(string)($game['tournament_wait_kind'] ?? 'initial_ready'),
+                'tournament_side_swap'=>!empty($game['tournament_side_swap']),
+                'rematch_available'=>false,
+            ]);
+        }
+
         // Dormant until a stored game has explicitly entered the Phase B state
         // machine. Legacy/current active games keep their accepted projection
         // unchanged and this read path never normalizes or mutates stored state.

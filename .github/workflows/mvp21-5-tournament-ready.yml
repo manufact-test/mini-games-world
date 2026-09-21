@@ -7,6 +7,8 @@ on:
     paths:
       - 'bot/database/migrations/20260921_0054_create_tournament_match_readiness.php'
       - 'bot/tournaments/TournamentMatchReadinessService.php'
+      - 'bot/tournaments/StagingTournamentManualAcceptanceService.php'
+      - 'bot/admin-tournaments.php'
       - 'bot/tournaments/TournamentHallService.php'
       - 'bot/services/GameService.php'
       - 'bot/services/GameRuntimeService.php'
@@ -18,6 +20,9 @@ on:
       - 'app/assets/js/admin-tournaments.js'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/tournaments-screen-v1.js'
+      - 'app/assets/js/screens/game-screen-v102.js'
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'app/assets/js/games/game-invites-v110-rematch-policy-v175.js'
       - 'app/assets/js/production-v110-acceptance-runtime.js'
       - 'app/assets/css/main.css'
       - 'app/runtime/client/version-manifest.php'
@@ -25,6 +30,8 @@ on:
       - 'bot/tests/Mvp21_4TournamentHallUxContractTest.php'
       - 'bot/tests/Mvp21_5TournamentMatchReadinessTest.php'
       - 'bot/tests/Mvp21_5TournamentReadyUxContractTest.php'
+      - 'bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php'
+      - 'bot/tests/RematchOptimisticUxContractTest.php'
       - 'bot/tests/Mvp21_6TournamentProgressionUxContractTest.php'
       - 'bot/tests/PhaseBMatchPreparationClockServiceTest.php'
       - 'bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php'
@@ -77,6 +84,8 @@ jobs:
           files=(
             bot/database/migrations/20260921_0054_create_tournament_match_readiness.php
             bot/tournaments/TournamentMatchReadinessService.php
+            bot/tournaments/StagingTournamentManualAcceptanceService.php
+            bot/admin-tournaments.php
             bot/tournaments/TournamentHallService.php
             bot/services/GameService.php
             bot/services/GameRuntimeService.php
@@ -90,6 +99,8 @@ jobs:
             bot/tests/Mvp21_4TournamentHallUxContractTest.php
             bot/tests/Mvp21_5TournamentMatchReadinessTest.php
             bot/tests/Mvp21_5TournamentReadyUxContractTest.php
+            bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php
+            bot/tests/RematchOptimisticUxContractTest.php
             bot/tests/Mvp21_6TournamentProgressionUxContractTest.php
             bot/tests/PhaseBMatchPreparationClockServiceTest.php
             bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php
@@ -102,13 +113,18 @@ jobs:
           node --check app/assets/js/admin-tournaments.js
           node --check app/assets/js/api/client.js
           node --check app/assets/js/screens/tournaments-screen-v1.js
+          node --check app/assets/js/screens/game-screen-v102.js
+          node --check app/assets/js/games/game-invites-v110.js
+          node --check app/assets/js/games/game-invites-v110-rematch-policy-v175.js
           node --check app/assets/js/production-v110-acceptance-runtime.js
 
       - name: Run MVP-21.5 readiness model
         run: php bot/tests/Mvp21_5TournamentMatchReadinessTest.php
 
       - name: Run MVP-21.5 UI and ownership contract
-        run: php bot/tests/Mvp21_5TournamentReadyUxContractTest.php
+        run: |
+          php bot/tests/Mvp21_5TournamentReadyUxContractTest.php
+          php bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php
 
       - name: Preserve shared Phase-B countdown/action lock
         run: |
@@ -156,6 +172,8 @@ jobs:
               .github/workflows/mvp21-6-tournament-rounds.yml|\
               bot/database/migrations/20260921_0054_create_tournament_match_readiness.php|\
               bot/tournaments/TournamentMatchReadinessService.php|\
+              bot/tournaments/StagingTournamentManualAcceptanceService.php|\
+              bot/admin-tournaments.php|\
               bot/tournaments/TournamentHallService.php|\
               bot/services/GameService.php|\
               bot/services/GameRuntimeService.php|\
@@ -167,6 +185,9 @@ jobs:
               app/assets/js/admin-tournaments.js|\
               app/assets/js/api/client.js|\
               app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/js/screens/game-screen-v102.js|\
+              app/assets/js/games/game-invites-v110.js|\
+              app/assets/js/games/game-invites-v110-rematch-policy-v175.js|\
               app/assets/js/production-v110-acceptance-runtime.js|\
               app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
@@ -174,6 +195,8 @@ jobs:
               bot/tests/Mvp21_4TournamentHallUxContractTest.php|\
               bot/tests/Mvp21_5TournamentMatchReadinessTest.php|\
               bot/tests/Mvp21_5TournamentReadyUxContractTest.php|\
+              bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php|\
+              bot/tests/RematchOptimisticUxContractTest.php|\
               bot/tests/Mvp21_6TournamentProgressionUxContractTest.php|\
               bot/tests/PhaseBMatchPreparationClockServiceTest.php|\
               bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php|\
@@ -191,7 +214,7 @@ jobs:
           test "$bad" -eq 0
 
           git diff --exit-code "$base" "$head" -- \
-            bot/games app/assets/js/games app/assets/css/games \
+            bot/games app/assets/css/games \
             bot/shop bot/ledger/LedgerWriteService.php \
             bot/runtime/ProductionPrimaryApplicationEntrypoints.php \
             bot/cron

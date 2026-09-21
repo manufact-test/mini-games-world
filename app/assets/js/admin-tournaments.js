@@ -26,6 +26,9 @@
   const manualInfo = card.querySelector('[data-tournament-manual-info]');
   const prepareManual = card.querySelector('[data-tournament-prepare-manual]');
   const manualNote = manualPanel?.querySelector('small') || null;
+  const progressionPanel = card.querySelector('[data-tournament-progression-panel]');
+  const progressionInfo = card.querySelector('[data-tournament-progression-info]');
+  const completeFixtures = card.querySelector('[data-tournament-complete-fixtures]');
   const resetPanel = card.querySelector('[data-tournament-reset-panel]');
   const resetInfo = card.querySelector('[data-tournament-reset-info]');
   const resetManual = card.querySelector('[data-tournament-reset-manual]');
@@ -33,6 +36,7 @@
   let snapshot = null;
   let manualAcceptance = null;
   let manualReset = null;
+  let manualProgression = null;
   let resetConfirmUntil = 0;
   let resetConfirmTimer = null;
 
@@ -141,6 +145,10 @@
       }
       if (control === prepareManual) {
         control.disabled = prepareManual.dataset.available !== '1';
+        return;
+      }
+      if (control === completeFixtures) {
+        control.disabled = completeFixtures.dataset.available !== '1';
         return;
       }
       if (control === resetManual) {
@@ -347,6 +355,23 @@
       }
     }
 
+    const progression = manualProgression && typeof manualProgression === 'object'
+      ? manualProgression
+      : {};
+    const canCompleteFixtures = progression.available === true;
+    if (progressionPanel instanceof HTMLElement) progressionPanel.hidden = !canCompleteFixtures;
+    if (completeFixtures instanceof HTMLButtonElement) {
+      completeFixtures.dataset.available = canCompleteFixtures ? '1' : '0';
+      completeFixtures.disabled = busy || !canCompleteFixtures;
+    }
+    if (progressionInfo instanceof HTMLElement) {
+      const fixturePairs = Number(progression.fixture_pair_count || 0);
+      const roundNo = Number(progression.round_no || 0);
+      progressionInfo.textContent = canCompleteFixtures
+        ? `Раунд ${format(roundNo)}: fixture-only пар для staging-проверки — ${format(fixturePairs)}.`
+        : 'Fixture-only пары пока не требуют завершения.';
+    }
+
     const reset = manualReset && typeof manualReset === 'object' ? manualReset : {};
     const canReset = reset.available === true;
     if (resetPanel instanceof HTMLElement) resetPanel.hidden = !canReset;
@@ -373,6 +398,9 @@
       manualReset = data?.manual_reset && typeof data.manual_reset === 'object'
         ? data.manual_reset
         : manualReset;
+      manualProgression = data?.manual_progression && typeof data.manual_progression === 'object'
+        ? data.manual_progression
+        : manualProgression;
       render(data.snapshot || {});
       return data;
     } catch (error) {
@@ -453,6 +481,23 @@
     } catch (_) {}
   };
 
+  const completeFixturePairs = async () => {
+    if (manualProgression?.available !== true) return;
+    const fixturePairs = Number(manualProgression.fixture_pair_count || 0);
+    const roundNo = Number(manualProgression.round_no || 0);
+    if (!window.confirm(`Только staging: канонически завершить fixture-only пары раунда ${roundNo} (пар: ${fixturePairs})? Реальные пары не затрагиваются.`)) return;
+    try {
+      const data = await withBusy('Завершаю fixture-only пары через турнирный progression owner…', () => post({
+        action:'complete_fixture_pairs',
+      }));
+      const completed = data?.manual_progression_result || {};
+      setStatus(
+        `Fixture-only пары завершены: ${format(completed.completed_pairs || 0)}. Обновите два живых клиента и проверьте переход турнира.`,
+        'ok'
+      );
+    } catch (_) {}
+  };
+
   const resetManualAcceptance = async () => {
     const tournament = snapshot?.tournament;
     const tournamentId = String(tournament?.tournament_id || '');
@@ -517,6 +562,7 @@
   create?.addEventListener('click', createDraft);
   open?.addEventListener('click', openRegistration);
   prepareManual?.addEventListener('click', prepareManualAcceptance);
+  completeFixtures?.addEventListener('click', completeFixturePairs);
   resetManual?.addEventListener('click', resetManualAcceptance);
   assignDate?.addEventListener('click', assignFinalDate);
 
