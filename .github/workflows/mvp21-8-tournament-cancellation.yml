@@ -115,6 +115,7 @@ jobs:
           while IFS= read -r path; do
             case "$path" in
               .github/workflows/mvp21-5-tournament-ready.yml|\
+              .github/workflows/mvp20-7-rating-archives.yml|\
               .github/workflows/mvp21-6-tournament-rounds.yml|\
               .github/workflows/mvp21-7-tournament-technical-outcomes.yml|\
               .github/workflows/mvp21-8-tournament-cancellation.yml|\
@@ -130,6 +131,7 @@ jobs:
               app/admin.php|\
               app/assets/js/admin-tournaments.js|\
               app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
               app/assets/css/components/mgw-tournament-honors.css|\
               app/assets/js/screens/profile-screen-v110.js|\
