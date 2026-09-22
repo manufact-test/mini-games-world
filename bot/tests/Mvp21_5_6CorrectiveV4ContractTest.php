@@ -109,7 +109,9 @@ $assert(str_contains($api, 'observeFinishedGame($data[\'games\'][$finishedTourna
         && str_contains($api, '$snapshot = $readiness->status($mgwId, $accountRef, $userId);'),
     'Server terminal observation must refresh Ready projection after durable progression changes.');
 $assert(str_contains($readiness, 'isInitialManualReadyRow')
-        && str_contains($readiness, "trim((string)(\$row['completed_at_utc'] ?? '')) === ''")),
+        && str_contains($readiness, 'completed_at_utc')
+        && str_contains($readiness, 'attempt_no')
+        && str_contains($readiness, 'wait_kind'),
     'Initial Ready projection must disappear once the durable pair has progressed or completed.');
 $assert(str_contains($invites, "String(finished.match_source || '') === 'tournament'"),
     'Legacy direct-rematch enhancer must exclude tournament games.');
