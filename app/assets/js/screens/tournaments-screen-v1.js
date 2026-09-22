@@ -189,6 +189,12 @@ export function initTournamentsScreen(){
   document.addEventListener('mgw:tournament-progression-open', () => {
     const tournamentScreen = document.getElementById('screen-tournaments');
     if (!(tournamentScreen instanceof HTMLElement)) return;
+    stopTournamentLaunchWatch();
+    stopTournamentStartBoundaryRefresh();
+    stopTournamentStartSync();
+    tournamentMatchSnapshot = null;
+    tournamentProgressionSnapshot = null;
+    tournamentMatchError = '';
     tournamentScreen.querySelectorAll('[data-competition-mode]').forEach(candidate => {
       const active = String(candidate.dataset.competitionMode || '') === 'tournaments';
       candidate.classList.toggle('active', active);
@@ -198,6 +204,18 @@ export function initTournamentsScreen(){
       panel.hidden = String(panel.dataset.competitionPanel || '') !== 'tournaments';
     });
     void loadTournamentSnapshot();
+  });
+
+  document.addEventListener('mgw:game-finished', event => {
+    const game = state.activeGame;
+    const finishedId = String(event?.detail?.gameId || '');
+    if (!game?.id
+        || String(game.id) !== finishedId
+        || String(game.match_source || '') !== 'tournament') return;
+    stopTournamentLaunchWatch();
+    stopTournamentStartBoundaryRefresh();
+    stopTournamentStartSync();
+    void synchronizeTournamentTerminalProgression();
   });
 
   document.addEventListener('mgw:app-ready', () => {
@@ -216,6 +234,10 @@ export function initTournamentsScreen(){
       return;
     }
     if (tournamentHallPanelVisible()) {
+      // Telegram WebView may have been suspended while the operator assigned a
+      // tournament date in Admin. Resume with an immediate authoritative refresh
+      // instead of waiting for the next 2s/3s timer phase.
+      void loadTournamentSnapshot();
       startTournamentVisibleRefresh();
       if (tournamentHallSnapshot?.hall?.entered === true) {
         startTournamentHallHeartbeat();
@@ -596,6 +618,21 @@ async function warmTournamentHallStatus(){
     })
     .finally(() => { tournamentHallRequest = null; });
   return tournamentHallRequest;
+}
+
+async function synchronizeTournamentTerminalProgression(){
+  try {
+    const result = await api.tournamentMatchState();
+    tournamentMatchSnapshot = result?.snapshot && typeof result.snapshot === 'object'
+      ? result.snapshot
+      : null;
+    tournamentProgressionSnapshot = result?.progression && typeof result.progression === 'object'
+      ? result.progression
+      : null;
+    tournamentMatchError = '';
+  } catch (error) {
+    tournamentMatchError = String(error?.message || 'Не удалось синхронизировать результат турнира.');
+  }
 }
 
 async function refreshTournamentMatchState(){
