@@ -165,6 +165,17 @@ final class RuntimePrimaryStagingRequestSessionConfig
         return $this->enabled;
     }
 
+    public function activeAt(int $now): bool
+    {
+        if (!$this->enabled || $now < 1) return false;
+        $expiresAt = self::parseExactTimestamp(
+            $this->expiresAtUtc,
+            'staging_db_primary_request_session.expires_at_utc'
+        )->getTimestamp();
+        $remaining = $expiresAt - $now;
+        return $remaining > 0 && $remaining <= self::MAX_SESSION_SECONDS;
+    }
+
     public function baselineRevision(): int
     {
         return $this->baselineRevision;
