@@ -154,6 +154,22 @@ final class TournamentCancellationService
                     'Tournament settlement has already started. Automatic cancellation refuses reward clawback.'
                 );
             }
+            $rewardLedgerCount = (int)$db->fetchValue(
+                'SELECT COUNT(*) FROM mgw_ledger_entries
+                 WHERE source_type=:source_type
+                   AND source_ref=:source_ref
+                   AND category=:category',
+                [
+                    'source_type'=>'official_tournament',
+                    'source_ref'=>$tournamentId,
+                    'category'=>'tournament_reward',
+                ]
+            );
+            if ($rewardLedgerCount > 0) {
+                throw new RuntimeException(
+                    'Tournament reward payout already exists. Automatic cancellation refuses unsafe prize clawback.'
+                );
+            }
 
             $registrations = $db->fetchAll(
                 'SELECT r.registration_id,r.mgw_id,r.account_ref,r.reservation_id,
