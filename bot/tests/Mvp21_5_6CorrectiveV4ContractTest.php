@@ -124,10 +124,11 @@ $assert(str_contains($fixture, 'progressionAcceptanceAvailability')
         && str_contains($fixture, 'fixtureRuntimeIdentityForMgw')
         && str_contains($fixture, 'observeFinishedGame(['),
     'Staging helper must only identify fixture pairs and reuse canonical progression result ownership.');
-$assert(str_contains($progression, 'both_absent_at_start_pending')
-        && str_contains($progression, 'STATE_READINESS_EXPIRED')
+$assert(str_contains($progression, "'both_absent_at_start'")
+        && str_contains($progression, 'STATE_COMPLETED')
+        && str_contains($progression, 'insertResolvedOrReadyRow')
         && str_contains($progression, 'ensureFirstRoundStructure'),
-    'Every seeded first-round pair, including both-absent competitors, must remain represented in durable progression.');
+    'Every seeded first-round pair, including both-absent competitors, must remain represented without inventing a winner.');
 $assert(str_contains($fixture, 'ensureFirstRoundStructure($tournamentId)'),
     'Staging progression availability must repair missing first-round rows for already-started manual tournaments.');
 $assert(str_contains($fixture, "'finish_reason'=>'staging_fixture_acceptance'")
