@@ -12,23 +12,54 @@ require $root.'/tournaments/TournamentMatchReadinessService.php';
 require $root.'/tournaments/TournamentRoundProgressionService.php';
 require $root.'/tournaments/TournamentSettlementService.php';
 
-if(!extension_loaded('pdo_sqlite')) throw new RuntimeException('Mvp21_9TournamentSettlementTest requires pdo_sqlite.');
-
-$pdo=new PDO('sqlite::memory:');
-$pdo->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
-$pdo->exec('PRAGMA foreign_keys = ON');
+$mysqlHost=trim((string)getenv('MGW_TEST_MYSQL_HOST'));
+$isMysql=$mysqlHost!=='';
+if($isMysql){
+ if(!extension_loaded('pdo_mysql')) throw new RuntimeException('Mvp21_9TournamentSettlementTest requires pdo_mysql for MySQL mode.');
+ $port=trim((string)getenv('MGW_TEST_MYSQL_PORT'))?:'3306';
+ $name=trim((string)getenv('MGW_TEST_MYSQL_DATABASE'))?:'mgw_test';
+ $user=trim((string)getenv('MGW_TEST_MYSQL_USER'))?:'root';
+ $pass=(string)getenv('MGW_TEST_MYSQL_PASSWORD');
+ $pdo=new PDO('mysql:host='.$mysqlHost.';port='.$port.';dbname='.$name.';charset=utf8mb4',$user,$pass,[
+  PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,
+  PDO::ATTR_EMULATE_PREPARES=>false,
+ ]);
+}else{
+ if(!extension_loaded('pdo_sqlite')) throw new RuntimeException('Mvp21_9TournamentSettlementTest requires pdo_sqlite.');
+ $pdo=new PDO('sqlite::memory:');
+ $pdo->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
+ $pdo->exec('PRAGMA foreign_keys = ON');
+}
 $db=new PdoDatabaseConnection($pdo);
 
-$db->execute('CREATE TABLE mgw_users (
- mgw_id TEXT PRIMARY KEY,nickname TEXT NULL,display_name TEXT NULL
-)');
+if($isMysql){
+ $db->execute('CREATE TABLE mgw_users (
+  mgw_id VARCHAR(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL PRIMARY KEY,
+  nickname VARCHAR(160) NULL,display_name VARCHAR(160) NULL
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+}else{
+ $db->execute('CREATE TABLE mgw_users (
+  mgw_id TEXT PRIMARY KEY,nickname TEXT NULL,display_name TEXT NULL
+ )');
+}
 (require $root.'/database/migrations/20260717_0005_create_balances_ledger_reservations.php')->up($db);
 (require $root.'/database/migrations/20260920_0049_create_official_tournaments.php')->up($db);
-$db->execute('CREATE TABLE mgw_tournament_round_matches (
- tournament_id TEXT NOT NULL,round_no INTEGER NOT NULL,pair_no INTEGER NOT NULL,
- match_kind TEXT NOT NULL,winner_mgw_id TEXT NULL,loser_mgw_id TEXT NULL,
- completed_at_utc TEXT NULL
-)');
+if($isMysql){
+ $db->execute('CREATE TABLE mgw_tournament_round_matches (
+  tournament_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  round_no SMALLINT UNSIGNED NOT NULL,pair_no SMALLINT UNSIGNED NOT NULL,
+  match_kind VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  winner_mgw_id VARCHAR(24) CHARACTER SET ascii COLLATE ascii_bin NULL,
+  loser_mgw_id VARCHAR(24) CHARACTER SET ascii COLLATE ascii_bin NULL,
+  completed_at_utc DATETIME(6) NULL
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+}else{
+ $db->execute('CREATE TABLE mgw_tournament_round_matches (
+  tournament_id TEXT NOT NULL,round_no INTEGER NOT NULL,pair_no INTEGER NOT NULL,
+  match_kind TEXT NOT NULL,winner_mgw_id TEXT NULL,loser_mgw_id TEXT NULL,
+  completed_at_utc TEXT NULL
+ )');
+}
 (require $root.'/database/migrations/20260922_0057_create_tournament_results_rewards.php')->up($db);
 
 $assertions=0;
