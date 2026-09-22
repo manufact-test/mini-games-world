@@ -81,7 +81,7 @@ $assert(str_contains($manifest, 'main-v110-handoff-shell.js?v=1157')
     'Startup corrective must publish a fresh main client identity.');
 $assert(str_contains($manifest, 'tournaments-screen-v1.js?v=27')
         && str_contains($manifest, 'mvp21_8=corrective-v8')
-        && str_contains($manifest, 'registration=cancel-restored-v1')
+        && str_contains($manifest, 'registration_cancel=restored-v1')
         && str_contains($manifest, 'mvp21_6=terminal-return-preserve-v5'),
     'Tournament corrective must publish a fresh v8 client identity.');
 
