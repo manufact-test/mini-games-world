@@ -301,6 +301,14 @@ jobs:
               app/assets/js/games/game-invites-v110.js|\
               app/assets/js/games/game-invites-v110-rematch-policy-v175.js|\
               app/runtime/client/version-manifest.php|\
+              app/assets/css/components/mgw-tournament-honors.css|\
+              app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/js/state.js|\
+              bot/profile-v2.php|\
+              bot/ratings/RatingArchiveService.php|\
+              bot/tests/Mvp21_9TournamentProductProjectionContractTest.php|\
+              bot/tests/Mvp21_9TournamentRewardProjectionTest.php|\
+              bot/tournaments/TournamentRewardProjectionService.php|\
               app/assets/css/main.css|\
               bot/tests/Mvp21_6TournamentRoundProgressionTest.php|\
               bot/tests/Mvp21_6TournamentRuntimeContractTest.php|\

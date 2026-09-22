@@ -229,6 +229,7 @@ jobs:
               .github/workflows/mvp18-5-reports-blocked-users.yml|\
               .github/workflows/mvp18-6-notification-pipeline.yml|\
               .github/workflows/mvp20-1-per-game-visible-rating.yml|\
+              .github/workflows/mvp20-7-rating-archives.yml|\
               .github/workflows/mvp21-1-tournament-registration.yml|\
               .github/workflows/mvp21-2-tournament-rules.yml|\
               .github/workflows/mvp21-3-tournament-schedule.yml|\
@@ -292,6 +293,14 @@ jobs:
               app/assets/js/production-v110-acceptance-runtime.js|\
               app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
+              app/assets/css/components/mgw-tournament-honors.css|\
+              app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/js/state.js|\
+              bot/profile-v2.php|\
+              bot/ratings/RatingArchiveService.php|\
+              bot/tests/Mvp21_9TournamentProductProjectionContractTest.php|\
+              bot/tests/Mvp21_9TournamentRewardProjectionTest.php|\
+              bot/tournaments/TournamentRewardProjectionService.php|\
               bot/tests/Mvp21_4TournamentHallBracketTest.php|\
               bot/tests/Mvp21_4TournamentHallUxContractTest.php|\
               bot/tests/Mvp21_5TournamentMatchReadinessTest.php|\

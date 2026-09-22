@@ -14,11 +14,19 @@ final class RatingArchiveService
     private const MAX_PROFILE_SEASONS = 12;
     private const SEASON_CLOSED = 'closed';
 
+    private ?TournamentRewardProjectionService $tournamentRewards = null;
+
     public function __construct(
         private DatabaseConnectionInterface $database,
-        private ?LeaderboardService $leaderboard = null
+        private ?LeaderboardService $leaderboard = null,
+        ?TournamentRewardProjectionService $tournamentRewards = null
     ) {
         $this->leaderboard ??= new LeaderboardService($database);
+        if ($tournamentRewards !== null) {
+            $this->tournamentRewards = $tournamentRewards;
+        } elseif (class_exists('TournamentRewardProjectionService')) {
+            $this->tournamentRewards = new TournamentRewardProjectionService($database);
+        }
     }
 
     public function profileSnapshot(string $mgwId): array
@@ -71,16 +79,17 @@ final class RatingArchiveService
             $this->closedSeasons(40)
         );
 
+        $tournaments = $this->tournamentRewards !== null
+            ? $this->tournamentRewards->publicArchive()
+            : ['available'=>false,'entries'=>[],'hall_of_fame'=>[]];
+
         return [
             'competition_state' => $control['competition_state'],
             'official' => $control['competition_state'] === PerGameRatingService::STATE_ACTIVE,
             'current_season_id' => $control['current_season_id'],
             'seasons' => $seasons,
             'hall_of_fame' => $this->hallOfFame(),
-            'tournaments' => [
-                'available' => false,
-                'entries' => [],
-            ],
+            'tournaments' => $tournaments,
         ];
     }
 

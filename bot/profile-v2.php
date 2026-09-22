@@ -76,6 +76,7 @@ try {
     $rating = (new PerGameRatingRuntimeBridge($configRef, $router, $database))->snapshotForProfile($mgwId);
     $yearlyMedals = (new YearlyMedalService($database))->userSnapshot($mgwId);
     $ratingArchive = (new RatingArchiveService($database))->profileSnapshot($mgwId);
+    $tournamentRewards = (new TournamentRewardProjectionService($database))->profileSnapshot($mgwId);
 
     $users = new UserService($configRef);
     $historyService = new HistoryService($configRef, $users);
@@ -99,6 +100,7 @@ try {
         'rating'=>$rating,
         'yearly_medals'=>$yearlyMedals,
         'rating_archive'=>$ratingArchive,
+        'tournament_rewards'=>$tournamentRewards,
         'user'=>$runtime['user'] ?? null,
         'stats'=>$runtime['stats'] ?? null,
         'history'=>$runtime['history'] ?? ['matches'=>[],'operations'=>[]],
