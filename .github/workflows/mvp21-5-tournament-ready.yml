@@ -246,6 +246,12 @@ jobs:
               bot/database/migrations/20260922_0058_add_tournament_technical_outcomes.php|\
               bot/services/ReconnectLifecycleService.php|\
               bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php|\
+              .github/workflows/mvp21-10-tournament-prize-review.yml|\
+              bot/database/migrations/20260922_0060_create_tournament_prize_review.php|\
+              bot/tournaments/TournamentPrizeReviewService.php|\
+              bot/tests/Mvp21_10TournamentPrizeReviewTest.php|\
+              bot/tests/Mvp21_10TournamentPrizeReviewContractTest.php|\
+              app/assets/css/admin-shell.css|\
               .github/workflows/mvp21-9-tournament-rewards.yml|\
               bot/database/migrations/20260922_0057_create_tournament_results_rewards.php|\
               bot/tournaments/TournamentSettlementService.php|\
