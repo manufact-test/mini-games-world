@@ -26,6 +26,18 @@ if($isMysql){
 $db=new PdoDatabaseConnection($pdo);
 
 if($isMysql){
+    $db->execute('SET FOREIGN_KEY_CHECKS=0');
+    foreach([
+        'mgw_tournament_reward_entitlements',
+        'mgw_tournament_results',
+        'mgw_tournament_golden_tickets',
+        'mgw_tournaments',
+        'mgw_users',
+    ] as $table){
+        $db->execute('DROP TABLE IF EXISTS '.$table);
+    }
+    $db->execute('SET FOREIGN_KEY_CHECKS=1');
+
     $db->execute('CREATE TABLE mgw_users (
         mgw_id VARCHAR(24) PRIMARY KEY,nickname VARCHAR(160) NULL,display_name VARCHAR(160) NULL,
         equipped_avatar_item_id VARCHAR(128) NULL
