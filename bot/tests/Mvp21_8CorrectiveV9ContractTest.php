@@ -30,9 +30,15 @@ $assert(str_contains($storage, "readOnlySections(\n                ['notificatio
 $assert(str_contains($storage, "LOWER(SHA2(state_json, 256)) AS actual_sha256")
         && str_contains($storage, "JSON_EXTRACT(state_json, '$.notifications') AS notifications_json"),
     'MySQL stale-primary guard must verify state integrity server-side and transfer only the notifications subtree.');
-$mysqlSelective = strpos($storage, "JSON_EXTRACT(state_json, '$.notifications')");
-$fullAdapterFallback = strpos($storage, "new DatabasePrimaryStateStorageAdapter($database)");
-$assert($mysqlSelective !== false && $fullAdapterFallback !== false && $mysqlSelective < $fullAdapterFallback,
+$staleHelperStart = strpos($storage, 'private static function stagingApiPrimaryNotificationSnapshotIsBehind');
+$strictBoolStart = strpos($storage, 'private static function strictBool', $staleHelperStart === false ? 0 : $staleHelperStart);
+$staleHelper = $staleHelperStart !== false && $strictBoolStart !== false
+    ? substr($storage, $staleHelperStart, $strictBoolStart - $staleHelperStart)
+    : '';
+$mysqlSelective = strpos($staleHelper, "JSON_EXTRACT(state_json, '$.notifications')");
+$fullAdapterFallback = strpos($staleHelper, "new DatabasePrimaryStateStorageAdapter($database)");
+$assert($staleHelper !== '' && $mysqlSelective !== false && $fullAdapterFallback !== false
+        && $mysqlSelective < $fullAdapterFallback,
     'Staging MySQL must use the selective notification probe before the local SQLite full-adapter fallback.');
 $assert(str_contains($storage, "'read_at'=>\$mutableTimestamp(\$notification['read_at'] ?? null)")
         && str_contains($storage, "'hidden_at'=>\$mutableTimestamp(\$notification['hidden_at'] ?? null)"),
