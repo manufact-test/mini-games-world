@@ -73,10 +73,9 @@ $assert(str_contains($source['special_runtime'], 'public function createTourname
         && str_contains($source['special_runtime'], 'if ($alreadyExists) return $db[\'games\'][$gameId];'),
     'Chess/Go/Domino must use the same idempotent tournament launch path.');
 
-$assert(str_contains($source['clock'], 'markTournamentPairReady')
-        && str_contains($source['clock'], "match_source")
-        && str_contains($source['clock'], 'server-tournament-ready'),
-    'Durable Hall readiness must hand off into the existing shared Phase-B clock without client auto-ready.');
+$assert(str_contains($source['clock'], 'public function markReady')
+        && str_contains($source['clock'], 'preparation_ready_devices'),
+    'Shared Phase-B readiness must wait for each real client to adopt the tournament game.');
 $assert(str_contains($source['clock'], 'countdownSeconds($game)')
         && str_contains($source['clock'], "'launch_countdown_sec' =>"),
     'Shared clock must expose a parameterized authoritative countdown.');
@@ -88,9 +87,11 @@ foreach (['tournament_match_state','tournament_match_ready'] as $needle) {
     $assert(str_contains($source['api'], $needle), 'Tournament API action missing: ' . $needle);
 }
 $assert(str_contains($source['api'], '$data[\'games\'][$gameId][\'launch_countdown_sec\'] = 10')
-        && str_contains($source['api'], 'markTournamentPairReady($tournamentGame)')
-        && str_contains($source['api'], 'attachGame('),
-    'Both-ready API path must create one ten-second locked game and durably attach it.');
+        && !str_contains($source['api'], 'markTournamentPairReady($tournamentGame)')
+        && str_contains($source['api'], 'attachGame(')
+        && str_contains($source['api'], 'after BOTH real')
+        && str_contains($source['api'], '$attachedReadyGameId'),
+    'Ready API must create/attach one game but defer the ten-second countdown until both real clients adopt it.');
 $assert(str_contains($source['api'], 'GameLaunchFinalizationService::finalizeStoredGame'),
     'Tournament launch must reuse canonical game launch finalization.');
 
@@ -107,13 +108,21 @@ $assert(str_contains($source['screen'], "new CustomEvent('mgw:prime-launch-feedb
         && str_contains($source['screen'], 'refreshTournamentMatchState'),
     'Ready click must prime feedback, then hand the authoritative game to the existing game screen.');
 $assert(str_contains($source['screen'], "tournamentHallSnapshot?.bracket")
-        && str_contains($source['screen'], 'await refreshTournamentMatchState()'),
-    'Hall heartbeat must let the first-ready player discover the exact game launched by the second.');
+        && str_contains($source['screen'], 'await refreshTournamentMatchState()')
+        && str_contains($source['screen'], 'match.self_ready === true')
+        && str_contains($source['screen'], '}, 350);'),
+    'First-ready client must discover the exact shared game through the bounded 350ms self-ready launch watch.');
 $assert(str_contains($source['screen'], 'startTournamentVisibleRefresh')
         && str_contains($source['screen'], '2000')
         && str_contains($source['screen'], 'await warmTournamentStatus()')
         && str_contains($source['screen'], 'warmTournamentHallStatus'),
     'Visible Tournament screen must continuously refresh authoritative tournament status and Hall state without navigation away/back.');
+$assert(str_contains($source['screen'], 'tournamentStartBoundaryTimer')
+        && str_contains($source['screen'], 'scheduleTournamentStartBoundaryRefresh')
+        && str_contains($source['screen'], 'scheduledStart.getTime() - Date.now() + 30')
+        && str_contains($source['screen'], 'const hallResult = await api.tournamentHallStatus()')
+        && str_contains($source['screen'], 'await refreshTournamentMatchState()'),
+    'Registered clients must issue a fresh post-T0 Hall/readiness read instead of waiting for or reusing the arbitrary two-second poll phase.');
 $assert(str_contains($source['screen'], 'Загружаем готовность вашей пары…')
         && str_contains($source['screen'], 'tournamentMatchError')
         && str_contains($source['screen'], 'const matchMarkup = tournamentMatchMarkup();'),
@@ -158,15 +167,15 @@ foreach ([
 $assert(str_contains($source['manifest'], 'client.js?v=1143')
         && str_contains($source['manifest'], 'mvp21_5=ready-v1'),
     'API client must publish a fresh MVP-21.5 cache identity.');
-$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=21')
-        && str_contains($source['manifest'], 'mvp21_5=corrective-v4')
-        && str_contains($source['manifest'], 'ready=launch-watch-350ms'),
-    'Tournament screen must publish the fresh corrective-v4 launch/registration cache identity.');
-$assert(str_contains($source['manifest'], 'production-v110-acceptance-runtime.js?v=131')
-        && str_contains($source['manifest'], 'mvp21_5=countdown-10-av-v1'),
-    'Shared Phase-B presentation must publish a fresh countdown cache identity.');
+$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=24')
+        && str_contains($source['manifest'], 'mvp21_5=corrective-v5')
+        && str_contains($source['manifest'], 'ready=t0-fresh-hall-launch-watch-v3'),
+    'Tournament screen must publish the fresh corrective-v5 launch cache identity.');
+$assert(str_contains($source['manifest'], 'production-v110-acceptance-runtime.js?v=132')
+        && str_contains($source['manifest'], 'mvp21_5=countdown-10-fresh60-v2'),
+    'Shared Phase-B presentation must publish the fresh server-active/fresh-60 cache identity.');
 $assert(str_contains($source['manifest'], 'main.css?v=199'),
     'Readiness presentation CSS must publish a fresh cache identity.');
 
-if ($assertions < 36) throw new RuntimeException('MVP-21.5 UX contract is too shallow.');
+if ($assertions < 37) throw new RuntimeException('MVP-21.5 UX contract is too shallow.');
 fwrite(STDOUT, "Mvp21_5TournamentReadyUxContractTest: {$assertions} assertions passed\n");

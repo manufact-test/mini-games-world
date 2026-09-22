@@ -306,6 +306,19 @@ final class TournamentRoundProgressionService
         return 'game_tour_' . substr(hash('sha256', $identity), 0, 48);
     }
 
+    public function ensureFirstRoundStructure(
+        string $tournamentId,
+        ?DateTimeImmutable $now = null
+    ): array {
+        $tournamentId = trim($tournamentId);
+        if ($tournamentId === '') {
+            throw new InvalidArgumentException('Tournament id is required.');
+        }
+        $moment = $this->moment($now);
+        $this->ensureFirstRoundRows($tournamentId, $moment);
+        return $this->tournamentSnapshot($tournamentId, $moment);
+    }
+
     public function statusForParticipant(
         string $mgwId,
         string $accountRef,
@@ -537,6 +550,38 @@ final class TournamentRoundProgressionService
                         'wait_kind'=>self::WAIT_INITIAL_READY,'match_kind'=>self::MATCH_ELIMINATION,
                         'winner_mgw_id'=>$winner,'loser_mgw_id'=>$loser,
                         'result_reason'=>'technical_loss_at_start','completed'=>$opened,
+                    ]
+                );
+            }
+
+            if (!$presentA && !$presentB) {
+                // Keep every seeded pair represented in progression. When both
+                // competitors missed T0 there is no automatic winner, but omitting
+                // the row makes an 8-player round structurally odd and breaks the
+                // entire bracket. The unresolved row cannot launch; staging may
+                // finish synthetic fixture-only pairs through the explicit admin
+                // acceptance helper, while production can keep its separate
+                // both-absent resolution policy.
+                $this->database->execute(
+                    'INSERT INTO mgw_tournament_round_matches (
+                        tournament_id,round_no,pair_no,player_a_mgw_id,player_b_mgw_id,
+                        readiness_opened_at_utc,readiness_deadline_at_utc,
+                        player_a_ready_at_utc,player_b_ready_at_utc,
+                        launch_state,game_id,created_at_utc,updated_at_utc,
+                        attempt_no,wait_kind,match_kind,winner_mgw_id,loser_mgw_id,result_reason,completed_at_utc
+                     ) VALUES (
+                        :tournament_id,1,:pair_no,:player_a_mgw_id,:player_b_mgw_id,
+                        :opened,:deadline,NULL,NULL,:launch_state,NULL,:created,:updated,
+                        1,:wait_kind,:match_kind,NULL,NULL,:result_reason,NULL
+                     )',
+                    [
+                        'tournament_id'=>$tournamentId,'pair_no'=>$pairNo,
+                        'player_a_mgw_id'=>$a,'player_b_mgw_id'=>$b,
+                        'opened'=>$opened,'deadline'=>$deadline,
+                        'launch_state'=>TournamentMatchReadinessService::STATE_READINESS_EXPIRED,
+                        'created'=>$opened,'updated'=>$opened,
+                        'wait_kind'=>self::WAIT_INITIAL_READY,'match_kind'=>self::MATCH_ELIMINATION,
+                        'result_reason'=>'both_absent_at_start_pending',
                     ]
                 );
             }

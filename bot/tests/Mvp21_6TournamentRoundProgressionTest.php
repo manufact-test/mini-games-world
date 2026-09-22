@@ -156,5 +156,42 @@ $finalStatus=$progress->statusForParticipant($players[1]['mgw'],$players[1]['acc
 $assertSame(true,$finalStatus['tournament_complete'],'Tournament becomes complete only after both final and third-place match finish.');
 $assertSame(9,(int)$db->fetchValue('SELECT COUNT(*) FROM mgw_tournament_match_attempts WHERE tournament_id=:t',['t'=>$tournament]),'Eight-player tournament with one draw replay must keep all nine played attempts.');
 
-if($assertions<22) throw new RuntimeException('MVP-21.6 progression test is too shallow: '.$assertions);
+// Corrective v5: every seeded pair must materialize even when both competitors
+// were absent at T0. Omitting these rows made an 8-player round structurally odd
+// after the live pair finished and prevented the staging fixture helper from
+// seeing its work.
+$absentTournament='tour-rounds-both-absent';
+$db->execute('INSERT INTO mgw_tournaments VALUES (:id,:slot,:state,:game,8,:start,:generated)',[
+ 'id'=>$absentTournament,'slot'=>'fixture-backfill',
+ 'state'=>TournamentRegistrationService::STATE_SCHEDULED,'game'=>'tictactoe',
+ 'start'=>'2026-09-21 11:00:00.000000','generated'=>'2026-09-21 11:00:00.000000'
+]);
+for($i=1;$i<=8;$i++){
+ $db->execute('INSERT INTO mgw_tournament_bracket_seeds VALUES (:t,:seed,:pair,:r,:m,:present,:tech)',[
+  't'=>$absentTournament,
+  'seed'=>$i,
+  'pair'=>(int)(($i-1)/2)+1,
+  'r'=>'absent-reg-'.$i,
+  'm'=>$players[$i]['mgw'],
+  'present'=>$i<=2?1:0,
+  'tech'=>$i<=2?0:1,
+ ]);
+}
+$absentSnapshot=$progress->ensureFirstRoundStructure(
+ $absentTournament,
+ new DateTimeImmutable('2026-09-21T11:00:01Z')
+);
+$assertSame(4,count($absentSnapshot['matches']),'Both-absent seeds must not disappear from an eight-player first round.');
+$bothAbsentRows=$db->fetchAll(
+ 'SELECT * FROM mgw_tournament_round_matches WHERE tournament_id=:t AND pair_no>=2 ORDER BY pair_no',
+ ['t'=>$absentTournament]
+);
+$assertSame(3,count($bothAbsentRows),'All three both-absent fixture pairs must have durable unresolved rows.');
+foreach($bothAbsentRows as $row){
+ $assertSame(TournamentMatchReadinessService::STATE_READINESS_EXPIRED,(string)$row['launch_state'],'Both-absent pair must be non-launchable.');
+ $assertSame('both_absent_at_start_pending',(string)$row['result_reason'],'Both-absent pair must retain an explicit pending-resolution reason.');
+ $assertSame(null,$row['completed_at_utc'],'Both-absent pair must remain unresolved until canonical progression chooses a winner.');
+}
+
+if($assertions<31) throw new RuntimeException('MVP-21.6 progression test is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_6TournamentRoundProgressionTest: {$assertions} assertions passed\n");

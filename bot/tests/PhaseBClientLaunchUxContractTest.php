@@ -53,8 +53,8 @@ $assert(
     'Safe game-screen import key must resolve through the canonical version manifest.'
 );
 $assert(
-    str_contains($versionManifest, "'./assets/js/production-v110-acceptance-runtime.js?v=110' => './assets/js/production-v110-acceptance-runtime.js?v=131")
-        && str_contains($versionManifest, 'mvp21_5=countdown-10-av-v1'),
+    str_contains($versionManifest, "'./assets/js/production-v110-acceptance-runtime.js?v=110' => './assets/js/production-v110-acceptance-runtime.js?v=132")
+        && str_contains($versionManifest, 'mvp21_5=countdown-10-fresh60-v2'),
     'The active v110 graph must resolve the reviewed MVP-21.5 acceptance runtime through the canonical version manifest.'
 );
 $assert(
@@ -113,7 +113,8 @@ $assert(
         && !str_contains($acceptance, 'runtime.clock.start = candidateStart'),
     'Same-turn snapshots must never retarget the local start anchor.'
 );
-$assert(str_contains($acceptance, "phase === 'countdown' && !launchStartReached(game)"), 'Countdown actions must remain blocked until the shared start anchor.');
-$assert(str_contains($acceptance, "phase === 'preparing' || phase === 'preparation_timeout' || phase === 'cancelled'"), 'Pre-start and cancelled actions must be blocked before optimistic state.');
+$assert(str_contains($acceptance, "if (phase && phase !== 'active') return false;"), 'Countdown actions must remain blocked until the authoritative server-active handoff.');
+$assert(str_contains($acceptance, "phase === 'countdown'") && str_contains($acceptance, "|| phase === 'preparation_timeout'"), 'Visible first-turn clock must stay full throughout preparing/countdown before active handoff.');
+$assert(str_contains($acceptance, "const serverReady = phase === 'active';"), 'Launch overlay must not release from a local countdown alone.');
 
 fwrite(STDOUT, "PhaseBClientLaunchUxContractTest: {$assertions} assertions passed\n");

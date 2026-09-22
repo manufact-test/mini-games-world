@@ -536,11 +536,13 @@ function openResultSheet(game, me, options = {}){
   text += goScoreText(game, me);
   text += dominoScoreText(game);
   const disabled = options.pending ? 'disabled aria-busy="true"' : '';
-  const summaryMarkup = resultSummaryPlaceholder(
-    game,
-    me,
-    options.pending ? 'подтверждаем…' : 'считаем…'
-  );
+  const summaryMarkup = tournamentMatch
+    ? tournamentResultSummaryMarkup(game)
+    : resultSummaryPlaceholder(
+        game,
+        me,
+        options.pending ? 'подтверждаем…' : 'считаем…'
+      );
 
   if (tournamentMatch) text += ' Турнирный результат сохранён в сетке.';
 
@@ -579,7 +581,7 @@ function openResultSheet(game, me, options = {}){
     document.dispatchEvent(new CustomEvent('mgw:game-dismissed'));
   });
 
-  if (!options.pending) void hydrateResultSummary(game, me);
+  if (!options.pending && !tournamentMatch) void hydrateResultSummary(game, me);
 }
 
 function setResultActionsDisabled(disabled){
@@ -593,6 +595,7 @@ function setResultActionsDisabled(disabled){
 }
 
 async function hydrateResultSummary(game, me){
+  if (String(game?.match_source || '') === 'tournament') return;
   const gameId = String(game?.id || '');
   if (!gameId) return;
   const target = document.getElementById('resultSummary');
@@ -613,6 +616,17 @@ async function hydrateResultSummary(game, me){
     if (!(current instanceof HTMLElement) || String(current.dataset.resultGameId || '') !== gameId) return;
     current.innerHTML = resultSummaryPlaceholder(game, me, 'итог пока недоступен');
   }
+}
+
+function tournamentResultSummaryMarkup(game){
+  const title = String(game?.game_title || 'Матч');
+  const names = (Array.isArray(game?.players) ? game.players : [])
+    .map(player => String(player?.name || '').trim())
+    .filter(Boolean);
+  const pairing = names.length >= 2
+    ? `${names[0]} против ${names[1]}`
+    : 'Участники турнирной пары';
+  return `<strong>Турнирный поединок · ${escapeHtml(title)}</strong><br>${escapeHtml(pairing)}`;
 }
 
 function resultSummaryMarkup(match){

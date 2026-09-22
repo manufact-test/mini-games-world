@@ -351,6 +351,21 @@ try {
                 $readyMatch = is_array($snapshot['match'] ?? null)
                     ? $snapshot['match']
                     : null;
+                $attachedReadyGameId = trim((string)($readyMatch['game_id'] ?? ''));
+                if ($attachedReadyGameId !== ''
+                    && isset($data['games'][$attachedReadyGameId])
+                    && is_array($data['games'][$attachedReadyGameId])
+                    && (string)($data['games'][$attachedReadyGameId]['status'] ?? '') === 'active'
+                    && (string)($data['games'][$attachedReadyGameId]['match_source'] ?? '') === 'tournament'
+                    && in_array($userId, array_map('strval', $data['games'][$attachedReadyGameId]['player_ids'] ?? []), true)) {
+                    return [
+                        'snapshot'=>$snapshot,
+                        'progression'=>null,
+                        'game'=>$games->publicGame($data['games'][$attachedReadyGameId], $userId),
+                        'user'=>$users->publicUser($user),
+                        'session'=>$sessions->publicState($user, $sessionId),
+                    ];
+                }
                 $initialReadyOwnsWindow = is_array($readyMatch)
                     && (int)($readyMatch['round_no'] ?? 0) === 1
                     && trim((string)($readyMatch['game_id'] ?? '')) === ''
@@ -452,13 +467,14 @@ try {
 
                     $data['games'][$gameId]['launch_countdown_sec'] = 10;
                     GameLaunchFinalizationService::finalizeStoredGame($data, $gameId, true);
-                    $clock = new MatchPreparationClockService();
                     $tournamentGame =& $data['games'][$gameId];
-                    if ((string)($tournamentGame['launch_phase'] ?? '') === 'preparing') {
-                        $clock->markTournamentPairReady($tournamentGame);
-                        $clock->advance($tournamentGame);
-                    }
 
+                    // Tournament Ready only selects and creates the shared game.
+                    // The common 10-second countdown starts later, after BOTH real
+                    // clients have actually adopted this exact game through
+                    // game_state and Phase-B has recorded both device-ready marks.
+                    // This prevents the second Ready request from spending half of
+                    // the countdown before the first client has entered the game.
                     if ($progressionOwnsLaunch) {
                         $progression->attachGame(
                             (string)$launch['tournament_id'],
@@ -476,11 +492,13 @@ try {
                         );
                     }
                     $snapshot = $readiness->status($mgwId, $accountRef, $userId);
-                    $progressionSnapshot = $progression->statusForParticipant(
-                        $mgwId,
-                        $accountRef,
-                        $userId
-                    );
+                    if ($progressionOwnsLaunch) {
+                        $progressionSnapshot = $progression->statusForParticipant(
+                            $mgwId,
+                            $accountRef,
+                            $userId
+                        );
+                    }
                     $publicGame = in_array($userId, array_map('strval', $tournamentGame['player_ids'] ?? []), true)
                         ? $games->publicGame($tournamentGame, $userId)
                         : null;

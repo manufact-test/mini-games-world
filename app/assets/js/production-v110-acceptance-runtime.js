@@ -358,6 +358,7 @@ function paintClock(){
   const phase = String(game?.launch_phase || '');
   const now = performance.now();
   const beforeTurnStart = phase === 'preparing'
+    || phase === 'countdown'
     || phase === 'preparation_timeout'
     || now < clock.start;
   const pendingWithoutServerClock = runtime.pending?.gameId === clock.gameId
@@ -375,9 +376,7 @@ function headerClockOwnsGame(game){
 }
 function launchAllowsAction(game){
   const phase = String(game?.launch_phase || '');
-  if (phase === 'preparing' || phase === 'preparation_timeout' || phase === 'cancelled') return false;
-  if (phase === 'countdown' && !launchStartReached(game)) return false;
-  if (phase && phase !== 'active' && phase !== 'countdown') return false;
+  if (phase && phase !== 'active') return false;
   return turnStartReached(game);
 }
 function launchAllowsLeave(game){
@@ -454,7 +453,10 @@ function syncLaunchPresentation(game, phase){
 
   const numbersDuration = LAUNCH_COUNTDOWN_STEP_MS * presentation.countdownSeconds;
   const numbersComplete = now - presentation.countdownStartedAt >= numbersDuration;
-  const serverReady = phase === 'active' || (phase === 'countdown' && launchStartReached(game));
+  // A local countdown reaching zero is not enough to expose the field.
+  // Wait for the server-owned active phase so the fresh first-turn deadline
+  // already exists before either client leaves the launch overlay.
+  const serverReady = phase === 'active';
   if (numbersComplete && serverReady && presentation.readyStartedAt === null) {
     presentation.readyStartedAt = now;
   }
@@ -534,7 +536,7 @@ function paintLaunchState(){
   const status = String(game?.status || '');
   const phase = String(game?.launch_phase || '');
   const presentation = syncLaunchPresentation(game, phase);
-  const countdownWaiting = phase === 'countdown' && !launchStartReached(game);
+  const countdownWaiting = phase === 'countdown';
   const serverBlocking = status === 'active'
     && (phase === 'preparing' || countdownWaiting || phase === 'preparation_timeout');
   const presentationBlocking = status === 'active'

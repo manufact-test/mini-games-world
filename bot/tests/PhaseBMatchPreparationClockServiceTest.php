@@ -132,10 +132,14 @@ $tournamentGame = [
     'turn_started_at' => now_iso(),
 ];
 $clock->initializeNewGame($tournamentGame);
-$clock->markTournamentPairReady($tournamentGame);
+$assert(($tournamentGame['launch_phase'] ?? '') === 'preparing', 'Tournament game creation must wait for both clients to adopt the shared game.');
+$clock->markReady($tournamentGame, 'tour_a', 'tour-session-a', 'tour-device-a');
 $clock->advance($tournamentGame);
-$assert(($tournamentGame['launch_phase'] ?? '') === 'countdown', 'Tournament both-ready handoff must reuse the shared countdown owner.');
-$assert(count($tournamentGame['preparation_ready_devices'] ?? []) === 2, 'Tournament readiness must mark exactly both paired players server-side.');
+$assert(($tournamentGame['launch_phase'] ?? '') === 'preparing', 'First tournament client must not start the common countdown alone.');
+$clock->markReady($tournamentGame, 'tour_b', 'tour-session-b', 'tour-device-b');
+$clock->advance($tournamentGame);
+$assert(($tournamentGame['launch_phase'] ?? '') === 'countdown', 'Both tournament clients must start one shared countdown only after adoption.');
+$assert(count($tournamentGame['preparation_ready_devices'] ?? []) === 2, 'Tournament Phase-B adoption must contain exactly both real paired players.');
 $tournamentStartsAtMs = (int)($tournamentGame['starts_epoch_ms'] ?? 0);
 $nowMs = (int)round(microtime(true) * 1000);
 $assert($tournamentStartsAtMs >= $nowMs + 9000, 'Tournament countdown must remain approximately ten seconds, not ordinary three seconds.');
@@ -151,7 +155,7 @@ try {
 }
 $assert($tournamentBlocked, 'Tournament field must stay locked until the countdown ends.');
 
-// Corrective v4: the 10-second launch countdown and first turn are separate clocks.
+// Corrective v5: client adoption, the 10-second launch countdown and first turn are separate clocks.
 // Advance the same tournament game across T0 without waiting in real time and prove
 // the first playable public frame receives a fresh full 60-second deadline.
 $tournamentGame['starts_epoch_ms'] = (int)round(microtime(true) * 1000) - 1;
