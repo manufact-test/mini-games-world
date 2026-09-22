@@ -93,10 +93,12 @@ $assertTrue(
 );
 $assertTrue(
     str_contains($source['storage_factory'], "\$identity = \$eventKey !== '' ? \$eventKey : \$notificationId;")
-    && str_contains($source['storage_factory'], "if (!isset(\$primaryUserEvents[\$notificationIdentity])) return true;")
+    && str_contains($source['storage_factory'], "if (!array_key_exists(\$notificationIdentity, \$primaryUserEvents)) return true;")
+    && str_contains($source['storage_factory'], "(\$rollbackState['read_at'] ?? null) !== (\$primaryState['read_at'] ?? null)")
+    && str_contains($source['storage_factory'], "(\$rollbackState['hidden_at'] ?? null) !== (\$primaryState['hidden_at'] ?? null)")
     && str_contains($source['storage_factory'], 'Do not weaken the selector on an unclassified readiness failure.')
     && str_contains($source['storage_factory'], "\$failures[\$entrypoint] = \$error;"),
-    'Staging fallback must require proven missing notification events and preserve strict selector failures.'
+    'Staging fallback must require proven notification inventory/mutable-state drift and preserve strict selector failures.'
 );
 
 
