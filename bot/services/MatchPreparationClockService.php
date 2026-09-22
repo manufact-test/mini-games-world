@@ -4,6 +4,8 @@ declare(strict_types=1);
 final class MatchPreparationClockService
 {
     public const PREPARATION_TIMEOUT_SEC = 10;
+    public const TOURNAMENT_INITIAL_ADOPTION_GRACE_SEC = 60;
+    public const TOURNAMENT_PEER_ADOPTION_TIMEOUT_SEC = 30;
     public const COUNTDOWN_SEC = 3;
     public const TURN_HANDOFF_SEC = 1;
     public const MOVE_TIMEOUT_SEC = 60;
@@ -17,7 +19,10 @@ final class MatchPreparationClockService
         }
 
         $now = time();
-        $deadline = $now + self::PREPARATION_TIMEOUT_SEC;
+        $isTournament = (string)($game['match_source'] ?? '') === 'tournament';
+        $deadline = $now + ($isTournament
+            ? self::TOURNAMENT_INITIAL_ADOPTION_GRACE_SEC
+            : self::PREPARATION_TIMEOUT_SEC);
         $game['launch_phase'] = 'preparing';
         $game['preparing_started_at'] = gmdate('c', $now);
         $game['preparation_deadline_at'] = gmdate('c', $deadline);
@@ -71,10 +76,26 @@ final class MatchPreparationClockService
             return;
         }
 
+        $hadReadyDevice = $game['preparation_ready_devices'] !== [];
+        $readyAt = now_iso();
         $game['preparation_ready_devices'][$userId] = [
             'device_hash' => $deviceHash,
-            'ready_at' => now_iso(),
+            'ready_at' => $readyAt,
         ];
+
+        // Tournament game creation happens in the Hall/Ready transport, before
+        // either WebView has necessarily adopted the runtime game. Give creation
+        // a broad safety grace, then start the actual peer-connect timeout only
+        // when the FIRST real client proves it has entered this exact game.
+        // The second real client therefore always receives a fresh bounded
+        // adoption window instead of inheriting time already spent in Hall/API.
+        if (!$hadReadyDevice && (string)($game['match_source'] ?? '') === 'tournament') {
+            $adoptionStarted = time();
+            $adoptionDeadline = $adoptionStarted + self::TOURNAMENT_PEER_ADOPTION_TIMEOUT_SEC;
+            $game['preparing_started_at'] = gmdate('c', $adoptionStarted);
+            $game['preparation_deadline_at'] = gmdate('c', $adoptionDeadline);
+            $game['turn_started_at'] = gmdate('c', $adoptionDeadline);
+        }
 
         foreach (array_map('strval', $game['player_ids'] ?? []) as $playerId) {
             if ($playerId !== '' && str_starts_with($playerId, 'bot_')
@@ -280,6 +301,9 @@ final class MatchPreparationClockService
             'ready_required' => count($game['player_ids'] ?? []),
             'time_left' => $timeLeft,
             'move_timeout_sec' => self::MOVE_TIMEOUT_SEC,
+            'preparation_timeout_sec' => (string)($game['match_source'] ?? '') === 'tournament'
+                ? self::TOURNAMENT_PEER_ADOPTION_TIMEOUT_SEC
+                : self::PREPARATION_TIMEOUT_SEC,
             'launch_countdown_sec' => $this->countdownSeconds($game),
         ]);
     }
