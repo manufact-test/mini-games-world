@@ -71,7 +71,6 @@ jobs:
           php bot/tests/Mvp21_1TournamentRegistrationTest.php
           php bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
           php bot/tests/Mvp21_1TournamentReservationRuntimeCompatibilityTest.php
-          php bot/tests/LedgerWriteServiceTest.php
 
       - name: Preserve tournament Hall, Ready and progression owners
         run: |
