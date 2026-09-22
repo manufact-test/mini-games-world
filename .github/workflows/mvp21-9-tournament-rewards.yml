@@ -8,6 +8,14 @@ on:
       - '.github/workflows/mvp21-9-tournament-rewards.yml'
       - 'bot/database/migrations/20260922_0057_create_tournament_results_rewards.php'
       - 'bot/tournaments/TournamentSettlementService.php'
+      - 'bot/tournaments/TournamentRewardProjectionService.php'
+      - 'bot/profile-v2.php'
+      - 'bot/ratings/RatingArchiveService.php'
+      - 'app/assets/js/state.js'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/css/components/mgw-tournament-honors.css'
+      - 'bot/tests/Mvp21_9TournamentRewardProjectionTest.php'
+      - 'bot/tests/Mvp21_9TournamentProductProjectionContractTest.php'
       - 'bot/tournaments/StagingTournamentManualAcceptanceService.php'
       - 'bot/core/bootstrap.php'
       - 'bot/api.php'
@@ -54,19 +62,33 @@ jobs:
           files=(
             bot/database/migrations/20260922_0057_create_tournament_results_rewards.php
             bot/tournaments/TournamentSettlementService.php
+            bot/tournaments/TournamentRewardProjectionService.php
             bot/tournaments/StagingTournamentManualAcceptanceService.php
+            bot/profile-v2.php
+            bot/ratings/RatingArchiveService.php
             bot/core/bootstrap.php
             bot/api.php
             bot/tests/Mvp21_9TournamentSettlementTest.php
             bot/tests/Mvp21_9TerminalUxContractTest.php
+            bot/tests/Mvp21_9TournamentRewardProjectionTest.php
+            bot/tests/Mvp21_9TournamentProductProjectionContractTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
           node --check app/assets/js/screens/tournaments-screen-v1.js
+          node --check app/assets/js/screens/profile-screen-v110.js
+          node --check app/assets/js/state.js
 
       - name: Run MVP-21.9 settlement and terminal UX
         run: |
           php bot/tests/Mvp21_9TournamentSettlementTest.php
           php bot/tests/Mvp21_9TerminalUxContractTest.php
+          php bot/tests/Mvp21_9TournamentRewardProjectionTest.php
+          php bot/tests/Mvp21_9TournamentProductProjectionContractTest.php
+
+      - name: Preserve rating Profile and archive owners
+        run: |
+          php bot/tests/Mvp20_7RatingArchiveTest.php
+          php bot/tests/Mvp20_7RatingArchiveIntegrationContractTest.php
 
       - name: Preserve tournament registration and ledger reservation semantics
         run: |
@@ -120,7 +142,13 @@ jobs:
               .github/workflows/mvp21-9-tournament-rewards.yml|\
               bot/database/migrations/20260922_0057_create_tournament_results_rewards.php|\
               bot/tournaments/TournamentSettlementService.php|\
+              bot/tournaments/TournamentRewardProjectionService.php|\
               bot/tournaments/StagingTournamentManualAcceptanceService.php|\
+              bot/profile-v2.php|\
+              bot/ratings/RatingArchiveService.php|\
+              app/assets/js/state.js|\
+              app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/css/components/mgw-tournament-honors.css|\
               bot/core/bootstrap.php|\
               bot/api.php|\
               app/assets/js/screens/tournaments-screen-v1.js|\
@@ -128,6 +156,8 @@ jobs:
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp21_9TournamentSettlementTest.php|\
               bot/tests/Mvp21_9TerminalUxContractTest.php|\
+              bot/tests/Mvp21_9TournamentRewardProjectionTest.php|\
+              bot/tests/Mvp21_9TournamentProductProjectionContractTest.php|\
               bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php|\
               bot/tests/Mvp21_6TournamentRoundProgressionTest.php|\
               bot/tournaments/TournamentRoundProgressionService.php)
@@ -187,4 +217,6 @@ jobs:
           MGW_TEST_MYSQL_DATABASE: mgw_test
           MGW_TEST_MYSQL_USER: root
           MGW_TEST_MYSQL_PASSWORD: root
-        run: php bot/tests/Mvp21_9TournamentSettlementTest.php
+        run: |
+          php bot/tests/Mvp21_9TournamentSettlementTest.php
+          php bot/tests/Mvp21_9TournamentRewardProjectionTest.php
