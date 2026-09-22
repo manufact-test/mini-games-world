@@ -173,6 +173,14 @@
     }
   };
 
+  const releaseFocusBeforeHide = panel => {
+    if (!(panel instanceof HTMLElement)) return;
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && panel.contains(active)) {
+      active.blur();
+    }
+  };
+
   const disarmResetConfirmation = () => {
     resetConfirmUntil = 0;
     if (resetConfirmTimer) window.clearTimeout(resetConfirmTimer);
@@ -234,6 +242,12 @@
 
     summary.replaceChildren();
     if (!tournament) {
+      // The successful reset is triggered by the reset button itself. Telegram
+      // WebView can strand the focused element when its parent is hidden in the
+      // same render pass, which makes the next text input appear frozen until
+      // the Mini App is backgrounded. Hand focus back before hiding that panel.
+      releaseFocusBeforeHide(resetPanel);
+      restoreDraftControls();
       summary.append(
         summaryCard('Статус', 'нет активного турнира'),
         summaryCard('Взнос', '50 000'),
