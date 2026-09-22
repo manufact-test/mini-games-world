@@ -62,6 +62,8 @@ on:
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
       - 'ops/checks/verify-mvp15-3-unified-balance-owner.py'
       - '.github/workflows/mvp16-6-notification-center-v2.yml'
+      - 'bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php'
+      - 'bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php'
       - 'bot/tests/Mvp18_4UniversalInviteLandingContractTest.php'
       - '.github/workflows/mvp20-1-per-game-visible-rating.yml'
       - '.github/workflows/mvp20-2-hidden-skill.yml'
@@ -290,6 +292,8 @@ jobs:
               bot/tests/Mvp21_5TournamentMatchReadinessTest.php|\
               bot/tests/Mvp21_5TournamentReadyUxContractTest.php|\
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
+              bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php|\
+              bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php|\
               bot/tests/Mvp18_4UniversalInviteLandingContractTest.php|\
               bot/tests/Mvp18FriendsUiContractTest.mjs|\
               bot/tests/NotificationActorSilentTerminalContractTest.php|\
