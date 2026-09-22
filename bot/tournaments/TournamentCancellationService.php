@@ -65,7 +65,7 @@ final class TournamentCancellationService
             'title'=>(string)($row['title'] ?? ''),
             'technical_cancel_required'=>$technicalRequired > 0,
             'technical_cancel_required_count'=>$technicalRequired,
-            'normal_cancel_available'=>$settled === 0,
+            'normal_cancel_available'=>$settled === 0 && $technicalRequired === 0,
             'emergency_stop_available'=>$settled === 0,
         ];
     }
