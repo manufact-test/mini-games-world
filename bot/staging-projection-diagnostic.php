@@ -321,6 +321,107 @@ try {
         static fn(array $data): array => $data
     );
 
+    // Staging-only self-healing diagnostic for the exact MVP-21 manual-acceptance
+    // failure: a runtime tournament game is terminal, but the durable round row
+    // is still stuck at launch_state=launched/completed_at_utc=NULL. The normal
+    // API deliberately hides SQL/PDO details from players, so this OIDC-protected
+    // endpoint both retries the canonical idempotent observer and records the exact
+    // exception when recovery is impossible.
+    $tournamentTerminalRecovery = [
+        'active'=>false,
+        'candidate_count'=>0,
+        'attempted_count'=>0,
+        'recovered_count'=>0,
+        'missing_runtime_count'=>0,
+        'non_terminal_runtime_count'=>0,
+        'errors'=>[],
+        'post_unresolved_count'=>0,
+    ];
+    $activeTournament = $tournamentSnapshot['tournament'] ?? null;
+    $activeTournamentId = is_array($activeTournament)
+        ? trim((string)($activeTournament['tournament_id'] ?? ''))
+        : '';
+    if ($activeTournamentId !== '') {
+        $tournamentTerminalRecovery['active'] = true;
+        $stuckRows = $db->fetchAll(
+            'SELECT round_no,pair_no,attempt_no,game_id,launch_state,completed_at_utc
+             FROM mgw_tournament_round_matches
+             WHERE tournament_id=:tournament_id
+               AND game_id IS NOT NULL
+               AND completed_at_utc IS NULL
+             ORDER BY round_no ASC,pair_no ASC',
+            ['tournament_id'=>$activeTournamentId]
+        );
+        $tournamentTerminalRecovery['candidate_count'] = count($stuckRows);
+        $progressionRecovery = new TournamentRoundProgressionService($db);
+
+        foreach ($stuckRows as $row) {
+            if (!is_array($row)) continue;
+            $gameId = trim((string)($row['game_id'] ?? ''));
+            if ($gameId === '') continue;
+
+            $runtimeGame = null;
+            $runtimeSource = '';
+            if (isset($runtimeSnapshot['games'][$gameId]) && is_array($runtimeSnapshot['games'][$gameId])) {
+                $runtimeGame = $runtimeSnapshot['games'][$gameId];
+                $runtimeSource = 'rollback_json';
+            } elseif (isset($primarySnapshot['games'][$gameId]) && is_array($primarySnapshot['games'][$gameId])) {
+                $runtimeGame = $primarySnapshot['games'][$gameId];
+                $runtimeSource = 'db_primary';
+            }
+
+            $rowDiagnostic = [
+                'round_no'=>(int)($row['round_no'] ?? 0),
+                'pair_no'=>(int)($row['pair_no'] ?? 0),
+                'attempt_no'=>max(1, (int)($row['attempt_no'] ?? 1)),
+                'game_ref_sha256'=>substr(hash('sha256', $gameId), 0, 16),
+                'launch_state'=>(string)($row['launch_state'] ?? ''),
+                'runtime_source'=>$runtimeSource,
+            ];
+
+            if (!is_array($runtimeGame)) {
+                $tournamentTerminalRecovery['missing_runtime_count']++;
+                $rowDiagnostic['result'] = 'runtime_game_missing';
+                $tournamentTerminalRecovery['errors'][] = $rowDiagnostic;
+                continue;
+            }
+
+            $rowDiagnostic['runtime_status'] = (string)($runtimeGame['status'] ?? '');
+            $rowDiagnostic['match_source'] = (string)($runtimeGame['match_source'] ?? '');
+            $rowDiagnostic['finish_reason'] = substr((string)($runtimeGame['finish_reason'] ?? ''), 0, 96);
+            $rowDiagnostic['player_count'] = count(is_array($runtimeGame['player_ids'] ?? null) ? $runtimeGame['player_ids'] : []);
+            $rowDiagnostic['winner_present'] = trim((string)($runtimeGame['winner_id'] ?? '')) !== '';
+            $rowDiagnostic['runtime_attempt_no'] = max(1, (int)($runtimeGame['tournament_attempt_no'] ?? 1));
+
+            if ((string)($runtimeGame['match_source'] ?? '') !== 'tournament'
+                || (string)($runtimeGame['status'] ?? '') !== 'finished') {
+                $tournamentTerminalRecovery['non_terminal_runtime_count']++;
+                $rowDiagnostic['result'] = 'runtime_not_terminal';
+                $tournamentTerminalRecovery['errors'][] = $rowDiagnostic;
+                continue;
+            }
+
+            $tournamentTerminalRecovery['attempted_count']++;
+            try {
+                $progressionRecovery->observeFinishedGame($runtimeGame);
+                $tournamentTerminalRecovery['recovered_count']++;
+            } catch (Throwable $terminalError) {
+                $rowDiagnostic['result'] = 'observer_failed';
+                $rowDiagnostic['exception'] = get_class($terminalError);
+                $rowDiagnostic['detail'] = substr($terminalError->getMessage(), 0, 1200);
+                $tournamentTerminalRecovery['errors'][] = $rowDiagnostic;
+            }
+        }
+
+        $tournamentTerminalRecovery['post_unresolved_count'] = (int)$db->fetchValue(
+            'SELECT COUNT(*) FROM mgw_tournament_round_matches
+             WHERE tournament_id=:tournament_id
+               AND game_id IS NOT NULL
+               AND completed_at_utc IS NULL',
+            ['tournament_id'=>$activeTournamentId]
+        );
+    }
+
     $snapshotNotificationDiff = static function (
         array $leftSnapshot,
         array $rightSnapshot,
@@ -490,6 +591,7 @@ try {
         'registered_count'=>(int)($tournamentSnapshot['tournament']['registered_count'] ?? 0),
         'tournament_fixture_ownership_repair'=>$fixtureOwnershipRepair,
         'tournament_fixture_runtime_parity'=>$fixtureRuntimeParity,
+        'tournament_terminal_recovery'=>$tournamentTerminalRecovery,
         'storage_selector_notification_fallback'=>$selectorFallbackCheck,
         'unified_economy_preview'=>[
             'ready'=>(bool)($economyPreview['ready'] ?? false),
