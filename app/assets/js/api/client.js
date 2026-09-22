@@ -142,6 +142,7 @@ export const api = {
     tournamentRulesLanguage:String(rules?.language || ''),
     tournamentRulesSha256:String(rules?.sha256 || ''),
   }),
+  tournamentRegistrationPublish: () => request('tournament_registration_publish'),
   tournamentLeave: () => request('tournament_leave'),
   mgwProfile: () => requestMgwProfile(),
   friends: (payload = {}) => requestUrl(FRIENDS_URL, payload),
