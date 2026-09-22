@@ -118,7 +118,9 @@ jobs:
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp21_9TournamentSettlementTest.php|\
               bot/tests/Mvp21_9TerminalUxContractTest.php|\
-              bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php)
+              bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php|\
+              bot/tests/Mvp21_6TournamentRoundProgressionTest.php|\
+              bot/tournaments/TournamentRoundProgressionService.php)
                 ;;
               *)
                 echo "Unexpected MVP-21.9 path: $path" >&2
