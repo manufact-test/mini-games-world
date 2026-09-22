@@ -17,7 +17,6 @@ const GAME_TYPES = Object.freeze([
 ]);
 const DEFAULT_GAME = 'tictactoe';
 const CACHE_TTL_MS = 45_000;
-const EXTERNAL_TOURNAMENT_COMMIT_CONFIRM_MS = 1200;
 const TOURNAMENT_T0_SYNC_INTERVAL_MS = 250;
 const TOURNAMENT_T0_SYNC_WINDOW_MS = 6000;
 const cache = new Map();
@@ -52,8 +51,6 @@ let tournamentMatchError = '';
 let tournamentLaunchWatchTimer = null;
 let tournamentStartBoundaryTimer = null;
 let tournamentStartSyncTimer = null;
-let tournamentExternalCommitCandidate = null;
-let tournamentExternalCommitTimer = null;
 
 function lockVisibleBalance(){
   const ids = ['balanceUnified', 'topbarBalanceUnified'];
@@ -356,19 +353,22 @@ async function warmTournamentStatus(){
   if (tournamentRequest) return tournamentRequest;
   const previousTournamentId = String(tournamentSnapshot?.tournament?.tournament_id || '');
   tournamentRequest = api.tournamentStatus()
-    .then(result => {
-      const nextSnapshot = result?.snapshot && typeof result.snapshot === 'object' ? result.snapshot : {};
-      // The mutating client already owns a local pending barrier. Other clients
-      // need the same visible-commit discipline: the canonical DB seat may be
-      // committed while the first WebView is still verifying its write. Never
-      // publish an external participant-count transition from a single poll.
+    .then(async result => {
+      let nextSnapshot = result?.snapshot && typeof result.snapshot === 'object' ? result.snapshot : {};
       if (tournamentBusy) return tournamentSnapshot;
-      if (shouldStageExternalTournamentCommit(nextSnapshot)) {
-        stageExternalTournamentCommit(nextSnapshot);
-        return tournamentSnapshot;
+
+      // Recovery owner for the only durable-but-unpublished state. A WebView can
+      // disappear after reservation/registration verification but before the
+      // publication acknowledgement. Only that same registered account may
+      // publish its own row when it next opens Tournament.
+      if (String(nextSnapshot?.registration?.state || '') === 'registered'
+          && nextSnapshot?.registration?.published === false) {
+        const published = await api.tournamentRegistrationPublish();
+        nextSnapshot = published?.snapshot && typeof published.snapshot === 'object'
+          ? published.snapshot
+          : nextSnapshot;
       }
 
-      clearTournamentExternalCommitCandidate();
       tournamentSnapshot = nextSnapshot;
       const nextTournamentId = String(tournamentSnapshot?.tournament?.tournament_id || '');
       if (previousTournamentId && nextTournamentId !== previousTournamentId) {
@@ -387,69 +387,6 @@ async function warmTournamentStatus(){
     })
     .finally(() => { tournamentRequest = null; });
   return tournamentRequest;
-}
-
-function tournamentRegisteredCount(snapshot){
-  const value = Number(snapshot?.tournament?.registered_count);
-  return Number.isFinite(value) ? value : null;
-}
-
-function shouldStageExternalTournamentCommit(nextSnapshot){
-  if (!tournamentSnapshot || tournamentBusy) return false;
-  const currentId = String(tournamentSnapshot?.tournament?.tournament_id || '');
-  const nextId = String(nextSnapshot?.tournament?.tournament_id || '');
-  if (!currentId || currentId !== nextId) return false;
-  const currentCount = tournamentRegisteredCount(tournamentSnapshot);
-  const nextCount = tournamentRegisteredCount(nextSnapshot);
-  return currentCount !== null && nextCount !== null && currentCount !== nextCount;
-}
-
-function clearTournamentExternalCommitCandidate(){
-  if (tournamentExternalCommitTimer) window.clearTimeout(tournamentExternalCommitTimer);
-  tournamentExternalCommitTimer = null;
-  tournamentExternalCommitCandidate = null;
-}
-
-function stageExternalTournamentCommit(nextSnapshot){
-  tournamentExternalCommitCandidate = nextSnapshot;
-  if (tournamentExternalCommitTimer) return;
-  tournamentExternalCommitTimer = window.setTimeout(async () => {
-    tournamentExternalCommitTimer = null;
-    const candidate = tournamentExternalCommitCandidate;
-    if (!candidate || tournamentBusy) {
-      if (!tournamentBusy) tournamentExternalCommitCandidate = null;
-      return;
-    }
-
-    try {
-      // Fresh second observation: do not reuse tournamentRequest, otherwise an
-      // in-flight poll can "confirm" itself. This is the cross-client equivalent
-      // of the mutating account's independent verification read.
-      const verified = await api.tournamentStatus();
-      const verifiedSnapshot = verified?.snapshot && typeof verified.snapshot === 'object'
-        ? verified.snapshot
-        : null;
-      if (!verifiedSnapshot || tournamentBusy) return;
-
-      const candidateId = String(candidate?.tournament?.tournament_id || '');
-      const verifiedId = String(verifiedSnapshot?.tournament?.tournament_id || '');
-      const candidateCount = tournamentRegisteredCount(candidate);
-      const verifiedCount = tournamentRegisteredCount(verifiedSnapshot);
-      if (candidateId && candidateId === verifiedId
-          && candidateCount !== null && candidateCount === verifiedCount) {
-        tournamentSnapshot = verifiedSnapshot;
-        tournamentExternalCommitCandidate = null;
-        syncTournamentRulesConsent();
-        if (tournamentHallPanelVisible()) renderTournamentSnapshot();
-        return;
-      }
-
-      tournamentExternalCommitCandidate = verifiedSnapshot;
-      stageExternalTournamentCommit(verifiedSnapshot);
-    } catch (_) {
-      tournamentExternalCommitCandidate = null;
-    }
-  }, EXTERNAL_TOURNAMENT_COMMIT_CONFIRM_MS);
 }
 
 function tournamentHallPanelVisible(){
@@ -852,8 +789,21 @@ async function mutateTournament(action){
       throw new Error('Отмена регистрации не сохранилась. Попробуйте ещё раз.');
     }
 
-    const verifiedAvailable = Number(verifiedSnapshot?.balance?.available_amount);
-    verifiedCommit = verifiedSnapshot;
+    let publicationSnapshot = verifiedSnapshot;
+    if (action === 'register' && verifiedSnapshot?.registration?.published === false) {
+      tournamentPendingAction = 'publish';
+      renderTournamentSnapshot();
+      const published = await api.tournamentRegistrationPublish();
+      publicationSnapshot = published?.snapshot && typeof published.snapshot === 'object'
+        ? published.snapshot
+        : verifiedSnapshot;
+      if (publicationSnapshot?.registration?.published !== true) {
+        throw new Error('Регистрация сохранилась, но ещё не опубликована. Повторите попытку.');
+      }
+    }
+
+    const verifiedAvailable = Number(publicationSnapshot?.balance?.available_amount);
+    verifiedCommit = publicationSnapshot;
     verifiedUser = responseUser
       ? {
           ...responseUser,
@@ -871,7 +821,6 @@ async function mutateTournament(action){
     tournamentPendingAction = '';
 
     if (!errorMessage && verifiedCommit) {
-      clearTournamentExternalCommitCandidate();
       tournamentSnapshot = verifiedCommit;
       syncTournamentRulesConsent();
     }
