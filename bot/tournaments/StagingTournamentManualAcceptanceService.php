@@ -173,6 +173,13 @@ final class StagingTournamentManualAcceptanceService
                 null,
                 $consent
             );
+            // Synthetic staging fixtures have no WebView that can acknowledge a
+            // durable registration. Publish them explicitly in the fixture owner
+            // so manual 6/8 preparation remains immediate and deterministic.
+            $registration = $this->tournaments->publishRegistration(
+                $identity['mgw_id'],
+                $identity['account_ref']
+            );
             $runtimeBatch[] = ['identity'=>$identity,'slot'=>$slot];
 
             $registeredIds[$identity['mgw_id']] = true;
