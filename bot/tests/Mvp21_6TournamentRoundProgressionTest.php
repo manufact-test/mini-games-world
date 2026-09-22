@@ -135,6 +135,20 @@ $db->execute('UPDATE mgw_account_ownership SET ownership_status=:status WHERE mg
  'status'=>'active','mgw'=>$players[7]['mgw']
 ]);
 $assertSame(2,(int)$db->fetchValue('SELECT COUNT(*) FROM mgw_tournament_round_matches WHERE tournament_id=:t AND round_no=2',['t'=>$tournament]),'Completing all four matches must create exactly two semifinals even if ownership projection changed after launch.');
+$winnerProgress=$progress->statusForParticipant(
+ $players[1]['mgw'],$players[1]['account'],$players[1]['legacy'],
+ new DateTimeImmutable('2026-09-21T10:03:31Z')
+);
+$loserProgress=$progress->statusForParticipant(
+ $players[2]['mgw'],$players[2]['account'],$players[2]['legacy'],
+ new DateTimeImmutable('2026-09-21T10:03:31Z')
+);
+$assertSame(2,(int)($winnerProgress['active_round']['round_no'] ?? 0),'Winner status must expose the newly formed second round.');
+$assertSame(2,(int)($winnerProgress['active_round']['total_count'] ?? 0),'Second round summary must expose both semifinal pairs.');
+$assertSame(false,(bool)($winnerProgress['participant_eliminated'] ?? true),'First-round winner must remain active.');
+$assertSame(true,(bool)($loserProgress['participant_eliminated'] ?? false),'First-round loser must be explicitly marked eliminated.');
+$assertSame(2,(int)($loserProgress['active_round']['round_no'] ?? 0),'Eliminated participant must still see the tournament advance to round two.');
+$assertTrue(is_array($loserProgress['active_round']['matches'] ?? null) && count($loserProgress['active_round']['matches'])===2,'Eliminated participant must receive the visible active-round bracket.');
 $semi=$db->fetchAll('SELECT * FROM mgw_tournament_round_matches WHERE tournament_id=:t AND round_no=2 ORDER BY pair_no',['t'=>$tournament]);
 $assertSame('2026-09-21 10:08:30.000000',(string)$semi[0]['readiness_opened_at_utc'],'Next round must open five minutes after the last match finishes.');
 $assertSame(TournamentRoundProgressionService::WAIT_ROUND_BREAK,(string)$semi[0]['wait_kind'],'Next round must expose round-break wait.');
@@ -209,5 +223,5 @@ foreach($bothAbsentRows as $row){
  $assertSame(null,$row['completed_at_utc'],'Both-absent pair must remain unresolved until canonical progression chooses a winner.');
 }
 
-if($assertions<32) throw new RuntimeException('MVP-21.6 progression test is too shallow: '.$assertions);
+if($assertions<38) throw new RuntimeException('MVP-21.6 progression test is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_6TournamentRoundProgressionTest: {$assertions} assertions passed\n");
