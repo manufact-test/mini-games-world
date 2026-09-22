@@ -27,7 +27,11 @@ const runtime = window.__MGW_V100_GAME_RUNTIME__ ||= {
   pointerHoldUntil:0,
   resultOpened:new Set(),
   weeklyNotified:new Set(),
+  tournamentResultDismissed:new Set(),
 };
+if (!(runtime.tournamentResultDismissed instanceof Set)) {
+  runtime.tournamentResultDismissed = new Set();
+}
 
 export function initGameScreen(){
   if (runtime.initialized) return;
@@ -55,6 +59,19 @@ export function initGameScreen(){
 export function enterGame(game, me = null){
   const id = String(game?.id || '');
   if (!id || String(game?.status || '') === '') return;
+
+  if (String(game?.status || '') === 'finished'
+      && String(game?.match_source || '') === 'tournament'
+      && runtime.tournamentResultDismissed.has(id)) {
+    state.timers.search = clearTimer(state.timers.search);
+    state.timers.game = clearTimer(state.timers.game);
+    state.activeGame = null;
+    clearGameView();
+    showScreen('tournaments');
+    document.dispatchEvent(new CustomEvent('mgw:tournament-progression-open'));
+    document.dispatchEvent(new CustomEvent('mgw:game-dismissed'));
+    return;
+  }
 
   state.timers.search = clearTimer(state.timers.search);
   state.timers.game = clearTimer(state.timers.game);
@@ -561,6 +578,7 @@ function openResultSheet(game, me, options = {}){
   `);
 
   document.getElementById('goTournament')?.addEventListener('click', () => {
+    runtime.tournamentResultDismissed.add(String(game?.id || ''));
     closeSheet();
     state.activeGame = null;
     clearGameView();
