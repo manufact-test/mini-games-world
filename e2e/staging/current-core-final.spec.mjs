@@ -166,6 +166,7 @@ async function readAction(page, path, data, label) {
 }
 
 async function openPlayer(browser, slot) {
+  const coldStartStartedAt = Date.now();
   const context = await browser.newContext({
     locale: 'ru-RU', timezoneId: 'Europe/Vilnius', viewport: { width: 390, height: 844 },
     isMobile: true, hasTouch: true,
@@ -179,10 +180,12 @@ async function openPlayer(browser, slot) {
     && requestAction(response.request()) === 'bootstrap'
   ), { timeout: 35_000 });
   const entry = await page.goto(ENTRY_URL, { waitUntil: 'domcontentloaded' });
+  const domContentLoadedAt = Date.now();
   expect(entry?.ok(), `Player ${slot} Telegram entry`).toBe(true);
   expect(entry.headers()['x-mgw-client-bootstrap']).toBe('v2-single-owner');
   expect(entry.headers()['x-mgw-game-zone']).toBe('unified-v1');
   const bootstrapResponse = await bootstrapPromise;
+  const bootstrapResponseAt = Date.now();
   const bootstrap = await bootstrapResponse.json();
   expect(bootstrapResponse.status()).toBe(200);
   expect(bootstrap?.ok).toBe(true);
@@ -190,6 +193,15 @@ async function openPlayer(browser, slot) {
   expect(Number(bootstrap?.match_economy?.entry_cost || 0)).toBeGreaterThan(0);
   await page.waitForFunction(() => window.__MGW_APP_BOOTSTRAP_V2__?.ready === true, null, { timeout: 20_000 });
   await expect(page.locator('#screen-home')).toHaveClass(/active/, { timeout: 25_000 });
+  await page.waitForFunction(() => document.getElementById('preloader')?.classList.contains('hidden') === true, null, { timeout: 25_000 });
+  const firstUsablePaintAt = Date.now();
+  console.log('[MGW_COLD_START_TIMING] ' + JSON.stringify({
+    slot,
+    navigation_to_dom_ms: domContentLoadedAt - coldStartStartedAt,
+    navigation_to_bootstrap_ms: bootstrapResponseAt - coldStartStartedAt,
+    bootstrap_to_first_usable_ms: firstUsablePaintAt - bootstrapResponseAt,
+    navigation_to_first_usable_ms: firstUsablePaintAt - coldStartStartedAt,
+  }));
   await page.waitForFunction(() => Boolean(
     localStorage.getItem('mgw_device_session_id') && localStorage.getItem('mgw_device_id')
   ), null, { timeout: 20_000 });
