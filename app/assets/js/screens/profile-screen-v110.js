@@ -409,7 +409,7 @@ function renderProfileV2(){
       <div class="profile-v2-linked-list">${identities.length ? identities.map(identityRow).join('') : emptyState('profile.linked_empty')}</div>
     </div></section>
   `;
-  lastProfileRenderSignature = profileRenderSignature(profile, user, stats, history, rating, yearlyMedals, ratingArchive);
+  lastProfileRenderSignature = profileRenderSignature(profile, user, stats, history, rating, yearlyMedals, ratingArchive, tournamentRewards);
 }
 
 function ownedAvatarItems(activeAvatar = currentAvatarItemId()){
