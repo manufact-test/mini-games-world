@@ -108,7 +108,7 @@ $assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=28')
         && str_contains($source['manifest'], 'hall_cta=entry-v1')
         && str_contains($source['manifest'], 'copy_polish=final-v1'),
     'Hall release must preserve the accepted Tournament screen base version and publish the final copy-polish identity.');
-$assert(str_contains($source['manifest'], 'main.css?v=199')
+$assert(str_contains($source['manifest'], 'main.css?v=200')
         && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v2'),
     'Hall release must preserve accepted CSS base version and add a fresh Hall identity.');
 
