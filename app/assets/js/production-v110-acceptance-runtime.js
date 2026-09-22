@@ -376,9 +376,7 @@ function headerClockOwnsGame(game){
 }
 function launchAllowsAction(game){
   const phase = String(game?.launch_phase || '');
-  if (phase === 'preparing' || phase === 'preparation_timeout' || phase === 'cancelled') return false;
-  if (phase === 'countdown' && !launchStartReached(game)) return false;
-  if (phase && phase !== 'active' && phase !== 'countdown') return false;
+  if (phase && phase !== 'active') return false;
   return turnStartReached(game);
 }
 function launchAllowsLeave(game){
