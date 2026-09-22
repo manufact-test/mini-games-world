@@ -125,11 +125,11 @@ $assert(str_contains($source['screen'], 'startTournamentVisibleRefresh')
         && str_contains($source['screen'], 'await warmTournamentStatus()')
         && str_contains($source['screen'], 'warmTournamentHallStatus'),
     'Visible Tournament screen must continuously refresh authoritative tournament status and Hall state without navigation away/back.');
-$assert(str_contains($source['screen'], 'EXTERNAL_TOURNAMENT_COMMIT_CONFIRM_MS = 1200')
-        && str_contains($source['screen'], 'shouldStageExternalTournamentCommit')
-        && str_contains($source['screen'], 'stageExternalTournamentCommit')
-        && str_contains($source['screen'], 'const verified = await api.tournamentStatus()'),
-    'A second open client must independently confirm an external participant-count transition before publishing it.');
+$assert(str_contains($source['screen'], 'await api.tournamentRegistrationPublish()')
+        && str_contains($source['screen'], "verifiedSnapshot?.registration?.published === false")
+        && !str_contains($source['screen'], 'EXTERNAL_TOURNAMENT_COMMIT_CONFIRM_MS')
+        && !str_contains($source['screen'], 'stageExternalTournamentCommit'),
+    'Cross-client participant count must use the explicit server publication barrier instead of a client delay.');
 $assert(str_contains($source['screen'], 'tournamentStartBoundaryTimer')
         && str_contains($source['screen'], 'startTournamentT0SyncBurst')
         && str_contains($source['screen'], 'TOURNAMENT_T0_SYNC_INTERVAL_MS = 250')
@@ -178,12 +178,12 @@ foreach ([
     $assert(str_contains($source['css'], $needle), 'Ready UI CSS missing: ' . $needle);
 }
 
-$assert(str_contains($source['manifest'], 'client.js?v=1143')
+$assert(str_contains($source['manifest'], 'client.js?v=1144')
         && str_contains($source['manifest'], 'mvp21_5=ready-v1'),
     'API client must publish a fresh MVP-21.5 cache identity.');
-$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=25')
-        && str_contains($source['manifest'], 'mvp21_5=corrective-v6')
-        && str_contains($source['manifest'], 'registration=cross-client-confirm-v2')
+$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=26')
+        && str_contains($source['manifest'], 'mvp21_7=corrective-v7')
+        && str_contains($source['manifest'], 'registration=server-publish-barrier-v1')
         && str_contains($source['manifest'], 'ready=t0-burst-250ms-peer-adoption-v4'),
     'Tournament screen must publish the fresh corrective-v6 registration/T0/peer-adoption cache identity.');
 $assert(str_contains($source['manifest'], 'production-v110-acceptance-runtime.js?v=132')
