@@ -24,7 +24,20 @@ final class TournamentSettlementService
     public function settleIfComplete(string $tournamentId, ?DateTimeImmutable $now = null): array
     {
         $tournamentId = $this->required($tournamentId, 64, 'tournament id');
-        $tournament = $this->tournament($tournamentId);
+
+        return $this->database->transaction(function (DatabaseConnectionInterface $db) use ($tournamentId, $now): array {
+            $tournament = $this->tournament($tournamentId, $db, true);
+            if (in_array((string)($tournament['tournament_state'] ?? ''), [
+                TournamentRegistrationService::STATE_CANCELLED,
+                TournamentRegistrationService::STATE_EMERGENCY_STOPPED,
+            ], true) || trim((string)($tournament['cancellation_kind'] ?? '')) !== '') {
+                return [
+                    'tournament_id'=>$tournamentId,
+                    'status'=>'cancelled',
+                    'settlement_complete'=>false,
+                    'runtime_balances'=>[],
+                ];
+            }
         $terminal = $this->terminalBracket($tournamentId);
         if ($terminal === null) {
             return [
@@ -146,14 +159,15 @@ final class TournamentSettlementService
             throw new RuntimeException('Tournament settlement did not produce one durable result per participant.');
         }
 
-        return [
-            'tournament_id'=>$tournamentId,
-            'status'=>'settled',
-            'settlement_complete'=>true,
-            'settled_count'=>$settledCount,
-            'reward_snapshot_version'=>$version,
-            'runtime_balances'=>$this->runtimeBalances($tournamentId),
-        ];
+            return [
+                'tournament_id'=>$tournamentId,
+                'status'=>'settled',
+                'settlement_complete'=>true,
+                'settled_count'=>$settledCount,
+                'reward_snapshot_version'=>$version,
+                'runtime_balances'=>$this->runtimeBalances($tournamentId),
+            ];
+        });
     }
 
     public function terminalSnapshotForParticipant(string $tournamentId, string $mgwId): array
@@ -590,11 +604,17 @@ final class TournamentSettlementService
         return $legacyFixture || $v2Fixture;
     }
 
-    private function tournament(string $tournamentId): array
-    {
-        $rows = $this->database->fetchAll(
-            'SELECT tournament_id,capacity,entry_fee_amount,entry_asset_code,reward_snapshot_json
-             FROM mgw_tournaments WHERE tournament_id=:tournament_id LIMIT 2',
+    private function tournament(
+        string $tournamentId,
+        ?DatabaseConnectionInterface $database = null,
+        bool $lock = false
+    ): array {
+        $database ??= $this->database;
+        $rows = $database->fetchAll(
+            'SELECT tournament_id,capacity,entry_fee_amount,entry_asset_code,reward_snapshot_json,
+                    tournament_state,cancellation_kind,cancelled_at_utc
+             FROM mgw_tournaments WHERE tournament_id=:tournament_id LIMIT 2'
+             . ($lock ? $this->forUpdate($database) : ''),
             ['tournament_id'=>$tournamentId]
         );
         if (count($rows) !== 1 || !is_array($rows[0])) {
