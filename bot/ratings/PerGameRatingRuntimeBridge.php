@@ -41,6 +41,9 @@ final class PerGameRatingRuntimeBridge
         // catches up on the next non-critical request, then this hook consumes
         // the normalized DB result.
         return !in_array(strtolower(trim($action)), [
+            // Cold bootstrap must not wait for rating catch-up. Profile/leaderboard
+            // owners and the next non-critical API request reconcile projected matches.
+            'bootstrap',
             'start_search',
             'leave_search',
             'game_state',

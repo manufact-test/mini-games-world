@@ -40,7 +40,6 @@ final class HiddenSkillRuntimeBridge
             'leave_game',
             'game_state',
             'start_search',
-            'bootstrap',
         ], true);
     }
 

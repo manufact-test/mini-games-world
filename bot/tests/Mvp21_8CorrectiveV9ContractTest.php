@@ -14,6 +14,11 @@ $api = $read('bot/api.php');
 $admin = $read('app/assets/js/admin-tournaments.js');
 $adminEntry = $read('app/admin.php');
 $e2e = $read('e2e/staging/current-core-final.spec.mjs');
+$realtimeBridge = $read('bot/realtime/RealtimeRuntimeBridge.php');
+$economyBridge = $read('bot/ledger/EconomyRuntimeBridge.php');
+$weeklyBridge = $read('bot/weekly/WeeklyBonusRuntimeBridge.php');
+$ratingBridge = $read('bot/ratings/PerGameRatingRuntimeBridge.php');
+$hiddenSkillBridge = $read('bot/ratings/HiddenSkillRuntimeBridge.php');
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -79,7 +84,28 @@ $assert(str_contains($e2e, '[MGW_COLD_START_TIMING]')
 $assert(str_contains($e2e, "document.getElementById('preloader')?.classList.contains('hidden') === true"),
     'Cold-start measurement must end at first usable paint, not merely HTTP completion.');
 
-if ($assertions < 15) {
+$assert(str_contains($realtimeBridge, "'bootstrap',")
+        && str_contains($realtimeBridge, 'currentApiActionIsLatencyCritical'),
+    'Realtime JSON→DB projection must defer bootstrap as a latency-critical boundary.');
+$assert(str_contains($economyBridge, "'bootstrap',")
+        && str_contains($economyBridge, 'currentApiActionIsLatencyCritical'),
+    'Economy JSON→DB projection must defer bootstrap as a latency-critical boundary.');
+$assert(str_contains($weeklyBridge, "return !in_array(strtolower(trim(\$action)), [")
+        && str_contains($weeklyBridge, "'bootstrap',"),
+    'Weekly aggregate projection must not block bootstrap.');
+$assert(str_contains($ratingBridge, "return !in_array(strtolower(trim(\$action)), [")
+        && str_contains($ratingBridge, "'bootstrap',"),
+    'Visible rating catch-up must not block bootstrap.');
+$hiddenProcessStart = strpos($hiddenSkillBridge, 'public function shouldProcessApiAction');
+$hiddenProcessEnd = strpos($hiddenSkillBridge, 'public function processProjectedMatches', $hiddenProcessStart === false ? 0 : $hiddenProcessStart);
+$hiddenProcess = $hiddenProcessStart !== false && $hiddenProcessEnd !== false
+    ? substr($hiddenSkillBridge, $hiddenProcessStart, $hiddenProcessEnd - $hiddenProcessStart)
+    : '';
+$assert($hiddenProcess !== '' && !str_contains($hiddenProcess, "'bootstrap'")
+        && str_contains($hiddenProcess, "'start_search'"),
+    'Hidden-skill catch-up must leave bootstrap while preserving search-time freshness.');
+
+if ($assertions < 20) {
     throw new RuntimeException('Corrective v9/v10 contract is too shallow: ' . $assertions);
 }
-fwrite(STDOUT, "Mvp21_8CorrectiveV9ContractTest: {$assertions} assertions passed (v10 cold-start probe)\n");
+fwrite(STDOUT, "Mvp21_8CorrectiveV9ContractTest: {$assertions} assertions passed (v11 bootstrap defer)\n");

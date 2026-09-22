@@ -23,6 +23,7 @@ on:
       - 'bot/ledger/EconomyRuntimeBridge.php'
       - 'bot/weekly/WeeklyBonusRuntimeBridge.php'
       - 'bot/ratings/PerGameRatingRuntimeBridge.php'
+      - 'bot/ratings/HiddenSkillRuntimeBridge.php'
       - 'bot/tests/Mvp21_1TournamentRegistrationTest.php'
       - 'bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php'
       - 'bot/tests/Mvp21_2TournamentRulesTest.php'
@@ -252,6 +253,7 @@ jobs:
               bot/ledger/EconomyRuntimeBridge.php|\
               bot/weekly/WeeklyBonusRuntimeBridge.php|\
               bot/ratings/PerGameRatingRuntimeBridge.php|\
+              bot/ratings/HiddenSkillRuntimeBridge.php|\
               bot/tests/Mvp21_1TournamentRegistrationTest.php|\
               bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php|\
               bot/tests/Mvp21_2TournamentRulesTest.php|\
