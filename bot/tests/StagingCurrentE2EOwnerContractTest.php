@@ -5,11 +5,18 @@ $root = dirname(__DIR__, 2);
 $currentConfig = file_get_contents($root . '/e2e/playwright.config.mjs');
 $legacyConfig = file_get_contents($root . '/e2e/playwright.legacy.config.mjs');
 $currentSpec = file_get_contents($root . '/e2e/staging/current-core-final.spec.mjs');
+$globalSetup = file_get_contents($root . '/e2e/staging-global-setup.mjs');
+$oidcHelper = file_get_contents($root . '/e2e/staging-oidc-token.mjs');
+$tournamentSpec = file_get_contents($root . '/e2e/staging/tournament-registration-live.spec.mjs');
+$checkersSpec = file_get_contents($root . '/e2e/staging/checkers-layout-diagnostic.spec.mjs');
+$goSpec = file_get_contents($root . '/e2e/staging/go-store-live-catalog.spec.mjs');
 $package = file_get_contents($root . '/package.json');
 $launch = file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
 
 if (!is_string($currentConfig) || !is_string($legacyConfig)
-    || !is_string($currentSpec) || !is_string($package) || !is_string($launch)) {
+    || !is_string($currentSpec) || !is_string($globalSetup) || !is_string($oidcHelper)
+    || !is_string($tournamentSpec) || !is_string($checkersSpec) || !is_string($goSpec)
+    || !is_string($package) || !is_string($launch)) {
     throw new RuntimeException('Cannot read current staging E2E ownership sources.');
 }
 
@@ -76,5 +83,23 @@ $assert(str_contains($currentSpec, "'/bot/presence.php'")
     'Final core must surface current presence/server 5xx responses.');
 $assert(str_contains($currentSpec, 'await resetPlayers();'),
     'Final core must self-clean A/B state after the browser scenario.');
+
+$assert(str_contains($oidcHelper, 'DEFAULT_ATTEMPTS = 5')
+    && str_contains($oidcHelper, 'response.status === 429 || response.status >= 500')
+    && str_contains($oidcHelper, '[MGW_E2E_INFRA_OIDC_FAILURE]')
+    && str_contains($oidcHelper, '[MGW_E2E_OIDC_RETRY]'),
+    'Staging OIDC owner must retry transient GitHub token failures and expose an infrastructure marker.');
+
+foreach ([
+    'global setup'=>$globalSetup,
+    'final core'=>$currentSpec,
+    'tournament live'=>$tournamentSpec,
+    'checkers diagnostic'=>$checkersSpec,
+    'Go catalog'=>$goSpec,
+] as $name=>$source) {
+    $assert(str_contains($source, 'requestStagingOidcToken')
+        && !str_contains($source, 'async function requestOidcToken'),
+        'Active staging E2E source must use the shared resilient OIDC owner: ' . $name);
+}
 
 fwrite(STDOUT, "StagingCurrentE2EOwnerContractTest: {$assertions} assertions passed\n");
