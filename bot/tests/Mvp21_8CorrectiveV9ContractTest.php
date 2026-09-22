@@ -27,6 +27,13 @@ $assert($sessionGate !== false && $staleProbe !== false && $sessionGate < $stale
     'Expired bounded DB-primary rehearsal must leave the API path before the expensive stale-snapshot probe.');
 $assert(str_contains($storage, "readOnlySections(\n                ['notifications']"),
     'Active stale-primary safety probe must read only rollback notifications, not every JSON section.');
+$assert(str_contains($storage, "LOWER(SHA2(state_json, 256)) AS actual_sha256")
+        && str_contains($storage, "JSON_EXTRACT(state_json, '$.notifications') AS notifications_json"),
+    'MySQL stale-primary guard must verify state integrity server-side and transfer only the notifications subtree.');
+$mysqlSelective = strpos($storage, "JSON_EXTRACT(state_json, '$.notifications')");
+$fullAdapterFallback = strpos($storage, "new DatabasePrimaryStateStorageAdapter($database)");
+$assert($mysqlSelective !== false && $fullAdapterFallback !== false && $mysqlSelective < $fullAdapterFallback,
+    'Staging MySQL must use the selective notification probe before the local SQLite full-adapter fallback.');
 $assert(str_contains($storage, "'read_at'=>\$mutableTimestamp(\$notification['read_at'] ?? null)")
         && str_contains($storage, "'hidden_at'=>\$mutableTimestamp(\$notification['hidden_at'] ?? null)"),
     'Stale-primary detection must include mutable notification read/hidden state.');
@@ -66,7 +73,7 @@ $assert(str_contains($e2e, '[MGW_COLD_START_TIMING]')
 $assert(str_contains($e2e, "document.getElementById('preloader')?.classList.contains('hidden') === true"),
     'Cold-start measurement must end at first usable paint, not merely HTTP completion.');
 
-if ($assertions < 13) {
-    throw new RuntimeException('Corrective v9 contract is too shallow: ' . $assertions);
+if ($assertions < 15) {
+    throw new RuntimeException('Corrective v9/v10 contract is too shallow: ' . $assertions);
 }
-fwrite(STDOUT, "Mvp21_8CorrectiveV9ContractTest: {$assertions} assertions passed\n");
+fwrite(STDOUT, "Mvp21_8CorrectiveV9ContractTest: {$assertions} assertions passed (v10 cold-start probe)\n");
