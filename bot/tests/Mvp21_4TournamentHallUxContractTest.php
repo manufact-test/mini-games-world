@@ -99,7 +99,7 @@ foreach ([
     $assert(str_contains($source['css'], $needle), 'Tournament Hall CSS missing: ' . $needle);
 }
 
-$assert(str_contains($source['manifest'], 'client.js?v=1144')
+$assert(str_contains($source['manifest'], 'client.js?v=1145')
         && str_contains($source['manifest'], 'mvp21_4=tournament-hall-v1')
         && str_contains($source['manifest'], 'hall_transport=direct-endpoint-v2'),
     'Hall release must preserve the accepted API cache contract and publish the direct-endpoint corrective identity.');
