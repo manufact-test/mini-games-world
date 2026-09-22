@@ -51,9 +51,9 @@ $assert(str_contains($screen, 'synchronizeTournamentTerminalProgression')
         && str_contains($screen, 'stopTournamentStartSync();'),
     'Terminal tournament game must pre-sync durable progression and stop stale launch owners.');
 
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=25')
-        && str_contains($manifest, 'mvp21_6=terminal-progression-sync-v3')
-        && str_contains($manifest, 'mvp21_5=corrective-v6'),
+$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=26')
+        && str_contains($manifest, 'mvp21_6=progression-primary-projection-safe-v4')
+        && str_contains($manifest, 'mvp21_7=corrective-v7'),
     'Tournament screen must publish the corrective-v6 terminal progression identity.');
 
 $assert(str_contains($api, "'progression'=>\$progressionSnapshot"),

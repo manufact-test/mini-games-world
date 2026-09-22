@@ -49,6 +49,7 @@ $db->execute('CREATE TABLE mgw_users (
 (require $root . '/database/migrations/20260717_0005_create_balances_ledger_reservations.php')->up($db);
 (require $root . '/database/migrations/20260920_0049_create_official_tournaments.php')->up($db);
 (require $root . '/database/migrations/20260920_0050_add_tournament_rules_consent.php')->up($db);
+(require $root . '/database/migrations/20260922_0056_add_tournament_registration_publication.php')->up($db);
 
 $ids = [];
 for ($i = 1; $i <= 10; $i++) {
@@ -130,7 +131,17 @@ $assertSame('registered', $registered['registration']['state'], 'Player must bec
 $assertSame(1, $registered['registration']['attempt_no'], 'First registration must use attempt 1.');
 $assertSame(50000, $registered['balance']['available_amount'], 'Registration must move entry out of available balance.');
 $assertSame(50000, $registered['balance']['reserved_amount'], 'Registration must reserve entry instead of spending it.');
-$assertSame(1, $registered['tournament']['registered_count'], 'First registration must occupy exactly one place.');
+$assertSame(false, $registered['registration']['published'], 'Fresh durable registration must remain private until the client publishes it.');
+$assertSame(0, $registered['tournament']['registered_count'], 'Unpublished registration must not change the public participant count.');
+$observerBeforePublish = $service->snapshot($ids[2], 'legacy:tg-2');
+$assertSame(0, $observerBeforePublish['tournament']['registered_count'], 'Another client must keep seeing the previous public count while registration is unpublished.');
+$published = $service->publishRegistration(
+    $ids[1],
+    $user1Account,
+    new DateTimeImmutable('2026-09-20T13:03:05Z')
+);
+$assertSame(true, $published['registration']['published'], 'Explicit publication must expose the durable registration.');
+$assertSame(1, $published['tournament']['registered_count'], 'Public count must advance only after explicit publication.');
 $assertSame(1, (int)$db->fetchValue(
     "SELECT COUNT(*) FROM mgw_reservations WHERE source_type='official_tournament' AND status='active'"
 ), 'Registration must create one active canonical reservation.');
@@ -168,6 +179,12 @@ $reregistered = $service->register(
     $rulesConsent
 );
 $assertSame(2, $reregistered['registration']['attempt_no'], 'Re-registration after withdrawal must create attempt 2.');
+$assertSame(false, $reregistered['registration']['published'], 'Re-registration must also pass the publication barrier.');
+$service->publishRegistration(
+    $ids[1],
+    $user1Account,
+    new DateTimeImmutable('2026-09-20T13:05:05Z')
+);
 $assertSame(2, (int)$db->fetchValue(
     'SELECT COUNT(*) FROM mgw_tournament_registrations WHERE tournament_id=:id AND mgw_id=:mgw',
     ['id'=>$tournamentId,'mgw'=>$ids[1]]
@@ -184,6 +201,16 @@ for ($i = 2; $i <= 8; $i++) {
         'legacy:tg-' . $i,
         new DateTimeImmutable('2026-09-20T13:' . sprintf('%02d', 5 + $i) . ':00Z'),
         $rulesConsent
+    );
+    if ($i === 8) {
+        $observerAtCapacityBeforePublish = $service->snapshot($ids[9], 'legacy:tg-9');
+        $assertSame(7, $observerAtCapacityBeforePublish['tournament']['registered_count'], 'Observer must stay at 7/8 while the eighth durable registration is still unpublished.');
+        $assertSame(TournamentRegistrationService::STATE_REGISTRATION_OPEN, $observerAtCapacityBeforePublish['tournament']['state'], 'Tournament must not auto-close before the eighth seat is published.');
+    }
+    $service->publishRegistration(
+        $ids[$i],
+        'legacy:tg-' . $i,
+        new DateTimeImmutable('2026-09-20T13:' . sprintf('%02d', 5 + $i) . ':05Z')
     );
 }
 
@@ -231,5 +258,5 @@ $assertSame(
     'Tournament must persist the immutable canonical reward snapshot.'
 );
 
-$assertTrue($assertions >= 30, 'MVP-21.1 model coverage must be substantial.');
+$assertTrue($assertions >= 37, 'MVP-21.1 model coverage must cover the publication barrier substantially.');
 fwrite(STDOUT, "Mvp21_1TournamentRegistrationTest: {$assertions} assertions passed\n");

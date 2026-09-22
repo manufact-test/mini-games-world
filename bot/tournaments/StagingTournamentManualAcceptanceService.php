@@ -173,6 +173,13 @@ final class StagingTournamentManualAcceptanceService
                 null,
                 $consent
             );
+            // Synthetic staging fixtures have no WebView that can acknowledge a
+            // durable registration. Publish them explicitly in the fixture owner
+            // so manual 6/8 preparation remains immediate and deterministic.
+            $registration = $this->tournaments->publishRegistration(
+                $identity['mgw_id'],
+                $identity['account_ref']
+            );
             $runtimeBatch[] = ['identity'=>$identity,'slot'=>$slot];
 
             $registeredIds[$identity['mgw_id']] = true;
@@ -272,6 +279,12 @@ final class StagingTournamentManualAcceptanceService
                 throw new RuntimeException('Registered staging fixture user is not active.');
             }
             $scanned++;
+
+            // Legacy fixture rows may have been created by an older staging
+            // helper after the publication migration was already applied.
+            // Synthetic identities have no WebView acknowledgement step, so
+            // repair must also normalize their public registration state.
+            $this->tournaments->publishRegistration($mgwId, $accountRef);
 
             $ownershipRows = $this->database->fetchAll(
                 'SELECT account_ref,mgw_id,legacy_user_id,ownership_status

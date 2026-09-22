@@ -13,6 +13,18 @@ on:
       - 'bot/tournaments/TournamentHallService.php'
       - 'bot/core/bootstrap.php'
       - 'bot/api.php'
+      - 'bot/database/migrations/20260922_0056_add_tournament_registration_publication.php'
+      - 'bot/tournaments/TournamentRegistrationService.php'
+      - 'bot/realtime/RealtimeRuntimeBridge.php'
+      - 'bot/ledger/EconomyRuntimeBridge.php'
+      - 'bot/weekly/WeeklyBonusRuntimeBridge.php'
+      - 'bot/ratings/PerGameRatingRuntimeBridge.php'
+      - 'bot/tests/Mvp21_1TournamentRegistrationTest.php'
+      - 'bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php'
+      - 'bot/tests/Mvp21_2TournamentRulesTest.php'
+      - 'bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php'
+      - 'bot/tests/Mvp21_3TournamentScheduleTest.php'
+      - 'bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php'
       - 'bot/services/GameService.php'
       - 'bot/services/GameRuntimeService.php'
       - 'bot/services/ChessRuntimeService.php'
@@ -100,6 +112,18 @@ jobs:
             bot/tournaments/TournamentHallService.php
             bot/core/bootstrap.php
             bot/api.php
+            bot/database/migrations/20260922_0056_add_tournament_registration_publication.php
+            bot/tournaments/TournamentRegistrationService.php
+            bot/realtime/RealtimeRuntimeBridge.php
+            bot/ledger/EconomyRuntimeBridge.php
+            bot/weekly/WeeklyBonusRuntimeBridge.php
+            bot/ratings/PerGameRatingRuntimeBridge.php
+            bot/tests/Mvp21_1TournamentRegistrationTest.php
+            bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
+            bot/tests/Mvp21_2TournamentRulesTest.php
+            bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php
+            bot/tests/Mvp21_3TournamentScheduleTest.php
+            bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php
             app/admin.php
             bot/services/GameService.php
             bot/services/GameRuntimeService.php
@@ -135,6 +159,12 @@ jobs:
           php bot/tests/Mvp21_6TournamentRuntimeContractTest.php
           php bot/tests/Mvp21_6TournamentProgressionUxContractTest.php
           php bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php
+          php bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php
+          php bot/tests/Mvp21_1TournamentRegistrationTest.php
+          php bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
+          php bot/tests/Mvp21_2TournamentRulesTest.php
+          php bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php
+          php bot/tests/Mvp21_3TournamentScheduleTest.php
 
       - name: Preserve MVP-21.5 ready/countdown owner
         run: |
@@ -192,6 +222,18 @@ jobs:
               bot/tournaments/TournamentHallService.php|\
               bot/core/bootstrap.php|\
               bot/api.php|\
+              bot/database/migrations/20260922_0056_add_tournament_registration_publication.php|\
+              bot/tournaments/TournamentRegistrationService.php|\
+              bot/realtime/RealtimeRuntimeBridge.php|\
+              bot/ledger/EconomyRuntimeBridge.php|\
+              bot/weekly/WeeklyBonusRuntimeBridge.php|\
+              bot/ratings/PerGameRatingRuntimeBridge.php|\
+              bot/tests/Mvp21_1TournamentRegistrationTest.php|\
+              bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php|\
+              bot/tests/Mvp21_2TournamentRulesTest.php|\
+              bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php|\
+              bot/tests/Mvp21_3TournamentScheduleTest.php|\
+              bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php|\
               app/admin.php|\
               app/assets/js/admin-tournaments.js|\
               bot/services/GameService.php|\

@@ -409,12 +409,12 @@ final class TournamentRegistrationService
                     registration_id,tournament_id,mgw_id,account_ref,attempt_no,
                     registration_state,reservation_id,
                     rules_version,rules_language,rules_sha256,rules_accepted_at_utc,
-                    registered_at_utc,withdrawn_at_utc,updated_at_utc
+                    registered_at_utc,withdrawn_at_utc,updated_at_utc,published_at_utc
                  ) VALUES (
                     :registration_id,:tournament_id,:mgw_id,:account_ref,:attempt_no,
                     :registration_state,:reservation_id,
                     :rules_version,:rules_language,:rules_sha256,:rules_accepted_at_utc,
-                    :registered_at_utc,NULL,:updated_at_utc
+                    :registered_at_utc,NULL,:updated_at_utc,NULL
                  )',
                 [
                     'registration_id'=>$registrationId,
@@ -434,6 +434,68 @@ final class TournamentRegistrationService
             );
 
             [$tournament, $closedNow] = $this->closeRegistrationIfReady($db, $tournament, $registeredAt);
+            $snapshot = $this->snapshotForRow($db, $tournament, $mgwId, $accountRef);
+            if ($closedNow) {
+                $snapshot['transition'] = ['registration_closed_now'=>true,'reason'=>'full'];
+            }
+            return $snapshot;
+        });
+    }
+
+    public function publishRegistration(
+        string $mgwId,
+        string $accountRef,
+        ?DateTimeImmutable $now = null
+    ): array {
+        $mgwId = $this->requiredText($mgwId, 24, 'MGW-ID');
+        $accountRef = $this->requiredText($accountRef, 255, 'account ref');
+        $publishedAt = $this->utc($now);
+
+        return $this->database->transaction(function (DatabaseConnectionInterface $db) use (
+            $mgwId,
+            $accountRef,
+            $publishedAt
+        ): array {
+            $tournament = $this->activeTournamentRow($db, true);
+            $rows = $db->fetchAll(
+                'SELECT * FROM mgw_tournament_registrations
+                 WHERE tournament_id=:tournament_id
+                   AND mgw_id=:mgw_id
+                   AND account_ref=:account_ref
+                 ORDER BY attempt_no DESC LIMIT 1' . $this->forUpdate($db),
+                [
+                    'tournament_id'=>$tournament['tournament_id'],
+                    'mgw_id'=>$mgwId,
+                    'account_ref'=>$accountRef,
+                ]
+            );
+            if ($rows === [] || !is_array($rows[0])
+                || (string)($rows[0]['registration_state'] ?? '') !== self::REGISTRATION_REGISTERED) {
+                throw new RuntimeException('Активная регистрация для публикации не найдена.');
+            }
+
+            $registration = $rows[0];
+            if (trim((string)($registration['published_at_utc'] ?? '')) === '') {
+                $updated = $db->execute(
+                    'UPDATE mgw_tournament_registrations
+                     SET published_at_utc=:published_at_utc,
+                         updated_at_utc=:updated_at_utc
+                     WHERE registration_id=:registration_id
+                       AND registration_state=:registration_state
+                       AND published_at_utc IS NULL',
+                    [
+                        'published_at_utc'=>$publishedAt,
+                        'updated_at_utc'=>$publishedAt,
+                        'registration_id'=>(string)$registration['registration_id'],
+                        'registration_state'=>self::REGISTRATION_REGISTERED,
+                    ]
+                );
+                if ($updated !== 1) {
+                    throw new RuntimeException('Публикация регистрации изменилась одновременно. Повторите попытку.');
+                }
+            }
+
+            [$tournament, $closedNow] = $this->closeRegistrationIfReady($db, $tournament, $publishedAt);
             $snapshot = $this->snapshotForRow($db, $tournament, $mgwId, $accountRef);
             if ($closedNow) {
                 $snapshot['transition'] = ['registration_closed_now'=>true,'reason'=>'full'];
@@ -699,14 +761,14 @@ final class TournamentRegistrationService
         ?string $mgwId,
         ?string $accountRef
     ): array {
-        $registeredCount = $this->registeredCount($db, (string)$row['tournament_id']);
+        $registeredCount = $this->publishedRegisteredCount($db, (string)$row['tournament_id']);
         $registration = null;
         if ($mgwId !== null && trim($mgwId) !== '') {
             $rows = $db->fetchAll(
                 'SELECT registration_id,tournament_id,mgw_id,account_ref,attempt_no,
                         registration_state,reservation_id,
                         rules_version,rules_language,rules_sha256,rules_accepted_at_utc,
-                        registered_at_utc,withdrawn_at_utc,updated_at_utc
+                        registered_at_utc,withdrawn_at_utc,updated_at_utc,published_at_utc
                  FROM mgw_tournament_registrations
                  WHERE tournament_id=:tournament_id AND mgw_id=:mgw_id
                  ORDER BY attempt_no DESC LIMIT 1',
@@ -775,6 +837,8 @@ final class TournamentRegistrationService
             'registered_at_utc'=>(string)$row['registered_at_utc'],
             'withdrawn_at_utc'=>$this->nullableText($row['withdrawn_at_utc'] ?? null, 32),
             'updated_at_utc'=>(string)$row['updated_at_utc'],
+            'published'=>trim((string)($row['published_at_utc'] ?? '')) !== '',
+            'published_at_utc'=>$this->nullableText($row['published_at_utc'] ?? null, 32),
         ];
     }
 
@@ -849,7 +913,7 @@ final class TournamentRegistrationService
         }
 
         $tournamentId = (string)$tournament['tournament_id'];
-        $registeredCount = $this->registeredCount($db, $tournamentId);
+        $registeredCount = $this->publishedRegisteredCount($db, $tournamentId);
         if ($registeredCount < (int)$tournament['capacity']) {
             return [$tournament, false];
         }
@@ -921,6 +985,17 @@ final class TournamentRegistrationService
         return (int)$db->fetchValue(
             'SELECT COUNT(*) FROM mgw_tournament_registrations
              WHERE tournament_id=:tournament_id AND registration_state=:state',
+            ['tournament_id'=>$tournamentId,'state'=>self::REGISTRATION_REGISTERED]
+        );
+    }
+
+    private function publishedRegisteredCount(DatabaseConnectionInterface $db, string $tournamentId): int
+    {
+        return (int)$db->fetchValue(
+            'SELECT COUNT(*) FROM mgw_tournament_registrations
+             WHERE tournament_id=:tournament_id
+               AND registration_state=:state
+               AND published_at_utc IS NOT NULL',
             ['tournament_id'=>$tournamentId,'state'=>self::REGISTRATION_REGISTERED]
         );
     }

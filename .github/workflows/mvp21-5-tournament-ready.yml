@@ -17,6 +17,18 @@ on:
       - 'bot/services/MatchPreparationClockService.php'
       - 'bot/core/bootstrap.php'
       - 'bot/api.php'
+      - 'bot/database/migrations/20260922_0056_add_tournament_registration_publication.php'
+      - 'bot/tournaments/TournamentRegistrationService.php'
+      - 'bot/realtime/RealtimeRuntimeBridge.php'
+      - 'bot/ledger/EconomyRuntimeBridge.php'
+      - 'bot/weekly/WeeklyBonusRuntimeBridge.php'
+      - 'bot/ratings/PerGameRatingRuntimeBridge.php'
+      - 'bot/tests/Mvp21_1TournamentRegistrationTest.php'
+      - 'bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php'
+      - 'bot/tests/Mvp21_2TournamentRulesTest.php'
+      - 'bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php'
+      - 'bot/tests/Mvp21_3TournamentScheduleTest.php'
+      - 'bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php'
       - 'app/admin.php'
       - 'app/assets/js/admin-tournaments.js'
       - 'app/assets/js/api/client.js'
@@ -96,6 +108,18 @@ jobs:
             bot/services/MatchPreparationClockService.php
             bot/core/bootstrap.php
             bot/api.php
+            bot/database/migrations/20260922_0056_add_tournament_registration_publication.php
+            bot/tournaments/TournamentRegistrationService.php
+            bot/realtime/RealtimeRuntimeBridge.php
+            bot/ledger/EconomyRuntimeBridge.php
+            bot/weekly/WeeklyBonusRuntimeBridge.php
+            bot/ratings/PerGameRatingRuntimeBridge.php
+            bot/tests/Mvp21_1TournamentRegistrationTest.php
+            bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
+            bot/tests/Mvp21_2TournamentRulesTest.php
+            bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php
+            bot/tests/Mvp21_3TournamentScheduleTest.php
+            bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php
             app/admin.php
             app/runtime/client/version-manifest.php
             bot/tests/Mvp21_4TournamentHallBracketTest.php
@@ -129,6 +153,12 @@ jobs:
         run: |
           php bot/tests/Mvp21_5TournamentReadyUxContractTest.php
           php bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php
+          php bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php
+          php bot/tests/Mvp21_1TournamentRegistrationTest.php
+          php bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
+          php bot/tests/Mvp21_2TournamentRulesTest.php
+          php bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php
+          php bot/tests/Mvp21_3TournamentScheduleTest.php
 
       - name: Preserve shared Phase-B countdown/action lock
         run: |
@@ -187,6 +217,18 @@ jobs:
               bot/services/MatchPreparationClockService.php|\
               bot/core/bootstrap.php|\
               bot/api.php|\
+              bot/database/migrations/20260922_0056_add_tournament_registration_publication.php|\
+              bot/tournaments/TournamentRegistrationService.php|\
+              bot/realtime/RealtimeRuntimeBridge.php|\
+              bot/ledger/EconomyRuntimeBridge.php|\
+              bot/weekly/WeeklyBonusRuntimeBridge.php|\
+              bot/ratings/PerGameRatingRuntimeBridge.php|\
+              bot/tests/Mvp21_1TournamentRegistrationTest.php|\
+              bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php|\
+              bot/tests/Mvp21_2TournamentRulesTest.php|\
+              bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php|\
+              bot/tests/Mvp21_3TournamentScheduleTest.php|\
+              bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php|\
               app/admin.php|\
               app/assets/js/admin-tournaments.js|\
               app/assets/js/api/client.js|\

@@ -62,7 +62,9 @@ $assertTrue(
 );
 
 $assertTrue(
-    str_contains($source['api'], "['bootstrap', 'staging_test_tournament_balance', 'tournament_register', 'tournament_leave']")
+    str_contains($source['api'], "'staging_test_tournament_balance',")
+    && str_contains($source['api'], "'tournament_registration_publish',")
+    && str_contains($source['api'], "'tournament_match_state',")
     && str_contains($source['api'], "!empty(\$tgUser['is_staging_test_user'])")
     && str_contains($source['api'], "['stg_test_player_a', 'stg_test_player_b']"),
     'Staging A/B bootstrap diagnostics must expose exact errors only for bounded technical test identities.'
@@ -104,7 +106,9 @@ foreach ([
     'const verified = await api.tournamentStatus();',
     'const verifiedSnapshot = verified?.snapshot',
     "const registrationState = String(verifiedSnapshot?.registration?.state || '');",
-    'verifiedCommit = verifiedSnapshot;',
+    "verifiedSnapshot?.registration?.published === false",
+    "await api.tournamentRegistrationPublish()",
+    'verifiedCommit = publicationSnapshot;',
     'tournamentSnapshot = verifiedCommit;',
     "if (action === 'register' && registrationState !== 'registered')",
     "if (action === 'leave' && registrationState === 'registered')",
@@ -138,6 +142,7 @@ $assertTrue(
     'Tournament mutation must not shadow imported app state and trigger a temporal-dead-zone error.'
 );
 $verifyPos = strpos($source['screen'], 'const verified = await api.tournamentStatus();');
+$publishPos = strpos($source['screen'], 'await api.tournamentRegistrationPublish()', $verifyPos ?: 0);
 $pendingEndPos = strpos($source['screen'], "tournamentBusy = false;\n    tournamentPendingAction = '';", $verifyPos ?: 0);
 $commitSnapshotPos = strpos($source['screen'], 'tournamentSnapshot = verifiedCommit;');
 $finalVerifiedRenderPos = strpos($source['screen'], 'renderTournamentSnapshot(errorMessage);', $commitSnapshotPos ?: 0);
@@ -145,12 +150,14 @@ $balanceReleasePos = strpos($source['screen'], 'releaseVisibleBalance();', $fina
 $balanceCommitPos = strpos($source['screen'], 'state.user = verifiedUser;');
 $assertTrue(
     $verifyPos !== false
+    && $publishPos !== false
     && $pendingEndPos !== false
     && $commitSnapshotPos !== false
     && $finalVerifiedRenderPos !== false
     && $balanceReleasePos !== false
     && $balanceCommitPos !== false
-    && $verifyPos < $pendingEndPos
+    && $verifyPos < $publishPos
+    && $publishPos < $pendingEndPos
     && $pendingEndPos < $commitSnapshotPos
     && $commitSnapshotPos < $finalVerifiedRenderPos
     && $finalVerifiedRenderPos < $balanceReleasePos
@@ -239,12 +246,12 @@ foreach ([
 }
 
 $assertTrue(
-    str_contains($source['manifest'], 'client.js?v=1143')
+    str_contains($source['manifest'], 'client.js?v=1144')
     && str_contains($source['manifest'], 'mvp21_2=tournament-rules-consent-v1'),
     'Corrective release must force a fresh API client module.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=25')
+    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=26')
     && str_contains($source['manifest'], 'mvp21_2=tournament-rules-copy-v2')
     && str_contains($source['manifest'], 'balance=visible-freeze-v2')
     && str_contains($source['manifest'], 'mvp21_3=schedule-local-time-v2'),

@@ -72,6 +72,7 @@ foreach ([
     '20260920_0051_refresh_tournament_rules_copy.php',
     '20260921_0052_add_tournament_schedule.php',
     '20260921_0053_create_tournament_hall_bracket.php',
+    '20260922_0056_add_tournament_registration_publication.php',
 ] as $migration) {
     (require $root . '/database/migrations/' . $migration)->up($db);
 }
@@ -157,6 +158,11 @@ for ($i = 1; $i <= 9; $i++) {
             $accountRef,
             new DateTimeImmutable(sprintf('2026-09-21T00:%02d:30Z', 10 + $i)),
             $consent
+        );
+        $tournaments->publishRegistration(
+            $mgwId,
+            $accountRef,
+            new DateTimeImmutable(sprintf('2026-09-21T00:%02d:31Z', 10 + $i))
         );
     }
 }
