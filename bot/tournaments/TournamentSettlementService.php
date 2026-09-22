@@ -131,13 +131,15 @@ final class TournamentSettlementService
                 'mgw_id'=>$mgwId,
                 'legacy_user_id'=>$this->nullable((string)($row['legacy_user_id'] ?? '')),
             ];
-            $metadata = [
+            $entryMetadata = [
                 'tournament_id'=>$tournamentId,
                 'mgw_id'=>$mgwId,
                 'canonical_placement'=>$canonicalPlacement,
-                'placement'=>$placement,
                 'reward_snapshot_version'=>$version,
                 'reward_snapshot_sha256'=>$snapshotHash,
+            ];
+            $metadata = $entryMetadata + [
+                'placement'=>$placement,
                 'reward_eligible'=>$rewardEligible,
                 'prize_review_hold'=>$heldForReview,
                 'prize_review_disqualified'=>$disqualified,
@@ -146,7 +148,7 @@ final class TournamentSettlementService
             $this->ledger->consumeReservation([
                 'operation_key'=>$this->operationKey($tournamentId, $mgwId, 'entry'),
                 'reservation_id'=>(string)$row['reservation_id'],
-                'metadata'=>$metadata + ['purpose'=>'tournament_entry_settlement'],
+                'metadata'=>$entryMetadata + ['purpose'=>'tournament_entry_settlement'],
                 'occurred_at_utc'=>$settledAt,
             ]);
 
