@@ -110,6 +110,7 @@ function applyProfileResponse(result, options = {}){
   state.profileRating = result.rating || state.profileRating || null;
   state.profileYearlyMedals = result.yearly_medals || state.profileYearlyMedals || null;
   state.profileRatingArchive = result.rating_archive || state.profileRatingArchive || null;
+  state.profileTournamentRewards = result.tournament_rewards || state.profileTournamentRewards || null;
   state.profileHistory = result.history || state.profileHistory || null;
   state.profileAuth = result.auth || state.profileAuth || null;
   if (hasProfileStats(state.profileStats)) saveCachedProfileStats(state.profileStats);
@@ -355,8 +356,9 @@ function renderProfileV2(){
   const rating = state.profileRating && typeof state.profileRating === 'object' ? state.profileRating : {};
   const yearlyMedals = state.profileYearlyMedals && typeof state.profileYearlyMedals === 'object' ? state.profileYearlyMedals : {};
   const ratingArchive = state.profileRatingArchive && typeof state.profileRatingArchive === 'object' ? state.profileRatingArchive : {};
+  const tournamentRewards = state.profileTournamentRewards && typeof state.profileTournamentRewards === 'object' ? state.profileTournamentRewards : {};
   const history = state.profileHistory && typeof state.profileHistory === 'object' ? state.profileHistory : {};
-  const renderSignature = profileRenderSignature(profile, user, stats, history, rating, yearlyMedals, ratingArchive);
+  const renderSignature = profileRenderSignature(profile, user, stats, history, rating, yearlyMedals, ratingArchive, tournamentRewards);
   if (root.childElementCount > 0 && renderSignature === lastProfileRenderSignature) return;
   const nickname = String(profile.nickname || user.display_name || t('profile.player')).trim();
   const mgwId = publicMgwId(profile.public_mgw_id || profile.mgw_id || user.public_mgw_id || user.mgw_id);
@@ -395,6 +397,7 @@ function renderProfileV2(){
     <section class="profile-v2-balance"><div><span>${escapeHtml(t('profile.balance'))}</span><small>${escapeHtml(t('profile.balance_note'))}</small></div><strong>${escapeHtml(formatNumber(balance))}</strong></section>
     ${renderRatingProfileSection(rating, ratingArchive, stats)}
     ${renderYearlyMedalSection(yearlyMedals)}
+    ${renderTournamentHonorsSection(tournamentRewards)}
     <section class="profile-v2-section">${sectionHead('profile.stats_title','profile.stats_note')}<div class="profile-v2-summary-grid">${summaryStat(stats?.games_played,'profile.games_played')}${summaryStat(stats?.wins,'profile.wins')}${summaryStat(stats?.losses,'profile.losses')}${summaryStat(stats?.draws,'profile.draws')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.by_game_title','profile.by_game_note')}<div class="profile-v2-games-grid">${GAME_TYPES.map(gameType => gameStatCard(gameType, stats?.by_game?.[gameType])).join('')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.history_title')}<div class="profile-v2-history">${matches.length ? matches.map(historyRow).join('') : emptyState('profile.history_empty')}</div></section>
@@ -791,7 +794,7 @@ function currentAvatarItemId(){
 }
 function normalizeNicknameInput(value){ return String(value || '').replace(/\s+/gu, ' ').trim(); }
 function cloneObject(value){ return value && typeof value === 'object' ? JSON.parse(JSON.stringify(value)) : value; }
-function profileRenderSignature(profile, user, stats, history, rating, yearlyMedals, ratingArchive){
+function profileRenderSignature(profile, user, stats, history, rating, yearlyMedals, ratingArchive, tournamentRewards){
   return JSON.stringify({
     profile,
     inventory:state.profileInventory || null,
@@ -808,6 +811,7 @@ function profileRenderSignature(profile, user, stats, history, rating, yearlyMed
     rating:rating || null,
     yearly_medals:yearlyMedals || null,
     rating_archive:ratingArchive || null,
+    tournament_rewards:tournamentRewards || null,
     history:history || null,
     auth:state.profileAuth || null,
     selected_avatar:String(state.selectedAvatarId || ''),
@@ -823,6 +827,130 @@ function ensureProfileRoot(){
 }
 function sectionHead(titleKey, noteKey = null){ return `<div class="profile-v2-section-head"><div><h2>${escapeHtml(t(titleKey))}</h2>${noteKey ? `<p>${escapeHtml(t(noteKey))}</p>` : ''}</div></div>`; }
 function summaryStat(value, labelKey){ const normalized = Number.isFinite(Number(value)) ? formatNumber(Number(value)) : '—'; return `<div class="profile-v2-summary-stat"><strong>${escapeHtml(normalized)}</strong><span>${escapeHtml(t(labelKey))}</span></div>`; }
+const TOURNAMENT_REWARD_LABELS = Object.freeze({
+  golden_ticket:'Golden Ticket',
+  champion_crown:'Корона чемпиона',
+  winner_badge:'Значок победителя',
+  champion_cosmetics:'Чемпионский набор',
+  hall_of_fame:'Зал славы',
+  cup_gold:'Золотой кубок',
+  silver_frame:'Серебряная рамка',
+  finalist_result:'Финалист турнира',
+  cup_silver:'Серебряный кубок',
+  bronze_mark:'Бронзовая отметка',
+  third_place_result:'3-е место',
+  cup_bronze:'Бронзовый кубок',
+});
+const TOURNAMENT_REWARD_ICONS = Object.freeze({
+  golden_ticket:'🎫',
+  champion_crown:'♛',
+  winner_badge:'◆',
+  champion_cosmetics:'✦',
+  hall_of_fame:'★',
+  cup_gold:'🏆',
+  silver_frame:'◇',
+  finalist_result:'Ⅱ',
+  cup_silver:'🥈',
+  bronze_mark:'●',
+  third_place_result:'Ⅲ',
+  cup_bronze:'🥉',
+});
+
+function renderTournamentHonorsSection(snapshot){
+  const source = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  if (source.available !== true) return '';
+
+  const ticket = source.golden_ticket && typeof source.golden_ticket === 'object'
+    ? source.golden_ticket
+    : null;
+  const summary = source.summary && typeof source.summary === 'object' ? source.summary : {};
+  const temporary = Array.isArray(source.active_temporary) ? source.active_temporary : [];
+  const permanentRaw = Array.isArray(source.permanent_achievements) ? source.permanent_achievements : [];
+  const history = Array.isArray(source.history) ? source.history : [];
+  const permanent = [];
+  const seenPermanent = new Set();
+  permanentRaw.forEach(item => {
+    const code = String(item?.reward_code || '');
+    if (!code || seenPermanent.has(code)) return;
+    seenPermanent.add(code);
+    permanent.push(item);
+  });
+
+  const ticketMarkup = ticket?.valid === true
+    ? `<article class="profile-v2-tournament-ticket">
+        <div class="profile-v2-tournament-ticket-mark" aria-hidden="true">GT</div>
+        <div><span>Golden Ticket</span><strong>Действителен до Большого турнира</strong><small>Чемпионств: ${escapeHtml(formatNumber(Math.max(1, Number(ticket.championship_count || 1))))} · не продаётся и не передаётся</small></div>
+      </article>`
+    : '';
+
+  const temporaryMarkup = temporary.length
+    ? `<div class="profile-v2-tournament-subtitle">Активные награды</div>
+      <div class="profile-v2-tournament-reward-grid">
+        ${temporary.map(item => tournamentRewardCard(item, true)).join('')}
+      </div>`
+    : '';
+
+  const permanentMarkup = permanent.length
+    ? `<div class="profile-v2-tournament-subtitle">Постоянные достижения</div>
+      <div class="profile-v2-tournament-reward-grid">
+        ${permanent.map(item => tournamentRewardCard(item, false)).join('')}
+      </div>`
+    : '';
+
+  const historyMarkup = history.length
+    ? `<div class="profile-v2-tournament-subtitle">История турниров</div>
+      <div class="profile-v2-tournament-history">
+        ${history.slice(0,8).map(tournamentHistoryCard).join('')}
+      </div>`
+    : '';
+
+  return `<section class="profile-v2-section profile-v2-tournament-honors">
+    <div class="profile-v2-section-head"><div><h2>Турнирные награды</h2><p>Кубки, постоянные результаты и временные награды официальных турниров.</p></div></div>
+    <div class="profile-v2-tournament-summary">
+      <div><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.tournaments || 0))))}</strong><span>турниров</span></div>
+      <div><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.podiums || 0))))}</strong><span>подиумов</span></div>
+      <div><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.championships || 0))))}</strong><span>побед</span></div>
+    </div>
+    ${ticketMarkup}
+    ${temporaryMarkup}
+    ${permanentMarkup}
+    ${historyMarkup}
+  </section>`;
+}
+
+function tournamentRewardCard(item, temporary){
+  const code = String(item?.reward_code || '');
+  const label = TOURNAMENT_REWARD_LABELS[code] || code || 'Награда';
+  const icon = TOURNAMENT_REWARD_ICONS[code] || '◆';
+  const until = item?.valid_until_at_utc ? formatDateTime(item.valid_until_at_utc) : '';
+  const note = temporary
+    ? (until ? `Активна до ${until}` : 'Активна')
+    : 'Навсегда';
+  return `<article class="profile-v2-tournament-reward" data-tournament-reward-code="${escapeHtml(code)}">
+    <b aria-hidden="true">${escapeHtml(icon)}</b>
+    <div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(note)}</span></div>
+  </article>`;
+}
+
+function tournamentHistoryCard(item){
+  const placement = Number(item?.placement || 0);
+  const result = placement > 0 ? `${placement} место` : 'Участник';
+  const date = item?.scheduled_start_at_utc || item?.settled_at_utc || null;
+  const rewards = Array.isArray(item?.rewards) ? item.rewards : [];
+  const cups = rewards
+    .filter(reward => String(reward?.reward_code || '').startsWith('cup_'))
+    .map(reward => TOURNAMENT_REWARD_LABELS[String(reward.reward_code)] || String(reward.reward_code));
+  const meta = [
+    gameName(String(item?.game_type || 'tictactoe')),
+    date ? formatDate(date) : '',
+    cups.join(', '),
+  ].filter(Boolean).join(' · ');
+  return `<article class="profile-v2-tournament-history-card place-${placement > 0 ? placement : 'other'}">
+    <div><span>${escapeHtml(String(item?.title || 'Официальный турнир'))}</span><strong>${escapeHtml(result)}</strong></div>
+    <small>${escapeHtml(meta)}</small>
+  </article>`;
+}
+
 function renderYearlyMedalSection(snapshot){
   const source = snapshot && typeof snapshot === 'object' ? snapshot : null;
   const medal = source?.visible === true
