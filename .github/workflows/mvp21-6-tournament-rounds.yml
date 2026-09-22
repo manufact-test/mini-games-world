@@ -33,6 +33,7 @@ on:
       - 'bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php'
       - 'bot/tests/RematchOptimisticUxContractTest.php'
       - 'bot/tests/PhaseBMatchPreparationClockServiceTest.php'
+      - 'bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php'
       - 'bot/tests/PhaseBClientLaunchUxContractTest.php'
       - 'bot/tests/Mvp21_4TournamentHallBracketTest.php'
       - 'bot/tests/Mvp21_4TournamentHallUxContractTest.php'
@@ -109,6 +110,7 @@ jobs:
             bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php
             bot/tests/RematchOptimisticUxContractTest.php
             bot/tests/PhaseBMatchPreparationClockServiceTest.php
+            bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php
             bot/tests/PhaseBClientLaunchUxContractTest.php
             app/runtime/client/version-manifest.php
             bot/tests/Mvp21_4TournamentHallBracketTest.php
@@ -209,6 +211,7 @@ jobs:
               bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php|\
               bot/tests/RematchOptimisticUxContractTest.php|\
               bot/tests/PhaseBMatchPreparationClockServiceTest.php|\
+              bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php|\
               bot/tests/PhaseBClientLaunchUxContractTest.php|\
               bot/tests/Mvp21_4TournamentHallBracketTest.php|\
               bot/tests/Mvp21_4TournamentHallUxContractTest.php|\
