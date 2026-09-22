@@ -124,7 +124,7 @@ jobs:
             echo 'MVP-18.6 must not modify accepted game engines.' >&2
             exit 1
           fi
-          grep -F "private const ENTRY_PATH = '/app/v110.php?v=1127';" bot/helpers/WebAppLaunchUrl.php
+          grep -F "private const ENTRY_PATH = '/app/v110.php?v=1233&" bot/helpers/WebAppLaunchUrl.php
           grep -F "'@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2'" app/runtime/client/version-manifest.php
           # version-manifest.php is a shared cache/import registry. The exact
           # notification-owned @mgw/main mapping is asserted above, while other
