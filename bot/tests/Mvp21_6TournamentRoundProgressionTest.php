@@ -36,6 +36,7 @@ $db->execute('CREATE TABLE mgw_tournament_bracket_seeds (
 )');
 (require $root.'/database/migrations/20260921_0054_create_tournament_match_readiness.php')->up($db);
 (require $root.'/database/migrations/20260921_0055_add_tournament_round_progression.php')->up($db);
+(require $root.'/database/migrations/20260922_0058_add_tournament_technical_outcomes.php')->up($db);
 
 $assertions=0;
 $assertSame=static function(mixed $e,mixed $a,string $m)use(&$assertions):void{
@@ -236,11 +237,12 @@ $bothAbsentRows=$db->fetchAll(
  'SELECT * FROM mgw_tournament_round_matches WHERE tournament_id=:t AND pair_no>=2 ORDER BY pair_no',
  ['t'=>$absentTournament]
 );
-$assertSame(3,count($bothAbsentRows),'All three both-absent fixture pairs must have durable unresolved rows.');
+$assertSame(3,count($bothAbsentRows),'All three both-absent fixture pairs must have durable terminal rows.');
 foreach($bothAbsentRows as $row){
- $assertSame(TournamentMatchReadinessService::STATE_READINESS_EXPIRED,(string)$row['launch_state'],'Both-absent pair must be non-launchable.');
- $assertSame('both_absent_at_start_pending',(string)$row['result_reason'],'Both-absent pair must retain an explicit pending-resolution reason.');
- $assertSame(null,$row['completed_at_utc'],'Both-absent pair must remain unresolved until canonical progression chooses a winner.');
+ $assertSame(TournamentRoundProgressionService::STATE_COMPLETED,(string)$row['launch_state'],'Both-absent pair must close without inventing a winner.');
+ $assertSame('both_absent_at_start',(string)$row['result_reason'],'Both-absent pair must retain its canonical technical outcome.');
+ $assertTrue(trim((string)($row['completed_at_utc'] ?? ''))!=='','Both-absent pair must complete at T0.');
+ $assertSame(null,$row['winner_mgw_id'],'Both-absent pair must not invent a winner.');
 }
 
 if($assertions<42) throw new RuntimeException('MVP-21.6 progression test is too shallow: '.$assertions);

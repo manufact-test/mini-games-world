@@ -394,13 +394,20 @@ final class TournamentSettlementService
         }
         if (!is_array($final) || !is_array($third)) return null;
 
-        $placements = [
-            $this->required((string)$final['winner_mgw_id'], 24, 'final winner')=>1,
-            $this->required((string)$final['loser_mgw_id'], 24, 'final loser')=>2,
-            $this->required((string)$third['winner_mgw_id'], 24, 'third-place winner')=>3,
-            $this->required((string)$third['loser_mgw_id'], 24, 'third-place loser')=>4,
-        ];
-        if (count($placements) !== 4) throw new RuntimeException('Terminal tournament placements are not unique.');
+        $placements = [];
+        foreach ([
+            [(string)($final['winner_mgw_id'] ?? ''),1],
+            [(string)($final['loser_mgw_id'] ?? ''),2],
+            [(string)($third['winner_mgw_id'] ?? ''),3],
+            [(string)($third['loser_mgw_id'] ?? ''),4],
+        ] as [$candidate,$place]) {
+            $candidate = trim($candidate);
+            if ($candidate === '') continue;
+            if (isset($placements[$candidate])) {
+                throw new RuntimeException('Terminal tournament placements are not unique.');
+            }
+            $placements[$this->required($candidate,24,'terminal placement player')] = $place;
+        }
         $completedAt = strcmp((string)$final['completed_at_utc'], (string)$third['completed_at_utc']) >= 0
             ? (string)$final['completed_at_utc']
             : (string)$third['completed_at_utc'];

@@ -1114,6 +1114,24 @@ function tournamentMatchMarkup(){
   `;
 }
 
+const TOURNAMENT_TECHNICAL_RESULT_LABELS = Object.freeze({
+  technical_loss_at_start:'Технический исход · соперник отсутствовал.',
+  both_absent_at_start:'Оба участника отсутствовали · победитель не назначен.',
+  technical_bye_vacant_slot:'Технический проход · свободный слот.',
+  vacant_bracket_slot:'Пара закрыта без участников.',
+  player_left:'Технический исход · соперник покинул матч.',
+  disconnect_timeout:'Технический исход · 60 секунд на возврат истекли.',
+  tournament_disconnect_timeout:'Технический исход · один игрок не вернулся за 3 минуты.',
+  tournament_both_absent_timeout:'Оба игрока не вернулись за 3 минуты · победитель не назначен.',
+  technical_restart_scheduled:'Технический перезапуск через 1 минуту.',
+  technical_restart_exhausted:'Технический сбой повторился · матч закрыт без победителя.',
+});
+
+function tournamentTechnicalOutcomeLabel(match){
+  const reason = String(match?.result_reason || '');
+  return TOURNAMENT_TECHNICAL_RESULT_LABELS[reason] || '';
+}
+
 function tournamentActiveRoundMarkup(progression){
   const round = progression?.active_round && typeof progression.active_round === 'object'
     ? progression.active_round
@@ -1132,24 +1150,29 @@ function tournamentActiveRoundMarkup(progression){
     if (matchKind === 'final') title = 'Финал';
     else if (matchKind === 'third_place') title = 'Матч за 3-е место';
 
-    const playerMarkup = players.map(player => {
-      const done = match?.completed === true;
-      const winner = player?.winner === true;
-      let status = player?.self === true ? 'вы' : 'участник';
-      if (done) {
-        if (matchKind === 'final') status = winner ? 'чемпион' : '2 место';
-        else if (matchKind === 'third_place') status = winner ? '3 место' : '4 место';
-        else status = winner ? 'прошёл дальше' : 'выбыл';
-      }
-      return `<div class="tournaments-v2-bracket-player${done && !winner ? ' is-loss' : ''}">
-        <strong>${escapeHtml(String(player?.nickname || 'Игрок'))}${player?.self === true ? ' · вы' : ''}</strong>
-        <span>${escapeHtml(status)}</span>
-      </div>`;
-    }).join('');
+    const playerMarkup = players.length
+      ? players.map(player => {
+          const done = match?.completed === true;
+          const winner = player?.winner === true;
+          let status = player?.self === true ? 'вы' : 'участник';
+          if (done) {
+            if (matchKind === 'final') status = winner ? 'чемпион' : '2 место';
+            else if (matchKind === 'third_place') status = winner ? '3 место' : '4 место';
+            else status = winner ? 'прошёл дальше' : 'выбыл';
+          }
+          return `<div class="tournaments-v2-bracket-player${done && !winner ? ' is-loss' : ''}">
+            <strong>${escapeHtml(String(player?.nickname || 'Игрок'))}${player?.self === true ? ' · вы' : ''}</strong>
+            <span>${escapeHtml(status)}</span>
+          </div>`;
+        }).join('')
+      : '<div class="tournaments-v2-bracket-player is-loss"><strong>Свободный слот</strong><span>без участника</span></div>';
 
+    const technicalOutcome = tournamentTechnicalOutcomeLabel(match);
     let outcome = 'Ожидает запуска.';
-    if (match?.completed === true) outcome = 'Матч завершён.';
+    if (technicalOutcome) outcome = technicalOutcome;
+    else if (match?.completed === true) outcome = 'Матч завершён.';
     else if (String(match?.launch_state || '') === 'launched') outcome = 'Матч идёт.';
+    else if (String(match?.wait_kind || '') === 'technical_restart') outcome = 'Технический перезапуск через 1 минуту.';
     else if (String(match?.wait_kind || '') === 'round_break') outcome = 'Перерыв между раундами.';
 
     return `<article class="tournaments-v2-bracket-pair">
@@ -1251,7 +1274,7 @@ function tournamentTerminalMarkup(progression, activeRoundMarkup){
     <section class="tournaments-v2-terminal">
       <div class="tournaments-v2-terminal-kicker">Все матчи турнира завершены. Награды начислены</div>
       <div class="tournaments-v2-terminal-hero">
-        <div><span>Чемпион</span><h3>${escapeHtml(String(champion?.nickname || 'Победитель турнира'))}</h3></div>
+        <div><span>Чемпион</span><h3>${escapeHtml(String(champion?.nickname || 'Не определён'))}</h3></div>
         <b aria-hidden="true">🏆</b>
       </div>
       <div class="tournaments-v2-terminal-podium">${podiumMarkup}</div>

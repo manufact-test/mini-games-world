@@ -5,10 +5,14 @@ final class TournamentRoundProgressionService
 {
     public const ROUND_BREAK_SECONDS = 300;
     public const DRAW_REPLAY_WAIT_SECONDS = 60;
+    public const TECHNICAL_RESTART_WAIT_SECONDS = 60;
+    public const TECHNICAL_RESTART_MAX_ATTEMPTS = 2;
     public const STATE_COMPLETED = 'completed';
+    public const STATE_TECHNICAL_CANCEL_REQUIRED = 'technical_cancel_required';
     public const WAIT_INITIAL_READY = 'initial_ready';
     public const WAIT_ROUND_BREAK = 'round_break';
     public const WAIT_DRAW_REPLAY = 'draw_replay';
+    public const WAIT_TECHNICAL_RESTART = 'technical_restart';
     public const MATCH_ELIMINATION = 'elimination';
     public const MATCH_FINAL = 'final';
     public const MATCH_THIRD_PLACE = 'third_place';
@@ -94,6 +98,7 @@ final class TournamentRoundProgressionService
             $finishedAtUtc = $this->utc($finishedAt);
             $winnerLegacy = trim((string)($game['winner_id'] ?? ''));
             $finishReason = trim((string)($game['finish_reason'] ?? ''));
+            $technicalRestart = false;
             if ($winnerLegacy === '' && $finishReason === 'preparation_timeout') {
                 $readyDevices = is_array($game['preparation_ready_devices'] ?? null)
                     ? $game['preparation_ready_devices']
@@ -104,17 +109,17 @@ final class TournamentRoundProgressionService
                         $readyPlayers[] = $runtimePlayerId;
                     }
                 }
-                // A tournament game that never started is not a draw when exactly
-                // one participant actually adopted the runtime game. The present
-                // participant advances by technical no-show; zero/two ready
-                // participants remain unresolved by this rule.
                 if (count($readyPlayers) === 1) {
                     $winnerLegacy = $readyPlayers[0];
+                } elseif (count($readyPlayers) >= 2) {
+                    // Both clients adopted the game, so a preparation timeout is
+                    // infrastructure failure rather than player no-show.
+                    $technicalRestart = true;
                 }
             }
             $winnerMgw = null;
             $loserMgw = null;
-            $resultType = 'draw';
+            $resultType = 'void';
 
             if ($winnerLegacy !== '') {
                 $winnerIndex = array_search($winnerLegacy, $runtimePlayers, true);
@@ -124,6 +129,10 @@ final class TournamentRoundProgressionService
                 $winnerMgw = $winnerIndex === 0 ? $aMgw : $bMgw;
                 $loserMgw = $winnerIndex === 0 ? $bMgw : $aMgw;
                 $resultType = 'win';
+            } elseif ($finishReason === 'draw') {
+                $resultType = 'draw';
+            } elseif ($technicalRestart || $this->isRestartableTechnicalFailure($finishReason)) {
+                $resultType = 'restart';
             }
 
             $db->execute(
@@ -154,6 +163,105 @@ final class TournamentRoundProgressionService
                     'created_at_utc'=>$this->utc($moment),
                 ]
             );
+
+            if ($resultType !== 'draw') {
+                $this->recordTechnicalOutcome(
+                    $db,
+                    $tournamentId,
+                    $roundNo,
+                    $pairNo,
+                    $attemptNo,
+                    $gameId,
+                    $this->technicalOutcomeCode($finishReason, $resultType),
+                    $aMgw,
+                    $bMgw,
+                    $winnerMgw,
+                    $loserMgw,
+                    [
+                        'finish_reason'=>$finishReason,
+                        'result_type'=>$resultType,
+                        'match_kind'=>(string)($row['match_kind'] ?? self::MATCH_ELIMINATION),
+                    ],
+                    $finishedAtUtc
+                );
+            }
+
+            if ($resultType === 'restart') {
+                if ($attemptNo < self::TECHNICAL_RESTART_MAX_ATTEMPTS) {
+                    $opens = $finishedAt->modify('+' . self::TECHNICAL_RESTART_WAIT_SECONDS . ' seconds');
+                    $opensUtc = $this->utc($opens);
+                    $deadlineUtc = $this->utc($opens->modify('+' . TournamentMatchReadinessService::READY_WINDOW_SECONDS . ' seconds'));
+                    $db->execute(
+                        'UPDATE mgw_tournament_round_matches
+                         SET readiness_opened_at_utc=:readiness_opened_at_utc,
+                             readiness_deadline_at_utc=:readiness_deadline_at_utc,
+                             player_a_ready_at_utc=:player_a_ready_at_utc,
+                             player_b_ready_at_utc=:player_b_ready_at_utc,
+                             launch_state=:launch_state,
+                             game_id=NULL,
+                             attempt_no=:attempt_no,
+                             wait_kind=:wait_kind,
+                             winner_mgw_id=NULL,
+                             loser_mgw_id=NULL,
+                             result_reason=:result_reason,
+                             completed_at_utc=NULL,
+                             updated_at_utc=:updated_at_utc
+                         WHERE tournament_id=:tournament_id AND round_no=:round_no AND pair_no=:pair_no',
+                        [
+                            'readiness_opened_at_utc'=>$opensUtc,
+                            'readiness_deadline_at_utc'=>$deadlineUtc,
+                            'player_a_ready_at_utc'=>$opensUtc,
+                            'player_b_ready_at_utc'=>$opensUtc,
+                            'launch_state'=>TournamentMatchReadinessService::STATE_READY,
+                            'attempt_no'=>$attemptNo + 1,
+                            'wait_kind'=>self::WAIT_TECHNICAL_RESTART,
+                            'result_reason'=>'technical_restart_scheduled',
+                            'updated_at_utc'=>$finishedAtUtc,
+                            'tournament_id'=>$tournamentId,
+                            'round_no'=>$roundNo,
+                            'pair_no'=>$pairNo,
+                        ]
+                    );
+                    return;
+                }
+
+                $finishReason = 'technical_restart_exhausted';
+                $this->recordTechnicalOutcome(
+                    $db,
+                    $tournamentId,
+                    $roundNo,
+                    $pairNo,
+                    $attemptNo,
+                    $gameId,
+                    'technical_restart_exhausted',
+                    $aMgw,
+                    $bMgw,
+                    null,
+                    null,
+                    ['max_attempts'=>self::TECHNICAL_RESTART_MAX_ATTEMPTS],
+                    $finishedAtUtc
+                );
+                $db->execute(
+                    'UPDATE mgw_tournament_round_matches
+                     SET launch_state=:launch_state,
+                         result_reason=:result_reason,
+                         game_id=NULL,
+                         winner_mgw_id=NULL,
+                         loser_mgw_id=NULL,
+                         completed_at_utc=NULL,
+                         updated_at_utc=:updated_at_utc
+                     WHERE tournament_id=:tournament_id AND round_no=:round_no AND pair_no=:pair_no',
+                    [
+                        'launch_state'=>self::STATE_TECHNICAL_CANCEL_REQUIRED,
+                        'result_reason'=>$finishReason,
+                        'updated_at_utc'=>$finishedAtUtc,
+                        'tournament_id'=>$tournamentId,
+                        'round_no'=>$roundNo,
+                        'pair_no'=>$pairNo,
+                    ]
+                );
+                return;
+            }
 
             if ($resultType === 'draw') {
                 $opens = $finishedAt->modify('+' . self::DRAW_REPLAY_WAIT_SECONDS . ' seconds');
@@ -209,7 +317,7 @@ final class TournamentRoundProgressionService
                     'launch_state'=>self::STATE_COMPLETED,
                     'winner_mgw_id'=>$winnerMgw,
                     'loser_mgw_id'=>$loserMgw,
-                    'result_reason'=>$this->nullable((string)($game['finish_reason'] ?? 'normal_win')),
+                    'result_reason'=>$this->nullable($finishReason !== '' ? $finishReason : 'normal_win'),
                     'completed_at_utc'=>$finishedAtUtc,
                     'updated_at_utc'=>$finishedAtUtc,
                     'tournament_id'=>$tournamentId,
@@ -219,7 +327,7 @@ final class TournamentRoundProgressionService
             );
         });
 
-        $this->createNextRoundIfComplete($tournamentId, $roundNo, $moment);
+        $this->propagateCompletedRounds($tournamentId, $roundNo, $moment);
         return $this->tournamentSnapshot($tournamentId, $moment);
     }
 
@@ -385,9 +493,18 @@ final class TournamentRoundProgressionService
             if ((int)($match['round_no'] ?? 0) !== $activeRoundNo) continue;
             $completed = $match['completed_at_utc'] !== null;
             if ($completed) $completedInActiveRound++;
-            $a = (string)$match['player_a_mgw_id'];
-            $b = (string)$match['player_b_mgw_id'];
-            $winner = (string)($match['winner_mgw_id'] ?? '');
+            $a = trim((string)$match['player_a_mgw_id']);
+            $b = trim((string)$match['player_b_mgw_id']);
+            $winner = trim((string)($match['winner_mgw_id'] ?? ''));
+            $players = [];
+            foreach ([$a,$b] as $participantId) {
+                if ($participantId === '') continue;
+                $players[] = [
+                    'nickname'=>$nicknames[$participantId] ?? 'Игрок',
+                    'self'=>$participantId === $mgwId,
+                    'winner'=>$completed && $winner !== '' && $winner === $participantId,
+                ];
+            }
             $activeRoundMatches[] = [
                 'round_no'=>(int)$match['round_no'],
                 'pair_no'=>(int)$match['pair_no'],
@@ -395,19 +512,9 @@ final class TournamentRoundProgressionService
                 'wait_kind'=>(string)$match['wait_kind'],
                 'match_kind'=>(string)$match['match_kind'],
                 'launch_state'=>(string)$match['launch_state'],
+                'result_reason'=>$match['result_reason'] ?? null,
                 'completed'=>$completed,
-                'players'=>[
-                    [
-                        'nickname'=>$nicknames[$a] ?? 'Игрок',
-                        'self'=>$a === $mgwId,
-                        'winner'=>$completed && $winner !== '' && $winner === $a,
-                    ],
-                    [
-                        'nickname'=>$nicknames[$b] ?? 'Игрок',
-                        'self'=>$b === $mgwId,
-                        'winner'=>$completed && $winner !== '' && $winner === $b,
-                    ],
-                ],
+                'players'=>$players,
             ];
         }
 
@@ -431,6 +538,13 @@ final class TournamentRoundProgressionService
             ],
             'tournament_complete'=>$this->isTournamentComplete($snapshot['matches']),
         ];
+    }
+
+    private function propagateCompletedRounds(string $tournamentId, int $startRoundNo, DateTimeImmutable $moment): void
+    {
+        for ($roundNo=max(1,$startRoundNo); $roundNo < $startRoundNo + 8; $roundNo++) {
+            $this->createNextRoundIfComplete($tournamentId, $roundNo, $moment);
+        }
     }
 
     private function createNextRoundIfComplete(string $tournamentId, int $roundNo, DateTimeImmutable $moment): void
@@ -467,14 +581,16 @@ final class TournamentRoundProgressionService
             $opens = $completedAt->modify('+' . self::ROUND_BREAK_SECONDS . ' seconds');
 
             if (count($rows) === 2) {
-                $this->insertAutoReadyRow(
+                $this->insertResolvedOrReadyRow(
                     $db,$tournamentId,$nextRound,1,
-                    (string)$rows[0]['winner_mgw_id'],(string)$rows[1]['winner_mgw_id'],
+                    $this->nullable((string)($rows[0]['winner_mgw_id'] ?? '')),
+                    $this->nullable((string)($rows[1]['winner_mgw_id'] ?? '')),
                     self::MATCH_FINAL,$opens
                 );
-                $this->insertAutoReadyRow(
+                $this->insertResolvedOrReadyRow(
                     $db,$tournamentId,$nextRound,2,
-                    (string)$rows[0]['loser_mgw_id'],(string)$rows[1]['loser_mgw_id'],
+                    $this->nullable((string)($rows[0]['loser_mgw_id'] ?? '')),
+                    $this->nullable((string)($rows[1]['loser_mgw_id'] ?? '')),
                     self::MATCH_THIRD_PLACE,$opens
                 );
                 return;
@@ -484,14 +600,65 @@ final class TournamentRoundProgressionService
                 throw new RuntimeException('Tournament elimination round must contain an even number of completed pairs.');
             }
             for ($index = 0; $index < count($rows); $index += 2) {
-                $this->insertAutoReadyRow(
+                $this->insertResolvedOrReadyRow(
                     $db,$tournamentId,$nextRound,(int)(($index / 2) + 1),
-                    (string)$rows[$index]['winner_mgw_id'],
-                    (string)$rows[$index + 1]['winner_mgw_id'],
+                    $this->nullable((string)($rows[$index]['winner_mgw_id'] ?? '')),
+                    $this->nullable((string)($rows[$index + 1]['winner_mgw_id'] ?? '')),
                     self::MATCH_ELIMINATION,$opens
                 );
             }
         });
+    }
+
+    private function insertResolvedOrReadyRow(
+        DatabaseConnectionInterface $db,
+        string $tournamentId,
+        int $roundNo,
+        int $pairNo,
+        ?string $a,
+        ?string $b,
+        string $matchKind,
+        DateTimeImmutable $opens
+    ): void {
+        $a = $this->nullable((string)($a ?? ''));
+        $b = $this->nullable((string)($b ?? ''));
+        if ($a !== null && $b !== null) {
+            if ($a === $b) throw new RuntimeException('Tournament next-round pair is invalid.');
+            $this->insertAutoReadyRow($db,$tournamentId,$roundNo,$pairNo,$a,$b,$matchKind,$opens);
+            return;
+        }
+
+        $opensUtc = $this->utc($opens);
+        $winner = $a ?? $b;
+        $reason = $winner === null ? 'vacant_bracket_slot' : 'technical_bye_vacant_slot';
+        $db->execute(
+            'INSERT INTO mgw_tournament_round_matches (
+                tournament_id,round_no,pair_no,player_a_mgw_id,player_b_mgw_id,
+                readiness_opened_at_utc,readiness_deadline_at_utc,
+                player_a_ready_at_utc,player_b_ready_at_utc,
+                launch_state,game_id,created_at_utc,updated_at_utc,
+                attempt_no,wait_kind,match_kind,winner_mgw_id,loser_mgw_id,result_reason,completed_at_utc
+             ) VALUES (
+                :tournament_id,:round_no,:pair_no,:player_a_mgw_id,:player_b_mgw_id,
+                :opened,:deadline,NULL,NULL,:launch_state,NULL,:created,:updated,
+                1,:wait_kind,:match_kind,:winner_mgw_id,NULL,:result_reason,:completed
+             )',
+            [
+                'tournament_id'=>$tournamentId,'round_no'=>$roundNo,'pair_no'=>$pairNo,
+                'player_a_mgw_id'=>$a,'player_b_mgw_id'=>$b,
+                'opened'=>$opensUtc,'deadline'=>$opensUtc,
+                'launch_state'=>self::STATE_COMPLETED,
+                'created'=>$opensUtc,'updated'=>$opensUtc,
+                'wait_kind'=>self::WAIT_ROUND_BREAK,'match_kind'=>$matchKind,
+                'winner_mgw_id'=>$winner,'result_reason'=>$reason,'completed'=>$opensUtc,
+            ]
+        );
+        $this->recordTechnicalOutcome(
+            $db,$tournamentId,$roundNo,$pairNo,1,null,$reason,
+            $a,$b,$winner,null,
+            ['automatic'=>true,'match_kind'=>$matchKind],
+            $opensUtc
+        );
     }
 
     private function insertAutoReadyRow(
@@ -631,16 +798,15 @@ final class TournamentRoundProgressionService
                         'result_reason'=>'technical_loss_at_start','completed'=>$opened,
                     ]
                 );
+                $this->recordTechnicalOutcome(
+                    $this->database,$tournamentId,1,(int)$pairNo,1,null,
+                    'technical_loss_at_start',$a,$b,$winner,$loser,
+                    ['present_a'=>$presentA,'present_b'=>$presentB],
+                    $opened
+                );
             }
 
             if (!$presentA && !$presentB) {
-                // Keep every seeded pair represented in progression. When both
-                // competitors missed T0 there is no automatic winner, but omitting
-                // the row makes an 8-player round structurally odd and breaks the
-                // entire bracket. The unresolved row cannot launch; staging may
-                // finish synthetic fixture-only pairs through the explicit admin
-                // acceptance helper, while production can keep its separate
-                // both-absent resolution policy.
                 $this->database->execute(
                     'INSERT INTO mgw_tournament_round_matches (
                         tournament_id,round_no,pair_no,player_a_mgw_id,player_b_mgw_id,
@@ -651,20 +817,108 @@ final class TournamentRoundProgressionService
                      ) VALUES (
                         :tournament_id,1,:pair_no,:player_a_mgw_id,:player_b_mgw_id,
                         :opened,:deadline,NULL,NULL,:launch_state,NULL,:created,:updated,
-                        1,:wait_kind,:match_kind,NULL,NULL,:result_reason,NULL
+                        1,:wait_kind,:match_kind,NULL,NULL,:result_reason,:completed
                      )',
                     [
                         'tournament_id'=>$tournamentId,'pair_no'=>$pairNo,
                         'player_a_mgw_id'=>$a,'player_b_mgw_id'=>$b,
                         'opened'=>$opened,'deadline'=>$deadline,
-                        'launch_state'=>TournamentMatchReadinessService::STATE_READINESS_EXPIRED,
+                        'launch_state'=>self::STATE_COMPLETED,
                         'created'=>$opened,'updated'=>$opened,
                         'wait_kind'=>self::WAIT_INITIAL_READY,'match_kind'=>self::MATCH_ELIMINATION,
-                        'result_reason'=>'both_absent_at_start_pending',
+                        'result_reason'=>'both_absent_at_start','completed'=>$opened,
                     ]
+                );
+                $this->recordTechnicalOutcome(
+                    $this->database,$tournamentId,1,(int)$pairNo,1,null,
+                    'both_absent_at_start',$a,$b,null,null,
+                    ['present_a'=>false,'present_b'=>false],
+                    $opened
                 );
             }
         }
+
+        $this->propagateCompletedRounds($tournamentId, 1, $moment);
+    }
+
+    private function isRestartableTechnicalFailure(string $finishReason): bool
+    {
+        return in_array($finishReason, ['server_failure','game_failure','technical_failure'], true);
+    }
+
+    private function technicalOutcomeCode(string $finishReason, string $resultType): string
+    {
+        $finishReason = trim($finishReason);
+        if ($finishReason === 'player_left') return 'manual_leave';
+        if ($finishReason === 'disconnect_timeout') return 'disconnect_timeout';
+        if ($finishReason === 'tournament_disconnect_timeout') return 'both_disconnect_timeout';
+        if ($finishReason === 'tournament_both_absent_timeout') return 'both_absent_timeout';
+        if ($finishReason === 'preparation_timeout') {
+            if ($resultType === 'win') return 'preparation_no_show';
+            if ($resultType === 'restart') return 'technical_restart';
+            return 'both_absent_preparation';
+        }
+        if ($resultType === 'restart') return 'technical_restart';
+        if ($finishReason !== '') return substr('technical_' . preg_replace('/[^a-z0-9_]+/i','_',strtolower($finishReason)),0,64);
+        return 'technical_void';
+    }
+
+    private function recordTechnicalOutcome(
+        DatabaseConnectionInterface $db,
+        string $tournamentId,
+        int $roundNo,
+        int $pairNo,
+        int $attemptNo,
+        ?string $gameId,
+        string $outcomeCode,
+        ?string $playerA,
+        ?string $playerB,
+        ?string $winner,
+        ?string $loser,
+        array $metadata,
+        string $occurredAtUtc
+    ): void {
+        $outcomeCode = substr(trim($outcomeCode),0,64);
+        if ($outcomeCode === '') $outcomeCode = 'technical_outcome';
+        $eventKey = hash('sha256', implode('|',[
+            $tournamentId,(string)$roundNo,(string)$pairNo,(string)$attemptNo,
+            trim((string)($gameId ?? '')),$outcomeCode
+        ]));
+        $sql = $db->driver() === 'sqlite'
+            ? 'INSERT OR IGNORE INTO mgw_tournament_technical_outcomes (
+                event_key,tournament_id,round_no,pair_no,attempt_no,game_id,outcome_code,
+                player_a_mgw_id,player_b_mgw_id,winner_mgw_id,loser_mgw_id,
+                metadata_json,occurred_at_utc,created_at_utc
+               ) VALUES (
+                :event_key,:tournament_id,:round_no,:pair_no,:attempt_no,:game_id,:outcome_code,
+                :player_a_mgw_id,:player_b_mgw_id,:winner_mgw_id,:loser_mgw_id,
+                :metadata_json,:occurred_at_utc,:created_at_utc
+               )'
+            : 'INSERT IGNORE INTO mgw_tournament_technical_outcomes (
+                event_key,tournament_id,round_no,pair_no,attempt_no,game_id,outcome_code,
+                player_a_mgw_id,player_b_mgw_id,winner_mgw_id,loser_mgw_id,
+                metadata_json,occurred_at_utc,created_at_utc
+               ) VALUES (
+                :event_key,:tournament_id,:round_no,:pair_no,:attempt_no,:game_id,:outcome_code,
+                :player_a_mgw_id,:player_b_mgw_id,:winner_mgw_id,:loser_mgw_id,
+                :metadata_json,:occurred_at_utc,:created_at_utc
+               )';
+        $db->execute($sql,[
+            'event_key'=>$eventKey,
+            'tournament_id'=>$tournamentId,
+            'round_no'=>$roundNo,
+            'pair_no'=>$pairNo,
+            'attempt_no'=>$attemptNo,
+            'game_id'=>$this->nullable((string)($gameId ?? '')),
+            'outcome_code'=>$outcomeCode,
+            'player_a_mgw_id'=>$this->nullable((string)($playerA ?? '')),
+            'player_b_mgw_id'=>$this->nullable((string)($playerB ?? '')),
+            'winner_mgw_id'=>$this->nullable((string)($winner ?? '')),
+            'loser_mgw_id'=>$this->nullable((string)($loser ?? '')),
+            'metadata_json'=>json_encode($metadata,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR),
+            'occurred_at_utc'=>$occurredAtUtc,
+            'created_at_utc'=>$occurredAtUtc,
+        ]);
     }
 
     private function participantNicknames(string $tournamentId): array
