@@ -79,7 +79,7 @@ $assert(str_contains($source['clock'], 'public function markReady')
 $assert(str_contains($source['clock'], 'TOURNAMENT_INITIAL_ADOPTION_GRACE_SEC = 60')
         && str_contains($source['clock'], 'TOURNAMENT_PEER_ADOPTION_TIMEOUT_SEC = 30')
         && str_contains($source['clock'], 'if (!$hadReadyDevice')
-        && str_contains($source['clock'], "(string)(\$game['match_source'] ?? '') === 'tournament'")),
+        && str_contains($source['clock'], '$adoptionDeadline = $adoptionStarted + self::TOURNAMENT_PEER_ADOPTION_TIMEOUT_SEC'),
     'Tournament preparation timeout must begin from first real runtime adoption, not Hall-side game creation.');
 $assert(str_contains($source['clock'], 'countdownSeconds($game)')
         && str_contains($source['clock'], "'launch_countdown_sec' =>"),
