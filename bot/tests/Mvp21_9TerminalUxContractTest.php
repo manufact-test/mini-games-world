@@ -26,7 +26,7 @@ $assertNotContains=static function(string $needle,string $haystack,string $messa
 };
 
 $assertContains('function tournamentTerminalMarkup(progression, activeRoundMarkup)', $js, 'Terminal presentation must have one explicit owner.');
-$assertContains('Турнир завершён · награды начислены', $js, 'Completed tournament must expose settled terminal state.');
+$assertContains('Все матчи турнира завершены. Награды начислены', $js, 'Completed tournament must expose settled terminal state.');
 $assertContains('data-tournament-terminal-rating', $js, 'Terminal result must provide a clear next action.');
 $assertContains('Финальная сетка · архив', $js, 'Final bracket must remain available as archive instead of dominating terminal UX.');
 $assertContains("if (matchKind === 'final') status = winner ? 'чемпион' : '2 место';", $js, 'Final winner/loser semantics must be terminal.');
