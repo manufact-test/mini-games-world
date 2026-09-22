@@ -8,6 +8,7 @@ on:
       - '.github/workflows/mvp21-9-tournament-rewards.yml'
       - 'bot/database/migrations/20260922_0057_create_tournament_results_rewards.php'
       - 'bot/tournaments/TournamentSettlementService.php'
+      - 'bot/tournaments/StagingTournamentManualAcceptanceService.php'
       - 'bot/core/bootstrap.php'
       - 'bot/api.php'
       - 'app/assets/js/screens/tournaments-screen-v1.js'
@@ -53,6 +54,7 @@ jobs:
           files=(
             bot/database/migrations/20260922_0057_create_tournament_results_rewards.php
             bot/tournaments/TournamentSettlementService.php
+            bot/tournaments/StagingTournamentManualAcceptanceService.php
             bot/core/bootstrap.php
             bot/api.php
             bot/tests/Mvp21_9TournamentSettlementTest.php
@@ -104,6 +106,7 @@ jobs:
               .github/workflows/mvp21-9-tournament-rewards.yml|\
               bot/database/migrations/20260922_0057_create_tournament_results_rewards.php|\
               bot/tournaments/TournamentSettlementService.php|\
+              bot/tournaments/StagingTournamentManualAcceptanceService.php|\
               bot/core/bootstrap.php|\
               bot/api.php|\
               app/assets/js/screens/tournaments-screen-v1.js|\
