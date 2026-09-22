@@ -133,7 +133,23 @@ $tournamentGame = [
 ];
 $clock->initializeNewGame($tournamentGame);
 $assert(($tournamentGame['launch_phase'] ?? '') === 'preparing', 'Tournament game creation must wait for both clients to adopt the shared game.');
+$tournamentInitialDeadline = strtotime((string)($tournamentGame['preparation_deadline_at'] ?? '')) ?: 0;
+$initialGrace = $tournamentInitialDeadline - time();
+$assert($initialGrace >= MatchPreparationClockService::TOURNAMENT_INITIAL_ADOPTION_GRACE_SEC - 2
+        && $initialGrace <= MatchPreparationClockService::TOURNAMENT_INITIAL_ADOPTION_GRACE_SEC + 1,
+    'Tournament game creation must use the broad initial adoption grace instead of spending the peer timeout in Hall.');
 $clock->markReady($tournamentGame, 'tour_a', 'tour-session-a', 'tour-device-a');
+$tournamentPeerDeadline = strtotime((string)($tournamentGame['preparation_deadline_at'] ?? '')) ?: 0;
+$peerGrace = $tournamentPeerDeadline - time();
+$assert($peerGrace >= MatchPreparationClockService::TOURNAMENT_PEER_ADOPTION_TIMEOUT_SEC - 2
+        && $peerGrace <= MatchPreparationClockService::TOURNAMENT_PEER_ADOPTION_TIMEOUT_SEC + 1,
+    'First real tournament client adoption must start a fresh peer-connect timeout.');
+$assert($tournamentPeerDeadline < $tournamentInitialDeadline,
+    'First real tournament adoption must replace the creation grace with the bounded peer deadline.');
+$tournamentPreparingPublic = $clock->enrichPublicGame($tournamentGame, []);
+$assert((int)($tournamentPreparingPublic['preparation_timeout_sec'] ?? 0)
+        === MatchPreparationClockService::TOURNAMENT_PEER_ADOPTION_TIMEOUT_SEC,
+    'Public tournament preparation timeout must describe the peer-adoption window.');
 $clock->advance($tournamentGame);
 $assert(($tournamentGame['launch_phase'] ?? '') === 'preparing', 'First tournament client must not start the common countdown alone.');
 $clock->markReady($tournamentGame, 'tour_b', 'tour-session-b', 'tour-device-b');
@@ -155,7 +171,7 @@ try {
 }
 $assert($tournamentBlocked, 'Tournament field must stay locked until the countdown ends.');
 
-// Corrective v5: client adoption, the 10-second launch countdown and first turn are separate clocks.
+// Corrective v6: game creation, peer adoption, the 10-second launch countdown and first turn are separate clocks.
 // Advance the same tournament game across T0 without waiting in real time and prove
 // the first playable public frame receives a fresh full 60-second deadline.
 $tournamentGame['starts_epoch_ms'] = (int)round(microtime(true) * 1000) - 1;
@@ -181,6 +197,11 @@ $ordinaryCountdown = [
     'turn_started_at' => now_iso(),
 ];
 $clock->initializeNewGame($ordinaryCountdown);
+$ordinaryDeadline = strtotime((string)($ordinaryCountdown['preparation_deadline_at'] ?? '')) ?: 0;
+$ordinaryGrace = $ordinaryDeadline - time();
+$assert($ordinaryGrace >= MatchPreparationClockService::PREPARATION_TIMEOUT_SEC - 2
+        && $ordinaryGrace <= MatchPreparationClockService::PREPARATION_TIMEOUT_SEC + 1,
+    'Ordinary matches must preserve the accepted preparation timeout from game creation.');
 $clock->markReady($ordinaryCountdown, 'ordinary_a', 's-a', 'd-a');
 $clock->markReady($ordinaryCountdown, 'ordinary_b', 's-b', 'd-b');
 $clock->advance($ordinaryCountdown);
