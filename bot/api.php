@@ -64,6 +64,20 @@ function mgw_is_battleship_fire_fast_path(array $data, string $action, array $pa
         && (string)($data['games'][$gameId]['phase'] ?? '') === 'battle';
 }
 
+function mgw_apply_tournament_settlement_balances(array &$data, array $balances): void
+{
+    if ($balances === [] || !isset($data['users']) || !is_array($data['users'])) return;
+    foreach ($data['users'] as $key => &$candidate) {
+        if (!is_array($candidate)) continue;
+        $legacyUserId = trim((string)($candidate['id'] ?? $key));
+        if ($legacyUserId === '' || !isset($balances[$legacyUserId]) || !is_array($balances[$legacyUserId])) continue;
+        $available = (int)($balances[$legacyUserId]['available_amount'] ?? -1);
+        if ($available < 0) continue;
+        $candidate[UnifiedBalanceRuntimeState::FIELD] = $available;
+    }
+    unset($candidate);
+}
+
 function mgw_observe_finished_tournament_game(array $game, array $config): void
 {
     if ((string)($game['match_source'] ?? '') !== 'tournament'
@@ -623,6 +637,42 @@ try {
                     if (is_array($currentGame)
                         && (string)($currentGame['match_source'] ?? '') === 'tournament') {
                         $publicGame = $games->publicGame($currentGame, $userId);
+                    }
+                }
+
+                if (is_array($progressionSnapshot)
+                    && $progressionSnapshot['tournament_complete'] === true) {
+                    $terminalTournamentId = trim((string)($progressionSnapshot['tournament_id'] ?? ''));
+                    if ($terminalTournamentId !== '') {
+                        try {
+                            $settlementOwner = new TournamentSettlementService(
+                                $database,
+                                new LedgerWriteService($database)
+                            );
+                            $settlement = $settlementOwner->settleIfComplete($terminalTournamentId);
+                            mgw_apply_tournament_settlement_balances(
+                                $data,
+                                is_array($settlement['runtime_balances'] ?? null)
+                                    ? $settlement['runtime_balances']
+                                    : []
+                            );
+                            $progressionSnapshot['terminal_result'] = $settlementOwner
+                                ->terminalSnapshotForParticipant($terminalTournamentId, $mgwId);
+                        } catch (Throwable $settlementError) {
+                            error_log(
+                                'Mini Games World tournament settlement retry pending for '
+                                . $terminalTournamentId
+                                . ': '
+                                . $settlementError->getMessage()
+                            );
+                            $progressionSnapshot['terminal_result'] = [
+                                'tournament_id'=>$terminalTournamentId,
+                                'settlement_state'=>'pending',
+                                'settlement_complete'=>false,
+                                'podium'=>[],
+                                'self_result'=>null,
+                            ];
+                        }
                     }
                 }
 

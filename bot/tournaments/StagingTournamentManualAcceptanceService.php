@@ -794,6 +794,7 @@ final class StagingTournamentManualAcceptanceService
             return [
                 'status'=>'already_reset',
                 'released_reservations'=>0,
+                'settled_reservations_preserved'=>0,
                 'fixture_accounts_retired'=>0,
                 'real_accounts_released'=>0,
                 'runtime_balances_updated'=>0,
@@ -862,6 +863,7 @@ final class StagingTournamentManualAcceptanceService
             $fixtureLegacyIds = [];
             $runtimeBalances = [];
             $released = 0;
+            $settledPreserved = 0;
             $fixtureRetired = 0;
             $realReleased = 0;
 
@@ -874,7 +876,8 @@ final class StagingTournamentManualAcceptanceService
                 if ($registrationId === '' || $mgwId === '' || $accountRef === '' || $reservationId === '') {
                     throw new RuntimeException('Staging tournament reset found an incomplete registration.');
                 }
-                if ((string)($registration['reservation_status'] ?? '') !== 'active'
+                $reservationStatus = (string)($registration['reservation_status'] ?? '');
+                if (!in_array($reservationStatus, ['active','consumed'], true)
                     || (int)($registration['reservation_amount'] ?? -1) !== TournamentRegistrationService::ENTRY_FEE
                     || (string)($registration['reservation_asset'] ?? '') !== TournamentRegistrationService::ENTRY_ASSET
                     || (string)($registration['reservation_source_type'] ?? '') !== 'official_tournament'
@@ -903,50 +906,59 @@ final class StagingTournamentManualAcceptanceService
                     (string)($ownership['source_ref'] ?? '')
                 );
 
-                $this->ledger->releaseReservation([
-                    'operation_key'=>'staging:tournament-reset:release:'
-                        . substr(hash('sha256', $tournamentId . '|' . $registrationId), 0, 48),
-                    'reservation_id'=>$reservationId,
-                    'metadata'=>[
-                        'tournament_id'=>$tournamentId,
-                        'registration_id'=>$registrationId,
-                        'reason'=>'staging_manual_acceptance_reset',
-                        'actor_ref'=>$actorRef,
-                    ],
-                    'occurred_at_utc'=>$resetAt,
-                ]);
-                $released++;
+                if ($reservationStatus === 'active') {
+                    $this->ledger->releaseReservation([
+                        'operation_key'=>'staging:tournament-reset:release:'
+                            . substr(hash('sha256', $tournamentId . '|' . $registrationId), 0, 48),
+                        'reservation_id'=>$reservationId,
+                        'metadata'=>[
+                            'tournament_id'=>$tournamentId,
+                            'registration_id'=>$registrationId,
+                            'reason'=>'staging_manual_acceptance_reset',
+                            'actor_ref'=>$actorRef,
+                        ],
+                        'occurred_at_utc'=>$resetAt,
+                    ]);
+                    $released++;
+                } else {
+                    $settledPreserved++;
+                }
 
                 $balance = $this->ledger->getBalance(
                     $accountRef,
                     TournamentRegistrationService::ENTRY_ASSET
                 );
                 if (!is_array($balance) || (int)($balance['reserved_amount'] ?? -1) !== 0) {
-                    throw new RuntimeException('Staging tournament reset did not release the canonical reservation.');
+                    throw new RuntimeException('Staging tournament reset did not leave the canonical reservation fully settled.');
                 }
 
                 if ($isFixture) {
-                    if ((int)($balance['available_amount'] ?? -1) !== TournamentRegistrationService::ENTRY_FEE) {
-                        throw new RuntimeException('Synthetic staging fixture balance is not the exact disposable test grant.');
+                    $fixtureAvailable = (int)($balance['available_amount'] ?? -1);
+                    if ($reservationStatus === 'active') {
+                        if ($fixtureAvailable !== TournamentRegistrationService::ENTRY_FEE) {
+                            throw new RuntimeException('Synthetic staging fixture balance is not the exact disposable test grant.');
+                        }
+                        $this->ledger->postAvailableDelta([
+                            'operation_key'=>'staging:tournament-reset:fixture-revoke:'
+                                . substr(hash('sha256', $tournamentId . '|' . $registrationId), 0, 48),
+                            'account_ref'=>$accountRef,
+                            'mgw_id'=>$mgwId,
+                            'legacy_user_id'=>$legacyUserId,
+                            'asset_code'=>TournamentRegistrationService::ENTRY_ASSET,
+                            'available_delta'=>-TournamentRegistrationService::ENTRY_FEE,
+                            'category'=>'staging_test_cleanup',
+                            'source_type'=>'staging_test',
+                            'source_ref'=>$tournamentId,
+                            'metadata'=>[
+                                'purpose'=>'retire_staging_tournament_fixture',
+                                'registration_id'=>$registrationId,
+                                'actor_ref'=>$actorRef,
+                            ],
+                            'occurred_at_utc'=>$resetAt,
+                        ]);
+                    } elseif ($fixtureAvailable !== 0) {
+                        throw new RuntimeException('Settled synthetic staging fixture must not retain competitive rewards.');
                     }
-                    $this->ledger->postAvailableDelta([
-                        'operation_key'=>'staging:tournament-reset:fixture-revoke:'
-                            . substr(hash('sha256', $tournamentId . '|' . $registrationId), 0, 48),
-                        'account_ref'=>$accountRef,
-                        'mgw_id'=>$mgwId,
-                        'legacy_user_id'=>$legacyUserId,
-                        'asset_code'=>TournamentRegistrationService::ENTRY_ASSET,
-                        'available_delta'=>-TournamentRegistrationService::ENTRY_FEE,
-                        'category'=>'staging_test_cleanup',
-                        'source_type'=>'staging_test',
-                        'source_ref'=>$tournamentId,
-                        'metadata'=>[
-                            'purpose'=>'retire_staging_tournament_fixture',
-                            'registration_id'=>$registrationId,
-                            'actor_ref'=>$actorRef,
-                        ],
-                        'occurred_at_utc'=>$resetAt,
-                    ]);
                     $db->execute(
                         'UPDATE mgw_users
                          SET status=:status,updated_at_utc=:updated_at_utc
@@ -964,7 +976,7 @@ final class StagingTournamentManualAcceptanceService
                     if ($legacyUserId !== '') {
                         $runtimeBalances[$legacyUserId] = (int)$balance['available_amount'];
                     }
-                    $realReleased++;
+                    if ($reservationStatus === 'active') $realReleased++;
                 }
 
                 $updated = $db->execute(
@@ -1043,6 +1055,7 @@ final class StagingTournamentManualAcceptanceService
                 'status'=>'reset',
                 'tournament_id'=>$tournamentId,
                 'released_reservations'=>$released,
+                'settled_reservations_preserved'=>$settledPreserved,
                 'fixture_accounts_retired'=>$fixtureRetired,
                 'real_accounts_released'=>$realReleased,
                 'runtime_balances_updated'=>(int)($runtimeResult['updated_balances'] ?? 0),

@@ -350,6 +350,15 @@ function bindTournamentActions(screen){
       return;
     }
 
+    const terminalRatingButton = event.target instanceof Element
+      ? event.target.closest('[data-tournament-terminal-rating]')
+      : null;
+    if (terminalRatingButton instanceof HTMLButtonElement) {
+      const ratingTab = screen.querySelector('[data-competition-mode="rating"]');
+      if (ratingTab instanceof HTMLButtonElement) ratingTab.click();
+      return;
+    }
+
     const button = event.target instanceof Element ? event.target.closest('[data-tournament-action]') : null;
     if (!(button instanceof HTMLButtonElement) || tournamentBusy) return;
     const action = String(button.dataset.tournamentAction || '');
@@ -1126,9 +1135,12 @@ function tournamentActiveRoundMarkup(progression){
     const playerMarkup = players.map(player => {
       const done = match?.completed === true;
       const winner = player?.winner === true;
-      const status = done
-        ? (winner ? 'прошёл дальше' : 'выбыл')
-        : (player?.self === true ? 'вы' : 'участник');
+      let status = player?.self === true ? 'вы' : 'участник';
+      if (done) {
+        if (matchKind === 'final') status = winner ? 'чемпион' : '2 место';
+        else if (matchKind === 'third_place') status = winner ? '3 место' : '4 место';
+        else status = winner ? 'прошёл дальше' : 'выбыл';
+      }
       return `<div class="tournaments-v2-bracket-player${done && !winner ? ' is-loss' : ''}">
         <strong>${escapeHtml(String(player?.nickname || 'Игрок'))}${player?.self === true ? ' · вы' : ''}</strong>
         <span>${escapeHtml(status)}</span>
@@ -1147,7 +1159,8 @@ function tournamentActiveRoundMarkup(progression){
     </article>`;
   }).join('');
 
-  const heading = roundNo === 3 ? 'Финальный раунд' : `Раунд ${roundNo}`;
+  const isFinalRound = matches.some(match => ['final','third_place'].includes(String(match?.match_kind || '')));
+  const heading = isFinalRound ? 'Финальный раунд' : `Раунд ${roundNo}`;
   return `<div class="tournaments-v2-active-round">
     <div class="tournaments-v2-hall-section-title">
       <strong>${escapeHtml(heading)}</strong>
@@ -1157,18 +1170,110 @@ function tournamentActiveRoundMarkup(progression){
   </div>`;
 }
 
+const TOURNAMENT_TERMINAL_REWARD_LABELS = Object.freeze({
+  golden_ticket:'Golden Ticket',
+  champion_crown:'Корона чемпиона · 30 дней',
+  winner_badge:'Значок победителя · навсегда',
+  champion_cosmetics:'Чемпионский набор · навсегда',
+  hall_of_fame:'Зал славы',
+  cup_gold:'Золотой кубок',
+  silver_frame:'Серебряная рамка · 30 дней',
+  finalist_result:'Отметка финалиста · навсегда',
+  cup_silver:'Серебряный кубок',
+  bronze_mark:'Бронзовая отметка · 30 дней',
+  third_place_result:'3-е место · навсегда',
+  cup_bronze:'Бронзовый кубок',
+});
+
+function tournamentTerminalRewardLabel(entitlement){
+  const code = String(entitlement?.reward_code || '');
+  return TOURNAMENT_TERMINAL_REWARD_LABELS[code] || code;
+}
+
+function tournamentTerminalMarkup(progression, activeRoundMarkup){
+  const terminal = progression?.terminal_result && typeof progression.terminal_result === 'object'
+    ? progression.terminal_result
+    : null;
+  if (!terminal || terminal.settlement_complete !== true) {
+    return `
+      <section class="tournaments-v2-terminal is-pending">
+        <div class="tournaments-v2-terminal-kicker">Турнир завершён</div>
+        <h3>Подводим итоги и начисляем награды…</h3>
+        <p>Результат сетки уже зафиксирован. Начисление выполняется идемпотентно и будет повторено автоматически.</p>
+      </section>
+      <details class="tournaments-v2-terminal-archive">
+        <summary>Финальная сетка · архив</summary>
+        <div class="tournaments-v2-terminal-archive-body">${activeRoundMarkup}</div>
+      </details>
+    `;
+  }
+
+  const podium = Array.isArray(terminal.podium) ? terminal.podium : [];
+  const champion = podium.find(item => Number(item?.placement || 0) === 1);
+  const selfResult = terminal.self_result && typeof terminal.self_result === 'object'
+    ? terminal.self_result
+    : null;
+  const podiumMarkup = podium.slice(0,3).map(item => {
+    const place = Number(item?.placement || 0);
+    const title = place === 1 ? 'Чемпион' : place === 2 ? '2 место' : '3 место';
+    const payoutLabel = item?.reward_eligible === false
+      ? 'тестовый · без награды'
+      : `${formatNumber(Math.max(0, Number(item?.payout_amount || 0)))} коинов`;
+    return `<article class="tournaments-v2-terminal-place place-${place}${item?.self === true ? ' is-self' : ''}">
+      <b>${escapeHtml(String(place))}</b>
+      <div><span>${escapeHtml(title)}</span><strong>${escapeHtml(String(item?.nickname || 'Игрок'))}${item?.self === true ? ' · вы' : ''}</strong></div>
+      <small>${escapeHtml(payoutLabel)}</small>
+    </article>`;
+  }).join('');
+
+  let selfTitle = 'Участие завершено';
+  if (Number(selfResult?.placement || 0) > 0) selfTitle = `${Number(selfResult.placement)} место`;
+  const payout = Math.max(0, Number(selfResult?.payout_amount || 0));
+  const prize = Math.max(0, Number(selfResult?.prize_amount || 0));
+  const entryReturn = Math.max(0, Number(selfResult?.entry_return_amount || 0));
+  let moneyCopy = 'Денежной награды нет.';
+  if (payout > 0 && prize > 0) {
+    moneyCopy = `Выплата ${formatNumber(payout)} коинов · приз ${formatNumber(prize)} + возврат взноса ${formatNumber(entryReturn)}.`;
+  } else if (entryReturn > 0) {
+    moneyCopy = `Возврат взноса · ${formatNumber(entryReturn)} коинов.`;
+  }
+
+  const entitlements = Array.isArray(selfResult?.entitlements) ? selfResult.entitlements : [];
+  const rewardsMarkup = entitlements.length
+    ? `<div class="tournaments-v2-terminal-rewards">${entitlements.map(item => `<span>${escapeHtml(tournamentTerminalRewardLabel(item))}</span>`).join('')}</div>`
+    : '';
+  const available = Number(selfResult?.balance?.available_amount);
+  const balanceMarkup = Number.isFinite(available)
+    ? `<small>Баланс после расчёта: <b>${escapeHtml(formatNumber(Math.max(0, available)))}</b></small>`
+    : '';
+
+  return `
+    <section class="tournaments-v2-terminal">
+      <div class="tournaments-v2-terminal-kicker">Все матчи турнира завершены. Награды начислены</div>
+      <div class="tournaments-v2-terminal-hero">
+        <div><span>Чемпион</span><h3>${escapeHtml(String(champion?.nickname || 'Победитель турнира'))}</h3></div>
+        <b aria-hidden="true">🏆</b>
+      </div>
+      <div class="tournaments-v2-terminal-podium">${podiumMarkup}</div>
+      ${selfResult ? `<div class="tournaments-v2-terminal-self">
+        <div><span>Ваш результат</span><strong>${escapeHtml(selfTitle)}</strong><p>${escapeHtml(moneyCopy)}</p></div>
+        ${balanceMarkup}
+        ${rewardsMarkup}
+      </div>` : ''}
+      <button class="tournaments-v2-tournament-action tournaments-v2-terminal-action" type="button" data-tournament-terminal-rating>Перейти к рейтингу</button>
+    </section>
+    <details class="tournaments-v2-terminal-archive">
+      <summary>Финальная сетка · архив</summary>
+      <div class="tournaments-v2-terminal-archive-body">${activeRoundMarkup}</div>
+    </details>
+  `;
+}
+
 function tournamentProgressionMarkup(match, progression){
   const activeRoundMarkup = tournamentActiveRoundMarkup(progression);
   const tournamentComplete = progression?.tournament_complete === true;
   if (tournamentComplete) {
-    return `
-      <section class="tournaments-v2-ready">
-        <div class="tournaments-v2-ready-head">
-          <div><span>Турнирная сетка</span><strong>Все матчи турнира завершены.</strong></div>
-        </div>
-      </section>
-      ${activeRoundMarkup}
-    `;
+    return tournamentTerminalMarkup(progression, activeRoundMarkup);
   }
 
   if (!match) {
