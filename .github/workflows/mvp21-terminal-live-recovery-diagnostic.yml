@@ -1,0 +1,47 @@
+name: MVP-21 terminal live recovery diagnostic
+
+on:
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Invoke OIDC-protected staging diagnostic
+        shell: bash
+        env:
+          MGW_STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+        run: |
+          set -Eeuo pipefail
+          oidc_json="$(curl --fail-with-body --silent --show-error             --header "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"             "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=mini-games-world-staging-e2e")"
+          oidc_token="$(printf '%s' "${oidc_json}" | jq -r '.value // empty')"
+          test -n "${oidc_token}"
+
+          body_file="$(mktemp)"
+          http_status="$(curl --silent --show-error             --output "${body_file}"             --write-out '%{http_code}'             --request POST             --header "Authorization: Bearer ${oidc_token}"             --header 'Accept: application/json'             --header 'Content-Type: application/json'             "${MGW_STAGING_ORIGIN}/bot/staging-projection-diagnostic.php"             --data '{}')"
+
+          printf 'HTTP %s\n' "${http_status}"
+          cat "${body_file}" | jq '{
+            ok,
+            error,
+            exception,
+            detail,
+            tournament: (.tournament | if . == null then null else {
+              tournament_id,
+              state,
+              registered_count,
+              capacity
+            } end),
+            tournament_terminal_recovery,
+            tournament_participant_read_probe
+          }'
+
+          test "${http_status}" -ge 200
+          test "${http_status}" -lt 300
