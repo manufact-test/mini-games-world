@@ -142,7 +142,7 @@ $assert(str_contains($api, '$stagingAcceptance->resolveMixedFixtureByeForPartici
         && str_contains($api, "strtolower(trim((string)(\$config['environment'] ?? ''))) === 'staging'")
         && str_contains($api, "'staging_mixed_fixture_bye'"),
     'Tournament heartbeat must resolve mixed fixture byes before attempting another runtime launch.');
-$assert(str_contains($progression, "$finishReason === 'preparation_timeout'")
+$assert(str_contains($progression, "\$finishReason === 'preparation_timeout'")
         && str_contains($progression, 'count($readyPlayers) === 1')
         && str_contains($progression, '$winnerLegacy = $readyPlayers[0];'),
     'A one-sided real tournament preparation timeout must advance the present player instead of becoming a draw replay.');
