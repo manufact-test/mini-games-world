@@ -30,7 +30,7 @@ final class TournamentSettlementService
             if (in_array((string)($tournament['tournament_state'] ?? ''), [
                 TournamentRegistrationService::STATE_CANCELLED,
                 TournamentRegistrationService::STATE_EMERGENCY_STOPPED,
-            ], true) || trim((string)($tournament['cancellation_kind'] ?? '')) !== '') {
+            ], true)) {
                 return [
                     'tournament_id'=>$tournamentId,
                     'status'=>'cancelled',
@@ -612,7 +612,7 @@ final class TournamentSettlementService
         $database ??= $this->database;
         $rows = $database->fetchAll(
             'SELECT tournament_id,capacity,entry_fee_amount,entry_asset_code,reward_snapshot_json,
-                    tournament_state,cancellation_kind,cancelled_at_utc
+                    tournament_state
              FROM mgw_tournaments WHERE tournament_id=:tournament_id LIMIT 2'
              . ($lock ? $this->forUpdate($database) : ''),
             ['tournament_id'=>$tournamentId]
