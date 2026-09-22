@@ -109,11 +109,16 @@ $last = null;
 for ($i = 1; $i <= 8; $i++) {
     $minute = 6 + $i;
     $ledgerClock = sprintf('2026-09-21 09:%02d:00.000000', $minute);
-    $last = $service->register(
+    $service->register(
         $ids[$i],
         'legacy:tg-' . $i,
         new DateTimeImmutable(sprintf('2026-09-21T09:%02d:00Z', $minute)),
         $consent
+    );
+    $last = $service->publishRegistration(
+        $ids[$i],
+        'legacy:tg-' . $i,
+        new DateTimeImmutable(sprintf('2026-09-21T09:%02d:01Z', $minute))
     );
 }
 $assertSame('waiting_for_date', $last['tournament']['state'], 'Full accepted roster must reach wait-for-date before scheduling.');
