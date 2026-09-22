@@ -1,0 +1,190 @@
+name: MVP-21.8 Tournament cancellation and emergency
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.github/workflows/mvp21-5-tournament-ready.yml'
+      - '.github/workflows/mvp21-6-tournament-rounds.yml'
+      - '.github/workflows/mvp21-7-tournament-technical-outcomes.yml'
+      - '.github/workflows/mvp21-8-tournament-cancellation.yml'
+      - '.github/workflows/mvp21-9-tournament-rewards.yml'
+      - 'bot/database/migrations/20260922_0059_add_tournament_cancellation_emergency.php'
+      - 'bot/tournaments/TournamentCancellationService.php'
+      - 'bot/tournaments/TournamentRegistrationService.php'
+      - 'bot/tournaments/TournamentRoundProgressionService.php'
+      - 'bot/tournaments/TournamentSettlementService.php'
+      - 'bot/core/bootstrap.php'
+      - 'bot/admin-tournaments.php'
+      - 'bot/tournament-status.php'
+      - 'app/admin.php'
+      - 'app/assets/js/admin-tournaments.js'
+      - 'app/assets/js/screens/tournaments-screen-v1.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp21_8TournamentCancellationTest.php'
+      - 'bot/tests/Mvp21_8TournamentCancellationUxContractTest.php'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp21-8-cancellation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Cancellation, emergency, refund and annulment regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint MVP-21.8 slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            bot/database/migrations/20260922_0059_add_tournament_cancellation_emergency.php
+            bot/tournaments/TournamentCancellationService.php
+            bot/tournaments/TournamentRegistrationService.php
+            bot/tournaments/TournamentRoundProgressionService.php
+            bot/tournaments/TournamentSettlementService.php
+            bot/core/bootstrap.php
+            bot/admin-tournaments.php
+            bot/tournament-status.php
+            bot/tests/Mvp21_8TournamentCancellationTest.php
+            bot/tests/Mvp21_8TournamentCancellationUxContractTest.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done
+          node --check app/assets/js/admin-tournaments.js
+          node --check app/assets/js/screens/tournaments-screen-v1.js
+
+      - name: Run MVP-21.8 cancellation owner
+        run: |
+          php bot/tests/Mvp21_8TournamentCancellationTest.php
+          php bot/tests/Mvp21_8TournamentCancellationUxContractTest.php
+
+      - name: Preserve MVP-21.7 technical outcome boundary
+        run: |
+          php bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php
+
+      - name: Preserve Ready and round progression
+        run: |
+          php bot/tests/Mvp21_5TournamentMatchReadinessTest.php
+          php bot/tests/Mvp21_5TournamentReadyUxContractTest.php
+          php bot/tests/Mvp21_6TournamentRoundProgressionTest.php
+          php bot/tests/Mvp21_6TournamentRuntimeContractTest.php
+          php bot/tests/Mvp21_6TournamentProgressionUxContractTest.php
+
+      - name: Preserve terminal settlement owner
+        run: |
+          php bot/tests/Mvp21_9TournamentSettlementTest.php
+          php bot/tests/Mvp21_9TerminalUxContractTest.php
+
+      - name: Preserve ledger and all-game baseline
+        run: |
+          php bot/tests/UnifiedBalanceMigrationFoundationTest.php
+          php bot/tests/Mvp167AllGamesRegressionContractTest.php
+          php bot/tests/Mvp14r2GamesBaselineTest.php
+          php bot/tests/Mvp14r2GamesContractTest.php
+
+      - name: Guard MVP-21.8 scope and frozen game engines
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp21-5-tournament-ready.yml|\
+              .github/workflows/mvp21-6-tournament-rounds.yml|\
+              .github/workflows/mvp21-7-tournament-technical-outcomes.yml|\
+              .github/workflows/mvp21-8-tournament-cancellation.yml|\
+              .github/workflows/mvp21-9-tournament-rewards.yml|\
+              bot/database/migrations/20260922_0059_add_tournament_cancellation_emergency.php|\
+              bot/tournaments/TournamentCancellationService.php|\
+              bot/tournaments/TournamentRegistrationService.php|\
+              bot/tournaments/TournamentRoundProgressionService.php|\
+              bot/tournaments/TournamentSettlementService.php|\
+              bot/core/bootstrap.php|\
+              bot/admin-tournaments.php|\
+              bot/tournament-status.php|\
+              app/admin.php|\
+              app/assets/js/admin-tournaments.js|\
+              app/assets/js/screens/tournaments-screen-v1.js|\
+              app/runtime/client/version-manifest.php|\
+              bot/tests/Mvp21_8TournamentCancellationTest.php|\
+              bot/tests/Mvp21_8TournamentCancellationUxContractTest.php)
+                ;;
+              *)
+                echo "Unexpected MVP-21.8 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+
+          git diff --exit-code "$base" "$head" -- \
+            bot/games app/assets/js/games app/assets/css/games \
+            bot/shop bot/cron
+
+  mysql:
+    name: Cancellation owner on MySQL 8.4
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring
+          coverage: none
+
+      - name: Run MVP-21.8 cancellation owner on MySQL
+        env:
+          MGW_TEST_MYSQL_HOST: 127.0.0.1
+          MGW_TEST_MYSQL_PORT: 3306
+          MGW_TEST_MYSQL_DATABASE: mgw_test
+          MGW_TEST_MYSQL_USER: root
+          MGW_TEST_MYSQL_PASSWORD: root
+        run: php bot/tests/Mvp21_8TournamentCancellationTest.php
