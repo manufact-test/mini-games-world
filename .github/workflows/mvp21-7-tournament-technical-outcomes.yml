@@ -110,7 +110,8 @@ jobs:
               app/assets/js/screens/tournaments-screen-v1.js|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp21_6TournamentRoundProgressionTest.php|\
-              bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php)
+              bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php|\
+              bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php)
                 ;;
               *)
                 echo "Unexpected MVP-21.7 path: $path" >&2
