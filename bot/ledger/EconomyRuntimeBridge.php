@@ -85,6 +85,10 @@ final class EconomyRuntimeBridge
 
         if ($basename !== 'api.php') return false;
         return in_array($action, [
+            // First usable Home is already authoritative from the JSON transaction.
+            // Defer JSON→DB catch-up so cold startup is never held behind external DB
+            // projection; the next ordinary non-critical API boundary resumes it.
+            'bootstrap',
             'start_search',
             'leave_search',
             'game_state',
