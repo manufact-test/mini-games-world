@@ -441,7 +441,7 @@ final class ReconnectLifecycleService
                 unset($db['users'][$loserId]['reconnect_game_id'], $db['users'][$loserId]['reconnect_until']);
             }
             $reason = $this->isTournamentGame($game) && !empty($reconnect['tournament_both_disconnect'])
-                ? 'tournament_both_disconnect_timeout'
+                ? 'tournament_disconnect_timeout'
                 : 'disconnect_timeout';
             $this->settlement->finish($db, $game, $winnerId, $reason, $loserId);
             return;
