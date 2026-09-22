@@ -189,7 +189,7 @@ $assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=28')
 $assert(str_contains($source['manifest'], 'production-v110-acceptance-runtime.js?v=132')
         && str_contains($source['manifest'], 'mvp21_5=countdown-10-fresh60-v2'),
     'Shared Phase-B presentation must publish the fresh server-active/fresh-60 cache identity.');
-$assert(str_contains($source['manifest'], 'main.css?v=199'),
+$assert(str_contains($source['manifest'], 'main.css?v=200'),
     'Readiness presentation CSS must publish a fresh cache identity.');
 
 if ($assertions < 40) throw new RuntimeException('MVP-21.5 UX contract is too shallow.');
