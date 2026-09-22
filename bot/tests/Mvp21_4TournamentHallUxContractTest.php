@@ -147,8 +147,9 @@ $assert(str_contains($source['admin'], 'control === title || control === game ||
         && str_contains($source['admin'], 'Подтвердить сброс')
         && !str_contains($source['admin'], 'if (!window.confirm(warning)) return;'),
     'Tournament Admin reset must stay editable and avoid native confirm focus poisoning in Telegram WebView.');
-$assert(str_contains($source['admin_page'], 'admin-tournaments.js?v=12')
+$assert(str_contains($source['admin_page'], 'admin-tournaments.js?v=13')
         && str_contains($source['admin_page'], 'mvp21_5=manual-acceptance-fixes-v3')
+        && str_contains($source['admin_page'], 'mvp21_8=corrective-v9')
         && str_contains($source['admin_page'], 'placeholder="Официальный турнир"'),
     'Tournament Admin must publish the fresh cache identity and use a placeholder instead of a destructive default title value.');
 
