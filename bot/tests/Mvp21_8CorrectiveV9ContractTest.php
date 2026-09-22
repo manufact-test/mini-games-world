@@ -72,6 +72,16 @@ $assert(str_contains($adminEntry, 'admin-tournaments.js?v=13')
         && str_contains($adminEntry, 'mvp21_8=corrective-v9'),
     'Admin reset corrective must publish a fresh Telegram WebView cache identity.');
 
+$assert(str_contains($api, "'storage_select_ms'")
+        && str_contains($api, "'transaction_total_ms'")
+        && str_contains($api, "'transaction_storage_overhead_ms'")
+        && str_contains($api, "'debug_bootstrap_timing'"),
+    'Staging bootstrap diagnostics must split selector, transaction and storage overhead.');
+$assert(str_contains($api, "\$isBootstrapTimingTest = \$bootstrapTimingEnabled")
+        && str_contains($api, "['stg_test_player_a', 'stg_test_player_b']"),
+    'Bootstrap server timing must remain bounded to staging technical identities.');
+$assert(str_contains($e2e, '[MGW_BOOTSTRAP_SERVER_TIMING]'),
+    'Real staging E2E must print server-side bootstrap phase timings.');
 $assert(str_contains($e2e, '[MGW_COLD_START_TIMING]')
         && str_contains($e2e, 'navigation_to_bootstrap_ms')
         && str_contains($e2e, 'navigation_to_first_usable_ms'),
@@ -79,7 +89,7 @@ $assert(str_contains($e2e, '[MGW_COLD_START_TIMING]')
 $assert(str_contains($e2e, "document.getElementById('preloader')?.classList.contains('hidden') === true"),
     'Cold-start measurement must end at first usable paint, not merely HTTP completion.');
 
-if ($assertions < 15) {
+if ($assertions < 18) {
     throw new RuntimeException('Corrective v9/v10 contract is too shallow: ' . $assertions);
 }
 fwrite(STDOUT, "Mvp21_8CorrectiveV9ContractTest: {$assertions} assertions passed (v10 cold-start probe)\n");
