@@ -114,7 +114,20 @@ try {
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
     $deviceId = clean_string($payload['deviceId'] ?? '', 120);
 
+    $bootstrapTimingEnabled = $action === 'bootstrap'
+        && strtolower(trim((string)($config['environment'] ?? ''))) === 'staging';
+    $bootstrapRequestStartedNs = hrtime(true);
+    $bootstrapTiming = [];
+    $elapsedMs = static fn(int $startedNs): float => round(
+        (hrtime(true) - $startedNs) / 1000000,
+        1
+    );
+
+    $storageStartedNs = hrtime(true);
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
+    if ($bootstrapTimingEnabled) {
+        $bootstrapTiming['storage_select_ms'] = $elapsedMs($storageStartedNs);
+    }
     $auth = new AuthService($config);
     $users = new UserService($config);
     $gameCatalog = new GameCatalogService($config);
@@ -130,7 +143,18 @@ try {
     $history = new HistoryService($config, $users);
     $weeklyMatch = new WeeklyMatchEconomyService($config, new NotificationService());
 
+    if ($bootstrapTimingEnabled) {
+        $bootstrapTiming['service_construct_ms'] = $elapsedMs($storageStartedNs)
+            - (float)($bootstrapTiming['storage_select_ms'] ?? 0.0);
+    }
+
+    $authStartedNs = hrtime(true);
     $tgUser = $auth->getUserFromRequest($payload);
+    if ($bootstrapTimingEnabled) {
+        $bootstrapTiming['auth_ms'] = $elapsedMs($authStartedNs);
+    }
+
+    $presenceStartedNs = hrtime(true);
     if ($action === 'bootstrap' && $sessionId !== '') {
         try {
             $presenceService->touch((string)($tgUser['id'] ?? ''), $sessionId);
@@ -138,34 +162,58 @@ try {
             error_log('Mini Games World bootstrap presence failed: ' . $presenceError->getMessage());
         }
     }
+    if ($bootstrapTimingEnabled) {
+        $bootstrapTiming['presence_ms'] = $elapsedMs($presenceStartedNs);
+    }
 
-    $result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $gameCatalog, $gameActions, $matchPreparationRuntime, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $runtimeHiddenSkillBridge, $sessionId, $deviceId, $config) {
+    $transactionStartedNs = hrtime(true);
+    $result = $db->transaction(function (array &$data) use ($action, $payload, $tgUser, $users, $games, $gameCatalog, $gameActions, $matchPreparationRuntime, $shop, $payments, $sessions, $statsService, $history, $weeklyMatch, $runtimeHiddenSkillBridge, $sessionId, $deviceId, $config, $bootstrapTimingEnabled, &$bootstrapTiming, $elapsedMs) {
+        $callbackStartedNs = hrtime(true);
+        $identityStartedNs = hrtime(true);
         $user = $users->ensureUser($data, $tgUser);
         $userId = (string)$user['id'];
         $data['users'][$userId] = $user;
         $user =& $data['users'][$userId];
 
         $sessions->ensureSessionShape($user);
+        if ($bootstrapTimingEnabled) {
+            $bootstrapTiming['identity_session_shape_ms'] = $elapsedMs($identityStartedNs);
+        }
 
         // MVP-9: если плановый cron был пропущен, первый вход игрока безопасно
         // догоняет только его собственное недельное начисление. Повтор невозможен
         // благодаря cycle key на пользователе.
+        $weeklyStartedNs = hrtime(true);
         $weeklyMatch->applyDueForUser($data, $user);
+        if ($bootstrapTimingEnabled) {
+            $bootstrapTiming['weekly_apply_ms'] = $elapsedMs($weeklyStartedNs);
+        }
 
         // game_state owns a new session-first ordering below: its polling may
         // refresh search, create a bot game or advance Phase B lifecycle, so even
         // the bounded cleanup must wait until active session ownership is checked.
+        $cleanupStartedNs = hrtime(true);
         $battleshipFireFastPath = mgw_is_battleship_fire_fast_path($data, $action, $payload);
         $forceCleanup = in_array($action, ['start_search', 'leave_search', 'game_action', 'make_move'], true);
         if ($action !== 'game_state' && !$battleshipFireFastPath) {
             mgw_cleanup_games_if_due($data, $games, $forceCleanup);
         }
+        if ($bootstrapTimingEnabled) {
+            $bootstrapTiming['cleanup_ms'] = $elapsedMs($cleanupStartedNs);
+        }
 
         switch ($action) {
             case 'bootstrap':
+                $sessionTouchStartedNs = hrtime(true);
                 $sessions->touch($user, $sessionId);
+                $bootstrapTiming['session_touch_ms'] = $elapsedMs($sessionTouchStartedNs);
+
+                $activeStartedNs = hrtime(true);
                 $active = $games->findActiveGameForUser($data, $userId);
-                return [
+                $bootstrapTiming['active_game_lookup_ms'] = $elapsedMs($activeStartedNs);
+
+                $projectionStartedNs = hrtime(true);
+                $bootstrapResult = [
                     'user' => $users->publicUser($user),
                     'session' => $sessions->publicState($user, $sessionId),
                     'shop' => $shop->status($user),
@@ -175,6 +223,9 @@ try {
                     'stats' => $statsService->build($data),
                     'active_game' => $active ? $games->publicGame($active, $userId) : null,
                 ];
+                $bootstrapTiming['response_projection_ms'] = $elapsedMs($projectionStartedNs);
+                $bootstrapTiming['transaction_callback_ms'] = $elapsedMs($callbackStartedNs);
+                return $bootstrapResult;
 
             case 'stats':
                 return [
@@ -882,6 +933,18 @@ try {
         }
     });
 
+    if ($bootstrapTimingEnabled) {
+        $bootstrapTiming['transaction_total_ms'] = $elapsedMs($transactionStartedNs);
+        $bootstrapTiming['transaction_storage_overhead_ms'] = round(
+            max(
+                0.0,
+                (float)$bootstrapTiming['transaction_total_ms']
+                - (float)($bootstrapTiming['transaction_callback_ms'] ?? 0.0)
+            ),
+            1
+        );
+    }
+
     if (in_array($action, ['tournament_register', 'tournament_registration_publish'], true)
         && !empty($result['snapshot']['transition']['registration_closed_now'])) {
         try {
@@ -902,6 +965,19 @@ try {
         } catch (Throwable $notifyError) {
             error_log('Mini Games World payment admin notification failed: ' . $notifyError->getMessage());
         }
+    }
+
+    $isBootstrapTimingTest = $bootstrapTimingEnabled
+        && is_array($tgUser ?? null)
+        && !empty($tgUser['is_staging_test_user'])
+        && in_array(
+            (string)($tgUser['id'] ?? ''),
+            ['stg_test_player_a', 'stg_test_player_b'],
+            true
+        );
+    if ($isBootstrapTimingTest && is_array($result)) {
+        $bootstrapTiming['request_to_response_ms'] = $elapsedMs($bootstrapRequestStartedNs);
+        $result['debug_bootstrap_timing'] = $bootstrapTiming;
     }
 
     api_ok($result);
