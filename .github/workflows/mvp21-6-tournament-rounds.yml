@@ -17,6 +17,7 @@ on:
       - 'bot/services/GameRuntimeService.php'
       - 'bot/services/ChessRuntimeService.php'
       - 'bot/services/GameLaunchFinalizationService.php'
+      - 'bot/services/MatchPreparationClockService.php'
       - 'app/admin.php'
       - 'app/assets/js/admin-tournaments.js'
       - 'app/assets/js/api/client.js'
@@ -33,6 +34,7 @@ on:
       - 'bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php'
       - 'bot/tests/RematchOptimisticUxContractTest.php'
       - 'bot/tests/PhaseBMatchPreparationClockServiceTest.php'
+      - 'bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php'
       - 'bot/tests/PhaseBClientLaunchUxContractTest.php'
       - 'bot/tests/Mvp21_4TournamentHallBracketTest.php'
       - 'bot/tests/Mvp21_4TournamentHallUxContractTest.php'
@@ -109,6 +111,7 @@ jobs:
             bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php
             bot/tests/RematchOptimisticUxContractTest.php
             bot/tests/PhaseBMatchPreparationClockServiceTest.php
+            bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php
             bot/tests/PhaseBClientLaunchUxContractTest.php
             app/runtime/client/version-manifest.php
             bot/tests/Mvp21_4TournamentHallBracketTest.php
@@ -195,6 +198,7 @@ jobs:
               bot/services/GameRuntimeService.php|\
               bot/services/ChessRuntimeService.php|\
               bot/services/GameLaunchFinalizationService.php|\
+              bot/services/MatchPreparationClockService.php|\
               app/assets/js/api/client.js|\
               app/assets/js/screens/tournaments-screen-v1.js|\
               app/assets/js/screens/game-screen-v102.js|\
@@ -209,6 +213,7 @@ jobs:
               bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php|\
               bot/tests/RematchOptimisticUxContractTest.php|\
               bot/tests/PhaseBMatchPreparationClockServiceTest.php|\
+              bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php|\
               bot/tests/PhaseBClientLaunchUxContractTest.php|\
               bot/tests/Mvp21_4TournamentHallBracketTest.php|\
               bot/tests/Mvp21_4TournamentHallUxContractTest.php|\

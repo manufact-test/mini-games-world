@@ -103,7 +103,7 @@ $assert(str_contains($source['manifest'], 'client.js?v=1143')
         && str_contains($source['manifest'], 'mvp21_4=tournament-hall-v1')
         && str_contains($source['manifest'], 'hall_transport=direct-endpoint-v2'),
     'Hall release must preserve the accepted API cache contract and publish the direct-endpoint corrective identity.');
-$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=24')
+$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=25')
         && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v2')
         && str_contains($source['manifest'], 'hall_cta=entry-v1')
         && str_contains($source['manifest'], 'copy_polish=final-v1'),

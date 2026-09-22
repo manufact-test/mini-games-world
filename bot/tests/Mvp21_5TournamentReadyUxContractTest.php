@@ -76,6 +76,11 @@ $assert(str_contains($source['special_runtime'], 'public function createTourname
 $assert(str_contains($source['clock'], 'public function markReady')
         && str_contains($source['clock'], 'preparation_ready_devices'),
     'Shared Phase-B readiness must wait for each real client to adopt the tournament game.');
+$assert(str_contains($source['clock'], 'TOURNAMENT_INITIAL_ADOPTION_GRACE_SEC = 60')
+        && str_contains($source['clock'], 'TOURNAMENT_PEER_ADOPTION_TIMEOUT_SEC = 30')
+        && str_contains($source['clock'], 'if (!$hadReadyDevice')
+        && str_contains($source['clock'], '$adoptionDeadline = $adoptionStarted + self::TOURNAMENT_PEER_ADOPTION_TIMEOUT_SEC'),
+    'Tournament preparation timeout must begin from first real runtime adoption, not Hall-side game creation.');
 $assert(str_contains($source['clock'], 'countdownSeconds($game)')
         && str_contains($source['clock'], "'launch_countdown_sec' =>"),
     'Shared clock must expose a parameterized authoritative countdown.');
@@ -94,6 +99,9 @@ $assert(str_contains($source['api'], '$data[\'games\'][$gameId][\'launch_countdo
     'Ready API must create/attach one game but defer the ten-second countdown until both real clients adopt it.');
 $assert(str_contains($source['api'], 'GameLaunchFinalizationService::finalizeStoredGame'),
     'Tournament launch must reuse canonical game launch finalization.');
+$assert(str_contains($source['api'], 'observeFinishedGame($data[\'games\'][$finishedTournamentGameId])')
+        && str_contains($source['api'], '$snapshot = $readiness->status($mgwId, $accountRef, $userId);'),
+    'Terminal tournament progression must refresh the Ready projection in the same API response.');
 
 foreach (['tournamentMatchState','tournamentMatchReady'] as $needle) {
     $assert(str_contains($source['client'], $needle), 'Tournament client transport missing: ' . $needle);
@@ -117,12 +125,18 @@ $assert(str_contains($source['screen'], 'startTournamentVisibleRefresh')
         && str_contains($source['screen'], 'await warmTournamentStatus()')
         && str_contains($source['screen'], 'warmTournamentHallStatus'),
     'Visible Tournament screen must continuously refresh authoritative tournament status and Hall state without navigation away/back.');
+$assert(str_contains($source['screen'], 'EXTERNAL_TOURNAMENT_COMMIT_CONFIRM_MS = 1200')
+        && str_contains($source['screen'], 'shouldStageExternalTournamentCommit')
+        && str_contains($source['screen'], 'stageExternalTournamentCommit')
+        && str_contains($source['screen'], 'const verified = await api.tournamentStatus()'),
+    'A second open client must independently confirm an external participant-count transition before publishing it.');
 $assert(str_contains($source['screen'], 'tournamentStartBoundaryTimer')
-        && str_contains($source['screen'], 'scheduleTournamentStartBoundaryRefresh')
-        && str_contains($source['screen'], 'scheduledStart.getTime() - Date.now() + 30')
+        && str_contains($source['screen'], 'startTournamentT0SyncBurst')
+        && str_contains($source['screen'], 'TOURNAMENT_T0_SYNC_INTERVAL_MS = 250')
+        && str_contains($source['screen'], 'TOURNAMENT_T0_SYNC_WINDOW_MS = 6000')
         && str_contains($source['screen'], 'const hallResult = await api.tournamentHallStatus()')
         && str_contains($source['screen'], 'await refreshTournamentMatchState()'),
-    'Registered clients must issue a fresh post-T0 Hall/readiness read instead of waiting for or reusing the arbitrary two-second poll phase.');
+    'Registered clients must burst-sync fresh Hall/readiness state across T0 instead of waiting for the arbitrary two/three-second poll phase.');
 $assert(str_contains($source['screen'], 'Загружаем готовность вашей пары…')
         && str_contains($source['screen'], 'tournamentMatchError')
         && str_contains($source['screen'], 'const matchMarkup = tournamentMatchMarkup();'),
@@ -167,15 +181,16 @@ foreach ([
 $assert(str_contains($source['manifest'], 'client.js?v=1143')
         && str_contains($source['manifest'], 'mvp21_5=ready-v1'),
     'API client must publish a fresh MVP-21.5 cache identity.');
-$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=24')
-        && str_contains($source['manifest'], 'mvp21_5=corrective-v5')
-        && str_contains($source['manifest'], 'ready=t0-fresh-hall-launch-watch-v3'),
-    'Tournament screen must publish the fresh corrective-v5 launch cache identity.');
+$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=25')
+        && str_contains($source['manifest'], 'mvp21_5=corrective-v6')
+        && str_contains($source['manifest'], 'registration=cross-client-confirm-v2')
+        && str_contains($source['manifest'], 'ready=t0-burst-250ms-peer-adoption-v4'),
+    'Tournament screen must publish the fresh corrective-v6 registration/T0/peer-adoption cache identity.');
 $assert(str_contains($source['manifest'], 'production-v110-acceptance-runtime.js?v=132')
         && str_contains($source['manifest'], 'mvp21_5=countdown-10-fresh60-v2'),
     'Shared Phase-B presentation must publish the fresh server-active/fresh-60 cache identity.');
 $assert(str_contains($source['manifest'], 'main.css?v=199'),
     'Readiness presentation CSS must publish a fresh cache identity.');
 
-if ($assertions < 37) throw new RuntimeException('MVP-21.5 UX contract is too shallow.');
+if ($assertions < 40) throw new RuntimeException('MVP-21.5 UX contract is too shallow.');
 fwrite(STDOUT, "Mvp21_5TournamentReadyUxContractTest: {$assertions} assertions passed\n");

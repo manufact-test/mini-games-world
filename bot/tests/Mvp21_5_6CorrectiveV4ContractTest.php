@@ -14,6 +14,7 @@ $specialRuntime = $read('bot/services/ChessRuntimeService.php');
 $clock = $read('bot/services/MatchPreparationClockService.php');
 $api = $read('bot/api.php');
 $progression = $read('bot/tournaments/TournamentRoundProgressionService.php');
+$readiness = $read('bot/tournaments/TournamentMatchReadinessService.php');
 $acceptance = $read('app/assets/js/production-v110-acceptance-runtime.js');
 $gameScreen = $read('app/assets/js/screens/game-screen-v102.js');
 $invites = $read('app/assets/js/games/game-invites-v110.js');
@@ -31,6 +32,11 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 
 $assert(str_contains($screen, 'if (tournamentBusy) return tournamentSnapshot;'),
     'Visible tournament status must not publish a committed seat while registration verification is pending.');
+$assert(str_contains($screen, 'EXTERNAL_TOURNAMENT_COMMIT_CONFIRM_MS = 1200')
+        && str_contains($screen, 'shouldStageExternalTournamentCommit')
+        && str_contains($screen, 'stageExternalTournamentCommit')
+        && str_contains($screen, 'const verified = await api.tournamentStatus()'),
+    'Other open clients must independently confirm an external registration count before visible publication.');
 $assert(str_contains($screen, 'startTournamentLaunchWatch')
         && str_contains($screen, '}, 350);')
         && str_contains($screen, 'match.self_ready === true')
@@ -38,13 +44,15 @@ $assert(str_contains($screen, 'startTournamentLaunchWatch')
     'First-ready client must use the actual self_ready field for the bounded shared-game watch.');
 $assert(str_contains($screen, 'stopTournamentLaunchWatch();'),
     'Launch watch must have an explicit stop owner.');
-$assert(str_contains($screen, 'scheduleTournamentStartBoundaryRefresh')
-        && str_contains($screen, 'scheduledStart.getTime() - Date.now() + 30')
-        && str_contains($screen, 'tournamentStartBoundaryTimer'),
-    'Tournament Ready materialization must be refreshed at T0 rather than lagging behind the two-second screen poll.');
+$assert(str_contains($screen, 'startTournamentT0SyncBurst')
+        && str_contains($screen, 'TOURNAMENT_T0_SYNC_INTERVAL_MS = 250')
+        && str_contains($screen, 'TOURNAMENT_T0_SYNC_WINDOW_MS = 6000')
+        && str_contains($screen, 'tournamentStartSyncTimer'),
+    'Tournament Ready materialization must burst-sync across T0 rather than lag behind two/three-second poll phases.');
 $assert(str_contains($screen, 'const hallResult = await api.tournamentHallStatus()')
-        && str_contains($screen, "typeof hallResult.snapshot === 'object'"),
-    'Exact-T0 refresh must start a new Hall request after the boundary instead of reusing a pre-T0 in-flight snapshot.');
+        && str_contains($screen, "typeof hallResult.snapshot === 'object'")
+        && str_contains($screen, 'tournamentHallSnapshot?.bracket && matchReady'),
+    'T0 burst must use fresh Hall reads until bracket plus match/progression state is available.');
 $assert(str_contains($screen, "document.addEventListener('mgw:tournament-progression-open'"),
     'Tournament screen must accept explicit return-to-progression navigation.');
 
@@ -55,6 +63,11 @@ $assert(str_contains($clock, "'turn_deadline_epoch_ms'] = null")
         && str_contains($clock, '$this->assignTurnClock($game, $turn)')
         && str_contains($clock, 'MOVE_TIMEOUT_SEC = 60'),
     'Tournament launch countdown and first playable 60-second turn must remain separate clocks.');
+$assert(str_contains($clock, 'TOURNAMENT_INITIAL_ADOPTION_GRACE_SEC = 60')
+        && str_contains($clock, 'TOURNAMENT_PEER_ADOPTION_TIMEOUT_SEC = 30')
+        && str_contains($clock, 'if (!$hadReadyDevice')
+        && str_contains($clock, '$game[\'preparation_deadline_at\'] = gmdate'),
+    'Tournament no-start timeout must be re-anchored to the first real runtime adoption.');
 $assert(!str_contains($api, 'markTournamentPairReady($tournamentGame)')
         && str_contains($api, 'after BOTH real')
         && str_contains($api, '$attachedReadyGameId'),
@@ -83,6 +96,23 @@ $assert(str_contains($gameScreen, 'tournamentResultSummaryMarkup')
         && str_contains($gameScreen, 'if (!options.pending && !tournamentMatch)')
         && str_contains($gameScreen, "if (String(game?.match_source || '') === 'tournament') return;"),
     'Tournament result must never hydrate ordinary economy/history summary or expose unavailable balance copy.');
+$assert(str_contains($gameScreen, 'tournamentResultDismissed:new Set()')
+        && str_contains($gameScreen, 'runtime.tournamentResultDismissed.add')
+        && str_contains($gameScreen, 'runtime.tournamentResultDismissed.has(id)'),
+    'Dismissed tournament terminal results must not reopen when stale active-game state is observed again.');
+$assert(str_contains($screen, "document.addEventListener('mgw:game-finished'")
+        && str_contains($screen, 'synchronizeTournamentTerminalProgression')
+        && str_contains($screen, 'tournamentMatchSnapshot = null;')
+        && str_contains($screen, 'stopTournamentStartSync();'),
+    'Tournament terminal navigation must kill stale launch timers/snapshots and pre-sync durable progression.');
+$assert(str_contains($api, 'observeFinishedGame($data[\'games\'][$finishedTournamentGameId])')
+        && str_contains($api, '$snapshot = $readiness->status($mgwId, $accountRef, $userId);'),
+    'Server terminal observation must refresh Ready projection after durable progression changes.');
+$assert(str_contains($readiness, 'isInitialManualReadyRow')
+        && str_contains($readiness, 'completed_at_utc')
+        && str_contains($readiness, 'attempt_no')
+        && str_contains($readiness, 'wait_kind'),
+    'Initial Ready projection must disappear once the durable pair has progressed or completed.');
 $assert(str_contains($invites, "String(finished.match_source || '') === 'tournament'"),
     'Legacy direct-rematch enhancer must exclude tournament games.');
 $assert(str_contains($rematch, "const tournamentMatch = String(game?.match_source || '') === 'tournament'"),
@@ -112,12 +142,14 @@ $assert(str_contains($adminJs, "progressionReason !== 'staging_only'")
         && str_contains($adminJs, "progressionPanel.hidden = !progressionVisible"),
     'Staging Admin must keep the fixture progression panel visible even when the action is temporarily disabled.');
 
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=24')
-        && str_contains($manifest, 'game-screen-v102.js?v=111')
+$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=25')
+        && str_contains($manifest, 'mvp21_5=corrective-v6')
+        && str_contains($manifest, 'game-screen-v102.js?v=112')
+        && str_contains($manifest, 'mvp21_6=tournament-result-dedupe-v3')
         && str_contains($manifest, 'production-v110-acceptance-runtime.js?v=132')
         && str_contains($manifest, 'game-invites-v110.js?v=1146')
         && str_contains($manifest, 'game-invites-v110-rematch-policy-v175.js?v=2'),
-    'Corrective v5 client owners must publish fresh active cache identities.');
+    'Corrective v6 client owners must publish fresh active cache identities without replacing the accepted Phase-B presentation owner.');
 
-if ($assertions < 31) throw new RuntimeException('Corrective v4 contract is too shallow: ' . $assertions);
+if ($assertions < 37) throw new RuntimeException('Corrective v4 contract is too shallow: ' . $assertions);
 fwrite(STDOUT, "Mvp21_5_6CorrectiveV4ContractTest: {$assertions} assertions passed\n");
