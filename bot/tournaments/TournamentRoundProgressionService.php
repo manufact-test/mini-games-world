@@ -8,6 +8,7 @@ final class TournamentRoundProgressionService
     public const TECHNICAL_RESTART_WAIT_SECONDS = 60;
     public const TECHNICAL_RESTART_MAX_ATTEMPTS = 2;
     public const STATE_COMPLETED = 'completed';
+    public const STATE_TECHNICAL_CANCEL_REQUIRED = 'technical_cancel_required';
     public const WAIT_INITIAL_READY = 'initial_ready';
     public const WAIT_ROUND_BREAK = 'round_break';
     public const WAIT_DRAW_REPLAY = 'draw_replay';
@@ -97,6 +98,7 @@ final class TournamentRoundProgressionService
             $finishedAtUtc = $this->utc($finishedAt);
             $winnerLegacy = trim((string)($game['winner_id'] ?? ''));
             $finishReason = trim((string)($game['finish_reason'] ?? ''));
+            $technicalRestart = false;
             if ($winnerLegacy === '' && $finishReason === 'preparation_timeout') {
                 $readyDevices = is_array($game['preparation_ready_devices'] ?? null)
                     ? $game['preparation_ready_devices']
@@ -107,12 +109,12 @@ final class TournamentRoundProgressionService
                         $readyPlayers[] = $runtimePlayerId;
                     }
                 }
-                // A tournament game that never started is not a draw when exactly
-                // one participant actually adopted the runtime game. The present
-                // participant advances by technical no-show; zero/two ready
-                // participants remain unresolved by this rule.
                 if (count($readyPlayers) === 1) {
                     $winnerLegacy = $readyPlayers[0];
+                } elseif (count($readyPlayers) >= 2) {
+                    // Both clients adopted the game, so a preparation timeout is
+                    // infrastructure failure rather than player no-show.
+                    $technicalRestart = true;
                 }
             }
             $winnerMgw = null;
@@ -129,7 +131,7 @@ final class TournamentRoundProgressionService
                 $resultType = 'win';
             } elseif ($finishReason === 'draw') {
                 $resultType = 'draw';
-            } elseif ($this->isRestartableTechnicalFailure($finishReason)) {
+            } elseif ($technicalRestart || $this->isRestartableTechnicalFailure($finishReason)) {
                 $resultType = 'restart';
             }
 
@@ -223,7 +225,6 @@ final class TournamentRoundProgressionService
                     return;
                 }
 
-                $resultType = 'void';
                 $finishReason = 'technical_restart_exhausted';
                 $this->recordTechnicalOutcome(
                     $db,
@@ -240,6 +241,26 @@ final class TournamentRoundProgressionService
                     ['max_attempts'=>self::TECHNICAL_RESTART_MAX_ATTEMPTS],
                     $finishedAtUtc
                 );
+                $db->execute(
+                    'UPDATE mgw_tournament_round_matches
+                     SET launch_state=:launch_state,
+                         result_reason=:result_reason,
+                         game_id=NULL,
+                         winner_mgw_id=NULL,
+                         loser_mgw_id=NULL,
+                         completed_at_utc=NULL,
+                         updated_at_utc=:updated_at_utc
+                     WHERE tournament_id=:tournament_id AND round_no=:round_no AND pair_no=:pair_no',
+                    [
+                        'launch_state'=>self::STATE_TECHNICAL_CANCEL_REQUIRED,
+                        'result_reason'=>$finishReason,
+                        'updated_at_utc'=>$finishedAtUtc,
+                        'tournament_id'=>$tournamentId,
+                        'round_no'=>$roundNo,
+                        'pair_no'=>$pairNo,
+                    ]
+                );
+                return;
             }
 
             if ($resultType === 'draw') {
@@ -832,9 +853,11 @@ final class TournamentRoundProgressionService
         if ($finishReason === 'disconnect_timeout') return 'disconnect_timeout';
         if ($finishReason === 'tournament_both_disconnect_timeout') return 'both_disconnect_timeout';
         if ($finishReason === 'tournament_both_absent_timeout') return 'both_absent_timeout';
-        if ($finishReason === 'preparation_timeout') return $resultType === 'win'
-            ? 'preparation_no_show'
-            : 'both_absent_preparation';
+        if ($finishReason === 'preparation_timeout') {
+            if ($resultType === 'win') return 'preparation_no_show';
+            if ($resultType === 'restart') return 'technical_restart';
+            return 'both_absent_preparation';
+        }
         if ($resultType === 'restart') return 'technical_restart';
         if ($finishReason !== '') return substr('technical_' . preg_replace('/[^a-z0-9_]+/i','_',strtolower($finishReason)),0,64);
         return 'technical_void';
