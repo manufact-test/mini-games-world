@@ -965,11 +965,45 @@ function tournamentBracketMarkup(bracket){
     }).join('');
 
   const matchMarkup = tournamentMatchMarkup();
+  if (tournamentProgressionIsAuthoritative()) {
+    return `<div class="tournaments-v2-bracket">
+      ${matchMarkup}
+      <details class="tournaments-v2-tournament-rules tournaments-v2-start-bracket-archive">
+        <summary><span>Стартовая сетка · архив</span></summary>
+        <div class="tournaments-v2-tournament-rules-body">
+          <div class="tournaments-v2-bracket-grid">${cards}</div>
+        </div>
+      </details>
+    </div>`;
+  }
   return `<div class="tournaments-v2-bracket">
     ${matchMarkup}
     <div class="tournaments-v2-hall-section-title"><strong>Первый раунд</strong><span>случайная сетка</span></div>
     <div class="tournaments-v2-bracket-grid">${cards}</div>
   </div>`;
+}
+
+function tournamentProgressionIsAuthoritative(){
+  const progression = tournamentProgressionSnapshot && typeof tournamentProgressionSnapshot === 'object'
+    ? tournamentProgressionSnapshot
+    : null;
+  if (!progression) return false;
+  if (progression.tournament_complete === true) return true;
+
+  const current = progression.current_match && typeof progression.current_match === 'object'
+    ? progression.current_match
+    : null;
+  if (current
+      && (Number(current.round_no || 0) > 1
+        || Number(current.attempt_no || 1) > 1
+        || String(current.wait_kind || 'initial_ready') !== 'initial_ready')) {
+    return true;
+  }
+
+  const latest = progression.latest_match && typeof progression.latest_match === 'object'
+    ? progression.latest_match
+    : null;
+  return Boolean(latest?.completed_at_utc);
 }
 
 function tournamentMatchMarkup(){
