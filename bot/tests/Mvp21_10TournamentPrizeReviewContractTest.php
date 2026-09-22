@@ -44,9 +44,9 @@ $assert(str_contains($files['settlement'],'RESULT_DISQUALIFIED'),'Settlement own
 $assert(str_contains($files['settlement'],"operationKey($tournamentId, $mgwId, 'payout')"),'Reward release must preserve the existing exactly-once operation key.');
 $assert(str_contains($files['settlement'],'prize_review_disqualified'),'Settlement ledger metadata must retain review decision context.');
 
-$assert(str_contains($files['admin_api'],"$action === 'prize_review_flag'"),'Tournament Admin must be able to register a serious signal.');
-$assert(str_contains($files['admin_api'],"$action === 'prize_review_release'"),'Tournament Admin must be able to release a held prize path.');
-$assert(str_contains($files['admin_api'],"$action === 'prize_review_disqualify'"),'Tournament Admin must be able to disqualify after review.');
+$assert(str_contains($files['admin_api'],'$action === \'prize_review_flag\''),'Tournament Admin must be able to register a serious signal.');
+$assert(str_contains($files['admin_api'],'$action === \'prize_review_release\''),'Tournament Admin must be able to release a held prize path.');
+$assert(str_contains($files['admin_api'],'$action === \'prize_review_disqualify\''),'Tournament Admin must be able to disqualify after review.');
 $assert(str_contains($files['admin_api'],'$settlement->settleIfComplete($tournamentId);'),'Admin decision must return to the canonical settlement owner.');
 $assert(str_contains($files['admin_api'],'mgw_apply_tournament_settlement_runtime_balances'),'Admin release must converge durable payout into runtime balance.');
 $assert(str_contains($files['admin_html'],'data-tournament-review-panel'),'Web Admin must expose prize review controls.');
