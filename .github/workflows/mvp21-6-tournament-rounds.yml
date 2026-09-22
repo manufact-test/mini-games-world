@@ -17,6 +17,7 @@ on:
       - 'bot/services/GameRuntimeService.php'
       - 'bot/services/ChessRuntimeService.php'
       - 'bot/services/GameLaunchFinalizationService.php'
+      - 'bot/services/MatchPreparationClockService.php'
       - 'app/admin.php'
       - 'app/assets/js/admin-tournaments.js'
       - 'app/assets/js/api/client.js'
@@ -197,6 +198,7 @@ jobs:
               bot/services/GameRuntimeService.php|\
               bot/services/ChessRuntimeService.php|\
               bot/services/GameLaunchFinalizationService.php|\
+              bot/services/MatchPreparationClockService.php|\
               app/assets/js/api/client.js|\
               app/assets/js/screens/tournaments-screen-v1.js|\
               app/assets/js/screens/game-screen-v102.js|\
