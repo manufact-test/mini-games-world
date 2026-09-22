@@ -540,6 +540,128 @@ try {
         'sensitive_identifiers_exposed'=>false,
     ];
 
+    // Read-only post-terminal probe for the two real participants in the active
+    // staging tournament. This mirrors tournament_match_state after the durable
+    // result is already committed, without requiring a player's Telegram auth.
+    $tournamentParticipantReadProbe = [
+        'participant_count'=>0,
+        'participants'=>[],
+    ];
+    if ($activeTournamentId !== '') {
+        $participantRows = $db->fetchAll(
+            'SELECT r.mgw_id,r.account_ref,o.legacy_user_id
+             FROM mgw_tournament_registrations r
+             INNER JOIN mgw_account_ownership o
+               ON o.mgw_id=r.mgw_id
+              AND o.account_ref=r.account_ref
+              AND o.ownership_status=:ownership_status
+             WHERE r.tournament_id=:tournament_id
+               AND r.registration_state=:registration_state
+             ORDER BY r.registered_at_utc ASC,r.registration_id ASC',
+            [
+                'ownership_status'=>'active',
+                'tournament_id'=>$activeTournamentId,
+                'registration_state'=>TournamentRegistrationService::REGISTRATION_REGISTERED,
+            ]
+        );
+        $readinessProbe = new TournamentMatchReadinessService($db);
+        $progressionProbe = new TournamentRoundProgressionService($db);
+        foreach ($participantRows as $participantRow) {
+            if (!is_array($participantRow)) continue;
+            $legacyUserId = trim((string)($participantRow['legacy_user_id'] ?? ''));
+            if ($legacyUserId === ''
+                || preg_match('/^stg_tour_(?:v2_)?[a-f0-9]{12}$/', $legacyUserId) === 1) {
+                continue;
+            }
+            $mgwId = trim((string)($participantRow['mgw_id'] ?? ''));
+            $accountRef = trim((string)($participantRow['account_ref'] ?? ''));
+            if ($mgwId === '' || $accountRef === '') continue;
+
+            $entry = [
+                'participant_ref_sha256'=>substr(hash('sha256', $legacyUserId), 0, 16),
+                'stages'=>[],
+            ];
+            $readySnapshot = null;
+            $progressionSnapshot = null;
+            try {
+                $readySnapshot = $readinessProbe->status($mgwId, $accountRef, $legacyUserId);
+                $entry['stages']['readiness_status'] = [
+                    'ok'=>true,
+                    'has_match'=>is_array($readySnapshot['match'] ?? null),
+                    'launch_state'=>(string)($readySnapshot['match']['launch_state'] ?? ''),
+                    'game_attached'=>trim((string)($readySnapshot['match']['game_id'] ?? '')) !== '',
+                ];
+            } catch (Throwable $probeError) {
+                $entry['stages']['readiness_status'] = [
+                    'ok'=>false,
+                    'exception'=>get_class($probeError),
+                    'detail'=>substr($probeError->getMessage(), 0, 1200),
+                ];
+            }
+
+            try {
+                $progressionSnapshot = $progressionProbe->statusForParticipant(
+                    $mgwId,
+                    $accountRef,
+                    $legacyUserId
+                );
+                $entry['stages']['progression_status'] = [
+                    'ok'=>true,
+                    'has_current'=>is_array($progressionSnapshot['current_match'] ?? null),
+                    'has_latest'=>is_array($progressionSnapshot['latest_match'] ?? null),
+                    'latest_completed'=>trim((string)($progressionSnapshot['latest_match']['completed_at_utc'] ?? '')) !== '',
+                    'tournament_complete'=>($progressionSnapshot['tournament_complete'] ?? false) === true,
+                ];
+            } catch (Throwable $probeError) {
+                $entry['stages']['progression_status'] = [
+                    'ok'=>false,
+                    'exception'=>get_class($probeError),
+                    'detail'=>substr($probeError->getMessage(), 0, 1200),
+                ];
+            }
+
+            try {
+                $readyLaunch = $readinessProbe->launchContext($mgwId, $accountRef, $legacyUserId);
+                $entry['stages']['readiness_launch'] = [
+                    'ok'=>true,
+                    'has_launch'=>is_array($readyLaunch),
+                ];
+            } catch (Throwable $probeError) {
+                $entry['stages']['readiness_launch'] = [
+                    'ok'=>false,
+                    'exception'=>get_class($probeError),
+                    'detail'=>substr($probeError->getMessage(), 0, 1200),
+                ];
+            }
+
+            try {
+                $progressionLaunch = $progressionProbe->launchContextForParticipant(
+                    $mgwId,
+                    $accountRef,
+                    $legacyUserId
+                );
+                $entry['stages']['progression_launch'] = [
+                    'ok'=>true,
+                    'has_launch'=>is_array($progressionLaunch),
+                    'round_no'=>(int)($progressionLaunch['round_no'] ?? 0),
+                    'pair_no'=>(int)($progressionLaunch['pair_no'] ?? 0),
+                    'wait_kind'=>(string)($progressionLaunch['wait_kind'] ?? ''),
+                ];
+            } catch (Throwable $probeError) {
+                $entry['stages']['progression_launch'] = [
+                    'ok'=>false,
+                    'exception'=>get_class($probeError),
+                    'detail'=>substr($probeError->getMessage(), 0, 1200),
+                ];
+            }
+
+            $tournamentParticipantReadProbe['participants'][] = $entry;
+        }
+        $tournamentParticipantReadProbe['participant_count'] = count(
+            $tournamentParticipantReadProbe['participants']
+        );
+    }
+
     // The canonical browser shell can preload the public rating archive while
     // an unrelated game test is running. Prove that read owner here so an HTTP
     // 500 becomes an exact OIDC-protected staging diagnostic instead of a
@@ -592,6 +714,7 @@ try {
         'tournament_fixture_ownership_repair'=>$fixtureOwnershipRepair,
         'tournament_fixture_runtime_parity'=>$fixtureRuntimeParity,
         'tournament_terminal_recovery'=>$tournamentTerminalRecovery,
+        'tournament_participant_read_probe'=>$tournamentParticipantReadProbe,
         'storage_selector_notification_fallback'=>$selectorFallbackCheck,
         'unified_economy_preview'=>[
             'ready'=>(bool)($economyPreview['ready'] ?? false),
