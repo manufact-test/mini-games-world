@@ -6,8 +6,9 @@ $js=file_get_contents(dirname($root).'/app/assets/js/screens/tournaments-screen-
 $css=file_get_contents(dirname($root).'/app/assets/css/main.css');
 $manifest=file_get_contents(dirname($root).'/app/runtime/client/version-manifest.php');
 $api=file_get_contents($root.'/api.php');
+$stagingReset=file_get_contents($root.'/tournaments/StagingTournamentManualAcceptanceService.php');
 
-if(!is_string($js)||!is_string($css)||!is_string($manifest)||!is_string($api)){
+if(!is_string($js)||!is_string($css)||!is_string($manifest)||!is_string($api)||!is_string($stagingReset)){
     throw new RuntimeException('MVP-21.9 terminal UX sources are unavailable.');
 }
 
@@ -44,5 +45,9 @@ $assertContains('mvp21_9=terminal-results-v1', $manifest, 'Actual main CSS mappi
 $assertContains('new TournamentSettlementService(', $api, 'Terminal API must use the canonical settlement owner.');
 $assertContains('mgw_apply_tournament_settlement_balances(', $api, 'Settlement must converge canonical DB payout into current runtime balances.');
 $assertContains("'terminal_result'", $api, 'Terminal settlement projection must reach tournament UI.');
+
+$assertContains("in_array(\$reservationStatus, ['active','consumed'], true)", $stagingReset, 'Staging reset must accept both active and terminal-consumed reservations.');
+$assertContains("'settled_reservations_preserved'", $stagingReset, 'Staging reset must expose consumed-reservation evidence.');
+$assertContains('Settled synthetic staging fixture must not retain competitive rewards.', $stagingReset, 'Staging reset must fail closed if a synthetic fixture somehow kept a competitive payout.');
 
 echo "MVP-21.9 terminal UX contract OK ({$assertions} assertions)\n";
