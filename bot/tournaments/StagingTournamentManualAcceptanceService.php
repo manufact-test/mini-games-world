@@ -599,12 +599,16 @@ final class StagingTournamentManualAcceptanceService
             $completed++;
         }
 
+        $after = $this->progressionAcceptanceAvailability($server);
         return [
             'status'=>'completed',
             'tournament_id'=>$tournamentId,
             'round_no'=>$roundNo,
             'completed_pairs'=>$completed,
-            'availability'=>$this->progressionAcceptanceAvailability($server),
+            'next_round_no'=>(int)($after['round_no'] ?? 0) > $roundNo
+                ? (int)$after['round_no']
+                : null,
+            'availability'=>$after,
         ];
     }
 
