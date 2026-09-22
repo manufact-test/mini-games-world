@@ -114,6 +114,12 @@ $progress->observeFinishedGame([
  'winner_id'=>$players[1]['legacy'],'finish_reason'=>'normal_win','finished_at'=>'2026-09-21T10:03:00Z',
 ],new DateTimeImmutable('2026-09-21T10:03:00Z'));
 $assertSame(2,(int)$db->fetchValue('SELECT COUNT(*) FROM mgw_tournament_match_attempts WHERE tournament_id=:t AND round_no=1 AND pair_no=1',['t'=>$tournament]),'Draw and replay must both remain in durable attempt history.');
+$readiness=new TournamentMatchReadinessService($db);
+$postTerminalReady=$readiness->status(
+ $players[1]['mgw'],$players[1]['account'],$players[1]['legacy'],
+ new DateTimeImmutable('2026-09-21T10:03:01Z')
+);
+$assertSame(null,$postTerminalReady['match'],'Completed/replayed first-round pair must not leak the stale initial Ready card after terminal progression.');
 
 $finish(2,3,'2026-09-21T10:03:10Z');
 $finish(3,5,'2026-09-21T10:03:20Z');
@@ -193,5 +199,5 @@ foreach($bothAbsentRows as $row){
  $assertSame(null,$row['completed_at_utc'],'Both-absent pair must remain unresolved until canonical progression chooses a winner.');
 }
 
-if($assertions<31) throw new RuntimeException('MVP-21.6 progression test is too shallow: '.$assertions);
+if($assertions<32) throw new RuntimeException('MVP-21.6 progression test is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_6TournamentRoundProgressionTest: {$assertions} assertions passed\n");
