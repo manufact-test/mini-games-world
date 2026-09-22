@@ -7,6 +7,7 @@ on:
     paths:
       - 'bot/database/migrations/20260921_0054_create_tournament_match_readiness.php'
       - 'bot/tournaments/TournamentMatchReadinessService.php'
+      - 'bot/tournaments/TournamentRoundProgressionService.php'
       - 'bot/tournaments/StagingTournamentManualAcceptanceService.php'
       - 'bot/admin-tournaments.php'
       - 'bot/tournaments/TournamentHallService.php'
@@ -33,6 +34,7 @@ on:
       - 'bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php'
       - 'bot/tests/RematchOptimisticUxContractTest.php'
       - 'bot/tests/Mvp21_6TournamentProgressionUxContractTest.php'
+      - 'bot/tests/Mvp21_6TournamentRoundProgressionTest.php'
       - 'bot/tests/PhaseBMatchPreparationClockServiceTest.php'
       - 'bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php'
       - 'bot/tests/PhaseBClientLaunchUxContractTest.php'
@@ -84,6 +86,7 @@ jobs:
           files=(
             bot/database/migrations/20260921_0054_create_tournament_match_readiness.php
             bot/tournaments/TournamentMatchReadinessService.php
+            bot/tournaments/TournamentRoundProgressionService.php
             bot/tournaments/StagingTournamentManualAcceptanceService.php
             bot/admin-tournaments.php
             bot/tournaments/TournamentHallService.php
@@ -102,6 +105,7 @@ jobs:
             bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php
             bot/tests/RematchOptimisticUxContractTest.php
             bot/tests/Mvp21_6TournamentProgressionUxContractTest.php
+            bot/tests/Mvp21_6TournamentRoundProgressionTest.php
             bot/tests/PhaseBMatchPreparationClockServiceTest.php
             bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php
             bot/tests/PhaseBClientLaunchUxContractTest.php
@@ -140,6 +144,7 @@ jobs:
           php bot/tests/Mvp21_4TournamentHallBracketTest.php
           php bot/tests/Mvp21_4TournamentHallUxContractTest.php
           php bot/tests/Mvp21_6TournamentProgressionUxContractTest.php
+          php bot/tests/Mvp21_6TournamentRoundProgressionTest.php
 
       - name: Preserve all-game runtime baseline
         run: |
@@ -172,6 +177,7 @@ jobs:
               .github/workflows/mvp21-6-tournament-rounds.yml|\
               bot/database/migrations/20260921_0054_create_tournament_match_readiness.php|\
               bot/tournaments/TournamentMatchReadinessService.php|\
+              bot/tournaments/TournamentRoundProgressionService.php|\
               bot/tournaments/StagingTournamentManualAcceptanceService.php|\
               bot/admin-tournaments.php|\
               bot/tournaments/TournamentHallService.php|\
@@ -198,6 +204,7 @@ jobs:
               bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php|\
               bot/tests/RematchOptimisticUxContractTest.php|\
               bot/tests/Mvp21_6TournamentProgressionUxContractTest.php|\
+              bot/tests/Mvp21_6TournamentRoundProgressionTest.php|\
               bot/tests/PhaseBMatchPreparationClockServiceTest.php|\
               bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php|\
               bot/tests/PhaseBClientLaunchUxContractTest.php|\
