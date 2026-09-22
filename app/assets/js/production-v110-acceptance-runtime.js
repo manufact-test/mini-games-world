@@ -453,7 +453,10 @@ function syncLaunchPresentation(game, phase){
 
   const numbersDuration = LAUNCH_COUNTDOWN_STEP_MS * presentation.countdownSeconds;
   const numbersComplete = now - presentation.countdownStartedAt >= numbersDuration;
-  const serverReady = phase === 'active' || (phase === 'countdown' && launchStartReached(game));
+  // A local countdown reaching zero is not enough to expose the field.
+  // Wait for the server-owned active phase so the fresh first-turn deadline
+  // already exists before either client leaves the launch overlay.
+  const serverReady = phase === 'active';
   if (numbersComplete && serverReady && presentation.readyStartedAt === null) {
     presentation.readyStartedAt = now;
   }
