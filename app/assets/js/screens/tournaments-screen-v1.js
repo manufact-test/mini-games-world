@@ -1219,11 +1219,17 @@ function tournamentTerminalMarkup(progression, activeRoundMarkup){
     ? progression.terminal_result
     : null;
   if (!terminal || terminal.settlement_complete !== true) {
+    const reviewHold = String(terminal?.settlement_state || '') === 'review_hold';
+    const selfHeld = terminal?.prize_review?.self_held === true;
     return `
-      <section class="tournaments-v2-terminal is-pending">
-        <div class="tournaments-v2-terminal-kicker">Турнир завершён</div>
-        <h3>Подводим итоги и начисляем награды…</h3>
-        <p>Результат сетки уже зафиксирован. Начисление выполняется идемпотентно и будет повторено автоматически.</p>
+      <section class="tournaments-v2-terminal is-pending${reviewHold ? ' is-review-hold' : ''}">
+        <div class="tournaments-v2-terminal-kicker">${reviewHold ? 'Призовая проверка' : 'Турнир завершён'}</div>
+        <h3>${reviewHold
+          ? (selfHeld ? 'Ваша призовая ветка временно удержана' : 'Часть призовой ветки временно удержана')
+          : 'Подводим итоги и начисляем награды…'}</h3>
+        <p>${reviewHold
+          ? 'Зафиксирован серьёзный сигнал. Выплата не потеряна и не передана другому владельцу: после Admin review канонический settlement либо разрешит награду, либо применит дисквалификацию и сдвиг мест.'
+          : 'Результат сетки уже зафиксирован. Начисление выполняется идемпотентно и будет повторено автоматически.'}</p>
       </section>
       <details class="tournaments-v2-terminal-archive">
         <summary>Финальная сетка · архив</summary>
@@ -1251,7 +1257,8 @@ function tournamentTerminalMarkup(progression, activeRoundMarkup){
   }).join('');
 
   let selfTitle = 'Участие завершено';
-  if (Number(selfResult?.placement || 0) > 0) selfTitle = `${Number(selfResult.placement)} место`;
+  if (String(selfResult?.result_code || '') === 'disqualified') selfTitle = 'Дисквалифицирован';
+  else if (Number(selfResult?.placement || 0) > 0) selfTitle = `${Number(selfResult.placement)} место`;
   const payout = Math.max(0, Number(selfResult?.payout_amount || 0));
   const prize = Math.max(0, Number(selfResult?.prize_amount || 0));
   const entryReturn = Math.max(0, Number(selfResult?.entry_return_amount || 0));
