@@ -45,11 +45,16 @@ $assert(str_contains($screen, 'formatReadyCountdown(opensAt.getTime() - Date.now
     'Progression waits must reuse the compact mm:ss countdown.');
 $assert(str_contains($screen, 'await refreshTournamentMatchState()'),
     'Existing Hall heartbeat must remain the automatic progression polling owner.');
+$assert(str_contains($screen, 'synchronizeTournamentTerminalProgression')
+        && str_contains($screen, "document.addEventListener('mgw:game-finished'")
+        && str_contains($screen, 'stopTournamentLaunchWatch();')
+        && str_contains($screen, 'stopTournamentStartSync();'),
+    'Terminal tournament game must pre-sync durable progression and stop stale launch owners.');
 
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=24')
-        && str_contains($manifest, 'mvp21_6=progression-return-v2')
-        && str_contains($manifest, 'mvp21_5=corrective-v5'),
-    'Tournament screen must publish the corrective-v5 identity while preserving progression ownership.');
+$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=25')
+        && str_contains($manifest, 'mvp21_6=terminal-progression-sync-v3')
+        && str_contains($manifest, 'mvp21_5=corrective-v6'),
+    'Tournament screen must publish the corrective-v6 terminal progression identity.');
 
 $assert(str_contains($api, "'progression'=>\$progressionSnapshot"),
     'Tournament API must expose the durable progression snapshot.');
@@ -60,5 +65,5 @@ $assert(str_contains($progression, "MATCH_FINAL = 'final'")
         && str_contains($progression, "MATCH_THIRD_PLACE = 'third_place'"),
     'UI stage names must map to explicit durable server match kinds.');
 
-if ($assertions < 17) throw new RuntimeException('MVP-21.6 progression UX contract is too shallow: ' . $assertions);
+if ($assertions < 18) throw new RuntimeException('MVP-21.6 progression UX contract is too shallow: ' . $assertions);
 fwrite(STDOUT, "Mvp21_6TournamentProgressionUxContractTest: {$assertions} assertions passed\n");
