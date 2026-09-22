@@ -66,9 +66,16 @@ final class TournamentSettlementService
             $mgwId = (string)$row['mgw_id'];
             $placement = $terminal['placements'][$mgwId] ?? null;
             $reward = $this->rewardForPlacement($snapshot, $placement);
-            $entryReturn = (int)($reward['entry_return'] ?? 0);
-            $prize = (int)($reward['prize'] ?? 0);
-            $payout = isset($reward['total']) ? (int)$reward['total'] : ($entryReturn + $prize);
+            $rewardEligible = !$this->isSyntheticStagingFixture(
+                $mgwId,
+                (string)$row['account_ref'],
+                (string)($row['legacy_user_id'] ?? '')
+            );
+            $entryReturn = $rewardEligible ? (int)($reward['entry_return'] ?? 0) : 0;
+            $prize = $rewardEligible ? (int)($reward['prize'] ?? 0) : 0;
+            $payout = $rewardEligible
+                ? (isset($reward['total']) ? (int)$reward['total'] : ($entryReturn + $prize))
+                : 0;
             if ($payout !== $entryReturn + $prize || $entryReturn < 0 || $prize < 0) {
                 throw new RuntimeException('Tournament reward snapshot payout is inconsistent.');
             }
@@ -87,6 +94,7 @@ final class TournamentSettlementService
                 'placement'=>$placement,
                 'reward_snapshot_version'=>$version,
                 'reward_snapshot_sha256'=>$snapshotHash,
+                'reward_eligible'=>$rewardEligible,
             ];
 
             $this->ledger->consumeReservation([
@@ -124,6 +132,7 @@ final class TournamentSettlementService
                 $entryReturn,
                 $prize,
                 $payout,
+                $rewardEligible,
                 $reward,
                 $settledAt
             );
@@ -222,6 +231,7 @@ final class TournamentSettlementService
         int $entryReturn,
         int $prize,
         int $payout,
+        bool $rewardEligible,
         array $reward,
         string $settledAt
     ): void {
@@ -242,6 +252,7 @@ final class TournamentSettlementService
                 if ($this->nullableInt($row['placement'] ?? null) !== $placement
                     || (string)$row['reward_snapshot_sha256'] !== $snapshotHash
                     || (int)$row['payout_amount'] !== $payout
+                    || (int)($row['reward_eligible'] ?? 1) !== ($rewardEligible ? 1 : 0)
                     || (string)$row['reservation_id'] !== (string)$registration['reservation_id']) {
                     throw new RuntimeException('Existing tournament result conflicts with canonical settlement.');
                 }
@@ -250,12 +261,12 @@ final class TournamentSettlementService
                     'INSERT INTO mgw_tournament_results (
                         tournament_id,mgw_id,registration_id,account_ref,placement,result_code,
                         reward_snapshot_version,reward_snapshot_sha256,
-                        entry_amount,entry_return_amount,prize_amount,payout_amount,
+                        entry_amount,entry_return_amount,prize_amount,payout_amount,reward_eligible,
                         reservation_id,settled_at_utc,created_at_utc,updated_at_utc
                      ) VALUES (
                         :tournament_id,:mgw_id,:registration_id,:account_ref,:placement,:result_code,
                         :reward_snapshot_version,:reward_snapshot_sha256,
-                        :entry_amount,:entry_return_amount,:prize_amount,:payout_amount,
+                        :entry_amount,:entry_return_amount,:prize_amount,:payout_amount,:reward_eligible,
                         :reservation_id,:settled_at_utc,:created_at_utc,:updated_at_utc
                      )',
                     [
@@ -271,6 +282,7 @@ final class TournamentSettlementService
                         'entry_return_amount'=>$entryReturn,
                         'prize_amount'=>$prize,
                         'payout_amount'=>$payout,
+                        'reward_eligible'=>$rewardEligible ? 1 : 0,
                         'reservation_id'=>(string)$registration['reservation_id'],
                         'settled_at_utc'=>$settledAt,
                         'created_at_utc'=>$settledAt,
@@ -279,7 +291,7 @@ final class TournamentSettlementService
                 );
             }
 
-            foreach ($this->rewardEntitlements($reward, $placement, $settledAt) as $entitlement) {
+            foreach ($rewardEligible ? $this->rewardEntitlements($reward, $placement, $settledAt) : [] as $entitlement) {
                 $sql = $db->driver() === 'sqlite'
                     ? 'INSERT OR IGNORE INTO mgw_tournament_reward_entitlements (
                         tournament_id,mgw_id,reward_code,reward_kind,valid_from_at_utc,valid_until_at_utc,
@@ -308,7 +320,7 @@ final class TournamentSettlementService
                 ]);
             }
 
-            if ($placement === 1 && !empty($reward['golden_ticket'])) {
+            if ($rewardEligible && $placement === 1 && !empty($reward['golden_ticket'])) {
                 $championshipCount = (int)$db->fetchValue(
                     'SELECT COUNT(*) FROM mgw_tournament_results WHERE mgw_id=:mgw_id AND placement=1',
                     ['mgw_id'=>$mgwId]
@@ -461,6 +473,7 @@ final class TournamentSettlementService
             'entry_return_amount'=>(int)$row['entry_return_amount'],
             'prize_amount'=>(int)$row['prize_amount'],
             'payout_amount'=>(int)$row['payout_amount'],
+            'reward_eligible'=>(int)($row['reward_eligible'] ?? 1) === 1,
             'reward_snapshot_version'=>(string)$row['reward_snapshot_version'],
             'settled_at_utc'=>(string)$row['settled_at_utc'],
         ];
@@ -527,6 +540,47 @@ final class TournamentSettlementService
             ];
         }
         return $result;
+    }
+
+    private function isSyntheticStagingFixture(
+        string $mgwId,
+        string $accountRef,
+        string $legacyUserId
+    ): bool {
+        $legacyUserId = trim($legacyUserId);
+        if ($legacyUserId === '') return false;
+
+        $rows = $this->database->fetchAll(
+            'SELECT source_type,source_ref
+             FROM mgw_account_ownership
+             WHERE account_ref=:account_ref
+               AND mgw_id=:mgw_id
+               AND legacy_user_id=:legacy_user_id
+               AND ownership_status=:ownership_status
+             LIMIT 2',
+            [
+                'account_ref'=>$accountRef,
+                'mgw_id'=>$mgwId,
+                'legacy_user_id'=>$legacyUserId,
+                'ownership_status'=>'active',
+            ]
+        );
+        if (count($rows) !== 1 || !is_array($rows[0])) return false;
+
+        $sourceType = (string)($rows[0]['source_type'] ?? '');
+        $sourceRef = (string)($rows[0]['source_ref'] ?? '');
+        $legacyFixture = preg_match('/^MGW-STG-[a-f0-9]{12}$/', $mgwId) === 1
+            && preg_match('/^legacy:stg_tour_[a-f0-9]{12}$/', $accountRef) === 1
+            && preg_match('/^stg_tour_[a-f0-9]{12}$/', $legacyUserId) === 1
+            && $sourceType === 'staging_fixture_repair';
+
+        $v2Fixture = preg_match('/^MGW-[0-9A-HJKMNP-TV-Z]{16}$/', strtoupper($mgwId)) === 1
+            && preg_match('/^legacy:stg_tour_v2_[a-f0-9]{12}$/', $accountRef) === 1
+            && preg_match('/^stg_tour_v2_[a-f0-9]{12}$/', $legacyUserId) === 1
+            && $sourceType === 'runtime_identity'
+            && $sourceRef === 'development:' . $legacyUserId;
+
+        return $legacyFixture || $v2Fixture;
     }
 
     private function tournament(string $tournamentId): array
