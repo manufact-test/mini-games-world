@@ -96,6 +96,34 @@ final class ReconnectLifecycleService
     ): void {
         $nowMs = $this->nowMs();
 
+        // Tournament dual-disconnect owns a longer shared window. Before an
+        // individual 60-second deadline is settled, capture an opponent whose
+        // lease is already disconnected in the same authoritative request.
+        foreach (array_keys($db['games'] ?? []) as $gameId) {
+            if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) continue;
+            $game = $db['games'][$gameId];
+            if (!$this->isReconnectManagedGame($game)
+                || !$this->isTournamentGame($game)
+                || empty($game['reconnect_v2']['paused'])) {
+                continue;
+            }
+            $players = is_array($game['reconnect_v2']['players'] ?? null)
+                ? $game['reconnect_v2']['players']
+                : [];
+            if ($this->allHumanPlayersDisconnected($game,$players)) continue;
+            foreach ($this->humanPlayerIds($game) as $playerId) {
+                if (isset($players[$playerId])) continue;
+                $snapshot = $this->presence->gameplaySnapshot($playerId);
+                if ((string)($snapshot['state'] ?? '') !== 'disconnected') continue;
+                $this->markPlayerDisconnected(
+                    $db,
+                    $playerId,
+                    $this->disconnectedAtFromPresence($snapshot,$nowMs)
+                );
+                break;
+            }
+        }
+
         // Reconnect deadlines are authoritative. A late ping must not revive a
         // match after its 60-second reconnect window already expired.
         foreach (array_keys($db['games'] ?? []) as $gameId) {
