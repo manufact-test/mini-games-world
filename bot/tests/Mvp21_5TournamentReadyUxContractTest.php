@@ -117,6 +117,11 @@ $assert(str_contains($source['screen'], 'startTournamentVisibleRefresh')
         && str_contains($source['screen'], 'await warmTournamentStatus()')
         && str_contains($source['screen'], 'warmTournamentHallStatus'),
     'Visible Tournament screen must continuously refresh authoritative tournament status and Hall state without navigation away/back.');
+$assert(str_contains($source['screen'], 'tournamentStartBoundaryTimer')
+        && str_contains($source['screen'], 'scheduleTournamentStartBoundaryRefresh')
+        && str_contains($source['screen'], 'scheduledStart.getTime() - Date.now() + 30')
+        && str_contains($source['screen'], 'await refreshTournamentMatchState()'),
+    'Registered clients must refresh readiness at the exact tournament T0 instead of waiting for the arbitrary two-second visible-poll phase.');
 $assert(str_contains($source['screen'], 'Загружаем готовность вашей пары…')
         && str_contains($source['screen'], 'tournamentMatchError')
         && str_contains($source['screen'], 'const matchMarkup = tournamentMatchMarkup();'),
@@ -171,5 +176,5 @@ $assert(str_contains($source['manifest'], 'production-v110-acceptance-runtime.js
 $assert(str_contains($source['manifest'], 'main.css?v=199'),
     'Readiness presentation CSS must publish a fresh cache identity.');
 
-if ($assertions < 36) throw new RuntimeException('MVP-21.5 UX contract is too shallow.');
+if ($assertions < 37) throw new RuntimeException('MVP-21.5 UX contract is too shallow.');
 fwrite(STDOUT, "Mvp21_5TournamentReadyUxContractTest: {$assertions} assertions passed\n");
