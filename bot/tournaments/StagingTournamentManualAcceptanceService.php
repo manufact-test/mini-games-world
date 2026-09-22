@@ -612,6 +612,141 @@ final class StagingTournamentManualAcceptanceService
         ];
     }
 
+    /**
+     * Staging-only safety for later rounds: a synthetic fixture identity has no
+     * WebView and therefore can never adopt a runtime game. Once the canonical
+     * round/replay wait has elapsed, resolve a mixed real+fixture pair as a
+     * technical bye instead of launching an unwinnable preparation loop.
+     */
+    public function resolveMixedFixtureByeForParticipant(
+        array $server,
+        string $mgwId,
+        string $legacyUserId,
+        ?DateTimeImmutable $now = null
+    ): array {
+        $this->assertAvailableEnvironment($server);
+        $mgwId = trim($mgwId);
+        $legacyUserId = trim($legacyUserId);
+        if ($mgwId === '' || $legacyUserId === '') {
+            return ['resolved'=>false,'reason'=>'participant_identity_missing'];
+        }
+
+        $snapshot = $this->tournaments->snapshot();
+        $tournament = $snapshot['tournament'] ?? null;
+        if (!is_array($tournament)) {
+            return ['resolved'=>false,'reason'=>'no_active_tournament'];
+        }
+        $tournamentId = trim((string)($tournament['tournament_id'] ?? ''));
+        if ($tournamentId === '') {
+            return ['resolved'=>false,'reason'=>'tournament_identity_missing'];
+        }
+
+        $rows = $this->database->fetchAll(
+            'SELECT * FROM mgw_tournament_round_matches
+             WHERE tournament_id=:tournament_id
+               AND completed_at_utc IS NULL
+               AND (player_a_mgw_id=:player_a_mgw_id OR player_b_mgw_id=:player_b_mgw_id)
+             ORDER BY round_no DESC,pair_no ASC
+             LIMIT 2',
+            [
+                'tournament_id'=>$tournamentId,
+                'player_a_mgw_id'=>$mgwId,
+                'player_b_mgw_id'=>$mgwId,
+            ]
+        );
+        if (count($rows) !== 1 || !is_array($rows[0])) {
+            return ['resolved'=>false,'reason'=>$rows === [] ? 'no_active_pair' : 'ambiguous_active_pair'];
+        }
+
+        $row = $rows[0];
+        $roundNo = max(1, (int)($row['round_no'] ?? 1));
+        if ($roundNo <= 1) {
+            return ['resolved'=>false,'reason'=>'first_round_owned_by_ready'];
+        }
+
+        $aMgw = trim((string)($row['player_a_mgw_id'] ?? ''));
+        $bMgw = trim((string)($row['player_b_mgw_id'] ?? ''));
+        $aFixture = $this->fixtureRuntimeIdentityForMgw($aMgw);
+        $bFixture = $this->fixtureRuntimeIdentityForMgw($bMgw);
+        if (($aFixture === null) === ($bFixture === null)) {
+            return ['resolved'=>false,'reason'=>'not_mixed_fixture_pair'];
+        }
+
+        $liveMgw = $aFixture !== null ? $bMgw : $aMgw;
+        if ($liveMgw !== $mgwId || $this->fixtureRuntimeIdentityForMgw($mgwId) !== null) {
+            return ['resolved'=>false,'reason'=>'participant_is_not_live_side'];
+        }
+
+        $moment = ($now ?? new DateTimeImmutable('now', new DateTimeZone('UTC')))
+            ->setTimezone(new DateTimeZone('UTC'));
+        $opensRaw = trim((string)($row['readiness_opened_at_utc'] ?? ''));
+        try {
+            $opens = (new DateTimeImmutable($opensRaw, new DateTimeZone('UTC')))
+                ->setTimezone(new DateTimeZone('UTC'));
+        } catch (Throwable) {
+            throw new RuntimeException('Staging mixed-fixture wait timestamp is invalid.');
+        }
+        if ($moment < $opens) {
+            return [
+                'resolved'=>false,
+                'reason'=>'wait_not_elapsed',
+                'round_no'=>$roundNo,
+                'pair_no'=>max(1, (int)($row['pair_no'] ?? 1)),
+                'opens_at_utc'=>$opens->format('Y-m-d H:i:s.u'),
+            ];
+        }
+
+        $fixtureIdentity = $aFixture ?? $bFixture;
+        if (!is_array($fixtureIdentity)) {
+            return ['resolved'=>false,'reason'=>'fixture_identity_unavailable'];
+        }
+        $fixtureLegacy = trim((string)($fixtureIdentity['legacy_user_id'] ?? ''));
+        if ($fixtureLegacy === '' || $fixtureLegacy === $legacyUserId) {
+            throw new RuntimeException('Staging mixed-fixture runtime identities are invalid.');
+        }
+
+        $pairNo = max(1, (int)($row['pair_no'] ?? 1));
+        $attemptNo = max(1, (int)($row['attempt_no'] ?? 1));
+        $attachedGameId = trim((string)($row['game_id'] ?? ''));
+        $gameId = $attachedGameId !== ''
+            ? $attachedGameId
+            : 'stg_tour_mixed_bye_' . substr(
+                hash('sha256', $tournamentId . '|' . $roundNo . '|' . $pairNo . '|' . $attemptNo . '|' . $mgwId),
+                0,
+                48
+            );
+
+        $playerIds = $aFixture !== null
+            ? [$fixtureLegacy, $legacyUserId]
+            : [$legacyUserId, $fixtureLegacy];
+
+        (new TournamentRoundProgressionService($this->database))->observeFinishedGame([
+            'id'=>$gameId,
+            'match_source'=>'tournament',
+            'status'=>'finished',
+            'tournament_id'=>$tournamentId,
+            'tournament_round_no'=>$roundNo,
+            'tournament_pair_no'=>$pairNo,
+            'tournament_attempt_no'=>$attemptNo,
+            'player_ids'=>$playerIds,
+            'winner_id'=>$legacyUserId,
+            'finish_reason'=>'staging_mixed_fixture_bye',
+            'finished_at'=>$moment->format(DATE_ATOM),
+        ], $moment);
+
+        return [
+            'resolved'=>true,
+            'reason'=>'staging_mixed_fixture_bye',
+            'tournament_id'=>$tournamentId,
+            'round_no'=>$roundNo,
+            'pair_no'=>$pairNo,
+            'attempt_no'=>$attemptNo,
+            'attached_game_id'=>$attachedGameId !== '' ? $attachedGameId : null,
+            'winner_legacy_user_id'=>$legacyUserId,
+            'loser_legacy_user_id'=>$fixtureLegacy,
+        ];
+    }
+
     public function resetAvailability(array $server): array
     {
         if (!$this->isAvailableEnvironment($server)) {
