@@ -83,6 +83,61 @@ try {
     $fixtureRuntimeParity = $fixture->repairFixtureRuntimeParity($_SERVER);
     $tournamentSnapshot = $tournaments->snapshot();
 
+    $tournamentRoundDiagnostic = [
+        'active'=>false,
+        'availability'=>null,
+        'rounds'=>[],
+        'attempt_count'=>0,
+    ];
+    $activeTournament = $tournamentSnapshot['tournament'] ?? null;
+    $activeTournamentId = is_array($activeTournament)
+        ? trim((string)($activeTournament['tournament_id'] ?? ''))
+        : '';
+    if ($activeTournamentId !== '') {
+        $tournamentRoundDiagnostic['active'] = true;
+        $tournamentRoundDiagnostic['availability'] = $fixture->progressionAcceptanceAvailability($_SERVER);
+        $roundRows = $db->fetchAll(
+            'SELECT round_no,pair_no,launch_state,attempt_no,wait_kind,match_kind,
+                    game_id,winner_mgw_id,loser_mgw_id,result_reason,completed_at_utc
+             FROM mgw_tournament_round_matches
+             WHERE tournament_id=:tournament_id
+             ORDER BY round_no ASC,pair_no ASC',
+            ['tournament_id'=>$activeTournamentId]
+        );
+        foreach ($roundRows as $row) {
+            if (!is_array($row)) continue;
+            $roundNo = max(1, (int)($row['round_no'] ?? 1));
+            $key = (string)$roundNo;
+            if (!isset($tournamentRoundDiagnostic['rounds'][$key])) {
+                $tournamentRoundDiagnostic['rounds'][$key] = [
+                    'pair_count'=>0,
+                    'completed_count'=>0,
+                    'unresolved_count'=>0,
+                    'pairs'=>[],
+                ];
+            }
+            $completed = trim((string)($row['completed_at_utc'] ?? '')) !== '';
+            $tournamentRoundDiagnostic['rounds'][$key]['pair_count']++;
+            $tournamentRoundDiagnostic['rounds'][$key][$completed ? 'completed_count' : 'unresolved_count']++;
+            $tournamentRoundDiagnostic['rounds'][$key]['pairs'][] = [
+                'pair_no'=>(int)($row['pair_no'] ?? 0),
+                'launch_state'=>(string)($row['launch_state'] ?? ''),
+                'attempt_no'=>max(1, (int)($row['attempt_no'] ?? 1)),
+                'wait_kind'=>(string)($row['wait_kind'] ?? ''),
+                'match_kind'=>(string)($row['match_kind'] ?? ''),
+                'game_attached'=>trim((string)($row['game_id'] ?? '')) !== '',
+                'completed'=>$completed,
+                'result_reason'=>(string)($row['result_reason'] ?? ''),
+                'winner_present'=>trim((string)($row['winner_mgw_id'] ?? '')) !== '',
+                'loser_present'=>trim((string)($row['loser_mgw_id'] ?? '')) !== '',
+            ];
+        }
+        $tournamentRoundDiagnostic['attempt_count'] = (int)$db->fetchValue(
+            'SELECT COUNT(*) FROM mgw_tournament_match_attempts WHERE tournament_id=:tournament_id',
+            ['tournament_id'=>$activeTournamentId]
+        );
+    }
+
     $selectorFallbackCheck = [
         'available'=>false,
         'would_fallback_to_json'=>false,
@@ -490,6 +545,7 @@ try {
         'registered_count'=>(int)($tournamentSnapshot['tournament']['registered_count'] ?? 0),
         'tournament_fixture_ownership_repair'=>$fixtureOwnershipRepair,
         'tournament_fixture_runtime_parity'=>$fixtureRuntimeParity,
+        'tournament_round_diagnostic'=>$tournamentRoundDiagnostic,
         'storage_selector_notification_fallback'=>$selectorFallbackCheck,
         'unified_economy_preview'=>[
             'ready'=>(bool)($economyPreview['ready'] ?? false),
