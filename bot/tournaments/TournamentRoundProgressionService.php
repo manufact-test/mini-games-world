@@ -851,7 +851,7 @@ final class TournamentRoundProgressionService
         $finishReason = trim($finishReason);
         if ($finishReason === 'player_left') return 'manual_leave';
         if ($finishReason === 'disconnect_timeout') return 'disconnect_timeout';
-        if ($finishReason === 'tournament_both_disconnect_timeout') return 'both_disconnect_timeout';
+        if ($finishReason === 'tournament_disconnect_timeout') return 'both_disconnect_timeout';
         if ($finishReason === 'tournament_both_absent_timeout') return 'both_absent_timeout';
         if ($finishReason === 'preparation_timeout') {
             if ($resultType === 'win') return 'preparation_no_show';
