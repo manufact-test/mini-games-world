@@ -77,6 +77,13 @@ final class TournamentPrizeReviewService
             if ($previousState === self::STATE_DISQUALIFIED) {
                 return $this->publicReview($existing);
             }
+            if ($previousState === self::STATE_PENDING
+                && (string)($existing['signal_code'] ?? '') === $signalCode
+                && $this->nullableText($existing['related_game_id'] ?? null, 96) === $relatedGameId
+                && (string)($existing['signal_note'] ?? '') === $note
+                && (string)($existing['signal_actor_ref'] ?? '') === $actorRef) {
+                return $this->publicReview($existing);
+            }
 
             $params = [
                 'tournament_id'=>$tournamentId,
