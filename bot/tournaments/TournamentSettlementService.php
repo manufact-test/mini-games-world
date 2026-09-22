@@ -234,6 +234,15 @@ final class TournamentSettlementService
             ['tournament_id'=>$tournamentId]
         );
 
+        $terminal = $this->terminalBracket($tournamentId);
+        $reviewDecision = $this->prizeReview !== null && is_array($terminal)
+            ? $this->prizeReview->settlementDecision($tournamentId, $terminal['placements'])
+            : ['hold'=>false,'held_mgw_ids'=>[],'disqualified_mgw_ids'=>[],'reviews'=>[]];
+        $selfReview = $this->prizeReview !== null
+            ? $this->prizeReview->participantReview($tournamentId, $mgwId)
+            : null;
+        $heldForReview = in_array($mgwId, array_map('strval', $reviewDecision['held_mgw_ids'] ?? []), true);
+
         $rows = $this->database->fetchAll(
             'SELECT tr.*,u.nickname,u.display_name
              FROM mgw_tournament_results tr
@@ -269,15 +278,24 @@ final class TournamentSettlementService
             if ($candidate !== '' && ($completedAt === null || strcmp($candidate, $completedAt) > 0)) $completedAt = $candidate;
         }
 
+        $settlementComplete = $expected > 0 && $settled === $expected;
+        $reviewHold = ($reviewDecision['hold'] ?? false) === true;
+
         return [
             'tournament_id'=>$tournamentId,
-            'settlement_state'=>$expected > 0 && $settled === $expected ? 'settled' : 'pending',
-            'settlement_complete'=>$expected > 0 && $settled === $expected,
+            'settlement_state'=>$settlementComplete ? 'settled' : ($reviewHold ? 'review_hold' : 'pending'),
+            'settlement_complete'=>$settlementComplete,
             'settled_count'=>$settled,
             'participant_count'=>$expected,
             'settled_at_utc'=>$completedAt,
             'podium'=>$podium,
             'self_result'=>$self,
+            'prize_review'=>[
+                'hold'=>$reviewHold,
+                'self_held'=>$heldForReview,
+                'self_review'=>$selfReview,
+                'held_count'=>count($reviewDecision['held_mgw_ids'] ?? []),
+            ],
         ];
     }
 
