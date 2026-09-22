@@ -32,13 +32,22 @@
   const resetPanel = card.querySelector('[data-tournament-reset-panel]');
   const resetInfo = card.querySelector('[data-tournament-reset-info]');
   const resetManual = card.querySelector('[data-tournament-reset-manual]');
+  const cancelPanel = card.querySelector('[data-tournament-cancel-panel]');
+  const cancelInfo = card.querySelector('[data-tournament-cancel-info]');
+  const cancelReason = card.querySelector('[data-tournament-cancel-reason]');
+  const cancelTournament = card.querySelector('[data-tournament-cancel]');
+  const emergencyStop = card.querySelector('[data-tournament-emergency]');
   let busy = false;
   let snapshot = null;
   let manualAcceptance = null;
   let manualReset = null;
   let manualProgression = null;
+  let cancellation = null;
   let resetConfirmUntil = 0;
   let resetConfirmTimer = null;
+  let cancelConfirmUntil = 0;
+  let cancelConfirmKind = '';
+  let cancelConfirmTimer = null;
 
   const format = value => new Intl.NumberFormat('ru-RU').format(Number(value || 0));
   const stateLabel = value => ({
@@ -46,6 +55,8 @@
     registration_open:'регистрация открыта',
     waiting_for_date:'состав набран · ожидает дату',
     scheduled:'дата назначена',
+    cancelled:'отменён',
+    emergency_stopped:'аварийно остановлен',
   })[String(value || '')] || String(value || '—');
   const parseUtc = value => {
     const raw = String(value || '').trim();
@@ -122,7 +133,7 @@
 
   const setBusy = (value) => {
     busy = value;
-    card.querySelectorAll('button, input, select').forEach(control => {
+    card.querySelectorAll('button, input, select, textarea').forEach(control => {
       if (value) {
         // Draft form controls must remain editable even while background admin
         // reads/resets are running. Disabling a focused Telegram WebView input
@@ -153,6 +164,14 @@
       }
       if (control === resetManual) {
         control.disabled = resetManual.dataset.available !== '1';
+        return;
+      }
+      if (control === cancelTournament) {
+        control.disabled = cancelTournament.dataset.available !== '1';
+        return;
+      }
+      if (control === emergencyStop) {
+        control.disabled = emergencyStop.dataset.available !== '1';
         return;
       }
       control.disabled = false;
@@ -188,6 +207,31 @@
     if (resetManual instanceof HTMLButtonElement) {
       resetManual.textContent = 'Сбросить staging-турнир';
     }
+  };
+
+  const disarmCancellationConfirmation = () => {
+    cancelConfirmUntil = 0;
+    cancelConfirmKind = '';
+    if (cancelConfirmTimer) window.clearTimeout(cancelConfirmTimer);
+    cancelConfirmTimer = null;
+    if (cancelTournament instanceof HTMLButtonElement) cancelTournament.textContent = 'Отменить турнир';
+    if (emergencyStop instanceof HTMLButtonElement) emergencyStop.textContent = 'Аварийная остановка';
+  };
+
+  const armCancellationConfirmation = (kind, warning) => {
+    cancelConfirmUntil = Date.now() + 8000;
+    cancelConfirmKind = kind;
+    if (kind === 'emergency' && emergencyStop instanceof HTMLButtonElement) {
+      emergencyStop.textContent = 'Подтвердить аварийную остановку';
+    } else if (kind === 'cancel' && cancelTournament instanceof HTMLButtonElement) {
+      cancelTournament.textContent = 'Подтвердить отмену';
+    }
+    setStatus(warning, 'error');
+    if (cancelConfirmTimer) window.clearTimeout(cancelConfirmTimer);
+    cancelConfirmTimer = window.setTimeout(() => {
+      disarmCancellationConfirmation();
+      if (!busy) setStatus('Отмена турнира не подтверждена.');
+    }, 8000);
   };
 
   const armResetConfirmation = warning => {
@@ -288,6 +332,17 @@
         resetManual.dataset.available = '0';
       }
       if (resetInfo instanceof HTMLElement) resetInfo.textContent = 'Сброс staging-турнира недоступен.';
+      releaseFocusBeforeHide(cancelPanel);
+      disarmCancellationConfirmation();
+      if (cancelPanel instanceof HTMLElement) cancelPanel.hidden = true;
+      if (cancelTournament instanceof HTMLButtonElement) {
+        cancelTournament.disabled = true;
+        cancelTournament.dataset.available = '0';
+      }
+      if (emergencyStop instanceof HTMLButtonElement) {
+        emergencyStop.disabled = true;
+        emergencyStop.dataset.available = '0';
+      }
       return;
     }
 
@@ -412,6 +467,24 @@
         ? `Staging cleanup: освободить все активные резервы и снять текущий турнир «${tournament.title || 'Официальный турнир'}» с active slot.`
         : 'Сброс staging-турнира недоступен.';
     }
+
+    const cancellationState = cancellation && typeof cancellation === 'object' ? cancellation : {};
+    const canCancel = cancellationState.normal_cancel_available === true;
+    const canEmergency = cancellationState.emergency_stop_available === true;
+    if (cancelPanel instanceof HTMLElement) cancelPanel.hidden = !(canCancel || canEmergency);
+    if (cancelTournament instanceof HTMLButtonElement) {
+      cancelTournament.dataset.available = canCancel ? '1' : '0';
+      cancelTournament.disabled = busy || !canCancel;
+    }
+    if (emergencyStop instanceof HTMLButtonElement) {
+      emergencyStop.dataset.available = canEmergency ? '1' : '0';
+      emergencyStop.disabled = busy || !canEmergency;
+    }
+    if (cancelInfo instanceof HTMLElement) {
+      cancelInfo.textContent = cancellationState.technical_cancel_required === true
+        ? 'Технический перезапуск исчерпан. Турнир требует аварийной остановки: укажите причину и подтвердите действие дважды.'
+        : 'Отмена возвращает каждому зарегистрированному участнику полный взнос 50 000 и аннулирует турнирные результаты.';
+    }
   };
 
   const withBusy = async (message, action) => {
@@ -429,6 +502,9 @@
       manualProgression = data?.manual_progression && typeof data.manual_progression === 'object'
         ? data.manual_progression
         : manualProgression;
+      cancellation = data?.cancellation && typeof data.cancellation === 'object'
+        ? data.cancellation
+        : cancellation;
       render(data.snapshot || {});
       return data;
     } catch (error) {
@@ -565,6 +641,56 @@
     }
   };
 
+  const executeTournamentCancellation = async kind => {
+    const tournament = snapshot?.tournament;
+    const tournamentId = String(tournament?.tournament_id || '');
+    if (!tournamentId || !['cancel','emergency'].includes(kind)) return;
+
+    const reason = String(cancelReason?.value || '').trim();
+    if (kind === 'emergency' && !reason) {
+      setStatus('Для аварийной остановки обязательно укажите причину.', 'error');
+      cancelReason?.focus();
+      return;
+    }
+
+    const titleText = String(tournament?.title || 'Официальный турнир');
+    const warning = kind === 'emergency'
+      ? `Аварийно остановить «${titleText}»? Всем участникам будет возвращён полный взнос, результаты будут аннулированы. Нажмите подтверждение ещё раз в течение 8 секунд.`
+      : `Отменить «${titleText}»? Всем участникам будет возвращён полный взнос, результаты будут аннулированы. Нажмите подтверждение ещё раз в течение 8 секунд.`;
+
+    if (cancelConfirmKind !== kind || Date.now() > cancelConfirmUntil) {
+      disarmCancellationConfirmation();
+      armCancellationConfirmation(kind, warning);
+      return;
+    }
+
+    disarmCancellationConfirmation();
+    releaseFocusBeforeHide(cancelPanel);
+    restoreDraftControls();
+
+    try {
+      const data = await withBusy(
+        kind === 'emergency' ? 'Аварийно останавливаю турнир…' : 'Отменяю турнир…',
+        () => post({
+          action:kind === 'emergency' ? 'emergency_stop' : 'cancel_tournament',
+          tournament_id:tournamentId,
+          reason,
+          confirmation:{
+            confirmed:true,
+            mode:'double_confirm',
+            tournament_id:tournamentId,
+            kind,
+          },
+        })
+      );
+      const result = data?.cancellation_result || {};
+      setStatus(
+        `${kind === 'emergency' ? 'Турнир аварийно остановлен' : 'Турнир отменён'}: полный возврат получили ${format(result.refunded_count || 0)} участн.; возвращено ${format(result.refund_amount || 0)} коинов. Результаты аннулированы.`,
+        'ok'
+      );
+    } catch (_) {}
+  };
+
   const assignFinalDate = async () => {
     const tournamentId = String(snapshot?.tournament?.tournament_id || '');
     if (!tournamentId || !(scheduleStart instanceof HTMLInputElement)) return;
@@ -601,6 +727,8 @@
   prepareManual?.addEventListener('click', prepareManualAcceptance);
   completeFixtures?.addEventListener('click', completeFixturePairs);
   resetManual?.addEventListener('click', resetManualAcceptance);
+  cancelTournament?.addEventListener('click', () => { void executeTournamentCancellation('cancel'); });
+  emergencyStop?.addEventListener('click', () => { void executeTournamentCancellation('emergency'); });
   assignDate?.addEventListener('click', assignFinalDate);
 
   if (telegram?.initData) {

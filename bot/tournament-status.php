@@ -36,10 +36,16 @@ try {
         new LedgerWriteService($database)
     );
 
+    $snapshot = $service->snapshot($mgwId, $accountRef);
+    $snapshot['last_cancellation'] = (new TournamentCancellationService(
+        $database,
+        new LedgerWriteService($database)
+    ))->lastCancellationForParticipant($mgwId);
+
     json_response([
         'ok'=>true,
         'generated_at'=>gmdate(DATE_ATOM),
-        'snapshot'=>$service->snapshot($mgwId, $accountRef),
+        'snapshot'=>$snapshot,
     ]);
 } catch (Throwable $error) {
     error_log('[MiniGamesWorld tournament status] ' . $error->getMessage());

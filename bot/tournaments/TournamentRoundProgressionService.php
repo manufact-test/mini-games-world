@@ -35,7 +35,7 @@ final class TournamentRoundProgressionService
         }
 
         $moment = $this->moment($now);
-        $this->ensureFirstRoundRows($tournamentId, $moment);
+        $cancelled = false;
 
         $this->database->transaction(function (DatabaseConnectionInterface $db) use (
             $game,
@@ -43,8 +43,27 @@ final class TournamentRoundProgressionService
             $roundNo,
             $pairNo,
             $gameId,
-            $moment
+            $moment,
+            &$cancelled
         ): void {
+            $stateRows = $db->fetchAll(
+                'SELECT tournament_state FROM mgw_tournaments
+                 WHERE tournament_id=:tournament_id' . $this->forUpdate($db),
+                ['tournament_id'=>$tournamentId]
+            );
+            if (count($stateRows) !== 1 || !is_array($stateRows[0])) {
+                throw new RuntimeException('Tournament progression owner is unavailable.');
+            }
+            if (in_array((string)$stateRows[0]['tournament_state'], [
+                TournamentRegistrationService::STATE_CANCELLED,
+                TournamentRegistrationService::STATE_EMERGENCY_STOPPED,
+            ], true)) {
+                $cancelled = true;
+                return;
+            }
+
+            $this->ensureFirstRoundRows($tournamentId, $moment);
+
             $rows = $db->fetchAll(
                 'SELECT * FROM mgw_tournament_round_matches
                  WHERE tournament_id=:tournament_id AND round_no=:round_no AND pair_no=:pair_no'
@@ -326,6 +345,14 @@ final class TournamentRoundProgressionService
                 ]
             );
         });
+
+        if ($cancelled) {
+            return [
+                'tournament_id'=>$tournamentId,
+                'ignored'=>true,
+                'reason'=>'tournament_cancelled',
+            ];
+        }
 
         $this->propagateCompletedRounds($tournamentId, $roundNo, $moment);
         return $this->tournamentSnapshot($tournamentId, $moment);
