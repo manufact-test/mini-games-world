@@ -103,6 +103,7 @@ require_once __DIR__ . '/../ratings/HiddenSkillRuntimeBridge.php';
 require_once __DIR__ . '/../tournaments/TournamentRegistrationService.php';
 require_once __DIR__ . '/../tournaments/TournamentMatchReadinessService.php';
 require_once __DIR__ . '/../tournaments/TournamentRoundProgressionService.php';
+require_once __DIR__ . '/../tournaments/TournamentPrizeReviewService.php';
 require_once __DIR__ . '/../tournaments/TournamentSettlementService.php';
 require_once __DIR__ . '/../tournaments/TournamentRewardProjectionService.php';
 require_once __DIR__ . '/../tournaments/TournamentCancellationService.php';
