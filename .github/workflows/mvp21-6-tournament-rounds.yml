@@ -26,6 +26,11 @@ on:
       - 'bot/tests/Mvp21_3TournamentScheduleTest.php'
       - 'bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php'
       - 'bot/tests/Mvp21_8CorrectiveContractTest.php'
+      - 'bot/tests/Mvp21_8CorrectiveV9ContractTest.php'
+      - 'bot/storage/StorageFactory.php'
+      - 'bot/runtime/RuntimePrimaryStagingRequestSessionConfig.php'
+      - 'bot/tests/RuntimePrimaryStagingRequestSessionConfigTest.php'
+      - 'e2e/staging/current-core-final.spec.mjs'
       - 'bot/services/GameService.php'
       - 'bot/services/GameRuntimeService.php'
       - 'bot/services/ChessRuntimeService.php'
@@ -127,6 +132,10 @@ jobs:
             bot/tests/Mvp21_3TournamentScheduleTest.php
             bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php
             bot/tests/Mvp21_8CorrectiveContractTest.php
+            bot/tests/Mvp21_8CorrectiveV9ContractTest.php
+            bot/storage/StorageFactory.php
+            bot/runtime/RuntimePrimaryStagingRequestSessionConfig.php
+            bot/tests/RuntimePrimaryStagingRequestSessionConfigTest.php
             app/admin.php
             bot/services/GameService.php
             bot/services/GameRuntimeService.php
@@ -165,6 +174,8 @@ jobs:
           php bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php
           php bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php
           php bot/tests/Mvp21_8CorrectiveContractTest.php
+          php bot/tests/Mvp21_8CorrectiveV9ContractTest.php
+          php bot/tests/RuntimePrimaryStagingRequestSessionConfigTest.php
           php bot/tests/Mvp21_1TournamentRegistrationTest.php
           php bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
           php bot/tests/Mvp21_2TournamentRulesTest.php
@@ -240,6 +251,11 @@ jobs:
               bot/tests/Mvp21_3TournamentScheduleTest.php|\
               bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php|\
               bot/tests/Mvp21_8CorrectiveContractTest.php|\
+              bot/tests/Mvp21_8CorrectiveV9ContractTest.php|\
+              bot/storage/StorageFactory.php|\
+              bot/runtime/RuntimePrimaryStagingRequestSessionConfig.php|\
+              bot/tests/RuntimePrimaryStagingRequestSessionConfigTest.php|\
+              e2e/staging/current-core-final.spec.mjs|\
               app/admin.php|\
               app/assets/js/admin-tournaments.js|\
               bot/services/GameService.php|\
