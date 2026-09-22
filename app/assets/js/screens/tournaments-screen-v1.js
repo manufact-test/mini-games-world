@@ -51,6 +51,8 @@ let tournamentMatchError = '';
 let tournamentLaunchWatchTimer = null;
 let tournamentStartBoundaryTimer = null;
 let tournamentStartSyncTimer = null;
+let tournamentTerminalSyncPromise = null;
+let tournamentTerminalReturnPending = false;
 
 function lockVisibleBalance(){
   const ids = ['balanceUnified', 'topbarBalanceUnified'];
@@ -189,9 +191,12 @@ export function initTournamentsScreen(){
     stopTournamentLaunchWatch();
     stopTournamentStartBoundaryRefresh();
     stopTournamentStartSync();
-    tournamentMatchSnapshot = null;
-    tournamentProgressionSnapshot = null;
+    // Do not discard the terminal progression already synchronized while the
+    // result sheet was open. Clearing it here caused the Hall to briefly fall
+    // back to the old "loading readiness/opponent" card and made one failed
+    // refresh look like a total tournament load failure.
     tournamentMatchError = '';
+    tournamentTerminalReturnPending = true;
     tournamentScreen.querySelectorAll('[data-competition-mode]').forEach(candidate => {
       const active = String(candidate.dataset.competitionMode || '') === 'tournaments';
       candidate.classList.toggle('active', active);
@@ -200,7 +205,9 @@ export function initTournamentsScreen(){
     tournamentScreen.querySelectorAll('[data-competition-panel]').forEach(panel => {
       panel.hidden = String(panel.dataset.competitionPanel || '') !== 'tournaments';
     });
-    void loadTournamentSnapshot();
+    renderTournamentSnapshot();
+    void synchronizeTournamentTerminalProgression()
+      .finally(() => { void loadTournamentSnapshot(); });
   });
 
   document.addEventListener('mgw:game-finished', event => {
@@ -212,6 +219,7 @@ export function initTournamentsScreen(){
     stopTournamentLaunchWatch();
     stopTournamentStartBoundaryRefresh();
     stopTournamentStartSync();
+    tournamentTerminalReturnPending = true;
     void synchronizeTournamentTerminalProgression();
   });
 
@@ -558,18 +566,25 @@ async function warmTournamentHallStatus(){
 }
 
 async function synchronizeTournamentTerminalProgression(){
-  try {
-    const result = await api.tournamentMatchState();
-    tournamentMatchSnapshot = result?.snapshot && typeof result.snapshot === 'object'
-      ? result.snapshot
-      : null;
-    tournamentProgressionSnapshot = result?.progression && typeof result.progression === 'object'
-      ? result.progression
-      : null;
-    tournamentMatchError = '';
-  } catch (error) {
-    tournamentMatchError = String(error?.message || 'Не удалось синхронизировать результат турнира.');
-  }
+  if (tournamentTerminalSyncPromise) return tournamentTerminalSyncPromise;
+  tournamentTerminalSyncPromise = api.tournamentMatchState()
+    .then(result => {
+      tournamentMatchSnapshot = result?.snapshot && typeof result.snapshot === 'object'
+        ? result.snapshot
+        : tournamentMatchSnapshot;
+      tournamentProgressionSnapshot = result?.progression && typeof result.progression === 'object'
+        ? result.progression
+        : tournamentProgressionSnapshot;
+      tournamentMatchError = '';
+      tournamentTerminalReturnPending = false;
+      return result;
+    })
+    .catch(error => {
+      tournamentMatchError = String(error?.message || 'Не удалось синхронизировать результат турнира.');
+      throw error;
+    })
+    .finally(() => { tournamentTerminalSyncPromise = null; });
+  return tournamentTerminalSyncPromise;
 }
 
 async function refreshTournamentMatchState(){
@@ -581,8 +596,13 @@ async function refreshTournamentMatchState(){
         : null;
       tournamentProgressionSnapshot = result?.progression && typeof result.progression === 'object'
         ? result.progression
-        : null;
+        : tournamentProgressionSnapshot;
       tournamentMatchError = '';
+      if (tournamentProgressionSnapshot?.latest_match?.completed_at_utc
+          || tournamentProgressionSnapshot?.current_match
+          || tournamentProgressionSnapshot?.tournament_complete === true) {
+        tournamentTerminalReturnPending = false;
+      }
       if (result?.game?.id && String(result.game.status || '') === 'active') {
         stopTournamentLaunchWatch();
         stopTournamentStartSync();
@@ -1029,14 +1049,17 @@ function tournamentMatchMarkup(){
     ? tournamentMatchSnapshot.match
     : null;
   if (!match) {
-    if (tournamentMatchError) {
+    if (tournamentMatchError && !tournamentTerminalReturnPending) {
       return `<section class="tournaments-v2-ready">
         <div class="tournaments-v2-tournament-error">${escapeHtml(tournamentMatchError)}</div>
       </section>`;
     }
+    const pendingCopy = tournamentTerminalReturnPending
+      ? 'Сохраняем результат турнира…'
+      : 'Загружаем готовность вашей пары…';
     return `<section class="tournaments-v2-ready">
       <div class="tournaments-v2-ready-head">
-        <div><span>Первый матч</span><strong>Загружаем готовность вашей пары…</strong></div>
+        <div><span>Турнирный матч</span><strong>${escapeHtml(pendingCopy)}</strong></div>
       </div>
     </section>`;
   }
@@ -1221,17 +1244,22 @@ function renderTournamentSnapshot(errorMessage = ''){
         ? (tournamentPendingAction === 'register' ? 'Регистрируем…' : 'Проверяем…')
         : `Зарегистрироваться · ${escapeHtml(formatNumber(fee))}`;
     action = `<button type="button" class="tournaments-v2-tournament-action${tournamentBusy ? ' is-pending' : ''}" data-tournament-action="register"${disabled ? ' disabled' : ''}${tournamentBusy ? ' aria-busy="true"' : ''}>${label}</button>`;
-  } else if (open && registered && !consentAccepted) {
-    const disabled = tournamentBusy || !tournamentRulesAccepted || !rulesReady;
-    const label = tournamentBusy
-      ? (tournamentPendingAction === 'register' ? 'Сохраняем согласие…' : 'Проверяем…')
-      : 'Подтвердить правила';
-    action = `<button type="button" class="tournaments-v2-tournament-action${tournamentBusy ? ' is-pending' : ''}" data-tournament-action="register"${disabled ? ' disabled' : ''}${tournamentBusy ? ' aria-busy="true"' : ''}>${label}</button>`;
   } else if (open && registered && !full) {
-    const label = tournamentBusy
+    const cancelLabel = tournamentBusy
       ? (tournamentPendingAction === 'leave' ? 'Отменяем…' : 'Проверяем…')
       : 'Отменить регистрацию';
-    action = `<button type="button" class="tournaments-v2-tournament-action tournaments-v2-tournament-action--secondary${tournamentBusy ? ' is-pending' : ''}" data-tournament-action="leave"${tournamentBusy ? ' disabled aria-busy="true"' : ''}>${label}</button>`;
+    const cancelButton = `<button type="button" class="tournaments-v2-tournament-action tournaments-v2-tournament-action--secondary${tournamentBusy ? ' is-pending' : ''}" data-tournament-action="leave"${tournamentBusy ? ' disabled aria-busy="true"' : ''}>${cancelLabel}</button>`;
+
+    if (!consentAccepted) {
+      const confirmDisabled = tournamentBusy || !tournamentRulesAccepted || !rulesReady;
+      const confirmLabel = tournamentBusy
+        ? (tournamentPendingAction === 'register' ? 'Сохраняем согласие…' : 'Проверяем…')
+        : 'Подтвердить правила';
+      const confirmButton = `<button type="button" class="tournaments-v2-tournament-action${tournamentBusy ? ' is-pending' : ''}" data-tournament-action="register"${confirmDisabled ? ' disabled' : ''}${tournamentBusy ? ' aria-busy="true"' : ''}>${confirmLabel}</button>`;
+      action = `${confirmButton}${cancelButton}`;
+    } else {
+      action = cancelButton;
+    }
   }
 
   const statusText = state === 'draft'

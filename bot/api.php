@@ -62,6 +62,31 @@ function mgw_is_battleship_fire_fast_path(array $data, string $action, array $pa
         && (string)($data['games'][$gameId]['phase'] ?? '') === 'battle';
 }
 
+function mgw_observe_finished_tournament_game(array $game, array $config): void
+{
+    if ((string)($game['match_source'] ?? '') !== 'tournament'
+        || (string)($game['status'] ?? '') !== 'finished') {
+        return;
+    }
+
+    try {
+        $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
+        if (!$databaseConfig->enabled()) return;
+        $database = PdoConnectionFactory::create($databaseConfig);
+        (new TournamentRoundProgressionService($database))->observeFinishedGame($game);
+    } catch (Throwable $error) {
+        // The game result is already authoritative runtime state. Never turn a
+        // valid terminal response into a game error because the durable bracket
+        // observer had a transient failure; tournament_match_state can retry it.
+        error_log(
+            'Mini Games World tournament progression observe failed for '
+            . (string)($game['id'] ?? 'unknown')
+            . ': '
+            . $error->getMessage()
+        );
+    }
+}
+
 function mgw_emit_tournament_full_admin_event(
     JsonDatabase $db,
     array $config,
@@ -425,7 +450,12 @@ try {
                     }
                 }
 
-                $launch = $readiness->launchContext($mgwId, $accountRef, $userId);
+                $readyGameAlreadyAttached = is_array($readyMatch)
+                    && trim((string)($readyMatch['game_id'] ?? '')) !== ''
+                    && (string)($readyMatch['launch_state'] ?? '') === TournamentMatchReadinessService::STATE_LAUNCHED;
+                $launch = $readyGameAlreadyAttached
+                    ? null
+                    : $readiness->launchContext($mgwId, $accountRef, $userId);
                 $progressionOwnsLaunch = false;
                 if (!is_array($launch) && !$initialReadyOwnsWindow) {
                     $launch = $progression->launchContextForParticipant(
@@ -695,6 +725,7 @@ try {
                 }
 
                 if ($game && ($game['status'] ?? '') === 'finished') {
+                    mgw_observe_finished_tournament_game($game, $config);
                     $sessions->releaseIfCurrent($user, $sessionId);
                 }
 
@@ -722,6 +753,7 @@ try {
                 $game = $gameActions->apply($data, $user, $gameId, $gameAction);
 
                 if (($game['status'] ?? '') === 'finished') {
+                    mgw_observe_finished_tournament_game($game, $config);
                     $sessions->releaseIfCurrent($user, $sessionId);
                 }
 
@@ -740,6 +772,7 @@ try {
                     $candidate = $data['games'][$gameId];
                     if (($candidate['status'] ?? '') === 'finished'
                         && in_array($userId, array_map('strval', $candidate['player_ids'] ?? []), true)) {
+                        mgw_observe_finished_tournament_game($candidate, $config);
                         $sessions->releaseIfCurrent($user, $sessionId);
 
                         return [
@@ -762,6 +795,7 @@ try {
                 ]);
 
                 if (($game['status'] ?? '') === 'finished') {
+                    mgw_observe_finished_tournament_game($game, $config);
                     $sessions->releaseIfCurrent($user, $sessionId);
                 }
 
@@ -779,6 +813,7 @@ try {
 
                 $gameId = clean_string($payload['gameId'] ?? '', 80);
                 $game = $games->surrenderGame($data, $user, $gameId);
+                mgw_observe_finished_tournament_game($game, $config);
 
                 $sessions->releaseIfCurrent($user, $sessionId);
 

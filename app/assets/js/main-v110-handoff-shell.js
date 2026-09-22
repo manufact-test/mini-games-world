@@ -17,7 +17,6 @@ import { initTypography } from './utils/typography.js?v=39';
 import { renderUser, renderBalances, clearTimer } from './ui.js?v=89';
 import { initHomeScreen, setRoom } from './screens/home-screen.js?v=74';
 import { initTournamentsScreen } from './screens/tournaments-screen-v1.js?v=4&arena=final-table-polish-v1';
-import { initStoreScreen, openStoreTab } from './screens/store-screen.js?v=34';
 import { initStoreOrder } from './screens/store-order.js?v=38';
 import { initStoreOrders } from './screens/store-orders.js?v=36';
 import { initNotificationsScreen } from './screens/notifications-screen-v110r13.js?v=1162&mvp18=friend-request-lifecycle';
@@ -26,7 +25,6 @@ import { initSearchScreen } from './screens/search-screen-v102.js?v=103';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
 import { initProfileScreen } from './screens/profile-screen-v110.js?v=1108';
 import { applyCanonicalMgwProfile } from './profile/mgw-profile-model.js?v=1';
-import { initMgwProfileBackgrounds } from './profile/mgw-profile-backgrounds.js?v=2&mvp19_3=profile-backgrounds-ux-corrective';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static';
 import { initGameInvites } from './games/game-invites-v110.js?v=1137&ux=1';
@@ -45,6 +43,7 @@ let statsRefreshing = false;
 let statsRouteLifecycleInitialized = false;
 let shellChromeInitialized = false;
 let balanceObserver = null;
+let storeScreenModulePromise = null;
 
 initTelegramApp();
 initV110Presence();
@@ -83,6 +82,10 @@ document.addEventListener('mgw:v99-game-found', event => {
 async function boot(){
   try {
     const statsTicket = beginStatsRequest('api');
+    // Profile used to start only after bootstrap completed, adding a full extra
+    // network round-trip before the preloader could disappear. Both reads are
+    // independent and read-only, so start them together.
+    const profilePromise = api.mgwProfile();
     const result = await api.bootstrap();
     const matchEntryCost = Number(result.match_economy?.entry_cost);
     if (!Number.isFinite(matchEntryCost) || matchEntryCost <= 0) {
@@ -91,7 +94,7 @@ async function boot(){
     APP_CONFIG.matchBet = matchEntryCost;
     state.selectedBet = matchEntryCost;
     setRoom(APP_CONFIG.defaultRoom);
-    const mgwProfileResult = await api.mgwProfile();
+    const mgwProfileResult = await profilePromise;
     state.mgwProfile = mgwProfileResult.profile || null;
     state.user = applyCanonicalMgwProfile(result.user || {}, state.mgwProfile);
     state.session = result.session || state.session;
@@ -105,20 +108,10 @@ async function boot(){
     showHomeActivity();
     syncWeeklyMatchButton(result.weekly_match || null);
 
-    // Profile backgrounds used to initialize only from the first Store/Profile
-    // screen-changed event. On mobile that meant the first Profile tap paid the
-    // background collection + premium surface decoration microtask before the
-    // browser could paint the route transition. Prime that existing owner while
-    // the preloader still covers the app, but keep active-game reloads untouched.
-    const primeMobileProfile = shouldPrimeMobileProfile(result);
-    if (primeMobileProfile) initMgwProfileBackgrounds();
+    // First usable Home/Game must not wait for hidden Profile/Tournament raster
+    // warming or a second profileV2 request. Those surfaces already own lazy/idle
+    // warm paths after app-ready, so publish readiness immediately.
     dispatchAppReady();
-    if (primeMobileProfile) await primeMobileProfileFirstPresentation();
-
-    // Tournament is shell-static, but its first `.active` frame used to be the
-    // first time Chromium rasterized both the route surface and the metallic
-    // active-nav filter. Paint that exact final state once underneath preloader.
-    if (!result.active_game?.id) await primeTournamentFirstPresentation();
 
     if (result.active_game?.id && !currentV99PassiveLock()?.locked) {
       enterGame(result.active_game, result.me || null);
@@ -128,10 +121,9 @@ async function boot(){
 
     startStatsPolling();
     syncAppShellChrome();
-    // Register Store warm only after Profile/Tournament first-raster work and the
-    // authoritative boot/invite path have settled. The wrapper keeps mobile active
-    // games intent-only, while normal shell starts the accepted idle Store warm.
-    initStoreScreen();
+    // Store has grown into a large module graph. Keep that graph out of the
+    // startup import chain entirely; warm it only after first usable paint.
+    warmStoreScreenAfterFirstPaint();
   } catch (error) {
     showBootFailure();
     toast(error?.message || 'Не удалось загрузить профиль. Закройте Mini Games World и откройте снова из Telegram.');
@@ -140,69 +132,33 @@ async function boot(){
   }
 }
 
-function shouldPrimeMobileProfile(result){
-  if (String(result?.active_game?.id || '').trim()) return false;
-  return typeof window.matchMedia === 'function'
-    && window.matchMedia('(max-width: 640px), (pointer: coarse)').matches;
-}
-
-async function primeMobileProfileFirstPresentation(){
-  // Frames/badges may already own an in-flight profileV2 read from clean-entry.
-  // The API coalesces read-only profileV2 requests, so awaiting it here does not
-  // add another request; it simply keeps its final cosmetic DOM work underneath
-  // the already-visible preloader instead of letting that work race the first tap.
-  try { await api.profileV2(); } catch (_) {}
-  await Promise.resolve();
-
-  const screen = document.getElementById('screen-profile');
-  const preloader = document.getElementById('preloader');
-  if (!(screen instanceof HTMLElement) || !(preloader instanceof HTMLElement) || preloader.classList.contains('hidden')) return;
-
-  // A non-zero hidden Profile was enough to keep later transitions warm, but
-  // Chromium can still skip the very first raster for a fully occluded layer.
-  // Promote the final decorated Profile for two real frames under the z=100
-  // preloader, then return it to its accepted invisible warm state.
-  screen.classList.add('mgw-profile-prewarm-pass');
-  void screen.offsetHeight;
-  await new Promise(resolve => window.requestAnimationFrame(() => {
-    window.requestAnimationFrame(resolve);
-  }));
-  screen.classList.remove('mgw-profile-prewarm-pass');
-}
-
-async function primeTournamentFirstPresentation(){
-  const screen = document.getElementById('screen-tournaments');
-  const navButton = document.querySelector('[data-shell-nav="tournaments"]');
-  const preloader = document.getElementById('preloader');
-  if (!(screen instanceof HTMLElement) || !(navButton instanceof HTMLElement) || !(preloader instanceof HTMLElement) || preloader.classList.contains('hidden')) return;
-
-  const wasScreenActive = screen.classList.contains('active');
-  const wasNavActive = navButton.classList.contains('active');
-  const previousTransition = screen.style.transition;
-  const icon = navButton.querySelector('img');
-
-  if (icon instanceof HTMLImageElement && !icon.complete && typeof icon.decode === 'function') {
-    await Promise.race([
-      icon.decode().catch(() => {}),
-      new Promise(resolve => window.setTimeout(resolve, 120)),
-    ]);
+function loadStoreScreenModule(){
+  if (!storeScreenModulePromise) {
+    storeScreenModulePromise = import('./screens/store-screen.js?v=34')
+      .then(module => {
+        module.initStoreScreen();
+        return module;
+      })
+      .catch(error => {
+        storeScreenModulePromise = null;
+        throw error;
+      });
   }
+  return storeScreenModulePromise;
+}
 
-  // Do not route or dispatch lifecycle events during the warm. Home stays the
-  // canonical active route; Tournament is simply composited once behind preloader.
-  screen.style.transition = 'none';
-  screen.classList.add('active');
-  navButton.classList.add('active');
-  void screen.offsetHeight;
-  void navButton.offsetHeight;
+function warmStoreScreenAfterFirstPaint(){
+  const warm = () => { void loadStoreScreenModule().catch(() => {}); };
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(warm, { timeout:1200 });
+  } else {
+    window.setTimeout(warm, 500);
+  }
+}
 
-  await new Promise(resolve => window.requestAnimationFrame(() => {
-    window.requestAnimationFrame(resolve);
-  }));
-
-  if (!wasScreenActive) screen.classList.remove('active');
-  if (!wasNavActive) navButton.classList.remove('active');
-  screen.style.transition = previousTransition;
+async function openStoreTabLazy(){
+  const module = await loadStoreScreenModule();
+  return module.openStoreTab();
 }
 
 function initAppShellChrome(){
@@ -331,15 +287,16 @@ function handleShellNavigation(event){
   const route = String(target.dataset.shellNav || 'home');
   if (!SHELL_ROUTES.has(route)) return;
 
-  // Store must never make the navigation button wait for its network read.
-  // openStoreTab paints either the warmed Store or its canonical pending skeleton
-  // synchronously before its first await, so prepare that hidden DOM first and then
-  // publish the route immediately. The same in-flight promise continues loading in
-  // the background; there is no second Store open/refresh from this navigation.
+  // Store's large code graph is lazy. Publish the shell route immediately;
+  // if idle warm has already completed this is instant, otherwise the existing
+  // Store shell stays visible while the module finishes loading once.
   if (route === 'store') {
-    const opening = openStoreTab();
     showScreen('store');
-    void opening.catch(() => {});
+    void openStoreTabLazy().catch(error => {
+      if (currentScreen() === 'store') {
+        toast(error?.message || 'Не удалось загрузить магазин.');
+      }
+    });
     return;
   }
 

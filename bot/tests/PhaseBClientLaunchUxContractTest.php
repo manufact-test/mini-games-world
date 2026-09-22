@@ -64,7 +64,7 @@ $assert(
 );
 $assert(
     str_contains($main, "./main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5")
-        && str_contains($versionManifest, "'./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1156"),
+        && str_contains($versionManifest, "'./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1157"),
     'Main v110 shell import key must resolve through the canonical version manifest.'
 );
 

@@ -25,6 +25,7 @@ on:
       - 'bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php'
       - 'bot/tests/Mvp21_3TournamentScheduleTest.php'
       - 'bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php'
+      - 'bot/tests/Mvp21_8CorrectiveContractTest.php'
       - 'bot/services/GameService.php'
       - 'bot/services/GameRuntimeService.php'
       - 'bot/services/ChessRuntimeService.php'
@@ -34,6 +35,7 @@ on:
       - 'app/assets/js/admin-tournaments.js'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/tournaments-screen-v1.js'
+      - 'app/assets/js/main-v110-handoff-shell.js'
       - 'app/assets/js/screens/game-screen-v102.js'
       - 'app/assets/js/production-v110-acceptance-runtime.js'
       - 'app/assets/js/games/game-invites-v110.js'
@@ -124,6 +126,7 @@ jobs:
             bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php
             bot/tests/Mvp21_3TournamentScheduleTest.php
             bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php
+            bot/tests/Mvp21_8CorrectiveContractTest.php
             app/admin.php
             bot/services/GameService.php
             bot/services/GameRuntimeService.php
@@ -148,6 +151,7 @@ jobs:
           node --check app/assets/js/admin-tournaments.js
           node --check app/assets/js/api/client.js
           node --check app/assets/js/screens/tournaments-screen-v1.js
+          node --check app/assets/js/main-v110-handoff-shell.js
           node --check app/assets/js/screens/game-screen-v102.js
           node --check app/assets/js/production-v110-acceptance-runtime.js
           node --check app/assets/js/games/game-invites-v110.js
@@ -160,6 +164,7 @@ jobs:
           php bot/tests/Mvp21_6TournamentProgressionUxContractTest.php
           php bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php
           php bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php
+          php bot/tests/Mvp21_8CorrectiveContractTest.php
           php bot/tests/Mvp21_1TournamentRegistrationTest.php
           php bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
           php bot/tests/Mvp21_2TournamentRulesTest.php
@@ -234,6 +239,7 @@ jobs:
               bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php|\
               bot/tests/Mvp21_3TournamentScheduleTest.php|\
               bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php|\
+              bot/tests/Mvp21_8CorrectiveContractTest.php|\
               app/admin.php|\
               app/assets/js/admin-tournaments.js|\
               bot/services/GameService.php|\
@@ -243,6 +249,7 @@ jobs:
               bot/services/MatchPreparationClockService.php|\
               app/assets/js/api/client.js|\
               app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/js/main-v110-handoff-shell.js|\
               app/assets/js/screens/game-screen-v102.js|\
               app/assets/js/production-v110-acceptance-runtime.js|\
               app/assets/js/games/game-invites-v110.js|\

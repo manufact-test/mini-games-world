@@ -142,14 +142,14 @@ $assert(str_contains($adminJs, "progressionReason !== 'staging_only'")
         && str_contains($adminJs, "progressionPanel.hidden = !progressionVisible"),
     'Staging Admin must keep the fixture progression panel visible even when the action is temporarily disabled.');
 
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=26')
-        && str_contains($manifest, 'mvp21_7=corrective-v7')
+$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=27')
+        && str_contains($manifest, 'mvp21_8=corrective-v8')
         && str_contains($manifest, 'game-screen-v102.js?v=112')
         && str_contains($manifest, 'mvp21_6=tournament-result-dedupe-v3')
         && str_contains($manifest, 'production-v110-acceptance-runtime.js?v=132')
         && str_contains($manifest, 'game-invites-v110.js?v=1146')
         && str_contains($manifest, 'game-invites-v110-rematch-policy-v175.js?v=2'),
-    'Corrective v7 client owners must publish fresh active cache identities without replacing the accepted Phase-B presentation owner.');
+    'Corrective v8 client owners must publish fresh active cache identities without replacing the accepted Phase-B presentation owner.');
 
 if ($assertions < 37) throw new RuntimeException('Corrective v4 contract is too shallow: ' . $assertions);
 fwrite(STDOUT, "Mvp21_5_6CorrectiveV4ContractTest: {$assertions} assertions passed\n");
