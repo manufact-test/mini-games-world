@@ -347,12 +347,69 @@ final class TournamentRoundProgressionService
             if ($latest === null || $match['round_no'] > $latest['round_no']) $latest = $match;
         }
 
+        $activeRoundNo = 0;
+        foreach ($snapshot['matches'] as $match) {
+            $activeRoundNo = max($activeRoundNo, (int)($match['round_no'] ?? 0));
+        }
+        $activeRoundMatches = [];
+        $participantIds = [];
+        foreach ($snapshot['matches'] as $match) {
+            if ((int)($match['round_no'] ?? 0) !== $activeRoundNo) continue;
+            $a = trim((string)($match['player_a_mgw_id'] ?? ''));
+            $b = trim((string)($match['player_b_mgw_id'] ?? ''));
+            if ($a !== '') $participantIds[$a] = true;
+            if ($b !== '') $participantIds[$b] = true;
+        }
+        $nicknames = $this->participantNicknames($tournamentId);
+        $completedInActiveRound = 0;
+        foreach ($snapshot['matches'] as $match) {
+            if ((int)($match['round_no'] ?? 0) !== $activeRoundNo) continue;
+            $completed = $match['completed_at_utc'] !== null;
+            if ($completed) $completedInActiveRound++;
+            $a = (string)$match['player_a_mgw_id'];
+            $b = (string)$match['player_b_mgw_id'];
+            $winner = (string)($match['winner_mgw_id'] ?? '');
+            $activeRoundMatches[] = [
+                'round_no'=>(int)$match['round_no'],
+                'pair_no'=>(int)$match['pair_no'],
+                'attempt_no'=>max(1, (int)$match['attempt_no']),
+                'wait_kind'=>(string)$match['wait_kind'],
+                'match_kind'=>(string)$match['match_kind'],
+                'launch_state'=>(string)$match['launch_state'],
+                'completed'=>$completed,
+                'players'=>[
+                    [
+                        'nickname'=>$nicknames[$a] ?? 'Игрок',
+                        'self'=>$a === $mgwId,
+                        'winner'=>$completed && $winner !== '' && $winner === $a,
+                    ],
+                    [
+                        'nickname'=>$nicknames[$b] ?? 'Игрок',
+                        'self'=>$b === $mgwId,
+                        'winner'=>$completed && $winner !== '' && $winner === $b,
+                    ],
+                ],
+            ];
+        }
+
+        $participantEliminated = $current === null
+            && is_array($latest)
+            && $latest['completed_at_utc'] !== null
+            && trim((string)($latest['loser_mgw_id'] ?? '')) === $mgwId;
+
         return [
             'tournament_id'=>$tournamentId,
             'round_break_seconds'=>self::ROUND_BREAK_SECONDS,
             'draw_replay_wait_seconds'=>self::DRAW_REPLAY_WAIT_SECONDS,
             'current_match'=>$current,
             'latest_match'=>$latest,
+            'participant_eliminated'=>$participantEliminated,
+            'active_round'=>[
+                'round_no'=>$activeRoundNo,
+                'completed_count'=>$completedInActiveRound,
+                'total_count'=>count($activeRoundMatches),
+                'matches'=>$activeRoundMatches,
+            ],
             'tournament_complete'=>$this->isTournamentComplete($snapshot['matches']),
         ];
     }
@@ -589,6 +646,31 @@ final class TournamentRoundProgressionService
                 );
             }
         }
+    }
+
+    private function participantNicknames(string $tournamentId): array
+    {
+        $rows = $this->database->fetchAll(
+            'SELECT r.mgw_id,u.nickname,u.display_name
+             FROM mgw_tournament_registrations r
+             INNER JOIN mgw_users u ON u.mgw_id=r.mgw_id
+             WHERE r.tournament_id=:tournament_id
+               AND r.registration_state=:registration_state',
+            [
+                'tournament_id'=>$tournamentId,
+                'registration_state'=>TournamentRegistrationService::REGISTRATION_REGISTERED,
+            ]
+        );
+        $result = [];
+        foreach ($rows as $row) {
+            if (!is_array($row)) continue;
+            $id = trim((string)($row['mgw_id'] ?? ''));
+            if ($id === '') continue;
+            $nickname = trim((string)($row['nickname'] ?? ''));
+            if ($nickname === '') $nickname = trim((string)($row['display_name'] ?? ''));
+            $result[$id] = $nickname !== '' ? $nickname : 'Игрок';
+        }
+        return $result;
     }
 
     private function tournamentSnapshot(string $tournamentId, DateTimeImmutable $moment): array
