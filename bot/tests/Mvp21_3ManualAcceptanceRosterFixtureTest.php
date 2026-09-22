@@ -279,13 +279,18 @@ $ledger->postAvailableDelta([
     'source_type'=>'test',
 ]);
 
-$final = $tournaments->register(
+$tournaments->register(
     $manualMgwId,
     'legacy:' . $manualLegacy,
     new DateTimeImmutable('2026-09-21T00:11:00Z'),
     $consent
 );
-$assertSame(8, $final['tournament']['registered_count'], 'Real eighth registration must complete the canonical 8/8 roster.');
+$final = $tournaments->publishRegistration(
+    $manualMgwId,
+    'legacy:' . $manualLegacy,
+    new DateTimeImmutable('2026-09-21T00:11:01Z')
+);
+$assertSame(8, $final['tournament']['registered_count'], 'Real eighth registration must complete the canonical 8/8 roster only after publication.');
 $assertSame('waiting_for_date', $final['tournament']['state'], 'Real eighth registration must trigger canonical automatic close.');
 $assertSame(true, $final['transition']['registration_closed_now'], 'Last live seat must own the real full-roster transition.');
 $manualBalance = $ledger->getBalance('legacy:' . $manualLegacy, TournamentRegistrationService::ENTRY_ASSET);
