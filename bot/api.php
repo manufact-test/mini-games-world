@@ -296,9 +296,10 @@ try {
                     // outside the bounded DB-primary rehearsal window, so a
                     // tournament write must not depend on that temporary latch.
                     // Mirror the canonical ledger's spendable amount into the
-                    // current runtime user. EconomyRuntimeBridge then verifies
-                    // JSON/ledger parity after the successful API transaction
-                    // while preserving reserved_amount as a held balance.
+                    // current runtime user. Tournament actions are a DB-owned
+                    // response boundary: unrelated JSON->DB projection/parity
+                    // catch-up is deliberately deferred to the next ordinary
+                    // application request, while reserved_amount remains held.
                     $rulesConsent = null;
                     if ($action === 'tournament_register') {
                         $rulesConsent = [
