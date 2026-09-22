@@ -358,6 +358,7 @@ function paintClock(){
   const phase = String(game?.launch_phase || '');
   const now = performance.now();
   const beforeTurnStart = phase === 'preparing'
+    || phase === 'countdown'
     || phase === 'preparation_timeout'
     || now < clock.start;
   const pendingWithoutServerClock = runtime.pending?.gameId === clock.gameId
