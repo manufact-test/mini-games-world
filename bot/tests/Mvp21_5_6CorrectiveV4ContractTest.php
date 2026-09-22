@@ -14,6 +14,7 @@ $specialRuntime = $read('bot/services/ChessRuntimeService.php');
 $clock = $read('bot/services/MatchPreparationClockService.php');
 $api = $read('bot/api.php');
 $progression = $read('bot/tournaments/TournamentRoundProgressionService.php');
+$readiness = $read('bot/tournaments/TournamentMatchReadinessService.php');
 $acceptance = $read('app/assets/js/production-v110-acceptance-runtime.js');
 $gameScreen = $read('app/assets/js/screens/game-screen-v102.js');
 $invites = $read('app/assets/js/games/game-invites-v110.js');
@@ -107,6 +108,9 @@ $assert(str_contains($screen, "document.addEventListener('mgw:game-finished'")
 $assert(str_contains($api, 'observeFinishedGame($data[\'games\'][$finishedTournamentGameId])')
         && str_contains($api, '$snapshot = $readiness->status($mgwId, $accountRef, $userId);'),
     'Server terminal observation must refresh Ready projection after durable progression changes.');
+$assert(str_contains($readiness, 'isInitialManualReadyRow')
+        && str_contains($readiness, "'completed_at_utc' ?? '') === ''"),
+    'Initial Ready projection must disappear once the durable pair has progressed or completed.');
 $assert(str_contains($invites, "String(finished.match_source || '') === 'tournament'"),
     'Legacy direct-rematch enhancer must exclude tournament games.');
 $assert(str_contains($rematch, "const tournamentMatch = String(game?.match_source || '') === 'tournament'"),
