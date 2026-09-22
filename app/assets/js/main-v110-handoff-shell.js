@@ -83,6 +83,10 @@ document.addEventListener('mgw:v99-game-found', event => {
 async function boot(){
   try {
     const statsTicket = beginStatsRequest('api');
+    // Profile used to start only after bootstrap completed, adding a full extra
+    // network round-trip before the preloader could disappear. Both reads are
+    // independent and read-only, so start them together.
+    const profilePromise = api.mgwProfile();
     const result = await api.bootstrap();
     const matchEntryCost = Number(result.match_economy?.entry_cost);
     if (!Number.isFinite(matchEntryCost) || matchEntryCost <= 0) {
@@ -91,7 +95,7 @@ async function boot(){
     APP_CONFIG.matchBet = matchEntryCost;
     state.selectedBet = matchEntryCost;
     setRoom(APP_CONFIG.defaultRoom);
-    const mgwProfileResult = await api.mgwProfile();
+    const mgwProfileResult = await profilePromise;
     state.mgwProfile = mgwProfileResult.profile || null;
     state.user = applyCanonicalMgwProfile(result.user || {}, state.mgwProfile);
     state.session = result.session || state.session;
@@ -105,20 +109,10 @@ async function boot(){
     showHomeActivity();
     syncWeeklyMatchButton(result.weekly_match || null);
 
-    // Profile backgrounds used to initialize only from the first Store/Profile
-    // screen-changed event. On mobile that meant the first Profile tap paid the
-    // background collection + premium surface decoration microtask before the
-    // browser could paint the route transition. Prime that existing owner while
-    // the preloader still covers the app, but keep active-game reloads untouched.
-    const primeMobileProfile = shouldPrimeMobileProfile(result);
-    if (primeMobileProfile) initMgwProfileBackgrounds();
+    // First usable Home/Game must not wait for hidden Profile/Tournament raster
+    // warming or a second profileV2 request. Those surfaces already own lazy/idle
+    // warm paths after app-ready, so publish readiness immediately.
     dispatchAppReady();
-    if (primeMobileProfile) await primeMobileProfileFirstPresentation();
-
-    // Tournament is shell-static, but its first `.active` frame used to be the
-    // first time Chromium rasterized both the route surface and the metallic
-    // active-nav filter. Paint that exact final state once underneath preloader.
-    if (!result.active_game?.id) await primeTournamentFirstPresentation();
 
     if (result.active_game?.id && !currentV99PassiveLock()?.locked) {
       enterGame(result.active_game, result.me || null);
@@ -128,10 +122,9 @@ async function boot(){
 
     startStatsPolling();
     syncAppShellChrome();
-    // Register Store warm only after Profile/Tournament first-raster work and the
-    // authoritative boot/invite path have settled. The wrapper keeps mobile active
-    // games intent-only, while normal shell starts the accepted idle Store warm.
-    initStoreScreen();
+    // Store is not part of first usable paint. Register it on the next task so
+    // its long catalog/profile integrations cannot extend the boot preloader.
+    window.setTimeout(() => { initStoreScreen(); }, 0);
   } catch (error) {
     showBootFailure();
     toast(error?.message || 'Не удалось загрузить профиль. Закройте Mini Games World и откройте снова из Telegram.');
