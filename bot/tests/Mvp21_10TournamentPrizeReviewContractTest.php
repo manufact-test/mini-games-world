@@ -38,10 +38,10 @@ $assert(!str_contains($files['review'],'mgw_tournament_reward_entitlements'),'Re
 $assert(!str_contains($files['review'],'mgw_tournament_golden_tickets'),'Review owner must never grant Golden Tickets.');
 
 $assert(str_contains($files['settlement'],'TournamentPrizeReviewService $prizeReview'),'Existing settlement owner must consume review state.');
-$assert(str_contains($files['settlement'],'\'status\'=>\$reviewHold ? \'review_hold\' : \'settled\''),'Settlement must expose explicit review hold state.');
+$assert(str_contains($files['settlement'], "'status'=>\$reviewHold ? 'review_hold' : 'settled'"),'Settlement must expose explicit review hold state.');
 $assert(str_contains($files['settlement'],'if ($heldForReview)'),'Held path must stop before payout/result persistence.');
 $assert(str_contains($files['settlement'],'RESULT_DISQUALIFIED'),'Settlement owner must persist reviewed disqualification.');
-$assert(str_contains($files['settlement'],'operationKey(\$tournamentId, \$mgwId, \'payout\')'),'Reward release must preserve the existing exactly-once operation key.');
+$assert(str_contains($files['settlement'], "operationKey(\$tournamentId, \$mgwId, 'payout')"),'Reward release must preserve the existing exactly-once operation key.');
 $assert(str_contains($files['settlement'],'prize_review_disqualified'),'Settlement ledger metadata must retain review decision context.');
 
 $assert(str_contains($files['admin_api'],'$action === \'prize_review_flag\''),'Tournament Admin must be able to register a serious signal.');
