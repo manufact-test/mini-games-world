@@ -270,6 +270,7 @@ try {
 
             case 'tournament_status':
             case 'tournament_register':
+            case 'tournament_registration_publish':
             case 'tournament_leave':
                 $mgwId = trim((string)($user['mgw_id'] ?? ''));
                 $accountRef = trim((string)($user['mgw_account_ref'] ?? ''));
@@ -307,9 +308,19 @@ try {
                             'sha256'=>clean_string($payload['tournamentRulesSha256'] ?? '', 64),
                         ];
                     }
-                    $snapshot = $action === 'tournament_register'
-                        ? $tournaments->register($mgwId, $accountRef, null, $rulesConsent)
-                        : $tournaments->leave($mgwId, $accountRef);
+                    $snapshot = match ($action) {
+                        'tournament_register' => $tournaments->register(
+                            $mgwId,
+                            $accountRef,
+                            null,
+                            $rulesConsent
+                        ),
+                        'tournament_registration_publish' => $tournaments->publishRegistration(
+                            $mgwId,
+                            $accountRef
+                        ),
+                        default => $tournaments->leave($mgwId, $accountRef),
+                    };
 
                     $available = (int)($snapshot['balance']['available_amount'] ?? -1);
                     $reserved = (int)($snapshot['balance']['reserved_amount'] ?? -1);
@@ -807,7 +818,7 @@ try {
         }
     });
 
-    if ($action === 'tournament_register'
+    if (in_array($action, ['tournament_register', 'tournament_registration_publish'], true)
         && !empty($result['snapshot']['transition']['registration_closed_now'])) {
         try {
             mgw_emit_tournament_full_admin_event($db, $config, (array)$result['snapshot']);
@@ -834,7 +845,15 @@ try {
     $isStagingTournamentTest = strtolower(trim((string)($config['environment'] ?? ''))) === 'staging'
         && in_array(
             (string)($action ?? ''),
-            ['bootstrap', 'staging_test_tournament_balance', 'tournament_register', 'tournament_leave'],
+            [
+                'bootstrap',
+                'staging_test_tournament_balance',
+                'tournament_register',
+                'tournament_registration_publish',
+                'tournament_leave',
+                'tournament_match_state',
+                'tournament_match_ready',
+            ],
             true
         )
         && is_array($tgUser ?? null)
