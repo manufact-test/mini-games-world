@@ -240,7 +240,7 @@ final class TournamentSettlementService
 
         $this->database->transaction(function (DatabaseConnectionInterface $db) use (
             $tournamentId,$registration,$mgwId,$placement,$version,$snapshotHash,
-            $entryAmount,$entryReturn,$prize,$payout,$reward,$settledAt,$resultCode
+            $entryAmount,$entryReturn,$prize,$payout,$rewardEligible,$reward,$settledAt,$resultCode
         ): void {
             $existing = $db->fetchAll(
                 'SELECT * FROM mgw_tournament_results
