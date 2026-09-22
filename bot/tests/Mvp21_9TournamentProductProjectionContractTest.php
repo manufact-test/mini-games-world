@@ -47,6 +47,12 @@ $assert(str_contains($files['profile_js'],'champion_crown'),'Champion crown must
 $assert(str_contains($files['profile_js'],'silver_frame'),'Silver frame must be a persistent Profile projection.');
 $assert(str_contains($files['profile_js'],'bronze_mark'),'Bronze mark must be a persistent Profile projection.');
 $assert(str_contains($files['profile_js'],'Активна до'),'Temporary tournament styling must visibly expose expiry.');
+$assert(str_contains($files['profile_js'],'has-tournament-crown'),'Active crown must project onto the Profile identity.');
+$assert(str_contains($files['profile_js'],'has-tournament-silver-frame'),'Active silver frame must project onto the Profile identity.');
+$assert(str_contains($files['profile_js'],'has-tournament-bronze-mark'),'Active bronze mark must project onto the Profile identity.');
+$assert(str_contains($files['css'],'.profile-v2-tournament-crown'),'Active champion crown must have a visual Profile owner.');
+$assert(str_contains($files['css'],'.has-tournament-silver-frame'),'Active silver frame must have a visual Profile owner.');
+$assert(str_contains($files['css'],'.profile-v2-tournament-bronze-mark'),'Active bronze mark must have a visual Profile owner.');
 $assert(str_contains($files['profile_js'],'winner_badge'),'Permanent winner badge must be visible.');
 $assert(str_contains($files['profile_js'],'champion_cosmetics'),'Champion set entitlement must be visible without inventing a sellable SKU.');
 $assert(str_contains($files['profile_js'],'cup_gold') && str_contains($files['profile_js'],'cup_silver') && str_contains($files['profile_js'],'cup_bronze'),'All permanent tournament cups must be visible.');
@@ -65,5 +71,5 @@ $assert(str_contains($files['main_css'],'mgw-tournament-honors.css'),'Main CSS m
 
 $assert(str_contains($files['manifest'],'mvp21_9=product-projections-v1'),'Version manifest must publish the fresh product projection identity.');
 
-$assert($assertions>=34,'MVP-21.9 product integration contract is too shallow: '.$assertions);
+$assert($assertions>=40,'MVP-21.9 product integration contract is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_9TournamentProductProjectionContractTest: {$assertions} assertions passed\n");
