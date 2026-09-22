@@ -475,6 +475,13 @@ final class StagingTournamentManualAcceptanceService
             return ['available'=>false,'reason'=>'missing_tournament_id','fixture_pair_count'=>0];
         }
 
+        // Backfill any first-round pair that the earlier progression owner
+        // omitted (notably both-absent fixture pairs) before deciding whether
+        // the staging helper should be offered. This also repairs an already
+        // started manual-acceptance tournament without requiring a reset.
+        (new TournamentRoundProgressionService($this->database))
+            ->ensureFirstRoundStructure($tournamentId);
+
         $rows = $this->database->fetchAll(
             'SELECT * FROM mgw_tournament_round_matches
              WHERE tournament_id=:tournament_id AND completed_at_utc IS NULL
