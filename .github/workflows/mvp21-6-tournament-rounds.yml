@@ -254,6 +254,16 @@ jobs:
               bot/database/migrations/20260922_0058_add_tournament_technical_outcomes.php|\
               bot/services/ReconnectLifecycleService.php|\
               bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php|\
+              .github/workflows/staging-e2e-oidc-resilience.yml|\
+              .github/workflows/staging-playwright-e2e.yml|\
+              bot/tests/StagingCurrentE2EOwnerContractTest.php|\
+              bot/tests/StagingE2EFallbackBudgetContractTest.php|\
+              e2e/staging-global-setup.mjs|\
+              e2e/staging-oidc-token.mjs|\
+              e2e/staging-oidc-token.selftest.mjs|\
+              e2e/staging/checkers-layout-diagnostic.spec.mjs|\
+              e2e/staging/go-store-live-catalog.spec.mjs|\
+              e2e/staging/tournament-registration-live.spec.mjs|\
               .github/workflows/mvp21-10-tournament-prize-review.yml|\
               bot/database/migrations/20260922_0060_create_tournament_prize_review.php|\
               bot/tournaments/TournamentPrizeReviewService.php|\
