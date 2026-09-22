@@ -47,6 +47,17 @@ final class PerGameRatingRuntimeBridge
             'game_action',
             'make_move',
             'leave_game',
+            // Tournament writes/reads are DB-owned product boundaries. They
+            // must return their canonical tournament state immediately instead
+            // of being allowed to fail afterwards on unrelated JSON->DB
+            // projection/parity catch-up. Normal projection resumes on the next
+            // ordinary non-tournament boundary.
+            'tournament_status',
+            'tournament_register',
+            'tournament_registration_publish',
+            'tournament_leave',
+            'tournament_match_state',
+            'tournament_match_ready',
         ], true);
     }
 
