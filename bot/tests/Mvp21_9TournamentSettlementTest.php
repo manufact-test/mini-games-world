@@ -77,7 +77,7 @@ $players=[];
 for($i=1;$i<=8;$i++){
  $mgw='MGW-'.str_pad((string)$i,16,(string)$i);
  $legacy='settlement-player-'.$i;
- $account='settlement-account-'.$i;
+ $account='mgw:'.$mgw;
  $players[$i]=['mgw'=>$mgw,'legacy'=>$legacy,'account'=>$account];
  $db->execute('INSERT INTO mgw_users (mgw_id,nickname,display_name) VALUES (:m,:n,:d)',[
   'm'=>$mgw,'n'=>'Игрок '.$i,'d'=>'Игрок '.$i
