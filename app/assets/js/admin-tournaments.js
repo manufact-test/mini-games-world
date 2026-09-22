@@ -262,6 +262,12 @@
         prepareManual.dataset.available = '0';
       }
       if (manualInfo instanceof HTMLElement) manualInfo.textContent = 'Ручная проверка staging недоступна.';
+      if (progressionPanel instanceof HTMLElement) progressionPanel.hidden = true;
+      if (completeFixtures instanceof HTMLButtonElement) {
+        completeFixtures.disabled = true;
+        completeFixtures.dataset.available = '0';
+      }
+      if (progressionInfo instanceof HTMLElement) progressionInfo.textContent = 'Fixture-only пары пока не требуют завершения.';
       if (resetPanel instanceof HTMLElement) resetPanel.hidden = true;
       if (resetManual instanceof HTMLButtonElement) {
         resetManual.disabled = true;
@@ -358,8 +364,10 @@
     const progression = manualProgression && typeof manualProgression === 'object'
       ? manualProgression
       : {};
+    const progressionReason = String(progression.reason || '');
+    const progressionVisible = progressionReason !== '' && progressionReason !== 'staging_only';
     const canCompleteFixtures = progression.available === true;
-    if (progressionPanel instanceof HTMLElement) progressionPanel.hidden = !canCompleteFixtures;
+    if (progressionPanel instanceof HTMLElement) progressionPanel.hidden = !progressionVisible;
     if (completeFixtures instanceof HTMLButtonElement) {
       completeFixtures.dataset.available = canCompleteFixtures ? '1' : '0';
       completeFixtures.disabled = busy || !canCompleteFixtures;
@@ -367,9 +375,15 @@
     if (progressionInfo instanceof HTMLElement) {
       const fixturePairs = Number(progression.fixture_pair_count || 0);
       const roundNo = Number(progression.round_no || 0);
-      progressionInfo.textContent = canCompleteFixtures
-        ? `Раунд ${format(roundNo)}: fixture-only пар для staging-проверки — ${format(fixturePairs)}.`
-        : 'Fixture-only пары пока не требуют завершения.';
+      if (canCompleteFixtures) {
+        progressionInfo.textContent = `Раунд ${format(roundNo)}: fixture-only пар для staging-проверки — ${format(fixturePairs)}.`;
+      } else if (progressionReason === 'no_fixture_only_pairs') {
+        progressionInfo.textContent = 'В текущем раунде нет fixture-only пар. Реальную пару нужно доиграть в клиентах.';
+      } else if (progressionReason === 'no_unresolved_pairs') {
+        progressionInfo.textContent = 'Текущий раунд уже завершён. Обновите турнир, чтобы увидеть следующий этап.';
+      } else {
+        progressionInfo.textContent = 'Fixture-only пары пока не требуют завершения.';
+      }
     }
 
     const reset = manualReset && typeof manualReset === 'object' ? manualReset : {};
