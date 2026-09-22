@@ -37,12 +37,21 @@
   const cancelReason = card.querySelector('[data-tournament-cancel-reason]');
   const cancelTournament = card.querySelector('[data-tournament-cancel]');
   const emergencyStop = card.querySelector('[data-tournament-emergency]');
+  const reviewPanel = card.querySelector('[data-tournament-review-panel]');
+  const reviewInfo = card.querySelector('[data-tournament-review-info]');
+  const reviewMgwId = card.querySelector('[data-tournament-review-mgw-id]');
+  const reviewSignal = card.querySelector('[data-tournament-review-signal]');
+  const reviewGameId = card.querySelector('[data-tournament-review-game-id]');
+  const reviewNote = card.querySelector('[data-tournament-review-note]');
+  const reviewFlag = card.querySelector('[data-tournament-review-flag]');
+  const reviewList = card.querySelector('[data-tournament-review-list]');
   let busy = false;
   let snapshot = null;
   let manualAcceptance = null;
   let manualReset = null;
   let manualProgression = null;
   let cancellation = null;
+  let prizeReview = null;
   let resetConfirmUntil = 0;
   let resetConfirmTimer = null;
   let cancelConfirmUntil = 0;
@@ -174,6 +183,10 @@
         control.disabled = emergencyStop.dataset.available !== '1';
         return;
       }
+      if (control === reviewFlag) {
+        control.disabled = reviewFlag.dataset.available !== '1';
+        return;
+      }
       control.disabled = false;
     });
   };
@@ -268,6 +281,90 @@
     return data;
   };
 
+  const reviewStateLabel = value => ({
+    pending:'Ожидает решения',
+    released:'Проверка пройдена',
+    disqualified:'Дисквалифицирован',
+  })[String(value || '')] || String(value || '—');
+
+  const renderPrizeReview = tournament => {
+    if (!(reviewPanel instanceof HTMLElement)) return;
+    const review = prizeReview && typeof prizeReview === 'object' ? prizeReview : {};
+    const scheduled = String(tournament?.state || '') === 'scheduled';
+    const available = review.available === true && scheduled;
+    reviewPanel.hidden = !available;
+
+    if (reviewFlag instanceof HTMLButtonElement) {
+      reviewFlag.dataset.available = available ? '1' : '0';
+      reviewFlag.disabled = busy || !available;
+    }
+    if (!available) return;
+
+    const settlement = review.settlement && typeof review.settlement === 'object'
+      ? review.settlement
+      : {};
+    const held = Array.isArray(settlement.held_mgw_ids) ? settlement.held_mgw_ids : [];
+    const top3 = Array.isArray(review.top3) ? review.top3 : [];
+    if (reviewInfo instanceof HTMLElement) {
+      const topCopy = top3.length
+        ? 'Top-3: ' + top3.map(item => `#${item.canonical_placement} ${item.nickname || item.public_mgw_id || item.mgw_id}`).join(' · ')
+        : 'Top-3 появится после завершения финала и матча за 3-е место.';
+      reviewInfo.textContent = settlement.hold === true
+        ? `ПРИЗОВАЯ ВЕТКА УДЕРЖИВАЕТСЯ: ${held.length} участн. ждут Admin review. ${topCopy}`
+        : `Серьёзных сигналов, удерживающих призовую ветку, нет. ${topCopy}`;
+    }
+
+    if (!(reviewList instanceof HTMLElement)) return;
+    reviewList.replaceChildren();
+    const reviews = Array.isArray(review.reviews) ? review.reviews : [];
+    if (!reviews.length) {
+      const empty = document.createElement('div');
+      empty.className = 'mgw-admin__history-empty';
+      empty.textContent = 'Активных или завершённых prize-review cases пока нет.';
+      reviewList.append(empty);
+      return;
+    }
+
+    reviews.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'mgw-admin__history-item';
+      row.dataset.tournamentPrizeReview = String(item.mgw_id || '');
+
+      const copy = document.createElement('div');
+      copy.className = 'mgw-admin__history-copy';
+      const title = document.createElement('strong');
+      title.textContent = `${item.nickname || 'Игрок'} · ${item.public_mgw_id || item.mgw_id || '—'} · ${reviewStateLabel(item.review_state)}`;
+      const signal = document.createElement('span');
+      signal.textContent = `Сигнал: ${item.signal_code || '—'}${item.related_game_id ? ` · Game ${item.related_game_id}` : ''}`;
+      const note = document.createElement('span');
+      note.textContent = item.signal_note || 'Без описания.';
+      const resolution = document.createElement('span');
+      resolution.textContent = item.resolution_note
+        ? `Решение: ${item.resolution_note}`
+        : `Создан: ${formatDateTime(item.signaled_at_utc)}`;
+      copy.append(title, signal, note, resolution);
+
+      const actions = document.createElement('div');
+      actions.className = 'mgw-admin__tournament-actions';
+      if (String(item.review_state || '') === 'pending') {
+        const release = document.createElement('button');
+        release.type = 'button';
+        release.textContent = 'Разрешить выплату';
+        release.addEventListener('click', () => { void resolvePrizeReview(item, 'release'); });
+
+        const disqualify = document.createElement('button');
+        disqualify.type = 'button';
+        disqualify.textContent = 'Дисквалифицировать';
+        disqualify.dataset.danger = '1';
+        disqualify.addEventListener('click', () => { void resolvePrizeReview(item, 'disqualify'); });
+        actions.append(release, disqualify);
+      }
+
+      row.append(copy, actions);
+      reviewList.append(row);
+    });
+  };
+
   const summaryCard = (label, value) => {
     const node = document.createElement('div');
     const span = document.createElement('span');
@@ -342,6 +439,11 @@
       if (emergencyStop instanceof HTMLButtonElement) {
         emergencyStop.disabled = true;
         emergencyStop.dataset.available = '0';
+      }
+      if (reviewPanel instanceof HTMLElement) reviewPanel.hidden = true;
+      if (reviewFlag instanceof HTMLButtonElement) {
+        reviewFlag.disabled = true;
+        reviewFlag.dataset.available = '0';
       }
       return;
     }
@@ -485,6 +587,8 @@
         ? 'Технический перезапуск исчерпан. Турнир требует аварийной остановки: укажите причину и подтвердите действие дважды.'
         : 'Отмена возвращает каждому зарегистрированному участнику полный взнос 50 000 и аннулирует турнирные результаты.';
     }
+
+    renderPrizeReview(tournament);
   };
 
   const withBusy = async (message, action) => {
@@ -505,6 +609,9 @@
       cancellation = data?.cancellation && typeof data.cancellation === 'object'
         ? data.cancellation
         : cancellation;
+      prizeReview = data?.prize_review && typeof data.prize_review === 'object'
+        ? data.prize_review
+        : prizeReview;
       render(data.snapshot || {});
       return data;
     } catch (error) {
@@ -691,6 +798,70 @@
     } catch (_) {}
   };
 
+  const flagPrizeReview = async () => {
+    const tournamentId = String(snapshot?.tournament?.tournament_id || '');
+    const mgwId = String(reviewMgwId?.value || '').trim();
+    const signalCode = String(reviewSignal?.value || '').trim();
+    const relatedGameId = String(reviewGameId?.value || '').trim();
+    const note = String(reviewNote?.value || '').trim();
+    if (!tournamentId || !mgwId || !signalCode || !note) {
+      setStatus('Для серьёзного сигнала укажите MGW-ID, тип сигнала и основание.', 'error');
+      return;
+    }
+    if (!window.confirm('Зафиксировать серьёзный сигнал? Если игрок окажется в затронутой призовой ветке, выплата будет удержана до Admin review.')) return;
+
+    try {
+      await withBusy('Фиксирую серьёзный сигнал призового пути…', () => post({
+        action:'prize_review_flag',
+        tournament_id:tournamentId,
+        mgw_id:mgwId,
+        signal_code:signalCode,
+        related_game_id:relatedGameId,
+        note,
+      }));
+      if (reviewNote instanceof HTMLInputElement) reviewNote.value = '';
+      setStatus('Серьёзный сигнал зафиксирован. Выплата удерживается только если этот сигнал затрагивает призовую ветку.', 'ok');
+    } catch (_) {}
+  };
+
+  const resolvePrizeReview = async (item, decision) => {
+    const tournamentId = String(snapshot?.tournament?.tournament_id || '');
+    const mgwId = String(item?.mgw_id || '');
+    if (!tournamentId || !mgwId || !['release','disqualify'].includes(decision)) return;
+    const note = window.prompt(
+      decision === 'disqualify'
+        ? 'Причина дисквалификации (обязательно):'
+        : 'Комментарий проверки перед разрешением выплаты (обязательно):',
+      ''
+    );
+    if (note === null || !String(note).trim()) {
+      setStatus('Решение prize review требует комментария.', 'error');
+      return;
+    }
+    if (decision === 'disqualify'
+        && !window.confirm('Дисквалифицировать игрока? Призовые места ниже будут сдвинуты каноническим settlement owner.')) return;
+
+    try {
+      const data = await withBusy(
+        decision === 'disqualify' ? 'Фиксирую дисквалификацию и пересчитываю призовую ветку…' : 'Разрешаю призовую выплату…',
+        () => post({
+          action:decision === 'disqualify' ? 'prize_review_disqualify' : 'prize_review_release',
+          tournament_id:tournamentId,
+          mgw_id:mgwId,
+          note:String(note).trim(),
+        })
+      );
+      const settlement = data?.prize_review_settlement || {};
+      if (settlement.status === 'review_hold') {
+        setStatus('Решение сохранено. В призовой ветке остаётся другой серьёзный сигнал — часть выплат всё ещё удерживается.', 'ok');
+      } else if (settlement.status === 'settled') {
+        setStatus('Review завершён. Канонический settlement выполнен без повторных выплат.', 'ok');
+      } else {
+        setStatus('Review завершён. Турнир ещё не дошёл до terminal settlement.', 'ok');
+      }
+    } catch (_) {}
+  };
+
   const assignFinalDate = async () => {
     const tournamentId = String(snapshot?.tournament?.tournament_id || '');
     if (!tournamentId || !(scheduleStart instanceof HTMLInputElement)) return;
@@ -729,6 +900,7 @@
   resetManual?.addEventListener('click', resetManualAcceptance);
   cancelTournament?.addEventListener('click', () => { void executeTournamentCancellation('cancel'); });
   emergencyStop?.addEventListener('click', () => { void executeTournamentCancellation('emergency'); });
+  reviewFlag?.addEventListener('click', () => { void flagPrizeReview(); });
   assignDate?.addEventListener('click', assignFinalDate);
 
   if (telegram?.initData) {

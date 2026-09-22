@@ -11,6 +11,29 @@ require_once __DIR__ . '/helpers/AdminWebAuth.php';
 require_once __DIR__ . '/tournaments/TournamentParticipantNotificationBridge.php';
 require_once __DIR__ . '/tournaments/StagingTournamentManualAcceptanceService.php';
 
+function mgw_apply_tournament_settlement_runtime_balances(
+    array $config,
+    array $balances
+): int {
+    if ($balances === []) return 0;
+    $storage = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
+    return $storage->transaction(static function (array &$data) use ($balances): int {
+        if (!isset($data['users']) || !is_array($data['users'])) return 0;
+        $updated = 0;
+        foreach ($data['users'] as $key=>&$user) {
+            if (!is_array($user)) continue;
+            $legacyUserId = trim((string)($user['id'] ?? $key));
+            if ($legacyUserId === '' || !isset($balances[$legacyUserId]) || !is_array($balances[$legacyUserId])) continue;
+            $available = (int)($balances[$legacyUserId]['available_amount'] ?? -1);
+            if ($available < 0) continue;
+            $user[UnifiedBalanceRuntimeState::FIELD] = $available;
+            $updated++;
+        }
+        unset($user);
+        return $updated;
+    });
+}
+
 function mgw_apply_tournament_cancellation_runtime(
     array $config,
     string $tournamentId,
@@ -134,6 +157,8 @@ try {
     $catalog = new GameCatalogService($config);
     $manualAcceptance = new StagingTournamentManualAcceptanceService($config, $database, $ledger, $service);
     $cancellation = new TournamentCancellationService($database, $ledger);
+    $prizeReview = new TournamentPrizeReviewService($database);
+    $settlement = new TournamentSettlementService($database, $ledger, $prizeReview);
     $actorRef = 'telegram:' . $telegramId;
     $action = strtolower(trim((string)($payload['action'] ?? 'snapshot')));
 
@@ -190,6 +215,44 @@ try {
             'snapshot'=>$service->snapshot(),
             'games'=>$catalog->publicCatalog(),
             'manual_reset_result'=>$reset,
+        ];
+    } elseif ($action === 'prize_review_flag') {
+        $tournamentId = clean_string($payload['tournament_id'] ?? '', 64);
+        $review = $prizeReview->flagSeriousSignal(
+            $tournamentId,
+            clean_string($payload['mgw_id'] ?? '', 24),
+            clean_string($payload['signal_code'] ?? '', 64),
+            clean_string($payload['note'] ?? '', 800),
+            $actorRef,
+            clean_string($payload['related_game_id'] ?? '', 96)
+        );
+        $result = [
+            'snapshot'=>$service->snapshot(),
+            'games'=>$catalog->publicCatalog(),
+            'prize_review_result'=>$review,
+        ];
+    } elseif ($action === 'prize_review_release' || $action === 'prize_review_disqualify') {
+        $tournamentId = clean_string($payload['tournament_id'] ?? '', 64);
+        $decision = $action === 'prize_review_disqualify'
+            ? TournamentPrizeReviewService::DECISION_DISQUALIFY
+            : TournamentPrizeReviewService::DECISION_RELEASE;
+        $review = $prizeReview->resolve(
+            $tournamentId,
+            clean_string($payload['mgw_id'] ?? '', 24),
+            $decision,
+            clean_string($payload['note'] ?? '', 800),
+            $actorRef
+        );
+        $settled = $settlement->settleIfComplete($tournamentId);
+        $runtimeUpdated = mgw_apply_tournament_settlement_runtime_balances(
+            $config,
+            is_array($settled['runtime_balances'] ?? null) ? $settled['runtime_balances'] : []
+        );
+        $result = [
+            'snapshot'=>$service->snapshot(),
+            'games'=>$catalog->publicCatalog(),
+            'prize_review_result'=>$review,
+            'prize_review_settlement'=>$settled + ['runtime_balances_updated'=>$runtimeUpdated],
         ];
     } elseif ($action === 'cancel_tournament' || $action === 'emergency_stop') {
         $kind = $action === 'emergency_stop'
@@ -259,6 +322,8 @@ try {
     $manualResetAvailability = $manualAcceptance->resetAvailability($_SERVER);
     $manualProgressionAvailability = $manualAcceptance->progressionAcceptanceAvailability($_SERVER);
     $cancellationAvailability = $cancellation->availability();
+    $currentTournamentId = trim((string)($result['snapshot']['tournament']['tournament_id'] ?? ''));
+    $prizeReviewSnapshot = $prizeReview->snapshot($currentTournamentId !== '' ? $currentTournamentId : null);
 
     json_response([
         'ok'=>true,
@@ -268,6 +333,7 @@ try {
         'manual_reset'=>$manualResetAvailability,
         'manual_progression'=>$manualProgressionAvailability,
         'cancellation'=>$cancellationAvailability,
+        'prize_review'=>$prizeReviewSnapshot,
     ] + $result);
 } catch (AdminWebAuthException $error) {
     json_response(['ok'=>false,'error'=>$error->publicMessage()], $error->httpStatus());

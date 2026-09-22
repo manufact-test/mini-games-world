@@ -15,11 +15,20 @@ final class TournamentSettlementService
     public const RESULT_THIRD = 'third_place';
     public const RESULT_FOURTH = 'fourth_place';
     public const RESULT_PARTICIPANT = 'participant';
+    public const RESULT_DISQUALIFIED = 'disqualified';
+
+    private ?TournamentPrizeReviewService $prizeReview;
 
     public function __construct(
         private DatabaseConnectionInterface $database,
-        private LedgerWriteService $ledger
-    ) {}
+        private LedgerWriteService $ledger,
+        ?TournamentPrizeReviewService $prizeReview = null
+    ) {
+        $this->prizeReview = $prizeReview;
+        if ($this->prizeReview === null && class_exists('TournamentPrizeReviewService')) {
+            $this->prizeReview = new TournamentPrizeReviewService($database);
+        }
+    }
 
     public function settleIfComplete(string $tournamentId, ?DateTimeImmutable $now = null): array
     {
@@ -56,6 +65,21 @@ final class TournamentSettlementService
             throw new RuntimeException('Tournament entry snapshot is invalid for settlement.');
         }
 
+        $reviewDecision = $this->prizeReview !== null
+            ? $this->prizeReview->settlementDecision($tournamentId, $terminal['placements'])
+            : [
+                'hold'=>false,
+                'held_mgw_ids'=>[],
+                'disqualified_mgw_ids'=>[],
+                'effective_placements'=>$terminal['placements'],
+                'reviews'=>[],
+            ];
+        $heldMgwIds = array_fill_keys(array_map('strval', $reviewDecision['held_mgw_ids'] ?? []), true);
+        $disqualifiedMgwIds = array_fill_keys(array_map('strval', $reviewDecision['disqualified_mgw_ids'] ?? []), true);
+        $effectivePlacements = is_array($reviewDecision['effective_placements'] ?? null)
+            ? $reviewDecision['effective_placements']
+            : $terminal['placements'];
+
         $rows = $this->database->fetchAll(
             'SELECT r.registration_id,r.mgw_id,r.account_ref,r.reservation_id,
                     res.legacy_user_id,res.status AS reservation_status,res.amount AS reservation_amount
@@ -77,9 +101,15 @@ final class TournamentSettlementService
         foreach ($rows as $row) {
             if (!is_array($row)) continue;
             $mgwId = (string)$row['mgw_id'];
-            $placement = $terminal['placements'][$mgwId] ?? null;
+            $canonicalPlacement = $terminal['placements'][$mgwId] ?? null;
+            $placement = array_key_exists($mgwId, $effectivePlacements)
+                ? $effectivePlacements[$mgwId]
+                : $canonicalPlacement;
+            $placement = $placement === null ? null : (int)$placement;
+            $heldForReview = isset($heldMgwIds[$mgwId]);
+            $disqualified = isset($disqualifiedMgwIds[$mgwId]);
             $reward = $this->rewardForPlacement($snapshot, $placement);
-            $rewardEligible = !$this->isSyntheticStagingFixture(
+            $rewardEligible = !$disqualified && !$this->isSyntheticStagingFixture(
                 $mgwId,
                 (string)$row['account_ref'],
                 (string)($row['legacy_user_id'] ?? '')
@@ -101,21 +131,33 @@ final class TournamentSettlementService
                 'mgw_id'=>$mgwId,
                 'legacy_user_id'=>$this->nullable((string)($row['legacy_user_id'] ?? '')),
             ];
-            $metadata = [
+            $entryMetadata = [
                 'tournament_id'=>$tournamentId,
                 'mgw_id'=>$mgwId,
-                'placement'=>$placement,
+                'canonical_placement'=>$canonicalPlacement,
                 'reward_snapshot_version'=>$version,
                 'reward_snapshot_sha256'=>$snapshotHash,
+            ];
+            $metadata = $entryMetadata + [
+                'placement'=>$placement,
                 'reward_eligible'=>$rewardEligible,
+                'prize_review_hold'=>$heldForReview,
+                'prize_review_disqualified'=>$disqualified,
             ];
 
             $this->ledger->consumeReservation([
                 'operation_key'=>$this->operationKey($tournamentId, $mgwId, 'entry'),
                 'reservation_id'=>(string)$row['reservation_id'],
-                'metadata'=>$metadata + ['purpose'=>'tournament_entry_settlement'],
+                'metadata'=>$entryMetadata + ['purpose'=>'tournament_entry_settlement'],
                 'occurred_at_utc'=>$settledAt,
             ]);
+
+            // A serious signal may hold only the affected prize path. The entry
+            // remains canonically consumed, while payout/result ownership stays
+            // here and is retried after Admin review.
+            if ($heldForReview) {
+                continue;
+            }
 
             if ($payout > 0) {
                 $this->ledger->postAvailableDelta($identity + [
@@ -147,7 +189,8 @@ final class TournamentSettlementService
                 $payout,
                 $rewardEligible,
                 $reward,
-                $settledAt
+                $settledAt,
+                $disqualified ? self::RESULT_DISQUALIFIED : null
             );
         }
 
@@ -155,16 +198,21 @@ final class TournamentSettlementService
             'SELECT COUNT(*) FROM mgw_tournament_results WHERE tournament_id=:tournament_id',
             ['tournament_id'=>$tournamentId]
         );
-        if ($settledCount !== count($rows)) {
+        $reviewHold = ($reviewDecision['hold'] ?? false) === true;
+        if (!$reviewHold && $settledCount !== count($rows)) {
             throw new RuntimeException('Tournament settlement did not produce one durable result per participant.');
+        }
+        if ($reviewHold && $settledCount >= count($rows)) {
+            throw new RuntimeException('Tournament prize review hold must leave the affected path unsettled.');
         }
 
             return [
                 'tournament_id'=>$tournamentId,
-                'status'=>'settled',
-                'settlement_complete'=>true,
+                'status'=>$reviewHold ? 'review_hold' : 'settled',
+                'settlement_complete'=>!$reviewHold && $settledCount === count($rows),
                 'settled_count'=>$settledCount,
                 'reward_snapshot_version'=>$version,
+                'review'=>$reviewDecision,
                 'runtime_balances'=>$this->runtimeBalances($tournamentId),
             ];
         });
@@ -187,6 +235,15 @@ final class TournamentSettlementService
             'SELECT COUNT(*) FROM mgw_tournament_results WHERE tournament_id=:tournament_id',
             ['tournament_id'=>$tournamentId]
         );
+
+        $terminal = $this->terminalBracket($tournamentId);
+        $reviewDecision = $this->prizeReview !== null && is_array($terminal)
+            ? $this->prizeReview->settlementDecision($tournamentId, $terminal['placements'])
+            : ['hold'=>false,'held_mgw_ids'=>[],'disqualified_mgw_ids'=>[],'reviews'=>[]];
+        $selfReview = $this->prizeReview !== null
+            ? $this->prizeReview->participantReview($tournamentId, $mgwId)
+            : null;
+        $heldForReview = in_array($mgwId, array_map('strval', $reviewDecision['held_mgw_ids'] ?? []), true);
 
         $rows = $this->database->fetchAll(
             'SELECT tr.*,u.nickname,u.display_name
@@ -223,15 +280,24 @@ final class TournamentSettlementService
             if ($candidate !== '' && ($completedAt === null || strcmp($candidate, $completedAt) > 0)) $completedAt = $candidate;
         }
 
+        $settlementComplete = $expected > 0 && $settled === $expected;
+        $reviewHold = ($reviewDecision['hold'] ?? false) === true;
+
         return [
             'tournament_id'=>$tournamentId,
-            'settlement_state'=>$expected > 0 && $settled === $expected ? 'settled' : 'pending',
-            'settlement_complete'=>$expected > 0 && $settled === $expected,
+            'settlement_state'=>$settlementComplete ? 'settled' : ($reviewHold ? 'review_hold' : 'pending'),
+            'settlement_complete'=>$settlementComplete,
             'settled_count'=>$settled,
             'participant_count'=>$expected,
             'settled_at_utc'=>$completedAt,
             'podium'=>$podium,
             'self_result'=>$self,
+            'prize_review'=>[
+                'hold'=>$reviewHold,
+                'self_held'=>$heldForReview,
+                'self_review'=>$selfReview,
+                'held_count'=>count($reviewDecision['held_mgw_ids'] ?? []),
+            ],
         ];
     }
 
@@ -247,10 +313,11 @@ final class TournamentSettlementService
         int $payout,
         bool $rewardEligible,
         array $reward,
-        string $settledAt
+        string $settledAt,
+        ?string $resultCodeOverride = null
     ): void {
         $mgwId = (string)$registration['mgw_id'];
-        $resultCode = $this->resultCode($placement);
+        $resultCode = $resultCodeOverride ?? $this->resultCode($placement);
 
         $this->database->transaction(function (DatabaseConnectionInterface $db) use (
             $tournamentId,$registration,$mgwId,$placement,$version,$snapshotHash,
@@ -544,11 +611,16 @@ final class TournamentSettlementService
     {
         $rows = $this->database->fetchAll(
             'SELECT res.legacy_user_id,b.available_amount,b.reserved_amount
-             FROM mgw_tournament_results tr
-             INNER JOIN mgw_reservations res ON res.reservation_id=tr.reservation_id
-             INNER JOIN mgw_balances b ON b.account_ref=tr.account_ref AND b.asset_code=:asset_code
-             WHERE tr.tournament_id=:tournament_id',
-            ['asset_code'=>TournamentRegistrationService::ENTRY_ASSET,'tournament_id'=>$tournamentId]
+             FROM mgw_tournament_registrations r
+             INNER JOIN mgw_reservations res ON res.reservation_id=r.reservation_id
+             INNER JOIN mgw_balances b ON b.account_ref=r.account_ref AND b.asset_code=:asset_code
+             WHERE r.tournament_id=:tournament_id
+               AND r.registration_state=:registration_state',
+            [
+                'asset_code'=>TournamentRegistrationService::ENTRY_ASSET,
+                'tournament_id'=>$tournamentId,
+                'registration_state'=>TournamentRegistrationService::REGISTRATION_REGISTERED,
+            ]
         );
         $result = [];
         foreach ($rows as $row) {
