@@ -22,6 +22,7 @@ on:
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/tournaments-screen-v1.js'
       - 'app/assets/js/screens/game-screen-v102.js'
+      - 'app/assets/js/production-v110-acceptance-runtime.js'
       - 'app/assets/js/games/game-invites-v110.js'
       - 'app/assets/js/games/game-invites-v110-rematch-policy-v175.js'
       - 'app/runtime/client/version-manifest.php'
@@ -32,6 +33,7 @@ on:
       - 'bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php'
       - 'bot/tests/RematchOptimisticUxContractTest.php'
       - 'bot/tests/PhaseBMatchPreparationClockServiceTest.php'
+      - 'bot/tests/PhaseBClientLaunchUxContractTest.php'
       - 'bot/tests/Mvp21_4TournamentHallBracketTest.php'
       - 'bot/tests/Mvp21_4TournamentHallUxContractTest.php'
       - 'bot/tests/Mvp21_5TournamentMatchReadinessTest.php'
@@ -107,6 +109,7 @@ jobs:
             bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php
             bot/tests/RematchOptimisticUxContractTest.php
             bot/tests/PhaseBMatchPreparationClockServiceTest.php
+            bot/tests/PhaseBClientLaunchUxContractTest.php
             app/runtime/client/version-manifest.php
             bot/tests/Mvp21_4TournamentHallBracketTest.php
             bot/tests/Mvp21_4TournamentHallUxContractTest.php
@@ -119,6 +122,7 @@ jobs:
           node --check app/assets/js/api/client.js
           node --check app/assets/js/screens/tournaments-screen-v1.js
           node --check app/assets/js/screens/game-screen-v102.js
+          node --check app/assets/js/production-v110-acceptance-runtime.js
           node --check app/assets/js/games/game-invites-v110.js
           node --check app/assets/js/games/game-invites-v110-rematch-policy-v175.js
 
@@ -194,6 +198,7 @@ jobs:
               app/assets/js/api/client.js|\
               app/assets/js/screens/tournaments-screen-v1.js|\
               app/assets/js/screens/game-screen-v102.js|\
+              app/assets/js/production-v110-acceptance-runtime.js|\
               app/assets/js/games/game-invites-v110.js|\
               app/assets/js/games/game-invites-v110-rematch-policy-v175.js|\
               app/runtime/client/version-manifest.php|\
@@ -204,6 +209,7 @@ jobs:
               bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php|\
               bot/tests/RematchOptimisticUxContractTest.php|\
               bot/tests/PhaseBMatchPreparationClockServiceTest.php|\
+              bot/tests/PhaseBClientLaunchUxContractTest.php|\
               bot/tests/Mvp21_4TournamentHallBracketTest.php|\
               bot/tests/Mvp21_4TournamentHallUxContractTest.php|\
               bot/tests/Mvp21_5TournamentMatchReadinessTest.php|\
