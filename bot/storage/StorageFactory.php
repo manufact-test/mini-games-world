@@ -120,6 +120,20 @@ final class StorageFactory
         if (isset($attempted[$entrypoint])) return;
         $attempted[$entrypoint] = true;
 
+        // The DB-primary rehearsal is explicitly bounded by a short request
+        // session. Once that session has expired, normal staging must return to
+        // JSON immediately. Do this BEFORE the stale-primary comparison: the old
+        // retained rehearsal snapshot can be very large and must not remain on
+        // every future cold-start/API critical path merely because private
+        // selector config has not yet been toggled off.
+        if ($environment === 'staging' && $script === 'api.php') {
+            require_once __DIR__ . '/../runtime/RuntimePrimaryStagingRequestSessionConfig.php';
+            $requestSession = RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($config);
+            if ($requestSession->enabled() && !$requestSession->activeAt(time())) {
+                return;
+            }
+        }
+
         // The DB-primary API selector is a bounded staging rehearsal, while
         // JSON remains the rollback/live source outside that rehearsal. If the
         // retained DB-primary snapshot is missing notification events OR still
@@ -172,7 +186,8 @@ final class StorageFactory
             $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
             if (!$databaseConfig->enabled()) return false;
 
-            $rollback = (new JsonStorageAdapter($dataDir))->readOnly(
+            $rollback = (new JsonStorageAdapter($dataDir))->readOnlySections(
+                ['notifications'],
                 static fn(array $data): array => $data
             );
             $primary = (new DatabasePrimaryStateStorageAdapter(
