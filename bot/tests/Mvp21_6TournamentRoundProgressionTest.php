@@ -121,7 +121,27 @@ $postTerminalReady=$readiness->status(
 );
 $assertSame(null,$postTerminalReady['match'],'Completed/replayed first-round pair must not leak the stale initial Ready card after terminal progression.');
 
-$finish(2,3,'2026-09-21T10:03:10Z');
+$pair2GameId=$progress->expectedGameId($tournament,1,2,1);
+$progress->attachGame($tournament,1,2,1,$pair2GameId,new DateTimeImmutable('2026-09-21T10:03:09Z'));
+$progress->observeFinishedGame([
+ 'id'=>$pair2GameId,'match_source'=>'tournament','tournament_id'=>$tournament,
+ 'tournament_round_no'=>1,'tournament_pair_no'=>2,'tournament_attempt_no'=>1,'status'=>'finished',
+ 'player_ids'=>[$players[3]['legacy'],$players[4]['legacy']],
+ 'winner_id'=>null,'finish_reason'=>'preparation_timeout',
+ 'preparation_ready_devices'=>[
+  $players[3]['legacy']=>['device_hash'=>'present-player','ready_at'=>'2026-09-21T10:03:09Z'],
+ ],
+ 'finished_at'=>'2026-09-21T10:03:10Z',
+],new DateTimeImmutable('2026-09-21T10:03:10Z'));
+$pair2Row=$db->fetchAll(
+ 'SELECT * FROM mgw_tournament_round_matches WHERE tournament_id=:t AND round_no=1 AND pair_no=2',
+ ['t'=>$tournament]
+)[0];
+$assertSame(TournamentRoundProgressionService::STATE_COMPLETED,(string)$pair2Row['launch_state'],'One-sided tournament preparation timeout must complete the pair instead of scheduling a draw replay.');
+$assertSame($players[3]['mgw'],(string)$pair2Row['winner_mgw_id'],'The only participant that adopted the tournament game must receive the technical win.');
+$assertSame('preparation_timeout',(string)$pair2Row['result_reason'],'Technical no-show result must preserve the runtime timeout reason for audit.');
+$assertSame(1,(int)$pair2Row['attempt_no'],'Technical no-show must not manufacture a replay attempt.');
+
 $finish(3,5,'2026-09-21T10:03:20Z');
 
 // A terminal result is already bound to the durable pair by its attached game id.
@@ -223,5 +243,5 @@ foreach($bothAbsentRows as $row){
  $assertSame(null,$row['completed_at_utc'],'Both-absent pair must remain unresolved until canonical progression chooses a winner.');
 }
 
-if($assertions<38) throw new RuntimeException('MVP-21.6 progression test is too shallow: '.$assertions);
+if($assertions<42) throw new RuntimeException('MVP-21.6 progression test is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_6TournamentRoundProgressionTest: {$assertions} assertions passed\n");

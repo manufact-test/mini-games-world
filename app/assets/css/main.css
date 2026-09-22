@@ -1884,6 +1884,9 @@
   color:var(--muted);
   font-size:9px;
 }
+#screen-tournaments .tournaments-v2-active-round>.tournaments-v2-hall-section-title{
+  margin-bottom:8px;
+}
 #screen-tournaments .tournaments-v2-hall-roster-grid{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));

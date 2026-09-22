@@ -93,6 +93,25 @@ final class TournamentRoundProgressionService
             $finishedAt = $this->parseOptionalMoment((string)($game['finished_at'] ?? ''), $moment);
             $finishedAtUtc = $this->utc($finishedAt);
             $winnerLegacy = trim((string)($game['winner_id'] ?? ''));
+            $finishReason = trim((string)($game['finish_reason'] ?? ''));
+            if ($winnerLegacy === '' && $finishReason === 'preparation_timeout') {
+                $readyDevices = is_array($game['preparation_ready_devices'] ?? null)
+                    ? $game['preparation_ready_devices']
+                    : [];
+                $readyPlayers = [];
+                foreach ($runtimePlayers as $runtimePlayerId) {
+                    if (isset($readyDevices[$runtimePlayerId]) && is_array($readyDevices[$runtimePlayerId])) {
+                        $readyPlayers[] = $runtimePlayerId;
+                    }
+                }
+                // A tournament game that never started is not a draw when exactly
+                // one participant actually adopted the runtime game. The present
+                // participant advances by technical no-show; zero/two ready
+                // participants remain unresolved by this rule.
+                if (count($readyPlayers) === 1) {
+                    $winnerLegacy = $readyPlayers[0];
+                }
+            }
             $winnerMgw = null;
             $loserMgw = null;
             $resultType = 'draw';

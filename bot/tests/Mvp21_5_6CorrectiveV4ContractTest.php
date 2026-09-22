@@ -23,6 +23,7 @@ $fixture = $read('bot/tournaments/StagingTournamentManualAcceptanceService.php')
 $adminApi = $read('bot/admin-tournaments.php');
 $adminJs = $read('app/assets/js/admin-tournaments.js');
 $manifest = $read('app/runtime/client/version-manifest.php');
+$css = $read('app/assets/css/main.css');
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -132,6 +133,22 @@ $assert(str_contains($fixture, 'ensureFirstRoundStructure($tournamentId)'),
 $assert(str_contains($fixture, "'finish_reason'=>'staging_fixture_acceptance'")
         && !str_contains($fixture, 'createTournamentGame('),
     'Staging fixture completion must not create fake runtime games or a second entry-fee path.');
+$assert(str_contains($fixture, 'resolveMixedFixtureByeForParticipant')
+        && str_contains($fixture, "'finish_reason'=>'staging_mixed_fixture_bye'")
+        && str_contains($fixture, "if (\$roundNo <= 1)")
+        && str_contains($fixture, "if (\$moment < \$opens)"),
+    'Later-round mixed staging fixtures must become technical byes only after their canonical wait and never replace first-round Ready.');
+$assert(str_contains($api, '$stagingAcceptance->resolveMixedFixtureByeForParticipant(')
+        && str_contains($api, "strtolower(trim((string)(\$config['environment'] ?? ''))) === 'staging'")
+        && str_contains($api, "'staging_mixed_fixture_bye'"),
+    'Tournament heartbeat must resolve mixed fixture byes before attempting another runtime launch.');
+$assert(str_contains($progression, "\$finishReason === 'preparation_timeout'")
+        && str_contains($progression, 'count($readyPlayers) === 1')
+        && str_contains($progression, '$winnerLegacy = $readyPlayers[0];'),
+    'A one-sided real tournament preparation timeout must advance the present player instead of becoming a draw replay.');
+$assert(str_contains($css, '.tournaments-v2-active-round>.tournaments-v2-hall-section-title')
+        && str_contains($css, 'margin-bottom:8px;'),
+    'Active round heading and completion counter must have breathing room above the bracket grid.');
 $assert(str_contains($adminApi, "'complete_fixture_pairs'")
         && str_contains($adminApi, "'manual_progression'"),
     'Tournament Admin must expose the explicit staging progression action and availability.');
@@ -143,6 +160,8 @@ $assert(str_contains($adminJs, "progressionReason !== 'staging_only'")
     'Staging Admin must keep the fixture progression panel visible even when the action is temporarily disabled.');
 
 $assert(str_contains($manifest, 'tournaments-screen-v1.js?v=28')
+        && str_contains($manifest, 'main.css?v=200')
+        && str_contains($manifest, 'mvp21_6=round-grid-spacing-v1')
         && str_contains($manifest, 'mvp21_8=corrective-v8')
         && str_contains($manifest, 'game-screen-v102.js?v=112')
         && str_contains($manifest, 'mvp21_6=tournament-result-dedupe-v3')
@@ -151,5 +170,5 @@ $assert(str_contains($manifest, 'tournaments-screen-v1.js?v=28')
         && str_contains($manifest, 'game-invites-v110-rematch-policy-v175.js?v=2'),
     'Corrective v8 client owners must publish fresh active cache identities without replacing the accepted Phase-B presentation owner.');
 
-if ($assertions < 37) throw new RuntimeException('Corrective v4 contract is too shallow: ' . $assertions);
+if ($assertions < 41) throw new RuntimeException('Corrective v4 contract is too shallow: ' . $assertions);
 fwrite(STDOUT, "Mvp21_5_6CorrectiveV4ContractTest: {$assertions} assertions passed\n");
