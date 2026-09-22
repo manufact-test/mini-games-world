@@ -394,7 +394,16 @@ function scheduleTournamentStartBoundaryRefresh(scheduledStart, registered){
 
     try {
       await warmTournamentStatus();
-      await warmTournamentHallStatus();
+
+      // Do not reuse a Hall request that may have started just before T0 and
+      // therefore legitimately returned the pre-bracket snapshot. This one
+      // boundary read is intentionally fresh and starts only after T0.
+      const hallResult = await api.tournamentHallStatus();
+      tournamentHallSnapshot = hallResult?.snapshot && typeof hallResult.snapshot === 'object'
+        ? hallResult.snapshot
+        : tournamentHallSnapshot;
+      tournamentHallError = '';
+
       if (tournamentHallSnapshot?.bracket) {
         await refreshTournamentMatchState();
       }
