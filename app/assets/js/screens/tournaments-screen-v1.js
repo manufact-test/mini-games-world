@@ -17,6 +17,9 @@ const GAME_TYPES = Object.freeze([
 ]);
 const DEFAULT_GAME = 'tictactoe';
 const CACHE_TTL_MS = 45_000;
+const EXTERNAL_TOURNAMENT_COMMIT_CONFIRM_MS = 1200;
+const TOURNAMENT_T0_SYNC_INTERVAL_MS = 250;
+const TOURNAMENT_T0_SYNC_WINDOW_MS = 6000;
 const cache = new Map();
 const inFlight = new Map();
 const archiveSeasonCache = new Map();
@@ -48,6 +51,9 @@ let tournamentMatchBusy = false;
 let tournamentMatchError = '';
 let tournamentLaunchWatchTimer = null;
 let tournamentStartBoundaryTimer = null;
+let tournamentStartSyncTimer = null;
+let tournamentExternalCommitCandidate = null;
+let tournamentExternalCommitTimer = null;
 
 function lockVisibleBalance(){
   const ids = ['balanceUnified', 'topbarBalanceUnified'];
@@ -206,6 +212,7 @@ export function initTournamentsScreen(){
       stopTournamentVisibleRefresh();
       stopTournamentLaunchWatch();
       stopTournamentStartBoundaryRefresh();
+      stopTournamentStartSync();
       return;
     }
     if (tournamentHallPanelVisible()) {
@@ -271,6 +278,7 @@ function bindModeTabs(screen){
         stopTournamentVisibleRefresh();
         stopTournamentLaunchWatch();
         stopTournamentStartBoundaryRefresh();
+        stopTournamentStartSync();
         void activateGame(activeGame);
       }
       if (mode === 'tournaments') {
@@ -328,10 +336,17 @@ async function warmTournamentStatus(){
   tournamentRequest = api.tournamentStatus()
     .then(result => {
       const nextSnapshot = result?.snapshot && typeof result.snapshot === 'object' ? result.snapshot : {};
-      // Registration mutation owns visible commit while its independent verification is pending.
-      // A background status poll may observe the already committed DB seat, but must never publish
-      // it before the mutation verifies balance + registration + capacity atomically.
+      // The mutating client already owns a local pending barrier. Other clients
+      // need the same visible-commit discipline: the canonical DB seat may be
+      // committed while the first WebView is still verifying its write. Never
+      // publish an external participant-count transition from a single poll.
       if (tournamentBusy) return tournamentSnapshot;
+      if (shouldStageExternalTournamentCommit(nextSnapshot)) {
+        stageExternalTournamentCommit(nextSnapshot);
+        return tournamentSnapshot;
+      }
+
+      clearTournamentExternalCommitCandidate();
       tournamentSnapshot = nextSnapshot;
       const nextTournamentId = String(tournamentSnapshot?.tournament?.tournament_id || '');
       if (previousTournamentId && nextTournamentId !== previousTournamentId) {
@@ -342,12 +357,77 @@ async function warmTournamentStatus(){
         tournamentMatchError = '';
         stopTournamentHallHeartbeat();
         stopTournamentVisibleRefresh();
+        stopTournamentLaunchWatch();
+        stopTournamentStartSync();
       }
       syncTournamentRulesConsent();
       return tournamentSnapshot;
     })
     .finally(() => { tournamentRequest = null; });
   return tournamentRequest;
+}
+
+function tournamentRegisteredCount(snapshot){
+  const value = Number(snapshot?.tournament?.registered_count);
+  return Number.isFinite(value) ? value : null;
+}
+
+function shouldStageExternalTournamentCommit(nextSnapshot){
+  if (!tournamentSnapshot || tournamentBusy) return false;
+  const currentId = String(tournamentSnapshot?.tournament?.tournament_id || '');
+  const nextId = String(nextSnapshot?.tournament?.tournament_id || '');
+  if (!currentId || currentId !== nextId) return false;
+  const currentCount = tournamentRegisteredCount(tournamentSnapshot);
+  const nextCount = tournamentRegisteredCount(nextSnapshot);
+  return currentCount !== null && nextCount !== null && currentCount !== nextCount;
+}
+
+function clearTournamentExternalCommitCandidate(){
+  if (tournamentExternalCommitTimer) window.clearTimeout(tournamentExternalCommitTimer);
+  tournamentExternalCommitTimer = null;
+  tournamentExternalCommitCandidate = null;
+}
+
+function stageExternalTournamentCommit(nextSnapshot){
+  tournamentExternalCommitCandidate = nextSnapshot;
+  if (tournamentExternalCommitTimer) return;
+  tournamentExternalCommitTimer = window.setTimeout(async () => {
+    tournamentExternalCommitTimer = null;
+    const candidate = tournamentExternalCommitCandidate;
+    if (!candidate || tournamentBusy) {
+      if (!tournamentBusy) tournamentExternalCommitCandidate = null;
+      return;
+    }
+
+    try {
+      // Fresh second observation: do not reuse tournamentRequest, otherwise an
+      // in-flight poll can "confirm" itself. This is the cross-client equivalent
+      // of the mutating account's independent verification read.
+      const verified = await api.tournamentStatus();
+      const verifiedSnapshot = verified?.snapshot && typeof verified.snapshot === 'object'
+        ? verified.snapshot
+        : null;
+      if (!verifiedSnapshot || tournamentBusy) return;
+
+      const candidateId = String(candidate?.tournament?.tournament_id || '');
+      const verifiedId = String(verifiedSnapshot?.tournament?.tournament_id || '');
+      const candidateCount = tournamentRegisteredCount(candidate);
+      const verifiedCount = tournamentRegisteredCount(verifiedSnapshot);
+      if (candidateId && candidateId === verifiedId
+          && candidateCount !== null && candidateCount === verifiedCount) {
+        tournamentSnapshot = verifiedSnapshot;
+        tournamentExternalCommitCandidate = null;
+        syncTournamentRulesConsent();
+        if (tournamentHallPanelVisible()) renderTournamentSnapshot();
+        return;
+      }
+
+      tournamentExternalCommitCandidate = verifiedSnapshot;
+      stageExternalTournamentCommit(verifiedSnapshot);
+    } catch (_) {
+      tournamentExternalCommitCandidate = null;
+    }
+  }, EXTERNAL_TOURNAMENT_COMMIT_CONFIRM_MS);
 }
 
 function tournamentHallPanelVisible(){
@@ -376,6 +456,11 @@ function stopTournamentStartBoundaryRefresh(){
   tournamentStartBoundaryTimer = null;
 }
 
+function stopTournamentStartSync(){
+  if (tournamentStartSyncTimer) window.clearTimeout(tournamentStartSyncTimer);
+  tournamentStartSyncTimer = null;
+}
+
 function scheduleTournamentStartBoundaryRefresh(scheduledStart, registered){
   stopTournamentStartBoundaryRefresh();
   if (!registered
@@ -384,20 +469,30 @@ function scheduleTournamentStartBoundaryRefresh(scheduledStart, registered){
       || !tournamentHallPanelVisible()) return;
 
   const delay = Math.min(2_147_000_000, Math.max(0, scheduledStart.getTime() - Date.now() + 30));
-  tournamentStartBoundaryTimer = window.setTimeout(async () => {
+  tournamentStartBoundaryTimer = window.setTimeout(() => {
     tournamentStartBoundaryTimer = null;
+    startTournamentT0SyncBurst(scheduledStart);
+  }, delay);
+}
+
+function startTournamentT0SyncBurst(scheduledStart){
+  stopTournamentStartSync();
+  if (!(scheduledStart instanceof Date) || !tournamentHallPanelVisible()) return;
+  const stopAt = scheduledStart.getTime() + TOURNAMENT_T0_SYNC_WINDOW_MS;
+
+  const tick = async () => {
+    tournamentStartSyncTimer = null;
     if (!tournamentHallPanelVisible()) return;
-    if (scheduledStart.getTime() > Date.now()) {
-      scheduleTournamentStartBoundaryRefresh(scheduledStart, registered);
+    if (Date.now() < scheduledStart.getTime()) {
+      tournamentStartSyncTimer = window.setTimeout(tick, Math.max(20, scheduledStart.getTime() - Date.now() + 20));
       return;
     }
 
     try {
       await warmTournamentStatus();
 
-      // Do not reuse a Hall request that may have started just before T0 and
-      // therefore legitimately returned the pre-bracket snapshot. This one
-      // boundary read is intentionally fresh and starts only after T0.
+      // Every T0 burst read is fresh. A request started before T0 is allowed to
+      // finish, but it cannot become the only source of truth for the bracket.
       const hallResult = await api.tournamentHallStatus();
       tournamentHallSnapshot = hallResult?.snapshot && typeof hallResult.snapshot === 'object'
         ? hallResult.snapshot
@@ -410,8 +505,18 @@ function scheduleTournamentStartBoundaryRefresh(scheduledStart, registered){
     } catch (error) {
       tournamentMatchError = String(error?.message || 'Не удалось синхронизировать старт турнира.');
     }
+
     renderTournamentSnapshot();
-  }, delay);
+
+    const matchReady = Boolean(tournamentMatchSnapshot?.match)
+      || Boolean(tournamentProgressionSnapshot?.current_match)
+      || Boolean(tournamentProgressionSnapshot?.latest_match);
+    if (tournamentHallSnapshot?.bracket && matchReady) return;
+    if (Date.now() >= stopAt) return;
+    tournamentStartSyncTimer = window.setTimeout(tick, TOURNAMENT_T0_SYNC_INTERVAL_MS);
+  };
+
+  void tick();
 }
 
 function startTournamentLaunchWatch(){
@@ -506,6 +611,7 @@ async function refreshTournamentMatchState(){
       tournamentMatchError = '';
       if (result?.game?.id && String(result.game.status || '') === 'active') {
         stopTournamentLaunchWatch();
+        stopTournamentStartSync();
         enterGame(result.game);
       }
       return tournamentMatchSnapshot;
@@ -530,6 +636,7 @@ async function markTournamentReady(){
       : tournamentProgressionSnapshot;
     if (result?.game?.id && String(result.game.status || '') === 'active') {
       stopTournamentLaunchWatch();
+      stopTournamentStartSync();
       enterGame(result.game);
       return;
     }
@@ -727,6 +834,7 @@ async function mutateTournament(action){
     tournamentPendingAction = '';
 
     if (!errorMessage && verifiedCommit) {
+      clearTournamentExternalCommitCandidate();
       tournamentSnapshot = verifiedCommit;
       syncTournamentRulesConsent();
     }
