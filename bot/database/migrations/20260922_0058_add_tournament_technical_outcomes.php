@@ -65,9 +65,7 @@ SQL);
 
     private function rebuildSqliteRoundMatches(DatabaseConnectionInterface $database): void
     {
-        $database->execute('PRAGMA foreign_keys = OFF');
-        try {
-            $database->execute(<<<'SQL'
+        $database->execute(<<<'SQL'
 CREATE TABLE IF NOT EXISTS mgw_tournament_round_matches_mvp217 (
     tournament_id TEXT NOT NULL,
     round_no INTEGER NOT NULL,
@@ -114,11 +112,8 @@ FROM mgw_tournament_round_matches
 SQL);
             $database->execute('DROP TABLE mgw_tournament_round_matches');
             $database->execute('ALTER TABLE mgw_tournament_round_matches_mvp217 RENAME TO mgw_tournament_round_matches');
-            $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_tournament_round_match_player_a ON mgw_tournament_round_matches (tournament_id, player_a_mgw_id)');
-            $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_tournament_round_match_player_b ON mgw_tournament_round_matches (tournament_id, player_b_mgw_id)');
-        } finally {
-            $database->execute('PRAGMA foreign_keys = ON');
-        }
+        $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_tournament_round_match_player_a ON mgw_tournament_round_matches (tournament_id, player_a_mgw_id)');
+        $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_tournament_round_match_player_b ON mgw_tournament_round_matches (tournament_id, player_b_mgw_id)');
     }
 
     private function createSqliteAudit(DatabaseConnectionInterface $database): void
