@@ -976,7 +976,7 @@ final class StagingTournamentManualAcceptanceService
                     if ($legacyUserId !== '') {
                         $runtimeBalances[$legacyUserId] = (int)$balance['available_amount'];
                     }
-                    $realReleased++;
+                    if ($reservationStatus === 'active') $realReleased++;
                 }
 
                 $updated = $db->execute(
