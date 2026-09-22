@@ -180,6 +180,11 @@ $assertSame($rules['sha256'], $registered['registration']['rules_consent']['sha2
 $assertSame('2026-09-20 18:04:00.000000', $registered['registration']['rules_consent']['accepted_at_utc'], 'Consent time must be server-authored.');
 $assertSame(50000, $registered['balance']['available_amount'], 'Rules consent must not change the canonical 50,000 reservation amount.');
 $assertSame(50000, $registered['balance']['reserved_amount'], 'Tournament entry remains reserved, not spent.');
+$registered = $service->publishRegistration(
+    $ids[1],
+    'legacy:tg-1',
+    new DateTimeImmutable('2026-09-20T18:04:01Z')
+);
 
 $duplicate = $service->register($ids[1], 'legacy:tg-1', null, $consent);
 $assertSame(1, $duplicate['tournament']['registered_count'], 'Duplicate consent/register must remain idempotent.');
@@ -193,14 +198,20 @@ $assertSame(100000, $left['balance']['available_amount'], 'Pre-full leave must r
 $assertSame(0, $left['balance']['reserved_amount'], 'Pre-full leave must release hold.');
 
 $service->register($ids[1], 'legacy:tg-1', new DateTimeImmutable('2026-09-20T18:06:00Z'), $consent);
+$service->publishRegistration($ids[1], 'legacy:tg-1', new DateTimeImmutable('2026-09-20T18:06:01Z'));
 $last = null;
 for ($i = 2; $i <= 8; $i++) {
     $clock = '2026-09-20 18:' . sprintf('%02d', 6 + $i) . ':00.000000';
-    $last = $service->register(
+    $service->register(
         $ids[$i],
         'legacy:tg-' . $i,
         new DateTimeImmutable('2026-09-20T18:' . sprintf('%02d', 6 + $i) . ':00Z'),
         $consent
+    );
+    $last = $service->publishRegistration(
+        $ids[$i],
+        'legacy:tg-' . $i,
+        new DateTimeImmutable('2026-09-20T18:' . sprintf('%02d', 6 + $i) . ':01Z')
     );
 }
 
