@@ -120,8 +120,9 @@ $assert(str_contains($source['screen'], 'startTournamentVisibleRefresh')
 $assert(str_contains($source['screen'], 'tournamentStartBoundaryTimer')
         && str_contains($source['screen'], 'scheduleTournamentStartBoundaryRefresh')
         && str_contains($source['screen'], 'scheduledStart.getTime() - Date.now() + 30')
+        && str_contains($source['screen'], 'const hallResult = await api.tournamentHallStatus()')
         && str_contains($source['screen'], 'await refreshTournamentMatchState()'),
-    'Registered clients must refresh readiness at the exact tournament T0 instead of waiting for the arbitrary two-second visible-poll phase.');
+    'Registered clients must issue a fresh post-T0 Hall/readiness read instead of waiting for or reusing the arbitrary two-second poll phase.');
 $assert(str_contains($source['screen'], 'Загружаем готовность вашей пары…')
         && str_contains($source['screen'], 'tournamentMatchError')
         && str_contains($source['screen'], 'const matchMarkup = tournamentMatchMarkup();'),
