@@ -47,6 +47,7 @@ let tournamentMatchRequest = null;
 let tournamentMatchBusy = false;
 let tournamentMatchError = '';
 let tournamentLaunchWatchTimer = null;
+let tournamentStartBoundaryTimer = null;
 
 function lockVisibleBalance(){
   const ids = ['balanceUnified', 'topbarBalanceUnified'];
@@ -204,6 +205,7 @@ export function initTournamentsScreen(){
       stopTournamentHallHeartbeat();
       stopTournamentVisibleRefresh();
       stopTournamentLaunchWatch();
+      stopTournamentStartBoundaryRefresh();
       return;
     }
     if (tournamentHallPanelVisible()) {
@@ -268,6 +270,7 @@ function bindModeTabs(screen){
         stopTournamentHallHeartbeat();
         stopTournamentVisibleRefresh();
         stopTournamentLaunchWatch();
+        stopTournamentStartBoundaryRefresh();
         void activateGame(activeGame);
       }
       if (mode === 'tournaments') {
@@ -366,6 +369,40 @@ function stopTournamentVisibleRefresh(){
 function stopTournamentLaunchWatch(){
   if (tournamentLaunchWatchTimer) window.clearTimeout(tournamentLaunchWatchTimer);
   tournamentLaunchWatchTimer = null;
+}
+
+function stopTournamentStartBoundaryRefresh(){
+  if (tournamentStartBoundaryTimer) window.clearTimeout(tournamentStartBoundaryTimer);
+  tournamentStartBoundaryTimer = null;
+}
+
+function scheduleTournamentStartBoundaryRefresh(scheduledStart, registered){
+  stopTournamentStartBoundaryRefresh();
+  if (!registered
+      || !(scheduledStart instanceof Date)
+      || scheduledStart.getTime() <= Date.now()
+      || !tournamentHallPanelVisible()) return;
+
+  const delay = Math.min(2_147_000_000, Math.max(0, scheduledStart.getTime() - Date.now() + 30));
+  tournamentStartBoundaryTimer = window.setTimeout(async () => {
+    tournamentStartBoundaryTimer = null;
+    if (!tournamentHallPanelVisible()) return;
+    if (scheduledStart.getTime() > Date.now()) {
+      scheduleTournamentStartBoundaryRefresh(scheduledStart, registered);
+      return;
+    }
+
+    try {
+      await warmTournamentStatus();
+      await warmTournamentHallStatus();
+      if (tournamentHallSnapshot?.bracket) {
+        await refreshTournamentMatchState();
+      }
+    } catch (error) {
+      tournamentMatchError = String(error?.message || 'Не удалось синхронизировать старт турнира.');
+    }
+    renderTournamentSnapshot();
+  }, delay);
 }
 
 function startTournamentLaunchWatch(){
@@ -994,6 +1031,7 @@ function renderTournamentSnapshot(errorMessage = ''){
   const waitingForDate = state === 'waiting_for_date' || tournament.waiting_for_date === true;
   const scheduled = state === 'scheduled' && Boolean(tournament.scheduled_start_at_utc);
   const scheduledStart = scheduled ? parseTournamentUtc(tournament.scheduled_start_at_utc) : null;
+  scheduleTournamentStartBoundaryRefresh(scheduledStart, registered);
   const full = tournament.is_full === true;
   const capacity = Math.max(1, Number(tournament.capacity || 0));
   const count = Math.max(0, Number(tournament.registered_count || 0));
