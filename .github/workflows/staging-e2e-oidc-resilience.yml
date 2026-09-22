@@ -76,6 +76,8 @@ jobs:
           bad=0
           while IFS= read -r path; do
             case "$path" in
+              .github/workflows/mvp21-5-tournament-ready.yml|\
+              .github/workflows/mvp21-6-tournament-rounds.yml|\
               .github/workflows/staging-e2e-oidc-resilience.yml|\
               .github/workflows/staging-playwright-e2e.yml|\
               e2e/staging-oidc-token.mjs|\
