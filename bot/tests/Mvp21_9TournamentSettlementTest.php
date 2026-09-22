@@ -42,6 +42,21 @@ if($isMysql){
   mgw_id TEXT PRIMARY KEY,nickname TEXT NULL,display_name TEXT NULL
  )');
 }
+if($isMysql){
+ $db->execute('CREATE TABLE mgw_account_ownership (
+  account_ref VARCHAR(255) COLLATE utf8mb4_bin NOT NULL PRIMARY KEY,
+  mgw_id VARCHAR(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  legacy_user_id VARCHAR(191) COLLATE utf8mb4_bin NOT NULL,
+  ownership_status VARCHAR(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  source_type VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  source_ref VARCHAR(191) COLLATE utf8mb4_bin NOT NULL
+ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+}else{
+ $db->execute('CREATE TABLE mgw_account_ownership (
+  account_ref TEXT NOT NULL PRIMARY KEY,mgw_id TEXT NOT NULL,legacy_user_id TEXT NOT NULL,
+  ownership_status TEXT NOT NULL,source_type TEXT NOT NULL,source_ref TEXT NOT NULL
+ )');
+}
 (require $root.'/database/migrations/20260717_0005_create_balances_ledger_reservations.php')->up($db);
 (require $root.'/database/migrations/20260920_0049_create_official_tournaments.php')->up($db);
 if($isMysql){
@@ -81,6 +96,11 @@ for($i=1;$i<=8;$i++){
  $players[$i]=['mgw'=>$mgw,'legacy'=>$legacy,'account'=>$account];
  $db->execute('INSERT INTO mgw_users (mgw_id,nickname,display_name) VALUES (:m,:n,:d)',[
   'm'=>$mgw,'n'=>'Игрок '.$i,'d'=>'Игрок '.$i
+ ]);
+ $db->execute('INSERT INTO mgw_account_ownership (
+   account_ref,mgw_id,legacy_user_id,ownership_status,source_type,source_ref
+  ) VALUES (:a,:m,:l,:s,:st,:sr)',[
+   'a'=>$account,'m'=>$mgw,'l'=>$legacy,'s'=>'active','st'=>'runtime_identity','sr'=>'telegram:'.$legacy
  ]);
  $ledger->postAvailableDelta([
   'operation_key'=>'settlement-seed-'.$i,
@@ -214,5 +234,58 @@ $assertSame(2,(int)$ticket['championship_count'],'Repeat championship must incre
 $service->settleIfComplete('tour-settle-2');
 $ticket=$db->fetchAll('SELECT * FROM mgw_tournament_golden_tickets WHERE mgw_id=:m',['m'=>$players[1]['mgw']])[0];
 $assertSame(2,(int)$ticket['championship_count'],'Repeated second settlement must not double-increment championship_count.');
+
+$fixtureLegacy='stg_tour_v2_abcdef123456';
+$fixture=[
+ 'mgw'=>'MGW-ABCDEFGHJKMNPQRS',
+ 'legacy'=>$fixtureLegacy,
+ 'account'=>'legacy:'.$fixtureLegacy,
+];
+$db->execute('INSERT INTO mgw_users (mgw_id,nickname,display_name) VALUES (:m,:n,:d)',[
+ 'm'=>$fixture['mgw'],'n'=>'Тестовый участник 2','d'=>'Тестовый участник 2'
+]);
+$db->execute('INSERT INTO mgw_account_ownership (
+ account_ref,mgw_id,legacy_user_id,ownership_status,source_type,source_ref
+) VALUES (:a,:m,:l,:s,:st,:sr)',[
+ 'a'=>$fixture['account'],'m'=>$fixture['mgw'],'l'=>$fixture['legacy'],
+ 's'=>'active','st'=>'runtime_identity','sr'=>'development:'.$fixture['legacy']
+]);
+$ledger->postAvailableDelta([
+ 'operation_key'=>'fixture-settlement-seed',
+ 'account_ref'=>$fixture['account'],'mgw_id'=>$fixture['mgw'],'legacy_user_id'=>$fixture['legacy'],
+ 'asset_code'=>TournamentRegistrationService::ENTRY_ASSET,
+ 'available_delta'=>50000,'category'=>'test_grant','source_type'=>'test','source_ref'=>'mvp21.9-fixture',
+ 'occurred_at_utc'=>'2026-09-24 18:00:00.000000'
+]);
+
+$fixturePlayers=$players;
+$fixturePlayers[2]=$fixture;
+foreach($fixturePlayers as $i=>$player){
+ if($i===2) continue;
+ $ledger->postAvailableDelta([
+  'operation_key'=>'fixture-round-topup-'.$i,
+  'account_ref'=>$player['account'],'mgw_id'=>$player['mgw'],'legacy_user_id'=>$player['legacy'],
+  'asset_code'=>TournamentRegistrationService::ENTRY_ASSET,
+  'available_delta'=>50000,'category'=>'test_seed','source_type'=>'test','source_ref'=>'mvp21.9-fixture',
+  'occurred_at_utc'=>'2026-09-24 18:00:00.000000'
+ ]);
+}
+$seedTournament('tour-settle-fixture','', '2026-09-24 20:00:00.000000',$fixturePlayers,$ledger,$db);
+$service->settleIfComplete('tour-settle-fixture');
+
+$fixtureBalance=$ledger->getBalance($fixture['account'],TournamentRegistrationService::ENTRY_ASSET);
+$assertSame(0,(int)$fixtureBalance['available_amount'],'Synthetic fixture placement must not receive competitive coin payout.');
+$assertSame(0,(int)$fixtureBalance['reserved_amount'],'Synthetic fixture reservation must still settle fully.');
+$fixtureResult=$db->fetchAll(
+ 'SELECT placement,payout_amount,reward_eligible FROM mgw_tournament_results WHERE tournament_id=:t AND mgw_id=:m',
+ ['t'=>'tour-settle-fixture','m'=>$fixture['mgw']]
+)[0];
+$assertSame(2,(int)$fixtureResult['placement'],'Synthetic fixture bracket placement must remain auditable.');
+$assertSame(0,(int)$fixtureResult['payout_amount'],'Synthetic fixture result must persist zero payout.');
+$assertSame(0,(int)$fixtureResult['reward_eligible'],'Synthetic fixture result must be marked reward-ineligible.');
+$assertSame(0,(int)$db->fetchValue(
+ 'SELECT COUNT(*) FROM mgw_tournament_reward_entitlements WHERE tournament_id=:t AND mgw_id=:m',
+ ['t'=>'tour-settle-fixture','m'=>$fixture['mgw']]
+),'Synthetic fixture must receive no competitive entitlement.');
 
 echo "MVP-21.9 tournament settlement OK ({$assertions} assertions)\n";
