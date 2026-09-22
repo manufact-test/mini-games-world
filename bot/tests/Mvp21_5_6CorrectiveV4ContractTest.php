@@ -38,6 +38,10 @@ $assert(str_contains($screen, 'startTournamentLaunchWatch')
     'First-ready client must use the actual self_ready field for the bounded shared-game watch.');
 $assert(str_contains($screen, 'stopTournamentLaunchWatch();'),
     'Launch watch must have an explicit stop owner.');
+$assert(str_contains($screen, 'scheduleTournamentStartBoundaryRefresh')
+        && str_contains($screen, 'scheduledStart.getTime() - Date.now() + 30')
+        && str_contains($screen, 'tournamentStartBoundaryTimer'),
+    'Tournament Ready materialization must be refreshed at T0 rather than lagging behind the two-second screen poll.');
 $assert(str_contains($screen, "document.addEventListener('mgw:tournament-progression-open'"),
     'Tournament screen must accept explicit return-to-progression navigation.');
 
@@ -112,5 +116,5 @@ $assert(str_contains($manifest, 'tournaments-screen-v1.js?v=23')
         && str_contains($manifest, 'game-invites-v110-rematch-policy-v175.js?v=2'),
     'Corrective v5 client owners must publish fresh active cache identities.');
 
-if ($assertions < 30) throw new RuntimeException('Corrective v4 contract is too shallow: ' . $assertions);
+if ($assertions < 31) throw new RuntimeException('Corrective v4 contract is too shallow: ' . $assertions);
 fwrite(STDOUT, "Mvp21_5_6CorrectiveV4ContractTest: {$assertions} assertions passed\n");
