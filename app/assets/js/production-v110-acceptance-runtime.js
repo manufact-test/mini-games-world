@@ -536,7 +536,7 @@ function paintLaunchState(){
   const status = String(game?.status || '');
   const phase = String(game?.launch_phase || '');
   const presentation = syncLaunchPresentation(game, phase);
-  const countdownWaiting = phase === 'countdown' && !launchStartReached(game);
+  const countdownWaiting = phase === 'countdown';
   const serverBlocking = status === 'active'
     && (phase === 'preparing' || countdownWaiting || phase === 'preparation_timeout');
   const presentationBlocking = status === 'active'
