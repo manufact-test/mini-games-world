@@ -14,6 +14,7 @@ require_once __DIR__ . '/PresenceService.php';
 final class ReconnectLifecycleService
 {
     public const RECONNECT_WINDOW_SEC = 60;
+    public const TOURNAMENT_BOTH_RECONNECT_WINDOW_SEC = 180;
     private const FREEZE_GUARD_SEC = 86400;
 
     private GameSettlementService $settlement;
@@ -44,7 +45,11 @@ final class ReconnectLifecycleService
             $reconnect = $game['reconnect_v2'] ?? null;
             if (is_array($reconnect) && !empty($reconnect['paused'])) {
                 $players = is_array($reconnect['players'] ?? null) ? $reconnect['players'] : [];
-                if ($this->allHumanPlayersDisconnected($game, $players)) return true;
+                if ($this->allHumanPlayersDisconnected($game, $players)) {
+                    if (!$this->isTournamentGame($game)) return true;
+                    $bothDeadlineMs = (int)($reconnect['both_deadline_ms'] ?? 0);
+                    if ($bothDeadlineMs <= 0 || $bothDeadlineMs <= $nowMs) return true;
+                }
 
                 foreach ($players as $playerState) {
                     $deadlineMs = (int)($playerState['deadline_ms'] ?? 0);
@@ -256,12 +261,36 @@ final class ReconnectLifecycleService
 
         $players = is_array($game['reconnect_v2']['players'] ?? null) ? $game['reconnect_v2']['players'] : [];
         if ($this->allHumanPlayersDisconnected($game, $players)) {
-            $this->noContest->cancel(
-                $db,
-                $game,
-                'both_disconnected',
-                'Возврат: оба игрока отключились'
-            );
+            if ($this->isTournamentGame($game)) {
+                $bothAtMs = 0;
+                foreach ($players as $playerState) {
+                    $bothAtMs = max($bothAtMs, (int)($playerState['disconnected_at_ms'] ?? 0));
+                }
+                if ($bothAtMs <= 0) $bothAtMs = $disconnectedAtMs;
+                $bothDeadlineMs = $bothAtMs + (self::TOURNAMENT_BOTH_RECONNECT_WINDOW_SEC * 1000);
+                $game['reconnect_v2']['tournament_both_disconnect'] = true;
+                $game['reconnect_v2']['both_disconnected_at_ms'] = $bothAtMs;
+                $game['reconnect_v2']['both_disconnected_at'] = gmdate('c', intdiv($bothAtMs, 1000));
+                $game['reconnect_v2']['both_deadline_ms'] = $bothDeadlineMs;
+                $game['reconnect_v2']['both_deadline_at'] = gmdate('c', intdiv($bothDeadlineMs, 1000));
+                foreach ($game['reconnect_v2']['players'] as &$playerState) {
+                    if (!is_array($playerState)) continue;
+                    if (!isset($playerState['individual_deadline_ms'])) {
+                        $playerState['individual_deadline_ms'] = (int)($playerState['deadline_ms'] ?? 0);
+                    }
+                    $playerState['deadline_ms'] = $bothDeadlineMs;
+                    $playerState['deadline_at'] = gmdate('c', intdiv($bothDeadlineMs, 1000));
+                }
+                unset($playerState);
+                $game['updated_at'] = now_iso();
+            } else {
+                $this->noContest->cancel(
+                    $db,
+                    $game,
+                    'both_disconnected',
+                    'Возврат: оба игрока отключились'
+                );
+            }
         }
         unset($game);
     }
@@ -300,6 +329,34 @@ final class ReconnectLifecycleService
         }
 
         $pausedAtMs = (int)($reconnect['paused_at_ms'] ?? $playerState['disconnected_at_ms'] ?? $nowMs);
+        $isTournamentBoth = $this->isTournamentGame($game)
+            && !empty($reconnect['tournament_both_disconnect']);
+
+        if ($isTournamentBoth) {
+            unset($game['reconnect_v2']['players'][$playerId]);
+            if (isset($db['users'][$playerId])) {
+                $db['users'][$playerId]['active_session_id'] = $sessionId;
+                $db['users'][$playerId]['active_session_at'] = now_iso();
+                unset($db['users'][$playerId]['reconnect_game_id'], $db['users'][$playerId]['reconnect_until']);
+            }
+
+            $remaining = is_array($game['reconnect_v2']['players'] ?? null)
+                ? $game['reconnect_v2']['players']
+                : [];
+            if ($remaining !== []) {
+                $game['updated_at'] = now_iso();
+                unset($game);
+                return;
+            }
+
+            $pauseMs = max(0, $nowMs - $pausedAtMs);
+            $this->restoreClock($game, $reconnect['clock_snapshot'] ?? [], $pauseMs);
+            unset($game['reconnect_v2']);
+            $game['updated_at'] = now_iso();
+            unset($game);
+            return;
+        }
+
         $pauseMs = max(0, $nowMs - $pausedAtMs);
         $this->restoreClock($game, $reconnect['clock_snapshot'] ?? [], $pauseMs);
         unset($game['reconnect_v2']);
@@ -320,6 +377,22 @@ final class ReconnectLifecycleService
 
         $players = is_array($reconnect['players'] ?? null) ? $reconnect['players'] : [];
         if ($this->allHumanPlayersDisconnected($game, $players)) {
+            if ($this->isTournamentGame($game)) {
+                $bothDeadlineMs = (int)($reconnect['both_deadline_ms'] ?? 0);
+                if ($bothDeadlineMs <= 0 || $bothDeadlineMs > $nowMs) return;
+                $this->noContest->cancel(
+                    $db,
+                    $game,
+                    'tournament_both_absent_timeout',
+                    'Турнирный матч: оба игрока не вернулись за 3 минуты',
+                    [
+                        'tournament_technical_outcome'=>'both_absent',
+                        'both_disconnect_window_sec'=>self::TOURNAMENT_BOTH_RECONNECT_WINDOW_SEC,
+                    ]
+                );
+                return;
+            }
+
             $this->noContest->cancel(
                 $db,
                 $game,
@@ -339,7 +412,10 @@ final class ReconnectLifecycleService
             if (isset($db['users'][$loserId])) {
                 unset($db['users'][$loserId]['reconnect_game_id'], $db['users'][$loserId]['reconnect_until']);
             }
-            $this->settlement->finish($db, $game, $winnerId, 'disconnect_timeout', $loserId);
+            $reason = $this->isTournamentGame($game) && !empty($reconnect['tournament_both_disconnect'])
+                ? 'tournament_both_disconnect_timeout'
+                : 'disconnect_timeout';
+            $this->settlement->finish($db, $game, $winnerId, $reason, $loserId);
             return;
         }
     }
@@ -411,6 +487,12 @@ final class ReconnectLifecycleService
         if (($game['status'] ?? '') !== 'active') return false;
         if (!array_key_exists('launch_phase', $game)) return true;
         return (string)($game['launch_phase'] ?? '') === 'active';
+    }
+
+    private function isTournamentGame(array $game): bool
+    {
+        return (string)($game['match_source'] ?? '') === 'tournament'
+            && trim((string)($game['tournament_id'] ?? '')) !== '';
     }
 
     private function humanPlayerIds(array $game): array
