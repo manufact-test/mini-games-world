@@ -142,6 +142,7 @@ require_once __DIR__ . '/../services/FeatureFlagService.php';
 require_once __DIR__ . '/../services/GameCatalogService.php';
 require_once __DIR__ . '/../services/GameService.php';
 require_once __DIR__ . '/../services/GameSettlementService.php';
+require_once __DIR__ . '/../services/GameNoContestSettlementService.php';
 require_once __DIR__ . '/../services/FourInARowBotService.php';
 require_once __DIR__ . '/../services/FourInARowService.php';
 require_once __DIR__ . '/../services/GameRuntimeService.php';
