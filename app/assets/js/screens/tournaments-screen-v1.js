@@ -1216,10 +1216,13 @@ function tournamentTerminalMarkup(progression, activeRoundMarkup){
   const podiumMarkup = podium.slice(0,3).map(item => {
     const place = Number(item?.placement || 0);
     const title = place === 1 ? 'Чемпион' : place === 2 ? '2 место' : '3 место';
+    const payoutLabel = item?.reward_eligible === false
+      ? 'тестовый · без награды'
+      : `${formatNumber(Math.max(0, Number(item?.payout_amount || 0)))} коинов`;
     return `<article class="tournaments-v2-terminal-place place-${place}${item?.self === true ? ' is-self' : ''}">
       <b>${escapeHtml(String(place))}</b>
       <div><span>${escapeHtml(title)}</span><strong>${escapeHtml(String(item?.nickname || 'Игрок'))}${item?.self === true ? ' · вы' : ''}</strong></div>
-      <small>${escapeHtml(formatNumber(Math.max(0, Number(item?.payout_amount || 0))))} коинов</small>
+      <small>${escapeHtml(payoutLabel)}</small>
     </article>`;
   }).join('');
 
