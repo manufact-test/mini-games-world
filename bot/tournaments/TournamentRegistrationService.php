@@ -10,10 +10,13 @@ final class TournamentRegistrationService
     public const STATE_REGISTRATION_OPEN = 'registration_open';
     public const STATE_WAITING_FOR_DATE = 'waiting_for_date';
     public const STATE_SCHEDULED = 'scheduled';
+    public const STATE_CANCELLED = 'cancelled';
+    public const STATE_EMERGENCY_STOPPED = 'emergency_stopped';
     public const RULES_VERSION = 'official-tournament-rules-v2';
     public const RULES_LANGUAGE = 'ru';
     public const REGISTRATION_REGISTERED = 'registered';
     public const REGISTRATION_WITHDRAWN = 'withdrawn';
+    public const REGISTRATION_CANCELLED = 'cancelled';
     public const ALLOWED_CAPACITIES = [8, 16, 32, 64, 128];
 
     public function __construct(
