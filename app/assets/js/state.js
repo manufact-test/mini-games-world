@@ -3,6 +3,7 @@ export const state = {
   mgwProfile: null,
   selectedAvatarId: null,
   profileInventory: null,
+  profileTournamentRewards: null,
   stats: null,
   room: 'match',
   screen: 'home',
