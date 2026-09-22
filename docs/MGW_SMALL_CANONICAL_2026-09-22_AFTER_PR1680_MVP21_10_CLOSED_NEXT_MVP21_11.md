@@ -42,7 +42,16 @@ Green on the final PR candidate:
 - rating/Profile/Hall regressions;
 - all-game frozen-mechanics baseline.
 
-Exact staging run #35778351182 initially hit a transient GitHub Actions OIDC 503. The Linux job was rerun and the full two-context staging browser body passed. GitHub's dependent final-status job retained the original job output from the first attempt, so the aggregate status remained red despite the successful rerun body. This is CI orchestration evidence, not a reproduced product failure.
+Exact staging E2E run **#35778351182**, final attempt **#3**: **SUCCESS**.
+
+- exact Hostinger deployment — success;
+- managed migration `20260922_0060_create_tournament_prize_review` — success;
+- A/B preflight — success;
+- full two-context staging browser suite — success;
+- final publisher — success;
+- commit status `staging-playwright-e2e` — **SUCCESS**.
+
+An earlier attempt on the same staging SHA failed in an unrelated Checkers direct-invite path. The clean retry on the exact same runtime SHA passed, so no MVP-21.10 product defect remained reproduced.
 
 ## Next boundary — MVP-21.11
 
