@@ -104,7 +104,7 @@ export function initTournamentsScreen(){
   if (!(screen instanceof HTMLElement) || !(content instanceof HTMLElement)) return;
 
   initialized = true;
-  screen.dataset.mgwTournaments = 'leaderboards-v2 rating-archive-v1 official-tournament-registration-v2-rules';
+  screen.dataset.mgwTournaments = 'leaderboards-v2 rating-archive-v1 tournament-archive-v1 official-tournament-registration-v2-rules';
   content.innerHTML = `
     <div class="tournaments-v2" id="tournamentsV2Root">
       <div class="page-head app-shell-page-head tournaments-v2-page-head">
@@ -155,7 +155,7 @@ export function initTournamentsScreen(){
           <div class="tournaments-v2-archive-body" id="ratingArchiveBody">${loadingMarkup()}</div>
         </div>
         <div data-rating-history-panel="tournaments" hidden>
-          <div class="tournaments-v2-empty">${escapeHtml(t('shell.competition_archive_tournaments_empty'))}</div>
+          <div class="tournaments-v2-archive-body" id="tournamentArchiveBody">${loadingMarkup()}</div>
         </div>
       </section>
       </div>
@@ -272,6 +272,7 @@ function bindArchiveModeTabs(screen){
         panel.hidden = String(panel.dataset.ratingHistoryPanel || '') !== mode;
       });
       if (mode === 'seasons') void loadArchiveOverview();
+      if (mode === 'tournaments') void loadTournamentArchiveOverview();
     });
   });
 }
@@ -1827,6 +1828,93 @@ async function warmArchiveOverview(){
     })
     .finally(() => { archiveOverviewPromise = null; });
   return archiveOverviewPromise;
+}
+
+async function loadTournamentArchiveOverview(){
+  const body = document.getElementById('tournamentArchiveBody');
+  if (!(body instanceof HTMLElement)) return;
+  try {
+    const overview = await warmArchiveOverview();
+    if (currentScreen() !== 'tournaments') return;
+    renderTournamentArchiveOverview(overview);
+  } catch (error) {
+    body.innerHTML = `<div class="tournaments-v2-empty">${escapeHtml(error?.message || 'Не удалось загрузить архив турниров.')}</div>`;
+  }
+}
+
+function renderTournamentArchiveOverview(overview){
+  const body = document.getElementById('tournamentArchiveBody');
+  if (!(body instanceof HTMLElement)) return;
+  const tournaments = overview?.tournaments && typeof overview.tournaments === 'object'
+    ? overview.tournaments
+    : {};
+  const entries = Array.isArray(tournaments.entries) ? tournaments.entries : [];
+  const hall = Array.isArray(tournaments.hall_of_fame) ? tournaments.hall_of_fame : [];
+  if (tournaments.available !== true || entries.length === 0) {
+    body.innerHTML = `<div class="tournaments-v2-empty">${escapeHtml(t('shell.competition_archive_tournaments_empty'))}</div>`;
+    return;
+  }
+
+  const hallMarkup = hall.length
+    ? `<section class="tournaments-v2-tournament-hof">
+        <div class="tournaments-v2-hof-title">Зал славы турниров</div>
+        <div class="tournaments-v2-tournament-hof-grid">
+          ${hall.slice(0,12).map(tournamentHallOfFameCard).join('')}
+        </div>
+      </section>`
+    : '';
+
+  body.innerHTML = `
+    ${hallMarkup}
+    <div class="tournaments-v2-tournament-archive-list">
+      ${entries.map(tournamentArchiveCard).join('')}
+    </div>
+  `;
+}
+
+function tournamentHallOfFameCard(entry){
+  const nickname = String(entry?.nickname || t('profile.player')).trim() || t('profile.player');
+  const avatar = String(entry?.avatar_item_id || 'starter-default-01').trim() || 'starter-default-01';
+  const count = Math.max(1, Number(entry?.championship_count || 1));
+  const tournamentDate = parseTournamentUtc(entry?.scheduled_start_at_utc || entry?.settled_at_utc);
+  const meta = [
+    gameName(String(entry?.game_type || DEFAULT_GAME)),
+    tournamentDate ? formatTournamentDateTime(tournamentDate) : '',
+  ].filter(Boolean).join(' · ');
+  return `<article class="tournaments-v2-tournament-hof-card">
+    <span class="tournaments-v2-avatar" data-avatar-item-id="${escapeHtml(avatar)}" aria-hidden="true">MG</span>
+    <div><strong>${escapeHtml(nickname)}</strong><span>${escapeHtml(meta)}</span></div>
+    <b title="Чемпионств">${escapeHtml(formatNumber(count))}× 🏆</b>
+  </article>`;
+}
+
+function tournamentArchiveCard(entry){
+  const top3 = Array.isArray(entry?.top3) ? entry.top3 : [];
+  const date = parseTournamentUtc(entry?.scheduled_start_at_utc || entry?.completed_at_utc);
+  const dateLabel = date ? formatTournamentDateTime(date) : 'Дата не указана';
+  const capacity = Math.max(0, Number(entry?.capacity || 0));
+  const podium = top3.length
+    ? `<div class="tournaments-v2-tournament-archive-podium">
+        ${top3.map(item => {
+          const place = Math.max(1, Number(item?.placement || 1));
+          const avatar = String(item?.avatar_item_id || 'starter-default-01').trim() || 'starter-default-01';
+          return `<div class="place-${place}">
+            <b>#${escapeHtml(formatNumber(place))}</b>
+            <span class="tournaments-v2-avatar" data-avatar-item-id="${escapeHtml(avatar)}" aria-hidden="true">MG</span>
+            <strong>${escapeHtml(String(item?.nickname || t('profile.player')))}</strong>
+          </div>`;
+        }).join('')}
+      </div>`
+    : '<div class="tournaments-v2-empty">Подиум недоступен.</div>';
+
+  return `<article class="tournaments-v2-tournament-archive-card">
+    <header>
+      <div><span>Официальный турнир</span><strong>${escapeHtml(String(entry?.title || 'Официальный турнир'))}</strong></div>
+      <small>${escapeHtml(dateLabel)}</small>
+    </header>
+    <p>${escapeHtml(gameName(String(entry?.game_type || DEFAULT_GAME)))}${capacity > 0 ? ` · ${escapeHtml(formatNumber(capacity))} участников` : ''}</p>
+    ${podium}
+  </article>`;
 }
 
 async function loadArchiveOverview(){
