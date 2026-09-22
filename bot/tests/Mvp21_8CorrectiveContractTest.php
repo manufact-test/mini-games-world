@@ -79,7 +79,7 @@ $assert(str_contains($manifest, 'main-v110-handoff-shell.js?v=1157')
         && str_contains($manifest, 'startup=nonblocking-hidden-warm-v1')
         && str_contains($manifest, 'store_warm=post-first-paint-v1'),
     'Startup corrective must publish a fresh main client identity.');
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=28')
+$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=29')
         && str_contains($manifest, 'mvp21_8=corrective-v8')
         && str_contains($manifest, 'registration_cancel=restored-v1')
         && str_contains($manifest, 'mvp21_6=terminal-return-preserve-v5'),
