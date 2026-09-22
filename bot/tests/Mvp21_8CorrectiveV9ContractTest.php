@@ -36,7 +36,7 @@ $staleHelper = $staleHelperStart !== false && $strictBoolStart !== false
     ? substr($storage, $staleHelperStart, $strictBoolStart - $staleHelperStart)
     : '';
 $mysqlSelective = strpos($staleHelper, "JSON_EXTRACT(state_json, '$.notifications')");
-$fullAdapterFallback = strpos($staleHelper, "new DatabasePrimaryStateStorageAdapter($database)");
+$fullAdapterFallback = strpos($staleHelper, 'new DatabasePrimaryStateStorageAdapter($database)');
 $assert($staleHelper !== '' && $mysqlSelective !== false && $fullAdapterFallback !== false
         && $mysqlSelective < $fullAdapterFallback,
     'Staging MySQL must use the selective notification probe before the local SQLite full-adapter fallback.');
