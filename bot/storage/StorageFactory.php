@@ -190,9 +190,56 @@ final class StorageFactory
                 ['notifications'],
                 static fn(array $data): array => $data
             );
-            $primary = (new DatabasePrimaryStateStorageAdapter(
-                PdoConnectionFactory::create($databaseConfig)
-            ))->readOnly(static fn(array $data): array => $data);
+
+            $database = PdoConnectionFactory::create($databaseConfig);
+            if ($database->driver() === 'mysql') {
+                // The retained rehearsal state can be a very large LONGTEXT row.
+                // Pulling and decoding the whole snapshot on every staging API
+                // request made the stale-state safety check itself dominate cold
+                // startup. Verify the exact stored JSON hash inside MySQL and
+                // transfer only the notifications subtree needed by this guard.
+                $rows = $database->fetchAll(
+                    "SELECT state_sha256,
+                            LOWER(SHA2(state_json, 256)) AS actual_sha256,
+                            JSON_EXTRACT(state_json, '$.notifications') AS notifications_json
+                     FROM " . RuntimePrimaryStateSchemaInstaller::TABLE . "
+                     WHERE singleton_id = 1"
+                );
+                if (count($rows) !== 1 || !is_array($rows[0])) {
+                    throw new RuntimeException('Runtime primary state singleton contract is broken.');
+                }
+                $expectedSha = strtolower(trim((string)($rows[0]['state_sha256'] ?? '')));
+                $actualSha = strtolower(trim((string)($rows[0]['actual_sha256'] ?? '')));
+                if (preg_match('/^[a-f0-9]{64}$/', $expectedSha) !== 1
+                    || preg_match('/^[a-f0-9]{64}$/', $actualSha) !== 1
+                    || !hash_equals($expectedSha, $actualSha)) {
+                    throw new RuntimeException('Runtime primary state fingerprint is invalid.');
+                }
+                $notificationsJson = $rows[0]['notifications_json'] ?? null;
+                if ($notificationsJson === null || trim((string)$notificationsJson) === '') {
+                    $primary = ['notifications'=>[]];
+                } else {
+                    $decodedNotifications = json_decode(
+                        (string)$notificationsJson,
+                        true,
+                        512,
+                        JSON_THROW_ON_ERROR
+                    );
+                    if (!is_array($decodedNotifications)) {
+                        throw new RuntimeException('Runtime primary notifications subtree is invalid.');
+                    }
+                    $primary = ['notifications'=>$decodedNotifications];
+                }
+            } else {
+                // Local SQLite safety tests keep the full adapter verification.
+                // The production/staging database contract is MySQL/MariaDB.
+                $primary = (new DatabasePrimaryStateStorageAdapter($database))
+                    ->readOnly(static fn(array $data): array => [
+                        'notifications'=>is_array($data['notifications'] ?? null)
+                            ? $data['notifications']
+                            : [],
+                    ]);
+            }
         } catch (Throwable) {
             // Do not weaken the selector on an unclassified readiness failure.
             // Only a positively proven stale notification inventory may fall
