@@ -16,6 +16,7 @@ $realtime = $read('bot/realtime/RealtimeRuntimeBridge.php');
 $economy = $read('bot/ledger/EconomyRuntimeBridge.php');
 $weekly = $read('bot/weekly/WeeklyBonusRuntimeBridge.php');
 $rating = $read('bot/ratings/PerGameRatingRuntimeBridge.php');
+$manifest = $read('app/runtime/client/version-manifest.php');
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -35,6 +36,14 @@ $assert(str_contains($api, "case 'tournament_registration_publish':")
 $assert(str_contains($client, 'tournamentRegistrationPublish:')
     && str_contains($screen, 'await api.tournamentRegistrationPublish()'),
     'Client must verify durable registration before explicitly publishing it.');
+$assert(str_contains($client, 'async function requestTournamentStatus()')
+    && str_contains($client, 'status < 500 || status > 599')
+    && str_contains($client, 'window.setTimeout(resolve, 180)')
+    && str_contains($client, 'tournamentStatus: () => requestTournamentStatus()'),
+    'Read-only tournament status must retry exactly one transient 5xx without retrying mutations.');
+$assert(str_contains($manifest, 'client.js?v=1145')
+    && str_contains($manifest, 'mvp21_7_1=status-read-retry-v1'),
+    'Transient tournament status recovery must publish a fresh client cache identity.');
 $assert(!str_contains($screen, 'EXTERNAL_TOURNAMENT_COMMIT_CONFIRM_MS')
     && !str_contains($screen, 'stageExternalTournamentCommit'),
     'Cross-client visibility must not rely on another arbitrary client timer.');
@@ -62,7 +71,7 @@ $assert(str_contains($screen, 'tournamentProgressionIsAuthoritative()')
     && str_contains($screen, 'Стартовая сетка · архив'),
     'Live progression must become primary after a completed/advanced tournament match.');
 
-if ($assertions < 30) {
+if ($assertions < 32) {
     throw new RuntimeException('MVP-21 corrective v7 contract is too shallow: ' . $assertions);
 }
 fwrite(STDOUT, "Mvp21_5_6CorrectiveV7ContractTest: {$assertions} assertions passed\n");

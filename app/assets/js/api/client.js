@@ -25,11 +25,26 @@ async function requestUrl(url, payload = {}){
   if (!response.ok || !data || data.ok === false) {
     const error = new Error(data?.error || `Ошибка API: ${response.status}`);
     error.code = data?.code || '';
+    error.status = response.status;
     throw error;
   }
   return data;
 }
 async function request(action, payload = {}){ return requestUrl(APP_CONFIG.apiBase, { action, ...payload }); }
+
+async function requestTournamentStatus(){
+  try {
+    return await requestUrl(TOURNAMENT_STATUS_URL, {});
+  } catch (error) {
+    const status = Number(error?.status || 0);
+    if (status < 500 || status > 599) throw error;
+    // Read-only status may occasionally lose one upstream PHP response under
+    // overlapping WebView polling. One bounded retry is safe here because this
+    // endpoint cannot register, charge, publish or mark Ready.
+    await new Promise(resolve => window.setTimeout(resolve, 180));
+    return requestUrl(TOURNAMENT_STATUS_URL, {});
+  }
+}
 
 function publishCosmeticInventory(result){
   const inventory = result?.store?.inventory;
@@ -129,7 +144,7 @@ export const api = {
   leaderboard: (gameType = 'tictactoe') => requestUrl(LEADERBOARD_URL, { game_type:gameType }),
   ratingArchiveOverview: () => requestUrl(RATING_ARCHIVE_URL, { mode:'overview' }),
   ratingArchiveSeason: (seasonId, gameType = 'tictactoe') => requestUrl(RATING_ARCHIVE_URL, { mode:'season', season_id:seasonId, game_type:gameType }),
-  tournamentStatus: () => requestUrl(TOURNAMENT_STATUS_URL, {}),
+  tournamentStatus: () => requestTournamentStatus(),
   tournamentHallStatus: () => requestUrl(TOURNAMENT_HALL_URL, { action:'status' }),
   tournamentHallEnter: () => requestUrl(TOURNAMENT_HALL_URL, { action:'enter' }),
   tournamentHallHeartbeat: () => requestUrl(TOURNAMENT_HALL_URL, { action:'heartbeat' }),

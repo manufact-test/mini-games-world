@@ -178,7 +178,7 @@ foreach ([
     $assert(str_contains($source['css'], $needle), 'Ready UI CSS missing: ' . $needle);
 }
 
-$assert(str_contains($source['manifest'], 'client.js?v=1144')
+$assert(str_contains($source['manifest'], 'client.js?v=1145')
         && str_contains($source['manifest'], 'mvp21_5=ready-v1'),
     'API client must publish a fresh MVP-21.5 cache identity.');
 $assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=26')

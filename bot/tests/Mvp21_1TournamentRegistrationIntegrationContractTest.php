@@ -133,7 +133,11 @@ $assertTrue(str_contains($sources['user_service'], '$available < 0 || $reserved 
 $assertTrue(!str_contains($sources['user_service'], '$reserved !== 0'), 'User rehydration must not reject valid active reservations.');
 
 $assertTrue(str_contains($sources['client'], 'TOURNAMENT_STATUS_URL'), 'Client API must own a read-only tournament status endpoint.');
-$assertTrue(str_contains($sources['client'], 'tournamentStatus: () => requestUrl(TOURNAMENT_STATUS_URL, {})'), 'Client API must keep tournament status outside the DB-primary write transaction.');
+$assertTrue(
+    str_contains($sources['client'], 'tournamentStatus: () => requestTournamentStatus()')
+    && str_contains($sources['client'], 'requestUrl(TOURNAMENT_STATUS_URL, {})'),
+    'Client API must keep tournament status outside the DB-primary write transaction, with bounded read retry ownership.'
+);
 $assertTrue(str_contains($sources['client'], "tournamentRegister: rules => request('tournament_register'"), 'Client API must expose consent-bound canonical register action.');
 $assertTrue(str_contains($sources['client'], 'tournamentRulesSha256'), 'Client register call must bind the exact rules identity.');
 $assertTrue(str_contains($sources['client'], "tournamentRegistrationPublish: () => request('tournament_registration_publish')"), 'Client must explicitly acknowledge registration publication.');

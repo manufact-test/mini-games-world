@@ -246,7 +246,7 @@ foreach ([
 }
 
 $assertTrue(
-    str_contains($source['manifest'], 'client.js?v=1144')
+    str_contains($source['manifest'], 'client.js?v=1145')
     && str_contains($source['manifest'], 'mvp21_2=tournament-rules-consent-v1'),
     'Corrective release must force a fresh API client module.'
 );
