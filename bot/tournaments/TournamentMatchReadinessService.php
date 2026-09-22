@@ -29,6 +29,12 @@ final class TournamentMatchReadinessService
         }
 
         $row = $this->expireIfNeeded($row, $moment);
+        if (!$this->isInitialManualReadyRow($row)) {
+            return [
+                'tournament_id'=>(string)$participant['tournament_id'],
+                'match'=>null,
+            ];
+        }
         return [
             'tournament_id'=>(string)$participant['tournament_id'],
             'match'=>$this->publicMatch($row, $mgwId, $moment),
@@ -562,6 +568,14 @@ final class TournamentMatchReadinessService
     {
         return trim((string)($row['player_a_ready_at_utc'] ?? '')) !== ''
             && trim((string)($row['player_b_ready_at_utc'] ?? '')) !== '';
+    }
+
+    private function isInitialManualReadyRow(array $row): bool
+    {
+        return (int)($row['round_no'] ?? 0) === self::FIRST_ROUND
+            && max(1, (int)($row['attempt_no'] ?? 1)) === 1
+            && (string)($row['wait_kind'] ?? 'initial_ready') === 'initial_ready'
+            && trim((string)($row['completed_at_utc'] ?? '')) === '';
     }
 
     private function nullableText(mixed $value): ?string
