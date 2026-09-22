@@ -68,8 +68,11 @@ $assert(!str_contains($bootBody, 'await primeMobileProfileFirstPresentation()'),
     'Hidden Profile raster warm must not block first usable paint.');
 $assert(!str_contains($bootBody, 'await primeTournamentFirstPresentation()'),
     'Hidden Tournament raster warm must not block first usable paint.');
-$assert(str_contains($bootBody, 'window.setTimeout(() => { initStoreScreen(); }, 0);'),
-    'Store initialization must be moved off the visible boot critical path.');
+$assert(str_contains($main, "import('./screens/store-screen.js?v=34')")
+        && !str_contains($main, "import { initStoreScreen, openStoreTab } from './screens/store-screen.js?v=34';")
+        && str_contains($main, 'warmStoreScreenAfterFirstPaint();')
+        && str_contains($main, 'window.requestIdleCallback(warm, { timeout:1200 });'),
+    'The large Store module graph must be lazy and warmed only after first usable paint.');
 
 $assert(str_contains($manifest, 'main-v110-handoff-shell.js?v=1157')
         && str_contains($manifest, 'startup=parallel-bootstrap-profile-v1')
