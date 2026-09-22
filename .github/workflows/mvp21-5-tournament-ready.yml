@@ -235,6 +235,11 @@ jobs:
               .github/workflows/mvp21-4-tournament-hall.yml|\
               .github/workflows/mvp21-5-tournament-ready.yml|\
               .github/workflows/mvp21-6-tournament-rounds.yml|\
+              .github/workflows/mvp21-9-tournament-rewards.yml|\
+              bot/database/migrations/20260922_0057_create_tournament_results_rewards.php|\
+              bot/tournaments/TournamentSettlementService.php|\
+              bot/tests/Mvp21_9TournamentSettlementTest.php|\
+              bot/tests/Mvp21_9TerminalUxContractTest.php|\
               bot/database/migrations/20260921_0054_create_tournament_match_readiness.php|\
               bot/tournaments/TournamentMatchReadinessService.php|\
               bot/tournaments/TournamentRoundProgressionService.php|\
