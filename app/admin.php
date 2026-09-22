@@ -20,7 +20,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
   <script src="./assets/js/admin-rating.js?v=1&mvp20_8=rating-admin" defer></script>
-  <script src="./assets/js/admin-tournaments.js?v=15&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3&mvp21_5=corrective-v5&mvp21_6=fixture-progression-helper-v3&mvp21_8=corrective-v12&mvp21_8_cancel=cancellation-emergency-v1" defer></script>
+  <script src="./assets/js/admin-tournaments.js?v=16&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3&mvp21_5=corrective-v5&mvp21_6=fixture-progression-helper-v3&mvp21_8=corrective-v12&mvp21_8_cancel=cancellation-emergency-v1&mvp21_10=prize-review-v1" defer></script>
 </head>
 <body>
   <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php">
@@ -145,6 +145,39 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
                   <button type="button" data-tournament-emergency disabled>Аварийная остановка</button>
                 </div>
                 <small>Обе операции требуют второго подтверждения. Всем зарегистрированным участникам возвращается полный взнос 50 000, турнирные результаты аннулируются и сохраняются только как аудит. Перенос даты здесь не выполняется.</small>
+              </div>
+              <div class="mgw-admin__tournament-schedule mgw-admin__tournament-review" data-tournament-review-panel hidden>
+                <div class="mgw-admin__tournament-current" data-tournament-review-info>Призовая проверка не активна.</div>
+                <div class="mgw-admin__tournament-review-grid">
+                  <label class="mgw-admin__field">
+                    <span>MGW-ID игрока</span>
+                    <input data-tournament-review-mgw-id type="text" maxlength="24" autocomplete="off" placeholder="MGW-…">
+                  </label>
+                  <label class="mgw-admin__field">
+                    <span>Серьёзный сигнал</span>
+                    <select data-tournament-review-signal>
+                      <option value="fraud">fraud</option>
+                      <option value="automation">automation</option>
+                      <option value="duplicate_identity">duplicate_identity</option>
+                      <option value="match_manipulation">match_manipulation</option>
+                      <option value="cheating_report">cheating_report</option>
+                      <option value="manual_review">manual_review</option>
+                    </select>
+                  </label>
+                  <label class="mgw-admin__field">
+                    <span>Game ID (для flagged match)</span>
+                    <input data-tournament-review-game-id type="text" maxlength="96" autocomplete="off" placeholder="Можно пустым только для уже определённого top-3">
+                  </label>
+                  <label class="mgw-admin__field">
+                    <span>Основание сигнала</span>
+                    <input data-tournament-review-note type="text" maxlength="800" autocomplete="off" placeholder="Что именно требует тяжёлой проверки">
+                  </label>
+                </div>
+                <div class="mgw-admin__tournament-actions">
+                  <button type="button" data-tournament-review-flag>Поставить призовой путь на проверку</button>
+                </div>
+                <small>Тяжёлая проверка применяется только к top-3 или участнику явно flagged tournament match. Сам сигнал не списывает и не начисляет деньги: он только удерживает затронутую призовую ветку до решения Admin.</small>
+                <div class="mgw-admin__history" data-tournament-review-list></div>
               </div>
               <div class="mgw-admin__tournament-schedule" data-tournament-schedule-panel hidden>
                 <label class="mgw-admin__field">
