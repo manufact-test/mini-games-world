@@ -1105,7 +1105,60 @@ function tournamentMatchMarkup(){
   `;
 }
 
+function tournamentActiveRoundMarkup(progression){
+  const round = progression?.active_round && typeof progression.active_round === 'object'
+    ? progression.active_round
+    : null;
+  const roundNo = Number(round?.round_no || 0);
+  const matches = Array.isArray(round?.matches) ? round.matches : [];
+  if (roundNo <= 1 || matches.length === 0) return '';
+
+  const completed = Math.max(0, Number(round?.completed_count || 0));
+  const total = Math.max(matches.length, Number(round?.total_count || 0));
+  const cards = matches.map(match => {
+    const pairNo = Number(match?.pair_no || 0);
+    const matchKind = String(match?.match_kind || 'elimination');
+    const players = Array.isArray(match?.players) ? match.players : [];
+    let title = `Пара ${pairNo}`;
+    if (matchKind === 'final') title = 'Финал';
+    else if (matchKind === 'third_place') title = 'Матч за 3-е место';
+
+    const playerMarkup = players.map(player => {
+      const done = match?.completed === true;
+      const winner = player?.winner === true;
+      const status = done
+        ? (winner ? 'прошёл дальше' : 'выбыл')
+        : (player?.self === true ? 'вы' : 'участник');
+      return `<div class="tournaments-v2-bracket-player${done && !winner ? ' is-loss' : ''}">
+        <strong>${escapeHtml(String(player?.nickname || 'Игрок'))}${player?.self === true ? ' · вы' : ''}</strong>
+        <span>${escapeHtml(status)}</span>
+      </div>`;
+    }).join('');
+
+    let outcome = 'Ожидает запуска.';
+    if (match?.completed === true) outcome = 'Матч завершён.';
+    else if (String(match?.launch_state || '') === 'launched') outcome = 'Матч идёт.';
+    else if (String(match?.wait_kind || '') === 'round_break') outcome = 'Перерыв между раундами.';
+
+    return `<article class="tournaments-v2-bracket-pair">
+      <header><span>${escapeHtml(title)}</span></header>
+      ${playerMarkup}
+      <p>${escapeHtml(outcome)}</p>
+    </article>`;
+  }).join('');
+
+  const heading = roundNo === 3 ? 'Финальный раунд' : `Раунд ${roundNo}`;
+  return `<div class="tournaments-v2-active-round">
+    <div class="tournaments-v2-hall-section-title">
+      <strong>${escapeHtml(heading)}</strong>
+      <span>${escapeHtml(`${completed}/${total} завершено`)}</span>
+    </div>
+    <div class="tournaments-v2-bracket-grid">${cards}</div>
+  </div>`;
+}
+
 function tournamentProgressionMarkup(match, progression){
+  const activeRoundMarkup = tournamentActiveRoundMarkup(progression);
   const tournamentComplete = progression?.tournament_complete === true;
   if (tournamentComplete) {
     return `
@@ -1114,6 +1167,7 @@ function tournamentProgressionMarkup(match, progression){
           <div><span>Турнирная сетка</span><strong>Все матчи турнира завершены.</strong></div>
         </div>
       </section>
+      ${activeRoundMarkup}
     `;
   }
 
@@ -1121,15 +1175,27 @@ function tournamentProgressionMarkup(match, progression){
     const latest = progression?.latest_match && typeof progression.latest_match === 'object'
       ? progression.latest_match
       : {};
+    const latestRound = Number(latest.round_no || 0);
+    const activeRoundNo = Number(progression?.active_round?.round_no || 0);
+    const eliminated = progression?.participant_eliminated === true;
+    let message = 'Ваш матч завершён · ждём остальные матчи раунда.';
+    if (eliminated && activeRoundNo > latestRound) {
+      message = 'Вы выбыли из турнира · сетка уже перешла в следующий раунд.';
+    } else if (eliminated) {
+      message = 'Вы выбыли из турнира.';
+    } else if (activeRoundNo > latestRound) {
+      message = 'Ваш матч завершён · следующий раунд уже сформирован.';
+    }
     return `
       <section class="tournaments-v2-ready">
         <div class="tournaments-v2-ready-head">
           <div>
             <span>Раунд ${escapeHtml(String(latest.round_no || ''))}</span>
-            <strong>Ваш матч завершён · ждём остальные матчи раунда.</strong>
+            <strong>${escapeHtml(message)}</strong>
           </div>
         </div>
       </section>
+      ${activeRoundMarkup}
     `;
   }
 
@@ -1168,6 +1234,7 @@ function tournamentProgressionMarkup(match, progression){
         ${opensAt && waiting ? `<b data-tournament-progression-countdown data-progression-opens-at="${opensAt.getTime()}">${escapeHtml(formatReadyCountdown(opensAt.getTime() - Date.now()))}</b>` : ''}
       </div>
     </section>
+    ${activeRoundMarkup}
   `;
 }
 
