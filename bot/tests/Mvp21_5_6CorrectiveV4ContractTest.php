@@ -159,7 +159,7 @@ $assert(str_contains($adminJs, "progressionReason !== 'staging_only'")
         && str_contains($adminJs, "progressionPanel.hidden = !progressionVisible"),
     'Staging Admin must keep the fixture progression panel visible even when the action is temporarily disabled.');
 
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=28')
+$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=29')
         && str_contains($manifest, 'main.css?v=200')
         && str_contains($manifest, 'mvp21_6=round-grid-spacing-v1')
         && str_contains($manifest, 'mvp21_8=corrective-v8')
