@@ -156,6 +156,61 @@ $assert((int)($readyGame['clock_revision'] ?? 0) === 0,
     'Tic-Tac-Toe first-turn clock revision must remain zero until countdown completes.');
 unset($user);
 
+// Corrective v6: a tournament game's peer-connect timeout begins from the
+// first real runtime adoption, not from Hall-side game creation. Even if an old
+// creation deadline is already stale, the explicit current-game request must
+// establish a fresh peer window before advance() can settle preparation.
+$tournament = $makePreparingGame('tournament-adoption', -2);
+$tournament['match_source'] = 'tournament';
+$tournament['bet'] = 0;
+$tournament['bank'] = 0;
+$db = [
+    'users' => [
+        'u1' => $makeUser('u1', 'tournament-adoption', 100),
+        'u2' => $makeUser('u2', 'tournament-adoption', 100),
+    ],
+    'games' => ['tournament-adoption' => $tournament],
+    'transactions' => [],
+    'system' => ['fees_match' => 0],
+];
+$user =& $db['users']['u1'];
+$service->synchronizeCurrentGame(
+    $db,
+    $user,
+    'tournament-adoption',
+    'tournament-adoption',
+    'tour-sess-a',
+    'tour-device-a'
+);
+$afterFirstAdoption = $db['games']['tournament-adoption'];
+$assert(($afterFirstAdoption['status'] ?? '') === 'active'
+        && ($afterFirstAdoption['launch_phase'] ?? '') === 'preparing',
+    'First real tournament adoption must replace a stale creation deadline instead of cancelling the match.');
+$firstPeerDeadline = strtotime((string)($afterFirstAdoption['preparation_deadline_at'] ?? '')) ?: 0;
+$assert($firstPeerDeadline >= time() + MatchPreparationClockService::TOURNAMENT_PEER_ADOPTION_TIMEOUT_SEC - 2,
+    'First real tournament adoption must receive a fresh peer-connect deadline.');
+$assert(count($afterFirstAdoption['preparation_ready_devices'] ?? []) === 1,
+    'First tournament runtime adoption must record exactly one real client.');
+unset($user);
+
+$user =& $db['users']['u2'];
+$service->synchronizeCurrentGame(
+    $db,
+    $user,
+    'tournament-adoption',
+    'tournament-adoption',
+    'tour-sess-b',
+    'tour-device-b'
+);
+$afterSecondAdoption = $db['games']['tournament-adoption'];
+$assert(($afterSecondAdoption['launch_phase'] ?? '') === 'countdown',
+    'Second real tournament adoption must enter the shared launch countdown without a preparation-timeout result.');
+$assert(count($afterSecondAdoption['preparation_ready_devices'] ?? []) === 2,
+    'Both tournament runtime clients must adopt the same shared game before countdown.');
+$assert(($afterSecondAdoption['finish_reason'] ?? null) === null,
+    'Normal two-client tournament adoption must never synthesize a no-start terminal result.');
+unset($user);
+
 // Elapsed preparation is advanced and settled by this one owner, exactly once.
 $game = $makePreparingGame('timeout', -2);
 $db = [
