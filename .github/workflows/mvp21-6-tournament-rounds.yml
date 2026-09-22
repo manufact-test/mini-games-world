@@ -161,6 +161,10 @@ jobs:
           php bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php
           php bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php
           php bot/tests/Mvp21_1TournamentRegistrationTest.php
+          php bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
+          php bot/tests/Mvp21_2TournamentRulesTest.php
+          php bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php
+          php bot/tests/Mvp21_3TournamentScheduleTest.php
 
       - name: Preserve MVP-21.5 ready/countdown owner
         run: |
