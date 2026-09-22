@@ -78,7 +78,7 @@ $preBusyRelease = strpos($admin, 'releaseFocusBeforeHide(resetPanel);', $resetHa
 $resetBusy = strpos($admin, "const data = await withBusy('Безопасно сбрасываю staging-турнир", $resetHandler === false ? 0 : $resetHandler);
 $assert($resetHandler !== false && $preBusyRelease !== false && $resetBusy !== false && $preBusyRelease < $resetBusy,
     'Reset confirmation focus must be released before withBusy disables the focused Telegram WebView button.');
-$assert(str_contains($adminEntry, 'admin-tournaments.js?v=14')
+$assert(str_contains($adminEntry, 'admin-tournaments.js?v=15')
         && str_contains($adminEntry, 'mvp21_8=corrective-v12'),
     'Admin reset corrective must publish a fresh Telegram WebView cache identity.');
 
