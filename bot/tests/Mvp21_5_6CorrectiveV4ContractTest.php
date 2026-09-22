@@ -32,11 +32,11 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 
 $assert(str_contains($screen, 'if (tournamentBusy) return tournamentSnapshot;'),
     'Visible tournament status must not publish a committed seat while registration verification is pending.');
-$assert(str_contains($screen, 'EXTERNAL_TOURNAMENT_COMMIT_CONFIRM_MS = 1200')
-        && str_contains($screen, 'shouldStageExternalTournamentCommit')
-        && str_contains($screen, 'stageExternalTournamentCommit')
-        && str_contains($screen, 'const verified = await api.tournamentStatus()'),
-    'Other open clients must independently confirm an external registration count before visible publication.');
+$assert(str_contains($screen, 'await api.tournamentRegistrationPublish()')
+        && str_contains($screen, "verifiedSnapshot?.registration?.published === false")
+        && !str_contains($screen, 'EXTERNAL_TOURNAMENT_COMMIT_CONFIRM_MS')
+        && !str_contains($screen, 'stageExternalTournamentCommit'),
+    'Other open clients must remain behind the server-owned registration publication boundary.');
 $assert(str_contains($screen, 'startTournamentLaunchWatch')
         && str_contains($screen, '}, 350);')
         && str_contains($screen, 'match.self_ready === true')
@@ -142,14 +142,14 @@ $assert(str_contains($adminJs, "progressionReason !== 'staging_only'")
         && str_contains($adminJs, "progressionPanel.hidden = !progressionVisible"),
     'Staging Admin must keep the fixture progression panel visible even when the action is temporarily disabled.');
 
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=25')
-        && str_contains($manifest, 'mvp21_5=corrective-v6')
+$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=26')
+        && str_contains($manifest, 'mvp21_7=corrective-v7')
         && str_contains($manifest, 'game-screen-v102.js?v=112')
         && str_contains($manifest, 'mvp21_6=tournament-result-dedupe-v3')
         && str_contains($manifest, 'production-v110-acceptance-runtime.js?v=132')
         && str_contains($manifest, 'game-invites-v110.js?v=1146')
         && str_contains($manifest, 'game-invites-v110-rematch-policy-v175.js?v=2'),
-    'Corrective v6 client owners must publish fresh active cache identities without replacing the accepted Phase-B presentation owner.');
+    'Corrective v7 client owners must publish fresh active cache identities without replacing the accepted Phase-B presentation owner.');
 
 if ($assertions < 37) throw new RuntimeException('Corrective v4 contract is too shallow: ' . $assertions);
 fwrite(STDOUT, "Mvp21_5_6CorrectiveV4ContractTest: {$assertions} assertions passed\n");
