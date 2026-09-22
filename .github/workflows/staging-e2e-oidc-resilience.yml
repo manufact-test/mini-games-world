@@ -1,0 +1,101 @@
+name: Staging E2E OIDC resilience
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.github/workflows/staging-e2e-oidc-resilience.yml'
+      - '.github/workflows/staging-playwright-e2e.yml'
+      - 'e2e/staging-oidc-token.mjs'
+      - 'e2e/staging-oidc-token.selftest.mjs'
+      - 'e2e/staging-global-setup.mjs'
+      - 'e2e/staging/current-core-final.spec.mjs'
+      - 'e2e/staging/tournament-registration-live.spec.mjs'
+      - 'e2e/staging/checkers-layout-diagnostic.spec.mjs'
+      - 'e2e/staging/go-store-live-catalog.spec.mjs'
+      - 'bot/tests/StagingCurrentE2EOwnerContractTest.php'
+      - 'bot/tests/StagingE2EFallbackBudgetContractTest.php'
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: OIDC retry and fallback contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Lint resilience sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l bot/tests/StagingCurrentE2EOwnerContractTest.php
+          php -l bot/tests/StagingE2EFallbackBudgetContractTest.php
+          node --check e2e/staging-oidc-token.mjs
+          node --check e2e/staging-oidc-token.selftest.mjs
+          node --check e2e/staging-global-setup.mjs
+          node --check e2e/staging/current-core-final.spec.mjs
+          node --check e2e/staging/tournament-registration-live.spec.mjs
+          node --check e2e/staging/checkers-layout-diagnostic.spec.mjs
+          node --check e2e/staging/go-store-live-catalog.spec.mjs
+
+      - name: Run OIDC resilience contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node e2e/staging-oidc-token.selftest.mjs
+          php bot/tests/StagingCurrentE2EOwnerContractTest.php
+          php bot/tests/StagingE2EFallbackBudgetContractTest.php
+
+      - name: Guard corrective scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/staging-e2e-oidc-resilience.yml|\
+              .github/workflows/staging-playwright-e2e.yml|\
+              e2e/staging-oidc-token.mjs|\
+              e2e/staging-oidc-token.selftest.mjs|\
+              e2e/staging-global-setup.mjs|\
+              e2e/staging/current-core-final.spec.mjs|\
+              e2e/staging/tournament-registration-live.spec.mjs|\
+              e2e/staging/checkers-layout-diagnostic.spec.mjs|\
+              e2e/staging/go-store-live-catalog.spec.mjs|\
+              bot/tests/StagingCurrentE2EOwnerContractTest.php|\
+              bot/tests/StagingE2EFallbackBudgetContractTest.php)
+                ;;
+              *)
+                echo "Unexpected staging E2E OIDC resilience path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+
+          git diff --exit-code "$base" "$head" -- \
+            bot/games app/assets/js/games app/assets/css/games \
+            bot/ledger bot/shop bot/cron
