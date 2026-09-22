@@ -1,0 +1,170 @@
+name: MVP-21.7 Tournament technical outcomes
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.github/workflows/mvp21-5-tournament-ready.yml'
+      - '.github/workflows/mvp21-6-tournament-rounds.yml'
+      - '.github/workflows/mvp21-7-tournament-technical-outcomes.yml'
+      - '.github/workflows/mvp21-9-tournament-rewards.yml'
+      - 'bot/database/migrations/20260922_0058_add_tournament_technical_outcomes.php'
+      - 'bot/services/ReconnectLifecycleService.php'
+      - 'bot/tournaments/TournamentRoundProgressionService.php'
+      - 'bot/tournaments/TournamentSettlementService.php'
+      - 'app/assets/js/screens/tournaments-screen-v1.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp21_6TournamentRoundProgressionTest.php'
+      - 'bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp21-7-technical-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: No-show, disconnect and technical outcome regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint MVP-21.7 slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            bot/database/migrations/20260922_0058_add_tournament_technical_outcomes.php
+            bot/services/ReconnectLifecycleService.php
+            bot/tournaments/TournamentRoundProgressionService.php
+            bot/tournaments/TournamentSettlementService.php
+            bot/tests/Mvp21_6TournamentRoundProgressionTest.php
+            bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done
+          node --check app/assets/js/screens/tournaments-screen-v1.js
+
+      - name: Run MVP-21.7 technical outcome model
+        run: |
+          php bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php
+
+      - name: Preserve reconnect and visible-rating owners
+        run: |
+          php bot/tests/Mvp17_4ReconnectLifecycleTest.php
+          php bot/tests/Mvp17_4ReconnectResumeRegressionTest.php
+          php bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
+          php bot/tests/Mvp20_1PerGameVisibleRatingTest.php
+          php bot/tests/Mvp20_1VisibleRatingIntegrationContractTest.php
+
+      - name: Preserve tournament rounds and settlement
+        run: |
+          php bot/tests/Mvp21_6TournamentRoundProgressionTest.php
+          php bot/tests/Mvp21_6TournamentRuntimeContractTest.php
+          php bot/tests/Mvp21_6TournamentProgressionUxContractTest.php
+          php bot/tests/Mvp21_9TournamentSettlementTest.php
+          php bot/tests/Mvp21_9TerminalUxContractTest.php
+
+      - name: Preserve all-game runtime baseline
+        run: |
+          php bot/tests/Mvp167AllGamesRegressionContractTest.php
+          php bot/tests/Mvp14r2GamesBaselineTest.php
+          php bot/tests/Mvp14r2GamesContractTest.php
+
+      - name: Guard MVP-21.7 scope and frozen game engines
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp21-5-tournament-ready.yml|\
+              .github/workflows/mvp21-6-tournament-rounds.yml|\
+              .github/workflows/mvp21-7-tournament-technical-outcomes.yml|\
+              .github/workflows/mvp21-9-tournament-rewards.yml|\
+              bot/database/migrations/20260922_0058_add_tournament_technical_outcomes.php|\
+              bot/services/ReconnectLifecycleService.php|\
+              bot/tournaments/TournamentRoundProgressionService.php|\
+              bot/tournaments/TournamentSettlementService.php|\
+              app/assets/js/screens/tournaments-screen-v1.js|\
+              app/runtime/client/version-manifest.php|\
+              bot/tests/Mvp21_6TournamentRoundProgressionTest.php|\
+              bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php)
+                ;;
+              *)
+                echo "Unexpected MVP-21.7 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+
+          git diff --exit-code "$base" "$head" -- \
+            bot/games app/assets/js/games app/assets/css/games \
+            bot/shop bot/ledger/LedgerWriteService.php \
+            bot/runtime/ProductionPrimaryApplicationEntrypoints.php \
+            bot/cron
+
+  mysql:
+    name: Technical outcome schema on MySQL 8.4
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring
+          coverage: none
+
+      - name: Run MVP-21.7 technical outcomes on MySQL
+        env:
+          MGW_TEST_MYSQL_HOST: 127.0.0.1
+          MGW_TEST_MYSQL_PORT: 3306
+          MGW_TEST_MYSQL_DATABASE: mgw_test
+          MGW_TEST_MYSQL_USER: root
+          MGW_TEST_MYSQL_PASSWORD: root
+        run: php bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php
