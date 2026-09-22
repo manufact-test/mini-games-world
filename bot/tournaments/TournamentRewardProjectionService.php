@@ -94,16 +94,27 @@ final class TournamentRewardProjectionService
         }
 
         $ticket = $this->goldenTicket($mgwId);
+        $summaryRows = $this->database->fetchAll(
+            'SELECT COUNT(*) AS tournaments,
+                    SUM(CASE WHEN placement BETWEEN 1 AND 3 THEN 1 ELSE 0 END) AS podiums,
+                    SUM(CASE WHEN placement=1 THEN 1 ELSE 0 END) AS championships
+             FROM mgw_tournament_results
+             WHERE mgw_id=:mgw_id AND reward_eligible=1',
+            ['mgw_id'=>$mgwId]
+        );
+        $summaryRow = count($summaryRows) === 1 && is_array($summaryRows[0])
+            ? $summaryRows[0]
+            : [];
 
         return [
             'available'=>$history !== [] || $permanent !== [] || $activeTemporary !== [] || $ticket !== null,
             'golden_ticket'=>$ticket,
             'summary'=>[
-                'tournaments'=>count($history),
-                'podiums'=>$podiums,
+                'tournaments'=>max(0,(int)($summaryRow['tournaments'] ?? count($history))),
+                'podiums'=>max(0,(int)($summaryRow['podiums'] ?? $podiums)),
                 'championships'=>$ticket !== null
                     ? (int)$ticket['championship_count']
-                    : $championshipsFromResults,
+                    : max(0,(int)($summaryRow['championships'] ?? $championshipsFromResults)),
             ],
             'active_temporary'=>$activeTemporary,
             'permanent_achievements'=>$permanent,
