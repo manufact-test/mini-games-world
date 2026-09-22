@@ -46,7 +46,7 @@ $assert(str_contains($screen, 'formatReadyCountdown(opensAt.getTime() - Date.now
 $assert(str_contains($screen, 'await refreshTournamentMatchState()'),
     'Existing Hall heartbeat must remain the automatic progression polling owner.');
 
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=23')
+$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=24')
         && str_contains($manifest, 'mvp21_6=progression-return-v2')
         && str_contains($manifest, 'mvp21_5=corrective-v5'),
     'Tournament screen must publish the corrective-v5 identity while preserving progression ownership.');
