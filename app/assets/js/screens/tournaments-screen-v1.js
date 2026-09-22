@@ -1425,6 +1425,31 @@ function renderTournamentSnapshot(errorMessage = ''){
   const snapshot = tournamentSnapshot && typeof tournamentSnapshot === 'object' ? tournamentSnapshot : {};
   const tournament = snapshot.tournament && typeof snapshot.tournament === 'object' ? snapshot.tournament : null;
   if (!tournament) {
+    const cancelled = snapshot.last_cancellation && typeof snapshot.last_cancellation === 'object'
+      ? snapshot.last_cancellation
+      : null;
+    if (cancelled) {
+      const emergency = String(cancelled.kind || '') === 'emergency';
+      const cancelledAt = parseTournamentUtc(cancelled.cancelled_at_utc);
+      body.innerHTML = `
+        <div class="tournaments-v2-tournament-hero">
+          <div>
+            <span class="tournaments-v2-tournament-state">${emergency ? 'Аварийная остановка' : 'Турнир отменён'}</span>
+            <h3>${escapeHtml(String(cancelled.title || 'Официальный турнир'))}</h3>
+            <p>${escapeHtml(gameName(String(cancelled.game_type || DEFAULT_GAME)))}</p>
+          </div>
+          <div class="tournaments-v2-tournament-entry"><small>Возврат</small><strong>${escapeHtml(formatNumber(Number(cancelled.refund_amount || 50000)))}</strong><span>коинов</span></div>
+        </div>
+        <div class="tournaments-v2-tournament-own is-registered">
+          <strong>Взнос возвращён полностью. Результаты турнира аннулированы.</strong>
+        </div>
+        <div class="tournaments-v2-tournament-rules-body">
+          <p><strong>Причина:</strong> ${escapeHtml(String(cancelled.reason || 'Турнир отменён администратором.'))}</p>
+          ${cancelledAt ? `<p><strong>Закрыт:</strong> ${escapeHtml(formatTournamentDateTime(cancelledAt))} по вашему времени.</p>` : ''}
+        </div>
+      `;
+      return;
+    }
     body.innerHTML = `<div class="tournaments-v2-empty">Официальный турнир пока не создан или не открыт для участников.</div>`;
     return;
   }
