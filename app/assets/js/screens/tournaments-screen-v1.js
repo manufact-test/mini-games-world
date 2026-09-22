@@ -1121,7 +1121,7 @@ const TOURNAMENT_TECHNICAL_RESULT_LABELS = Object.freeze({
   vacant_bracket_slot:'Пара закрыта без участников.',
   player_left:'Технический исход · соперник покинул матч.',
   disconnect_timeout:'Технический исход · 60 секунд на возврат истекли.',
-  tournament_both_disconnect_timeout:'Технический исход · один игрок не вернулся за 3 минуты.',
+  tournament_disconnect_timeout:'Технический исход · один игрок не вернулся за 3 минуты.',
   tournament_both_absent_timeout:'Оба игрока не вернулись за 3 минуты · победитель не назначен.',
   technical_restart_scheduled:'Технический перезапуск через 1 минуту.',
   technical_restart_exhausted:'Технический сбой повторился · матч закрыт без победителя.',
