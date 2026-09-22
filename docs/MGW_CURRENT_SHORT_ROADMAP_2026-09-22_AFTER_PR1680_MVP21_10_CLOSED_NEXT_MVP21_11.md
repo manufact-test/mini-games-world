@@ -40,10 +40,6 @@ The latest completed slice, MVP-21.10, adds the canonical prize-path anti-fraud 
 
 PR #1680 final head:
 
-`188c54eff59bc0908a381af07b0afb48818e99`
-
-Correction: authoritative final PR head is:
-
 `188c54eff59bc0908a381af7110e92a086a91dfc`
 
 Merged staging:
