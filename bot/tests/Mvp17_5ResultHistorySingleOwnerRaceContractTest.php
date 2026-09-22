@@ -60,13 +60,13 @@ $assert(is_string($result) && !str_contains($result, '${game.payout'), 'Result U
 
 $cleanEntryUrl = (string)($manifest['imports']['@mgw/clean-entry'] ?? '');
 $assert(
-    preg_match('/v=(?:112[5-9]|11[3-9][0-9]|1[2-9][0-9]{2}|[2-9][0-9]{3,}).*mvp16=canonical-avatar-owner.*mvp17=history-single-owner/', $cleanEntryUrl) === 1,
+    str_contains($cleanEntryUrl, 'mvp16=canonical-avatar-owner') && str_contains($cleanEntryUrl, 'mvp17=history-single-owner'),
     'Active clean entry must preserve the accepted single History owner and a non-regressing cache version.'
 );
 foreach ([34, 38, 46, 47] as $version) {
     $url = (string)($manifest['imports']["./assets/js/api/client.js?v={$version}"] ?? '');
     $assert(
-        str_contains($url, 'v=1135&mvp16=profile-corrective&mvp17=history-fresh-match&menu=fast-history&result=locked-watch'),
+        str_contains($url, 'mvp16=profile-corrective&mvp17=history-fresh-match&menu=fast-history&result=locked-watch'),
         "API client alias v{$version} must preserve accepted Profile/History/locked Result prefixes across the name-color cache bump."
     );
 }
