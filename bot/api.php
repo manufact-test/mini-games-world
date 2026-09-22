@@ -4,6 +4,8 @@ require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/services/GameLaunchFinalizationService.php';
 require_once __DIR__ . '/services/MatchPreparationRuntimeService.php';
 require_once __DIR__ . '/tournaments/TournamentAdminNotificationBridge.php';
+require_once __DIR__ . '/tournaments/StagingTournamentManualAcceptanceService.php';
+require_once __DIR__ . '/services/GameSettlementService.php';
 
 function mgw_cleanup_games_if_due(array &$data, ChessRuntimeService $games, bool $force = false): void
 {
@@ -447,6 +449,41 @@ try {
                 // progression resumes and can observe finishes / later rounds.
                 $progressionSnapshot = null;
                 if (!$initialReadyOwnsWindow) {
+                    if (strtolower(trim((string)($config['environment'] ?? ''))) === 'staging') {
+                        $stagingLedger = new LedgerWriteService($database);
+                        $stagingTournamentService = new TournamentRegistrationService($database, $stagingLedger);
+                        $stagingAcceptance = new StagingTournamentManualAcceptanceService(
+                            $config,
+                            $database,
+                            $stagingLedger,
+                            $stagingTournamentService
+                        );
+                        $fixtureBye = $stagingAcceptance->resolveMixedFixtureByeForParticipant(
+                            $_SERVER,
+                            $mgwId,
+                            $userId
+                        );
+                        if (!empty($fixtureBye['resolved'])) {
+                            $attachedFixtureGameId = trim((string)($fixtureBye['attached_game_id'] ?? ''));
+                            if ($attachedFixtureGameId !== ''
+                                && isset($data['games'][$attachedFixtureGameId])
+                                && is_array($data['games'][$attachedFixtureGameId])
+                                && (string)($data['games'][$attachedFixtureGameId]['status'] ?? '') !== 'finished') {
+                                $fixtureGame =& $data['games'][$attachedFixtureGameId];
+                                (new GameSettlementService($config))->finish(
+                                    $data,
+                                    $fixtureGame,
+                                    (string)$fixtureBye['winner_legacy_user_id'],
+                                    'staging_mixed_fixture_bye',
+                                    (string)$fixtureBye['loser_legacy_user_id']
+                                );
+                                $fixtureGame['launch_phase'] = 'cancelled';
+                                $fixtureGame['preparation_cancelled_at'] = now_iso();
+                                unset($fixtureGame);
+                            }
+                        }
+                    }
+
                     $progressionSnapshot = $progression->statusForParticipant(
                         $mgwId,
                         $accountRef,
