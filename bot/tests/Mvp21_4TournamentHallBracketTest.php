@@ -159,6 +159,11 @@ for ($i = 1; $i <= 9; $i++) {
             new DateTimeImmutable(sprintf('2026-09-21T00:%02d:30Z', 10 + $i)),
             $consent
         );
+        $tournaments->publishRegistration(
+            $mgwId,
+            $accountRef,
+            new DateTimeImmutable(sprintf('2026-09-21T00:%02d:31Z', 10 + $i))
+        );
     }
 }
 
