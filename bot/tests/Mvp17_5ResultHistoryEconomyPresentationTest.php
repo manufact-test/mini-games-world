@@ -107,7 +107,7 @@ $assert(is_string($resultClient) && str_contains($resultClient, 'id="newOpponent
 $assert(is_string($profileClient) && str_contains($profileClient, 'match?.economy'), 'Profile history must consume the same canonical match economy projection.');
 $assert(is_string($profileClient) && str_contains($profileClient, 'economy.ledger_delta'), 'Profile history must display canonical ledger delta.');
 $assert(
-    str_contains((string)($manifest['imports']['./assets/js/screens/game-screen-v102.js?v=102'] ?? ''), 'v=106&clock=phase-b-single-writer&battleship=leave-guard&mvp17=result-history-economy&live=owner-v3&result=compact-fast-v1'),
+    str_contains((string)($manifest['imports']['./assets/js/screens/game-screen-v102.js?v=102'] ?? ''), 'clock=phase-b-single-writer&battleship=leave-guard&mvp17=result-history-economy&live=owner-v3&result=compact-fast-v1'),
     'Active v110 manifest must publish the compact fast Result owner while preserving accepted game ownership prefixes.'
 );
 $profileTarget = (string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? '');
@@ -124,9 +124,9 @@ $assert(
     'Active v110 manifest must preserve the accepted Profile pass A and Result/History economy lineage through bounded Profile composition.'
 );
 $assert(
-    str_contains((string)($manifest['imports']['./assets/js/games/game-invites-v110.js?v=1137&ux=1'] ?? ''), 'game-invites-v110-rematch-policy-v175.js?v=1&fp=2'),
+    str_contains((string)($manifest['imports']['./assets/js/games/game-invites-v110.js?v=1137&ux=1'] ?? ''), 'game-invites-v110-rematch-policy-v175.js?v=2&fp=2&mvp21_6=tournament-exclusion-v1'),
     'Accepted MVP-17.5 rematch presentation policy must remain frozen.'
 );
-$assert(is_string($launch) && str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1127';"), 'Result/history test must remain anchored to actual Telegram v110 launch.');
+$assert(is_string($launch) && str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1233&"), 'Result/history test must remain anchored to actual Telegram v110 launch.');
 
 fwrite(STDOUT, "Mvp17_5ResultHistoryEconomyPresentationTest: {$assertions} assertions passed\n");

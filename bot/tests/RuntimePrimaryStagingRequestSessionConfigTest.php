@@ -36,6 +36,7 @@ $config = [
 $session = RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($config);
 $session->assertEnabledForApi(10, 12, $now);
 $assertTrue($session->enabled(), 'Enabled request session must report enabled');
+$assertTrue($session->activeAt($now), 'Enabled unexpired bounded session must be active at its evidence time');
 $assertTrue($session->baselineRevision() === 10, 'Request session must preserve baseline');
 $assertTrue($session->maximumRevision() === 14, 'Request session must compute bounded maximum');
 $assertTrue($session->remainingRevisions(12) === 2, 'Request session must compute remaining revisions');
@@ -69,6 +70,7 @@ $assertThrows(
 $expired = $config;
 $expired['staging_db_primary_request_session']['expires_at_utc'] = '2026-07-20T11:59:59+00:00';
 $expiredSession = RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($expired);
+$assertTrue(!$expiredSession->activeAt($now), 'Expired bounded session must not remain an active routing candidate');
 $assertThrows(
     static fn() => $expiredSession->assertEnabledForApi(10, 10, $now),
     'has expired'
@@ -77,6 +79,7 @@ $assertThrows(
 $tooLong = $config;
 $tooLong['staging_db_primary_request_session']['expires_at_utc'] = '2026-07-20T12:31:00+00:00';
 $tooLongSession = RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($tooLong);
+$assertTrue(!$tooLongSession->activeAt($now), 'More-than-30-minute future session must not enter the bounded routing path');
 $assertThrows(
     static fn() => $tooLongSession->assertEnabledForApi(10, 10, $now),
     'more than 30 minutes away'

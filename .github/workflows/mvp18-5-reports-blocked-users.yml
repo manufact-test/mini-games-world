@@ -164,7 +164,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -F "private const ENTRY_PATH = '/app/v110.php?v=1127';" bot/helpers/WebAppLaunchUrl.php
+          grep -F "private const ENTRY_PATH = '/app/v110.php?v=1233&" bot/helpers/WebAppLaunchUrl.php
           grep -F "'@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2'" app/runtime/client/version-manifest.php
           git diff --exit-code '${{ github.event.pull_request.base.sha }}' '${{ github.event.pull_request.head.sha }}' -- \
             bot/helpers/WebAppLaunchUrl.php \

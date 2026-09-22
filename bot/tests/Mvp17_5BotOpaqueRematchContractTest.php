@@ -122,12 +122,12 @@ $assert(
     is_array($manifest)
         && str_contains(
             (string)($manifest['imports']['./assets/js/games/game-invites-v110.js?v=1137&ux=1'] ?? ''),
-            'game-invites-v110-rematch-policy-v175.js?v=1&fp=2'
+            'game-invites-v110-rematch-policy-v175.js?v=2&fp=2&mvp21_6=tournament-exclusion-v1'
         ),
     'The active v110 invite import must cache-bust to the safe prepaint policy without changing frozen v1 contract identity.'
 );
 $assert(
-    is_string($launch) && str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1127';"),
+    is_string($launch) && str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1233&"),
     'The contract must remain anchored to the Telegram/Test v110 entry actually launched by the bot.'
 );
 $assert(

@@ -93,10 +93,12 @@ $assertTrue(
 );
 $assertTrue(
     str_contains($source['storage_factory'], "\$identity = \$eventKey !== '' ? \$eventKey : \$notificationId;")
-    && str_contains($source['storage_factory'], "if (!isset(\$primaryUserEvents[\$notificationIdentity])) return true;")
+    && str_contains($source['storage_factory'], "if (!array_key_exists(\$notificationIdentity, \$primaryUserEvents)) return true;")
+    && str_contains($source['storage_factory'], "(\$rollbackState['read_at'] ?? null) !== (\$primaryState['read_at'] ?? null)")
+    && str_contains($source['storage_factory'], "(\$rollbackState['hidden_at'] ?? null) !== (\$primaryState['hidden_at'] ?? null)")
     && str_contains($source['storage_factory'], 'Do not weaken the selector on an unclassified readiness failure.')
     && str_contains($source['storage_factory'], "\$failures[\$entrypoint] = \$error;"),
-    'Staging fallback must require proven missing notification events and preserve strict selector failures.'
+    'Staging fallback must require proven notification inventory/mutable-state drift and preserve strict selector failures.'
 );
 
 
@@ -264,7 +266,8 @@ $assertTrue(
     'Corrective release must force fresh Tournament schedule CSS.'
 );
 $assertTrue(
-    str_contains($source['admin'], 'admin-tournaments.js?v=12&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3'),
+    str_contains($source['admin'], 'admin-tournaments.js?v=13&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3')
+    && str_contains($source['admin'], 'mvp21_8=corrective-v9'),
     'Tournament Admin must force the fresh MVP-21.3 manual-acceptance client.'
 );
 

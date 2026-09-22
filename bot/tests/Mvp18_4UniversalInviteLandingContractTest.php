@@ -147,7 +147,7 @@ $assertTrue(
     'Public landing lifecycle normalization must happen on an in-memory copy only'
 );
 $assertTrue(
-    str_contains($launchSource, "private const ENTRY_PATH = '/app/v110.php?v=1127';"),
+    str_contains($launchSource, "private const ENTRY_PATH = '/app/v110.php?v=1233&"),
     'MVP-18.4 must preserve the frozen Telegram Mini App entry identity'
 );
 

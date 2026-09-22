@@ -26,6 +26,11 @@ on:
       - 'bot/tests/Mvp21_3TournamentScheduleTest.php'
       - 'bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php'
       - 'bot/tests/Mvp21_8CorrectiveContractTest.php'
+      - 'bot/tests/Mvp21_8CorrectiveV9ContractTest.php'
+      - 'bot/storage/StorageFactory.php'
+      - 'bot/runtime/RuntimePrimaryStagingRequestSessionConfig.php'
+      - 'bot/tests/RuntimePrimaryStagingRequestSessionConfigTest.php'
+      - 'e2e/staging/current-core-final.spec.mjs'
       - 'bot/services/GameService.php'
       - 'bot/services/GameRuntimeService.php'
       - 'bot/services/ChessRuntimeService.php'
@@ -56,6 +61,15 @@ on:
       - 'bot/tests/Mvp21_5TournamentReadyUxContractTest.php'
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
       - 'ops/checks/verify-mvp15-3-unified-balance-owner.py'
+      - '.github/workflows/mvp16-6-notification-center-v2.yml'
+      - '.github/workflows/mvp18-4-universal-invite-landing.yml'
+      - 'bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php'
+      - 'bot/tests/Mvp17_5ResultHistorySingleOwnerRaceContractTest.php'
+      - 'bot/tests/Mvp17_5TerminalLaunchPolishContractTest.php'
+      - 'bot/tests/Mvp17_5BotOpaqueRematchContractTest.php'
+      - 'bot/tests/Mvp17_5TicTacToeFirstTapSingleOwnerContractTest.php'
+      - 'bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php'
+      - 'bot/tests/Mvp18_4UniversalInviteLandingContractTest.php'
       - '.github/workflows/mvp20-1-per-game-visible-rating.yml'
       - '.github/workflows/mvp20-2-hidden-skill.yml'
       - '.github/workflows/mvp20-3-leaderboards-antifarming.yml'
@@ -127,6 +141,10 @@ jobs:
             bot/tests/Mvp21_3TournamentScheduleTest.php
             bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php
             bot/tests/Mvp21_8CorrectiveContractTest.php
+            bot/tests/Mvp21_8CorrectiveV9ContractTest.php
+            bot/storage/StorageFactory.php
+            bot/runtime/RuntimePrimaryStagingRequestSessionConfig.php
+            bot/tests/RuntimePrimaryStagingRequestSessionConfigTest.php
             app/admin.php
             bot/services/GameService.php
             bot/services/GameRuntimeService.php
@@ -165,6 +183,8 @@ jobs:
           php bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php
           php bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php
           php bot/tests/Mvp21_8CorrectiveContractTest.php
+          php bot/tests/Mvp21_8CorrectiveV9ContractTest.php
+          php bot/tests/RuntimePrimaryStagingRequestSessionConfigTest.php
           php bot/tests/Mvp21_1TournamentRegistrationTest.php
           php bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
           php bot/tests/Mvp21_2TournamentRulesTest.php
@@ -205,6 +225,10 @@ jobs:
           bad=0
           while IFS= read -r path; do
             case "$path" in
+              .github/workflows/mvp16-6-notification-center-v2.yml|\
+              .github/workflows/mvp18-4-universal-invite-landing.yml|\
+              .github/workflows/mvp18-5-reports-blocked-users.yml|\
+              .github/workflows/mvp18-6-notification-pipeline.yml|\
               .github/workflows/mvp20-1-per-game-visible-rating.yml|\
               .github/workflows/mvp20-2-hidden-skill.yml|\
               .github/workflows/mvp20-3-leaderboards-antifarming.yml|\
@@ -240,6 +264,11 @@ jobs:
               bot/tests/Mvp21_3TournamentScheduleTest.php|\
               bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php|\
               bot/tests/Mvp21_8CorrectiveContractTest.php|\
+              bot/tests/Mvp21_8CorrectiveV9ContractTest.php|\
+              bot/storage/StorageFactory.php|\
+              bot/runtime/RuntimePrimaryStagingRequestSessionConfig.php|\
+              bot/tests/RuntimePrimaryStagingRequestSessionConfigTest.php|\
+              e2e/staging/current-core-final.spec.mjs|\
               app/admin.php|\
               app/assets/js/admin-tournaments.js|\
               bot/services/GameService.php|\
@@ -269,6 +298,15 @@ jobs:
               bot/tests/Mvp21_5TournamentMatchReadinessTest.php|\
               bot/tests/Mvp21_5TournamentReadyUxContractTest.php|\
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
+              bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php|\
+              bot/tests/Mvp17_5ResultHistorySingleOwnerRaceContractTest.php|\
+              bot/tests/Mvp17_5TerminalLaunchPolishContractTest.php|\
+              bot/tests/Mvp17_5BotOpaqueRematchContractTest.php|\
+              bot/tests/Mvp17_5TicTacToeFirstTapSingleOwnerContractTest.php|\
+              bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php|\
+              bot/tests/Mvp18_4UniversalInviteLandingContractTest.php|\
+              bot/tests/Mvp18FriendsUiContractTest.mjs|\
+              bot/tests/NotificationActorSilentTerminalContractTest.php|\
               bot/tests/GameLaunchFinalizationOwnerContractTest.php|\
               ops/checks/verify-mvp15-3-unified-balance-owner.py)
                 ;;

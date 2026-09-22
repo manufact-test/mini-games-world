@@ -120,13 +120,28 @@ final class StorageFactory
         if (isset($attempted[$entrypoint])) return;
         $attempted[$entrypoint] = true;
 
+        // The DB-primary rehearsal is explicitly bounded by a short request
+        // session. Once that session has expired, normal staging must return to
+        // JSON immediately. Do this BEFORE the stale-primary comparison: the old
+        // retained rehearsal snapshot can be very large and must not remain on
+        // every future cold-start/API critical path merely because private
+        // selector config has not yet been toggled off.
+        if ($environment === 'staging' && $script === 'api.php') {
+            require_once __DIR__ . '/../runtime/RuntimePrimaryStagingRequestSessionConfig.php';
+            $requestSession = RuntimePrimaryStagingRequestSessionConfig::fromApplicationConfig($config);
+            if ($requestSession->enabled() && !$requestSession->activeAt(time())) {
+                return;
+            }
+        }
+
         // The DB-primary API selector is a bounded staging rehearsal, while
         // JSON remains the rollback/live source outside that rehearsal. If the
-        // retained DB-primary snapshot is missing notification events that are
-        // already present in rollback JSON, routing a new API request into that
-        // stale snapshot makes the projection finalizer fail after otherwise
-        // successful application work. Fail open only for this proven staging
-        // API drift: keep production and every other selector failure strict.
+        // retained DB-primary snapshot is missing notification events OR still
+        // carries an older read/hidden state than rollback JSON, routing a new
+        // API request into that stale snapshot makes the projection finalizer
+        // compare yesterday's source state with today's canonical DB projection.
+        // Fail open only for this proven staging API drift; production and every
+        // other selector/readiness failure remain strict.
         if ($environment === 'staging'
             && $script === 'api.php'
             && self::stagingApiPrimaryNotificationSnapshotIsBehind($config)) {
@@ -171,7 +186,8 @@ final class StorageFactory
             $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
             if (!$databaseConfig->enabled()) return false;
 
-            $rollback = (new JsonStorageAdapter($dataDir))->readOnly(
+            $rollback = (new JsonStorageAdapter($dataDir))->readOnlySections(
+                ['notifications'],
                 static fn(array $data): array => $data
             );
             $primary = (new DatabasePrimaryStateStorageAdapter(
@@ -184,7 +200,16 @@ final class StorageFactory
             return false;
         }
 
-        $inventory = static function (array $snapshot): array {
+        $mutableTimestamp = static function (mixed $value): ?string {
+            $raw = trim((string)$value);
+            if ($raw === '') return null;
+            $moment = new DateTimeImmutable($raw);
+            return $moment
+                ->setTimezone(new DateTimeZone('UTC'))
+                ->format('Y-m-d H:i:s.u');
+        };
+
+        $inventory = static function (array $snapshot) use ($mutableTimestamp): array {
             $events = [];
             foreach (is_array($snapshot['notifications'] ?? null)
                 ? $snapshot['notifications']
@@ -195,19 +220,35 @@ final class StorageFactory
                 $notificationId = trim((string)($notification['id'] ?? ''));
                 $identity = $eventKey !== '' ? $eventKey : $notificationId;
                 if ($userId === '' || $identity === '') continue;
-                $events[$userId][$identity] = true;
+                $events[$userId][$identity] = [
+                    'read_at'=>$mutableTimestamp($notification['read_at'] ?? null),
+                    'hidden_at'=>$mutableTimestamp($notification['hidden_at'] ?? null),
+                ];
             }
             return $events;
         };
 
-        $rollbackEvents = $inventory($rollback);
-        $primaryEvents = $inventory($primary);
+        try {
+            $rollbackEvents = $inventory($rollback);
+            $primaryEvents = $inventory($primary);
+        } catch (Throwable) {
+            // A malformed timestamp is not a classified stale-snapshot signal.
+            // Leave that failure to the guarded selector instead of silently
+            // routing around it.
+            return false;
+        }
+
         foreach ($rollbackEvents as $userId=>$events) {
             $primaryUserEvents = is_array($primaryEvents[$userId] ?? null)
                 ? $primaryEvents[$userId]
                 : [];
-            foreach ($events as $notificationIdentity=>$_present) {
-                if (!isset($primaryUserEvents[$notificationIdentity])) return true;
+            foreach ($events as $notificationIdentity=>$rollbackState) {
+                if (!array_key_exists($notificationIdentity, $primaryUserEvents)) return true;
+                $primaryState = $primaryUserEvents[$notificationIdentity];
+                if (($rollbackState['read_at'] ?? null) !== ($primaryState['read_at'] ?? null)
+                    || ($rollbackState['hidden_at'] ?? null) !== ($primaryState['hidden_at'] ?? null)) {
+                    return true;
+                }
             }
         }
         return false;

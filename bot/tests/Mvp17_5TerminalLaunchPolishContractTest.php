@@ -22,8 +22,8 @@ $assert(
     'Ready must not appear until both countdown and authoritative launch time are ready.'
 );
 $assert(
-    is_string($runtime) && str_contains($runtime, "const countdownWaiting = phase === 'countdown' && !launchStartReached(game);"),
-    'Stale countdown phase must stop blocking once the authoritative local launch instant has been reached.'
+    is_string($runtime) && str_contains($runtime, "const countdownWaiting = phase === 'countdown';"),
+    'Server countdown phase must remain blocking until the authoritative active phase is published.'
 );
 $assert(
     is_string($runtime)
@@ -44,7 +44,7 @@ $assert(
 $assert(
     str_contains(
         (string)($manifest['imports']['./assets/js/production-v110-acceptance-runtime.js?v=110'] ?? ''),
-        'v=130&clock=battleship-setup-single-owner&launch=ready-gated-v2&terminal=clock-stable'
+        'v=132&clock=battleship-setup-single-writer&launch=server-active-gated-v3&terminal=clock-stable'
     ),
     'Active v110 manifest must cache-bust only the accepted acceptance-runtime owner.'
 );

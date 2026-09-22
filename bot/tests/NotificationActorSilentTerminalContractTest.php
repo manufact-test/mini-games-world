@@ -66,7 +66,7 @@ if (!str_contains($invites, 'data-rematch-pending')
 
 // MVP-17.5 adds a presentation-only rematch policy in front of this accepted
 // invite/notification runtime. It must preserve the exact silent-terminal owner.
-if (!str_contains($manifest, 'game-invites-v110-rematch-policy-v175.js?v=1')) {
+if (!str_contains($manifest, 'game-invites-v110-rematch-policy-v175.js?v=2&fp=2&mvp21_6=tournament-exclusion-v1')) {
     throw new RuntimeException('Bot-opaque rematch policy cache-bust missing.');
 }
 if (!str_contains($rematchPolicy, './game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent')) {
