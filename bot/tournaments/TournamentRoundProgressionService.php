@@ -306,6 +306,19 @@ final class TournamentRoundProgressionService
         return 'game_tour_' . substr(hash('sha256', $identity), 0, 48);
     }
 
+    public function ensureFirstRoundStructure(
+        string $tournamentId,
+        ?DateTimeImmutable $now = null
+    ): array {
+        $tournamentId = trim($tournamentId);
+        if ($tournamentId === '') {
+            throw new InvalidArgumentException('Tournament id is required.');
+        }
+        $moment = $this->moment($now);
+        $this->ensureFirstRoundRows($tournamentId, $moment);
+        return $this->tournamentSnapshot($tournamentId, $moment);
+    }
+
     public function statusForParticipant(
         string $mgwId,
         string $accountRef,
