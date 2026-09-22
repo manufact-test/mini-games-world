@@ -370,12 +370,24 @@ function renderProfileV2(){
   const ownedAvatars = ownedAvatarItems(activeAvatar);
   const activeNameColor = currentNameColorItemId();
   const nameColorAttribute = activeNameColor ? ` data-name-color-item-id="${escapeHtml(activeNameColor)}"` : '';
+  const activeTournamentRewardCodes = new Set(
+    (Array.isArray(tournamentRewards?.active_temporary) ? tournamentRewards.active_temporary : [])
+      .map(item => String(item?.reward_code || ''))
+      .filter(Boolean)
+  );
+  const tournamentIdentityClasses = [
+    activeTournamentRewardCodes.has('champion_crown') ? ' has-tournament-crown' : '',
+    activeTournamentRewardCodes.has('silver_frame') ? ' has-tournament-silver-frame' : '',
+    activeTournamentRewardCodes.has('bronze_mark') ? ' has-tournament-bronze-mark' : '',
+  ].join('');
 
   root.innerHTML = `
     <header class="profile-v2-head"><div><h1>${escapeHtml(t('profile.title'))}</h1></div></header>
-    <section class="profile-v2-identity">
+    <section class="profile-v2-identity${tournamentIdentityClasses}" data-tournament-temporary-style="${escapeHtml(Array.from(activeTournamentRewardCodes).join(' '))}">
       <button class="profile-v2-avatar-edit" type="button" data-edit-mgw-avatar aria-label="${escapeHtml(t('profile.avatar_edit'))}">
         <span class="profile-v2-avatar" id="profileV2Avatar" data-avatar-item-id="${escapeHtml(activeAvatar)}" aria-hidden="true">MG</span>
+        ${activeTournamentRewardCodes.has('champion_crown') ? '<span class="profile-v2-tournament-crown" aria-label="Корона чемпиона">♛</span>' : ''}
+        ${activeTournamentRewardCodes.has('bronze_mark') ? '<span class="profile-v2-tournament-bronze-mark" aria-label="Бронзовая отметка">●</span>' : ''}
         <span class="profile-v2-avatar-pencil" aria-hidden="true">✎</span>
       </button>
       <div class="profile-v2-person">
