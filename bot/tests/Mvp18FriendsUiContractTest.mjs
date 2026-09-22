@@ -18,7 +18,7 @@ const inviteWrapper = read('app/assets/js/games/game-invites-v110-rematch-policy
 const inviteOwner = read('app/assets/js/games/game-invites-v110.js');
 const endpoint = read('bot/friends.php');
 
-assert(launch.includes("private const ENTRY_PATH = '/app/v110.php?v=1127';"), 'Telegram launch owner must remain v110.php?v=1127');
+assert(launch.includes("private const ENTRY_PATH = '/app/v110.php?v=1233&"), 'Telegram launch owner must remain on the current canonical versioned v110 entry');
 assert(entry.includes("app/runtime/client/version-manifest.php") || entry.includes("runtime/client/version-manifest.php"), 'v110 entry must still render version manifest');
 assert(manifest.includes("'@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2'"), 'Accepted reconnect wrapper cache identity must remain frozen');
 assert(activeMain.includes("import './production-v110-reconnect-v174.js?v=1';"), 'Active main must preserve accepted reconnect owner');
@@ -27,11 +27,11 @@ assert(!activeMain.includes('friends-screen-v110.js'), 'Friends must not modify 
 assert(accountShortcuts.includes("import('../screens/friends-screen-v110.js?v=5&mvp18=instant-route&optimistic-relations')"), 'Existing account shortcut owner must lazy-load the instant Friends module on demand');
 assert(accountShortcuts.includes('closeSheet();') && accountShortcuts.indexOf('closeSheet();') < accountShortcuts.indexOf('await loadFriendsModule()'), 'Friends shortcut must close the menu synchronously before awaiting its module');
 assert(accountShortcuts.includes('void loadFriendsModule();'), 'Friends module must prewarm while the menu is visible');
-assert(manifest.includes("game-invites-v110-rematch-policy-v175.js?v=1&fp=2"), 'Accepted rematch wrapper cache identity must remain frozen');
+assert(manifest.includes("game-invites-v110-rematch-policy-v175.js?v=2&fp=2&mvp21_6=tournament-exclusion-v1"), 'Accepted rematch wrapper must stay on the current tournament-aware cache identity');
 assert(inviteWrapper.includes("v=1142&zone=unified&rematch=optimistic&terminal=self-silent"), 'Accepted rematch wrapper must keep its frozen base invite specifier');
-assert(manifest.includes("'./assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent' => './assets/js/games/game-invites-v110.js?v=1145&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native&waiting=draft-safe'"), 'Frozen wrapper specifier must converge through the manifest on the current draft-safe Telegram-share owner');
-assert(manifest.includes("'./assets/js/games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1' => './assets/js/games/game-invites-v110.js?v=1145&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native&waiting=draft-safe'"), 'Existing Friends invite specifier must converge on the same current invite owner');
-assert(manifest.includes("'./assets/js/games/game-invites-v110.js?v=1144&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native' => './assets/js/games/game-invites-v110.js?v=1145&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native&waiting=draft-safe'"), 'Previously resolved Telegram-share owner must cache-bust to the draft-safe waiting owner');
+assert(manifest.includes("'./assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent' => './assets/js/games/game-invites-v110.js?v=1146&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native&waiting=draft-safe&mvp21_6=tournament-rematch-exclusion-v1'"), 'Frozen wrapper specifier must converge through the manifest on the current tournament-aware draft-safe Telegram-share owner');
+assert(manifest.includes("'./assets/js/games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1' => './assets/js/games/game-invites-v110.js?v=1146&mvp21_6=tournament-rematch-exclusion-v1'"), 'Existing Friends invite specifier must converge on the current tournament-aware invite owner');
+assert(manifest.includes("'./assets/js/games/game-invites-v110.js?v=1144&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native' => './assets/js/games/game-invites-v110.js?v=1146&mvp21_6=tournament-rematch-exclusion-v1'"), 'Previously resolved Telegram-share owner must converge on the current tournament-aware invite owner');
 assert(friends.includes("game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1"), 'Friends must keep handing off through its accepted invite specifier');
 assert(inviteOwner.includes('export function openSocialPlayerInvite'), 'Existing invite owner must expose one bounded social entry');
 assert(inviteOwner.includes("inviteRequest('create_direct'"), 'Social invite must remain inside existing direct-invite lifecycle owner');
