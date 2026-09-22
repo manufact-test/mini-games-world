@@ -372,7 +372,7 @@ function startTournamentLaunchWatch(){
   if (tournamentLaunchWatchTimer || !tournamentHallPanelVisible()) return;
   const match = tournamentMatchSnapshot?.match;
   const waitingForSharedGame = match
-    && match.my_ready === true
+    && match.self_ready === true
     && !String(match.game_id || '').trim();
   if (!waitingForSharedGame) return;
 
