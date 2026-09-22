@@ -1,3 +1,48 @@
+/* Active tournament styling is projected onto the Profile identity only while
+   its durable entitlement is still active. */
+#screen-profile .profile-v2-identity.has-tournament-silver-frame .profile-v2-avatar-edit{
+  border-color:rgba(214,225,240,.82);
+  box-shadow:
+    0 0 0 2px rgba(214,225,240,.16),
+    0 0 22px rgba(190,211,239,.13),
+    inset 0 0 0 1px rgba(255,255,255,.08);
+}
+#screen-profile .profile-v2-tournament-crown{
+  position:absolute;
+  z-index:4;
+  left:50%;
+  top:-12px;
+  transform:translateX(-50%);
+  color:#ffdb7e;
+  font-size:23px;
+  line-height:1;
+  text-shadow:0 2px 8px rgba(0,0,0,.5),0 0 12px rgba(255,198,72,.24);
+  pointer-events:none;
+}
+#screen-profile .profile-v2-tournament-bronze-mark{
+  position:absolute;
+  z-index:4;
+  right:-2px;
+  bottom:5px;
+  width:17px;
+  height:17px;
+  display:grid;
+  place-items:center;
+  border:2px solid rgba(17,19,29,.95);
+  border-radius:50%;
+  background:#b87346;
+  color:#f2c09c;
+  font-size:7px;
+  box-shadow:0 3px 10px rgba(0,0,0,.34);
+  pointer-events:none;
+}
+#screen-profile .profile-v2-identity.has-tournament-crown .profile-v2-avatar-edit{
+  overflow:visible;
+}
+#screen-profile .profile-v2-identity.has-tournament-bronze-mark .profile-v2-avatar-edit{
+  overflow:visible;
+}
+
 /* MVP-21.9 — persistent tournament rewards, Profile honors and archive */
 
 #screen-profile .profile-v2-tournament-honors{
