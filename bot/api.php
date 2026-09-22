@@ -391,17 +391,42 @@ try {
                 $attachedReadyGameId = trim((string)($readyMatch['game_id'] ?? ''));
                 if ($attachedReadyGameId !== ''
                     && isset($data['games'][$attachedReadyGameId])
-                    && is_array($data['games'][$attachedReadyGameId])
-                    && (string)($data['games'][$attachedReadyGameId]['status'] ?? '') === 'active'
-                    && (string)($data['games'][$attachedReadyGameId]['match_source'] ?? '') === 'tournament'
-                    && in_array($userId, array_map('strval', $data['games'][$attachedReadyGameId]['player_ids'] ?? []), true)) {
-                    return [
-                        'snapshot'=>$snapshot,
-                        'progression'=>null,
-                        'game'=>$games->publicGame($data['games'][$attachedReadyGameId], $userId),
-                        'user'=>$users->publicUser($user),
-                        'session'=>$sessions->publicState($user, $sessionId),
-                    ];
+                    && is_array($data['games'][$attachedReadyGameId])) {
+                    $attachedReadyGame = $data['games'][$attachedReadyGameId];
+                    $attachedParticipant = in_array(
+                        $userId,
+                        array_map('strval', $attachedReadyGame['player_ids'] ?? []),
+                        true
+                    );
+                    $attachedTournamentGame = (string)($attachedReadyGame['match_source'] ?? '') === 'tournament';
+
+                    if ($attachedParticipant
+                        && $attachedTournamentGame
+                        && (string)($attachedReadyGame['status'] ?? '') === 'active') {
+                        return [
+                            'snapshot'=>$snapshot,
+                            'progression'=>null,
+                            'game'=>$games->publicGame($attachedReadyGame, $userId),
+                            'user'=>$users->publicUser($user),
+                            'session'=>$sessions->publicState($user, $sessionId),
+                        ];
+                    }
+
+                    // A finished game already attached by the Ready owner is the
+                    // strongest terminal evidence for the first-round pair. Commit
+                    // it into durable progression BEFORE consulting the old Ready
+                    // projection, then refresh that projection in the same request.
+                    // observeFinishedGame() is idempotent by game_id, so both live
+                    // clients may safely cross this boundary concurrently.
+                    if ($attachedParticipant
+                        && $attachedTournamentGame
+                        && (string)($attachedReadyGame['status'] ?? '') === 'finished') {
+                        $progression->observeFinishedGame($attachedReadyGame);
+                        $snapshot = $readiness->status($mgwId, $accountRef, $userId);
+                        $readyMatch = is_array($snapshot['match'] ?? null)
+                            ? $snapshot['match']
+                            : null;
+                    }
                 }
                 $initialReadyOwnsWindow = is_array($readyMatch)
                     && (int)($readyMatch['round_no'] ?? 0) === 1
@@ -447,6 +472,9 @@ try {
                         // the Hall can never keep rendering a stale "both ready /
                         // match starting" card after the runtime game is terminal.
                         $snapshot = $readiness->status($mgwId, $accountRef, $userId);
+                        $readyMatch = is_array($snapshot['match'] ?? null)
+                            ? $snapshot['match']
+                            : null;
                     }
                 }
 
