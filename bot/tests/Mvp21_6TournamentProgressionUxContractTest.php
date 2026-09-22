@@ -29,6 +29,10 @@ $assert(str_contains($screen, 'data-tournament-progression-countdown'),
     'Tournament progression must expose a live wait countdown.');
 $assert(str_contains($screen, 'data-progression-opens-at'),
     'Progression countdown must be anchored to the server-provided open instant.');
+$assert(str_contains($screen, 'startTournamentRenderedCountdownTicker(')
+        && str_contains($screen, 'window.setInterval(updateCountdown, 1000)')
+        && str_contains($screen, 'startTournamentRenderedCountdownTicker(body);'),
+    'Started Tournament Hall must tick round/replay countdown every second between heartbeat rerenders.');
 $assert(str_contains($screen, 'Ничья · переигровка начнётся через минуту. Стороны меняются.'),
     'Draw UX must clearly explain the one-minute replay and side swap.');
 $assert(str_contains($screen, 'Раунд завершён · перерыв перед следующим матчем.'),
@@ -58,11 +62,12 @@ $assert(str_contains($screen, 'synchronizeTournamentTerminalProgression')
         && str_contains($screen, 'stopTournamentStartSync();'),
     'Terminal tournament game must pre-sync durable progression and stop stale launch owners.');
 
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=28')
+$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=29')
         && str_contains($manifest, 'mvp21_6=terminal-return-preserve-v5')
         && str_contains($manifest, 'mvp21_8=corrective-v8')
         && str_contains($manifest, 'mvp21_6=active-round-grid-v1')
-        && str_contains($manifest, 'archive=heartbeat-open-v1'),
+        && str_contains($manifest, 'archive=heartbeat-open-v1')
+        && str_contains($manifest, 'mvp21_6=smooth-round-countdown-v1'),
     'Tournament screen must publish the active-round/archive corrective identity.');
 
 $assert(str_contains($api, "'progression'=>\$progressionSnapshot"),
@@ -79,5 +84,5 @@ $assert(str_contains($progression, 'm.player_a_mgw_id=:player_a_mgw_id OR m.play
         && !str_contains($progression, 'm.player_a_mgw_id=:mgw_id OR m.player_b_mgw_id=:mgw_id'),
     'MySQL PDO participant lookup must never reuse the same named placeholder twice in the OR predicate.');
 
-if ($assertions < 21) throw new RuntimeException('MVP-21.6 progression UX contract is too shallow: ' . $assertions);
+if ($assertions < 22) throw new RuntimeException('MVP-21.6 progression UX contract is too shallow: ' . $assertions);
 fwrite(STDOUT, "Mvp21_6TournamentProgressionUxContractTest: {$assertions} assertions passed\n");
