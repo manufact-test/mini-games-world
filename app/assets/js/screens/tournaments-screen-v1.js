@@ -1246,7 +1246,7 @@ function tournamentTerminalMarkup(progression, activeRoundMarkup){
 
   return `
     <section class="tournaments-v2-terminal">
-      <div class="tournaments-v2-terminal-kicker">Турнир завершён · награды начислены</div>
+      <div class="tournaments-v2-terminal-kicker">Все матчи турнира завершены. Награды начислены</div>
       <div class="tournaments-v2-terminal-hero">
         <div><span>Чемпион</span><h3>${escapeHtml(String(champion?.nickname || 'Победитель турнира'))}</h3></div>
         <b aria-hidden="true">🏆</b>
