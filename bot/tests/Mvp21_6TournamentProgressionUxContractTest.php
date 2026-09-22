@@ -64,6 +64,11 @@ $assert(str_contains($progression, 'ROUND_BREAK_SECONDS = 300')
 $assert(str_contains($progression, "MATCH_FINAL = 'final'")
         && str_contains($progression, "MATCH_THIRD_PLACE = 'third_place'"),
     'UI stage names must map to explicit durable server match kinds.');
+$assert(str_contains($progression, 'm.player_a_mgw_id=:player_a_mgw_id OR m.player_b_mgw_id=:player_b_mgw_id')
+        && str_contains($progression, "'player_a_mgw_id'=>\$mgwId")
+        && str_contains($progression, "'player_b_mgw_id'=>\$mgwId")
+        && !str_contains($progression, 'm.player_a_mgw_id=:mgw_id OR m.player_b_mgw_id=:mgw_id'),
+    'MySQL PDO participant lookup must never reuse the same named placeholder twice in the OR predicate.');
 
-if ($assertions < 18) throw new RuntimeException('MVP-21.6 progression UX contract is too shallow: ' . $assertions);
+if ($assertions < 19) throw new RuntimeException('MVP-21.6 progression UX contract is too shallow: ' . $assertions);
 fwrite(STDOUT, "Mvp21_6TournamentProgressionUxContractTest: {$assertions} assertions passed\n");

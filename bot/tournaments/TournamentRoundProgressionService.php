@@ -220,11 +220,15 @@ final class TournamentRoundProgressionService
              FROM mgw_tournament_round_matches m
              INNER JOIN mgw_tournaments t ON t.tournament_id=m.tournament_id
              WHERE m.tournament_id=:tournament_id
-               AND (m.player_a_mgw_id=:mgw_id OR m.player_b_mgw_id=:mgw_id)
+               AND (m.player_a_mgw_id=:player_a_mgw_id OR m.player_b_mgw_id=:player_b_mgw_id)
                AND m.completed_at_utc IS NULL
              ORDER BY m.round_no DESC,m.pair_no ASC
              LIMIT 2',
-            ['tournament_id'=>$tournamentId,'mgw_id'=>$mgwId]
+            [
+                'tournament_id'=>$tournamentId,
+                'player_a_mgw_id'=>$mgwId,
+                'player_b_mgw_id'=>$mgwId,
+            ]
         );
         if ($rows === []) return null;
         if (count($rows) !== 1 || !is_array($rows[0])) {
