@@ -27,4 +27,15 @@ $assert(str_contains($config, 'timeout: 90_000'), 'Per-test Playwright timeout m
 $assert(str_contains($config, 'retries: 0'), 'Staging Playwright retries must remain disabled.');
 $assert(!str_contains($config, 'retries: 1') && !str_contains($config, 'retries: 2'), 'No retry weakening may be introduced.');
 
+$assert(str_contains($linuxBlock, 'staging-e2e-linux.log')
+    && str_contains($linuxBlock, '[MGW_E2E_INFRA_OIDC_FAILURE]')
+    && str_contains($linuxBlock, "result='runner_infrastructure_failure'"),
+    'Linux route must preserve Playwright output and classify exhausted GitHub OIDC failures as runner infrastructure.');
+$assert(str_contains($macBlock, 'staging-e2e-macos.log')
+    && str_contains($macBlock, '[MGW_E2E_INFRA_OIDC_FAILURE]')
+    && str_contains($macBlock, "result='runner_infrastructure_failure'"),
+    'macOS fallback must preserve Playwright output and classify exhausted GitHub OIDC failures as runner infrastructure.');
+$assert(substr_count($workflow, '--retry 4 --retry-delay 1 --retry-all-errors') >= 2,
+    'Both staging projection OIDC calls must retry transient GitHub token endpoint failures.');
+
 fwrite(STDOUT, "StagingE2EFallbackBudgetContractTest: {$assertions} assertions passed\n");
