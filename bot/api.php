@@ -404,6 +404,12 @@ try {
                             $accountRef,
                             $userId
                         );
+                        // The durable progression owner may have completed the
+                        // initial pair or moved it into a replay/next-round wait.
+                        // Re-read the MVP-21.5 projection in the same response so
+                        // the Hall can never keep rendering a stale "both ready /
+                        // match starting" card after the runtime game is terminal.
+                        $snapshot = $readiness->status($mgwId, $accountRef, $userId);
                     }
                 }
 
