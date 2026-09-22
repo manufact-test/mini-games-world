@@ -29,6 +29,8 @@ return new class implements DatabaseMigrationInterface {
             $database->execute('ALTER TABLE mgw_tournament_round_matches ADD COLUMN annulment_reason TEXT NULL');
             $database->execute('ALTER TABLE mgw_tournament_match_attempts ADD COLUMN annulled_at_utc TEXT NULL');
             $database->execute('ALTER TABLE mgw_tournament_match_attempts ADD COLUMN annulment_reason TEXT NULL');
+            $database->execute('ALTER TABLE mgw_tournament_technical_outcomes ADD COLUMN annulled_at_utc TEXT NULL');
+            $database->execute('ALTER TABLE mgw_tournament_technical_outcomes ADD COLUMN annulment_reason TEXT NULL');
 
             $database->execute(<<<'SQL'
 CREATE TABLE IF NOT EXISTS mgw_tournament_cancellation_events (
@@ -46,6 +48,7 @@ CREATE TABLE IF NOT EXISTS mgw_tournament_cancellation_events (
     consumed_refund_count INTEGER NOT NULL,
     annulled_match_count INTEGER NOT NULL,
     annulled_attempt_count INTEGER NOT NULL,
+    annulled_technical_count INTEGER NOT NULL,
     created_at_utc TEXT NOT NULL,
     FOREIGN KEY (tournament_id) REFERENCES mgw_tournaments (tournament_id) ON DELETE RESTRICT ON UPDATE RESTRICT
 )
@@ -78,6 +81,12 @@ ALTER TABLE mgw_tournament_match_attempts
 SQL);
 
         $database->execute(<<<'SQL'
+ALTER TABLE mgw_tournament_technical_outcomes
+    ADD COLUMN annulled_at_utc DATETIME(6) NULL,
+    ADD COLUMN annulment_reason VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL
+SQL);
+
+        $database->execute(<<<'SQL'
 CREATE TABLE IF NOT EXISTS mgw_tournament_cancellation_events (
     event_key CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL PRIMARY KEY,
     tournament_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
@@ -93,6 +102,7 @@ CREATE TABLE IF NOT EXISTS mgw_tournament_cancellation_events (
     consumed_refund_count INT UNSIGNED NOT NULL,
     annulled_match_count INT UNSIGNED NOT NULL,
     annulled_attempt_count INT UNSIGNED NOT NULL,
+    annulled_technical_count INT UNSIGNED NOT NULL,
     created_at_utc DATETIME(6) NOT NULL,
     UNIQUE KEY uq_mgw_tournament_cancel_tournament (tournament_id),
     INDEX idx_mgw_tournament_cancel_created (created_at_utc),
