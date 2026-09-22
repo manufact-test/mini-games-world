@@ -1238,6 +1238,51 @@ function tournamentProgressionMarkup(match, progression){
   `;
 }
 
+function startTournamentRenderedCountdownTicker(body, scheduledStart = null){
+  if (!(body instanceof HTMLElement)) return;
+
+  const updateCountdown = () => {
+    if (currentScreen() !== 'tournaments' || !body.isConnected) {
+      if (tournamentCountdownTimer) window.clearInterval(tournamentCountdownTimer);
+      tournamentCountdownTimer = null;
+      return;
+    }
+
+    const countdown = body.querySelector('[data-tournament-countdown]');
+    const countdownLabel = body.querySelector('[data-tournament-countdown-label]');
+    if (countdown instanceof HTMLElement && scheduledStart instanceof Date) {
+      const remainingMs = scheduledStart.getTime() - Date.now();
+      const startedNow = remainingMs <= 0;
+      countdown.textContent = startedNow ? 'Турнир начался' : formatTournamentCountdown(remainingMs);
+      if (countdownLabel instanceof HTMLElement) countdownLabel.hidden = startedNow;
+      countdown.parentElement?.classList.toggle('is-started', startedNow);
+    }
+
+    const readyCountdown = body.querySelector('[data-tournament-ready-countdown]');
+    if (readyCountdown instanceof HTMLElement) {
+      const readyDeadline = Number(readyCountdown.dataset.readyDeadline || 0);
+      readyCountdown.textContent = formatReadyCountdown(readyDeadline - Date.now());
+    }
+
+    const progressionCountdown = body.querySelector('[data-tournament-progression-countdown]');
+    if (progressionCountdown instanceof HTMLElement) {
+      const opensAt = Number(progressionCountdown.dataset.progressionOpensAt || 0);
+      progressionCountdown.textContent = formatReadyCountdown(opensAt - Date.now());
+    }
+
+    const hallButton = body.querySelector('[data-tournament-hall-enter]');
+    if (hallButton instanceof HTMLButtonElement && !tournamentHallBusy) {
+      const opensAt = Number(hallButton.dataset.hallOpensAt || 0);
+      const openNow = opensAt > 0 && Date.now() >= opensAt;
+      hallButton.disabled = !openNow;
+      hallButton.textContent = 'Вход';
+    }
+  };
+
+  updateCountdown();
+  tournamentCountdownTimer = window.setInterval(updateCountdown, 1000);
+}
+
 function renderTournamentSnapshot(errorMessage = ''){
   if (tournamentCountdownTimer) {
     window.clearInterval(tournamentCountdownTimer);
@@ -1379,6 +1424,7 @@ function renderTournamentSnapshot(errorMessage = ''){
       ${errorMessage ? `<div class="tournaments-v2-tournament-error">${escapeHtml(errorMessage)}</div>` : ''}
       ${hallMarkup}
     `;
+    startTournamentRenderedCountdownTicker(body);
     if (tournamentHallSnapshot?.hall?.entered === true) {
       stopTournamentVisibleRefresh();
       startTournamentHallHeartbeat();
@@ -1422,42 +1468,7 @@ function renderTournamentSnapshot(errorMessage = ''){
   `;
 
   if (scheduled && scheduledStart) {
-    const countdown = body.querySelector('[data-tournament-countdown]');
-    const countdownLabel = body.querySelector('[data-tournament-countdown-label]');
-    const updateCountdown = () => {
-      if (currentScreen() !== 'tournaments'
-          || !(countdown instanceof HTMLElement)
-          || !countdown.isConnected) {
-        if (tournamentCountdownTimer) window.clearInterval(tournamentCountdownTimer);
-        tournamentCountdownTimer = null;
-        return;
-      }
-      const remainingMs = scheduledStart.getTime() - Date.now();
-      const startedNow = remainingMs <= 0;
-      countdown.textContent = startedNow ? 'Турнир начался' : formatTournamentCountdown(remainingMs);
-      if (countdownLabel instanceof HTMLElement) countdownLabel.hidden = startedNow;
-      countdown.parentElement?.classList.toggle('is-started', startedNow);
-      const readyCountdown = body.querySelector('[data-tournament-ready-countdown]');
-      if (readyCountdown instanceof HTMLElement) {
-        const readyDeadline = Number(readyCountdown.dataset.readyDeadline || 0);
-        readyCountdown.textContent = formatReadyCountdown(readyDeadline - Date.now());
-      }
-      const progressionCountdown = body.querySelector('[data-tournament-progression-countdown]');
-      if (progressionCountdown instanceof HTMLElement) {
-        const opensAt = Number(progressionCountdown.dataset.progressionOpensAt || 0);
-        progressionCountdown.textContent = formatReadyCountdown(opensAt - Date.now());
-      }
-      const hallButton = body.querySelector('[data-tournament-hall-enter]');
-      if (hallButton instanceof HTMLButtonElement && !tournamentHallBusy) {
-        const opensAt = Number(hallButton.dataset.hallOpensAt || 0);
-        const startAt = Number(hallButton.dataset.hallStartAt || 0);
-        const openNow = opensAt > 0 && Date.now() >= opensAt;
-        hallButton.disabled = !openNow;
-        hallButton.textContent = 'Вход';
-      }
-    };
-    updateCountdown();
-    tournamentCountdownTimer = window.setInterval(updateCountdown, 1000);
+    startTournamentRenderedCountdownTicker(body, scheduledStart);
   }
 
   startTournamentVisibleRefresh();
