@@ -110,9 +110,14 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          oidc_json="$(curl --fail-with-body --silent --show-error \
+          if ! oidc_json="$(curl --fail-with-body --silent --show-error \
+            --retry 4 --retry-delay 1 --retry-all-errors \
             --header "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=mini-games-world-staging-e2e")"
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=mini-games-world-staging-e2e" \
+            2>staging-projection-oidc-linux.log)"; then
+            printf '[MGW_E2E_INFRA_OIDC_FAILURE] projection OIDC request failed\n' | tee -a staging-projection-oidc-linux.log >&2
+            exit 1
+          fi
           oidc_token="$(printf '%s' "${oidc_json}" | jq -r '.value // empty')"
           test -n "${oidc_token}"
           curl --fail-with-body --silent --show-error \
@@ -139,7 +144,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          node --input-type=module <<'NODE'
+          node --input-type=module <<'NODE' 2>&1 | tee staging-preflight-linux.log
           import stagingGlobalSetup from './e2e/staging-global-setup.mjs';
           await stagingGlobalSetup();
           NODE
@@ -164,7 +169,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          npm run test:e2e:staging
+          npm run test:e2e:staging 2>&1 | tee staging-e2e-linux.log
 
       - name: Classify Linux route
         id: classify
@@ -182,15 +187,25 @@ jobs:
           if [[ "${READINESS_OUTCOME}" != 'success' ]]; then
             result='network_unavailable'
           elif [[ "${PROJECTION_OUTCOME}" != 'success' ]]; then
-            result='application_failure'
+            if grep -Fq '[MGW_E2E_INFRA_OIDC_FAILURE]' staging-projection-oidc-linux.log 2>/dev/null; then
+              result='runner_infrastructure_failure'
+            else
+              result='application_failure'
+            fi
           elif [[ "${SETUP_OUTCOME}" != 'success' ]]; then
             result='runner_infrastructure_failure'
           elif [[ "${PREFLIGHT_OUTCOME}" != 'success' ]]; then
-            result='application_failure'
+            if grep -Fq '[MGW_E2E_INFRA_OIDC_FAILURE]' staging-preflight-linux.log 2>/dev/null; then
+              result='runner_infrastructure_failure'
+            else
+              result='application_failure'
+            fi
           elif [[ "${INSTALL_OUTCOME}" != 'success' ]]; then
             result='runner_infrastructure_failure'
           elif [[ "${E2E_OUTCOME}" == 'success' ]]; then
             result='success'
+          elif grep -Fq '[MGW_E2E_INFRA_OIDC_FAILURE]' staging-e2e-linux.log 2>/dev/null; then
+            result='runner_infrastructure_failure'
           else
             result='application_failure'
           fi
@@ -206,6 +221,9 @@ jobs:
             e2e/artifacts/playwright
             staging-e2e-readiness-linux.json
             staging-projection-diagnostic.json
+            staging-projection-oidc-linux.log
+            staging-preflight-linux.log
+            staging-e2e-linux.log
           if-no-files-found: warn
           retention-days: 7
 
@@ -277,9 +295,14 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          oidc_json="$(curl --fail-with-body --silent --show-error \
+          if ! oidc_json="$(curl --fail-with-body --silent --show-error \
+            --retry 4 --retry-delay 1 --retry-all-errors \
             --header "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=mini-games-world-staging-e2e")"
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=mini-games-world-staging-e2e" \
+            2>staging-projection-oidc-macos.log)"; then
+            printf '[MGW_E2E_INFRA_OIDC_FAILURE] projection OIDC request failed\n' | tee -a staging-projection-oidc-macos.log >&2
+            exit 1
+          fi
           oidc_token="$(printf '%s' "${oidc_json}" | jq -r '.value // empty')"
           test -n "${oidc_token}"
           curl --fail-with-body --silent --show-error \
@@ -306,7 +329,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          node --input-type=module <<'NODE'
+          node --input-type=module <<'NODE' 2>&1 | tee staging-preflight-macos.log
           import stagingGlobalSetup from './e2e/staging-global-setup.mjs';
           await stagingGlobalSetup();
           NODE
@@ -328,7 +351,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          npm run test:e2e:staging
+          npm run test:e2e:staging 2>&1 | tee staging-e2e-macos.log
 
       - name: Classify macOS fallback route
         id: classify
@@ -346,15 +369,25 @@ jobs:
           if [[ "${READINESS_OUTCOME}" != 'success' ]]; then
             result='network_unavailable'
           elif [[ "${PROJECTION_OUTCOME}" != 'success' ]]; then
-            result='application_failure'
+            if grep -Fq '[MGW_E2E_INFRA_OIDC_FAILURE]' staging-projection-oidc-macos.log 2>/dev/null; then
+              result='runner_infrastructure_failure'
+            else
+              result='application_failure'
+            fi
           elif [[ "${SETUP_OUTCOME}" != 'success' ]]; then
             result='runner_infrastructure_failure'
           elif [[ "${PREFLIGHT_OUTCOME}" != 'success' ]]; then
-            result='application_failure'
+            if grep -Fq '[MGW_E2E_INFRA_OIDC_FAILURE]' staging-preflight-macos.log 2>/dev/null; then
+              result='runner_infrastructure_failure'
+            else
+              result='application_failure'
+            fi
           elif [[ "${INSTALL_OUTCOME}" != 'success' ]]; then
             result='runner_infrastructure_failure'
           elif [[ "${E2E_OUTCOME}" == 'success' ]]; then
             result='success'
+          elif grep -Fq '[MGW_E2E_INFRA_OIDC_FAILURE]' staging-e2e-macos.log 2>/dev/null; then
+            result='runner_infrastructure_failure'
           else
             result='application_failure'
           fi
@@ -370,6 +403,9 @@ jobs:
             e2e/artifacts/playwright
             staging-e2e-readiness-macos.json
             staging-projection-diagnostic.json
+            staging-projection-oidc-macos.log
+            staging-preflight-macos.log
+            staging-e2e-macos.log
           if-no-files-found: warn
           retention-days: 7
 
