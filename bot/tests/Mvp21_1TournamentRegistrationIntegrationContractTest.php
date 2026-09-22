@@ -6,6 +6,7 @@ $paths = [
     'migration'=>'bot/database/migrations/20260920_0049_create_official_tournaments.php',
     'rules_migration'=>'bot/database/migrations/20260920_0050_add_tournament_rules_consent.php',
     'rules_copy_migration'=>'bot/database/migrations/20260920_0051_refresh_tournament_rules_copy.php',
+    'publication_migration'=>'bot/database/migrations/20260922_0056_add_tournament_registration_publication.php',
     'service'=>'bot/tournaments/TournamentRegistrationService.php',
     'notification_bridge'=>'bot/tournaments/TournamentAdminNotificationBridge.php',
     'player_api'=>'bot/api.php',
@@ -52,6 +53,8 @@ $assertTrue(str_contains($sources['rules_migration'], 'rules_accepted_at_utc'), 
 $assertTrue(!str_contains($sources['rules_migration'], 'CREATE TABLE IF NOT EXISTS mgw_notifications'), 'MVP-21.2 must not create a second notification store.');
 $assertTrue(str_contains($sources['rules_copy_migration'], 'TournamentRegistrationService::canonicalRulesSnapshot'), 'Rules copy migration must reuse the canonical tournament rules owner.');
 $assertTrue(str_contains($sources['rules_copy_migration'], 'TournamentRegistrationService::canonicalRulesSha256'), 'Rules copy migration must publish the canonical revised rules identity.');
+$assertTrue(str_contains($sources['publication_migration'], 'published_at_utc'), 'Corrective v7 must persist a registration publication boundary.');
+$assertTrue(str_contains($sources['publication_migration'], "registration_state = :state"), 'Publication migration must backfill already-public registrations safely.');
 
 $assertTrue(str_contains($sources['service'], "public const ENTRY_ASSET = 'mgw_coin'"), 'Tournament entry must use canonical mgw_coin.');
 $assertTrue(str_contains($sources['service'], 'public const ENTRY_FEE = 50000'), 'Tournament entry must be exactly 50,000.');
@@ -68,6 +71,8 @@ $assertTrue(str_contains($sources['service'], "public const STATE_WAITING_FOR_DA
 $assertTrue(str_contains($sources['service'], "public const RULES_VERSION = 'official-tournament-rules-v2'"), 'MVP-21.2 must freeze the current rules copy revision.');
 $assertTrue(str_contains($sources['service'], 'validatedRulesConsent('), 'Registration must validate exact rules consent server-side.');
 $assertTrue(str_contains($sources['service'], 'closeRegistrationIfReady('), 'Registration owner must auto-close at full.');
+$assertTrue(str_contains($sources['service'], 'public function publishRegistration('), 'Registration owner must publish a verified seat explicitly.');
+$assertTrue(str_contains($sources['service'], 'publishedRegisteredCount('), 'Public participant count must ignore durable unpublished registrations.');
 
 $registerStart = strpos($sources['service'], 'public function register(');
 $leaveStart = strpos($sources['service'], 'public function leave(');
@@ -84,6 +89,7 @@ $assertTrue(str_contains($registerSlice, "if (\$registeredCount >= \$capacity)")
 
 $assertTrue(str_contains($sources['player_api'], '$auth->getUserFromRequest($payload)'), 'Player tournament actions must stay inside canonical authenticated API runtime.');
 $assertTrue(str_contains($sources['player_api'], "case 'tournament_register':"), 'Canonical API must expose tournament register.');
+$assertTrue(str_contains($sources['player_api'], "case 'tournament_registration_publish':"), 'Canonical API must expose tournament publication acknowledgement.');
 $assertTrue(str_contains($sources['player_api'], "case 'tournament_leave':"), 'Canonical API must expose tournament leave.');
 $assertTrue(str_contains($sources['player_api'], "'tournamentRulesAccepted'"), 'Canonical API must receive explicit tournament rules consent.');
 $assertTrue(str_contains($sources['player_api'], 'TournamentAdminNotificationBridge'), 'Full-tournament admin alert must reuse the canonical notification pipeline bridge.');
@@ -92,7 +98,7 @@ $assertTrue(!str_contains($sources['player_api'], 'Tournament registration requi
 $assertTrue(!str_contains($sources['player_api'], 'Staging tournament balance control requires canonical DB-primary runtime state.'), 'Live staging acceptance must exercise the same JSON-first tournament path as real players.');
 $assertTrue(!str_contains($sources['player_api'], '$runtimeStorageDriver'), 'MVP-21.1 must not depend on the bounded DB-primary rehearsal latch.');
 $assertTrue(str_contains($sources['player_api'], '$user[UnifiedBalanceRuntimeState::FIELD] = $available'), 'Tournament writes must mirror canonical spendable balance into current runtime state.');
-$assertTrue(str_contains($sources['player_api'], 'EconomyRuntimeBridge then verifies'), 'Tournament API must document post-write JSON/ledger parity ownership.');
+$assertTrue(str_contains($sources['player_api'], 'unrelated JSON->DB projection/parity'), 'Tournament API must document deferred unrelated projection ownership.');
 $assertTrue(str_contains($sources['player_api'], 'new TournamentRegistrationService('), 'Canonical API must delegate registration ownership to TournamentRegistrationService.');
 $assertTrue(str_contains($sources['player_api'], "case 'staging_test_tournament_balance':"), 'Live staging acceptance must have a bounded test-balance action.');
 $assertTrue(str_contains($sources['player_api'], "['stg_test_player_a', 'stg_test_player_b']"), 'Test-balance action must be restricted to dedicated A/B identities.');
@@ -130,6 +136,7 @@ $assertTrue(str_contains($sources['client'], 'TOURNAMENT_STATUS_URL'), 'Client A
 $assertTrue(str_contains($sources['client'], 'tournamentStatus: () => requestUrl(TOURNAMENT_STATUS_URL, {})'), 'Client API must keep tournament status outside the DB-primary write transaction.');
 $assertTrue(str_contains($sources['client'], "tournamentRegister: rules => request('tournament_register'"), 'Client API must expose consent-bound canonical register action.');
 $assertTrue(str_contains($sources['client'], 'tournamentRulesSha256'), 'Client register call must bind the exact rules identity.');
+$assertTrue(str_contains($sources['client'], "tournamentRegistrationPublish: () => request('tournament_registration_publish')"), 'Client must explicitly acknowledge registration publication.');
 $assertTrue(str_contains($sources['client'], "tournamentLeave: () => request('tournament_leave')"), 'Client API must expose canonical leave action.');
 
 $assertTrue(str_contains($sources['screen'], 'official-tournament-registration-v2-rules'), 'Arena Tournament tab must expose MVP-21.2 runtime identity.');
@@ -137,6 +144,7 @@ $assertTrue(str_contains($sources['screen'], 'data-tournament-action="register"'
 $assertTrue(str_contains($sources['screen'], 'data-tournament-action="leave"'), 'Tournament tab must expose pre-full leave action.');
 $assertTrue(str_contains($sources['screen'], 'api.tournamentStatus()'), 'Tournament tab must read canonical tournament status.');
 $assertTrue(str_contains($sources['screen'], 'await api.tournamentRegister({'), 'Tournament tab must call canonical registration endpoint with consent.');
+$assertTrue(str_contains($sources['screen'], 'await api.tournamentRegistrationPublish()'), 'Tournament tab must publish only after durable registration verification.');
 $assertTrue(str_contains($sources['screen'], 'data-tournament-rules-consent'), 'Tournament tab must require an explicit rules checkbox.');
 $assertTrue(str_contains($sources['screen'], 'Состав набран · ожидаем назначения даты'), 'Tournament tab must expose wait-for-date status.');
 $assertTrue(str_contains($sources['screen'], 'api.tournamentLeave()'), 'Tournament tab must call canonical leave endpoint.');
@@ -167,5 +175,5 @@ foreach ([
     $assertTrue(!str_contains($sources['service'], $forbiddenOwner), 'Tournament service must not become a game-engine owner: ' . $forbiddenOwner);
 }
 
-$assertTrue($assertions >= 95, 'Tournament integration contract must cover MVP-21.1 preservation plus MVP-21.2 rules, auto-close and notification ownership.');
+$assertTrue($assertions >= 101, 'Tournament integration contract must cover registration publication plus preserved tournament ownership.');
 fwrite(STDOUT, "Mvp21_1TournamentRegistrationIntegrationContractTest: {$assertions} assertions passed\n");
