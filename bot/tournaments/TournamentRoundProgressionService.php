@@ -63,31 +63,31 @@ final class TournamentRoundProgressionService
             if ((int)$existingAttempt > 0) return;
 
             $attemptNo = max(1, (int)($row['attempt_no'] ?? 1));
+            $gameAttemptNo = max(1, (int)($game['tournament_attempt_no'] ?? 1));
+            if ($gameAttemptNo !== $attemptNo) {
+                throw new RuntimeException('Finished tournament game attempt does not match the durable pair.');
+            }
+
             $runtimePlayers = array_values(array_filter(
                 array_map('strval', $game['player_ids'] ?? []),
                 static fn(string $id): bool => $id !== ''
             ));
-            if (count($runtimePlayers) !== 2) {
-                throw new RuntimeException('Tournament game result requires exactly two runtime players.');
+            if (count($runtimePlayers) !== 2 || $runtimePlayers[0] === $runtimePlayers[1]) {
+                throw new RuntimeException('Tournament game result requires exactly two distinct runtime players.');
             }
 
-            $legacyByMgw = $this->legacyIdsForMgwIds([
-                (string)$row['player_a_mgw_id'],
-                (string)$row['player_b_mgw_id'],
-            ]);
-            $aMgw = (string)$row['player_a_mgw_id'];
-            $bMgw = (string)$row['player_b_mgw_id'];
-            if (!isset($legacyByMgw[$aMgw], $legacyByMgw[$bMgw])) {
-                throw new RuntimeException('Tournament progression identities are incomplete.');
-            }
-            $expectedRuntime = [$legacyByMgw[$aMgw], $legacyByMgw[$bMgw]];
-            sort($expectedRuntime);
-            $actualRuntime = $runtimePlayers;
-            sort($actualRuntime);
-            if ($expectedRuntime !== $actualRuntime) {
-                throw new RuntimeException('Tournament game players do not match the durable pair.');
+            $aMgw = trim((string)$row['player_a_mgw_id']);
+            $bMgw = trim((string)$row['player_b_mgw_id']);
+            if ($aMgw === '' || $bMgw === '' || $aMgw === $bMgw) {
+                throw new RuntimeException('Tournament progression durable pair is invalid.');
             }
 
+            // The runtime game is attached to this durable pair before play starts,
+            // and GameService preserves pair order in player_ids. Terminal settlement
+            // must therefore use the attached game itself as the immutable identity
+            // witness. Re-resolving mutable account ownership here can fail after a
+            // session/account projection changes and strand a valid finished match in
+            // the old "launched" Ready state.
             $finishedAt = $this->parseOptionalMoment((string)($game['finished_at'] ?? ''), $moment);
             $finishedAtUtc = $this->utc($finishedAt);
             $winnerLegacy = trim((string)($game['winner_id'] ?? ''));
@@ -96,15 +96,12 @@ final class TournamentRoundProgressionService
             $resultType = 'draw';
 
             if ($winnerLegacy !== '') {
-                if ($winnerLegacy === $legacyByMgw[$aMgw]) {
-                    $winnerMgw = $aMgw;
-                    $loserMgw = $bMgw;
-                } elseif ($winnerLegacy === $legacyByMgw[$bMgw]) {
-                    $winnerMgw = $bMgw;
-                    $loserMgw = $aMgw;
-                } else {
-                    throw new RuntimeException('Tournament winner does not belong to the durable pair.');
+                $winnerIndex = array_search($winnerLegacy, $runtimePlayers, true);
+                if ($winnerIndex === false) {
+                    throw new RuntimeException('Tournament winner does not belong to the attached runtime game.');
                 }
+                $winnerMgw = $winnerIndex === 0 ? $aMgw : $bMgw;
+                $loserMgw = $winnerIndex === 0 ? $bMgw : $aMgw;
                 $resultType = 'win';
             }
 
