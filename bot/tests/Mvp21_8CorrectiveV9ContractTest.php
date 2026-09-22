@@ -41,7 +41,8 @@ $firstReady = strpos($api, '$initialReadyOwnsWindow = is_array($readyMatch)');
 $attachedTerminal = strpos($api, '$progression->observeFinishedGame($attachedReadyGame);');
 $assert($attachedTerminal !== false && $firstReady !== false && $attachedTerminal < $firstReady,
     'An attached finished first-round game must enter durable progression before stale Ready ownership is evaluated.');
-$assert(str_contains($api, "$snapshot = $readiness->status($mgwId, $accountRef, $userId);\n                        $readyMatch = is_array($snapshot['match'] ?? null)"),
+$assert(str_contains($api, '$snapshot = $readiness->status($mgwId, $accountRef, $userId);')
+        && str_contains($api, "\$readyMatch = is_array(\$snapshot['match'] ?? null)"),
     'Terminal reconciliation must refresh both readiness snapshot and local Ready match before launch decisions.');
 $assert(str_contains($api, 'observeFinishedGame() is idempotent by game_id'),
     'Terminal reconciliation must document and rely on the durable idempotency boundary.');
