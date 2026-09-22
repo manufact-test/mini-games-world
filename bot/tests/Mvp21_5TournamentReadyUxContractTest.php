@@ -181,7 +181,7 @@ foreach ([
 $assert(str_contains($source['manifest'], 'client.js?v=1145')
         && str_contains($source['manifest'], 'mvp21_5=ready-v1'),
     'API client must publish a fresh MVP-21.5 cache identity.');
-$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=27')
+$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=28')
         && str_contains($source['manifest'], 'mvp21_8=corrective-v8')
         && str_contains($source['manifest'], 'registration=server-publish-barrier-v1')
         && str_contains($source['manifest'], 'ready=t0-burst-250ms-peer-adoption-v4'),

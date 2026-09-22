@@ -103,7 +103,7 @@ $assert(str_contains($source['manifest'], 'client.js?v=1145')
         && str_contains($source['manifest'], 'mvp21_4=tournament-hall-v1')
         && str_contains($source['manifest'], 'hall_transport=direct-endpoint-v2'),
     'Hall release must preserve the accepted API cache contract and publish the direct-endpoint corrective identity.');
-$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=27')
+$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=28')
         && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v2')
         && str_contains($source['manifest'], 'hall_cta=entry-v1')
         && str_contains($source['manifest'], 'copy_polish=final-v1'),
@@ -147,7 +147,7 @@ $assert(str_contains($source['admin'], 'control === title || control === game ||
         && str_contains($source['admin'], 'Подтвердить сброс')
         && !str_contains($source['admin'], 'if (!window.confirm(warning)) return;'),
     'Tournament Admin reset must stay editable and avoid native confirm focus poisoning in Telegram WebView.');
-$assert(str_contains($source['admin_page'], 'admin-tournaments.js?v=14')
+$assert(str_contains($source['admin_page'], 'admin-tournaments.js?v=15')
         && str_contains($source['admin_page'], 'mvp21_5=manual-acceptance-fixes-v3')
         && str_contains($source['admin_page'], 'mvp21_8=corrective-v12')
         && str_contains($source['admin_page'], 'placeholder="Официальный турнир"'),

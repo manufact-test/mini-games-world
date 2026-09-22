@@ -519,10 +519,12 @@
         action:'complete_fixture_pairs',
       }));
       const completed = data?.manual_progression_result || {};
-      setStatus(
-        `Fixture-only пары завершены: ${format(completed.completed_pairs || 0)}. Обновите два живых клиента и проверьте переход турнира.`,
-        'ok'
-      );
+      const nextRound = Number(completed.next_round_no || 0);
+      const completedRound = Number(completed.round_no || 0);
+      const message = nextRound > completedRound
+        ? `Fixture-only пары завершены: ${format(completed.completed_pairs || 0)}. Раунд ${format(completedRound)} закрыт, создан раунд ${format(nextRound)}.`
+        : `Fixture-only пары завершены: ${format(completed.completed_pairs || 0)}. Турнирное состояние обновлено.`;
+      setStatus(message, 'ok');
     } catch (_) {}
   };
 

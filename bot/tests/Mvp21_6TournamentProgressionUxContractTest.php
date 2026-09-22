@@ -39,6 +39,13 @@ $assert(str_contains($screen, "else if (matchKind === 'third_place') stage = 'М
     'Third-place match must have an explicit tournament label.');
 $assert(str_contains($screen, 'Ваш матч завершён · ждём остальные матчи раунда.'),
     'A player who finishes early must be told that the round waits for all matches.');
+$assert(str_contains($screen, 'tournamentActiveRoundMarkup(')
+        && str_contains($screen, 'Вы выбыли из турнира · сетка уже перешла в следующий раунд.')
+        && str_contains($screen, 'active_round'),
+    'Post-round UX must expose the live round grid and an explicit eliminated-participant state.');
+$assert(str_contains($screen, 'tournamentStartBracketArchiveOpen')
+        && str_contains($screen, "body.querySelector('.tournaments-v2-start-bracket-archive')"),
+    'Start-bracket archive open state must survive Hall heartbeat rerenders.');
 $assert(str_contains($screen, 'Все матчи турнира завершены.'),
     'Completed tournament must expose a terminal progression message.');
 $assert(str_contains($screen, 'formatReadyCountdown(opensAt.getTime() - Date.now())'),
@@ -51,10 +58,12 @@ $assert(str_contains($screen, 'synchronizeTournamentTerminalProgression')
         && str_contains($screen, 'stopTournamentStartSync();'),
     'Terminal tournament game must pre-sync durable progression and stop stale launch owners.');
 
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=27')
+$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=28')
         && str_contains($manifest, 'mvp21_6=terminal-return-preserve-v5')
-        && str_contains($manifest, 'mvp21_8=corrective-v8'),
-    'Tournament screen must publish the corrective-v8 terminal progression identity.');
+        && str_contains($manifest, 'mvp21_8=corrective-v8')
+        && str_contains($manifest, 'mvp21_6=active-round-grid-v1')
+        && str_contains($manifest, 'archive=heartbeat-open-v1'),
+    'Tournament screen must publish the active-round/archive corrective identity.');
 
 $assert(str_contains($api, "'progression'=>\$progressionSnapshot"),
     'Tournament API must expose the durable progression snapshot.');
@@ -70,5 +79,5 @@ $assert(str_contains($progression, 'm.player_a_mgw_id=:player_a_mgw_id OR m.play
         && !str_contains($progression, 'm.player_a_mgw_id=:mgw_id OR m.player_b_mgw_id=:mgw_id'),
     'MySQL PDO participant lookup must never reuse the same named placeholder twice in the OR predicate.');
 
-if ($assertions < 19) throw new RuntimeException('MVP-21.6 progression UX contract is too shallow: ' . $assertions);
+if ($assertions < 21) throw new RuntimeException('MVP-21.6 progression UX contract is too shallow: ' . $assertions);
 fwrite(STDOUT, "Mvp21_6TournamentProgressionUxContractTest: {$assertions} assertions passed\n");
