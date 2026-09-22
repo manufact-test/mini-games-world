@@ -280,6 +280,12 @@ final class StagingTournamentManualAcceptanceService
             }
             $scanned++;
 
+            // Legacy fixture rows may have been created by an older staging
+            // helper after the publication migration was already applied.
+            // Synthetic identities have no WebView acknowledgement step, so
+            // repair must also normalize their public registration state.
+            $this->tournaments->publishRegistration($mgwId, $accountRef);
+
             $ownershipRows = $this->database->fetchAll(
                 'SELECT account_ref,mgw_id,legacy_user_id,ownership_status
                  FROM mgw_account_ownership
