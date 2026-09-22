@@ -153,11 +153,12 @@ $seedTournament=static function(
    'INSERT INTO mgw_tournament_registrations (
      registration_id,tournament_id,mgw_id,account_ref,attempt_no,registration_state,reservation_id,
      registered_at_utc,withdrawn_at_utc,updated_at_utc
-    ) VALUES (:r,:t,:m,:a,1,:s,:res,:at,NULL,:at)',
+    ) VALUES (:r,:t,:m,:a,1,:s,:res,:registered_at,NULL,:updated_at)',
    [
     'r'=>'reg-'.$tournamentId.'-'.$i,'t'=>$tournamentId,'m'=>$player['mgw'],'a'=>$player['account'],
     's'=>TournamentRegistrationService::REGISTRATION_REGISTERED,'res'=>$reservation['reservation_id'],
-    'at'=>'2026-09-22 18:01:00.000000'
+    'registered_at'=>'2026-09-22 18:01:00.000000',
+    'updated_at'=>'2026-09-22 18:01:00.000000'
    ]
   );
  }
