@@ -53,6 +53,7 @@ let tournamentStartBoundaryTimer = null;
 let tournamentStartSyncTimer = null;
 let tournamentTerminalSyncPromise = null;
 let tournamentTerminalReturnPending = false;
+let tournamentStartBracketArchiveOpen = false;
 
 function lockVisibleBalance(){
   const ids = ['balanceUnified', 'topbarBalanceUnified'];
@@ -988,7 +989,7 @@ function tournamentBracketMarkup(bracket){
   if (tournamentProgressionIsAuthoritative()) {
     return `<div class="tournaments-v2-bracket">
       ${matchMarkup}
-      <details class="tournaments-v2-tournament-rules tournaments-v2-start-bracket-archive">
+      <details class="tournaments-v2-tournament-rules tournaments-v2-start-bracket-archive"${tournamentStartBracketArchiveOpen ? ' open' : ''}>
         <summary><span>Стартовая сетка · архив</span></summary>
         <div class="tournaments-v2-tournament-rules-body">
           <div class="tournaments-v2-bracket-grid">${cards}</div>
@@ -1177,6 +1178,10 @@ function renderTournamentSnapshot(errorMessage = ''){
   }
   const body = document.getElementById('officialTournamentBody');
   if (!(body instanceof HTMLElement)) return;
+  const currentArchive = body.querySelector('.tournaments-v2-start-bracket-archive');
+  if (currentArchive instanceof HTMLDetailsElement) {
+    tournamentStartBracketArchiveOpen = currentArchive.open;
+  }
   const snapshot = tournamentSnapshot && typeof tournamentSnapshot === 'object' ? tournamentSnapshot : {};
   const tournament = snapshot.tournament && typeof snapshot.tournament === 'object' ? snapshot.tournament : null;
   if (!tournament) {
