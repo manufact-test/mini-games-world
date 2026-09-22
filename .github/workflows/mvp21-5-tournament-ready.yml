@@ -64,6 +64,7 @@ on:
       - '.github/workflows/mvp18-4-universal-invite-landing.yml'
       - 'bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php'
       - 'bot/tests/Mvp17_5ResultHistorySingleOwnerRaceContractTest.php'
+      - 'bot/tests/Mvp17_5TerminalLaunchPolishContractTest.php'
       - 'bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php'
       - 'bot/tests/Mvp18_4UniversalInviteLandingContractTest.php'
       - '.github/workflows/mvp20-1-per-game-visible-rating.yml'
@@ -288,6 +289,7 @@ jobs:
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
               bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php|\
               bot/tests/Mvp17_5ResultHistorySingleOwnerRaceContractTest.php|\
+              bot/tests/Mvp17_5TerminalLaunchPolishContractTest.php|\
               bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php|\
               bot/tests/Mvp18_4UniversalInviteLandingContractTest.php|\
               bot/tests/Mvp18FriendsUiContractTest.mjs|\
