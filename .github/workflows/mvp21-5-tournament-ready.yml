@@ -60,6 +60,8 @@ on:
       - 'bot/tests/GameLaunchFinalizationOwnerContractTest.php'
       - 'bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php'
       - 'bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php'
+      - '.github/workflows/mvp16-6-notification-center-v2.yml'
+      - 'bot/tests/Mvp18_4UniversalInviteLandingContractTest.php'
       - '.github/workflows/mvp20-1-per-game-visible-rating.yml'
       - '.github/workflows/mvp21-1-tournament-registration.yml'
       - '.github/workflows/mvp21-2-tournament-rules.yml'
@@ -214,6 +216,7 @@ jobs:
           bad=0
           while IFS= read -r path; do
             case "$path" in
+              .github/workflows/mvp16-6-notification-center-v2.yml|\
               .github/workflows/mvp18-5-reports-blocked-users.yml|\
               .github/workflows/mvp18-6-notification-pipeline.yml|\
               .github/workflows/mvp20-1-per-game-visible-rating.yml|\
@@ -278,6 +281,7 @@ jobs:
               bot/tests/GameLaunchFinalizationOwnerContractTest.php|\
               bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php|\
               bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
+              bot/tests/Mvp18_4UniversalInviteLandingContractTest.php|\
               bot/tests/Mvp18FriendsUiContractTest.mjs|\
               bot/tests/NotificationActorSilentTerminalContractTest.php)
                 ;;
