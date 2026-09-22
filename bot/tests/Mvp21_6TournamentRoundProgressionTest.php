@@ -123,8 +123,18 @@ $assertSame(null,$postTerminalReady['match'],'Completed/replayed first-round pai
 
 $finish(2,3,'2026-09-21T10:03:10Z');
 $finish(3,5,'2026-09-21T10:03:20Z');
+
+// A terminal result is already bound to the durable pair by its attached game id.
+// Simulate an ownership projection changing after launch: the finished runtime game
+// must still advance the bracket instead of leaking a stale "Матч запущен" Ready row.
+$db->execute('UPDATE mgw_account_ownership SET ownership_status=:status WHERE mgw_id=:mgw',[
+ 'status'=>'retired','mgw'=>$players[7]['mgw']
+]);
 $finish(4,7,'2026-09-21T10:03:30Z');
-$assertSame(2,(int)$db->fetchValue('SELECT COUNT(*) FROM mgw_tournament_round_matches WHERE tournament_id=:t AND round_no=2',['t'=>$tournament]),'Completing all four matches must create exactly two semifinals.');
+$db->execute('UPDATE mgw_account_ownership SET ownership_status=:status WHERE mgw_id=:mgw',[
+ 'status'=>'active','mgw'=>$players[7]['mgw']
+]);
+$assertSame(2,(int)$db->fetchValue('SELECT COUNT(*) FROM mgw_tournament_round_matches WHERE tournament_id=:t AND round_no=2',['t'=>$tournament]),'Completing all four matches must create exactly two semifinals even if ownership projection changed after launch.');
 $semi=$db->fetchAll('SELECT * FROM mgw_tournament_round_matches WHERE tournament_id=:t AND round_no=2 ORDER BY pair_no',['t'=>$tournament]);
 $assertSame('2026-09-21 10:08:30.000000',(string)$semi[0]['readiness_opened_at_utc'],'Next round must open five minutes after the last match finishes.');
 $assertSame(TournamentRoundProgressionService::WAIT_ROUND_BREAK,(string)$semi[0]['wait_kind'],'Next round must expose round-break wait.');

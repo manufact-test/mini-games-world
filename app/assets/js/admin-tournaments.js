@@ -541,6 +541,13 @@
     }
     disarmResetConfirmation();
 
+    // The second confirmation click leaves the reset button focused. Telegram
+    // WebView can freeze the next text input if that focused button is disabled
+    // by withBusy() before focus is released. Blur it synchronously, before any
+    // busy-state mutation or panel rerender.
+    releaseFocusBeforeHide(resetPanel);
+    restoreDraftControls();
+
     try {
       const data = await withBusy('Безопасно сбрасываю staging-турнир и освобождаю резервы…', () => post({
         action:'reset_manual_acceptance',

@@ -73,8 +73,13 @@ $assert($releaseHelper !== false && $releaseReset !== false && $hideReset !== fa
     'Admin reset must blur a focused reset control before hiding its panel.');
 $assert(str_contains($admin, 'restoreDraftControls();'),
     'Draft controls must remain explicitly interactive after reset rerender.');
-$assert(str_contains($adminEntry, 'admin-tournaments.js?v=13')
-        && str_contains($adminEntry, 'mvp21_8=corrective-v9'),
+$resetHandler = strpos($admin, 'const resetManualAcceptance = async () =>');
+$preBusyRelease = strpos($admin, 'releaseFocusBeforeHide(resetPanel);', $resetHandler === false ? 0 : $resetHandler);
+$resetBusy = strpos($admin, "const data = await withBusy('Безопасно сбрасываю staging-турнир", $resetHandler === false ? 0 : $resetHandler);
+$assert($resetHandler !== false && $preBusyRelease !== false && $resetBusy !== false && $preBusyRelease < $resetBusy,
+    'Reset confirmation focus must be released before withBusy disables the focused Telegram WebView button.');
+$assert(str_contains($adminEntry, 'admin-tournaments.js?v=14')
+        && str_contains($adminEntry, 'mvp21_8=corrective-v12'),
     'Admin reset corrective must publish a fresh Telegram WebView cache identity.');
 
 $assert(str_contains($e2e, '[MGW_COLD_START_TIMING]')
@@ -105,7 +110,7 @@ $assert($hiddenProcess !== '' && !str_contains($hiddenProcess, "'bootstrap'")
         && str_contains($hiddenProcess, "'start_search'"),
     'Hidden-skill catch-up must leave bootstrap while preserving search-time freshness.');
 
-if ($assertions < 20) {
+if ($assertions < 21) {
     throw new RuntimeException('Corrective v9/v10 contract is too shallow: ' . $assertions);
 }
 fwrite(STDOUT, "Mvp21_8CorrectiveV9ContractTest: {$assertions} assertions passed (v11 bootstrap defer)\n");
