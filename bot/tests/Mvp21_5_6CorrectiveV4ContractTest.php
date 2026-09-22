@@ -42,6 +42,9 @@ $assert(str_contains($screen, 'scheduleTournamentStartBoundaryRefresh')
         && str_contains($screen, 'scheduledStart.getTime() - Date.now() + 30')
         && str_contains($screen, 'tournamentStartBoundaryTimer'),
     'Tournament Ready materialization must be refreshed at T0 rather than lagging behind the two-second screen poll.');
+$assert(str_contains($screen, 'const hallResult = await api.tournamentHallStatus()')
+        && str_contains($screen, "typeof hallResult.snapshot === 'object'"),
+    'Exact-T0 refresh must start a new Hall request after the boundary instead of reusing a pre-T0 in-flight snapshot.');
 $assert(str_contains($screen, "document.addEventListener('mgw:tournament-progression-open'"),
     'Tournament screen must accept explicit return-to-progression navigation.');
 
