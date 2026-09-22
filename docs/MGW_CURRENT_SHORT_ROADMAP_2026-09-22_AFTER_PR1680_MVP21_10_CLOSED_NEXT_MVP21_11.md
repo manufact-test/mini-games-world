@@ -48,16 +48,17 @@ Merged staging:
 
 The final PR candidate passed the focused MVP-21.10 SQLite and MySQL suites plus preserved MVP-21.5–21.9, rating/Profile/Hall and all-games regression workflows.
 
-Staging E2E run **35778351182**:
+Staging E2E run **35778351182**, final attempt **#3**: **SUCCESS**.
 
 - exact Hostinger deployment — success;
 - managed migration `20260922_0060_create_tournament_prize_review` — success;
 - preflight — success;
-- first attempt browser suite reached the core lifecycle but GitHub OIDC returned HTTP 503;
-- Linux job rerun then completed the full two-context browser body successfully;
-- dependent final-status publisher kept the original first-attempt output and therefore left the aggregate run/status red.
+- full two-context browser suite — success;
+- Linux route — success;
+- final result publisher — success;
+- commit status `staging-playwright-e2e` — **SUCCESS**.
 
-Treat this as a CI rerun-output quirk, not as product acceptance. MVP-21.11 must include a clean release-proof workflow and leave an unambiguous green final gate.
+An earlier attempt on the same runtime SHA reproduced an unrelated Checkers direct-invite failure. The clean rerun on the exact same staging SHA passed. MVP-21.10 therefore closes with a green exact-staging gate.
 
 ## MVP-21.11 — exact next task
 
