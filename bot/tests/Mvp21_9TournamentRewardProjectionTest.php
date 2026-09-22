@@ -11,11 +11,22 @@ $mysqlHost=trim((string)getenv('MGW_TEST_MYSQL_HOST'));
 $isMysql=$mysqlHost!=='';
 if($isMysql){
     if(!extension_loaded('pdo_mysql')) throw new RuntimeException('Projection test requires pdo_mysql in MySQL mode.');
+    $mysqlPort=trim((string)getenv('MGW_TEST_MYSQL_PORT'))?:'3306';
+    $mysqlUser=trim((string)getenv('MGW_TEST_MYSQL_USER'))?:'root';
+    $mysqlPassword=(string)getenv('MGW_TEST_MYSQL_PASSWORD');
+    $schema='mgw_projection_test';
+    $server=new PDO(
+        'mysql:host='.$mysqlHost.';port='.$mysqlPort.';charset=utf8mb4',
+        $mysqlUser,
+        $mysqlPassword,
+        [PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_EMULATE_PREPARES=>false]
+    );
+    $server->exec('DROP DATABASE IF EXISTS '.$schema);
+    $server->exec('CREATE DATABASE '.$schema.' CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
     $pdo=new PDO(
-        'mysql:host='.$mysqlHost.';port='.(trim((string)getenv('MGW_TEST_MYSQL_PORT'))?:'3306')
-        .';dbname='.(trim((string)getenv('MGW_TEST_MYSQL_DATABASE'))?:'mgw_test').';charset=utf8mb4',
-        trim((string)getenv('MGW_TEST_MYSQL_USER'))?:'root',
-        (string)getenv('MGW_TEST_MYSQL_PASSWORD'),
+        'mysql:host='.$mysqlHost.';port='.$mysqlPort.';dbname='.$schema.';charset=utf8mb4',
+        $mysqlUser,
+        $mysqlPassword,
         [PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_EMULATE_PREPARES=>false]
     );
 }else{
@@ -26,18 +37,6 @@ if($isMysql){
 $db=new PdoDatabaseConnection($pdo);
 
 if($isMysql){
-    $db->execute('SET FOREIGN_KEY_CHECKS=0');
-    foreach([
-        'mgw_tournament_reward_entitlements',
-        'mgw_tournament_results',
-        'mgw_tournament_golden_tickets',
-        'mgw_tournaments',
-        'mgw_users',
-    ] as $table){
-        $db->execute('DROP TABLE IF EXISTS '.$table);
-    }
-    $db->execute('SET FOREIGN_KEY_CHECKS=1');
-
     $db->execute('CREATE TABLE mgw_users (
         mgw_id VARCHAR(24) PRIMARY KEY,nickname VARCHAR(160) NULL,display_name VARCHAR(160) NULL,
         equipped_avatar_item_id VARCHAR(128) NULL
