@@ -63,9 +63,11 @@ final class TournamentRoundProgressionService
             if ((int)$existingAttempt > 0) return;
 
             $attemptNo = max(1, (int)($row['attempt_no'] ?? 1));
-            $gameAttemptNo = max(1, (int)($game['tournament_attempt_no'] ?? 1));
-            if ($gameAttemptNo !== $attemptNo) {
-                throw new RuntimeException('Finished tournament game attempt does not match the durable pair.');
+            if (array_key_exists('tournament_attempt_no', $game)) {
+                $gameAttemptNo = max(1, (int)$game['tournament_attempt_no']);
+                if ($gameAttemptNo !== $attemptNo) {
+                    throw new RuntimeException('Finished tournament game attempt does not match the durable pair.');
+                }
             }
 
             $runtimePlayers = array_values(array_filter(
