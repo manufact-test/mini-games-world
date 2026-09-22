@@ -191,6 +191,12 @@ async function openPlayer(browser, slot) {
   expect(bootstrap?.ok).toBe(true);
   expect(bootstrap?.user?.id).toBe(`stg_test_player_${slot.toLowerCase()}`);
   expect(Number(bootstrap?.match_economy?.entry_cost || 0)).toBeGreaterThan(0);
+  if (bootstrap?.debug_bootstrap_timing && typeof bootstrap.debug_bootstrap_timing === 'object') {
+    console.log('[MGW_BOOTSTRAP_SERVER_TIMING] ' + JSON.stringify({
+      slot,
+      ...bootstrap.debug_bootstrap_timing,
+    }));
+  }
   await page.waitForFunction(() => window.__MGW_APP_BOOTSTRAP_V2__?.ready === true, null, { timeout: 20_000 });
   await expect(page.locator('#screen-home')).toHaveClass(/active/, { timeout: 25_000 });
   await page.waitForFunction(() => document.getElementById('preloader')?.classList.contains('hidden') === true, null, { timeout: 25_000 });
