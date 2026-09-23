@@ -35,6 +35,9 @@ on:
       - 'bot/services/GameService.php'
       - 'bot/services/GameRuntimeService.php'
       - 'bot/services/ChessRuntimeService.php'
+      - 'bot/services/ReconnectLifecycleService.php'
+      - 'bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php'
+      - '.github/workflows/mvp21-7-tournament-technical-outcomes.yml'
       - 'bot/services/GameLaunchFinalizationService.php'
       - 'bot/services/MatchPreparationClockService.php'
       - 'app/admin.php'
@@ -150,6 +153,8 @@ jobs:
             bot/services/GameService.php
             bot/services/GameRuntimeService.php
             bot/services/ChessRuntimeService.php
+            bot/services/ReconnectLifecycleService.php
+            bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php
             bot/services/GameLaunchFinalizationService.php
             bot/tests/Mvp21_6TournamentRoundProgressionTest.php
             bot/tests/Mvp21_6TournamentRuntimeContractTest.php
@@ -191,6 +196,9 @@ jobs:
           php bot/tests/Mvp21_2TournamentRulesTest.php
           php bot/tests/Mvp21_3ManualAcceptanceRosterFixtureTest.php
           php bot/tests/Mvp21_3TournamentScheduleTest.php
+
+      - name: Preserve MVP-21.7 reconnect/technical owner
+        run: php bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php
 
       - name: Preserve MVP-21.5 ready/countdown owner
         run: |

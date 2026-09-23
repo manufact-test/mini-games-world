@@ -20,6 +20,7 @@ require $root.'/services/PresenceService.php';
 require $root.'/services/GameSettlementService.php';
 require $root.'/services/GameNoContestSettlementService.php';
 require $root.'/services/ReconnectLifecycleService.php';
+require $root.'/services/GameService.php';
 require $root.'/tournaments/TournamentRegistrationService.php';
 require $root.'/tournaments/TournamentMatchReadinessService.php';
 require $root.'/tournaments/TournamentRoundProgressionService.php';
@@ -522,9 +523,84 @@ try{
     $assertSame('active',(string)$runtime['games']['g-217-background-bootstrap-race']['status'],'Real Telegram background/bootstrap race must not produce a false terminal tournament result.');
     $assertSame('g-217-background-bootstrap-race',(string)$runtime['users']['r7']['current_game_id'],'First player must keep the original tournament game after recovery.');
     $assertSame('g-217-background-bootstrap-race',(string)$runtime['users']['r8']['current_game_id'],'Second player must keep the original tournament game after recovery.');
+
+    // Manual Telegram acceptance exposed the missing ordering owner: bootstrap
+    // and other API requests run generic game cleanup before the returning
+    // presence ping. At ~90 seconds that cleanup can settle the normal 60-second
+    // move timeout and clear both current_game_id values before reconnect gets a
+    // chance to freeze the game.
+    $runtime=$newRuntime('g-217-precleanup-order','r11','r12');
+    $runtime['games']['g-217-precleanup-order']['turn_started_at']=gmdate('c',time()-90);
+    $runtime['games']['g-217-precleanup-order']['turn_deadline_at']=gmdate('c',time()-30);
+    $runtime['games']['g-217-precleanup-order']['turn_deadline_epoch_ms']=(time()-30)*1000;
+
+    $presence->touch('r11','session-r11','lease-r11-old');
+    $presence->touch('r12','session-r12','lease-r12-old');
+    $presence->background('r11','session-r11','lease-r11-old');
+    $presence->background('r12','session-r12','lease-r12-old');
+    $preCleanupBackgroundAt=time()-90;
+    foreach([
+        ['r11','session-r11','lease-r11-old'],
+        ['r12','session-r12','lease-r12-old'],
+    ] as [$playerId,$sessionId,$leaseId]){
+        $accountDirectory=$temp.DIRECTORY_SEPARATOR.'account-'.hash('sha256',$playerId);
+        $leasePath=$accountDirectory.DIRECTORY_SEPARATOR.'session-'
+            .hash('sha256',$sessionId."\0presence:".$leaseId).'.presence';
+        file_put_contents($leasePath,json_encode([
+            'touched_at'=>$preCleanupBackgroundAt,
+            'leave_after'=>0,
+            'mode'=>'background',
+        ],JSON_UNESCAPED_SLASHES),LOCK_EX);
+    }
+
+    $unguarded=$runtime;
+    $legacyCleanup=new GameService([
+        'commission_rate'=>0.10,
+        'move_timeout_sec'=>60,
+    ]);
+    $legacyCleanup->cleanupActiveGames($unguarded);
+    $assertSame('finished',(string)$unguarded['games']['g-217-precleanup-order']['status'],'Regression proof: generic cleanup alone terminalizes the 90-second tournament turn before reconnect recovery.');
+    $assertSame('timeout',(string)$unguarded['games']['g-217-precleanup-order']['finish_reason'],'Regression proof must identify the real generic move-timeout terminalization path.');
+    $assertSame(null,$unguarded['users']['r11']['current_game_id'],'Generic timeout proves why the returning client lands on Home instead of the same tournament game.');
+
+    $guarded=$runtime;
+    $assertTrue(
+        $lifecycle->needsMutation($guarded,'','','status',[]),
+        'Cleanup preflight must detect the two stale Telegram background leases before normal move-timeout cleanup.'
+    );
+    $lifecycle->synchronize($guarded,'','','status',[]);
+    $reconnect=$guarded['games']['g-217-precleanup-order']['reconnect_v2']??[];
+    $assertTrue(!empty($reconnect['tournament_both_disconnect']),'Cleanup preflight must promote both stale tournament players directly into the shared branch.');
+    $assertSame(2,count($reconnect['players']??[]),'Cleanup preflight must capture both players in one synchronization pass, not leave an expired one-player window.');
+    $assertSame('active',(string)$guarded['games']['g-217-precleanup-order']['status'],'Reconnect preflight must keep the 90-second-away tournament game active.');
+
+    $legacyCleanup->cleanupActiveGames($guarded);
+    $assertSame('active',(string)$guarded['games']['g-217-precleanup-order']['status'],'Generic game cleanup must not terminalize a tournament after reconnect preflight froze its clock.');
+
+    $prev11=$presence->gameplaySnapshot('r11');
+    $prev12=$presence->gameplaySnapshot('r12');
+    $presence->touch('r11','session-r11-new','lease-r11-new');
+    $presence->touch('r12','session-r12-new','lease-r12-new');
+    $lifecycle->synchronize($guarded,'r11','session-r11-new','ping',$prev11);
+    $assertSame('active',(string)$guarded['games']['g-217-precleanup-order']['status'],'First return after cleanup preflight must preserve the same active tournament game.');
+    $lifecycle->synchronize($guarded,'r12','session-r12-new','ping',$prev12);
+    $assertTrue(!isset($guarded['games']['g-217-precleanup-order']['reconnect_v2']),'Both returns before 180 seconds must clear the pre-cleanup reconnect pause.');
+    $assertSame('active',(string)$guarded['games']['g-217-precleanup-order']['status'],'Both returned clients must resume the original tournament game after the exact manual 90-second absence.');
+
+    $runtimeSource=file_get_contents($root.'/services/ChessRuntimeService.php');
+    $preflightPos=is_string($runtimeSource)
+        ? strpos($runtimeSource,'$this->reconnectLifecycle->synchronize')
+        : false;
+    $cleanupPos=is_string($runtimeSource)
+        ? strpos($runtimeSource,'$this->base->cleanup($db);')
+        : false;
+    $assertTrue(
+        is_int($preflightPos)&&is_int($cleanupPos)&&$preflightPos<$cleanupPos,
+        'Runtime cleanup owner must synchronize reconnect before any engine timeout cleanup.'
+    );
 }finally{
     $removeTree($temp);
 }
 
-if($assertions<76) throw new RuntimeException('MVP-21.7 technical-outcome test is too shallow: '.$assertions);
+if($assertions<88) throw new RuntimeException('MVP-21.7 technical-outcome test is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_7TournamentTechnicalOutcomesTest: {$assertions} assertions passed\n");

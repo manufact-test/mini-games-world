@@ -12,6 +12,7 @@ on:
       - 'bot/database/migrations/20260922_0058_add_tournament_technical_outcomes.php'
       - 'bot/services/PresenceService.php'
       - 'bot/services/ReconnectLifecycleService.php'
+      - 'bot/services/ChessRuntimeService.php'
       - 'bot/tournaments/TournamentRoundProgressionService.php'
       - 'bot/tournaments/TournamentSettlementService.php'
       - 'app/assets/js/screens/tournaments-screen-v1.js'
@@ -57,6 +58,7 @@ jobs:
             bot/database/migrations/20260922_0058_add_tournament_technical_outcomes.php
             bot/services/PresenceService.php
             bot/services/ReconnectLifecycleService.php
+            bot/services/ChessRuntimeService.php
             bot/tournaments/TournamentRoundProgressionService.php
             bot/tournaments/TournamentSettlementService.php
             bot/tests/Mvp21_6TournamentRoundProgressionTest.php
@@ -127,6 +129,7 @@ jobs:
               bot/database/migrations/20260922_0058_add_tournament_technical_outcomes.php|\
               bot/services/PresenceService.php|\
               bot/services/ReconnectLifecycleService.php|\
+              bot/services/ChessRuntimeService.php|\
               bot/tournaments/TournamentRoundProgressionService.php|\
               bot/tournaments/TournamentSettlementService.php|\
               app/assets/js/screens/tournaments-screen-v1.js|\

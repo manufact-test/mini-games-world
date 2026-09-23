@@ -98,31 +98,45 @@ final class ReconnectLifecycleService
     ): void {
         $nowMs = $this->nowMs();
 
-        // Tournament dual-disconnect owns a longer shared window. Before an
-        // individual 60-second deadline is settled, capture an opponent whose
-        // lease is already disconnected in the same authoritative request.
+        // Tournament dual-disconnect owns a longer shared window. Promote
+        // BOTH disconnected players before any individual 60-second deadline or
+        // generic game cleanup can settle the match. This also covers the real
+        // Telegram return race where neither closing WebView persisted
+        // reconnect_v2, but both stale presence leases still prove both players
+        // were away.
         foreach (array_keys($db['games'] ?? []) as $gameId) {
             if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) continue;
             $game = $db['games'][$gameId];
-            if (!$this->isReconnectManagedGame($game)
-                || !$this->isTournamentGame($game)
-                || empty($game['reconnect_v2']['paused'])) {
+            if (!$this->isReconnectManagedGame($game) || !$this->isTournamentGame($game)) {
                 continue;
             }
+
+            $humanPlayers = $this->humanPlayerIds($game);
+            if (count($humanPlayers) < 2) continue;
+
             $players = is_array($game['reconnect_v2']['players'] ?? null)
                 ? $game['reconnect_v2']['players']
                 : [];
-            if ($this->allHumanPlayersDisconnected($game,$players)) continue;
-            foreach ($this->humanPlayerIds($game) as $playerId) {
+            if ($this->allHumanPlayersDisconnected($game, $players)) continue;
+
+            $candidates = [];
+            foreach ($humanPlayers as $playerId) {
                 if (isset($players[$playerId])) continue;
                 $snapshot = $this->presence->gameplaySnapshot($playerId);
                 if (!$this->presenceSignalsDisconnect($game, $playerId, $snapshot)) continue;
+                $candidates[$playerId] = $this->disconnectedAtFromPresence($snapshot, $nowMs);
+            }
+
+            if (count($players) + count($candidates) < count($humanPlayers)) {
+                continue;
+            }
+
+            foreach ($candidates as $playerId => $disconnectedAtMs) {
                 $this->markPlayerDisconnected(
                     $db,
-                    $playerId,
-                    $this->disconnectedAtFromPresence($snapshot,$nowMs)
+                    (string)$playerId,
+                    (int)$disconnectedAtMs
                 );
-                break;
             }
         }
 
