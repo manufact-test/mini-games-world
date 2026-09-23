@@ -658,11 +658,13 @@
     } catch (_) {}
   };
 
-  const passiveRefresh = async () => {
+  const passiveRefresh = async (force = false) => {
     if (busy || passiveRefreshInFlight || document.hidden || !telegram?.initData) return;
+    const tournamentState = String(snapshot?.tournament?.state || '');
+    if (!force && tournamentState === 'scheduled') return;
     passiveRefreshInFlight = true;
     try {
-      const data = await post({action:'snapshot', passive_refresh:true});
+      const data = await post({action:'snapshot'});
       applyResponseState(data);
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
@@ -966,12 +968,12 @@
       passiveRefreshTimer = null;
       return;
     }
-    void passiveRefresh();
+    void passiveRefresh(true);
     schedulePassiveRefresh();
   });
 
   window.addEventListener('focus', () => {
-    void passiveRefresh();
+    void passiveRefresh(true);
   });
 
   if (telegram?.initData) {
