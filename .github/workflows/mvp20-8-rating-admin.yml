@@ -11,6 +11,7 @@ on:
       - 'bot/core/bootstrap.php'
       - 'app/admin.php'
       - 'app/assets/js/admin-rating.js'
+      - 'app/assets/js/admin-tournaments.js'
       - 'app/assets/css/admin-shell.css'
       - 'bot/tests/Mvp20_8RatingAdminTest.php'
       - 'bot/tests/Mvp20_8RatingAdminIntegrationContractTest.php'
@@ -63,6 +64,7 @@ jobs:
           )
           for file in "${files[@]}"; do php -l "$file"; done
           node --check app/assets/js/admin-rating.js
+          node --check app/assets/js/admin-tournaments.js
 
       - name: Run MVP-20.8 reviewed correction model
         run: php bot/tests/Mvp20_8RatingAdminTest.php
@@ -116,7 +118,7 @@ jobs:
           bad=0
           while IFS= read -r path; do
             case "$path" in
-              .github/workflows/mvp20-8-rating-admin.yml|              bot/database/migrations/20260920_0048_create_rating_admin_review.php|              bot/ratings/RatingAdminService.php|              bot/admin-rating.php|              bot/core/bootstrap.php|              app/admin.php|              app/assets/js/admin-rating.js|              app/assets/css/admin-shell.css|              bot/tests/Mvp20_8RatingAdminTest.php|              bot/tests/Mvp20_8RatingAdminIntegrationContractTest.php|              bot/tests/Mvp20_8RatingLoadTest.php)
+              .github/workflows/mvp20-8-rating-admin.yml|              bot/database/migrations/20260920_0048_create_rating_admin_review.php|              bot/ratings/RatingAdminService.php|              bot/admin-rating.php|              bot/core/bootstrap.php|              app/admin.php|              app/assets/js/admin-rating.js|              app/assets/js/admin-tournaments.js|              app/assets/css/admin-shell.css|              bot/tests/Mvp20_8RatingAdminTest.php|              bot/tests/Mvp20_8RatingAdminIntegrationContractTest.php|              bot/tests/Mvp20_8RatingLoadTest.php)
                 ;;
               *)
                 if [[ "$successor" -eq 0 ]]; then
