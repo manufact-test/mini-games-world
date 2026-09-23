@@ -38,6 +38,9 @@ $assert(str_contains($source['service'], 'random_int(')
     'Bracket must have a server-side random immutable generation owner.');
 $assert(str_contains($source['service'], 'technical_loss_at_start'),
     'Absent participants must remain in the bracket with technical loss evidence.');
+$assert(str_contains($source['service'], 'isManualAcceptanceFixtureRegistration')
+        && str_contains($source['service'], '$present = $this->isManualAcceptanceFixtureRegistration($registration);'),
+    'Synthetic manual-acceptance fixtures must stay present at T0 so explicit fixture progression owns their results.');
 $assert(!str_contains($source['service'], 'ready_at_utc')
         && !str_contains($source['service'], 'countdown_started_at_utc'),
     'MVP-21.4 service must not implement MVP-21.5 ready/countdown state.');
