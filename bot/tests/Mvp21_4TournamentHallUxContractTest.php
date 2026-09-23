@@ -19,6 +19,7 @@ $source = [
     'diagnostic'=>$read('bot/staging-projection-diagnostic.php'),
     'admin'=>$read('app/assets/js/admin-tournaments.js'),
     'admin_page'=>$read('app/admin.php'),
+    'admin_css'=>$read('app/assets/css/admin-shell.css'),
 ];
 
 $assertions = 0;
@@ -38,6 +39,9 @@ $assert(str_contains($source['service'], 'random_int(')
     'Bracket must have a server-side random immutable generation owner.');
 $assert(str_contains($source['service'], 'technical_loss_at_start'),
     'Absent participants must remain in the bracket with technical loss evidence.');
+$assert(str_contains($source['service'], 'isManualAcceptanceFixtureRegistration')
+        && str_contains($source['service'], '$present = $this->isManualAcceptanceFixtureRegistration($registration);'),
+    'Synthetic manual-acceptance fixtures must stay present at T0 so explicit fixture progression owns their results.');
 $assert(!str_contains($source['service'], 'ready_at_utc')
         && !str_contains($source['service'], 'countdown_started_at_utc'),
     'MVP-21.4 service must not implement MVP-21.5 ready/countdown state.');
@@ -147,11 +151,13 @@ $assert(str_contains($source['admin'], 'control === title || control === game ||
         && str_contains($source['admin'], 'Подтвердить сброс')
         && !str_contains($source['admin'], 'if (!window.confirm(warning)) return;'),
     'Tournament Admin reset must stay editable and avoid native confirm focus poisoning in Telegram WebView.');
-$assert(str_contains($source['admin_page'], 'admin-tournaments.js?v=15')
+$assert(str_contains($source['admin_page'], 'admin-tournaments.js?v=16')
+        && str_contains($source['admin_page'], 'admin-shell.css?v=6')
+        && str_contains($source['admin_page'], 'mvp21_manual=admin-ui-v1')
         && str_contains($source['admin_page'], 'mvp21_5=manual-acceptance-fixes-v3')
         && str_contains($source['admin_page'], 'mvp21_8=corrective-v12')
         && str_contains($source['admin_page'], 'placeholder="Официальный турнир"'),
-    'Tournament Admin must publish the fresh cache identity and use a placeholder instead of a destructive default title value.');
+    'Tournament Admin must publish the fresh corrective cache identity and preserve the safe title placeholder.');
 
 if ($assertions < 30) throw new RuntimeException('MVP-21.4 UX contract is too shallow.');
 fwrite(STDOUT, "Mvp21_4TournamentHallUxContractTest: {$assertions} assertions passed\n");
