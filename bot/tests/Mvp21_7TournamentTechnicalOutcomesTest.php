@@ -359,9 +359,43 @@ try{
     $assertSame('finished',(string)$runtime['games']['g-217-return']['status'],'Remaining absent player must lose when shared deadline expires.');
     $assertSame('r3',(string)$runtime['games']['g-217-return']['winner_id'],'Returned participant must receive the technical win.');
     $assertSame('tournament_disconnect_timeout',(string)$runtime['games']['g-217-return']['finish_reason'],'Shared branch one-sided expiry must have schema-safe tournament reason.');
+
+    // Regression from manual Telegram acceptance: both documents can disappear
+    // while the JSON reconnect mutation is missed. The first returning ping then
+    // owns recovery. It must promote the still-disconnected opponent into the
+    // shared 180-second tournament branch before restoring the current player.
+    $runtime=$newRuntime('g-217-missed-leaves','r5','r6');
+    $presence->touch('r5','session-r5','lease-r5');
+    $presence->touch('r6','session-r6','lease-r6');
+    $presence->leave('r5','session-r5','lease-r5');
+    $presence->leave('r6','session-r6','lease-r6');
+
+    $prev=$presence->gameplaySnapshot('r5');
+    $presence->touch('r5','session-r5-new','lease-r5-new');
+    $lifecycle->synchronize($runtime,'r5','session-r5-new','ping',$prev);
+    $reconnect=$runtime['games']['g-217-missed-leaves']['reconnect_v2']??[];
+    $assertTrue(!empty($reconnect['tournament_both_disconnect']),'First returning ping must recover a missed dual-disconnect into the shared tournament branch.');
+    $assertSame('active',(string)$runtime['games']['g-217-missed-leaves']['status'],'Recovered dual-disconnect must keep the same tournament game active inside the shared window.');
+    $remaining=$reconnect['players']??[];
+    $assertTrue(!isset($remaining['r5'])&&isset($remaining['r6']),'Returning player must be restored while the still-away opponent remains under the shared deadline.');
+    $assertSame(
+        180000,
+        (int)($reconnect['both_deadline_ms']??0)-(int)($reconnect['both_disconnected_at_ms']??0),
+        'Recovered dual-disconnect must own the full three-minute shared window.'
+    );
+    $assertSame('g-217-missed-leaves',(string)$runtime['users']['r5']['current_game_id'],'First returning participant must retain the same tournament game.');
+
+    $prev=$presence->gameplaySnapshot('r6');
+    $presence->touch('r6','session-r6-new','lease-r6-new');
+    $lifecycle->synchronize($runtime,'r6','session-r6-new','ping',$prev);
+    $assertTrue(!isset($runtime['games']['g-217-missed-leaves']['reconnect_v2']),'Second return inside the shared window must fully resume the tournament game.');
+    $assertSame('active',(string)$runtime['games']['g-217-missed-leaves']['status'],'Both returning players must resume the original active game instead of producing a false terminal result.');
+    $assertSame('g-217-missed-leaves',(string)$runtime['users']['r6']['current_game_id'],'Second returning participant must retain the same tournament game.');
+    $assertSame('session-r5-new',(string)$runtime['users']['r5']['active_session_id'],'First returning client must keep transferred session ownership after full resume.');
+    $assertSame('session-r6-new',(string)$runtime['users']['r6']['active_session_id'],'Second returning client must receive transferred session ownership after full resume.');
 }finally{
     $removeTree($temp);
 }
 
-if($assertions<45) throw new RuntimeException('MVP-21.7 technical-outcome test is too shallow: '.$assertions);
+if($assertions<55) throw new RuntimeException('MVP-21.7 technical-outcome test is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_7TournamentTechnicalOutcomesTest: {$assertions} assertions passed\n");
