@@ -997,6 +997,13 @@ function tournamentBracketMarkup(bracket){
     pairs.get(pairNo).push(seed);
   });
 
+  const firstRoundArchive = Array.isArray(tournamentProgressionSnapshot?.first_round_archive)
+    ? tournamentProgressionSnapshot.first_round_archive
+    : [];
+  const archiveByPair = new Map(
+    firstRoundArchive.map(match => [Number(match?.pair_no || 0), match])
+  );
+
   const cards = Array.from(pairs.entries())
     .sort((a,b) => a[0] - b[0])
     .map(([pairNo, pair]) => {
@@ -1004,15 +1011,59 @@ function tournamentBracketMarkup(bracket){
       const b = pair[1] || {};
       const aLoss = a?.technical_loss === true;
       const bLoss = b?.technical_loss === true;
-      let outcome = 'Оба участника были в зале. Матч перейдёт к этапу готовности.';
-      if (aLoss && !bLoss) outcome = `${String(b?.nickname || 'Игрок')} проходит дальше · соперник отсутствовал.`;
-      else if (!aLoss && bLoss) outcome = `${String(a?.nickname || 'Игрок')} проходит дальше · соперник отсутствовал.`;
-      else if (aLoss && bLoss) outcome = 'Оба участника отсутствовали · оба получили техническое поражение. Исход пары будет обработан отдельной турнирной веткой.';
+      const archivedMatch = archiveByPair.get(pairNo) || null;
+      const archivedPlayers = Array.isArray(archivedMatch?.players) ? archivedMatch.players : [];
+      const archivedPlayer = value => archivedPlayers.find(player =>
+        String(player?.mgw_id || '') !== ''
+        && String(player?.mgw_id || '') === String(value?.mgw_id || '')
+      ) || null;
+      const completed = archivedMatch?.completed === true;
+      const technicalOutcome = archivedMatch ? tournamentTechnicalOutcomeLabel(archivedMatch) : '';
 
-      const player = value => `<div class="tournaments-v2-bracket-player${value?.technical_loss === true ? ' is-loss' : ''}">
-        <strong>${escapeHtml(String(value?.nickname || 'Игрок'))}</strong>
-        <span>${value?.technical_loss === true ? 'тех. поражение' : 'в зале'}</span>
-      </div>`;
+      let outcome = 'Оба участника были в зале. Матч перейдёт к этапу готовности.';
+      if (archivedMatch) {
+        const winner = archivedPlayers.find(player => player?.winner === true);
+        if (completed && technicalOutcome) {
+          outcome = technicalOutcome;
+        } else if (completed && winner) {
+          outcome = `${String(winner?.nickname || 'Игрок')} проходит дальше.`;
+        } else if (completed) {
+          outcome = 'Матч завершён · победитель не назначен.';
+        } else if (String(archivedMatch?.launch_state || '') === 'launched') {
+          outcome = 'Матч идёт.';
+        } else {
+          outcome = 'Матч ещё не завершён.';
+        }
+      } else if (aLoss && !bLoss) {
+        outcome = `${String(b?.nickname || 'Игрок')} проходит дальше · соперник отсутствовал.`;
+      } else if (!aLoss && bLoss) {
+        outcome = `${String(a?.nickname || 'Игрок')} проходит дальше · соперник отсутствовал.`;
+      } else if (aLoss && bLoss) {
+        outcome = 'Оба участника отсутствовали · оба получили техническое поражение. Исход пары будет обработан отдельной турнирной веткой.';
+      }
+
+      const player = value => {
+        const result = archivedPlayer(value);
+        let status = value?.technical_loss === true ? 'тех. поражение' : 'в зале';
+        let lost = value?.technical_loss === true;
+        if (archivedMatch) {
+          if (completed) {
+            const won = result?.winner === true;
+            status = won ? 'прошёл дальше' : 'выбыл';
+            lost = !won;
+          } else if (String(archivedMatch?.launch_state || '') === 'launched') {
+            status = 'играет';
+            lost = false;
+          } else {
+            status = 'участник';
+            lost = false;
+          }
+        }
+        return `<div class="tournaments-v2-bracket-player${lost ? ' is-loss' : ''}">
+          <strong>${escapeHtml(String(value?.nickname || 'Игрок'))}</strong>
+          <span>${escapeHtml(status)}</span>
+        </div>`;
+      };
 
       return `<article class="tournaments-v2-bracket-pair">
         <header><span>Пара ${pairNo}</span></header>
