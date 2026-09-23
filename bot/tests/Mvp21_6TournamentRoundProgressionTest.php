@@ -179,6 +179,11 @@ $assertTrue(
  && count(array_filter($firstArchivePair1['players'],static fn(array $p):bool=>($p['winner']??false)===true))===1,
  'First-round archive must identify exactly one durable winner for a normal completed pair.'
 );
+$assertSame(2,count($winnerProgress['rounds'] ?? []),'Progression must retain both completed round one and newly formed round two.');
+$assertSame(1,(int)($winnerProgress['rounds'][0]['round_no'] ?? 0),'Round history must start with round one.');
+$assertSame(4,(int)($winnerProgress['rounds'][0]['total_count'] ?? 0),'Round one archive must retain all four pairs.');
+$assertSame(2,(int)($winnerProgress['rounds'][1]['round_no'] ?? 0),'Round history must expose round two as a separate stage.');
+$assertSame(2,(int)($winnerProgress['rounds'][1]['total_count'] ?? 0),'Round two archive must expose both semifinal pairs.');
 $semi=$db->fetchAll('SELECT * FROM mgw_tournament_round_matches WHERE tournament_id=:t AND round_no=2 ORDER BY pair_no',['t'=>$tournament]);
 $assertSame('2026-09-21 10:06:30.000000',(string)$semi[0]['readiness_opened_at_utc'],'Next round must open three minutes after the last match finishes.');
 $assertSame(TournamentRoundProgressionService::WAIT_ROUND_BREAK,(string)$semi[0]['wait_kind'],'Next round must expose round-break wait.');
@@ -214,6 +219,9 @@ $assertSame('2026-09-21 10:13:00.000000',(string)$finals[0]['readiness_opened_at
 $completeRound(3,['player_a_mgw_id','player_a_mgw_id'],'2026-09-21T10:16:00Z');
 $finalStatus=$progress->statusForParticipant($players[1]['mgw'],$players[1]['account'],$players[1]['legacy'],new DateTimeImmutable('2026-09-21T10:16:01Z'));
 $assertSame(true,$finalStatus['tournament_complete'],'Tournament becomes complete only after both final and third-place match finish.');
+$assertSame(3,count($finalStatus['rounds'] ?? []),'Completed eight-player tournament must retain all three round sections.');
+$assertSame(2,(int)($finalStatus['rounds'][2]['total_count'] ?? 0),'Final round archive must retain final and third-place match together.');
+$assertSame(2,(int)($finalStatus['rounds'][2]['completed_count'] ?? 0),'Final round archive must mark both placement matches complete.');
 $assertSame(9,(int)$db->fetchValue('SELECT COUNT(*) FROM mgw_tournament_match_attempts WHERE tournament_id=:t',['t'=>$tournament]),'Eight-player tournament with one draw replay must keep all nine played attempts.');
 
 // Corrective v5: every seeded pair must materialize even when both competitors
@@ -254,5 +262,5 @@ foreach($bothAbsentRows as $row){
  $assertSame(null,$row['winner_mgw_id'],'Both-absent pair must not invent a winner.');
 }
 
-if($assertions<46) throw new RuntimeException('MVP-21.6 progression test is too shallow: '.$assertions);
+if($assertions<54) throw new RuntimeException('MVP-21.6 progression test is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_6TournamentRoundProgressionTest: {$assertions} assertions passed\n");
