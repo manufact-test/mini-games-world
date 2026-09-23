@@ -359,7 +359,7 @@ jobs:
               bot/tests/Mvp21_6TournamentProgressionUxContractTest.php|\
               bot/tests/Mvp21_8CorrectiveContractTest.php|\
               bot/tests/Mvp21_8TournamentCancellationUxContractTest.php|\
-              bot/tests/Mvp21_9TerminalUxContractTest.php
+              bot/tests/Mvp21_9TerminalUxContractTest.php)
                 ;;
               *)
                 echo "Unexpected MVP-21.6 path: $path" >&2
