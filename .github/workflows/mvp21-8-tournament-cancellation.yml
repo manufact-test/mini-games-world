@@ -130,8 +130,11 @@ jobs:
               bot/database/migrations/20260922_0059_add_tournament_cancellation_emergency.php|\
               bot/tournaments/TournamentCancellationService.php|\
               bot/tournaments/TournamentRegistrationService.php|\
+              bot/services/PresenceService.php|\
+              bot/services/ReconnectLifecycleService.php|\
               bot/tournaments/TournamentRoundProgressionService.php|\
               bot/tournaments/TournamentSettlementService.php|\
+              bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php|\
               bot/core/bootstrap.php|\
               bot/admin-tournaments.php|\
               bot/tournament-status.php|\
