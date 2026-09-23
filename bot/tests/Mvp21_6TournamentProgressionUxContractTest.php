@@ -52,6 +52,12 @@ $assert(str_contains($screen, 'tournamentStartBracketArchiveOpen')
         && str_contains($screen, 'captureTournamentArchiveViewport(body)')
         && str_contains($screen, 'restoreTournamentArchiveViewport(body)'),
     'Start-bracket archive open state and inner scroll position must survive Hall heartbeat rerenders.');
+$assert(str_contains($progression, "'first_round_archive'=>\$firstRoundArchive")
+        && str_contains($progression, "'winner'=>\$completed && \$winner !== '' && \$winner === \$participantId")
+        && str_contains($screen, 'tournamentProgressionSnapshot?.first_round_archive')
+        && str_contains($screen, "status = won ? 'прошёл дальше' : 'выбыл'")
+        && str_contains($screen, "outcome = 'Матч завершён · победитель не назначен.'"),
+    'Start-bracket archive must overlay durable first-round winners, losers and no-winner technical outcomes instead of stale Hall-presence labels.');
 $assert(str_contains($screen, 'Все матчи турнира завершены.'),
     'Completed tournament must expose a terminal progression message.');
 $assert(str_contains($screen, 'formatReadyCountdown(opensAt.getTime() - Date.now())'),
@@ -70,7 +76,8 @@ $assert(str_contains($manifest, 'tournaments-screen-v1.js?v=30')
         && str_contains($manifest, 'mvp21_8=corrective-v8')
         && str_contains($manifest, 'mvp21_6=active-round-grid-v1')
         && str_contains($manifest, 'archive=heartbeat-open-v1')
-        && str_contains($manifest, 'mvp21_6=smooth-round-countdown-v1'),
+        && str_contains($manifest, 'mvp21_6=smooth-round-countdown-v1')
+        && str_contains($manifest, 'archive=first-round-results-v1'),
     'Tournament screen must publish the active-round/archive corrective identity.');
 
 $assert(str_contains($api, "'progression'=>\$progressionSnapshot"),
@@ -87,5 +94,5 @@ $assert(str_contains($progression, 'm.player_a_mgw_id=:player_a_mgw_id OR m.play
         && !str_contains($progression, 'm.player_a_mgw_id=:mgw_id OR m.player_b_mgw_id=:mgw_id'),
     'MySQL PDO participant lookup must never reuse the same named placeholder twice in the OR predicate.');
 
-if ($assertions < 22) throw new RuntimeException('MVP-21.6 progression UX contract is too shallow: ' . $assertions);
+if ($assertions < 23) throw new RuntimeException('MVP-21.6 progression UX contract is too shallow: ' . $assertions);
 fwrite(STDOUT, "Mvp21_6TournamentProgressionUxContractTest: {$assertions} assertions passed\n");

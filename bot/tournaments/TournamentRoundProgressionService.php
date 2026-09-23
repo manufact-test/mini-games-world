@@ -515,6 +515,41 @@ final class TournamentRoundProgressionService
             if ($b !== '') $participantIds[$b] = true;
         }
         $nicknames = $this->participantNicknames($tournamentId);
+
+        // Preserve the immutable T0 pairing, but expose the durable first-round
+        // result overlay separately so the client archive can stop showing
+        // stale "in hall" labels after those matches have actually finished.
+        $firstRoundArchive = [];
+        foreach ($snapshot['matches'] as $match) {
+            if ((int)($match['round_no'] ?? 0) !== 1) continue;
+            $completed = $match['completed_at_utc'] !== null;
+            $winner = trim((string)($match['winner_mgw_id'] ?? ''));
+            $loser = trim((string)($match['loser_mgw_id'] ?? ''));
+            $players = [];
+            foreach ([
+                trim((string)($match['player_a_mgw_id'] ?? '')),
+                trim((string)($match['player_b_mgw_id'] ?? '')),
+            ] as $participantId) {
+                if ($participantId === '') continue;
+                $players[] = [
+                    'mgw_id'=>$participantId,
+                    'nickname'=>$nicknames[$participantId] ?? 'Игрок',
+                    'self'=>$participantId === $mgwId,
+                    'winner'=>$completed && $winner !== '' && $winner === $participantId,
+                    'loser'=>$completed && $loser !== '' && $loser === $participantId,
+                ];
+            }
+            $firstRoundArchive[] = [
+                'round_no'=>1,
+                'pair_no'=>(int)$match['pair_no'],
+                'attempt_no'=>max(1, (int)$match['attempt_no']),
+                'launch_state'=>(string)$match['launch_state'],
+                'result_reason'=>$match['result_reason'] ?? null,
+                'completed'=>$completed,
+                'players'=>$players,
+            ];
+        }
+
         $completedInActiveRound = 0;
         foreach ($snapshot['matches'] as $match) {
             if ((int)($match['round_no'] ?? 0) !== $activeRoundNo) continue;
@@ -557,6 +592,7 @@ final class TournamentRoundProgressionService
             'current_match'=>$current,
             'latest_match'=>$latest,
             'participant_eliminated'=>$participantEliminated,
+            'first_round_archive'=>$firstRoundArchive,
             'active_round'=>[
                 'round_no'=>$activeRoundNo,
                 'completed_count'=>$completedInActiveRound,
