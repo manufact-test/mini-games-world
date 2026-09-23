@@ -66,6 +66,7 @@ foreach([
     '20260921_0054_create_tournament_match_readiness.php',
     '20260921_0055_add_tournament_round_progression.php',
     '20260922_0057_create_tournament_results_rewards.php',
+    '20260922_0058_add_tournament_technical_outcomes.php',
 ] as $migration){
     (require $root.'/database/migrations/'.$migration)->up($db);
 }
