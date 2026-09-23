@@ -74,7 +74,7 @@ $status=$progress->statusForParticipant(
  new DateTimeImmutable('2026-09-21T10:00:01Z')
 );
 $assertSame(4,(int)$db->fetchValue('SELECT COUNT(*) FROM mgw_tournament_round_matches WHERE tournament_id=:t AND round_no=1',['t'=>$tournament]),'All first-round pairs must materialize together.');
-$assertSame(300,$status['round_break_seconds'],'Round break must be exactly five minutes.');
+$assertSame(180,$status['round_break_seconds'],'Round break must be exactly three minutes.');
 $assertSame(60,$status['draw_replay_wait_seconds'],'Draw replay wait must be exactly one minute.');
 
 $readyAt='2026-09-21 10:00:02.000000';
