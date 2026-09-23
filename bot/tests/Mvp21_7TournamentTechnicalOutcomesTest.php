@@ -436,9 +436,72 @@ try{
     $assertSame('g-217-missed-leaves',(string)$runtime['users']['r6']['current_game_id'],'Second returning participant must retain the same tournament game.');
     $assertSame('session-r5-new',(string)$runtime['users']['r5']['active_session_id'],'First returning client must keep transferred session ownership after full resume.');
     $assertSame('session-r6-new',(string)$runtime['users']['r6']['active_session_id'],'Second returning client must receive transferred session ownership after full resume.');
+
+    // Real Telegram Desktop can close/minimize the WebView with only the
+    // visibility/background signal reaching the server. The final pagehide
+    // leave beacon is not guaranteed. A concurrent bootstrap request can also
+    // arrive before the dedicated presence ping and used to mask that evidence.
+    $runtime=$newRuntime('g-217-background-bootstrap-race','r7','r8');
+    $presence->touch('r7','session-r7','lease-r7-old');
+    $presence->touch('r8','session-r8','lease-r8-old');
+    $presence->background('r7','session-r7','lease-r7-old');
+    $presence->background('r8','session-r8','lease-r8-old');
+
+    $backgroundAt=time()-120;
+    foreach([
+        ['r7','session-r7','lease-r7-old'],
+        ['r8','session-r8','lease-r8-old'],
+    ] as [$playerId,$sessionId,$leaseId]){
+        $accountDirectory=$temp.DIRECTORY_SEPARATOR.'account-'.hash('sha256',$playerId);
+        $leasePath=$accountDirectory.DIRECTORY_SEPARATOR.'session-'
+            .hash('sha256',$sessionId."\0presence:".$leaseId).'.presence';
+        file_put_contents($leasePath,json_encode([
+            'touched_at'=>$backgroundAt,
+            'leave_after'=>0,
+            'mode'=>'background',
+        ],JSON_UNESCAPED_SLASHES),LOCK_EX);
+    }
+
+    // bootstrap() still owns a legacy empty-lease online touch. It must remain
+    // neutral for gameplay and must not erase the stale document lease.
+    $presence->touch('r7','session-r7');
+    $staleBackgroundR7=$presence->gameplaySnapshot('r7');
+    $assertSame('background',(string)($staleBackgroundR7['state']??''),'A lost-pagehide Telegram exit must remain represented as background before reconnect recovery.');
+    $assertTrue(!empty($staleBackgroundR7['tournament_disconnect_fallback']),'Two-minute-old background must expose tournament-only disconnect fallback.');
+    $assertTrue(
+        (int)($staleBackgroundR7['disconnected_at_ms']??0) > 0
+        && (int)($staleBackgroundR7['disconnected_at_ms']??0) < (int)floor(microtime(true)*1000),
+        'Stale background fallback must retain a past disconnect instant rather than minting a fresh three-minute window.'
+    );
+
+    $prev=$presence->gameplaySnapshot('r7');
+    $presence->touch('r7','session-r7','lease-r7-new');
+    $assertTrue(
+        $lifecycle->needsMutation($runtime,'r7','session-r7','ping',$prev),
+        'First real presence ping must request mutation even when bootstrap won the network race.'
+    );
+    $lifecycle->synchronize($runtime,'r7','session-r7','ping',$prev);
+    $reconnect=$runtime['games']['g-217-background-bootstrap-race']['reconnect_v2']??[];
+    $assertTrue(!empty($reconnect['tournament_both_disconnect']),'Lost pagehide on both Telegram documents must recover into the shared tournament branch.');
+    $assertSame('active',(string)$runtime['games']['g-217-background-bootstrap-race']['status'],'Recovered background/bootstrap race must keep the tournament game active.');
+    $remaining=$reconnect['players']??[];
+    $assertTrue(!isset($remaining['r7'])&&isset($remaining['r8']),'First returning player must resume while the second stale-background player keeps the shared window open.');
+
+    $presence->touch('r8','session-r8');
+    $prev=$presence->gameplaySnapshot('r8');
+    $presence->touch('r8','session-r8','lease-r8-new');
+    $assertTrue(
+        $lifecycle->needsMutation($runtime,'r8','session-r8','ping',$prev),
+        'Second real presence ping must still enter the recovered shared branch after its own bootstrap touch.'
+    );
+    $lifecycle->synchronize($runtime,'r8','session-r8','ping',$prev);
+    $assertTrue(!isset($runtime['games']['g-217-background-bootstrap-race']['reconnect_v2']),'Both returns after a lost Telegram pagehide must resume the same game.');
+    $assertSame('active',(string)$runtime['games']['g-217-background-bootstrap-race']['status'],'Real Telegram background/bootstrap race must not produce a false terminal tournament result.');
+    $assertSame('g-217-background-bootstrap-race',(string)$runtime['users']['r7']['current_game_id'],'First player must keep the original tournament game after recovery.');
+    $assertSame('g-217-background-bootstrap-race',(string)$runtime['users']['r8']['current_game_id'],'Second player must keep the original tournament game after recovery.');
 }finally{
     $removeTree($temp);
 }
 
-if($assertions<61) throw new RuntimeException('MVP-21.7 technical-outcome test is too shallow: '.$assertions);
+if($assertions<73) throw new RuntimeException('MVP-21.7 technical-outcome test is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_7TournamentTechnicalOutcomesTest: {$assertions} assertions passed\n");
