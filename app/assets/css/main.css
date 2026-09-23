@@ -2279,6 +2279,13 @@
   font-size:8.5px;
   line-height:1.4;
 }
+#screen-tournaments .tournaments-v2-terminal-self .tournaments-v2-terminal-payout{
+  margin-top:7px;
+  color:#f4dfaa;
+  font-size:12px;
+  line-height:1.3;
+  font-weight:900;
+}
 #screen-tournaments .tournaments-v2-terminal-self>small{
   align-self:start;
   color:var(--muted);
