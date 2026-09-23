@@ -114,11 +114,28 @@ final class TournamentReconnectTraceService
 
     public function tournamentGames(array $db): array
     {
-        $result = [];
+        $candidates = [];
         foreach (is_array($db['games'] ?? null) ? $db['games'] : [] as $game) {
             if (!is_array($game) || (string)($game['match_source'] ?? '') !== 'tournament') continue;
-            if (!in_array((string)($game['status'] ?? ''), ['active','finished'], true)) continue;
-            $result[] = $this->gameContext($game);
+            $status = (string)($game['status'] ?? '');
+            if (!in_array($status, ['active','finished'], true)) continue;
+            $stamp = strtotime((string)($game['updated_at'] ?? $game['finished_at'] ?? $game['created_at'] ?? '')) ?: 0;
+            $candidates[] = [
+                'active'=>$status === 'active' ? 1 : 0,
+                'stamp'=>$stamp,
+                'game'=>$game,
+            ];
+        }
+
+        usort($candidates, static function (array $a, array $b): int {
+            $active = ((int)$b['active']) <=> ((int)$a['active']);
+            if ($active !== 0) return $active;
+            return ((int)$b['stamp']) <=> ((int)$a['stamp']);
+        });
+
+        $result = [];
+        foreach (array_slice($candidates, 0, 16) as $candidate) {
+            $result[] = $this->gameContext($candidate['game']);
         }
         return $result;
     }
