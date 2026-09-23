@@ -74,7 +74,7 @@ $status=$progress->statusForParticipant(
  new DateTimeImmutable('2026-09-21T10:00:01Z')
 );
 $assertSame(4,(int)$db->fetchValue('SELECT COUNT(*) FROM mgw_tournament_round_matches WHERE tournament_id=:t AND round_no=1',['t'=>$tournament]),'All first-round pairs must materialize together.');
-$assertSame(300,$status['round_break_seconds'],'Round break must be exactly five minutes.');
+$assertSame(180,$status['round_break_seconds'],'Round break must be exactly three minutes.');
 $assertSame(60,$status['draw_replay_wait_seconds'],'Draw replay wait must be exactly one minute.');
 
 $readyAt='2026-09-21 10:00:02.000000';
@@ -171,10 +171,10 @@ $assertSame(true,(bool)($loserProgress['participant_eliminated'] ?? false),'Firs
 $assertSame(2,(int)($loserProgress['active_round']['round_no'] ?? 0),'Eliminated participant must still see the tournament advance to round two.');
 $assertTrue(is_array($loserProgress['active_round']['matches'] ?? null) && count($loserProgress['active_round']['matches'])===2,'Eliminated participant must receive the visible active-round bracket.');
 $semi=$db->fetchAll('SELECT * FROM mgw_tournament_round_matches WHERE tournament_id=:t AND round_no=2 ORDER BY pair_no',['t'=>$tournament]);
-$assertSame('2026-09-21 10:08:30.000000',(string)$semi[0]['readiness_opened_at_utc'],'Next round must open five minutes after the last match finishes.');
+$assertSame('2026-09-21 10:06:30.000000',(string)$semi[0]['readiness_opened_at_utc'],'Next round must open three minutes after the last match finishes.');
 $assertSame(TournamentRoundProgressionService::WAIT_ROUND_BREAK,(string)$semi[0]['wait_kind'],'Next round must expose round-break wait.');
-$assertSame(null,$progress->launchContextForParticipant($players[1]['mgw'],$players[1]['account'],$players[1]['legacy'],new DateTimeImmutable('2026-09-21T10:08:29Z')),'Semifinal must stay locked until the five-minute break ends.');
-$semiLaunch=$progress->launchContextForParticipant($players[1]['mgw'],$players[1]['account'],$players[1]['legacy'],new DateTimeImmutable('2026-09-21T10:08:30Z'));
+$assertSame(null,$progress->launchContextForParticipant($players[1]['mgw'],$players[1]['account'],$players[1]['legacy'],new DateTimeImmutable('2026-09-21T10:06:29Z')),'Semifinal must stay locked until the three-minute break ends.');
+$semiLaunch=$progress->launchContextForParticipant($players[1]['mgw'],$players[1]['account'],$players[1]['legacy'],new DateTimeImmutable('2026-09-21T10:06:30Z'));
 $assertTrue(is_array($semiLaunch),'Semifinal must auto-launch after the round break.');
 
 $completeRound=function(int $round,array $winners,string $baseTime)use($progress,$db,$tournament,$players):void{
@@ -200,7 +200,7 @@ $finals=$db->fetchAll('SELECT * FROM mgw_tournament_round_matches WHERE tourname
 $assertSame(2,count($finals),'Semifinals must create both final and third-place match.');
 $assertSame(TournamentRoundProgressionService::MATCH_FINAL,(string)$finals[0]['match_kind'],'Pair 1 of last round must be final.');
 $assertSame(TournamentRoundProgressionService::MATCH_THIRD_PLACE,(string)$finals[1]['match_kind'],'Pair 2 of last round must be third-place.');
-$assertSame('2026-09-21 10:15:00.000000',(string)$finals[0]['readiness_opened_at_utc'],'Final and third-place match must share the same five-minute break.');
+$assertSame('2026-09-21 10:13:00.000000',(string)$finals[0]['readiness_opened_at_utc'],'Final and third-place match must share the same three-minute break.');
 
 $completeRound(3,['player_a_mgw_id','player_a_mgw_id'],'2026-09-21T10:16:00Z');
 $finalStatus=$progress->statusForParticipant($players[1]['mgw'],$players[1]['account'],$players[1]['legacy'],new DateTimeImmutable('2026-09-21T10:16:01Z'));

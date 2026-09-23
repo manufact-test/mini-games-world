@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 final class TournamentRoundProgressionService
 {
-    public const ROUND_BREAK_SECONDS = 300;
+    public const ROUND_BREAK_SECONDS = 180;
     public const DRAW_REPLAY_WAIT_SECONDS = 60;
     public const TECHNICAL_RESTART_WAIT_SECONDS = 60;
     public const TECHNICAL_RESTART_MAX_ATTEMPTS = 2;

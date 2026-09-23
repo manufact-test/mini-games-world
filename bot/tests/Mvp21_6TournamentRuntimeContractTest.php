@@ -66,8 +66,8 @@ $assert(str_contains($readiness, "(string)(\$row['wait_kind'] ?? 'initial_ready'
     'First-match readiness must reject round/replay wait owners.');
 $assert(str_contains($readiness, "trim((string)(\$row['completed_at_utc'] ?? '')) !== ''"),
     'Manual Ready must remain frozen after the first logical match completes.');
-$assert(str_contains($progression, 'public const ROUND_BREAK_SECONDS = 300;'),
-    'Progression must keep the canonical five-minute round break.');
+$assert(str_contains($progression, 'public const ROUND_BREAK_SECONDS = 180;'),
+    'Progression must keep the canonical three-minute round break.');
 $assert(str_contains($progression, 'public const DRAW_REPLAY_WAIT_SECONDS = 60;'),
     'Progression must keep the canonical one-minute draw replay wait.');
 $assert(str_contains($progression, "MATCH_THIRD_PLACE = 'third_place'"),
