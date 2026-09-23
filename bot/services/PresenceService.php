@@ -6,6 +6,7 @@ final class PresenceService
     private const ONLINE_WINDOW_SEC = 75;
     private const GAME_DISCONNECT_WINDOW_SEC = 8;
     private const LEAVE_GRACE_SEC = 12;
+    private const BACKGROUND_RECONNECT_FALLBACK_SEC = 15;
     private const GAMEPLAY_STATE_RETENTION_SEC = 21600;
     private const MARKER_FILE = '.enabled';
 
@@ -26,7 +27,16 @@ final class PresenceService
 
     public function touch(string $accountId, string $sessionId, string $presenceLeaseId = ''): void
     {
-        $this->writeLease($accountId, $sessionId, $presenceLeaseId, 'foreground');
+        // The generic bootstrap path still performs a legacy two-argument
+        // touch. Keep that useful for the public online counter, but make it a
+        // neutral lease so it cannot erase document-scoped disconnect evidence
+        // before the dedicated presence.php ping arrives.
+        $this->writeLease(
+            $accountId,
+            $sessionId,
+            $presenceLeaseId,
+            trim($presenceLeaseId) === '' ? 'bootstrap' : 'foreground'
+        );
     }
 
     public function background(string $accountId, string $sessionId, string $presenceLeaseId = ''): void
@@ -58,9 +68,11 @@ final class PresenceService
 
     /**
      * Gameplay presence intentionally differs from the public online counter.
-     * A background document remains connected-idle even after public online
-     * freshness expires; only a foreground lease that stops heartbeating or an
-     * explicit leave becomes a gameplay disconnect.
+     * A background document remains connected-idle for normal gameplay. A
+     * bounded stale marker is also exposed so tournament reconnect can recover
+     * Telegram/WebView exits where visibilitychange reached the server but the
+     * later pagehide/leave beacon never did. Generic bootstrap touches are
+     * neutral and must never mask document-scoped disconnect evidence.
      *
      * @return array{state:string,last_foreground_at:int}
      */
@@ -86,15 +98,20 @@ final class PresenceService
         $lastForegroundAt = 0;
         $knownLease = false;
         $hasBackground = false;
+        $lastBackgroundAt = 0;
         $disconnectedAt = 0;
 
         foreach (glob($accountDirectory . DIRECTORY_SEPARATOR . 'session-*.presence') ?: [] as $path) {
             $state = $this->readSessionState($path);
-            $knownLease = true;
             $mode = (string)($state['mode'] ?? 'foreground');
             $touchedAt = (int)($state['touched_at'] ?? 0);
             $leaveAfter = (int)($state['leave_after'] ?? 0);
 
+            if ($mode === 'bootstrap') {
+                continue;
+            }
+
+            $knownLease = true;
             if ($mode === 'foreground') {
                 $lastForegroundAt = max($lastForegroundAt, $touchedAt);
                 if ($touchedAt >= $foregroundCutoff && ($leaveAfter <= 0 || $leaveAfter > $now)) {
@@ -108,6 +125,7 @@ final class PresenceService
 
             if ($mode === 'background' && ($leaveAfter <= 0 || $leaveAfter > $now)) {
                 $hasBackground = true;
+                $lastBackgroundAt = max($lastBackgroundAt, $touchedAt);
                 continue;
             }
 
@@ -120,7 +138,16 @@ final class PresenceService
         }
 
         if ($hasBackground) {
-            return ['state' => 'background', 'last_foreground_at' => $lastForegroundAt];
+            $fallbackAt = $lastBackgroundAt > 0
+                ? $lastBackgroundAt + self::BACKGROUND_RECONNECT_FALLBACK_SEC
+                : 0;
+            return [
+                'state' => 'background',
+                'last_foreground_at' => $lastForegroundAt,
+                'last_background_at' => $lastBackgroundAt,
+                'tournament_disconnect_fallback' => $fallbackAt > 0 && $fallbackAt <= $now,
+                'disconnected_at_ms' => $fallbackAt > 0 ? $fallbackAt * 1000 : 0,
+            ];
         }
         if ($knownLease) {
             return [
@@ -189,7 +216,9 @@ final class PresenceService
         $payload = json_encode([
             'touched_at' => time(),
             'leave_after' => 0,
-            'mode' => $mode === 'background' ? 'background' : 'foreground',
+            'mode' => in_array($mode, ['foreground', 'background', 'bootstrap'], true)
+                ? $mode
+                : 'foreground',
         ], JSON_UNESCAPED_SLASHES);
         if (!is_string($payload) || @file_put_contents($temporary, $payload, LOCK_EX) === false) {
             @unlink($temporary);
@@ -294,7 +323,7 @@ final class PresenceService
         $decoded = json_decode($raw, true);
         if (is_array($decoded)) {
             $mode = (string)($decoded['mode'] ?? 'foreground');
-            if (!in_array($mode, ['foreground', 'background', 'left'], true)) $mode = 'foreground';
+            if (!in_array($mode, ['foreground', 'background', 'left', 'bootstrap'], true)) $mode = 'foreground';
             return [
                 'touched_at' => (int)($decoded['touched_at'] ?? 0),
                 'leave_after' => (int)($decoded['leave_after'] ?? 0),
