@@ -86,6 +86,7 @@ final class PresenceService
         $lastForegroundAt = 0;
         $knownLease = false;
         $hasBackground = false;
+        $disconnectedAt = 0;
 
         foreach (glob($accountDirectory . DIRECTORY_SEPARATOR . 'session-*.presence') ?: [] as $path) {
             $state = $this->readSessionState($path);
@@ -99,11 +100,22 @@ final class PresenceService
                 if ($touchedAt >= $foregroundCutoff && ($leaveAfter <= 0 || $leaveAfter > $now)) {
                     return ['state' => 'foreground', 'last_foreground_at' => $lastForegroundAt];
                 }
+                if ($touchedAt > 0) {
+                    $disconnectedAt = max($disconnectedAt, $touchedAt + self::GAME_DISCONNECT_WINDOW_SEC);
+                }
                 continue;
             }
 
             if ($mode === 'background' && ($leaveAfter <= 0 || $leaveAfter > $now)) {
                 $hasBackground = true;
+                continue;
+            }
+
+            if ($mode === 'left') {
+                $leftAt = $leaveAfter > 0
+                    ? max(0, $leaveAfter - self::LEAVE_GRACE_SEC)
+                    : $touchedAt;
+                $disconnectedAt = max($disconnectedAt, $leftAt);
             }
         }
 
@@ -111,7 +123,11 @@ final class PresenceService
             return ['state' => 'background', 'last_foreground_at' => $lastForegroundAt];
         }
         if ($knownLease) {
-            return ['state' => 'disconnected', 'last_foreground_at' => $lastForegroundAt];
+            return [
+                'state' => 'disconnected',
+                'last_foreground_at' => $lastForegroundAt,
+                'disconnected_at_ms' => $disconnectedAt > 0 ? $disconnectedAt * 1000 : 0,
+            ];
         }
         return ['state' => 'unknown', 'last_foreground_at' => 0];
     }
@@ -236,13 +252,18 @@ final class PresenceService
             $leaveAfter = (int)($state['leave_after'] ?? 0);
             $mode = (string)($state['mode'] ?? 'foreground');
 
-            if ($touchedAt <= 0 || $touchedAt < $retentionCutoff) {
+            $retentionAnchor = $mode === 'left' && $leaveAfter > 0
+                ? max($touchedAt, $leaveAfter - self::LEAVE_GRACE_SEC)
+                : $touchedAt;
+            if ($retentionAnchor <= 0 || $retentionAnchor < $retentionCutoff) {
                 @unlink($path);
                 continue;
             }
-            if ($mode === 'left' && $leaveAfter > 0 && $leaveAfter <= $now) {
-                @unlink($path);
-            }
+
+            // Expired explicit-leave leases stop counting as online immediately,
+            // but remain as bounded gameplay tombstones until retention expiry.
+            // A later returning ping can then recover a reconnect mutation that
+            // the closing WebView failed to finish before it disappeared.
         }
 
         $leases = glob($accountDirectory . DIRECTORY_SEPARATOR . 'session-*.presence') ?: [];
