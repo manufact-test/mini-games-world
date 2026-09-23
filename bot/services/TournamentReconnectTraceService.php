@@ -62,6 +62,7 @@ final class TournamentReconnectTraceService
             'utc'=>gmdate(DATE_ATOM),
             'request_ref'=>$this->requestRef,
             'endpoint'=>basename((string)($_SERVER['SCRIPT_NAME'] ?? $_SERVER['SCRIPT_FILENAME'] ?? 'cli')),
+            'request_action'=>$this->requestAction(),
             'event'=>$event,
             'context'=>$this->sanitize($context),
         ];
@@ -207,6 +208,26 @@ final class TournamentReconnectTraceService
             if (is_array($decoded)) $result[] = $decoded;
         }
         return $result;
+    }
+
+    private function requestAction(): string
+    {
+        $cachedKey = 'mgw_tournament_reconnect_trace_request_action';
+        if (array_key_exists($cachedKey, $GLOBALS)) {
+            return substr(trim((string)$GLOBALS[$cachedKey]), 0, 48);
+        }
+
+        $action = '';
+        $raw = @file_get_contents('php://input');
+        if (is_string($raw) && $raw !== '') {
+            $payload = json_decode($raw, true);
+            if (is_array($payload)) {
+                $action = trim((string)($payload['action'] ?? ''));
+            }
+        }
+        $action = substr($action, 0, 48);
+        $GLOBALS[$cachedKey] = $action;
+        return $action;
     }
 
     private function sanitize(mixed $value, int $depth = 0): mixed
