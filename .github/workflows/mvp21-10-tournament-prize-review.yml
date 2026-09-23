@@ -111,6 +111,7 @@ jobs:
               .github/workflows/mvp21-8-tournament-cancellation.yml|\
               .github/workflows/mvp21-9-tournament-rewards.yml|\
               .github/workflows/mvp21-10-tournament-prize-review.yml|\
+              .github/workflows/mvp21-11-tournament-release-proof.yml|\
               bot/database/migrations/20260922_0060_create_tournament_prize_review.php|\
               bot/tournaments/TournamentPrizeReviewService.php|\
               bot/tournaments/TournamentSettlementService.php|\
@@ -123,7 +124,10 @@ jobs:
               app/assets/css/admin-shell.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp21_10TournamentPrizeReviewTest.php|\
-              bot/tests/Mvp21_10TournamentPrizeReviewContractTest.php)
+              bot/tests/Mvp21_10TournamentPrizeReviewContractTest.php|\
+              bot/tournaments/TournamentRoundProgressionService.php|\
+              bot/tests/Mvp21_6TournamentRoundProgressionTest.php|\
+              bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php)
                 ;;
               # Manual acceptance coordinated UI corrective
               .github/workflows/mvp21-5-tournament-ready.yml|\
