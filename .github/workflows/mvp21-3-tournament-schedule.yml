@@ -18,6 +18,7 @@ on:
       - 'bot/staging-projection-diagnostic.php'
       - 'bot/services/StagingTestPlayerStateResetService.php'
       - 'bot/admin-tournaments.php'
+      - 'bot/helpers/AdminWebAuth.php'
       - 'app/admin.php'
       - 'app/assets/js/admin-tournaments.js'
       - 'app/assets/js/api/client.js'
@@ -89,6 +90,7 @@ jobs:
             bot/staging-projection-diagnostic.php
             bot/services/StagingTestPlayerStateResetService.php
             bot/admin-tournaments.php
+            bot/helpers/AdminWebAuth.php
             app/admin.php
             app/runtime/client/version-manifest.php
             bot/tests/Mvp21_3TournamentScheduleTest.php
@@ -183,6 +185,7 @@ jobs:
               bot/staging-projection-diagnostic.php|\
               bot/services/StagingTestPlayerStateResetService.php|\
               bot/admin-tournaments.php|\
+              bot/helpers/AdminWebAuth.php|\
               app/admin.php|\
               app/assets/js/admin-tournaments.js|\
               app/assets/js/api/client.js|\
@@ -234,6 +237,7 @@ jobs:
               bot/staging-projection-diagnostic.php|\
               bot/services/StagingTestPlayerStateResetService.php|\
               bot/admin-tournaments.php|\
+              bot/helpers/AdminWebAuth.php|\
               app/admin.php|\
               app/assets/js/admin-tournaments.js|\
               app/assets/js/api/client.js|\
