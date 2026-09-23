@@ -1,32 +1,11 @@
+import { requestStagingOidcToken } from './staging-oidc-token.mjs';
 const STAGING_ORIGIN = process.env.MGW_STAGING_ORIGIN
   || 'https://seashell-okapi-889488.hostingersite.com';
 const AUTH_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-auth.php`;
 const TEST_ONLY_INVITE_RECOVERY_ROUTE = `${STAGING_ORIGIN}/bot/staging-test-only-invite-recovery.php`;
 const INVITE_MISMATCH_DIAGNOSTIC_ROUTE = `${STAGING_ORIGIN}/bot/staging-invite-mismatch-diagnostic.php`;
-const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
-
-async function requestOidcToken(){
-  const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
-  const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN || '';
-  if (!requestUrl || !requestToken) {
-    throw new Error('GitHub Actions OIDC environment is unavailable for staging reset.');
-  }
-
-  const url = new URL(requestUrl);
-  url.searchParams.set('audience', OIDC_AUDIENCE);
-  const response = await fetch(url, {
-    headers:{ Authorization:`bearer ${requestToken}`, Accept:'application/json' },
-  });
-  if (!response.ok) throw new Error(`GitHub Actions OIDC reset token failed: ${response.status}`);
-  const payload = await response.json();
-  if (typeof payload?.value !== 'string' || payload.value.split('.').length !== 3) {
-    throw new Error('GitHub Actions OIDC reset response did not contain a JWT.');
-  }
-  return payload.value;
-}
-
 async function diagnoseInviteMismatch(){
-  const oidcToken = await requestOidcToken();
+  const oidcToken = await requestStagingOidcToken();
   const response = await fetch(INVITE_MISMATCH_DIAGNOSTIC_ROUTE, {
     method:'POST',
     headers:{
@@ -44,7 +23,7 @@ async function diagnoseInviteMismatch(){
 }
 
 async function recoverTestOnlyInviteOrphans(){
-  const oidcToken = await requestOidcToken();
+  const oidcToken = await requestStagingOidcToken();
   const response = await fetch(TEST_ONLY_INVITE_RECOVERY_ROUTE, {
     method:'POST',
     headers:{
@@ -78,7 +57,7 @@ async function recoverTestOnlyInviteOrphans(){
 }
 
 async function resetTestPlayers(){
-  const oidcToken = await requestOidcToken();
+  const oidcToken = await requestStagingOidcToken();
   const response = await fetch(AUTH_ROUTE, {
     method:'POST',
     headers:{

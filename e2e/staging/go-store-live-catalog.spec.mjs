@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { requestStagingOidcToken } from '../staging-oidc-token.mjs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test, expect } from '@playwright/test';
@@ -6,32 +7,16 @@ import { test, expect } from '@playwright/test';
 const ORIGIN = process.env.MGW_STAGING_ORIGIN || 'https://seashell-okapi-889488.hostingersite.com';
 const AUTH_URL = `${ORIGIN}/bot/staging-test-auth.php`;
 const STORE_URL = `${ORIGIN}/bot/cosmetic-store.php`;
-const OIDC_AUDIENCE = 'mini-games-world-staging-e2e';
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const launchSource = readFileSync(resolve(repoRoot, 'bot/helpers/WebAppLaunchUrl.php'), 'utf8');
 const entryMatch = launchSource.match(/^\s*private const ENTRY_PATH = '([^']+)';/m);
 if (!entryMatch) throw new Error('Canonical WebAppLaunchUrl ENTRY_PATH is unavailable.');
 const ENTRY_URL = `${ORIGIN}${entryMatch[1]}`;
 
-async function requestOidcToken() {
-  const source = process.env.ACTIONS_ID_TOKEN_REQUEST_URL || '';
-  const bearer = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN || '';
-  if (!source || !bearer) throw new Error('GitHub Actions OIDC environment is unavailable.');
-  const url = new URL(source);
-  url.searchParams.set('audience', OIDC_AUDIENCE);
-  const response = await fetch(url, {
-    headers: { Authorization: `bearer ${bearer}`, Accept: 'application/json' },
-  });
-  if (!response.ok) throw new Error(`OIDC request failed: ${response.status}`);
-  const payload = await response.json();
-  if (typeof payload?.value !== 'string') throw new Error('OIDC JWT is unavailable.');
-  return payload.value;
-}
-
 async function authorize(context) {
   const response = await context.request.post(AUTH_URL, {
     headers: {
-      Authorization: `Bearer ${await requestOidcToken()}`,
+      Authorization: `Bearer ${await requestStagingOidcToken()}`,
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
