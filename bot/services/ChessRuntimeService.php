@@ -8,6 +8,8 @@ require_once dirname(__DIR__) . '/games/go/GoService.php';
 require_once dirname(__DIR__) . '/games/domino/DominoBotService.php';
 require_once dirname(__DIR__) . '/games/domino/DominoService.php';
 require_once __DIR__ . '/MatchPreparationClockService.php';
+require_once __DIR__ . '/PresenceService.php';
+require_once __DIR__ . '/ReconnectLifecycleService.php';
 require_once __DIR__ . '/MatchmakingQueue.php';
 require_once __DIR__ . '/BotProfilePolicy.php';
 require_once dirname(__DIR__) . '/runtime/UnifiedGameZonePolicy.php';
@@ -23,6 +25,7 @@ final class ChessRuntimeService
     private GoService $go;
     private DominoService $domino;
     private MatchPreparationClockService $matchPreparationClock;
+    private ReconnectLifecycleService $reconnectLifecycle;
     private MatchmakingQueue $matchmaking;
     private BotProfilePolicy $botProfiles;
 
@@ -37,12 +40,33 @@ final class ChessRuntimeService
         $this->go = new GoService($config, $settlement);
         $this->domino = new DominoService($config, $settlement);
         $this->matchPreparationClock = new MatchPreparationClockService();
+
+        $dataDirectory = trim((string)($config['data_dir'] ?? ''));
+        $presenceDirectory = $dataDirectory !== ''
+            ? rtrim($dataDirectory, DIRECTORY_SEPARATOR)
+                . DIRECTORY_SEPARATOR . '.runtime'
+                . DIRECTORY_SEPARATOR . 'presence'
+            : null;
+        $this->reconnectLifecycle = new ReconnectLifecycleService(
+            $config,
+            new PresenceService($presenceDirectory)
+        );
+
         $this->matchmaking = new MatchmakingQueue();
         $this->botProfiles = new BotProfilePolicy();
     }
 
     public function cleanup(array &$db): void
     {
+        // Reconnect owns disconnect semantics and must run before any engine
+        // timeout cleanup. Otherwise the first request after a Telegram/WebView
+        // absence can let the normal 60-second move timer finish a tournament
+        // game before presence has a chance to freeze the shared 180-second
+        // dual-disconnect window.
+        if ($this->reconnectLifecycle->needsMutation($db, '', '', 'status', [])) {
+            $this->reconnectLifecycle->synchronize($db, '', '', 'status', []);
+        }
+
         $this->base->cleanup($db);
         $this->chess->cleanup($db);
         $this->go->cleanup($db);
