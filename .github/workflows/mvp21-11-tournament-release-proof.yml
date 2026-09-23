@@ -119,6 +119,7 @@ jobs:
               bot/tests/Mvp21_5TournamentReadyUxContractTest.php|\
               bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php|\
               bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php|\
+              bot/tests/Mvp21_8CorrectiveContractTest.php|\
               bot/tests/Mvp21_9TerminalUxContractTest.php|\
               .github/workflows/mvp21-9-tournament-rewards.yml|\
               app/assets/js/screens/tournaments-screen-v1.js|\
