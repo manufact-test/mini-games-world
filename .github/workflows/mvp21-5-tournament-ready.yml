@@ -238,6 +238,7 @@ jobs:
               .github/workflows/mvp21-6-tournament-rounds.yml|\
               .github/workflows/mvp21-7-tournament-technical-outcomes.yml|\
               .github/workflows/mvp21-8-tournament-cancellation.yml|\
+              .github/workflows/mvp21-11-tournament-release-proof.yml|\
               bot/database/migrations/20260922_0059_add_tournament_cancellation_emergency.php|\
               bot/tournaments/TournamentCancellationService.php|\
               bot/tournament-status.php|\
@@ -314,6 +315,8 @@ jobs:
               bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php|\
               bot/tests/RematchOptimisticUxContractTest.php|\
               bot/tests/Mvp21_6TournamentProgressionUxContractTest.php|\
+              bot/tests/Mvp21_6TournamentRuntimeContractTest.php|\
+              bot/tests/Mvp21_11TournamentReleaseProofTest.php|\
               bot/tests/Mvp21_6TournamentRoundProgressionTest.php|\
               bot/tests/PhaseBMatchPreparationClockServiceTest.php|\
               bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php|\
