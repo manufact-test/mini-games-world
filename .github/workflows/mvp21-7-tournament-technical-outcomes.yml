@@ -145,6 +145,7 @@ jobs:
               bot/tests/Mvp21_6TournamentProgressionUxContractTest.php|\
               bot/tests/Mvp21_11TournamentReleaseProofTest.php|\
               bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php|\
+              bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php|\
               bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php)
                 ;;
               # Manual acceptance coordinated UI corrective
