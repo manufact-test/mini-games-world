@@ -8,6 +8,7 @@ header('X-Content-Type-Options: nosniff');
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/services/GitHubActionsOidcVerifier.php';
 require_once __DIR__ . '/tournaments/StagingTournamentManualAcceptanceService.php';
+require_once __DIR__ . '/services/TournamentReconnectTraceService.php';
 
 try {
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
@@ -546,6 +547,7 @@ try {
         'tournament_fixture_ownership_repair'=>$fixtureOwnershipRepair,
         'tournament_fixture_runtime_parity'=>$fixtureRuntimeParity,
         'tournament_round_diagnostic'=>$tournamentRoundDiagnostic,
+        'tournament_reconnect_trace'=>(new TournamentReconnectTraceService($config))->tail(),
         'storage_selector_notification_fallback'=>$selectorFallbackCheck,
         'unified_economy_preview'=>[
             'ready'=>(bool)($economyPreview['ready'] ?? false),
