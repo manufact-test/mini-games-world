@@ -106,13 +106,15 @@ $assert(str_contains($source['manifest'], 'client.js?v=1145')
         && str_contains($source['manifest'], 'mvp21_4=tournament-hall-v1')
         && str_contains($source['manifest'], 'hall_transport=direct-endpoint-v2'),
     'Hall release must preserve the accepted API cache contract and publish the direct-endpoint corrective identity.');
-$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=29')
+$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=30')
         && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v2')
         && str_contains($source['manifest'], 'hall_cta=entry-v1')
-        && str_contains($source['manifest'], 'copy_polish=final-v1'),
+        && str_contains($source['manifest'], 'copy_polish=final-v1')
+        && str_contains($source['manifest'], 'mvp21_manual=acceptance-corrective-v1'),
     'Hall release must preserve the accepted Tournament screen base version and publish the final copy-polish identity.');
-$assert(str_contains($source['manifest'], 'main.css?v=200')
-        && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v2'),
+$assert(str_contains($source['manifest'], 'main.css?v=201')
+        && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v2')
+        && str_contains($source['manifest'], 'mvp21_manual=terminal-payout-v1'),
     'Hall release must preserve accepted CSS base version and add a fresh Hall identity.');
 
 $assert(str_contains($source['manual_fixture'], '$runtimeBatch')
