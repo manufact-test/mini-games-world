@@ -136,9 +136,10 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               </div>
               <div class="mgw-admin__tournament-schedule" data-tournament-cancel-panel hidden>
                 <div class="mgw-admin__tournament-current" data-tournament-cancel-info>Отмена турнира недоступна.</div>
-                <label>
-                  Причина
-                  <textarea data-tournament-cancel-reason rows="3" maxlength="1200" placeholder="Для обычной отмены необязательно. Для аварийной остановки — обязательно."></textarea>
+                <label class="mgw-admin__field">
+                  <span>Причина</span>
+                  <textarea class="mgw-admin__tournament-reason" data-tournament-cancel-reason rows="3" maxlength="1200" placeholder="Опишите причину"></textarea>
+                  <small class="mgw-admin__field-help">Для обычной отмены необязательно. Для аварийной остановки — обязательно.</small>
                 </label>
                 <div class="mgw-admin__tournament-actions">
                   <button type="button" data-tournament-cancel disabled>Отменить турнир</button>
@@ -180,10 +181,16 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
                 <div class="mgw-admin__history" data-tournament-review-list></div>
               </div>
               <div class="mgw-admin__tournament-schedule" data-tournament-schedule-panel hidden>
-                <label class="mgw-admin__field">
-                  <span>Финальная дата и время начала</span>
-                  <input data-tournament-start type="datetime-local" step="60">
-                </label>
+                <div class="mgw-admin__tournament-date-time">
+                  <label class="mgw-admin__field">
+                    <span>Дата начала</span>
+                    <input data-tournament-start-date type="date">
+                  </label>
+                  <label class="mgw-admin__field">
+                    <span>Время начала</span>
+                    <input data-tournament-start-time type="time" step="60">
+                  </label>
+                </div>
                 <div class="mgw-admin__tournament-actions">
                   <button type="button" data-tournament-assign-date disabled>Назначить дату</button>
                 </div>
