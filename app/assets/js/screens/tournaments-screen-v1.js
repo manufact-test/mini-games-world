@@ -1309,7 +1309,7 @@ function tournamentTerminalMarkup(progression, activeRoundMarkup){
       </div>
       <div class="tournaments-v2-terminal-podium">${podiumMarkup}</div>
       ${selfResult ? `<div class="tournaments-v2-terminal-self">
-        <div><span>Ваш результат</span><strong>${escapeHtml(selfTitle)}</strong><p>${escapeHtml(moneyCopy)}</p></div>
+        <div><span>Ваш результат</span><strong>${escapeHtml(selfTitle)}</strong><p class="tournaments-v2-terminal-payout">${escapeHtml(moneyCopy)}</p></div>
         ${balanceMarkup}
         ${rewardsMarkup}
       </div>` : ''}
