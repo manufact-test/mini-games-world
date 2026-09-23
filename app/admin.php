@@ -14,7 +14,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Admin</title>
-  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=5&replay=17-6&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1">
+  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=6&replay=17-6&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="./assets/js/admin-shell.js?v=4&replay=17-6&test-coins=staging" defer></script>
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
@@ -138,8 +138,8 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
                 <div class="mgw-admin__tournament-current" data-tournament-cancel-info>Отмена турнира недоступна.</div>
                 <label class="mgw-admin__field">
                   <span>Причина</span>
-                  <textarea data-tournament-cancel-reason rows="3" maxlength="1200" placeholder="Опишите причину" style="min-height:88px;padding:11px 12px;resize:vertical"></textarea>
-                  <small style="color:#858791;font-size:11px;line-height:1.45">Для обычной отмены необязательно. Для аварийной остановки — обязательно.</small>
+                  <textarea class="mgw-admin__tournament-reason" data-tournament-cancel-reason rows="3" maxlength="1200" placeholder="Опишите причину"></textarea>
+                  <small class="mgw-admin__field-help">Для обычной отмены необязательно. Для аварийной остановки — обязательно.</small>
                 </label>
                 <div class="mgw-admin__tournament-actions">
                   <button type="button" data-tournament-cancel disabled>Отменить турнир</button>
