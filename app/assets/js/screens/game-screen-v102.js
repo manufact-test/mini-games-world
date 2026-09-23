@@ -38,6 +38,25 @@ export function initGameScreen(){
   runtime.initialized = true;
   document.getElementById('leaveGame')?.addEventListener('click', requestLeaveGame);
 
+  document.addEventListener('mgw:sheet-closed', () => {
+    const game = state.activeGame;
+    const id = String(game?.id || '');
+    if (!id
+        || String(game?.status || '') !== 'finished'
+        || String(game?.match_source || '') !== 'tournament'
+        || !runtime.resultOpened.has(id)
+        || runtime.tournamentResultDismissed.has(id)) return;
+
+    // Closing a tournament result sheet (including a backdrop tap) must never
+    // expose the dead board underneath. Treat dismissal as "back to tournament".
+    runtime.tournamentResultDismissed.add(id);
+    state.activeGame = null;
+    clearGameView();
+    showScreen('tournaments');
+    document.dispatchEvent(new CustomEvent('mgw:tournament-progression-open'));
+    document.dispatchEvent(new CustomEvent('mgw:game-dismissed'));
+  });
+
   document.addEventListener('pointerdown', event => {
     const origin = event.target;
     if (!(origin instanceof Element) || !origin.closest('#gameBoard button')) return;

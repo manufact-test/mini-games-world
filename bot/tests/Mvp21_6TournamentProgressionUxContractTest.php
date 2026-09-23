@@ -48,8 +48,10 @@ $assert(str_contains($screen, 'tournamentActiveRoundMarkup(')
         && str_contains($screen, 'active_round'),
     'Post-round UX must expose the live round grid and an explicit eliminated-participant state.');
 $assert(str_contains($screen, 'tournamentStartBracketArchiveOpen')
-        && str_contains($screen, "body.querySelector('.tournaments-v2-start-bracket-archive')"),
-    'Start-bracket archive open state must survive Hall heartbeat rerenders.');
+        && str_contains($screen, 'tournamentStartBracketArchiveScrollTop')
+        && str_contains($screen, 'captureTournamentArchiveViewport(body)')
+        && str_contains($screen, 'restoreTournamentArchiveViewport(body)'),
+    'Start-bracket archive open state and inner scroll position must survive Hall heartbeat rerenders.');
 $assert(str_contains($screen, 'Все матчи турнира завершены.'),
     'Completed tournament must expose a terminal progression message.');
 $assert(str_contains($screen, 'formatReadyCountdown(opensAt.getTime() - Date.now())'),
@@ -62,7 +64,8 @@ $assert(str_contains($screen, 'synchronizeTournamentTerminalProgression')
         && str_contains($screen, 'stopTournamentStartSync();'),
     'Terminal tournament game must pre-sync durable progression and stop stale launch owners.');
 
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=29')
+$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=30')
+        && str_contains($manifest, 'mvp21_manual=acceptance-corrective-v1')
         && str_contains($manifest, 'mvp21_6=terminal-return-preserve-v5')
         && str_contains($manifest, 'mvp21_8=corrective-v8')
         && str_contains($manifest, 'mvp21_6=active-round-grid-v1')

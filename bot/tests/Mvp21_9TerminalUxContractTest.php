@@ -1,14 +1,16 @@
 <?php
 declare(strict_types=1);
+// Manual acceptance UI corrective CI checkpoint.
 
 $root=dirname(__DIR__);
 $js=file_get_contents(dirname($root).'/app/assets/js/screens/tournaments-screen-v1.js');
+$gameJs=file_get_contents(dirname($root).'/app/assets/js/screens/game-screen-v102.js');
 $css=file_get_contents(dirname($root).'/app/assets/css/main.css');
 $manifest=file_get_contents(dirname($root).'/app/runtime/client/version-manifest.php');
 $api=file_get_contents($root.'/api.php');
 $stagingReset=file_get_contents($root.'/tournaments/StagingTournamentManualAcceptanceService.php');
 
-if(!is_string($js)||!is_string($css)||!is_string($manifest)||!is_string($api)||!is_string($stagingReset)){
+if(!is_string($js)||!is_string($gameJs)||!is_string($css)||!is_string($manifest)||!is_string($api)||!is_string($stagingReset)){
     throw new RuntimeException('MVP-21.9 terminal UX sources are unavailable.');
 }
 
@@ -37,9 +39,17 @@ $assertNotContains("roundNo === 3 ? 'Финальный раунд'", $js, 'Eigh
 
 $assertContains('.tournaments-v2-terminal{', $css, 'Terminal block must have isolated styling.');
 $assertContains('.tournaments-v2-terminal-podium{', $css, 'Podium must have dedicated responsive styling.');
-$assertContains('.tournaments-v2-terminal-archive{', $css, 'Archive disclosure must have dedicated styling.');
+$assertContains('tournaments-v2-tournament-rules tournaments-v2-final-bracket-archive', $js, 'Final archive must reuse the accepted starting-bracket disclosure shell.');
+$assertContains('.tournaments-v2-tournament-rules', $css, 'Unified bracket archive disclosure must reuse the tournament rules styling owner.');
+$assertContains('Награда:', $js, 'Player-facing terminal copy must show only the final tournament reward.');
+$assertNotContains('moneyCopy = `Выплата', $js, 'Player-facing terminal copy must not expose internal prize/entry-return accounting.');
+$assertContains("document.addEventListener('mgw:sheet-closed'", $gameJs, 'Closing a tournament result sheet must have an explicit route owner.');
+$assertContains("String(game?.match_source || '') !== 'tournament'", $gameJs, 'Result-sheet close routing must remain tournament-scoped.');
+$assertContains("showScreen('tournaments')", $gameJs, 'Dismissed tournament result must return to the Tournament surface instead of the dead game board.');
 
 $assertContains('mvp21_9=terminal-results-settlement-v1', $manifest, 'Actual tournament module mapping must publish MVP-21.9 runtime.');
+$assertContains('mvp21_manual=acceptance-corrective-v1', $manifest, 'Manual acceptance corrective must publish a fresh Tournament screen identity.');
+$assertContains('mvp21_manual=tournament-result-return-v1', $manifest, 'Tournament result return corrective must publish a fresh active game-screen identity.');
 $assertContains('mvp21_9=terminal-results-v1', $manifest, 'Actual main CSS mapping must publish MVP-21.9 styling.');
 
 $assertContains('new TournamentSettlementService(', $api, 'Terminal API must use the canonical settlement owner.');
