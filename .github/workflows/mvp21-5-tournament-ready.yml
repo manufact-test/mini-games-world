@@ -270,6 +270,10 @@ jobs:
               bot/services/GameService.php|\
               bot/services/GameRuntimeService.php|\
               bot/services/ChessRuntimeService.php|\
+              bot/services/TournamentReconnectTraceService.php|\
+              bot/presence.php|\
+              bot/staging-projection-diagnostic.php|\
+              bot/tests/Mvp21RealTelegramReconnectTraceTest.php|\
               bot/services/MatchPreparationClockService.php|\
               bot/core/bootstrap.php|\
               bot/api.php|\
