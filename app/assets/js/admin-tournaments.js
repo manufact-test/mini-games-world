@@ -19,7 +19,8 @@
   const open = card.querySelector('[data-tournament-open]');
   const refresh = card.querySelector('[data-tournament-refresh]');
   const schedulePanel = card.querySelector('[data-tournament-schedule-panel]');
-  const scheduleStart = card.querySelector('[data-tournament-start]');
+  const scheduleDate = card.querySelector('[data-tournament-start-date]');
+  const scheduleTime = card.querySelector('[data-tournament-start-time]');
   const assignDate = card.querySelector('[data-tournament-assign-date]');
   const scheduleInfo = card.querySelector('[data-tournament-schedule-info]');
   const manualPanel = card.querySelector('[data-tournament-manual-panel]');
@@ -159,8 +160,8 @@
         control.disabled = assignDate.dataset.available !== '1';
         return;
       }
-      if (control === scheduleStart) {
-        control.disabled = scheduleStart.dataset.locked === '1';
+      if (control === scheduleDate || control === scheduleTime) {
+        control.disabled = control.dataset.locked === '1';
         return;
       }
       if (control === prepareManual) {
@@ -405,10 +406,11 @@
         assignDate.disabled = true;
         assignDate.dataset.available = '0';
       }
-      if (scheduleStart instanceof HTMLInputElement) {
-        scheduleStart.value = '';
-        scheduleStart.disabled = false;
-        scheduleStart.dataset.locked = '0';
+      for (const control of [scheduleDate, scheduleTime]) {
+        if (!(control instanceof HTMLInputElement)) continue;
+        control.value = '';
+        control.disabled = false;
+        control.dataset.locked = '0';
       }
       if (scheduleInfo instanceof HTMLElement) scheduleInfo.textContent = 'Дата ещё не назначена.';
       if (manualPanel instanceof HTMLElement) manualPanel.hidden = true;
@@ -472,15 +474,21 @@
     const waitingForDate = state === 'waiting_for_date';
     const scheduled = state === 'scheduled' && Boolean(tournament.scheduled_start_at_utc);
     if (schedulePanel instanceof HTMLElement) schedulePanel.hidden = !(waitingForDate || scheduled);
-    if (scheduleStart instanceof HTMLInputElement) {
-      scheduleStart.dataset.locked = scheduled ? '1' : '0';
-      scheduleStart.disabled = busy || scheduled;
-      if (scheduled) {
-        const startDate = parseUtc(tournament.scheduled_start_at_utc);
-        if (startDate) {
-          const offset = startDate.getTimezoneOffset() * 60000;
-          scheduleStart.value = new Date(startDate.getTime() - offset).toISOString().slice(0,16);
-        }
+    for (const control of [scheduleDate, scheduleTime]) {
+      if (!(control instanceof HTMLInputElement)) continue;
+      control.dataset.locked = scheduled ? '1' : '0';
+      control.disabled = busy || scheduled;
+    }
+    if (scheduled) {
+      const startDate = parseUtc(tournament.scheduled_start_at_utc);
+      if (startDate) {
+        const yyyy = String(startDate.getFullYear()).padStart(4, '0');
+        const mm = String(startDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(startDate.getDate()).padStart(2, '0');
+        const hh = String(startDate.getHours()).padStart(2, '0');
+        const mi = String(startDate.getMinutes()).padStart(2, '0');
+        if (scheduleDate instanceof HTMLInputElement) scheduleDate.value = `${yyyy}-${mm}-${dd}`;
+        if (scheduleTime instanceof HTMLInputElement) scheduleTime.value = `${hh}:${mi}`;
       }
     }
     if (assignDate instanceof HTMLButtonElement) {
@@ -864,13 +872,16 @@
 
   const assignFinalDate = async () => {
     const tournamentId = String(snapshot?.tournament?.tournament_id || '');
-    if (!tournamentId || !(scheduleStart instanceof HTMLInputElement)) return;
-    const localValue = String(scheduleStart.value || '').trim();
-    if (!localValue) {
-      setStatus('Укажите финальную дату и время начала турнира.', 'error');
+    if (!tournamentId
+        || !(scheduleDate instanceof HTMLInputElement)
+        || !(scheduleTime instanceof HTMLInputElement)) return;
+    const localDate = String(scheduleDate.value || '').trim();
+    const localTime = String(scheduleTime.value || '').trim();
+    if (!localDate || !localTime) {
+      setStatus('Укажите дату и время начала турнира.', 'error');
       return;
     }
-    const start = new Date(localValue);
+    const start = new Date(`${localDate}T${localTime}:00`);
     if (Number.isNaN(start.getTime()) || start.getTime() <= Date.now()) {
       setStatus('Дата начала турнира должна быть в будущем.', 'error');
       return;
