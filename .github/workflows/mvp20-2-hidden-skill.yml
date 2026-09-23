@@ -153,9 +153,6 @@ jobs:
               bot/services/MatchmakingQueue.php|\
               bot/services/GameRuntimeService.php|\
               bot/services/ChessRuntimeService.php|\
-              .github/workflows/mvp21-7-tournament-technical-outcomes.yml|\
-              bot/services/ReconnectLifecycleService.php|\
-              bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php|\
               bot/realtime/RuntimeRealtimeSourceTrait.php|\
               bot/realtime/RealtimeDatabaseStore.php|\
               bot/realtime/RuntimeRealtimeDatabaseTrait.php|\
