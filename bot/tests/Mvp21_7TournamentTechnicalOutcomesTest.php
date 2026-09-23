@@ -263,6 +263,117 @@ $assertSame(1,(int)$db->fetchValue('SELECT COUNT(*) FROM mgw_tournament_match_at
 $assertSame(1,(int)$db->fetchValue("SELECT COUNT(*) FROM mgw_tournament_technical_outcomes
                                     WHERE tournament_id=:t AND round_no=1 AND pair_no=2 AND outcome_code='disconnect_timeout'",['t'=>'tour-217-results']),'Duplicate observer must not duplicate technical audit.');
 
+// Manual-acceptance regression: six synthetic fixture seats must not be
+// treated as T0 no-shows. Only the absent live player may take a technical
+// loss; the three fixture-only pairs must stay unresolved until the explicit
+// staging helper completes them. This prevents vacancy propagation from
+// crowning the surviving live player immediately.
+$hallSource=file_get_contents($root.'/tournaments/TournamentHallService.php');
+$assertTrue(
+    is_string($hallSource)
+    && str_contains($hallSource, '$present = $this->isManualAcceptanceFixtureRegistration($registration);'),
+    'Manual staging fixtures must be seeded as present because they have no Hall WebView heartbeat.'
+);
+
+$manualTournament='tour-217-manual-progress';
+$db->execute('INSERT INTO mgw_tournaments (
+    tournament_id,active_slot,tournament_state,game_type,capacity,scheduled_start_at_utc,bracket_generated_at_utc
+) VALUES (:id,:slot,:state,:game,8,:start,:generated)',[
+    'id'=>$manualTournament,'slot'=>$manualTournament,
+    'state'=>TournamentRegistrationService::STATE_SCHEDULED,'game'=>'tictactoe',
+    'start'=>'2026-09-22 20:00:00.000000','generated'=>'2026-09-22 20:00:00.000000'
+]);
+foreach($players as $i=>$player){
+    $registration='reg-'.$manualTournament.'-'.$i;
+    $db->execute('INSERT INTO mgw_tournament_registrations (
+        tournament_id,registration_id,mgw_id,account_ref,registration_state
+    ) VALUES (:t,:r,:m,:a,:s)',[
+        't'=>$manualTournament,'r'=>$registration,'m'=>$player['mgw'],'a'=>$player['account'],
+        's'=>TournamentRegistrationService::REGISTRATION_REGISTERED
+    ]);
+    $present=$i<=7;
+    $db->execute('INSERT INTO mgw_tournament_bracket_seeds (
+        tournament_id,seed_no,pair_no,registration_id,mgw_id,present_at_start,technical_loss_at_start
+    ) VALUES (:t,:seed,:pair,:r,:m,:present,:technical)',[
+        't'=>$manualTournament,'seed'=>$i,'pair'=>(int)(($i-1)/2)+1,'r'=>$registration,'m'=>$player['mgw'],
+        'present'=>$present?1:0,'technical'=>$present?0:1
+    ]);
+}
+$manualStart=$progress->ensureFirstRoundStructure(
+    $manualTournament,
+    new DateTimeImmutable('2026-09-22T20:00:01Z')
+);
+$manualRound1=$db->fetchAll(
+    'SELECT * FROM mgw_tournament_round_matches
+     WHERE tournament_id=:t AND round_no=1 ORDER BY pair_no',
+    ['t'=>$manualTournament]
+);
+$assertSame(4,count($manualRound1),'Manual 6+2 acceptance must materialize four first-round pairs.');
+for($pair=1;$pair<=3;$pair++){
+    $row=$manualRound1[$pair-1];
+    $assertSame(null,$row['completed_at_utc'],'Fixture-only pair '.$pair.' must wait for explicit staging completion.');
+    $assertSame(TournamentMatchReadinessService::STATE_WAITING_READY,(string)$row['launch_state'],'Fixture-only pair '.$pair.' must remain an unresolved first-round pair.');
+}
+$liveRow=$manualRound1[3];
+$assertSame(TournamentRoundProgressionService::STATE_COMPLETED,(string)$liveRow['launch_state'],'Absent live opponent must still resolve the live first-round pair technically.');
+$assertSame($players[7]['mgw'],(string)$liveRow['winner_mgw_id'],'Present live participant must advance from the no-show pair.');
+$assertSame('technical_loss_at_start',(string)$liveRow['result_reason'],'No-show result must retain its exact technical reason.');
+$assertSame(
+    0,
+    (int)$db->fetchValue(
+        'SELECT COUNT(*) FROM mgw_tournament_round_matches WHERE tournament_id=:t AND round_no=2',
+        ['t'=>$manualTournament]
+    ),
+    'One live technical win must not create the next round while fixture-only pairs are unresolved.'
+);
+$liveStatus=$progress->statusForParticipant(
+    $players[7]['mgw'],$players[7]['account'],$players[7]['legacy'],
+    new DateTimeImmutable('2026-09-22T20:00:02Z')
+);
+$assertSame(false,(bool)$liveStatus['tournament_complete'],'Manual acceptance survivor must not become champion after one technical win.');
+$assertSame(1,(int)$liveStatus['active_round']['round_no'],'Manual acceptance must remain visibly in round one until fixture pairs are completed.');
+$assertSame(1,(int)$liveStatus['active_round']['completed_count'],'Only the live no-show pair may be completed before the staging helper runs.');
+
+for($pair=1;$pair<=3;$pair++){
+    $row=$manualRound1[$pair-1];
+    $a=(string)$row['player_a_mgw_id'];
+    $b=(string)$row['player_b_mgw_id'];
+    $legacyByMgw=[];
+    foreach($players as $player) $legacyByMgw[$player['mgw']]=$player['legacy'];
+    $progress->observeFinishedGame([
+        'id'=>'stg-manual-r1-p'.$pair,
+        'match_source'=>'tournament',
+        'tournament_id'=>$manualTournament,
+        'tournament_round_no'=>1,
+        'tournament_pair_no'=>$pair,
+        'tournament_attempt_no'=>1,
+        'status'=>'finished',
+        'player_ids'=>[$legacyByMgw[$a],$legacyByMgw[$b]],
+        'winner_id'=>$legacyByMgw[$a],
+        'finish_reason'=>'staging_fixture_acceptance',
+        'finished_at'=>'2026-09-22T20:01:00Z',
+    ],new DateTimeImmutable('2026-09-22T20:01:00Z'));
+}
+$manualRound2=$db->fetchAll(
+    'SELECT * FROM mgw_tournament_round_matches
+     WHERE tournament_id=:t AND round_no=2 ORDER BY pair_no',
+    ['t'=>$manualTournament]
+);
+$assertSame(2,count($manualRound2),'Explicit fixture completion must advance only to the two semifinal pairs.');
+$assertSame(
+    0,
+    (int)$db->fetchValue(
+        'SELECT COUNT(*) FROM mgw_tournament_round_matches WHERE tournament_id=:t AND round_no=3',
+        ['t'=>$manualTournament]
+    ),
+    'Final and third-place rows must not exist before both semifinals resolve.'
+);
+$liveStatus=$progress->statusForParticipant(
+    $players[7]['mgw'],$players[7]['account'],$players[7]['legacy'],
+    new DateTimeImmutable('2026-09-22T20:01:01Z')
+);
+$assertSame(false,(bool)$liveStatus['tournament_complete'],'Round-two creation must not trigger terminal settlement semantics.');
+
 $ratingSource=file_get_contents($root.'/ratings/PerGameRatingService.php');
 $assertTrue(
     is_string($ratingSource)
@@ -363,5 +474,5 @@ try{
     $removeTree($temp);
 }
 
-if($assertions<45) throw new RuntimeException('MVP-21.7 technical-outcome test is too shallow: '.$assertions);
+if($assertions<63) throw new RuntimeException('MVP-21.7 technical-outcome test is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_7TournamentTechnicalOutcomesTest: {$assertions} assertions passed\n");
