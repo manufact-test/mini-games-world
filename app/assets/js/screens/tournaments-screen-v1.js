@@ -53,10 +53,10 @@ let tournamentStartBoundaryTimer = null;
 let tournamentStartSyncTimer = null;
 let tournamentTerminalSyncPromise = null;
 let tournamentTerminalReturnPending = false;
-let tournamentStartBracketArchiveOpen = false;
-let tournamentStartBracketArchiveScrollTop = 0;
-let tournamentFinalBracketArchiveOpen = false;
-let tournamentFinalBracketArchiveScrollTop = 0;
+const tournamentRoundArchiveOpen = new Map();
+const tournamentRoundArchiveScrollTop = new Map();
+let tournamentRoundArchiveTournamentId = '';
+let tournamentLastRenderedRoundNo = 0;
 
 function lockVisibleBalance(){
   const ids = ['balanceUnified', 'topbarBalanceUnified'];
