@@ -671,7 +671,7 @@ try{
         ? strpos($presenceSource,'$presence->touch($accountId, $sessionId, $presenceLeaseId);')
         : false;
     $presenceDeparturePos=is_string($presenceSource)
-        ? strpos($presenceSource,"if ($action === 'background')")
+        ? strpos($presenceSource,"if (\$action === 'background')")
         : false;
     $assertTrue(
         is_int($presenceDecisionPos)
