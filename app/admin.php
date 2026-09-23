@@ -20,7 +20,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
   <script src="./assets/js/admin-rating.js?v=1&mvp20_8=rating-admin" defer></script>
-  <script src="./assets/js/admin-tournaments.js?v=15&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3&mvp21_5=corrective-v5&mvp21_6=fixture-progression-helper-v3&mvp21_8=corrective-v12&mvp21_8_cancel=cancellation-emergency-v1&mvp21_10=prize-review-v1" defer></script>
+  <script src="./assets/js/admin-tournaments.js?v=15&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3&mvp21_5=corrective-v5&mvp21_6=fixture-progression-helper-v3&mvp21_8=corrective-v12&mvp21_8_cancel=cancellation-emergency-v1&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1" defer></script>
 </head>
 <body>
   <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php">
@@ -136,9 +136,10 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               </div>
               <div class="mgw-admin__tournament-schedule" data-tournament-cancel-panel hidden>
                 <div class="mgw-admin__tournament-current" data-tournament-cancel-info>Отмена турнира недоступна.</div>
-                <label>
-                  Причина
-                  <textarea data-tournament-cancel-reason rows="3" maxlength="1200" placeholder="Для обычной отмены необязательно. Для аварийной остановки — обязательно."></textarea>
+                <label class="mgw-admin__field">
+                  <span>Причина</span>
+                  <textarea data-tournament-cancel-reason rows="3" maxlength="1200" placeholder="Опишите причину" style="min-height:88px;padding:11px 12px;resize:vertical"></textarea>
+                  <small style="color:#858791;font-size:11px;line-height:1.45">Для обычной отмены необязательно. Для аварийной остановки — обязательно.</small>
                 </label>
                 <div class="mgw-admin__tournament-actions">
                   <button type="button" data-tournament-cancel disabled>Отменить турнир</button>
@@ -181,8 +182,12 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               </div>
               <div class="mgw-admin__tournament-schedule" data-tournament-schedule-panel hidden>
                 <label class="mgw-admin__field">
-                  <span>Финальная дата и время начала</span>
-                  <input data-tournament-start type="datetime-local" step="60">
+                  <span>Дата начала</span>
+                  <input data-tournament-start-date type="date">
+                </label>
+                <label class="mgw-admin__field">
+                  <span>Время начала</span>
+                  <input data-tournament-start-time type="time" step="60">
                 </label>
                 <div class="mgw-admin__tournament-actions">
                   <button type="button" data-tournament-assign-date disabled>Назначить дату</button>
