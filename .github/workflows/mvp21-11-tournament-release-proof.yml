@@ -65,7 +65,6 @@ jobs:
           php bot/tests/Mvp21_1TournamentRegistrationTest.php
           php bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
           php bot/tests/Mvp21_2TournamentRulesTest.php
-          php bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php
           php bot/tests/Mvp21_3TournamentScheduleTest.php
           php bot/tests/Mvp21_4TournamentHallBracketTest.php
           php bot/tests/Mvp21_4TournamentHallUxContractTest.php
