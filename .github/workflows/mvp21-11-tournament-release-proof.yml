@@ -105,7 +105,15 @@ jobs:
           bad=0
           while IFS= read -r path; do
             case "$path" in
+              .github/workflows/mvp21-6-tournament-rounds.yml|\
+              .github/workflows/mvp21-7-tournament-technical-outcomes.yml|\
+              .github/workflows/mvp21-8-tournament-cancellation.yml|\
               .github/workflows/mvp21-11-tournament-release-proof.yml|\
+              bot/tournaments/TournamentRegistrationService.php|\
+              bot/tournaments/TournamentRoundProgressionService.php|\
+              bot/tests/Mvp21_6TournamentRoundProgressionTest.php|\
+              bot/tests/Mvp21_6TournamentRuntimeContractTest.php|\
+              bot/tests/Mvp21_6TournamentProgressionUxContractTest.php|\
               bot/tests/Mvp21_11TournamentReleaseProofTest.php)
                 ;;
               *)
