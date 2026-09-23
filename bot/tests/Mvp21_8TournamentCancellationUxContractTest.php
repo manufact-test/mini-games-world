@@ -81,7 +81,11 @@ $assert(str_contains($files['status'],"snapshot['last_cancellation']"),'Particip
 $assert(str_contains($files['player_ui'],'Взнос возвращён полностью. Результаты турнира аннулированы.'),'Player UI must state full refund and annulment.');
 $assert(str_contains($files['player_ui'],'Аварийная остановка'),'Player UI must distinguish emergency stop.');
 $assert(str_contains($files['player_ui'],'Причина:'),'Player UI must expose cancellation reason.');
+$assert(str_contains($files['player_ui'],'await warmTournamentStatus();')
+        && str_contains($files['player_ui'],'if (!tournamentSnapshot?.tournament)')
+        && str_contains($files['player_ui'],'tournamentHallSnapshot = null;'),
+    'An open Tournament Hall must poll active-tournament liveness and replace stale Hall state immediately after Admin cancellation.');
 $assert(str_contains($files['manifest'],'mvp21_8=cancellation-emergency-v1'),'Client manifest must publish MVP-21.8 tournament UI.');
 
-$assert($assertions>=45,'MVP-21.8 UX/integration contract is too shallow: '.$assertions);
+$assert($assertions>=46,'MVP-21.8 UX/integration contract is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_8TournamentCancellationUxContractTest: {$assertions} assertions passed\n");
