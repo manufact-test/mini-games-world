@@ -1,8 +1,6 @@
 <?php
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/services/TournamentReconnectTraceService.php';
-
 final class TournamentRoundProgressionService
 {
     public const ROUND_BREAK_SECONDS = 180;
@@ -27,12 +25,6 @@ final class TournamentRoundProgressionService
             || (string)($game['status'] ?? '') !== 'finished') {
             throw new InvalidArgumentException('Only finished tournament games may advance tournament rounds.');
         }
-
-        $traceConfig = is_array($GLOBALS['config'] ?? null) ? $GLOBALS['config'] : [];
-        $trace = new TournamentReconnectTraceService($traceConfig);
-        $trace->record('tournament.observe_finished', [
-            'game'=>$trace->gameContext($game),
-        ]);
 
         $tournamentId = trim((string)($game['tournament_id'] ?? ''));
         $roundNo = max(1, (int)($game['tournament_round_no'] ?? 0));
