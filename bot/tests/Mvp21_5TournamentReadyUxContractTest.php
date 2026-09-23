@@ -181,11 +181,12 @@ foreach ([
 $assert(str_contains($source['manifest'], 'client.js?v=1145')
         && str_contains($source['manifest'], 'mvp21_5=ready-v1'),
     'API client must publish a fresh MVP-21.5 cache identity.');
-$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=30')
+$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=31')
         && str_contains($source['manifest'], 'mvp21_8=corrective-v8')
         && str_contains($source['manifest'], 'registration=server-publish-barrier-v1')
         && str_contains($source['manifest'], 'ready=t0-burst-250ms-peer-adoption-v4')
-        && str_contains($source['manifest'], 'mvp21_manual=acceptance-corrective-v1'),
+        && str_contains($source['manifest'], 'mvp21_manual=acceptance-corrective-v1')
+        && str_contains($source['manifest'], 'desktop=endurance-v1'),
     'Tournament screen must publish the fresh corrective-v8 registration/T0/peer-adoption cache identity.');
 $assert(str_contains($source['manifest'], 'production-v110-acceptance-runtime.js?v=132')
         && str_contains($source['manifest'], 'mvp21_5=countdown-10-fresh60-v2'),
