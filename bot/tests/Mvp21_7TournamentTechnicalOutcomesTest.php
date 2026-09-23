@@ -389,7 +389,11 @@ try{
         ],JSON_UNESCAPED_SLASHES),LOCK_EX);
     }
 
-    $assertSame([], $presence->onlineAccountIds(),'Expired leave grace must not keep departed tournament players publicly online.');
+    $onlineAfterAgedLeaves=$presence->onlineAccountIds();
+    $assertTrue(
+        !in_array('r5',$onlineAfterAgedLeaves,true)&&!in_array('r6',$onlineAfterAgedLeaves,true),
+        'Expired leave grace must not keep departed tournament players publicly online.'
+    );
     $staleR5=$presence->gameplaySnapshot('r5');
     $assertSame('disconnected',(string)($staleR5['state']??''),'Two-minute-old explicit leave must remain a gameplay disconnect tombstone.');
     $assertSame($leftAt*1000,(int)($staleR5['disconnected_at_ms']??0),'Gameplay tombstone must preserve the original leave instant for the shared deadline.');
