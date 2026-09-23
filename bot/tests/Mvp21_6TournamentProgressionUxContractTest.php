@@ -72,7 +72,7 @@ $assert(str_contains($manifest, 'tournaments-screen-v1.js?v=29')
 
 $assert(str_contains($api, "'progression'=>\$progressionSnapshot"),
     'Tournament API must expose the durable progression snapshot.');
-$assert(str_contains($progression, 'ROUND_BREAK_SECONDS = 300')
+$assert(str_contains($progression, 'ROUND_BREAK_SECONDS = 180')
         && str_contains($progression, 'DRAW_REPLAY_WAIT_SECONDS = 60'),
     'UI countdown semantics must be backed by canonical server timings.');
 $assert(str_contains($progression, "MATCH_FINAL = 'final'")
