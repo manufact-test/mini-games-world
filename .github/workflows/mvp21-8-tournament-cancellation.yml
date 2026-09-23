@@ -135,6 +135,7 @@ jobs:
               bot/tournaments/TournamentRoundProgressionService.php|\
               bot/tournaments/TournamentSettlementService.php|\
               bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php|\
+              bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php|\
               bot/core/bootstrap.php|\
               bot/admin-tournaments.php|\
               bot/tournament-status.php|\
