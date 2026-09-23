@@ -141,6 +141,7 @@ jobs:
               bot/services/ReconnectLifecycleService.php|\
               bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php|\
               .github/workflows/mvp21-10-tournament-prize-review.yml|\
+              .github/workflows/mvp21-11-tournament-release-proof.yml|\
               bot/database/migrations/20260922_0060_create_tournament_prize_review.php|\
               bot/tournaments/TournamentPrizeReviewService.php|\
               bot/tests/Mvp21_10TournamentPrizeReviewTest.php|\
@@ -166,6 +167,7 @@ jobs:
               bot/tests/Mvp21_9TournamentRewardProjectionTest.php|\
               bot/tests/Mvp21_9TournamentProductProjectionContractTest.php|\
               bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php|\
+              bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php|\
               bot/tests/Mvp21_6TournamentRoundProgressionTest.php|\
               bot/tournaments/TournamentRoundProgressionService.php)
                 ;;

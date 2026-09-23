@@ -115,6 +115,15 @@ jobs:
               bot/tests/Mvp21_6TournamentRoundProgressionTest.php|\
               bot/tests/Mvp21_6TournamentRuntimeContractTest.php|\
               bot/tests/Mvp21_6TournamentProgressionUxContractTest.php|\
+              bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php|\
+              bot/tests/Mvp21_4TournamentHallUxContractTest.php|\
+              bot/tests/Mvp21_5TournamentReadyUxContractTest.php|\
+              bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php|\
+              bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php|\
+              bot/tests/Mvp21_8CorrectiveContractTest.php|\
+              bot/tests/Mvp21_9TerminalUxContractTest.php|\
+              .github/workflows/mvp21-9-tournament-rewards.yml|\
+              .github/workflows/mvp21-10-tournament-prize-review.yml|\
               app/assets/js/screens/tournaments-screen-v1.js|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp21_11TournamentReleaseProofTest.php)

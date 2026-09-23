@@ -53,10 +53,10 @@ let tournamentStartBoundaryTimer = null;
 let tournamentStartSyncTimer = null;
 let tournamentTerminalSyncPromise = null;
 let tournamentTerminalReturnPending = false;
-let tournamentStartBracketArchiveOpen = false;
-let tournamentStartBracketArchiveScrollTop = 0;
-let tournamentFinalBracketArchiveOpen = false;
-let tournamentFinalBracketArchiveScrollTop = 0;
+const tournamentRoundArchiveOpen = new Map();
+const tournamentRoundArchiveScrollTop = new Map();
+let tournamentRoundArchiveTournamentId = '';
+let tournamentLastRenderedRoundNo = 0;
 
 function lockVisibleBalance(){
   const ids = ['balanceUnified', 'topbarBalanceUnified'];
@@ -240,6 +240,7 @@ export function initTournamentsScreen(){
       stopTournamentLaunchWatch();
       stopTournamentStartBoundaryRefresh();
       stopTournamentStartSync();
+      stopTournamentRenderedCountdownTicker();
       return;
     }
     if (tournamentHallPanelVisible()) {
@@ -311,6 +312,7 @@ function bindModeTabs(screen){
         stopTournamentLaunchWatch();
         stopTournamentStartBoundaryRefresh();
         stopTournamentStartSync();
+        stopTournamentRenderedCountdownTicker();
         void activateGame(activeGame);
       }
       if (mode === 'tournaments') {
@@ -527,6 +529,7 @@ function startTournamentVisibleRefresh(){
 
   tournamentVisibleRefreshTimer = window.setTimeout(async () => {
     tournamentVisibleRefreshTimer = null;
+    const renderBefore = tournamentLiveRenderFingerprint();
     if (!tournamentHallPanelVisible()) return;
 
     try {
@@ -557,7 +560,9 @@ function startTournamentVisibleRefresh(){
       tournamentHallError = String(error?.message || 'Не удалось обновить турнир.');
     }
 
-    renderTournamentSnapshot();
+    if (tournamentLiveRenderFingerprint() !== renderBefore) {
+      renderTournamentSnapshot();
+    }
     if (tournamentHallSnapshot?.hall?.entered === true) {
       startTournamentHallHeartbeat();
     }
@@ -687,6 +692,7 @@ function startTournamentHallHeartbeat(){
 
   tournamentHallTimer = window.setTimeout(async () => {
     tournamentHallTimer = null;
+    const renderBefore = tournamentLiveRenderFingerprint();
     if (tournamentHallSnapshot?.hall?.entered !== true || !tournamentHallPanelVisible()) return;
     try {
       await warmTournamentStatus();
@@ -726,7 +732,9 @@ function startTournamentHallHeartbeat(){
       }
       tournamentHallError = String(error?.message || 'Не удалось обновить присутствие в Турнирный зал.');
     }
-    renderTournamentSnapshot();
+    if (tournamentLiveRenderFingerprint() !== renderBefore) {
+      renderTournamentSnapshot();
+    }
     startTournamentHallHeartbeat();
   }, 3000);
 }
@@ -961,7 +969,7 @@ function tournamentHallMarkup(registered, scheduled, scheduledStart){
         <div class="tournaments-v2-hall-head">
           <div>
             <span>Турнирный зал</span>
-            <h3>Стартовая сетка</h3>
+            <h3>Сетка турнира</h3>
           </div>
           <b>СТАРТ</b>
         </div>
@@ -989,131 +997,14 @@ function tournamentHallMarkup(registered, scheduled, scheduledStart){
 }
 
 function tournamentBracketMarkup(bracket){
-  const seeds = Array.isArray(bracket?.seeds) ? bracket.seeds : [];
-  const pairs = new Map();
-  seeds.forEach(seed => {
-    const pairNo = Number(seed?.pair_no || 0);
-    if (!pairs.has(pairNo)) pairs.set(pairNo, []);
-    pairs.get(pairNo).push(seed);
-  });
-
-  const firstRoundArchive = Array.isArray(tournamentProgressionSnapshot?.first_round_archive)
-    ? tournamentProgressionSnapshot.first_round_archive
-    : [];
-  const archiveByPair = new Map(
-    firstRoundArchive.map(match => [Number(match?.pair_no || 0), match])
-  );
-
-  const cards = Array.from(pairs.entries())
-    .sort((a,b) => a[0] - b[0])
-    .map(([pairNo, pair]) => {
-      const a = pair[0] || {};
-      const b = pair[1] || {};
-      const aLoss = a?.technical_loss === true;
-      const bLoss = b?.technical_loss === true;
-      const archivedMatch = archiveByPair.get(pairNo) || null;
-      const archivedPlayers = Array.isArray(archivedMatch?.players) ? archivedMatch.players : [];
-      const archivedPlayer = value => archivedPlayers.find(player =>
-        String(player?.mgw_id || '') !== ''
-        && String(player?.mgw_id || '') === String(value?.mgw_id || '')
-      ) || null;
-      const completed = archivedMatch?.completed === true;
-      const technicalOutcome = archivedMatch ? tournamentTechnicalOutcomeLabel(archivedMatch) : '';
-
-      let outcome = 'Оба участника были в зале. Матч перейдёт к этапу готовности.';
-      if (archivedMatch) {
-        const winner = archivedPlayers.find(player => player?.winner === true);
-        if (completed && technicalOutcome) {
-          outcome = technicalOutcome;
-        } else if (completed && winner) {
-          outcome = `${String(winner?.nickname || 'Игрок')} проходит дальше.`;
-        } else if (completed) {
-          outcome = 'Матч завершён · победитель не назначен.';
-        } else if (String(archivedMatch?.launch_state || '') === 'launched') {
-          outcome = 'Матч идёт.';
-        } else {
-          outcome = 'Матч ещё не завершён.';
-        }
-      } else if (aLoss && !bLoss) {
-        outcome = `${String(b?.nickname || 'Игрок')} проходит дальше · соперник отсутствовал.`;
-      } else if (!aLoss && bLoss) {
-        outcome = `${String(a?.nickname || 'Игрок')} проходит дальше · соперник отсутствовал.`;
-      } else if (aLoss && bLoss) {
-        outcome = 'Оба участника отсутствовали · оба получили техническое поражение. Исход пары будет обработан отдельной турнирной веткой.';
-      }
-
-      const player = value => {
-        const result = archivedPlayer(value);
-        let status = value?.technical_loss === true ? 'тех. поражение' : 'в зале';
-        let lost = value?.technical_loss === true;
-        if (archivedMatch) {
-          if (completed) {
-            const won = result?.winner === true;
-            status = won ? 'прошёл дальше' : 'выбыл';
-            lost = !won;
-          } else if (String(archivedMatch?.launch_state || '') === 'launched') {
-            status = 'играет';
-            lost = false;
-          } else {
-            status = 'участник';
-            lost = false;
-          }
-        }
-        return `<div class="tournaments-v2-bracket-player${lost ? ' is-loss' : ''}">
-          <strong>${escapeHtml(String(value?.nickname || 'Игрок'))}</strong>
-          <span>${escapeHtml(status)}</span>
-        </div>`;
-      };
-
-      return `<article class="tournaments-v2-bracket-pair">
-        <header><span>Пара ${pairNo}</span></header>
-        ${player(a)}
-        ${player(b)}
-        <p>${escapeHtml(outcome)}</p>
-      </article>`;
-    }).join('');
-
   const matchMarkup = tournamentMatchMarkup();
-  if (tournamentProgressionIsAuthoritative()) {
-    return `<div class="tournaments-v2-bracket">
-      ${matchMarkup}
-      <details class="tournaments-v2-tournament-rules tournaments-v2-start-bracket-archive"${tournamentStartBracketArchiveOpen ? ' open' : ''}>
-        <summary><span>Стартовая сетка · архив</span></summary>
-        <div class="tournaments-v2-tournament-rules-body">
-          <div class="tournaments-v2-bracket-grid">${cards}</div>
-        </div>
-      </details>
-    </div>`;
-  }
+  const roundsMarkup = tournamentRoundSectionsMarkup(bracket, tournamentProgressionSnapshot);
   return `<div class="tournaments-v2-bracket">
     ${matchMarkup}
-    <div class="tournaments-v2-hall-section-title"><strong>Первый раунд</strong><span>случайная сетка</span></div>
-    <div class="tournaments-v2-bracket-grid">${cards}</div>
+    ${roundsMarkup}
   </div>`;
 }
 
-function tournamentProgressionIsAuthoritative(){
-  const progression = tournamentProgressionSnapshot && typeof tournamentProgressionSnapshot === 'object'
-    ? tournamentProgressionSnapshot
-    : null;
-  if (!progression) return false;
-  if (progression.tournament_complete === true) return true;
-
-  const current = progression.current_match && typeof progression.current_match === 'object'
-    ? progression.current_match
-    : null;
-  if (current
-      && (Number(current.round_no || 0) > 1
-        || Number(current.attempt_no || 1) > 1
-        || String(current.wait_kind || 'initial_ready') !== 'initial_ready')) {
-    return true;
-  }
-
-  const latest = progression.latest_match && typeof progression.latest_match === 'object'
-    ? progression.latest_match
-    : null;
-  return Boolean(latest?.completed_at_utc);
-}
 
 function tournamentMatchMarkup(){
   const progression = tournamentProgressionSnapshot && typeof tournamentProgressionSnapshot === 'object'
@@ -1211,66 +1102,192 @@ function tournamentTechnicalOutcomeLabel(match){
   return TOURNAMENT_TECHNICAL_RESULT_LABELS[reason] || '';
 }
 
-function tournamentActiveRoundMarkup(progression){
-  const round = progression?.active_round && typeof progression.active_round === 'object'
-    ? progression.active_round
-    : null;
-  const roundNo = Number(round?.round_no || 0);
-  const matches = Array.isArray(round?.matches) ? round.matches : [];
-  if (roundNo <= 1 || matches.length === 0) return '';
+function tournamentSeedFallbackRound(bracket){
+  const seeds = Array.isArray(bracket?.seeds) ? bracket.seeds : [];
+  const pairs = new Map();
+  seeds.forEach(seed => {
+    const pairNo = Number(seed?.pair_no || 0);
+    if (!pairs.has(pairNo)) pairs.set(pairNo, []);
+    pairs.get(pairNo).push(seed);
+  });
 
-  const completed = Math.max(0, Number(round?.completed_count || 0));
-  const total = Math.max(matches.length, Number(round?.total_count || 0));
-  const cards = matches.map(match => {
-    const pairNo = Number(match?.pair_no || 0);
-    const matchKind = String(match?.match_kind || 'elimination');
-    const players = Array.isArray(match?.players) ? match.players : [];
-    let title = `Пара ${pairNo}`;
-    if (matchKind === 'final') title = 'Финал';
-    else if (matchKind === 'third_place') title = 'Матч за 3-е место';
+  const matches = Array.from(pairs.entries())
+    .sort((a,b) => a[0] - b[0])
+    .map(([pairNo, pair]) => {
+      const a = pair[0] || {};
+      const b = pair[1] || {};
+      const aLoss = a?.technical_loss === true;
+      const bLoss = b?.technical_loss === true;
+      let resultReason = null;
+      let completed = false;
+      let winnerMgw = '';
 
-    const playerMarkup = players.length
-      ? players.map(player => {
-          const done = match?.completed === true;
-          const winner = player?.winner === true;
-          let status = player?.self === true ? 'вы' : 'участник';
-          if (done) {
-            if (matchKind === 'final') status = winner ? 'чемпион' : '2 место';
-            else if (matchKind === 'third_place') status = winner ? '3 место' : '4 место';
-            else status = winner ? 'прошёл дальше' : 'выбыл';
-          }
-          return `<div class="tournaments-v2-bracket-player${done && !winner ? ' is-loss' : ''}">
-            <strong>${escapeHtml(String(player?.nickname || 'Игрок'))}${player?.self === true ? ' · вы' : ''}</strong>
-            <span>${escapeHtml(status)}</span>
-          </div>`;
-        }).join('')
-      : '<div class="tournaments-v2-bracket-player is-loss"><strong>Свободный слот</strong><span>без участника</span></div>';
+      if (aLoss && bLoss) {
+        completed = true;
+        resultReason = 'both_absent_at_start';
+      } else if (aLoss !== bLoss) {
+        completed = true;
+        resultReason = 'technical_loss_at_start';
+        winnerMgw = String((aLoss ? b : a)?.mgw_id || '');
+      }
 
-    const technicalOutcome = tournamentTechnicalOutcomeLabel(match);
-    let outcome = 'Ожидает запуска.';
-    if (technicalOutcome) outcome = technicalOutcome;
-    else if (match?.completed === true) outcome = 'Матч завершён.';
-    else if (String(match?.launch_state || '') === 'launched') outcome = 'Матч идёт.';
-    else if (String(match?.wait_kind || '') === 'technical_restart') outcome = 'Технический перезапуск через 1 минуту.';
-    else if (String(match?.wait_kind || '') === 'round_break') outcome = 'Перерыв между раундами.';
+      const players = [a,b]
+        .filter(player => String(player?.mgw_id || '') !== '')
+        .map(player => {
+          const id = String(player?.mgw_id || '');
+          const winner = completed && winnerMgw !== '' && winnerMgw === id;
+          return {
+            mgw_id:id,
+            nickname:String(player?.nickname || 'Игрок'),
+            self:false,
+            winner,
+            loser:completed && !winner,
+          };
+        });
 
-    return `<article class="tournaments-v2-bracket-pair">
-      <header><span>${escapeHtml(title)}</span></header>
-      ${playerMarkup}
-      <p>${escapeHtml(outcome)}</p>
-    </article>`;
-  }).join('');
+      return {
+        round_no:1,
+        pair_no:pairNo,
+        attempt_no:1,
+        wait_kind:'initial_ready',
+        match_kind:'elimination',
+        launch_state:completed ? 'completed' : 'waiting_ready',
+        result_reason:resultReason,
+        completed,
+        players,
+      };
+    });
 
-  const isFinalRound = matches.some(match => ['final','third_place'].includes(String(match?.match_kind || '')));
-  const heading = isFinalRound ? 'Финальный раунд' : `Раунд ${roundNo}`;
-  return `<div class="tournaments-v2-active-round">
-    <div class="tournaments-v2-hall-section-title">
-      <strong>${escapeHtml(heading)}</strong>
-      <span>${escapeHtml(`${completed}/${total} завершено`)}</span>
-    </div>
-    <div class="tournaments-v2-bracket-grid">${cards}</div>
-  </div>`;
+  return {
+    round_no:1,
+    completed_count:matches.filter(match => match.completed === true).length,
+    total_count:matches.length,
+    matches,
+  };
 }
+
+function tournamentRoundLabel(round, rounds){
+  const matches = Array.isArray(round?.matches) ? round.matches : [];
+  const roundNo = Number(round?.round_no || 0);
+  if (matches.some(match => ['final','third_place'].includes(String(match?.match_kind || '')))) {
+    return 'Финальный раунд';
+  }
+
+  const ordered = Array.isArray(rounds) ? rounds : [];
+  const currentIndex = ordered.findIndex(candidate => Number(candidate?.round_no || 0) === roundNo);
+  const nextRound = currentIndex >= 0 ? ordered[currentIndex + 1] : null;
+  const nextMatches = Array.isArray(nextRound?.matches) ? nextRound.matches : [];
+  const nextIsFinal = nextMatches.some(match => ['final','third_place'].includes(String(match?.match_kind || '')));
+  if (nextIsFinal && matches.length === 2) return 'Полуфинал';
+
+  return `Раунд ${roundNo}`;
+}
+
+function tournamentRoundCardMarkup(match){
+  const pairNo = Number(match?.pair_no || 0);
+  const matchKind = String(match?.match_kind || 'elimination');
+  const players = Array.isArray(match?.players) ? match.players : [];
+  const done = match?.completed === true;
+  const hasWinner = players.some(player => player?.winner === true);
+
+  let title = `Пара ${pairNo}`;
+  if (matchKind === 'final') title = 'Финал';
+  else if (matchKind === 'third_place') title = 'Матч за 3-е место';
+
+  const playerMarkup = players.length
+    ? players.map(player => {
+        const winner = player?.winner === true;
+        let status = player?.self === true ? 'вы' : 'участник';
+        if (done) {
+          if (matchKind === 'final') {
+            status = winner ? 'чемпион' : (hasWinner ? '2 место' : 'без результата');
+          } else if (matchKind === 'third_place') {
+            status = winner ? '3 место' : (hasWinner ? '4 место' : 'без результата');
+          } else {
+            status = winner ? 'прошёл дальше' : 'выбыл';
+          }
+        } else if (String(match?.launch_state || '') === 'launched') {
+          status = player?.self === true ? 'вы · играет' : 'играет';
+        }
+
+        return `<div class="tournaments-v2-bracket-player${done && !winner ? ' is-loss' : ''}">
+          <strong>${escapeHtml(String(player?.nickname || 'Игрок'))}${player?.self === true ? ' · вы' : ''}</strong>
+          <span>${escapeHtml(status)}</span>
+        </div>`;
+      }).join('')
+    : '<div class="tournaments-v2-bracket-player is-loss"><strong>Свободный слот</strong><span>без участника</span></div>';
+
+  const technicalOutcome = tournamentTechnicalOutcomeLabel(match);
+  let outcome = 'Ожидает запуска.';
+  if (technicalOutcome) outcome = technicalOutcome;
+  else if (done && hasWinner) {
+    const winner = players.find(player => player?.winner === true);
+    outcome = matchKind === 'final'
+      ? 'Финал завершён.'
+      : matchKind === 'third_place'
+        ? 'Матч за 3-е место завершён.'
+        : `${String(winner?.nickname || 'Игрок')} проходит дальше.`;
+  } else if (done) outcome = 'Матч завершён · победитель не назначен.';
+  else if (String(match?.launch_state || '') === 'launched') outcome = 'Матч идёт.';
+  else if (String(match?.wait_kind || '') === 'technical_restart') outcome = 'Технический перезапуск через 1 минуту.';
+  else if (String(match?.wait_kind || '') === 'round_break') outcome = 'Перерыв между раундами.';
+
+  return `<article class="tournaments-v2-bracket-pair">
+    <header><span>${escapeHtml(title)}</span></header>
+    ${playerMarkup}
+    <p>${escapeHtml(outcome)}</p>
+  </article>`;
+}
+
+function tournamentRoundSectionsMarkup(bracket, progression){
+  const progressionRounds = Array.isArray(progression?.rounds)
+    ? progression.rounds.filter(round => Number(round?.round_no || 0) > 0)
+    : [];
+  const rounds = progressionRounds.length ? progressionRounds : [tournamentSeedFallbackRound(bracket)];
+  const latestRoundNo = rounds.reduce(
+    (max, round) => Math.max(max, Number(round?.round_no || 0)),
+    0
+  );
+  const tournamentId = String(progression?.tournament_id || tournamentSnapshot?.tournament?.tournament_id || '');
+
+  if (tournamentRoundArchiveTournamentId !== tournamentId) {
+    tournamentRoundArchiveTournamentId = tournamentId;
+    tournamentRoundArchiveOpen.clear();
+    tournamentRoundArchiveScrollTop.clear();
+    tournamentLastRenderedRoundNo = 0;
+  }
+
+  if (latestRoundNo > 0 && latestRoundNo !== tournamentLastRenderedRoundNo) {
+    if (tournamentLastRenderedRoundNo > 0) {
+      tournamentRoundArchiveOpen.set(tournamentLastRenderedRoundNo, false);
+    }
+    tournamentRoundArchiveOpen.set(latestRoundNo, true);
+    tournamentLastRenderedRoundNo = latestRoundNo;
+  }
+
+  return rounds.map(round => {
+    const roundNo = Number(round?.round_no || 0);
+    const matches = Array.isArray(round?.matches) ? round.matches : [];
+    const completed = Math.max(0, Number(round?.completed_count || 0));
+    const total = Math.max(matches.length, Number(round?.total_count || 0));
+    const heading = tournamentRoundLabel(round, rounds);
+    const open = tournamentRoundArchiveOpen.has(roundNo)
+      ? tournamentRoundArchiveOpen.get(roundNo) === true
+      : roundNo === latestRoundNo;
+    const cards = matches.map(tournamentRoundCardMarkup).join('');
+
+    return `<details
+      class="tournaments-v2-tournament-rules tournaments-v2-round-archive${roundNo === latestRoundNo ? ' is-current' : ''}"
+      data-tournament-round-archive="${escapeHtml(String(roundNo))}"
+      ${open ? 'open' : ''}>
+      <summary><span>${escapeHtml(heading)} · ${escapeHtml(`${completed}/${total} завершено`)}</span></summary>
+      <div class="tournaments-v2-tournament-rules-body">
+        <div class="tournaments-v2-bracket-grid">${cards}</div>
+      </div>
+    </details>`;
+  }).join('');
+}
+
 
 const TOURNAMENT_TERMINAL_REWARD_LABELS = Object.freeze({
   golden_ticket:'Golden Ticket',
@@ -1292,7 +1309,7 @@ function tournamentTerminalRewardLabel(entitlement){
   return TOURNAMENT_TERMINAL_REWARD_LABELS[code] || code;
 }
 
-function tournamentTerminalMarkup(progression, activeRoundMarkup){
+function tournamentTerminalMarkup(progression){
   const terminal = progression?.terminal_result && typeof progression.terminal_result === 'object'
     ? progression.terminal_result
     : null;
@@ -1309,10 +1326,6 @@ function tournamentTerminalMarkup(progression, activeRoundMarkup){
           ? 'Зафиксирован серьёзный сигнал. Выплата не потеряна и не передана другому владельцу: после Admin review канонический settlement либо разрешит награду, либо применит дисквалификацию и сдвиг мест.'
           : 'Результат сетки уже зафиксирован. Начисление выполняется идемпотентно и будет повторено автоматически.'}</p>
       </section>
-      <details class="tournaments-v2-tournament-rules tournaments-v2-final-bracket-archive"${tournamentFinalBracketArchiveOpen ? ' open' : ''}>
-        <summary><span>Финальная сетка · архив</span></summary>
-        <div class="tournaments-v2-tournament-rules-body">${activeRoundMarkup}</div>
-      </details>
     `;
   }
 
@@ -1366,18 +1379,13 @@ function tournamentTerminalMarkup(progression, activeRoundMarkup){
       </div>` : ''}
       <button class="tournaments-v2-tournament-action tournaments-v2-terminal-action" type="button" data-tournament-terminal-rating>Перейти к рейтингу</button>
     </section>
-    <details class="tournaments-v2-tournament-rules tournaments-v2-final-bracket-archive"${tournamentFinalBracketArchiveOpen ? ' open' : ''}>
-        <summary><span>Финальная сетка · архив</span></summary>
-        <div class="tournaments-v2-tournament-rules-body">${activeRoundMarkup}</div>
-      </details>
   `;
 }
 
 function tournamentProgressionMarkup(match, progression){
-  const activeRoundMarkup = tournamentActiveRoundMarkup(progression);
   const tournamentComplete = progression?.tournament_complete === true;
   if (tournamentComplete) {
-    return tournamentTerminalMarkup(progression, activeRoundMarkup);
+    return tournamentTerminalMarkup(progression);
   }
 
   if (!match) {
@@ -1404,7 +1412,6 @@ function tournamentProgressionMarkup(match, progression){
           </div>
         </div>
       </section>
-      ${activeRoundMarkup}
     `;
   }
 
@@ -1443,17 +1450,25 @@ function tournamentProgressionMarkup(match, progression){
         ${opensAt && waiting ? `<b data-tournament-progression-countdown data-progression-opens-at="${opensAt.getTime()}">${escapeHtml(formatReadyCountdown(opensAt.getTime() - Date.now()))}</b>` : ''}
       </div>
     </section>
-    ${activeRoundMarkup}
   `;
+}
+
+function stopTournamentRenderedCountdownTicker(){
+  if (tournamentCountdownTimer !== null) {
+    window.clearInterval(tournamentCountdownTimer);
+    tournamentCountdownTimer = null;
+  }
 }
 
 function startTournamentRenderedCountdownTicker(body, scheduledStart = null){
   if (!(body instanceof HTMLElement)) return;
+  stopTournamentRenderedCountdownTicker();
 
+  let timerId = null;
   const updateCountdown = () => {
-    if (currentScreen() !== 'tournaments' || !body.isConnected) {
-      if (tournamentCountdownTimer) window.clearInterval(tournamentCountdownTimer);
-      tournamentCountdownTimer = null;
+    if (!body.isConnected || !tournamentHallPanelVisible()) {
+      if (timerId !== null) window.clearInterval(timerId);
+      if (tournamentCountdownTimer === timerId) tournamentCountdownTimer = null;
       return;
     }
 
@@ -1489,49 +1504,92 @@ function startTournamentRenderedCountdownTicker(body, scheduledStart = null){
   };
 
   updateCountdown();
-  tournamentCountdownTimer = window.setInterval(updateCountdown, 1000);
+  timerId = window.setInterval(updateCountdown, 1000);
+  tournamentCountdownTimer = timerId;
 }
 
 function captureTournamentArchiveViewport(body){
-  const startArchive = body.querySelector('.tournaments-v2-start-bracket-archive');
-  if (startArchive instanceof HTMLDetailsElement) {
-    tournamentStartBracketArchiveOpen = startArchive.open;
-    const scroller = startArchive.querySelector('.tournaments-v2-tournament-rules-body');
-    if (scroller instanceof HTMLElement) tournamentStartBracketArchiveScrollTop = scroller.scrollTop;
-  }
-
-  const finalArchive = body.querySelector('.tournaments-v2-final-bracket-archive');
-  if (finalArchive instanceof HTMLDetailsElement) {
-    tournamentFinalBracketArchiveOpen = finalArchive.open;
-    const scroller = finalArchive.querySelector('.tournaments-v2-tournament-rules-body');
-    if (scroller instanceof HTMLElement) tournamentFinalBracketArchiveScrollTop = scroller.scrollTop;
-  }
+  body.querySelectorAll('[data-tournament-round-archive]').forEach(details => {
+    if (!(details instanceof HTMLDetailsElement)) return;
+    const roundNo = Number(details.dataset.tournamentRoundArchive || 0);
+    if (roundNo <= 0) return;
+    tournamentRoundArchiveOpen.set(roundNo, details.open);
+    const scroller = details.querySelector('.tournaments-v2-tournament-rules-body');
+    if (scroller instanceof HTMLElement) {
+      tournamentRoundArchiveScrollTop.set(roundNo, scroller.scrollTop);
+    }
+  });
 }
 
 function restoreTournamentArchiveViewport(body){
   window.requestAnimationFrame(() => {
     if (!body.isConnected) return;
+    body.querySelectorAll('[data-tournament-round-archive]').forEach(details => {
+      if (!(details instanceof HTMLDetailsElement)) return;
+      const roundNo = Number(details.dataset.tournamentRoundArchive || 0);
+      if (roundNo <= 0) return;
 
-    const startArchive = body.querySelector('.tournaments-v2-start-bracket-archive');
-    if (startArchive instanceof HTMLDetailsElement) {
-      startArchive.open = tournamentStartBracketArchiveOpen;
-      const scroller = startArchive.querySelector('.tournaments-v2-tournament-rules-body');
-      if (scroller instanceof HTMLElement) scroller.scrollTop = tournamentStartBracketArchiveScrollTop;
-    }
-
-    const finalArchive = body.querySelector('.tournaments-v2-final-bracket-archive');
-    if (finalArchive instanceof HTMLDetailsElement) {
-      finalArchive.open = tournamentFinalBracketArchiveOpen;
-      const scroller = finalArchive.querySelector('.tournaments-v2-tournament-rules-body');
-      if (scroller instanceof HTMLElement) scroller.scrollTop = tournamentFinalBracketArchiveScrollTop;
-    }
+      if (tournamentRoundArchiveOpen.has(roundNo)) {
+        details.open = tournamentRoundArchiveOpen.get(roundNo) === true;
+      }
+      const scroller = details.querySelector('.tournaments-v2-tournament-rules-body');
+      if (scroller instanceof HTMLElement && tournamentRoundArchiveScrollTop.has(roundNo)) {
+        scroller.scrollTop = Number(tournamentRoundArchiveScrollTop.get(roundNo) || 0);
+      }
+    });
   });
 }
+
+function tournamentLiveRenderFingerprint(){
+  const tournament = tournamentSnapshot?.tournament && typeof tournamentSnapshot.tournament === 'object'
+    ? tournamentSnapshot.tournament
+    : null;
+  const registration = tournamentSnapshot?.registration && typeof tournamentSnapshot.registration === 'object'
+    ? tournamentSnapshot.registration
+    : null;
+  const hall = tournamentHallSnapshot?.hall && typeof tournamentHallSnapshot.hall === 'object'
+    ? tournamentHallSnapshot.hall
+    : null;
+  const roster = Array.isArray(hall?.roster)
+    ? hall.roster.map(player => ({
+        id:String(player?.mgw_id || ''),
+        entered:player?.entered === true,
+        present:player?.present === true,
+      }))
+    : [];
+
+  return JSON.stringify({
+    tournament:tournament ? {
+      id:String(tournament.tournament_id || ''),
+      state:String(tournament.state || ''),
+      count:Number(tournament.registered_count || 0),
+      capacity:Number(tournament.capacity || 0),
+      start:String(tournament.scheduled_start_at_utc || ''),
+    } : null,
+    registration:registration ? {
+      state:String(registration.state || ''),
+      published:registration.published === true,
+      rules:String(registration?.rules_consent?.sha256 || ''),
+    } : null,
+    hall:hall ? {
+      entered:hall.entered === true,
+      open:hall.open === true,
+      started:hall.started === true,
+      roster,
+    } : null,
+    bracket:tournamentHallSnapshot?.bracket || null,
+    match:tournamentMatchSnapshot?.match || null,
+    progression:tournamentProgressionSnapshot || null,
+    hallError:tournamentHallError,
+    matchError:tournamentMatchError,
+    terminalPending:tournamentTerminalReturnPending,
+    busy:tournamentBusy || tournamentHallBusy || tournamentMatchBusy,
+    pendingAction:tournamentPendingAction,
+  });
+}
+
 function renderTournamentSnapshot(errorMessage = ''){
-  if (tournamentCountdownTimer) {
-    window.clearInterval(tournamentCountdownTimer);
-    tournamentCountdownTimer = null;
-  }
+  stopTournamentRenderedCountdownTicker();
   const body = document.getElementById('officialTournamentBody');
   if (!(body instanceof HTMLElement)) return;
   captureTournamentArchiveViewport(body);
