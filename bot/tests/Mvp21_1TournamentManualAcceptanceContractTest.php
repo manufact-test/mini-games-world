@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+// Coordinated manual acceptance CI checkpoint.
 
 $root = dirname(__DIR__, 2);
 $files = [
