@@ -21,7 +21,7 @@ final class AdminWebAuthException extends RuntimeException
 
 final class AdminWebAuth
 {
-    public const MAX_AGE_SECONDS = 4 * 60 * 60;
+    public const MAX_AGE_SECONDS = 15 * 60;
     public const CLOCK_SKEW_SECONDS = 60;
 
     public static function authorize(array $config, string $initData, ?int $now = null): array
