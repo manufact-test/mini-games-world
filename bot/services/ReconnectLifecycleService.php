@@ -175,6 +175,43 @@ final class ReconnectLifecycleService
             $this->markPlayerDisconnected($db, $accountId, $disconnectedAtMs);
         }
 
+        // A returning tournament client can be the first request that notices
+        // both stale foreground leases. The current ping has already refreshed
+        // its own presence document, while previousPresence proves it was away.
+        // After marking that returning player, capture any still-disconnected
+        // opponent BEFORE restoring the current player. Otherwise the one-player
+        // reconnect state is cleared immediately and the opponent falls back to
+        // the shorter 60-second branch instead of the shared 180-second window.
+        if (in_array($action, ['ping', 'status'], true) && $accountId !== '') {
+            foreach (array_keys($db['games'] ?? []) as $gameId) {
+                if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) continue;
+                $game = $db['games'][$gameId];
+                if (!$this->isReconnectManagedGame($game)
+                    || !$this->isTournamentGame($game)
+                    || empty($game['reconnect_v2']['paused'])
+                    || !in_array($accountId, $this->humanPlayerIds($game), true)) {
+                    continue;
+                }
+
+                $players = is_array($game['reconnect_v2']['players'] ?? null)
+                    ? $game['reconnect_v2']['players']
+                    : [];
+                if ($this->allHumanPlayersDisconnected($game, $players)) continue;
+
+                foreach ($this->humanPlayerIds($game) as $playerId) {
+                    if ($playerId === $accountId || isset($players[$playerId])) continue;
+                    $snapshot = $this->presence->gameplaySnapshot($playerId);
+                    if ((string)($snapshot['state'] ?? '') !== 'disconnected') continue;
+                    $this->markPlayerDisconnected(
+                        $db,
+                        $playerId,
+                        $this->disconnectedAtFromPresence($snapshot, $nowMs)
+                    );
+                    break;
+                }
+            }
+        }
+
         // Reconcile explicit leave and foreground lease loss for every active
         // human match. Background leases are intentionally NOT disconnects.
         foreach (array_keys($db['games'] ?? []) as $gameId) {
