@@ -437,6 +437,29 @@ try{
     $assertSame('session-r5-new',(string)$runtime['users']['r5']['active_session_id'],'First returning client must keep transferred session ownership after full resume.');
     $assertSame('session-r6-new',(string)$runtime['users']['r6']['active_session_id'],'Second returning client must receive transferred session ownership after full resume.');
 
+    // A single backgrounded tournament client is still connected-idle. The
+    // fallback must not pause a normal match unless the opponent is also away.
+    $runtimeSingleBackground=$newRuntime('g-217-single-background','r9','r10');
+    $presence->touch('r9','session-r9','lease-r9');
+    $presence->touch('r10','session-r10','lease-r10');
+    $presence->background('r9','session-r9','lease-r9');
+    $singleBackgroundAt=time()-120;
+    $singleAccountDirectory=$temp.DIRECTORY_SEPARATOR.'account-'.hash('sha256','r9');
+    $singleLeasePath=$singleAccountDirectory.DIRECTORY_SEPARATOR.'session-'
+        .hash('sha256',"session-r9\0presence:lease-r9").'.presence';
+    file_put_contents($singleLeasePath,json_encode([
+        'touched_at'=>$singleBackgroundAt,
+        'leave_after'=>0,
+        'mode'=>'background',
+    ],JSON_UNESCAPED_SLASHES),LOCK_EX);
+    $singleSnapshot=$presence->gameplaySnapshot('r9');
+    $assertTrue(!empty($singleSnapshot['tournament_disconnect_fallback']),'Stale background may expose fallback evidence for tournament recovery.');
+    $assertTrue(
+        !$lifecycle->needsMutation($runtimeSingleBackground,'r9','session-r9-new','ping',$singleSnapshot),
+        'One stale background player with a foreground opponent must remain connected-idle and must not pause the tournament match.'
+    );
+    $assertTrue(!isset($runtimeSingleBackground['games']['g-217-single-background']['reconnect_v2']),'Single-background tournament semantics must stay unchanged.');
+
     // Real Telegram Desktop can close/minimize the WebView with only the
     // visibility/background signal reaching the server. The final pagehide
     // leave beacon is not guaranteed. A concurrent bootstrap request can also
@@ -503,5 +526,5 @@ try{
     $removeTree($temp);
 }
 
-if($assertions<73) throw new RuntimeException('MVP-21.7 technical-outcome test is too shallow: '.$assertions);
+if($assertions<76) throw new RuntimeException('MVP-21.7 technical-outcome test is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_7TournamentTechnicalOutcomesTest: {$assertions} assertions passed\n");
