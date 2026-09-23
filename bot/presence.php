@@ -4,6 +4,7 @@ declare(strict_types=1);
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/services/PresenceService.php';
 require_once __DIR__ . '/services/ReconnectLifecycleService.php';
+require_once __DIR__ . '/services/TournamentReconnectTraceService.php';
 
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
@@ -29,6 +30,7 @@ try {
     $presence = new PresenceService();
     $stats = new StatsService($presence);
     $reconnect = new ReconnectLifecycleService($config, $presence);
+    $trace = new TournamentReconnectTraceService($config);
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
 
     // Preserve the state that existed before a fresh ping. It lets a new
@@ -50,26 +52,67 @@ try {
     // Normal four-second presence heartbeats stay read-only. We enter a storage
     // transaction only when reconnect state, expiry or settlement really needs
     // to change, avoiding a new high-frequency JSON write loop.
-    $requiresMutation = $db->readOnly(static function (array $data) use (
+    $decision = $db->readOnly(static function (array $data) use (
         $reconnect,
+        $trace,
         $accountId,
         $sessionId,
         $action,
         $previousPresence
-    ): bool {
-        return $reconnect->needsMutation($data, $accountId, $sessionId, $action, $previousPresence);
+    ): array {
+        return [
+            'requires_mutation'=>$reconnect->needsMutation(
+                $data,
+                $accountId,
+                $sessionId,
+                $action,
+                $previousPresence
+            ),
+            'trace_context'=>$trace->tournamentContextForAccount($data, $accountId),
+        ];
     });
+    $requiresMutation = !empty($decision['requires_mutation']);
+    $traceContext = is_array($decision['trace_context'] ?? null)
+        ? $decision['trace_context']
+        : null;
+    $previousState = (string)($previousPresence['state'] ?? 'unknown');
+    if ($traceContext !== null
+        && ($requiresMutation
+            || in_array($action, ['background', 'leave'], true)
+            || $previousState !== 'foreground')) {
+        $trace->record('presence.request', [
+            'action'=>$action,
+            'account_ref'=>$trace->ref($accountId),
+            'session_ref'=>$trace->ref($sessionId),
+            'lease_ref'=>$trace->ref($presenceLeaseId),
+            'previous_presence'=>$trace->presenceContext($previousPresence),
+            'requires_mutation'=>$requiresMutation,
+            'runtime'=>$traceContext,
+        ]);
+    }
 
     if ($requiresMutation) {
         $result = $db->transaction(static function (array &$data) use (
             $reconnect,
+            $trace,
             $stats,
             $accountId,
             $sessionId,
+            $presenceLeaseId,
             $action,
             $previousPresence
         ): array {
+            $before = $trace->tournamentContextForAccount($data, $accountId);
             $reconnect->synchronize($data, $accountId, $sessionId, $action, $previousPresence);
+            $after = $trace->tournamentContextForAccount($data, $accountId);
+            $trace->record('presence.reconnect_mutation', [
+                'action'=>$action,
+                'account_ref'=>$trace->ref($accountId),
+                'session_ref'=>$trace->ref($sessionId),
+                'lease_ref'=>$trace->ref($presenceLeaseId),
+                'before'=>$before,
+                'after'=>$after,
+            ]);
             return ['stats' => $stats->build($data)];
         });
     } else {
