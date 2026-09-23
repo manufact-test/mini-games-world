@@ -38,12 +38,15 @@ try {
     // before bootstrap encounters the old device lock.
     $previousPresence = $presence->gameplaySnapshot($accountId);
 
-    // Every visible document owns its own presence lease. Background is an
-    // explicit connected-idle state: its normal move timer keeps running. Only
-    // foreground lease loss or pagehide/leave enters the reconnect lifecycle.
-    if ($action === 'ping' || $action === 'status') {
-        $presence->touch($accountId, $sessionId, $presenceLeaseId);
-    } elseif ($action === 'background') {
+    // Departure signals must be published before reconnect evaluation so the
+    // second player leaving can be observed immediately. A returning foreground
+    // heartbeat is deliberately different: do NOT overwrite stale disconnect
+    // evidence yet. Telegram opens bootstrap and presence requests in parallel,
+    // and publishing foreground first lets bootstrap miss the dual-away state
+    // and settle an expired move as a normal timeout before reconnect acquires
+    // the runtime lock.
+    $isForegroundHeartbeat = in_array($action, ['ping', 'status'], true);
+    if ($action === 'background') {
         $presence->background($accountId, $sessionId, $presenceLeaseId);
     } elseif ($action === 'leave') {
         $presence->leave($accountId, $sessionId, $presenceLeaseId);
@@ -96,14 +99,26 @@ try {
             $reconnect,
             $trace,
             $stats,
+            $presence,
             $accountId,
             $sessionId,
             $presenceLeaseId,
             $action,
+            $isForegroundHeartbeat,
             $previousPresence
         ): array {
             $before = $trace->tournamentContextForAccount($data, $accountId);
             $reconnect->synchronize($data, $accountId, $sessionId, $action, $previousPresence);
+
+            // Publish the returning foreground lease while app.lock is still
+            // exclusively owned by this reconnect mutation. Any concurrent
+            // bootstrap cleanup therefore observes either the old absence
+            // evidence or the already-reconciled runtime, never the broken
+            // intermediate state exposed by the former touch-before-lock order.
+            if ($isForegroundHeartbeat) {
+                $presence->touch($accountId, $sessionId, $presenceLeaseId);
+            }
+
             $after = $trace->tournamentContextForAccount($data, $accountId);
             $trace->record('presence.reconnect_mutation', [
                 'action'=>$action,
@@ -116,6 +131,12 @@ try {
             return ['stats' => $stats->build($data)];
         });
     } else {
+        // A normal heartbeat has no reconnect mutation to protect. Publish it
+        // only after the read-only reconnect decision so a returning stale
+        // lease can never be masked before that decision is made.
+        if ($isForegroundHeartbeat) {
+            $presence->touch($accountId, $sessionId, $presenceLeaseId);
+        }
         $result = $db->readOnly(static function (array $data) use ($stats): array {
             return ['stats' => $stats->build($data)];
         });
