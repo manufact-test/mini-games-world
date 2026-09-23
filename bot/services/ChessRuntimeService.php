@@ -10,6 +10,7 @@ require_once dirname(__DIR__) . '/games/domino/DominoService.php';
 require_once __DIR__ . '/MatchPreparationClockService.php';
 require_once __DIR__ . '/PresenceService.php';
 require_once __DIR__ . '/ReconnectLifecycleService.php';
+require_once __DIR__ . '/TournamentReconnectTraceService.php';
 require_once __DIR__ . '/MatchmakingQueue.php';
 require_once __DIR__ . '/BotProfilePolicy.php';
 require_once dirname(__DIR__) . '/runtime/UnifiedGameZonePolicy.php';
@@ -63,14 +64,71 @@ final class ChessRuntimeService
         // absence can let the normal 60-second move timer finish a tournament
         // game before presence has a chance to freeze the shared 180-second
         // dual-disconnect window.
-        if ($this->reconnectLifecycle->needsMutation($db, '', '', 'status', [])) {
+        $trace = new TournamentReconnectTraceService($this->config);
+        $requestAction = trim((string)($GLOBALS['mgw_tournament_reconnect_trace_api_action'] ?? ''));
+        $preflightBefore = $trace->tournamentGames($db);
+        $needsReconnectMutation = $this->reconnectLifecycle->needsMutation($db, '', '', 'status', []);
+        if ($needsReconnectMutation) {
             $this->reconnectLifecycle->synchronize($db, '', '', 'status', []);
+            $preflightAfter = $trace->tournamentGames($db);
+            $trace->record('cleanup.reconnect_preflight_mutated', [
+                'api_action'=>$requestAction,
+                'before'=>$preflightBefore,
+                'after'=>$preflightAfter,
+            ]);
         }
 
+        $before = $trace->tournamentGames($db);
         $this->base->cleanup($db);
+        $after = $trace->tournamentGames($db);
+        if ($before !== $after) {
+            $trace->record('cleanup.stage_changed', [
+                'api_action'=>$requestAction,
+                'stage'=>'base_runtime',
+                'preflight_needed'=>$needsReconnectMutation,
+                'before'=>$before,
+                'after'=>$after,
+            ]);
+        }
+
+        $before = $after;
         $this->chess->cleanup($db);
+        $after = $trace->tournamentGames($db);
+        if ($before !== $after) {
+            $trace->record('cleanup.stage_changed', [
+                'api_action'=>$requestAction,
+                'stage'=>'chess',
+                'preflight_needed'=>$needsReconnectMutation,
+                'before'=>$before,
+                'after'=>$after,
+            ]);
+        }
+
+        $before = $after;
         $this->go->cleanup($db);
+        $after = $trace->tournamentGames($db);
+        if ($before !== $after) {
+            $trace->record('cleanup.stage_changed', [
+                'api_action'=>$requestAction,
+                'stage'=>'go',
+                'preflight_needed'=>$needsReconnectMutation,
+                'before'=>$before,
+                'after'=>$after,
+            ]);
+        }
+
+        $before = $after;
         $this->domino->cleanup($db);
+        $after = $trace->tournamentGames($db);
+        if ($before !== $after) {
+            $trace->record('cleanup.stage_changed', [
+                'api_action'=>$requestAction,
+                'stage'=>'domino',
+                'preflight_needed'=>$needsReconnectMutation,
+                'before'=>$before,
+                'after'=>$after,
+            ]);
+        }
     }
 
     public function cleanupQueue(array &$db): void
