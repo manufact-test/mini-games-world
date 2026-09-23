@@ -30,9 +30,10 @@ $assert(str_contains($screen, 'data-tournament-progression-countdown'),
 $assert(str_contains($screen, 'data-progression-opens-at'),
     'Progression countdown must be anchored to the server-provided open instant.');
 $assert(str_contains($screen, 'startTournamentRenderedCountdownTicker(')
+        && str_contains($screen, 'stopTournamentRenderedCountdownTicker();')
         && str_contains($screen, 'window.setInterval(updateCountdown, 1000)')
-        && str_contains($screen, 'startTournamentRenderedCountdownTicker(body);'),
-    'Started Tournament Hall must tick round/replay countdown every second between heartbeat rerenders.');
+        && str_contains($screen, 'tournamentCountdownTimer = timerId;'),
+    'Started Tournament Hall must keep exactly one owned round/replay countdown ticker.');
 $assert(str_contains($screen, 'Ничья · переигровка начнётся через минуту. Стороны меняются.'),
     'Draw UX must clearly explain the one-minute replay and side swap.');
 $assert(str_contains($screen, 'Раунд завершён · перерыв перед следующим матчем.'),
@@ -43,21 +44,27 @@ $assert(str_contains($screen, "else if (matchKind === 'third_place') stage = 'М
     'Third-place match must have an explicit tournament label.');
 $assert(str_contains($screen, 'Ваш матч завершён · ждём остальные матчи раунда.'),
     'A player who finishes early must be told that the round waits for all matches.');
-$assert(str_contains($screen, 'tournamentActiveRoundMarkup(')
-        && str_contains($screen, 'Вы выбыли из турнира · сетка уже перешла в следующий раунд.')
-        && str_contains($screen, 'active_round'),
-    'Post-round UX must expose the live round grid and an explicit eliminated-participant state.');
-$assert(str_contains($screen, 'tournamentStartBracketArchiveOpen')
-        && str_contains($screen, 'tournamentStartBracketArchiveScrollTop')
+$assert(str_contains($screen, 'tournamentRoundSectionsMarkup(')
+        && str_contains($screen, 'data-tournament-round-archive=')
+        && str_contains($screen, "'Полуфинал'")
+        && str_contains($screen, "'Финальный раунд'")
+        && str_contains($screen, 'Вы выбыли из турнира · сетка уже перешла в следующий раунд.'),
+    'Every materialized round must remain available as its own collapsible bracket section.');
+$assert(str_contains($screen, 'tournamentRoundArchiveOpen')
+        && str_contains($screen, 'tournamentRoundArchiveScrollTop')
         && str_contains($screen, 'captureTournamentArchiveViewport(body)')
         && str_contains($screen, 'restoreTournamentArchiveViewport(body)'),
-    'Start-bracket archive open state and inner scroll position must survive Hall heartbeat rerenders.');
-$assert(str_contains($progression, "'first_round_archive'=>\$firstRoundArchive")
+    'Per-round archive open state and inner scroll position must survive Hall heartbeat updates.');
+$assert(str_contains($progression, "'rounds'=>\$rounds")
+        && str_contains($progression, "'first_round_archive'=>\$firstRoundArchive")
         && str_contains($progression, "'winner'=>\$completed && \$winner !== '' && \$winner === \$participantId")
-        && str_contains($screen, 'tournamentProgressionSnapshot?.first_round_archive')
-        && str_contains($screen, "status = won ? 'прошёл дальше' : 'выбыл'")
+        && str_contains($screen, "status = winner ? 'прошёл дальше' : 'выбыл'")
         && str_contains($screen, "outcome = 'Матч завершён · победитель не назначен.'"),
-    'Start-bracket archive must overlay durable first-round winners, losers and no-winner technical outcomes instead of stale Hall-presence labels.');
+    'Durable round history must preserve winners, losers and no-winner technical outcomes for every stage.');
+$assert(str_contains($screen, 'function tournamentLiveRenderFingerprint()')
+        && substr_count($screen, 'const renderBefore = tournamentLiveRenderFingerprint();') >= 2
+        && substr_count($screen, 'if (tournamentLiveRenderFingerprint() !== renderBefore)') >= 2,
+    'Long-running Hall polling must not rebuild the full tournament DOM when authoritative state is unchanged.');
 $assert(str_contains($screen, 'Все матчи турнира завершены.'),
     'Completed tournament must expose a terminal progression message.');
 $assert(str_contains($screen, 'formatReadyCountdown(opensAt.getTime() - Date.now())'),
@@ -70,15 +77,17 @@ $assert(str_contains($screen, 'synchronizeTournamentTerminalProgression')
         && str_contains($screen, 'stopTournamentStartSync();'),
     'Terminal tournament game must pre-sync durable progression and stop stale launch owners.');
 
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=30')
+$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=31')
         && str_contains($manifest, 'mvp21_manual=acceptance-corrective-v1')
         && str_contains($manifest, 'mvp21_6=terminal-return-preserve-v5')
         && str_contains($manifest, 'mvp21_8=corrective-v8')
         && str_contains($manifest, 'mvp21_6=active-round-grid-v1')
         && str_contains($manifest, 'archive=heartbeat-open-v1')
         && str_contains($manifest, 'mvp21_6=smooth-round-countdown-v1')
-        && str_contains($manifest, 'archive=first-round-results-v1'),
-    'Tournament screen must publish the active-round/archive corrective identity.');
+        && str_contains($manifest, 'archive=first-round-results-v1')
+        && str_contains($manifest, 'archive=per-round-v1')
+        && str_contains($manifest, 'desktop=endurance-v1'),
+    'Tournament screen must publish the per-round archive and desktop endurance identity.');
 
 $assert(str_contains($api, "'progression'=>\$progressionSnapshot"),
     'Tournament API must expose the durable progression snapshot.');
@@ -94,5 +103,5 @@ $assert(str_contains($progression, 'm.player_a_mgw_id=:player_a_mgw_id OR m.play
         && !str_contains($progression, 'm.player_a_mgw_id=:mgw_id OR m.player_b_mgw_id=:mgw_id'),
     'MySQL PDO participant lookup must never reuse the same named placeholder twice in the OR predicate.');
 
-if ($assertions < 23) throw new RuntimeException('MVP-21.6 progression UX contract is too shallow: ' . $assertions);
+if ($assertions < 24) throw new RuntimeException('MVP-21.6 progression UX contract is too shallow: ' . $assertions);
 fwrite(STDOUT, "Mvp21_6TournamentProgressionUxContractTest: {$assertions} assertions passed\n");
