@@ -240,6 +240,7 @@ export function initTournamentsScreen(){
       stopTournamentLaunchWatch();
       stopTournamentStartBoundaryRefresh();
       stopTournamentStartSync();
+      stopTournamentRenderedCountdownTicker();
       return;
     }
     if (tournamentHallPanelVisible()) {
@@ -311,6 +312,7 @@ function bindModeTabs(screen){
         stopTournamentLaunchWatch();
         stopTournamentStartBoundaryRefresh();
         stopTournamentStartSync();
+        stopTournamentRenderedCountdownTicker();
         void activateGame(activeGame);
       }
       if (mode === 'tournaments') {
@@ -527,6 +529,7 @@ function startTournamentVisibleRefresh(){
 
   tournamentVisibleRefreshTimer = window.setTimeout(async () => {
     tournamentVisibleRefreshTimer = null;
+    const renderBefore = tournamentLiveRenderFingerprint();
     if (!tournamentHallPanelVisible()) return;
 
     try {
@@ -557,7 +560,9 @@ function startTournamentVisibleRefresh(){
       tournamentHallError = String(error?.message || 'Не удалось обновить турнир.');
     }
 
-    renderTournamentSnapshot();
+    if (tournamentLiveRenderFingerprint() !== renderBefore) {
+      renderTournamentSnapshot();
+    }
     if (tournamentHallSnapshot?.hall?.entered === true) {
       startTournamentHallHeartbeat();
     }
@@ -687,6 +692,7 @@ function startTournamentHallHeartbeat(){
 
   tournamentHallTimer = window.setTimeout(async () => {
     tournamentHallTimer = null;
+    const renderBefore = tournamentLiveRenderFingerprint();
     if (tournamentHallSnapshot?.hall?.entered !== true || !tournamentHallPanelVisible()) return;
     try {
       await warmTournamentStatus();
@@ -726,7 +732,9 @@ function startTournamentHallHeartbeat(){
       }
       tournamentHallError = String(error?.message || 'Не удалось обновить присутствие в Турнирный зал.');
     }
-    renderTournamentSnapshot();
+    if (tournamentLiveRenderFingerprint() !== renderBefore) {
+      renderTournamentSnapshot();
+    }
     startTournamentHallHeartbeat();
   }, 3000);
 }
