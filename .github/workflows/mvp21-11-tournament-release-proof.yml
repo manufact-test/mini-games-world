@@ -1,0 +1,183 @@
+name: MVP-21.11 Tournament release proof
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.github/workflows/mvp21-11-tournament-release-proof.yml'
+      - 'bot/tests/Mvp21_11TournamentReleaseProofTest.php'
+      - 'bot/tournaments/TournamentRegistrationService.php'
+      - 'bot/tournaments/TournamentMatchReadinessService.php'
+      - 'bot/tournaments/TournamentRoundProgressionService.php'
+      - 'bot/tournaments/TournamentSettlementService.php'
+      - 'bot/tournaments/TournamentCancellationService.php'
+      - 'bot/tournaments/TournamentPrizeReviewService.php'
+      - 'bot/database/migrations/20260920_0049_create_official_tournaments.php'
+      - 'bot/database/migrations/20260920_0050_add_tournament_rules_consent.php'
+      - 'bot/database/migrations/20260921_0052_add_tournament_schedule.php'
+      - 'bot/database/migrations/20260921_0053_create_tournament_hall_bracket.php'
+      - 'bot/database/migrations/20260921_0054_create_tournament_match_readiness.php'
+      - 'bot/database/migrations/20260921_0055_add_tournament_round_progression.php'
+      - 'bot/database/migrations/20260922_0057_create_tournament_results_rewards.php'
+      - 'bot/database/migrations/20260922_0058_add_tournament_technical_outcomes.php'
+      - 'bot/database/migrations/20260922_0059_add_tournament_cancellation_emergency.php'
+      - 'bot/database/migrations/20260922_0060_create_tournament_prize_review.php'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp21-11-release-proof-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sqlite:
+    name: Full release proof on SQLite
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint release proof
+        run: php -l bot/tests/Mvp21_11TournamentReleaseProofTest.php
+
+      - name: Run 8/16/32/64/128 and eight-game lifecycle matrix
+        run: php bot/tests/Mvp21_11TournamentReleaseProofTest.php
+
+      - name: Preserve MVP-21.1 through MVP-21.4
+        run: |
+          php bot/tests/Mvp21_1TournamentRegistrationTest.php
+          php bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
+          php bot/tests/Mvp21_2TournamentRulesTest.php
+          php bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php
+          php bot/tests/Mvp21_3TournamentScheduleTest.php
+          php bot/tests/Mvp21_4TournamentHallBracketTest.php
+          php bot/tests/Mvp21_4TournamentHallUxContractTest.php
+
+      - name: Preserve MVP-21.5 through MVP-21.7
+        run: |
+          php bot/tests/Mvp21_5TournamentMatchReadinessTest.php
+          php bot/tests/Mvp21_5TournamentReadyUxContractTest.php
+          php bot/tests/Mvp21_6TournamentRoundProgressionTest.php
+          php bot/tests/Mvp21_6TournamentRuntimeContractTest.php
+          php bot/tests/Mvp21_6TournamentProgressionUxContractTest.php
+          php bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php
+
+      - name: Preserve MVP-21.8 through MVP-21.10
+        run: |
+          php bot/tests/Mvp21_8TournamentCancellationTest.php
+          php bot/tests/Mvp21_8TournamentCancellationUxContractTest.php
+          php bot/tests/Mvp21_9TournamentSettlementTest.php
+          php bot/tests/Mvp21_9TerminalUxContractTest.php
+          php bot/tests/Mvp21_9TournamentRewardProjectionTest.php
+          php bot/tests/Mvp21_9TournamentProductProjectionContractTest.php
+          php bot/tests/Mvp21_10TournamentPrizeReviewTest.php
+          php bot/tests/Mvp21_10TournamentPrizeReviewContractTest.php
+
+      - name: Preserve frozen eight-game mechanics
+        run: |
+          php bot/tests/Mvp167AllGamesRegressionContractTest.php
+          php bot/tests/Mvp14r2GamesBaselineTest.php
+          php bot/tests/Mvp14r2GamesContractTest.php
+
+      - name: Guard release-proof scope and authoritative owners
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp21-11-tournament-release-proof.yml|\
+              bot/tests/Mvp21_11TournamentReleaseProofTest.php)
+                ;;
+              *)
+                echo "Unexpected MVP-21.11 implementation path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+
+          git diff --exit-code "$base" "$head" -- \
+            bot/games \
+            app/assets/js/games \
+            app/assets/css/games \
+            bot/ledger/LedgerWriteService.php \
+            bot/shop \
+            bot/runtime/ProductionPrimaryApplicationEntrypoints.php \
+            bot/cron
+
+  mysql:
+    name: Large-capacity release proof on MySQL 8.4
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring
+          coverage: none
+
+      - name: Run large-capacity and eight-game release proof
+        env:
+          MGW_TEST_MYSQL_HOST: 127.0.0.1
+          MGW_TEST_MYSQL_PORT: 3306
+          MGW_TEST_MYSQL_DATABASE: mgw_test
+          MGW_TEST_MYSQL_USER: root
+          MGW_TEST_MYSQL_PASSWORD: root
+        run: php bot/tests/Mvp21_11TournamentReleaseProofTest.php
+
+  release-gate:
+    name: MVP-21.11 final release-proof gate
+    runs-on: ubuntu-24.04
+    needs: [sqlite, mysql]
+    if: always()
+    steps:
+      - name: Require every release-proof owner
+        shell: bash
+        run: |
+          test "${{ needs.sqlite.result }}" = "success"
+          test "${{ needs.mysql.result }}" = "success"
+          echo "MVP-21.11 release proof passed."
