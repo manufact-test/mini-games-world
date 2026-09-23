@@ -58,8 +58,20 @@
   let cancelConfirmUntil = 0;
   let cancelConfirmKind = '';
   let cancelConfirmTimer = null;
+  let passiveRefreshTimer = null;
+  let passiveRefreshInFlight = false;
+  const PASSIVE_REFRESH_MS = 8000;
 
   const format = value => new Intl.NumberFormat('ru-RU').format(Number(value || 0));
+  const confirmAction = message => new Promise(resolve => {
+    if (telegram && typeof telegram.showConfirm === 'function') {
+      try {
+        telegram.showConfirm(message, confirmed => resolve(confirmed === true));
+        return;
+      } catch (_) {}
+    }
+    resolve(window.confirm(message));
+  });
   const stateLabel = value => ({
     draft:'черновик',
     registration_open:'регистрация открыта',
@@ -599,28 +611,32 @@
     renderPrizeReview(tournament);
   };
 
+  const applyResponseState = data => {
+    manualAcceptance = data?.manual_acceptance && typeof data.manual_acceptance === 'object'
+      ? data.manual_acceptance
+      : manualAcceptance;
+    manualReset = data?.manual_reset && typeof data.manual_reset === 'object'
+      ? data.manual_reset
+      : manualReset;
+    manualProgression = data?.manual_progression && typeof data.manual_progression === 'object'
+      ? data.manual_progression
+      : manualProgression;
+    cancellation = data?.cancellation && typeof data.cancellation === 'object'
+      ? data.cancellation
+      : cancellation;
+    prizeReview = data?.prize_review && typeof data.prize_review === 'object'
+      ? data.prize_review
+      : prizeReview;
+    render(data?.snapshot || {});
+  };
+
   const withBusy = async (message, action) => {
     if (busy) return null;
     setBusy(true);
     setStatus(message);
     try {
       const data = await action();
-      manualAcceptance = data?.manual_acceptance && typeof data.manual_acceptance === 'object'
-        ? data.manual_acceptance
-        : manualAcceptance;
-      manualReset = data?.manual_reset && typeof data.manual_reset === 'object'
-        ? data.manual_reset
-        : manualReset;
-      manualProgression = data?.manual_progression && typeof data.manual_progression === 'object'
-        ? data.manual_progression
-        : manualProgression;
-      cancellation = data?.cancellation && typeof data.cancellation === 'object'
-        ? data.cancellation
-        : cancellation;
-      prizeReview = data?.prize_review && typeof data.prize_review === 'object'
-        ? data.prize_review
-        : prizeReview;
-      render(data.snapshot || {});
+      applyResponseState(data);
       return data;
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Не удалось выполнить операцию с турниром.', 'error');
@@ -642,6 +658,30 @@
     } catch (_) {}
   };
 
+  const passiveRefresh = async () => {
+    if (busy || passiveRefreshInFlight || document.hidden || !telegram?.initData) return;
+    passiveRefreshInFlight = true;
+    try {
+      const data = await post({action:'snapshot', passive_refresh:true});
+      applyResponseState(data);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      if (/сессия панели устарела/i.test(message)) {
+        setStatus(message, 'error');
+      }
+    } finally {
+      passiveRefreshInFlight = false;
+    }
+  };
+
+  const schedulePassiveRefresh = () => {
+    if (passiveRefreshTimer) window.clearTimeout(passiveRefreshTimer);
+    passiveRefreshTimer = window.setTimeout(async () => {
+      await passiveRefresh();
+      schedulePassiveRefresh();
+    }, PASSIVE_REFRESH_MS);
+  };
+
   const createDraft = async () => {
     const selectedGame = String(game.value || '').trim();
     const selectedCapacity = Number(capacity.value || 0);
@@ -650,7 +690,7 @@
       setStatus('Выберите игру и допустимый размер турнира.', 'error');
       return;
     }
-    if (!window.confirm(`Создать черновик официального турнира на ${selectedCapacity} участников? Взнос 50 000, правила и снимок наград будут зафиксированы.`)) return;
+    if (!(await confirmAction(`Создать черновик официального турнира на ${selectedCapacity} участников? Взнос 50 000, правила и снимок наград будут зафиксированы.`))) return;
 
     try {
       await withBusy('Создаю черновик турнира…', () => post({
@@ -666,7 +706,7 @@
   const openRegistration = async () => {
     const tournamentId = String(snapshot?.tournament?.tournament_id || '');
     if (!tournamentId) return;
-    if (!window.confirm('Открыть регистрацию? Игроки смогут резервировать 50 000 коинов и занимать места.')) return;
+    if (!(await confirmAction('Открыть регистрацию? Игроки смогут резервировать 50 000 коинов и занимать места.'))) return;
 
     try {
       await withBusy('Открываю регистрацию…', () => post({
@@ -685,7 +725,7 @@
     const mode = manualAcceptance?.modes?.[String(liveSeats)] || {};
     const target = Number(mode.target_registered_count || Math.max(0, cap - liveSeats));
     if (!tournament || cap < 2 || target <= count) return;
-    if (!window.confirm(`Только staging: добавить тестовых участников до ${target}/${cap} и оставить живых мест — ${liveSeats}?`)) return;
+    if (!(await confirmAction(`Только staging: добавить тестовых участников до ${target}/${cap} и оставить живых мест — ${liveSeats}?`))) return;
 
     try {
       const data = await withBusy('Готовлю турнир для ручной проверки…', () => post({
@@ -704,7 +744,7 @@
     if (manualProgression?.available !== true) return;
     const fixturePairs = Number(manualProgression.fixture_pair_count || 0);
     const roundNo = Number(manualProgression.round_no || 0);
-    if (!window.confirm(`Только staging: канонически завершить fixture-only пары раунда ${roundNo} (пар: ${fixturePairs})? Реальные пары не затрагиваются.`)) return;
+    if (!(await confirmAction(`Только staging: канонически завершить fixture-only пары раунда ${roundNo} (пар: ${fixturePairs})? Реальные пары не затрагиваются.`))) return;
     try {
       const data = await withBusy('Завершаю fixture-only пары через турнирный progression owner…', () => post({
         action:'complete_fixture_pairs',
@@ -847,7 +887,7 @@
       return;
     }
     if (decision === 'disqualify'
-        && !window.confirm('Дисквалифицировать игрока? Призовые места ниже будут сдвинуты каноническим settlement owner.')) return;
+        && !(await confirmAction('Дисквалифицировать игрока? Призовые места ниже будут сдвинуты каноническим settlement owner.'))) return;
 
     try {
       const data = await withBusy(
@@ -887,7 +927,7 @@
       return;
     }
     const label = formatDateTime(start);
-    if (!window.confirm(`Назначить старт турнира на ${label}? После сохранения перенести дату в MVP-21.3 нельзя.`)) return;
+    if (!(await confirmAction(`Назначить старт турнира на ${label}? После сохранения перенести дату в MVP-21.3 нельзя.`))) return;
 
     try {
       const data = await withBusy('Назначаю финальную дату и создаю напоминания…', () => post({
@@ -900,7 +940,13 @@
       } else {
         setStatus('Дата турнира назначена. Участникам подготовлены напоминания за день, час и 15 минут.', 'ok');
       }
-    } catch (_) {}
+    } catch (error) {
+      if (scheduleInfo instanceof HTMLElement) {
+        scheduleInfo.textContent = error instanceof Error
+          ? error.message
+          : 'Не удалось назначить дату турнира.';
+      }
+    }
   };
 
   refresh?.addEventListener('click', load);
@@ -914,7 +960,22 @@
   reviewFlag?.addEventListener('click', () => { void flagPrizeReview(); });
   assignDate?.addEventListener('click', assignFinalDate);
 
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (passiveRefreshTimer) window.clearTimeout(passiveRefreshTimer);
+      passiveRefreshTimer = null;
+      return;
+    }
+    void passiveRefresh();
+    schedulePassiveRefresh();
+  });
+
+  window.addEventListener('focus', () => {
+    void passiveRefresh();
+  });
+
   if (telegram?.initData) {
     window.setTimeout(load, 180);
+    window.setTimeout(schedulePassiveRefresh, 1200);
   }
 })();
