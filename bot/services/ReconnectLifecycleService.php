@@ -540,6 +540,11 @@ final class ReconnectLifecycleService
 
     private function disconnectedAtFromPresence(array $snapshot, int $nowMs): int
     {
+        $explicitDisconnectedAtMs = (int)($snapshot['disconnected_at_ms'] ?? 0);
+        if ($explicitDisconnectedAtMs > 0) {
+            return max(0, min($nowMs, $explicitDisconnectedAtMs));
+        }
+
         $lastForeground = (int)($snapshot['last_foreground_at'] ?? 0);
         if ($lastForeground <= 0) return $nowMs;
 
