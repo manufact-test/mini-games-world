@@ -170,6 +170,15 @@ $assertSame(false,(bool)($winnerProgress['participant_eliminated'] ?? true),'Fir
 $assertSame(true,(bool)($loserProgress['participant_eliminated'] ?? false),'First-round loser must be explicitly marked eliminated.');
 $assertSame(2,(int)($loserProgress['active_round']['round_no'] ?? 0),'Eliminated participant must still see the tournament advance to round two.');
 $assertTrue(is_array($loserProgress['active_round']['matches'] ?? null) && count($loserProgress['active_round']['matches'])===2,'Eliminated participant must receive the visible active-round bracket.');
+$assertSame(4,count($winnerProgress['first_round_archive'] ?? []),'Progression must expose all four first-round pairs for the immutable start-bracket archive.');
+$firstArchivePair1=$winnerProgress['first_round_archive'][0] ?? [];
+$assertSame(true,(bool)($firstArchivePair1['completed'] ?? false),'First-round archive must mark a finished pair as completed.');
+$assertSame('normal_win',(string)($firstArchivePair1['result_reason'] ?? ''),'First-round archive must preserve the durable result reason.');
+$assertTrue(
+ is_array($firstArchivePair1['players'] ?? null)
+ && count(array_filter($firstArchivePair1['players'],static fn(array $p):bool=>($p['winner']??false)===true))===1,
+ 'First-round archive must identify exactly one durable winner for a normal completed pair.'
+);
 $semi=$db->fetchAll('SELECT * FROM mgw_tournament_round_matches WHERE tournament_id=:t AND round_no=2 ORDER BY pair_no',['t'=>$tournament]);
 $assertSame('2026-09-21 10:06:30.000000',(string)$semi[0]['readiness_opened_at_utc'],'Next round must open three minutes after the last match finishes.');
 $assertSame(TournamentRoundProgressionService::WAIT_ROUND_BREAK,(string)$semi[0]['wait_kind'],'Next round must expose round-break wait.');
@@ -245,5 +254,5 @@ foreach($bothAbsentRows as $row){
  $assertSame(null,$row['winner_mgw_id'],'Both-absent pair must not invent a winner.');
 }
 
-if($assertions<42) throw new RuntimeException('MVP-21.6 progression test is too shallow: '.$assertions);
+if($assertions<46) throw new RuntimeException('MVP-21.6 progression test is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_6TournamentRoundProgressionTest: {$assertions} assertions passed\n");
