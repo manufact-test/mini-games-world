@@ -1301,7 +1301,7 @@ function tournamentTerminalRewardLabel(entitlement){
   return TOURNAMENT_TERMINAL_REWARD_LABELS[code] || code;
 }
 
-function tournamentTerminalMarkup(progression, activeRoundMarkup){
+function tournamentTerminalMarkup(progression){
   const terminal = progression?.terminal_result && typeof progression.terminal_result === 'object'
     ? progression.terminal_result
     : null;
@@ -1318,10 +1318,6 @@ function tournamentTerminalMarkup(progression, activeRoundMarkup){
           ? 'Зафиксирован серьёзный сигнал. Выплата не потеряна и не передана другому владельцу: после Admin review канонический settlement либо разрешит награду, либо применит дисквалификацию и сдвиг мест.'
           : 'Результат сетки уже зафиксирован. Начисление выполняется идемпотентно и будет повторено автоматически.'}</p>
       </section>
-      <details class="tournaments-v2-tournament-rules tournaments-v2-final-bracket-archive"${tournamentFinalBracketArchiveOpen ? ' open' : ''}>
-        <summary><span>Финальная сетка · архив</span></summary>
-        <div class="tournaments-v2-tournament-rules-body">${activeRoundMarkup}</div>
-      </details>
     `;
   }
 
@@ -1375,18 +1371,13 @@ function tournamentTerminalMarkup(progression, activeRoundMarkup){
       </div>` : ''}
       <button class="tournaments-v2-tournament-action tournaments-v2-terminal-action" type="button" data-tournament-terminal-rating>Перейти к рейтингу</button>
     </section>
-    <details class="tournaments-v2-tournament-rules tournaments-v2-final-bracket-archive"${tournamentFinalBracketArchiveOpen ? ' open' : ''}>
-        <summary><span>Финальная сетка · архив</span></summary>
-        <div class="tournaments-v2-tournament-rules-body">${activeRoundMarkup}</div>
-      </details>
   `;
 }
 
 function tournamentProgressionMarkup(match, progression){
-  const activeRoundMarkup = tournamentActiveRoundMarkup(progression);
   const tournamentComplete = progression?.tournament_complete === true;
   if (tournamentComplete) {
-    return tournamentTerminalMarkup(progression, activeRoundMarkup);
+    return tournamentTerminalMarkup(progression);
   }
 
   if (!match) {
@@ -1413,7 +1404,6 @@ function tournamentProgressionMarkup(match, progression){
           </div>
         </div>
       </section>
-      ${activeRoundMarkup}
     `;
   }
 
@@ -1452,7 +1442,6 @@ function tournamentProgressionMarkup(match, progression){
         ${opensAt && waiting ? `<b data-tournament-progression-countdown data-progression-opens-at="${opensAt.getTime()}">${escapeHtml(formatReadyCountdown(opensAt.getTime() - Date.now()))}</b>` : ''}
       </div>
     </section>
-    ${activeRoundMarkup}
   `;
 }
 
