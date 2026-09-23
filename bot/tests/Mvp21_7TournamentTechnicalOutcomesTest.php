@@ -524,6 +524,72 @@ try{
     $assertSame('g-217-background-bootstrap-race',(string)$runtime['users']['r7']['current_game_id'],'First player must keep the original tournament game after recovery.');
     $assertSame('g-217-background-bootstrap-race',(string)$runtime['users']['r8']['current_game_id'],'Second player must keep the original tournament game after recovery.');
 
+    // Real Telegram can also destroy one old document lease completely.
+    // On return that player has previousPresence=unknown, while the opponent
+    // still has a stale background lease. The durable game session timestamp
+    // must provide only the missing half of the dual-away proof.
+    $runtime=$newRuntime('g-217-return-unknown-lease','r13','r14');
+    $runtime['users']['r13']['active_session_at']=gmdate('c',time()-120);
+    $runtime['users']['r14']['active_session_at']=gmdate('c',time()-120);
+
+    $presence->touch('r14','session-r14','lease-r14-old');
+    $presence->background('r14','session-r14','lease-r14-old');
+    $unknownPeerBackgroundAt=time()-120;
+    $r14Directory=$temp.DIRECTORY_SEPARATOR.'account-'.hash('sha256','r14');
+    $r14LeasePath=$r14Directory.DIRECTORY_SEPARATOR.'session-'
+        .hash('sha256',"session-r14\0presence:lease-r14-old").'.presence';
+    file_put_contents($r14LeasePath,json_encode([
+        'touched_at'=>$unknownPeerBackgroundAt,
+        'leave_after'=>0,
+        'mode'=>'background',
+    ],JSON_UNESCAPED_SLASHES),LOCK_EX);
+
+    $unknownPrevious=$presence->gameplaySnapshot('r13');
+    $assertSame('unknown',(string)($unknownPrevious['state']??''),'Destroyed Telegram document lease must reproduce previousPresence=unknown.');
+    $presence->touch('r13','session-r13-new','lease-r13-new');
+    $assertTrue(
+        $lifecycle->needsMutation($runtime,'r13','session-r13-new','ping',$unknownPrevious),
+        'Unknown returning lease plus stale game session and independently absent opponent must enter dual reconnect before individual expiry.'
+    );
+    $lifecycle->synchronize($runtime,'r13','session-r13-new','ping',$unknownPrevious);
+    $reconnect=$runtime['games']['g-217-return-unknown-lease']['reconnect_v2']??[];
+    $assertTrue(!empty($reconnect['tournament_both_disconnect']),'Unknown returning lease must still recover the shared 180-second tournament branch.');
+    $remaining=$reconnect['players']??[];
+    $assertTrue(!isset($remaining['r13'])&&isset($remaining['r14']),'Returning unknown-lease player must resume while the independently absent opponent remains in the shared window.');
+    $assertSame('active',(string)$runtime['games']['g-217-return-unknown-lease']['status'],'Unknown-lease recovery must not terminalize the tournament match.');
+    $assertSame('g-217-return-unknown-lease',(string)$runtime['users']['r13']['current_game_id'],'Unknown-lease return must preserve the same tournament game ownership.');
+
+    $previousR14=$presence->gameplaySnapshot('r14');
+    $presence->touch('r14','session-r14-new','lease-r14-new');
+    $lifecycle->synchronize($runtime,'r14','session-r14-new','ping',$previousR14);
+    $assertTrue(!isset($runtime['games']['g-217-return-unknown-lease']['reconnect_v2']),'Second player returning before 180 seconds must fully resume the unknown-lease recovery game.');
+    $assertSame('active',(string)$runtime['games']['g-217-return-unknown-lease']['status'],'Both players returning from unknown-lease race must resume the original active game.');
+    $assertSame('g-217-return-unknown-lease',(string)$runtime['users']['r14']['current_game_id'],'Second player must retain the original tournament game after unknown-lease recovery.');
+
+    // Safety boundary: an unknown document lease is NOT by itself a disconnect.
+    // A fresh game-owned session timestamp means this participant is active, so
+    // one stale-background opponent must remain the ordinary single-away case.
+    $runtimeFresh=$newRuntime('g-217-unknown-fresh-session','r15','r16');
+    $runtimeFresh['users']['r15']['active_session_at']=now_iso();
+    $runtimeFresh['users']['r16']['active_session_at']=gmdate('c',time()-120);
+    $presence->touch('r16','session-r16','lease-r16-old');
+    $presence->background('r16','session-r16','lease-r16-old');
+    $r16Directory=$temp.DIRECTORY_SEPARATOR.'account-'.hash('sha256','r16');
+    $r16LeasePath=$r16Directory.DIRECTORY_SEPARATOR.'session-'
+        .hash('sha256',"session-r16\0presence:lease-r16-old").'.presence';
+    file_put_contents($r16LeasePath,json_encode([
+        'touched_at'=>time()-120,
+        'leave_after'=>0,
+        'mode'=>'background',
+    ],JSON_UNESCAPED_SLASHES),LOCK_EX);
+    $freshUnknownPrevious=$presence->gameplaySnapshot('r15');
+    $presence->touch('r15','session-r15-new','lease-r15-new');
+    $assertTrue(
+        !$lifecycle->needsMutation($runtimeFresh,'r15','session-r15-new','ping',$freshUnknownPrevious),
+        'Fresh active_session_at must prevent an unknown returning lease from fabricating a dual disconnect.'
+    );
+    $assertTrue(!isset($runtimeFresh['games']['g-217-unknown-fresh-session']['reconnect_v2']),'Fresh-session safety boundary must leave the active tournament untouched.');
+
     // Manual Telegram acceptance exposed the missing ordering owner: bootstrap
     // and other API requests run generic game cleanup before the returning
     // presence ping. At ~90 seconds that cleanup can settle the normal 60-second
@@ -602,5 +668,5 @@ try{
     $removeTree($temp);
 }
 
-if($assertions<88) throw new RuntimeException('MVP-21.7 technical-outcome test is too shallow: '.$assertions);
+if($assertions<103) throw new RuntimeException('MVP-21.7 technical-outcome test is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_7TournamentTechnicalOutcomesTest: {$assertions} assertions passed\n");

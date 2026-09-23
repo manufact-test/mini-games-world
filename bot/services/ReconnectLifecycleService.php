@@ -39,6 +39,30 @@ final class ReconnectLifecycleService
         $action = trim($action);
         $accountId = trim($accountId);
 
+        // A returning Telegram document may have no surviving document-scoped
+        // presence lease at all. In that case previousPresence is "unknown",
+        // while the opponent's stale lease proves the opponent was away. Use
+        // the returning participant's stale active_session_at only as the
+        // missing half of a dual-absence proof. This must run before individual
+        // 60-second reconnect expiry is considered.
+        foreach ($db['games'] ?? [] as $game) {
+            if (!is_array($game)
+                || !$this->isReconnectManagedGame($game)
+                || !$this->isTournamentGame($game)) {
+                continue;
+            }
+            if ($this->tournamentDualDisconnectCandidates(
+                $db,
+                $game,
+                $accountId,
+                $action,
+                $previousPresence,
+                $nowMs
+            ) !== []) {
+                return true;
+            }
+        }
+
         foreach ($db['games'] ?? [] as $game) {
             if (!is_array($game) || !$this->isReconnectManagedGame($game)) continue;
 
@@ -100,10 +124,10 @@ final class ReconnectLifecycleService
 
         // Tournament dual-disconnect owns a longer shared window. Promote
         // BOTH disconnected players before any individual 60-second deadline or
-        // generic game cleanup can settle the match. This also covers the real
-        // Telegram return race where neither closing WebView persisted
-        // reconnect_v2, but both stale presence leases still prove both players
-        // were away.
+        // generic game cleanup can settle the match. The candidate resolver also
+        // covers a real Telegram return where this participant's old document
+        // lease vanished completely: stale active_session_at may prove only the
+        // returning half, and only when the opponent independently proves absent.
         foreach (array_keys($db['games'] ?? []) as $gameId) {
             if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) continue;
             $game = $db['games'][$gameId];
@@ -111,25 +135,15 @@ final class ReconnectLifecycleService
                 continue;
             }
 
-            $humanPlayers = $this->humanPlayerIds($game);
-            if (count($humanPlayers) < 2) continue;
-
-            $players = is_array($game['reconnect_v2']['players'] ?? null)
-                ? $game['reconnect_v2']['players']
-                : [];
-            if ($this->allHumanPlayersDisconnected($game, $players)) continue;
-
-            $candidates = [];
-            foreach ($humanPlayers as $playerId) {
-                if (isset($players[$playerId])) continue;
-                $snapshot = $this->presence->gameplaySnapshot($playerId);
-                if (!$this->presenceSignalsDisconnect($game, $playerId, $snapshot)) continue;
-                $candidates[$playerId] = $this->disconnectedAtFromPresence($snapshot, $nowMs);
-            }
-
-            if (count($players) + count($candidates) < count($humanPlayers)) {
-                continue;
-            }
+            $candidates = $this->tournamentDualDisconnectCandidates(
+                $db,
+                $game,
+                $accountId,
+                $action,
+                $previousPresence,
+                $nowMs
+            );
+            if ($candidates === []) continue;
 
             foreach ($candidates as $playerId => $disconnectedAtMs) {
                 $this->markPlayerDisconnected(
@@ -556,6 +570,110 @@ final class ReconnectLifecycleService
             $epoch = strtotime((string)$value);
             $game[$field] = $epoch === false ? $value : gmdate('c', $epoch + $pauseSec);
         }
+    }
+
+    /**
+     * @return array<string,int> Missing reconnect players that can be promoted
+     *         only when the evidence proves the whole human pair was away.
+     */
+    private function tournamentDualDisconnectCandidates(
+        array $db,
+        array $game,
+        string $accountId,
+        string $action,
+        array $previousPresence,
+        int $nowMs
+    ): array {
+        if (!$this->isTournamentGame($game) || !$this->isReconnectManagedGame($game)) {
+            return [];
+        }
+
+        $humanPlayers = $this->humanPlayerIds($game);
+        if (count($humanPlayers) < 2) return [];
+
+        $players = is_array($game['reconnect_v2']['players'] ?? null)
+            ? $game['reconnect_v2']['players']
+            : [];
+        if ($this->allHumanPlayersDisconnected($game, $players)) return [];
+
+        $accountId = trim($accountId);
+        $action = trim($action);
+        $candidates = [];
+        $strongEvidenceCount = count($players);
+
+        foreach ($humanPlayers as $playerId) {
+            if (isset($players[$playerId])) continue;
+
+            $snapshot = $this->presence->gameplaySnapshot($playerId);
+            if ($this->directTournamentAbsenceSignal($snapshot)) {
+                $candidates[$playerId] = $this->disconnectedAtFromPresence($snapshot, $nowMs);
+                $strongEvidenceCount++;
+                continue;
+            }
+
+            if ($playerId !== $accountId || !in_array($action, ['ping', 'status'], true)) {
+                continue;
+            }
+
+            if ($this->directTournamentAbsenceSignal($previousPresence)) {
+                $candidates[$playerId] = $this->disconnectedAtFromPresence($previousPresence, $nowMs);
+                $strongEvidenceCount++;
+                continue;
+            }
+
+            // Telegram can destroy the old WebView without preserving any
+            // document lease, making previousPresence "unknown" on return. The
+            // gameplay session timestamp is durable runtime evidence that this
+            // exact participant stopped making game-owned requests. It is only
+            // accepted as WEAK evidence here; a second player's independent
+            // reconnect/presence evidence must still prove the pair was away.
+            if ((string)($previousPresence['state'] ?? 'unknown') !== 'unknown') {
+                continue;
+            }
+            $sessionDisconnectedAtMs = $this->sessionDisconnectedAtMs($db, $playerId, $nowMs);
+            if ($sessionDisconnectedAtMs > 0) {
+                $candidates[$playerId] = $sessionDisconnectedAtMs;
+            }
+        }
+
+        if (count($players) + count($candidates) < count($humanPlayers)) {
+            return [];
+        }
+
+        // Never manufacture a dual-disconnect solely from stale session
+        // timestamps. At least one participant must have strong persisted
+        // reconnect/presence evidence.
+        if ($strongEvidenceCount < 1) {
+            return [];
+        }
+
+        return $candidates;
+    }
+
+    private function directTournamentAbsenceSignal(array $snapshot): bool
+    {
+        $state = (string)($snapshot['state'] ?? '');
+        if ($state === 'disconnected') return true;
+
+        return $state === 'background'
+            && !empty($snapshot['tournament_disconnect_fallback']);
+    }
+
+    private function sessionDisconnectedAtMs(array $db, string $playerId, int $nowMs): int
+    {
+        $playerId = trim($playerId);
+        if ($playerId === '' || !isset($db['users'][$playerId]) || !is_array($db['users'][$playerId])) {
+            return 0;
+        }
+
+        $user = $db['users'][$playerId];
+        $activeSessionAt = strtotime((string)($user['active_session_at'] ?? '')) ?: 0;
+        if ($activeSessionAt <= 0) return 0;
+
+        $detectedAt = $activeSessionAt + $this->presence->gameDisconnectWindowSec();
+        if (($detectedAt * 1000) > $nowMs) return 0;
+
+        return max(0, min($nowMs, $detectedAt * 1000));
     }
 
     private function presenceSignalsDisconnect(
