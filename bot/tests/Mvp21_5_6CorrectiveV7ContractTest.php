@@ -67,9 +67,10 @@ foreach ([
     }
 }
 
-$assert(str_contains($screen, 'tournamentProgressionIsAuthoritative()')
-    && str_contains($screen, 'Стартовая сетка · архив'),
-    'Live progression must become primary after a completed/advanced tournament match.');
+$assert(str_contains($screen, 'tournamentRoundSectionsMarkup(')
+    && str_contains($screen, 'data-tournament-round-archive=')
+    && str_contains($screen, 'tournamentProgressionSnapshot'),
+    'Live progression must retain every materialized tournament round as an independent archive section.');
 
 if ($assertions < 32) {
     throw new RuntimeException('MVP-21 corrective v7 contract is too shallow: ' . $assertions);
