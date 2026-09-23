@@ -28,18 +28,18 @@ $assertNotContains=static function(string $needle,string $haystack,string $messa
     }
 };
 
-$assertContains('function tournamentTerminalMarkup(progression, activeRoundMarkup)', $js, 'Terminal presentation must have one explicit owner.');
+$assertContains('function tournamentTerminalMarkup(progression)', $js, 'Terminal presentation must have one explicit owner.');
 $assertContains('Все матчи турнира завершены. Награды начислены', $js, 'Completed tournament must expose settled terminal state.');
 $assertContains('data-tournament-terminal-rating', $js, 'Terminal result must provide a clear next action.');
-$assertContains('Финальная сетка · архив', $js, 'Final bracket must remain available as archive instead of dominating terminal UX.');
-$assertContains("if (matchKind === 'final') status = winner ? 'чемпион' : '2 место';", $js, 'Final winner/loser semantics must be terminal.');
-$assertContains("else if (matchKind === 'third_place') status = winner ? '3 место' : '4 место';", $js, 'Third-place semantics must be terminal.');
+$assertContains("return 'Финальный раунд';", $js, 'Final placement matches must remain available in their own final-round accordion.');
+$assertContains("status = winner ? 'чемпион' : (hasWinner ? '2 место' : 'без результата');", $js, 'Final winner/loser semantics must be terminal.');
+$assertContains("status = winner ? '3 место' : (hasWinner ? '4 место' : 'без результата');", $js, 'Third-place semantics must be terminal.');
 $assertContains("matches.some(match => ['final','third_place'].includes", $js, 'Final-round heading must derive from match kind rather than hard-coded round number.');
 $assertNotContains("roundNo === 3 ? 'Финальный раунд'", $js, 'Eight-player round number must not become a permanent final-round assumption.');
 
 $assertContains('.tournaments-v2-terminal{', $css, 'Terminal block must have isolated styling.');
 $assertContains('.tournaments-v2-terminal-podium{', $css, 'Podium must have dedicated responsive styling.');
-$assertContains('tournaments-v2-tournament-rules tournaments-v2-final-bracket-archive', $js, 'Final archive must reuse the accepted starting-bracket disclosure shell.');
+$assertContains('tournaments-v2-tournament-rules tournaments-v2-round-archive', $js, 'Every round archive, including the final stage, must reuse the accepted disclosure shell.');
 $assertContains('.tournaments-v2-tournament-rules', $css, 'Unified bracket archive disclosure must reuse the tournament rules styling owner.');
 $assertContains('Награда:', $js, 'Player-facing terminal copy must show only the final tournament reward.');
 $assertNotContains('moneyCopy = `Выплата', $js, 'Player-facing terminal copy must not expose internal prize/entry-return accounting.');
