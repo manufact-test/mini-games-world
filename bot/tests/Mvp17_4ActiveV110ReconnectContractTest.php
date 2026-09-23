@@ -75,6 +75,20 @@ $assert(
     'The active v110 presence owner must distinguish background from a real page leave.'
 );
 $assert(
+    str_contains($presence, "telegram.onEvent('deactivated', handleTelegramDeactivated)")
+        && str_contains($presence, "telegram.onEvent('activated', handleTelegramActivated)")
+        && str_contains($presence, "function handleTelegramDeactivated(){")
+        && str_contains($presence, "runtime.telegramActive = false;")
+        && str_contains($presence, "sendLifecycleBeacon('background');")
+        && str_contains($presence, "if (runtime.telegramActive === false) return false;"),
+    'Telegram deactivation must publish background presence and stop foreground heartbeats until activation resumes the document.'
+);
+$assert(
+    str_contains((string)($manifest['imports']['./assets/js/production-v110-presence.js?v=1121&b=f5a28b030c69'] ?? ''), 'telegram=deactivated-background-v1'),
+    'The active v110 graph must cache-bust the Telegram deactivation presence corrective.'
+);
+
+$assert(
     str_contains($presence, 'export function waitForV110InitialPresence()'),
     'The active v110 boot owner must be able to await its first presence handshake.'
 );

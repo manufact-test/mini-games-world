@@ -47,6 +47,7 @@ on:
       - 'app/assets/js/production-v110-acceptance-runtime.js'
       - 'app/assets/css/main.css'
       - 'app/runtime/client/version-manifest.php'
+      - 'app/assets/js/production-v110-presence.js'
       - 'bot/tests/Mvp21_4TournamentHallBracketTest.php'
       - 'bot/tests/Mvp21_4TournamentHallUxContractTest.php'
       - 'bot/tests/Mvp21_5TournamentMatchReadinessTest.php'
@@ -144,6 +145,7 @@ jobs:
             bot/tests/RuntimePrimaryStagingRequestSessionConfigTest.php
             app/admin.php
             app/runtime/client/version-manifest.php
+            app/assets/js/production-v110-presence.js
             bot/tests/Mvp21_4TournamentHallBracketTest.php
             bot/tests/Mvp21_4TournamentHallUxContractTest.php
             bot/tests/Mvp21_5TournamentMatchReadinessTest.php
@@ -168,6 +170,7 @@ jobs:
           node --check app/assets/js/games/game-invites-v110.js
           node --check app/assets/js/games/game-invites-v110-rematch-policy-v175.js
           node --check app/assets/js/production-v110-acceptance-runtime.js
+          node --check app/assets/js/production-v110-presence.js
 
       - name: Run MVP-21.5 readiness model
         run: php bot/tests/Mvp21_5TournamentMatchReadinessTest.php
@@ -300,6 +303,7 @@ jobs:
               app/assets/js/production-v110-acceptance-runtime.js|\
               app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
+              app/assets/js/production-v110-presence.js|\
               app/assets/css/components/mgw-tournament-honors.css|\
               app/assets/js/screens/profile-screen-v110.js|\
               app/assets/js/state.js|\

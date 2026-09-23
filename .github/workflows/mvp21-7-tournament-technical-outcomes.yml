@@ -12,6 +12,8 @@ on:
       - 'bot/database/migrations/20260922_0058_add_tournament_technical_outcomes.php'
       - 'bot/services/PresenceService.php'
       - 'bot/services/ReconnectLifecycleService.php'
+      - 'app/assets/js/production-v110-presence.js'
+      - 'bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php'
       - 'bot/services/ChessRuntimeService.php'
       - 'bot/tournaments/TournamentRoundProgressionService.php'
       - 'bot/tournaments/TournamentSettlementService.php'
@@ -58,6 +60,7 @@ jobs:
             bot/database/migrations/20260922_0058_add_tournament_technical_outcomes.php
             bot/services/PresenceService.php
             bot/services/ReconnectLifecycleService.php
+            bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
             bot/services/ChessRuntimeService.php
             bot/tournaments/TournamentRoundProgressionService.php
             bot/tournaments/TournamentSettlementService.php
@@ -66,10 +69,14 @@ jobs:
           )
           for file in "${files[@]}"; do php -l "$file"; done
           node --check app/assets/js/screens/tournaments-screen-v1.js
+          node --check app/assets/js/production-v110-presence.js
 
       - name: Run MVP-21.7 technical outcome model
         run: |
           php bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php
+
+      - name: Preserve active v110 Telegram reconnect transport
+        run: php bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
 
       - name: Preserve reconnect and visible-rating owners
         run: |
@@ -129,6 +136,8 @@ jobs:
               bot/database/migrations/20260922_0058_add_tournament_technical_outcomes.php|\
               bot/services/PresenceService.php|\
               bot/services/ReconnectLifecycleService.php|\
+              app/assets/js/production-v110-presence.js|\
+              bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php|\
               bot/services/ChessRuntimeService.php|\
               bot/tournaments/TournamentRoundProgressionService.php|\
               bot/tournaments/TournamentSettlementService.php|\

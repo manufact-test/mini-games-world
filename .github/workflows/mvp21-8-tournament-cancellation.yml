@@ -18,6 +18,8 @@ on:
       - 'bot/services/ReconnectLifecycleService.php'
       - 'bot/services/ChessRuntimeService.php'
       - 'bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php'
+      - 'app/assets/js/production-v110-presence.js'
+      - 'bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php'
       - 'bot/core/bootstrap.php'
       - 'bot/admin-tournaments.php'
       - 'bot/tournament-status.php'
@@ -71,6 +73,7 @@ jobs:
             bot/services/ReconnectLifecycleService.php
             bot/services/ChessRuntimeService.php
             bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php
+            bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
             bot/core/bootstrap.php
             bot/admin-tournaments.php
             bot/tournament-status.php
@@ -80,6 +83,7 @@ jobs:
           for file in "${files[@]}"; do php -l "$file"; done
           node --check app/assets/js/admin-tournaments.js
           node --check app/assets/js/screens/tournaments-screen-v1.js
+          node --check app/assets/js/production-v110-presence.js
 
       - name: Run MVP-21.8 cancellation owner
         run: |
@@ -89,6 +93,7 @@ jobs:
       - name: Preserve MVP-21.7 technical outcome boundary
         run: |
           php bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php
+          php bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
 
       - name: Preserve Ready and round progression
         run: |
@@ -142,6 +147,8 @@ jobs:
               bot/tournaments/TournamentRoundProgressionService.php|\
               bot/tournaments/TournamentSettlementService.php|\
               bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php|\
+              app/assets/js/production-v110-presence.js|\
+              bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php|\
               bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php|\
               bot/core/bootstrap.php|\
               bot/admin-tournaments.php|\

@@ -28,6 +28,7 @@ const runtime = window.__MGW_V110_PRESENCE__ ||= {
   initialPingPromise:null,
   initialPresenceReady:false,
   resumeSignalPending:false,
+  telegramActive:true,
 };
 
 export function initV110Presence(){
@@ -41,6 +42,7 @@ export function initV110Presence(){
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
+      runtime.telegramActive = true;
       void resumePresence(true);
     } else {
       cancelInFlightRequests();
@@ -49,6 +51,7 @@ export function initV110Presence(){
   });
 
   window.addEventListener('pageshow', () => {
+    runtime.telegramActive = true;
     if (document.visibilityState === 'visible') void resumePresence(true);
   }, { capture:true });
 
@@ -58,7 +61,8 @@ export function initV110Presence(){
 
   const telegram = getTelegram();
   if (typeof telegram?.onEvent === 'function') {
-    try { telegram.onEvent('activated', () => void resumePresence(true)); } catch (error) {}
+    try { telegram.onEvent('activated', handleTelegramActivated); } catch (error) {}
+    try { telegram.onEvent('deactivated', handleTelegramDeactivated); } catch (error) {}
   }
 
   // Presence transport starts before profile/bootstrap reads. MVP-17.4 also
@@ -101,6 +105,18 @@ function heartbeatPhaseMs(value){
   return HEARTBEAT_PHASE_MIN_MS + (hash % HEARTBEAT_PHASE_RANGE_MS);
 }
 
+function handleTelegramActivated(){
+  runtime.telegramActive = true;
+  void resumePresence(true);
+}
+
+function handleTelegramDeactivated(){
+  if (runtime.telegramActive === false) return;
+  runtime.telegramActive = false;
+  cancelInFlightRequests();
+  sendLifecycleBeacon('background');
+}
+
 function resumePresence(force = false){
   if (document.visibilityState !== 'visible') return Promise.resolve(false);
   runtime.left = false;
@@ -129,6 +145,7 @@ function presenceTransportBusy(){
 }
 
 async function pingPresence(){
+  if (runtime.telegramActive === false) return false;
   if (presenceTransportBusy() || document.visibilityState !== 'visible') return false;
 
   const requestId = ++runtime.pingRequestId;
@@ -162,6 +179,7 @@ async function pingPresence(){
 }
 
 async function refreshStatus(){
+  if (runtime.telegramActive === false) return false;
   if (presenceTransportBusy() || !runtime.appReady || !canReadHomeStatus()) return false;
 
   const requestId = ++runtime.statusRequestId;
@@ -188,6 +206,7 @@ async function refreshStatus(){
 }
 
 function scheduleRetry(){
+  if (runtime.telegramActive === false) return;
   if (runtime.retryTimer || document.visibilityState !== 'visible') return;
   runtime.retryTimer = window.setTimeout(() => {
     runtime.retryTimer = null;
@@ -196,6 +215,7 @@ function scheduleRetry(){
 }
 
 function canReadHomeStatus(){
+  if (runtime.telegramActive === false) return false;
   if (!runtime.appReady || document.visibilityState !== 'visible') return false;
   const active = document.querySelector('.screen.active');
   return String(active?.dataset.screen || '') === 'home';
