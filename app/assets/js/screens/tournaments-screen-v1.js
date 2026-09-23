@@ -54,6 +54,9 @@ let tournamentStartSyncTimer = null;
 let tournamentTerminalSyncPromise = null;
 let tournamentTerminalReturnPending = false;
 let tournamentStartBracketArchiveOpen = false;
+let tournamentStartBracketArchiveScrollTop = 0;
+let tournamentFinalBracketArchiveOpen = false;
+let tournamentFinalBracketArchiveScrollTop = 0;
 
 function lockVisibleBalance(){
   const ids = ['balanceUnified', 'topbarBalanceUnified'];
@@ -686,6 +689,20 @@ function startTournamentHallHeartbeat(){
     tournamentHallTimer = null;
     if (tournamentHallSnapshot?.hall?.entered !== true || !tournamentHallPanelVisible()) return;
     try {
+      await warmTournamentStatus();
+      if (!tournamentSnapshot?.tournament) {
+        tournamentHallSnapshot = null;
+        tournamentMatchSnapshot = null;
+        tournamentProgressionSnapshot = null;
+        tournamentHallError = '';
+        tournamentMatchError = '';
+        stopTournamentLaunchWatch();
+        stopTournamentStartBoundaryRefresh();
+        stopTournamentStartSync();
+        renderTournamentSnapshot();
+        return;
+      }
+
       const result = await api.tournamentHallHeartbeat();
       tournamentHallSnapshot = result?.snapshot && typeof result.snapshot === 'object'
         ? result.snapshot
@@ -697,6 +714,16 @@ function startTournamentHallHeartbeat(){
         }
       }
     } catch (error) {
+      try { await warmTournamentStatus(); } catch (_) {}
+      if (!tournamentSnapshot?.tournament) {
+        tournamentHallSnapshot = null;
+        tournamentMatchSnapshot = null;
+        tournamentProgressionSnapshot = null;
+        tournamentHallError = '';
+        tournamentMatchError = '';
+        renderTournamentSnapshot();
+        return;
+      }
       tournamentHallError = String(error?.message || 'Не удалось обновить присутствие в Турнирный зал.');
     }
     renderTournamentSnapshot();
@@ -1231,9 +1258,9 @@ function tournamentTerminalMarkup(progression, activeRoundMarkup){
           ? 'Зафиксирован серьёзный сигнал. Выплата не потеряна и не передана другому владельцу: после Admin review канонический settlement либо разрешит награду, либо применит дисквалификацию и сдвиг мест.'
           : 'Результат сетки уже зафиксирован. Начисление выполняется идемпотентно и будет повторено автоматически.'}</p>
       </section>
-      <details class="tournaments-v2-terminal-archive">
-        <summary>Финальная сетка · архив</summary>
-        <div class="tournaments-v2-terminal-archive-body">${activeRoundMarkup}</div>
+      <details class="tournaments-v2-tournament-rules tournaments-v2-final-bracket-archive"${tournamentFinalBracketArchiveOpen ? ' open' : ''}>
+        <summary><span>Финальная сетка · архив</span></summary>
+        <div class="tournaments-v2-tournament-rules-body">${activeRoundMarkup}</div>
       </details>
     `;
   }
@@ -1260,14 +1287,9 @@ function tournamentTerminalMarkup(progression, activeRoundMarkup){
   if (String(selfResult?.result_code || '') === 'disqualified') selfTitle = 'Дисквалифицирован';
   else if (Number(selfResult?.placement || 0) > 0) selfTitle = `${Number(selfResult.placement)} место`;
   const payout = Math.max(0, Number(selfResult?.payout_amount || 0));
-  const prize = Math.max(0, Number(selfResult?.prize_amount || 0));
-  const entryReturn = Math.max(0, Number(selfResult?.entry_return_amount || 0));
-  let moneyCopy = 'Денежной награды нет.';
-  if (payout > 0 && prize > 0) {
-    moneyCopy = `Выплата ${formatNumber(payout)} коинов · приз ${formatNumber(prize)} + возврат взноса ${formatNumber(entryReturn)}.`;
-  } else if (entryReturn > 0) {
-    moneyCopy = `Возврат взноса · ${formatNumber(entryReturn)} коинов.`;
-  }
+  const moneyCopy = payout > 0
+    ? `Награда: ${formatNumber(payout)} коинов`
+    : 'Денежной награды нет.';
 
   const entitlements = Array.isArray(selfResult?.entitlements) ? selfResult.entitlements : [];
   const rewardsMarkup = entitlements.length
@@ -1287,16 +1309,16 @@ function tournamentTerminalMarkup(progression, activeRoundMarkup){
       </div>
       <div class="tournaments-v2-terminal-podium">${podiumMarkup}</div>
       ${selfResult ? `<div class="tournaments-v2-terminal-self">
-        <div><span>Ваш результат</span><strong>${escapeHtml(selfTitle)}</strong><p>${escapeHtml(moneyCopy)}</p></div>
+        <div><span>Ваш результат</span><strong>${escapeHtml(selfTitle)}</strong><p class="tournaments-v2-terminal-payout">${escapeHtml(moneyCopy)}</p></div>
         ${balanceMarkup}
         ${rewardsMarkup}
       </div>` : ''}
       <button class="tournaments-v2-tournament-action tournaments-v2-terminal-action" type="button" data-tournament-terminal-rating>Перейти к рейтингу</button>
     </section>
-    <details class="tournaments-v2-terminal-archive">
-      <summary>Финальная сетка · архив</summary>
-      <div class="tournaments-v2-terminal-archive-body">${activeRoundMarkup}</div>
-    </details>
+    <details class="tournaments-v2-tournament-rules tournaments-v2-final-bracket-archive"${tournamentFinalBracketArchiveOpen ? ' open' : ''}>
+        <summary><span>Финальная сетка · архив</span></summary>
+        <div class="tournaments-v2-tournament-rules-body">${activeRoundMarkup}</div>
+      </details>
   `;
 }
 
@@ -1419,6 +1441,41 @@ function startTournamentRenderedCountdownTicker(body, scheduledStart = null){
   tournamentCountdownTimer = window.setInterval(updateCountdown, 1000);
 }
 
+function captureTournamentArchiveViewport(body){
+  const startArchive = body.querySelector('.tournaments-v2-start-bracket-archive');
+  if (startArchive instanceof HTMLDetailsElement) {
+    tournamentStartBracketArchiveOpen = startArchive.open;
+    const scroller = startArchive.querySelector('.tournaments-v2-tournament-rules-body');
+    if (scroller instanceof HTMLElement) tournamentStartBracketArchiveScrollTop = scroller.scrollTop;
+  }
+
+  const finalArchive = body.querySelector('.tournaments-v2-final-bracket-archive');
+  if (finalArchive instanceof HTMLDetailsElement) {
+    tournamentFinalBracketArchiveOpen = finalArchive.open;
+    const scroller = finalArchive.querySelector('.tournaments-v2-tournament-rules-body');
+    if (scroller instanceof HTMLElement) tournamentFinalBracketArchiveScrollTop = scroller.scrollTop;
+  }
+}
+
+function restoreTournamentArchiveViewport(body){
+  window.requestAnimationFrame(() => {
+    if (!body.isConnected) return;
+
+    const startArchive = body.querySelector('.tournaments-v2-start-bracket-archive');
+    if (startArchive instanceof HTMLDetailsElement) {
+      startArchive.open = tournamentStartBracketArchiveOpen;
+      const scroller = startArchive.querySelector('.tournaments-v2-tournament-rules-body');
+      if (scroller instanceof HTMLElement) scroller.scrollTop = tournamentStartBracketArchiveScrollTop;
+    }
+
+    const finalArchive = body.querySelector('.tournaments-v2-final-bracket-archive');
+    if (finalArchive instanceof HTMLDetailsElement) {
+      finalArchive.open = tournamentFinalBracketArchiveOpen;
+      const scroller = finalArchive.querySelector('.tournaments-v2-tournament-rules-body');
+      if (scroller instanceof HTMLElement) scroller.scrollTop = tournamentFinalBracketArchiveScrollTop;
+    }
+  });
+}
 function renderTournamentSnapshot(errorMessage = ''){
   if (tournamentCountdownTimer) {
     window.clearInterval(tournamentCountdownTimer);
@@ -1426,10 +1483,7 @@ function renderTournamentSnapshot(errorMessage = ''){
   }
   const body = document.getElementById('officialTournamentBody');
   if (!(body instanceof HTMLElement)) return;
-  const currentArchive = body.querySelector('.tournaments-v2-start-bracket-archive');
-  if (currentArchive instanceof HTMLDetailsElement) {
-    tournamentStartBracketArchiveOpen = currentArchive.open;
-  }
+  captureTournamentArchiveViewport(body);
   const snapshot = tournamentSnapshot && typeof tournamentSnapshot === 'object' ? tournamentSnapshot : {};
   const tournament = snapshot.tournament && typeof snapshot.tournament === 'object' ? snapshot.tournament : null;
   if (!tournament) {
@@ -1585,6 +1639,7 @@ function renderTournamentSnapshot(errorMessage = ''){
       ${errorMessage ? `<div class="tournaments-v2-tournament-error">${escapeHtml(errorMessage)}</div>` : ''}
       ${hallMarkup}
     `;
+    restoreTournamentArchiveViewport(body);
     startTournamentRenderedCountdownTicker(body);
     if (tournamentHallSnapshot?.hall?.entered === true) {
       stopTournamentVisibleRefresh();
@@ -1627,6 +1682,7 @@ function renderTournamentSnapshot(errorMessage = ''){
     ${ownStatus ? `<div class="tournaments-v2-tournament-own${registered ? ' is-registered' : ''}${insufficient ? ' is-insufficient' : ''}"><strong>${escapeHtml(ownStatus)}</strong></div>` : ''}
     ${action}
   `;
+  restoreTournamentArchiveViewport(body);
 
   if (scheduled && scheduledStart) {
     startTournamentRenderedCountdownTicker(body, scheduledStart);
