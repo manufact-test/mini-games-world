@@ -589,7 +589,7 @@ try{
 
     $runtimeSource=file_get_contents($root.'/services/ChessRuntimeService.php');
     $preflightPos=is_string($runtimeSource)
-        ? strpos($runtimeSource,"$this->reconnectLifecycle->synchronize")
+        ? strpos($runtimeSource,'$this->reconnectLifecycle->synchronize')
         : false;
     $cleanupPos=is_string($runtimeSource)
         ? strpos($runtimeSource,'$this->base->cleanup($db);')
