@@ -254,11 +254,13 @@ $assertTrue(
     'Corrective release must force a fresh API client module.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=30')
+    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=31')
     && str_contains($source['manifest'], 'mvp21_2=tournament-rules-copy-v2')
     && str_contains($source['manifest'], 'balance=visible-freeze-v2')
     && str_contains($source['manifest'], 'mvp21_3=schedule-local-time-v2')
-    && str_contains($source['manifest'], 'mvp21_manual=acceptance-corrective-v1'),
+    && str_contains($source['manifest'], 'mvp21_manual=acceptance-corrective-v1')
+    && str_contains($source['manifest'], 'archive=per-round-v1')
+    && str_contains($source['manifest'], 'desktop=endurance-v1'),
     'Corrective release must preserve the balance-freeze owner while forcing the fresh Tournament schedule module.'
 );
 $assertTrue(
