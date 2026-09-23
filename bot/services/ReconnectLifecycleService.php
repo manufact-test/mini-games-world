@@ -605,7 +605,7 @@ final class ReconnectLifecycleService
             if (isset($players[$playerId])) continue;
 
             $snapshot = $this->presence->gameplaySnapshot($playerId);
-            if ($this->presenceSignalsDisconnect($game, $playerId, $snapshot)) {
+            if ($this->directTournamentAbsenceSignal($snapshot)) {
                 $candidates[$playerId] = $this->disconnectedAtFromPresence($snapshot, $nowMs);
                 $strongEvidenceCount++;
                 continue;
@@ -615,7 +615,7 @@ final class ReconnectLifecycleService
                 continue;
             }
 
-            if ($this->presenceSignalsDisconnect($game, $playerId, $previousPresence)) {
+            if ($this->directTournamentAbsenceSignal($previousPresence)) {
                 $candidates[$playerId] = $this->disconnectedAtFromPresence($previousPresence, $nowMs);
                 $strongEvidenceCount++;
                 continue;
@@ -648,6 +648,15 @@ final class ReconnectLifecycleService
         }
 
         return $candidates;
+    }
+
+    private function directTournamentAbsenceSignal(array $snapshot): bool
+    {
+        $state = (string)($snapshot['state'] ?? '');
+        if ($state === 'disconnected') return true;
+
+        return $state === 'background'
+            && !empty($snapshot['tournament_disconnect_fallback']);
     }
 
     private function sessionDisconnectedAtMs(array $db, string $playerId, int $nowMs): int
