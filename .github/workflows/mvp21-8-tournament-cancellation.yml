@@ -119,6 +119,7 @@ jobs:
               .github/workflows/mvp21-6-tournament-rounds.yml|\
               .github/workflows/mvp21-7-tournament-technical-outcomes.yml|\
               .github/workflows/mvp21-8-tournament-cancellation.yml|\
+              .github/workflows/mvp21-11-tournament-release-proof.yml|\
               .github/workflows/mvp21-10-tournament-prize-review.yml|\
               bot/database/migrations/20260922_0060_create_tournament_prize_review.php|\
               bot/tournaments/TournamentPrizeReviewService.php|\
@@ -148,7 +149,11 @@ jobs:
               bot/tests/Mvp21_9TournamentRewardProjectionTest.php|\
               bot/tournaments/TournamentRewardProjectionService.php|\
               bot/tests/Mvp21_8TournamentCancellationTest.php|\
-              bot/tests/Mvp21_8TournamentCancellationUxContractTest.php)
+              bot/tests/Mvp21_8TournamentCancellationUxContractTest.php|\
+              bot/tests/Mvp21_6TournamentRoundProgressionTest.php|\
+              bot/tests/Mvp21_6TournamentRuntimeContractTest.php|\
+              bot/tests/Mvp21_6TournamentProgressionUxContractTest.php|\
+              bot/tests/Mvp21_11TournamentReleaseProofTest.php)
                 ;;
               *)
                 echo "Unexpected MVP-21.8 path: $path" >&2
