@@ -12,6 +12,7 @@ $files=[
  'admin_endpoint'=>file_get_contents($root.'/bot/admin-tournaments.php'),
  'admin_ui'=>file_get_contents($root.'/app/admin.php'),
  'admin_js'=>file_get_contents($root.'/app/assets/js/admin-tournaments.js'),
+ 'admin_css'=>file_get_contents($root.'/app/assets/css/admin-shell.css'),
  'status'=>file_get_contents($root.'/bot/tournament-status.php'),
  'player_ui'=>file_get_contents($root.'/app/assets/js/screens/tournaments-screen-v1.js'),
  'manifest'=>file_get_contents($root.'/app/runtime/client/version-manifest.php'),
@@ -70,6 +71,27 @@ $assert(str_contains($files['admin_ui'],'data-tournament-cancel-reason'),'Admin 
 $assert(str_contains($files['admin_ui'],'data-tournament-cancel'),'Admin must expose normal cancel action.');
 $assert(str_contains($files['admin_ui'],'data-tournament-emergency'),'Admin must expose emergency action.');
 $assert(str_contains($files['admin_ui'],'Перенос даты здесь не выполняется.'),'Admin copy must state the no-reschedule boundary.');
+$assert(str_contains($files['admin_ui'],'class="mgw-admin__tournament-reason"')
+        && str_contains($files['admin_ui'],'placeholder="Опишите причину"')
+        && str_contains($files['admin_ui'],'class="mgw-admin__field-help"'),
+    'Cancellation reason must render as an intentional dark Admin field with helper copy outside the control.');
+$assert(str_contains($files['admin_css'],'.mgw-admin__tournament-reason')
+        && str_contains($files['admin_css'],'min-height:88px!important')
+        && str_contains($files['admin_css'],'.mgw-admin__field-help'),
+    'Cancellation reason styling must override the generic large textarea and remain readable in the dark Admin shell.');
+$assert(str_contains($files['admin_ui'],'data-tournament-start-date type="date"')
+        && str_contains($files['admin_ui'],'data-tournament-start-time type="time"')
+        && !str_contains($files['admin_ui'],'type="datetime-local"'),
+    'Tournament start control must split date and time so Telegram WebView does not render ambiguous extra datetime placeholder characters.');
+$assert(str_contains($files['admin_js'],"const scheduleDate = card.querySelector('[data-tournament-start-date]')")
+        && str_contains($files['admin_js'],"const scheduleTime = card.querySelector('[data-tournament-start-time]')")
+        && str_contains($files['admin_js'],'localDate')
+        && str_contains($files['admin_js'],'localTime')
+        && str_contains($files['admin_js'],'toISOString()'),
+    'Admin schedule JS must combine the explicit local date and time fields before converting to UTC.');
+$assert(str_contains($files['admin_css'],'.mgw-admin__tournament-date-time')
+        && str_contains($files['admin_css'],'@media(max-width:520px)'),
+    'Split date/time controls must stay responsive in Telegram mobile WebView.');
 
 $assert(str_contains($files['admin_js'],'armCancellationConfirmation'),'Admin must require a second deliberate confirmation.');
 $assert(str_contains($files['admin_js'],"kind === 'emergency' && !reason"),'Admin must block emergency without reason.');
@@ -83,5 +105,5 @@ $assert(str_contains($files['player_ui'],'Аварийная остановка'
 $assert(str_contains($files['player_ui'],'Причина:'),'Player UI must expose cancellation reason.');
 $assert(str_contains($files['manifest'],'mvp21_8=cancellation-emergency-v1'),'Client manifest must publish MVP-21.8 tournament UI.');
 
-$assert($assertions>=45,'MVP-21.8 UX/integration contract is too shallow: '.$assertions);
+$assert($assertions>=50,'MVP-21.8 UX/integration contract is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_8TournamentCancellationUxContractTest: {$assertions} assertions passed\n");
