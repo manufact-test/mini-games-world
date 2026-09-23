@@ -19,6 +19,9 @@ $admin = $read('app/assets/js/admin-tournaments.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r13.js');
 $manifest = $read('app/runtime/client/version-manifest.php');
 $bridge = $read('bot/tournaments/TournamentParticipantNotificationBridge.php');
+$tournamentEndpoint = $read('bot/admin-tournaments.php');
+$adminWebAuth = $read('bot/helpers/AdminWebAuth.php');
+$page = $read('app/admin.php');
 
 $assert(str_contains($tournaments, 'Начало турнира · по вашему времени'),
     'Player tournament card must label the start as device-local time.');
@@ -50,7 +53,24 @@ $assert(str_contains(
 $assert(str_contains($manifest, 'mvp21_3=schedule-local-time-v2'),
     'Active import map must publish the player local-time corrective.');
 
-if ($assertions < 9) {
+$assert(str_contains($admin, 'const PASSIVE_REFRESH_MS = 8000;')
+        && str_contains($admin, "passive_refresh:true")
+        && str_contains($admin, "document.addEventListener('visibilitychange'")
+        && str_contains($admin, "window.addEventListener('focus'"),
+    'Tournament Admin must refresh live while visible and immediately after returning to the WebView.');
+$assert(str_contains($admin, "typeof telegram.showConfirm === 'function'")
+        && str_contains($admin, 'await confirmAction(`Назначить старт турнира'),
+    'Tournament schedule confirmation must use the Telegram-native confirmation path before browser fallback.');
+$assert(str_contains($tournamentEndpoint, '$passiveRefresh')
+        && str_contains($tournamentEndpoint, '&& !$passiveRefresh'),
+    'Passive Tournament Admin refresh must not run scheduled-notification write reconciliation.');
+$assert(str_contains($adminWebAuth, 'public const MAX_AGE_SECONDS = 4 * 60 * 60;'),
+    'Web Admin authorization must remain usable for a practical live tournament administration session.');
+$assert(str_contains($page, 'admin-tournaments.js?v=16')
+        && str_contains($page, 'mvp21_manual=admin-ui-v2'),
+    'Admin page must publish the corrected Tournament Admin client under a fresh cache-busting URL.');
+
+if ($assertions < 14) {
     throw new RuntimeException('MVP-21.3 manual acceptance UX corrective coverage is incomplete.');
 }
 
