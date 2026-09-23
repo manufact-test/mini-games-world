@@ -212,9 +212,16 @@ final class TournamentHallService
                     throw new RuntimeException('Tournament bracket contains an incomplete registration.');
                 }
 
-                $present = false;
+                // Synthetic staging fixtures have no Telegram WebView and therefore
+                // cannot emit Hall heartbeats. They are intentionally treated as
+                // present at T0 so their first-round pairs remain unresolved until
+                // the explicit staging fixture helper completes them. Without this
+                // boundary, all fixture pairs become "both absent", vacancy
+                // propagation can auto-complete every later round, and one live
+                // technical winner is incorrectly crowned champion immediately.
+                $present = $this->isManualAcceptanceFixtureRegistration($registration);
                 $seenRaw = $lastPresence[$mgwId] ?? '';
-                if ($seenRaw !== '') {
+                if (!$present && $seenRaw !== '') {
                     $seen = $this->parseUtc($seenRaw);
                     $present = $seen >= $freshFrom && $seen <= $start;
                 }
@@ -279,15 +286,19 @@ final class TournamentHallService
         $live = [];
         foreach ($registrations as $registration) {
             if (!is_array($registration)) return $registrations;
-            $accountRef = trim((string)($registration['account_ref'] ?? ''));
-            $isFixture = preg_match('/^legacy:stg_tour_(?:v2_)?[a-f0-9]{12}$/', $accountRef) === 1;
-            if ($isFixture) $fixtures[] = $registration;
+            if ($this->isManualAcceptanceFixtureRegistration($registration)) $fixtures[] = $registration;
             else $live[] = $registration;
         }
 
         if (count($fixtures) !== 6 || count($live) !== 2) return $registrations;
 
         return array_merge($fixtures, $live);
+    }
+
+    private function isManualAcceptanceFixtureRegistration(array $registration): bool
+    {
+        $accountRef = trim((string)($registration['account_ref'] ?? ''));
+        return preg_match('/^legacy:stg_tour_(?:v2_)?[a-f0-9]{12}$/', $accountRef) === 1;
     }
 
     private function recordHallRequestPresence(array $participant, DateTimeImmutable $moment): void
