@@ -10,6 +10,7 @@ on:
       - '.github/workflows/mvp21-7-tournament-technical-outcomes.yml'
       - '.github/workflows/mvp21-9-tournament-rewards.yml'
       - 'bot/database/migrations/20260922_0058_add_tournament_technical_outcomes.php'
+      - 'bot/services/PresenceService.php'
       - 'bot/services/ReconnectLifecycleService.php'
       - 'bot/tournaments/TournamentRoundProgressionService.php'
       - 'bot/tournaments/TournamentSettlementService.php'
@@ -54,6 +55,7 @@ jobs:
           set -euo pipefail
           files=(
             bot/database/migrations/20260922_0058_add_tournament_technical_outcomes.php
+            bot/services/PresenceService.php
             bot/services/ReconnectLifecycleService.php
             bot/tournaments/TournamentRoundProgressionService.php
             bot/tournaments/TournamentSettlementService.php
@@ -123,6 +125,7 @@ jobs:
               app/assets/css/admin-shell.css|\
               .github/workflows/mvp21-9-tournament-rewards.yml|\
               bot/database/migrations/20260922_0058_add_tournament_technical_outcomes.php|\
+              bot/services/PresenceService.php|\
               bot/services/ReconnectLifecycleService.php|\
               bot/tournaments/TournamentRoundProgressionService.php|\
               bot/tournaments/TournamentSettlementService.php|\
@@ -142,6 +145,7 @@ jobs:
               bot/tests/Mvp21_6TournamentProgressionUxContractTest.php|\
               bot/tests/Mvp21_11TournamentReleaseProofTest.php|\
               bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php|\
+              bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php|\
               bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php)
                 ;;
               # Manual acceptance coordinated UI corrective
