@@ -989,131 +989,14 @@ function tournamentHallMarkup(registered, scheduled, scheduledStart){
 }
 
 function tournamentBracketMarkup(bracket){
-  const seeds = Array.isArray(bracket?.seeds) ? bracket.seeds : [];
-  const pairs = new Map();
-  seeds.forEach(seed => {
-    const pairNo = Number(seed?.pair_no || 0);
-    if (!pairs.has(pairNo)) pairs.set(pairNo, []);
-    pairs.get(pairNo).push(seed);
-  });
-
-  const firstRoundArchive = Array.isArray(tournamentProgressionSnapshot?.first_round_archive)
-    ? tournamentProgressionSnapshot.first_round_archive
-    : [];
-  const archiveByPair = new Map(
-    firstRoundArchive.map(match => [Number(match?.pair_no || 0), match])
-  );
-
-  const cards = Array.from(pairs.entries())
-    .sort((a,b) => a[0] - b[0])
-    .map(([pairNo, pair]) => {
-      const a = pair[0] || {};
-      const b = pair[1] || {};
-      const aLoss = a?.technical_loss === true;
-      const bLoss = b?.technical_loss === true;
-      const archivedMatch = archiveByPair.get(pairNo) || null;
-      const archivedPlayers = Array.isArray(archivedMatch?.players) ? archivedMatch.players : [];
-      const archivedPlayer = value => archivedPlayers.find(player =>
-        String(player?.mgw_id || '') !== ''
-        && String(player?.mgw_id || '') === String(value?.mgw_id || '')
-      ) || null;
-      const completed = archivedMatch?.completed === true;
-      const technicalOutcome = archivedMatch ? tournamentTechnicalOutcomeLabel(archivedMatch) : '';
-
-      let outcome = 'Оба участника были в зале. Матч перейдёт к этапу готовности.';
-      if (archivedMatch) {
-        const winner = archivedPlayers.find(player => player?.winner === true);
-        if (completed && technicalOutcome) {
-          outcome = technicalOutcome;
-        } else if (completed && winner) {
-          outcome = `${String(winner?.nickname || 'Игрок')} проходит дальше.`;
-        } else if (completed) {
-          outcome = 'Матч завершён · победитель не назначен.';
-        } else if (String(archivedMatch?.launch_state || '') === 'launched') {
-          outcome = 'Матч идёт.';
-        } else {
-          outcome = 'Матч ещё не завершён.';
-        }
-      } else if (aLoss && !bLoss) {
-        outcome = `${String(b?.nickname || 'Игрок')} проходит дальше · соперник отсутствовал.`;
-      } else if (!aLoss && bLoss) {
-        outcome = `${String(a?.nickname || 'Игрок')} проходит дальше · соперник отсутствовал.`;
-      } else if (aLoss && bLoss) {
-        outcome = 'Оба участника отсутствовали · оба получили техническое поражение. Исход пары будет обработан отдельной турнирной веткой.';
-      }
-
-      const player = value => {
-        const result = archivedPlayer(value);
-        let status = value?.technical_loss === true ? 'тех. поражение' : 'в зале';
-        let lost = value?.technical_loss === true;
-        if (archivedMatch) {
-          if (completed) {
-            const won = result?.winner === true;
-            status = won ? 'прошёл дальше' : 'выбыл';
-            lost = !won;
-          } else if (String(archivedMatch?.launch_state || '') === 'launched') {
-            status = 'играет';
-            lost = false;
-          } else {
-            status = 'участник';
-            lost = false;
-          }
-        }
-        return `<div class="tournaments-v2-bracket-player${lost ? ' is-loss' : ''}">
-          <strong>${escapeHtml(String(value?.nickname || 'Игрок'))}</strong>
-          <span>${escapeHtml(status)}</span>
-        </div>`;
-      };
-
-      return `<article class="tournaments-v2-bracket-pair">
-        <header><span>Пара ${pairNo}</span></header>
-        ${player(a)}
-        ${player(b)}
-        <p>${escapeHtml(outcome)}</p>
-      </article>`;
-    }).join('');
-
   const matchMarkup = tournamentMatchMarkup();
-  if (tournamentProgressionIsAuthoritative()) {
-    return `<div class="tournaments-v2-bracket">
-      ${matchMarkup}
-      <details class="tournaments-v2-tournament-rules tournaments-v2-start-bracket-archive"${tournamentStartBracketArchiveOpen ? ' open' : ''}>
-        <summary><span>Стартовая сетка · архив</span></summary>
-        <div class="tournaments-v2-tournament-rules-body">
-          <div class="tournaments-v2-bracket-grid">${cards}</div>
-        </div>
-      </details>
-    </div>`;
-  }
+  const roundsMarkup = tournamentRoundSectionsMarkup(bracket, tournamentProgressionSnapshot);
   return `<div class="tournaments-v2-bracket">
     ${matchMarkup}
-    <div class="tournaments-v2-hall-section-title"><strong>Первый раунд</strong><span>случайная сетка</span></div>
-    <div class="tournaments-v2-bracket-grid">${cards}</div>
+    ${roundsMarkup}
   </div>`;
 }
 
-function tournamentProgressionIsAuthoritative(){
-  const progression = tournamentProgressionSnapshot && typeof tournamentProgressionSnapshot === 'object'
-    ? tournamentProgressionSnapshot
-    : null;
-  if (!progression) return false;
-  if (progression.tournament_complete === true) return true;
-
-  const current = progression.current_match && typeof progression.current_match === 'object'
-    ? progression.current_match
-    : null;
-  if (current
-      && (Number(current.round_no || 0) > 1
-        || Number(current.attempt_no || 1) > 1
-        || String(current.wait_kind || 'initial_ready') !== 'initial_ready')) {
-    return true;
-  }
-
-  const latest = progression.latest_match && typeof progression.latest_match === 'object'
-    ? progression.latest_match
-    : null;
-  return Boolean(latest?.completed_at_utc);
-}
 
 function tournamentMatchMarkup(){
   const progression = tournamentProgressionSnapshot && typeof tournamentProgressionSnapshot === 'object'
