@@ -15,6 +15,9 @@ on:
       - 'bot/tournaments/TournamentRegistrationService.php'
       - 'bot/tournaments/TournamentRoundProgressionService.php'
       - 'bot/tournaments/TournamentSettlementService.php'
+      - 'bot/services/ReconnectLifecycleService.php'
+      - 'bot/services/ChessRuntimeService.php'
+      - 'bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php'
       - 'bot/core/bootstrap.php'
       - 'bot/admin-tournaments.php'
       - 'bot/tournament-status.php'
@@ -65,6 +68,9 @@ jobs:
             bot/tournaments/TournamentRegistrationService.php
             bot/tournaments/TournamentRoundProgressionService.php
             bot/tournaments/TournamentSettlementService.php
+            bot/services/ReconnectLifecycleService.php
+            bot/services/ChessRuntimeService.php
+            bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php
             bot/core/bootstrap.php
             bot/admin-tournaments.php
             bot/tournament-status.php
@@ -132,6 +138,7 @@ jobs:
               bot/tournaments/TournamentRegistrationService.php|\
               bot/services/PresenceService.php|\
               bot/services/ReconnectLifecycleService.php|\
+              bot/services/ChessRuntimeService.php|\
               bot/tournaments/TournamentRoundProgressionService.php|\
               bot/tournaments/TournamentSettlementService.php|\
               bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php|\
