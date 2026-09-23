@@ -85,7 +85,7 @@ $assertTrue=static function(bool $condition,string $message)use(&$assertions):vo
 
 $assertSame([8,16,32,64,128],TournamentRegistrationService::ALLOWED_CAPACITIES,'Release proof must preserve all five launch capacities.');
 $assertSame(50000,TournamentRegistrationService::ENTRY_FEE,'Tournament entry fee must stay canonical.');
-$assertSame(300,TournamentRoundProgressionService::ROUND_BREAK_SECONDS,'Round break must stay five minutes.');
+$assertSame(180,TournamentRoundProgressionService::ROUND_BREAK_SECONDS,'Round break must stay three minutes.');
 $assertSame(60,TournamentRoundProgressionService::DRAW_REPLAY_WAIT_SECONDS,'Draw replay wait must stay one minute.');
 $assertSame('ru',TournamentRegistrationService::RULES_LANGUAGE,'Tournament rules localization must stay Russian.');
 
