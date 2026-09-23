@@ -142,7 +142,8 @@ jobs:
               bot/tests/Mvp21_8CorrectiveContractTest.php|\
               bot/tests/Mvp21_8TournamentCancellationUxContractTest.php|\
               bot/tests/Mvp21_9TerminalUxContractTest.php|\
-              bot/tests/Mvp21_4TournamentHallUxContractTest.php)
+              bot/tests/Mvp21_4TournamentHallUxContractTest.php|\
+              bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php)
                 ;;
               *)
                 echo "Unexpected MVP-21.10 path: $path" >&2
