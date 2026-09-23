@@ -147,9 +147,10 @@ $assert(str_contains($progression, "\$finishReason === 'preparation_timeout'")
         && str_contains($progression, 'count($readyPlayers) === 1')
         && str_contains($progression, '$winnerLegacy = $readyPlayers[0];'),
     'A one-sided real tournament preparation timeout must advance the present player instead of becoming a draw replay.');
-$assert(str_contains($css, '.tournaments-v2-active-round>.tournaments-v2-hall-section-title')
-        && str_contains($css, 'margin-bottom:8px;'),
-    'Active round heading and completion counter must have breathing room above the bracket grid.');
+$assert(str_contains($css, '.tournaments-v2-tournament-rules summary')
+        && str_contains($css, '.tournaments-v2-tournament-rules-body')
+        && str_contains($screen, 'tournaments-v2-round-archive'),
+    'Every tournament round must reuse the accepted collapsible bracket shell.');
 $assert(str_contains($adminApi, "'complete_fixture_pairs'")
         && str_contains($adminApi, "'manual_progression'"),
     'Tournament Admin must expose the explicit staging progression action and availability.');
@@ -160,11 +161,13 @@ $assert(str_contains($adminJs, "progressionReason !== 'staging_only'")
         && str_contains($adminJs, "progressionPanel.hidden = !progressionVisible"),
     'Staging Admin must keep the fixture progression panel visible even when the action is temporarily disabled.');
 
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=30')
+$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=31')
         && str_contains($manifest, 'main.css?v=201')
         && str_contains($manifest, 'mvp21_6=round-grid-spacing-v1')
         && str_contains($manifest, 'mvp21_8=corrective-v8')
         && str_contains($manifest, 'mvp21_manual=acceptance-corrective-v1')
+        && str_contains($manifest, 'archive=per-round-v1')
+        && str_contains($manifest, 'desktop=endurance-v1')
         && str_contains($manifest, 'game-screen-v102.js?v=113')
         && str_contains($manifest, 'mvp21_manual=tournament-result-return-v1')
         && str_contains($manifest, 'mvp21_6=tournament-result-dedupe-v3')
