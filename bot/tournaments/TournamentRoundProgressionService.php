@@ -501,28 +501,26 @@ final class TournamentRoundProgressionService
             if ($latest === null || $match['round_no'] > $latest['round_no']) $latest = $match;
         }
 
-        $activeRoundNo = 0;
-        foreach ($snapshot['matches'] as $match) {
-            $activeRoundNo = max($activeRoundNo, (int)($match['round_no'] ?? 0));
-        }
-        $activeRoundMatches = [];
-        $participantIds = [];
-        foreach ($snapshot['matches'] as $match) {
-            if ((int)($match['round_no'] ?? 0) !== $activeRoundNo) continue;
-            $a = trim((string)($match['player_a_mgw_id'] ?? ''));
-            $b = trim((string)($match['player_b_mgw_id'] ?? ''));
-            if ($a !== '') $participantIds[$a] = true;
-            if ($b !== '') $participantIds[$b] = true;
-        }
         $nicknames = $this->participantNicknames($tournamentId);
+        $roundsByNo = [];
+        $activeRoundNo = 0;
 
-        // Preserve the immutable T0 pairing, but expose the durable first-round
-        // result overlay separately so the client archive can stop showing
-        // stale "in hall" labels after those matches have actually finished.
-        $firstRoundArchive = [];
         foreach ($snapshot['matches'] as $match) {
-            if ((int)($match['round_no'] ?? 0) !== 1) continue;
+            $roundNo = max(1, (int)($match['round_no'] ?? 1));
+            $activeRoundNo = max($activeRoundNo, $roundNo);
+            if (!isset($roundsByNo[$roundNo])) {
+                $roundsByNo[$roundNo] = [
+                    'round_no'=>$roundNo,
+                    'completed_count'=>0,
+                    'total_count'=>0,
+                    'matches'=>[],
+                ];
+            }
+
             $completed = $match['completed_at_utc'] !== null;
+            if ($completed) $roundsByNo[$roundNo]['completed_count']++;
+            $roundsByNo[$roundNo]['total_count']++;
+
             $winner = trim((string)($match['winner_mgw_id'] ?? ''));
             $loser = trim((string)($match['loser_mgw_id'] ?? ''));
             $players = [];
@@ -539,36 +537,9 @@ final class TournamentRoundProgressionService
                     'loser'=>$completed && $loser !== '' && $loser === $participantId,
                 ];
             }
-            $firstRoundArchive[] = [
-                'round_no'=>1,
-                'pair_no'=>(int)$match['pair_no'],
-                'attempt_no'=>max(1, (int)$match['attempt_no']),
-                'launch_state'=>(string)$match['launch_state'],
-                'result_reason'=>$match['result_reason'] ?? null,
-                'completed'=>$completed,
-                'players'=>$players,
-            ];
-        }
 
-        $completedInActiveRound = 0;
-        foreach ($snapshot['matches'] as $match) {
-            if ((int)($match['round_no'] ?? 0) !== $activeRoundNo) continue;
-            $completed = $match['completed_at_utc'] !== null;
-            if ($completed) $completedInActiveRound++;
-            $a = trim((string)$match['player_a_mgw_id']);
-            $b = trim((string)$match['player_b_mgw_id']);
-            $winner = trim((string)($match['winner_mgw_id'] ?? ''));
-            $players = [];
-            foreach ([$a,$b] as $participantId) {
-                if ($participantId === '') continue;
-                $players[] = [
-                    'nickname'=>$nicknames[$participantId] ?? 'Игрок',
-                    'self'=>$participantId === $mgwId,
-                    'winner'=>$completed && $winner !== '' && $winner === $participantId,
-                ];
-            }
-            $activeRoundMatches[] = [
-                'round_no'=>(int)$match['round_no'],
+            $roundsByNo[$roundNo]['matches'][] = [
+                'round_no'=>$roundNo,
                 'pair_no'=>(int)$match['pair_no'],
                 'attempt_no'=>max(1, (int)$match['attempt_no']),
                 'wait_kind'=>(string)$match['wait_kind'],
@@ -579,6 +550,21 @@ final class TournamentRoundProgressionService
                 'players'=>$players,
             ];
         }
+
+        ksort($roundsByNo, SORT_NUMERIC);
+        $rounds = array_values($roundsByNo);
+        $activeRound = $roundsByNo[$activeRoundNo] ?? [
+            'round_no'=>0,
+            'completed_count'=>0,
+            'total_count'=>0,
+            'matches'=>[],
+        ];
+
+        // Backward-compatible first-round projection remains available while the
+        // client migrates to the complete per-round archive.
+        $firstRoundArchive = is_array($roundsByNo[1]['matches'] ?? null)
+            ? $roundsByNo[1]['matches']
+            : [];
 
         $participantEliminated = $current === null
             && is_array($latest)
@@ -593,12 +579,8 @@ final class TournamentRoundProgressionService
             'latest_match'=>$latest,
             'participant_eliminated'=>$participantEliminated,
             'first_round_archive'=>$firstRoundArchive,
-            'active_round'=>[
-                'round_no'=>$activeRoundNo,
-                'completed_count'=>$completedInActiveRound,
-                'total_count'=>count($activeRoundMatches),
-                'matches'=>$activeRoundMatches,
-            ],
+            'rounds'=>$rounds,
+            'active_round'=>$activeRound,
             'tournament_complete'=>$this->isTournamentComplete($snapshot['matches']),
         ];
     }
