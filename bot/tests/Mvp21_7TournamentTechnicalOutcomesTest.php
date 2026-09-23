@@ -653,6 +653,41 @@ try{
     $assertTrue(!isset($guarded['games']['g-217-precleanup-order']['reconnect_v2']),'Both returns before 180 seconds must clear the pre-cleanup reconnect pause.');
     $assertSame('active',(string)$guarded['games']['g-217-precleanup-order']['status'],'Both returned clients must resume the original tournament game after the exact manual 90-second absence.');
 
+    // The real Telegram trace from staging exposed a narrower race than the
+    // generic pre-cleanup regression above: the returning presence request had
+    // already decided that reconnect was required, but it published its fresh
+    // foreground lease before acquiring app.lock. A concurrent bootstrap then
+    // saw one player foreground + one stale background, skipped reconnect
+    // preflight, and settled the expired turn as an ordinary timeout. Guard the
+    // endpoint ordering itself so that intermediate state can never reappear.
+    $presenceSource=file_get_contents($root.'/presence.php');
+    $presenceDecisionPos=is_string($presenceSource)
+        ? strpos($presenceSource,'$decision = $db->readOnly')
+        : false;
+    $presenceSyncPos=is_string($presenceSource)
+        ? strpos($presenceSource,'$reconnect->synchronize')
+        : false;
+    $presenceForegroundTouchPos=is_string($presenceSource)
+        ? strpos($presenceSource,'$presence->touch($accountId, $sessionId, $presenceLeaseId);')
+        : false;
+    $presenceDeparturePos=is_string($presenceSource)
+        ? strpos($presenceSource,"if ($action === 'background')")
+        : false;
+    $assertTrue(
+        is_int($presenceDecisionPos)
+        && is_int($presenceSyncPos)
+        && is_int($presenceForegroundTouchPos)
+        && $presenceDecisionPos<$presenceSyncPos
+        && $presenceSyncPos<$presenceForegroundTouchPos,
+        'Returning foreground presence must not be published until reconnect has synchronized under the runtime lock.'
+    );
+    $assertTrue(
+        is_int($presenceDeparturePos)
+        && is_int($presenceDecisionPos)
+        && $presenceDeparturePos<$presenceDecisionPos,
+        'Background/leave departure evidence must still be published before reconnect evaluation.'
+    );
+
     $runtimeSource=file_get_contents($root.'/services/ChessRuntimeService.php');
     $preflightPos=is_string($runtimeSource)
         ? strpos($runtimeSource,'$this->reconnectLifecycle->synchronize')
@@ -668,5 +703,5 @@ try{
     $removeTree($temp);
 }
 
-if($assertions<103) throw new RuntimeException('MVP-21.7 technical-outcome test is too shallow: '.$assertions);
+if($assertions<105) throw new RuntimeException('MVP-21.7 technical-outcome test is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_7TournamentTechnicalOutcomesTest: {$assertions} assertions passed\n");
