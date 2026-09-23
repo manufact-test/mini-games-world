@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+// Manual acceptance UI corrective CI checkpoint.
 
 $root=dirname(__DIR__);
 $js=file_get_contents(dirname($root).'/app/assets/js/screens/tournaments-screen-v1.js');
