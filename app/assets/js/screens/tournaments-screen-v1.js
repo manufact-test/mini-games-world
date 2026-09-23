@@ -961,7 +961,7 @@ function tournamentHallMarkup(registered, scheduled, scheduledStart){
         <div class="tournaments-v2-hall-head">
           <div>
             <span>Турнирный зал</span>
-            <h3>Стартовая сетка</h3>
+            <h3>Сетка турнира</h3>
           </div>
           <b>СТАРТ</b>
         </div>
@@ -1445,13 +1445,22 @@ function tournamentProgressionMarkup(match, progression){
   `;
 }
 
+function stopTournamentRenderedCountdownTicker(){
+  if (tournamentCountdownTimer !== null) {
+    window.clearInterval(tournamentCountdownTimer);
+    tournamentCountdownTimer = null;
+  }
+}
+
 function startTournamentRenderedCountdownTicker(body, scheduledStart = null){
   if (!(body instanceof HTMLElement)) return;
+  stopTournamentRenderedCountdownTicker();
 
+  let timerId = null;
   const updateCountdown = () => {
-    if (currentScreen() !== 'tournaments' || !body.isConnected) {
-      if (tournamentCountdownTimer) window.clearInterval(tournamentCountdownTimer);
-      tournamentCountdownTimer = null;
+    if (!body.isConnected || !tournamentHallPanelVisible()) {
+      if (timerId !== null) window.clearInterval(timerId);
+      if (tournamentCountdownTimer === timerId) tournamentCountdownTimer = null;
       return;
     }
 
@@ -1487,49 +1496,92 @@ function startTournamentRenderedCountdownTicker(body, scheduledStart = null){
   };
 
   updateCountdown();
-  tournamentCountdownTimer = window.setInterval(updateCountdown, 1000);
+  timerId = window.setInterval(updateCountdown, 1000);
+  tournamentCountdownTimer = timerId;
 }
 
 function captureTournamentArchiveViewport(body){
-  const startArchive = body.querySelector('.tournaments-v2-start-bracket-archive');
-  if (startArchive instanceof HTMLDetailsElement) {
-    tournamentStartBracketArchiveOpen = startArchive.open;
-    const scroller = startArchive.querySelector('.tournaments-v2-tournament-rules-body');
-    if (scroller instanceof HTMLElement) tournamentStartBracketArchiveScrollTop = scroller.scrollTop;
-  }
-
-  const finalArchive = body.querySelector('.tournaments-v2-final-bracket-archive');
-  if (finalArchive instanceof HTMLDetailsElement) {
-    tournamentFinalBracketArchiveOpen = finalArchive.open;
-    const scroller = finalArchive.querySelector('.tournaments-v2-tournament-rules-body');
-    if (scroller instanceof HTMLElement) tournamentFinalBracketArchiveScrollTop = scroller.scrollTop;
-  }
+  body.querySelectorAll('[data-tournament-round-archive]').forEach(details => {
+    if (!(details instanceof HTMLDetailsElement)) return;
+    const roundNo = Number(details.dataset.tournamentRoundArchive || 0);
+    if (roundNo <= 0) return;
+    tournamentRoundArchiveOpen.set(roundNo, details.open);
+    const scroller = details.querySelector('.tournaments-v2-tournament-rules-body');
+    if (scroller instanceof HTMLElement) {
+      tournamentRoundArchiveScrollTop.set(roundNo, scroller.scrollTop);
+    }
+  });
 }
 
 function restoreTournamentArchiveViewport(body){
   window.requestAnimationFrame(() => {
     if (!body.isConnected) return;
+    body.querySelectorAll('[data-tournament-round-archive]').forEach(details => {
+      if (!(details instanceof HTMLDetailsElement)) return;
+      const roundNo = Number(details.dataset.tournamentRoundArchive || 0);
+      if (roundNo <= 0) return;
 
-    const startArchive = body.querySelector('.tournaments-v2-start-bracket-archive');
-    if (startArchive instanceof HTMLDetailsElement) {
-      startArchive.open = tournamentStartBracketArchiveOpen;
-      const scroller = startArchive.querySelector('.tournaments-v2-tournament-rules-body');
-      if (scroller instanceof HTMLElement) scroller.scrollTop = tournamentStartBracketArchiveScrollTop;
-    }
-
-    const finalArchive = body.querySelector('.tournaments-v2-final-bracket-archive');
-    if (finalArchive instanceof HTMLDetailsElement) {
-      finalArchive.open = tournamentFinalBracketArchiveOpen;
-      const scroller = finalArchive.querySelector('.tournaments-v2-tournament-rules-body');
-      if (scroller instanceof HTMLElement) scroller.scrollTop = tournamentFinalBracketArchiveScrollTop;
-    }
+      if (tournamentRoundArchiveOpen.has(roundNo)) {
+        details.open = tournamentRoundArchiveOpen.get(roundNo) === true;
+      }
+      const scroller = details.querySelector('.tournaments-v2-tournament-rules-body');
+      if (scroller instanceof HTMLElement && tournamentRoundArchiveScrollTop.has(roundNo)) {
+        scroller.scrollTop = Number(tournamentRoundArchiveScrollTop.get(roundNo) || 0);
+      }
+    });
   });
 }
+
+function tournamentLiveRenderFingerprint(){
+  const tournament = tournamentSnapshot?.tournament && typeof tournamentSnapshot.tournament === 'object'
+    ? tournamentSnapshot.tournament
+    : null;
+  const registration = tournamentSnapshot?.registration && typeof tournamentSnapshot.registration === 'object'
+    ? tournamentSnapshot.registration
+    : null;
+  const hall = tournamentHallSnapshot?.hall && typeof tournamentHallSnapshot.hall === 'object'
+    ? tournamentHallSnapshot.hall
+    : null;
+  const roster = Array.isArray(hall?.roster)
+    ? hall.roster.map(player => ({
+        id:String(player?.mgw_id || ''),
+        entered:player?.entered === true,
+        present:player?.present === true,
+      }))
+    : [];
+
+  return JSON.stringify({
+    tournament:tournament ? {
+      id:String(tournament.tournament_id || ''),
+      state:String(tournament.state || ''),
+      count:Number(tournament.registered_count || 0),
+      capacity:Number(tournament.capacity || 0),
+      start:String(tournament.scheduled_start_at_utc || ''),
+    } : null,
+    registration:registration ? {
+      state:String(registration.state || ''),
+      published:registration.published === true,
+      rules:String(registration?.rules_consent?.sha256 || ''),
+    } : null,
+    hall:hall ? {
+      entered:hall.entered === true,
+      open:hall.open === true,
+      started:hall.started === true,
+      roster,
+    } : null,
+    bracket:tournamentHallSnapshot?.bracket || null,
+    match:tournamentMatchSnapshot?.match || null,
+    progression:tournamentProgressionSnapshot || null,
+    hallError:tournamentHallError,
+    matchError:tournamentMatchError,
+    terminalPending:tournamentTerminalReturnPending,
+    busy:tournamentBusy || tournamentHallBusy || tournamentMatchBusy,
+    pendingAction:tournamentPendingAction,
+  });
+}
+
 function renderTournamentSnapshot(errorMessage = ''){
-  if (tournamentCountdownTimer) {
-    window.clearInterval(tournamentCountdownTimer);
-    tournamentCountdownTimer = null;
-  }
+  stopTournamentRenderedCountdownTicker();
   const body = document.getElementById('officialTournamentBody');
   if (!(body instanceof HTMLElement)) return;
   captureTournamentArchiveViewport(body);
