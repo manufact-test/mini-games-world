@@ -59,7 +59,7 @@ final class ReconnectLifecycleService
                 foreach ($this->humanPlayerIds($game) as $playerId) {
                     if (isset($players[$playerId])) continue;
                     $snapshot = $this->presence->gameplaySnapshot($playerId);
-                    if ($this->presenceSignalsDisconnect($game, $snapshot)) {
+                    if ($this->presenceSignalsDisconnect($game, $playerId, $snapshot)) {
                         return true;
                     }
                 }
@@ -75,12 +75,12 @@ final class ReconnectLifecycleService
             foreach ($this->humanPlayerIds($game) as $playerId) {
                 if ($playerId === $accountId
                     && in_array($action, ['ping', 'status'], true)
-                    && $this->presenceSignalsDisconnect($game, $previousPresence)) {
+                    && $this->presenceSignalsDisconnect($game, $playerId, $previousPresence)) {
                     return true;
                 }
 
                 $snapshot = $this->presence->gameplaySnapshot($playerId);
-                if ($this->presenceSignalsDisconnect($game, $snapshot)) {
+                if ($this->presenceSignalsDisconnect($game, $playerId, $snapshot)) {
                     return true;
                 }
             }
@@ -116,7 +116,7 @@ final class ReconnectLifecycleService
             foreach ($this->humanPlayerIds($game) as $playerId) {
                 if (isset($players[$playerId])) continue;
                 $snapshot = $this->presence->gameplaySnapshot($playerId);
-                if (!$this->presenceSignalsDisconnect($game, $snapshot)) continue;
+                if (!$this->presenceSignalsDisconnect($game, $playerId, $snapshot)) continue;
                 $this->markPlayerDisconnected(
                     $db,
                     $playerId,
@@ -152,7 +152,7 @@ final class ReconnectLifecycleService
             foreach ($this->humanPlayerIds($game) as $playerId) {
                 if (isset($players[$playerId])) continue;
                 $snapshot = $this->presence->gameplaySnapshot($playerId);
-                if (!$this->presenceSignalsDisconnect($game, $snapshot)) continue;
+                if (!$this->presenceSignalsDisconnect($game, $playerId, $snapshot)) continue;
                 $candidate = [
                     'player_id' => $playerId,
                     'disconnected_at_ms' => $this->disconnectedAtFromPresence($snapshot, $nowMs),
@@ -205,7 +205,7 @@ final class ReconnectLifecycleService
                 foreach ($this->humanPlayerIds($game) as $playerId) {
                     if ($playerId === $accountId || isset($players[$playerId])) continue;
                     $snapshot = $this->presence->gameplaySnapshot($playerId);
-                    if (!$this->presenceSignalsDisconnect($game, $snapshot)) continue;
+                    if (!$this->presenceSignalsDisconnect($game, $playerId, $snapshot)) continue;
                     $this->markPlayerDisconnected(
                         $db,
                         $playerId,
@@ -227,7 +227,7 @@ final class ReconnectLifecycleService
 
             foreach ($this->humanPlayerIds($game) as $playerId) {
                 $snapshot = $this->presence->gameplaySnapshot($playerId);
-                if (!$this->presenceSignalsDisconnect($game, $snapshot)) continue;
+                if (!$this->presenceSignalsDisconnect($game, $playerId, $snapshot)) continue;
                 $this->markPlayerDisconnected(
                     $db,
                     $playerId,
@@ -544,21 +544,50 @@ final class ReconnectLifecycleService
         }
     }
 
-    private function presenceSignalsDisconnect(array $game, array $snapshot): bool
+    private function presenceSignalsDisconnect(
+        array $game,
+        string $playerId,
+        array $snapshot
+    ): bool
     {
         $state = (string)($snapshot['state'] ?? '');
         if ($state === 'disconnected') return true;
 
-        return $this->isTournamentGame($game)
-            && $state === 'background'
-            && !empty($snapshot['tournament_disconnect_fallback']);
+        if (!$this->isTournamentGame($game)
+            || $state !== 'background'
+            || empty($snapshot['tournament_disconnect_fallback'])) {
+            return false;
+        }
+
+        // A single backgrounded Telegram document remains connected-idle and
+        // its normal game clock keeps running. The fallback exists only for the
+        // dual-away tournament case: it recovers two stale background leases
+        // when Telegram dropped both final pagehide/leave beacons.
+        $players = is_array($game['reconnect_v2']['players'] ?? null)
+            ? $game['reconnect_v2']['players']
+            : [];
+        foreach ($this->humanPlayerIds($game) as $otherId) {
+            if ($otherId === $playerId) continue;
+            if (isset($players[$otherId])) return true;
+
+            $other = $this->presence->gameplaySnapshot($otherId);
+            $otherState = (string)($other['state'] ?? '');
+            if ($otherState === 'disconnected') return true;
+            if ($otherState === 'background'
+                && !empty($other['tournament_disconnect_fallback'])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function accountPresenceSignalsDisconnect(
         array $db,
         string $accountId,
         array $snapshot
-    ): bool {
+    ): bool
+    {
         $accountId = trim($accountId);
         if ($accountId === '') return false;
 
@@ -569,7 +598,7 @@ final class ReconnectLifecycleService
 
         $game = $db['games'][$gameId];
         return $this->isReconnectManagedGame($game)
-            && $this->presenceSignalsDisconnect($game, $snapshot);
+            && $this->presenceSignalsDisconnect($game, $accountId, $snapshot);
     }
 
     private function disconnectedAtFromPresence(array $snapshot, int $nowMs): int
