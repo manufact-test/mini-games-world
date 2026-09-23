@@ -127,7 +127,6 @@ try {
     }
 
     $action = (string)($payload['action'] ?? '');
-    $GLOBALS['mgw_tournament_reconnect_trace_api_action'] = $action;
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
     $deviceId = clean_string($payload['deviceId'] ?? '', 120);
 
