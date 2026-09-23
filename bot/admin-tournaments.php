@@ -161,7 +161,6 @@ try {
     $settlement = new TournamentSettlementService($database, $ledger, $prizeReview);
     $actorRef = 'telegram:' . $telegramId;
     $action = strtolower(trim((string)($payload['action'] ?? 'snapshot')));
-    $passiveRefresh = $action === 'snapshot' && !empty($payload['passive_refresh']);
 
     if ($action === 'snapshot') {
         $result = [
@@ -294,7 +293,6 @@ try {
     $notifications = null;
     $scheduledTournament = $result['snapshot']['tournament'] ?? null;
     if (is_array($scheduledTournament)
-        && !$passiveRefresh
         && (string)($scheduledTournament['state'] ?? '') === TournamentRegistrationService::STATE_SCHEDULED) {
         try {
             $tournamentId = (string)($scheduledTournament['tournament_id'] ?? '');
