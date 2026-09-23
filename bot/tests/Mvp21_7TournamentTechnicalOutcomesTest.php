@@ -370,8 +370,38 @@ try{
     $presence->leave('r5','session-r5','lease-r5');
     $presence->leave('r6','session-r6','lease-r6');
 
+    // Real Telegram repro waits about two minutes. The WebView can finish the
+    // presence leave write while the reconnect JSON mutation is missed during
+    // shutdown. Age both explicit-leave leases beyond the 12-second online
+    // handoff grace, but keep them well inside gameplay retention.
+    $leftAt=time()-120;
+    foreach([
+        ['r5','session-r5','lease-r5'],
+        ['r6','session-r6','lease-r6'],
+    ] as [$playerId,$sessionId,$leaseId]){
+        $accountDirectory=$temp.DIRECTORY_SEPARATOR.'account-'.hash('sha256',$playerId);
+        $leasePath=$accountDirectory.DIRECTORY_SEPARATOR.'session-'
+            .hash('sha256',$sessionId."\0presence:".$leaseId).'.presence';
+        file_put_contents($leasePath,json_encode([
+            'touched_at'=>$leftAt-4,
+            'leave_after'=>$leftAt+12,
+            'mode'=>'left',
+        ],JSON_UNESCAPED_SLASHES),LOCK_EX);
+    }
+
+    $assertSame([], $presence->onlineAccountIds(),'Expired leave grace must not keep departed tournament players publicly online.');
+    $staleR5=$presence->gameplaySnapshot('r5');
+    $assertSame('disconnected',(string)($staleR5['state']??''),'Two-minute-old explicit leave must remain a gameplay disconnect tombstone.');
+    $assertSame($leftAt*1000,(int)($staleR5['disconnected_at_ms']??0),'Gameplay tombstone must preserve the original leave instant for the shared deadline.');
+
+    // Match the real presence.php ordering: capture previous snapshot, touch the
+    // new document lease, decide mutation, then synchronize.
     $prev=$presence->gameplaySnapshot('r5');
     $presence->touch('r5','session-r5-new','lease-r5-new');
+    $assertTrue(
+        $lifecycle->needsMutation($runtime,'r5','session-r5-new','ping',$prev),
+        'First returning presence.php ping after two minutes must request reconnect mutation.'
+    );
     $lifecycle->synchronize($runtime,'r5','session-r5-new','ping',$prev);
     $reconnect=$runtime['games']['g-217-missed-leaves']['reconnect_v2']??[];
     $assertTrue(!empty($reconnect['tournament_both_disconnect']),'First returning ping must recover a missed dual-disconnect into the shared tournament branch.');
@@ -383,10 +413,19 @@ try{
         (int)($reconnect['both_deadline_ms']??0)-(int)($reconnect['both_disconnected_at_ms']??0),
         'Recovered dual-disconnect must own the full three-minute shared window.'
     );
+    $remainingSharedMs=(int)($reconnect['both_deadline_ms']??0)-(int)floor(microtime(true)*1000);
+    $assertTrue(
+        $remainingSharedMs>=55000&&$remainingSharedMs<=65000,
+        'Returning after about two minutes must keep only the remaining shared minute instead of resetting a fresh three-minute window.'
+    );
     $assertSame('g-217-missed-leaves',(string)$runtime['users']['r5']['current_game_id'],'First returning participant must retain the same tournament game.');
 
     $prev=$presence->gameplaySnapshot('r6');
     $presence->touch('r6','session-r6-new','lease-r6-new');
+    $assertTrue(
+        $lifecycle->needsMutation($runtime,'r6','session-r6-new','ping',$prev),
+        'Second returning presence.php ping must still enter the existing shared reconnect mutation.'
+    );
     $lifecycle->synchronize($runtime,'r6','session-r6-new','ping',$prev);
     $assertTrue(!isset($runtime['games']['g-217-missed-leaves']['reconnect_v2']),'Second return inside the shared window must fully resume the tournament game.');
     $assertSame('active',(string)$runtime['games']['g-217-missed-leaves']['status'],'Both returning players must resume the original active game instead of producing a false terminal result.');
@@ -397,5 +436,5 @@ try{
     $removeTree($temp);
 }
 
-if($assertions<55) throw new RuntimeException('MVP-21.7 technical-outcome test is too shallow: '.$assertions);
+if($assertions<61) throw new RuntimeException('MVP-21.7 technical-outcome test is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_7TournamentTechnicalOutcomesTest: {$assertions} assertions passed\n");
