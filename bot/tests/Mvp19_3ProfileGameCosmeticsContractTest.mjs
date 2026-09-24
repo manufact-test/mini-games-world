@@ -97,6 +97,10 @@ expect(mobileAnimationGuard.includes("profileObserver.observe(screen, { childLis
 expect(manifest.includes('profile_route_guard=animation-runtime-v2') && manifest.includes('profile_input=known-animation-set-v1'), 'active clean-entry identity must preserve the accepted guard identity while publishing the no-full-scan first-input cache key');
 expect(shellMain.includes("profileTrigger.dataset.shellNav = 'profile';"), 'top identity must use the same canonical shell Profile route owner as bottom navigation');
 expect(manifest.includes('profile_topbar=direct-shell-v2'), 'active shell mapping must cache-bust the direct topbar Profile route owner');
+expect(shellMain.includes('function shouldPrimeMobileProfile(result)') && shellMain.includes('await primeMobileProfileFirstPresentation()'), 'mobile cold-start must complete Profile preparation under the preloader before interaction');
+expect(shellMain.includes("classList.add('mgw-profile-prewarm-pass')") && shellMain.includes('window.requestAnimationFrame(() => {'), 'mobile cold-start must force a covered real Profile raster rather than leaving first rasterization to the first tap');
+expect(shellMain.includes("if (String(result?.active_game?.id || '').trim()) return false;"), 'covered Profile raster warm must remain disabled on active-game reloads');
+expect(manifest.includes('profile_first=covered-raster-prewarm-v2'), 'active shell identity must publish the covered first-raster corrective');
 expect(manifest.includes('profile_mobile=animation-runtime-guard-v2'), 'active consistency CSS identity must preserve the non-universal mobile Profile animation guard');
 
 expect(profileCss.includes('.profile-v2-game-collection'), 'Profile game collection layout must exist');
