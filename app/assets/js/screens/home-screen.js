@@ -326,7 +326,7 @@ async function openSupportTicketDetail(ticketNumber){
 
 function renderSupportTicketThread(ticket){
   if(!ticket)return;
-  const meta=document.getElementById('supportTickketMeta');
+  const meta=document.getElementById('supportTicketMeta');
   if(meta)meta.textContent=[ticket.category_label,ticket.status_label||ticket.status,ticket.platform_label].filter(Boolean).join(' · ');
   const thread=document.getElementById('supportTicketThread');
   if(!thread)return;
@@ -357,7 +357,7 @@ function renderSupportTicketThread(ticket){
 }
 
 function supportFileValidation(file){
-  const allowed=['image/jpeg','image/png','image/webp','application/pdf','text/plain'];
+  const allowed=['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain'];
   if(!file)return 'Файл не выбран.';
   if(Number(file.size||0)>2000000)return 'Файл больше 2 МБ.';
   const mime=String(file.type||'').toLowerCase();
@@ -385,7 +385,7 @@ function mountSupportFilePicker(inputId,triggerId,listId){
     }));
     if(trigger){
       trigger.disabled=files.length>=3;
-      trigger.textContent=files.length>=3?'Лимит 3 файла':'＋  Добавить';
+      trigger.textContent=files.length>=3?'Лимит 3 файла':'＋ Добавить';
     }
   };
 
@@ -445,7 +445,7 @@ async function openSupportAttachment(attachmentId,button){
   }
   const label=button?.querySelector('em');
   if(label)label.textContent='Загрузка…';
-  if(button)botton.disabled=true;
+  if(button)button.disabled=true;
   try{
     const result=await api.supportAttachment(attachmentId);
     const file=result?.attachment||{};
@@ -464,7 +464,7 @@ async function openSupportAttachment(attachmentId,button){
     }else{
       const anchor=document.createElement('a');
       anchor.href=url;
-      anchor.download=String(File.file_name||'attachment');
+      anchor.download=String(file.file_name||'attachment');
       document.body.append(anchor);
       anchor.click();
       anchor.remove();
