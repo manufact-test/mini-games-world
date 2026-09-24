@@ -56,7 +56,7 @@ function openMoreMenuSheet(){
     ${menuItemMarkup('feedbackBtn', '💬', 'Обратная связь')}
     ${menuItemMarkup('ideaBtn', '💡', 'Предложить идею')}
     ${menuItemMarkup('supportBtn', '⚠️', 'Пожаловаться', 'danger')}
-    ${menuItemMarkup('supportTicketsBtn', '🎫', 'Мои обращения')}
+    ${menuItemMarkup('supportTicketsBtn', '▣', 'Мои обращения', 'support-hub')}
     ${menuItemMarkup('balanceHistoryBtn', '🧾', 'История баланса')}
     ${menuItemMarkup('matchHistoryBtn', '🎮', 'История матчей')}
   </div>`);
@@ -208,16 +208,21 @@ function openSupportForm(type){
           <textarea id="supportText" class="support-ticket-control support-ticket-message" maxlength="4000" placeholder="${escapeHtml(messagePlaceholder)}"></textarea>
         </label>
 
-        <label class="support-ticket-files">
-          <span><strong>Вложения</strong><small>до 3 файлов, до 2 МБ каждый</small></span>
-          <input id="supportFiles" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain">
-        </label>
+        <div class="support-file-picker">
+          <div class="support-file-picker-head">
+            <div><strong>Вложения</strong><small>Необязательно · до 3 файлов, до 2 МБ каждый</small></div>
+            <button class="support-file-add" id="supportFilesTrigger" type="button">＋ Добавить</button>
+          </div>
+          <input id="supportFiles" class="support-file-native" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain">
+          <div class="support-file-list" id="supportFilesList"></div>
+        </div>
       </div>
       <button class="btn primary full support-ticket-submit" id="sendSupport" type="button">Создать обращение</button>
     </div>`);
 
   const categoryNode=document.getElementById('supportCategory');
   if(categoryNode) categoryNode.value=category;
+  const supportFilePicker=mountSupportFilePicker('supportFiles','supportFilesTrigger','supportFilesList');
 
   document.getElementById('sendSupport')?.addEventListener('click',async()=>{
     const message=document.getElementById('supportText')?.value.trim()||'';
@@ -225,7 +230,7 @@ function openSupportForm(type){
     const button=document.getElementById('sendSupport');
     if(button)button.disabled=true;
     try{
-      const attachments=await supportFilesPayload(document.getElementById('supportFiles'));
+      const attachments=await supportFilesPayload(supportFilePicker.getFiles());
       const result=await api.supportCreate({
         category:document.getElementById('supportCategory')?.value||category,
         priority:document.getElementById('supportPriority')?.value||'normal',
@@ -245,7 +250,9 @@ function openSupportForm(type){
 }
 
 async function openSupportTicketsSheet(){
-  openSheet(`<div class="sheet-head"><div><h2>Мои обращения</h2><p>Здесь сохраняются статус и переписка по каждому тикету.</p></div><button class="close" data-close-sheet type="button">×</button></div><div class="small-note" id="supportTicketsState">Загружаю…</div><div class="history-list" id="supportTicketsList"></div>`);
+  openSheet(`<div class="sheet-head support-hub-head"><div><h2>Мои обращения</h2></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="support-ticket-summary" id="supportTicketsState">Загружаю…</div>
+    <div class="support-ticket-list" id="supportTicketsList"></div>`);
   try{
     const result=await api.supportSnapshot();
     const list=document.getElementById('supportTicketsList');
@@ -253,71 +260,222 @@ async function openSupportTicketsSheet(){
     if(!list||!stateNode)return;
     const tickets=Array.isArray(result?.tickets)?result.tickets:[];
     stateNode.textContent=tickets.length?`Обращений: ${tickets.length}`:'Обращений пока нет.';
-    list.innerHTML=tickets.map(ticket=>`<button class="history-item" type="button" data-support-ticket="${escapeHtml(ticket.ticket_number||'')}"><div><strong>${escapeHtml(ticket.ticket_number||'Обращение')}</strong><span>${escapeHtml(ticket.subject||ticket.category_label||'')}</span><em>${escapeHtml(ticket.status_label||ticket.status||'')} · ${escapeHtml(ticket.priority_label||ticket.priority||'')} · ${escapeHtml(formatDate(ticket.updated_at||''))}</em></div></button>`).join('');
+    list.innerHTML=tickets.map(ticket=>{
+      const status=escapeHtml(ticket.status_label||ticket.status||'');
+      const priority=escapeHtml(ticket.priority_label||ticket.priority||'');
+      const category=escapeHtml(ticket.category_label||'');
+      const date=escapeHtml(formatDate(ticket.updated_at||''));
+      return `<button class="support-ticket-row" type="button" data-support-ticket="${escapeHtml(ticket.ticket_number||'')}">
+        <span class="support-ticket-row-top"><strong>${escapeHtml(ticket.ticket_number||'Обращение')}</strong><em>${status}</em></span>
+        <span class="support-ticket-row-subject">${escapeHtml(ticket.subject||ticket.category_label||'')}</span>
+        <span class="support-ticket-row-meta"><span>${category}</span><span>${priority}</span><time>${date}</time></span>
+      </button>`;
+    }).join('');
     list.querySelectorAll('[data-support-ticket]').forEach(button=>button.addEventListener('click',()=>void openSupportTicketDetail(button.dataset.supportTicket||'')));
   }catch(error){
-    const stateNode=document.getElementById('supportTicketsState'); if(stateNode)stateNode.textContent=error.message||'Не удалось загрузить обращения.';
+    const stateNode=document.getElementById('supportTicketsState');
+    if(stateNode)stateNode.textContent=error.message||'Не удалось загрузить обращения.';
   }
 }
 
 async function openSupportTicketDetail(ticketNumber){
   if(!ticketNumber)return;
-  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(ticketNumber)}</h2><p id="supportTicketMeta">Загружаю переписку…</p></div><button class="close" data-close-sheet type="button">×</button></div><div class="history-list" id="supportTicketThread"></div><textarea id="supportReplyText" class="form-textarea" maxlength="4000" placeholder="Добавить сообщение"></textarea><label class="small-note">Вложения<input id="supportReplyFiles" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain"></label><button class="btn primary full" id="supportReplySend" type="button">Отправить</button>`);
+  openSheet(`<div class="sheet-head support-thread-head"><div><h2>${escapeHtml(ticketNumber)}</h2><p id="supportTicketMeta">Загружаю…</p></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="support-thread" id="supportTicketThread"></div>
+    <div class="support-reply-composer">
+      <span class="support-reply-title">Ответить</span>
+      <textarea id="supportReplyText" class="support-ticket-control support-ticket-message support-reply-text" maxlength="4000" placeholder="Напишите сообщение"></textarea>
+      <div class="support-file-picker support-file-picker--reply">
+        <div class="support-file-picker-head">
+          <div><strong>Добавить к ответу</strong><small>Необязательно · до 3 файлов, до 2 МБ каждый</small></div>
+          <button class="support-file-add" id="supportReplyFilesTrigger" type="button">＋ Файл</button>
+        </div>
+        <input id="supportReplyFiles" class="support-file-native" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain">
+        <div class="support-file-list" id="supportReplyFilesList"></div>
+      </div>
+      <button class="btn primary full support-reply-send" id="supportReplySend" type="button">Отправить</button>
+    </div>`);
+  const replyPicker=mountSupportFilePicker('supportReplyFiles','supportReplyFilesTrigger','supportReplyFilesList');
   try{
     const result=await api.supportTicket(ticketNumber);
     renderSupportTicketThread(result?.ticket);
     document.getElementById('supportReplySend')?.addEventListener('click',async()=>{
       const message=document.getElementById('supportReplyText')?.value.trim()||'';
       if(!message)return toast('Напишите сообщение.');
-      const send=document.getElementById('supportReplySend'); if(send)send.disabled=true;
+      const send=document.getElementById('supportReplySend');
+      if(send)send.disabled=true;
       try{
-        const attachments=await supportFilesPayload(document.getElementById('supportReplyFiles'));
+        const attachments=await supportFilesPayload(replyPicker.getFiles());
         const updated=await api.supportReply(ticketNumber,message,attachments);
         renderSupportTicketThread(updated?.ticket);
-        const input=document.getElementById('supportReplyText'); if(input)input.value='';
-        const files=document.getElementById('supportReplyFiles'); if(files)files.value='';
-      }catch(error){toast(error.message||'Не удалось отправить сообщение.');}
-      finally{if(send)send.disabled=false;}
+        const input=document.getElementById('supportReplyText');
+        if(input)input.value='';
+        replyPicker.clear();
+        toast('Сообщение отправлено.');
+      }catch(error){
+        toast(error.message||'Не удалось отправить сообщение.');
+      }finally{
+        if(send)send.disabled=false;
+      }
     });
   }catch(error){
-    const meta=document.getElementById('supportTicketMeta'); if(meta)meta.textContent=error.message||'Не удалось открыть обращение.';
+    const meta=document.getElementById('supportTicketMeta');
+    if(meta)meta.textContent=error.message||'Не удалось открыть обращение.';
   }
 }
 
 function renderSupportTicketThread(ticket){
   if(!ticket)return;
   const meta=document.getElementById('supportTicketMeta');
-  if(meta)meta.textContent=`${ticket.category_label||''} · ${ticket.status_label||ticket.status||''} · ${ticket.platform_label||''}`;
-  const thread=document.getElementById('supportTicketThread'); if(!thread)return;
+  if(meta)meta.textContent=[ticket.category_label,ticket.status_label||ticket.status,ticket.platform_label].filter(Boolean).join(' · ');
+  const thread=document.getElementById('supportTicketThread');
+  if(!thread)return;
   thread.innerHTML=(ticket.messages||[]).map(message=>{
-    const files=(message.attachments||[]).map(file=>`<button class="btn ghost" type="button" data-support-attachment="${escapeHtml(file.attachment_id||'')}">📎 ${escapeHtml(file.file_name||'Файл')}</button>`).join('');
-    return `<div class="history-item"><div><strong>${message.actor_type==='admin'?'Поддержка':'Вы'}</strong><span>${escapeHtml(message.body||'')}</span><em>${escapeHtml(formatDate(message.created_at_utc||''))}</em>${files}</div></div>`;
+    const own=message.actor_type!=='admin';
+    const files=(message.attachments||[]).map(file=>`
+      <div class="support-thread-attachment-wrap">
+        <button class="support-thread-attachment" type="button" data-support-attachment="${escapeHtml(file.attachment_id||'')}">
+          <span aria-hidden="true">⌁</span>
+          <span class="support-thread-attachment-name">${escapeHtml(file.file_name||'Вложение')}</span>
+          <em>Открыть</em>
+        </button>
+        <div class="support-thread-attachment-preview" data-support-attachment-preview="${escapeHtml(file.attachment_id||'')}"></div>
+      </div>`).join('');
+    return `<article class="support-thread-message ${own?'is-user':'is-admin'}">
+      <header><strong>${own?'Ваше сообщение':'Поддержка'}</strong><time>${escapeHtml(formatDate(message.created_at_utc||''))}</time></header>
+      <div class="support-thread-body">${escapeHtml(message.body||'')}</div>
+      ${files?`<div class="support-thread-attachments">${files}</div>`:''}
+    </article>`;
   }).join('');
-  thread.querySelectorAll('[data-support-attachment]').forEach(button=>button.addEventListener('click',()=>void openSupportAttachment(button.dataset.supportAttachment||'')));
+  thread.querySelectorAll('[data-support-attachment]').forEach(button=>button.addEventListener('click',()=>void openSupportAttachment(button.dataset.supportAttachment||'',button)));
+  thread.scrollTop=thread.scrollHeight;
   const send=document.getElementById('supportReplySend');
-  if(send)send.disabled=ticket.status==='closed';
+  const reply=document.querySelector('.support-reply-composer');
+  const closed=ticket.status==='closed';
+  if(send)send.disabled=closed;
+  if(reply)reply.classList.toggle('is-disabled',closed);
 }
 
-async function supportFilesPayload(input){
-  const files=Array.from(input?.files||[]);
+function supportFileValidation(file){
+  const allowed=['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain'];
+  if(!file)return 'Файл не выбран.';
+  if(Number(file.size||0)>2000000)return 'Файл больше 2 МБ.';
+  const mime=String(file.type||'').toLowerCase();
+  if(!allowed.includes(mime))return 'Поддерживаются изображения, PDF и TXT.';
+  return '';
+}
+
+function mountSupportFilePicker(inputId,triggerId,listId){
+  const input=document.getElementById(inputId);
+  const trigger=document.getElementById(triggerId);
+  const list=document.getElementById(listId);
+  let files=[];
+
+  const key=file=>`${file.name}:${file.size}:${file.lastModified}`;
+  const render=()=>{
+    if(!list)return;
+    list.innerHTML=files.map((file,index)=>`<div class="support-file-chip">
+      <span><strong>${escapeHtml(file.name)}</strong><small>${Math.max(1,Math.ceil(file.size/1024))} КБ</small></span>
+      <button type="button" data-support-file-remove="${index}" aria-label="Удалить файл">×</button>
+    </div>`).join('');
+    list.querySelectorAll('[data-support-file-remove]').forEach(button=>button.addEventListener('click',()=>{
+      const index=Number(button.dataset.supportFileRemove);
+      files=files.filter((_,itemIndex)=>itemIndex!==index);
+      render();
+    }));
+    if(trigger){
+      trigger.disabled=files.length>=3;
+      trigger.textContent=files.length>=3?'Лимит 3 файла':(triggerId==='supportReplyFilesTrigger'?'＋ Файл':'＋ Добавить');
+    }
+  };
+
+  trigger?.addEventListener('click',()=>input?.click());
+  input?.addEventListener('change',()=>{
+    const selected=Array.from(input.files||[]);
+    input.value='';
+    for(const file of selected){
+      const validation=supportFileValidation(file);
+      if(validation){
+        toast(`${file.name}: ${validation}`);
+        continue;
+      }
+      if(files.some(item=>key(item)===key(file)))continue;
+      if(files.length>=3){
+        toast('Можно приложить не более 3 файлов.');
+        break;
+      }
+      files.push(file);
+    }
+    render();
+  });
+  render();
+
+  return{
+    getFiles:()=>files.slice(),
+    clear:()=>{files=[];if(input)input.value='';render();}
+  };
+}
+
+async function supportFilesPayload(source){
+  const files=Array.isArray(source)?source:Array.from(source?.files||[]);
   if(files.length>3)throw new Error('Можно приложить не более 3 файлов.');
   return Promise.all(files.map(file=>new Promise((resolve,reject)=>{
-    if(file.size>2000000)return reject(new Error(`${file.name}: файл больше 2 МБ.`));
+    const validation=supportFileValidation(file);
+    if(validation)return reject(new Error(`${file.name}: ${validation}`));
     const reader=new FileReader();
     reader.onerror=()=>reject(new Error(`${file.name}: не удалось прочитать файл.`));
-    reader.onload=()=>{const mime=String(file.type||'').toLowerCase();const allowed=['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain'];if(!allowed.includes(mime))return reject(new Error(`${file.name}: поддерживаются изображения, PDF и TXT.`));resolve({file_name:file.name,mime_type:mime,content_base64:String(reader.result||'').split(',').pop()||''});};
+    reader.onload=()=>resolve({
+      file_name:file.name,
+      mime_type:String(file.type||'').toLowerCase(),
+      content_base64:String(reader.result||'').split(',').pop()||''
+    });
     reader.readAsDataURL(file);
   })));
 }
 
-async function openSupportAttachment(attachmentId){
+async function openSupportAttachment(attachmentId,button){
   if(!attachmentId)return;
+  const preview=Array.from(document.querySelectorAll('[data-support-attachment-preview]'))
+    .find(node=>node.dataset.supportAttachmentPreview===attachmentId)||null;
+  if(preview?.dataset.loaded==='1'){
+    const hidden=preview.hidden;
+    preview.hidden=!hidden;
+    const action=button?.querySelector('em');
+    if(action)action.textContent=hidden?'Скрыть':'Открыть';
+    return;
+  }
+  const label=button?.querySelector('em');
+  if(label)label.textContent='Загрузка…';
+  if(button)button.disabled=true;
   try{
     const result=await api.supportAttachment(attachmentId);
     const file=result?.attachment||{};
-    const binary=atob(String(file.content_base64||'')); const bytes=new Uint8Array(binary.length);
+    const binary=atob(String(file.content_base64||''));
+    const bytes=new Uint8Array(binary.length);
     for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
-    const url=URL.createObjectURL(new Blob([bytes],{type:file.mime_type||'application/octet-stream'}));
-    window.open(url,'_blank','noopener,noreferrer'); window.setTimeout(()=>URL.revokeObjectURL(url),60000);
-  }catch(error){toast(error.message||'Не удалось открыть вложение.');}
+    const mime=String(file.mime_type||'application/octet-stream');
+    const blob=new Blob([bytes],{type:mime});
+    const url=URL.createObjectURL(blob);
+    if(mime.startsWith('image/')&&preview){
+      preview.innerHTML=`<img src="${url}" alt="${escapeHtml(file.file_name||'Вложение')}">`;
+      preview.dataset.loaded='1';
+      preview.hidden=false;
+      if(label)label.textContent='Скрыть';
+      window.setTimeout(()=>URL.revokeObjectURL(url),300000);
+    }else{
+      const anchor=document.createElement('a');
+      anchor.href=url;
+      anchor.download=String(file.file_name||'attachment');
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(()=>URL.revokeObjectURL(url),60000);
+      if(label)label.textContent='Открыть';
+    }
+  }catch(error){
+    toast(error.message||'Не удалось открыть вложение.');
+    if(label)label.textContent='Открыть';
+  }finally{
+    if(button)button.disabled=false;
+  }
 }

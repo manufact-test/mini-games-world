@@ -202,11 +202,10 @@ final class SupportTicketService
             $this->database->execute(
                 'UPDATE mgw_support_tickets
                  SET status_code = :status, updated_at_utc = :updated_at, last_message_at_utc = :last_message,
-                     resolved_at_utc = CASE WHEN :status_for_resolved = \'resolved\' THEN resolved_at_utc ELSE NULL END
+                     resolved_at_utc = NULL
                  WHERE ticket_id = :ticket_id',
                 [
                     'status' => $nextStatus,
-                    'status_for_resolved' => $nextStatus,
                     'updated_at' => $now,
                     'last_message' => $now,
                     'ticket_id' => (string)$ticket['ticket_id'],
