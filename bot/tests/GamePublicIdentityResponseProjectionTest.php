@@ -18,16 +18,25 @@ final class GameIdentityProjectionFakeDatabase
 {
     public int $queryCount = 0;
 
-    public function __construct(private array $rows) {}
+    public function __construct(private array $rows, private array $prestigeRows = []) {}
 
     public function fetchAll(string $sql, array $parameters = []): array
     {
         $this->queryCount++;
-        if (!str_contains($sql, 'SELECT i.provider_subject, i.mgw_id, u.nickname')) {
-            throw new RuntimeException('Game identity projection must use the canonical read-only identity query.');
-        }
         if (preg_match('/\b(?:INSERT|UPDATE|DELETE|REPLACE)\b/i', $sql) === 1) {
             throw new RuntimeException('Game identity projection must remain read-only.');
+        }
+
+        if (str_contains($sql, 'FROM mgw_tournament_reward_entitlements')) {
+            $mgwIds = array_map('strval', array_values($parameters));
+            return array_values(array_filter(
+                $this->prestigeRows,
+                static fn(array $row): bool => in_array((string)$row['mgw_id'], $mgwIds, true)
+            ));
+        }
+
+        if (!str_contains($sql, 'SELECT i.provider_subject, i.mgw_id, u.nickname')) {
+            throw new RuntimeException('Game identity projection must use the canonical read-only identity query.');
         }
 
         $subjects = array_map('strval', array_values($parameters));
@@ -66,6 +75,8 @@ PdoConnectionFactory::$database = new GameIdentityProjectionFakeDatabase([
     ['provider_subject'=>'1002', 'mgw_id'=>'MGW-B1', 'nickname'=>'Не использовать 1'],
     ['provider_subject'=>'1002', 'mgw_id'=>'MGW-B2', 'nickname'=>'Не использовать 2'],
     ['provider_subject'=>'1003', 'mgw_id'=>'MGW-C', 'nickname'=>'Игрок Три'],
+], [
+    ['mgw_id'=>'MGW-A','reward_code'=>'champion_crown','valid_until_at_utc'=>'2099-12-31 23:59:59.000000'],
 ]);
 
 $input = [
@@ -108,10 +119,15 @@ $assertSame('Царь у дворца', $output['game']['players'][0]['name'], '
 $assertSame('Old Telegram 2', $output['game']['players'][1]['name'], 'Ambiguous provider subject must preserve existing safe display name');
 $assertSame('Бот', $output['game']['players'][2]['name'], 'Bot identity must remain unchanged');
 $assertSame('Игрок Три', $output['active_game']['players'][0]['name'], 'Bootstrap active_game must use the same canonical projection');
+$assertSame(true, $output['game']['players'][0]['tournament_prestige']['champion_crown'] ?? null, 'Active champion crown must project into the public game identity.');
+$assertSame('2099-12-31 23:59:59.000000', $output['game']['players'][0]['tournament_prestige']['champion_crown_until_at_utc'] ?? null, 'Champion crown projection must retain its durable expiry.');
+$assertSame(false, $output['active_game']['players'][0]['tournament_prestige']['champion_crown'] ?? null, 'Players without a current crown must project an explicit false prestige flag.');
 $assertSame($input['user'], $output['user'], 'Game response projection must never rewrite authenticated user identity');
-$assertSame(2, PdoConnectionFactory::$database->queryCount, 'Only public game payloads should trigger canonical read queries');
+$assertSame(4, PdoConnectionFactory::$database->queryCount, 'Each public game payload may perform one canonical identity read and one additive tournament-prestige read.');
 
 $assertContains('mgw_project_canonical_game_identity($data)', $responseSource, 'API normalization must project canonical game identity at the final response boundary');
+$assertContains('mgw_tournament_reward_entitlements', $responseSource, 'Public game identity projection must read durable active tournament prestige without changing game mechanics.');
+$assertContains("$player['tournament_prestige'] = $tournamentPrestige", $responseSource, 'Projected player identity must expose tournament prestige to the presentation layer.');
 $assertContains("foreach (['game', 'active_game'] as \$gameKey)", $responseSource, 'Projection must be limited to public game payloads');
 $assertNotContains("\$user['mgw_nickname']", $resolverSource, 'Runtime account resolver must not inject visible game identity globally');
 
