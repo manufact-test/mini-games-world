@@ -427,11 +427,14 @@ final class TournamentCancellationService
              INNER JOIN mgw_tournament_registrations r
                ON r.tournament_id=e.tournament_id AND r.mgw_id=:mgw_id
              WHERE r.registration_state=:registration_state
+               AND t.tournament_state IN (:cancelled_state,:emergency_state)
              ORDER BY e.created_at_utc DESC
              LIMIT 1',
             [
                 'mgw_id'=>$mgwId,
                 'registration_state'=>TournamentRegistrationService::REGISTRATION_CANCELLED,
+                'cancelled_state'=>TournamentRegistrationService::STATE_CANCELLED,
+                'emergency_state'=>TournamentRegistrationService::STATE_EMERGENCY_STOPPED,
             ]
         );
         if ($rows === [] || !is_array($rows[0])) return null;
