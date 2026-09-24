@@ -168,8 +168,8 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
                     </select>
                   </label>
                   <label class="mgw-admin__field">
-                    <span>Game ID (для flagged match)</span>
-                    <input data-tournament-review-game-id type="text" maxlength="96" autocomplete="off" placeholder="Можно пустым только для уже определённого top-3">
+                    <span>ID матча (для отмеченного матча)</span>
+                    <input data-tournament-review-game-id type="text" maxlength="96" autocomplete="off" placeholder="Можно оставить пустым только для уже определённого призёра">
                   </label>
                   <label class="mgw-admin__field">
                     <span>Основание сигнала</span>
@@ -179,7 +179,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
                 <div class="mgw-admin__tournament-actions">
                   <button type="button" data-tournament-review-flag>Поставить призовой путь на проверку</button>
                 </div>
-                <small>Тяжёлая проверка применяется только к top-3 или участнику явно flagged tournament match. Сам сигнал не списывает и не начисляет деньги: он только удерживает затронутую призовую ветку до решения Admin.</small>
+                <small>Углублённая проверка применяется только к призёру или участнику явно отмеченного матча. Сам сигнал не списывает и не начисляет деньги: он только удерживает затронутую призовую ветку до решения администратора.</small>
                 <div class="mgw-admin__history" data-tournament-review-list></div>
               </div>
               <div class="mgw-admin__tournament-schedule" data-tournament-schedule-panel hidden>
@@ -219,7 +219,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           <span>Проверки и пересчёты</span>
         </div>
         <div class="mgw-admin__rating">
-          <div class="mgw-admin__rating-status" data-rating-status>Rating Admin ещё не загружен.</div>
+          <div class="mgw-admin__rating-status" data-rating-status>Сезонные данные ещё не загружены.</div>
 
           <div class="mgw-admin__rating-metrics" data-rating-metrics></div>
 
@@ -242,11 +242,11 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               <label class="mgw-admin__field">
                 <span>Причина</span>
                 <select data-rating-reason-code>
-                  <option value="fraud">fraud</option>
-                  <option value="automation">automation</option>
-                  <option value="duplicate_identity">duplicate_identity</option>
-                  <option value="match_manipulation">match_manipulation</option>
-                  <option value="manual_review">manual_review</option>
+                  <option value="fraud">Мошенничество</option>
+                  <option value="automation">Автоматизация / бот</option>
+                  <option value="duplicate_identity">Дублирующая личность</option>
+                  <option value="match_manipulation">Манипуляция матчем</option>
+                  <option value="manual_review">Ручная проверка</option>
                 </select>
               </label>
               <label class="mgw-admin__field">
@@ -268,7 +268,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               <div class="mgw-admin__rating-actions">
                 <button type="button" data-rating-recalculate>Пересчитать закрытый сезон</button>
               </div>
-              <small>Разрешено только для FINALIZING/CLOSED. Используются действующие review exclusions и существующие award owners.</small>
+              <small>Доступно только для финализируемого или закрытого сезона. Используются действующие ручные исключения и существующие механизмы наград.</small>
               <pre class="mgw-admin__rating-rehearsal" data-rating-rehearsal-output>Репетиция ещё не запускалась.</pre>
             </section>
           </div>
@@ -451,10 +451,10 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
             <span>Переход</span>
             <select data-notification-deep-link>
               <option value="">без перехода</option>
-              <option value="home">home</option>
-              <option value="profile">profile</option>
-              <option value="store">store</option>
-              <option value="store:orders">store:orders</option>
+              <option value="home">Главная</option>
+              <option value="profile">Профиль</option>
+              <option value="store">Магазин</option>
+              <option value="store:orders">Магазин · заказы</option>
             </select>
           </label>
 
@@ -500,25 +500,25 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
         </div>
         <div class="mgw-admin__tournament mgw-admin__test-stack">
 <div class="mgw-admin__tournament-schedule" data-tournament-manual-panel hidden>
-                <div class="mgw-admin__tournament-current" data-tournament-manual-info>Ручная проверка staging недоступна.</div>
+                <div class="mgw-admin__tournament-current" data-tournament-manual-info>Ручная проверка STAGING недоступна.</div>
                 <div class="mgw-admin__tournament-actions">
                   <button type="button" data-tournament-prepare-manual disabled>Подготовить 6/8 для двух живых аккаунтов</button>
                 </div>
-                <small>Только staging: 6 мест заполняются синтетическими участниками через тот же канонический сервис регистрации и резерв 50 000. Два места остаются двум живым аккаунтам для ручной проверки первого матча.</small>
+                <small>Только STAGING: 6 мест заполняются синтетическими участниками через тот же канонический сервис регистрации и резерв 50 000. Два места остаются двум живым аккаунтам для ручной проверки первого матча.</small>
               </div>
 <div class="mgw-admin__tournament-schedule" data-tournament-progression-panel hidden>
-                <div class="mgw-admin__tournament-current" data-tournament-progression-info>Fixture-only пары пока не требуют завершения.</div>
+                <div class="mgw-admin__tournament-current" data-tournament-progression-info>Тестовые пары пока не требуют завершения.</div>
                 <div class="mgw-admin__tournament-actions">
                   <button type="button" data-tournament-complete-fixtures disabled>Завершить fixture-only пары</button>
                 </div>
-                <small>Только staging: завершает только пары, где оба участника — синтетические fixture. Результат проходит через канонический TournamentRoundProgressionService, не создаёт второй взнос и не затрагивает реально сыгранную пару.</small>
+                <small>Только STAGING: завершает только пары, где оба участника — синтетические fixture. Результат проходит через канонический канонический сервис турнирного прогресса, не создаёт второй взнос и не затрагивает реально сыгранную пару.</small>
               </div>
 <div class="mgw-admin__tournament-schedule" data-tournament-reset-panel hidden>
-                <div class="mgw-admin__tournament-current" data-tournament-reset-info>Сброс staging-турнира недоступен.</div>
+                <div class="mgw-admin__tournament-current" data-tournament-reset-info>Сброс STAGING-турнира недоступен.</div>
                 <div class="mgw-admin__tournament-actions">
                   <button type="button" data-tournament-reset-manual disabled>Сбросить staging-турнир</button>
                 </div>
-                <small>Только staging: все турнирные резервы освобождаются через канонический ledger, registrations закрываются как withdrawn, синтетические fixture accounts выводятся из тестового runtime, а реальный аккаунт не деактивируется. Старый турнир остаётся в аудите и освобождает active slot для новой проверки.</small>
+                <small>Только STAGING: все турнирные резервы освобождаются через канонический журнал операций, регистрации закрываются как отозванные, синтетические тестовые аккаунты выводятся из тестового runtime, а реальный аккаунт не деактивируется. Старый турнир остаётся в аудите и освобождает активный слот для новой проверки.</small>
               </div>
         </div>
       </article>
@@ -615,7 +615,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
     </section>
 
     <footer class="mgw-admin__footer">
-      Web Admin использует существующие серверные owners и аудит. Тестовые инструменты доступны только в безопасной staging-среде.
+      Web Admin использует существующие серверные механизмы и аудит. Тестовые инструменты доступны только в среде STAGING.
     </footer>
   </main>
 </body>
