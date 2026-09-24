@@ -23,6 +23,18 @@ on:
       - 'bot/database/migrations/20260922_0058_add_tournament_technical_outcomes.php'
       - 'bot/database/migrations/20260922_0059_add_tournament_cancellation_emergency.php'
       - 'bot/database/migrations/20260922_0060_create_tournament_prize_review.php'
+      - 'bot/helpers/response.php'
+      - 'app/assets/js/ui.js'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/js/screens/game-screen-v102.js'
+      - 'app/assets/js/screens/tournaments-screen-v1.js'
+      - 'app/assets/css/components/mgw-tournament-honors.css'
+      - 'app/assets/css/main.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/index.html'
+      - 'bot/tests/GamePublicIdentityResponseProjectionTest.php'
+      - 'bot/tests/Mvp21_9TournamentProductProjectionContractTest.php'
+      - '.github/workflows/mvp21-9-tournament-rewards.yml'
   workflow_dispatch:
 
 permissions:
@@ -86,6 +98,7 @@ jobs:
           php bot/tests/Mvp21_9TerminalUxContractTest.php
           php bot/tests/Mvp21_9TournamentRewardProjectionTest.php
           php bot/tests/Mvp21_9TournamentProductProjectionContractTest.php
+          php bot/tests/GamePublicIdentityResponseProjectionTest.php
           php bot/tests/Mvp21_10TournamentPrizeReviewTest.php
           php bot/tests/Mvp21_10TournamentPrizeReviewContractTest.php
 
@@ -124,8 +137,17 @@ jobs:
               bot/tests/Mvp21_9TerminalUxContractTest.php|\
               .github/workflows/mvp21-9-tournament-rewards.yml|\
               .github/workflows/mvp21-10-tournament-prize-review.yml|\
+              bot/helpers/response.php|\
+              app/assets/js/ui.js|\
+              app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/js/screens/game-screen-v102.js|\
               app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/css/components/mgw-tournament-honors.css|\
+              app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
+              app/index.html|\
+              bot/tests/GamePublicIdentityResponseProjectionTest.php|\
+              bot/tests/Mvp21_9TournamentProductProjectionContractTest.php|\
               bot/tests/Mvp21_11TournamentReleaseProofTest.php)
                 ;;
               *)
