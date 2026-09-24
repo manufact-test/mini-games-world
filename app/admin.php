@@ -14,21 +14,22 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Admin</title>
-  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=6&replay=17-6&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
+  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=7&replay=17-6&mvp22_1=support-tickets&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="./assets/js/admin-shell.js?v=4&replay=17-6&test-coins=staging" defer></script>
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
+  <script src="./assets/js/admin-support.js?v=1&mvp22_1=support-tickets" defer></script>
   <script src="./assets/js/admin-rating.js?v=1&mvp20_8=rating-admin" defer></script>
   <script src="./assets/js/admin-tournaments.js?v=15&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3&mvp21_5=corrective-v5&mvp21_6=fixture-progression-helper-v3&mvp21_8=corrective-v12&mvp21_8_cancel=cancellation-emergency-v1&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v2" defer></script>
 </head>
 <body>
-  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php">
+  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-support-api="../bot/admin-support.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php">
     <header class="mgw-admin__header">
       <div>
         <p class="mgw-admin__eyebrow">MINI GAMES WORLD</p>
         <h1>Web Admin</h1>
-        <p class="mgw-admin__subtitle">Системный обзор, рейтинг, bell events, экономика, replay storage и очередь жалоб.</p>
+        <p class="mgw-admin__subtitle">Системный обзор, поддержка, рейтинг, bell events, экономика, replay storage и очередь жалоб.</p>
       </div>
       <button class="mgw-admin__refresh" type="button" data-admin-refresh>Обновить</button>
     </header>
@@ -280,6 +281,108 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
             <h3>Последние recalculation jobs</h3>
             <div class="mgw-admin__history" data-rating-jobs></div>
           </section>
+        </div>
+      </article>
+
+      <article class="mgw-admin__card mgw-admin__card--wide" data-admin-support>
+        <div class="mgw-admin__card-head">
+          <h2>Поддержка</h2>
+          <span>MVP-22.1 · tickets / thread / attachments</span>
+        </div>
+        <div class="mgw-admin__support">
+          <div class="mgw-admin__support-status" data-support-status>Обращения ещё не загружены.</div>
+          <div class="mgw-admin__support-metrics" data-support-metrics></div>
+
+          <div class="mgw-admin__support-filters">
+            <label class="mgw-admin__field">
+              <span>Поиск</span>
+              <input data-support-filter-query type="search" maxlength="120" autocomplete="off" placeholder="SUP-… / MGW-ID / тема">
+            </label>
+            <label class="mgw-admin__field">
+              <span>Статус</span>
+              <select data-support-filter-status><option value="">Все статусы</option></select>
+            </label>
+            <label class="mgw-admin__field">
+              <span>Приоритет</span>
+              <select data-support-filter-priority><option value="">Все приоритеты</option></select>
+            </label>
+            <label class="mgw-admin__field">
+              <span>Категория</span>
+              <select data-support-filter-category><option value="">Все категории</option></select>
+            </label>
+            <label class="mgw-admin__field">
+              <span>Платформа</span>
+              <select data-support-filter-platform><option value="">Все платформы</option></select>
+            </label>
+            <button type="button" data-support-refresh>Обновить</button>
+          </div>
+
+          <div class="mgw-admin__support-layout">
+            <section class="mgw-admin__support-panel">
+              <h3>Очередь</h3>
+              <div class="mgw-admin__support-queue" data-support-queue></div>
+            </section>
+
+            <section class="mgw-admin__support-panel mgw-admin__support-detail" data-support-detail hidden>
+              <div class="mgw-admin__support-detail-head">
+                <div>
+                  <span data-support-detail-number>—</span>
+                  <h3 data-support-detail-subject>Обращение</h3>
+                </div>
+                <div class="mgw-admin__support-detail-meta">
+                  <span data-support-detail-player>—</span>
+                  <span data-support-detail-platform>—</span>
+                  <span data-support-detail-category>—</span>
+                  <span data-support-detail-owner>Без владельца</span>
+                </div>
+              </div>
+
+              <div class="mgw-admin__support-controls">
+                <label class="mgw-admin__field">
+                  <span>Статус</span>
+                  <select class="mgw-admin__support-select" data-support-detail-status></select>
+                </label>
+                <label class="mgw-admin__field">
+                  <span>Приоритет</span>
+                  <select class="mgw-admin__support-select" data-support-detail-priority></select>
+                </label>
+                <div class="mgw-admin__support-owner-actions">
+                  <button type="button" data-support-assign-self>Взять себе</button>
+                  <button type="button" data-support-unassign>Снять владельца</button>
+                </div>
+              </div>
+
+              <details class="mgw-admin__support-related">
+                <summary>Связанные ID</summary>
+                <div class="mgw-admin__support-related-grid">
+                  <label class="mgw-admin__field"><span>Game ID</span><input data-support-related-game type="text" maxlength="96"></label>
+                  <label class="mgw-admin__field"><span>Payment ID</span><input data-support-related-payment type="text" maxlength="96"></label>
+                  <label class="mgw-admin__field"><span>Tournament ID</span><input data-support-related-tournament type="text" maxlength="64"></label>
+                  <label class="mgw-admin__field"><span>Operation ID</span><input data-support-related-operation type="text" maxlength="191"></label>
+                </div>
+                <button type="button" data-support-related-save>Сохранить связи</button>
+              </details>
+
+              <div class="mgw-admin__support-thread" data-support-thread></div>
+
+              <div class="mgw-admin__support-reply">
+                <label class="mgw-admin__field">
+                  <span>Ответ</span>
+                  <textarea data-support-reply rows="4" maxlength="4000" placeholder="Ответ пользователю"></textarea>
+                </label>
+                <label class="mgw-admin__field">
+                  <span>Вложения · до 3 файлов, 2 МБ каждый</span>
+                  <input data-support-reply-files type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain">
+                </label>
+                <button type="button" data-support-reply-send>Отправить в thread</button>
+              </div>
+
+              <details class="mgw-admin__support-history">
+                <summary>История изменений</summary>
+                <div data-support-history></div>
+              </details>
+            </section>
+          </div>
         </div>
       </article>
 

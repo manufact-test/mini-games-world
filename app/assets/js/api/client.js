@@ -12,6 +12,7 @@ const RATING_ARCHIVE_URL = `${window.location.origin}/bot/rating-archive.php`;
 const TOURNAMENT_STATUS_URL = `${window.location.origin}/bot/tournament-status.php`;
 const TOURNAMENT_HALL_URL = `${window.location.origin}/bot/tournament-hall.php`;
 const GAME_REACTION_URL = `${window.location.origin}/bot/game-reaction.php`;
+const SUPPORT_URL = `${window.location.origin}/bot/support.php`;
 
 let profileV2ReadPromise = null;
 let tournamentPrestigeReadPromise = null;
@@ -172,7 +173,12 @@ export const api = {
   friends: (payload = {}) => requestUrl(FRIENDS_URL, payload),
   history: () => requestHistory(),
   historyFast: () => request('history'),
-  support: (type, message) => request('support', { type, message }),
+  support: (type, message) => requestUrl(SUPPORT_URL, { action:'create', category:type, message }),
+  supportSnapshot: () => requestUrl(SUPPORT_URL, { action:'snapshot' }),
+  supportTicket: ticket => requestUrl(SUPPORT_URL, { action:'ticket', ticket }),
+  supportCreate: payload => requestUrl(SUPPORT_URL, { action:'create', ...payload }),
+  supportReply: (ticket, message, attachments = []) => requestUrl(SUPPORT_URL, { action:'reply', ticket, message, attachments }),
+  supportAttachment: attachmentId => requestUrl(SUPPORT_URL, { action:'attachment', attachment_id:attachmentId }),
   cosmeticStoreStatus: () => requestCosmeticStore({ action:'status' }),
   cosmeticStorePurchase: (offerId, requestToken) => requestCosmeticStore({ action:'purchase', offer_id:offerId, request_token:requestToken }),
   cosmeticStoreEquip: itemId => requestCosmeticStore({ action:'equip', item_id:itemId }),
