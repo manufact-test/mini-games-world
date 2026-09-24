@@ -79,6 +79,22 @@ foreach ($queue as $row) {
 }
 $assert(is_string($target) && $target !== '', 'Normal support ticket fixture is required.');
 
+$userReply = $service->replyByUser(
+    $target,
+    $mgwId,
+    'User follow-up with near-limit attachment.',
+    [[
+        'file_name' => 'near-limit.jpg',
+        'mime_type' => 'image/jpeg',
+        'content_base64' => base64_encode(str_repeat('A', 1900000)),
+    ]]
+);
+$assert(count($userReply['messages']) === 2, 'User reply must persist as a second isolated message.');
+$userReplyAttachment = $userReply['messages'][1]['attachments'][0] ?? null;
+$assert(is_array($userReplyAttachment), 'User reply attachment metadata must persist.');
+$userReplyDownload = $service->attachmentForUser((string)$userReplyAttachment['attachment_id'], $mgwId);
+$assert((int)$userReplyDownload['size_bytes'] === 1900000, 'Near-limit user attachment must round-trip on MySQL.');
+
 $actor = 'telegram:mysql-ci-admin';
 $service->assignOwner($target, $actor, $actor);
 $service->setStatus($target, 'in_progress', $actor);
@@ -96,7 +112,7 @@ $assert($detail['owner_ref'] === $actor, 'MySQL owner must persist.');
 $assert($detail['related']['operation_id'] === str_repeat('o', 191), 'Long related IDs must persist without scalar audit overflow.');
 $assert($detail['status'] === 'in_progress', 'MySQL status must persist.');
 $assert($detail['priority'] === 'high', 'MySQL priority must persist.');
-$assert(count($detail['messages']) === 2, 'MySQL ticket thread must stay isolated.');
+$assert(count($detail['messages']) === 3, 'MySQL ticket thread must stay isolated across user/admin replies.');
 $assert(count($detail['history']) >= 5, 'MySQL owner/status/priority/reply history must persist.');
 
 foreach ([
