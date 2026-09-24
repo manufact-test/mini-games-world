@@ -110,6 +110,8 @@ jobs:
               .github/workflows/mvp21-7-tournament-technical-outcomes.yml|\
               .github/workflows/mvp21-8-tournament-cancellation.yml|\
               .github/workflows/mvp21-9-tournament-rewards.yml|\
+              .github/workflows/mvp19-6-checkers-boards.yml|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
               .github/workflows/mvp21-10-tournament-prize-review.yml|\
               .github/workflows/mvp21-11-tournament-release-proof.yml|\
               bot/database/migrations/20260922_0060_create_tournament_prize_review.php|\
@@ -121,6 +123,15 @@ jobs:
               app/admin.php|\
               app/assets/js/admin-tournaments.js|\
               app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/js/ui.js|\
+              app/assets/js/screens/game-screen-v102.js|\
+              app/assets/css/components/mgw-tournament-honors.css|\
+              app/assets/css/main.css|\
+              app/index.html|\
+              bot/helpers/response.php|\
+              bot/tests/GamePublicIdentityResponseProjectionTest.php|\
+              bot/tests/Mvp21_9TournamentProductProjectionContractTest.php|\
               app/assets/css/admin-shell.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp21_10TournamentPrizeReviewTest.php|\

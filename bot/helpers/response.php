@@ -167,6 +167,52 @@ function mgw_canonical_game_player_profiles(array $playerIds): array {
         return [];
     }
 
+    // Tournament prestige is additive. If an older test/schema does not yet have
+    // the reward table, canonical nickname/avatar projection must still survive.
+    $prestigeByMgw = [];
+    $prestigeMgwIds = [];
+    foreach ($rows as $row) {
+        if (!is_array($row)) continue;
+        $mgwId = trim((string)($row['mgw_id'] ?? ''));
+        if ($mgwId !== '') $prestigeMgwIds[$mgwId] = true;
+    }
+    if ($prestigeMgwIds !== []) {
+        try {
+            $prestigePlaceholders = [];
+            $prestigeParameters = [];
+            foreach (array_keys($prestigeMgwIds) as $index => $mgwId) {
+                $key = ':prestige_' . $index;
+                $prestigePlaceholders[] = $key;
+                $prestigeParameters[$key] = $mgwId;
+            }
+            $prestigeRows = $database->fetchAll(
+                'SELECT mgw_id,reward_code,valid_until_at_utc
+                 FROM mgw_tournament_reward_entitlements
+                 WHERE mgw_id IN (' . implode(', ', $prestigePlaceholders) . ")
+                   AND reward_code = 'champion_crown'",
+                $prestigeParameters
+            );
+            $nowTs = time();
+            foreach ($prestigeRows as $prestigeRow) {
+                if (!is_array($prestigeRow)) continue;
+                $mgwId = trim((string)($prestigeRow['mgw_id'] ?? ''));
+                $until = trim((string)($prestigeRow['valid_until_at_utc'] ?? ''));
+                if ($mgwId === '' || $until === '') continue;
+                $untilTs = strtotime($until . ' UTC');
+                if ($untilTs === false || $untilTs <= $nowTs) continue;
+                $existingUntil = (string)($prestigeByMgw[$mgwId]['champion_crown_until_at_utc'] ?? '');
+                if ($existingUntil === '' || strcmp($until, $existingUntil) > 0) {
+                    $prestigeByMgw[$mgwId] = [
+                        'champion_crown'=>true,
+                        'champion_crown_until_at_utc'=>$until,
+                    ];
+                }
+            }
+        } catch (Throwable $prestigeError) {
+            error_log('Mini Games World tournament prestige projection skipped: ' . $prestigeError->getMessage());
+        }
+    }
+
     // A provider subject may theoretically exist under more than one provider.
     // Project only when every matching row resolves to one MGW owner; ambiguous
     // subjects preserve the already-safe legacy display identity.
@@ -193,6 +239,10 @@ function mgw_canonical_game_player_profiles(array $playerIds): array {
                 'frame_item_id' => $frameItemId !== '' ? $frameItemId : null,
                 'entry_effect_item_id' => $entryEffectItemId !== '' ? $entryEffectItemId : null,
                 'victory_effect_item_id' => $victoryEffectItemId !== '' ? $victoryEffectItemId : null,
+                'tournament_prestige' => $prestigeByMgw[$mgwId] ?? [
+                    'champion_crown'=>false,
+                    'champion_crown_until_at_utc'=>null,
+                ],
                 'game_cosmetics' => ['slots' => []],
             ];
         }
@@ -260,6 +310,9 @@ function mgw_project_canonical_game_identity(array $data): array {
             $frameItemId = trim((string)($profile['frame_item_id'] ?? ''));
             $entryEffectItemId = trim((string)($profile['entry_effect_item_id'] ?? ''));
             $victoryEffectItemId = trim((string)($profile['victory_effect_item_id'] ?? ''));
+            $tournamentPrestige = is_array($profile['tournament_prestige'] ?? null)
+                ? $profile['tournament_prestige']
+                : ['champion_crown'=>false,'champion_crown_until_at_utc'=>null];
             $gameCosmetics = is_array($profile['game_cosmetics'] ?? null)
                 ? $profile['game_cosmetics']
                 : ['slots' => []];
@@ -270,6 +323,7 @@ function mgw_project_canonical_game_identity(array $data): array {
             if ($frameItemId !== '') $player['frame_item_id'] = $frameItemId;
             if ($entryEffectItemId !== '') $player['entry_effect_item_id'] = $entryEffectItemId;
             if ($victoryEffectItemId !== '') $player['victory_effect_item_id'] = $victoryEffectItemId;
+            $player['tournament_prestige'] = $tournamentPrestige;
             $player['game_cosmetics'] = $gameCosmetics;
         }
         unset($player);

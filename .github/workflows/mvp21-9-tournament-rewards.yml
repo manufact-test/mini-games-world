@@ -13,7 +13,12 @@ on:
       - 'bot/ratings/RatingArchiveService.php'
       - 'app/assets/js/state.js'
       - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/js/ui.js'
+      - 'app/assets/js/screens/game-screen-v102.js'
       - 'app/assets/css/components/mgw-tournament-honors.css'
+      - 'app/index.html'
+      - 'bot/helpers/response.php'
+      - 'bot/tests/GamePublicIdentityResponseProjectionTest.php'
       - 'bot/tests/Mvp21_9TournamentRewardProjectionTest.php'
       - 'bot/tests/Mvp21_9TournamentProductProjectionContractTest.php'
       - 'bot/tournaments/StagingTournamentManualAcceptanceService.php'
@@ -72,10 +77,14 @@ jobs:
             bot/tests/Mvp21_9TerminalUxContractTest.php
             bot/tests/Mvp21_9TournamentRewardProjectionTest.php
             bot/tests/Mvp21_9TournamentProductProjectionContractTest.php
+            bot/tests/GamePublicIdentityResponseProjectionTest.php
+            bot/helpers/response.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
           node --check app/assets/js/screens/tournaments-screen-v1.js
           node --check app/assets/js/screens/profile-screen-v110.js
+          node --check app/assets/js/screens/game-screen-v102.js
+          node --check app/assets/js/ui.js
           node --check app/assets/js/state.js
 
       - name: Run MVP-21.9 settlement and terminal UX
@@ -84,6 +93,7 @@ jobs:
           php bot/tests/Mvp21_9TerminalUxContractTest.php
           php bot/tests/Mvp21_9TournamentRewardProjectionTest.php
           php bot/tests/Mvp21_9TournamentProductProjectionContractTest.php
+          php bot/tests/GamePublicIdentityResponseProjectionTest.php
 
       - name: Preserve rating Profile and archive owners
         run: |
@@ -148,6 +158,8 @@ jobs:
               bot/tests/Mvp21_10TournamentPrizeReviewContractTest.php|\
               app/assets/css/admin-shell.css|\
               .github/workflows/mvp21-9-tournament-rewards.yml|\
+              .github/workflows/mvp19-6-checkers-boards.yml|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
               bot/database/migrations/20260922_0057_create_tournament_results_rewards.php|\
               bot/tournaments/TournamentSettlementService.php|\
               bot/tournaments/TournamentRewardProjectionService.php|\
@@ -156,7 +168,12 @@ jobs:
               bot/ratings/RatingArchiveService.php|\
               app/assets/js/state.js|\
               app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/js/ui.js|\
+              app/assets/js/screens/game-screen-v102.js|\
               app/assets/css/components/mgw-tournament-honors.css|\
+              app/index.html|\
+              bot/helpers/response.php|\
+              bot/tests/GamePublicIdentityResponseProjectionTest.php|\
               bot/core/bootstrap.php|\
               bot/api.php|\
               app/assets/js/screens/tournaments-screen-v1.js|\

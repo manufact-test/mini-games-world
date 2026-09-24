@@ -233,6 +233,12 @@ jobs:
               .github/workflows/mvp18-6-notification-pipeline.yml|\
               .github/workflows/mvp20-1-per-game-visible-rating.yml|\
               .github/workflows/mvp20-7-rating-archives.yml|\
+              .github/workflows/mvp19-6-checkers-boards.yml|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
+              app/assets/js/ui.js|\
+              app/index.html|\
+              bot/helpers/response.php|\
+              bot/tests/GamePublicIdentityResponseProjectionTest.php|\
               .github/workflows/mvp21-1-tournament-registration.yml|\
               .github/workflows/mvp21-2-tournament-rules.yml|\
               .github/workflows/mvp21-3-tournament-schedule.yml|\

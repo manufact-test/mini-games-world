@@ -14,6 +14,14 @@ function activeProfileNameColorItemId(user){
   return PROFILE_NAME_COLOR_IDS.has(candidate) ? candidate : '';
 }
 
+function activeTournamentChampionCrown(){
+  const rewards = state.profileTournamentRewards && typeof state.profileTournamentRewards === 'object'
+    ? state.profileTournamentRewards
+    : {};
+  const active = Array.isArray(rewards.active_temporary) ? rewards.active_temporary : [];
+  return active.some(item => String(item?.reward_code || '') === 'champion_crown');
+}
+
 export function formatDate(value){
   if (!value) return 'Дата регистрации появится после входа';
   return new Intl.DateTimeFormat('ru-RU', { day:'2-digit', month:'long', year:'numeric' }).format(new Date(value));
@@ -44,6 +52,7 @@ export function renderUser(user){
     if (nameColorItemId) el.dataset.nameColorItemId = nameColorItemId;
     else delete el.dataset.nameColorItemId;
   });
+  const championCrown = activeTournamentChampionCrown();
   ['topAvatar','profileAvatar','searchMeAvatar'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -56,6 +65,7 @@ export function renderUser(user){
     el.style.backgroundPosition = '';
     el.style.backgroundRepeat = '';
     el.classList.remove('has-photo');
+    el.classList.toggle('has-tournament-prestige-crown', championCrown);
   });
   const date = document.getElementById('profileDate');
   if (date) date.textContent = user?.registered_at ? `В игре с ${formatDate(user.registered_at)}` : 'Дата регистрации появится после входа';

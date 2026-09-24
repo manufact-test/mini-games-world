@@ -344,6 +344,10 @@ async function reconcileBattleshipFireFailure(gameId, item, action){
   }
 }
 
+function gameTournamentCrownSvg(){
+  return '<svg class="mgw-game-prestige-crown" viewBox="0 0 48 36" aria-hidden="true" focusable="false"><path d="M5 27 8 8l11 9L24 3l5 14 11-9 3 19H5Z" fill="currentColor"/><path d="M7 29h34v5H7z" rx="2" fill="currentColor"/><path d="M13 24h22" stroke="rgba(88,57,7,.6)" stroke-width="2.4" stroke-linecap="round"/></svg>';
+}
+
 function renderGame(game, me, forceSurface){
   if (!me?.id) return;
   const meta = document.getElementById('matchMeta');
@@ -366,12 +370,15 @@ function renderGame(game, me, forceSurface){
   if (String(game.status || '') !== 'active') timer.textContent = '—';
   else if (!phaseClockOwned) timer.textContent = `${game.time_left ?? 60} сек`;
 
-  const playersMarkup = (game.players || []).map(player => `
-    <div class="game-player ${String(game.turn) === String(player.id) && game.status === 'active' ? 'active' : ''}">
-      <div class="name">${escapeHtml(player.name)}</div>
+  const playersMarkup = (game.players || []).map(player => {
+    const champion = player?.tournament_prestige?.champion_crown === true;
+    return `
+    <div class="game-player ${String(game.turn) === String(player.id) && game.status === 'active' ? 'active' : ''}${champion ? ' has-tournament-crown' : ''}">
+      <div class="name">${champion ? gameTournamentCrownSvg() : ''}<span>${escapeHtml(player.name)}</span></div>
       <div class="mark">${escapeHtml(playerMarkText(game, player))} · ${String(player.id) === String(me.id) ? 'вы' : 'соперник'}</div>
     </div>
-  `).join('');
+  `;
+  }).join('');
   if (players.innerHTML !== playersMarkup) players.innerHTML = playersMarkup;
 
   const fingerprint = gameSurfaceFingerprint(game, me.id);

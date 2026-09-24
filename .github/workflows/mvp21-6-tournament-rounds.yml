@@ -251,6 +251,12 @@ jobs:
               .github/workflows/mvp20-5-seasonal-awards.yml|\
               .github/workflows/mvp20-6-yearly-medal.yml|\
               .github/workflows/mvp20-7-rating-archives.yml|\
+              .github/workflows/mvp19-6-checkers-boards.yml|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
+              app/assets/js/ui.js|\
+              app/index.html|\
+              bot/helpers/response.php|\
+              bot/tests/GamePublicIdentityResponseProjectionTest.php|\
               .github/workflows/mvp20-8-rating-admin.yml|\
               .github/workflows/mvp21-1-tournament-registration.yml|\
               .github/workflows/mvp21-2-tournament-rules.yml|\

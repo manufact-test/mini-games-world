@@ -127,6 +127,12 @@ jobs:
             case "$path" in
               .github/workflows/mvp21-5-tournament-ready.yml|\
               .github/workflows/mvp20-7-rating-archives.yml|\
+              .github/workflows/mvp19-6-checkers-boards.yml|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
+              app/assets/js/ui.js|\
+              app/index.html|\
+              bot/helpers/response.php|\
+              bot/tests/GamePublicIdentityResponseProjectionTest.php|\
               .github/workflows/mvp21-6-tournament-rounds.yml|\
               .github/workflows/mvp21-7-tournament-technical-outcomes.yml|\
               .github/workflows/mvp21-8-tournament-cancellation.yml|\
