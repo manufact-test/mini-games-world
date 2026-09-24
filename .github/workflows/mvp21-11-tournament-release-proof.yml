@@ -33,6 +33,7 @@ on:
       - 'app/runtime/client/version-manifest.php'
       - 'app/index.html'
       - 'bot/tests/GamePublicIdentityResponseProjectionTest.php'
+      - 'bot/tests/Mvp21_8CorrectiveContractTest.php'
       - 'bot/tests/Mvp21_9TournamentProductProjectionContractTest.php'
       - '.github/workflows/mvp21-9-tournament-rewards.yml'
   workflow_dispatch:
