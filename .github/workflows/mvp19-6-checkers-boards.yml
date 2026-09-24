@@ -154,7 +154,17 @@ jobs:
             bot/services/GameActionService.php \
             bot/services/GameInviteService.php \
             bot/services/ReconnectLifecycleService.php \
-            app/assets/js/screens/game-screen-v102.js \
             cron \
             config/private.php
+
+          # The shared game shell may add the accepted read-only tournament prestige
+          # badge, but Checkers mechanics/renderers remain frozen above. Bound the
+          # shell delta to the small crown presentation and reject broad rewrites.
+          if ! git diff --quiet "$base" "$head" -- app/assets/js/screens/game-screen-v102.js; then
+            grep -F 'function gameTournamentCrownSvg()' app/assets/js/screens/game-screen-v102.js
+            grep -F 'player?.tournament_prestige?.champion_crown === true' app/assets/js/screens/game-screen-v102.js
+            read -r additions deletions _ < <(git diff --numstat "$base" "$head" -- app/assets/js/screens/game-screen-v102.js)
+            test "${additions:-999}" -le 20
+            test "${deletions:-999}" -le 8
+          fi
           git diff --check
