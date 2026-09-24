@@ -202,6 +202,10 @@
       }
       control.disabled = false;
     });
+    [prepareManual, completeFixtures, resetManual].forEach(control => {
+      if (!(control instanceof HTMLButtonElement)) return;
+      control.disabled = value || control.dataset.available !== '1';
+    });
   };
 
   const setStatus = (message, state = '') => {
@@ -231,7 +235,7 @@
     if (resetConfirmTimer) window.clearTimeout(resetConfirmTimer);
     resetConfirmTimer = null;
     if (resetManual instanceof HTMLButtonElement) {
-      resetManual.textContent = 'Сбросить staging-турнир';
+      resetManual.textContent = 'Сбросить STAGING-турнир';
     }
   };
 
@@ -323,7 +327,7 @@
         ? 'Top-3: ' + top3.map(item => `#${item.canonical_placement} ${item.nickname || item.public_mgw_id || item.mgw_id}`).join(' · ')
         : 'Top-3 появится после завершения финала и матча за 3-е место.';
       reviewInfo.textContent = settlement.hold === true
-        ? `ПРИЗОВАЯ ВЕТКА УДЕРЖИВАЕТСЯ: ${held.length} участн. ждут Admin review. ${topCopy}`
+        ? `ПРИЗОВАЯ ВЕТКА УДЕРЖИВАЕТСЯ: ${held.length} участн. ждут решения администратора. ${topCopy}`
         : `Серьёзных сигналов, удерживающих призовую ветку, нет. ${topCopy}`;
     }
 
@@ -525,7 +529,7 @@
       && (Object.keys(modes).length > 0 || manual.available === true);
     if (manualPanel instanceof HTMLElement) manualPanel.hidden = !manualVisible;
     if (manualNote instanceof HTMLElement) {
-      manualNote.textContent = 'Только staging: для ручной проверки MVP-21.5 добавляются 6 синтетических участников, а два места остаются двум живым аккаунтам. После заполнения 8/8 эти два живых аккаунта гарантированно попадут в одну пару первого раунда.';
+      manualNote.textContent = 'Только STAGING: для ручной проверки MVP-21.5 добавляются 6 синтетических участников, а два места остаются двум живым аккаунтам. После заполнения 8/8 эти два живых аккаунта гарантированно попадут в одну пару первого раунда.';
     }
     if (prepareManual instanceof HTMLButtonElement) {
       const canPrepare = selectedMode.available === true;
@@ -727,7 +731,7 @@
     const mode = manualAcceptance?.modes?.[String(liveSeats)] || {};
     const target = Number(mode.target_registered_count || Math.max(0, cap - liveSeats));
     if (!tournament || cap < 2 || target <= count) return;
-    if (!(await confirmAction(`Только staging: добавить тестовых участников до ${target}/${cap} и оставить живых мест — ${liveSeats}?`))) return;
+    if (!(await confirmAction(`Только STAGING: добавить тестовых участников до ${target}/${cap} и оставить живых мест — ${liveSeats}?`))) return;
 
     try {
       const data = await withBusy('Готовлю турнир для ручной проверки…', () => post({
@@ -746,7 +750,7 @@
     if (manualProgression?.available !== true) return;
     const fixturePairs = Number(manualProgression.fixture_pair_count || 0);
     const roundNo = Number(manualProgression.round_no || 0);
-    if (!(await confirmAction(`Только staging: канонически завершить fixture-only пары раунда ${roundNo} (пар: ${fixturePairs})? Реальные пары не затрагиваются.`))) return;
+    if (!(await confirmAction(`Только STAGING: канонически завершить fixture-only пары раунда ${roundNo} (пар: ${fixturePairs})? Реальные пары не затрагиваются.`))) return;
     try {
       const data = await withBusy('Завершаю fixture-only пары через турнирный progression owner…', () => post({
         action:'complete_fixture_pairs',
@@ -858,7 +862,7 @@
       setStatus('Для серьёзного сигнала укажите MGW-ID, тип сигнала и основание.', 'error');
       return;
     }
-    if (!window.confirm('Зафиксировать серьёзный сигнал? Если игрок окажется в затронутой призовой ветке, выплата будет удержана до Admin review.')) return;
+    if (!window.confirm('Зафиксировать серьёзный сигнал? Если игрок окажется в затронутой призовой ветке, выплата будет удержана до решения администратора.')) return;
 
     try {
       await withBusy('Фиксирую серьёзный сигнал призового пути…', () => post({
@@ -885,7 +889,7 @@
       ''
     );
     if (note === null || !String(note).trim()) {
-      setStatus('Решение prize review требует комментария.', 'error');
+      setStatus('Для решения по призовой проверке нужен комментарий.', 'error');
       return;
     }
     if (decision === 'disqualify'
@@ -905,9 +909,9 @@
       if (settlement.status === 'review_hold') {
         setStatus('Решение сохранено. В призовой ветке остаётся другой серьёзный сигнал — часть выплат всё ещё удерживается.', 'ok');
       } else if (settlement.status === 'settled') {
-        setStatus('Review завершён. Канонический settlement выполнен без повторных выплат.', 'ok');
+        setStatus('Проверка завершена. Каноническое начисление выполнено без повторных выплат.', 'ok');
       } else {
-        setStatus('Review завершён. Турнир ещё не дошёл до terminal settlement.', 'ok');
+        setStatus('Проверка завершена. Турнир ещё не дошёл до финального расчёта.', 'ok');
       }
     } catch (_) {}
   };
