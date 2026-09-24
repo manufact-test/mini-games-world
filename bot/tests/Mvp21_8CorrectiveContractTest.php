@@ -11,6 +11,7 @@ $read = static function (string $path) use ($root): string {
 $api = $read('bot/api.php');
 $screen = $read('app/assets/js/screens/tournaments-screen-v1.js');
 $main = $read('app/assets/js/main-v110-handoff-shell.js');
+$profile = $read('app/assets/js/screens/profile-screen-v110.js');
 $manifest = $read('app/runtime/client/version-manifest.php');
 
 $assertions = 0;
@@ -60,6 +61,15 @@ $assert($profilePromise !== false && $prestigePromise !== false && $bootstrap !=
     'Bootstrap, canonical profile and lightweight prestige reads must overlap instead of paying sequential round trips.');
 $assert($ready !== false && $profileAwait < $ready,
     'Canonical identity and lightweight prestige must still be ready before app-ready is published.');
+
+$assert(str_contains($profile, 'deferWhileHidden:true')
+        && str_contains($profile, 'hiddenProfileRenderPending = true;'),
+    'Background Profile hydration must update state without rebuilding the long hidden Profile DOM.');
+$assert(str_contains($profile, 'flushHiddenProfileRenderOnEntry')
+        && str_contains($profile, 'PROFILE_ROUTE_TRANSITION_MS + 40'),
+    'A deferred hidden Profile render must resume only after the route transition frame.');
+$assert(str_contains($profile, 'Date.now() - lastFullProfileSnapshotAt < 5000'),
+    'Fresh background Profile hydration must suppress an immediate duplicate profileV2 request on entry.');
 $bootStart = strpos($main, 'async function boot(){');
 $bootEnd = strpos($main, 'function shouldPrimeMobileProfile', $bootStart ?: 0);
 $bootBody = ($bootStart !== false && $bootEnd !== false)
@@ -89,7 +99,7 @@ $assert(str_contains($manifest, 'tournaments-screen-v1.js?v=31')
         && str_contains($manifest, 'desktop=endurance-v1'),
     'Tournament corrective must publish a fresh v8 client identity.');
 
-if ($assertions < 18) {
+if ($assertions < 21) {
     throw new RuntimeException('Corrective v8 contract is too shallow: ' . $assertions);
 }
 fwrite(STDOUT, "Mvp21_8CorrectiveContractTest: {$assertions} assertions passed\n");
