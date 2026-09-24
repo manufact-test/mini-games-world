@@ -147,6 +147,12 @@ $assert(
 );
 
 $assert(
+    str_contains($shell, "initialParams.has('ticket')")
+        && str_contains($shell, "initialParams.has('report')"),
+    'Existing support/report deep links must open the matching section in the new shell.'
+);
+
+$assert(
     str_contains($page, 'data-admin-section="support"')
         && str_contains($page, 'data-admin-section="tournaments"')
         && str_contains($page, 'data-admin-section="economy"')
