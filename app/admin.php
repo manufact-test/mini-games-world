@@ -69,6 +69,28 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           <h2>Операционная сводка</h2>
           <span>Только просмотр</span>
         </div>
+        <div class="mgw-admin__overview-live">
+          <button type="button" data-admin-shortcut="system">
+            <span>Система</span>
+            <strong data-overview-system>Проверка…</strong>
+            <small data-overview-system-note>Состояние runtime</small>
+          </button>
+          <button type="button" data-admin-shortcut="support">
+            <span>Поддержка</span>
+            <strong data-overview-support>—</strong>
+            <small data-overview-support-note>Открытых обращений</small>
+          </button>
+          <button type="button" data-admin-shortcut="tournaments">
+            <span>Турнир</span>
+            <strong data-overview-tournament>—</strong>
+            <small data-overview-tournament-note>Текущий статус</small>
+          </button>
+          <button type="button" data-admin-shortcut="tournaments">
+            <span>Сезон</span>
+            <strong data-overview-season>—</strong>
+            <small data-overview-season-note>Состояние соревнований</small>
+          </button>
+        </div>
         <div class="mgw-admin__overview" data-admin-dashboard>—</div>
       </article>
 
