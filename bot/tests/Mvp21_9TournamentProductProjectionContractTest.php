@@ -36,7 +36,7 @@ $assert(!str_contains($files['projector'],'consumeReservation'),'Projector must 
 $assert(str_contains($files['settlement'],'persistSettledResult'),'Existing settlement service must remain the reward writer.');
 $assert(str_contains($files['settlement'],'mgw_tournament_reward_entitlements'),'Existing settlement owner must remain entitlement writer.');
 
-$assert(str_contains($files['profile_api'],"'tournament_rewards'=>$tournamentRewards"),'Profile API must expose durable tournament honors.');
+$assert(str_contains($files['profile_api'],"'tournament_rewards'=>\$tournamentRewards"),'Profile API must expose durable tournament honors.');
 $assert(str_contains($files['profile_api'],'new TournamentRewardProjectionService($database)'),'Profile API must use the read-only projector.');
 $assert(str_contains($files['archive'],'->publicArchive()'),'Rating archive overview must project settled official tournaments.');
 $assert(str_contains($files['archive'],"['available'=>false,'entries'=>[],'hall_of_fame'=>[]]"),'Legacy archive-only tests must retain a no-tournament fallback.');
