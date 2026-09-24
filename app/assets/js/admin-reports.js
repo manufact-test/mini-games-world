@@ -58,13 +58,13 @@
       const title = document.createElement('strong');
       const caseLink = document.createElement('a');
       caseLink.href = String(report.case_link || `./admin.php?report=${encodeURIComponent(report.report_id || '')}`);
-      caseLink.textContent = String(report.report_id || 'Case');
+      caseLink.textContent = String(report.report_id || 'Жалоба');
       title.append(caseLink, document.createTextNode(` · ${labelStatus(String(report.status || 'open'))}`));
 
       const people = document.createElement('span');
       people.textContent = `${report.reporter_nickname || 'Игрок'} (${report.reporter_public_mgw_id || '—'}) → ${report.target_nickname || 'Игрок'} (${report.target_public_mgw_id || '—'})`;
       const reason = document.createElement('span');
-      reason.textContent = `Причина: ${report.reason_label || report.reason || '—'}${report.related_match_id ? ` · Match ${report.related_match_id}` : ''}`;
+      reason.textContent = `Причина: ${report.reason_label || report.reason || '—'}${report.related_match_id ? ` · матч ${report.related_match_id}` : ''}`;
       const details = document.createElement('span');
       details.textContent = report.details ? String(report.details) : 'Комментарий не добавлен.';
       const time = document.createElement('span');
@@ -121,7 +121,7 @@
     try {
       const data = await post({action:'set_status', report_id:reportId, status:nextStatus});
       render(data.reports || []);
-      status.textContent = `Case ${reportId}: ${labelStatus(nextStatus)}.`;
+      status.textContent = `Жалоба ${reportId}: ${labelStatus(nextStatus)}.`;
       status.dataset.state = 'ok';
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : 'Не удалось изменить статус жалобы.';
