@@ -228,10 +228,14 @@ final class TelegramService
         if ($isMainAdminKeyboard) {
             $adminUrl = WebAppLaunchUrl::admin($this->config);
             if ($adminUrl !== '') {
-                $replyMarkup['inline_keyboard'][] = [[
-                    'text' => '🌐 Web Admin',
-                    'web_app' => ['url' => $adminUrl],
-                ]];
+                return [
+                    'inline_keyboard' => [[
+                        [
+                            'text' => '🌐 Открыть Web Admin',
+                            'web_app' => ['url' => $adminUrl],
+                        ],
+                    ]],
+                ];
             }
         }
 
