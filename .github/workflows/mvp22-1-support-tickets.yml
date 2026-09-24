@@ -14,6 +14,8 @@ on:
       - 'app/admin.php'
       - 'app/assets/js/admin-support.js'
       - 'app/assets/css/admin-shell.css'
+      - 'app/assets/css/main.css'
+      - 'app/index.html'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/home-screen.js'
       - 'app/runtime/client/version-manifest.php'
@@ -42,6 +44,14 @@ jobs:
           node --check app/assets/js/admin-support.js
           node --check app/assets/js/api/client.js
           node --check app/assets/js/screens/home-screen.js
+      - name: Support form UI regression
+        run: |
+          set -euo pipefail
+          grep -Fq 'support-ticket-create' app/assets/js/screens/home-screen.js
+          grep -Fq 'support-ticket-message' app/assets/js/screens/home-screen.js
+          grep -Fq 'support-ticket-select option' app/assets/css/main.css
+          grep -Fq 'max-height:calc(86dvh - 142px)' app/assets/css/main.css
+          ! grep -Fq 'Создадим отдельный тикет' app/assets/js/screens/home-screen.js
       - name: 100-ticket isolation regression
         run: php bot/tests/SupportTicketServiceTest.php
 
