@@ -110,7 +110,7 @@
 .mgw-admin__field textarea{padding:11px;line-height:1.5}
 .mgw-admin button{font-family:inherit}
 .mgw-admin__economy-actions button,.mgw-admin__rating-actions button,.mgw-admin__tournament-actions button,.mgw-admin__history button,.mgw-admin__replay-search button,.mgw-admin__support-filters>button,.mgw-admin__support-owner-actions button,.mgw-admin__support-related>button,.mgw-admin__support-reply>button{min-height:40px;padding:0 13px;border-radius:10px;font-size:12px}
-.mgw-admin__overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:16px}
+.mgw-admin__overview-live{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:14px 14px 0}.mgw-admin__overview-live button{min-width:0;padding:11px 12px;border:1px solid #2b2c34;border-radius:11px;background:#0d0e12;color:#fff;text-align:left;cursor:pointer}.mgw-admin__overview-live button:hover{border-color:#5d55a9;background:#15141e}.mgw-admin__overview-live button[data-alert]{border-color:#704b3b;background:#211611}.mgw-admin__overview-live span,.mgw-admin__overview-live small{display:block;color:#858792;font-size:10px}.mgw-admin__overview-live strong{display:block;margin:5px 0 4px;overflow:hidden;color:#f4f4f6;font-size:14px;text-overflow:ellipsis;white-space:nowrap}.mgw-admin__overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:16px}
 .mgw-admin__overview-group{min-width:0;padding:13px;border:1px solid #292a31;border-radius:13px;background:#0e0f13}
 .mgw-admin__overview-group:first-child{grid-column:1/-1}
 .mgw-admin__overview-group h3{margin:0 0 10px;color:#f1f1f4;font-size:13px}
@@ -169,7 +169,7 @@
   .mgw-admin__support-back{display:inline-flex;align-items:center;justify-content:center;justify-self:start;min-height:36px;padding:0 10px;border:1px solid #373944;border-radius:9px;background:#14151b;color:#d8d9df}
   .mgw-admin__support-thread{max-height:none}
 }
-@media(max-width:720px){
+@media(max-width:720px){.mgw-admin__overview-live{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px 12px 0}
   .mgw-admin{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
   .mgw-admin__header{align-items:stretch;gap:12px}
   .mgw-admin__header-actions{justify-content:stretch}
