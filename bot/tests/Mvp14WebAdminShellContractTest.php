@@ -74,7 +74,7 @@ $assert(
 );
 
 $assert(
-    str_contains($launchUrl, "private const ADMIN_PATH = '/app/admin.php?v=2'")
+    str_contains($launchUrl, "private const ADMIN_PATH = '/app/admin.php?v=1'")
         && str_contains($launchUrl, 'public static function admin(array $config): string'),
     'The existing WebApp launch URL owner must publish the admin shell URL.'
 );
