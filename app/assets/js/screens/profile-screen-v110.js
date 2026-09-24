@@ -1034,7 +1034,7 @@ function tournamentShowcaseMarkup(snapshot){
       </details>`
     : '';
 
-  return `<div class="profile-v2-tournament-showcase">
+  return `<div class="profile-v2-tournament-showcase" data-tournament-prestige-showcase="v1">
     <div class="profile-v2-tournament-showcase-summary">
       <div><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.tournaments || 0))))}</strong><span>турниров</span></div>
       <div><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.podiums || 0))))}</strong><span>подиумов</span></div>
