@@ -151,19 +151,77 @@ function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,char=>({'
 function openSupportForm(type){
   const defaults={feedback:'feedback',idea:'idea',complaint:'complaint'};
   const category=defaults[type]||'other';
-  const title=type==='idea'?'Предложить идею':(type==='feedback'?'Обратная связь':'Обращение в поддержку');
-  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(title)}</h2><p>Создадим отдельный тикет — ответы и история не смешиваются с другими обращениями.</p></div><button class="close" data-close-sheet type="button">×</button></div>
-    <label class="form-label">Категория<select id="supportCategory" class="form-textarea"><option value="feedback">Обратная связь</option><option value="idea">Предложение</option><option value="complaint">Жалоба</option><option value="technical">Техническая проблема</option><option value="payment">Платёж / коины</option><option value="game">Игра / матч</option><option value="tournament">Турнир</option><option value="account">Аккаунт</option><option value="other">Другое</option></select></label>
-    <label class="form-label">Тема<input id="supportSubject" class="form-textarea" maxlength="160" placeholder="Коротко о проблеме"></label>
-    <label class="form-label">Приоритет<select id="supportPriority" class="form-textarea"><option value="normal">Обычный</option><option value="high">Высокий</option><option value="critical">Критический</option><option value="low">Низкий</option></select></label>
-    <textarea id="supportText" class="form-textarea" maxlength="4000" placeholder="Опишите ситуацию"></textarea>
-    <label class="small-note">Вложения: до 3 файлов, 2 МБ каждый<input id="supportFiles" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain"></label>
-    <button class="btn primary full" id="sendSupport" type="button">Создать обращение</button>`);
-  const categoryNode=document.getElementById('supportCategory'); if(categoryNode)categoryNode.value=category;
+  const titles={
+    feedback:'Обратная связь',
+    idea:'Предложить идею',
+    complaint:'Пожаловаться',
+  };
+  const messagePlaceholders={
+    feedback:'Напишите сообщение',
+    idea:'Опишите идею',
+    complaint:'Опишите проблему или жалобу',
+  };
+  const title=titles[type]||'Обращение';
+  const messagePlaceholder=messagePlaceholders[type]||'Опишите ситуацию';
+
+  openSheet(`<div class="sheet-head support-ticket-create-head"><div><h2>${escapeHtml(title)}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="support-ticket-create">
+      <div class="support-ticket-create-scroll">
+        <label class="support-ticket-field">
+          <span class="support-ticket-label">Категория</span>
+          <span class="support-ticket-select-wrap">
+            <select id="supportCategory" class="support-ticket-control support-ticket-select">
+              <option value="feedback">Обратная связь</option>
+              <option value="idea">Предложение</option>
+              <option value="complaint">Жалоба</option>
+              <option value="technical">Техническая проблема</option>
+              <option value="payment">Платёж / коины</option>
+              <option value="game">Игра / матч</option>
+              <option value="tournament">Турнир</option>
+              <option value="account">Аккаунт</option>
+              <option value="other">Другое</option>
+            </select>
+          </span>
+        </label>
+
+        <label class="support-ticket-field">
+          <span class="support-ticket-label">Тема</span>
+          <input id="supportSubject" class="support-ticket-control" maxlength="160" placeholder="Короткая тема">
+        </label>
+
+        <label class="support-ticket-field">
+          <span class="support-ticket-label">Приоритет</span>
+          <span class="support-ticket-select-wrap">
+            <select id="supportPriority" class="support-ticket-control support-ticket-select">
+              <option value="normal">Обычный</option>
+              <option value="high">Высокий</option>
+              <option value="critical">Критический</option>
+              <option value="low">Низкий</option>
+            </select>
+          </span>
+        </label>
+
+        <label class="support-ticket-field support-ticket-message-field">
+          <span class="support-ticket-label">Сообщение</span>
+          <textarea id="supportText" class="support-ticket-control support-ticket-message" maxlength="4000" placeholder="${escapeHtml(messagePlaceholder)}"></textarea>
+        </label>
+
+        <label class="support-ticket-files">
+          <span><strong>Вложения</strong><small>до 3 файлов, до 2 МБ каждый</small></span>
+          <input id="supportFiles" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain">
+        </label>
+      </div>
+      <button class="btn primary full support-ticket-submit" id="sendSupport" type="button">Создать обращение</button>
+    </div>`);
+
+  const categoryNode=document.getElementById('supportCategory');
+  if(categoryNode) categoryNode.value=category;
+
   document.getElementById('sendSupport')?.addEventListener('click',async()=>{
     const message=document.getElementById('supportText')?.value.trim()||'';
     if(!message)return toast('Напишите сообщение.');
-    const button=document.getElementById('sendSupport'); if(button)button.disabled=true;
+    const button=document.getElementById('sendSupport');
+    if(button)button.disabled=true;
     try{
       const attachments=await supportFilesPayload(document.getElementById('supportFiles'));
       const result=await api.supportCreate({
@@ -176,8 +234,11 @@ function openSupportForm(type){
       const number=result?.ticket?.ticket_number||'';
       closeSheet();
       toast(number?(`Обращение ${number} создано.`):'Обращение создано.');
-    }catch(error){toast(error.message||'Не удалось создать обращение.');}
-    finally{if(button)button.disabled=false;}
+    }catch(error){
+      toast(error.message||'Не удалось создать обращение.');
+    }finally{
+      if(button)button.disabled=false;
+    }
   });
 }
 
