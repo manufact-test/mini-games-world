@@ -11,6 +11,9 @@ const ROUTES = Object.freeze({
 });
 const KNOWN_SCREENS = new Set(Object.keys(ROUTES));
 const cleanupOwners = new Map();
+let deferredProfileEntryFrameOne = 0;
+let deferredProfileEntryFrameTwo = 0;
+let firstProfileLifecycleDeferred = false;
 
 export function routeRegistry(){
   return ROUTES;
@@ -62,7 +65,14 @@ export function showScreen(name){
   });
   state.screen = next;
 
-  if (previous !== next) dispatchScreenChanged({ from:previous, to:next });
+  if (previous !== next) {
+    const detail = { from:previous, to:next };
+    if (shouldDeferFirstProfileLifecycle(next)) scheduleFirstProfileLifecycle(detail);
+    else {
+      cancelDeferredProfileLifecycle();
+      dispatchScreenChanged(detail);
+    }
+  }
 
   return next;
 }
@@ -85,6 +95,32 @@ export function onScreenLeave(name, listener){
   };
   document.addEventListener('mgw:screen-changed', handler);
   return () => document.removeEventListener('mgw:screen-changed', handler);
+}
+
+function shouldDeferFirstProfileLifecycle(next){
+  if (firstProfileLifecycleDeferred || next !== 'profile') return false;
+  if (typeof window.matchMedia !== 'function' || typeof window.requestAnimationFrame !== 'function') return false;
+  return window.matchMedia('(max-width: 640px), (pointer: coarse)').matches;
+}
+
+function scheduleFirstProfileLifecycle(detail){
+  firstProfileLifecycleDeferred = true;
+  cancelDeferredProfileLifecycle();
+  deferredProfileEntryFrameOne = window.requestAnimationFrame(() => {
+    deferredProfileEntryFrameOne = 0;
+    deferredProfileEntryFrameTwo = window.requestAnimationFrame(() => {
+      deferredProfileEntryFrameTwo = 0;
+      if (currentScreen() !== 'profile') return;
+      dispatchScreenChanged(detail);
+    });
+  });
+}
+
+function cancelDeferredProfileLifecycle(){
+  if (deferredProfileEntryFrameOne) window.cancelAnimationFrame(deferredProfileEntryFrameOne);
+  if (deferredProfileEntryFrameTwo) window.cancelAnimationFrame(deferredProfileEntryFrameTwo);
+  deferredProfileEntryFrameOne = 0;
+  deferredProfileEntryFrameTwo = 0;
 }
 
 function dispatchScreenChanged(detail){
