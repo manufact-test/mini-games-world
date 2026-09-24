@@ -374,8 +374,14 @@ function renderGame(game, me, forceSurface){
     const champion = player?.tournament_prestige?.champion_crown === true;
     return `
     <div class="game-player ${String(game.turn) === String(player.id) && game.status === 'active' ? 'active' : ''}${champion ? ' has-tournament-crown' : ''}">
-      <div class="name">${champion ? gameTournamentCrownSvg() : ''}<span>${escapeHtml(player.name)}</span></div>
-      <div class="mark">${escapeHtml(playerMarkText(game, player))} · ${String(player.id) === String(me.id) ? 'вы' : 'соперник'}</div>
+      <div class="name"><span>${escapeHtml(player.name)}</span></div>
+      <div class="mark">
+        <span class="mgw-game-player-mark-stack">
+          ${champion ? gameTournamentCrownSvg() : ''}
+          <span class="mgw-game-player-mark-symbol">${escapeHtml(playerMarkText(game, player))}</span>
+        </span>
+        <span class="mgw-game-player-role">· ${String(player.id) === String(me.id) ? 'вы' : 'соперник'}</span>
+      </div>
     </div>
   `;
   }).join('');

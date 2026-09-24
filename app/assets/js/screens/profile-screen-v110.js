@@ -37,6 +37,8 @@ let gameCosmeticSaving = false;
 let activeCollectionGame = 'tictactoe';
 let lastProfileRenderSignature = '';
 let deferredProfileRender = false;
+let hiddenProfileRenderPending = false;
+let lastFullProfileSnapshotAt = 0;
 
 export function initProfileScreen(){
   document.querySelector('#screen-profile [data-back-home]')?.remove();
@@ -48,6 +50,7 @@ export function initProfileScreen(){
   renderProfileV2();
   document.addEventListener('mgw:open-profile', openProfile);
   document.addEventListener('mgw:screen-changed', flushDeferredProfileRender);
+  document.addEventListener('mgw:screen-changed', flushHiddenProfileRenderOnEntry);
   const warm = () => warmProfileSnapshot();
   if (typeof globalThis.requestIdleCallback === 'function') {
     globalThis.requestIdleCallback(warm, { timeout:700 });
@@ -65,7 +68,7 @@ function warmProfileSnapshot(){
   if (profileLoading) return;
   profileLoading = true;
   void api.profileV2()
-    .then(result => applyProfileResponse(result, { deferWhileActive:true }))
+    .then(result => applyProfileResponse(result, { deferWhileActive:true, deferWhileHidden:true }))
     .catch(() => {})
     .finally(() => { profileLoading = false; });
 }
@@ -83,6 +86,7 @@ export function openProfile(){
 
 function scheduleProfileRefreshAfterEntry(){
   if (profileLoading || profileRefreshTask !== null) return;
+  if (Date.now() - lastFullProfileSnapshotAt < 5000) return;
   const delay = isMobileProfilePresentation() ? PROFILE_MOBILE_REFRESH_DELAY_MS : 0;
   profileRefreshTask = window.setTimeout(() => {
     profileRefreshTask = null;
@@ -115,16 +119,23 @@ function applyProfileResponse(result, options = {}){
   state.profileAuth = result.auth || state.profileAuth || null;
   if (hasProfileStats(state.profileStats)) saveCachedProfileStats(state.profileStats);
 
+  if (result?.profile && result?.inventory) lastFullProfileSnapshotAt = Date.now();
+
   // renderUser/renderBalances write into shared shell nodes. Rewriting identical
   // text/avatars creates childList mutations which wake every Profile cosmetic
   // MutationObserver. Keep those writes idempotent on background refreshes.
   if (profileChromeSignature() !== previousChromeSignature) renderUser(state.user);
   if (Number(state.user?.balance || 0) !== previousBalance) renderBalances(state.user);
 
+  if (options.deferWhileHidden === true && shouldDeferHiddenProfileRender()) {
+    hiddenProfileRenderPending = true;
+    return;
+  }
   if (options.deferWhileActive === true && shouldDeferActiveProfileRender()) {
     deferredProfileRender = true;
     return;
   }
+  hiddenProfileRenderPending = false;
   deferredProfileRender = false;
   renderProfileV2();
 }
@@ -152,6 +163,25 @@ function shouldDeferActiveProfileRender(){
   return currentScreen() === 'profile'
     && root instanceof HTMLElement
     && root.childElementCount > 0;
+}
+
+function shouldDeferHiddenProfileRender(){
+  const root = document.getElementById('profileV2Root');
+  return currentScreen() !== 'profile'
+    && root instanceof HTMLElement
+    && root.childElementCount > 0;
+}
+
+function flushHiddenProfileRenderOnEntry(event){
+  if (event?.detail?.to !== 'profile' || !hiddenProfileRenderPending) return;
+  hiddenProfileRenderPending = false;
+  window.setTimeout(() => {
+    if (currentScreen() !== 'profile') {
+      hiddenProfileRenderPending = true;
+      return;
+    }
+    renderProfileV2();
+  }, PROFILE_ROUTE_TRANSITION_MS + 40);
 }
 
 function flushDeferredProfileRender(event){

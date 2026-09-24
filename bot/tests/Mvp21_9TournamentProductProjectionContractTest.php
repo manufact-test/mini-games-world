@@ -72,7 +72,7 @@ $assert(str_contains($files['css'],'.profile-v2-tournament-status'),'Tournament 
 $assert(str_contains($files['css'],'.profile-v2-tournament-showcase'),'Full prestige detail must live in a dedicated showcase.');
 $assert(str_contains($files['css'],'.profile-v2-tournament-showcase-scroll') && str_contains($files['css'],'overflow-y:auto'),'Tournament Showcase scroll owner must actually scroll vertically.');
 $assert(str_contains($files['css'],'grid-auto-columns:40px'),'Compact prestige metrics must share one normalized desktop geometry.');
-$assert(str_contains($files['css'],'width:13px') && str_contains($files['css'],'.mgw-game-prestige-crown'),'Live champion crown must use the compact corrective geometry.');
+$assert(str_contains($files['css'],'width:11px') && str_contains($files['css'],'.mgw-game-prestige-crown'),'Live champion crown must use the final compact geometry.');
 $assert(str_contains($files['css'],'.profile-v2-tournament-crown'),'Active champion crown must have a visual Profile owner.');
 $assert(str_contains($files['css'],'.mgw-tournament-icon'),'Tournament honors must share one SVG geometry owner.');
 $assert(str_contains($files['profile_js'],'winner_badge'),'Permanent winner badge must be visible.');
@@ -81,6 +81,8 @@ $assert(str_contains($files['profile_js'],'profile-v2-tournament-history-disclos
 $assert(str_contains($files['profile_js'],"document.dispatchEvent(new CustomEvent('mgw:tournament-hall-of-fame-open'))"),'Profile Hall of Fame action must navigate to the real Arena Hall of Fame.');
 $assert(str_contains($files['ui'],'has-tournament-prestige-crown'),'Shared app chrome must visibly project an active champion crown.');
 $assert(str_contains($files['game_js'],'gameTournamentCrownSvg'),'Live match participant cards must render champion prestige.');
+$assert(str_contains($files['game_js'],'mgw-game-player-mark-stack'),'Live crown must share a dedicated X/O alignment stack instead of consuming nickname width.');
+$assert(str_contains($files['css'],'bottom:calc(100% + 1px)') && str_contains($files['css'],'transform:translateX(-50%)'),'Live crown must be centered directly above the player mark axis.');
 $assert(str_contains($files['game_js'],"player?.tournament_prestige?.champion_crown === true"),'Live match crown must derive from authoritative public player prestige.');
 $assert(str_contains($files['response'],'mgw_tournament_reward_entitlements'),'Public game identity must read the durable champion crown entitlement.');
 $assert(str_contains($files['response'],"\$player['tournament_prestige'] = \$tournamentPrestige"),'Public game identity must expose prestige separately from game mechanics.');
@@ -107,6 +109,8 @@ $assert(str_contains($files['manifest'],'mvp21_prestige=early-read-v2'),'Version
 $assert(str_contains($files['manifest'],'mvp21_prestige=early-hydration-v2'),'Version manifest must publish the early boot hydration identity.');
 $assert(str_contains($files['manifest'],'mvp21_prestige_corrective=visual-v2'),'Version manifest must publish the visual corrective identity.');
 $assert(str_contains($files['manifest'],'mvp21_prestige_corrective=crown-size-v2'),'Version manifest must publish the compact live crown identity.');
+$assert(str_contains($files['manifest'],'mvp21_prestige_final=profile-nav-v3'),'Version manifest must publish the final Profile navigation polish.');
+$assert(str_contains($files['manifest'],'mvp21_prestige_final=mark-axis-v3'),'Version manifest must publish the final crown/mark alignment.');
 
-$assert($assertions>=67,'MVP-21.9 product integration contract is too shallow: '.$assertions);
+$assert($assertions>=71,'MVP-21.9 product integration contract is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_9TournamentProductProjectionContractTest: {$assertions} assertions passed\n");
