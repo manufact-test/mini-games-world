@@ -63,13 +63,13 @@ expect(profile.includes('data-tournament-showcase-scroll'), 'Tournament prestige
 expect(!profile.includes('champion_cosmetics') || profile.includes("TOURNAMENT_HIDDEN_REWARD_CODES = new Set(['champion_cosmetics'])"), 'Tournament prestige corrective must not turn the deferred champion entitlement into a Profile inventory item');
 expect(!profile.includes('ProductInventoryService') && !profile.includes('CosmeticStoreService'), 'yearly medal Profile composition must not create a second cosmetics inventory/store owner');
 
-const openProfileStart = profile.indexOf('export function openProfile(event = null)');
+const openProfileStart = profile.indexOf('export function openProfile()');
 const visibleProfile = profile.indexOf('showProfileImmediately();', openProfileStart);
 const scheduledRefresh = profile.indexOf('scheduleProfileRefreshAfterEntry();', visibleProfile);
 const refreshHelper = profile.indexOf('function scheduleProfileRefreshAfterEntry()');
 const backgroundHydration = profile.indexOf('api.profileV2()', refreshHelper);
 expect(openProfileStart >= 0 && visibleProfile > openProfileStart && scheduledRefresh > visibleProfile && refreshHelper >= 0 && backgroundHydration > refreshHelper, 'Profile must paint shared state immediately and schedule authoritative hydration after the route first frame');
-expect(profile.includes("if (event?.type === 'mgw:open-profile') event.stopImmediatePropagation?.();"), 'topbar Profile intent must stay single-owner until the deferred first-paint route lifecycle');
+expect(profile.includes('const event = arguments[0] || null;') && profile.includes("if (event?.type === 'mgw:open-profile') event.stopImmediatePropagation?.();"), 'topbar Profile intent must stay single-owner until the deferred first-paint route lifecycle');
 expect(profile.includes('function warmProfileSnapshot()') && profile.includes('globalThis.setTimeout(warm, 0)'), 'Profile must start its read-only authoritative warm immediately after the boot task without blocking bootstrap');
 expect(profile.includes('lastProfileRenderSignature') && profile.includes('renderSignature === lastProfileRenderSignature'), 'Profile must skip redundant full DOM rebuilds when authoritative state is unchanged');
 expect(profile.includes('deferWhileHidden:true') && profile.includes('scheduleProfileRenderIdle()'), 'Background Profile hydration must converge through the bounded idle render owner');
@@ -96,7 +96,7 @@ expect(mobileAnimationGuard.includes("document.addEventListener('mgw:app-ready'"
 expect(mobileAnimationGuard.includes("profileObserver.observe(screen, { childList:true, subtree:true })"), 'new hidden Profile animations must be paused without observing route class changes on the Profile subtree');
 expect(router.includes('function scheduleFirstProfileLifecycle(detail)') && (router.match(/requestAnimationFrame/g) || []).length >= 2, 'first mobile Profile lifecycle listeners must be deferred until after an initial paint opportunity');
 expect(!router.includes('setTimeout'), 'Profile first-paint routing must not introduce timer ownership into the router');
-expect(manifest.includes('profile_route_guard=animation-runtime-v3') && manifest.includes('profile_input=known-animation-set-v1'), 'active clean-entry identity must publish the no-full-scan first-input guard');
+expect(manifest.includes('profile_route_guard=animation-runtime-v2') && manifest.includes('profile_input=known-animation-set-v1'), 'active clean-entry identity must preserve the accepted guard identity while publishing the no-full-scan first-input cache key');
 expect(manifest.includes('profile_first_paint=deferred-lifecycle-v1'), 'active router identity must publish first Profile paint before legacy route listeners');
 expect(manifest.includes('profile_mobile=animation-runtime-guard-v2'), 'active consistency CSS identity must preserve the non-universal mobile Profile animation guard');
 
