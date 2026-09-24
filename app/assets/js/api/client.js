@@ -14,6 +14,7 @@ const TOURNAMENT_HALL_URL = `${window.location.origin}/bot/tournament-hall.php`;
 const GAME_REACTION_URL = `${window.location.origin}/bot/game-reaction.php`;
 
 let profileV2ReadPromise = null;
+let tournamentPrestigeReadPromise = null;
 
 async function requestUrl(url, payload = {}){
   const response = await fetch(url, {
@@ -126,6 +127,13 @@ function requestProfileV2(profileUpdate = null){
   return profileV2ReadPromise;
 }
 
+function requestTournamentPrestige(){
+  if (tournamentPrestigeReadPromise) return tournamentPrestigeReadPromise;
+  tournamentPrestigeReadPromise = requestUrl(PROFILE_V2_URL, { tournament_prestige_only:true })
+    .finally(() => { tournamentPrestigeReadPromise = null; });
+  return tournamentPrestigeReadPromise;
+}
+
 export const api = {
   bootstrap: () => request('bootstrap'),
   stats: () => request('stats'),
@@ -141,6 +149,7 @@ export const api = {
   profileReactionUnequip: () => requestUrl(GAME_REACTION_URL, { action:'unequip' }),
   profile: () => request('profile'),
   profileV2: (profileUpdate = null) => requestProfileV2(profileUpdate),
+  tournamentPrestige: () => requestTournamentPrestige(),
   leaderboard: (gameType = 'tictactoe') => requestUrl(LEADERBOARD_URL, { game_type:gameType }),
   ratingArchiveOverview: () => requestUrl(RATING_ARCHIVE_URL, { mode:'overview' }),
   ratingArchiveSeason: (seasonId, gameType = 'tictactoe') => requestUrl(RATING_ARCHIVE_URL, { mode:'season', season_id:seasonId, game_type:gameType }),
