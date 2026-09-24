@@ -434,8 +434,14 @@ final class SupportTicketService
                 'ticket_id' => (string)$ticket['ticket_id'],
             ];
             if ($column === 'status_code') {
-                $extra = ", resolved_at_utc = CASE WHEN :value = 'resolved' THEN :updated_at WHEN :value IN ('open','in_progress','waiting_user') THEN NULL ELSE resolved_at_utc END,
-                           closed_at_utc = CASE WHEN :value = 'closed' THEN :updated_at WHEN :value <> 'closed' THEN NULL ELSE closed_at_utc END";
+                $extra = ", resolved_at_utc = CASE WHEN :status_for_resolved = 'resolved' THEN :resolved_at WHEN :status_for_clear_resolved IN ('open','in_progress','waiting_user') THEN NULL ELSE resolved_at_utc END,
+                           closed_at_utc = CASE WHEN :status_for_closed = 'closed' THEN :closed_at WHEN :status_for_clear_closed <> 'closed' THEN NULL ELSE closed_at_utc END";
+                $params['status_for_resolved'] = $value;
+                $params['resolved_at'] = $now;
+                $params['status_for_clear_resolved'] = $value;
+                $params['status_for_closed'] = $value;
+                $params['closed_at'] = $now;
+                $params['status_for_clear_closed'] = $value;
             }
             $this->database->execute(
                 'UPDATE mgw_support_tickets SET ' . $column . ' = :value, updated_at_utc = :updated_at' . $extra . ' WHERE ticket_id = :ticket_id',
