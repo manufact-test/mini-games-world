@@ -11,7 +11,8 @@ const LEADERBOARD_URL = `${window.location.origin}/bot/leaderboard.php`;
 const RATING_ARCHIVE_URL = `${window.location.origin}/bot/rating-archive.php`;
 const TOURNAMENT_STATUS_URL = `${window.location.origin}/bot/tournament-status.php`;
 const TOURNAMENT_HALL_URL = `${window.location.origin}/bot/tournament-hall.php`;
-const GAME_REACTION_URL = `${window.location.origin}/bot/game-reaction.php`;\nconst SUPPORT_URL = `${window.location.origin}/bot/support.php`;
+const GAME_REACTION_URL = `${window.location.origin}/bot/game-reaction.php`;
+const SUPPORT_URL = `${window.location.origin}/bot/support.php`;
 
 let profileV2ReadPromise = null;
 let tournamentPrestigeReadPromise = null;
