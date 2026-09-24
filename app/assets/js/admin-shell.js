@@ -52,9 +52,12 @@
   const telegram = window.Telegram?.WebApp || null;
   let requestInFlight = false;
   let currentEconomyVersion = 0;
-  let activeSection = new URLSearchParams(window.location.search).has('ticket')
+  const initialParams = new URLSearchParams(window.location.search);
+  let activeSection = initialParams.has('ticket')
     ? 'support'
-    : (window.location.hash || '#overview').slice(1);
+    : initialParams.has('report')
+      ? 'users'
+      : (window.location.hash || '#overview').slice(1);
 
   const sections = {
     overview:['Обзор','Ключевое состояние продукта и быстрый контроль.'],
