@@ -202,10 +202,11 @@ final class SupportTicketService
             $this->database->execute(
                 'UPDATE mgw_support_tickets
                  SET status_code = :status, updated_at_utc = :updated_at, last_message_at_utc = :last_message,
-                     resolved_at_utc = CASE WHEN :status = \'resolved\' THEN resolved_at_utc ELSE NULL END
+                     resolved_at_utc = CASE WHEN :status_for_resolved = \'resolved\' THEN resolved_at_utc ELSE NULL END
                  WHERE ticket_id = :ticket_id',
                 [
                     'status' => $nextStatus,
+                    'status_for_resolved' => $nextStatus,
                     'updated_at' => $now,
                     'last_message' => $now,
                     'ticket_id' => (string)$ticket['ticket_id'],
@@ -252,8 +253,11 @@ final class SupportTicketService
 
         $query = $this->text((string)($filters['query'] ?? ''), 120);
         if ($query !== '') {
-            $where[] = '(ticket_number LIKE :query OR requester_mgw_id LIKE :query OR subject LIKE :query)';
-            $params['query'] = '%' . $query . '%';
+            $where[] = '(ticket_number LIKE :query_number OR requester_mgw_id LIKE :query_requester OR subject LIKE :query_subject)';
+            $needle = '%' . $query . '%';
+            $params['query_number'] = $needle;
+            $params['query_requester'] = $needle;
+            $params['query_subject'] = $needle;
         }
 
         $sql = 'SELECT * FROM mgw_support_tickets';
@@ -544,8 +548,8 @@ final class SupportTicketService
         $ticketRef = $this->text($ticketRef, 64);
         if ($ticketRef === '') throw new SupportTicketException('ticket_required', 'Укажите номер обращения.');
         $rows = $this->database->fetchAll(
-            'SELECT * FROM mgw_support_tickets WHERE ticket_id = :ref OR ticket_number = :ref LIMIT 1',
-            ['ref' => $ticketRef]
+            'SELECT * FROM mgw_support_tickets WHERE ticket_id = :ticket_id_ref OR ticket_number = :ticket_number_ref LIMIT 1',
+            ['ticket_id_ref' => $ticketRef, 'ticket_number_ref' => $ticketRef]
         );
         if ($rows === []) throw new SupportTicketException('ticket_not_found', 'Обращение не найдено.');
         return $rows[0];
