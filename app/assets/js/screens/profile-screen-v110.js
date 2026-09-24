@@ -70,7 +70,12 @@ function warmProfileSnapshot(){
     .finally(() => { profileLoading = false; });
 }
 
-export function openProfile(){
+export function openProfile(event = null){
+  // The canonical Profile owner is registered before the historical cosmetic
+  // repair listeners. Keep the topbar intent single-owner: route immediately,
+  // then let the deferred mgw:screen-changed lifecycle run repair work after
+  // the first visible Profile frame instead of inside the original click task.
+  if (event?.type === 'mgw:open-profile') event.stopImmediatePropagation?.();
   if (currentScreen() === 'profile') return;
 
   // Route ownership stays with the canonical shell. Paint the already prepared
