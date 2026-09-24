@@ -74,9 +74,15 @@ $assert(
 
 $assert(
     str_contains($page, 'class="mgw-admin__overview" data-admin-dashboard')
+        && str_contains($page, 'data-overview-support')
+        && str_contains($page, 'data-overview-tournament')
+        && str_contains($page, 'data-overview-season')
         && str_contains($shell, 'const renderDashboard = raw =>')
+        && str_contains($shell, "mgw:admin-support-summary")
+        && str_contains($shell, "mgw:admin-tournament-summary")
+        && str_contains($shell, "mgw:admin-rating-summary")
         && !str_contains($page, '<pre data-admin-dashboard>'),
-    'Overview must be a structured dashboard rather than the old giant raw pre block.'
+    'Overview must be a structured operational dashboard with live support/tournament/season summaries.'
 );
 
 foreach ([
