@@ -341,6 +341,16 @@ $assertSame(0,(int)$db->fetchValue(
     "SELECT COUNT(*) FROM mgw_tournament_results WHERE tournament_id='tour-cancel-normal'"
 ),'Cancelled tournament must never produce placement rewards.');
 
+$db->execute(
+    "UPDATE mgw_tournaments SET tournament_state='staging_reset'
+     WHERE tournament_id='tour-cancel-normal'"
+);
+$assertSame(
+    null,
+    $service->lastCancellationForParticipant($players[1]['mgw']),
+    'A staging-reset tournament must preserve audit rows without remaining visible as the participant current cancellation.'
+);
+
 // Consumed-but-unrewarded entry: refund it exactly once with available delta.
 $seedTournament($db,$ledger,$players,'tour-cancel-consumed',false,2);
 $consumedReservation=(string)$db->fetchValue(
