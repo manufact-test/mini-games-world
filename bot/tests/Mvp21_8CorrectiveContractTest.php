@@ -63,13 +63,18 @@ $assert($ready !== false && $profileAwait < $ready,
     'Canonical identity and lightweight prestige must still be ready before app-ready is published.');
 
 $assert(str_contains($profile, 'deferWhileHidden:true')
-        && str_contains($profile, 'hiddenProfileRenderPending = true;'),
-    'Background Profile hydration must update state without rebuilding the long hidden Profile DOM.');
-$assert(str_contains($profile, 'flushHiddenProfileRenderOnEntry')
-        && str_contains($profile, 'PROFILE_ROUTE_TRANSITION_MS + 40'),
-    'A deferred hidden Profile render must resume only after the route transition frame.');
-$assert(str_contains($profile, 'Date.now() - lastFullProfileSnapshotAt < 5000'),
-    'Fresh background Profile hydration must suppress an immediate duplicate profileV2 request on entry.');
+        && str_contains($profile, 'scheduleProfileRenderIdle();'),
+    'Background Profile hydration must converge through the bounded idle render owner.');
+$assert(str_contains($profile, 'requestIdleCallback(flushScheduledProfileRender, { timeout:1800 })')
+        && str_contains($profile, "document.documentElement.classList.contains('mgw-profile-route-settling')"),
+    'Deferred full Profile rendering must run as idle work and yield during the first route settle window.');
+$assert(str_contains($profile, 'navigator.scheduling.isInputPending({ includeContinuous:true })')
+        && !str_contains($profile, 'flushHiddenProfileRenderOnEntry')
+        && !str_contains($profile, 'PROFILE_ROUTE_TRANSITION_MS + 40'),
+    'First Profile entry must not own the expensive full-DOM convergence task.');
+$assert(str_contains($profile, 'globalThis.setTimeout(warm, 0)')
+        && str_contains($profile, 'Date.now() - lastFullProfileSnapshotAt < 5000'),
+    'Profile must start its read-only warm promptly and suppress an immediate duplicate read on entry.');
 $bootStart = strpos($main, 'async function boot(){');
 $bootEnd = strpos($main, 'function shouldPrimeMobileProfile', $bootStart ?: 0);
 $bootBody = ($bootStart !== false && $bootEnd !== false)
@@ -99,7 +104,7 @@ $assert(str_contains($manifest, 'tournaments-screen-v1.js?v=31')
         && str_contains($manifest, 'desktop=endurance-v1'),
     'Tournament corrective must publish a fresh v8 client identity.');
 
-if ($assertions < 21) {
+if ($assertions < 22) {
     throw new RuntimeException('Corrective v8 contract is too shallow: ' . $assertions);
 }
 fwrite(STDOUT, "Mvp21_8CorrectiveContractTest: {$assertions} assertions passed\n");

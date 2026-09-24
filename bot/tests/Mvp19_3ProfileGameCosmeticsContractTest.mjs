@@ -68,10 +68,13 @@ const scheduledRefresh = profile.indexOf('scheduleProfileRefreshAfterEntry();', 
 const refreshHelper = profile.indexOf('function scheduleProfileRefreshAfterEntry()');
 const backgroundHydration = profile.indexOf('api.profileV2()', refreshHelper);
 expect(openProfileStart >= 0 && visibleProfile > openProfileStart && scheduledRefresh > visibleProfile && refreshHelper >= 0 && backgroundHydration > refreshHelper, 'Profile must paint shared state immediately and schedule authoritative hydration after the route first frame');
-expect(profile.includes('function warmProfileSnapshot()') && profile.includes('requestIdleCallback(warm, { timeout:700 })'), 'Profile must warm its authoritative snapshot before likely navigation');
+expect(profile.includes('function warmProfileSnapshot()') && profile.includes('globalThis.setTimeout(warm, 0)'), 'Profile must start its read-only authoritative warm immediately after the boot task without blocking bootstrap');
 expect(profile.includes('lastProfileRenderSignature') && profile.includes('renderSignature === lastProfileRenderSignature'), 'Profile must skip redundant full DOM rebuilds when authoritative state is unchanged');
-expect(profile.includes('deferWhileHidden:true') && profile.includes('hiddenProfileRenderPending'), 'MVP-21 prestige final polish may defer hidden Profile remounts without replacing the collection owner');
-expect(profile.includes('flushHiddenProfileRenderOnEntry') && profile.includes('PROFILE_ROUTE_TRANSITION_MS + 40'), 'Deferred hidden Profile state must remount only after the accepted route transition frame');
+expect(profile.includes('deferWhileHidden:true') && profile.includes('scheduleProfileRenderIdle()'), 'Background Profile hydration must converge through the bounded idle render owner');
+expect(profile.includes('requestIdleCallback(flushScheduledProfileRender, { timeout:1800 })'), 'Long Profile refresh work must be scheduled as idle work instead of a route-transition task');
+expect(profile.includes("document.documentElement.classList.contains('mgw-profile-route-settling')"), 'Idle Profile convergence must yield while the canonical first-route settle guard is active');
+expect(profile.includes('navigator.scheduling.isInputPending({ includeContinuous:true })'), 'Idle Profile convergence must yield to pending user input when the runtime exposes the scheduling signal');
+expect(!profile.includes('flushHiddenProfileRenderOnEntry') && !profile.includes('PROFILE_ROUTE_TRANSITION_MS + 40'), 'First Profile entry must never be the trigger for the deferred full-DOM rebuild');
 expect(profile.includes('Date.now() - lastFullProfileSnapshotAt < 5000'), 'Fresh background Profile state must suppress an immediate duplicate hydration request');
 
 // Mobile route performance: never key a universal descendant selector directly
