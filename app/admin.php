@@ -14,11 +14,12 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Admin</title>
-  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=7&replay=17-6&mvp22_1=support-tickets&&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
+  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=7&replay=17-6&mvp22_1=support-tickets&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="./assets/js/admin-shell.js?v=4&replay=17-6&test-coins=staging" defer></script>
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
-  <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>\n  <script src="./assets/js/admin-support.js?v=1&mvp22_1=support-tickets" defer></script>
+  <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
+  <script src="./assets/js/admin-support.js?v=1&mvp22_1=support-tickets" defer></script>
   <script src="./assets/js/admin-rating.js?v=1&mvp20_8=rating-admin" defer></script>
   <script src="./assets/js/admin-tournaments.js?v=15&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3&mvp21_5=corrective-v5&mvp21_6=fixture-progression-helper-v3&mvp21_8=corrective-v12&mvp21_8_cancel=cancellation-emergency-v1&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v2" defer></script>
 </head>
@@ -28,7 +29,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
       <div>
         <p class="mgw-admin__eyebrow">MINI GAMES WORLD</p>
         <h1>Web Admin</h1>
-        <p class="mgw-admin__subtitle">Системный обзор, рейтинг, bell events, экономика, replay storage и очередь жалоб.</p>
+        <p class="mgw-admin__subtitle">Системный обзор, поддержка, рейтинг, bell events, экономика, replay storage и очередь жалоб.</p>
       </div>
       <button class="mgw-admin__refresh" type="button" data-admin-refresh>Обновить</button>
     </header>
