@@ -78,8 +78,12 @@
     const m = snapshot?.metrics || {};
     const state = String(competition.competition_state || '—');
     const season = String(currentSeason.season_id || competition.current_season_id || '—');
+    const stateLabel = ({OFF:'Выключено',PRESEASON:'Предсезон',ACTIVE:'Активно'})[state] || state;
+    window.dispatchEvent(new CustomEvent('mgw:admin-rating-summary', {
+      detail:{state, stateLabel, season}
+    }));
     metrics.append(
-      metricCard('Состояние соревнований', ({OFF:'Выключено',PRESEASON:'Предсезон',ACTIVE:'Активно'})[state] || state),
+      metricCard('Состояние соревнований', stateLabel),
       metricCard('Сезон', season),
       metricCard('Строк рейтинга', Number(m.score_rows || 0).toLocaleString('ru-RU')),
       metricCard('Участий', Number(m.participation_rows || 0).toLocaleString('ru-RU')),
