@@ -119,7 +119,7 @@ $database->execute(
         registration_closed_at_utc,registration_closed_reason,
         scheduled_start_at_utc,scheduled_by_ref,scheduled_at_utc
      ) VALUES (
-        :id,NULL,:title,:game,8,50000,:asset,:reward,:state,:actor,:actor,
+        :id,NULL,:title,:game,8,50000,:asset,:reward,:state,:created_by,:opened_by,
         :created,:opened,:updated,:closed,:reason,NULL,NULL,NULL
      )',
     [
@@ -129,7 +129,8 @@ $database->execute(
         'asset'=>'coins',
         'reward'=>$rewardSnapshot,
         'state'=>'completed',
-        'actor'=>'test',
+        'created_by'=>'test',
+        'opened_by'=>'test',
         'created'=>$now,
         'opened'=>$now,
         'updated'=>$now,
@@ -145,7 +146,7 @@ $database->execute(
         registration_closed_at_utc,registration_closed_reason,
         scheduled_start_at_utc,scheduled_by_ref,scheduled_at_utc
      ) VALUES (
-        :id,:slot,:title,:game,8,50000,:asset,:reward,:state,:actor,:actor,
+        :id,:slot,:title,:game,8,50000,:asset,:reward,:state,:created_by,:opened_by,
         :created,:opened,:updated,NULL,NULL,NULL,NULL,NULL
      )',
     [
@@ -156,7 +157,8 @@ $database->execute(
         'asset'=>'coins',
         'reward'=>$rewardSnapshot,
         'state'=>TournamentRegistrationService::STATE_REGISTRATION_OPEN,
-        'actor'=>'test',
+        'created_by'=>'test',
+        'opened_by'=>'test',
         'created'=>$now,
         'opened'=>$now,
         'updated'=>$now,
