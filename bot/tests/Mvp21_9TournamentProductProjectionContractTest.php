@@ -9,6 +9,8 @@ $files=[
  'archive'=>file_get_contents($root.'/bot/ratings/RatingArchiveService.php'),
  'bootstrap'=>file_get_contents($root.'/bot/core/bootstrap.php'),
  'profile_js'=>file_get_contents($root.'/app/assets/js/screens/profile-screen-v110.js'),
+ 'api_js'=>file_get_contents($root.'/app/assets/js/api/client.js'),
+ 'shell_js'=>file_get_contents($root.'/app/assets/js/main-v110-handoff-shell.js'),
  'tournaments_js'=>file_get_contents($root.'/app/assets/js/screens/tournaments-screen-v1.js'),
  'ui'=>file_get_contents($root.'/app/assets/js/ui.js'),
  'game_js'=>file_get_contents($root.'/app/assets/js/screens/game-screen-v102.js'),
@@ -38,6 +40,13 @@ $assert(str_contains($files['settlement'],'mgw_tournament_reward_entitlements'),
 
 $assert(str_contains($files['profile_api'],"'tournament_rewards'=>\$tournamentRewards"),'Profile API must expose durable tournament honors.');
 $assert(str_contains($files['profile_api'],'new TournamentRewardProjectionService($database)'),'Profile API must use the read-only projector.');
+$assert(str_contains($files['projector'],'public function prestigeSnapshot('),'Projector must expose a lightweight prestige-only snapshot.');
+$assert(str_contains($files['projector'],"'partial'=>true"),'Lightweight prestige snapshot must be explicitly marked partial.');
+$assert(str_contains($files['profile_api'],"tournament_prestige_only"),'Profile endpoint must expose the bounded lightweight prestige read.');
+$assert(str_contains($files['profile_api'],'->prestigeSnapshot($mgwId)'),'Lightweight endpoint must avoid the full Profile projection path.');
+$assert(str_contains($files['api_js'],'tournamentPrestige: () => requestTournamentPrestige()'),'Client API must expose the lightweight prestige request.');
+$assert(str_contains($files['shell_js'],'const prestigePromise = api.tournamentPrestige().catch(() => null);'),'Boot must start prestige hydration immediately alongside its existing reads.');
+$assert(str_contains($files['shell_js'],'state.profileTournamentRewards = prestigeResult.tournament_rewards;'),'Boot must publish prestige before shared chrome renders.');
 $assert(str_contains($files['archive'],'->publicArchive()'),'Rating archive overview must project settled official tournaments.');
 $assert(str_contains($files['archive'],"['available'=>false,'entries'=>[],'hall_of_fame'=>[]]"),'Legacy archive-only tests must retain a no-tournament fallback.');
 $assert(str_contains($files['bootstrap'],'TournamentRewardProjectionService.php'),'Bootstrap must load the projector.');
@@ -46,6 +55,7 @@ $assert(str_contains($files['state'],'profileTournamentRewards'),'Client state m
 $assert(str_contains($files['profile_js'],'renderTournamentPrestigeSummary(tournamentRewards)'),'Profile must place a compact tournament status directly in the main profile flow.');
 $assert(str_contains($files['profile_js'],'data-open-tournament-showcase'),'Compact tournament status must open the dedicated prestige showcase.');
 $assert(str_contains($files['profile_js'],'tournamentShowcaseMarkup(snapshot)'),'Profile must own one dedicated tournament showcase renderer.');
+$assert(str_contains($files['profile_js'],'data-tournament-showcase-scroll'),'Tournament Showcase must have a dedicated bounded scroll owner.');
 $assert(str_contains($files['profile_js'],'tournamentPrestigeIconSvg'),'Tournament rewards must use the shared SVG icon language instead of platform emoji.');
 $assert(str_contains($files['profile_js'],"TOURNAMENT_HIDDEN_REWARD_CODES = new Set(['champion_cosmetics'])"),'Undefined champion cosmetics entitlement must stay durable but hidden until real inventory items exist.');
 $assert(str_contains($files['profile_js'],'Golden Ticket'),'Profile must visibly expose Golden Ticket.');
@@ -60,6 +70,9 @@ $assert(str_contains($files['profile_js'],'has-tournament-silver-frame'),'Active
 $assert(str_contains($files['profile_js'],'has-tournament-bronze-mark'),'Active bronze mark must project onto the Profile identity.');
 $assert(str_contains($files['css'],'.profile-v2-tournament-status'),'Tournament prestige must be visible near the top of Profile without scrolling through the collection.');
 $assert(str_contains($files['css'],'.profile-v2-tournament-showcase'),'Full prestige detail must live in a dedicated showcase.');
+$assert(str_contains($files['css'],'.profile-v2-tournament-showcase-scroll') && str_contains($files['css'],'overflow-y:auto'),'Tournament Showcase scroll owner must actually scroll vertically.');
+$assert(str_contains($files['css'],'grid-auto-columns:40px'),'Compact prestige metrics must share one normalized desktop geometry.');
+$assert(str_contains($files['css'],'width:13px') && str_contains($files['css'],'.mgw-game-prestige-crown'),'Live champion crown must use the compact corrective geometry.');
 $assert(str_contains($files['css'],'.profile-v2-tournament-crown'),'Active champion crown must have a visual Profile owner.');
 $assert(str_contains($files['css'],'.mgw-tournament-icon'),'Tournament honors must share one SVG geometry owner.');
 $assert(str_contains($files['profile_js'],'winner_badge'),'Permanent winner badge must be visible.');
@@ -71,7 +84,7 @@ $assert(str_contains($files['game_js'],'gameTournamentCrownSvg'),'Live match par
 $assert(str_contains($files['game_js'],"player?.tournament_prestige?.champion_crown === true"),'Live match crown must derive from authoritative public player prestige.');
 $assert(str_contains($files['response'],'mgw_tournament_reward_entitlements'),'Public game identity must read the durable champion crown entitlement.');
 $assert(str_contains($files['response'],"\$player['tournament_prestige'] = \$tournamentPrestige"),'Public game identity must expose prestige separately from game mechanics.');
-$assert(str_contains($files['index'],'mvp21_prestige=showcase-v1'),'Index must bust the prestige stylesheet cache.');
+$assert(str_contains($files['index'],'mvp21_prestige=showcase-v1') && str_contains($files['index'],'mvp21_prestige_corrective=visual-v2'),'Index must bust the prestige corrective stylesheet cache.');
 
 $assert(str_contains($files['tournaments_js'],'tournament-archive-v1'),'Arena must publish tournament archive surface identity.');
 $assert(str_contains($files['tournaments_js'],'loadTournamentArchiveOverview'),'Tournament archive tab must have a live data owner.');
@@ -90,6 +103,10 @@ $assert(str_contains($files['manifest'],'mvp21_9=product-projections-v1'),'Versi
 $assert(str_contains($files['manifest'],'mvp21_prestige=showcase-v1'),'Version manifest must publish the prestige showcase identity.');
 $assert(str_contains($files['manifest'],'mvp21_prestige=champion-crown-v1'),'Version manifest must publish the shared champion crown identity.');
 $assert(str_contains($files['manifest'],'mvp21_prestige=hall-of-fame-link-v1'),'Version manifest must publish the Hall of Fame navigation identity.');
+$assert(str_contains($files['manifest'],'mvp21_prestige=early-read-v2'),'Version manifest must publish the early prestige API identity.');
+$assert(str_contains($files['manifest'],'mvp21_prestige=early-hydration-v2'),'Version manifest must publish the early boot hydration identity.');
+$assert(str_contains($files['manifest'],'mvp21_prestige_corrective=visual-v2'),'Version manifest must publish the visual corrective identity.');
+$assert(str_contains($files['manifest'],'mvp21_prestige_corrective=crown-size-v2'),'Version manifest must publish the compact live crown identity.');
 
-$assert($assertions>=52,'MVP-21.9 product integration contract is too shallow: '.$assertions);
+$assert($assertions>=67,'MVP-21.9 product integration contract is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_9TournamentProductProjectionContractTest: {$assertions} assertions passed\n");
