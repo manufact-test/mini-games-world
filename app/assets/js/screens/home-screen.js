@@ -242,7 +242,7 @@ async function supportFilesPayload(input){
     if(file.size>2000000)return reject(new Error(`${file.name}: файл больше 2 МБ.`));
     const reader=new FileReader();
     reader.onerror=()=>reject(new Error(`${file.name}: не удалось прочитать файл.`));
-    reader.onload=()=>resolve({file_name:file.name,mime_type:file.type||'application/octet-stream',content_base64:String(reader.result||'').split(',').pop()||''});
+    reader.onload=()=>{const mime=String(file.type||'').toLowerCase();const allowed=['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain'];if(!allowed.includes(mime))return reject(new Error(`${file.name}: поддерживаются изображения, PDF и TXT.`));resolve({file_name:file.name,mime_type:mime,content_base64:String(reader.result||'').split(',').pop()||''});};
     reader.readAsDataURL(file);
   })));
 }
