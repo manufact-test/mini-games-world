@@ -13,7 +13,6 @@ $rating = $read('app/assets/js/admin-rating.js');
 $notifications = $read('app/assets/js/admin-notifications.js');
 $telegram = $read('bot/services/TelegramService.php');
 $adminService = $read('bot/services/AdminService.php');
-$launch = $read('bot/helpers/WebAppLaunchUrl.php');
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -142,14 +141,16 @@ foreach (['admin:dashboard','admin:orders','admin:support','admin:users','admin:
 }
 
 $assert(
-    str_contains($launch, "private const ADMIN_PATH = '/app/admin.php?v=2'"),
-    'Reworked admin HTML must cache-bust the authoritative Telegram admin launch parent.'
-);
-
-$assert(
     str_contains($shell, "initialParams.has('ticket')")
         && str_contains($shell, "initialParams.has('report')"),
     'Existing support/report deep links must open the matching section in the new shell.'
+);
+
+$assert(
+    str_contains($page, "Cache-Control: no-store, no-cache, must-revalidate")
+        && str_contains($page, 'admin-shell.css?v=8')
+        && str_contains($page, 'admin-shell.js?v=5'),
+    'Admin-only rework must stay no-store and publish fresh child asset identities without changing the shared game launch owner.'
 );
 
 $assert(
