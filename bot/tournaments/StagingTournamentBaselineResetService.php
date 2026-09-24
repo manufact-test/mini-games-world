@@ -271,18 +271,30 @@ final class StagingTournamentBaselineResetService
 
             $fixturesRetired = 0;
             foreach ($fixtureLegacyIds as $legacyUserId) {
-                $fixturesRetired += $db->execute(
-                    'UPDATE mgw_users u
-                     INNER JOIN mgw_account_ownership o ON o.mgw_id=u.mgw_id
-                     SET u.status=:retired,u.updated_at_utc=:updated_at
-                     WHERE o.legacy_user_id=:legacy_user_id AND u.status=:active',
+                $fixtureRows = $db->fetchAll(
+                    'SELECT mgw_id FROM mgw_account_ownership
+                     WHERE legacy_user_id=:legacy_user_id AND ownership_status=:ownership_status',
                     [
-                        'retired'=>'staging_fixture_retired',
-                        'updated_at'=>$resetAt,
                         'legacy_user_id'=>$legacyUserId,
-                        'active'=>'active',
+                        'ownership_status'=>'active',
                     ]
                 );
+                foreach ($fixtureRows as $fixtureRow) {
+                    if (!is_array($fixtureRow)) continue;
+                    $fixtureMgwId = trim((string)($fixtureRow['mgw_id'] ?? ''));
+                    if ($fixtureMgwId === '') continue;
+                    $fixturesRetired += $db->execute(
+                        'UPDATE mgw_users
+                         SET status=:retired,updated_at_utc=:updated_at
+                         WHERE mgw_id=:mgw_id AND status=:active',
+                        [
+                            'retired'=>'staging_fixture_retired',
+                            'updated_at'=>$resetAt,
+                            'mgw_id'=>$fixtureMgwId,
+                            'active'=>'active',
+                        ]
+                    );
+                }
             }
 
             return [
