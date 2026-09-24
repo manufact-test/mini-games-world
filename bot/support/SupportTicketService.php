@@ -299,13 +299,13 @@ final class SupportTicketService
         $ticket = $this->findTicket($ticketRef);
         $related = $this->normalizeRelated($related);
         $now = $this->timestamp();
-        $before = json_encode([
+        $before = [
             'game_id' => $ticket['related_game_id'] ?? null,
             'payment_id' => $ticket['related_payment_id'] ?? null,
             'tournament_id' => $ticket['related_tournament_id'] ?? null,
             'operation_id' => $ticket['related_operation_id'] ?? null,
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        $after = json_encode($related, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        ];
+        $after = $related;
 
         $this->database->transaction(function () use ($ticket, $related, $actorRef, $before, $after, $now): void {
             $this->database->execute(
@@ -323,7 +323,10 @@ final class SupportTicketService
                     'ticket_id' => (string)$ticket['ticket_id'],
                 ]
             );
-            $this->insertEvent((string)$ticket['ticket_id'], 'related_ids_changed', $actorRef, $before, $after, [], $now);
+            $this->insertEvent((string)$ticket['ticket_id'], 'related_ids_changed', $actorRef, null, null, [
+                'before' => $before,
+                'after' => $after,
+            ], $now);
         });
         return $this->adminTicket((string)$ticket['ticket_number']);
     }
