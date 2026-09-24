@@ -117,7 +117,7 @@
   gap:3px;
 }
 #screen-profile .profile-v2-tournament-status-copy>small{
-  color:#e7bd58;
+  color:#f3d276;
   font-size:7.5px;
   line-height:1;
   font-weight:950;
@@ -134,48 +134,58 @@
 }
 #screen-profile .profile-v2-tournament-status-copy>span{
   overflow:hidden;
-  color:rgba(236,238,246,.60);
+  color:rgba(249,246,237,.76);
   font-size:8px;
   line-height:1.3;
   white-space:nowrap;
   text-overflow:ellipsis;
 }
 #screen-profile .profile-v2-tournament-status-metrics{
-  display:flex;
+  display:grid;
+  grid-auto-flow:column;
+  grid-auto-columns:40px;
   align-items:center;
-  gap:5px;
+  gap:6px;
 }
 #screen-profile .profile-v2-tournament-status-metrics>b{
-  min-width:38px;
-  min-height:40px;
-  padding:5px 6px;
+  box-sizing:border-box;
+  width:40px;
+  height:40px;
+  min-width:0;
+  min-height:0;
+  padding:4px;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
   gap:2px;
-  border:1px solid rgba(255,255,255,.075);
+  border:1px solid rgba(255,255,255,.11);
   border-radius:10px;
-  background:rgba(255,255,255,.026);
+  background:rgba(255,255,255,.045);
 }
 #screen-profile .profile-v2-tournament-status-metrics strong{
-  color:#fff7e1;
+  color:#fff;
   font-size:13px;
+  font-weight:950;
   font-variant-numeric:tabular-nums;
   line-height:1;
 }
 #screen-profile .profile-v2-tournament-status-metrics small{
-  color:rgba(226,228,237,.48);
-  font-size:6.5px;
-  font-weight:850;
+  color:rgba(255,255,255,.74);
+  font-size:6.7px;
+  font-weight:900;
+  letter-spacing:.015em;
   text-transform:uppercase;
 }
 #screen-profile .profile-v2-tournament-status-metrics .has-ticket{
   color:#ffd365;
 }
 #screen-profile .profile-v2-tournament-status-metrics .has-ticket .mgw-tournament-icon{
-  width:21px;
-  height:21px;
+  width:19px;
+  height:19px;
+}
+#screen-profile .profile-v2-tournament-status-metrics .has-ticket small{
+  color:#ffe7a1;
 }
 #screen-profile .profile-v2-tournament-status-arrow{
   color:rgba(255,222,139,.58);
@@ -190,11 +200,23 @@
   color:var(--muted);
   font-size:11px;
 }
+.profile-v2-tournament-showcase-scroll{
+  flex:1 1 auto;
+  min-height:0;
+  max-height:calc(86dvh - 104px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  padding:0 2px max(18px,env(safe-area-inset-bottom));
+}
+.profile-v2-tournament-showcase-scroll::-webkit-scrollbar{display:none}
 .profile-v2-tournament-showcase{
   display:flex;
   flex-direction:column;
   gap:0;
-  padding-bottom:max(6px,env(safe-area-inset-bottom));
+  padding-bottom:2px;
 }
 .profile-v2-tournament-showcase-summary{
   display:grid;
@@ -318,8 +340,8 @@
 
 .profile-v2-tournament-subtitle{
   margin:16px 2px 8px;
-  color:rgba(243,226,181,.70);
-  font-size:8px;
+  color:rgba(255,238,193,.82);
+  font-size:8.5px;
   font-weight:950;
   letter-spacing:.075em;
   text-transform:uppercase;
@@ -361,15 +383,15 @@
 }
 .profile-v2-tournament-reward strong{
   overflow:hidden;
-  color:#f7f2e6;
-  font-size:9px;
+  color:#fffaf0;
+  font-size:10px;
   line-height:1.2;
   white-space:nowrap;
   text-overflow:ellipsis;
 }
 .profile-v2-tournament-reward span{
-  color:var(--muted);
-  font-size:7.5px;
+  color:rgba(235,236,244,.68);
+  font-size:8px;
 }
 .profile-v2-tournament-reward[data-tournament-reward-code="silver_frame"]>b,
 .profile-v2-tournament-reward[data-tournament-reward-code="cup_silver"]>b,
@@ -550,17 +572,24 @@
 
 /* Crown projected into the actual game participant line for both players. */
 #screen-game .game-player.has-tournament-crown .name{
+  min-width:0;
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:5px;
+  gap:3px;
+}
+#screen-game .game-player.has-tournament-crown .name>span{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 #screen-game .game-player .mgw-game-prestige-crown{
   flex:0 0 auto;
-  width:17px;
-  height:14px;
+  width:13px;
+  height:11px;
   color:#ffd66a;
-  filter:drop-shadow(0 1px 2px rgba(0,0,0,.55)) drop-shadow(0 0 4px rgba(255,196,60,.22));
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.50)) drop-shadow(0 0 3px rgba(255,196,60,.18));
 }
 
 @media (max-width:640px){
@@ -574,9 +603,13 @@
     height:42px;
     border-radius:13px;
   }
+  #screen-profile .profile-v2-tournament-status-metrics{
+    grid-auto-columns:38px;
+    gap:5px;
+  }
   #screen-profile .profile-v2-tournament-status-metrics>b{
-    min-width:34px;
-    min-height:36px;
+    width:38px;
+    height:38px;
     padding:4px;
   }
   #screen-profile .profile-v2-tournament-status-metrics strong{font-size:12px}
