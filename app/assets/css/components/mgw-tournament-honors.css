@@ -639,6 +639,23 @@
   font-size:8px;
   white-space:nowrap;
 }
+#screen-tournaments .tournaments-v2-hof-count{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  color:#e8c159;
+  font-variant-numeric:tabular-nums;
+}
+#screen-tournaments .tournaments-v2-hof-trophy{
+  width:17px;
+  height:17px;
+  color:#e8c159;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.32));
+}
+#screen-tournaments .tournaments-v2-hof-count>span{
+  color:#f7d87f;
+  font-size:9px;
+}
 #screen-tournaments .tournaments-v2-tournament-archive-list{
   display:flex;
   flex-direction:column;
