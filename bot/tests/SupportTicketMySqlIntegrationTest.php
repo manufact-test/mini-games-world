@@ -84,9 +84,16 @@ $service->assignOwner($target, $actor, $actor);
 $service->setStatus($target, 'in_progress', $actor);
 $service->setPriority($target, 'high', $actor);
 $service->replyByAdmin($target, $actor, 'MySQL admin reply.');
+$service->updateRelated($target, [
+    'game_id' => str_repeat('g', 96),
+    'payment_id' => str_repeat('p', 96),
+    'tournament_id' => str_repeat('t', 64),
+    'operation_id' => str_repeat('o', 191),
+], $actor);
 $detail = $service->adminTicket($target);
 
 $assert($detail['owner_ref'] === $actor, 'MySQL owner must persist.');
+$assert($detail['related']['operation_id'] === str_repeat('o', 191), 'Long related IDs must persist without scalar audit overflow.');
 $assert($detail['status'] === 'in_progress', 'MySQL status must persist.');
 $assert($detail['priority'] === 'high', 'MySQL priority must persist.');
 $assert(count($detail['messages']) === 2, 'MySQL ticket thread must stay isolated.');
