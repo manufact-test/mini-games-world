@@ -82,7 +82,14 @@ $other = $service->adminTicket($otherNumber);
 support_assert(count($other['messages']) === 1, 'another ticket thread must not receive target reply');
 support_assert($other['owner_ref'] === null, 'another ticket owner must stay isolated');
 
-$attachment = $updated['messages'][1]['attachments'][0] ?? null;
+$attachment = null;
+foreach ($updated['messages'] as $messageRow) {
+    if ((string)($messageRow['actor_type'] ?? '') !== 'admin') continue;
+    if (!empty($messageRow['attachments'][0]) && is_array($messageRow['attachments'][0])) {
+        $attachment = $messageRow['attachments'][0];
+        break;
+    }
+}
 support_assert(is_array($attachment), 'admin reply attachment metadata must exist');
 $download = $service->attachmentForUser((string)$attachment['attachment_id'], $userA);
 support_assert(base64_decode((string)$download['content_base64'], true) === 'support-proof', 'attachment bytes must round-trip');
