@@ -84,7 +84,8 @@ expect(profile.includes('Date.now() - lastFullProfileSnapshotAt < 5000'), 'Fresh
 // bounded Web Animations lifecycle guard; only unsupported WebViews get CSS fallback.
 expect(!mobileProfileCss.includes('\n  #screen-profile.screen:not(.active) *,'), 'mobile Profile route CSS must not invalidate the whole descendant tree on normal active flips');
 expect(mobileProfileCss.includes('html.mgw-profile-animation-css-fallback #screen-profile.screen:not(.active) *'), 'legacy WebViews must retain a CSS-only hidden-animation fallback');
-expect(cleanEntryWrapper.includes("import './profile/mgw-mobile-profile-animation-guard-v2.js?v=2&profile_input=known-animation-set-v1';"), 'active clean-entry wrapper must load the cache-busted first-input Profile animation guard');
+expect(cleanEntryWrapper.includes("import './profile/mgw-mobile-profile-animation-guard-v2.js?v=1';"), 'accepted clean-entry wrapper must retain the canonical Profile animation guard specifier');
+expect(manifest.includes("'./assets/js/profile/mgw-mobile-profile-animation-guard-v2.js?v=1' => './assets/js/profile/mgw-mobile-profile-animation-guard-v2.js?v=2&profile_input=known-animation-set-v1'"), 'import-map owner must cache-bust the first-input Profile animation guard without changing clean-entry bytes');
 expect(mobileAnimationGuard.includes("root.getAnimations({ subtree:true })"), 'mobile Profile animation guard may enumerate animations only during off-input discovery');
 expect(mobileAnimationGuard.includes('const knownProfileAnimations = new Set();') && mobileAnimationGuard.includes('function pauseKnownAnimations()'), 'route input must operate on already-known Profile animation objects');
 const routeIntentStart = mobileAnimationGuard.indexOf('function handleRouteIntent(event){');
