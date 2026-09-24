@@ -51,14 +51,15 @@ $assert($consent !== false && $cancel !== false,
     'Stale consent handling must coexist with cancellation instead of replacing it.');
 
 $profilePromise = strpos($main, 'const profilePromise = api.mgwProfile();');
+$prestigePromise = strpos($main, 'const prestigePromise = api.tournamentPrestige().catch(() => null);');
 $bootstrap = strpos($main, 'const result = await api.bootstrap();');
-$profileAwait = strpos($main, 'const mgwProfileResult = await profilePromise;');
+$profileAwait = strpos($main, 'const [mgwProfileResult, prestigeResult] = await Promise.all([profilePromise, prestigePromise]);');
 $ready = strpos($main, 'dispatchAppReady();');
-$assert($profilePromise !== false && $bootstrap !== false && $profileAwait !== false
-        && $profilePromise < $bootstrap && $bootstrap < $profileAwait,
-    'Bootstrap and canonical profile reads must overlap instead of paying two sequential round trips.');
+$assert($profilePromise !== false && $prestigePromise !== false && $bootstrap !== false && $profileAwait !== false
+        && $profilePromise < $bootstrap && $prestigePromise < $bootstrap && $bootstrap < $profileAwait,
+    'Bootstrap, canonical profile and lightweight prestige reads must overlap instead of paying sequential round trips.');
 $assert($ready !== false && $profileAwait < $ready,
-    'Canonical identity must still be ready before app-ready is published.');
+    'Canonical identity and lightweight prestige must still be ready before app-ready is published.');
 $bootStart = strpos($main, 'async function boot(){');
 $bootEnd = strpos($main, 'function shouldPrimeMobileProfile', $bootStart ?: 0);
 $bootBody = ($bootStart !== false && $bootEnd !== false)
