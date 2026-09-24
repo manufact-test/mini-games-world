@@ -11,6 +11,11 @@
   const environment = root.querySelector('[data-admin-environment]');
   const build = root.querySelector('[data-admin-build]');
   const generated = root.querySelector('[data-admin-generated]');
+  const environmentBadge = root.querySelector('[data-admin-environment-badge]');
+  const nav = root.querySelector('[data-admin-nav]');
+  const navButtons = Array.from(root.querySelectorAll('[data-admin-nav-target]'));
+  const sectionTitle = root.querySelector('[data-admin-section-title]');
+  const sectionDescription = root.querySelector('[data-admin-section-description]');
   const dashboard = root.querySelector('[data-admin-dashboard]');
   const systemCheck = root.querySelector('[data-admin-system-check]');
   const economyVersion = root.querySelector('[data-economy-version]');
@@ -39,6 +44,81 @@
   const telegram = window.Telegram?.WebApp || null;
   let requestInFlight = false;
   let currentEconomyVersion = 0;
+  let activeSection = new URLSearchParams(window.location.search).has('ticket')
+    ? 'support'
+    : (window.location.hash || '#overview').slice(1);
+
+  const sections = {
+    overview:['Обзор','Ключевое состояние продукта и быстрый контроль.'],
+    users:['Пользователи','Жалобы и действия, связанные с игроками.'],
+    support:['Поддержка','Очередь обращений и рабочее место по выбранному тикету.'],
+    tournaments:['Турниры и сезоны','Официальные турниры, рейтинг и сезонные проверки.'],
+    economy:['Экономика','Версионные настройки экономики и аудит изменений.'],
+    notifications:['Уведомления','Сообщения игрокам через единый центр уведомлений.'],
+    system:['Система','Состояние runtime и диагностическая сводка.'],
+    tests:['Тесты','Staging-инструменты и диагностические сценарии.'],
+  };
+
+  const renderDashboard = raw => {
+    dashboard.replaceChildren();
+    let group = null;
+    String(raw || '—').split(/\r?\n/).map(line => line.trim()).filter(Boolean).forEach(line => {
+      const isHeading = /^[🛠📊💰🎁📩🎮🧾]/u.test(line) && !line.includes(':');
+      if (isHeading) {
+        group = document.createElement('section');
+        group.className = 'mgw-admin__overview-group';
+        const heading = document.createElement('h3');
+        heading.textContent = line.replace(/^[^\p{L}\p{N}]+/u, '');
+        group.append(heading);
+        dashboard.append(group);
+        return;
+      }
+      if (!group) {
+        group = document.createElement('section');
+        group.className = 'mgw-admin__overview-group';
+        dashboard.append(group);
+      }
+      const separator = line.indexOf(':');
+      if (separator > 0) {
+        const row = document.createElement('div');
+        row.className = 'mgw-admin__overview-row';
+        const label = document.createElement('span');
+        const value = document.createElement('strong');
+        label.textContent = line.slice(0, separator).trim().replace('Dev-записей','Тестовых записей');
+        value.textContent = line.slice(separator + 1).trim();
+        row.append(label, value);
+        group.append(row);
+      } else {
+        const note = document.createElement('p');
+        note.textContent = line;
+        group.append(note);
+      }
+    });
+  };
+
+  const applySection = (section, updateHash = true) => {
+    if (!sections[section]) section = 'overview';
+    const testsButton = navButtons.find(button => button.dataset.adminNavTarget === 'tests');
+    if (section === 'tests' && testsButton?.hidden) section = 'overview';
+    activeSection = section;
+    root.querySelectorAll('[data-admin-section]').forEach(card => {
+      card.hidden = card.dataset.adminSection !== section;
+    });
+    navButtons.forEach(button => {
+      const selected = button.dataset.adminNavTarget === section;
+      button.classList.toggle('is-active', selected);
+      button.setAttribute('aria-current', selected ? 'page' : 'false');
+    });
+    const meta = sections[section];
+    sectionTitle.textContent = meta[0];
+    sectionDescription.textContent = meta[1];
+    if (updateHash) history.replaceState(null, '', window.location.pathname + window.location.search + '#' + section);
+    if (window.scrollY > 140) root.scrollIntoView({block:'start', behavior:'smooth'});
+  };
+
+  navButtons.forEach(button => {
+    button.addEventListener('click', () => applySection(String(button.dataset.adminNavTarget || 'overview')));
+  });
 
   const setStatus = (message, state = '') => {
     status.textContent = message;
@@ -73,15 +153,27 @@
   };
 
   const renderBase = (data) => {
-    environment.textContent = String(data.environment || '—');
+    const rawEnvironment = String(data.environment || 'production').toLowerCase();
+    const environmentLabel = rawEnvironment === 'staging'
+      ? 'STAGING'
+      : rawEnvironment === 'production' ? 'PRODUCTION' : rawEnvironment.toUpperCase();
+    environment.textContent = environmentLabel;
+    environmentBadge.textContent = environmentLabel;
+    environmentBadge.dataset.environment = rawEnvironment;
     build.textContent = String(data.build || '—');
     generated.textContent = data.generated_at
       ? new Date(data.generated_at).toLocaleString('ru-RU')
       : '—';
-    dashboard.textContent = String(data.dashboard || '—');
-    systemCheck.textContent = String(data.system_check || '—');
+    renderDashboard(String(data.dashboard || '—'));
+    systemCheck.textContent = String(data.system_check || '—')
+      .replaceAll('Dev-записей', 'Тестовых записей')
+      .replaceAll('Структура: OK', 'Структура: исправна');
+    const testsButton = navButtons.find(button => button.dataset.adminNavTarget === 'tests');
+    if (testsButton) testsButton.hidden = rawEnvironment === 'production';
+    root.classList.toggle('is-production', rawEnvironment === 'production');
     meta.hidden = false;
     content.hidden = false;
+    applySection(activeSection, false);
   };
 
   const historyLabel = (entry) => {
@@ -257,7 +349,7 @@
       ]);
       renderBase(baseData);
       renderEconomy(economyData);
-      setStatus('Данные загружены. Обновление выполняется только вручную.', 'ok');
+      setStatus('Данные актуальны.', 'ok');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Не удалось загрузить панель.', 'error');
     } finally {
