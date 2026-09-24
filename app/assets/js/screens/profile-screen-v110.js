@@ -137,6 +137,12 @@ function profileChromeSignature(){
     String(state.mgwProfile?.nickname || state.mgwProfile?.display_name || state.user?.display_name || ''),
     String(state.selectedAvatarId || state.mgwProfile?.avatar?.item_id || state.user?.avatar_item_id || ''),
     String(equipped.profile_name_color || state.mgwProfile?.name_color_item_id || state.user?.name_color_item_id || ''),
+    String(
+      (Array.isArray(state.profileTournamentRewards?.active_temporary)
+        ? state.profileTournamentRewards.active_temporary
+        : []
+      ).find(item => String(item?.reward_code || '') === 'champion_crown')?.valid_until_at_utc || ''
+    ),
     String(state.user?.registered_at || ''),
   ].join('|');
 }
@@ -201,6 +207,10 @@ function bindProfileActions(){
     }
     if (event.target.closest('[data-edit-mgw-avatar]')) {
       openAvatarEditor();
+      return;
+    }
+    if (event.target.closest('[data-open-tournament-showcase]')) {
+      openTournamentShowcase();
       return;
     }
     const avatarCard = event.target.closest('[data-profile-avatar-preview]');
@@ -386,7 +396,7 @@ function renderProfileV2(){
     <section class="profile-v2-identity${tournamentIdentityClasses}" data-tournament-temporary-style="${escapeHtml(Array.from(activeTournamentRewardCodes).join(' '))}">
       <button class="profile-v2-avatar-edit" type="button" data-edit-mgw-avatar aria-label="${escapeHtml(t('profile.avatar_edit'))}">
         <span class="profile-v2-avatar" id="profileV2Avatar" data-avatar-item-id="${escapeHtml(activeAvatar)}" aria-hidden="true">MG</span>
-        ${activeTournamentRewardCodes.has('champion_crown') ? '<span class="profile-v2-tournament-crown" aria-label="Корона чемпиона">♛</span>' : ''}
+        ${activeTournamentRewardCodes.has('champion_crown') ? `<span class="profile-v2-tournament-crown" aria-label="Корона чемпиона">${tournamentPrestigeIconSvg('champion_crown','is-profile-crown')}</span>` : ''}
         ${activeTournamentRewardCodes.has('bronze_mark') ? '<span class="profile-v2-tournament-bronze-mark" aria-label="Бронзовая отметка">●</span>' : ''}
         <span class="profile-v2-avatar-pencil" aria-hidden="true">✎</span>
       </button>
@@ -397,6 +407,7 @@ function renderProfileV2(){
       </div>
       <div class="profile-v2-id-card"><button type="button" data-copy-mgw-id="${escapeHtml(mgwId)}" ${mgwId ? '' : 'disabled'} aria-label="${escapeHtml(t('profile.copy_id'))}"><b>${escapeHtml(mgwId || '—')}</b><small>${escapeHtml(t('profile.copy_id'))}</small></button></div>
     </section>
+    ${renderTournamentPrestigeSummary(tournamentRewards)}
     <section class="profile-v2-section profile-v2-collection-section">
       <div class="profile-v2-section-head"><div><h2>Моя коллекция</h2></div></div>
       <div class="profile-v2-collection-title">Аватарки</div>
@@ -409,7 +420,6 @@ function renderProfileV2(){
     <section class="profile-v2-balance"><div><span>${escapeHtml(t('profile.balance'))}</span><small>${escapeHtml(t('profile.balance_note'))}</small></div><strong>${escapeHtml(formatNumber(balance))}</strong></section>
     ${renderRatingProfileSection(rating, ratingArchive, stats)}
     ${renderYearlyMedalSection(yearlyMedals)}
-    ${renderTournamentHonorsSection(tournamentRewards)}
     <section class="profile-v2-section">${sectionHead('profile.stats_title','profile.stats_note')}<div class="profile-v2-summary-grid">${summaryStat(stats?.games_played,'profile.games_played')}${summaryStat(stats?.wins,'profile.wins')}${summaryStat(stats?.losses,'profile.losses')}${summaryStat(stats?.draws,'profile.draws')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.by_game_title','profile.by_game_note')}<div class="profile-v2-games-grid">${GAME_TYPES.map(gameType => gameStatCard(gameType, stats?.by_game?.[gameType])).join('')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.history_title')}<div class="profile-v2-history">${matches.length ? matches.map(historyRow).join('') : emptyState('profile.history_empty')}</div></section>
@@ -853,93 +863,220 @@ const TOURNAMENT_REWARD_LABELS = Object.freeze({
   third_place_result:'3-е место',
   cup_bronze:'Бронзовый кубок',
 });
-const TOURNAMENT_REWARD_ICONS = Object.freeze({
-  golden_ticket:'🎫',
-  champion_crown:'♛',
-  winner_badge:'◆',
-  champion_cosmetics:'✦',
-  hall_of_fame:'★',
-  cup_gold:'🏆',
-  silver_frame:'◇',
-  finalist_result:'Ⅱ',
-  cup_silver:'🥈',
-  bronze_mark:'●',
-  third_place_result:'Ⅲ',
-  cup_bronze:'🥉',
-});
+const TOURNAMENT_HIDDEN_REWARD_CODES = new Set(['champion_cosmetics']);
 
-function renderTournamentHonorsSection(snapshot){
-  const source = snapshot && typeof snapshot === 'object' ? snapshot : {};
-  if (source.available !== true) return '';
+function tournamentPrestigeIconSvg(code, extraClass = ''){
+  const cls = `mgw-tournament-icon ${extraClass}`.trim();
+  const common = `class="${cls}" viewBox="0 0 48 48" aria-hidden="true" focusable="false"`;
+  switch(String(code || '')){
+    case 'champion_crown':
+      return `<svg ${common}><path d="M7 34 10 15l10 8 4-13 4 13 10-8 3 19H7Z" fill="currentColor" opacity=".96"/><path d="M9 36h30v5H9z" rx="2" fill="currentColor"/><path d="M15 30h18" stroke="rgba(55,35,4,.55)" stroke-width="2.4" stroke-linecap="round"/></svg>`;
+    case 'golden_ticket':
+      return `<svg ${common}><path d="M7 11h34v8c-3 0-5 2-5 5s2 5 5 5v8H7v-8c3 0 5-2 5-5s-2-5-5-5v-8Z" fill="currentColor"/><path d="M24 15.5 27 21l6 .8-4.4 4.2 1 6-5.6-2.8-5.6 2.8 1-6-4.4-4.2 6-.8 3-5.5Z" fill="rgba(79,52,6,.74)"/></svg>`;
+    case 'winner_badge':
+      return `<svg ${common}><circle cx="24" cy="20" r="13" fill="currentColor"/><path d="m16 31-2 12 10-6 10 6-2-12" fill="currentColor" opacity=".82"/><path d="m24 12 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9L24 12Z" fill="rgba(72,47,4,.68)"/></svg>`;
+    case 'hall_of_fame':
+      return `<svg ${common}><path d="M12 39h24v4H12zM15 35h18v4H15zM18 17h12v18H18zM14 13h20l-10-8-10 8Z" fill="currentColor"/><path d="M22 20h4v12h-4z" fill="rgba(70,47,7,.55)"/></svg>`;
+    case 'cup_gold':
+    case 'cup_silver':
+    case 'cup_bronze':
+      return `<svg ${common}><path d="M15 7h18v8c0 9-4 15-9 15s-9-6-9-15V7Z" fill="currentColor"/><path d="M13 11H7c0 8 3 12 9 12M35 11h6c0 8-3 12-9 12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M22 29h4v7h-4zM15 37h18v5H15z" fill="currentColor"/></svg>`;
+    case 'silver_frame':
+      return `<svg ${common}><rect x="8" y="8" width="32" height="32" rx="8" fill="none" stroke="currentColor" stroke-width="5"/><path d="m24 14 3 6 7 .9-5 4.8 1.2 7-6.2-3.2-6.2 3.2 1.2-7-5-4.8 7-.9 3-6Z" fill="currentColor" opacity=".72"/></svg>`;
+    case 'bronze_mark':
+      return `<svg ${common}><circle cx="24" cy="24" r="17" fill="currentColor"/><circle cx="24" cy="24" r="10" fill="none" stroke="rgba(83,48,23,.55)" stroke-width="3"/><path d="m24 16 2.4 4.8 5.3.8-3.8 3.7.9 5.2-4.8-2.5-4.8 2.5.9-5.2-3.8-3.7 5.3-.8L24 16Z" fill="rgba(83,48,23,.6)"/></svg>`;
+    case 'finalist_result':
+      return `<svg ${common}><circle cx="24" cy="24" r="18" fill="none" stroke="currentColor" stroke-width="4"/><path d="M18 15h7c5 0 8 2.5 8 6 0 6-9 7-14 13h15" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    case 'third_place_result':
+      return `<svg ${common}><circle cx="24" cy="24" r="18" fill="none" stroke="currentColor" stroke-width="4"/><path d="M17 15h9c4 0 7 2 7 5.5S30 26 25 26h-4 4c5 0 8 2 8 6s-3 6-8 6h-9" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    default:
+      return `<svg ${common}><path d="m24 6 5 10 11 1.6-8 7.8 1.9 11L24 31.2l-9.9 5.2 1.9-11-8-7.8L19 16 24 6Z" fill="currentColor"/></svg>`;
+  }
+}
 
-  const ticket = source.golden_ticket && typeof source.golden_ticket === 'object'
-    ? source.golden_ticket
-    : null;
-  const summary = source.summary && typeof source.summary === 'object' ? source.summary : {};
-  const temporary = Array.isArray(source.active_temporary) ? source.active_temporary : [];
-  const permanentRaw = Array.isArray(source.permanent_achievements) ? source.permanent_achievements : [];
-  const history = Array.isArray(source.history) ? source.history : [];
+function tournamentVisiblePermanentRewards(source){
+  const permanentRaw = Array.isArray(source?.permanent_achievements) ? source.permanent_achievements : [];
   const permanent = [];
-  const seenPermanent = new Set();
+  const seen = new Set();
   permanentRaw.forEach(item => {
     const code = String(item?.reward_code || '');
-    if (!code || seenPermanent.has(code)) return;
-    seenPermanent.add(code);
+    if (!code || seen.has(code) || TOURNAMENT_HIDDEN_REWARD_CODES.has(code)) return;
+    seen.add(code);
     permanent.push(item);
   });
+  return permanent;
+}
 
-  const ticketMarkup = ticket?.valid === true
-    ? `<article class="profile-v2-tournament-ticket">
-        <div class="profile-v2-tournament-ticket-mark" aria-hidden="true">GT</div>
-        <div><span>Golden Ticket</span><strong>Действителен до Большого турнира</strong><small>Чемпионств: ${escapeHtml(formatNumber(Math.max(1, Number(ticket.championship_count || 1))))} · не продаётся и не передаётся</small></div>
-      </article>`
-    : '';
+function tournamentCrownReward(source){
+  return (Array.isArray(source?.active_temporary) ? source.active_temporary : [])
+    .find(item => String(item?.reward_code || '') === 'champion_crown') || null;
+}
+
+function tournamentPrestigeStatusCopy(source){
+  const summary = source?.summary && typeof source.summary === 'object' ? source.summary : {};
+  const championships = Math.max(0, Number(summary.championships || 0));
+  const podiums = Math.max(0, Number(summary.podiums || 0));
+  const crown = tournamentCrownReward(source);
+  if (crown) {
+    const until = crown?.valid_until_at_utc ? formatDateTime(crown.valid_until_at_utc) : '';
+    return {
+      kicker:'Действующий чемпион',
+      title:until ? `Корона активна до ${until}` : 'Корона чемпиона активна',
+      tone:'is-champion',
+    };
+  }
+  if (championships > 0) return {
+    kicker:'Чемпион официального турнира',
+    title:`${formatNumber(championships)} побед · ${formatNumber(podiums)} подиумов`,
+    tone:'is-champion',
+  };
+  if (podiums > 0) return {
+    kicker:'Призёр официального турнира',
+    title:`${formatNumber(podiums)} подиумов`,
+    tone:'is-podium',
+  };
+  return {
+    kicker:'Турнирный участник',
+    title:`${formatNumber(Math.max(0, Number(summary.tournaments || 0)))} турниров`,
+    tone:'',
+  };
+}
+
+function renderTournamentPrestigeSummary(snapshot){
+  const source = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  if (source.available !== true) return '';
+  const summary = source.summary && typeof source.summary === 'object' ? source.summary : {};
+  const ticket = source.golden_ticket && typeof source.golden_ticket === 'object' && source.golden_ticket.valid === true
+    ? source.golden_ticket
+    : null;
+  const status = tournamentPrestigeStatusCopy(source);
+  const leadIcon = tournamentCrownReward(source)
+    ? tournamentPrestigeIconSvg('champion_crown','is-crown')
+    : tournamentPrestigeIconSvg('cup_gold','is-cup');
+
+  return `<section class="profile-v2-section profile-v2-tournament-status ${escapeHtml(status.tone)}">
+    <button type="button" class="profile-v2-tournament-status-button" data-open-tournament-showcase aria-label="Открыть турнирную витрину">
+      <span class="profile-v2-tournament-status-emblem" aria-hidden="true">${leadIcon}</span>
+      <span class="profile-v2-tournament-status-copy">
+        <small>Турнирный статус</small>
+        <strong>${escapeHtml(status.kicker)}</strong>
+        <span>${escapeHtml(status.title)}</span>
+      </span>
+      <span class="profile-v2-tournament-status-metrics" aria-hidden="true">
+        <b><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.championships || 0))))}</strong><small>побед</small></b>
+        <b><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.podiums || 0))))}</strong><small>подиумов</small></b>
+        ${ticket ? `<b class="has-ticket">${tournamentPrestigeIconSvg('golden_ticket','is-mini')}<small>ticket</small></b>` : ''}
+      </span>
+      <span class="profile-v2-tournament-status-arrow" aria-hidden="true">›</span>
+    </button>
+  </section>`;
+}
+
+function tournamentTicketMarkup(ticket){
+  if (!(ticket && typeof ticket === 'object' && ticket.valid === true)) return '';
+  const count = Math.max(1, Number(ticket.championship_count || 1));
+  return `<article class="profile-v2-tournament-ticket">
+    <div class="profile-v2-tournament-ticket-mark" aria-hidden="true">
+      ${tournamentPrestigeIconSvg('golden_ticket','is-ticket')}
+      ${count > 1 ? `<b>×${escapeHtml(formatNumber(count))}</b>` : ''}
+    </div>
+    <div>
+      <span>Golden Ticket</span>
+      <strong>Допуск к Большому турниру</strong>
+      <small>Действителен до проведения Большого турнира · не продаётся и не передаётся</small>
+    </div>
+  </article>`;
+}
+
+function tournamentShowcaseMarkup(snapshot){
+  const source = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  const summary = source.summary && typeof source.summary === 'object' ? source.summary : {};
+  const temporary = Array.isArray(source.active_temporary) ? source.active_temporary : [];
+  const permanent = tournamentVisiblePermanentRewards(source);
+  const history = Array.isArray(source.history) ? source.history : [];
 
   const temporaryMarkup = temporary.length
-    ? `<div class="profile-v2-tournament-subtitle">Активные награды</div>
+    ? `<div class="profile-v2-tournament-subtitle">Активно сейчас</div>
       <div class="profile-v2-tournament-reward-grid">
         ${temporary.map(item => tournamentRewardCard(item, true)).join('')}
       </div>`
     : '';
 
-  const permanentMarkup = permanent.length
-    ? `<div class="profile-v2-tournament-subtitle">Постоянные достижения</div>
+  const trophies = permanent.filter(item => String(item?.reward_code || '').startsWith('cup_'));
+  const achievements = permanent.filter(item => !String(item?.reward_code || '').startsWith('cup_'));
+
+  const trophyMarkup = trophies.length
+    ? `<div class="profile-v2-tournament-subtitle">Трофейный шкаф</div>
+      <div class="profile-v2-tournament-trophy-shelf">
+        ${trophies.map(item => tournamentRewardCard(item, false, true)).join('')}
+      </div>`
+    : '';
+
+  const achievementMarkup = achievements.length
+    ? `<div class="profile-v2-tournament-subtitle">Достижения</div>
       <div class="profile-v2-tournament-reward-grid">
-        ${permanent.map(item => tournamentRewardCard(item, false)).join('')}
+        ${achievements.map(item => tournamentRewardCard(item, false)).join('')}
       </div>`
     : '';
 
   const historyMarkup = history.length
-    ? `<div class="profile-v2-tournament-subtitle">История турниров</div>
-      <div class="profile-v2-tournament-history">
-        ${history.slice(0,8).map(tournamentHistoryCard).join('')}
-      </div>`
+    ? `<details class="profile-v2-tournament-history-disclosure">
+        <summary><span>История турниров</span><b>${escapeHtml(formatNumber(history.length))}</b></summary>
+        <div class="profile-v2-tournament-history">
+          ${history.slice(0,12).map(tournamentHistoryCard).join('')}
+        </div>
+      </details>`
     : '';
 
-  return `<section class="profile-v2-section profile-v2-tournament-honors">
-    <div class="profile-v2-section-head"><div><h2>Турнирные награды</h2><p>Кубки, постоянные результаты и временные награды официальных турниров.</p></div></div>
-    <div class="profile-v2-tournament-summary">
+  return `<div class="profile-v2-tournament-showcase">
+    <div class="profile-v2-tournament-showcase-summary">
       <div><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.tournaments || 0))))}</strong><span>турниров</span></div>
       <div><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.podiums || 0))))}</strong><span>подиумов</span></div>
       <div><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.championships || 0))))}</strong><span>побед</span></div>
     </div>
-    ${ticketMarkup}
+    ${tournamentTicketMarkup(source.golden_ticket)}
     ${temporaryMarkup}
-    ${permanentMarkup}
+    ${trophyMarkup}
+    ${achievementMarkup}
+    <button class="profile-v2-tournament-hof-link" type="button" data-open-tournament-hall-of-fame>
+      ${tournamentPrestigeIconSvg('hall_of_fame','is-hof')}
+      <span><strong>Зал славы турниров</strong><small>Чемпионы официальных турниров и история побед</small></span>
+      <b aria-hidden="true">›</b>
+    </button>
     ${historyMarkup}
-  </section>`;
+  </div>`;
 }
 
-function tournamentRewardCard(item, temporary){
+function openTournamentShowcase(){
+  const snapshot = state.profileTournamentRewards && typeof state.profileTournamentRewards === 'object'
+    ? state.profileTournamentRewards
+    : {};
+  if (snapshot.available !== true) return;
+  openSheet(`
+    <div class="sheet-head profile-v2-tournament-showcase-head">
+      <div><h2>Турнирная витрина</h2><p>Статус, трофеи и награды официальных турниров.</p></div>
+      <button class="close" data-close-sheet type="button">×</button>
+    </div>
+    ${tournamentShowcaseMarkup(snapshot)}
+  `);
+  document.querySelector('#sheet [data-open-tournament-hall-of-fame]')?.addEventListener('click', () => {
+    closeSheet();
+    showScreen('tournaments');
+    window.requestAnimationFrame(() => {
+      document.dispatchEvent(new CustomEvent('mgw:tournament-hall-of-fame-open'));
+    });
+  }, { once:true });
+}
+
+function tournamentRewardCard(item, temporary, trophy = false){
   const code = String(item?.reward_code || '');
   const label = TOURNAMENT_REWARD_LABELS[code] || code || 'Награда';
-  const icon = TOURNAMENT_REWARD_ICONS[code] || '◆';
   const until = item?.valid_until_at_utc ? formatDateTime(item.valid_until_at_utc) : '';
   const note = temporary
     ? (until ? `Активна до ${until}` : 'Активна')
     : 'Навсегда';
-  return `<article class="profile-v2-tournament-reward" data-tournament-reward-code="${escapeHtml(code)}">
-    <b aria-hidden="true">${escapeHtml(icon)}</b>
+  return `<article class="profile-v2-tournament-reward${trophy ? ' is-trophy' : ''}" data-tournament-reward-code="${escapeHtml(code)}">
+    <b aria-hidden="true">${tournamentPrestigeIconSvg(code, trophy ? 'is-trophy' : '')}</b>
     <div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(note)}</span></div>
   </article>`;
 }
@@ -949,19 +1086,18 @@ function tournamentHistoryCard(item){
   const result = placement > 0 ? `${placement} место` : 'Участник';
   const date = item?.scheduled_start_at_utc || item?.settled_at_utc || null;
   const rewards = Array.isArray(item?.rewards) ? item.rewards : [];
-  const cups = rewards
-    .filter(reward => String(reward?.reward_code || '').startsWith('cup_'))
-    .map(reward => TOURNAMENT_REWARD_LABELS[String(reward.reward_code)] || String(reward.reward_code));
+  const cup = rewards.find(reward => String(reward?.reward_code || '').startsWith('cup_'));
   const meta = [
     gameName(String(item?.game_type || 'tictactoe')),
     date ? formatDate(date) : '',
-    cups.join(', '),
   ].filter(Boolean).join(' · ');
   return `<article class="profile-v2-tournament-history-card place-${placement > 0 ? placement : 'other'}">
-    <div><span>${escapeHtml(String(item?.title || 'Официальный турнир'))}</span><strong>${escapeHtml(result)}</strong></div>
-    <small>${escapeHtml(meta)}</small>
+    <span class="profile-v2-tournament-history-medal" aria-hidden="true">${cup ? tournamentPrestigeIconSvg(String(cup.reward_code),'is-history') : tournamentPrestigeIconSvg('winner_badge','is-history')}</span>
+    <div><span>${escapeHtml(String(item?.title || 'Официальный турнир'))}</span><small>${escapeHtml(meta)}</small></div>
+    <strong>${escapeHtml(result)}</strong>
   </article>`;
 }
+
 
 function renderYearlyMedalSection(snapshot){
   const source = snapshot && typeof snapshot === 'object' ? snapshot : null;
