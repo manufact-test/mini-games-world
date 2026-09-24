@@ -86,6 +86,7 @@ async function boot(){
     // network round-trip before the preloader could disappear. Both reads are
     // independent and read-only, so start them together.
     const profilePromise = api.mgwProfile();
+    const prestigePromise = api.tournamentPrestige().catch(() => null);
     const result = await api.bootstrap();
     const matchEntryCost = Number(result.match_economy?.entry_cost);
     if (!Number.isFinite(matchEntryCost) || matchEntryCost <= 0) {
@@ -94,8 +95,11 @@ async function boot(){
     APP_CONFIG.matchBet = matchEntryCost;
     state.selectedBet = matchEntryCost;
     setRoom(APP_CONFIG.defaultRoom);
-    const mgwProfileResult = await profilePromise;
+    const [mgwProfileResult, prestigeResult] = await Promise.all([profilePromise, prestigePromise]);
     state.mgwProfile = mgwProfileResult.profile || null;
+    if (prestigeResult?.tournament_rewards && typeof prestigeResult.tournament_rewards === 'object') {
+      state.profileTournamentRewards = prestigeResult.tournament_rewards;
+    }
     state.user = applyCanonicalMgwProfile(result.user || {}, state.mgwProfile);
     state.session = result.session || state.session;
     renderUser(state.user);
