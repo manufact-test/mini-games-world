@@ -127,7 +127,7 @@ $assertSame(4, PdoConnectionFactory::$database->queryCount, 'Each public game pa
 
 $assertContains('mgw_project_canonical_game_identity($data)', $responseSource, 'API normalization must project canonical game identity at the final response boundary');
 $assertContains('mgw_tournament_reward_entitlements', $responseSource, 'Public game identity projection must read durable active tournament prestige without changing game mechanics.');
-$assertContains("$player['tournament_prestige'] = $tournamentPrestige", $responseSource, 'Projected player identity must expose tournament prestige to the presentation layer.');
+$assertContains("\$player['tournament_prestige'] = \$tournamentPrestige", $responseSource, 'Projected player identity must expose tournament prestige to the presentation layer.');
 $assertContains("foreach (['game', 'active_game'] as \$gameKey)", $responseSource, 'Projection must be limited to public game payloads');
 $assertNotContains("\$user['mgw_nickname']", $resolverSource, 'Runtime account resolver must not inject visible game identity globally');
 
