@@ -18,6 +18,7 @@ const PROFILE_ROUTE_SETTLING_CLASS = 'mgw-profile-route-settling';
 const PROFILE_CSS_FALLBACK_CLASS = 'mgw-profile-animation-css-fallback';
 
 const pausedByGuard = new Set();
+const knownProfileAnimations = new Set();
 let profileObserver = null;
 let routeClassObserver = null;
 let resumeFrameOne = 0;
@@ -65,6 +66,25 @@ function pauseAnimations(root = profileScreen()){
   }
 
   for (const animation of animations) {
+    knownProfileAnimations.add(animation);
+    const state = String(animation?.playState || '');
+    if (state !== 'running' && state !== 'pending') continue;
+    try {
+      animation.pause();
+      pausedByGuard.add(animation);
+    } catch (_) {}
+  }
+}
+
+function pauseKnownAnimations(){
+  const screen = profileScreen();
+  if (!screen) return;
+  for (const animation of [...knownProfileAnimations]) {
+    if (!animationStillBelongsToProfile(animation, screen)) {
+      knownProfileAnimations.delete(animation);
+      pausedByGuard.delete(animation);
+      continue;
+    }
     const state = String(animation?.playState || '');
     if (state !== 'running' && state !== 'pending') continue;
     try {
@@ -88,7 +108,10 @@ function resumePausedAnimations(){
 
   for (const animation of [...pausedByGuard]) {
     pausedByGuard.delete(animation);
-    if (!animationStillBelongsToProfile(animation, screen)) continue;
+    if (!animationStillBelongsToProfile(animation, screen)) {
+      knownProfileAnimations.delete(animation);
+      continue;
+    }
     if (String(animation?.playState || '') !== 'paused') continue;
     try { animation.play(); } catch (_) {}
   }
@@ -120,10 +143,12 @@ function handleRouteIntent(event){
   const currentRoute = currentShellRoute();
   if (targetRoute !== 'profile' && currentRoute !== 'profile') return;
 
-  // pointerdown happens before the canonical click owner changes .active. Do the
-  // bounded Animation-object pause here so the click task itself only flips route.
+  // Never traverse the full Profile subtree on pointerdown. The hidden observer
+  // already discovers/pauses new animations off the input path. Leaving Profile
+  // only touches the already-known animation objects, which is O(active effects)
+  // instead of forcing a first-use style walk across the long collection.
   cancelResumeFrames();
-  pauseAnimations();
+  if (currentRoute === 'profile' && targetRoute !== 'profile') pauseKnownAnimations();
 }
 
 function handleScreenChanged(event){
@@ -134,9 +159,7 @@ function handleScreenChanged(event){
 
   if (to !== 'profile') {
     cancelResumeFrames();
-    // Programmatic navigation may not have a pointerdown/click intent. In normal
-    // bottom-nav flow this is effectively a no-op because animations are paused.
-    pauseAnimations();
+    pauseKnownAnimations();
     return;
   }
 
@@ -152,7 +175,7 @@ function handleRouteClassMutation(){
   if (!isMobileProfilePresentation()) return;
   if (document.documentElement.classList.contains(PROFILE_ROUTE_SETTLING_CLASS)) {
     cancelResumeFrames();
-    pauseAnimations();
+    if (currentShellRoute() === 'profile') pauseKnownAnimations();
     return;
   }
   if (currentShellRoute() === 'profile') resumeAfterTwoPaints();
@@ -195,6 +218,20 @@ function initMobileProfileAnimationGuard(){
   document.addEventListener('pointerdown', handleRouteIntent, true);
   document.addEventListener('click', handleRouteIntent, true);
   document.addEventListener('mgw:screen-changed', handleScreenChanged);
+
+  // One full scan after app-ready is allowed off the user's first tap. It catches
+  // pseudo-element/CSS animations introduced by late Profile decorators without
+  // turning pointerdown into a forced subtree style/animation enumeration.
+  document.addEventListener('mgw:app-ready', () => {
+    const prime = () => {
+      if (currentShellRoute() !== 'profile') pauseAnimations(screen);
+    };
+    if (typeof globalThis.requestIdleCallback === 'function') {
+      globalThis.requestIdleCallback(prime, { timeout:700 });
+    } else {
+      globalThis.setTimeout(prime, 120);
+    }
+  }, { once:true });
 }
 
 if (document.readyState === 'loading') {
