@@ -34,7 +34,7 @@
       body:JSON.stringify({...payload, initData:telegram?.initData || ''}),
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok || data.ok !== true) throw new Error(String(data.error || 'Не удалось обработать bell event.'));
+    if (!response.ok || data.ok !== true) throw new Error(String(data.error || 'Не удалось обработать уведомление.'));
     return data;
   };
 
@@ -50,6 +50,12 @@
     return Number.isNaN(date.getTime()) ? raw : date.toISOString();
   };
 
+  const sourceLabel = value => ({admin:'Администратор',system:'Система',support:'Поддержка'})[String(value || '')] || String(value || '—');
+  const audienceLabel = value => ({
+    all:'Все игроки', one:'Один игрок', segment:'Сегмент', platform:'Платформа',
+    tournament:'Участники турнира', support:'Участник обращения'
+  })[String(value || '')] || String(value || '—');
+
   const recipientIds = () => String(recipients.value || '')
     .split(/[\s,;]+/)
     .map(value => value.trim())
@@ -64,10 +70,10 @@
     audienceHint.textContent = ({
       all:'Все текущие MGW-аккаунты.',
       one:'Один точный MGW-ID.',
-      platform:'Все аккаунты текущей identity-платформы.',
+      platform:'Все аккаунты выбранной платформы.',
       segment:'Явный снимок MGW-ID + идентификатор сегмента.',
-      tournament:'Явный снимок участников + tournament ID. Tournament lifecycle здесь не создаётся.',
-      support:'Явный снимок получателей + case/ticket ID. Support lifecycle здесь не создаётся.',
+      tournament:'Зафиксированный список участников выбранного турнира.',
+      support:'Получатель, связанный с выбранным обращением.',
     })[type] || '';
   };
 
@@ -76,7 +82,7 @@
     if (!Array.isArray(events) || events.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'mgw-admin__history-empty';
-      empty.textContent = 'Admin/system/support bell events пока нет.';
+      empty.textContent = 'Уведомлений пока нет.';
       list.append(empty);
       return;
     }
@@ -87,13 +93,13 @@
       const copy = document.createElement('div');
       copy.className = 'mgw-admin__history-copy';
       const head = document.createElement('strong');
-      head.textContent = `${event.title || 'Уведомление'} · ${event.source_type || 'admin'} / ${event.audience_type || '—'}`;
+      head.textContent = `${event.title || 'Уведомление'} · ${sourceLabel(event.source_type)} / ${audienceLabel(event.audience_type)}`;
       const body = document.createElement('span');
       body.textContent = String(event.text || '');
       const lifecycle = document.createElement('span');
-      lifecycle.textContent = `Получатели ${event.recipient_count || 0} · delivered ${event.delivered_count || 0} · read ${event.read_count || 0}`;
+      lifecycle.textContent = `Получателей: ${event.recipient_count || 0} · доставлено: ${event.delivered_count || 0} · прочитано: ${event.read_count || 0}`;
       const timing = document.createElement('span');
-      timing.textContent = `Schedule: ${event.scheduled_at || 'сразу'} · Expiry: ${event.expires_at || 'нет'}${event.expired ? ' · expired' : ''}`;
+      timing.textContent = `Отправка: ${event.scheduled_at || 'сразу'} · срок действия: ${event.expires_at || 'не ограничен'}${event.expired ? ' · истёк' : ''}`;
       const meta = document.createElement('span');
       meta.textContent = `${event.event_id || '—'} · ${event.audience_ref || '—'}${event.deep_link ? ` · → ${event.deep_link}` : ''}`;
       copy.append(head, body, lifecycle, timing, meta);
@@ -112,15 +118,15 @@
     busy = true;
     refresh.disabled = true;
     send.disabled = true;
-    status.textContent = 'Загружаю bell events…';
+    status.textContent = 'Загружаю уведомления…';
     delete status.dataset.state;
     try {
       const data = await post({action:'snapshot'});
       render(data.events || []);
-      status.textContent = 'Notification pipeline готов. Android push здесь не используется.';
+      status.textContent = 'Центр уведомлений готов.';
       status.dataset.state = 'ok';
     } catch (error) {
-      status.textContent = error instanceof Error ? error.message : 'Не удалось загрузить bell events.';
+      status.textContent = error instanceof Error ? error.message : 'Не удалось загрузить уведомления.';
       status.dataset.state = 'error';
     } finally {
       busy = false;
@@ -140,7 +146,7 @@
     busy = true;
     refresh.disabled = true;
     send.disabled = true;
-    status.textContent = 'Создаю bell event…';
+    status.textContent = 'Создаю уведомление…';
     delete status.dataset.state;
     try {
       const event = {
@@ -159,10 +165,10 @@
       };
       const data = await post({action:'create', event});
       render(data.events || []);
-      status.textContent = `Bell event ${data.created?.event_id || ''}: ${data.created?.recipient_count || 0} получателей.`;
+      status.textContent = `Уведомление создано: ${data.created?.recipient_count || 0} получателей.`;
       status.dataset.state = 'ok';
     } catch (error) {
-      status.textContent = error instanceof Error ? error.message : 'Не удалось создать bell event.';
+      status.textContent = error instanceof Error ? error.message : 'Не удалось создать уведомление.';
       status.dataset.state = 'error';
     } finally {
       busy = false;

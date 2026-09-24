@@ -9,10 +9,6 @@ on:
       - 'bot/ratings/RatingAdminService.php'
       - 'bot/admin-rating.php'
       - 'bot/core/bootstrap.php'
-      - 'app/admin.php'
-      - 'app/assets/js/admin-rating.js'
-      - 'app/assets/js/admin-tournaments.js'
-      - 'app/assets/css/admin-shell.css'
       - 'bot/tests/Mvp20_8RatingAdminTest.php'
       - 'bot/tests/Mvp20_8RatingAdminIntegrationContractTest.php'
       - 'bot/tests/Mvp20_8RatingLoadTest.php'
@@ -113,6 +109,9 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           successor=0
           if git diff --name-only "$base" "$head" | grep -Fxq '.github/workflows/mvp21-6-tournament-rounds.yml'; then
+            successor=1
+          fi
+          if git diff --name-only "$base" "$head" | grep -Fxq '.github/workflows/mvp22-admin-rework.yml'; then
             successor=1
           fi
           bad=0

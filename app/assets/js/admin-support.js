@@ -10,7 +10,10 @@
   const statusBox = root.querySelector('[data-support-status]');
   const metricsBox = root.querySelector('[data-support-metrics]');
   const queue = root.querySelector('[data-support-queue]');
+  const queuePanel = root.querySelector('[data-support-queue-panel]');
   const detail = root.querySelector('[data-support-detail]');
+  const back = root.querySelector('[data-support-back]');
+  const relatedSummary = root.querySelector('[data-support-related-summary]');
   const refresh = root.querySelector('[data-support-refresh]');
   const queryInput = root.querySelector('[data-support-filter-query]');
   const statusFilter = root.querySelector('[data-support-filter-status]');
@@ -81,8 +84,28 @@
   };
 
   const priorityClass = value => ['low','normal','high','critical'].includes(value) ? `priority-${value}` : 'priority-normal';
+  const historyLabel = value => ({
+    created:'Создано обращение',
+    user_reply:'Сообщение игрока',
+    admin_reply:'Ответ администратора',
+    status_changed:'Изменён статус',
+    priority_changed:'Изменён приоритет',
+    owner_changed:'Изменён ответственный',
+    related_ids_changed:'Обновлены технические связи',
+  })[String(value || '')] || 'Изменение';
+  const humanValue = value => ({
+    open:'Открыто', in_progress:'В работе', waiting_user:'Ожидает игрока', resolved:'Решено', closed:'Закрыто',
+    low:'Низкий', normal:'Обычный', high:'Высокий', critical:'Критический',
+  })[String(value || '')] || String(value ?? '');
 
   const renderMetrics = metrics => {
+    window.dispatchEvent(new CustomEvent('mgw:admin-support-summary', {
+      detail:{
+        open:Number(metrics?.open_total || 0),
+        critical:Number(metrics?.critical_open || 0),
+        unowned:Number(metrics?.unowned_open || 0),
+      }
+    }));
     metricsBox.innerHTML = [
       ['Открытых', metrics?.open_total ?? 0],
       ['Критических', metrics?.critical_open ?? 0],
@@ -102,7 +125,7 @@
       </span>
       <span class="mgw-admin__support-ticket-subject">${escapeHtml(ticket.subject || ticket.category_label || 'Обращение')}</span>
       <span class="mgw-admin__support-ticket-meta">${escapeHtml(ticket.category_label || '—')} · ${escapeHtml(ticket.platform_label || '—')}</span>
-      <span class="mgw-admin__support-ticket-meta">${escapeHtml(ticket.status_label || ticket.status || '—')} · ${escapeHtml(ticket.owner_ref || 'Без владельца')}</span>
+      <span class="mgw-admin__support-ticket-meta">${escapeHtml(ticket.status_label || ticket.status || '—')} · Ответственный: ${escapeHtml(ticket.owner_ref || 'не назначен')}</span>
       <span class="mgw-admin__support-ticket-time">${escapeHtml(ticket.updated_at || '')} UTC</span>
     `;
     button.addEventListener('click', () => void openTicket(ticket.ticket_number));
@@ -118,7 +141,11 @@
       queue.append(empty);
       return;
     }
-    tickets.forEach(ticket => queue.append(queueItem(ticket)));
+    tickets.forEach(ticket => {
+      const item = queueItem(ticket);
+      if (currentTicket && String(ticket.ticket_number || '') === String(currentTicket.ticket_number || '')) item.setAttribute('aria-current','true');
+      queue.append(item);
+    });
   };
 
   const attachmentButton = attachment => {
@@ -163,8 +190,11 @@
     (ticket.history || []).forEach(event => {
       const row = document.createElement('div');
       row.className = 'mgw-admin__support-history-row';
-      const value = [event.previous_value, event.next_value].filter(value => value !== null && value !== '').join(' → ');
-      row.innerHTML = `<strong>${escapeHtml(event.event_type || 'event')}</strong><span>${escapeHtml(value)}</span><em>${escapeHtml(event.actor_ref || '—')} · ${escapeHtml(event.created_at_utc || '—')} UTC</em>`;
+      const value = [event.previous_value, event.next_value]
+        .filter(value => value !== null && value !== '')
+        .map(humanValue)
+        .join(' → ');
+      row.innerHTML = `<strong>${escapeHtml(historyLabel(event.event_type))}</strong><span>${escapeHtml(value)}</span><em>${escapeHtml(event.actor_ref || '—')} · ${escapeHtml(event.created_at_utc || '—')} UTC</em>`;
       history.append(row);
     });
   };
@@ -177,7 +207,9 @@
     detail.querySelector('[data-support-detail-player]').textContent = String(ticket.requester_mgw_id || '—');
     detail.querySelector('[data-support-detail-platform]').textContent = String(ticket.platform_label || '—');
     detail.querySelector('[data-support-detail-category]').textContent = String(ticket.category_label || '—');
-    detail.querySelector('[data-support-detail-owner]').textContent = String(ticket.owner_ref || 'Без владельца');
+    detail.querySelector('[data-support-detail-owner]').textContent = ticket.owner_ref
+      ? `Ответственный: ${String(ticket.owner_ref)}`
+      : 'Ответственный не назначен';
 
     const statusSelect = detail.querySelector('[data-support-detail-status]');
     const prioritySelect = detail.querySelector('[data-support-detail-priority]');
@@ -190,10 +222,23 @@
     detail.querySelector('[data-support-related-payment]').value = related.payment_id || '';
     detail.querySelector('[data-support-related-tournament]').value = related.tournament_id || '';
     detail.querySelector('[data-support-related-operation]').value = related.operation_id || '';
+    const linked = [
+      related.game_id ? 'матч' : '',
+      related.payment_id ? 'пополнение' : '',
+      related.tournament_id ? 'турнир' : '',
+      related.operation_id ? 'операция' : '',
+    ].filter(Boolean);
+    relatedSummary.textContent = linked.length
+      ? `Связанные данные: ${linked.join(', ')}`
+      : 'Связанные данные: нет';
 
     renderThread(ticket);
     renderHistory(ticket);
-    detail.scrollIntoView({block:'start', behavior:'smooth'});
+    root.classList.add('is-ticket-open');
+    queue.querySelectorAll('[data-ticket-number]').forEach(button => {
+      button.setAttribute('aria-current', button.dataset.ticketNumber === String(ticket.ticket_number || '') ? 'true' : 'false');
+    });
+    if (window.matchMedia('(max-width: 980px)').matches) root.scrollIntoView({block:'start', behavior:'smooth'});
   };
 
   const renderSnapshot = data => {
@@ -326,6 +371,10 @@
     }
   };
 
+  back.addEventListener('click', () => {
+    root.classList.remove('is-ticket-open');
+    if (window.matchMedia('(max-width: 980px)').matches) queuePanel.scrollIntoView({block:'start', behavior:'smooth'});
+  });
   refresh.addEventListener('click', () => void load());
   [statusFilter, priorityFilter, categoryFilter, platformFilter].forEach(select => {
     select.addEventListener('change', () => void load());

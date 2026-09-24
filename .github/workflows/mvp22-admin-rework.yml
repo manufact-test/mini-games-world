@@ -1,0 +1,111 @@
+name: MVP-22 Web Admin rework
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/admin.php'
+      - 'app/assets/css/admin-shell.css'
+      - 'app/assets/js/admin-shell.js'
+      - 'app/assets/js/admin-support.js'
+      - 'app/assets/js/admin-tournaments.js'
+      - 'app/assets/js/admin-rating.js'
+      - 'app/assets/js/admin-notifications.js'
+      - 'app/assets/js/admin-reports.js'
+      - 'bot/services/TelegramService.php'
+      - 'bot/tests/Mvp14WebAdminShellContractTest.php'
+      - 'bot/tests/Mvp22AdminShellReworkContractTest.php'
+      - '.github/workflows/mvp18-5-reports-blocked-users.yml'
+      - '.github/workflows/mvp20-8-rating-admin.yml'
+      - '.github/workflows/mvp21-5-tournament-ready.yml'
+      - '.github/workflows/mvp21-6-tournament-rounds.yml'
+      - '.github/workflows/mvp21-8-tournament-cancellation.yml'
+      - '.github/workflows/mvp21-10-tournament-prize-review.yml'
+      - '.github/workflows/mvp21-7-tournament-technical-outcomes.yml'
+      - '.github/workflows/mvp22-admin-rework.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp22-admin-rework-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  admin-rework:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l app/admin.php
+          php -l bot/services/TelegramService.php
+          php -l bot/tests/Mvp22AdminShellReworkContractTest.php
+          files=(
+            app/assets/js/admin-shell.js
+            app/assets/js/admin-support.js
+            app/assets/js/admin-tournaments.js
+            app/assets/js/admin-rating.js
+            app/assets/js/admin-notifications.js
+            app/assets/js/admin-reports.js
+          )
+          for file in "${files[@]}"; do
+            node --check "$file"
+          done
+
+      - name: Admin shell contract
+        run: php bot/tests/Mvp22AdminShellReworkContractTest.php
+
+      - name: Preserve Support backend contract
+        run: php bot/tests/SupportTicketServiceTest.php
+
+      - name: Preserve Admin-backed product owners
+        shell: bash
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
+          php bot/tests/Mvp20_8RatingAdminTest.php
+          php bot/tests/Mvp20_8RatingAdminIntegrationContractTest.php
+          php bot/tests/Mvp21_5TournamentMatchReadinessTest.php
+          php bot/tests/Mvp21_6TournamentRoundProgressionTest.php
+          php bot/tests/Mvp21_6TournamentRuntimeContractTest.php
+          php bot/tests/Mvp21_6TournamentProgressionUxContractTest.php
+          php bot/tests/Mvp21_8TournamentCancellationTest.php
+          php bot/tests/Mvp21_10TournamentPrizeReviewTest.php
+          php bot/tests/Mvp21_10TournamentPrizeReviewContractTest.php
+
+      - name: Scope guard
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          allowed='^(\.github/workflows/(mvp18-5-reports-blocked-users|mvp20-8-rating-admin|mvp21-5-tournament-ready|mvp21-6-tournament-rounds|mvp21-7-tournament-technical-outcomes|mvp21-8-tournament-cancellation|mvp21-10-tournament-prize-review)\.yml|app/admin\.php|app/assets/css/admin-shell\.css|app/assets/js/admin-(shell|support|tournaments|rating|notifications|reports)\.js|bot/services/TelegramService\.php|bot/tests/Mvp14WebAdminShellContractTest\.php|bot/tests/Mvp22AdminShellReworkContractTest\.php|\.github/workflows/mvp22-admin-rework\.yml)$'
+          bad=0
+          while IFS= read -r path; do
+            if ! grep -Eq "$allowed" <<<"$path"; then
+              echo "Unexpected Admin rework path: $path" >&2
+              bad=1
+            fi
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+          git diff --exit-code "$base" "$head" -- bot/games bot/support bot/ratings bot/tournaments bot/economy bot/ledger
