@@ -6,6 +6,7 @@ const mainCss = fs.readFileSync('app/assets/css/main.css', 'utf8');
 const mobileProfileCss = fs.readFileSync('app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit.css', 'utf8');
 const cleanEntryWrapper = fs.readFileSync('app/assets/js/production-clean-entry-v110-mvp19-3-final-polish-mobile-nav-v2.js', 'utf8');
 const mobileAnimationGuard = fs.readFileSync('app/assets/js/profile/mgw-mobile-profile-animation-guard-v2.js', 'utf8');
+const shellMain = fs.readFileSync('app/assets/js/main-v110-handoff-shell.js', 'utf8');
 const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 const inventory = fs.readFileSync('bot/catalog/ProductInventoryService.php', 'utf8');
 const storeService = fs.readFileSync('bot/catalog/CosmeticStoreService.php', 'utf8');
@@ -68,7 +69,6 @@ const scheduledRefresh = profile.indexOf('scheduleProfileRefreshAfterEntry();', 
 const refreshHelper = profile.indexOf('function scheduleProfileRefreshAfterEntry()');
 const backgroundHydration = profile.indexOf('api.profileV2()', refreshHelper);
 expect(openProfileStart >= 0 && visibleProfile > openProfileStart && scheduledRefresh > visibleProfile && refreshHelper >= 0 && backgroundHydration > refreshHelper, 'Profile must paint shared state immediately and schedule authoritative hydration after the route first frame');
-expect(profile.includes('const event = arguments[0] || null;') && profile.includes("if (event?.type === 'mgw:open-profile') event.stopImmediatePropagation?.();"), 'topbar Profile intent must stay single-owner until the deferred first-paint route lifecycle');
 expect(profile.includes('function warmProfileSnapshot()') && profile.includes('globalThis.setTimeout(warm, 0)'), 'Profile must start its read-only authoritative warm immediately after the boot task without blocking bootstrap');
 expect(profile.includes('lastProfileRenderSignature') && profile.includes('renderSignature === lastProfileRenderSignature'), 'Profile must skip redundant full DOM rebuilds when authoritative state is unchanged');
 expect(profile.includes('deferWhileHidden:true') && profile.includes('scheduleProfileRenderIdle()'), 'Background Profile hydration must converge through the bounded idle render owner');
@@ -95,6 +95,8 @@ expect(routeIntentBody.includes('pauseKnownAnimations()') && !routeIntentBody.in
 expect(mobileAnimationGuard.includes("document.addEventListener('mgw:app-ready'") && mobileAnimationGuard.includes("requestIdleCallback(prime, { timeout:700 })"), 'late Profile animations must be discovered off the first-tap path');
 expect(mobileAnimationGuard.includes("profileObserver.observe(screen, { childList:true, subtree:true })"), 'new hidden Profile animations must be paused without observing route class changes on the Profile subtree');
 expect(manifest.includes('profile_route_guard=animation-runtime-v2') && manifest.includes('profile_input=known-animation-set-v1'), 'active clean-entry identity must preserve the accepted guard identity while publishing the no-full-scan first-input cache key');
+expect(shellMain.includes("profileTrigger.dataset.shellNav = 'profile';"), 'top identity must use the same canonical shell Profile route owner as bottom navigation');
+expect(manifest.includes('profile_topbar=direct-shell-v2'), 'active shell mapping must cache-bust the direct topbar Profile route owner');
 expect(manifest.includes('profile_mobile=animation-runtime-guard-v2'), 'active consistency CSS identity must preserve the non-universal mobile Profile animation guard');
 
 expect(profileCss.includes('.profile-v2-game-collection'), 'Profile game collection layout must exist');
