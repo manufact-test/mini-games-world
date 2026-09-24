@@ -960,7 +960,7 @@ function renderTournamentPrestigeSummary(snapshot){
         ? tournamentPrestigeIconSvg('winner_badge','is-medal')
         : tournamentPrestigeIconSvg('participant','is-participant');
 
-  return `<section class="profile-v2-section profile-v2-tournament-status ${escapeHtml(status.tone)}">
+  return `<section class="profile-v2-section profile-v2-tournament-status ${escapeHtml(status.tone)}" data-tournament-prestige="v1">
     <button type="button" class="profile-v2-tournament-status-button" data-open-tournament-showcase aria-label="Открыть турнирную витрину">
       <span class="profile-v2-tournament-status-emblem" aria-hidden="true">${leadIcon}</span>
       <span class="profile-v2-tournament-status-copy">
