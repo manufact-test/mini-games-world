@@ -123,6 +123,69 @@ final class TournamentRewardProjectionService
         ];
     }
 
+    public function prestigeSnapshot(
+        string $mgwId,
+        ?DateTimeImmutable $now = null
+    ): array {
+        $mgwId = $this->required($mgwId, 24, 'MGW-ID');
+        $moment = ($now ?? new DateTimeImmutable('now', new DateTimeZone('UTC')))
+            ->setTimezone(new DateTimeZone('UTC'));
+        $nowUtc = $moment->format('Y-m-d H:i:s.u');
+
+        $summaryRows = $this->database->fetchAll(
+            'SELECT COUNT(*) AS tournaments,
+                    SUM(CASE WHEN placement BETWEEN 1 AND 3 THEN 1 ELSE 0 END) AS podiums,
+                    SUM(CASE WHEN placement=1 THEN 1 ELSE 0 END) AS championships
+             FROM mgw_tournament_results
+             WHERE mgw_id=:mgw_id AND reward_eligible=1',
+            ['mgw_id'=>$mgwId]
+        );
+        $summaryRow = count($summaryRows) === 1 && is_array($summaryRows[0])
+            ? $summaryRows[0]
+            : [];
+        $ticket = $this->goldenTicket($mgwId);
+
+        $crownRows = $this->database->fetchAll(
+            "SELECT e.tournament_id,e.reward_code,e.reward_kind,
+                    e.valid_from_at_utc,e.valid_until_at_utc,e.granted_at_utc,
+                    t.title,t.game_type,t.scheduled_start_at_utc
+             FROM mgw_tournament_reward_entitlements e
+             INNER JOIN mgw_tournaments t ON t.tournament_id=e.tournament_id
+             WHERE e.mgw_id=:mgw_id
+               AND e.reward_code='champion_crown'
+             ORDER BY e.granted_at_utc DESC
+             LIMIT 8",
+            ['mgw_id'=>$mgwId]
+        );
+        $activeTemporary = [];
+        foreach ($crownRows as $row) {
+            if (!is_array($row)) continue;
+            $reward = $this->publicEntitlement($row, $nowUtc);
+            if (($reward['active'] ?? false) === true) $activeTemporary[] = $reward;
+        }
+
+        $tournaments = max(0,(int)($summaryRow['tournaments'] ?? 0));
+        $podiums = max(0,(int)($summaryRow['podiums'] ?? 0));
+        $championships = $ticket !== null
+            ? max(0,(int)($ticket['championship_count'] ?? 0))
+            : max(0,(int)($summaryRow['championships'] ?? 0));
+
+        return [
+            'available'=>$tournaments > 0 || $ticket !== null || $activeTemporary !== [],
+            'golden_ticket'=>$ticket,
+            'summary'=>[
+                'tournaments'=>$tournaments,
+                'podiums'=>$podiums,
+                'championships'=>$championships,
+            ],
+            'active_temporary'=>$activeTemporary,
+            'permanent_achievements'=>[],
+            'history'=>[],
+            'partial'=>true,
+            'generated_at_utc'=>$nowUtc,
+        ];
+    }
+
     public function publicArchive(int $limit = self::MAX_PUBLIC_TOURNAMENTS): array
     {
         $limit = max(1, min(self::MAX_PUBLIC_TOURNAMENTS, $limit));
