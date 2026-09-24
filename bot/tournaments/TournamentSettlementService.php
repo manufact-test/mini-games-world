@@ -403,7 +403,8 @@ final class TournamentSettlementService
 
             if ($rewardEligible && $placement === 1 && !empty($reward['golden_ticket'])) {
                 $championshipCount = (int)$db->fetchValue(
-                    'SELECT COUNT(*) FROM mgw_tournament_results WHERE mgw_id=:mgw_id AND placement=1',
+                    'SELECT COUNT(*) FROM mgw_tournament_results
+                     WHERE mgw_id=:mgw_id AND placement=1 AND reward_eligible=1',
                     ['mgw_id'=>$mgwId]
                 );
                 $ticketRows = $db->fetchAll(
