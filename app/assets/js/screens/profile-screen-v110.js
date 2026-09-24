@@ -29,14 +29,14 @@ const GAME_COSMETIC_GROUPS = Object.freeze([
 const NICKNAME_MAX_LENGTH = 13;
 let profileLoading = false;
 let profileRefreshTask = null;
-let deferredProfileRenderTask = null;
+let profileRenderIdleHandle = null;
+let profileRenderFallbackHandle = null;
 let nicknameSaving = false;
 let avatarSaving = false;
 let nameColorSaving = false;
 let gameCosmeticSaving = false;
 let activeCollectionGame = 'tictactoe';
 let lastProfileRenderSignature = '';
-let deferredProfileRender = false;
 let hiddenProfileRenderPending = false;
 let lastFullProfileSnapshotAt = 0;
 
@@ -49,14 +49,11 @@ export function initProfileScreen(){
   bindProfileActions();
   renderProfileV2();
   document.addEventListener('mgw:open-profile', openProfile);
-  document.addEventListener('mgw:screen-changed', flushDeferredProfileRender);
-  document.addEventListener('mgw:screen-changed', flushHiddenProfileRenderOnEntry);
   const warm = () => warmProfileSnapshot();
-  if (typeof globalThis.requestIdleCallback === 'function') {
-    globalThis.requestIdleCallback(warm, { timeout:700 });
-  } else {
-    globalThis.setTimeout(warm, 180);
-  }
+  // Start the read immediately after the current boot task. It is read-only,
+  // coalesced by the API client and never awaited by bootstrap, so Home/Game
+  // remain nonblocking while Profile gets a head start before the first tap.
+  globalThis.setTimeout(warm, 0);
 }
 
 function isMobileProfilePresentation(){
@@ -127,16 +124,12 @@ function applyProfileResponse(result, options = {}){
   if (profileChromeSignature() !== previousChromeSignature) renderUser(state.user);
   if (Number(state.user?.balance || 0) !== previousBalance) renderBalances(state.user);
 
-  if (options.deferWhileHidden === true && shouldDeferHiddenProfileRender()) {
-    hiddenProfileRenderPending = true;
+  if ((options.deferWhileHidden === true && shouldDeferHiddenProfileRender())
+      || (options.deferWhileActive === true && shouldDeferActiveProfileRender())) {
+    scheduleProfileRenderIdle();
     return;
   }
-  if (options.deferWhileActive === true && shouldDeferActiveProfileRender()) {
-    deferredProfileRender = true;
-    return;
-  }
-  hiddenProfileRenderPending = false;
-  deferredProfileRender = false;
+  cancelScheduledProfileRender();
   renderProfileV2();
 }
 
@@ -172,35 +165,49 @@ function shouldDeferHiddenProfileRender(){
     && root.childElementCount > 0;
 }
 
-function flushHiddenProfileRenderOnEntry(event){
-  if (event?.detail?.to !== 'profile' || !hiddenProfileRenderPending) return;
+function cancelScheduledProfileRender(){
+  if (profileRenderIdleHandle !== null && typeof globalThis.cancelIdleCallback === 'function') {
+    globalThis.cancelIdleCallback(profileRenderIdleHandle);
+  }
+  if (profileRenderFallbackHandle !== null) window.clearTimeout(profileRenderFallbackHandle);
+  profileRenderIdleHandle = null;
+  profileRenderFallbackHandle = null;
   hiddenProfileRenderPending = false;
-  window.setTimeout(() => {
-    if (currentScreen() !== 'profile') {
-      hiddenProfileRenderPending = true;
-      return;
-    }
-    renderProfileV2();
-  }, PROFILE_ROUTE_TRANSITION_MS + 40);
 }
 
-function flushDeferredProfileRender(event){
-  if (event?.detail?.from !== 'profile' || !deferredProfileRender) return;
-  deferredProfileRender = false;
-  if (deferredProfileRenderTask !== null) window.clearTimeout(deferredProfileRenderTask);
+function scheduleProfileRenderIdle(){
+  hiddenProfileRenderPending = true;
+  if (profileRenderIdleHandle !== null || profileRenderFallbackHandle !== null) return;
 
-  // The refreshed long collection is hidden after route leave, so rebuilding it
-  // inside the synchronous screen-changed dispatch only blocks the destination
-  // button/transition. Wait until the 240 ms shell transition is over; then the
-  // hidden DOM can be refreshed without stealing the outgoing mobile frame.
-  deferredProfileRenderTask = window.setTimeout(() => {
-    deferredProfileRenderTask = null;
-    if (currentScreen() === 'profile') {
-      deferredProfileRender = true;
-      return;
-    }
-    renderProfileV2();
-  }, PROFILE_MOBILE_REFRESH_DELAY_MS);
+  if (typeof globalThis.requestIdleCallback === 'function') {
+    profileRenderIdleHandle = globalThis.requestIdleCallback(flushScheduledProfileRender, { timeout:1800 });
+    return;
+  }
+  profileRenderFallbackHandle = window.setTimeout(() => flushScheduledProfileRender(null), 180);
+}
+
+function flushScheduledProfileRender(deadline){
+  profileRenderIdleHandle = null;
+  profileRenderFallbackHandle = null;
+  if (!hiddenProfileRenderPending) return;
+
+  const inputPending = typeof navigator?.scheduling?.isInputPending === 'function'
+    && navigator.scheduling.isInputPending({ includeContinuous:true });
+  const routeSettling = currentScreen() === 'profile'
+    && document.documentElement.classList.contains('mgw-profile-route-settling');
+  const shortIdleBudget = deadline && deadline.didTimeout !== true && deadline.timeRemaining() < 12;
+
+  // Never spend the first Profile navigation frame rebuilding the long DOM.
+  // If input is pending, the route guard is settling, or this idle slice is too
+  // short, yield and try again instead of turning the user's first tap into a
+  // multi-second main-thread task.
+  if (inputPending || routeSettling || shortIdleBudget) {
+    scheduleProfileRenderIdle();
+    return;
+  }
+
+  hiddenProfileRenderPending = false;
+  renderProfileV2();
 }
 
 function showProfileImmediately(){
