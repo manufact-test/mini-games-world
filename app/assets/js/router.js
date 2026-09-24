@@ -13,7 +13,7 @@ const KNOWN_SCREENS = new Set(Object.keys(ROUTES));
 const cleanupOwners = new Map();
 let deferredProfileEntryFrameOne = 0;
 let deferredProfileEntryFrameTwo = 0;
-let firstProfileLifecycleDeferred = false;
+let firstProfileLifecyclePublished = false;
 
 export function routeRegistry(){
   return ROUTES;
@@ -98,19 +98,19 @@ export function onScreenLeave(name, listener){
 }
 
 function shouldDeferFirstProfileLifecycle(next){
-  if (firstProfileLifecycleDeferred || next !== 'profile') return false;
+  if (firstProfileLifecyclePublished || next !== 'profile') return false;
   if (typeof window.matchMedia !== 'function' || typeof window.requestAnimationFrame !== 'function') return false;
   return window.matchMedia('(max-width: 640px), (pointer: coarse)').matches;
 }
 
 function scheduleFirstProfileLifecycle(detail){
-  firstProfileLifecycleDeferred = true;
   cancelDeferredProfileLifecycle();
   deferredProfileEntryFrameOne = window.requestAnimationFrame(() => {
     deferredProfileEntryFrameOne = 0;
     deferredProfileEntryFrameTwo = window.requestAnimationFrame(() => {
       deferredProfileEntryFrameTwo = 0;
       if (currentScreen() !== 'profile') return;
+      firstProfileLifecyclePublished = true;
       dispatchScreenChanged(detail);
     });
   });
