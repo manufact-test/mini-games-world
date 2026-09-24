@@ -158,6 +158,8 @@ jobs:
               bot/tests/Mvp21_10TournamentPrizeReviewContractTest.php|\
               app/assets/css/admin-shell.css|\
               .github/workflows/mvp21-9-tournament-rewards.yml|\
+              .github/workflows/mvp19-6-checkers-boards.yml|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
               bot/database/migrations/20260922_0057_create_tournament_results_rewards.php|\
               bot/tournaments/TournamentSettlementService.php|\
               bot/tournaments/TournamentRewardProjectionService.php|\
