@@ -463,6 +463,9 @@
         reviewFlag.disabled = true;
         reviewFlag.dataset.available = '0';
       }
+      window.dispatchEvent(new CustomEvent('mgw:admin-tournament-summary', {
+        detail:{label:'Нет активного', participants:''}
+      }));
       return;
     }
 
@@ -470,6 +473,13 @@
     const count = Number(tournament.registered_count || 0);
     const cap = Number(tournament.capacity || 0);
     const fee = Number(tournament?.entry_fee?.amount || 50000);
+    window.dispatchEvent(new CustomEvent('mgw:admin-tournament-summary', {
+      detail:{
+        label:stateLabel(state),
+        participants:`${format(count)} / ${format(cap)}`,
+        title:String(tournament.title || 'Официальный турнир'),
+      }
+    }));
 
     summary.append(
       summaryCard('Статус', stateLabel(state)),
