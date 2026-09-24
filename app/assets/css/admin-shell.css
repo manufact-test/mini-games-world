@@ -4,3 +4,74 @@
 .mgw-admin__tournament-review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mgw-admin__tournament-review [data-danger="1"]{border-color:#763f3f;background:#472526;color:#ffd5d5}.mgw-admin__tournament-review [data-danger="1"]:hover{border-color:#a55454;background:#5c2b2d}.mgw-admin__tournament-review .mgw-admin__history{margin-top:4px}@media(max-width:760px){.mgw-admin__tournament-review-grid{grid-template-columns:1fr}}
 
 .mgw-admin__field-help{display:block;color:#858791;font-size:11px;line-height:1.45}.mgw-admin__tournament-reason{min-height:88px!important;padding:11px 12px!important;resize:vertical}
+
+
+/* MVP-22.1 · Support tickets */
+.mgw-admin__support{display:grid;gap:16px}
+.mgw-admin__support-status{padding:12px 14px;border:1px solid rgba(148,163,184,.22);border-radius:12px;background:rgba(15,23,42,.55);font-size:13px;color:#cbd5e1}
+.mgw-admin__support-status[data-state="ok"]{border-color:rgba(34,197,94,.35);color:#bbf7d0}
+.mgw-admin__support-status[data-state="error"]{border-color:rgba(248,113,113,.4);color:#fecaca}
+.mgw-admin__support-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.mgw-admin__support-metrics>div{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;border:1px solid rgba(148,163,184,.18);border-radius:12px;background:rgba(15,23,42,.42)}
+.mgw-admin__support-metrics span{font-size:12px;color:#94a3b8}
+.mgw-admin__support-metrics strong{font-size:18px;color:#f8fafc}
+.mgw-admin__support-filters{display:grid;grid-template-columns:minmax(180px,1.4fr) repeat(4,minmax(130px,1fr)) auto;gap:10px;align-items:end}
+.mgw-admin__support-filters>button,.mgw-admin__support-owner-actions button,.mgw-admin__support-related>button,.mgw-admin__support-reply>button{min-height:40px;border:1px solid rgba(96,165,250,.35);border-radius:10px;background:rgba(37,99,235,.18);color:#dbeafe;font-weight:700;padding:0 14px;cursor:pointer}
+.mgw-admin__support-layout{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(420px,1.2fr);gap:14px;align-items:start}
+.mgw-admin__support-panel{min-width:0;border:1px solid rgba(148,163,184,.18);border-radius:14px;background:rgba(15,23,42,.34);padding:14px}
+.mgw-admin__support-panel>h3{margin:0 0 12px}
+.mgw-admin__support-queue{display:grid;gap:8px;max-height:720px;overflow:auto;padding-right:3px}
+.mgw-admin__support-ticket{width:100%;display:grid;gap:5px;text-align:left;padding:12px;border:1px solid rgba(148,163,184,.18);border-left-width:4px;border-radius:12px;background:rgba(2,6,23,.52);color:#e2e8f0;cursor:pointer}
+.mgw-admin__support-ticket:hover{background:rgba(30,41,59,.72)}
+.mgw-admin__support-ticket.priority-low{border-left-color:#64748b}
+.mgw-admin__support-ticket.priority-normal{border-left-color:#60a5fa}
+.mgw-admin__support-ticket.priority-high{border-left-color:#f59e0b}
+.mgw-admin__support-ticket.priority-critical{border-left-color:#ef4444;background:rgba(127,29,29,.15)}
+.mgw-admin__support-ticket-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mgw-admin__support-ticket-subject{font-size:14px;font-weight:700;color:#f8fafc}
+.mgw-admin__support-ticket-meta,.mgw-admin__support-ticket-time{font-size:11px;color:#94a3b8}
+.mgw-admin__support-priority{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.mgw-admin__support-priority.priority-low{background:rgba(100,116,139,.18);color:#cbd5e1}
+.mgw-admin__support-priority.priority-normal{background:rgba(96,165,250,.16);color:#bfdbfe}
+.mgw-admin__support-priority.priority-high{background:rgba(245,158,11,.17);color:#fde68a}
+.mgw-admin__support-priority.priority-critical{background:rgba(239,68,68,.2);color:#fecaca}
+.mgw-admin__support-detail{display:grid;gap:14px}
+.mgw-admin__support-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.mgw-admin__support-detail-head h3{margin:3px 0 0;font-size:20px}
+.mgw-admin__support-detail-head>div>span:first-child{font-size:12px;color:#60a5fa;font-weight:800}
+.mgw-admin__support-detail-meta{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
+.mgw-admin__support-detail-meta span{padding:4px 7px;border-radius:999px;background:rgba(148,163,184,.1);font-size:10px;color:#cbd5e1}
+.mgw-admin__support-controls{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}
+.mgw-admin__support-owner-actions{display:flex;gap:8px;flex-wrap:wrap}
+.mgw-admin__support-select.priority-critical{border-color:rgba(239,68,68,.65)!important}
+.mgw-admin__support-select.priority-high{border-color:rgba(245,158,11,.55)!important}
+.mgw-admin__support-related,.mgw-admin__support-history{border:1px solid rgba(148,163,184,.16);border-radius:12px;padding:10px 12px;background:rgba(2,6,23,.35)}
+.mgw-admin__support-related summary,.mgw-admin__support-history summary{cursor:pointer;font-weight:700;color:#cbd5e1}
+.mgw-admin__support-related-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.mgw-admin__support-thread{display:grid;gap:10px;max-height:540px;overflow:auto;padding:4px}
+.mgw-admin__support-message{max-width:88%;display:grid;gap:7px;padding:11px 12px;border-radius:13px;border:1px solid rgba(148,163,184,.16)}
+.mgw-admin__support-message.is-user{justify-self:start;background:rgba(15,23,42,.8)}
+.mgw-admin__support-message.is-admin{justify-self:end;background:rgba(30,64,175,.18);border-color:rgba(96,165,250,.28)}
+.mgw-admin__support-message-head{display:flex;justify-content:space-between;gap:12px;font-size:10px;color:#94a3b8}
+.mgw-admin__support-message-head strong{color:#cbd5e1}
+.mgw-admin__support-message-body{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.45;color:#f1f5f9}
+.mgw-admin__support-attachments{display:flex;gap:6px;flex-wrap:wrap}
+.mgw-admin__support-attachment{border:1px solid rgba(96,165,250,.28);border-radius:8px;background:rgba(37,99,235,.12);color:#bfdbfe;padding:6px 8px;font-size:10px;cursor:pointer}
+.mgw-admin__support-reply{display:grid;gap:9px;border-top:1px solid rgba(148,163,184,.14);padding-top:12px}
+.mgw-admin__support-history-row{display:grid;grid-template-columns:minmax(100px,.65fr) minmax(100px,1fr) minmax(170px,1fr);gap:8px;padding:8px 0;border-bottom:1px solid rgba(148,163,184,.1);font-size:10px}
+.mgw-admin__support-history-row:last-child{border-bottom:0}
+.mgw-admin__support-history-row strong{color:#e2e8f0}
+.mgw-admin__support-history-row span,.mgw-admin__support-history-row em{color:#94a3b8;font-style:normal}
+@media (max-width:980px){
+  .mgw-admin__support-filters{grid-template-columns:1fr 1fr}
+  .mgw-admin__support-layout{grid-template-columns:1fr}
+  .mgw-admin__support-queue{max-height:360px}
+}
+@media (max-width:640px){
+  .mgw-admin__support-metrics{grid-template-columns:1fr}
+  .mgw-admin__support-filters,.mgw-admin__support-controls,.mgw-admin__support-related-grid{grid-template-columns:1fr}
+  .mgw-admin__support-detail-head{display:grid}
+  .mgw-admin__support-detail-meta{justify-content:flex-start}
+  .mgw-admin__support-message{max-width:96%}
+  .mgw-admin__support-history-row{grid-template-columns:1fr}
+}
