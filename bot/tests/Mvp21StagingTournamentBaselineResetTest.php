@@ -190,11 +190,11 @@ $register = static function (
         'INSERT INTO mgw_tournament_registrations (
             registration_id,tournament_id,mgw_id,account_ref,attempt_no,registration_state,
             reservation_id,registered_at_utc,withdrawn_at_utc,updated_at_utc,
-            rules_version,rules_snapshot_json,rules_snapshot_sha256,rules_accepted_at_utc
+            rules_version,rules_language,rules_sha256,rules_accepted_at_utc
          ) VALUES (
             :registration_id,:tournament_id,:mgw_id,:account_ref,1,:state,
             :reservation_id,:registered,NULL,:updated,
-            :rules_version,:rules_json,:rules_hash,:rules_accepted
+            :rules_version,:rules_language,:rules_hash,:rules_accepted
          )',
         [
             'registration_id'=>$registrationId,
@@ -206,7 +206,7 @@ $register = static function (
             'registered'=>$now,
             'updated'=>$now,
             'rules_version'=>'test-v1',
-            'rules_json'=>'{}',
+            'rules_language'=>'ru',
             'rules_hash'=>hash('sha256', '{}'),
             'rules_accepted'=>$now,
         ]
