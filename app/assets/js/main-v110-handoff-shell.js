@@ -183,6 +183,10 @@ function initAppShellChrome(){
     profileTrigger.setAttribute('aria-label', t('nav.profile'));
     profileTrigger.setAttribute('role', 'button');
     profileTrigger.setAttribute('tabindex', '0');
+    // Top identity is part of the persistent shell. Route it through the same
+    // capture-phase owner as the bottom Profile tab so the historical
+    // mgw:open-profile fan-out never sits on the first tap path.
+    profileTrigger.dataset.shellNav = 'profile';
   }
 
   const iconRow = existingTopbar.querySelector('.icon-row');
