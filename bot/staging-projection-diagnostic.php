@@ -84,6 +84,68 @@ try {
     $fixtureRuntimeParity = $fixture->repairFixtureRuntimeParity($_SERVER);
     $tournamentSnapshot = $tournaments->snapshot();
 
+    // One-time staging baseline cleanup after MVP-21 manual acceptance.
+    // Preserve the cancellation audit rows, but retire every pre-baseline
+    // cancelled/emergency test tournament so participant status reads as a
+    // truly empty "before first real tournament" state.
+    $stagingCancellationBaselineCleanup = [
+        'eligible'=>false,
+        'candidate_count'=>0,
+        'reset_count'=>0,
+    ];
+    if (!is_array($tournamentSnapshot['tournament'] ?? null)) {
+        $stagingCancellationBaselineCleanup['eligible'] = true;
+        $cutoff = '2026-09-24 19:25:00.000000';
+        $legacyCancelledRows = $db->fetchAll(
+            'SELECT DISTINCT t.tournament_id
+             FROM mgw_tournaments t
+             INNER JOIN mgw_tournament_cancellation_events e
+               ON e.tournament_id=t.tournament_id
+             WHERE t.active_slot IS NULL
+               AND t.tournament_state IN (:cancelled_state,:emergency_state)
+               AND e.created_at_utc<=:cutoff
+               AND NOT EXISTS (
+                   SELECT 1 FROM mgw_tournament_results tr
+                   WHERE tr.tournament_id=t.tournament_id
+                     AND tr.reward_eligible<>0
+               )
+             ORDER BY t.tournament_id ASC',
+            [
+                'cancelled_state'=>TournamentRegistrationService::STATE_CANCELLED,
+                'emergency_state'=>TournamentRegistrationService::STATE_EMERGENCY_STOPPED,
+                'cutoff'=>$cutoff,
+            ]
+        );
+        $stagingCancellationBaselineCleanup['candidate_count'] = count($legacyCancelledRows);
+        if ($legacyCancelledRows !== []) {
+            $resetAt = (new DateTimeImmutable('now', new DateTimeZone('UTC')))
+                ->format('Y-m-d H:i:s.u');
+            foreach ($legacyCancelledRows as $legacyCancelledRow) {
+                if (!is_array($legacyCancelledRow)) continue;
+                $legacyTournamentId = trim((string)($legacyCancelledRow['tournament_id'] ?? ''));
+                if ($legacyTournamentId === '') continue;
+                $stagingCancellationBaselineCleanup['reset_count'] += $db->execute(
+                    'UPDATE mgw_tournaments
+                     SET tournament_state=:reset_state,
+                         registration_closed_reason=:closed_reason,
+                         updated_at_utc=:updated_at
+                     WHERE tournament_id=:tournament_id
+                       AND active_slot IS NULL
+                       AND tournament_state IN (:cancelled_state,:emergency_state)',
+                    [
+                        'reset_state'=>'staging_reset',
+                        'closed_reason'=>'staging_baseline_reset',
+                        'updated_at'=>$resetAt,
+                        'tournament_id'=>$legacyTournamentId,
+                        'cancelled_state'=>TournamentRegistrationService::STATE_CANCELLED,
+                        'emergency_state'=>TournamentRegistrationService::STATE_EMERGENCY_STOPPED,
+                    ]
+                );
+            }
+        }
+        $tournamentSnapshot = $tournaments->snapshot();
+    }
+
     $tournamentRoundDiagnostic = [
         'active'=>false,
         'availability'=>null,
@@ -544,6 +606,7 @@ try {
         'failures'=>$failures,
         'tournament'=>$tournamentSnapshot['tournament'] ?? null,
         'registered_count'=>(int)($tournamentSnapshot['tournament']['registered_count'] ?? 0),
+        'staging_cancellation_baseline_cleanup'=>$stagingCancellationBaselineCleanup,
         'tournament_fixture_ownership_repair'=>$fixtureOwnershipRepair,
         'tournament_fixture_runtime_parity'=>$fixtureRuntimeParity,
         'tournament_round_diagnostic'=>$tournamentRoundDiagnostic,
