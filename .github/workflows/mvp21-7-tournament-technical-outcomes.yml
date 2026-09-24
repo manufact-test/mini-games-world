@@ -163,6 +163,8 @@ jobs:
               bot/tournaments/TournamentRoundProgressionService.php|\
               bot/tournaments/TournamentSettlementService.php|\
               app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/js/api/client.js|\
+              app/assets/js/main-v110-handoff-shell.js|\
               app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
               app/assets/css/components/mgw-tournament-honors.css|\

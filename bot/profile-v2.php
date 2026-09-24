@@ -58,6 +58,16 @@ try {
     // One DB connection, one canonical ownership/equip owner. Profile consumes
     // ProductInventoryService snapshots; it never recreates inventory state.
     $database = PdoConnectionFactory::create($databaseConfig);
+
+    if (($payload['tournament_prestige_only'] ?? false) === true) {
+        $tournamentRewards = (new TournamentRewardProjectionService($database))->prestigeSnapshot($mgwId);
+        json_response([
+            'ok'=>true,
+            'tournament_rewards'=>$tournamentRewards,
+            'lightweight'=>true,
+        ]);
+    }
+
     $profileService = new MgwProfileService($database);
     try {
         $canonicalProfile = isset($payload['profile_update']) && is_array($payload['profile_update'])

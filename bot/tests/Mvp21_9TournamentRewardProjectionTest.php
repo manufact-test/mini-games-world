@@ -219,6 +219,20 @@ $assertSame('tictactoe',$profile['history'][0]['game_type'],'Profile history mus
 $assertSame('2026-09-20 18:00:00.000000',$profile['history'][0]['scheduled_start_at_utc'],'Profile history must expose tournament date.');
 $assertTrue(count($profile['permanent_achievements'])>=7,'Permanent tournament achievements must persist across tournaments.');
 
+$prestige=$service->prestigeSnapshot(
+    $players[1]['id'],
+    new DateTimeImmutable('2026-09-22T20:00:00Z')
+);
+$assertSame(true,$prestige['available'],'Lightweight prestige snapshot must remain available for a champion.');
+$assertSame(true,$prestige['partial'],'Lightweight prestige snapshot must identify itself as partial.');
+$assertSame(2,$prestige['summary']['tournaments'],'Early prestige snapshot must preserve tournament count.');
+$assertSame(2,$prestige['summary']['podiums'],'Early prestige snapshot must preserve podium count.');
+$assertSame(2,$prestige['summary']['championships'],'Early prestige snapshot must preserve championship count.');
+$assertSame(1,count($prestige['active_temporary']),'Early prestige snapshot must include the current crown only.');
+$assertSame('champion_crown',$prestige['active_temporary'][0]['reward_code'],'Early prestige must expose the active champion crown.');
+$assertSame([], $prestige['permanent_achievements'],'Early prestige must not load the full permanent reward collection.');
+$assertSame([], $prestige['history'],'Early prestige must not load full tournament history.');
+
 $archive=$service->publicArchive();
 $assertSame(true,$archive['available'],'Settled tournaments must activate the public tournament archive.');
 $assertSame(2,count($archive['entries']),'Both settled tournaments must appear in archive.');
@@ -240,5 +254,5 @@ $assertTrue(!str_contains((string)$source,'INSERT INTO'),'Projection owner must 
 $assertTrue(!str_contains((string)$source,'UPDATE '),'Projection owner must remain read-only.');
 $assertTrue(!str_contains((string)$source,'DELETE FROM'),'Projection owner must remain read-only.');
 
-if($assertions<27) throw new RuntimeException('MVP-21.9 projection test is too shallow: '.$assertions);
+if($assertions<36) throw new RuntimeException('MVP-21.9 projection test is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_9TournamentRewardProjectionTest: {$assertions} assertions passed\n");

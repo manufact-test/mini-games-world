@@ -167,6 +167,8 @@ jobs:
               bot/profile-v2.php|\
               bot/ratings/RatingArchiveService.php|\
               app/assets/js/state.js|\
+              app/assets/js/api/client.js|\
+              app/assets/js/main-v110-handoff-shell.js|\
               app/assets/js/screens/profile-screen-v110.js|\
               app/assets/js/ui.js|\
               app/assets/js/screens/game-screen-v102.js|\

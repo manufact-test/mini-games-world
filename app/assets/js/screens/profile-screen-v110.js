@@ -1063,7 +1063,9 @@ function openTournamentShowcase(){
       <div><h2>Турнирная витрина</h2><p>Статус, трофеи и награды официальных турниров.</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
-    ${tournamentShowcaseMarkup(snapshot)}
+    <div class="profile-v2-tournament-showcase-scroll" data-tournament-showcase-scroll>
+      ${tournamentShowcaseMarkup(snapshot)}
+    </div>
   `);
   document.querySelector('#sheet [data-open-tournament-hall-of-fame]')?.addEventListener('click', () => {
     closeSheet();

@@ -135,11 +135,16 @@ jobs:
               bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php|\
               bot/tests/Mvp21_8CorrectiveContractTest.php|\
               bot/tests/Mvp21_9TerminalUxContractTest.php|\
+              .github/workflows/mvp20-7-rating-archives.yml|\
               .github/workflows/mvp21-9-tournament-rewards.yml|\
               .github/workflows/mvp19-6-checkers-boards.yml|\
               bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
               .github/workflows/mvp21-10-tournament-prize-review.yml|\
               bot/helpers/response.php|\
+              bot/profile-v2.php|\
+              bot/tournaments/TournamentRewardProjectionService.php|\
+              app/assets/js/api/client.js|\
+              app/assets/js/main-v110-handoff-shell.js|\
               app/assets/js/ui.js|\
               app/assets/js/screens/profile-screen-v110.js|\
               app/assets/js/screens/game-screen-v102.js|\
@@ -150,6 +155,7 @@ jobs:
               app/index.html|\
               bot/tests/GamePublicIdentityResponseProjectionTest.php|\
               bot/tests/Mvp21_9TournamentProductProjectionContractTest.php|\
+              bot/tests/Mvp21_9TournamentRewardProjectionTest.php|\
               bot/tests/Mvp21_11TournamentReleaseProofTest.php)
                 ;;
               *)

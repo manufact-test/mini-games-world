@@ -58,6 +58,8 @@ expect(profile.includes('function renderYearlyMedalSection('), 'MVP-20.6 yearly 
 expect(profile.includes('renderTournamentPrestigeSummary(tournamentRewards)'), 'MVP-21 prestige may compose a compact status near identity without replacing the accepted collection owner');
 expect(profile.includes('data-open-tournament-showcase'), 'Tournament prestige detail must open outside the collection instead of nesting a second inventory owner');
 expect(profile.includes("TOURNAMENT_HIDDEN_REWARD_CODES = new Set(['champion_cosmetics'])"), 'Undefined champion cosmetics must not masquerade as an owned game-cosmetic SKU');
+expect(profile.includes('data-tournament-showcase-scroll'), 'Tournament prestige corrective must keep long reward detail inside its own bounded sheet scroller');
+expect(!profile.includes('champion_cosmetics') || profile.includes("TOURNAMENT_HIDDEN_REWARD_CODES = new Set(['champion_cosmetics'])"), 'Tournament prestige corrective must not turn the deferred champion entitlement into a Profile inventory item');
 expect(!profile.includes('ProductInventoryService') && !profile.includes('CosmeticStoreService'), 'yearly medal Profile composition must not create a second cosmetics inventory/store owner');
 
 const openProfileStart = profile.indexOf('export function openProfile()');
