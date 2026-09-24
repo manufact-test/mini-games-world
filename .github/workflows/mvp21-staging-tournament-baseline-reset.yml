@@ -1,0 +1,58 @@
+name: MVP-21 Staging tournament baseline reset
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/tournaments/StagingTournamentBaselineResetService.php'
+      - 'bot/staging-tournament-baseline-reset.php'
+      - 'bot/tests/Mvp21StagingTournamentBaselineResetTest.php'
+      - '.github/workflows/mvp21-staging-tournament-baseline-reset.yml'
+      - '.github/workflows/staging-playwright-e2e.yml'
+  workflow_dispatch:
+
+jobs:
+  sqlite-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax
+        run: |
+          php -l bot/tournaments/StagingTournamentBaselineResetService.php
+          php -l bot/staging-tournament-baseline-reset.php
+          php -l bot/tests/Mvp21StagingTournamentBaselineResetTest.php
+      - name: SQLite baseline reset proof
+        run: php bot/tests/Mvp21StagingTournamentBaselineResetTest.php
+
+  mysql-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_baseline_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring
+          coverage: none
+      - name: MySQL 8.4 baseline reset proof
+        env:
+          MGW_MVP21_BASELINE_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_baseline_ci;charset=utf8mb4
+          MGW_MVP21_BASELINE_MYSQL_USER: root
+          MGW_MVP21_BASELINE_MYSQL_PASS: root
+        run: php bot/tests/Mvp21StagingTournamentBaselineResetTest.php
