@@ -227,12 +227,12 @@
       const data = await post({action:'snapshot', filters:filters()});
       renderSnapshot(data);
       setStatus('Очередь поддержки загружена.', 'ok');
-      if (requestedTicket && !currentTicket) await openTicket(requestedTicket, false);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Не удалось загрузить поддержку.', 'error');
     } finally {
       setBusy(false);
     }
+    if (requestedTicket && !currentTicket) void openTicket(requestedTicket, false);
   };
 
   const openTicket = async (ticketNumber, scroll = true) => {
@@ -273,7 +273,10 @@
       reader.onerror = () => reject(new Error(`${file.name}: не удалось прочитать файл.`));
       reader.onload = () => {
         const value = String(reader.result || '');
-        resolve({file_name:file.name, mime_type:file.type || 'application/octet-stream', content_base64:value.split(',').pop() || ''});
+        const mime = String(file.type || '').toLowerCase();
+        const allowed = ['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain'];
+        if (!allowed.includes(mime)) return reject(new Error(`${file.name}: поддерживаются изображения, PDF и TXT.`));
+        resolve({file_name:file.name, mime_type:mime, content_base64:value.split(',').pop() || ''});
       };
       reader.readAsDataURL(file);
     })));
