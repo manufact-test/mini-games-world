@@ -25,6 +25,7 @@ import { initSearchScreen } from './screens/search-screen-v102.js?v=103';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
 import { initProfileScreen } from './screens/profile-screen-v110.js?v=1108';
 import { applyCanonicalMgwProfile } from './profile/mgw-profile-model.js?v=1';
+import { initMgwProfileBackgrounds } from './profile/mgw-profile-backgrounds.js?v=2&mvp19_3=profile-backgrounds-ux-corrective';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static';
 import { initGameInvites } from './games/game-invites-v110.js?v=1137&ux=1';
@@ -112,10 +113,16 @@ async function boot(){
     showHomeActivity();
     syncWeeklyMatchButton(result.weekly_match || null);
 
-    // First usable Home/Game must not wait for hidden Profile/Tournament raster
-    // warming or a second profileV2 request. Those surfaces already own lazy/idle
-    // warm paths after app-ready, so publish readiness immediately.
+    // The accepted mobile Profile presentation owns a covered first-raster pass.
+    // Without it, Chromium/WebView keeps the hidden Profile DOM structurally ready
+    // but postpones the expensive premium/background raster until the first tap,
+    // which makes only the first Profile transition visibly slower. Do that one
+    // cold raster while the preloader still covers the app. Active-game reloads
+    // stay on the lightweight path.
+    const primeMobileProfile = shouldPrimeMobileProfile(result);
+    if (primeMobileProfile) initMgwProfileBackgrounds();
     dispatchAppReady();
+    if (primeMobileProfile) await primeMobileProfileFirstPresentation();
 
     if (result.active_game?.id && !currentV99PassiveLock()?.locked) {
       enterGame(result.active_game, result.me || null);
@@ -134,6 +141,37 @@ async function boot(){
   } finally {
     hidePreloader();
   }
+}
+
+function shouldPrimeMobileProfile(result){
+  if (String(result?.active_game?.id || '').trim()) return false;
+  return typeof window.matchMedia === 'function'
+    && window.matchMedia('(max-width: 640px), (pointer: coarse)').matches;
+}
+
+async function primeMobileProfileFirstPresentation(){
+  // profileV2 is read-only/coalesced. Awaiting it under the preloader lets the
+  // existing Profile/background owners finish their cold state work before the
+  // first user gesture instead of racing that gesture.
+  try { await api.profileV2(); } catch (_) {}
+  await Promise.resolve();
+
+  const screen = document.getElementById('screen-profile');
+  const preloader = document.getElementById('preloader');
+  if (!(screen instanceof HTMLElement)
+      || !(preloader instanceof HTMLElement)
+      || preloader.classList.contains('hidden')) return;
+
+  // The mobile Profile CSS already keeps a non-zero hidden layer warm, but a
+  // fully occluded subtree is still allowed to skip its first raster. Promote the
+  // final decorated Profile for two real frames underneath the z=100 preloader,
+  // then return it to the invisible prepared state before interaction is exposed.
+  screen.classList.add('mgw-profile-prewarm-pass');
+  void screen.offsetHeight;
+  await new Promise(resolve => window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(resolve);
+  }));
+  screen.classList.remove('mgw-profile-prewarm-pass');
 }
 
 function loadStoreScreenModule(){
