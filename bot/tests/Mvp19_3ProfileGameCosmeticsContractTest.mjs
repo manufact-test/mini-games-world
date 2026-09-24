@@ -6,6 +6,7 @@ const mainCss = fs.readFileSync('app/assets/css/main.css', 'utf8');
 const mobileProfileCss = fs.readFileSync('app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit.css', 'utf8');
 const cleanEntryWrapper = fs.readFileSync('app/assets/js/production-clean-entry-v110-mvp19-3-final-polish-mobile-nav-v2.js', 'utf8');
 const mobileAnimationGuard = fs.readFileSync('app/assets/js/profile/mgw-mobile-profile-animation-guard-v2.js', 'utf8');
+const router = fs.readFileSync('app/assets/js/router.js', 'utf8');
 const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 const inventory = fs.readFileSync('bot/catalog/ProductInventoryService.php', 'utf8');
 const storeService = fs.readFileSync('bot/catalog/CosmeticStoreService.php', 'utf8');
@@ -83,12 +84,20 @@ expect(profile.includes('Date.now() - lastFullProfileSnapshotAt < 5000'), 'Fresh
 // bounded Web Animations lifecycle guard; only unsupported WebViews get CSS fallback.
 expect(!mobileProfileCss.includes('\n  #screen-profile.screen:not(.active) *,'), 'mobile Profile route CSS must not invalidate the whole descendant tree on normal active flips');
 expect(mobileProfileCss.includes('html.mgw-profile-animation-css-fallback #screen-profile.screen:not(.active) *'), 'legacy WebViews must retain a CSS-only hidden-animation fallback');
-expect(cleanEntryWrapper.includes("import './profile/mgw-mobile-profile-animation-guard-v2.js?v=1';"), 'active clean-entry wrapper must load the bounded mobile Profile animation guard');
-expect(mobileAnimationGuard.includes("root.getAnimations({ subtree:true })"), 'mobile Profile animation guard must pause actual descendant Animation objects instead of rematching all descendants in CSS');
-expect(mobileAnimationGuard.includes("document.addEventListener('pointerdown', handleRouteIntent, true)"), 'mobile Profile animation guard must pause before the canonical click route task');
+expect(cleanEntryWrapper.includes("import './profile/mgw-mobile-profile-animation-guard-v2.js?v=2&profile_input=known-animation-set-v1';"), 'active clean-entry wrapper must load the cache-busted first-input Profile animation guard');
+expect(mobileAnimationGuard.includes("root.getAnimations({ subtree:true })"), 'mobile Profile animation guard may enumerate animations only during off-input discovery');
+expect(mobileAnimationGuard.includes('const knownProfileAnimations = new Set();') && mobileAnimationGuard.includes('function pauseKnownAnimations()'), 'route input must operate on already-known Profile animation objects');
+const routeIntentStart = mobileAnimationGuard.indexOf('function handleRouteIntent(event){');
+const routeIntentEnd = mobileAnimationGuard.indexOf('function handleScreenChanged(event){', routeIntentStart);
+const routeIntentBody = routeIntentStart >= 0 && routeIntentEnd > routeIntentStart ? mobileAnimationGuard.slice(routeIntentStart, routeIntentEnd) : '';
+expect(routeIntentBody.includes('pauseKnownAnimations()') && !routeIntentBody.includes('pauseAnimations();'), 'pointer input must never force a full Profile subtree animation scan');
+expect(mobileAnimationGuard.includes("document.addEventListener('mgw:app-ready'") && mobileAnimationGuard.includes("requestIdleCallback(prime, { timeout:700 })"), 'late Profile animations must be discovered off the first-tap path');
 expect(mobileAnimationGuard.includes("profileObserver.observe(screen, { childList:true, subtree:true })"), 'new hidden Profile animations must be paused without observing route class changes on the Profile subtree');
-expect(manifest.includes('profile_route_guard=animation-runtime-v2'), 'active clean-entry identity must publish the bounded mobile Profile route guard');
-expect(manifest.includes('profile_mobile=animation-runtime-guard-v2'), 'active consistency CSS identity must publish the non-universal mobile Profile animation guard');
+expect(router.includes('function scheduleFirstProfileLifecycle(detail)') && (router.match(/requestAnimationFrame/g) || []).length >= 2, 'first mobile Profile lifecycle listeners must be deferred until after an initial paint opportunity');
+expect(!router.includes('setTimeout'), 'Profile first-paint routing must not introduce timer ownership into the router');
+expect(manifest.includes('profile_route_guard=animation-runtime-v3') && manifest.includes('profile_input=known-animation-set-v1'), 'active clean-entry identity must publish the no-full-scan first-input guard');
+expect(manifest.includes('profile_first_paint=deferred-lifecycle-v1'), 'active router identity must publish first Profile paint before legacy route listeners');
+expect(manifest.includes('profile_mobile=animation-runtime-guard-v2'), 'active consistency CSS identity must preserve the non-universal mobile Profile animation guard');
 
 expect(profileCss.includes('.profile-v2-game-collection'), 'Profile game collection layout must exist');
 expect(profileCss.includes('.profile-v2-game-tabs{display:flex'), 'Profile must keep games in one horizontal selector row');
