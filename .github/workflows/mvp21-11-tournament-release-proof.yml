@@ -136,6 +136,8 @@ jobs:
               bot/tests/Mvp21_8CorrectiveContractTest.php|\
               bot/tests/Mvp21_9TerminalUxContractTest.php|\
               .github/workflows/mvp21-9-tournament-rewards.yml|\
+              .github/workflows/mvp19-6-checkers-boards.yml|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
               .github/workflows/mvp21-10-tournament-prize-review.yml|\
               bot/helpers/response.php|\
               app/assets/js/ui.js|\
