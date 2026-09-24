@@ -236,6 +236,21 @@ $service->settleIfComplete('tour-settle-2');
 $ticket=$db->fetchAll('SELECT * FROM mgw_tournament_golden_tickets WHERE mgw_id=:m',['m'=>$players[1]['mgw']])[0];
 $assertSame(2,(int)$ticket['championship_count'],'Repeated second settlement must not double-increment championship_count.');
 
+$db->execute(
+ 'UPDATE mgw_tournament_results
+  SET reward_eligible=0
+  WHERE tournament_id=:t AND mgw_id=:m',
+ ['t'=>'tour-settle-1','m'=>$players[1]['mgw']]
+);
+$seedTournament('tour-settle-3','', '2026-09-24 20:00:00.000000',$players,$ledger,$db);
+$service->settleIfComplete('tour-settle-3');
+$ticket=$db->fetchAll('SELECT * FROM mgw_tournament_golden_tickets WHERE mgw_id=:m',['m'=>$players[1]['mgw']])[0];
+$assertSame(
+ 2,
+ (int)$ticket['championship_count'],
+ 'Reward-ineligible historical test win must not inflate the next real championship count.'
+);
+
 $fixtureLegacy='stg_tour_v2_abcdef123456';
 $fixture=[
  'mgw'=>'MGW-ABCDEFGHJKMNPQRS',
