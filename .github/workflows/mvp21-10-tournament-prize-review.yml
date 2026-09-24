@@ -110,6 +110,8 @@ jobs:
               .github/workflows/mvp21-7-tournament-technical-outcomes.yml|\
               .github/workflows/mvp21-8-tournament-cancellation.yml|\
               .github/workflows/mvp21-9-tournament-rewards.yml|\
+              .github/workflows/mvp19-6-checkers-boards.yml|\
+              bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs|\
               .github/workflows/mvp21-10-tournament-prize-review.yml|\
               .github/workflows/mvp21-11-tournament-release-proof.yml|\
               bot/database/migrations/20260922_0060_create_tournament_prize_review.php|\
