@@ -70,6 +70,9 @@ const backgroundHydration = profile.indexOf('api.profileV2()', refreshHelper);
 expect(openProfileStart >= 0 && visibleProfile > openProfileStart && scheduledRefresh > visibleProfile && refreshHelper >= 0 && backgroundHydration > refreshHelper, 'Profile must paint shared state immediately and schedule authoritative hydration after the route first frame');
 expect(profile.includes('function warmProfileSnapshot()') && profile.includes('requestIdleCallback(warm, { timeout:700 })'), 'Profile must warm its authoritative snapshot before likely navigation');
 expect(profile.includes('lastProfileRenderSignature') && profile.includes('renderSignature === lastProfileRenderSignature'), 'Profile must skip redundant full DOM rebuilds when authoritative state is unchanged');
+expect(profile.includes('deferWhileHidden:true') && profile.includes('hiddenProfileRenderPending'), 'MVP-21 prestige final polish may defer hidden Profile remounts without replacing the collection owner');
+expect(profile.includes('flushHiddenProfileRenderOnEntry') && profile.includes('PROFILE_ROUTE_TRANSITION_MS + 40'), 'Deferred hidden Profile state must remount only after the accepted route transition frame');
+expect(profile.includes('Date.now() - lastFullProfileSnapshotAt < 5000'), 'Fresh background Profile state must suppress an immediate duplicate hydration request');
 
 // Mobile route performance: never key a universal descendant selector directly
 // off #screen-profile.active/not(.active). That makes every Profile route flip
