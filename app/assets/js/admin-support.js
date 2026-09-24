@@ -99,6 +99,13 @@
   })[String(value || '')] || String(value ?? '');
 
   const renderMetrics = metrics => {
+    window.dispatchEvent(new CustomEvent('mgw:admin-support-summary', {
+      detail:{
+        open:Number(metrics?.open_total || 0),
+        critical:Number(metrics?.critical_open || 0),
+        unowned:Number(metrics?.unowned_open || 0),
+      }
+    }));
     metricsBox.innerHTML = [
       ['Открытых', metrics?.open_total ?? 0],
       ['Критических', metrics?.critical_open ?? 0],
