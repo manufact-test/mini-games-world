@@ -19,9 +19,25 @@ function baseline_assert(bool $condition, string $message): void
     }
 }
 
-$pdo = new PDO('sqlite::memory:');
+$mysqlDsn = trim((string)getenv('MGW_MVP21_BASELINE_MYSQL_DSN'));
+if ($mysqlDsn !== '') {
+    $pdo = new PDO(
+        $mysqlDsn,
+        (string)getenv('MGW_MVP21_BASELINE_MYSQL_USER'),
+        (string)getenv('MGW_MVP21_BASELINE_MYSQL_PASS'),
+        [
+            PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES=>false,
+        ]
+    );
+} else {
+    $pdo = new PDO('sqlite::memory:');
+}
 $database = new PdoDatabaseConnection($pdo);
-$database->execute('PRAGMA foreign_keys = ON');
+if ($database->driver() === 'sqlite') {
+    $database->execute('PRAGMA foreign_keys = ON');
+}
 
 foreach ([
     '20260716_0002_create_accounts_identities_sessions.php',
@@ -350,4 +366,4 @@ $repeat = $service->apply(
 );
 baseline_assert($repeat['status'] === 'already_clean', 'cleanup must be idempotent');
 
-fwrite(STDOUT, "MVP-21 staging baseline reset OK: feature code preserved, visible tournaments/rewards zeroed, ledger audit retained.\n");
+fwrite(STDOUT, "MVP-21 staging baseline reset OK (" . $database->driver() . "): feature code preserved, visible tournaments/rewards zeroed, ledger audit retained.\n");
