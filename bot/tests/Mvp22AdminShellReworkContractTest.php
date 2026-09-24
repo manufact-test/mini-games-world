@@ -121,10 +121,10 @@ foreach ([
 $assert(
     str_contains($telegram, "'text' => '🌐 Открыть Web Admin'")
         && preg_match("/return \[\s*'inline_keyboard' => \[\[/", $telegram) === 1
-        && str_contains($telegram, "$mainAdminCallbacks['admin:dashboard']")
-        && str_contains($telegram, "$mainAdminCallbacks['admin:orders']")
-        && str_contains($telegram, "$mainAdminCallbacks['admin:support']")
-        && str_contains($telegram, "$mainAdminCallbacks['admin:users']"),
+        && str_contains($telegram, '$mainAdminCallbacks[\'admin:dashboard\']')
+        && str_contains($telegram, '$mainAdminCallbacks[\'admin:orders\']')
+        && str_contains($telegram, '$mainAdminCallbacks[\'admin:support\']')
+        && str_contains($telegram, '$mainAdminCallbacks[\'admin:users\']'),
     'Visible legacy Telegram admin menu must collapse to one Web Admin button.'
 );
 
