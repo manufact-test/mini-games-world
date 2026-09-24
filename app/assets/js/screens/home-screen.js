@@ -56,6 +56,7 @@ function openMoreMenuSheet(){
     ${menuItemMarkup('feedbackBtn', '💬', 'Обратная связь')}
     ${menuItemMarkup('ideaBtn', '💡', 'Предложить идею')}
     ${menuItemMarkup('supportBtn', '⚠️', 'Пожаловаться', 'danger')}
+    ${menuItemMarkup('supportTicketsBtn', '🎫', 'Мои обращения')}
     ${menuItemMarkup('balanceHistoryBtn', '🧾', 'История баланса')}
     ${menuItemMarkup('matchHistoryBtn', '🎮', 'История матчей')}
   </div>`);
@@ -64,6 +65,7 @@ function openMoreMenuSheet(){
   document.getElementById('feedbackBtn')?.addEventListener('click',()=>openSupportForm('feedback'));
   document.getElementById('ideaBtn')?.addEventListener('click',()=>openSupportForm('idea'));
   document.getElementById('supportBtn')?.addEventListener('click',()=>openSupportForm('complaint'));
+  document.getElementById('supportTicketsBtn')?.addEventListener('click',()=>void openSupportTicketsSheet());
   document.getElementById('balanceHistoryBtn')?.addEventListener('click',openBalanceHistorySheet);
   document.getElementById('matchHistoryBtn')?.addEventListener('click',openMatchHistorySheet);
 }
