@@ -1,0 +1,44 @@
+name: MVP-22.1 Support tickets
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/support.php'
+      - 'bot/admin-support.php'
+      - 'bot/support/**'
+      - 'bot/database/migrations/20260924_0061_create_support_tickets.php'
+      - 'bot/tests/SupportTicketServiceTest.php'
+      - 'app/admin.php'
+      - 'app/assets/js/admin-support.js'
+      - 'app/assets/css/admin-shell.css'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/screens/home-screen.js'
+      - 'app/runtime/client/version-manifest.php'
+      - '.github/workflows/mvp22-1-support-tickets.yml'
+  workflow_dispatch:
+
+jobs:
+  support-tickets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax
+        run: |
+          php -l bot/support.php
+          php -l bot/admin-support.php
+          php -l bot/support/SupportTicketService.php
+          php -l bot/support/SupportTelegramNotifier.php
+          php -l bot/database/migrations/20260924_0061_create_support_tickets.php
+          php -l bot/tests/SupportTicketServiceTest.php
+          php -l app/admin.php
+          php -l app/runtime/client/version-manifest.php
+      - name: JavaScript syntax
+        run: |
+          node --check app/assets/js/admin-support.js
+          node --check app/assets/js/api/client.js
+          node --check app/assets/js/screens/home-screen.js
+      - name: 100-ticket isolation regression
+        run: php bot/tests/SupportTicketServiceTest.php
