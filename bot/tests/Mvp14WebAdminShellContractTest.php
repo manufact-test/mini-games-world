@@ -74,19 +74,19 @@ $assert(
 );
 
 $assert(
-    str_contains($launchUrl, "private const ADMIN_PATH = '/app/admin.php?v=1'")
+    str_contains($launchUrl, "private const ADMIN_PATH = '/app/admin.php?v=2'")
         && str_contains($launchUrl, 'public static function admin(array $config): string'),
     'The existing WebApp launch URL owner must publish the admin shell URL.'
 );
 
 $assert(
-    str_contains($telegram, "'text' => '🌐 Web Admin'")
+    str_contains($telegram, "'text' => '🌐 Открыть Web Admin'")
         && str_contains($telegram, 'WebAppLaunchUrl::admin($this->config)')
         && str_contains($telegram, '$mainAdminCallbacks[\'admin:dashboard\']')
         && str_contains($telegram, '$mainAdminCallbacks[\'admin:orders\']')
         && str_contains($telegram, '$mainAdminCallbacks[\'admin:support\']')
         && str_contains($telegram, '$mainAdminCallbacks[\'admin:users\']'),
-    'Only the existing full Telegram admin keyboard should gain the Web Admin launch button.'
+    'The legacy Telegram admin keyboard must now collapse to the single Web Admin launch button while backend callbacks remain available.'
 );
 
 $assert(
