@@ -149,6 +149,112 @@ function topupAmountLabel(item){if(item.status==='paid')return'+'+Number(item.co
 function formatDate(value){if(!value)return'';const date=new Date(value);if(Number.isNaN(date.getTime()))return String(value);return date.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}
 function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[char]));}
 function openSupportForm(type){
-  openSheet(`<div class="sheet-head"><div><h2>${type==='idea'?'Предложить идею':(type==='feedback'?'Обратная связь':'Обращение в поддержку')}</h2><p>Опишите ситуацию, мы сохраним обращение.</p></div><button class="close" data-close-sheet type="button">×</button></div><textarea id="supportText" class="form-textarea" placeholder="Напишите сообщение"></textarea><button class="btn primary full" id="sendSupport" type="button">Отправить</button>`);
-  document.getElementById('sendSupport')?.addEventListener('click',async()=>{const message=document.getElementById('supportText').value.trim();if(!message)return toast('Напишите сообщение.');try{await api.support(type,message);closeSheet();toast('Сообщение сохранено.');}catch(error){toast(error.message);}});
+  const defaults={feedback:'feedback',idea:'idea',complaint:'complaint'};
+  const category=defaults[type]||'other';
+  const title=type==='idea'?'Предложить идею':(type==='feedback'?'Обратная связь':'Обращение в поддержку');
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(title)}</h2><p>Создадим отдельный тикет — ответы и история не смешиваются с другими обращениями.</p></div><button class="close" data-close-sheet type="button">×</button></div>
+    <label class="form-label">Категория<select id="supportCategory" class="form-textarea"><option value="feedback">Обратная связь</option><option value="idea">Предложение</option><option value="complaint">Жалоба</option><option value="technical">Техническая проблема</option><option value="payment">Платёж / коины</option><option value="game">Игра / матч</option><option value="tournament">Турнир</option><option value="account">Аккаунт</option><option value="other">Другое</option></select></label>
+    <label class="form-label">Тема<input id="supportSubject" class="form-textarea" maxlength="160" placeholder="Коротко о проблеме"></label>
+    <label class="form-label">Приоритет<select id="supportPriority" class="form-textarea"><option value="normal">Обычный</option><option value="high">Высокий</option><option value="critical">Критический</option><option value="low">Низкий</option></select></label>
+    <textarea id="supportText" class="form-textarea" maxlength="4000" placeholder="Опишите ситуацию"></textarea>
+    <label class="small-note">Вложения: до 3 файлов, 2 МБ каждый<input id="supportFiles" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain"></label>
+    <button class="btn primary full" id="sendSupport" type="button">Создать обращение</button>`);
+  const categoryNode=document.getElementById('supportCategory'); if(categoryNode)categoryNode.value=category;
+  document.getElementById('sendSupport')?.addEventListener('click',async()=>{
+    const message=document.getElementById('supportText')?.value.trim()||'';
+    if(!message)return toast('Напишите сообщение.');
+    const button=document.getElementById('sendSupport'); if(button)button.disabled=true;
+    try{
+      const attachments=await supportFilesPayload(document.getElementById('supportFiles'));
+      const result=await api.supportCreate({
+        category:document.getElementById('supportCategory')?.value||category,
+        priority:document.getElementById('supportPriority')?.value||'normal',
+        subject:document.getElementById('supportSubject')?.value.trim()||'',
+        message,
+        attachments,
+      });
+      const number=result?.ticket?.ticket_number||'';
+      closeSheet();
+      toast(number?(`Обращение ${number} создано.`):'Обращение создано.');
+    }catch(error){toast(error.message||'Не удалось создать обращение.');}
+    finally{if(button)button.disabled=false;}
+  });
+}
+
+async function openSupportTicketsSheet(){
+  openSheet(`<div class="sheet-head"><div><h2>Мои обращения</h2><p>Здесь сохраняются статус и переписка по каждому тикету.</p></div><button class="close" data-close-sheet type="button">×</button></div><div class="small-note" id="supportTicketsState">Загружаю…</div><div class="history-list" id="supportTicketsList"></div>`);
+  try{
+    const result=await api.supportSnapshot();
+    const list=document.getElementById('supportTicketsList');
+    const stateNode=document.getElementById('supportTicketsState');
+    if(!list||!stateNode)return;
+    const tickets=Array.isArray(result?.tickets)?result.tickets:[];
+    stateNode.textContent=tickets.length?`Обращений: ${tickets.length}`:'Обращений пока нет.';
+    list.innerHTML=tickets.map(ticket=>`<button class="history-item" type="button" data-support-ticket="${escapeHtml(ticket.ticket_number||'')}"><div><strong>${escapeHtml(ticket.ticket_number||'Обращение')}</strong><span>${escapeHtml(ticket.subject||ticket.category_label||'')}</span><em>${escapeHtml(ticket.status_label||ticket.status||'')} · ${escapeHtml(ticket.priority_label||ticket.priority||'')} · ${escapeHtml(formatDate(ticket.updated_at||''))}</em></div></button>`).join('');
+    list.querySelectorAll('[data-support-ticket]').forEach(button=>button.addEventListener('click',()=>void openSupportTicketDetail(button.dataset.supportTicket||'')));
+  }catch(error){
+    const stateNode=document.getElementById('supportTicketsState'); if(stateNode)stateNode.textContent=error.message||'Не удалось загрузить обращения.';
+  }
+}
+
+async function openSupportTicketDetail(ticketNumber){
+  if(!ticketNumber)return;
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(ticketNumber)}</h2><p id="supportTicketMeta">Загружаю переписку…</p></div><button class="close" data-close-sheet type="button">×</button></div><div class="history-list" id="supportTicketThread"></div><textarea id="supportReplyText" class="form-textarea" maxlength="4000" placeholder="Добавить сообщение"></textarea><label class="small-note">Вложения<input id="supportReplyFiles" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain"></label><button class="btn primary full" id="supportReplySend" type="button">Отправить</button>`);
+  try{
+    const result=await api.supportTicket(ticketNumber);
+    renderSupportTicketThread(result?.ticket);
+    document.getElementById('supportReplySend')?.addEventListener('click',async()=>{
+      const message=document.getElementById('supportReplyText')?.value.trim()||'';
+      if(!message)return toast('Напишите сообщение.');
+      const send=document.getElementById('supportReplySend'); if(send)send.disabled=true;
+      try{
+        const attachments=await supportFilesPayload(document.getElementById('supportReplyFiles'));
+        const updated=await api.supportReply(ticketNumber,message,attachments);
+        renderSupportTicketThread(updated?.ticket);
+        const input=document.getElementById('supportReplyText'); if(input)input.value='';
+        const files=document.getElementById('supportReplyFiles'); if(files)files.value='';
+      }catch(error){toast(error.message||'Не удалось отправить сообщение.');}
+      finally{if(send)send.disabled=false;}
+    });
+  }catch(error){
+    const meta=document.getElementById('supportTicketMeta'); if(meta)meta.textContent=error.message||'Не удалось открыть обращение.';
+  }
+}
+
+function renderSupportTicketThread(ticket){
+  if(!ticket)return;
+  const meta=document.getElementById('supportTicketMeta');
+  if(meta)meta.textContent=`${ticket.category_label||''} · ${ticket.status_label||ticket.status||''} · ${ticket.platform_label||''}`;
+  const thread=document.getElementById('supportTicketThread'); if(!thread)return;
+  thread.innerHTML=(ticket.messages||[]).map(message=>{
+    const files=(message.attachments||[]).map(file=>`<button class="btn ghost" type="button" data-support-attachment="${escapeHtml(file.attachment_id||'')}">📎 ${escapeHtml(file.file_name||'Файл')}</button>`).join('');
+    return `<div class="history-item"><div><strong>${message.actor_type==='admin'?'Поддержка':'Вы'}</strong><span>${escapeHtml(message.body||'')}</span><em>${escapeHtml(formatDate(message.created_at_utc||''))}</em>${files}</div></div>`;
+  }).join('');
+  thread.querySelectorAll('[data-support-attachment]').forEach(button=>button.addEventListener('click',()=>void openSupportAttachment(button.dataset.supportAttachment||'')));
+  const send=document.getElementById('supportReplySend');
+  if(send)send.disabled=ticket.status==='closed';
+}
+
+async function supportFilesPayload(input){
+  const files=Array.from(input?.files||[]);
+  if(files.length>3)throw new Error('Можно приложить не более 3 файлов.');
+  return Promise.all(files.map(file=>new Promise((resolve,reject)=>{
+    if(file.size>2000000)return reject(new Error(`${file.name}: файл больше 2 МБ.`));
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error(`${file.name}: не удалось прочитать файл.`));
+    reader.onload=()=>resolve({file_name:file.name,mime_type:file.type||'application/octet-stream',content_base64:String(reader.result||'').split(',').pop()||''});
+    reader.readAsDataURL(file);
+  })));
+}
+
+async function openSupportAttachment(attachmentId){
+  if(!attachmentId)return;
+  try{
+    const result=await api.supportAttachment(attachmentId);
+    const file=result?.attachment||{};
+    const binary=atob(String(file.content_base64||'')); const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+    const url=URL.createObjectURL(new Blob([bytes],{type:file.mime_type||'application/octet-stream'}));
+    window.open(url,'_blank','noopener,noreferrer'); window.setTimeout(()=>URL.revokeObjectURL(url),60000);
+  }catch(error){toast(error.message||'Не удалось открыть вложение.');}
 }
