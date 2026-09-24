@@ -80,8 +80,11 @@ $bootEnd = strpos($main, 'function shouldPrimeMobileProfile', $bootStart ?: 0);
 $bootBody = ($bootStart !== false && $bootEnd !== false)
     ? substr($main, $bootStart, $bootEnd - $bootStart)
     : '';
-$assert(!str_contains($bootBody, 'await primeMobileProfileFirstPresentation()'),
-    'Hidden Profile raster warm must not block first usable paint.');
+$assert(str_contains($bootBody, 'await primeMobileProfileFirstPresentation()')
+        && str_contains($main, "classList.add('mgw-profile-prewarm-pass')")
+        && str_contains($main, 'window.requestAnimationFrame(() => {')
+        && str_contains($main, "if (String(result?.active_game?.id || '').trim()) return false;"),
+    'Cold mobile Profile may complete one bounded covered raster pass under the preloader, but never on active-game reloads.');
 $assert(!str_contains($bootBody, 'await primeTournamentFirstPresentation()'),
     'Hidden Tournament raster warm must not block first usable paint.');
 $assert(str_contains($main, "import('./screens/store-screen.js?v=34')")
@@ -93,7 +96,8 @@ $assert(str_contains($main, "import('./screens/store-screen.js?v=34')")
 $assert(str_contains($manifest, 'main-v110-handoff-shell.js?v=1157')
         && str_contains($manifest, 'startup=parallel-bootstrap-profile-v1')
         && str_contains($manifest, 'startup=nonblocking-hidden-warm-v1')
-        && str_contains($manifest, 'store_warm=post-first-paint-v1'),
+        && str_contains($manifest, 'store_warm=post-first-paint-v1')
+        && str_contains($manifest, 'profile_first=covered-raster-prewarm-v2'),
     'Startup corrective must publish a fresh main client identity.');
 $assert(str_contains($manifest, 'tournaments-screen-v1.js?v=31')
         && str_contains($manifest, 'mvp21_8=corrective-v8')
