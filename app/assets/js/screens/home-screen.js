@@ -287,8 +287,8 @@ async function openSupportTicketDetail(ticketNumber){
       <textarea id="supportReplyText" class="support-ticket-control support-ticket-message support-reply-text" maxlength="4000" placeholder="Напишите сообщение"></textarea>
       <div class="support-file-picker support-file-picker--reply">
         <div class="support-file-picker-head">
-          <div><strong>Вложения</strong><small>Необязательно · до 3 файлов, до 2 МБ каждый</small></div>
-          <button class="support-file-add" id="supportReplyFilesTrigger" type="button">＋ Добавить</button>
+          <div><strong>Добавить к ответу</strong><small>Необязательно · до 3 файлов, до 2 МБ каждый</small></div>
+          <button class="support-file-add" id="supportReplyFilesTrigger" type="button">＋ Файл</button>
         </div>
         <input id="supportReplyFiles" class="support-file-native" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain">
         <div class="support-file-list" id="supportReplyFilesList"></div>
@@ -385,7 +385,7 @@ function mountSupportFilePicker(inputId,triggerId,listId){
     }));
     if(trigger){
       trigger.disabled=files.length>=3;
-      trigger.textContent=files.length>=3?'Лимит 3 файла':'＋ Добавить';
+      trigger.textContent=files.length>=3?'Лимит 3 файла':(triggerId==='supportReplyFilesTrigger'?'＋ Файл':'＋ Добавить');
     }
   };
 
