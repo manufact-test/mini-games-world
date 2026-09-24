@@ -950,9 +950,15 @@ function renderTournamentPrestigeSummary(snapshot){
     ? source.golden_ticket
     : null;
   const status = tournamentPrestigeStatusCopy(source);
+  const championships = Math.max(0, Number(summary.championships || 0));
+  const podiums = Math.max(0, Number(summary.podiums || 0));
   const leadIcon = tournamentCrownReward(source)
     ? tournamentPrestigeIconSvg('champion_crown','is-crown')
-    : tournamentPrestigeIconSvg('cup_gold','is-cup');
+    : championships > 0
+      ? tournamentPrestigeIconSvg('cup_gold','is-cup')
+      : podiums > 0
+        ? tournamentPrestigeIconSvg('winner_badge','is-medal')
+        : tournamentPrestigeIconSvg('participant','is-participant');
 
   return `<section class="profile-v2-section profile-v2-tournament-status ${escapeHtml(status.tone)}">
     <button type="button" class="profile-v2-tournament-status-button" data-open-tournament-showcase aria-label="Открыть турнирную витрину">
