@@ -109,8 +109,9 @@ $assert(str_contains($files['manifest'],'mvp21_prestige=early-read-v2'),'Version
 $assert(str_contains($files['manifest'],'mvp21_prestige=early-hydration-v2'),'Version manifest must publish the early boot hydration identity.');
 $assert(str_contains($files['manifest'],'mvp21_prestige_corrective=visual-v2'),'Version manifest must publish the visual corrective identity.');
 $assert(str_contains($files['manifest'],'mvp21_prestige_corrective=crown-size-v2'),'Version manifest must publish the compact live crown identity.');
-$assert(str_contains($files['manifest'],'mvp21_prestige_final=profile-nav-v3'),'Version manifest must publish the final Profile navigation polish.');
+$assert(str_contains($files['manifest'],'mvp21_prestige_final=profile-nav-v3'),'Version manifest must preserve the accepted final Profile navigation polish.');
+$assert(str_contains($files['manifest'],'mvp21_profile_first_open=idle-convergence-v4'),'Version manifest must publish the first-open idle convergence corrective.');
 $assert(str_contains($files['manifest'],'mvp21_prestige_final=mark-axis-v3'),'Version manifest must publish the final crown/mark alignment.');
 
-$assert($assertions>=71,'MVP-21.9 product integration contract is too shallow: '.$assertions);
+$assert($assertions>=72,'MVP-21.9 product integration contract is too shallow: '.$assertions);
 fwrite(STDOUT,"Mvp21_9TournamentProductProjectionContractTest: {$assertions} assertions passed\n");
