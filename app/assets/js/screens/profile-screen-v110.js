@@ -70,7 +70,11 @@ function warmProfileSnapshot(){
     .finally(() => { profileLoading = false; });
 }
 
-export function openProfile(event = null){
+export function openProfile(){
+  // Keep the public no-argument signature stable for older contracts/callers,
+  // while still consuming the CustomEvent when this function is used directly
+  // as the mgw:open-profile listener.
+  const event = arguments[0] || null;
   // The canonical Profile owner is registered before the historical cosmetic
   // repair listeners. Keep the topbar intent single-owner: route immediately,
   // then let the deferred mgw:screen-changed lifecycle run repair work after
