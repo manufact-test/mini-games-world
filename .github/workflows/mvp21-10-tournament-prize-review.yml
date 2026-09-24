@@ -121,6 +121,15 @@ jobs:
               app/admin.php|\
               app/assets/js/admin-tournaments.js|\
               app/assets/js/screens/tournaments-screen-v1.js|\
+              app/assets/js/screens/profile-screen-v110.js|\
+              app/assets/js/ui.js|\
+              app/assets/js/screens/game-screen-v102.js|\
+              app/assets/css/components/mgw-tournament-honors.css|\
+              app/assets/css/main.css|\
+              app/index.html|\
+              bot/helpers/response.php|\
+              bot/tests/GamePublicIdentityResponseProjectionTest.php|\
+              bot/tests/Mvp21_9TournamentProductProjectionContractTest.php|\
               app/assets/css/admin-shell.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp21_10TournamentPrizeReviewTest.php|\
