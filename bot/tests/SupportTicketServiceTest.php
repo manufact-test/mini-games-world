@@ -52,8 +52,10 @@ for ($index = 0; $index < 100; $index++) {
 $queue = $service->adminQueue([], 100);
 support_assert(count($queue) === 100, '100 support tickets must remain independently visible');
 
-$targetNumber = (string)$queue[0]['ticket_number'];
-$otherNumber = (string)$queue[1]['ticket_number'];
+$normalQueue = array_values(array_filter($queue, static fn(array $row): bool => (string)($row['priority'] ?? '') === 'normal'));
+support_assert(count($normalQueue) >= 2, 'fixture must contain at least two normal-priority tickets');
+$targetNumber = (string)$normalQueue[0]['ticket_number'];
+$otherNumber = (string)$normalQueue[1]['ticket_number'];
 $actor = 'telegram:admin-test';
 
 $service->assignOwner($targetNumber, $actor, $actor);
