@@ -435,7 +435,8 @@ async function supportFilesPayload(source){
 
 async function openSupportAttachment(attachmentId,button){
   if(!attachmentId)return;
-  const preview=document.querySelector(`[data-support-attachment-preview="${CSS.escape(attachmentId)}"]`);
+  const preview=Array.from(document.querySelectorAll('[data-support-attachment-preview]'))
+    .find(node=>node.dataset.supportAttachmentPreview===attachmentId)||null;
   if(preview?.dataset.loaded==='1'){
     const hidden=preview.hidden;
     preview.hidden=!hidden;
