@@ -189,6 +189,23 @@ export function initTournamentsScreen(){
     void loadTournamentSnapshot();
   });
 
+  document.addEventListener('mgw:tournament-hall-of-fame-open', () => {
+    const tournamentScreen = document.getElementById('screen-tournaments');
+    if (!(tournamentScreen instanceof HTMLElement)) return;
+    const ratingTab = tournamentScreen.querySelector('[data-competition-mode="rating"]');
+    if (ratingTab instanceof HTMLButtonElement) ratingTab.click();
+    const tournamentArchiveTab = tournamentScreen.querySelector('[data-rating-history-mode="tournaments"]');
+    if (tournamentArchiveTab instanceof HTMLButtonElement) tournamentArchiveTab.click();
+    void loadTournamentArchiveOverview().finally(() => {
+      window.requestAnimationFrame(() => {
+        tournamentScreen.querySelector('.tournaments-v2-tournament-hof')?.scrollIntoView({
+          behavior:'smooth',
+          block:'start',
+        });
+      });
+    });
+  });
+
   document.addEventListener('mgw:tournament-progression-open', () => {
     const tournamentScreen = document.getElementById('screen-tournaments');
     if (!(tournamentScreen instanceof HTMLElement)) return;
@@ -2044,6 +2061,10 @@ function renderTournamentArchiveOverview(overview){
   `;
 }
 
+function tournamentHallTrophySvg(){
+  return '<svg class="tournaments-v2-hof-trophy" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M15 7h18v8c0 9-4 15-9 15s-9-6-9-15V7Z" fill="currentColor"/><path d="M13 11H7c0 8 3 12 9 12M35 11h6c0 8-3 12-9 12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M22 29h4v7h-4zM15 37h18v5H15z" fill="currentColor"/></svg>';
+}
+
 function tournamentHallOfFameCard(entry){
   const nickname = String(entry?.nickname || t('profile.player')).trim() || t('profile.player');
   const avatar = String(entry?.avatar_item_id || 'starter-default-01').trim() || 'starter-default-01';
@@ -2056,7 +2077,7 @@ function tournamentHallOfFameCard(entry){
   return `<article class="tournaments-v2-tournament-hof-card">
     <span class="tournaments-v2-avatar" data-avatar-item-id="${escapeHtml(avatar)}" aria-hidden="true">MG</span>
     <div><strong>${escapeHtml(nickname)}</strong><span>${escapeHtml(meta)}</span></div>
-    <b title="Чемпионств">${escapeHtml(formatNumber(count))}× 🏆</b>
+    <b class="tournaments-v2-hof-count" title="Чемпионств">${tournamentHallTrophySvg()}<span>${escapeHtml(formatNumber(count))}</span></b>
   </article>`;
 }
 
