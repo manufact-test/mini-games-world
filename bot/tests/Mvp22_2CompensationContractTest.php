@@ -45,6 +45,8 @@ $assert(str_contains($admin, 'Баланс напрямую здесь не ре
 
 $assert(str_contains($client, "action:'operations'"), 'Admin client must browse canonical source operations without requiring copied technical IDs.');
 $assert(str_contains($client, 'chooseOperation'), 'Admin client must let an operator select a browsed source operation.');
+$assert(str_contains($client, "data-compensation-operation-select"), 'Operation browser selections must have a stable control owner.');
+$assert(str_contains($client, "querySelectorAll('[data-compensation-operation-select]')"), 'Busy-state recovery must re-enable non-selected operation buttons after async search.');
 $assert(str_contains($client, "action:'lookup'"), 'Admin client must retain exact original-operation lookup.');
 $assert(str_contains($client, "action:'request'"), 'Admin client must use a dedicated compensation request action.');
 $assert(str_contains($client, "action:'confirm'"), 'Admin client must use a distinct confirmation request.');
