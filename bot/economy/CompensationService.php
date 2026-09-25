@@ -13,7 +13,8 @@ final class CompensationService
 
     public function __construct(
         private DatabaseConnectionInterface $database,
-        private LedgerWriteService $ledger
+        private LedgerWriteService $ledger,
+        private StorageTransactionInterface $runtimeStorage
     ) {}
 
     public function limits(): array
@@ -46,6 +47,9 @@ final class CompensationService
 
         if ((string)$original['asset_code'] !== self::ASSET_CODE) {
             throw new InvalidArgumentException('Компенсация доступна только для MGW Coins.');
+        }
+        if (trim((string)($original['legacy_user_id'] ?? '')) === '') {
+            throw new InvalidArgumentException('У исходной операции нет runtime-пользователя для безопасной компенсации.');
         }
         if ((string)$original['category'] === 'admin_compensation'
             || (string)$original['source_type'] === 'admin_compensation') {
@@ -204,6 +208,11 @@ final class CompensationService
             throw new RuntimeException('Компенсация ещё не получила необходимое подтверждение.');
         }
 
+        $legacyUserId = trim((string)($record['legacy_user_id'] ?? ''));
+        if ($legacyUserId === '') {
+            throw new RuntimeException('Runtime-пользователь компенсации не определён.');
+        }
+
         $metadata = [
             'compensation_id' => (string)$record['compensation_id'],
             'original_entry_id' => (string)$record['original_entry_id'],
@@ -212,30 +221,133 @@ final class CompensationService
             'requested_by_ref' => (string)$record['requested_by_ref'],
             'confirmed_by_ref' => $this->nullable((string)($record['confirmed_by_ref'] ?? '')),
         ];
-        $posted = $this->ledger->postAvailableDelta([
-            'operation_key' => (string)$record['ledger_operation_key'],
-            'account_ref' => (string)$record['account_ref'],
-            'mgw_id' => $this->nullable((string)($record['mgw_id'] ?? '')),
-            'legacy_user_id' => $this->nullable((string)($record['legacy_user_id'] ?? '')),
-            'asset_code' => (string)$record['asset_code'],
-            'available_delta' => (int)$record['amount'],
-            'category' => 'admin_compensation',
-            'source_type' => 'admin_compensation',
-            'source_ref' => (string)$record['original_entry_id'],
-            'metadata' => $metadata,
-        ]);
 
-        $entryId = trim((string)($posted['entry_id'] ?? ''));
-        if ($entryId === '') throw new RuntimeException('Компенсационная запись журнала не создана.');
-        $ledgerRows = $this->database->fetchAll(
-            'SELECT available_before,available_after
-             FROM mgw_ledger_entries WHERE entry_id=:entry_id',
-            ['entry_id' => $entryId]
-        );
-        if (count($ledgerRows) !== 1 || !is_array($ledgerRows[0])) {
-            throw new RuntimeException('Компенсационная запись журнала не подтверждена.');
-        }
+        $runtimeResult = $this->runtimeStorage->transaction(function (array &$data) use (
+            $record,
+            $legacyUserId,
+            $metadata
+        ): array {
+            if (!isset($data['users']) || !is_array($data['users'])) $data['users'] = [];
+            if (!isset($data['transactions']) || !is_array($data['transactions'])) $data['transactions'] = [];
 
+            $storageKey = $this->runtimeUserStorageKey($data['users'], $legacyUserId);
+            $user =& $data['users'][$storageKey];
+            UnifiedBalanceRuntimeState::ensureUser($user);
+            $runtimeBefore = (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? -1);
+            if ($runtimeBefore < 0) throw new RuntimeException('Runtime-баланс пользователя некорректен.');
+
+            $existingRuntime = null;
+            foreach (array_reverse($data['transactions']) as $transaction) {
+                if (!is_array($transaction)) continue;
+                if ((string)($transaction['category'] ?? '') !== 'admin_compensation') continue;
+                if ((string)($transaction['compensation_id'] ?? '') !== (string)$record['compensation_id']) continue;
+                $existingRuntime = $transaction;
+                break;
+            }
+
+            $existingLedger = $this->database->fetchAll(
+                'SELECT entry_id,available_before,available_after
+                 FROM mgw_ledger_entries
+                 WHERE idempotency_key=:operation_key
+                 LIMIT 2',
+                ['operation_key'=>(string)$record['ledger_operation_key']]
+            );
+            if (count($existingLedger) > 1) {
+                throw new RuntimeException('Компенсационная ledger-операция неоднозначна.');
+            }
+
+            if ($existingLedger === []) {
+                $databaseBalance = $this->ledger->getBalance(
+                    (string)$record['account_ref'],
+                    (string)$record['asset_code']
+                );
+                if (!is_array($databaseBalance)) {
+                    throw new RuntimeException('Канонический баланс пользователя недоступен.');
+                }
+                $databaseBefore = (int)($databaseBalance['available_amount'] ?? -1);
+                if ($databaseBefore < 0 || $runtimeBefore !== $databaseBefore) {
+                    throw new RuntimeException('Баланс изменился. Обновите данные и повторите компенсацию.');
+                }
+            }
+
+            $posted = $this->ledger->postAvailableDelta([
+                'operation_key' => (string)$record['ledger_operation_key'],
+                'account_ref' => (string)$record['account_ref'],
+                'mgw_id' => $this->nullable((string)($record['mgw_id'] ?? '')),
+                'legacy_user_id' => $legacyUserId,
+                'asset_code' => (string)$record['asset_code'],
+                'available_delta' => (int)$record['amount'],
+                'category' => 'admin_compensation',
+                'source_type' => 'admin_compensation',
+                'source_ref' => (string)$record['original_entry_id'],
+                'metadata' => $metadata,
+            ]);
+
+            $entryId = trim((string)($posted['entry_id'] ?? ''));
+            if ($entryId === '') throw new RuntimeException('Компенсационная запись журнала не создана.');
+            $ledgerRows = $this->database->fetchAll(
+                'SELECT available_before,available_after
+                 FROM mgw_ledger_entries WHERE entry_id=:entry_id',
+                ['entry_id'=>$entryId]
+            );
+            if (count($ledgerRows) !== 1 || !is_array($ledgerRows[0])) {
+                throw new RuntimeException('Компенсационная запись журнала не подтверждена.');
+            }
+
+            $ledgerBefore = (int)$ledgerRows[0]['available_before'];
+            $ledgerAfter = (int)$ledgerRows[0]['available_after'];
+
+            if ($existingRuntime === null) {
+                // Fresh path: runtime and ledger started in parity. Recovery path:
+                // the ledger may already exist because a previous JSON commit failed;
+                // add the compensation to the current runtime value exactly once.
+                $runtimeAfter = $existingLedger === []
+                    ? $ledgerAfter
+                    : $runtimeBefore + (int)$record['amount'];
+                if ($runtimeAfter < $runtimeBefore) {
+                    throw new RuntimeException('Runtime-баланс переполнен.');
+                }
+                $user[UnifiedBalanceRuntimeState::FIELD] = $runtimeAfter;
+                $data['transactions'][] = [
+                    'id'=>'cmp-runtime-' . substr(hash('sha256', (string)$record['compensation_id']), 0, 24),
+                    'type'=>'balance_change',
+                    'category'=>'admin_compensation',
+                    'user_id'=>$storageKey,
+                    'telegram_id'=>(string)($user['telegram_id'] ?? $user['id'] ?? $storageKey),
+                    'mgw_id'=>(string)($record['mgw_id'] ?? $user['mgw_id'] ?? ''),
+                    'amount'=>(int)$record['amount'],
+                    'balance_before'=>$runtimeBefore,
+                    'balance_after'=>$runtimeAfter,
+                    'actor_ref'=>(string)$record['requested_by_ref'],
+                    'reason'=>(string)$record['reason'],
+                    'request_token'=>(string)$record['request_token'],
+                    'compensation_id'=>(string)$record['compensation_id'],
+                    'original_entry_id'=>(string)$record['original_entry_id'],
+                    'ledger_entry_id'=>$entryId,
+                    'description'=>'Административная компенсация по исходной операции',
+                    'created_at'=>$this->nowIso(),
+                ];
+            } else {
+                if ((int)($existingRuntime['amount'] ?? 0) !== (int)$record['amount']
+                    || (string)($existingRuntime['original_entry_id'] ?? '') !== (string)$record['original_entry_id']) {
+                    throw new RuntimeException('Runtime-аудит компенсации не совпадает с запросом.');
+                }
+            }
+
+            return [
+                'ledger_entry_id'=>$entryId,
+                'ledger_available_before'=>$ledgerBefore,
+                'ledger_available_after'=>$ledgerAfter,
+                'ledger_replayed'=>!empty($posted['replayed']),
+            ];
+        });
+
+        $entryId = trim((string)($runtimeResult['ledger_entry_id'] ?? ''));
+        if ($entryId === '') throw new RuntimeException('Компенсационная запись журнала не подтверждена.');
+
+        // Mark applied only after the runtime-source transaction committed.
+        // If this DB update fails, a retry sees the stable ledger/runtime audit
+        // and safely completes this row without a second credit.
         $now = $this->now();
         $this->database->execute(
             'UPDATE mgw_compensations
@@ -247,13 +359,13 @@ final class CompensationService
                  updated_at_utc=:updated_at_utc
              WHERE compensation_id=:compensation_id',
             [
-                'status_code' => self::STATUS_APPLIED,
-                'ledger_entry_id' => $entryId,
-                'available_before' => (int)$ledgerRows[0]['available_before'],
-                'available_after' => (int)$ledgerRows[0]['available_after'],
-                'applied_at_utc' => $now,
-                'updated_at_utc' => $now,
-                'compensation_id' => (string)$record['compensation_id'],
+                'status_code'=>self::STATUS_APPLIED,
+                'ledger_entry_id'=>$entryId,
+                'available_before'=>(int)$runtimeResult['ledger_available_before'],
+                'available_after'=>(int)$runtimeResult['ledger_available_after'],
+                'applied_at_utc'=>$now,
+                'updated_at_utc'=>$now,
+                'compensation_id'=>(string)$record['compensation_id'],
             ]
         );
 
@@ -262,6 +374,32 @@ final class CompensationService
             throw new RuntimeException('Компенсация проведена по журналу, но аудит не подтверждён.');
         }
         return $this->publicCompensation($updated);
+    }
+
+    private function runtimeUserStorageKey(array $users, string $legacyUserId): string
+    {
+        $matches = [];
+        foreach ($users as $key=>$user) {
+            if (!is_array($user)) continue;
+            $candidate = trim((string)($user['id'] ?? $key));
+            if ($candidate === $legacyUserId || (string)$key === $legacyUserId) {
+                $matches[] = (string)$key;
+            }
+        }
+        $matches = array_values(array_unique($matches));
+        if (count($matches) !== 1) {
+            throw new RuntimeException(
+                $matches === []
+                    ? 'Runtime-пользователь компенсации не найден.'
+                    : 'Runtime-пользователь компенсации неоднозначен.'
+            );
+        }
+        return $matches[0];
+    }
+
+    private function nowIso(): string
+    {
+        return (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM);
     }
 
     private function resolveOriginalEntry(string $operationRef): array
