@@ -14,9 +14,10 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Панель администратора</title>
-  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=11&replay=17-6&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
+  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=11&replay=17-6&mvp22_4=antifraud-v1&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="./assets/js/admin-shell.js?v=6&replay=17-6&test-coins=staging" defer></script>
+  <script src="./assets/js/admin-shell.js?v=7&mvp22_4=section-v1&test-coins=staging" defer></script>
+  <script src="./assets/js/admin-antifraud.js?v=1&mvp22_4=cases-replay-v1" defer></script>
   <script src="./assets/js/admin-compensation.js?v=4&mvp22_2=admin-simple-flow-v4" defer></script>
   <script src="./assets/js/admin-reports.js?v=2&mvp18=reports&mvp22_3=manual-acceptance-v6" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
@@ -45,6 +46,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
     <nav class="mgw-admin__nav" aria-label="Разделы панели администратора" data-admin-nav>
       <button type="button" data-admin-nav-target="overview">Обзор</button>
       <button type="button" data-admin-nav-target="users">Пользователи</button>
+      <button type="button" data-admin-nav-target="antifraud">Проверка игр</button>
       <button type="button" data-admin-nav-target="support">Поддержка</button>
       <button type="button" data-admin-nav-target="tournaments">Турниры и сезоны</button>
       <button type="button" data-admin-nav-target="economy">Экономика</button>
@@ -570,26 +572,129 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
         </div>
       </article>
 
-      <article class="mgw-admin__card mgw-admin__card--wide" data-admin-section="tests" data-replay-card>
+      <article class="mgw-admin__card mgw-admin__card--wide" data-admin-section="antifraud" data-admin-antifraud>
         <div class="mgw-admin__card-head">
-          <h2>Диагностика матча</h2>
-          <span>Только просмотр</span>
+          <h2>Проверка игр</h2>
+          <span>Anti-fraud кейсы и replay</span>
         </div>
-        <div class="mgw-admin__replay">
-          <div class="mgw-admin__replay-search">
-            <label class="mgw-admin__field">
-              <span>ID матча</span>
-              <input data-replay-match-id type="text" maxlength="191" autocomplete="off" placeholder="Введите ID матча">
-            </label>
-            <button type="button" data-replay-load>Загрузить диагностику</button>
+
+        <div class="mgw-admin__antifraud">
+          <div class="mgw-admin__replay-status" data-af-status>
+            Загружаю anti-fraud кейсы…
           </div>
-          <div class="mgw-admin__replay-status" data-replay-status>Укажите ID матча. Данные не изменяются.</div>
-          <div data-replay-output hidden>
-            <div class="mgw-admin__replay-summary" data-replay-summary></div>
-            <h3>События</h3>
-            <div class="mgw-admin__replay-list" data-replay-timeline></div>
-            <h3>Снимки состояния</h3>
-            <div class="mgw-admin__replay-list" data-replay-frames></div>
+
+          <div class="mgw-admin__af-toolbar">
+            <div class="mgw-admin__af-tabs" role="tablist" aria-label="Состояние anti-fraud кейсов">
+              <button type="button" class="is-active" data-af-mode="active">Активные</button>
+              <button type="button" data-af-mode="closed">Обработанные</button>
+            </div>
+            <div class="mgw-admin__af-filter">
+              <input type="search" data-af-query maxlength="120" autocomplete="off" placeholder="Кейс, матч, ответственный">
+              <button type="button" data-af-refresh>Обновить</button>
+            </div>
+          </div>
+
+          <section class="mgw-admin__af-match-search">
+            <div>
+              <strong>Проверить матч</strong>
+              <span>Загрузите replay, историю пары и доступные device/session сигналы.</span>
+            </div>
+            <div class="mgw-admin__replay-search">
+              <label class="mgw-admin__field">
+                <span>ID матча</span>
+                <input data-af-match-id type="text" maxlength="191" autocomplete="off" placeholder="Введите ID матча">
+              </label>
+              <button type="button" data-af-match-load>Проверить матч</button>
+            </div>
+          </section>
+
+          <div class="mgw-admin__af-layout">
+            <section class="mgw-admin__support-panel">
+              <h3 data-af-queue-title>Активные кейсы</h3>
+              <div class="mgw-admin__af-queue" data-af-queue></div>
+            </section>
+
+            <section class="mgw-admin__support-panel mgw-admin__af-review" data-af-review hidden>
+              <div class="mgw-admin__af-summary" data-af-match-summary></div>
+              <div class="mgw-admin__replay-status" data-af-policy>
+                Сигналы предназначены только для ручной проверки.
+              </div>
+
+              <section class="mgw-admin__af-block">
+                <h3>Сигналы</h3>
+                <div class="mgw-admin__af-signals" data-af-signals></div>
+              </section>
+
+              <section class="mgw-admin__af-block" data-af-player>
+                <div class="mgw-admin__af-player-head">
+                  <div>
+                    <h3>Replay</h3>
+                    <span data-af-player-meta>—</span>
+                  </div>
+                  <div class="mgw-admin__af-player-controls">
+                    <button type="button" data-af-prev aria-label="Предыдущий шаг">←</button>
+                    <button type="button" data-af-play aria-label="Воспроизвести">▶</button>
+                    <button type="button" data-af-next aria-label="Следующий шаг">→</button>
+                    <select data-af-speed aria-label="Скорость replay">
+                      <option value="0.5">0.5×</option>
+                      <option value="1" selected>1×</option>
+                      <option value="2">2×</option>
+                      <option value="4">4×</option>
+                    </select>
+                  </div>
+                </div>
+                <input class="mgw-admin__af-progress" data-af-progress type="range" min="0" max="0" value="0" step="1" aria-label="Шаг replay">
+                <div class="mgw-admin__af-player-grid">
+                  <div>
+                    <span>Состояние</span>
+                    <pre data-af-player-state>—</pre>
+                  </div>
+                  <div>
+                    <span>События шага</span>
+                    <pre data-af-player-events>—</pre>
+                  </div>
+                </div>
+              </section>
+
+              <details class="mgw-admin__af-disclosure">
+                <summary>История этой пары</summary>
+                <div class="mgw-admin__af-history" data-af-pair-history></div>
+              </details>
+
+              <details class="mgw-admin__af-disclosure">
+                <summary>Device / session сигналы</summary>
+                <div data-af-device-session></div>
+              </details>
+
+              <section class="mgw-admin__af-case" data-af-case hidden>
+                <div class="mgw-admin__af-case-summary" data-af-case-summary>—</div>
+                <button type="button" data-af-create-case>Создать кейс для ручной проверки</button>
+                <button type="button" data-af-take-case hidden>Взять в работу</button>
+                <div class="mgw-admin__af-decisions" data-af-decisions hidden>
+                  <label class="mgw-admin__field">
+                    <span>Комментарий к итогу</span>
+                    <textarea data-af-decision-note rows="3" maxlength="800" placeholder="Что проверено и почему принято это решение"></textarea>
+                  </label>
+                  <div class="mgw-admin__af-decision-buttons">
+                    <button type="button" data-af-decision="cleared">Нарушений не найдено</button>
+                    <button type="button" data-af-decision="monitor">Оставить под наблюдением</button>
+                    <button type="button" data-af-decision="rating_review">Передать в рейтинг</button>
+                    <button type="button" data-af-decision="moderation_review">Передать в модерацию</button>
+                  </div>
+                </div>
+                <small>Anti-fraud кейс не блокирует игрока автоматически. Любая санкция остаётся отдельным ручным решением.</small>
+              </section>
+
+              <details class="mgw-admin__af-disclosure">
+                <summary>Технический журнал событий</summary>
+                <div class="mgw-admin__replay-list" data-af-raw-timeline></div>
+              </details>
+
+              <details class="mgw-admin__af-disclosure">
+                <summary>Технические снимки состояния</summary>
+                <div class="mgw-admin__replay-list" data-af-raw-frames></div>
+              </details>
+            </section>
           </div>
         </div>
       </article>
