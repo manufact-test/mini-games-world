@@ -12,10 +12,11 @@ const GAME_NAMES = Object.freeze({
   checkers:'Шашки', reversi:'Реверси', chess:'Шахматы', go:'Го', domino:'Домино',
 });
 const REPORT_REASONS = Object.freeze([
-  ['abuse','Оскорбления или травля'],
+  ['nickname','Недопустимый никнейм'],
+  ['avatar','Недопустимый аватар'],
+  ['spam','Спам'],
   ['cheating','Нечестная игра'],
-  ['spam','Спам или навязчивые сообщения'],
-  ['offensive_profile','Недопустимый профиль'],
+  ['stalling','Затягивание игры'],
   ['other','Другое'],
 ]);
 
