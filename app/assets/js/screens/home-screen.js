@@ -276,7 +276,7 @@ function openPlayerReportSheet(){
   openSheet(`<div class="sheet-head player-report-head"><div><h2>Пожаловаться на игрока</h2><p>Найдите игрока и выберите причину жалобы.</p></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="player-report-create">
       <section class="player-report-step">
-        <div class="player-report-step-title"><b>1</b><span><strong>Кого вы хотите пожаловаться?</strong><small>Поиск по нику или MGW-ID</small></span></div>
+        <div class="player-report-step-title"><b>1</b><span><strong>На кого вы хотите пожаловаться?</strong><small>Поиск по нику или MGW-ID</small></span></div>
         <div class="player-report-search">
           <input id="playerReportSearch" class="form-input" maxlength="40" autocomplete="off" placeholder="Ник или MGW-ID">
           <button class="btn primary" id="playerReportSearchBtn" type="button">Найти</button>
