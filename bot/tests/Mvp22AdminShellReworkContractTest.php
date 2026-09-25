@@ -150,7 +150,7 @@ $assert(
 
 $assert(
     str_contains($page, "Cache-Control: no-store, no-cache, must-revalidate")
-        && str_contains($page, 'admin-shell.css?v=11')
+        && str_contains($page, 'admin-shell.css?v=12')
         && str_contains($page, 'admin-shell.js?v=6'),
     'Admin-only rework must stay no-store and publish fresh child asset identities without changing the shared game launch owner.'
 );
@@ -184,6 +184,14 @@ $assert(
         && str_contains($support, "Ответ сохранён, но уведомление не подтверждено в колокольчике пользователя.")
         && str_contains($support, "throw error;"),
     'Admin Support reply UX must report success only after the exact recipient bell feed is verified.'
+);
+
+$assert(
+    str_contains($page, 'admin-reports.js?v=3')
+        && str_contains($css, '.mgw-admin__report-card{')
+        && str_contains($css, '.mgw-admin__report-message{')
+        && str_contains($css, '.mgw-admin__report-tech{'),
+    'Moderation queue must publish the readable report-card UI with technical metadata collapsed.'
 );
 
 $assert(
