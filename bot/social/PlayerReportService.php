@@ -253,7 +253,7 @@ final class PlayerReportService
             );
         }
 
-        foreach ($this->queue(200) as $report) {
+        foreach ($this->queue(200, ['mode' => 'all']) as $report) {
             if ((string)$report['report_id'] === $reportId) return $report;
         }
         throw new PlayerReportException('report_not_found', 'Жалоба не найдена.');
