@@ -29,7 +29,8 @@ final class NotificationCenterV2Policy
     public static function isSafeDeepLink(string $deepLink): bool
     {
         $deepLink = trim($deepLink);
-        return $deepLink === '' || in_array($deepLink, self::SAFE_DEEP_LINKS, true);
+        if ($deepLink === '' || in_array($deepLink, self::SAFE_DEEP_LINKS, true)) return true;
+        return preg_match('/^support:ticket:SUP-[0-9]{6}-[A-F0-9]{8}$/i', $deepLink) === 1;
     }
 
     public static function scheduledAt(array $notification): ?string
@@ -93,7 +94,7 @@ final class NotificationCenterV2Policy
         if (in_array($type, ['first_game_bonus', 'weekly_match_bonus'], true)) return '';
 
         $explicit = trim((string)($notification['deep_link'] ?? ''));
-        if (in_array($explicit, self::SAFE_DEEP_LINKS, true)) return $explicit;
+        if (self::isSafeDeepLink($explicit)) return $explicit;
 
         if (str_starts_with($type, 'shop_order_')) return 'store:orders';
         if (str_starts_with($type, 'payment_')) return 'home';
