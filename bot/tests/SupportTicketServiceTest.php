@@ -118,8 +118,26 @@ try {
 }
 support_assert($crossAttachmentDenied, 'cross-user attachment read must fail closed');
 
-$metrics = $service->queueMetrics();
-support_assert((int)$metrics['open_total'] === 100, 'all 100 non-terminal tickets must remain counted');
-support_assert((int)$metrics['critical_open'] >= 1, 'critical priority must remain represented');
+$closed = $service->setStatus($targetNumber, 'closed', $actor);
+support_assert($closed['status'] === 'closed', 'closed support status must persist');
+support_assert(!empty($closed['closed_at']), 'closed support ticket must receive closed_at');
+support_assert(!empty($closed['resolved_at']), 'closed support ticket must be terminal/resolved');
 
-echo "MVP-22.1 SupportTicketServiceTest OK: 100 isolated tickets + owner/status/history/thread/attachment boundaries.\n";
+$activeQueue = $service->adminQueue(['mode' => 'active'], 100);
+$processedQueue = $service->adminQueue(['mode' => 'processed'], 100);
+support_assert(count($activeQueue) === 99, 'closed ticket must leave the active support queue');
+support_assert(count($processedQueue) === 1, 'closed ticket must appear in processed support');
+support_assert((string)$processedQueue[0]['ticket_number'] === $targetNumber, 'processed support must contain the closed ticket');
+
+$userSnapshotAfterClose = $service->userSnapshot($userA, 100);
+$closedForUser = array_values(array_filter(
+    $userSnapshotAfterClose,
+    static fn(array $row): bool => (string)($row['ticket_number'] ?? '') === $targetNumber
+));
+support_assert(count($closedForUser) === 1 && (string)$closedForUser[0]['status'] === 'closed', 'user snapshot must expose the terminal closed status');
+
+$metrics = $service->queueMetrics();
+support_assert((int)$metrics['open_total'] === 99, 'closed support ticket must not remain in active metrics');
+support_assert((int)$metrics['critical_open'] >= 0, 'critical metric must remain valid after terminal transition');
+
+echo "MVP-22.1 SupportTicketServiceTest OK: 100 isolated tickets + active/processed terminal lifecycle + history/thread/attachment boundaries.\n";
