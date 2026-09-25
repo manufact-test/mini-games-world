@@ -60,5 +60,15 @@ try {
     json_response(['ok'=>false,'error'=>$error->getMessage()], 422);
 } catch (Throwable $error) {
     error_log('MGW rating archive failed: ' . $error->getMessage());
-    json_response(['ok'=>false,'error'=>'Не удалось загрузить архив рейтинга.'], 500);
+
+    $response = ['ok'=>false,'error'=>'Не удалось загрузить архив рейтинга.'];
+    if (strtolower(trim((string)($config['environment'] ?? ''))) === 'staging'
+        && isset($authenticatedUser)
+        && is_array($authenticatedUser)
+        && !empty($authenticatedUser['is_staging_test_user'])) {
+        $response['debug_error'] = substr($error->getMessage(), 0, 1200);
+        $response['debug_exception'] = get_class($error);
+    }
+
+    json_response($response, 500);
 }
