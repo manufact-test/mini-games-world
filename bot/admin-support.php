@@ -9,6 +9,7 @@ header('Referrer-Policy: no-referrer');
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/helpers/AdminWebAuth.php';
 require_once __DIR__ . '/support/SupportTicketService.php';
+require_once __DIR__ . '/support/SupportNotificationBridge.php';
 
 function mgw_admin_support_status(string $reason): int
 {
@@ -41,6 +42,7 @@ try {
     $action = strtolower(trim((string)($payload['action'] ?? 'snapshot')));
     $ticketRef = (string)($payload['ticket'] ?? $payload['ticket_number'] ?? '');
     $ticket = null;
+    $notification = null;
 
     try {
         switch ($action) {
@@ -71,6 +73,22 @@ try {
                     (string)($payload['message'] ?? ''),
                     is_array($payload['attachments'] ?? null) ? $payload['attachments'] : []
                 );
+                try {
+                    $published = (new SupportNotificationBridge($config))
+                        ->notifyUserAboutAdminReply($ticket, $actorRef);
+                    $notification = [
+                        'ok' => true,
+                        'event_id' => (string)($published['event_id'] ?? ''),
+                        'recipient_count' => (int)($published['recipient_count'] ?? 0),
+                        'delivered_count' => (int)($published['delivered_count'] ?? 0),
+                    ];
+                } catch (Throwable $notificationError) {
+                    error_log('[MiniGamesWorld admin support notification] ' . $notificationError->getMessage());
+                    $notification = [
+                        'ok' => false,
+                        'error' => 'Ответ сохранён, но уведомление пользователю не создано.',
+                    ];
+                }
                 break;
 
             case 'update_related':
@@ -108,6 +126,7 @@ try {
             'priorities' => SupportTicketService::PRIORITY_LABELS,
             'statuses' => SupportTicketService::STATUS_LABELS,
             'platforms' => SupportTicketService::PLATFORM_LABELS,
+            'notification' => $notification,
         ]);
     } catch (SupportTicketException $error) {
         json_response([

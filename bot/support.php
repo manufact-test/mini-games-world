@@ -101,7 +101,16 @@ try {
                 (string)($payload['message'] ?? ''),
                 is_array($payload['attachments'] ?? null) ? $payload['attachments'] : []
             );
-            json_response(['ok' => true, 'action' => 'reply', 'ticket' => $ticket]);
+
+            $adminAlertSent = (new SupportTelegramNotifier($config, new TelegramService($config)))
+                ->notifyUserReply($ticket);
+
+            json_response([
+                'ok' => true,
+                'action' => 'reply',
+                'ticket' => $ticket,
+                'admin_alert_sent' => $adminAlertSent,
+            ]);
         }
 
         if ($action === 'ticket') {

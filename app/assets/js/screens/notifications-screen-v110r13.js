@@ -411,6 +411,16 @@ async function openNotificationDeepLink(id){
   if (deepLink === 'store:orders') {
     showScreen('store');
     queueMicrotask(() => void openStoreOrders());
+    return;
+  }
+  const supportMatch = deepLink.match(/^support:ticket:(SUP-[0-9]{6}-[A-F0-9]{8})$/i);
+  if (supportMatch) {
+    showScreen('home');
+    queueMicrotask(() => {
+      document.dispatchEvent(new CustomEvent('mgw:open-support-ticket', {
+        detail:{ ticket:supportMatch[1].toUpperCase() }
+      }));
+    });
   }
 }
 
@@ -1022,8 +1032,9 @@ function normalizeItem(value){
 }
 
 function safeDeepLink(value){
-  const link = String(value || '');
-  return ['home','profile','store','store:orders','friends:requests'].includes(link) ? link : '';
+  const link = String(value || '').trim();
+  if (['home','profile','store','store:orders','friends:requests'].includes(link)) return link;
+  return /^support:ticket:SUP-[0-9]{6}-[A-F0-9]{8}$/i.test(link) ? link : '';
 }
 
 function isRetainedItem(item){

@@ -73,10 +73,18 @@ $updated = $service->replyByAdmin(
 );
 
 support_assert($updated['owner_ref'] === $actor, 'owner must persist');
-support_assert($updated['status'] === 'in_progress', 'status must persist');
+support_assert($updated['status'] === 'waiting_user', 'admin reply must wait for the user');
 support_assert($updated['priority'] === 'critical', 'priority must persist');
 support_assert(count($updated['messages']) === 2, 'target thread must contain isolated admin reply');
 support_assert(count($updated['history']) >= 5, 'owner/status/priority/reply must be durable history');
+
+$userFollowUp = $service->replyByUser(
+    $targetNumber,
+    $userA,
+    'User follow-up after admin reply.'
+);
+support_assert($userFollowUp['status'] === 'open', 'user reply must reopen a waiting-user ticket');
+support_assert(count($userFollowUp['messages']) === 3, 'user follow-up must remain in the same ticket thread');
 
 $other = $service->adminTicket($otherNumber);
 support_assert(count($other['messages']) === 1, 'another ticket thread must not receive target reply');

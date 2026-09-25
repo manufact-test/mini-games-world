@@ -101,11 +101,13 @@ $assertSame('system_message', $db['notifications'][0]['type'], 'system event mus
 $db = $base();
 $supportEvent = $event('req-support-000001', 'support');
 $supportEvent['source_type'] = 'support';
-$supportEvent['audience_ref'] = 'case:RPT-42';
+$supportEvent['audience_ref'] = 'ticket:SUP-260925-ABCDEF12';
 $supportEvent['recipient_mgw_ids'] = ['MGW000000000000000000001'];
+$supportEvent['deep_link'] = 'support:ticket:SUP-260925-ABCDEF12';
 $support = $service->createEvent($db, $supportEvent, 'telegram:1', $now);
 $assertSame(1, $support['recipient_count'], 'support must accept an explicit case recipient snapshot');
 $assertSame('support_message', $db['notifications'][0]['type'], 'support must use the same bell pipeline, not a support-specific store');
+$assertSame('support:ticket:SUP-260925-ABCDEF12', $db['notifications'][0]['deep_link'], 'support bell must retain the exact ticket deep link');
 
 $db = $base();
 $futureEvent = $event('req-future-000001', 'one');

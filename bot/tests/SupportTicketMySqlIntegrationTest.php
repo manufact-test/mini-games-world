@@ -110,7 +110,7 @@ $detail = $service->adminTicket($target);
 
 $assert($detail['owner_ref'] === $actor, 'MySQL owner must persist.');
 $assert($detail['related']['operation_id'] === str_repeat('o', 191), 'Long related IDs must persist without scalar audit overflow.');
-$assert($detail['status'] === 'in_progress', 'MySQL status must persist.');
+$assert($detail['status'] === 'waiting_user', 'MySQL admin reply must persist waiting-user status.');
 $assert($detail['priority'] === 'high', 'MySQL priority must persist.');
 $assert(count($detail['messages']) === 3, 'MySQL ticket thread must stay isolated across user/admin replies.');
 $assert(count($detail['history']) >= 5, 'MySQL owner/status/priority/reply history must persist.');

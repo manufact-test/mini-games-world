@@ -345,7 +345,7 @@ final class SupportTicketService
         $messageId = 'ticketmsg_' . bin2hex(random_bytes(16));
         $now = $this->timestamp();
         $previousStatus = (string)$ticket['status_code'];
-        $nextStatus = $previousStatus === 'open' ? 'in_progress' : $previousStatus;
+        $nextStatus = 'waiting_user';
 
         $this->database->transaction(function () use (
             $ticket, $actorRef, $message, $preparedAttachments, $messageId, $now, $previousStatus, $nextStatus
