@@ -6,6 +6,7 @@ const MENU_ICONS = {
   feedbackBtn:'ui/status/info.webp',
   ideaBtn:'ui/status/success.webp',
   supportBtn:'ui/status/warning.webp',
+  supportTicketsBtn:'ui/navigation/notifications.webp',
   balanceHistoryBtn:'ui/navigation/history.webp',
   matchHistoryBtn:'ui/navigation/games.webp',
 };
