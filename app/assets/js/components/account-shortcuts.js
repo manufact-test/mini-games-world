@@ -23,7 +23,7 @@ async function openFriendsShortcut(){
 
 function loadFriendsModule(){
   if (!friendsModulePromise) {
-    friendsModulePromise = import('../screens/friends-screen-v110.js?v=5&mvp18=instant-route&optimistic-relations')
+    friendsModulePromise = import('../screens/friends-screen-v110.js?v=6&mvp18=instant-route&optimistic-relations&mvp22_3=report-categories-v1')
       .catch(error => {
         friendsModulePromise = null;
         throw error;
