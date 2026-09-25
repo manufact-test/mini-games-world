@@ -357,7 +357,7 @@
       return data;
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Не удалось сохранить изменение.', 'error');
-      return null;
+      throw error;
     } finally {
       setBusy(false);
     }
@@ -481,7 +481,7 @@
       tournament_id:detail.querySelector('[data-support-related-tournament]').value.trim(),
       operation_id:detail.querySelector('[data-support-related-operation]').value.trim(),
     },
-  });
+  }).catch(() => {});
 
   let attachmentViewerUrl = '';
 
@@ -622,13 +622,13 @@
   });
   detail.querySelector('[data-support-detail-priority]').addEventListener('change', event => {
     if (currentTicket && !['resolved','closed'].includes(String(currentTicket.status || ''))) {
-      void mutate({action:'set_priority', priority:event.target.value});
+      void mutate({action:'set_priority', priority:event.target.value}).catch(() => {});
     }
   });
-  detail.querySelector('[data-support-assign-self]').addEventListener('click', () => void mutate({action:'assign_self'}));
+  detail.querySelector('[data-support-assign-self]').addEventListener('click', () => void mutate({action:'assign_self'}).catch(() => {}));
   detail.querySelector('[data-support-close]')?.addEventListener('click', () => {
     if (!currentTicket || !['in_progress','waiting_user'].includes(String(currentTicket.status || ''))) return;
-    void mutate({action:'set_status', status:'closed'});
+    void mutate({action:'set_status', status:'closed'}).catch(() => {});
   });
   detail.querySelector('[data-support-related-save]').addEventListener('click', saveRelated);
   detail.querySelector('[data-support-reply-send]').addEventListener('click', () => void sendReply());
