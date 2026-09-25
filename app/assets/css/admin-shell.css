@@ -446,3 +446,68 @@
 .mgw-admin__attachment-viewer-actions{
   grid-template-columns:1fr;
 }
+
+
+/* MVP-22.2 compensation — operator-first flow */
+.mgw-admin__compensation{display:flex;flex-direction:column;gap:12px;padding:14px}
+.mgw-admin__compensation-step,.mgw-admin__compensation-confirm,.mgw-admin__compensation-history{border:1px solid #292b34;border-radius:14px;background:#101116}
+.mgw-admin__compensation-step{display:flex;flex-direction:column;gap:12px;padding:14px}
+.mgw-admin__compensation-step-head{display:flex;align-items:flex-start;gap:10px}
+.mgw-admin__compensation-step-num{display:grid;place-items:center;flex:0 0 26px;width:26px;height:26px;border:1px solid #5f55c9;border-radius:8px;background:#211d46;color:#d8d2ff;font-size:12px;font-weight:900}
+.mgw-admin__compensation-step-head h3{margin:1px 0 3px;color:#f0f0f3;font-size:13px}
+.mgw-admin__compensation-step-head p{margin:0;color:#868894;font-size:11px;line-height:1.45}
+.mgw-admin__compensation .mgw-admin__field select{font-family:inherit;font-size:13px}
+.mgw-admin__compensation-selected{padding:12px;border:1px solid #353846;border-radius:12px;background:#0d0e12}
+.mgw-admin__compensation-selected-main{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.mgw-admin__compensation-selected-main>div{min-width:0}
+.mgw-admin__compensation-selected-main span{display:block;margin-bottom:4px;color:#7f818d;font-size:9px;font-weight:750;text-transform:uppercase;letter-spacing:.06em}
+.mgw-admin__compensation-selected-main strong{display:block;overflow:hidden;color:#f3f3f5;font-size:12px;text-overflow:ellipsis;white-space:nowrap}
+.mgw-admin__compensation-tech,.mgw-admin__compensation-advanced,.mgw-admin__compensation-history{overflow:hidden}
+.mgw-admin__compensation-tech{margin-top:10px;border-top:1px solid #252730}
+.mgw-admin__compensation-tech summary,.mgw-admin__compensation-advanced>summary,.mgw-admin__compensation-history>summary{cursor:pointer;list-style:none}
+.mgw-admin__compensation-tech summary::-webkit-details-marker,.mgw-admin__compensation-advanced>summary::-webkit-details-marker,.mgw-admin__compensation-history>summary::-webkit-details-marker{display:none}
+.mgw-admin__compensation-tech summary{padding-top:10px;color:#8d8f9a;font-size:11px}
+.mgw-admin__compensation-tech summary::after,.mgw-admin__compensation-advanced>summary::after{content:"+";float:right;color:#777a86;font-weight:900}
+.mgw-admin__compensation-tech[open] summary::after,.mgw-admin__compensation-advanced[open]>summary::after{content:"−"}
+.mgw-admin__compensation-tech>div{display:flex;flex-direction:column;gap:7px;padding-top:10px}
+.mgw-admin__compensation-tech>div>div{display:grid;grid-template-columns:120px minmax(0,1fr);gap:8px}
+.mgw-admin__compensation-tech span{color:#777a86;font-size:10px}
+.mgw-admin__compensation-tech code{min-width:0;color:#b9bbc5;font:10px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow-wrap:anywhere}
+.mgw-admin__compensation-advanced{border:1px solid #272933;border-radius:11px;background:#0d0e12}
+.mgw-admin__compensation-advanced>summary{padding:11px 12px;color:#a7a9b3;font-size:11px;font-weight:750}
+.mgw-admin__compensation-advanced-body{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px;padding:0 12px 12px}
+.mgw-admin__compensation-advanced-body button,.mgw-admin__compensation-submit,.mgw-admin__compensation-confirm button,.mgw-admin__compensation-history-body button{appearance:none;min-height:40px;border:1px solid #6557d9;border-radius:10px;background:#5d4fd2;color:#fff;padding:0 13px;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+.mgw-admin__compensation-advanced-body button:disabled,.mgw-admin__compensation-submit:disabled,.mgw-admin__compensation-confirm button:disabled{opacity:.45;cursor:default}
+.mgw-admin__compensation-form{display:grid;grid-template-columns:180px minmax(0,1fr);gap:10px}
+.mgw-admin__compensation-submit{width:100%;min-height:44px}
+.mgw-admin__compensation-hint{margin:0;color:#7f818d;font-size:10px;line-height:1.45}
+.mgw-admin__compensation-message{padding:10px 11px;border:1px solid #343641;border-radius:10px;background:#0d0e12;color:#b8bac4;font-size:11px;line-height:1.45}
+.mgw-admin__compensation-message[data-state="ok"]{border-color:#31563f;color:#bde8c9}
+.mgw-admin__compensation-message[data-state="error"]{border-color:#663838;color:#ffc7c7}
+.mgw-admin__compensation-confirm{display:flex;flex-direction:column;gap:12px;padding:14px;border-color:#6d5730}
+.mgw-admin__compensation-confirm-copy{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mgw-admin__compensation-confirm-copy>div{padding:10px;border:1px solid #302f31;border-radius:10px;background:#0d0e12}
+.mgw-admin__compensation-confirm-copy span{display:block;margin-bottom:4px;color:#858791;font-size:9px;text-transform:uppercase;letter-spacing:.06em}
+.mgw-admin__compensation-confirm-copy strong{display:block;color:#f1f1f3;font-size:11px;overflow-wrap:anywhere}
+.mgw-admin__compensation-history>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;color:#d7d7dc;font-size:12px;font-weight:800}
+.mgw-admin__compensation-history>summary strong{display:grid;place-items:center;min-width:24px;height:24px;border-radius:999px;background:#23242c;color:#aeb0bb;font-size:10px}
+.mgw-admin__compensation-history>[data-compensation-history]{display:flex;flex-direction:column;gap:7px;padding:0 12px 12px}
+.mgw-admin__compensation-history-item{border:1px solid #292b34;border-radius:10px;background:#0d0e12;overflow:hidden}
+.mgw-admin__compensation-history-item>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 11px;cursor:pointer;list-style:none}
+.mgw-admin__compensation-history-item>summary::-webkit-details-marker{display:none}
+.mgw-admin__compensation-history-item>summary span{font-size:11px;font-weight:750}
+.mgw-admin__compensation-history-item>summary strong{color:#9fa1ac;font-size:10px}
+.mgw-admin__compensation-history-body{display:flex;flex-direction:column;gap:8px;padding:0 11px 11px;border-top:1px solid #23252d}
+.mgw-admin__compensation-history-body p{margin:9px 0 0;color:#8d8f99;font-size:10.5px;line-height:1.45;overflow-wrap:anywhere}
+.mgw-admin__compensation-history-body p+p{margin-top:0}
+.mgw-admin__compensation-history-body button{align-self:flex-start;min-height:34px;background:#17181e;border-color:#3a3b44;font-size:10px}
+@media(max-width:760px){
+  .mgw-admin__compensation{padding:12px}
+  .mgw-admin__compensation-step{padding:12px}
+  .mgw-admin__compensation-selected-main{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mgw-admin__compensation-form{grid-template-columns:1fr}
+  .mgw-admin__compensation-advanced-body{grid-template-columns:1fr}
+  .mgw-admin__compensation-advanced-body button{width:100%}
+  .mgw-admin__compensation-confirm-copy{grid-template-columns:1fr}
+  .mgw-admin__compensation-tech>div>div{grid-template-columns:1fr;gap:2px}
+}

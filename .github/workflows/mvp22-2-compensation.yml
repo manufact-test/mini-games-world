@@ -14,6 +14,7 @@ on:
       - 'bot/tests/Mvp22_2CompensationMySqlIntegrationTest.php'
       - 'bot/tests/Mvp22_2CompensationContractTest.php'
       - 'app/admin.php'
+      - 'app/assets/css/admin-shell.css'
       - 'app/assets/js/admin-compensation.js'
       - '.github/workflows/mvp15-8-economy-remote-config.yml'
       - '.github/workflows/mvp22-admin-rework.yml'
@@ -96,7 +97,7 @@ jobs:
           bad=0
           while IFS= read -r path; do
             case "$path" in
-              .github/workflows/mvp15-8-economy-remote-config.yml|.github/workflows/mvp22-admin-rework.yml|.github/workflows/mvp22-2-compensation.yml|app/admin.php|app/assets/js/admin-compensation.js|bot/admin-compensation.php|bot/economy/CompensationService.php|bot/database/migrations/20260925_0062_create_compensations.php|bot/runtime/ProductionPrimaryApplicationEntrypoints.php|bot/helpers/staging-e2e-runtime-files.txt|bot/tests/Mvp22_2CompensationWorkflowTest.php|bot/tests/Mvp22_2CompensationMySqlIntegrationTest.php|bot/tests/Mvp22_2CompensationContractTest.php)
+              .github/workflows/mvp15-8-economy-remote-config.yml|.github/workflows/mvp22-admin-rework.yml|.github/workflows/mvp22-2-compensation.yml|app/admin.php|app/assets/css/admin-shell.css|app/assets/js/admin-compensation.js|bot/admin-compensation.php|bot/economy/CompensationService.php|bot/database/migrations/20260925_0062_create_compensations.php|bot/runtime/ProductionPrimaryApplicationEntrypoints.php|bot/helpers/staging-e2e-runtime-files.txt|bot/tests/Mvp22_2CompensationWorkflowTest.php|bot/tests/Mvp22_2CompensationMySqlIntegrationTest.php|bot/tests/Mvp22_2CompensationContractTest.php)
                 ;;
               *)
                 echo "Unexpected MVP-22.2 path: $path" >&2

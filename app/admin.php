@@ -14,10 +14,10 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Панель администратора</title>
-  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=11&replay=17-6&mvp22_1=support-tickets&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
+  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=11&replay=17-6&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="./assets/js/admin-shell.js?v=6&replay=17-6&test-coins=staging" defer></script>
-  <script src="./assets/js/admin-compensation.js?v=3&mvp22_2=operation-browser-v2&selection=interactive-v1" defer></script>
+  <script src="./assets/js/admin-compensation.js?v=4&mvp22_2=admin-simple-flow-v4" defer></script>
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
   <script src="./assets/js/admin-support.js?v=7&mvp22_1=admin-rework&support_focus=ticket-detail-v1&attachment_viewer=inline-v2&reply_files=managed-v1&reply_delivery=bell-verified-v2" defer></script>
@@ -583,69 +583,121 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
       <article class="mgw-admin__card mgw-admin__card--wide" data-admin-section="economy" data-compensation-card>
         <div class="mgw-admin__card-head">
           <h2>Компенсации</h2>
-          <span>Через канонический журнал операций</span>
+          <span>Возврат коинов по списанию</span>
         </div>
-        <div class="mgw-admin__economy">
-          <div class="mgw-admin__history">
-            <h3>Выберите исходную операцию</h3>
-            <div class="mgw-admin__replay-search">
+
+        <div class="mgw-admin__compensation">
+          <section class="mgw-admin__compensation-step">
+            <div class="mgw-admin__compensation-step-head">
+              <span class="mgw-admin__compensation-step-num">1</span>
+              <div>
+                <h3>Выберите списание</h3>
+                <p>Показываем последние операции, где у игрока списались MGW Coins.</p>
+              </div>
+            </div>
+
+            <label class="mgw-admin__field">
+              <span>Исходная операция</span>
+              <select data-compensation-operation-picker>
+                <option value="">Загрузка последних списаний…</option>
+              </select>
+            </label>
+
+            <div class="mgw-admin__compensation-selected" data-compensation-selected hidden>
+              <div class="mgw-admin__compensation-selected-main">
+                <div>
+                  <span>Игрок</span>
+                  <strong data-compensation-selected-player>—</strong>
+                </div>
+                <div>
+                  <span>Списано</span>
+                  <strong data-compensation-selected-amount>—</strong>
+                </div>
+                <div>
+                  <span>Когда</span>
+                  <strong data-compensation-selected-time>—</strong>
+                </div>
+                <div>
+                  <span>Баланс сейчас</span>
+                  <strong data-compensation-selected-balance>—</strong>
+                </div>
+              </div>
+
+              <details class="mgw-admin__compensation-tech">
+                <summary>Технические данные</summary>
+                <div data-compensation-selected-tech>—</div>
+              </details>
+            </div>
+
+            <details class="mgw-admin__compensation-advanced">
+              <summary>Не нашли нужную операцию?</summary>
+              <div class="mgw-admin__compensation-advanced-body">
+                <label class="mgw-admin__field">
+                  <span>Поиск по игроку, MGW ID или операции</span>
+                  <input data-compensation-browser-query type="search" maxlength="120" autocomplete="off" placeholder="Например: Player4576286">
+                </label>
+                <button type="button" data-compensation-browser-search>Найти списания</button>
+
+                <label class="mgw-admin__field">
+                  <span>Или открыть по точному ID</span>
+                  <input data-compensation-operation type="text" maxlength="191" autocomplete="off" placeholder="entry_id или operation key">
+                </label>
+                <button type="button" data-compensation-lookup>Открыть по ID</button>
+              </div>
+            </details>
+
+            <div class="mgw-admin__compensation-message" data-compensation-lookup-status hidden></div>
+          </section>
+
+          <section class="mgw-admin__compensation-step">
+            <div class="mgw-admin__compensation-step-head">
+              <span class="mgw-admin__compensation-step-num">2</span>
+              <div>
+                <h3>Укажите сумму и причину</h3>
+                <p>Для обычного возврата сумма подставится автоматически по выбранному списанию.</p>
+              </div>
+            </div>
+
+            <div class="mgw-admin__compensation-form">
               <label class="mgw-admin__field">
-                <span>Игрок, MGW ID, ID операции или источник</span>
-                <input data-compensation-browser-query type="search" maxlength="120" autocomplete="off" placeholder="Можно оставить пустым — покажем последние операции">
+                <span>Сумма компенсации</span>
+                <input data-compensation-amount type="number" min="1" step="1" inputmode="numeric" placeholder="0">
               </label>
-              <button type="button" data-compensation-browser-search>Найти</button>
+              <label class="mgw-admin__field">
+                <span>Причина</span>
+                <input data-compensation-reason type="text" maxlength="500" autocomplete="off" placeholder="Например: ошибочное списание">
+              </label>
             </div>
-            <div data-compensation-operations>
-              <div class="mgw-admin__history-empty">Загрузка последних операций…</div>
+
+            <button class="mgw-admin__compensation-submit" type="button" data-compensation-request disabled>
+              Создать компенсацию
+            </button>
+            <p class="mgw-admin__compensation-hint" data-compensation-limit-copy>Загрузка лимитов…</p>
+
+            <div class="mgw-admin__compensation-message" data-compensation-status hidden></div>
+          </section>
+
+          <section class="mgw-admin__compensation-confirm" data-compensation-confirmation hidden>
+            <div class="mgw-admin__compensation-step-head">
+              <span class="mgw-admin__compensation-step-num">!</span>
+              <div>
+                <h3>Нужно второе подтверждение</h3>
+                <p>Крупная компенсация не будет начислена, пока вы не подтвердите её ещё раз.</p>
+              </div>
             </div>
-          </div>
+            <div class="mgw-admin__compensation-confirm-copy" data-compensation-confirmation-copy>—</div>
+            <button type="button" data-compensation-confirm>Подтвердить компенсацию</button>
+          </section>
 
-          <div class="mgw-admin__replay-search">
-            <label class="mgw-admin__field">
-              <span>Точный ID исходной операции</span>
-              <input data-compensation-operation type="text" maxlength="191" autocomplete="off" placeholder="entry_id или operation key">
-            </label>
-            <button type="button" data-compensation-lookup>Открыть по ID</button>
-          </div>
-
-          <div class="mgw-admin__replay-status" data-compensation-lookup-status>
-            Выберите операцию выше или укажите её точный ID. Баланс напрямую здесь не редактируется.
-          </div>
-          <div class="mgw-admin__replay-summary" data-compensation-operation-summary hidden></div>
-
-          <div class="mgw-admin__economy-meta">
-            <label class="mgw-admin__field">
-              <span>Сумма компенсации</span>
-              <input data-compensation-amount type="number" min="1" step="1" inputmode="numeric" placeholder="0">
-            </label>
-            <label class="mgw-admin__field">
-              <span>Причина</span>
-              <input data-compensation-reason type="text" maxlength="500" autocomplete="off" placeholder="Обязательная причина">
-            </label>
-          </div>
-
-          <div class="mgw-admin__economy-actions">
-            <button type="button" data-compensation-request disabled>Создать компенсацию</button>
-            <small data-compensation-limit-copy>Загрузка лимитов…</small>
-          </div>
-
-          <div class="mgw-admin__replay-status" data-compensation-status>
-            Компенсация создаёт отдельную компенсирующую запись ledger и не изменяет баланс напрямую.
-          </div>
-
-          <div class="mgw-admin__simulation" data-compensation-confirmation hidden>
-            <h3>Требуется второе подтверждение</h3>
-            <pre data-compensation-confirmation-copy>—</pre>
-            <div class="mgw-admin__economy-actions">
-              <button type="button" data-compensation-confirm>Подтвердить компенсацию</button>
-              <small>До второго подтверждения баланс пользователя не меняется.</small>
+          <details class="mgw-admin__compensation-history">
+            <summary>
+              <span>История компенсаций</span>
+              <strong data-compensation-history-count>0</strong>
+            </summary>
+            <div data-compensation-history>
+              <div class="mgw-admin__history-empty">Загрузка…</div>
             </div>
-          </div>
-
-          <div class="mgw-admin__history">
-            <h3>Последние компенсации</h3>
-            <div data-compensation-history><div class="mgw-admin__history-empty">Загрузка…</div></div>
-          </div>
+          </details>
         </div>
       </article>
 

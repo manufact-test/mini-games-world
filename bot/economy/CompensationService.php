@@ -45,6 +45,7 @@ final class CompensationService
         $where = [
             'l.asset_code=:asset_code',
             "(l.legacy_user_id IS NOT NULL AND TRIM(l.legacy_user_id) <> '')",
+            'l.available_delta<0',
             'l.category<>:compensation_category',
             'l.source_type<>:compensation_source_type',
         ];
@@ -100,6 +101,9 @@ final class CompensationService
 
         if ((string)$original['asset_code'] !== self::ASSET_CODE) {
             throw new InvalidArgumentException('Компенсация доступна только для MGW Coins.');
+        }
+        if ((int)$original['available_delta'] >= 0) {
+            throw new InvalidArgumentException('Компенсировать можно только исходное списание MGW Coins.');
         }
         if (trim((string)($original['legacy_user_id'] ?? '')) === '') {
             throw new InvalidArgumentException('У исходной операции нет runtime-пользователя для безопасной компенсации.');

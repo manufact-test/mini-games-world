@@ -26,7 +26,9 @@ $assert(str_contains($service, 'public function confirm('), 'Second confirmation
 $assert(str_contains($service, "'original_entry_id'"), 'Compensation metadata must link the original ledger entry.');
 $assert(str_contains($service, "'original_operation_key'"), 'Compensation metadata must link the original operation key.');
 $assert(str_contains($service, 'public function recentOperations('), 'Compensation service must expose a bounded browser of canonical source operations.');
+$assert(str_contains($service, "l.available_delta<0"), 'Operation browser must expose only debit operations.');
 $assert(str_contains($service, "l.category<>:compensation_category"), 'Operation browser must exclude compensation-on-compensation rows.');
+$assert(str_contains($service, "Компенсировать можно только исходное списание MGW Coins."), 'Server must reject positive source operations even through exact-ID lookup.');
 $assert(!preg_match('/UPDATE\s+mgw_balances/i', $service), 'Compensation service must never directly update balances.');
 $assert(!preg_match('/INSERT\s+INTO\s+mgw_ledger_entries/i', $service), 'Compensation service must never become a parallel ledger writer.');
 
@@ -36,17 +38,19 @@ $assert(str_contains($endpoint, "routeFor('economy')"), 'Compensation endpoint m
 $assert(str_contains($endpoint, 'StorageFactory::create($config)'), 'Compensation endpoint must use the active runtime storage owner for projection.');
 
 $assert(str_contains($admin, 'data-compensation-api="../bot/admin-compensation.php"'), 'Web Admin must publish the compensation endpoint.');
-$assert(str_contains($admin, 'data-compensation-operation'), 'Web Admin must keep exact original-operation lookup available.');
-$assert(str_contains($admin, 'data-compensation-browser-query'), 'Web Admin must expose a human-usable source-operation browser.');
-$assert(str_contains($admin, 'data-compensation-operations'), 'Web Admin must render recent canonical source operations.');
+$assert(str_contains($admin, 'data-compensation-operation-picker'), 'Web Admin must expose one compact source-operation dropdown.');
+$assert(str_contains($admin, 'data-compensation-operation'), 'Web Admin must keep exact original-operation lookup inside the advanced path.');
+$assert(str_contains($admin, 'data-compensation-browser-query'), 'Web Admin must keep optional advanced search available.');
+$assert(str_contains($admin, 'Технические данные'), 'Technical ledger details must be collapsed behind an explicit disclosure.');
+$assert(str_contains($admin, 'Не нашли нужную операцию?'), 'Technical lookup must stay outside the primary operator flow.');
 $assert(str_contains($admin, 'data-compensation-reason'), 'Web Admin must require a reason.');
 $assert(str_contains($admin, 'data-compensation-confirmation'), 'Web Admin must expose the second-confirmation state.');
-$assert(str_contains($admin, 'Баланс напрямую здесь не редактируется'), 'Admin copy must make the no-direct-balance-edit boundary explicit.');
+$assert(str_contains($admin, 'Возврат коинов по списанию'), 'Admin copy must describe compensation in operator language instead of ledger terminology.');
 
 $assert(str_contains($client, "action:'operations'"), 'Admin client must browse canonical source operations without requiring copied technical IDs.');
-$assert(str_contains($client, 'chooseOperation'), 'Admin client must let an operator select a browsed source operation.');
-$assert(str_contains($client, "data-compensation-operation-select"), 'Operation browser selections must have a stable control owner.');
-$assert(str_contains($client, "querySelectorAll('[data-compensation-operation-select]')"), 'Busy-state recovery must re-enable non-selected operation buttons after async search.');
+$assert(str_contains($client, 'chooseFromPicker'), 'Admin client must use the compact dropdown as the primary selection owner.');
+$assert(str_contains($client, 'rows.filter(canCompensate)'), 'Admin client must hide ineligible credit operations from the primary picker.');
+$assert(str_contains($client, 'selectedTech'), 'Technical operation metadata must render only inside the collapsed technical disclosure.');
 $assert(str_contains($client, "action:'lookup'"), 'Admin client must retain exact original-operation lookup.');
 $assert(str_contains($client, "action:'request'"), 'Admin client must use a dedicated compensation request action.');
 $assert(str_contains($client, "action:'confirm'"), 'Admin client must use a distinct confirmation request.');
