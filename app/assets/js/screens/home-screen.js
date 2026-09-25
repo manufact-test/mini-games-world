@@ -32,6 +32,13 @@ export function initHomeScreen(){
   });
   document.addEventListener('keydown', event => { if (event.key === 'Enter' && event.target?.id === 'profileOpen') openProfileFromTop(); });
   document.addEventListener('mgw:open-language-settings', openLanguageSettingsSheet);
+  document.addEventListener('mgw:open-support-ticket', event => {
+    const ticketNumber = String(event.detail?.ticket || '').trim();
+    if (!/^SUP-[0-9]{6}-[A-F0-9]{8}$/i.test(ticketNumber)) return;
+    showScreen('home');
+    closeSheet();
+    void openSupportTicketDetail(ticketNumber);
+  });
   document.addEventListener('mgw:game-finished', () => {
     historyCacheAt = 0;
     window.setTimeout(() => { void refreshHistoryCache({ force:true }).catch(() => {}); }, 700);
