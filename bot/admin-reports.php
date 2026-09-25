@@ -81,7 +81,13 @@ try {
         json_response(['ok' => false, 'error' => 'Некорректное действие очереди жалоб.'], 400);
     }
 
-    $queue = $reports->queue(100);
+    $filters = is_array($payload['filters'] ?? null) ? $payload['filters'] : [];
+    $queue = $reports->queue(100, [
+        'mode' => (string)($filters['mode'] ?? 'active'),
+        'query' => (string)($filters['query'] ?? ''),
+        'date_from' => (string)($filters['date_from'] ?? ''),
+        'date_to' => (string)($filters['date_to'] ?? ''),
+    ]);
     foreach ($queue as &$report) {
         $report['case_link'] = './admin.php?report=' . rawurlencode((string)$report['report_id']);
         $report['moderation'] = $moderation->reportSnapshot((string)$report['report_id']);
