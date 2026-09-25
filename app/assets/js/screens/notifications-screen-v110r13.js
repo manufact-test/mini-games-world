@@ -395,6 +395,21 @@ async function openNotificationDeepLink(id){
 
   if (!item.read) await markOneNotificationRead(id);
   if (notificationCenterBlockedByMatch()) return;
+
+  const supportMatch = deepLink.match(/^support:ticket:(SUP-[0-9]{6}-[A-F0-9]{8})$/i);
+  if (supportMatch) {
+    showScreen('home');
+    queueMicrotask(() => {
+      document.dispatchEvent(new CustomEvent('mgw:open-support-ticket', {
+        detail:{
+          ticket:supportMatch[1].toUpperCase(),
+          source:'notification'
+        }
+      }));
+    });
+    return;
+  }
+
   closeSheet();
   if (deepLink === 'home') {
     showScreen('home');
@@ -412,15 +427,6 @@ async function openNotificationDeepLink(id){
     showScreen('store');
     queueMicrotask(() => void openStoreOrders());
     return;
-  }
-  const supportMatch = deepLink.match(/^support:ticket:(SUP-[0-9]{6}-[A-F0-9]{8})$/i);
-  if (supportMatch) {
-    showScreen('home');
-    queueMicrotask(() => {
-      document.dispatchEvent(new CustomEvent('mgw:open-support-ticket', {
-        detail:{ ticket:supportMatch[1].toUpperCase() }
-      }));
-    });
   }
 }
 
