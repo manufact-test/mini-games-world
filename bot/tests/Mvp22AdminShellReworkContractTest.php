@@ -150,7 +150,7 @@ $assert(
 
 $assert(
     str_contains($page, "Cache-Control: no-store, no-cache, must-revalidate")
-        && str_contains($page, 'admin-shell.css?v=9')
+        && str_contains($page, 'admin-shell.css?v=10')
         && str_contains($page, 'admin-shell.js?v=6'),
     'Admin-only rework must stay no-store and publish fresh child asset identities without changing the shared game launch owner.'
 );
@@ -162,6 +162,18 @@ $assert(
         && str_contains($shell, "backOverview?.addEventListener('click'")
         && str_contains($css, '.mgw-admin__nav{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))'),
     'Manual-review fix must keep the mobile admin navigation complete and provide a clear route back to Overview.'
+);
+
+$assert(
+    str_contains($page, 'admin-support.js?v=4')
+        && str_contains($support, "detail.scrollIntoView({")
+        && !str_contains($support, "root.scrollIntoView({block:'start', behavior:'smooth'})")
+        && str_contains($support, "data-support-attachment-viewer")
+        && str_contains($support, "showAttachmentViewer")
+        && str_contains($support, "sourceButton.textContent = 'Открываю…'")
+        && str_contains($css, '.mgw-admin__attachment-viewer{')
+        && str_contains($css, '.mgw-admin__support-detail{scroll-margin-top:72px}'),
+    'Support ticket opening must focus the selected detail card and attachments must open in the inline viewer instead of blocked async popups.'
 );
 
 $assert(
