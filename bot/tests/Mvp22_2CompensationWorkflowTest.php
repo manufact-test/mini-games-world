@@ -118,10 +118,10 @@ $assertSame(88000, $lookup['current_available_amount'], 'Lookup must expose curr
 $assertSame('Comp Tester', $lookup['nickname'], 'Lookup must expose the canonical player nickname.');
 
 $recent = $service->recentOperations('', 10);
-$assertSame(2, count($recent), 'Operation browser must expose recent compensable ledger operations.');
+$assertSame(1, count($recent), 'Operation browser must expose only recent debit operations that can be compensated.');
 $assertSame((string)$original['entry_id'], $recent[0]['entry_id'], 'Operation browser must show the newest ledger operation first.');
 $searched = $service->recentOperations('Comp Tester', 10);
-$assertSame(2, count($searched), 'Operation browser must find operations by canonical nickname.');
+$assertSame(1, count($searched), 'Operation browser must find eligible debits by canonical nickname.');
 $searchedByOperation = $service->recentOperations('purchase:compensation-fixture', 10);
 $assertSame(1, count($searchedByOperation), 'Operation browser must find the exact original operation key.');
 
@@ -214,6 +214,16 @@ $assertThrows(
     ),
     'Compensation-on-compensation must be rejected.'
 );
+$assertThrows(
+    fn() => $service->requestCompensation(
+        'mvp22-2:seed',
+        100,
+        'Нельзя компенсировать начисление',
+        'telegram:admin-1',
+        'request-positive-source'
+    ),
+    'Positive ledger operations must not be valid compensation sources.'
+);
 
 $integrity = (new LedgerIntegrityVerifier($db))->verifyAccountAsset($accountRef, 'mgw_coin');
 $assertSame(true, $integrity['ok'], 'Compensation workflow must preserve ledger hash/arithmetic integrity.');
@@ -225,7 +235,7 @@ $directMutation = $db->fetchValue(
 $assertSame(2, (int)$directMutation, 'Exactly two accepted compensations must exist as canonical ledger entries.');
 
 $recentAfterCompensations = $service->recentOperations('', 10);
-$assertSame(2, count($recentAfterCompensations), 'Operation browser must exclude compensation-on-compensation ledger rows.');
+$assertSame(1, count($recentAfterCompensations), 'Operation browser must exclude credits and compensation-on-compensation ledger rows.');
 $assertTrue(
     count(array_filter($recentAfterCompensations, static fn(array $row): bool => ($row['category'] ?? '') === 'admin_compensation')) === 0,
     'Operation browser must never offer an administrative compensation as a new source operation.'
