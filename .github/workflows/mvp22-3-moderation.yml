@@ -30,8 +30,10 @@ on:
       - 'app/assets/js/screens/profile-screen-v110.js'
       - 'app/runtime/client/version-manifest.php'
       - '.github/workflows/mvp18-5-reports-blocked-users.yml'
+      - '.github/workflows/mvp22-2-compensation.yml'
       - '.github/workflows/mvp22-admin-rework.yml'
       - '.github/workflows/mvp22-3-moderation.yml'
+      - 'bot/tests/Mvp18FriendsUiContractTest.mjs'
   workflow_dispatch:
 
 permissions:
@@ -123,7 +125,7 @@ jobs:
           bad=0
           while IFS= read -r path; do
             case "$path" in
-              .github/workflows/mvp18-5-reports-blocked-users.yml|.github/workflows/mvp22-admin-rework.yml|.github/workflows/mvp22-3-moderation.yml|app/admin.php|app/assets/css/admin-shell.css|app/assets/css/main.css|app/assets/js/admin-reports.js|app/assets/js/api/client.js|app/assets/js/components/account-shortcuts.js|app/assets/js/screens/friends-screen-v110.js|app/assets/js/screens/profile-screen-v110.js|app/runtime/client/version-manifest.php|bot/admin-reports.php|bot/moderation.php|bot/moderation/ModerationService.php|bot/social/PlayerReportService.php|bot/database/migrations/20260925_0063_create_moderation_restrictions_appeals.php|bot/profile-v2.php|bot/friends.php|bot/invites.php|bot/api.php|bot/runtime/ProductionPrimaryApplicationEntrypoints.php|bot/helpers/staging-e2e-runtime-files.txt|bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php|bot/tests/Mvp22_3ModerationWorkflowTest.php|bot/tests/Mvp22_3ModerationMySqlIntegrationTest.php|bot/tests/Mvp22_3ModerationContractTest.php)
+              .github/workflows/mvp18-5-reports-blocked-users.yml|.github/workflows/mvp22-2-compensation.yml|.github/workflows/mvp22-admin-rework.yml|.github/workflows/mvp22-3-moderation.yml|app/admin.php|app/assets/css/admin-shell.css|app/assets/css/main.css|app/assets/js/admin-reports.js|app/assets/js/api/client.js|app/assets/js/components/account-shortcuts.js|app/assets/js/screens/friends-screen-v110.js|app/assets/js/screens/profile-screen-v110.js|app/runtime/client/version-manifest.php|bot/admin-reports.php|bot/moderation.php|bot/moderation/ModerationService.php|bot/social/PlayerReportService.php|bot/database/migrations/20260925_0063_create_moderation_restrictions_appeals.php|bot/profile-v2.php|bot/friends.php|bot/invites.php|bot/api.php|bot/runtime/ProductionPrimaryApplicationEntrypoints.php|bot/helpers/staging-e2e-runtime-files.txt|bot/tests/Mvp18FriendsUiContractTest.mjs|bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php|bot/tests/Mvp22_3ModerationWorkflowTest.php|bot/tests/Mvp22_3ModerationMySqlIntegrationTest.php|bot/tests/Mvp22_3ModerationContractTest.php)
                 ;;
               *)
                 echo "Unexpected MVP-22.3 path: $path" >&2
