@@ -228,6 +228,16 @@ final class SupportTicketService
         $where = [];
         $params = [];
 
+        $mode = strtolower(trim((string)($filters['mode'] ?? 'active')));
+        if (!in_array($mode, ['active', 'processed', 'all'], true)) {
+            throw new SupportTicketException('invalid_filter', 'Некорректный режим очереди.');
+        }
+        if ($mode === 'active') {
+            $where[] = "status_code NOT IN ('resolved','closed')";
+        } elseif ($mode === 'processed') {
+            $where[] = "status_code IN ('resolved','closed')";
+        }
+
         foreach (['status' => self::STATUS_LABELS, 'priority' => self::PRIORITY_LABELS, 'category' => self::CATEGORY_LABELS, 'platform' => self::PLATFORM_LABELS] as $key => $allowed) {
             $value = strtolower(trim((string)($filters[$key] ?? '')));
             if ($value === '') continue;
@@ -433,26 +443,34 @@ final class SupportTicketService
         $now = $this->timestamp();
 
         $this->database->transaction(function () use ($ticket, $column, $value, $eventType, $actorRef, $previous, $now): void {
-            $extra = '';
-            $params = [
-                'value' => $value,
-                'updated_at' => $now,
-                'ticket_id' => (string)$ticket['ticket_id'],
-            ];
             if ($column === 'status_code') {
-                $extra = ", resolved_at_utc = CASE WHEN :status_for_resolved = 'resolved' THEN :resolved_at WHEN :status_for_clear_resolved IN ('open','in_progress','waiting_user') THEN NULL ELSE resolved_at_utc END,
-                           closed_at_utc = CASE WHEN :status_for_closed = 'closed' THEN :closed_at WHEN :status_for_clear_closed <> 'closed' THEN NULL ELSE closed_at_utc END";
-                $params['status_for_resolved'] = $value;
-                $params['resolved_at'] = $now;
-                $params['status_for_clear_resolved'] = $value;
-                $params['status_for_closed'] = $value;
-                $params['closed_at'] = $now;
-                $params['status_for_clear_closed'] = $value;
+                $nextStatus = (string)$value;
+                $resolvedAt = in_array($nextStatus, ['resolved', 'closed'], true) ? $now : null;
+                $closedAt = $nextStatus === 'closed' ? $now : null;
+                $this->database->execute(
+                    'UPDATE mgw_support_tickets
+                     SET status_code = :status, updated_at_utc = :updated_at,
+                         resolved_at_utc = :resolved_at, closed_at_utc = :closed_at
+                     WHERE ticket_id = :ticket_id',
+                    [
+                        'status' => $nextStatus,
+                        'updated_at' => $now,
+                        'resolved_at' => $resolvedAt,
+                        'closed_at' => $closedAt,
+                        'ticket_id' => (string)$ticket['ticket_id'],
+                    ]
+                );
+            } else {
+                $this->database->execute(
+                    'UPDATE mgw_support_tickets SET ' . $column . ' = :value, updated_at_utc = :updated_at WHERE ticket_id = :ticket_id',
+                    [
+                        'value' => $value,
+                        'updated_at' => $now,
+                        'ticket_id' => (string)$ticket['ticket_id'],
+                    ]
+                );
             }
-            $this->database->execute(
-                'UPDATE mgw_support_tickets SET ' . $column . ' = :value, updated_at_utc = :updated_at' . $extra . ' WHERE ticket_id = :ticket_id',
-                $params
-            );
+
             $this->insertEvent(
                 (string)$ticket['ticket_id'],
                 $eventType,
