@@ -511,3 +511,24 @@
   .mgw-admin__compensation-confirm-copy{grid-template-columns:1fr}
   .mgw-admin__compensation-tech>div>div{grid-template-columns:1fr;gap:2px}
 }
+
+
+/* Economy Admin — keep technical JSON/calculation out of the default operator view */
+.mgw-admin__economy-disclosure{border:1px solid #292b34;border-radius:12px;background:#101116;overflow:hidden}
+.mgw-admin__economy-disclosure>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;cursor:pointer;list-style:none;user-select:none}
+.mgw-admin__economy-disclosure>summary::-webkit-details-marker{display:none}
+.mgw-admin__economy-disclosure>summary>span{min-width:0}
+.mgw-admin__economy-disclosure>summary strong{display:block;color:#e8e8ec;font-size:12px}
+.mgw-admin__economy-disclosure>summary small{display:block;margin-top:3px;color:#858791;font-size:10px;line-height:1.4}
+.mgw-admin__economy-disclosure>summary i{position:relative;flex:0 0 24px;width:24px;height:24px;border:1px solid #343641;border-radius:8px;background:#17181e}
+.mgw-admin__economy-disclosure>summary i::before,.mgw-admin__economy-disclosure>summary i::after{content:"";position:absolute;left:50%;top:50%;width:10px;height:1.5px;border-radius:999px;background:#b9bbc5;transform:translate(-50%,-50%)}
+.mgw-admin__economy-disclosure>summary i::after{transform:translate(-50%,-50%) rotate(90deg);transition:opacity .16s ease}
+.mgw-admin__economy-disclosure[open]>summary{border-bottom:1px solid #252730;background:#121319}
+.mgw-admin__economy-disclosure[open]>summary i::after{opacity:0}
+.mgw-admin__economy-disclosure-body{display:flex;flex-direction:column;gap:12px;padding:12px 13px 13px}
+.mgw-admin__economy-disclosure-body.mgw-admin__simulation{padding:12px 13px 13px}
+.mgw-admin__economy-disclosure-body.mgw-admin__simulation pre{max-height:440px}
+@media(max-width:760px){
+  .mgw-admin__economy-disclosure>summary{padding:11px 12px}
+  .mgw-admin__economy-disclosure-body{padding:11px 12px 12px}
+}
