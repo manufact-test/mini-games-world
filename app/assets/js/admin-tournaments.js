@@ -235,7 +235,7 @@
     if (resetConfirmTimer) window.clearTimeout(resetConfirmTimer);
     resetConfirmTimer = null;
     if (resetManual instanceof HTMLButtonElement) {
-      resetManual.textContent = 'Сбросить STAGING-турнир';
+      resetManual.textContent = 'Сбросить тестовый турнир';
     }
   };
 
@@ -273,12 +273,12 @@
     if (resetConfirmTimer) window.clearTimeout(resetConfirmTimer);
     resetConfirmTimer = window.setTimeout(() => {
       disarmResetConfirmation();
-      if (!busy) setStatus('Сброс staging-турнира не подтверждён.');
+      if (!busy) setStatus('Сброс тестового турнира не подтверждён.');
     }, 8000);
   };
 
   const post = async payload => {
-    if (!telegram?.initData) throw new Error('Откройте Web Admin из Telegram.');
+    if (!telegram?.initData) throw new Error('Откройте панель администратора из Telegram.');
     const headers = {'Content-Type':'application/json'};
     const requestedLiveSeats = Number(payload?.live_seats || 0);
     if ([1,2].includes(requestedLiveSeats)) {
@@ -337,7 +337,7 @@
     if (!reviews.length) {
       const empty = document.createElement('div');
       empty.className = 'mgw-admin__history-empty';
-      empty.textContent = 'Активных или завершённых prize-review cases пока нет.';
+      empty.textContent = 'Активных или завершённых призовых проверок пока нет.';
       reviewList.append(empty);
       return;
     }
@@ -352,7 +352,7 @@
       const title = document.createElement('strong');
       title.textContent = `${item.nickname || 'Игрок'} · ${item.public_mgw_id || item.mgw_id || '—'} · ${reviewStateLabel(item.review_state)}`;
       const signal = document.createElement('span');
-      signal.textContent = `Сигнал: ${item.signal_code || '—'}${item.related_game_id ? ` · Game ${item.related_game_id}` : ''}`;
+      signal.textContent = `Сигнал: ${item.signal_label || item.signal_code || '—'}${item.related_game_id ? ` · матч ${item.related_game_id}` : ''}`;
       const note = document.createElement('span');
       note.textContent = item.signal_note || 'Без описания.';
       const resolution = document.createElement('span');
@@ -434,19 +434,19 @@
         prepareManual.disabled = true;
         prepareManual.dataset.available = '0';
       }
-      if (manualInfo instanceof HTMLElement) manualInfo.textContent = 'Ручная проверка staging недоступна.';
+      if (manualInfo instanceof HTMLElement) manualInfo.textContent = 'Ручная проверка тестовой среды недоступна.';
       if (progressionPanel instanceof HTMLElement) progressionPanel.hidden = true;
       if (completeFixtures instanceof HTMLButtonElement) {
         completeFixtures.disabled = true;
         completeFixtures.dataset.available = '0';
       }
-      if (progressionInfo instanceof HTMLElement) progressionInfo.textContent = 'Fixture-only пары пока не требуют завершения.';
+      if (progressionInfo instanceof HTMLElement) progressionInfo.textContent = 'Тестовые пары пока не требуют завершения.';
       if (resetPanel instanceof HTMLElement) resetPanel.hidden = true;
       if (resetManual instanceof HTMLButtonElement) {
         resetManual.disabled = true;
         resetManual.dataset.available = '0';
       }
-      if (resetInfo instanceof HTMLElement) resetInfo.textContent = 'Сброс staging-турнира недоступен.';
+      if (resetInfo instanceof HTMLElement) resetInfo.textContent = 'Сброс тестового турнира недоступен.';
       releaseFocusBeforeHide(cancelPanel);
       disarmCancellationConfirmation();
       if (cancelPanel instanceof HTMLElement) cancelPanel.hidden = true;
@@ -539,7 +539,7 @@
       && (Object.keys(modes).length > 0 || manual.available === true);
     if (manualPanel instanceof HTMLElement) manualPanel.hidden = !manualVisible;
     if (manualNote instanceof HTMLElement) {
-      manualNote.textContent = 'Только STAGING: для ручной проверки MVP-21.5 добавляются 6 синтетических участников, а два места остаются двум живым аккаунтам. После заполнения 8/8 эти два живых аккаунта гарантированно попадут в одну пару первого раунда.';
+      manualNote.textContent = 'Только тестовая среда: для ручной проверки добавляются 6 синтетических участников, а два места остаются двум живым аккаунтам. После заполнения 8/8 эти два живых аккаунта гарантированно попадут в одну пару первого раунда.';
     }
     if (prepareManual instanceof HTMLButtonElement) {
       const canPrepare = selectedMode.available === true;
@@ -558,11 +558,11 @@
           : `Готово: ${format(count)}/${format(cap)}. Осталось одно живое место — зарегистрируйтесь обычным аккаунтом.`;
       } else if (selectedMode.available === true) {
         const fixtureCount = Number(selectedMode.remaining_fixture_slots || 0);
-        manualInfo.textContent = `Staging: будет добавлено ${format(fixtureCount)} тестовых участников; живых мест останется — ${format(selectedLiveSeats)}.`;
+        manualInfo.textContent = `Тестовая среда: будет добавлено ${format(fixtureCount)} тестовых участников; живых мест останется — ${format(selectedLiveSeats)}.`;
       } else if (count > target && state === 'registration_open') {
-        manualInfo.textContent = 'Для выбранного режима уже занято слишком много мест. Используйте другой режим или сбросьте staging-турнир.';
+        manualInfo.textContent = 'Для выбранного режима уже занято слишком много мест. Используйте другой режим или сбросьте тестовый турнир.';
       } else {
-        manualInfo.textContent = 'Ручная проверка staging недоступна.';
+        manualInfo.textContent = 'Ручная проверка тестовой среды недоступна.';
       }
     }
 
@@ -581,13 +581,13 @@
       const fixturePairs = Number(progression.fixture_pair_count || 0);
       const roundNo = Number(progression.round_no || 0);
       if (canCompleteFixtures) {
-        progressionInfo.textContent = `Раунд ${format(roundNo)}: fixture-only пар для staging-проверки — ${format(fixturePairs)}.`;
+        progressionInfo.textContent = `Раунд ${format(roundNo)}: тестовых пар — ${format(fixturePairs)}.`;
       } else if (progressionReason === 'no_fixture_only_pairs') {
-        progressionInfo.textContent = 'В текущем раунде нет fixture-only пар. Реальную пару нужно доиграть в клиентах.';
+        progressionInfo.textContent = 'В текущем раунде нет тестовых пар. Реальную пару нужно доиграть в клиентах.';
       } else if (progressionReason === 'no_unresolved_pairs') {
         progressionInfo.textContent = 'Текущий раунд уже завершён. Обновите турнир, чтобы увидеть следующий этап.';
       } else {
-        progressionInfo.textContent = 'Fixture-only пары пока не требуют завершения.';
+        progressionInfo.textContent = 'Тестовые пары пока не требуют завершения.';
       }
     }
 
@@ -601,7 +601,7 @@
     if (resetInfo instanceof HTMLElement) {
       resetInfo.textContent = canReset
         ? `Staging cleanup: освободить все активные резервы и снять текущий турнир «${tournament.title || 'Официальный турнир'}» с active slot.`
-        : 'Сброс staging-турнира недоступен.';
+        : 'Сброс тестового турнира недоступен.';
     }
 
     const cancellationState = cancellation && typeof cancellation === 'object' ? cancellation : {};
@@ -741,7 +741,7 @@
     const mode = manualAcceptance?.modes?.[String(liveSeats)] || {};
     const target = Number(mode.target_registered_count || Math.max(0, cap - liveSeats));
     if (!tournament || cap < 2 || target <= count) return;
-    if (!(await confirmAction(`Только STAGING: добавить тестовых участников до ${target}/${cap} и оставить живых мест — ${liveSeats}?`))) return;
+    if (!(await confirmAction(`Только тестовая среда: добавить тестовых участников до ${target}/${cap} и оставить живых мест — ${liveSeats}?`))) return;
 
     try {
       const data = await withBusy('Готовлю турнир для ручной проверки…', () => post({
@@ -760,17 +760,17 @@
     if (manualProgression?.available !== true) return;
     const fixturePairs = Number(manualProgression.fixture_pair_count || 0);
     const roundNo = Number(manualProgression.round_no || 0);
-    if (!(await confirmAction(`Только STAGING: канонически завершить fixture-only пары раунда ${roundNo} (пар: ${fixturePairs})? Реальные пары не затрагиваются.`))) return;
+    if (!(await confirmAction(`Только тестовая среда: завершить тестовые пары раунда ${roundNo} через штатный турнирный механизм (пар: ${fixturePairs})? Реальные пары не затрагиваются.`))) return;
     try {
-      const data = await withBusy('Завершаю fixture-only пары через турнирный progression owner…', () => post({
+      const data = await withBusy('Завершаю тестовые пары через штатный механизм турнирного прогресса…', () => post({
         action:'complete_fixture_pairs',
       }));
       const completed = data?.manual_progression_result || {};
       const nextRound = Number(completed.next_round_no || 0);
       const completedRound = Number(completed.round_no || 0);
       const message = nextRound > completedRound
-        ? `Fixture-only пары завершены: ${format(completed.completed_pairs || 0)}. Раунд ${format(completedRound)} закрыт, создан раунд ${format(nextRound)}.`
-        : `Fixture-only пары завершены: ${format(completed.completed_pairs || 0)}. Турнирное состояние обновлено.`;
+        ? `Тестовые пары завершены: ${format(completed.completed_pairs || 0)}. Раунд ${format(completedRound)} закрыт, создан раунд ${format(nextRound)}.`
+        : `Тестовые пары завершены: ${format(completed.completed_pairs || 0)}. Турнирное состояние обновлено.`;
       setStatus(message, 'ok');
     } catch (_) {}
   };
@@ -798,13 +798,13 @@
     restoreDraftControls();
 
     try {
-      const data = await withBusy('Безопасно сбрасываю staging-турнир и освобождаю резервы…', () => post({
+      const data = await withBusy('Безопасно сбрасываю тестовый турнир и освобождаю резервы…', () => post({
         action:'reset_manual_acceptance',
       }));
       const reset = data?.manual_reset_result || {};
       restoreDraftControls();
       setStatus(
-        `Staging-турнир сброшен: освобождено резервов — ${format(reset.released_reservations || 0)}, fixture accounts retired — ${format(reset.fixture_accounts_retired || 0)}. Можно сразу создать новый турнир.`,
+        `Тестовый турнир сброшен: освобождено резервов — ${format(reset.released_reservations || 0)}, тестовых аккаунтов завершено — ${format(reset.fixture_accounts_retired || 0)}. Можно сразу создать новый турнир.`,
         'ok'
       );
     } catch (_) {
@@ -903,7 +903,7 @@
       return;
     }
     if (decision === 'disqualify'
-        && !(await confirmAction('Дисквалифицировать игрока? Призовые места ниже будут сдвинуты каноническим settlement owner.'))) return;
+        && !(await confirmAction('Дисквалифицировать игрока? Призовые места ниже будут пересчитаны штатным механизмом расчёта.'))) return;
 
     try {
       const data = await withBusy(
