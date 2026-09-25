@@ -13,22 +13,22 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
-  <title>Mini Games World · Admin</title>
-  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=8&replay=17-6&mvp22_1=support-tickets&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
+  <title>Mini Games World · Панель администратора</title>
+  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=9&replay=17-6&mvp22_1=support-tickets&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="./assets/js/admin-shell.js?v=5&replay=17-6&test-coins=staging" defer></script>
+  <script src="./assets/js/admin-shell.js?v=6&replay=17-6&test-coins=staging" defer></script>
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
-  <script src="./assets/js/admin-support.js?v=2&mvp22_1=admin-rework" defer></script>
-  <script src="./assets/js/admin-rating.js?v=1&mvp20_8=rating-admin" defer></script>
-  <script src="./assets/js/admin-tournaments.js?v=16&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3&mvp21_5=corrective-v5&mvp21_6=fixture-progression-helper-v3&mvp21_8=corrective-v12&mvp21_8_cancel=cancellation-emergency-v1&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v2" defer></script>
+  <script src="./assets/js/admin-support.js?v=3&mvp22_1=admin-rework" defer></script>
+  <script src="./assets/js/admin-rating.js?v=2&mvp20_8=rating-admin" defer></script>
+  <script src="./assets/js/admin-tournaments.js?v=17&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3&mvp21_5=corrective-v5&mvp21_6=fixture-progression-helper-v3&mvp21_8=corrective-v12&mvp21_8_cancel=cancellation-emergency-v1&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v2" defer></script>
 </head>
 <body>
   <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-support-api="../bot/admin-support.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php">
     <header class="mgw-admin__header">
       <div class="mgw-admin__title">
         <p class="mgw-admin__eyebrow">MINI GAMES WORLD</p>
-        <h1>Web Admin</h1>
+        <h1>Панель администратора</h1>
         <p class="mgw-admin__subtitle">Рабочая панель администратора</p>
       </div>
       <div class="mgw-admin__header-actions">
@@ -41,7 +41,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
       Подключение к Telegram…
     </section>
 
-    <nav class="mgw-admin__nav" aria-label="Разделы Web Admin" data-admin-nav>
+    <nav class="mgw-admin__nav" aria-label="Разделы панели администратора" data-admin-nav>
       <button type="button" data-admin-nav-target="overview">Обзор</button>
       <button type="button" data-admin-nav-target="users">Пользователи</button>
       <button type="button" data-admin-nav-target="support">Поддержка</button>
@@ -53,8 +53,11 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
     </nav>
 
     <div class="mgw-admin__section-intro" data-admin-section-intro>
-      <strong data-admin-section-title>Обзор</strong>
-      <span data-admin-section-description>Ключевое состояние продукта и быстрый контроль.</span>
+      <button class="mgw-admin__section-back" type="button" data-admin-back-overview hidden>← К обзору</button>
+      <div class="mgw-admin__section-copy">
+        <strong data-admin-section-title>Обзор</strong>
+        <span data-admin-section-description>Ключевое состояние продукта и быстрый контроль.</span>
+      </div>
     </div>
 
     <section class="mgw-admin__meta" data-admin-meta hidden>
@@ -185,7 +188,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
                       <option value="automation">Автоматизация / бот</option>
                       <option value="duplicate_identity">Дублирующая личность</option>
                       <option value="match_manipulation">Манипуляция матчем</option>
-                      <option value="cheating_report">cheating_report</option>
+                      <option value="cheating_report">Жалоба на нечестную игру</option>
                       <option value="manual_review">Ручная проверка</option>
                     </select>
                   </label>
@@ -400,7 +403,11 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
                 </label>
                 <label class="mgw-admin__field">
                   <span>Вложения · до 3 файлов, 2 МБ каждый</span>
-                  <input data-support-reply-files type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain">
+                  <span class="mgw-admin__file-picker">
+                    <input data-support-reply-files type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain">
+                    <span class="mgw-admin__file-picker-button">Выбрать файлы</span>
+                    <strong data-support-file-summary>Файлы не выбраны</strong>
+                  </span>
                 </label>
                 <button type="button" data-support-reply-send>Отправить ответ</button>
               </div>
@@ -454,7 +461,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           </label>
           <label class="mgw-admin__field" hidden>
             <span>Идентификатор аудитории</span>
-            <input data-notification-audience-ref type="text" maxlength="191" autocomplete="off" placeholder="segment / tournament / case ID">
+            <input data-notification-audience-ref type="text" maxlength="191" autocomplete="off" placeholder="сегмент / турнир / ID обращения">
           </label>
           <label class="mgw-admin__field" hidden>
             <span>Получатели (MGW-ID)</span>
@@ -506,41 +513,43 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           <h2>Пользователи и жалобы</h2>
           <span>Ручная проверка</span>
         </div>
-        <div class="mgw-admin__economy-actions">
-          <button type="button" data-report-queue-refresh>Обновить очередь</button>
-          <small>Статус меняется вручную. Автоматические блокировки и санкции не применяются.</small>
+        <div class="mgw-admin__reports">
+          <div class="mgw-admin__economy-actions">
+            <button type="button" data-report-queue-refresh>Обновить очередь</button>
+            <small>Статус меняется вручную. Автоматические блокировки и санкции не применяются.</small>
+          </div>
+          <div class="mgw-admin__replay-status" data-report-queue-status>Очередь ещё не загружена.</div>
+          <div class="mgw-admin__history" data-report-queue-list></div>
         </div>
-        <div class="mgw-admin__replay-status" data-report-queue-status>Очередь ещё не загружена.</div>
-        <div class="mgw-admin__history" data-report-queue-list></div>
       </article>
 
 
       <article class="mgw-admin__card mgw-admin__card--wide" data-admin-section="tests" data-tournament-test-tools>
         <div class="mgw-admin__card-head">
           <h2>Тесты турниров</h2>
-          <span>Только STAGING</span>
+          <span>Только тестовая среда</span>
         </div>
         <div class="mgw-admin__tournament mgw-admin__test-stack">
 <div class="mgw-admin__tournament-schedule" data-tournament-manual-panel hidden>
-                <div class="mgw-admin__tournament-current" data-tournament-manual-info>Ручная проверка STAGING недоступна.</div>
+                <div class="mgw-admin__tournament-current" data-tournament-manual-info>Ручная проверка тестовой среды недоступна.</div>
                 <div class="mgw-admin__tournament-actions">
                   <button type="button" data-tournament-prepare-manual disabled>Подготовить 6/8 для двух живых аккаунтов</button>
                 </div>
-                <small>Только STAGING: 6 мест заполняются синтетическими участниками через тот же канонический сервис регистрации и резерв 50 000. Два места остаются двум живым аккаунтам для ручной проверки первого матча.</small>
+                <small>Только тестовая среда: 6 мест заполняются синтетическими участниками через тот же канонический сервис регистрации и резерв 50 000. Два места остаются двум живым аккаунтам для ручной проверки первого матча.</small>
               </div>
 <div class="mgw-admin__tournament-schedule" data-tournament-progression-panel hidden>
                 <div class="mgw-admin__tournament-current" data-tournament-progression-info>Тестовые пары пока не требуют завершения.</div>
                 <div class="mgw-admin__tournament-actions">
-                  <button type="button" data-tournament-complete-fixtures disabled>Завершить fixture-only пары</button>
+                  <button type="button" data-tournament-complete-fixtures disabled>Завершить тестовые пары</button>
                 </div>
-                <small>Только STAGING: завершает только пары, где оба участника — синтетические fixture. Результат проходит через канонический канонический сервис турнирного прогресса, не создаёт второй взнос и не затрагивает реально сыгранную пару.</small>
+                <small>Только тестовая среда: завершает только пары, где оба участника — синтетические fixture. Результат проходит через канонический сервис турнирного прогресса, не создаёт второй взнос и не затрагивает реально сыгранную пару.</small>
               </div>
 <div class="mgw-admin__tournament-schedule" data-tournament-reset-panel hidden>
-                <div class="mgw-admin__tournament-current" data-tournament-reset-info>Сброс STAGING-турнира недоступен.</div>
+                <div class="mgw-admin__tournament-current" data-tournament-reset-info>Сброс тестового турнира недоступен.</div>
                 <div class="mgw-admin__tournament-actions">
-                  <button type="button" data-tournament-reset-manual disabled>Сбросить staging-турнир</button>
+                  <button type="button" data-tournament-reset-manual disabled>Сбросить тестовый турнир</button>
                 </div>
-                <small>Только STAGING: все турнирные резервы освобождаются через канонический журнал операций, регистрации закрываются как отозванные, синтетические тестовые аккаунты выводятся из тестового runtime, а реальный аккаунт не деактивируется. Старый турнир остаётся в аудите и освобождает активный слот для новой проверки.</small>
+                <small>Только тестовая среда: все турнирные резервы освобождаются через канонический журнал операций, регистрации закрываются как отозванные, синтетические тестовые аккаунты выводятся из тестовой среды, а реальный аккаунт не деактивируется. Старый турнир остаётся в аудите и освобождает активный слот для новой проверки.</small>
               </div>
         </div>
       </article>
@@ -586,7 +595,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           </label>
 
           <label class="mgw-admin__field">
-            <span>Причина изменения / rollback</span>
+            <span>Причина изменения / отката</span>
             <input data-economy-reason type="text" maxlength="500" autocomplete="off" placeholder="Обязательная причина">
           </label>
 
@@ -610,7 +619,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
       <article class="mgw-admin__card mgw-admin__card--wide" data-admin-section="tests" data-test-coins-card>
         <div class="mgw-admin__card-head">
           <h2>Тестовые коины</h2>
-          <span>Только STAGING</span>
+          <span>Только тестовая среда</span>
         </div>
         <div class="mgw-admin__economy">
           <div class="mgw-admin__economy-meta">
@@ -629,7 +638,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           </label>
           <div class="mgw-admin__economy-actions">
             <button type="button" data-test-coins-grant>Начислить тестовые коины</button>
-            <small>Только staging. Пустое поле игрока использует Telegram ID текущего администратора.</small>
+            <small>Только тестовая среда. Пустое поле игрока использует Telegram ID текущего администратора.</small>
           </div>
           <div class="mgw-admin__replay-status" data-test-coins-status>Начислений в этой сессии ещё не было.</div>
         </div>
