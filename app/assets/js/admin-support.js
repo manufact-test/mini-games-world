@@ -154,7 +154,7 @@
     button.type = 'button';
     button.className = 'mgw-admin__support-attachment';
     button.textContent = `📎 ${attachment.file_name || 'Вложение'} · ${Math.max(1, Math.ceil(Number(attachment.size_bytes || 0) / 1024))} КБ`;
-    button.addEventListener('click', () => void openAttachment(String(attachment.attachment_id || '')));
+    button.addEventListener('click', () => void openAttachment(String(attachment.attachment_id || ''), button));
     return button;
   };
 
@@ -239,7 +239,6 @@
     queue.querySelectorAll('[data-ticket-number]').forEach(button => {
       button.setAttribute('aria-current', button.dataset.ticketNumber === String(ticket.ticket_number || '') ? 'true' : 'false');
     });
-    if (window.matchMedia('(max-width: 980px)').matches) root.scrollIntoView({block:'start', behavior:'smooth'});
   };
 
   const renderSnapshot = data => {
@@ -288,7 +287,12 @@
     try {
       const data = await post({action:'ticket', ticket:ticketNumber, filters:filters()});
       renderSnapshot(data);
-      if (!scroll) detail.scrollIntoView({block:'start'});
+      if (window.matchMedia('(max-width: 980px)').matches) {
+        window.requestAnimationFrame(() => detail.scrollIntoView({
+          block:'start',
+          behavior:scroll ? 'smooth' : 'auto'
+        }));
+      }
       setStatus(`${ticketNumber}: карточка и история загружены.`, 'ok');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Не удалось открыть обращение.', 'error');
@@ -356,20 +360,122 @@
     },
   });
 
-  const openAttachment = async attachmentId => {
+  let attachmentViewerUrl = '';
+
+  const closeAttachmentViewer = () => {
+    document.querySelector('[data-support-attachment-viewer]')?.remove();
+    if (attachmentViewerUrl) {
+      URL.revokeObjectURL(attachmentViewerUrl);
+      attachmentViewerUrl = '';
+    }
+  };
+
+  const showAttachmentViewer = attachment => {
+    closeAttachmentViewer();
+
+    const mime = String(attachment.mime_type || 'application/octet-stream').toLowerCase();
+    const fileName = String(attachment.file_name || 'Вложение');
+    const base64 = String(attachment.content_base64 || '');
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'mgw-admin__attachment-viewer';
+    overlay.dataset.supportAttachmentViewer = '';
+    overlay.tabIndex = -1;
+
+    const card = document.createElement('div');
+    card.className = 'mgw-admin__attachment-viewer-card';
+
+    const head = document.createElement('div');
+    head.className = 'mgw-admin__attachment-viewer-head';
+
+    const copy = document.createElement('div');
+    const title = document.createElement('strong');
+    const meta = document.createElement('span');
+    title.textContent = fileName;
+    meta.textContent = `${mime || 'файл'} · ${Math.max(1, Math.ceil(bytes.length / 1024))} КБ`;
+    copy.append(title, meta);
+
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'mgw-admin__attachment-viewer-close';
+    close.setAttribute('aria-label', 'Закрыть просмотр вложения');
+    close.textContent = '×';
+    close.addEventListener('click', closeAttachmentViewer);
+    head.append(copy, close);
+
+    const preview = document.createElement('div');
+    preview.className = 'mgw-admin__attachment-viewer-preview';
+
+    if (mime.startsWith('image/')) {
+      const image = document.createElement('img');
+      image.alt = fileName;
+      image.src = `data:${mime};base64,${base64}`;
+      preview.append(image);
+    } else if (mime === 'text/plain') {
+      const pre = document.createElement('pre');
+      pre.textContent = new TextDecoder('utf-8').decode(bytes);
+      preview.append(pre);
+    } else {
+      const note = document.createElement('div');
+      note.className = 'mgw-admin__attachment-viewer-note';
+      note.textContent = mime === 'application/pdf'
+        ? 'PDF готов к открытию.'
+        : 'Для этого типа файла доступно открытие в отдельном окне.';
+      preview.append(note);
+    }
+
+    const blob = new Blob([bytes], {type:mime || 'application/octet-stream'});
+    attachmentViewerUrl = URL.createObjectURL(blob);
+
+    const actions = document.createElement('div');
+    actions.className = 'mgw-admin__attachment-viewer-actions';
+
+    const open = document.createElement('a');
+    open.href = attachmentViewerUrl;
+    open.target = '_blank';
+    open.rel = 'noopener noreferrer';
+    open.textContent = mime === 'application/pdf' ? 'Открыть PDF' : 'Открыть отдельно';
+
+    const download = document.createElement('a');
+    download.href = attachmentViewerUrl;
+    download.download = fileName;
+    download.textContent = 'Скачать';
+
+    actions.append(open, download);
+    card.append(head, preview, actions);
+    overlay.append(card);
+
+    overlay.addEventListener('click', event => {
+      if (event.target === overlay) closeAttachmentViewer();
+    });
+    overlay.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closeAttachmentViewer();
+    });
+
+    document.body.append(overlay);
+    overlay.focus({preventScroll:true});
+  };
+
+  const openAttachment = async (attachmentId, sourceButton = null) => {
     if (!attachmentId) return;
+    const originalText = sourceButton?.textContent || '';
+    if (sourceButton) {
+      sourceButton.disabled = true;
+      sourceButton.textContent = 'Открываю…';
+    }
     try {
       const data = await post({action:'attachment', attachment_id:attachmentId});
-      const attachment = data.attachment || {};
-      const binary = atob(String(attachment.content_base64 || ''));
-      const bytes = new Uint8Array(binary.length);
-      for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
-      const blob = new Blob([bytes], {type:String(attachment.mime_type || 'application/octet-stream')});
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank', 'noopener,noreferrer');
-      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      showAttachmentViewer(data.attachment || {});
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Не удалось открыть вложение.', 'error');
+    } finally {
+      if (sourceButton?.isConnected) {
+        sourceButton.disabled = false;
+        sourceButton.textContent = originalText;
+      }
     }
   };
 
