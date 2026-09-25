@@ -42,7 +42,8 @@ assert(api.includes("const FRIENDS_URL = `${window.location.origin}/bot/friends.
 assert(api.includes('friends: (payload = {}) => requestUrl(FRIENDS_URL, payload)'), 'Active API client must expose Friends request helper');
 assert(accountShortcuts.includes("trigger.id === 'moreMenuOpen'"), 'Friends shortcut must be limited to normal topbar menu');
 assert(!accountShortcuts.includes("trigger.id === 'gameMenuOpen' ? true"), 'Game menu must not bypass active-match navigation lock');
-assert(accountShortcuts.includes('account-menu-entry--friends') && accountShortcuts.includes('account-menu-entry--orders'), 'Friends and Store orders must have explicit menu presentation roles');
+assert(accountShortcuts.includes('account-menu-entry--friends'), 'Friends must keep an explicit menu presentation role');
+assert(!accountShortcuts.includes('account-menu-entry--orders') && !accountShortcuts.includes('Мои заявки'), 'Obsolete Store orders shortcut must stay removed from the main menu');
 assert(shieldVisuals.includes("setIconOnly(icon, 'ui/navigation/friends.webp')"), 'Friends menu must use the accepted full-size navigation artwork');
 assert(shortcutCss.includes('.account-menu-entry--friends .account-menu-copy strong') && shortcutCss.includes('font-size:16px'), 'Friends menu title must stay large and white');
 assert(friendsCss.includes('linear-gradient(145deg,#1c1d28,#12151e)') && !friendsCss.includes('background:rgba(255,255,255,.86)'), 'Friend cards must use the dark MGW surface, never the old white card');
