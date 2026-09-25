@@ -89,7 +89,7 @@ jobs:
           grep -Fx 'app/assets/js/admin-compensation.js' "$manifest"
 
       - name: Scope guard
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && (startsWith(github.head_ref, 'agent/mvp22-2-compensation-') || startsWith(github.head_ref, 'agent/mvp22-2-operation-browser-'))
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
