@@ -201,6 +201,14 @@ bot/economy/EconomyConfigDefinition.php
 bot/economy/EconomyConfigService.php
 bot/database/migrations/20260815_0008_create_economy_config.php
 
+# MVP-22.2 compensation workflow. Compensation is an audited orchestration
+# layer over the existing canonical LedgerWriteService; these files must deploy
+# together so Admin never reports a compensation against a partial runtime.
+bot/admin-compensation.php
+bot/economy/CompensationService.php
+bot/database/migrations/20260925_0062_create_compensations.php
+app/assets/js/admin-compensation.js
+
 # Unversioned /app/ v114/v121 graph remains fingerprinted as an explicit
 # staging/reference route, but it is not a Telegram menu owner and is not the
 # accepted /start application graph.
