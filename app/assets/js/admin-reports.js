@@ -28,14 +28,17 @@
     return data;
   };
 
-  const labelStatus = (value) => ({ open:'Новая', reviewing:'В работе', closed:'Закрыта' })[value] || value;
+  const labelStatus = (value) => ({ open:'Новая', reviewing:'В работе', closed:'Рассмотрена' })[value] || value;
+  const statusTone = (value) => ({ open:'new', reviewing:'reviewing', closed:'closed' })[value] || 'neutral';
 
   const actionButton = (reportId, nextStatus, label) => {
     const button = document.createElement('button');
     button.type = 'button';
+    button.className = 'mgw-admin__report-action';
     button.textContent = label;
     button.dataset.reportId = reportId;
     button.dataset.reportStatus = nextStatus;
+    button.dataset.reportActionTone = nextStatus === 'closed' ? 'complete' : (nextStatus === 'reviewing' ? 'primary' : 'secondary');
     button.addEventListener('click', () => void changeStatus(reportId, nextStatus));
     return button;
   };
@@ -298,35 +301,98 @@
     }
 
     reports.forEach(report => {
-      const item = document.createElement('div');
-      item.className = 'mgw-admin__history-item';
+      const item = document.createElement('article');
+      item.className = 'mgw-admin__report-card';
       item.dataset.reportCase = String(report.report_id || '');
+      item.dataset.reportStatus = String(report.status || 'open');
 
-      const copy = document.createElement('div');
-      copy.className = 'mgw-admin__history-copy';
-      const title = document.createElement('strong');
+      const head = document.createElement('div');
+      head.className = 'mgw-admin__report-head';
+
+      const identity = document.createElement('div');
+      identity.className = 'mgw-admin__report-identity';
+      const eyebrow = document.createElement('span');
+      eyebrow.textContent = 'Жалоба игрока';
       const caseLink = document.createElement('a');
+      caseLink.className = 'mgw-admin__report-id';
       caseLink.href = String(report.case_link || `./admin.php?report=${encodeURIComponent(report.report_id || '')}`);
       caseLink.textContent = String(report.report_id || 'Жалоба');
-      title.append(caseLink, document.createTextNode(` · ${labelStatus(String(report.status || 'open'))}`));
+      identity.append(eyebrow, caseLink);
 
-      const people = document.createElement('span');
-      people.textContent = `${report.reporter_nickname || 'Игрок'} (${report.reporter_public_mgw_id || '—'}) → ${report.target_nickname || 'Игрок'} (${report.target_public_mgw_id || '—'})`;
-      const reason = document.createElement('span');
-      reason.textContent = `Причина: ${report.reason_label || report.reason || '—'}${report.related_match_id ? ` · матч ${report.related_match_id}` : ''}`;
-      const details = document.createElement('span');
-      details.textContent = report.details ? String(report.details) : 'Комментарий не добавлен.';
-      const time = document.createElement('span');
-      time.textContent = `${report.created_at || '—'} UTC${report.last_admin_ref ? ` · ${report.last_admin_ref}` : ''}`;
-      copy.append(title, people, reason, details, time);
+      const badge = document.createElement('span');
+      badge.className = 'mgw-admin__report-status';
+      badge.dataset.tone = statusTone(String(report.status || 'open'));
+      badge.textContent = labelStatus(String(report.status || 'open'));
+      head.append(identity, badge);
+
+      const reason = document.createElement('div');
+      reason.className = 'mgw-admin__report-reason';
+      const reasonLabel = document.createElement('span');
+      reasonLabel.textContent = 'Причина';
+      const reasonValue = document.createElement('strong');
+      reasonValue.textContent = String(report.reason_label || report.reason || '—');
+      reason.append(reasonLabel, reasonValue);
+
+      const people = document.createElement('div');
+      people.className = 'mgw-admin__report-people';
+
+      const reporter = document.createElement('div');
+      reporter.innerHTML = '<span>Отправитель</span>';
+      const reporterName = document.createElement('strong');
+      reporterName.textContent = String(report.reporter_nickname || 'Игрок');
+      const reporterId = document.createElement('small');
+      reporterId.textContent = String(report.reporter_public_mgw_id || '—');
+      reporter.append(reporterName, reporterId);
+
+      const target = document.createElement('div');
+      target.innerHTML = '<span>Жалоба на игрока</span>';
+      const targetName = document.createElement('strong');
+      targetName.textContent = String(report.target_nickname || 'Игрок');
+      const targetId = document.createElement('small');
+      targetId.textContent = String(report.target_public_mgw_id || '—');
+      target.append(targetName, targetId);
+      people.append(reporter, target);
+
+      const message = document.createElement('div');
+      message.className = 'mgw-admin__report-message';
+      const messageLabel = document.createElement('span');
+      messageLabel.textContent = 'Комментарий игрока';
+      const messageText = document.createElement('p');
+      messageText.textContent = report.details ? String(report.details) : 'Комментарий не добавлен.';
+      message.append(messageLabel, messageText);
 
       const actions = document.createElement('div');
-      actions.className = 'mgw-admin__economy-actions';
+      actions.className = 'mgw-admin__report-actions';
       if (report.status !== 'open') actions.append(actionButton(report.report_id, 'open', 'Вернуть в новые'));
-      if (report.status !== 'reviewing') actions.append(actionButton(report.report_id, 'reviewing', 'В работу'));
-      if (report.status !== 'closed') actions.append(actionButton(report.report_id, 'closed', 'Закрыть'));
+      if (report.status !== 'reviewing') actions.append(actionButton(report.report_id, 'reviewing', 'Взять в работу'));
+      if (report.status !== 'closed') actions.append(actionButton(report.report_id, 'closed', 'Завершить рассмотрение'));
 
-      item.append(copy, actions, moderationPanel(report));
+      const technical = document.createElement('details');
+      technical.className = 'mgw-admin__report-tech';
+      const technicalSummary = document.createElement('summary');
+      technicalSummary.textContent = 'Технические данные';
+      const technicalGrid = document.createElement('div');
+      technicalGrid.className = 'mgw-admin__report-tech-grid';
+      const technicalRows = [
+        ['ID жалобы', report.report_id || '—'],
+        ['Создана', localTime(report.created_at)],
+        ['Обновлена', localTime(report.updated_at)],
+        ['Рассмотрена', report.resolved_at ? localTime(report.resolved_at) : '—'],
+        ['Связанный матч', report.related_match_id || '—'],
+        ['Последний администратор', report.last_admin_ref || '—'],
+      ];
+      technicalRows.forEach(([label,value]) => {
+        const row = document.createElement('div');
+        const key = document.createElement('span');
+        key.textContent = String(label);
+        const val = document.createElement('strong');
+        val.textContent = String(value);
+        row.append(key, val);
+        technicalGrid.append(row);
+      });
+      technical.append(technicalSummary, technicalGrid);
+
+      item.append(head, reason, people, message, actions, technical, moderationPanel(report));
       list.append(item);
     });
 
