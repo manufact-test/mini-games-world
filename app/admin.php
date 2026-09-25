@@ -17,7 +17,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <link rel="stylesheet" href="./assets/css/admin-shell.css?v=11&replay=17-6&mvp22_1=support-tickets&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="./assets/js/admin-shell.js?v=6&replay=17-6&test-coins=staging" defer></script>
-  <script src="./assets/js/admin-compensation.js?v=2&mvp22_2=operation-browser-v2" defer></script>
+  <script src="./assets/js/admin-compensation.js?v=3&mvp22_2=operation-browser-v2&selection=interactive-v1" defer></script>
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
   <script src="./assets/js/admin-support.js?v=7&mvp22_1=admin-rework&support_focus=ticket-detail-v1&attachment_viewer=inline-v2&reply_files=managed-v1&reply_delivery=bell-verified-v2" defer></script>
