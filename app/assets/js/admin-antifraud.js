@@ -14,6 +14,7 @@
   const refreshButton = root.querySelector('[data-af-refresh]');
   const queue = root.querySelector('[data-af-queue]');
   const queueTitle = root.querySelector('[data-af-queue-title]');
+  const recentMatch = root.querySelector('[data-af-recent-match]');
   const matchInput = root.querySelector('[data-af-match-id]');
   const matchLoad = root.querySelector('[data-af-match-load]');
   const reviewBox = root.querySelector('[data-af-review]');
@@ -122,6 +123,30 @@
     if (!value) return '—';
     const date = new Date(String(value).replace(' ', 'T') + (String(value).includes('Z') || /[+-]\d\d:\d\d$/.test(String(value)) ? '' : 'Z'));
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('ru-RU');
+  };
+
+  const renderRecentMatches = matches => {
+    if (!recentMatch) return;
+    const selected = String(recentMatch.value || '');
+    recentMatch.replaceChildren();
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Выберите недавний матч';
+    recentMatch.append(placeholder);
+
+    (Array.isArray(matches) ? matches : []).forEach(match => {
+      const option = document.createElement('option');
+      option.value = String(match.match_id || '');
+      const names = (match.players || [])
+        .map(player => player.display_name || player.mgw_id || 'Игрок')
+        .filter(Boolean)
+        .join(' — ');
+      option.textContent = `${match.game_type || 'game'} · ${names || 'участники'} · ${localTime(match.finished_at)}`;
+      recentMatch.append(option);
+    });
+    if (Array.from(recentMatch.options).some(option => option.value === selected)) {
+      recentMatch.value = selected;
+    }
   };
 
   const renderQueue = cases => {
@@ -409,6 +434,7 @@
     try {
       const data = await post({action:'snapshot', filters:filters()});
       renderQueue(data.cases || []);
+      renderRecentMatches(data.recent_matches || []);
       setStatus(mode === 'closed' ? 'Обработанные кейсы загружены.' : 'Активные кейсы загружены.', 'ok');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Не удалось загрузить anti-fraud кейсы.', 'error');
@@ -448,6 +474,7 @@
       const data = await post({action:'case', case_id:caseId, filters:filters()});
       currentCase = data.case || null;
       renderQueue(data.cases || []);
+      renderRecentMatches(data.recent_matches || []);
       renderReview(data.review || null);
       setStatus(`${caseId}: данные проверки загружены.`, 'ok');
     } catch (error) {
@@ -464,6 +491,7 @@
       const data = await post({...payload, filters:filters()});
       currentCase = data.case || null;
       renderQueue(data.cases || []);
+      renderRecentMatches(data.recent_matches || []);
       renderReview(data.review || null);
       return data;
     } catch (error) {
@@ -482,6 +510,10 @@
   refreshButton.addEventListener('click', () => void loadSnapshot());
   queryInput.addEventListener('keydown', event => {
     if (event.key === 'Enter') void loadSnapshot();
+  });
+  recentMatch?.addEventListener('change', () => {
+    const matchId = String(recentMatch.value || '');
+    if (matchId) matchInput.value = matchId;
   });
   matchLoad.addEventListener('click', () => void reviewMatch());
   matchInput.addEventListener('keydown', event => {
