@@ -82,7 +82,20 @@ function diagnostics(page, slot) {
     if (path === '/bot/presence.php') value.presenceStatuses.push(status);
 
     if (status >= 500) {
-      value.serverErrors.push({ path, status, recovered:false });
+      const failure = { path, status, recovered:false };
+      value.serverErrors.push(failure);
+      void response.text().then(raw => {
+        if (!raw) return;
+        try {
+          const payload = JSON.parse(raw);
+          const debugError = String(payload?.debug_error || '').trim();
+          const debugException = String(payload?.debug_exception || '').trim();
+          if (debugError) failure.debug_error = debugError.slice(0, 1200);
+          if (debugException) failure.debug_exception = debugException.slice(0, 200);
+        } catch {
+          failure.response = raw.replace(/\s+/g, ' ').slice(0, 1200);
+        }
+      }).catch(() => {});
       return;
     }
 
