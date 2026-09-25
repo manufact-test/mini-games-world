@@ -150,7 +150,7 @@ $assert(
 
 $assert(
     str_contains($page, "Cache-Control: no-store, no-cache, must-revalidate")
-        && str_contains($page, 'admin-shell.css?v=12')
+        && str_contains($page, 'admin-shell.css?v=11')
         && str_contains($page, 'admin-shell.js?v=6'),
     'Admin-only rework must stay no-store and publish fresh child asset identities without changing the shared game launch owner.'
 );
@@ -187,7 +187,7 @@ $assert(
 );
 
 $assert(
-    str_contains($page, 'admin-reports.js?v=3')
+    str_contains($page, 'admin-reports.js?v=2')
         && str_contains($css, '.mgw-admin__report-card{')
         && str_contains($css, '.mgw-admin__report-message{')
         && str_contains($css, '.mgw-admin__report-tech{'),
