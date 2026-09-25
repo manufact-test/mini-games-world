@@ -80,13 +80,13 @@ $assert(
 );
 
 $assert(
-    str_contains($telegram, "'text' => '🌐 Открыть Web Admin'")
+    str_contains($telegram, "'text' => '🌐 Открыть панель администратора'")
         && str_contains($telegram, 'WebAppLaunchUrl::admin($this->config)')
         && str_contains($telegram, '$mainAdminCallbacks[\'admin:dashboard\']')
         && str_contains($telegram, '$mainAdminCallbacks[\'admin:orders\']')
         && str_contains($telegram, '$mainAdminCallbacks[\'admin:support\']')
         && str_contains($telegram, '$mainAdminCallbacks[\'admin:users\']'),
-    'The legacy Telegram admin keyboard must now collapse to the single Web Admin launch button while backend callbacks remain available.'
+    'The legacy Telegram admin keyboard must collapse to the single Russian admin-panel launch button while backend callbacks remain available.'
 );
 
 $assert(

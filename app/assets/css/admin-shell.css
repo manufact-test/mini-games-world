@@ -194,3 +194,72 @@
   .mgw-admin__header-actions{display:grid;grid-template-columns:1fr}
   .mgw-admin__refresh{width:100%}
 }
+
+
+/* MVP-22 · manual review polish */
+.mgw-admin__section-intro{align-items:flex-start}
+.mgw-admin__section-copy{display:grid;gap:3px;min-width:0}
+.mgw-admin__section-back{flex:0 0 auto;min-height:36px;padding:0 11px;border:1px solid #373944;border-radius:9px;background:#14151b;color:#e7e7eb;font:inherit;font-size:12px;font-weight:750;cursor:pointer}
+.mgw-admin__section-back:hover{border-color:#6557d9;background:#1b1930}
+.mgw-admin__reports{display:grid;gap:12px;padding:14px}
+.mgw-admin__reports>.mgw-admin__economy-actions,
+.mgw-admin__reports>.mgw-admin__replay-status,
+.mgw-admin__reports>.mgw-admin__history{margin:0}
+.mgw-admin__economy-actions,
+.mgw-admin__rating-actions,
+.mgw-admin__tournament-actions,
+.mgw-admin__support-owner-actions{width:100%}
+.mgw-admin__economy-actions button,
+.mgw-admin__rating-actions button,
+.mgw-admin__tournament-actions button,
+.mgw-admin__support-owner-actions button{flex:1 1 160px}
+.mgw-admin__file-picker{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px;min-height:44px;padding:6px;border:1px solid #30313a;border-radius:10px;background:#0c0d11;overflow:hidden}
+.mgw-admin__file-picker input{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none}
+.mgw-admin__file-picker-button{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 11px;border:1px solid #6557d9;border-radius:8px;background:#282342;color:#fff;font-size:12px;font-weight:800;cursor:pointer}
+.mgw-admin__file-picker strong{min-width:0;overflow:hidden;color:#a8aab4;font-size:11px;font-weight:650;text-overflow:ellipsis;white-space:nowrap}
+.mgw-admin__file-picker:focus-within{border-color:#6e5cff}
+.mgw-admin__support-reply>button,
+.mgw-admin__support-related>button,
+.mgw-admin__support-filters>button{width:100%}
+.mgw-admin__nav button{scroll-snap-align:start}
+.mgw-admin__nav{scroll-snap-type:x proximity}
+@media(max-width:720px){
+  .mgw-admin{padding-top:max(14px,env(safe-area-inset-top))}
+  .mgw-admin__header{margin-bottom:12px}
+  .mgw-admin__nav{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible;margin:0 0 14px;padding:6px;gap:6px;scroll-snap-type:none}
+  .mgw-admin__nav button{width:100%;min-width:0;padding:0 8px;white-space:normal;line-height:1.15}
+  .mgw-admin__section-intro{display:flex;align-items:flex-start;gap:9px;margin-bottom:12px}
+  .mgw-admin__section-copy{flex:1}
+  .mgw-admin__section-copy strong{font-size:19px}
+  .mgw-admin__section-copy span{line-height:1.4}
+  .mgw-admin__meta{margin-bottom:14px}
+  .mgw-admin__card-head{padding:14px}
+  .mgw-admin__reports,.mgw-admin__support,.mgw-admin__rating,.mgw-admin__tournament,.mgw-admin__economy,.mgw-admin__replay{padding:12px}
+  .mgw-admin__reports{gap:12px}
+  .mgw-admin__economy-actions,
+  .mgw-admin__rating-actions,
+  .mgw-admin__tournament-actions,
+  .mgw-admin__support-owner-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;align-items:stretch}
+  .mgw-admin__economy-actions button,
+  .mgw-admin__rating-actions button,
+  .mgw-admin__tournament-actions button,
+  .mgw-admin__support-owner-actions button{width:100%;min-width:0}
+  .mgw-admin__economy-actions small,
+  .mgw-admin__rating-actions small,
+  .mgw-admin__tournament-actions small{grid-column:1/-1;margin-top:2px;line-height:1.45}
+  .mgw-admin__support-panel{padding:12px}
+  .mgw-admin__support-status{padding:12px}
+  .mgw-admin__support-reply{padding:11px}
+  .mgw-admin__file-picker{grid-template-columns:1fr;gap:6px}
+  .mgw-admin__file-picker-button{width:100%}
+  .mgw-admin__file-picker strong{text-align:center;padding:2px 5px}
+}
+@media(max-width:430px){
+  .mgw-admin__nav{grid-template-columns:1fr 1fr}
+  .mgw-admin__nav button{font-size:11.5px}
+  .mgw-admin__section-back{min-height:34px;padding:0 9px}
+  .mgw-admin__economy-actions,
+  .mgw-admin__rating-actions,
+  .mgw-admin__tournament-actions,
+  .mgw-admin__support-owner-actions{grid-template-columns:1fr}
+}

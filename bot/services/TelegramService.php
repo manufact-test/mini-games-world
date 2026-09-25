@@ -231,7 +231,7 @@ final class TelegramService
                 return [
                     'inline_keyboard' => [[
                         [
-                            'text' => '🌐 Открыть Web Admin',
+                            'text' => '🌐 Открыть панель администратора',
                             'web_app' => ['url' => $adminUrl],
                         ],
                     ]],

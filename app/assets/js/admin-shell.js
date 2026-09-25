@@ -15,6 +15,7 @@
   const nav = root.querySelector('[data-admin-nav]');
   const navButtons = Array.from(root.querySelectorAll('[data-admin-nav-target]'));
   const sectionTitle = root.querySelector('[data-admin-section-title]');
+  const backOverview = root.querySelector('[data-admin-back-overview]');
   const sectionDescription = root.querySelector('[data-admin-section-description]');
   const dashboard = root.querySelector('[data-admin-dashboard]');
   const overviewSystem = root.querySelector('[data-overview-system]');
@@ -67,7 +68,7 @@
     economy:['Экономика','Версионные настройки экономики и аудит изменений.'],
     notifications:['Уведомления','Сообщения игрокам через единый центр уведомлений.'],
     system:['Система','Состояние runtime и диагностическая сводка.'],
-    tests:['Тесты','Staging-инструменты и диагностические сценарии.'],
+    tests:['Тесты','Инструменты тестовой среды и диагностические сценарии.'],
   };
 
   const renderDashboard = raw => {
@@ -119,7 +120,11 @@
       const selected = button.dataset.adminNavTarget === section;
       button.classList.toggle('is-active', selected);
       button.setAttribute('aria-current', selected ? 'page' : 'false');
+      if (selected && window.innerWidth > 720) {
+        button.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+      }
     });
+    if (backOverview) backOverview.hidden = section === 'overview';
     const meta = sections[section];
     sectionTitle.textContent = meta[0];
     sectionDescription.textContent = meta[1];
@@ -130,6 +135,7 @@
   navButtons.forEach(button => {
     button.addEventListener('click', () => applySection(String(button.dataset.adminNavTarget || 'overview')));
   });
+  backOverview?.addEventListener('click', () => applySection('overview'));
   root.querySelectorAll('[data-admin-shortcut]').forEach(button => {
     button.addEventListener('click', () => applySection(String(button.dataset.adminShortcut || 'overview')));
   });
@@ -186,7 +192,7 @@
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.ok !== true) {
-      throw new Error(String(data.error || 'Не удалось выполнить запрос панели.'));
+      throw new Error(String(data.error || 'Не удалось выполнить запрос панели администратора.'));
     }
     return data;
   };
@@ -194,8 +200,8 @@
   const renderBase = (data) => {
     const rawEnvironment = String(data.environment || 'production').toLowerCase();
     const environmentLabel = rawEnvironment === 'staging'
-      ? 'STAGING'
-      : rawEnvironment === 'production' ? 'PRODUCTION' : rawEnvironment.toUpperCase();
+      ? 'ТЕСТОВАЯ СРЕДА'
+      : rawEnvironment === 'production' ? 'РАБОЧАЯ СРЕДА' : 'НЕИЗВЕСТНАЯ СРЕДА';
     environment.textContent = environmentLabel;
     environmentBadge.textContent = environmentLabel;
     environmentBadge.dataset.environment = rawEnvironment;
@@ -225,7 +231,7 @@
 
   const historyLabel = (entry) => {
     const type = entry.change_type === 'rollback'
-      ? `rollback к v${entry.source_version}`
+      ? `откат к v${entry.source_version}`
       : entry.change_type === 'seed' ? 'начальная версия' : 'изменение';
     return `v${entry.version} · ${type}`;
   };
@@ -312,20 +318,20 @@
     replaySummary.replaceChildren();
     replayTimeline.replaceChildren();
     replayFrames.replaceChildren();
-    addReplaySummary('Match', match.match_id || '—');
+    addReplaySummary('Матч', match.match_id || '—');
     addReplaySummary('Игра', match.game_type || '—');
     addReplaySummary('Статус', match.status || '—');
-    addReplaySummary('State version', match.state_version || '—');
+    addReplaySummary('Версия состояния', match.state_version || '—');
     addReplaySummary('События', diagnostics.event_count ?? timeline.length);
-    addReplaySummary('Snapshots', diagnostics.snapshot_count ?? frames.length);
+    addReplaySummary('Снимки', diagnostics.snapshot_count ?? frames.length);
     addReplaySummary('Игроки', players.map(player => player.display_name || player.player_ref).join(' / ') || '—');
-    addReplaySummary('Replayable', diagnostics.replayable === true ? 'YES' : 'NO');
+    addReplaySummary('Воспроизводится', diagnostics.replayable === true ? 'Да' : 'Нет');
 
     timeline.forEach(event => {
-      const actor = event.actor_user_id ? ` · actor ${event.actor_user_id}` : '';
+      const actor = event.actor_user_id ? ` · участник ${event.actor_user_id}` : '';
       replayTimeline.append(replayDetails(
         `${event.event_type || 'event'} · rev ${event.primary_revision}.${event.event_ordinal}`,
-        `${event.occurred_at_utc || '—'} · snapshot v${event.snapshot_state_version || '—'}${actor}`,
+        `${event.occurred_at_utc || '—'} · снимок v${event.snapshot_state_version || '—'}${actor}`,
         event
       ));
     });
@@ -338,8 +344,8 @@
 
     frames.forEach(frame => {
       replayFrames.append(replayDetails(
-        `Snapshot v${frame.state_version}`,
-        `${frame.created_at_utc || '—'} · events ${Array.isArray(frame.events) ? frame.events.length : 0}`,
+        `Снимок v${frame.state_version}`,
+        `${frame.created_at_utc || '—'} · событий ${Array.isArray(frame.events) ? frame.events.length : 0}`,
         frame
       ));
     });
@@ -348,8 +354,8 @@
       ? diagnostics.missing_snapshot_versions.join(', ')
       : '';
     replayStatus.textContent = diagnostics.replayable === true
-      ? 'Replay chain целостна: durable events связаны с immutable snapshots.'
-      : `Replay chain неполна${missing ? `; отсутствуют snapshots: ${missing}` : '.'}`;
+      ? 'Цепочка воспроизведения целостна: события связаны с неизменяемыми снимками состояния.'
+      : `Цепочка воспроизведения неполна${missing ? `; отсутствуют снимки: ${missing}` : '.'}`;
     replayStatus.dataset.state = diagnostics.replayable === true ? 'ok' : 'error';
     replayOutput.hidden = false;
   };
@@ -358,21 +364,21 @@
     if (requestInFlight) return;
     const matchId = replayMatchId.value.trim();
     if (!matchId) {
-      replayStatus.textContent = 'Укажите Match ID.';
+      replayStatus.textContent = 'Укажите ID матча.';
       replayStatus.dataset.state = 'error';
       replayMatchId.focus();
       return;
     }
 
     setBusy(true);
-    replayStatus.textContent = 'Читаю durable event log и snapshots…';
+    replayStatus.textContent = 'Читаю журнал событий и снимки состояния…';
     delete replayStatus.dataset.state;
     replayOutput.hidden = true;
     try {
       const data = await post(replayEndpoint, {action: 'match_replay', matchId});
       renderReplay(data);
     } catch (error) {
-      replayStatus.textContent = error instanceof Error ? error.message : 'Не удалось загрузить replay.';
+      replayStatus.textContent = error instanceof Error ? error.message : 'Не удалось загрузить диагностику матча.';
       replayStatus.dataset.state = 'error';
     } finally {
       setBusy(false);
@@ -382,7 +388,7 @@
   const load = async () => {
     if (requestInFlight) return;
     if (!telegram || !telegram.initData) {
-      setStatus('Откройте Web Admin кнопкой из админ-панели бота в Telegram.', 'error');
+      setStatus('Откройте панель администратора кнопкой из админ-панели бота в Telegram.', 'error');
       return;
     }
 
@@ -447,14 +453,14 @@
     if (!window.confirm(`Создать новую версию экономики на основе v${version}?`)) return;
 
     setBusy(true);
-    setStatus(`Создаю rollback-версию из v${version}…`);
+    setStatus(`Создаю версию отката из v${version}…`);
     try {
       const data = await post(economyEndpoint, {action: 'rollback', version, reason});
       renderEconomy(data);
       economyReason.value = '';
-      setStatus(`Rollback сохранён как новая v${data.current.version}. История не переписывалась.`, 'ok');
+      setStatus(`Откат сохранён как новая v${data.current.version}. История не переписывалась.`, 'ok');
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Не удалось выполнить rollback.', 'error');
+      setStatus(error instanceof Error ? error.message : 'Не удалось выполнить откат.', 'error');
     } finally {
       setBusy(false);
     }

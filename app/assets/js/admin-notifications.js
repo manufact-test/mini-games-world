@@ -111,7 +111,7 @@
   const load = async () => {
     if (busy) return;
     if (!telegram?.initData) {
-      status.textContent = 'Откройте Web Admin из Telegram.';
+      status.textContent = 'Откройте панель администратора из Telegram.';
       status.dataset.state = 'error';
       return;
     }
@@ -138,7 +138,7 @@
   const create = async () => {
     if (busy) return;
     if (!telegram?.initData) {
-      status.textContent = 'Откройте Web Admin из Telegram.';
+      status.textContent = 'Откройте панель администратора из Telegram.';
       status.dataset.state = 'error';
       return;
     }

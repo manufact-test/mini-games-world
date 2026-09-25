@@ -37,7 +37,7 @@
   };
 
   const post = async payload => {
-    if (!telegram?.initData) throw new Error('Откройте Web Admin из Telegram.');
+    if (!telegram?.initData) throw new Error('Откройте панель администратора из Telegram.');
     const response = await fetch(endpoint, {
       method:'POST',
       cache:'no-store',
@@ -78,13 +78,15 @@
     const m = snapshot?.metrics || {};
     const state = String(competition.competition_state || '—');
     const season = String(currentSeason.season_id || competition.current_season_id || '—');
-    const stateLabel = ({OFF:'Выключено',PRESEASON:'Предсезон',ACTIVE:'Активно'})[state] || state;
+    const normalizedState = state.toUpperCase();
+    const stateLabel = ({OFF:'Выключено',PRESEASON:'Предсезон',ACTIVE:'Активно'})[normalizedState] || 'Неизвестно';
+    const seasonLabel = season.toLowerCase() === 'preseason' ? 'Предсезон' : season;
     window.dispatchEvent(new CustomEvent('mgw:admin-rating-summary', {
-      detail:{state, stateLabel, season}
+      detail:{state, stateLabel, season:seasonLabel}
     }));
     metrics.append(
       metricCard('Состояние соревнований', stateLabel),
-      metricCard('Сезон', season),
+      metricCard('Сезон', seasonLabel),
       metricCard('Строк рейтинга', Number(m.score_rows || 0).toLocaleString('ru-RU')),
       metricCard('Участий', Number(m.participation_rows || 0).toLocaleString('ru-RU')),
       metricCard('Ожидают проекции', Number(m.pending_projection_count || 0), Number(m.pending_projection_count || 0) > 0 ? 'warn' : 'ok'),
@@ -94,6 +96,16 @@
     );
     if (!seasonInput.value && currentSeason.season_id) seasonInput.value = String(currentSeason.season_id);
   };
+
+  const jobStateLabel = value => ({
+    queued:'В очереди',
+    running:'Выполняется',
+    completed:'Завершён',
+    complete:'Завершён',
+    done:'Завершён',
+    failed:'Ошибка',
+    cancelled:'Отменён',
+  })[String(value || '').toLowerCase()] || String(value || '—');
 
   const empty = text => {
     const node = document.createElement('div');
@@ -145,7 +157,7 @@
       copy.className = 'mgw-admin__history-copy';
       const title = document.createElement('strong');
       const details = document.createElement('span');
-      title.textContent = `${row.season_id || '—'} · ${row.job_state || '—'}`;
+      title.textContent = `${String(row.season_id || '—').toLowerCase() === 'preseason' ? 'Предсезон' : (row.season_id || '—')} · ${jobStateLabel(row.job_state)}`;
       const excluded = Array.isArray(row.excluded_mgw_ids) ? row.excluded_mgw_ids.length : 0;
       details.textContent = `${row.job_id || '—'} · исключений: ${excluded} · ${row.reason_text || '—'}`;
       copy.append(title, details);
