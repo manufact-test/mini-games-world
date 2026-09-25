@@ -40,6 +40,34 @@ foreach ([
     $assert(str_contains($page, $needle), 'Anti-fraud Admin surface missing: ' . $needle);
 }
 
+
+$assert(
+    str_contains($page, 'data-af-home-mode="match"')
+        && str_contains($page, 'data-af-review-tab="overview"')
+        && str_contains($page, 'data-af-review-tab="replay"')
+        && str_contains($page, 'data-af-review-tab="pair"')
+        && str_contains($page, 'data-af-review-tab="devices"')
+        && str_contains($page, 'data-af-review-tab="case"')
+        && str_contains($page, 'Проверка матча в три шага')
+        && str_contains($page, 'Пошаговый повтор матча')
+        && str_contains($page, 'Это не видео.')
+        && str_contains($page, 'Технические данные повтора'),
+    'Anti-fraud Admin must use a guided match review workspace instead of one long stacked diagnostic page.'
+);
+
+$assert(
+    str_contains($ui, "const showHome = nextMode =>")
+        && str_contains($ui, "const showReviewTab = name =>")
+        && str_contains($ui, "const openReviewWorkspace = preferredTab =>")
+        && str_contains($ui, "const renderReplayAvailability = review =>")
+        && str_contains($ui, "frames.length === 1")
+        && str_contains($ui, "Пошаговый повтор недоступен")
+        && str_contains($ui, "reviewBox.scrollIntoView")
+        && str_contains($ui, "openReviewWorkspace('overview')")
+        && str_contains($ui, "openReviewWorkspace('case')"),
+    'Anti-fraud UI must visibly transition into review, explain unavailable replay, and route cases to their own tab.'
+);
+
 $assert(
     str_contains($page, 'admin-antifraud.js')
         && str_contains($page, 'data-replay-api="../bot/admin-replay.php"')
@@ -75,7 +103,7 @@ foreach ([
 
 $assert(
     str_contains($css, '.mgw-admin__antifraud')
-        && str_contains($css, '.mgw-admin__af-layout')
+        && str_contains($css, '.mgw-admin__af-review-tabs')
         && str_contains($css, '.mgw-admin__af-player-grid')
         && str_contains($css, '@media(max-width:640px)'),
     'Anti-fraud Admin workspace must have responsive styling.'
