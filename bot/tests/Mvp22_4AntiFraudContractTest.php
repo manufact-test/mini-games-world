@@ -126,7 +126,7 @@ $assert(
 
 $assert(
     str_contains($reader, "'mgw_id' =>")
-        && str_contains($reader, "$row['seat_index'] ?? $row['seat']")
+        && str_contains($reader, "\$row['seat_index'] ?? \$row['seat']")
         && !str_contains($reader, 'ORDER BY seat_index, player_ref'),
     'Replay reader must expose canonical player identity and support the canonical seat schema.'
 );
