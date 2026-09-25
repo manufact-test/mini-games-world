@@ -13,6 +13,11 @@ let historyCache = null;
 let historyCacheAt = 0;
 let historyCachePromise = null;
 
+const SUPPORT_TICKETS_CACHE_MAX_AGE_MS = 15000;
+let supportTicketsCache = null;
+let supportTicketsCacheAt = 0;
+let supportTicketsCachePromise = null;
+
 window.__MGW_MATCH_HISTORY_UI_BUILD__ = 'mvp17-5-history-economy-live-owner-v3';
 window.__MGW_HISTORY_MODAL_UX_BUILD__ = 'mvp17-5-prefetched-history-v3';
 
@@ -50,6 +55,7 @@ export function renderStats(stats){
 
 function openMoreMenuSheet(){
   void refreshHistoryCache().catch(() => {});
+  void refreshSupportTicketsCache().catch(() => {});
   openSheet(`<div class="sheet-head"><div><h2>Меню</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="menu-list">
     ${menuItemMarkup('settingsBtn', '⚙️', t('settings.title'))}
     ${menuItemMarkup('rulesBtn', '📘', 'Правила')}
@@ -239,6 +245,7 @@ function openSupportForm(type){
         attachments,
       });
       const number=result?.ticket?.ticket_number||'';
+      supportTicketsCacheAt=0;
       closeSheet();
       toast(number?(`Обращение ${number} создано.`):'Обращение создано.');
     }catch(error){
@@ -249,38 +256,68 @@ function openSupportForm(type){
   });
 }
 
+function isSupportTicketsCacheStale(){
+  return !supportTicketsCache || (Date.now()-supportTicketsCacheAt)>=SUPPORT_TICKETS_CACHE_MAX_AGE_MS;
+}
+
+function refreshSupportTicketsCache({force=false}={}){
+  if(!force&&!isSupportTicketsCacheStale())return Promise.resolve(supportTicketsCache);
+  if(supportTicketsCachePromise)return supportTicketsCachePromise;
+  supportTicketsCachePromise=api.supportSnapshot()
+    .then(result=>{supportTicketsCache=result;supportTicketsCacheAt=Date.now();return result;})
+    .finally(()=>{supportTicketsCachePromise=null;});
+  return supportTicketsCachePromise;
+}
+
 async function openSupportTicketsSheet(){
-  openSheet(`<div class="sheet-head support-hub-head"><div><h2>Мои обращения</h2></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="support-ticket-summary" id="supportTicketsState">Загружаю…</div>
-    <div class="support-ticket-list" id="supportTicketsList"></div>`);
   try{
-    const result=await api.supportSnapshot();
-    const list=document.getElementById('supportTicketsList');
-    const stateNode=document.getElementById('supportTicketsState');
-    if(!list||!stateNode)return;
+    const result=supportTicketsCache||await refreshSupportTicketsCache();
     const tickets=Array.isArray(result?.tickets)?result.tickets:[];
-    stateNode.textContent=tickets.length?`Обращений: ${tickets.length}`:'Обращений пока нет.';
-    list.innerHTML=tickets.map(ticket=>{
-      const status=escapeHtml(ticket.status_label||ticket.status||'');
-      const priority=escapeHtml(ticket.priority_label||ticket.priority||'');
-      const category=escapeHtml(ticket.category_label||'');
-      const date=escapeHtml(formatDate(ticket.updated_at||''));
-      return `<button class="support-ticket-row" type="button" data-support-ticket="${escapeHtml(ticket.ticket_number||'')}">
-        <span class="support-ticket-row-top"><strong>${escapeHtml(ticket.ticket_number||'Обращение')}</strong><em>${status}</em></span>
-        <span class="support-ticket-row-subject">${escapeHtml(ticket.subject||ticket.category_label||'')}</span>
-        <span class="support-ticket-row-meta"><span>${category}</span><span>${priority}</span><time>${date}</time></span>
-      </button>`;
-    }).join('');
-    list.querySelectorAll('[data-support-ticket]').forEach(button=>button.addEventListener('click',()=>void openSupportTicketDetail(button.dataset.supportTicket||'')));
+    renderSupportTicketsSheet(tickets);
+    if(isSupportTicketsCacheStale()){
+      void refreshSupportTicketsCache({force:true}).catch(()=>{});
+    }
   }catch(error){
-    const stateNode=document.getElementById('supportTicketsState');
-    if(stateNode)stateNode.textContent=error.message||'Не удалось загрузить обращения.';
+    toast(error.message||'Не удалось загрузить обращения.');
   }
 }
 
-async function openSupportTicketDetail(ticketNumber){
+function renderSupportTicketsSheet(tickets){
+  const rows=tickets.map(ticket=>{
+    const status=escapeHtml(supportTicketStatusLabel(ticket));
+    const priority=escapeHtml(ticket.priority_label||ticket.priority||'');
+    const category=escapeHtml(ticket.category_label||'');
+    const date=escapeHtml(formatDate(ticket.updated_at||''));
+    return `<button class="support-ticket-row" type="button" data-support-ticket="${escapeHtml(ticket.ticket_number||'')}">
+      <span class="support-ticket-row-top"><strong>${escapeHtml(ticket.ticket_number||'Обращение')}</strong><em>${status}</em></span>
+      <span class="support-ticket-row-subject">${escapeHtml(ticket.subject||ticket.category_label||'')}</span>
+      <span class="support-ticket-row-meta"><span>${category}</span><span>${priority}</span><time>${date}</time></span>
+    </button>`;
+  }).join('');
+
+  openSheet(`<div class="sheet-head support-hub-head"><div><h2>Мои обращения</h2></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="support-ticket-summary">${tickets.length?`Обращений: ${tickets.length}`:'Обращений пока нет.'}</div>
+    <div class="support-ticket-list">${rows}</div>`);
+
+  document.querySelectorAll('[data-support-ticket]').forEach(button=>button.addEventListener('click',()=>void openSupportTicketDetail(button.dataset.supportTicket||'',button)));
+}
+
+async function openSupportTicketDetail(ticketNumber,sourceButton=null){
   if(!ticketNumber)return;
-  openSheet(`<div class="sheet-head support-thread-head"><div><h2>${escapeHtml(ticketNumber)}</h2><p id="supportTicketMeta">Загружаю…</p></div><button class="close" data-close-sheet type="button">×</button></div>
+  if(sourceButton)sourceButton.disabled=true;
+  try{
+    const result=await api.supportTicket(ticketNumber);
+    const ticket=result?.ticket;
+    if(!ticket)throw new Error('Не удалось открыть обращение.');
+    renderSupportTicketDetail(ticketNumber,ticket);
+  }catch(error){
+    toast(error.message||'Не удалось открыть обращение.');
+    if(sourceButton?.isConnected)sourceButton.disabled=false;
+  }
+}
+
+function renderSupportTicketDetail(ticketNumber,ticket){
+  openSheet(`<div class="sheet-head support-thread-head"><div><h2>${escapeHtml(ticketNumber)}</h2><p id="supportTicketMeta">${escapeHtml(supportTicketStatusLabel(ticket))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="support-thread" id="supportTicketThread"></div>
     <div class="support-reply-composer">
       <span class="support-reply-title">Ответить</span>
@@ -295,39 +332,48 @@ async function openSupportTicketDetail(ticketNumber){
       </div>
       <button class="btn primary full support-reply-send" id="supportReplySend" type="button">Отправить</button>
     </div>`);
+
   const replyPicker=mountSupportFilePicker('supportReplyFiles','supportReplyFilesTrigger','supportReplyFilesList');
-  try{
-    const result=await api.supportTicket(ticketNumber);
-    renderSupportTicketThread(result?.ticket);
-    document.getElementById('supportReplySend')?.addEventListener('click',async()=>{
-      const message=document.getElementById('supportReplyText')?.value.trim()||'';
-      if(!message)return toast('Напишите сообщение.');
-      const send=document.getElementById('supportReplySend');
-      if(send)send.disabled=true;
-      try{
-        const attachments=await supportFilesPayload(replyPicker.getFiles());
-        const updated=await api.supportReply(ticketNumber,message,attachments);
-        renderSupportTicketThread(updated?.ticket);
-        const input=document.getElementById('supportReplyText');
-        if(input)input.value='';
-        replyPicker.clear();
-        toast('Сообщение отправлено.');
-      }catch(error){
-        toast(error.message||'Не удалось отправить сообщение.');
-      }finally{
-        if(send)send.disabled=false;
-      }
-    });
-  }catch(error){
-    const meta=document.getElementById('supportTicketMeta');
-    if(meta)meta.textContent=error.message||'Не удалось открыть обращение.';
-  }
+  renderSupportTicketThread(ticket);
+
+  document.getElementById('supportReplySend')?.addEventListener('click',async()=>{
+    const message=document.getElementById('supportReplyText')?.value.trim()||'';
+    if(!message)return toast('Напишите сообщение.');
+    const send=document.getElementById('supportReplySend');
+    if(send)send.disabled=true;
+    try{
+      const attachments=await supportFilesPayload(replyPicker.getFiles());
+      const updated=await api.supportReply(ticketNumber,message,attachments);
+      supportTicketsCacheAt=0;
+      renderSupportTicketThread(updated?.ticket);
+      const input=document.getElementById('supportReplyText');
+      if(input)input.value='';
+      replyPicker.clear();
+      toast('Сообщение отправлено.');
+    }catch(error){
+      toast(error.message||'Не удалось отправить сообщение.');
+    }finally{
+      if(send)send.disabled=false;
+    }
+  });
+}
+
+function supportTicketStatusLabel(ticket){
+  const status=String(ticket?.status||'').trim().toLowerCase();
+  const labels={
+    open:'Открыто',
+    in_progress:'В работе',
+    waiting_user:'Ждёт ответа',
+    waiting_for_user:'Ждёт ответа',
+    closed:'Закрыто',
+  };
+  return labels[status]||String(ticket?.status_label||ticket?.status||'');
 }
 
 function renderSupportTicketThread(ticket){
   if(!ticket)return;
   const meta=document.getElementById('supportTicketMeta');
-  if(meta)meta.textContent=[ticket.category_label,ticket.status_label||ticket.status,ticket.platform_label].filter(Boolean).join(' · ');
+  if(meta)meta.textContent=supportTicketStatusLabel(ticket);
   const thread=document.getElementById('supportTicketThread');
   if(!thread)return;
   thread.innerHTML=(ticket.messages||[]).map(message=>{
