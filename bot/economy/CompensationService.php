@@ -32,6 +32,59 @@ final class CompensationService
         return $this->publicOperation($entry);
     }
 
+    public function recentOperations(string $query = '', int $limit = 30): array
+    {
+        $limit = max(1, min(60, $limit));
+        $query = trim($query);
+        if (function_exists('mb_substr')) {
+            $query = mb_substr($query, 0, 120);
+        } else {
+            $query = substr($query, 0, 120);
+        }
+
+        $where = [
+            'l.asset_code=:asset_code',
+            "(l.legacy_user_id IS NOT NULL AND TRIM(l.legacy_user_id) <> '')",
+            'l.category<>:compensation_category',
+            'l.source_type<>:compensation_source_type',
+        ];
+        $params = [
+            'asset_code'=>self::ASSET_CODE,
+            'compensation_category'=>'admin_compensation',
+            'compensation_source_type'=>'admin_compensation',
+        ];
+
+        if ($query !== '') {
+            $like = '%' . $query . '%';
+            $where[] = '(
+                l.entry_id LIKE :query_entry
+                OR l.idempotency_key LIKE :query_operation
+                OR COALESCE(l.mgw_id,\'\') LIKE :query_mgw
+                OR COALESCE(u.nickname,\'\') LIKE :query_nickname
+                OR COALESCE(l.source_ref,\'\') LIKE :query_source
+            )';
+            $params += [
+                'query_entry'=>$like,
+                'query_operation'=>$like,
+                'query_mgw'=>$like,
+                'query_nickname'=>$like,
+                'query_source'=>$like,
+            ];
+        }
+
+        $rows = $this->database->fetchAll(
+            'SELECT l.*, u.nickname
+             FROM mgw_ledger_entries l
+             LEFT JOIN mgw_users u ON u.mgw_id=l.mgw_id
+             WHERE ' . implode(' AND ', $where) . '
+             ORDER BY l.ledger_sequence DESC
+             LIMIT ' . $limit,
+            $params
+        );
+
+        return array_map(fn(array $row): array => $this->publicOperation($row), $rows);
+    }
+
     public function requestCompensation(
         string $operationRef,
         mixed $amountValue,

@@ -17,7 +17,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <link rel="stylesheet" href="./assets/css/admin-shell.css?v=11&replay=17-6&mvp22_1=support-tickets&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="./assets/js/admin-shell.js?v=6&replay=17-6&test-coins=staging" defer></script>
-  <script src="./assets/js/admin-compensation.js?v=1&mvp22_2=ledger-compensation-v1" defer></script>
+  <script src="./assets/js/admin-compensation.js?v=2&mvp22_2=operation-browser-v2" defer></script>
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
   <script src="./assets/js/admin-support.js?v=7&mvp22_1=admin-rework&support_focus=ticket-detail-v1&attachment_viewer=inline-v2&reply_files=managed-v1&reply_delivery=bell-verified-v2" defer></script>
@@ -586,16 +586,30 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           <span>Через канонический журнал операций</span>
         </div>
         <div class="mgw-admin__economy">
+          <div class="mgw-admin__history">
+            <h3>Выберите исходную операцию</h3>
+            <div class="mgw-admin__replay-search">
+              <label class="mgw-admin__field">
+                <span>Игрок, MGW ID, ID операции или источник</span>
+                <input data-compensation-browser-query type="search" maxlength="120" autocomplete="off" placeholder="Можно оставить пустым — покажем последние операции">
+              </label>
+              <button type="button" data-compensation-browser-search>Найти</button>
+            </div>
+            <div data-compensation-operations>
+              <div class="mgw-admin__history-empty">Загрузка последних операций…</div>
+            </div>
+          </div>
+
           <div class="mgw-admin__replay-search">
             <label class="mgw-admin__field">
-              <span>ID исходной операции</span>
+              <span>Точный ID исходной операции</span>
               <input data-compensation-operation type="text" maxlength="191" autocomplete="off" placeholder="entry_id или operation key">
             </label>
-            <button type="button" data-compensation-lookup>Найти операцию</button>
+            <button type="button" data-compensation-lookup>Открыть по ID</button>
           </div>
 
           <div class="mgw-admin__replay-status" data-compensation-lookup-status>
-            Сначала найдите исходную операцию. Баланс напрямую здесь не редактируется.
+            Выберите операцию выше или укажите её точный ID. Баланс напрямую здесь не редактируется.
           </div>
           <div class="mgw-admin__replay-summary" data-compensation-operation-summary hidden></div>
 

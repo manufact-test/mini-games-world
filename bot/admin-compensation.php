@@ -21,7 +21,7 @@ try {
     }
 
     $action = strtolower(trim((string)($payload['action'] ?? 'snapshot')));
-    if (!in_array($action, ['snapshot','lookup','request','confirm'], true)) {
+    if (!in_array($action, ['snapshot','operations','lookup','request','confirm'], true)) {
         json_response(['ok'=>false,'error'=>'Некорректное действие компенсации.'], 400);
     }
 
@@ -57,7 +57,12 @@ try {
         'limits' => $service->limits(),
     ];
 
-    if ($action === 'lookup') {
+    if ($action === 'operations') {
+        $response['operations'] = $service->recentOperations(
+            (string)($payload['query'] ?? ''),
+            40
+        );
+    } elseif ($action === 'lookup') {
         $response['operation'] = $service->lookupOperation((string)($payload['operation_ref'] ?? ''));
     } elseif ($action === 'request') {
         $response['compensation'] = $service->requestCompensation(
@@ -75,6 +80,7 @@ try {
         );
         $response['history'] = $service->history(25);
     } else {
+        $response['operations'] = $service->recentOperations('', 30);
         $response['history'] = $service->history(25);
     }
 

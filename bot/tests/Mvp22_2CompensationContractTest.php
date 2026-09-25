@@ -25,21 +25,27 @@ $assert(str_contains($service, "STATUS_PENDING_CONFIRMATION"), 'Large compensati
 $assert(str_contains($service, 'public function confirm('), 'Second confirmation must be a separate server action.');
 $assert(str_contains($service, "'original_entry_id'"), 'Compensation metadata must link the original ledger entry.');
 $assert(str_contains($service, "'original_operation_key'"), 'Compensation metadata must link the original operation key.');
+$assert(str_contains($service, 'public function recentOperations('), 'Compensation service must expose a bounded browser of canonical source operations.');
+$assert(str_contains($service, "l.category<>:compensation_category"), 'Operation browser must exclude compensation-on-compensation rows.');
 $assert(!preg_match('/UPDATE\s+mgw_balances/i', $service), 'Compensation service must never directly update balances.');
 $assert(!preg_match('/INSERT\s+INTO\s+mgw_ledger_entries/i', $service), 'Compensation service must never become a parallel ledger writer.');
 
-$assert(str_contains($endpoint, "['snapshot','lookup','request','confirm']"), 'Admin endpoint must expose the bounded compensation actions.');
+$assert(str_contains($endpoint, "['snapshot','operations','lookup','request','confirm']"), 'Admin endpoint must expose the bounded compensation actions.');
 $assert(str_contains($endpoint, 'AdminWebAuth::authorize'), 'Compensation endpoint must reuse Admin Web auth.');
 $assert(str_contains($endpoint, "routeFor('economy')"), 'Compensation endpoint must require the canonical economy DB route.');
 $assert(str_contains($endpoint, 'StorageFactory::create($config)'), 'Compensation endpoint must use the active runtime storage owner for projection.');
 
 $assert(str_contains($admin, 'data-compensation-api="../bot/admin-compensation.php"'), 'Web Admin must publish the compensation endpoint.');
-$assert(str_contains($admin, 'data-compensation-operation'), 'Web Admin must require the original operation.');
+$assert(str_contains($admin, 'data-compensation-operation'), 'Web Admin must keep exact original-operation lookup available.');
+$assert(str_contains($admin, 'data-compensation-browser-query'), 'Web Admin must expose a human-usable source-operation browser.');
+$assert(str_contains($admin, 'data-compensation-operations'), 'Web Admin must render recent canonical source operations.');
 $assert(str_contains($admin, 'data-compensation-reason'), 'Web Admin must require a reason.');
 $assert(str_contains($admin, 'data-compensation-confirmation'), 'Web Admin must expose the second-confirmation state.');
 $assert(str_contains($admin, 'Баланс напрямую здесь не редактируется'), 'Admin copy must make the no-direct-balance-edit boundary explicit.');
 
-$assert(str_contains($client, "action:'lookup'"), 'Admin client must resolve an original operation before compensation.');
+$assert(str_contains($client, "action:'operations'"), 'Admin client must browse canonical source operations without requiring copied technical IDs.');
+$assert(str_contains($client, 'chooseOperation'), 'Admin client must let an operator select a browsed source operation.');
+$assert(str_contains($client, "action:'lookup'"), 'Admin client must retain exact original-operation lookup.');
 $assert(str_contains($client, "action:'request'"), 'Admin client must use a dedicated compensation request action.');
 $assert(str_contains($client, "action:'confirm'"), 'Admin client must use a distinct confirmation request.');
 $assert(str_contains($client, 'request_token'), 'Admin client must provide request idempotency.');

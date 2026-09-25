@@ -7,6 +7,9 @@
 
   const endpoint = String(shell.dataset.compensationApi || '');
   const telegram = window.Telegram?.WebApp || null;
+  const browserQuery = root.querySelector('[data-compensation-browser-query]');
+  const browserButton = root.querySelector('[data-compensation-browser-search]');
+  const operations = root.querySelector('[data-compensation-operations]');
   const operationInput = root.querySelector('[data-compensation-operation]');
   const lookupButton = root.querySelector('[data-compensation-lookup]');
   const lookupStatus = root.querySelector('[data-compensation-lookup-status]');
@@ -57,9 +60,11 @@
 
   const setBusy = value => {
     busy = value;
+    browserButton.disabled = value;
     lookupButton.disabled = value;
     requestButton.disabled = value || !currentOperation || !!pendingCompensation;
     confirmButton.disabled = value || !pendingCompensation;
+    browserQuery.disabled = value;
     operationInput.disabled = value;
     amountInput.disabled = value;
     reasonInput.disabled = value;
@@ -101,6 +106,61 @@
     );
   };
 
+  const chooseOperation = operation => {
+    if (!operation) return;
+    clearPending();
+    operationInput.value = String(operation.entry_id || operation.operation_key || '');
+    renderOperation(operation);
+    const delta = Number(operation.available_delta || 0);
+    const suggested = delta < 0 ? Math.abs(delta) : 0;
+    if (!amountInput.value.trim() && suggested > 0 && suggested <= Number(limits.max_amount || 250000)) {
+      amountInput.value = String(suggested);
+    }
+    resetRequestToken();
+    operationSummary.scrollIntoView({behavior:'smooth',block:'nearest'});
+  };
+
+  const renderOperations = rows => {
+    operations.replaceChildren();
+    if (!Array.isArray(rows) || rows.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'mgw-admin__history-empty';
+      empty.textContent = browserQuery.value.trim()
+        ? 'По этому запросу подходящих операций не найдено.'
+        : 'Подходящих операций пока нет.';
+      operations.append(empty);
+      return;
+    }
+
+    rows.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'mgw-admin__history-item';
+      const copy = document.createElement('div');
+      copy.className = 'mgw-admin__history-copy';
+      const title = document.createElement('strong');
+      const meta = document.createElement('span');
+      const player = item.nickname || item.mgw_id || item.account_ref || 'Игрок';
+      const delta = Number(item.available_delta || 0);
+      title.textContent = `${delta > 0 ? '+' : ''}${coins(delta)} · ${player}`;
+      meta.textContent = [
+        item.category || 'операция',
+        localTime(item.created_at_utc),
+        item.operation_key,
+        item.source_ref ? `источник: ${item.source_ref}` : '',
+      ].filter(Boolean).join(' · ');
+      copy.append(title,meta);
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = currentOperation?.entry_id === item.entry_id ? 'Выбрана' : 'Выбрать';
+      button.disabled = busy || currentOperation?.entry_id === item.entry_id;
+      button.addEventListener('click',() => chooseOperation(item));
+
+      row.append(copy,button);
+      operations.append(row);
+    });
+  };
+
   const renderHistory = rows => {
     history.replaceChildren();
     if (!Array.isArray(rows) || rows.length === 0) {
@@ -127,8 +187,8 @@
       const badge = document.createElement('button');
       badge.type = 'button';
       if (item.status === 'applied') {
-        badge.disabled = true;
-        badge.textContent = '✓ Ledger';
+        badge.textContent = 'Исходная';
+        badge.addEventListener('click',() => void openOperation(item.original_entry_id));
       } else {
         badge.textContent = 'Подтвердить';
         badge.addEventListener('click',() => {
@@ -187,7 +247,49 @@
   const refreshSnapshot = async () => {
     const data = await post({action:'snapshot'});
     applyLimits(data.limits);
+    renderOperations(data.operations || []);
     renderHistory(data.history || []);
+  };
+
+  const browseOperations = async () => {
+    if (busy) return;
+    setBusy(true);
+    operations.replaceChildren();
+    const loading = document.createElement('div');
+    loading.className = 'mgw-admin__history-empty';
+    loading.textContent = 'Ищу операции…';
+    operations.append(loading);
+    try {
+      const data = await post({action:'operations',query:browserQuery.value.trim()});
+      applyLimits(data.limits);
+      renderOperations(data.operations || []);
+    } catch (error) {
+      operations.replaceChildren();
+      const empty = document.createElement('div');
+      empty.className = 'mgw-admin__history-empty';
+      empty.textContent = error.message || 'Не удалось загрузить операции.';
+      operations.append(empty);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openOperation = async operationRef => {
+    if (busy || !operationRef) return;
+    setBusy(true);
+    setBox(lookupStatus,'Открываю исходную операцию…');
+    try {
+      const data = await post({action:'lookup',operation_ref:String(operationRef)});
+      applyLimits(data.limits);
+      operationInput.value = String(data.operation?.entry_id || operationRef);
+      renderOperation(data.operation);
+      resetRequestToken();
+      operationSummary.scrollIntoView({behavior:'smooth',block:'nearest'});
+    } catch (error) {
+      setBox(lookupStatus,error.message || 'Операция не найдена.','error');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const lookup = async () => {
@@ -293,6 +395,13 @@
     }
   };
 
+  browserButton.addEventListener('click',browseOperations);
+  browserQuery.addEventListener('keydown',event => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      void browseOperations();
+    }
+  });
   lookupButton.addEventListener('click',lookup);
   operationInput.addEventListener('keydown',event => {
     if (event.key === 'Enter') {
