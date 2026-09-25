@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/accounts/MgwIdGenerator.php';
+
 final class ModerationException extends RuntimeException
 {
     public function __construct(public readonly string $reason, string $message)
