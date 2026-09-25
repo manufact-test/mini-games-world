@@ -216,6 +216,7 @@ bot/admin-reports.php
 bot/moderation.php
 bot/moderation/ModerationService.php
 bot/social/PlayerReportService.php
+bot/friends.php
 bot/database/migrations/20260925_0063_create_moderation_restrictions_appeals.php
 app/assets/js/admin-reports.js
 app/assets/js/screens/friends-screen-v110.js
