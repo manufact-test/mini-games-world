@@ -20,9 +20,15 @@ final class MatchReplayReader
         if (!is_array($match)) return null;
 
         $players = $this->database->fetchAll(
-            'SELECT * FROM mgw_match_players WHERE match_id = :match_id ORDER BY seat_index, player_ref',
+            'SELECT * FROM mgw_match_players WHERE match_id = :match_id',
             ['match_id' => $matchId]
         );
+        usort($players, static function (array $left, array $right): int {
+            $leftSeat = (int)($left['seat_index'] ?? $left['seat'] ?? 0);
+            $rightSeat = (int)($right['seat_index'] ?? $right['seat'] ?? 0);
+            return $leftSeat <=> $rightSeat
+                ?: strcmp((string)($left['player_ref'] ?? ''), (string)($right['player_ref'] ?? ''));
+        });
         $events = $this->database->fetchAll(
             'SELECT * FROM mgw_match_events WHERE match_id = :match_id ORDER BY primary_revision, event_ordinal, event_id',
             ['match_id' => $matchId]
