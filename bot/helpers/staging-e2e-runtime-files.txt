@@ -302,3 +302,12 @@ bot/storage/JsonDatabase.php
 bot/storage/JsonStorageAdapter.php
 bot/storage/contracts/ExclusiveSnapshotStorageInterface.php
 bot/storage/contracts/ProjectionDirtyStorageInterface.php
+
+
+# MVP-22.4 anti-fraud cases + replay viewer. The existing immutable match event/snapshot
+# reader is enriched with manual case evidence only; signals never apply sanctions.
+bot/admin-replay.php
+bot/replay/MatchReplayReader.php
+bot/antifraud/AntiFraudCaseService.php
+bot/database/migrations/20260925_0064_create_antifraud_cases.php
+app/assets/js/admin-antifraud.js
