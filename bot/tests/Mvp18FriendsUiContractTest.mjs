@@ -24,7 +24,7 @@ assert(manifest.includes("'@mgw/main' => './assets/js/main-v110-reconnect-v174.j
 assert(activeMain.includes("import './production-v110-reconnect-v174.js?v=1';"), 'Active main must preserve accepted reconnect owner');
 assert(activeMain.includes("import './main-v110.js?v=1139"), 'Active main must preserve accepted shell graph');
 assert(!activeMain.includes('friends-screen-v110.js'), 'Friends must not modify the frozen reconnect composition owner');
-assert(accountShortcuts.includes("import('../screens/friends-screen-v110.js?v=5&mvp18=instant-route&optimistic-relations')"), 'Existing account shortcut owner must lazy-load the instant Friends module on demand');
+assert(accountShortcuts.includes("import('../screens/friends-screen-v110.js?v=6&mvp18=instant-route&optimistic-relations&mvp22_3=report-categories-v1')"), 'Existing account shortcut owner must lazy-load the instant Friends module on demand');
 assert(accountShortcuts.includes('closeSheet();') && accountShortcuts.indexOf('closeSheet();') < accountShortcuts.indexOf('await loadFriendsModule()'), 'Friends shortcut must close the menu synchronously before awaiting its module');
 assert(accountShortcuts.includes('void loadFriendsModule();'), 'Friends module must prewarm while the menu is visible');
 assert(manifest.includes("game-invites-v110-rematch-policy-v175.js?v=2&fp=2&mvp21_6=tournament-exclusion-v1"), 'Accepted rematch wrapper must stay on the current tournament-aware cache identity');
