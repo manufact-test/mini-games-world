@@ -94,7 +94,7 @@ final class NotificationCenterV2Policy
         if (in_array($type, ['first_game_bonus', 'weekly_match_bonus'], true)) return '';
 
         $explicit = trim((string)($notification['deep_link'] ?? ''));
-        if (self::isSafeDeepLink($explicit)) return $explicit;
+        if ($explicit !== '' && self::isSafeDeepLink($explicit)) return $explicit;
 
         if (str_starts_with($type, 'shop_order_')) return 'store:orders';
         if (str_starts_with($type, 'payment_')) return 'home';
