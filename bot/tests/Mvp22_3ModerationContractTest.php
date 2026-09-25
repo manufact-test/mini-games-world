@@ -13,6 +13,7 @@ $apiEndpoint = file_get_contents($root . '/api.php') ?: '';
 $profileEndpoint = file_get_contents($root . '/profile-v2.php') ?: '';
 $friendsUi = file_get_contents(dirname($root) . '/app/assets/js/screens/friends-screen-v110.js') ?: '';
 $homeUi = file_get_contents(dirname($root) . '/app/assets/js/screens/home-screen.js') ?: '';
+$accountShortcuts = file_get_contents(dirname($root) . '/app/assets/js/components/account-shortcuts.js') ?: '';
 $profileUi = file_get_contents(dirname($root) . '/app/assets/js/screens/profile-screen-v110.js') ?: '';
 $adminUi = file_get_contents(dirname($root) . '/app/assets/js/admin-reports.js') ?: '';
 $client = file_get_contents(dirname($root) . '/app/assets/js/api/client.js') ?: '';
@@ -50,6 +51,7 @@ $assert(str_contains($reports, 'public function reporterHistory('), 'PlayerRepor
 $assert(str_contains($adminUi, 'Завершить рассмотрение'), 'Admin report queue must expose a clear complaint completion action.');
 $assert(str_contains($adminUi, 'Технические данные'), 'Admin report technical metadata must remain available behind a disclosure.');
 $assert(!str_contains($homeUi, '<option value="complaint">Жалоба</option>'), 'Support category selector must not masquerade as the player moderation flow.');
+$assert(!str_contains($accountShortcuts, 'Мои заявки') && !str_contains($accountShortcuts, 'shopOrders'), 'Obsolete My orders shortcut must not be injected into the main menu.');
 $assert(str_contains($mainCss, '.support-ticket-select-wrap::after{'), 'Support select must retain a dedicated chevron owner.');
 $assert(str_contains($mainCss, 'border-right:2px solid currentColor;') && str_contains($mainCss, 'border-bottom:2px solid currentColor;'), 'Support select chevron must be geometry-based instead of the misaligned text glyph.');
 $assert(!str_contains($mainCss, "content:'⌄';"), 'Broken text-glyph Support arrows must not return.');
