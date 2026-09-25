@@ -221,6 +221,11 @@
     if (Array.from(statusSelect.options).some(option => option.value === ticket.status)) statusSelect.value = ticket.status;
     if (Array.from(prioritySelect.options).some(option => option.value === ticket.priority)) prioritySelect.value = ticket.priority;
     prioritySelect.className = `mgw-admin__support-select ${priorityClass(ticket.priority)}`;
+    const closeButton = detail.querySelector('[data-support-close]');
+    if (closeButton) {
+      closeButton.disabled = ticket.status === 'closed';
+      closeButton.textContent = ticket.status === 'closed' ? 'Обращение закрыто' : 'Закрыть обращение';
+    }
 
     const related = ticket.related || {};
     detail.querySelector('[data-support-related-game]').value = related.game_id || '';
@@ -577,6 +582,10 @@
   });
   detail.querySelector('[data-support-assign-self]').addEventListener('click', () => void mutate({action:'assign_self'}));
   detail.querySelector('[data-support-unassign]').addEventListener('click', () => void mutate({action:'unassign'}));
+  detail.querySelector('[data-support-close]')?.addEventListener('click', () => {
+    if (!currentTicket || currentTicket.status === 'closed') return;
+    void mutate({action:'set_status', status:'closed'});
+  });
   detail.querySelector('[data-support-related-save]').addEventListener('click', saveRelated);
   detail.querySelector('[data-support-reply-send]').addEventListener('click', () => void sendReply());
   replyFileInput?.addEventListener('change', event => {
