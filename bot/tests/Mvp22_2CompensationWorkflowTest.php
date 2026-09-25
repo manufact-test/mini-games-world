@@ -8,7 +8,27 @@ require_once __DIR__ . '/../database/DatabaseMigrationInterface.php';
 require_once __DIR__ . '/../ledger/LedgerIntegrity.php';
 require_once __DIR__ . '/../ledger/LedgerWriteService.php';
 require_once __DIR__ . '/../ledger/LedgerIntegrityVerifier.php';
+require_once __DIR__ . '/../storage/contracts/StorageTransactionInterface.php';
+require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
 require_once __DIR__ . '/../economy/CompensationService.php';
+
+final class Mvp22_2MemoryStorage implements StorageTransactionInterface
+{
+    public function __construct(public array $data) {}
+
+    public function transaction(callable $callback): mixed
+    {
+        $working = $this->data;
+        $result = $callback($working);
+        $this->data = $working;
+        return $result;
+    }
+
+    public function readOnly(callable $callback): mixed
+    {
+        return $callback($this->data);
+    }
+}
 
 $pdo = new PDO('sqlite::memory:');
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -45,6 +65,7 @@ $assertThrows = static function (callable $callback, string $message) use (&$ass
 };
 
 $mgwId = 'MGW-0000000000000001';
+$legacyUserId = '101';
 $accountRef = 'mgw:' . $mgwId;
 $db->execute('INSERT INTO mgw_users (mgw_id,nickname) VALUES (:mgw_id,:nickname)', [
     'mgw_id'=>$mgwId,
@@ -56,6 +77,7 @@ $ledger->postAvailableDelta([
     'operation_key'=>'mvp22-2:seed',
     'account_ref'=>$accountRef,
     'mgw_id'=>$mgwId,
+    'legacy_user_id'=>$legacyUserId,
     'asset_code'=>'mgw_coin',
     'available_delta'=>100000,
     'category'=>'test_seed',
@@ -67,6 +89,7 @@ $original = $ledger->postAvailableDelta([
     'operation_key'=>'purchase:compensation-fixture',
     'account_ref'=>$accountRef,
     'mgw_id'=>$mgwId,
+    'legacy_user_id'=>$legacyUserId,
     'asset_code'=>'mgw_coin',
     'available_delta'=>-12000,
     'category'=>'store_purchase',
@@ -74,7 +97,17 @@ $original = $ledger->postAvailableDelta([
     'source_ref'=>'purchase-fixture',
 ]);
 
-$service = new CompensationService($db, $ledger);
+$runtime = new Mvp22_2MemoryStorage([
+    'users'=>[
+        $legacyUserId=>[
+            'id'=>$legacyUserId,
+            'mgw_id'=>$mgwId,
+            UnifiedBalanceRuntimeState::FIELD=>88000,
+        ],
+    ],
+    'transactions'=>[],
+]);
+$service = new CompensationService($db, $ledger, $runtime);
 $limits = $service->limits();
 $assertSame(50000, $limits['large_amount_threshold'], 'Large compensation threshold must stay explicit.');
 $assertSame(250000, $limits['max_amount'], 'Maximum compensation amount must stay bounded.');
@@ -96,6 +129,8 @@ $assertSame(false, $small['requires_second_confirmation'], 'Small compensation m
 $assertSame(88000, $small['available_before'], 'Small compensation ledger before must be exact.');
 $assertSame(93000, $small['available_after'], 'Small compensation must increase available balance through ledger.');
 $assertTrue(str_starts_with((string)$small['ledger_entry_id'], 'led_'), 'Applied compensation must retain its canonical ledger entry.');
+$assertSame(93000, $runtime->data['users'][$legacyUserId][UnifiedBalanceRuntimeState::FIELD], 'Small compensation must project the ledger result to runtime balance.');
+$assertSame(1, count($runtime->data['transactions']), 'Small compensation must create one runtime audit transaction.');
 
 $ledgerCountAfterSmall = (int)$db->fetchValue('SELECT COUNT(*) FROM mgw_ledger_entries');
 $smallRetry = $service->requestCompensation(
@@ -107,6 +142,7 @@ $smallRetry = $service->requestCompensation(
 );
 $assertSame('applied', $smallRetry['status'], 'Request-token retry must return the same applied compensation.');
 $assertSame($ledgerCountAfterSmall, (int)$db->fetchValue('SELECT COUNT(*) FROM mgw_ledger_entries'), 'Request retry must not duplicate ledger delta.');
+$assertSame(1, count($runtime->data['transactions']), 'Request retry must not duplicate runtime compensation.');
 
 $large = $service->requestCompensation(
     'purchase:compensation-fixture',
@@ -118,16 +154,20 @@ $large = $service->requestCompensation(
 $assertSame('pending_confirmation', $large['status'], 'Large compensation must stop before balance mutation.');
 $assertSame(true, $large['requires_second_confirmation'], 'Large compensation must require a second confirmation.');
 $assertSame(93000, $ledger->getBalance($accountRef, 'mgw_coin')['available_amount'], 'Pending large compensation must not change balance.');
+$assertSame(93000, $runtime->data['users'][$legacyUserId][UnifiedBalanceRuntimeState::FIELD], 'Pending large compensation must not change runtime balance.');
 
 $confirmed = $service->confirm((string)$large['compensation_id'], 'telegram:admin-1');
 $assertSame('applied', $confirmed['status'], 'Second confirmation must apply the compensation.');
 $assertSame(93000, $confirmed['available_before'], 'Large compensation must preserve ledger before amount.');
 $assertSame(143000, $confirmed['available_after'], 'Large compensation must increase canonical balance exactly once.');
+$assertSame(143000, $runtime->data['users'][$legacyUserId][UnifiedBalanceRuntimeState::FIELD], 'Large compensation must project to runtime balance after confirmation.');
+$assertSame(2, count($runtime->data['transactions']), 'Two applied compensations must have two runtime audit rows.');
 
 $countAfterLarge = (int)$db->fetchValue('SELECT COUNT(*) FROM mgw_ledger_entries');
 $confirmRetry = $service->confirm((string)$large['compensation_id'], 'telegram:admin-1');
 $assertSame('applied', $confirmRetry['status'], 'Confirmation retry must be idempotent.');
 $assertSame($countAfterLarge, (int)$db->fetchValue('SELECT COUNT(*) FROM mgw_ledger_entries'), 'Confirmation retry must not duplicate ledger entry.');
+$assertSame(2, count($runtime->data['transactions']), 'Confirmation retry must not duplicate runtime transaction.');
 
 $lookupAfter = $service->lookupOperation((string)$original['entry_id']);
 $assertSame(55000, $lookupAfter['applied_compensation_total'], 'Original operation must expose total applied compensations.');
