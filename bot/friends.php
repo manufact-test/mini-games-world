@@ -80,6 +80,20 @@ try {
                 'players' => $service->searchPlayers($actorMgwId, (string)($payload['query'] ?? '')),
                 'limit' => FriendGraphService::SEARCH_LIMIT,
             ],
+            'report_lookup' => (function () use ($service, $actorMgwId, $payload): array {
+                $query = trim((string)($payload['query'] ?? ''));
+                $exact = $service->lookupExact($actorMgwId, $query);
+                if (is_array($exact) && (string)($exact['mgw_id'] ?? '') === $actorMgwId) {
+                    throw new PlayerReportException('self_report', 'Нельзя отправить жалобу на свой профиль.');
+                }
+                return [
+                    'players' => $exact !== null ? [$exact] : $service->searchPlayers($actorMgwId, $query),
+                    'limit' => FriendGraphService::SEARCH_LIMIT,
+                ];
+            })(),
+            'report_history' => [
+                'reports' => $reports->reporterHistory($actorMgwId, 12),
+            ],
             'player_profile' => (function () use ($service, $profileReader, $actorMgwId, $target): array {
                 if ($service->lookupExact($actorMgwId, $target) === null) {
                     throw new FriendGraphException('user_unavailable', 'MGW account is unavailable.');
