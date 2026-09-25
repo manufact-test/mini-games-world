@@ -20,9 +20,15 @@ final class MatchReplayReader
         if (!is_array($match)) return null;
 
         $players = $this->database->fetchAll(
-            'SELECT * FROM mgw_match_players WHERE match_id = :match_id ORDER BY seat_index, player_ref',
+            'SELECT * FROM mgw_match_players WHERE match_id = :match_id',
             ['match_id' => $matchId]
         );
+        usort($players, static function (array $left, array $right): int {
+            $leftSeat = (int)($left['seat_index'] ?? $left['seat'] ?? 0);
+            $rightSeat = (int)($right['seat_index'] ?? $right['seat'] ?? 0);
+            return $leftSeat <=> $rightSeat
+                ?: strcmp((string)($left['player_ref'] ?? ''), (string)($right['player_ref'] ?? ''));
+        });
         $events = $this->database->fetchAll(
             'SELECT * FROM mgw_match_events WHERE match_id = :match_id ORDER BY primary_revision, event_ordinal, event_id',
             ['match_id' => $matchId]
@@ -126,12 +132,21 @@ final class MatchReplayReader
 
     private function normalizePlayer(array $row): array
     {
+        $playerType = strtolower(trim((string)($row['player_type'] ?? $row['role'] ?? 'player')));
+        $isBot = array_key_exists('is_bot', $row)
+            ? (bool)$row['is_bot']
+            : $playerType === 'bot';
+
         return [
             'player_ref' => (string)($row['player_ref'] ?? ''),
-            'seat_index' => (int)($row['seat_index'] ?? 0),
-            'role' => $row['role'] ?? null,
-            'is_bot' => (bool)($row['is_bot'] ?? false),
+            'mgw_id' => trim((string)($row['mgw_id'] ?? '')),
+            'legacy_user_id' => $row['legacy_user_id'] ?? null,
+            'seat_index' => (int)($row['seat_index'] ?? $row['seat'] ?? 0),
+            'role' => $row['role'] ?? $row['player_type'] ?? null,
+            'player_type' => $row['player_type'] ?? $row['role'] ?? null,
+            'is_bot' => $isBot,
             'display_name' => $row['display_name'] ?? null,
+            'result' => $row['result'] ?? null,
         ];
     }
 
