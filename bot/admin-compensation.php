@@ -44,7 +44,12 @@ try {
     }
 
     $database = PdoConnectionFactory::create($databaseConfig);
-    $service = new CompensationService($database, new LedgerWriteService($database));
+    $runtimeStorage = StorageFactory::create($config);
+    $service = new CompensationService(
+        $database,
+        new LedgerWriteService($database),
+        $runtimeStorage
+    );
 
     $response = [
         'ok' => true,
