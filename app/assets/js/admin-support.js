@@ -68,9 +68,12 @@
       }
       if (node.type !== 'file') node.disabled = value;
     });
-    if (!value && currentTicket?.status === 'closed') {
-      const closeButton = detail.querySelector('[data-support-close]');
-      if (closeButton) closeButton.disabled = true;
+    if (!value && currentTicket) {
+      const terminal = ['resolved','closed'].includes(String(currentTicket.status || ''));
+      const prioritySelect = detail.querySelector('[data-support-detail-priority]');
+      if (prioritySelect) prioritySelect.disabled = terminal;
+      detail.querySelectorAll('[data-support-related-game],[data-support-related-payment],[data-support-related-tournament],[data-support-related-operation]')
+        .forEach(input => { input.disabled = terminal; });
     }
   };
 
@@ -228,9 +231,11 @@
     if (statusValue) statusValue.textContent = humanValue(ticket.status || ticket.status_label || '—');
 
     const prioritySelect = detail.querySelector('[data-support-detail-priority]');
+    const priorityField = detail.querySelector('[data-support-priority-field]');
     if (Array.from(prioritySelect.options).some(option => option.value === ticket.priority)) prioritySelect.value = ticket.priority;
     prioritySelect.className = `mgw-admin__support-select ${priorityClass(ticket.priority)}`;
     prioritySelect.disabled = terminal;
+    if (priorityField) priorityField.hidden = terminal;
 
     const takeButton = detail.querySelector('[data-support-assign-self]');
     const closeButton = detail.querySelector('[data-support-close]');
