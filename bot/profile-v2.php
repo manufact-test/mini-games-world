@@ -8,6 +8,7 @@ header('Referrer-Policy: no-referrer');
 
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/accounts/MgwProfileService.php';
+require_once __DIR__ . '/moderation/ModerationService.php';
 
 function mgw_profile_v2_stats_by_game(array $data, string $userId): array
 {
@@ -69,10 +70,18 @@ try {
     }
 
     $profileService = new MgwProfileService($database);
+    $moderation = new ModerationService($database);
     try {
-        $canonicalProfile = isset($payload['profile_update']) && is_array($payload['profile_update'])
-            ? $profileService->updateProfile($mgwId, $payload['profile_update'])
-            : $profileService->publicProfile($mgwId);
+        if (isset($payload['profile_update']) && is_array($payload['profile_update'])) {
+            $moderation->assertAllowed($mgwId, 'profile');
+            $canonicalProfile = $profileService->updateProfile($mgwId, $payload['profile_update']);
+        } else {
+            // Read access remains available so a restricted/banned player can
+            // inspect the account and reach the appeal flow.
+            $canonicalProfile = $profileService->publicProfile($mgwId);
+        }
+    } catch (ModerationException $error) {
+        json_response(['ok'=>false,'error'=>$error->getMessage(),'code'=>$error->reason], 403);
     } catch (InvalidArgumentException $error) {
         [$code, $message] = mgw_profile_v2_validation_error($error);
         json_response(['ok'=>false,'error'=>$message,'code'=>$code], 422);

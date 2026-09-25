@@ -12,6 +12,8 @@
   const refresh = root.querySelector('[data-report-queue-refresh]');
   const requestedCase = new URLSearchParams(window.location.search).get('report') || '';
   let busy = false;
+  let adminRef = '';
+  let moderationOptions = { restriction_scopes:{}, restriction_durations:[] };
 
   const post = async (payload) => {
     const response = await fetch(endpoint, {
@@ -36,6 +38,253 @@
     button.dataset.reportStatus = nextStatus;
     button.addEventListener('click', () => void changeStatus(reportId, nextStatus));
     return button;
+  };
+
+  const localTime = value => {
+    if (!value) return '—';
+    const raw = String(value);
+    const date = new Date(raw.includes('T') ? raw : raw.replace(' ', 'T') + 'Z');
+    return Number.isNaN(date.getTime()) ? raw : date.toLocaleString('ru-RU');
+  };
+
+  const moderationButton = (label, handler) => {
+    const node = document.createElement('button');
+    node.type = 'button';
+    node.textContent = label;
+    node.addEventListener('click', handler);
+    return node;
+  };
+
+  const moderationTextarea = placeholder => {
+    const node = document.createElement('textarea');
+    node.rows = 3;
+    node.maxLength = 800;
+    node.placeholder = placeholder;
+    return node;
+  };
+
+  const moderationField = (label, control) => {
+    const wrap = document.createElement('label');
+    wrap.className = 'mgw-admin__field';
+    const span = document.createElement('span');
+    span.textContent = label;
+    wrap.append(span, control);
+    return wrap;
+  };
+
+  const moderationSelect = entries => {
+    const node = document.createElement('select');
+    entries.forEach(entry => {
+      const option = document.createElement('option');
+      option.value = String(entry[0]);
+      option.textContent = String(entry[1]);
+      node.append(option);
+    });
+    return node;
+  };
+
+  const moderationActionLabel = value => ({
+    warning:'Предупреждение',
+    restriction:'Ограничение',
+    permanent_ban:'Постоянная блокировка',
+  })[value] || value;
+
+  const moderationStatusLabel = value => ({
+    active:'Активно',
+    pending_second_review:'Ждёт второго администратора',
+    confirmed:'Подтверждено',
+    rejected:'Отклонено',
+    revoked:'Отменено',
+    expired:'Истекло',
+  })[value] || value;
+
+  const appealStatusLabel = value => ({
+    open:'Новая',
+    reviewing:'В работе',
+    accepted:'Удовлетворена',
+    rejected:'Отклонена',
+  })[value] || value;
+
+  const applySnapshot = data => {
+    adminRef = String(data.admin_ref || adminRef || '');
+    moderationOptions = Object.assign({}, moderationOptions, data.moderation_options || {});
+    render(data.reports || []);
+  };
+
+  const mutateModeration = async (payload, successMessage) => {
+    if (busy) return;
+    busy = true;
+    refresh.disabled = true;
+    list.querySelectorAll('button,select,textarea,input').forEach(node => { node.disabled = true; });
+    try {
+      const data = await post(payload);
+      applySnapshot(data);
+      status.textContent = successMessage;
+      status.dataset.state = 'ok';
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : 'Не удалось выполнить действие модерации.';
+      status.dataset.state = 'error';
+    } finally {
+      busy = false;
+      refresh.disabled = false;
+      list.querySelectorAll('button,select,textarea,input').forEach(node => { node.disabled = false; });
+    }
+  };
+
+  const moderationPanel = report => {
+    const rootPanel = document.createElement('details');
+    rootPanel.className = 'mgw-admin__moderation-panel';
+    const summary = document.createElement('summary');
+    summary.textContent = 'Решение и история модерации';
+    rootPanel.append(summary);
+
+    const body = document.createElement('div');
+    body.className = 'mgw-admin__moderation-panel-body';
+
+    const note = moderationTextarea('Что проверено и почему применяется действие');
+    const scope = moderationSelect(Object.entries(moderationOptions.restriction_scopes || {}));
+    const duration = moderationSelect((moderationOptions.restriction_durations || []).map(item => [item.seconds, item.label]));
+
+    const grid = document.createElement('div');
+    grid.className = 'mgw-admin__moderation-grid';
+    grid.append(
+      moderationField('Область ограничения', scope),
+      moderationField('Срок', duration)
+    );
+
+    const actions = document.createElement('div');
+    actions.className = 'mgw-admin__economy-actions';
+    actions.append(
+      moderationButton('Предупреждение', () => void mutateModeration({
+        action:'warning',
+        report_id:report.report_id,
+        note:note.value.trim(),
+      }, 'Предупреждение сохранено.')),
+      moderationButton('Ограничить', () => void mutateModeration({
+        action:'restrict',
+        report_id:report.report_id,
+        scope:scope.value,
+        duration_seconds:Number(duration.value),
+        note:note.value.trim(),
+      }, 'Ограничение применено.')),
+      moderationButton('На постоянную блокировку', () => void mutateModeration({
+        action:'recommend_ban',
+        report_id:report.report_id,
+        note:note.value.trim(),
+      }, 'Рекомендация отправлена на вторую проверку.'))
+    );
+
+    body.append(moderationField('Основание решения', note), grid, actions);
+
+    const moderation = report.moderation || {};
+    const actionRows = Array.isArray(moderation.actions) ? moderation.actions : [];
+    if (actionRows.length) {
+      const historyTitle = document.createElement('h4');
+      historyTitle.textContent = 'История решений';
+      body.append(historyTitle);
+
+      actionRows.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'mgw-admin__moderation-event';
+        const strong = document.createElement('strong');
+        strong.textContent = moderationActionLabel(item.action_type) + ' · ' + moderationStatusLabel(item.status);
+        const meta = document.createElement('span');
+        const metaParts = [];
+        if (item.scope_label) metaParts.push(item.scope_label);
+        if (item.expires_at_utc) metaParts.push('до ' + localTime(item.expires_at_utc));
+        if (item.created_by_admin_ref) metaParts.push(item.created_by_admin_ref);
+        meta.textContent = metaParts.join(' · ');
+        const p = document.createElement('p');
+        p.textContent = item.note || 'Без комментария.';
+        row.append(strong, meta, p);
+        body.append(row);
+
+        if (item.action_type === 'permanent_ban' && item.status === 'pending_second_review') {
+          const review = document.createElement('div');
+          review.className = 'mgw-admin__moderation-second-review';
+          const reviewTitle = document.createElement('strong');
+          reviewTitle.textContent = 'Вторая проверка постоянной блокировки';
+          review.append(reviewTitle);
+
+          if (String(item.created_by_admin_ref || '') === adminRef) {
+            const warning = document.createElement('p');
+            warning.textContent = 'Подтверждение должен выполнить другой администратор.';
+            review.append(warning);
+          } else {
+            const reviewNote = moderationTextarea('Комментарий второго администратора');
+            const reviewActions = document.createElement('div');
+            reviewActions.className = 'mgw-admin__economy-actions';
+            reviewActions.append(
+              moderationButton('Подтвердить блокировку', () => void mutateModeration({
+                action:'review_ban',
+                report_id:report.report_id,
+                moderation_action_id:item.action_id,
+                decision:'approve',
+                note:reviewNote.value.trim(),
+              }, 'Постоянная блокировка подтверждена.')),
+              moderationButton('Отклонить', () => void mutateModeration({
+                action:'review_ban',
+                report_id:report.report_id,
+                moderation_action_id:item.action_id,
+                decision:'reject',
+                note:reviewNote.value.trim(),
+              }, 'Рекомендация отклонена.'))
+            );
+            review.append(moderationField('Комментарий второй проверки', reviewNote), reviewActions);
+          }
+          body.append(review);
+        }
+      });
+    }
+
+    const appeals = Array.isArray(moderation.appeals) ? moderation.appeals : [];
+    if (appeals.length) {
+      const appealsTitle = document.createElement('h4');
+      appealsTitle.textContent = 'Апелляции';
+      body.append(appealsTitle);
+      appeals.forEach(appeal => {
+        const card = document.createElement('div');
+        card.className = 'mgw-admin__moderation-appeal';
+        const title = document.createElement('strong');
+        title.textContent = 'Апелляция · ' + appealStatusLabel(appeal.status);
+        const meta = document.createElement('span');
+        meta.textContent = String(appeal.appeal_id || '') + ' · ' + localTime(appeal.created_at_utc);
+        const text = document.createElement('p');
+        text.textContent = appeal.message || 'Без текста.';
+        card.append(title, meta, text);
+
+        if (appeal.status === 'open' || appeal.status === 'reviewing') {
+          const reviewNote = moderationTextarea('Комментарий администратора по апелляции');
+          const reviewActions = document.createElement('div');
+          reviewActions.className = 'mgw-admin__economy-actions';
+          reviewActions.append(
+            moderationButton('Удовлетворить', () => void mutateModeration({
+              action:'review_appeal',
+              report_id:report.report_id,
+              appeal_id:appeal.appeal_id,
+              decision:'accept',
+              note:reviewNote.value.trim(),
+            }, 'Апелляция удовлетворена.')),
+            moderationButton('Отклонить', () => void mutateModeration({
+              action:'review_appeal',
+              report_id:report.report_id,
+              appeal_id:appeal.appeal_id,
+              decision:'reject',
+              note:reviewNote.value.trim(),
+            }, 'Апелляция отклонена.'))
+          );
+          card.append(moderationField('Решение по апелляции', reviewNote), reviewActions);
+        } else if (appeal.review_note) {
+          const result = document.createElement('p');
+          result.textContent = 'Решение: ' + appeal.review_note;
+          card.append(result);
+        }
+        body.append(card);
+      });
+    }
+
+    rootPanel.append(body);
+    return rootPanel;
   };
 
   const render = (reports) => {
@@ -77,7 +326,7 @@
       if (report.status !== 'reviewing') actions.append(actionButton(report.report_id, 'reviewing', 'В работу'));
       if (report.status !== 'closed') actions.append(actionButton(report.report_id, 'closed', 'Закрыть'));
 
-      item.append(copy, actions);
+      item.append(copy, actions, moderationPanel(report));
       list.append(item);
     });
 
@@ -101,8 +350,8 @@
     delete status.dataset.state;
     try {
       const data = await post({action:'snapshot'});
-      render(data.reports || []);
-      status.textContent = 'Очередь загружена. Статусы меняются вручную; автоматических блокировок нет.';
+      applySnapshot(data);
+      status.textContent = 'Очередь загружена. Все санкции применяются вручную и сохраняются в истории.';
       status.dataset.state = 'ok';
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : 'Не удалось загрузить очередь жалоб.';
@@ -120,7 +369,7 @@
     list.querySelectorAll('button').forEach(button => { button.disabled = true; });
     try {
       const data = await post({action:'set_status', report_id:reportId, status:nextStatus});
-      render(data.reports || []);
+      applySnapshot(data);
       status.textContent = `Жалоба ${reportId}: ${labelStatus(nextStatus)}.`;
       status.dataset.state = 'ok';
     } catch (error) {

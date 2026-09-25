@@ -532,3 +532,26 @@
   .mgw-admin__economy-disclosure>summary{padding:11px 12px}
   .mgw-admin__economy-disclosure-body{padding:11px 12px 12px}
 }
+
+
+/* MVP-22.3 moderation cases */
+.mgw-admin__moderation-panel{grid-column:1/-1;border:1px solid #2b2d36;border-radius:10px;background:#0d0e12;overflow:hidden}
+.mgw-admin__moderation-panel>summary{padding:10px 11px;cursor:pointer;list-style:none;color:#c7c9d2;font-size:11px;font-weight:800}
+.mgw-admin__moderation-panel>summary::-webkit-details-marker{display:none}
+.mgw-admin__moderation-panel>summary::after{content:"+";float:right;color:#858791;font-weight:900}
+.mgw-admin__moderation-panel[open]>summary{border-bottom:1px solid #24262e;background:#111218}
+.mgw-admin__moderation-panel[open]>summary::after{content:"−"}
+.mgw-admin__moderation-panel-body{display:flex;flex-direction:column;gap:10px;padding:11px}
+.mgw-admin__moderation-panel-body textarea{min-height:78px!important;padding:10px 11px!important;resize:vertical}
+.mgw-admin__moderation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.mgw-admin__moderation-panel-body h4{margin:3px 0 0;color:#d7d8de;font-size:11px}
+.mgw-admin__moderation-event,.mgw-admin__moderation-appeal,.mgw-admin__moderation-second-review{display:flex;flex-direction:column;gap:5px;padding:10px;border:1px solid #292b34;border-radius:10px;background:#101116}
+.mgw-admin__moderation-event>strong,.mgw-admin__moderation-appeal>strong,.mgw-admin__moderation-second-review>strong{font-size:11px}
+.mgw-admin__moderation-event>span,.mgw-admin__moderation-appeal>span{color:#858791;font-size:10px;overflow-wrap:anywhere}
+.mgw-admin__moderation-event>p,.mgw-admin__moderation-appeal>p,.mgw-admin__moderation-second-review>p{margin:0;color:#a7a9b3;font-size:10.5px;line-height:1.45;overflow-wrap:anywhere}
+.mgw-admin__moderation-second-review{border-color:#6d5730}
+@media(max-width:760px){
+  .mgw-admin__moderation-grid{grid-template-columns:1fr}
+  .mgw-admin__moderation-panel-body .mgw-admin__economy-actions{flex-direction:column;align-items:stretch}
+  .mgw-admin__moderation-panel-body .mgw-admin__economy-actions button{width:100%}
+}

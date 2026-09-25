@@ -14,11 +14,17 @@ final class PlayerReportException extends RuntimeException
 final class PlayerReportService
 {
     public const REASONS = [
-        'abuse' => 'Оскорбления или травля',
+        'nickname' => 'Недопустимый никнейм',
+        'avatar' => 'Недопустимый аватар',
+        'spam' => 'Спам',
         'cheating' => 'Нечестная игра',
-        'spam' => 'Спам или навязчивые сообщения',
-        'offensive_profile' => 'Недопустимый профиль',
+        'stalling' => 'Затягивание игры',
         'other' => 'Другое',
+    ];
+
+    private const LEGACY_REASON_LABELS = [
+        'abuse' => 'Оскорбления или травля',
+        'offensive_profile' => 'Недопустимый профиль',
     ];
 
     public const STATUSES = ['open', 'reviewing', 'closed'];
@@ -110,7 +116,7 @@ final class PlayerReportService
                 'target_public_mgw_id' => MgwIdGenerator::toPublic((string)$row['target_mgw_id']),
                 'target_nickname' => (string)($row['target_nickname'] ?? 'Игрок'),
                 'reason' => $reason,
-                'reason_label' => self::REASONS[$reason] ?? $reason,
+                'reason_label' => self::REASONS[$reason] ?? self::LEGACY_REASON_LABELS[$reason] ?? $reason,
                 'details' => (string)($row['details'] ?? ''),
                 'related_match_id' => (string)($row['related_match_id'] ?? ''),
                 'status' => (string)($row['status'] ?? 'open'),

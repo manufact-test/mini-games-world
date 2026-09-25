@@ -209,6 +209,18 @@ bot/economy/CompensationService.php
 bot/database/migrations/20260925_0062_create_compensations.php
 app/assets/js/admin-compensation.js
 
+# MVP-22.3 moderation/restrictions/appeals. The report queue, durable moderation
+# decisions, player-facing appeal surface and every guarded entrypoint must deploy
+# together so a restriction can never be displayed without being enforced.
+bot/admin-reports.php
+bot/moderation.php
+bot/moderation/ModerationService.php
+bot/social/PlayerReportService.php
+bot/database/migrations/20260925_0063_create_moderation_restrictions_appeals.php
+app/assets/js/admin-reports.js
+app/assets/js/screens/friends-screen-v110.js
+app/assets/js/components/account-shortcuts.js
+
 # Unversioned /app/ v114/v121 graph remains fingerprinted as an explicit
 # staging/reference route, but it is not a Telegram menu owner and is not the
 # accepted /start application graph.

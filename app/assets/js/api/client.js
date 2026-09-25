@@ -13,6 +13,7 @@ const TOURNAMENT_STATUS_URL = `${window.location.origin}/bot/tournament-status.p
 const TOURNAMENT_HALL_URL = `${window.location.origin}/bot/tournament-hall.php`;
 const GAME_REACTION_URL = `${window.location.origin}/bot/game-reaction.php`;
 const SUPPORT_URL = `${window.location.origin}/bot/support.php`;
+const MODERATION_URL = `${window.location.origin}/bot/moderation.php`;
 
 let profileV2ReadPromise = null;
 let tournamentPrestigeReadPromise = null;
@@ -194,6 +195,8 @@ export const api = {
   supportCreate: payload => requestUrl(SUPPORT_URL, { action:'create', ...payload }),
   supportReply: (ticket, message, attachments = []) => requestUrl(SUPPORT_URL, { action:'reply', ticket, message, attachments }),
   supportAttachment: attachmentId => requestUrl(SUPPORT_URL, { action:'attachment', attachment_id:attachmentId }),
+  moderationSnapshot: () => requestUrl(MODERATION_URL, { action:'snapshot' }),
+  moderationAppeal: (actionId, message) => requestUrl(MODERATION_URL, { action:'appeal', action_id:actionId, message }),
   cosmeticStoreStatus: () => requestCosmeticStore({ action:'status' }),
   cosmeticStorePurchase: (offerId, requestToken) => requestCosmeticStore({ action:'purchase', offer_id:offerId, request_token:requestToken }),
   cosmeticStoreEquip: itemId => requestCosmeticStore({ action:'equip', item_id:itemId }),

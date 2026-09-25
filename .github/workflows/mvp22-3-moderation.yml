@@ -1,0 +1,171 @@
+name: MVP-22.3 Moderation restrictions appeals
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/moderation.php'
+      - 'bot/moderation/ModerationService.php'
+      - 'bot/admin-reports.php'
+      - 'bot/social/PlayerReportService.php'
+      - 'bot/database/migrations/20260925_0063_create_moderation_restrictions_appeals.php'
+      - 'bot/profile-v2.php'
+      - 'bot/friends.php'
+      - 'bot/invites.php'
+      - 'bot/api.php'
+      - 'bot/runtime/ProductionPrimaryApplicationEntrypoints.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
+      - 'bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php'
+      - 'bot/tests/Mvp22_3ModerationWorkflowTest.php'
+      - 'bot/tests/Mvp22_3ModerationMySqlIntegrationTest.php'
+      - 'bot/tests/Mvp22_3ModerationContractTest.php'
+      - 'app/admin.php'
+      - 'app/assets/css/admin-shell.css'
+      - 'app/assets/css/main.css'
+      - 'app/assets/js/admin-reports.js'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/components/account-shortcuts.js'
+      - 'app/assets/js/screens/friends-screen-v110.js'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/runtime/client/version-manifest.php'
+      - '.github/workflows/mvp18-5-reports-blocked-users.yml'
+      - '.github/workflows/mvp22-2-compensation.yml'
+      - '.github/workflows/mvp22-admin-rework.yml'
+      - '.github/workflows/mvp22-3-moderation.yml'
+      - 'bot/tests/Mvp18FriendsUiContractTest.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  moderation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          php -l bot/moderation.php
+          php -l bot/moderation/ModerationService.php
+          php -l bot/admin-reports.php
+          php -l bot/social/PlayerReportService.php
+          php -l bot/database/migrations/20260925_0063_create_moderation_restrictions_appeals.php
+          php -l bot/profile-v2.php
+          php -l bot/friends.php
+          php -l bot/invites.php
+          php -l bot/api.php
+          php -l bot/runtime/ProductionPrimaryApplicationEntrypoints.php
+          php -l bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
+          php -l bot/tests/Mvp22_3ModerationWorkflowTest.php
+          php -l bot/tests/Mvp22_3ModerationMySqlIntegrationTest.php
+          php -l bot/tests/Mvp22_3ModerationContractTest.php
+          php -l app/admin.php
+          node --check app/assets/js/admin-reports.js
+          node --check app/assets/js/api/client.js
+          node --check app/assets/js/components/account-shortcuts.js
+          node --check app/assets/js/screens/friends-screen-v110.js
+          node --check app/assets/js/screens/profile-screen-v110.js
+
+      - name: Moderation lifecycle
+        run: php bot/tests/Mvp22_3ModerationWorkflowTest.php
+
+      - name: Moderation static contract
+        run: php bot/tests/Mvp22_3ModerationContractTest.php
+
+      - name: Preserve reports and blocked users
+        run: php bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
+
+      - name: No report auto-ban and explicit second review
+        run: |
+          set -euo pipefail
+          ! grep -Eiq 'UPDATE[[:space:]]+mgw_users[[:space:]]+SET[[:space:]]+status' bot/social/PlayerReportService.php
+          grep -Fq "second_admin_required" bot/moderation/ModerationService.php
+          grep -Fq "pending_second_review" bot/moderation/ModerationService.php
+          grep -Fq "public function submitAppeal" bot/moderation/ModerationService.php
+          grep -Fq "public function reviewAppeal" bot/moderation/ModerationService.php
+          grep -Fq "assertAllowed" bot/profile-v2.php
+          grep -Fq "assertAllowed" bot/friends.php
+          grep -Fq "assertAllowed" bot/invites.php
+          grep -Fq "assertAllowed" bot/api.php
+
+      - name: Exact staging fingerprint coverage
+        run: |
+          set -euo pipefail
+          manifest='bot/helpers/staging-e2e-runtime-files.txt'
+          grep -Fx 'bot/moderation.php' "$manifest"
+          grep -Fx 'bot/moderation/ModerationService.php' "$manifest"
+          grep -Fx 'bot/database/migrations/20260925_0063_create_moderation_restrictions_appeals.php' "$manifest"
+          grep -Fx 'bot/admin-reports.php' "$manifest"
+          grep -Fx 'app/assets/js/admin-reports.js' "$manifest"
+          grep -Fx 'app/assets/js/screens/friends-screen-v110.js' "$manifest"
+
+      - name: Scope guard
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp18-5-reports-blocked-users.yml|.github/workflows/mvp22-2-compensation.yml|.github/workflows/mvp22-admin-rework.yml|.github/workflows/mvp22-3-moderation.yml|app/admin.php|app/assets/css/admin-shell.css|app/assets/css/main.css|app/assets/js/admin-reports.js|app/assets/js/api/client.js|app/assets/js/components/account-shortcuts.js|app/assets/js/screens/friends-screen-v110.js|app/assets/js/screens/profile-screen-v110.js|app/runtime/client/version-manifest.php|bot/admin-reports.php|bot/moderation.php|bot/moderation/ModerationService.php|bot/social/PlayerReportService.php|bot/database/migrations/20260925_0063_create_moderation_restrictions_appeals.php|bot/profile-v2.php|bot/friends.php|bot/invites.php|bot/api.php|bot/runtime/ProductionPrimaryApplicationEntrypoints.php|bot/helpers/staging-e2e-runtime-files.txt|bot/tests/Mvp18FriendsUiContractTest.mjs|bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php|bot/tests/Mvp22_3ModerationWorkflowTest.php|bot/tests/Mvp22_3ModerationMySqlIntegrationTest.php|bot/tests/Mvp22_3ModerationContractTest.php)
+                ;;
+              *)
+                echo "Unexpected MVP-22.3 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+          git diff --exit-code "$base" "$head" -- bot/games bot/ratings bot/tournaments bot/economy bot/ledger bot/support
+
+  moderation-mysql:
+    name: Moderation lifecycle on MySQL 8.4
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_moderation_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring
+          coverage: none
+      - name: Lint MySQL proof
+        run: php -l bot/tests/Mvp22_3ModerationMySqlIntegrationTest.php
+      - name: Run MySQL proof
+        env:
+          MGW_MODERATION_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_moderation_ci;charset=utf8mb4
+          MGW_MODERATION_MYSQL_USER: root
+          MGW_MODERATION_MYSQL_PASS: root
+        run: php bot/tests/Mvp22_3ModerationMySqlIntegrationTest.php
