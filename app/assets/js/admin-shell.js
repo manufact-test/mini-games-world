@@ -364,21 +364,21 @@
     if (requestInFlight) return;
     const matchId = replayMatchId.value.trim();
     if (!matchId) {
-      replayStatus.textContent = 'Укажите Match ID.';
+      replayStatus.textContent = 'Укажите ID матча.';
       replayStatus.dataset.state = 'error';
       replayMatchId.focus();
       return;
     }
 
     setBusy(true);
-    replayStatus.textContent = 'Читаю durable event log и snapshots…';
+    replayStatus.textContent = 'Читаю журнал событий и снимки состояния…';
     delete replayStatus.dataset.state;
     replayOutput.hidden = true;
     try {
       const data = await post(replayEndpoint, {action: 'match_replay', matchId});
       renderReplay(data);
     } catch (error) {
-      replayStatus.textContent = error instanceof Error ? error.message : 'Не удалось загрузить replay.';
+      replayStatus.textContent = error instanceof Error ? error.message : 'Не удалось загрузить диагностику матча.';
       replayStatus.dataset.state = 'error';
     } finally {
       setBusy(false);
@@ -388,7 +388,7 @@
   const load = async () => {
     if (requestInFlight) return;
     if (!telegram || !telegram.initData) {
-      setStatus('Откройте Web Admin кнопкой из админ-панели бота в Telegram.', 'error');
+      setStatus('Откройте панель администратора кнопкой из админ-панели бота в Telegram.', 'error');
       return;
     }
 
@@ -453,14 +453,14 @@
     if (!window.confirm(`Создать новую версию экономики на основе v${version}?`)) return;
 
     setBusy(true);
-    setStatus(`Создаю rollback-версию из v${version}…`);
+    setStatus(`Создаю версию отката из v${version}…`);
     try {
       const data = await post(economyEndpoint, {action: 'rollback', version, reason});
       renderEconomy(data);
       economyReason.value = '';
-      setStatus(`Rollback сохранён как новая v${data.current.version}. История не переписывалась.`, 'ok');
+      setStatus(`Откат сохранён как новая v${data.current.version}. История не переписывалась.`, 'ok');
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Не удалось выполнить rollback.', 'error');
+      setStatus(error instanceof Error ? error.message : 'Не удалось выполнить откат.', 'error');
     } finally {
       setBusy(false);
     }
