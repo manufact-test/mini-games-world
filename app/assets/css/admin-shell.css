@@ -722,3 +722,35 @@
   .mgw-admin__report-action{width:100%}
   .mgw-admin__report-id{white-space:normal;overflow-wrap:anywhere}
 }
+
+
+/* MVP-22.3 manual acceptance: operational report queue + archive */
+.mgw-admin__report-toolbar{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+.mgw-admin__report-toolbar>small{color:#858792;font-size:10px;line-height:1.45}
+.mgw-admin__report-tabs{display:flex;gap:7px}
+.mgw-admin__report-tabs button{
+  appearance:none;min-height:38px;padding:0 15px;border:1px solid #343641;border-radius:10px;
+  background:#111218;color:#aeb0ba;font:inherit;font-size:11px;font-weight:850;cursor:pointer
+}
+.mgw-admin__report-tabs button.is-active{border-color:#6557d9;background:#5d4fd2;color:#fff}
+.mgw-admin__report-filters{display:grid;grid-template-columns:minmax(180px,1fr) auto auto auto;gap:8px;align-items:end}
+.mgw-admin__report-filters>input,
+.mgw-admin__report-filters label input{
+  box-sizing:border-box;width:100%;min-height:40px;border:1px solid #30323b;border-radius:10px;
+  background:#0d0e12;color:#eeeef2;padding:0 11px;font:inherit;font-size:11px;outline:none
+}
+.mgw-admin__report-filters>input:focus,
+.mgw-admin__report-filters label input:focus{border-color:#6557d9;box-shadow:0 0 0 2px rgba(101,87,217,.15)}
+.mgw-admin__report-filters label{display:flex;flex-direction:column;gap:4px;color:#858792;font-size:9px;font-weight:800}
+.mgw-admin__report-filters>button{
+  min-height:40px;border:1px solid #3b3d47;border-radius:10px;background:#17181e;color:#eeeef2;
+  padding:0 14px;font:inherit;font-size:11px;font-weight:800;cursor:pointer
+}
+[data-support-close]{border-color:#5b3d43!important;background:#25171a!important;color:#f2c2ca!important}
+[data-support-close]:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:760px){
+  .mgw-admin__report-tabs{display:grid;grid-template-columns:1fr 1fr}
+  .mgw-admin__report-filters{grid-template-columns:1fr 1fr}
+  .mgw-admin__report-filters>input{grid-column:1/-1}
+  .mgw-admin__report-filters>button{grid-column:1/-1}
+}
