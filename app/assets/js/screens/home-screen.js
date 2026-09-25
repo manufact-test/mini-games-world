@@ -14,6 +14,14 @@ let historyCacheAt = 0;
 let historyCachePromise = null;
 
 const SUPPORT_TICKETS_CACHE_MAX_AGE_MS = 15000;
+const PLAYER_REPORT_REASONS = Object.freeze([
+  ['nickname','Недопустимый никнейм'],
+  ['avatar','Недопустимый аватар'],
+  ['spam','Спам'],
+  ['cheating','Нечестная игра'],
+  ['stalling','Затягивание игры'],
+  ['other','Другое'],
+]);
 let supportTicketsCache = null;
 let supportTicketsCacheAt = 0;
 let supportTicketsCachePromise = null;
@@ -78,7 +86,7 @@ function openMoreMenuSheet(){
   document.getElementById('rulesBtn')?.addEventListener('click', openRulesSheet);
   document.getElementById('feedbackBtn')?.addEventListener('click',()=>openSupportForm('feedback'));
   document.getElementById('ideaBtn')?.addEventListener('click',()=>openSupportForm('idea'));
-  document.getElementById('supportBtn')?.addEventListener('click',()=>openSupportForm('complaint'));
+  document.getElementById('supportBtn')?.addEventListener('click',()=>openPlayerReportSheet());
   document.getElementById('supportTicketsBtn')?.addEventListener('click',()=>void openSupportTicketsSheet());
   document.getElementById('balanceHistoryBtn')?.addEventListener('click',openBalanceHistorySheet);
   document.getElementById('matchHistoryBtn')?.addEventListener('click',openMatchHistorySheet);
@@ -165,17 +173,15 @@ function topupAmountLabel(item){if(item.status==='paid')return'+'+Number(item.co
 function formatDate(value){if(!value)return'';const date=new Date(value);if(Number.isNaN(date.getTime()))return String(value);return date.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}
 function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[char]));}
 function openSupportForm(type){
-  const defaults={feedback:'feedback',idea:'idea',complaint:'complaint'};
+  const defaults={feedback:'feedback',idea:'idea'};
   const category=defaults[type]||'other';
   const titles={
     feedback:'Обратная связь',
     idea:'Предложить идею',
-    complaint:'Пожаловаться',
   };
   const messagePlaceholders={
     feedback:'Напишите сообщение',
     idea:'Опишите идею',
-    complaint:'Опишите проблему или жалобу',
   };
   const title=titles[type]||'Обращение';
   const messagePlaceholder=messagePlaceholders[type]||'Опишите ситуацию';
@@ -189,7 +195,6 @@ function openSupportForm(type){
             <select id="supportCategory" class="support-ticket-control support-ticket-select">
               <option value="feedback">Обратная связь</option>
               <option value="idea">Предложение</option>
-              <option value="complaint">Жалоба</option>
               <option value="technical">Техническая проблема</option>
               <option value="payment">Платёж / коины</option>
               <option value="game">Игра / матч</option>
@@ -262,6 +267,151 @@ function openSupportForm(type){
       if(button)button.disabled=false;
     }
   });
+}
+
+function openPlayerReportSheet(){
+  let selectedPlayer=null;
+  let selectedReason='';
+
+  openSheet(`<div class="sheet-head player-report-head"><div><h2>Пожаловаться на игрока</h2><p>Найдите игрока и выберите причину жалобы.</p></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="player-report-create">
+      <section class="player-report-step">
+        <div class="player-report-step-title"><b>1</b><span><strong>На кого вы хотите пожаловаться?</strong><small>Поиск по нику или MGW-ID</small></span></div>
+        <div class="player-report-search">
+          <input id="playerReportSearch" class="form-input" maxlength="40" autocomplete="off" placeholder="Ник или MGW-ID">
+          <button class="btn primary" id="playerReportSearchBtn" type="button">Найти</button>
+        </div>
+        <div class="player-report-search-status" id="playerReportSearchStatus">Введите минимум 2 символа ника или полный MGW-ID.</div>
+        <div class="player-report-results" id="playerReportResults"></div>
+        <div class="player-report-selected" id="playerReportSelected" hidden></div>
+      </section>
+
+      <section class="player-report-step" id="playerReportReasonStep" hidden>
+        <div class="player-report-step-title"><b>2</b><span><strong>Причина жалобы</strong><small>Выберите один вариант</small></span></div>
+        <div class="player-report-reasons" id="playerReportReasons">
+          ${PLAYER_REPORT_REASONS.map(([value,label])=>`<button type="button" data-player-report-reason="${escapeHtml(value)}" aria-pressed="false">${escapeHtml(label)}</button>`).join('')}
+        </div>
+        <label class="player-report-comment">
+          <span>Комментарий <small>необязательно</small></span>
+          <textarea id="playerReportComment" class="form-input" maxlength="800" placeholder="Кратко опишите ситуацию"></textarea>
+        </label>
+        <button class="btn primary full player-report-submit" id="playerReportSend" type="button" disabled>Отправить жалобу</button>
+      </section>
+    </div>`);
+
+  const searchInput=document.getElementById('playerReportSearch');
+  const searchButton=document.getElementById('playerReportSearchBtn');
+  const searchStatus=document.getElementById('playerReportSearchStatus');
+  const results=document.getElementById('playerReportResults');
+  const selected=document.getElementById('playerReportSelected');
+  const reasonStep=document.getElementById('playerReportReasonStep');
+  const send=document.getElementById('playerReportSend');
+
+  const refreshSendState=()=>{
+    if(send)send.disabled=!(selectedPlayer&&selectedReason);
+  };
+
+  const choosePlayer=player=>{
+    selectedPlayer=player;
+    if(selected){
+      selected.hidden=false;
+      selected.innerHTML=`<span><strong>${escapeHtml(player?.nickname||'Игрок')}</strong><small>${escapeHtml(player?.public_mgw_id||'')}</small></span><button type="button" id="playerReportChangeTarget">Изменить</button>`;
+    }
+    if(results)results.innerHTML='';
+    if(searchStatus)searchStatus.textContent='Игрок выбран.';
+    if(reasonStep)reasonStep.hidden=false;
+    document.getElementById('playerReportChangeTarget')?.addEventListener('click',()=>{
+      selectedPlayer=null;
+      if(selected)selected.hidden=true;
+      if(reasonStep)reasonStep.hidden=true;
+      refreshSendState();
+      searchInput?.focus();
+    });
+    refreshSendState();
+    window.setTimeout(()=>reasonStep?.scrollIntoView({behavior:'smooth',block:'nearest'}),40);
+  };
+
+  const renderPlayers=players=>{
+    if(!results)return;
+    if(!Array.isArray(players)||players.length===0){
+      results.innerHTML='';
+      if(searchStatus)searchStatus.textContent='Игроки не найдены. Попробуйте другой ник или MGW-ID.';
+      return;
+    }
+    if(searchStatus)searchStatus.textContent=`Найдено: ${players.length}. Выберите игрока.`;
+    results.innerHTML=players.map((player,index)=>`<button class="player-report-result" type="button" data-player-report-target="${index}">
+      <span><strong>${escapeHtml(player?.nickname||'Игрок')}</strong><small>${escapeHtml(player?.public_mgw_id||'')}</small></span><em>Выбрать</em>
+    </button>`).join('');
+    results.querySelectorAll('[data-player-report-target]').forEach(button=>button.addEventListener('click',()=>{
+      const index=Number(button.dataset.playerReportTarget);
+      const player=players[index];
+      if(player)choosePlayer(player);
+    }));
+  };
+
+  const runSearch=async()=>{
+    const query=String(searchInput?.value||'').trim();
+    const nicknameQuery=query.replace(/^@/u,'');
+    const looksLikeMgwId=/^MGW-(?:ID-)?/iu.test(query);
+    if(!query){
+      if(searchStatus)searchStatus.textContent='Введите ник или MGW-ID.';
+      searchInput?.focus();
+      return;
+    }
+    if(!looksLikeMgwId&&Array.from(nicknameQuery).length<2){
+      if(searchStatus)searchStatus.textContent='Для поиска по нику введите минимум 2 символа.';
+      searchInput?.focus();
+      return;
+    }
+    if(searchButton)searchButton.disabled=true;
+    if(results)results.innerHTML='';
+    if(searchStatus)searchStatus.textContent='Ищу игрока…';
+    try{
+      const response=await api.friends({action:'lookup',query});
+      const players=Array.isArray(response?.result?.players)?response.result.players.filter(player=>player&&typeof player==='object'):[];
+      renderPlayers(players);
+    }catch(error){
+      if(searchStatus)searchStatus.textContent=error?.message||'Не удалось выполнить поиск.';
+    }finally{
+      if(searchButton)searchButton.disabled=false;
+    }
+  };
+
+  searchButton?.addEventListener('click',()=>void runSearch());
+  searchInput?.addEventListener('keydown',event=>{
+    if(event.key!=='Enter')return;
+    event.preventDefault();
+    void runSearch();
+  });
+
+  document.querySelectorAll('#sheet [data-player-report-reason]').forEach(button=>button.addEventListener('click',()=>{
+    selectedReason=String(button.dataset.playerReportReason||'');
+    document.querySelectorAll('#sheet [data-player-report-reason]').forEach(item=>item.setAttribute('aria-pressed',item===button?'true':'false'));
+    refreshSendState();
+  }));
+
+  send?.addEventListener('click',async()=>{
+    if(!selectedPlayer||!selectedReason)return;
+    const details=String(document.getElementById('playerReportComment')?.value||'').trim();
+    send.disabled=true;
+    try{
+      const response=await api.friends({
+        action:'report',
+        target_mgw_id:String(selectedPlayer?.mgw_id||''),
+        reason:selectedReason,
+        details,
+        related_match_id:'',
+      });
+      const caseId=String(response?.result?.report_id||'');
+      closeSheet();
+      toast(caseId?`Жалоба отправлена · ${caseId}`:'Жалоба отправлена.');
+    }catch(error){
+      toast(error?.message||'Не удалось отправить жалобу.');
+      if(send.isConnected)send.disabled=false;
+    }
+  });
+
+  searchInput?.focus();
 }
 
 function isSupportTicketsCacheStale(){

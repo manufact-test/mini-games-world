@@ -2442,25 +2442,29 @@
 .support-ticket-select-wrap{
   position:relative;
   display:block;
+  width:100%;
   min-width:0;
 }
 .support-ticket-select-wrap::after{
-  content:'⌄';
+  content:'';
   position:absolute;
-  right:14px;
+  right:17px;
   top:50%;
-  transform:translateY(-55%);
+  width:7px;
+  height:7px;
+  border-right:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  transform:translateY(-72%) rotate(45deg);
+  transform-origin:center;
   color:var(--text);
-  font-size:18px;
-  font-weight:900;
-  line-height:1;
   pointer-events:none;
 }
 .support-ticket-select{
   display:block;
+  width:100%;
   appearance:none;
   -webkit-appearance:none;
-  padding-right:42px;
+  padding-right:46px;
   color-scheme:dark;
   cursor:pointer;
 }
@@ -2952,4 +2956,45 @@
 @media(max-width:640px){
   .profile-v2-moderation-item>div{flex-direction:column;gap:3px}
   .profile-v2-moderation-item>div span{text-align:left}
+}
+
+
+/* MVP-22.3 report-entry corrective: player reports are not Support tickets */
+.player-report-head p{margin-top:3px;color:var(--muted);font-size:11px;line-height:1.4}
+.player-report-create{display:flex;flex-direction:column;gap:12px}
+.player-report-step{display:flex;flex-direction:column;gap:10px;padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.035)}
+.player-report-step-title{display:flex;align-items:flex-start;gap:9px}
+.player-report-step-title>b{display:grid;place-items:center;flex:0 0 24px;width:24px;height:24px;border:1px solid rgba(135,109,255,.7);border-radius:8px;background:rgba(95,74,210,.18);color:#ded7ff;font-size:11px}
+.player-report-step-title>span{min-width:0}
+.player-report-step-title strong{display:block;color:var(--text);font-size:12px}
+.player-report-step-title small{display:block;margin-top:2px;color:var(--muted);font-size:10px;line-height:1.4}
+.player-report-search{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.player-report-search .form-input{min-width:0}
+.player-report-search .btn{min-width:84px;padding-inline:14px}
+.player-report-search-status{color:var(--muted);font-size:10.5px;line-height:1.4}
+.player-report-results{display:flex;flex-direction:column;gap:7px}
+.player-report-results:empty{display:none}
+.player-report-result{appearance:none;display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:10px 11px;border:1px solid rgba(255,255,255,.1);border-radius:11px;background:#11131a;color:var(--text);text-align:left;cursor:pointer}
+.player-report-result:active{transform:translateY(1px)}
+.player-report-result span{min-width:0}
+.player-report-result strong{display:block;overflow:hidden;font-size:11.5px;text-overflow:ellipsis;white-space:nowrap}
+.player-report-result small{display:block;margin-top:2px;color:var(--muted);font-size:9.5px;overflow-wrap:anywhere}
+.player-report-result em{flex:0 0 auto;color:#bdb2ff;font-size:10px;font-style:normal;font-weight:800}
+.player-report-selected{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 11px;border:1px solid rgba(125,98,255,.38);border-radius:11px;background:rgba(87,66,187,.11)}
+.player-report-selected[hidden]{display:none!important}
+.player-report-selected span{min-width:0}
+.player-report-selected strong{display:block;font-size:11.5px}
+.player-report-selected small{display:block;margin-top:2px;color:var(--muted);font-size:9.5px}
+.player-report-selected button{appearance:none;flex:0 0 auto;border:0;background:transparent;color:#c8bdff;font:inherit;font-size:10px;font-weight:800;cursor:pointer}
+.player-report-reasons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.player-report-reasons button{appearance:none;min-height:42px;padding:8px 10px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:#11131a;color:#cfd1db;font:inherit;font-size:10.5px;font-weight:750;text-align:left;cursor:pointer}
+.player-report-reasons button[aria-pressed="true"]{border-color:rgba(141,114,255,.88);background:rgba(104,78,220,.18);color:#fff;box-shadow:0 0 0 2px rgba(124,92,255,.11)}
+.player-report-comment{display:flex;flex-direction:column;gap:6px;color:var(--text);font-size:11px;font-weight:750}
+.player-report-comment>span small{color:var(--muted);font-size:9.5px;font-weight:500}
+.player-report-comment textarea{min-height:94px;resize:none}
+.player-report-submit{margin:0!important}
+@media(max-width:520px){
+  .player-report-search{grid-template-columns:1fr}
+  .player-report-search .btn{width:100%}
+  .player-report-reasons{grid-template-columns:1fr}
 }
