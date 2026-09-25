@@ -307,14 +307,18 @@
   };
 
   const mutate = async payload => {
-    if (busy || !currentTicket?.ticket_number) return;
+    if (busy || !currentTicket?.ticket_number) return null;
     setBusy(true);
     try {
       const data = await post({...payload, ticket:currentTicket.ticket_number, filters:filters()});
       renderSnapshot(data);
-      setStatus(`${currentTicket.ticket_number}: изменения сохранены в истории.`, 'ok');
+      if (payload.action !== 'reply') {
+        setStatus(`${currentTicket.ticket_number}: изменения сохранены в истории.`, 'ok');
+      }
+      return data;
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Не удалось сохранить изменение.', 'error');
+      throw error;
     } finally {
       setBusy(false);
     }
@@ -416,11 +420,17 @@
     }
     try {
       const attachments = await filesToPayload(selectedReplyFiles);
-      await mutate({action:'reply', message, attachments});
+      const result = await mutate({action:'reply', message, attachments});
+      if (!result) return;
       detail.querySelector('[data-support-reply]').value = '';
       clearReplyFiles();
+      if (result.notification?.ok) {
+        setStatus('Ответ отправлен. Пользователь получил уведомление в приложении.', 'ok');
+      } else {
+        setStatus(result.notification?.error || 'Ответ сохранён, но уведомление пользователю не создано.', 'error');
+      }
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Не удалось подготовить вложение.', 'error');
+      setStatus(error instanceof Error ? error.message : 'Не удалось отправить ответ.', 'error');
     }
   };
 
