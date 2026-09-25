@@ -11,6 +11,7 @@ require_once __DIR__ . '/social/FriendGraphService.php';
 require_once __DIR__ . '/social/SocialFriendNotificationService.php';
 require_once __DIR__ . '/social/SocialPlayerProfileReader.php';
 require_once __DIR__ . '/social/PlayerReportService.php';
+require_once __DIR__ . '/moderation/ModerationService.php';
 
 function mgw_friend_error_status(string $reason): int
 {
@@ -63,10 +64,16 @@ try {
     $service = new FriendGraphService($database);
     $profileReader = new SocialPlayerProfileReader($database);
     $reports = new PlayerReportService($database);
+    $moderation = new ModerationService($database);
     $action = strtolower(trim((string)($payload['action'] ?? 'snapshot')));
     $target = trim((string)($payload['target_mgw_id'] ?? ''));
 
     try {
+        // Reads, decline/cancel, block/unblock and reporting remain available
+        // for safety. Social restrictions stop new relationship creation.
+        if (in_array($action, ['request','accept'], true)) {
+            $moderation->assertAllowed($actorMgwId, 'social');
+        }
         $result = match ($action) {
             'snapshot' => $service->snapshot($actorMgwId),
             'lookup' => [
@@ -95,6 +102,12 @@ try {
             ),
             default => throw new InvalidArgumentException('unknown_action'),
         };
+    } catch (ModerationException $error) {
+        json_response([
+            'ok'=>false,
+            'code'=>$error->reason,
+            'error'=>$error->getMessage(),
+        ], 403);
     } catch (FriendGraphException|PlayerReportException $error) {
         json_response([
             'ok' => false,
