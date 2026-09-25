@@ -15,6 +15,8 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $assert(str_contains($service, 'LedgerWriteService'), 'Compensation must use the canonical LedgerWriteService.');
+$assert(str_contains($service, 'StorageTransactionInterface'), 'Compensation must project the accepted ledger result into the active runtime storage transaction.');
+$assert(str_contains($service, 'UnifiedBalanceRuntimeState::FIELD'), 'Compensation must keep the runtime unified balance projection converged.');
 $assert(str_contains($service, "'category' => 'admin_compensation'"), 'Compensation ledger category must be explicit.');
 $assert(str_contains($service, "'source_type' => 'admin_compensation'"), 'Compensation source type must be explicit.');
 $assert(str_contains($service, 'LARGE_AMOUNT_THRESHOLD = 50000'), 'Large compensation threshold must be server-owned.');
@@ -29,6 +31,7 @@ $assert(!preg_match('/INSERT\s+INTO\s+mgw_ledger_entries/i', $service), 'Compens
 $assert(str_contains($endpoint, "['snapshot','lookup','request','confirm']"), 'Admin endpoint must expose the bounded compensation actions.');
 $assert(str_contains($endpoint, 'AdminWebAuth::authorize'), 'Compensation endpoint must reuse Admin Web auth.');
 $assert(str_contains($endpoint, "routeFor('economy')"), 'Compensation endpoint must require the canonical economy DB route.');
+$assert(str_contains($endpoint, 'StorageFactory::create($config)'), 'Compensation endpoint must use the active runtime storage owner for projection.');
 
 $assert(str_contains($admin, 'data-compensation-api="../bot/admin-compensation.php"'), 'Web Admin must publish the compensation endpoint.');
 $assert(str_contains($admin, 'data-compensation-operation'), 'Web Admin must require the original operation.');
