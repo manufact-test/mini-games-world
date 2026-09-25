@@ -60,10 +60,9 @@ try {
 
             case 'assign_self':
                 $ticket = $service->assignOwner($ticketRef, $actorRef, $actorRef);
-                break;
-
-            case 'unassign':
-                $ticket = $service->assignOwner($ticketRef, null, $actorRef);
+                if ((string)($ticket['status'] ?? '') === 'open') {
+                    $ticket = $service->setStatus($ticketRef, 'in_progress', $actorRef);
+                }
                 break;
 
             case 'reply':
