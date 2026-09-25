@@ -21,7 +21,11 @@
   const categoryFilter = root.querySelector('[data-support-filter-category]');
   const platformFilter = root.querySelector('[data-support-filter-platform]');
   const fileSummary = root.querySelector('[data-support-file-summary]');
+  const replyFileList = root.querySelector('[data-support-reply-file-list]');
+  const replyFileInput = root.querySelector('[data-support-reply-files]');
   const requestedTicket = new URLSearchParams(window.location.search).get('ticket') || '';
+  const replyFileTypes = new Set(['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain']);
+  let selectedReplyFiles = [];
   let currentTicket = null;
   let currentAdminRef = '';
   let busy = false;
@@ -282,6 +286,7 @@
 
   const openTicket = async (ticketNumber, scroll = true) => {
     if (busy || !ticketNumber) return;
+    if (currentTicket && String(currentTicket.ticket_number || '') !== String(ticketNumber)) clearReplyFiles();
     setBusy(true);
     setStatus(`Открываю ${ticketNumber}…`);
     try {
@@ -315,36 +320,105 @@
     }
   };
 
-  const filesToPayload = async input => {
-    const files = Array.from(input?.files || []).slice(0, 3);
-    return Promise.all(files.map(file => new Promise((resolve, reject) => {
-      if (file.size > 2_000_000) return reject(new Error(`${file.name}: файл больше 2 МБ.`));
-      const reader = new FileReader();
-      reader.onerror = () => reject(new Error(`${file.name}: не удалось прочитать файл.`));
-      reader.onload = () => {
-        const value = String(reader.result || '');
-        const mime = String(file.type || '').toLowerCase();
-        const allowed = ['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain'];
-        if (!allowed.includes(mime)) return reject(new Error(`${file.name}: поддерживаются изображения, PDF и TXT.`));
-        resolve({file_name:file.name, mime_type:mime, content_base64:value.split(',').pop() || ''});
-      };
-      reader.readAsDataURL(file);
-    })));
+  const formatFileSize = bytes => {
+    const size = Number(bytes || 0);
+    if (size < 1024) return `${size} Б`;
+    if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} КБ`;
+    return `${(size / (1024 * 1024)).toFixed(1).replace('.0','')} МБ`;
   };
+
+  const renderReplyFiles = () => {
+    if (fileSummary) {
+      fileSummary.textContent = selectedReplyFiles.length
+        ? `Выбрано файлов: ${selectedReplyFiles.length}/3`
+        : 'Файлы не выбраны';
+    }
+    if (!replyFileList) return;
+    replyFileList.replaceChildren();
+    selectedReplyFiles.forEach((file, index) => {
+      const row = document.createElement('div');
+      row.className = 'mgw-admin__reply-file';
+
+      const copy = document.createElement('div');
+      const name = document.createElement('strong');
+      const meta = document.createElement('span');
+      name.textContent = file.name;
+      meta.textContent = formatFileSize(file.size);
+      copy.append(name, meta);
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'mgw-admin__reply-file-remove';
+      remove.setAttribute('aria-label', `Удалить ${file.name}`);
+      remove.textContent = '×';
+      remove.addEventListener('click', () => {
+        selectedReplyFiles.splice(index, 1);
+        renderReplyFiles();
+      });
+
+      row.append(copy, remove);
+      replyFileList.append(row);
+    });
+  };
+
+  const clearReplyFiles = () => {
+    selectedReplyFiles = [];
+    if (replyFileInput) replyFileInput.value = '';
+    renderReplyFiles();
+  };
+
+  const addReplyFiles = files => {
+    const errors = [];
+    Array.from(files || []).forEach(file => {
+      if (selectedReplyFiles.length >= 3) {
+        errors.push('Можно выбрать не больше 3 файлов.');
+        return;
+      }
+      const mime = String(file.type || '').toLowerCase();
+      if (!replyFileTypes.has(mime)) {
+        errors.push(`${file.name}: поддерживаются изображения, PDF и TXT.`);
+        return;
+      }
+      if (Number(file.size || 0) > 2_000_000) {
+        errors.push(`${file.name}: файл больше 2 МБ.`);
+        return;
+      }
+      selectedReplyFiles.push(file);
+    });
+    if (replyFileInput) replyFileInput.value = '';
+    renderReplyFiles();
+    if (errors.length) {
+      setStatus(errors[0], 'error');
+    } else if (selectedReplyFiles.length) {
+      setStatus('Вложения готовы к отправке.', 'ok');
+    }
+  };
+
+  const filesToPayload = async files => Promise.all(Array.from(files || []).map(file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error(`${file.name}: не удалось прочитать файл.`));
+    reader.onload = () => {
+      const value = String(reader.result || '');
+      resolve({
+        file_name:file.name,
+        mime_type:String(file.type || '').toLowerCase(),
+        content_base64:value.split(',').pop() || ''
+      });
+    };
+    reader.readAsDataURL(file);
+  })));
 
   const sendReply = async () => {
     const message = detail.querySelector('[data-support-reply]').value.trim();
-    const fileInput = detail.querySelector('[data-support-reply-files]');
     if (!message) {
       setStatus('Напишите ответ пользователю.', 'error');
       return;
     }
     try {
-      const attachments = await filesToPayload(fileInput);
+      const attachments = await filesToPayload(selectedReplyFiles);
       await mutate({action:'reply', message, attachments});
       detail.querySelector('[data-support-reply]').value = '';
-      fileInput.value = '';
-      if (fileSummary) fileSummary.textContent = 'Файлы не выбраны';
+      clearReplyFiles();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Не удалось подготовить вложение.', 'error');
     }
@@ -422,8 +496,8 @@
       const note = document.createElement('div');
       note.className = 'mgw-admin__attachment-viewer-note';
       note.textContent = mime === 'application/pdf'
-        ? 'PDF готов к открытию.'
-        : 'Для этого типа файла доступно открытие в отдельном окне.';
+        ? 'PDF можно скачать на устройство.'
+        : 'Файл можно скачать на устройство.';
       preview.append(note);
     }
 
@@ -433,18 +507,12 @@
     const actions = document.createElement('div');
     actions.className = 'mgw-admin__attachment-viewer-actions';
 
-    const open = document.createElement('a');
-    open.href = attachmentViewerUrl;
-    open.target = '_blank';
-    open.rel = 'noopener noreferrer';
-    open.textContent = mime === 'application/pdf' ? 'Открыть PDF' : 'Открыть отдельно';
-
     const download = document.createElement('a');
     download.href = attachmentViewerUrl;
     download.download = fileName;
-    download.textContent = 'Скачать';
+    download.textContent = mime === 'application/pdf' ? 'Скачать PDF' : 'Скачать';
 
-    actions.append(open, download);
+    actions.append(download);
     card.append(head, preview, actions);
     overlay.append(card);
 
@@ -480,6 +548,7 @@
   };
 
   back.addEventListener('click', () => {
+    clearReplyFiles();
     root.classList.remove('is-ticket-open');
     if (window.matchMedia('(max-width: 980px)').matches) queuePanel.scrollIntoView({block:'start', behavior:'smooth'});
   });
@@ -500,17 +569,10 @@
   detail.querySelector('[data-support-unassign]').addEventListener('click', () => void mutate({action:'unassign'}));
   detail.querySelector('[data-support-related-save]').addEventListener('click', saveRelated);
   detail.querySelector('[data-support-reply-send]').addEventListener('click', () => void sendReply());
-  detail.querySelector('[data-support-reply-files]').addEventListener('change', event => {
-    const files = Array.from(event.target.files || []);
-    if (!fileSummary) return;
-    if (!files.length) {
-      fileSummary.textContent = 'Файлы не выбраны';
-      return;
-    }
-    fileSummary.textContent = files.length === 1
-      ? files[0].name
-      : `Выбрано файлов: ${files.length}`;
+  replyFileInput?.addEventListener('change', event => {
+    addReplyFiles(event.target.files);
   });
 
+  renderReplyFiles();
   load();
 })();
