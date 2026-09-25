@@ -191,23 +191,37 @@ $reviewing = $service->takeInReview((string)$case['case_id'], 'telegram:admin-2'
 $assert(($reviewing['status'] ?? '') === 'reviewing', 'Take in review must advance the case one-way.');
 $assert(($reviewing['owner_ref'] ?? '') === 'telegram:admin-2', 'Reviewer must be persisted.');
 
-$closed = $service->resolve((string)$case['case_id'], 'monitor', 'Повторные игры требуют наблюдения.', 'telegram:admin-2');
-$assert(($closed['status'] ?? '') === 'closed', 'Decision must close the case.');
-$assert(($closed['decision'] ?? '') === 'monitor', 'Decision must be durable.');
-$assert(!empty($closed['closed_at']), 'Closed anti-fraud case must have closed_at.');
+$monitoring = $service->resolve((string)$case['case_id'], 'monitor', 'Повторные игры требуют наблюдения.', 'telegram:admin-2');
+$assert(($monitoring['status'] ?? '') === 'monitoring', 'Monitor decision must keep the case active.');
+$assert(($monitoring['decision'] ?? '') === 'monitor', 'Monitor decision must be durable.');
+$assert(empty($monitoring['closed_at']), 'Monitoring case must not have closed_at.');
 
 $active = $service->snapshot(['mode' => 'active']);
 $closedQueue = $service->snapshot(['mode' => 'closed']);
-$assert(count($active['cases'] ?? []) === 0, 'Closed case must leave active queue.');
-$assert(count($closedQueue['cases'] ?? []) === 1, 'Closed case must remain in reviewed archive.');
+$assert(count($active['cases'] ?? []) === 1, 'Monitoring case must remain in active queue.');
+$assert(count($closedQueue['cases'] ?? []) === 0, 'Monitoring case must not appear in completed archive.');
+
+$resumed = $service->takeInReview((string)$case['case_id'], 'telegram:admin-3');
+$assert(($resumed['status'] ?? '') === 'reviewing', 'Monitoring case must be resumable.');
+$assert(($resumed['decision'] ?? '') === 'pending', 'Resuming monitoring must clear the pending workflow decision.');
+
+$closed = $service->resolve((string)$case['case_id'], 'cleared', 'Нарушение не подтвердилось.', 'telegram:admin-3');
+$assert(($closed['status'] ?? '') === 'closed', 'Final decision must close the case.');
+$assert(($closed['decision'] ?? '') === 'cleared', 'Final decision must be durable.');
+$assert(!empty($closed['closed_at']), 'Completed case must have closed_at.');
+
+$active = $service->snapshot(['mode' => 'active']);
+$closedQueue = $service->snapshot(['mode' => 'closed']);
+$assert(count($active['cases'] ?? []) === 0, 'Completed case must leave active queue.');
+$assert(count($closedQueue['cases'] ?? []) === 1, 'Completed case must remain in completed archive.');
 $assert((int)$db->fetchValue('SELECT COUNT(*) FROM mgw_moderation_actions') === 0, 'Anti-fraud review must not create moderation sanctions automatically.');
 
 $blockedBackwards = false;
 try {
-    $service->takeInReview((string)$case['case_id'], 'telegram:admin-3');
+    $service->takeInReview((string)$case['case_id'], 'telegram:admin-4');
 } catch (AntiFraudCaseException $error) {
     $blockedBackwards = $error->reason === 'case_terminal';
 }
-$assert($blockedBackwards, 'Closed case must be read-only and cannot return to review.');
+$assert($blockedBackwards, 'Completed case must be read-only and cannot return to review.');
 
 fwrite(STDOUT, "MVP-22.4 AntiFraudWorkflowTest OK: {$assertions} assertions.\n");

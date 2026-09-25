@@ -23,13 +23,11 @@ foreach ([
     'data-admin-section="antifraud" data-admin-antifraud',
     'data-af-mode="active"',
     'data-af-mode="closed"',
-    'data-af-recent-match',
+    'data-af-recent-trigger',
+    'data-af-recent-list',
     'data-af-match-id',
-    'data-af-prev',
-    'data-af-play',
-    'data-af-next',
-    'data-af-speed',
-    'data-af-progress',
+    'data-af-timeline-state',
+    'data-af-timeline',
     'data-af-create-case',
     'data-af-take-case',
     'data-af-decision="cleared"',
@@ -44,28 +42,32 @@ foreach ([
 $assert(
     str_contains($page, 'data-af-home-mode="match"')
         && str_contains($page, 'data-af-review-tab="overview"')
-        && str_contains($page, 'data-af-review-tab="replay"')
+        && str_contains($page, 'data-af-review-tab="timeline"')
         && str_contains($page, 'data-af-review-tab="pair"')
         && str_contains($page, 'data-af-review-tab="devices"')
         && str_contains($page, 'data-af-review-tab="case"')
-        && str_contains($page, 'Проверка матча в три шага')
-        && str_contains($page, 'Пошаговый повтор матча')
+        && str_contains($page, 'Хронология матча')
         && str_contains($page, 'Это не видео.')
-        && str_contains($page, 'Технические данные повтора'),
-    'Anti-fraud Admin must use a guided match review workspace instead of one long stacked diagnostic page.'
+        && str_contains($page, 'Технические данные матча')
+        && str_contains($page, 'Завершённые')
+        && !str_contains($page, 'data-af-recent-match')
+        && !str_contains($page, 'data-af-play')
+        && !str_contains($page, 'data-af-speed')
+        && !str_contains($page, 'data-af-progress'),
+    'Anti-fraud Admin must use an in-app recent-match picker and a readable event timeline instead of native select or pseudo-video controls.'
 );
 
 $assert(
-    str_contains($ui, "const showHome = nextMode =>")
-        && str_contains($ui, "const showReviewTab = name =>")
-        && str_contains($ui, "const openReviewWorkspace = preferredTab =>")
-        && str_contains($ui, "const renderReplayAvailability = review =>")
-        && str_contains($ui, "frames.length === 1")
-        && str_contains($ui, "Пошаговый повтор недоступен")
-        && str_contains($ui, "reviewBox.scrollIntoView")
+    str_contains($ui, "const toggleRecentList = () =>")
+        && str_contains($ui, "const renderRecentMatches = matches =>")
+        && str_contains($ui, "const renderTimeline = review =>")
+        && str_contains($ui, "const timelineDescription = (event, frame) =>")
         && str_contains($ui, "openReviewWorkspace('overview')")
-        && str_contains($ui, "openReviewWorkspace('case')"),
-    'Anti-fraud UI must visibly transition into review, explain unavailable replay, and route cases to their own tab.'
+        && str_contains($ui, "openReviewWorkspace('case')")
+        && !str_contains($ui, "playButton.addEventListener")
+        && !str_contains($ui, "scheduleNext =")
+        && !str_contains($ui, "speedSelect.addEventListener"),
+    'Anti-fraud UI must keep match selection inside Web Admin and render a static human-readable timeline.'
 );
 
 $assert(
@@ -85,15 +87,12 @@ $assert(
 
 foreach ([
     "mode = 'active'",
-    "mode === 'closed' ? 'Обработанные кейсы'",
+    "mode === 'closed' ? 'Завершённые кейсы'",
     "const renderRecentMatches = matches =>",
     "const renderSignals = review =>",
+    "const renderTimeline = review =>",
     "const renderPairHistory = review =>",
     "const renderDeviceSession = review =>",
-    "const scheduleNext = () =>",
-    "playButton.addEventListener('click'",
-    "speedSelect.addEventListener('change'",
-    "progress.addEventListener('input'",
     "action:'create_case'",
     "action:'take_case'",
     "action:'resolve_case'",
@@ -104,7 +103,7 @@ foreach ([
 $assert(
     str_contains($css, '.mgw-admin__antifraud')
         && str_contains($css, '.mgw-admin__af-review-tabs')
-        && str_contains($css, '.mgw-admin__af-player-grid')
+        && str_contains($css, '.mgw-admin__af-timeline')
         && str_contains($css, '@media(max-width:640px)'),
     'Anti-fraud Admin workspace must have responsive styling.'
 );
@@ -145,7 +144,10 @@ foreach ([
 $assert(
     str_contains($service, "STATUS_OPEN = 'open'")
         && str_contains($service, "STATUS_REVIEWING = 'reviewing'")
+        && str_contains($service, "STATUS_MONITORING = 'monitoring'")
         && str_contains($service, "STATUS_CLOSED = 'closed'")
+        && str_contains($service, "c.status_code IN ('open','reviewing','monitoring')")
+        && str_contains($service, "$decision === self::DECISION_MONITOR")
         && str_contains($service, "public function takeInReview")
         && str_contains($service, "public function resolve")
         && str_contains($service, "'case_terminal'"),

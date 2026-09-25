@@ -13,6 +13,7 @@ final class AntiFraudCaseService
 {
     public const STATUS_OPEN = 'open';
     public const STATUS_REVIEWING = 'reviewing';
+    public const STATUS_MONITORING = 'monitoring';
     public const STATUS_CLOSED = 'closed';
 
     public const DECISION_PENDING = 'pending';
@@ -109,7 +110,7 @@ final class AntiFraudCaseService
         $where = [];
         $params = [];
         if ($mode === 'active') {
-            $where[] = "c.status_code IN ('open','reviewing')";
+            $where[] = "c.status_code IN ('open','reviewing','monitoring')";
         } elseif ($mode === 'closed') {
             $where[] = "c.status_code = 'closed'";
         }
@@ -137,7 +138,7 @@ final class AntiFraudCaseService
         if ($where !== []) $sql .= ' WHERE ' . implode(' AND ', $where);
         $sql .= " ORDER BY
                     CASE c.priority_code WHEN 'high' THEN 0 WHEN 'normal' THEN 1 ELSE 2 END,
-                    CASE c.status_code WHEN 'open' THEN 0 WHEN 'reviewing' THEN 1 ELSE 2 END,
+                    CASE c.status_code WHEN 'open' THEN 0 WHEN 'reviewing' THEN 1 WHEN 'monitoring' THEN 2 ELSE 3 END,
                     c.updated_at_utc DESC
                   LIMIT " . $limit;
 
@@ -250,33 +251,34 @@ final class AntiFraudCaseService
         $status = (string)$case['status'];
 
         if ($status === self::STATUS_REVIEWING) return $case;
-        if ($status !== self::STATUS_OPEN) {
-            throw new AntiFraudCaseException('case_terminal', 'Закрытый anti-fraud кейс доступен только для просмотра.');
+        if (!in_array($status, [self::STATUS_OPEN, self::STATUS_MONITORING], true)) {
+            throw new AntiFraudCaseException('case_terminal', 'Завершённый anti-fraud кейс доступен только для просмотра.');
         }
 
         $now = $this->timestamp();
-        $this->database->transaction(function () use ($case, $actorRef, $now): void {
+        $this->database->transaction(function () use ($case, $actorRef, $now, $status): void {
             $this->database->execute(
                 'UPDATE mgw_antifraud_cases
-                 SET status_code = :status, owner_ref = :owner_ref,
-                     reviewed_at_utc = :reviewed_at, updated_at_utc = :updated_at
+                 SET status_code = :status, decision_code = :decision, owner_ref = :owner_ref,
+                     reviewed_at_utc = :reviewed_at, updated_at_utc = :updated_at, closed_at_utc = NULL
                  WHERE case_id = :case_id AND status_code = :expected',
                 [
                     'status' => self::STATUS_REVIEWING,
+                    'decision' => self::DECISION_PENDING,
                     'owner_ref' => $actorRef,
                     'reviewed_at' => $now,
                     'updated_at' => $now,
                     'case_id' => (string)$case['case_id'],
-                    'expected' => self::STATUS_OPEN,
+                    'expected' => $status,
                 ]
             );
             $this->insertEvent(
                 (string)$case['case_id'],
                 'status_changed',
                 $actorRef,
-                self::STATUS_OPEN,
+                $status,
                 self::STATUS_REVIEWING,
-                null,
+                $status === self::STATUS_MONITORING ? 'Наблюдение возобновлено.' : null,
                 $now
             );
         });
@@ -302,17 +304,22 @@ final class AntiFraudCaseService
         }
 
         $now = $this->timestamp();
-        $this->database->transaction(function () use ($case, $decision, $note, $actorRef, $now): void {
+        $targetStatus = $decision === self::DECISION_MONITOR
+            ? self::STATUS_MONITORING
+            : self::STATUS_CLOSED;
+        $closedAt = $targetStatus === self::STATUS_CLOSED ? $now : null;
+
+        $this->database->transaction(function () use ($case, $decision, $note, $actorRef, $now, $targetStatus, $closedAt): void {
             $this->database->execute(
                 'UPDATE mgw_antifraud_cases
                  SET status_code = :status, decision_code = :decision,
                      updated_at_utc = :updated_at, closed_at_utc = :closed_at
                  WHERE case_id = :case_id AND status_code = :expected',
                 [
-                    'status' => self::STATUS_CLOSED,
+                    'status' => $targetStatus,
                     'decision' => $decision,
                     'updated_at' => $now,
-                    'closed_at' => $now,
+                    'closed_at' => $closedAt,
                     'case_id' => (string)$case['case_id'],
                     'expected' => self::STATUS_REVIEWING,
                 ]
@@ -331,8 +338,8 @@ final class AntiFraudCaseService
                 'status_changed',
                 $actorRef,
                 self::STATUS_REVIEWING,
-                self::STATUS_CLOSED,
-                null,
+                $targetStatus,
+                $targetStatus === self::STATUS_MONITORING ? 'Кейс оставлен под наблюдением.' : null,
                 $now
             );
         });
@@ -377,8 +384,9 @@ final class AntiFraudCaseService
     {
         return [
             self::STATUS_OPEN => 'Новый',
-            self::STATUS_REVIEWING => 'На проверке',
-            self::STATUS_CLOSED => 'Обработан',
+            self::STATUS_REVIEWING => 'В работе',
+            self::STATUS_MONITORING => 'Под наблюдением',
+            self::STATUS_CLOSED => 'Завершён',
         ];
     }
 
@@ -387,7 +395,7 @@ final class AntiFraudCaseService
         return [
             self::DECISION_PENDING => 'Решение не принято',
             self::DECISION_CLEARED => 'Нарушений не найдено',
-            self::DECISION_MONITOR => 'Оставить под наблюдением',
+            self::DECISION_MONITOR => 'Под наблюдением',
             self::DECISION_MODERATION_REVIEW => 'Передать на модерацию',
             self::DECISION_RATING_REVIEW => 'Передать на проверку рейтинга',
         ];

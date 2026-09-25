@@ -17,7 +17,11 @@
   const refreshButton = root.querySelector('[data-af-refresh]');
   const queue = root.querySelector('[data-af-queue]');
   const queueTitle = root.querySelector('[data-af-queue-title]');
-  const recentMatch = root.querySelector('[data-af-recent-match]');
+
+  const recentPicker = root.querySelector('[data-af-recent-picker]');
+  const recentTrigger = root.querySelector('[data-af-recent-trigger]');
+  const recentSelected = root.querySelector('[data-af-recent-selected]');
+  const recentList = root.querySelector('[data-af-recent-list]');
   const matchInput = root.querySelector('[data-af-match-id]');
   const matchLoad = root.querySelector('[data-af-match-load]');
 
@@ -30,21 +34,13 @@
   const policy = root.querySelector('[data-af-policy]');
   const signals = root.querySelector('[data-af-signals]');
 
-  const pairHistory = root.querySelector('[data-af-pair-history]');
-  const deviceSession = root.querySelector('[data-af-device-session]');
-
-  const replayStatus = root.querySelector('[data-af-replay-status]');
-  const player = root.querySelector('[data-af-player]');
-  const prevButton = root.querySelector('[data-af-prev]');
-  const playButton = root.querySelector('[data-af-play]');
-  const nextButton = root.querySelector('[data-af-next]');
-  const speedSelect = root.querySelector('[data-af-speed]');
-  const progress = root.querySelector('[data-af-progress]');
-  const playerMeta = root.querySelector('[data-af-player-meta]');
-  const playerState = root.querySelector('[data-af-player-state]');
-  const playerEvents = root.querySelector('[data-af-player-events]');
+  const timelineState = root.querySelector('[data-af-timeline-state]');
+  const timelineBox = root.querySelector('[data-af-timeline]');
   const rawTimeline = root.querySelector('[data-af-raw-timeline]');
   const rawFrames = root.querySelector('[data-af-raw-frames]');
+
+  const pairHistory = root.querySelector('[data-af-pair-history]');
+  const deviceSession = root.querySelector('[data-af-device-session]');
 
   const caseBox = root.querySelector('[data-af-case]');
   const caseSummary = root.querySelector('[data-af-case-summary]');
@@ -61,10 +57,8 @@
   let busy = false;
   let currentReview = null;
   let currentCase = null;
-  let frames = [];
-  let frameIndex = 0;
-  let playing = false;
-  let timer = 0;
+  let recentMatches = [];
+  let selectedRecentMatchId = '';
 
   const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, ch => ({
     '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'
@@ -100,26 +94,24 @@
     busy = value;
     root.setAttribute('aria-busy', value ? 'true' : 'false');
     [
-      refreshButton, matchLoad, recentMatch, matchInput, queryInput,
-      createCaseButton, takeCaseButton, decisionNote, speedSelect,
-      prevButton, playButton, nextButton, progress
+      refreshButton, matchLoad, recentTrigger, matchInput, queryInput,
+      createCaseButton, takeCaseButton, decisionNote
     ].filter(Boolean).forEach(node => {
       node.disabled = value;
     });
+    recentList?.querySelectorAll('button').forEach(node => { node.disabled = value; });
     decisionButtons.forEach(node => { node.disabled = value; });
     modeButtons.forEach(node => { node.disabled = value; });
     homeButtons.forEach(node => { node.disabled = value; });
     reviewTabs.forEach(node => { node.disabled = value; });
-    if (!value) {
-      renderCaseActions();
-      renderFrame();
-    }
+    if (!value) renderCaseActions();
   };
 
   const statusLabel = value => ({
     open:'Новый',
-    reviewing:'На проверке',
-    closed:'Обработан',
+    reviewing:'В работе',
+    monitoring:'Под наблюдением',
+    closed:'Завершён',
     finished:'Завершён',
     active:'Идёт',
     cancelled:'Отменён',
@@ -128,7 +120,7 @@
   const decisionLabel = value => ({
     pending:'Решение не принято',
     cleared:'Нарушений не найдено',
-    monitor:'Оставлен под наблюдением',
+    monitor:'Под наблюдением',
     moderation_review:'Передан в модерацию',
     rating_review:'Передан на проверку рейтинга',
   })[String(value || '')] || String(value || '—');
@@ -158,15 +150,24 @@
   })[String(value || '')] || String(value || 'Игра');
 
   const eventLabel = value => ({
-    match_started:'Начало матча',
-    move:'Ход',
-    action:'Действие',
-    result:'Результат',
-    match_finished:'Завершение матча',
+    match_started:'Матч начался',
+    move:'Ход игрока',
+    action:'Действие игрока',
+    result:'Результат матча',
+    match_finished:'Матч завершён',
     timeout:'Тайм-аут',
     reconnect:'Переподключение',
     disconnect:'Отключение',
   })[String(value || '')] || 'Событие матча';
+
+  const phaseLabel = value => ({
+    start:'Начало',
+    active:'Идёт',
+    playing:'Идёт',
+    finished:'Завершён',
+    complete:'Завершён',
+    completed:'Завершён',
+  })[String(value || '')] || String(value || '');
 
   const finishLabel = value => ({
     normal_win:'Обычная победа',
@@ -184,14 +185,83 @@
     return Number.isNaN(date.getTime()) ? raw : date.toLocaleString('ru-RU');
   };
 
+  const players = () => Array.isArray(currentReview?.replay?.players) ? currentReview.replay.players : [];
+
   const playerName = ref => {
-    const players = Array.isArray(currentReview?.replay?.players) ? currentReview.replay.players : [];
     const value = String(ref || '');
-    const player = players.find(item =>
+    const player = players().find(item =>
       String(item.player_ref || '') === value ||
-      String(item.mgw_id || '') === value
+      String(item.mgw_id || '') === value ||
+      String(item.legacy_user_id || '') === value
     );
     return player ? String(player.display_name || player.mgw_id || player.player_ref || 'Игрок') : (value || 'Система');
+  };
+
+  const closeRecentList = () => {
+    if (!recentList || !recentTrigger) return;
+    recentList.hidden = true;
+    recentTrigger.setAttribute('aria-expanded','false');
+  };
+
+  const toggleRecentList = () => {
+    if (!recentList || !recentTrigger || busy) return;
+    recentList.hidden = !recentList.hidden;
+    recentTrigger.setAttribute('aria-expanded', recentList.hidden ? 'false' : 'true');
+  };
+
+  const recentMatchPrimary = match => {
+    const names = (match.players || [])
+      .map(player => player.display_name || player.mgw_id || 'Игрок')
+      .filter(Boolean)
+      .join(' — ');
+    return gameLabel(match.game_type) + ' · ' + (names || 'участники');
+  };
+
+  const renderRecentMatches = matches => {
+    recentMatches = Array.isArray(matches) ? matches : [];
+    if (!recentList) return;
+
+    recentList.replaceChildren();
+
+    if (recentMatches.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'mgw-admin__af-recent-empty';
+      empty.textContent = 'Недавних матчей пока нет. Можно вставить ID матча вручную.';
+      recentList.append(empty);
+      return;
+    }
+
+    recentMatches.forEach(match => {
+      const matchId = String(match.match_id || '');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'mgw-admin__af-recent-item';
+      button.dataset.matchId = matchId;
+      button.setAttribute('role','option');
+      button.setAttribute('aria-selected', matchId === selectedRecentMatchId ? 'true' : 'false');
+
+      const primary = document.createElement('strong');
+      primary.textContent = recentMatchPrimary(match);
+
+      const meta = document.createElement('span');
+      meta.textContent = localTime(match.finished_at);
+
+      const id = document.createElement('small');
+      id.textContent = matchId;
+
+      button.append(primary, meta, id);
+      button.addEventListener('click', () => {
+        selectedRecentMatchId = matchId;
+        matchInput.value = matchId;
+        recentSelected.textContent = recentMatchPrimary(match);
+        recentList.querySelectorAll('[data-match-id]').forEach(node => {
+          node.setAttribute('aria-selected', String(node.dataset.matchId || '') === matchId ? 'true' : 'false');
+        });
+        closeRecentList();
+        setStatus('Матч выбран. Нажмите «Открыть проверку».', 'ok');
+      });
+      recentList.append(button);
+    });
   };
 
   const signalExplanation = signal => {
@@ -201,14 +271,13 @@
     if (code === 'shared_device_history') return 'У игроков найден общий идентификатор устройства в истории. Проверьте контекст предыдущих матчей.';
     if (code === 'repeat_pair_24h') return 'Эта пара играла друг с другом много раз за короткий период. Сравните историю пары и результат матча.';
     if (code === 'rating_antifarming_limited') return 'Система рейтинга уже ограничила начисление очков из-за повторных побед над тем же соперником.';
-    if (code === 'replay_integrity_gap') return 'В сохранённой цепочке повтора есть пропуски. Пошаговый повтор может быть неполным.';
+    if (code === 'replay_integrity_gap') return 'В сохранённой истории матча есть пропуски. Хронология может быть неполной.';
     if (code === 'manual_review') return 'Кейс создан администратором вручную без автоматического сигнала.';
     const reason = String(details.reason || details.message || '').trim();
     return reason || 'Сигнал требует ручной проверки администратором.';
   };
 
   const showHome = nextMode => {
-    stopPlayer();
     currentReview = null;
     reviewBox.hidden = true;
     home.hidden = false;
@@ -222,6 +291,8 @@
       const panelMode = String(panel.dataset.afHomePanel || '');
       panel.hidden = homeMode === 'match' ? panelMode !== 'match' : panelMode !== 'cases';
     });
+
+    closeRecentList();
 
     if (homeMode !== 'match') {
       void loadSnapshot();
@@ -239,49 +310,25 @@
     reviewPanels.forEach(panel => {
       panel.hidden = String(panel.dataset.afReviewPanel || '') !== reviewTab;
     });
-    if (reviewTab === 'replay') renderFrame();
   };
 
   const openReviewWorkspace = preferredTab => {
+    closeRecentList();
     home.hidden = true;
     reviewBox.hidden = false;
     showReviewTab(preferredTab || 'overview');
     reviewBox.scrollIntoView({block:'start', behavior:'smooth'});
   };
 
-  const renderRecentMatches = matches => {
-    if (!recentMatch) return;
-    const selected = String(recentMatch.value || '');
-    recentMatch.replaceChildren();
-    const placeholder = document.createElement('option');
-    placeholder.value = '';
-    placeholder.textContent = 'Выберите матч из списка';
-    recentMatch.append(placeholder);
-
-    (Array.isArray(matches) ? matches : []).forEach(match => {
-      const option = document.createElement('option');
-      option.value = String(match.match_id || '');
-      const names = (match.players || [])
-        .map(player => player.display_name || player.mgw_id || 'Игрок')
-        .filter(Boolean)
-        .join(' — ');
-      option.textContent = gameLabel(match.game_type) + ' · ' + (names || 'участники') + ' · ' + localTime(match.finished_at);
-      recentMatch.append(option);
-    });
-    if (Array.from(recentMatch.options).some(option => option.value === selected)) {
-      recentMatch.value = selected;
-    }
-  };
-
   const renderQueue = cases => {
     queue.replaceChildren();
-    queueTitle.textContent = mode === 'closed' ? 'Обработанные кейсы' : 'Активные кейсы';
+    queueTitle.textContent = mode === 'closed' ? 'Завершённые кейсы' : 'Активные кейсы';
 
     if (!Array.isArray(cases) || cases.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'mgw-admin__af-empty';
       empty.textContent = mode === 'closed'
-        ? 'Обработанных кейсов пока нет.'
+        ? 'Завершённых кейсов пока нет.'
         : 'Активных кейсов пока нет.';
       queue.append(empty);
       return;
@@ -311,15 +358,16 @@
     matchSummary.replaceChildren();
     const replay = review?.replay || {};
     const match = replay.match || {};
-    const players = Array.isArray(replay.players) ? replay.players : [];
+    const matchPlayers = Array.isArray(replay.players) ? replay.players : [];
     const diagnostics = replay.diagnostics || {};
+    const timelineCount = Array.isArray(replay.timeline) ? replay.timeline.length : 0;
     const rows = [
       ['Игра', gameLabel(match.game_type)],
-      ['Игроки', players.map(p => p.display_name || p.mgw_id || p.player_ref).join(' — ') || '—'],
+      ['Игроки', matchPlayers.map(p => p.display_name || p.mgw_id || p.player_ref).join(' — ') || '—'],
       ['Статус', statusLabel(match.status)],
       ['Сигналы', String(Array.isArray(review?.signals) ? review.signals.length : 0)],
-      ['Повтор', diagnostics.replayable === true && (replay.frames || []).length > 1 ? 'Доступен' : 'Ограничен'],
-      ['Матч', match.match_id || '—'],
+      ['События', String(timelineCount)],
+      ['Целостность', diagnostics.replayable === true ? 'Полная' : 'Есть пропуски'],
     ];
 
     rows.forEach(([label,value]) => {
@@ -332,7 +380,7 @@
       matchSummary.append(row);
     });
 
-    const names = players.map(p => p.display_name || p.mgw_id || p.player_ref).filter(Boolean).join(' — ');
+    const names = matchPlayers.map(p => p.display_name || p.mgw_id || p.player_ref).filter(Boolean).join(' — ');
     reviewSubtitle.textContent = gameLabel(match.game_type) + (names ? ' · ' + names : '') + ' · ' + String(match.match_id || '');
   };
 
@@ -343,7 +391,7 @@
     if (list.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'mgw-admin__af-empty mgw-admin__af-empty--ok';
-      empty.innerHTML = '<strong>Автоматических сигналов нет</strong><span>Это не означает автоматическое одобрение: при необходимости всё равно можно посмотреть повтор и историю пары.</span>';
+      empty.innerHTML = '<strong>Автоматических сигналов нет</strong><span>При необходимости всё равно можно посмотреть хронологию, историю пары и устройства.</span>';
       signals.append(empty);
       return;
     }
@@ -367,6 +415,154 @@
     });
   };
 
+  const stateSummary = frame => {
+    if (!frame || typeof frame !== 'object') return '';
+    const publicState = frame.public_state && typeof frame.public_state === 'object' ? frame.public_state : {};
+    const serverState = frame.server_state && typeof frame.server_state === 'object' ? frame.server_state : {};
+    const phase = publicState.phase || serverState.phase || publicState.status || serverState.status || '';
+    const turn = publicState.turn || serverState.turn || publicState.turn_player_ref || serverState.turn_player_ref || '';
+    const winner = publicState.winner || serverState.winner || publicState.winner_player_ref || serverState.winner_player_ref || '';
+
+    const parts = [];
+    if (phase) parts.push('Этап: ' + phaseLabel(phase));
+    if (turn) parts.push('Ход: ' + playerName(turn));
+    if (winner) parts.push('Победитель: ' + playerName(winner));
+    return parts.join(' · ');
+  };
+
+  const timelineDescription = (event, frame) => {
+    const type = String(event?.event_type || '');
+    const actor = String(event?.actor_user_id || '');
+    if (type === 'match_started') return 'Матч начался.';
+    if (type === 'move') return actor ? playerName(actor) + ' сделал ход.' : 'Зафиксирован ход игрока.';
+    if (type === 'action') return actor ? playerName(actor) + ' выполнил действие.' : 'Зафиксировано действие игрока.';
+    if (type === 'result' || type === 'match_finished') {
+      const state = stateSummary(frame);
+      return state ? 'Зафиксирован результат. ' + state : 'Матч завершён, результат сохранён.';
+    }
+    if (type === 'timeout') return actor ? 'Зафиксирован тайм-аут: ' + playerName(actor) + '.' : 'Зафиксирован тайм-аут.';
+    if (type === 'disconnect') return actor ? playerName(actor) + ' отключился.' : 'Зафиксировано отключение.';
+    if (type === 'reconnect') return actor ? playerName(actor) + ' переподключился.' : 'Зафиксировано переподключение.';
+    const state = stateSummary(frame);
+    return state || 'Сервер сохранил событие матча.';
+  };
+
+  const renderTimeline = review => {
+    timelineBox.replaceChildren();
+    const replay = review?.replay || {};
+    const events = Array.isArray(replay.timeline) ? replay.timeline : [];
+    const frames = Array.isArray(replay.frames) ? replay.frames : [];
+    const diagnostics = replay.diagnostics || {};
+    const frameByVersion = new Map(frames.map(frame => [String(frame.state_version ?? ''), frame]));
+
+    if (events.length === 0 && frames.length === 0) {
+      timelineState.dataset.state = 'error';
+      timelineState.innerHTML = '<strong>Хронология недоступна</strong><span>Для этого матча не сохранены события или состояния.</span>';
+      return;
+    }
+
+    if (diagnostics.replayable === true) {
+      timelineState.dataset.state = 'ok';
+      timelineState.innerHTML = '<strong>Хронология собрана</strong><span>Событий: ' + events.length + '. Они показаны ниже в порядке записи сервером.</span>';
+    } else {
+      const missing = Array.isArray(diagnostics.missing_snapshot_versions) ? diagnostics.missing_snapshot_versions : [];
+      timelineState.dataset.state = 'warn';
+      timelineState.innerHTML = '<strong>Хронология может быть неполной</strong><span>В сохранённой цепочке есть пропуски' + (missing.length ? ': ' + escapeHtml(missing.join(', ')) : '') + '.</span>';
+    }
+
+    const items = events.length
+      ? events.map((event,index) => ({
+          index:index + 1,
+          title:eventLabel(event.event_type),
+          time:event.occurred_at_utc,
+          actor:event.actor_user_id,
+          frame:frameByVersion.get(String(event.snapshot_state_version ?? '')) || null,
+          event,
+        }))
+      : frames.map((frame,index) => ({
+          index:index + 1,
+          title:'Сохранено состояние матча',
+          time:frame.created_at_utc,
+          actor:'',
+          frame,
+          event:null,
+        }));
+
+    items.forEach(item => {
+      const article = document.createElement('article');
+      article.className = 'mgw-admin__af-timeline-item';
+
+      const number = document.createElement('span');
+      number.className = 'mgw-admin__af-timeline-number';
+      number.textContent = String(item.index);
+
+      const body = document.createElement('div');
+      body.className = 'mgw-admin__af-timeline-body';
+
+      const head = document.createElement('div');
+      head.className = 'mgw-admin__af-timeline-head';
+
+      const title = document.createElement('strong');
+      title.textContent = item.title;
+
+      const time = document.createElement('time');
+      time.textContent = localTime(item.time);
+      head.append(title,time);
+
+      const description = document.createElement('p');
+      description.textContent = item.event
+        ? timelineDescription(item.event,item.frame)
+        : (stateSummary(item.frame) || 'Сервер сохранил состояние матча.');
+
+      const state = stateSummary(item.frame);
+      body.append(head,description);
+      if (state && !(item.event && (String(item.event.event_type || '') === 'result' || String(item.event.event_type || '') === 'match_finished'))) {
+        const meta = document.createElement('small');
+        meta.textContent = state;
+        body.append(meta);
+      }
+
+      article.append(number,body);
+      timelineBox.append(article);
+    });
+  };
+
+  const renderRawReplay = review => {
+    rawTimeline.replaceChildren();
+    rawFrames.replaceChildren();
+    const replay = review?.replay || {};
+    const events = Array.isArray(replay.timeline) ? replay.timeline : [];
+    const frames = Array.isArray(replay.frames) ? replay.frames : [];
+
+    const add = (target,title,meta,payload) => {
+      const details = document.createElement('details');
+      details.className = 'mgw-admin__replay-item';
+      const summary = document.createElement('summary');
+      const strong = document.createElement('strong');
+      const span = document.createElement('span');
+      strong.textContent = title;
+      span.textContent = meta;
+      summary.append(strong,span);
+      const pre = document.createElement('pre');
+      pre.textContent = JSON.stringify(payload,null,2);
+      details.append(summary,pre);
+      target.append(details);
+    };
+
+    events.forEach(event => add(
+      rawTimeline,
+      eventLabel(event.event_type) + ' · rev ' + event.primary_revision + '.' + event.event_ordinal,
+      localTime(event.occurred_at_utc) + ' · state v' + (event.snapshot_state_version || '—'),
+      event
+    ));
+    frames.forEach(frame => add(
+      rawFrames,
+      'Снимок состояния v' + (frame.state_version || '—'),
+      localTime(frame.created_at_utc) + ' · событий ' + (Array.isArray(frame.events) ? frame.events.length : 0),
+      frame
+    ));
+  };
+
   const renderPairHistory = review => {
     pairHistory.replaceChildren();
     const list = Array.isArray(review?.pair_history) ? review.pair_history : [];
@@ -379,9 +575,7 @@
     list.forEach(item => {
       const row = document.createElement('div');
       row.className = 'mgw-admin__af-history-row';
-      const winner = item.winner_player_ref
-        ? playerName(item.winner_player_ref)
-        : 'Не определён';
+      const winner = item.winner_player_ref ? playerName(item.winner_player_ref) : 'Не определён';
       row.innerHTML =
         '<strong>' + escapeHtml(gameLabel(item.game_type)) + '</strong>' +
         '<span>' + escapeHtml(finishLabel(item.finish_reason || item.status)) + '</span>' +
@@ -420,8 +614,8 @@
       '<div><span>Совпадений во время матча</span><strong>' + sharedWindow.length + '</strong></div>';
     deviceSession.append(summary);
 
-    const players = data.players || {};
-    if (Object.keys(players).length === 0) {
+    const devicePlayers = data.players || {};
+    if (Object.keys(devicePlayers).length === 0) {
       const empty = document.createElement('div');
       empty.className = 'mgw-admin__af-empty';
       empty.textContent = 'Подробные device/session данные для этого матча недоступны.';
@@ -429,7 +623,7 @@
       return;
     }
 
-    Object.entries(players).forEach(([mgwId,player]) => {
+    Object.entries(devicePlayers).forEach(([mgwId,player]) => {
       const details = document.createElement('details');
       details.className = 'mgw-admin__af-session-player';
       const head = document.createElement('summary');
@@ -451,152 +645,6 @@
     });
   };
 
-  const stopPlayer = () => {
-    playing = false;
-    if (timer) window.clearTimeout(timer);
-    timer = 0;
-    playButton.textContent = '▶ Воспроизвести';
-    playButton.setAttribute('aria-label','Воспроизвести пошаговый повтор');
-  };
-
-  const frameDelay = (from, to) => {
-    const speed = Math.max(0.25, Number(speedSelect.value || 1));
-    const a = Date.parse(String(from?.created_at_utc || '').replace(' ', 'T') + 'Z');
-    const b = Date.parse(String(to?.created_at_utc || '').replace(' ', 'T') + 'Z');
-    const delta = Number.isFinite(a) && Number.isFinite(b) && b > a ? b - a : 1000;
-    return Math.max(500, Math.min(2200, delta / speed));
-  };
-
-  const scheduleNext = () => {
-    if (!playing) return;
-    if (frameIndex >= frames.length - 1) {
-      stopPlayer();
-      setStatus('Повтор завершён. Можно вернуться к любому шагу.', 'ok');
-      return;
-    }
-    timer = window.setTimeout(() => {
-      frameIndex += 1;
-      renderFrame();
-      scheduleNext();
-    }, frameDelay(frames[frameIndex], frames[frameIndex + 1]));
-  };
-
-  const stateSummary = frame => {
-    const publicState = frame?.public_state && typeof frame.public_state === 'object' ? frame.public_state : {};
-    const serverState = frame?.server_state && typeof frame.server_state === 'object' ? frame.server_state : {};
-    const phase = publicState.phase || serverState.phase || publicState.status || serverState.status || '';
-    const turn = publicState.turn || serverState.turn || publicState.turn_player_ref || serverState.turn_player_ref || '';
-    const winner = publicState.winner || serverState.winner || publicState.winner_player_ref || serverState.winner_player_ref || '';
-
-    const parts = [];
-    if (phase) parts.push('<strong>Этап:</strong> ' + escapeHtml(statusLabel(phase)));
-    if (turn) parts.push('<strong>Ход:</strong> ' + escapeHtml(playerName(turn)));
-    if (winner) parts.push('<strong>Победитель:</strong> ' + escapeHtml(playerName(winner)));
-    if (parts.length === 0) {
-      parts.push('<span>Состояние сохранено. Полный снимок доступен ниже в «Технических данных».</span>');
-    }
-    return parts.join('<br>');
-  };
-
-  const renderReplayAvailability = review => {
-    const replay = review?.replay || {};
-    const diagnostics = replay.diagnostics || {};
-    frames = Array.isArray(replay.frames) ? replay.frames : [];
-    frameIndex = 0;
-    stopPlayer();
-
-    const missing = Array.isArray(diagnostics.missing_snapshot_versions) ? diagnostics.missing_snapshot_versions : [];
-
-    if (frames.length === 0) {
-      player.hidden = true;
-      replayStatus.dataset.state = 'error';
-      replayStatus.innerHTML = '<strong>Пошаговый повтор недоступен</strong><span>Для этого матча не сохранены состояния, из которых можно собрать повтор.</span>';
-      return;
-    }
-
-    if (frames.length === 1) {
-      player.hidden = true;
-      replayStatus.dataset.state = 'warn';
-      replayStatus.innerHTML = '<strong>Пошаговый повтор недоступен</strong><span>Сохранён только один снимок состояния. Кнопки воспроизведения поэтому не используются. Технические события можно открыть ниже.</span>';
-      return;
-    }
-
-    player.hidden = false;
-    if (diagnostics.replayable !== true) {
-      replayStatus.dataset.state = 'warn';
-      replayStatus.innerHTML = '<strong>Повтор доступен частично</strong><span>В цепочке есть пропуски' + (missing.length ? ': ' + escapeHtml(missing.join(', ')) : '') + '. Смотрите шаги как диагностическую информацию.</span>';
-    } else {
-      replayStatus.dataset.state = 'ok';
-      replayStatus.innerHTML = '<strong>Повтор готов</strong><span>Доступно шагов: ' + frames.length + '. Нажмите «Воспроизвести» или переходите по шагам вручную.</span>';
-    }
-    renderFrame();
-  };
-
-  const renderFrame = () => {
-    if (!player || player.hidden || frames.length === 0) return;
-    frameIndex = Math.max(0, Math.min(frames.length - 1, frameIndex));
-    const frame = frames[frameIndex] || {};
-    const events = Array.isArray(frame.events) ? frame.events : [];
-
-    progress.max = String(Math.max(0, frames.length - 1));
-    progress.value = String(frameIndex);
-    prevButton.disabled = busy || frameIndex <= 0;
-    nextButton.disabled = busy || frameIndex >= frames.length - 1;
-    playButton.disabled = busy || frames.length < 2;
-
-    playerMeta.textContent = 'Шаг ' + (frameIndex + 1) + ' из ' + frames.length + ' · ' + localTime(frame.created_at_utc);
-
-    if (events.length === 0) {
-      playerEvents.innerHTML = '<strong>Сохранено состояние матча</strong><span>Отдельного события на этом шаге нет.</span>';
-    } else {
-      playerEvents.innerHTML = events.map(event =>
-        '<div class="mgw-admin__af-step-event">' +
-          '<strong>' + escapeHtml(eventLabel(event.event_type)) + '</strong>' +
-          '<span>' + escapeHtml(playerName(event.actor_user_id)) + '</span>' +
-          '<em>' + escapeHtml(localTime(event.occurred_at_utc)) + '</em>' +
-        '</div>'
-      ).join('');
-    }
-
-    playerState.innerHTML = stateSummary(frame);
-  };
-
-  const renderRawReplay = review => {
-    rawTimeline.replaceChildren();
-    rawFrames.replaceChildren();
-    const replay = review?.replay || {};
-    const timeline = Array.isArray(replay.timeline) ? replay.timeline : [];
-    const replayFrames = Array.isArray(replay.frames) ? replay.frames : [];
-
-    const add = (target, title, meta, payload) => {
-      const details = document.createElement('details');
-      details.className = 'mgw-admin__replay-item';
-      const summary = document.createElement('summary');
-      const strong = document.createElement('strong');
-      const span = document.createElement('span');
-      strong.textContent = title;
-      span.textContent = meta;
-      summary.append(strong,span);
-      const pre = document.createElement('pre');
-      pre.textContent = JSON.stringify(payload, null, 2);
-      details.append(summary,pre);
-      target.append(details);
-    };
-
-    timeline.forEach(event => add(
-      rawTimeline,
-      eventLabel(event.event_type) + ' · rev ' + event.primary_revision + '.' + event.event_ordinal,
-      localTime(event.occurred_at_utc) + ' · state v' + (event.snapshot_state_version || '—'),
-      event
-    ));
-    replayFrames.forEach(frame => add(
-      rawFrames,
-      'Снимок состояния v' + (frame.state_version || '—'),
-      localTime(frame.created_at_utc) + ' · событий ' + (Array.isArray(frame.events) ? frame.events.length : 0),
-      frame
-    ));
-  };
-
   const renderCaseActions = () => {
     const hasReview = currentReview && currentReview.replay?.match?.match_id;
     caseBox.hidden = !hasReview;
@@ -606,26 +654,33 @@
     currentCase = item;
 
     createCaseButton.hidden = item !== null;
-    takeCaseButton.hidden = !item || item.status !== 'open';
+    takeCaseButton.hidden = !item || !['open','monitoring'].includes(String(item.status || ''));
     decisionBox.hidden = !item || item.status !== 'reviewing';
     openProcessedButton.hidden = !item || item.status !== 'closed';
 
     if (!item) {
-      caseSummary.innerHTML = '<strong>Кейс не создан</strong><span>Если матч требует отдельного решения, создайте кейс. Само создание ничего не блокирует.</span>';
+      caseSummary.innerHTML = '<strong>Кейс не создан</strong><span>Обычный просмотр матча не требует кейса. Создавайте его только если ситуацию нужно отдельно зафиксировать и довести до решения.</span>';
       return;
     }
 
     if (item.status === 'open') {
-      caseSummary.innerHTML = '<strong>' + escapeHtml(item.case_id) + ' · Новый</strong><span>Кейс создан. Нажмите «Взять в работу», чтобы назначить себя и перейти к решению.</span>';
+      takeCaseButton.textContent = 'Взять в работу';
+      caseSummary.innerHTML = '<strong>' + escapeHtml(item.case_id) + ' · Новый</strong><span>Кейс создан и ждёт администратора.</span>';
       return;
     }
 
     if (item.status === 'reviewing') {
-      caseSummary.innerHTML = '<strong>' + escapeHtml(item.case_id) + ' · На проверке</strong><span>Добавьте короткий комментарий и выберите итог проверки ниже.</span>';
+      caseSummary.innerHTML = '<strong>' + escapeHtml(item.case_id) + ' · В работе</strong><span>Добавьте комментарий и выберите следующий итог.</span>';
       return;
     }
 
-    caseSummary.innerHTML = '<strong>' + escapeHtml(item.case_id) + ' · Проверка завершена</strong><span>Итог: ' + escapeHtml(decisionLabel(item.decision)) + '.</span>';
+    if (item.status === 'monitoring') {
+      takeCaseButton.textContent = 'Вернуть в работу';
+      caseSummary.innerHTML = '<strong>' + escapeHtml(item.case_id) + ' · Под наблюдением</strong><span>Кейс остаётся активным. Когда появятся новые данные, верните его в работу и примите итоговое решение.</span>';
+      return;
+    }
+
+    caseSummary.innerHTML = '<strong>' + escapeHtml(item.case_id) + ' · Завершён</strong><span>Итог: ' + escapeHtml(decisionLabel(item.decision)) + '.</span>';
   };
 
   const renderReview = review => {
@@ -638,10 +693,10 @@
 
     renderMatchSummary(currentReview);
     renderSignals(currentReview);
+    renderTimeline(currentReview);
+    renderRawReplay(currentReview);
     renderPairHistory(currentReview);
     renderDeviceSession(currentReview);
-    renderReplayAvailability(currentReview);
-    renderRawReplay(currentReview);
     renderCaseActions();
 
     policy.textContent = String(currentReview.policy?.copy || 'Сигналы только помогают ручной проверке. Один сигнал не блокирует игрока автоматически.');
@@ -654,13 +709,14 @@
       setStatus('Откройте Web Admin из Telegram.', 'error');
       return;
     }
+
     setBusy(true);
-    setStatus(mode === 'closed' ? 'Загружаю обработанные кейсы…' : 'Загружаю активные кейсы…');
+    setStatus(mode === 'closed' ? 'Загружаю завершённые кейсы…' : 'Загружаю активные кейсы…');
     try {
       const data = await post({action:'snapshot', filters:filters()});
       renderQueue(data.cases || []);
       renderRecentMatches(data.recent_matches || []);
-      setStatus(mode === 'closed' ? 'Обработанные кейсы загружены.' : 'Активные кейсы загружены.', 'ok');
+      setStatus(mode === 'closed' ? 'Завершённые кейсы загружены.' : 'Активные кейсы загружены.', 'ok');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Не удалось загрузить кейсы.', 'error');
     } finally {
@@ -670,10 +726,9 @@
 
   const reviewMatch = async () => {
     if (busy) return;
-    const matchId = String(matchInput.value || recentMatch?.value || '').trim();
+    const matchId = String(matchInput.value || selectedRecentMatchId || '').trim();
     if (!matchId) {
       setStatus('Сначала выберите матч из списка или вставьте его ID.', 'error');
-      matchInput.focus();
       return;
     }
 
@@ -731,8 +786,7 @@
   };
 
   homeButtons.forEach(button => button.addEventListener('click', () => {
-    const target = String(button.dataset.afHomeMode || 'match');
-    showHome(target);
+    showHome(String(button.dataset.afHomeMode || 'match'));
   }));
 
   modeButtons.forEach(button => button.addEventListener('click', () => {
@@ -747,17 +801,30 @@
     showHome(currentCase?.status === 'closed' ? 'closed' : 'match');
   });
 
+  recentTrigger.addEventListener('click', event => {
+    event.stopPropagation();
+    toggleRecentList();
+  });
+
+  recentList.addEventListener('click', event => event.stopPropagation());
+  document.addEventListener('click', event => {
+    if (recentPicker && !recentPicker.contains(event.target)) closeRecentList();
+  });
+
   refreshButton.addEventListener('click', () => void loadSnapshot());
   queryInput.addEventListener('keydown', event => {
     if (event.key === 'Enter') void loadSnapshot();
   });
 
-  recentMatch?.addEventListener('change', () => {
-    const matchId = String(recentMatch.value || '');
-    if (matchId) matchInput.value = matchId;
-  });
-
   matchLoad.addEventListener('click', () => void reviewMatch());
+  matchInput.addEventListener('input', () => {
+    const typed = String(matchInput.value || '').trim();
+    if (typed !== selectedRecentMatchId) {
+      selectedRecentMatchId = '';
+      recentSelected.textContent = 'Выбрать недавний матч';
+      recentList.querySelectorAll('[data-match-id]').forEach(node => node.setAttribute('aria-selected','false'));
+    }
+  });
   matchInput.addEventListener('keydown', event => {
     if (event.key === 'Enter') void reviewMatch();
   });
@@ -768,17 +835,23 @@
     void mutateCase({action:'create_case', match_id:matchId}).then(data => {
       if (!data) return;
       showReviewTab('case');
-      setStatus((data.case?.case_id || 'Кейс') + ' создан. Игрок автоматически не блокировался.', 'ok');
+      setStatus((data.case?.case_id || 'Кейс') + ' создан и добавлен в активные.', 'ok');
     });
   });
 
   takeCaseButton.addEventListener('click', () => {
     if (!currentCase?.case_id) return;
+    const wasMonitoring = currentCase.status === 'monitoring';
     void mutateCase({action:'take_case', case_id:currentCase.case_id}).then(data => {
       if (!data) return;
       showReviewTab('case');
       decisionNote.focus();
-      setStatus((data.case?.case_id || 'Кейс') + ' взят в работу. Теперь добавьте комментарий и выберите итог.', 'ok');
+      setStatus(
+        (data.case?.case_id || 'Кейс') +
+        (wasMonitoring ? ' возвращён в работу.' : ' взят в работу.') +
+        ' Добавьте комментарий и выберите итог.',
+        'ok'
+      );
     });
   });
 
@@ -786,7 +859,7 @@
     if (!currentCase?.case_id) return;
     const note = String(decisionNote.value || '').trim();
     if (!note) {
-      setStatus('Сначала добавьте короткий комментарий к решению.', 'error');
+      setStatus('Сначала добавьте короткий комментарий.', 'error');
       decisionNote.focus();
       return;
     }
@@ -801,57 +874,15 @@
       if (!data) return;
       decisionNote.value = '';
       showReviewTab('case');
-      setStatus((data.case?.case_id || 'Кейс') + ' обработан. Итог: ' + decisionLabel(data.case?.decision) + '.', 'ok');
+      if (data.case?.status === 'monitoring') {
+        setStatus((data.case?.case_id || 'Кейс') + ' оставлен под наблюдением и остаётся в активных.', 'ok');
+      } else {
+        setStatus((data.case?.case_id || 'Кейс') + ' завершён. Итог: ' + decisionLabel(data.case?.decision) + '.', 'ok');
+      }
     });
   }));
 
   openProcessedButton.addEventListener('click', () => showHome('closed'));
-
-  prevButton.addEventListener('click', () => {
-    if (frames.length < 2) return;
-    stopPlayer();
-    frameIndex -= 1;
-    renderFrame();
-  });
-
-  nextButton.addEventListener('click', () => {
-    if (frames.length < 2) return;
-    stopPlayer();
-    frameIndex += 1;
-    renderFrame();
-  });
-
-  playButton.addEventListener('click', () => {
-    if (playing) {
-      stopPlayer();
-      setStatus('Повтор поставлен на паузу.', 'ok');
-      return;
-    }
-    if (frames.length < 2) {
-      setStatus('Пошаговый повтор для этого матча недоступен. Причина указана над кнопками.', 'error');
-      return;
-    }
-    if (frameIndex >= frames.length - 1) frameIndex = 0;
-    playing = true;
-    playButton.textContent = '⏸ Пауза';
-    playButton.setAttribute('aria-label','Поставить повтор на паузу');
-    renderFrame();
-    setStatus('Воспроизвожу пошаговый повтор матча.', 'ok');
-    scheduleNext();
-  });
-
-  speedSelect.addEventListener('change', () => {
-    if (!playing) return;
-    if (timer) window.clearTimeout(timer);
-    timer = 0;
-    scheduleNext();
-  });
-
-  progress.addEventListener('input', () => {
-    stopPlayer();
-    frameIndex = Number(progress.value || 0);
-    renderFrame();
-  });
 
   const requestedCase = new URLSearchParams(window.location.search).get('afcase') || '';
   if (requestedCase) {
