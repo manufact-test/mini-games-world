@@ -2935,3 +2935,21 @@
   .support-reply-text{height:76px!important;min-height:76px!important}
   .support-ticket-list{max-height:50dvh}
 }
+
+
+/* MVP-22.3 player moderation / appeals */
+.profile-v2-moderation{display:flex;flex-direction:column;gap:14px}
+.profile-v2-moderation>section{display:flex;flex-direction:column;gap:9px}
+.profile-v2-moderation>section>h3{margin:0;color:var(--text,#f3f3f5);font-size:13px}
+.profile-v2-moderation-item{display:flex;flex-direction:column;gap:7px;padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:13px;background:rgba(255,255,255,.035)}
+.profile-v2-moderation-item>div{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.profile-v2-moderation-item>div strong{font-size:12px}
+.profile-v2-moderation-item>div span{color:var(--muted,#8f92a0);font-size:10px;text-align:right}
+.profile-v2-moderation-item p{margin:0;color:var(--muted,#a6a8b2);font-size:11px;line-height:1.45;overflow-wrap:anywhere}
+.profile-v2-moderation-item small{color:var(--muted,#8f92a0);font-size:10px;line-height:1.4;overflow-wrap:anywhere}
+.profile-v2-moderation-empty,.profile-v2-moderation-loading{padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:12px;color:var(--muted,#92949f);font-size:11px;line-height:1.45;background:rgba(255,255,255,.025)}
+#mgwModerationAppealText{min-height:110px;resize:vertical;margin-bottom:10px}
+@media(max-width:640px){
+  .profile-v2-moderation-item>div{flex-direction:column;gap:3px}
+  .profile-v2-moderation-item>div span{text-align:left}
+}
