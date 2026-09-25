@@ -59,7 +59,10 @@ $assertNotContains('.sheet #settingsBtn', $mainCss, 'Settings must not need a on
 $assertContains("settingsBtn:'ui/navigation/settings.webp'", $visuals, 'Settings must use the accepted Shield King metallic settings icon.');
 $assertContains("rulesBtn:'ui/actions/rules.webp'", $visuals, 'Settings and neighboring rows must share the same dynamic metallic icon owner.');
 
-$assertContains('home-screen.js?v=80&mvp16=settings-row-owner', $versionManifest, 'Settings row cache key must stay current.');
+$assertions++;
+if (preg_match('/home-screen\.js\?v=(\d+)[^\']*mvp16=settings-row-owner/', $versionManifest, $homeVersionMatch) !== 1 || (int)$homeVersionMatch[1] < 80) {
+    throw new RuntimeException('Settings row cache identity must remain at or beyond the accepted owner baseline while allowing later bounded Home work.');
+}
 $assertions++;
 if (preg_match('/profile-screen-v110\.js\?v=(\d+)[^\']*mvp16=profile-pass-a/', $versionManifest, $profileVersionMatch) !== 1 || (int)$profileVersionMatch[1] < 1119) {
     throw new RuntimeException('Profile pass A cache identity must remain at or beyond the accepted controller baseline while allowing later bounded Profile work.');
@@ -68,6 +71,13 @@ $assertions++;
 if (preg_match('/main\.css\?v=(\d+)/', $versionManifest, $mainCssVersionMatch) !== 1 || (int)$mainCssVersionMatch[1] < 171) {
     throw new RuntimeException('Main CSS cache key must stay at or beyond the Profile pass A baseline.');
 }
-$assertContains("shield-king-visuals.js?v=127&sk=4&icons=c1efd5af&shell=nav' => './assets/js/components/shield-king-visuals.js?v=129&sk=4&icons=c1efd5af&shell=nav&settings=metallic&friends=1", $versionManifest, 'Telegram shell must preserve the corrected Settings icon owner while cache-busting the Friends menu art.');
+$assertions++;
+if (preg_match(
+    "/shield-king-visuals\.js\?v=127&sk=4&icons=c1efd5af&shell=nav' => '\.\/assets\/js\/components\/shield-king-visuals\.js\?v=(\d+)&sk=4&icons=c1efd5af&shell=nav&settings=metallic&friends=1(?:&[^']*)?'/",
+    $versionManifest,
+    $visualVersionMatch
+) !== 1 || (int)$visualVersionMatch[1] < 129) {
+    throw new RuntimeException('Telegram shell must preserve the corrected Settings/Friends icon owner while allowing later bounded shell cache-busting.');
+}
 
 fwrite(STDOUT, "ProfileV2PassAStaticContractTest: {$assertions} assertions passed\n");
