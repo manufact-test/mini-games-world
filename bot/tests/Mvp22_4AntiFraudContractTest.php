@@ -82,11 +82,11 @@ $assert(
 );
 
 foreach ([
-    "if ($action === 'snapshot')",
-    "if ($action === 'match_replay' || $action === 'match_review')",
-    "if ($action === 'create_case')",
-    "if ($action === 'take_case')",
-    "if ($action === 'resolve_case')",
+    "if (\$action === 'snapshot')",
+    "if (\$action === 'match_replay' || \$action === 'match_review')",
+    "if (\$action === 'create_case')",
+    "if (\$action === 'take_case')",
+    "if (\$action === 'resolve_case')",
 ] as $needle) {
     $assert(str_contains($endpoint, $needle), 'Anti-fraud API action missing: ' . $needle);
 }
