@@ -117,6 +117,14 @@ $assertSame((string)$original['entry_id'], $lookup['entry_id'], 'Lookup must res
 $assertSame(88000, $lookup['current_available_amount'], 'Lookup must expose current canonical balance.');
 $assertSame('Comp Tester', $lookup['nickname'], 'Lookup must expose the canonical player nickname.');
 
+$recent = $service->recentOperations('', 10);
+$assertSame(2, count($recent), 'Operation browser must expose recent compensable ledger operations.');
+$assertSame((string)$original['entry_id'], $recent[0]['entry_id'], 'Operation browser must show the newest ledger operation first.');
+$searched = $service->recentOperations('Comp Tester', 10);
+$assertSame(2, count($searched), 'Operation browser must find operations by canonical nickname.');
+$searchedByOperation = $service->recentOperations('purchase:compensation-fixture', 10);
+$assertSame(1, count($searchedByOperation), 'Operation browser must find the exact original operation key.');
+
 $small = $service->requestCompensation(
     'purchase:compensation-fixture',
     5000,
@@ -215,5 +223,12 @@ $directMutation = $db->fetchValue(
     "SELECT COUNT(*) FROM mgw_ledger_entries WHERE category='admin_compensation' AND source_type='admin_compensation'"
 );
 $assertSame(2, (int)$directMutation, 'Exactly two accepted compensations must exist as canonical ledger entries.');
+
+$recentAfterCompensations = $service->recentOperations('', 10);
+$assertSame(2, count($recentAfterCompensations), 'Operation browser must exclude compensation-on-compensation ledger rows.');
+$assertTrue(
+    count(array_filter($recentAfterCompensations, static fn(array $row): bool => ($row['category'] ?? '') === 'admin_compensation')) === 0,
+    'Operation browser must never offer an administrative compensation as a new source operation.'
+);
 
 fwrite(STDOUT, "MVP-22.2 compensation workflow OK ($assertions assertions, sqlite).\n");
