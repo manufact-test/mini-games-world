@@ -18,6 +18,7 @@ on:
       - 'app/index.html'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/screens/home-screen.js'
+      - 'app/assets/js/components/shield-king-visuals.js'
       - 'app/runtime/client/version-manifest.php'
       - '.github/workflows/mvp22-1-support-tickets.yml'
   workflow_dispatch:
@@ -44,15 +45,20 @@ jobs:
           node --check app/assets/js/admin-support.js
           node --check app/assets/js/api/client.js
           node --check app/assets/js/screens/home-screen.js
+          node --check app/assets/js/components/shield-king-visuals.js
       - name: Support form UI regression
         run: |
           set -euo pipefail
           grep -Fq 'support-ticket-create' app/assets/js/screens/home-screen.js
           grep -Fq 'support-thread-attachment' app/assets/js/screens/home-screen.js
           grep -Fq 'mountSupportFilePicker' app/assets/js/screens/home-screen.js
-          grep -Fq "menuItemMarkup('supportTicketsBtn', '🎫', 'Мои обращения')" app/assets/js/screens/home-screen.js
-          ! grep -Fq 'support-hub' app/assets/js/screens/home-screen.js
-          ! grep -Fq '.menu-item-standard.support-hub' app/assets/css/main.css
+          grep -Fq "menuItemMarkup('supportTicketsBtn', '🎫', 'Мои обращения', 'support-attention')" app/assets/js/screens/home-screen.js
+          grep -Fq "supportTicketsBtn:'ui/navigation/notifications.webp'" app/assets/js/components/shield-king-visuals.js
+          grep -Fq '.menu-item-standard.support-attention' app/assets/css/main.css
+          grep -Fq '.support-thread-message.is-user{' app/assets/css/main.css
+          grep -A4 -F '.support-thread-message.is-user{' app/assets/css/main.css | grep -Fq 'width:100%;'
+          grep -Fq '.support-file-chip button::before' app/assets/css/main.css
+          ! grep -Fq 'background:rgba(106,42,61,.13);' app/assets/css/main.css
           grep -Fq 'support-ticket-select option' app/assets/css/main.css
           grep -Fq 'support-thread-message' app/assets/css/main.css
           grep -Fq 'support-file-chip' app/assets/css/main.css
