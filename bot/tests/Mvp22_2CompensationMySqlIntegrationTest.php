@@ -8,7 +8,25 @@ require_once __DIR__ . '/../database/DatabaseMigrationInterface.php';
 require_once __DIR__ . '/../ledger/LedgerIntegrity.php';
 require_once __DIR__ . '/../ledger/LedgerWriteService.php';
 require_once __DIR__ . '/../ledger/LedgerIntegrityVerifier.php';
+require_once __DIR__ . '/../storage/contracts/StorageTransactionInterface.php';
+require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
 require_once __DIR__ . '/../economy/CompensationService.php';
+
+final class Mvp22_2MysqlMemoryStorage implements StorageTransactionInterface
+{
+    public function __construct(public array $data) {}
+    public function transaction(callable $callback): mixed
+    {
+        $working = $this->data;
+        $result = $callback($working);
+        $this->data = $working;
+        return $result;
+    }
+    public function readOnly(callable $callback): mixed
+    {
+        return $callback($this->data);
+    }
+}
 
 $dsn = trim((string)getenv('MGW_COMPENSATION_MYSQL_DSN'));
 $user = (string)getenv('MGW_COMPENSATION_MYSQL_USER');
@@ -53,6 +71,7 @@ $assert = static function (bool $condition, string $message): void {
 };
 
 $mgwId = 'MGW-0000000000000022';
+$legacyUserId = '202';
 $accountRef = 'mgw:' . $mgwId;
 $db->execute('INSERT INTO mgw_users (mgw_id,nickname) VALUES (:id,:nickname)', [
     'id'=>$mgwId,
@@ -64,6 +83,7 @@ $ledger->postAvailableDelta([
     'operation_key'=>'mysql-comp-seed',
     'account_ref'=>$accountRef,
     'mgw_id'=>$mgwId,
+    'legacy_user_id'=>$legacyUserId,
     'asset_code'=>'mgw_coin',
     'available_delta'=>120000,
     'category'=>'test_seed',
@@ -81,7 +101,17 @@ $original = $ledger->postAvailableDelta([
     'source_ref'=>'mysql-purchase',
 ]);
 
-$service = new CompensationService($db, $ledger);
+$runtime = new Mvp22_2MysqlMemoryStorage([
+    'users'=>[
+        $legacyUserId=>[
+            'id'=>$legacyUserId,
+            'mgw_id'=>$mgwId,
+            UnifiedBalanceRuntimeState::FIELD=>100000,
+        ],
+    ],
+    'transactions'=>[],
+]);
+$service = new CompensationService($db, $ledger, $runtime);
 $pending = $service->requestCompensation(
     'mysql-original-operation',
     50000,
@@ -91,14 +121,18 @@ $pending = $service->requestCompensation(
 );
 $assert($pending['status'] === 'pending_confirmation', 'MySQL large compensation must wait for confirmation.');
 $assert($ledger->getBalance($accountRef, 'mgw_coin')['available_amount'] === 100000, 'Pending MySQL compensation must not change balance.');
+$assert($runtime->data['users'][$legacyUserId][UnifiedBalanceRuntimeState::FIELD] === 100000, 'Pending MySQL compensation must not change runtime balance.');
 
 $applied = $service->confirm((string)$pending['compensation_id'], 'telegram:mysql-admin');
 $assert($applied['status'] === 'applied', 'MySQL confirmed compensation must be applied.');
 $assert($applied['available_after'] === 150000, 'MySQL compensation must use canonical ledger balance.');
+$assert($runtime->data['users'][$legacyUserId][UnifiedBalanceRuntimeState::FIELD] === 150000, 'MySQL compensation must project to runtime balance.');
+$assert(count($runtime->data['transactions']) === 1, 'MySQL compensation must create one runtime audit row.');
 
 $entryCount = (int)$db->fetchValue('SELECT COUNT(*) FROM mgw_ledger_entries');
 $service->confirm((string)$pending['compensation_id'], 'telegram:mysql-admin');
 $assert((int)$db->fetchValue('SELECT COUNT(*) FROM mgw_ledger_entries') === $entryCount, 'MySQL confirm retry must not duplicate ledger entry.');
+$assert(count($runtime->data['transactions']) === 1, 'MySQL confirm retry must not duplicate runtime transaction.');
 
 $small = $service->requestCompensation(
     (string)$original['entry_id'],
@@ -109,6 +143,8 @@ $small = $service->requestCompensation(
 );
 $assert($small['status'] === 'applied', 'MySQL small compensation must apply immediately.');
 $assert($small['available_after'] === 151234, 'MySQL small compensation amount must reconcile.');
+$assert($runtime->data['users'][$legacyUserId][UnifiedBalanceRuntimeState::FIELD] === 151234, 'MySQL small compensation must keep runtime and ledger converged.');
+$assert(count($runtime->data['transactions']) === 2, 'MySQL runtime audit must contain both applied compensations.');
 
 $integrity = (new LedgerIntegrityVerifier($db))->verifyAccountAsset($accountRef, 'mgw_coin');
 $assert($integrity['ok'] === true, 'MySQL compensation must preserve ledger integrity.');
