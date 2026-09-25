@@ -2545,6 +2545,19 @@
 }
 
 
+/* MVP-22.1 support menu visual parity */
+.sheet .menu-item-standard.support-attention{
+  background:linear-gradient(180deg,rgba(255,212,92,.12),rgba(43,36,20,.82));
+  border-color:rgba(255,220,112,.34);
+  color:#fff1bd;
+}
+.sheet .menu-item-standard.support-attention:hover,
+.sheet .menu-item-standard.support-attention:focus{
+  background:linear-gradient(180deg,rgba(255,212,92,.17),rgba(48,39,20,.88));
+  border-color:rgba(255,224,126,.46);
+  color:#fff4c8;
+}
+
 /* MVP-22.1 support thread UX repair */
 .support-ticket-summary{
   display:inline-flex;
@@ -2659,7 +2672,8 @@
   border-radius:15px;
 }
 .support-thread-message.is-user{
-  justify-self:end;
+  width:100%;
+  justify-self:stretch;
   background:rgba(118,92,166,.13);
   border-color:rgba(165,126,221,.25);
 }
@@ -2852,17 +2866,28 @@
   font-size:9px;
 }
 .support-file-chip button{
-  display:grid;
-  place-items:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   flex:0 0 28px;
   width:28px;
   height:28px;
-  border:1px solid rgba(180,124,142,.25);
+  padding:0;
+  border:1px solid rgba(150,159,186,.24);
   border-radius:9px;
-  background:rgba(106,42,61,.13);
-  color:#f0dce3;
-  font-size:17px;
+  background:rgba(255,255,255,.045);
+  color:#cfd3dc;
+  font-size:0;
+  line-height:1;
   cursor:pointer;
+}
+.support-file-chip button::before{
+  content:'×';
+  display:block;
+  font-size:18px;
+  font-weight:700;
+  line-height:1;
+  transform:translateY(-1px);
 }
 
 @media (max-height:690px){

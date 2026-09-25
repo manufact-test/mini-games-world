@@ -56,7 +56,7 @@ function openMoreMenuSheet(){
     ${menuItemMarkup('feedbackBtn', '💬', 'Обратная связь')}
     ${menuItemMarkup('ideaBtn', '💡', 'Предложить идею')}
     ${menuItemMarkup('supportBtn', '⚠️', 'Пожаловаться', 'danger')}
-    ${menuItemMarkup('supportTicketsBtn', '🎫', 'Мои обращения')}
+    ${menuItemMarkup('supportTicketsBtn', '🎫', 'Мои обращения', 'support-attention')}
     ${menuItemMarkup('balanceHistoryBtn', '🧾', 'История баланса')}
     ${menuItemMarkup('matchHistoryBtn', '🎮', 'История матчей')}
   </div>`);
