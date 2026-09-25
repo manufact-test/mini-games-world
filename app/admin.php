@@ -76,7 +76,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           <button type="button" data-admin-shortcut="system">
             <span>Система</span>
             <strong data-overview-system>Проверка…</strong>
-            <small data-overview-system-note>Состояние runtime</small>
+            <small data-overview-system-note>Состояние системы</small>
           </button>
           <button type="button" data-admin-shortcut="support">
             <span>Поддержка</span>
@@ -542,7 +542,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
                 <div class="mgw-admin__tournament-actions">
                   <button type="button" data-tournament-complete-fixtures disabled>Завершить тестовые пары</button>
                 </div>
-                <small>Только тестовая среда: завершает только пары, где оба участника — синтетические fixture. Результат проходит через канонический сервис турнирного прогресса, не создаёт второй взнос и не затрагивает реально сыгранную пару.</small>
+                <small>Только тестовая среда: завершает только пары, где оба участника — синтетические тестовые участники. Результат проходит через канонический сервис турнирного прогресса, не создаёт второй взнос и не затрагивает реально сыгранную пару.</small>
               </div>
 <div class="mgw-admin__tournament-schedule" data-tournament-reset-panel hidden>
                 <div class="mgw-admin__tournament-current" data-tournament-reset-info>Сброс тестового турнира недоступен.</div>
@@ -646,7 +646,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
     </section>
 
     <footer class="mgw-admin__footer">
-      Web Admin использует существующие серверные механизмы и аудит. Тестовые инструменты доступны только в среде STAGING.
+      Панель администратора использует существующие серверные механизмы и аудит. Тестовые инструменты доступны только в тестовой среде.
     </footer>
   </main>
 </body>
