@@ -6,6 +6,7 @@ require_once __DIR__ . '/services/MatchPreparationRuntimeService.php';
 require_once __DIR__ . '/tournaments/TournamentAdminNotificationBridge.php';
 require_once __DIR__ . '/tournaments/StagingTournamentManualAcceptanceService.php';
 require_once __DIR__ . '/services/GameSettlementService.php';
+require_once __DIR__ . '/moderation/ModerationService.php';
 
 function mgw_cleanup_games_if_due(array &$data, ChessRuntimeService $games, bool $force = false): void
 {
@@ -147,6 +148,32 @@ try {
     $weeklyMatch = new WeeklyMatchEconomyService($config, new NotificationService());
 
     $tgUser = $auth->getUserFromRequest($payload);
+
+    // MVP-22.3 restrictions guard only creation/entry paths. Read-only state,
+    // leaving an activity, support and already-running game completion remain
+    // available so moderation never strands a user away from the appeal path.
+    if (in_array($action, ['start_search','request_rematch','tournament_register','tournament_registration_publish'], true)) {
+        $moderationMgwId = strtoupper(trim((string)($tgUser['mgw_id'] ?? '')));
+        if (MgwIdGenerator::isValid($moderationMgwId)) {
+            $moderationDatabaseConfig = DatabaseConfig::fromApplicationConfig($config);
+            $moderationRouter = new RuntimeStorageRouter($config);
+            if (!$moderationDatabaseConfig->enabled()
+                || ($moderationRouter->enabled() && $moderationRouter->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE)) {
+                json_response(['ok'=>false,'error'=>'Проверка ограничений временно недоступна.'], 503);
+            }
+            try {
+                (new ModerationService(PdoConnectionFactory::create($moderationDatabaseConfig)))
+                    ->assertAllowed($moderationMgwId, 'gameplay');
+            } catch (ModerationException $moderationError) {
+                json_response([
+                    'ok'=>false,
+                    'code'=>$moderationError->reason,
+                    'error'=>$moderationError->getMessage(),
+                ], 403);
+            }
+        }
+    }
+
     if ($action === 'bootstrap' && $sessionId !== '') {
         try {
             $presenceService->touch((string)($tgUser['id'] ?? ''), $sessionId);
