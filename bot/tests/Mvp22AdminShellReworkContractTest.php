@@ -47,8 +47,10 @@ $assert(
         && str_contains($shell, "environmentLabel = rawEnvironment === 'staging'")
         && str_contains($shell, "rawEnvironment === 'production'")
         && str_contains($css, '.mgw-admin__environment-badge[data-environment="staging"]')
-        && str_contains($css, '.mgw-admin__environment-badge[data-environment="production"]'),
-    'Web Admin must show an explicit STAGING / PRODUCTION environment indicator.'
+        && str_contains($css, '.mgw-admin__environment-badge[data-environment="production"]')
+        && str_contains($shell, "'ТЕСТОВАЯ СРЕДА'")
+        && str_contains($shell, "'РАБОЧАЯ СРЕДА'"),
+    'Admin must show explicit, human-readable Russian environment labels.'
 );
 
 $testSection = strpos($page, 'data-admin-section="tests" data-tournament-test-tools');
@@ -124,7 +126,7 @@ foreach ([
 }
 
 $assert(
-    str_contains($telegram, "'text' => '🌐 Открыть Web Admin'")
+    str_contains($telegram, "'text' => '🌐 Открыть панель администратора'")
         && preg_match("/return \[\s*'inline_keyboard' => \[\[/", $telegram) === 1
         && str_contains($telegram, '$mainAdminCallbacks[\'admin:dashboard\']')
         && str_contains($telegram, '$mainAdminCallbacks[\'admin:orders\']')
@@ -148,9 +150,55 @@ $assert(
 
 $assert(
     str_contains($page, "Cache-Control: no-store, no-cache, must-revalidate")
-        && str_contains($page, 'admin-shell.css?v=8')
-        && str_contains($page, 'admin-shell.js?v=5'),
+        && str_contains($page, 'admin-shell.css?v=9')
+        && str_contains($page, 'admin-shell.js?v=6'),
     'Admin-only rework must stay no-store and publish fresh child asset identities without changing the shared game launch owner.'
+);
+
+$assert(
+    str_contains($page, '<h1>Панель администратора</h1>')
+        && !str_contains($page, '<h1>Web Admin</h1>')
+        && str_contains($page, 'data-admin-back-overview')
+        && str_contains($shell, "backOverview?.addEventListener('click'")
+        && str_contains($css, '.mgw-admin__nav{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))'),
+    'Manual-review fix must keep the mobile admin navigation complete and provide a clear route back to Overview.'
+);
+
+$assert(
+    str_contains($page, 'class="mgw-admin__reports"')
+        && str_contains($page, 'class="mgw-admin__file-picker"')
+        && str_contains($page, 'data-support-file-summary')
+        && str_contains($support, "fileSummary.textContent = files.length === 1")
+        && str_contains($css, '.mgw-admin__support-reply>button')
+        && str_contains($css, '.mgw-admin__economy-actions button'),
+    'Manual-review fix must preserve mobile spacing, full-width actions and the custom support file picker.'
+);
+
+foreach ([
+    'COMPETITION',
+    'SCORE ROWS',
+    'PARTICIPATION',
+    'PENDING PROJECTION',
+    'REVIEW EXCLUSIONS',
+    'BOT OUTCOMES',
+    'BOT VIOLATIONS',
+] as $oldVisibleMetric) {
+    $assert(
+        !str_contains($page, '>' . $oldVisibleMetric . '<'),
+        'English rating metric must not be hard-coded in the operator UI: ' . $oldVisibleMetric
+    );
+}
+
+$assert(
+    str_contains($rating, "season.toLowerCase() === 'preseason' ? 'Предсезон' : season")
+        && str_contains($rating, "state.toUpperCase()"),
+    'Rating UI must localize preseason and competition states before rendering.'
+);
+
+$assert(
+    !str_contains($adminService, '"🎮 Последние матчи')
+        && !str_contains($adminService, '"🧾 Последние операции'),
+    'Telegram admin dashboard must omit the long recent matches and recent operations sections.'
 );
 
 $assert(
