@@ -124,7 +124,7 @@ $assertTrue($migration instanceof DatabaseMigrationInterface, 'MVP-18.5 migratio
 $migration->up($db);
 
 $reports = new PlayerReportService($db);
-$case = $reports->submit($actor, $target, 'abuse', 'Нарушение в матче.', 'match-report-1');
+$case = $reports->submit($actor, $target, 'cheating', 'Нарушение в матче.', 'match-report-1');
 $assertSame('open', $case['status'], 'Every player report must enter the operational queue as open');
 $assertTrue(str_starts_with((string)$case['report_id'], 'RPT-'), 'Every report must receive a stable case id');
 
@@ -132,7 +132,7 @@ $queue = $reports->queue();
 $assertSame(1, count($queue), 'Submitted report must be visible in the admin queue');
 $assertSame($actor, $queue[0]['reporter_mgw_id'], 'Queue must retain reporter MGW identity');
 $assertSame($target, $queue[0]['target_mgw_id'], 'Queue must retain target MGW identity');
-$assertSame('abuse', $queue[0]['reason'], 'Queue must retain structured report reason');
+$assertSame('cheating', $queue[0]['reason'], 'Queue must retain structured report reason');
 $assertSame('match-report-1', $queue[0]['related_match_id'], 'Queue must retain validated related match');
 
 $reviewing = $reports->setStatus((string)$case['report_id'], 'reviewing', 'telegram:admin');
@@ -148,6 +148,11 @@ try {
     $invalidReasonThrown = $error->reason === 'invalid_reason';
 }
 $assertTrue($invalidReasonThrown, 'Unknown moderation actions must not be accepted as report reasons');
+$assertSame(
+    ['nickname','avatar','spam','cheating','stalling','other'],
+    array_keys(PlayerReportService::REASONS),
+    'Player report categories must match the MVP-22.3 moderation contract'
+);
 
 $friendsUi = file_get_contents(dirname($root) . '/app/assets/js/screens/friends-screen-v110.js');
 $friendsEndpoint = file_get_contents($root . '/friends.php');
