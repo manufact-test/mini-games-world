@@ -902,6 +902,7 @@
       setStatus('Для решения по призовой проверке нужен комментарий.', 'error');
       return;
     }
+    // Compatibility contract: призовые места ниже сдвинуты каноническим settlement owner.
     if (decision === 'disqualify'
         && !(await confirmAction('Дисквалифицировать игрока? Призовые места ниже будут пересчитаны штатным механизмом расчёта.'))) return;
 
