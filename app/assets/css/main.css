@@ -3135,3 +3135,28 @@
   .player-report-search{gap:10px}
   .player-report-search .btn{margin-top:0}
 }
+
+
+/* MVP-22.3 manual acceptance: disabled report actions keep canonical white CTA */
+.player-report-search .btn.primary:disabled,
+.player-report-submit.btn.primary:disabled{
+  opacity:1!important;
+  background:#fff!important;
+  border-color:#fff!important;
+  color:#6d6f78!important;
+  box-shadow:none!important;
+  cursor:not-allowed!important;
+}
+.player-report-search .btn.primary:disabled:hover,
+.player-report-submit.btn.primary:disabled:hover{transform:none!important}
+.player-report-head{
+  position:sticky;
+  top:-1px;
+  z-index:8;
+  margin:-2px -2px 0;
+  padding:2px 2px 9px;
+  background:linear-gradient(180deg,#262136 0%,#262136 82%,rgba(38,33,54,0) 100%);
+}
+.player-report-head .close{position:relative;z-index:9}
+.player-report-step{background:#242033;border-color:rgba(255,255,255,.13)}
+#playerReportReasonStep{margin-top:2px}
