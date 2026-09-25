@@ -121,7 +121,7 @@ jobs:
           grep -F "['snapshot', 'update', 'rollback']" bot/admin-economy.php
           grep -F 'AdminWebAuth::authorize' bot/admin-read.php
           grep -F 'AdminWebAuth::authorize' bot/admin-economy.php
-          grep -F "['bot/admin-read.php', 'bot/admin-economy.php']" bot/runtime/ProductionPrimaryApplicationEntrypoints.php
+          grep -F "['bot/admin-read.php', 'bot/admin-economy.php', 'bot/admin-compensation.php']" bot/runtime/ProductionPrimaryApplicationEntrypoints.php
           grep -F 'data-economy-api="../bot/admin-economy.php"' app/admin.php
           if grep -Eq 'localStorage|sessionStorage|document\.cookie' app/assets/js/admin-shell.js; then
             echo 'Browser auth/state owner is forbidden in Web Admin.' >&2
