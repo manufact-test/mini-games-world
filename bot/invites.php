@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
+require_once __DIR__ . '/moderation/ModerationService.php';
 require_once __DIR__ . '/helpers/WebAppLaunchUrl.php';
 require_once __DIR__ . '/services/GameInviteService.php';
 require_once __DIR__ . '/services/InviteSignalService.php';
@@ -199,13 +200,21 @@ try {
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
 
     $socialInviteGuard = null;
+    $moderation = null;
     $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
     $socialRouter = new RuntimeStorageRouter($config);
     if ($databaseConfig->enabled()
         && (!$socialRouter->enabled() || $socialRouter->routeFor('accounts') === RuntimeStorageRouter::DRIVER_DATABASE)) {
-        $socialInviteGuard = new SocialInviteGuard(PdoConnectionFactory::create($databaseConfig));
+        $socialDatabase = PdoConnectionFactory::create($databaseConfig);
+        $socialInviteGuard = new SocialInviteGuard($socialDatabase);
+        $moderation = new ModerationService($socialDatabase);
     }
     $actorMgwId = strtoupper(trim((string)($tgUser['mgw_id'] ?? '')));
+    if ($moderation instanceof ModerationService
+        && MgwIdGenerator::isValid($actorMgwId)
+        && in_array($action, ['create_link_draft','confirm_shared','create_direct','open_link','accept','start','rematch'], true)) {
+        $moderation->assertAllowed($actorMgwId, 'gameplay');
+    }
     $identityProvider = SocialInviteGuard::providerForAuthenticatedUser($tgUser);
 
     $legacyBridgeAllowed = RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed();
@@ -475,6 +484,8 @@ try {
     }
 
     api_ok($result);
+} catch (ModerationException $e) {
+    json_response(['ok'=>false,'code'=>$e->reason,'error'=>$e->getMessage()], 403);
 } catch (Throwable $e) {
     api_error($e->getMessage());
 }
