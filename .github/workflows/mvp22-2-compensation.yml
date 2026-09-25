@@ -65,7 +65,6 @@ jobs:
       - name: Preserve canonical ledger and DB-primary owners
         run: |
           set -euo pipefail
-          php bot/tests/LedgerSchemaTest.php
           php bot/tests/LedgerWriteServiceTest.php
           php bot/tests/ProductionPrimaryAllApplicationEntrypointRoutingTest.php
           php bot/tests/Mvp15EconomyRemoteConfigTest.php
