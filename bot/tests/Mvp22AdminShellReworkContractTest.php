@@ -150,7 +150,7 @@ $assert(
 
 $assert(
     str_contains($page, "Cache-Control: no-store, no-cache, must-revalidate")
-        && str_contains($page, 'admin-shell.css?v=10')
+        && str_contains($page, 'admin-shell.css?v=11')
         && str_contains($page, 'admin-shell.js?v=6'),
     'Admin-only rework must stay no-store and publish fresh child asset identities without changing the shared game launch owner.'
 );
@@ -165,7 +165,7 @@ $assert(
 );
 
 $assert(
-    str_contains($page, 'admin-support.js?v=4')
+    str_contains($page, 'admin-support.js?v=5')
         && str_contains($support, "detail.scrollIntoView({")
         && !str_contains($support, "root.scrollIntoView({block:'start', behavior:'smooth'})")
         && str_contains($support, "data-support-attachment-viewer")
@@ -180,10 +180,26 @@ $assert(
     str_contains($page, 'class="mgw-admin__reports"')
         && str_contains($page, 'class="mgw-admin__file-picker"')
         && str_contains($page, 'data-support-file-summary')
-        && str_contains($support, "fileSummary.textContent = files.length === 1")
+        && str_contains($page, 'data-support-reply-file-list')
+        && str_contains($support, 'selectedReplyFiles')
+        && str_contains($support, 'formatFileSize')
+        && str_contains($support, "selectedReplyFiles.length >= 3")
+        && str_contains($support, "file.size || 0) > 2_000_000")
+        && str_contains($support, "remove.textContent = '×'")
+        && str_contains($css, '.mgw-admin__reply-file{')
+        && str_contains($css, '.mgw-admin__reply-file-remove{')
         && str_contains($css, '.mgw-admin__support-reply>button')
         && str_contains($css, '.mgw-admin__economy-actions button'),
-    'Manual-review fix must preserve mobile spacing, full-width actions and the custom support file picker.'
+    'Manual-review fix must preserve mobile spacing, full-width actions and managed Support reply attachments with size/removal controls.'
+);
+
+$assert(
+    !str_contains($support, "open.textContent = mime === 'application/pdf' ? 'Открыть PDF' : 'Открыть отдельно'")
+        && !str_contains($support, 'Открыть отдельно')
+        && str_contains($support, "download.textContent = mime === 'application/pdf' ? 'Скачать PDF' : 'Скачать'")
+        && str_contains($css, '.mgw-admin__attachment-viewer-actions{')
+        && str_contains($css, 'grid-template-columns:1fr;'),
+    'Inline attachment viewer must not expose the non-working separate-open action and must keep a reliable download action.'
 );
 
 foreach ([
