@@ -260,7 +260,15 @@ $case = $service->createCase('mysql_target','telegram:mysql-admin-one');
 $assert(($case['status'] ?? '') === 'open', 'MySQL case must start open.');
 $reviewing = $service->takeInReview((string)$case['case_id'],'telegram:mysql-admin-two');
 $assert(($reviewing['status'] ?? '') === 'reviewing', 'MySQL case must advance to reviewing.');
-$closed = $service->resolve((string)$case['case_id'],'cleared','Signals reviewed; no violation confirmed.','telegram:mysql-admin-two');
+
+$monitoring = $service->resolve((string)$case['case_id'],'monitor','Watch for repeated pair activity.','telegram:mysql-admin-two');
+$assert(($monitoring['status'] ?? '') === 'monitoring', 'MySQL monitor decision must remain active.');
+$assert(empty($monitoring['closed_at']), 'MySQL monitoring case must not have closed_at.');
+
+$resumed = $service->takeInReview((string)$case['case_id'],'telegram:mysql-admin-three');
+$assert(($resumed['status'] ?? '') === 'reviewing', 'MySQL monitoring case must resume to reviewing.');
+
+$closed = $service->resolve((string)$case['case_id'],'cleared','Signals reviewed; no violation confirmed.','telegram:mysql-admin-three');
 $assert(($closed['status'] ?? '') === 'closed', 'MySQL case resolution must persist terminal state.');
 $assert(($closed['decision'] ?? '') === 'cleared', 'MySQL decision must persist.');
 $assert(!empty($closed['closed_at']), 'MySQL closed case must persist closed_at.');
