@@ -7,35 +7,74 @@
 
   const endpoint = String(shell.dataset.compensationApi || '');
   const telegram = window.Telegram?.WebApp || null;
+
+  const picker = root.querySelector('[data-compensation-operation-picker]');
+  const selectedBox = root.querySelector('[data-compensation-selected]');
+  const selectedPlayer = root.querySelector('[data-compensation-selected-player]');
+  const selectedAmount = root.querySelector('[data-compensation-selected-amount]');
+  const selectedTime = root.querySelector('[data-compensation-selected-time]');
+  const selectedBalance = root.querySelector('[data-compensation-selected-balance]');
+  const selectedTech = root.querySelector('[data-compensation-selected-tech]');
+
   const browserQuery = root.querySelector('[data-compensation-browser-query]');
   const browserButton = root.querySelector('[data-compensation-browser-search]');
-  const operations = root.querySelector('[data-compensation-operations]');
   const operationInput = root.querySelector('[data-compensation-operation]');
   const lookupButton = root.querySelector('[data-compensation-lookup]');
   const lookupStatus = root.querySelector('[data-compensation-lookup-status]');
-  const operationSummary = root.querySelector('[data-compensation-operation-summary]');
+
   const amountInput = root.querySelector('[data-compensation-amount]');
   const reasonInput = root.querySelector('[data-compensation-reason]');
   const requestButton = root.querySelector('[data-compensation-request]');
   const limitCopy = root.querySelector('[data-compensation-limit-copy]');
   const statusBox = root.querySelector('[data-compensation-status]');
+
   const confirmation = root.querySelector('[data-compensation-confirmation]');
   const confirmationCopy = root.querySelector('[data-compensation-confirmation-copy]');
   const confirmButton = root.querySelector('[data-compensation-confirm]');
+
   const history = root.querySelector('[data-compensation-history]');
+  const historyCount = root.querySelector('[data-compensation-history-count]');
 
   let busy = false;
   let currentOperation = null;
   let operationRows = [];
   let pendingCompensation = null;
   let activeRequestToken = '';
-  let limits = {large_amount_threshold:50000,max_amount:250000,asset_code:'mgw_coin'};
+  let limits = {
+    large_amount_threshold:50000,
+    max_amount:250000,
+    asset_code:'mgw_coin',
+  };
 
   const coins = value => Number(value || 0).toLocaleString('ru-RU');
+
   const localTime = value => {
     if (!value) return '—';
-    const date = new Date(String(value).replace(' ', 'T') + (String(value).includes('Z') ? '' : 'Z'));
-    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('ru-RU');
+    const raw = String(value);
+    const date = new Date(raw.includes('T') ? raw : raw.replace(' ', 'T') + 'Z');
+    if (Number.isNaN(date.getTime())) return raw;
+    return date.toLocaleString('ru-RU', {
+      day:'2-digit',
+      month:'2-digit',
+      year:'2-digit',
+      hour:'2-digit',
+      minute:'2-digit',
+    });
+  };
+
+  const playerName = item =>
+    String(item?.nickname || item?.mgw_id || item?.account_ref || 'Игрок');
+
+  const categoryLabel = value => {
+    const labels = {
+      store_purchase:'Покупка',
+      tournament_entry:'Взнос в турнир',
+      tournament_registration:'Взнос в турнир',
+      game_stake:'Ставка в игре',
+      match_stake:'Ставка в матче',
+      purchase:'Покупка',
+    };
+    return labels[String(value || '')] || 'Списание';
   };
 
   const post = async payload => {
@@ -44,175 +83,48 @@
       cache:'no-store',
       credentials:'same-origin',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({...payload,initData:telegram?.initData || ''}),
+      body:JSON.stringify({
+        ...payload,
+        initData:telegram?.initData || '',
+      }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.ok !== true) {
-      throw new Error(String(data.error || 'Не удалось выполнить действие компенсации.'));
+      throw new Error(String(data.error || 'Не удалось выполнить действие.'));
     }
     return data;
   };
 
-  const setBox = (box, message, state = '') => {
+  const setMessage = (box, message = '', state = '') => {
+    if (!message) {
+      box.hidden = true;
+      box.textContent = '';
+      delete box.dataset.state;
+      return;
+    }
+    box.hidden = false;
     box.textContent = message;
     if (state) box.dataset.state = state;
     else delete box.dataset.state;
   };
 
+  const canCompensate = operation =>
+    !!operation && Number(operation.available_delta || 0) < 0;
+
   const setBusy = value => {
     busy = value;
+    picker.disabled = value || operationRows.length === 0;
     browserButton.disabled = value;
     lookupButton.disabled = value;
-    requestButton.disabled = value || !currentOperation || !!pendingCompensation;
-    confirmButton.disabled = value || !pendingCompensation;
-    browserQuery.disabled = value;
     operationInput.disabled = value;
+    browserQuery.disabled = value;
     amountInput.disabled = value;
     reasonInput.disabled = value;
-    root.querySelectorAll('[data-compensation-operation-select]').forEach(button => {
-      button.disabled = value || String(button.dataset.compensationOperationSelect || '') === String(currentOperation?.entry_id || '');
-    });
-  };
-
-  const metric = (label, value) => {
-    const wrap = document.createElement('div');
-    const span = document.createElement('span');
-    const strong = document.createElement('strong');
-    span.textContent = label;
-    strong.textContent = value;
-    wrap.append(span,strong);
-    return wrap;
-  };
-
-  const renderOperation = operation => {
-    currentOperation = operation || null;
-    operationSummary.replaceChildren();
-    if (!currentOperation) {
-      operationSummary.hidden = true;
-      requestButton.disabled = true;
-      return;
-    }
-    const player = currentOperation.nickname
-      ? `${currentOperation.nickname} · ${currentOperation.mgw_id || currentOperation.account_ref}`
-      : (currentOperation.mgw_id || currentOperation.account_ref);
-    operationSummary.append(
-      metric('Игрок', player),
-      metric('Операция', currentOperation.operation_key),
-      metric('Изменение', `${Number(currentOperation.available_delta) > 0 ? '+' : ''}${coins(currentOperation.available_delta)}`),
-      metric('Доступно сейчас', coins(currentOperation.current_available_amount))
-    );
-    operationSummary.hidden = false;
-    requestButton.disabled = busy;
-    setBox(
-      lookupStatus,
-      `Найдена запись ${currentOperation.entry_id}. Категория: ${currentOperation.category}. Уже компенсировано: ${coins(currentOperation.applied_compensation_total)}.`,
-      'ok'
-    );
-  };
-
-  const chooseOperation = operation => {
-    if (!operation) return;
-    clearPending();
-    operationInput.value = String(operation.entry_id || operation.operation_key || '');
-    renderOperation(operation);
-    const delta = Number(operation.available_delta || 0);
-    const suggested = delta < 0 ? Math.abs(delta) : 0;
-    if (!amountInput.value.trim() && suggested > 0 && suggested <= Number(limits.max_amount || 250000)) {
-      amountInput.value = String(suggested);
-    }
-    resetRequestToken();
-    renderOperations(operationRows);
-    operationSummary.scrollIntoView({behavior:'smooth',block:'nearest'});
-  };
-
-  const renderOperations = rows => {
-    operationRows = Array.isArray(rows) ? rows : [];
-    operations.replaceChildren();
-    if (operationRows.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'mgw-admin__history-empty';
-      empty.textContent = browserQuery.value.trim()
-        ? 'По этому запросу подходящих операций не найдено.'
-        : 'Подходящих операций пока нет.';
-      operations.append(empty);
-      return;
-    }
-
-    operationRows.forEach(item => {
-      const row = document.createElement('div');
-      row.className = 'mgw-admin__history-item';
-      const copy = document.createElement('div');
-      copy.className = 'mgw-admin__history-copy';
-      const title = document.createElement('strong');
-      const meta = document.createElement('span');
-      const player = item.nickname || item.mgw_id || item.account_ref || 'Игрок';
-      const delta = Number(item.available_delta || 0);
-      title.textContent = `${delta > 0 ? '+' : ''}${coins(delta)} · ${player}`;
-      meta.textContent = [
-        item.category || 'операция',
-        localTime(item.created_at_utc),
-        item.operation_key,
-        item.source_ref ? `источник: ${item.source_ref}` : '',
-      ].filter(Boolean).join(' · ');
-      copy.append(title,meta);
-
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.dataset.compensationOperationSelect = String(item.entry_id || '');
-      button.textContent = currentOperation?.entry_id === item.entry_id ? 'Выбрана' : 'Выбрать';
-      button.disabled = busy || currentOperation?.entry_id === item.entry_id;
-      button.addEventListener('click',() => chooseOperation(item));
-
-      row.append(copy,button);
-      operations.append(row);
-    });
-  };
-
-  const renderHistory = rows => {
-    history.replaceChildren();
-    if (!Array.isArray(rows) || rows.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'mgw-admin__history-empty';
-      empty.textContent = 'Компенсаций пока нет.';
-      history.append(empty);
-      return;
-    }
-
-    rows.forEach(item => {
-      const row = document.createElement('div');
-      row.className = 'mgw-admin__history-item';
-      const copy = document.createElement('div');
-      copy.className = 'mgw-admin__history-copy';
-      const title = document.createElement('strong');
-      const meta = document.createElement('span');
-      const player = item.nickname || item.mgw_id || item.account_ref || 'Игрок';
-      const state = item.status === 'applied' ? 'Проведена' : 'Ждёт подтверждения';
-      title.textContent = `${coins(item.amount)} · ${player} · ${state}`;
-      meta.textContent = `${localTime(item.requested_at_utc)} · ${item.reason} · исходная: ${item.original_operation_key}`;
-      copy.append(title,meta);
-
-      const badge = document.createElement('button');
-      badge.type = 'button';
-      if (item.status === 'applied') {
-        badge.textContent = 'Исходная';
-        badge.addEventListener('click',() => void openOperation(item.original_entry_id));
-      } else {
-        badge.textContent = 'Подтвердить';
-        badge.addEventListener('click',() => {
-          showPending(item);
-          setBusy(false);
-          confirmation.scrollIntoView({behavior:'smooth',block:'nearest'});
-        });
-      }
-      row.append(copy,badge);
-      history.append(row);
-    });
-  };
-
-  const applyLimits = next => {
-    if (next && typeof next === 'object') limits = {...limits,...next};
-    amountInput.max = String(limits.max_amount || 250000);
-    limitCopy.textContent = `Лимит: до ${coins(limits.max_amount)}. От ${coins(limits.large_amount_threshold)} требуется второе подтверждение.`;
+    requestButton.disabled =
+      value ||
+      !canCompensate(currentOperation) ||
+      !!pendingCompensation;
+    confirmButton.disabled = value || !pendingCompensation;
   };
 
   const resetRequestToken = () => {
@@ -221,61 +133,267 @@
 
   const requestToken = () => {
     if (activeRequestToken) return activeRequestToken;
-    const random = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const random =
+      globalThis.crypto?.randomUUID?.() ||
+      `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     activeRequestToken = `admin-compensation:${random}`;
     return activeRequestToken;
   };
 
+  const applyLimits = next => {
+    if (next && typeof next === 'object') {
+      limits = {...limits,...next};
+    }
+    amountInput.max = String(limits.max_amount || 250000);
+    limitCopy.textContent =
+      `До ${coins(limits.max_amount)} коинов за одну компенсацию. ` +
+      `От ${coins(limits.large_amount_threshold)} потребуется второе подтверждение.`;
+  };
+
+  const optionLabel = operation => {
+    const delta = Math.abs(Number(operation.available_delta || 0));
+    return `−${coins(delta)} · ${playerName(operation)} · ${localTime(operation.created_at_utc)}`;
+  };
+
+  const renderPicker = rows => {
+    operationRows = Array.isArray(rows) ? rows.filter(canCompensate) : [];
+    picker.replaceChildren();
+
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = operationRows.length
+      ? 'Выберите списание…'
+      : 'Подходящих списаний не найдено';
+    picker.append(placeholder);
+
+    operationRows.forEach(operation => {
+      const option = document.createElement('option');
+      option.value = String(operation.entry_id || '');
+      option.textContent = optionLabel(operation);
+      picker.append(option);
+    });
+
+    picker.disabled = busy || operationRows.length === 0;
+
+    if (currentOperation && canCompensate(currentOperation)) {
+      const exists = operationRows.some(
+        item => String(item.entry_id) === String(currentOperation.entry_id)
+      );
+      if (exists) picker.value = String(currentOperation.entry_id);
+    }
+  };
+
+  const renderSelected = operation => {
+    currentOperation = operation || null;
+
+    if (!currentOperation) {
+      selectedBox.hidden = true;
+      requestButton.disabled = true;
+      picker.value = '';
+      return;
+    }
+
+    const delta = Number(currentOperation.available_delta || 0);
+    selectedPlayer.textContent = playerName(currentOperation);
+    selectedAmount.textContent =
+      delta < 0
+        ? `${coins(Math.abs(delta))} коинов`
+        : `+${coins(delta)} коинов`;
+    selectedTime.textContent = localTime(currentOperation.created_at_utc);
+    selectedBalance.textContent =
+      `${coins(currentOperation.current_available_amount)} коинов`;
+
+    selectedTech.replaceChildren();
+    const techRows = [
+      ['ID операции', currentOperation.entry_id],
+      ['Ключ операции', currentOperation.operation_key],
+      ['Тип', categoryLabel(currentOperation.category)],
+      ['Техническая категория', currentOperation.category],
+      ['Источник', currentOperation.source_ref || '—'],
+      ['Уже компенсировано', `${coins(currentOperation.applied_compensation_total)} коинов`],
+    ];
+    techRows.forEach(([label,value]) => {
+      const row = document.createElement('div');
+      const key = document.createElement('span');
+      const val = document.createElement('code');
+      key.textContent = label;
+      val.textContent = String(value ?? '—');
+      row.append(key,val);
+      selectedTech.append(row);
+    });
+
+    selectedBox.hidden = false;
+
+    if (canCompensate(currentOperation)) {
+      setMessage(lookupStatus);
+      const suggested = Math.abs(delta);
+      if (suggested > 0 && suggested <= Number(limits.max_amount || 250000)) {
+        amountInput.value = String(suggested);
+      }
+      requestButton.disabled = busy || !!pendingCompensation;
+    } else {
+      setMessage(
+        lookupStatus,
+        'Эта операция не является списанием. Для компенсации выберите операцию со списанием коинов.',
+        'error'
+      );
+      requestButton.disabled = true;
+    }
+
+    resetRequestToken();
+  };
+
+  const chooseFromPicker = () => {
+    const entryId = picker.value;
+    if (!entryId) {
+      renderSelected(null);
+      return;
+    }
+    const operation = operationRows.find(
+      item => String(item.entry_id) === String(entryId)
+    );
+    renderSelected(operation || null);
+  };
+
+  const renderHistory = rows => {
+    const items = Array.isArray(rows) ? rows : [];
+    historyCount.textContent = String(items.length);
+    history.replaceChildren();
+
+    if (items.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'mgw-admin__history-empty';
+      empty.textContent = 'Компенсаций пока нет.';
+      history.append(empty);
+      return;
+    }
+
+    items.forEach(item => {
+      const details = document.createElement('details');
+      details.className = 'mgw-admin__compensation-history-item';
+
+      const summary = document.createElement('summary');
+      const main = document.createElement('span');
+      const state = document.createElement('strong');
+      main.textContent =
+        `${coins(item.amount)} коинов · ${playerName(item)}`;
+      state.textContent =
+        item.status === 'applied' ? 'Проведена' : 'Ждёт подтверждения';
+      summary.append(main,state);
+
+      const body = document.createElement('div');
+      body.className = 'mgw-admin__compensation-history-body';
+
+      const reason = document.createElement('p');
+      reason.textContent = `Причина: ${item.reason}`;
+
+      const time = document.createElement('p');
+      time.textContent = `Создана: ${localTime(item.requested_at_utc)}`;
+
+      body.append(reason,time);
+
+      if (item.status === 'pending_confirmation') {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = 'Продолжить подтверждение';
+        button.addEventListener('click',() => {
+          showPending(item);
+          confirmation.scrollIntoView({behavior:'smooth',block:'nearest'});
+        });
+        body.append(button);
+      } else if (item.original_entry_id) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = 'Показать исходное списание';
+        button.addEventListener('click',() => {
+          void openOperation(item.original_entry_id);
+        });
+        body.append(button);
+      }
+
+      details.append(summary,body);
+      history.append(details);
+    });
+  };
+
   const showPending = item => {
     pendingCompensation = item;
-    confirmationCopy.textContent = [
-      `Игрок: ${item.nickname || item.mgw_id || item.account_ref}`,
-      `Сумма: ${coins(item.amount)} MGW Coins`,
-      `Причина: ${item.reason}`,
-      `Исходная операция: ${item.original_operation_key}`,
-      '',
-      'Баланс ещё не изменён. Нажмите кнопку ниже для отдельного второго подтверждения.'
-    ].join('\n');
+    confirmationCopy.replaceChildren();
+
+    const lines = [
+      ['Игрок', playerName(item)],
+      ['Сумма', `${coins(item.amount)} коинов`],
+      ['Причина', item.reason],
+    ];
+    lines.forEach(([label,value]) => {
+      const row = document.createElement('div');
+      const key = document.createElement('span');
+      const val = document.createElement('strong');
+      key.textContent = label;
+      val.textContent = String(value || '—');
+      row.append(key,val);
+      confirmationCopy.append(row);
+    });
+
     confirmation.hidden = false;
     requestButton.disabled = true;
     confirmButton.disabled = busy;
-    setBox(statusBox,'Крупная компенсация сохранена и ждёт второго подтверждения. Баланс не изменён.','');
+    setMessage(
+      statusBox,
+      'Компенсация подготовлена. Коins ещё не начислены — требуется второе подтверждение.'
+        .replace('Коins','Коины')
+    );
   };
 
   const clearPending = () => {
     pendingCompensation = null;
     confirmation.hidden = true;
-    confirmationCopy.textContent = '—';
+    confirmationCopy.replaceChildren();
     confirmButton.disabled = true;
-    requestButton.disabled = busy || !currentOperation;
+    requestButton.disabled = busy || !canCompensate(currentOperation);
     activeRequestToken = '';
   };
 
   const refreshSnapshot = async () => {
     const data = await post({action:'snapshot'});
     applyLimits(data.limits);
-    renderOperations(data.operations || []);
+    renderPicker(data.operations || []);
     renderHistory(data.history || []);
   };
 
   const browseOperations = async () => {
     if (busy) return;
     setBusy(true);
-    operations.replaceChildren();
-    const loading = document.createElement('div');
-    loading.className = 'mgw-admin__history-empty';
-    loading.textContent = 'Ищу операции…';
-    operations.append(loading);
+    setMessage(lookupStatus,'Ищу списания…');
+
     try {
-      const data = await post({action:'operations',query:browserQuery.value.trim()});
+      const data = await post({
+        action:'operations',
+        query:browserQuery.value.trim(),
+      });
       applyLimits(data.limits);
-      renderOperations(data.operations || []);
+      renderPicker(data.operations || []);
+      renderSelected(null);
+
+      if ((data.operations || []).length === 0) {
+        setMessage(
+          lookupStatus,
+          'Подходящих списаний по этому запросу не найдено.',
+          'error'
+        );
+      } else {
+        setMessage(
+          lookupStatus,
+          `Найдено списаний: ${(data.operations || []).length}. Выберите нужное в списке выше.`,
+          'ok'
+        );
+      }
     } catch (error) {
-      operations.replaceChildren();
-      const empty = document.createElement('div');
-      empty.className = 'mgw-admin__history-empty';
-      empty.textContent = error.message || 'Не удалось загрузить операции.';
-      operations.append(empty);
+      setMessage(
+        lookupStatus,
+        error.message || 'Не удалось найти списания.',
+        'error'
+      );
     } finally {
       setBusy(false);
     }
@@ -284,66 +402,78 @@
   const openOperation = async operationRef => {
     if (busy || !operationRef) return;
     setBusy(true);
-    setBox(lookupStatus,'Открываю исходную операцию…');
+    setMessage(lookupStatus,'Открываю операцию…');
+
     try {
-      const data = await post({action:'lookup',operation_ref:String(operationRef)});
+      const data = await post({
+        action:'lookup',
+        operation_ref:String(operationRef),
+      });
       applyLimits(data.limits);
       operationInput.value = String(data.operation?.entry_id || operationRef);
-      renderOperation(data.operation);
-      resetRequestToken();
-      operationSummary.scrollIntoView({behavior:'smooth',block:'nearest'});
+      renderSelected(data.operation);
+
+      if (canCompensate(data.operation)) {
+        const exists = operationRows.some(
+          item => String(item.entry_id) === String(data.operation.entry_id)
+        );
+        if (!exists) {
+          renderPicker([data.operation,...operationRows]);
+        }
+        picker.value = String(data.operation.entry_id);
+      }
     } catch (error) {
-      setBox(lookupStatus,error.message || 'Операция не найдена.','error');
+      setMessage(
+        lookupStatus,
+        error.message || 'Операция не найдена.',
+        'error'
+      );
     } finally {
       setBusy(false);
     }
   };
 
   const lookup = async () => {
-    if (busy) return;
     const operationRef = operationInput.value.trim();
     if (!operationRef) {
-      setBox(lookupStatus,'Укажите ID исходной операции.','error');
+      setMessage(lookupStatus,'Введите точный ID операции.','error');
       operationInput.focus();
       return;
     }
-    setBusy(true);
-    setBox(lookupStatus,'Ищу операцию…');
-    try {
-      const data = await post({action:'lookup',operation_ref:operationRef});
-      applyLimits(data.limits);
-      renderOperation(data.operation);
-      resetRequestToken();
-    } catch (error) {
-      renderOperation(null);
-      setBox(lookupStatus,error.message || 'Операция не найдена.','error');
-    } finally {
-      setBusy(false);
-    }
+    await openOperation(operationRef);
   };
 
   const createCompensation = async () => {
-    if (busy || !currentOperation) return;
+    if (busy || !canCompensate(currentOperation)) return;
+
     const amount = Number(amountInput.value);
     const reason = reasonInput.value.trim();
+
     if (!Number.isInteger(amount) || amount < 1) {
-      setBox(statusBox,'Укажите целую сумму компенсации.','error');
+      setMessage(statusBox,'Укажите целую сумму компенсации.','error');
       amountInput.focus();
       return;
     }
+
     if (amount > Number(limits.max_amount || 250000)) {
-      setBox(statusBox,`Сумма превышает лимит ${coins(limits.max_amount)}.`,'error');
+      setMessage(
+        statusBox,
+        `Сумма превышает лимит ${coins(limits.max_amount)} коинов.`,
+        'error'
+      );
       amountInput.focus();
       return;
     }
+
     if (!reason) {
-      setBox(statusBox,'Укажите причину компенсации.','error');
+      setMessage(statusBox,'Укажите причину компенсации.','error');
       reasonInput.focus();
       return;
     }
 
     setBusy(true);
-    setBox(statusBox,'Создаю компенсацию…');
+    setMessage(statusBox,'Создаю компенсацию…');
+
     try {
       const data = await post({
         action:'request',
@@ -352,23 +482,41 @@
         reason,
         request_token:requestToken(),
       });
+
       applyLimits(data.limits);
       renderHistory(data.history || []);
+
       const item = data.compensation;
       if (item?.status === 'pending_confirmation') {
         showPending(item);
       } else if (item?.status === 'applied') {
         clearPending();
-        setBox(statusBox,`Компенсация проведена. Баланс: ${coins(item.available_before)} → ${coins(item.available_after)}.`,'ok');
-        const lookupData = await post({action:'lookup',operation_ref:currentOperation.entry_id});
-        renderOperation(lookupData.operation);
+        setMessage(
+          statusBox,
+          `Готово. Начислено ${coins(item.amount)} коинов. Баланс: ${coins(item.available_before)} → ${coins(item.available_after)}.`,
+          'ok'
+        );
         amountInput.value = '';
         reasonInput.value = '';
+
+        const lookupData = await post({
+          action:'lookup',
+          operation_ref:currentOperation.entry_id,
+        });
+        renderSelected(lookupData.operation);
       } else {
-        setBox(statusBox,'Компенсация сохранена, но её состояние требует проверки.','error');
+        setMessage(
+          statusBox,
+          'Компенсация сохранена, но её состояние требует проверки.',
+          'error'
+        );
       }
     } catch (error) {
-      setBox(statusBox,error.message || 'Не удалось создать компенсацию.','error');
+      setMessage(
+        statusBox,
+        error.message || 'Не удалось создать компенсацию.',
+        'error'
+      );
     } finally {
       setBusy(false);
     }
@@ -376,31 +524,52 @@
 
   const confirmCompensation = async () => {
     if (busy || !pendingCompensation) return;
+
     setBusy(true);
-    setBox(statusBox,'Провожу подтверждённую компенсацию…');
+    setMessage(statusBox,'Подтверждаю компенсацию…');
+
     try {
       const data = await post({
         action:'confirm',
         compensation_id:pendingCompensation.compensation_id,
       });
+
       applyLimits(data.limits);
       renderHistory(data.history || []);
+
       const item = data.compensation;
-      if (item?.status !== 'applied') throw new Error('Компенсация не была проведена.');
-      clearPending();
-      setBox(statusBox,`Компенсация проведена. Баланс: ${coins(item.available_before)} → ${coins(item.available_after)}.`,'ok');
-      if (currentOperation) {
-        const lookupData = await post({action:'lookup',operation_ref:currentOperation.entry_id});
-        renderOperation(lookupData.operation);
+      if (item?.status !== 'applied') {
+        throw new Error('Компенсация не была проведена.');
       }
+
+      clearPending();
+      setMessage(
+        statusBox,
+        `Готово. Начислено ${coins(item.amount)} коинов. Баланс: ${coins(item.available_before)} → ${coins(item.available_after)}.`,
+        'ok'
+      );
       amountInput.value = '';
       reasonInput.value = '';
+
+      if (currentOperation) {
+        const lookupData = await post({
+          action:'lookup',
+          operation_ref:currentOperation.entry_id,
+        });
+        renderSelected(lookupData.operation);
+      }
     } catch (error) {
-      setBox(statusBox,error.message || 'Не удалось подтвердить компенсацию.','error');
+      setMessage(
+        statusBox,
+        error.message || 'Не удалось подтвердить компенсацию.',
+        'error'
+      );
     } finally {
       setBusy(false);
     }
   };
+
+  picker.addEventListener('change',chooseFromPicker);
 
   browserButton.addEventListener('click',browseOperations);
   browserQuery.addEventListener('keydown',event => {
@@ -409,6 +578,7 @@
       void browseOperations();
     }
   });
+
   lookupButton.addEventListener('click',lookup);
   operationInput.addEventListener('keydown',event => {
     if (event.key === 'Enter') {
@@ -416,18 +586,28 @@
       void lookup();
     }
   });
-  operationInput.addEventListener('input',() => {
-    renderOperation(null);
-    clearPending();
-  });
+
   amountInput.addEventListener('input',resetRequestToken);
   reasonInput.addEventListener('input',resetRequestToken);
   requestButton.addEventListener('click',createCompensation);
   confirmButton.addEventListener('click',confirmCompensation);
 
   telegram?.ready?.();
+
   void refreshSnapshot().catch(error => {
-    setBox(statusBox,error.message || 'Не удалось загрузить историю компенсаций.','error');
+    picker.replaceChildren();
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'Не удалось загрузить списания';
+    picker.append(option);
+    picker.disabled = true;
+
+    setMessage(
+      statusBox,
+      error.message || 'Не удалось загрузить компенсации.',
+      'error'
+    );
+
     history.replaceChildren();
     const empty = document.createElement('div');
     empty.className = 'mgw-admin__history-empty';
