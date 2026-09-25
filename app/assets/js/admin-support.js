@@ -20,6 +20,7 @@
   const priorityFilter = root.querySelector('[data-support-filter-priority]');
   const categoryFilter = root.querySelector('[data-support-filter-category]');
   const platformFilter = root.querySelector('[data-support-filter-platform]');
+  const fileSummary = root.querySelector('[data-support-file-summary]');
   const requestedTicket = new URLSearchParams(window.location.search).get('ticket') || '';
   let currentTicket = null;
   let currentAdminRef = '';
@@ -166,7 +167,7 @@
       const head = document.createElement('div');
       head.className = 'mgw-admin__support-message-head';
       const who = document.createElement('strong');
-      who.textContent = message.actor_type === 'admin' ? `Admin · ${message.actor_ref || '—'}` : `Игрок · ${message.actor_ref || '—'}`;
+      who.textContent = message.actor_type === 'admin' ? `Администратор · ${message.actor_ref || '—'}` : `Игрок · ${message.actor_ref || '—'}`;
       const when = document.createElement('span');
       when.textContent = `${message.created_at_utc || '—'} UTC`;
       head.append(who, when);
@@ -263,7 +264,7 @@
   const load = async () => {
     if (busy) return;
     if (!telegram?.initData) {
-      setStatus('Откройте Web Admin из Telegram.', 'error');
+      setStatus('Откройте панель администратора из Telegram.', 'error');
       return;
     }
     setBusy(true);
@@ -339,6 +340,7 @@
       await mutate({action:'reply', message, attachments});
       detail.querySelector('[data-support-reply]').value = '';
       fileInput.value = '';
+      if (fileSummary) fileSummary.textContent = 'Файлы не выбраны';
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Не удалось подготовить вложение.', 'error');
     }
@@ -392,6 +394,17 @@
   detail.querySelector('[data-support-unassign]').addEventListener('click', () => void mutate({action:'unassign'}));
   detail.querySelector('[data-support-related-save]').addEventListener('click', saveRelated);
   detail.querySelector('[data-support-reply-send]').addEventListener('click', () => void sendReply());
+  detail.querySelector('[data-support-reply-files]').addEventListener('change', event => {
+    const files = Array.from(event.target.files || []);
+    if (!fileSummary) return;
+    if (!files.length) {
+      fileSummary.textContent = 'Файлы не выбраны';
+      return;
+    }
+    fileSummary.textContent = files.length === 1
+      ? files[0].name
+      : `Выбрано файлов: ${files.length}`;
+  });
 
   load();
 })();
