@@ -49,7 +49,7 @@ $assert(str_contains($admin, 'Возврат коинов по списанию'
 
 $assert(str_contains($client, "action:'operations'"), 'Admin client must browse canonical source operations without requiring copied technical IDs.');
 $assert(str_contains($client, 'chooseFromPicker'), 'Admin client must use the compact dropdown as the primary selection owner.');
-$assert(str_contains($client, 'operationRows.filter(canCompensate)'), 'Admin client must hide ineligible credit operations from the primary picker.');
+$assert(str_contains($client, 'rows.filter(canCompensate)'), 'Admin client must hide ineligible credit operations from the primary picker.');
 $assert(str_contains($client, 'selectedTech'), 'Technical operation metadata must render only inside the collapsed technical disclosure.');
 $assert(str_contains($client, "action:'lookup'"), 'Admin client must retain exact original-operation lookup.');
 $assert(str_contains($client, "action:'request'"), 'Admin client must use a dedicated compensation request action.');
