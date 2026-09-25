@@ -196,9 +196,14 @@ final class CompensationService
         }
 
         $amount = (int)$row['amount'];
+        $databaseBalance = $this->ledger->getBalance((string)$row['account_ref'], self::ASSET_CODE);
+        if (!is_array($databaseBalance)) {
+            throw new RuntimeException('Canonical balance is unavailable for compensation.');
+        }
         $runtime = $this->applyRuntimeBalance(
             (string)$row['legacy_user_id'],
             $amount,
+            (int)$databaseBalance['available_amount'],
             (string)$row['request_token'],
             (string)$row['compensation_id'],
             (string)$row['original_entry_id'],
@@ -260,6 +265,7 @@ final class CompensationService
     private function applyRuntimeBalance(
         string $legacyUserId,
         int $amount,
+        int $databaseAvailableBefore,
         string $requestToken,
         string $compensationId,
         string $originalEntryId,
@@ -267,7 +273,7 @@ final class CompensationService
         string $actorRef
     ): array {
         return $this->runtimeStorage->transaction(function (array &$data) use (
-            $legacyUserId,$amount,$requestToken,$compensationId,$originalEntryId,$reason,$actorRef
+            $legacyUserId,$amount,$databaseAvailableBefore,$requestToken,$compensationId,$originalEntryId,$reason,$actorRef
         ): array {
             if (!isset($data['users']) || !is_array($data['users'])) $data['users'] = [];
             if (!isset($data['transactions']) || !is_array($data['transactions'])) $data['transactions'] = [];
@@ -303,6 +309,9 @@ final class CompensationService
             $user =& $data['users'][$storageKey];
             UnifiedBalanceRuntimeState::ensureUser($user);
             $before = (int)$user[UnifiedBalanceRuntimeState::FIELD];
+            if ($before !== $databaseAvailableBefore) {
+                throw new RuntimeException('Runtime balance differs from canonical ledger before compensation.');
+            }
             if ($before < 0 || $before > PHP_INT_MAX - $amount) {
                 throw new RuntimeException('Runtime balance cannot accept compensation safely.');
             }
