@@ -324,7 +324,7 @@
     const top3 = Array.isArray(review.top3) ? review.top3 : [];
     if (reviewInfo instanceof HTMLElement) {
       const topCopy = top3.length
-        ? 'Top-3: ' + top3.map(item => `#${item.canonical_placement} ${item.nickname || item.public_mgw_id || item.mgw_id}`).join(' · ')
+        ? 'Топ-3: ' + top3.map(item => `#${item.canonical_placement} ${item.nickname || item.public_mgw_id || item.mgw_id}`).join(' · ')
         : 'Top-3 появится после завершения финала и матча за 3-е место.';
       reviewInfo.textContent = settlement.hold === true
         ? `ПРИЗОВАЯ ВЕТКА УДЕРЖИВАЕТСЯ: ${held.length} участн. ждут решения администратора. ${topCopy}`
@@ -600,7 +600,7 @@
     }
     if (resetInfo instanceof HTMLElement) {
       resetInfo.textContent = canReset
-        ? `Staging cleanup: освободить все активные резервы и снять текущий турнир «${tournament.title || 'Официальный турнир'}» с active slot.`
+        ? `Тестовый сброс: освободить все активные резервы и снять текущий турнир «${tournament.title || 'Официальный турнир'}» с активного слота.`
         : 'Сброс тестового турнира недоступен.';
     }
 
@@ -782,7 +782,7 @@
 
     const count = Number(tournament?.registered_count || 0);
     const cap = Number(tournament?.capacity || 0);
-    const warning = `Сбросить ТОЛЬКО staging-турнир «${tournament.title || 'Официальный турнир'}» (${format(count)}/${format(cap)})? Нажмите «Подтвердить сброс» ещё раз в течение 8 секунд.`;
+    const warning = `Сбросить ТОЛЬКО тестовый турнир «${tournament.title || 'Официальный турнир'}» (${format(count)}/${format(cap)})? Нажмите «Подтвердить сброс» ещё раз в течение 8 секунд.`;
 
     if (Date.now() > resetConfirmUntil) {
       armResetConfirmation(warning);
