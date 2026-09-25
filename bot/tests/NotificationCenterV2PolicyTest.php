@@ -56,6 +56,22 @@ $assertSame('profile', NotificationCenterV2Policy::deepLink([
 $assertSame('friends:requests', NotificationCenterV2Policy::deepLink([
     'type' => 'friend_request',
 ]), 'friend requests must open the canonical requests tab even for older stored events');
+$assertTrue(
+    NotificationCenterV2Policy::isSafeDeepLink('support:ticket:SUP-260925-ABCDEF12'),
+    'support ticket deep link must be accepted only in canonical ticket-number form'
+);
+$assertSame(
+    'support:ticket:SUP-260925-ABCDEF12',
+    NotificationCenterV2Policy::deepLink([
+        'type' => 'support_message',
+        'deep_link' => 'support:ticket:SUP-260925-ABCDEF12',
+    ]),
+    'support notification must preserve its exact internal ticket destination'
+);
+$assertFalse(
+    NotificationCenterV2Policy::isSafeDeepLink('support:ticket:../../etc/passwd'),
+    'malformed support deep links must remain rejected'
+);
 
 $now = new DateTimeImmutable('2026-08-17T16:00:00Z');
 $assertTrue(NotificationCenterV2Policy::isExpired([
