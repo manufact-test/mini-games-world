@@ -286,6 +286,7 @@
 
   const openTicket = async (ticketNumber, scroll = true) => {
     if (busy || !ticketNumber) return;
+    if (currentTicket && String(currentTicket.ticket_number || '') !== String(ticketNumber)) clearReplyFiles();
     setBusy(true);
     setStatus(`Открываю ${ticketNumber}…`);
     try {
@@ -547,6 +548,7 @@
   };
 
   back.addEventListener('click', () => {
+    clearReplyFiles();
     root.classList.remove('is-ticket-open');
     if (window.matchMedia('(max-width: 980px)').matches) queuePanel.scrollIntoView({block:'start', behavior:'smooth'});
   });
