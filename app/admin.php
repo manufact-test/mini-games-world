@@ -599,7 +599,14 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               <strong>Проверить матч</strong>
               <span>Загрузите replay, историю пары и доступные device/session сигналы.</span>
             </div>
-            <div class="mgw-admin__replay-search">
+            <div class="mgw-admin__af-match-pick">
+              <label class="mgw-admin__field">
+                <span>Последние матчи</span>
+                <select data-af-recent-match>
+                  <option value="">Выберите недавний матч</option>
+                </select>
+              </label>
+              <span>или</span>
               <label class="mgw-admin__field">
                 <span>ID матча</span>
                 <input data-af-match-id type="text" maxlength="191" autocomplete="off" placeholder="Введите ID матча">
