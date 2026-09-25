@@ -2546,24 +2546,6 @@
 
 
 /* MVP-22.1 support thread UX repair */
-.sheet .menu-item-standard.support-hub{
-  border-color:rgba(127,164,214,.32);
-  background:linear-gradient(135deg,rgba(111,126,156,.10),rgba(91,78,124,.12));
-}
-.sheet .menu-item-standard.support-hub .menu-item-icon{
-  font-family:Arial,sans-serif;
-  color:#c8ced8;
-  font-size:20px;
-  font-weight:900;
-  text-shadow:0 1px 0 rgba(255,255,255,.28),0 -1px 0 rgba(0,0,0,.45);
-  filter:none;
-}
-.sheet .menu-item-standard.support-hub:hover,
-.sheet .menu-item-standard.support-hub:focus{
-  border-color:rgba(166,188,224,.52);
-  background:linear-gradient(135deg,rgba(118,135,168,.16),rgba(103,87,139,.18));
-}
-
 .support-ticket-summary{
   display:inline-flex;
   align-items:center;
