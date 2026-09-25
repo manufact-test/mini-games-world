@@ -48,6 +48,21 @@ async function requestTournamentStatus(){
   }
 }
 
+async function requestRatingArchive(payload){
+  try {
+    return await requestUrl(RATING_ARCHIVE_URL, payload);
+  } catch (error) {
+    const status = Number(error?.status || 0);
+    if (status < 500 || status > 599) throw error;
+    // The rating archive is read-only. Hostinger has intermittently returned
+    // one empty upstream 500 while the immediately preceding/following archive
+    // reads succeed. Retry once so a transient PHP/FPM response never breaks
+    // the surrounding game lifecycle or archive UI.
+    await new Promise(resolve => window.setTimeout(resolve, 180));
+    return requestUrl(RATING_ARCHIVE_URL, payload);
+  }
+}
+
 function publishCosmeticInventory(result){
   const inventory = result?.store?.inventory;
   const equipped = inventory?.equipped;
@@ -152,8 +167,8 @@ export const api = {
   profileV2: (profileUpdate = null) => requestProfileV2(profileUpdate),
   tournamentPrestige: () => requestTournamentPrestige(),
   leaderboard: (gameType = 'tictactoe') => requestUrl(LEADERBOARD_URL, { game_type:gameType }),
-  ratingArchiveOverview: () => requestUrl(RATING_ARCHIVE_URL, { mode:'overview' }),
-  ratingArchiveSeason: (seasonId, gameType = 'tictactoe') => requestUrl(RATING_ARCHIVE_URL, { mode:'season', season_id:seasonId, game_type:gameType }),
+  ratingArchiveOverview: () => requestRatingArchive({ mode:'overview' }),
+  ratingArchiveSeason: (seasonId, gameType = 'tictactoe') => requestRatingArchive({ mode:'season', season_id:seasonId, game_type:gameType }),
   tournamentStatus: () => requestTournamentStatus(),
   tournamentHallStatus: () => requestUrl(TOURNAMENT_HALL_URL, { action:'status' }),
   tournamentHallEnter: () => requestUrl(TOURNAMENT_HALL_URL, { action:'enter' }),
