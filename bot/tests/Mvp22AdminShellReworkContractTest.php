@@ -62,9 +62,10 @@ $assert(
         && $manualPanel !== false && $manualPanel > $testSection
         && $progressPanel !== false && $progressPanel > $testSection
         && $resetPanel !== false && $resetPanel > $testSection
-        && str_contains($page, 'data-admin-section="tests" data-replay-card')
-        && str_contains($page, 'data-admin-section="tests" data-test-coins-card'),
-    'Staging fixtures, reset, replay diagnostics and test coins must live under Tests.'
+        && str_contains($page, 'data-admin-section="tests" data-test-coins-card')
+        && !str_contains($page, 'data-admin-section="tests" data-replay-card')
+        && str_contains($page, 'data-admin-section="antifraud" data-admin-antifraud'),
+    'Staging fixtures/reset/test coins must remain under Tests while replay moves to the dedicated anti-fraud work area.'
 );
 
 $assert(
