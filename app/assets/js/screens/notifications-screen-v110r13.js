@@ -411,6 +411,16 @@ async function openNotificationDeepLink(id){
   if (deepLink === 'store:orders') {
     showScreen('store');
     queueMicrotask(() => void openStoreOrders());
+    return;
+  }
+  const supportMatch = deepLink.match(/^support:ticket:(SUP-[0-9]{6}-[A-F0-9]{8})$/i);
+  if (supportMatch) {
+    showScreen('home');
+    queueMicrotask(() => {
+      document.dispatchEvent(new CustomEvent('mgw:open-support-ticket', {
+        detail:{ ticket:supportMatch[1].toUpperCase() }
+      }));
+    });
   }
 }
 
