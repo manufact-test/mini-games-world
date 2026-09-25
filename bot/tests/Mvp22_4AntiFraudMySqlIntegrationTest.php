@@ -185,9 +185,12 @@ $insertMatch = static function (PdoDatabaseConnection $db, string $id, string $s
         "INSERT INTO mgw_match_players (
             match_id,seat,player_ref,mgw_id,legacy_user_id,player_type,symbol,display_name,result,joined_at_utc,updated_at_utc
          ) VALUES
-            (:id,0,'player-a','MGW-A',NULL,'human','white','Alpha','win',:start,:finish),
-            (:id,1,'player-b','MGW-B',NULL,'human','black','Beta','loss',:start,:finish)",
-        ['id'=>$id,'start'=>$start,'finish'=>$finish]
+            (:id_a,0,'player-a','MGW-A',NULL,'human','white','Alpha','win',:start_a,:finish_a),
+            (:id_b,1,'player-b','MGW-B',NULL,'human','black','Beta','loss',:start_b,:finish_b)",
+        [
+            'id_a'=>$id,'start_a'=>$start,'finish_a'=>$finish,
+            'id_b'=>$id,'start_b'=>$start,'finish_b'=>$finish,
+        ]
     );
 };
 
