@@ -19,7 +19,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <script src="./assets/js/admin-shell.js?v=6&replay=17-6&test-coins=staging" defer></script>
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
-  <script src="./assets/js/admin-support.js?v=6&mvp22_1=admin-rework&support_focus=ticket-detail-v1&attachment_viewer=inline-v2&reply_files=managed-v1&reply_delivery=bell-v1" defer></script>
+  <script src="./assets/js/admin-support.js?v=7&mvp22_1=admin-rework&support_focus=ticket-detail-v1&attachment_viewer=inline-v2&reply_files=managed-v1&reply_delivery=bell-verified-v2" defer></script>
   <script src="./assets/js/admin-rating.js?v=2&mvp20_8=rating-admin" defer></script>
   <script src="./assets/js/admin-tournaments.js?v=17&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3&mvp21_5=corrective-v5&mvp21_6=fixture-progression-helper-v3&mvp21_8=corrective-v12&mvp21_8_cancel=cancellation-emergency-v1&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v2" defer></script>
 </head>

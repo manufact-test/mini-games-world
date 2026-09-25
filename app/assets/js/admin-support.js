@@ -424,10 +424,10 @@
       if (!result) return;
       detail.querySelector('[data-support-reply]').value = '';
       clearReplyFiles();
-      if (result.notification?.ok) {
-        setStatus('Ответ отправлен. Пользователь получил уведомление в приложении.', 'ok');
+      if (result.notification?.ok && result.notification?.feed_verified && Number(result.notification?.delivered_count || 0) > 0) {
+        setStatus('Ответ отправлен. Уведомление создано в колокольчике пользователя.', 'ok');
       } else {
-        setStatus(result.notification?.error || 'Ответ сохранён, но уведомление пользователю не создано.', 'error');
+        setStatus(result.notification?.error || 'Ответ сохранён, но уведомление не подтверждено в колокольчике пользователя.', 'error');
       }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Не удалось отправить ответ.', 'error');

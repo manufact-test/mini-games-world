@@ -165,7 +165,7 @@ $assert(
 );
 
 $assert(
-    str_contains($page, 'admin-support.js?v=6')
+    str_contains($page, 'admin-support.js?v=7')
         && str_contains($support, "detail.scrollIntoView({")
         && !str_contains($support, "root.scrollIntoView({block:'start', behavior:'smooth'})")
         && str_contains($support, "data-support-attachment-viewer")
@@ -178,10 +178,12 @@ $assert(
 
 $assert(
     str_contains($support, "result.notification?.ok")
-        && str_contains($support, "Пользователь получил уведомление в приложении.")
-        && str_contains($support, "Ответ сохранён, но уведомление пользователю не создано.")
+        && str_contains($support, "result.notification?.feed_verified")
+        && str_contains($support, "Number(result.notification?.delivered_count || 0) > 0")
+        && str_contains($support, "Уведомление создано в колокольчике пользователя.")
+        && str_contains($support, "Ответ сохранён, но уведомление не подтверждено в колокольчике пользователя.")
         && str_contains($support, "throw error;"),
-    'Admin Support reply UX must distinguish stored replies from successful user notification delivery.'
+    'Admin Support reply UX must report success only after the exact recipient bell feed is verified.'
 );
 
 $assert(

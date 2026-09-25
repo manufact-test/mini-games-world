@@ -164,16 +164,19 @@ final class AdminNotificationEventService
     private function resolveRecipients(array $db, string $audienceType, string $audienceRef, array $input): array
     {
         $users = [];
+        $usersByLegacyId = [];
         foreach ($db['users'] ?? [] as $key => $user) {
             if (!is_array($user)) continue;
             $legacyUserId = $this->text((string)($user['id'] ?? $key), 191);
             $mgwId = $this->text((string)($user['mgw_id'] ?? ''), 24);
             if ($legacyUserId === '' || $mgwId === '') continue;
-            $users[$mgwId] = [
+            $resolvedUser = [
                 'user_id' => $legacyUserId,
                 'mgw_id' => $mgwId,
                 'provider' => strtolower($this->text((string)($user['mgw_identity_provider'] ?? ''), 32)),
             ];
+            $users[$mgwId] = $resolvedUser;
+            $usersByLegacyId[$legacyUserId] = $resolvedUser;
         }
 
         if ($audienceType === 'all') return array_values($users);
@@ -205,6 +208,47 @@ final class AdminNotificationEventService
                     'recipients_required',
                     'Для segment/tournament/support нужен снимок recipient MGW-ID.'
                 );
+            }
+        }
+
+        if ($audienceType === 'support') {
+            $legacySource = $input['recipient_legacy_user_ids'] ?? [];
+            if (is_string($legacySource)) {
+                $legacySource = preg_split('/[\s,;]+/', $legacySource, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            }
+            if (!is_array($legacySource)) $legacySource = [];
+
+            $legacySnapshot = [];
+            foreach ($legacySource as $value) {
+                $legacyUserId = $this->text((string)$value, 191);
+                if ($legacyUserId !== '') $legacySnapshot[$legacyUserId] = $legacyUserId;
+            }
+
+            if ($legacySnapshot !== []) {
+                $resolved = [];
+                $missingBindings = [];
+                foreach ($requested as $mgwId) {
+                    $matched = null;
+                    foreach ($legacySnapshot as $legacyUserId) {
+                        $candidate = $usersByLegacyId[$legacyUserId] ?? null;
+                        if (!is_array($candidate) || (string)$candidate['mgw_id'] !== $mgwId) continue;
+                        $matched = $candidate;
+                        break;
+                    }
+                    if ($matched === null) {
+                        $missingBindings[] = $mgwId;
+                        continue;
+                    }
+                    $resolved[] = $matched;
+                }
+
+                if ($missingBindings !== []) {
+                    throw new AdminNotificationEventException(
+                        'recipient_binding_not_found',
+                        'Не удалось подтвердить транспорт получателя для MGW-ID: ' . implode(', ', $missingBindings)
+                    );
+                }
+                return $resolved;
             }
         }
 

@@ -81,6 +81,7 @@ try {
                         'event_id' => (string)($published['event_id'] ?? ''),
                         'recipient_count' => (int)($published['recipient_count'] ?? 0),
                         'delivered_count' => (int)($published['delivered_count'] ?? 0),
+                        'feed_verified' => !empty($published['feed_verified']),
                     ];
                 } catch (Throwable $notificationError) {
                     error_log('[MiniGamesWorld admin support notification] ' . $notificationError->getMessage());
