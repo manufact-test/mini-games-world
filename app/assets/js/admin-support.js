@@ -11,6 +11,8 @@
   const metricsBox = root.querySelector('[data-support-metrics]');
   const queue = root.querySelector('[data-support-queue]');
   const queuePanel = root.querySelector('[data-support-queue-panel]');
+  const queueTitle = root.querySelector('[data-support-queue-title]');
+  const modeButtons = Array.from(root.querySelectorAll('[data-support-mode]'));
   const detail = root.querySelector('[data-support-detail]');
   const back = root.querySelector('[data-support-back]');
   const relatedSummary = root.querySelector('[data-support-related-summary]');
@@ -28,6 +30,7 @@
   let selectedReplyFiles = [];
   let currentTicket = null;
   let currentAdminRef = '';
+  let queueMode = requestedTicket ? 'all' : 'active';
   let busy = false;
 
   const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({
@@ -48,6 +51,7 @@
   };
 
   const filters = () => ({
+    mode:queueMode,
     query:queryInput.value.trim(),
     status:statusFilter.value,
     priority:priorityFilter.value,
@@ -64,9 +68,12 @@
       }
       if (node.type !== 'file') node.disabled = value;
     });
-    if (!value && currentTicket?.status === 'closed') {
-      const closeButton = detail.querySelector('[data-support-close]');
-      if (closeButton) closeButton.disabled = true;
+    if (!value && currentTicket) {
+      const terminal = ['resolved','closed'].includes(String(currentTicket.status || ''));
+      const prioritySelect = detail.querySelector('[data-support-detail-priority]');
+      if (prioritySelect) prioritySelect.disabled = terminal;
+      detail.querySelectorAll('[data-support-related-game],[data-support-related-payment],[data-support-related-tournament],[data-support-related-operation]')
+        .forEach(input => { input.disabled = terminal; });
     }
   };
 
@@ -133,9 +140,7 @@
         <span class="mgw-admin__support-priority ${priorityClass(ticket.priority)}">${escapeHtml(ticket.priority_label || ticket.priority || '—')}</span>
       </span>
       <span class="mgw-admin__support-ticket-subject">${escapeHtml(ticket.subject || ticket.category_label || 'Обращение')}</span>
-      <span class="mgw-admin__support-ticket-meta">${escapeHtml(ticket.category_label || '—')} · ${escapeHtml(ticket.platform_label || '—')}</span>
-      <span class="mgw-admin__support-ticket-meta">${escapeHtml(ticket.status_label || ticket.status || '—')} · Ответственный: ${escapeHtml(ticket.owner_ref || 'не назначен')}</span>
-      <span class="mgw-admin__support-ticket-time">${escapeHtml(ticket.updated_at || '')} UTC</span>
+      <span class="mgw-admin__support-ticket-state">${escapeHtml(ticket.status_label || ticket.status || '—')}</span>
     `;
     button.addEventListener('click', () => void openTicket(ticket.ticket_number));
     return button;
@@ -146,7 +151,7 @@
     if (!Array.isArray(tickets) || tickets.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'mgw-admin__history-empty';
-      empty.textContent = 'По выбранным фильтрам обращений нет.';
+      empty.textContent = queueMode === 'processed' ? 'Обработанных обращений пока нет.' : 'Активных обращений по выбранным фильтрам нет.';
       queue.append(empty);
       return;
     }
@@ -210,7 +215,9 @@
 
   const renderDetail = ticket => {
     currentTicket = ticket;
+    const terminal = ['resolved','closed'].includes(String(ticket.status || ''));
     detail.hidden = false;
+    detail.dataset.ticketTerminal = terminal ? '1' : '0';
     detail.querySelector('[data-support-detail-number]').textContent = String(ticket.ticket_number || '—');
     detail.querySelector('[data-support-detail-subject]').textContent = String(ticket.subject || 'Обращение');
     detail.querySelector('[data-support-detail-player]').textContent = String(ticket.requester_mgw_id || '—');
@@ -220,22 +227,36 @@
       ? `Ответственный: ${String(ticket.owner_ref)}`
       : 'Ответственный не назначен';
 
-    const statusSelect = detail.querySelector('[data-support-detail-status]');
+    const statusValue = detail.querySelector('[data-support-detail-status]');
+    if (statusValue) statusValue.textContent = humanValue(ticket.status || ticket.status_label || '—');
+
     const prioritySelect = detail.querySelector('[data-support-detail-priority]');
-    if (Array.from(statusSelect.options).some(option => option.value === ticket.status)) statusSelect.value = ticket.status;
+    const priorityField = detail.querySelector('[data-support-priority-field]');
     if (Array.from(prioritySelect.options).some(option => option.value === ticket.priority)) prioritySelect.value = ticket.priority;
     prioritySelect.className = `mgw-admin__support-select ${priorityClass(ticket.priority)}`;
+    prioritySelect.disabled = terminal;
+    if (priorityField) priorityField.hidden = terminal;
+
+    const takeButton = detail.querySelector('[data-support-assign-self]');
     const closeButton = detail.querySelector('[data-support-close]');
-    if (closeButton) {
-      closeButton.disabled = ticket.status === 'closed';
-      closeButton.textContent = ticket.status === 'closed' ? 'Обращение закрыто' : 'Закрыть обращение';
-    }
+    if (takeButton) takeButton.hidden = String(ticket.status || '') !== 'open';
+    if (closeButton) closeButton.hidden = !['in_progress','waiting_user'].includes(String(ticket.status || ''));
 
     const related = ticket.related || {};
-    detail.querySelector('[data-support-related-game]').value = related.game_id || '';
-    detail.querySelector('[data-support-related-payment]').value = related.payment_id || '';
-    detail.querySelector('[data-support-related-tournament]').value = related.tournament_id || '';
-    detail.querySelector('[data-support-related-operation]').value = related.operation_id || '';
+    const relatedInputs = [
+      detail.querySelector('[data-support-related-game]'),
+      detail.querySelector('[data-support-related-payment]'),
+      detail.querySelector('[data-support-related-tournament]'),
+      detail.querySelector('[data-support-related-operation]'),
+    ];
+    relatedInputs[0].value = related.game_id || '';
+    relatedInputs[1].value = related.payment_id || '';
+    relatedInputs[2].value = related.tournament_id || '';
+    relatedInputs[3].value = related.operation_id || '';
+    relatedInputs.forEach(input => { input.disabled = terminal; });
+    const relatedSave = detail.querySelector('[data-support-related-save]');
+    if (relatedSave) relatedSave.hidden = terminal;
+
     const linked = [
       related.game_id ? 'матч' : '',
       related.payment_id ? 'пополнение' : '',
@@ -245,6 +266,9 @@
     relatedSummary.textContent = linked.length
       ? `Связанные данные: ${linked.join(', ')}`
       : 'Связанные данные: нет';
+
+    const reply = detail.querySelector('.mgw-admin__support-reply');
+    if (reply) reply.hidden = terminal;
 
     renderThread(ticket);
     renderHistory(ticket);
@@ -260,14 +284,9 @@
     fillSelect(priorityFilter, data.priorities || {}, 'Все приоритеты');
     fillSelect(categoryFilter, data.categories || {}, 'Все категории');
     fillSelect(platformFilter, data.platforms || {}, 'Все платформы');
-    const detailStatus = detail.querySelector('[data-support-detail-status]');
     const detailPriority = detail.querySelector('[data-support-detail-priority]');
-    fillSelect(detailStatus, data.statuses || {}, 'Статус');
     fillSelect(detailPriority, data.priorities || {}, 'Приоритет');
-    if (currentTicket) {
-      detailStatus.value = currentTicket.status || '';
-      detailPriority.value = currentTicket.priority || '';
-    }
+    if (currentTicket) detailPriority.value = currentTicket.priority || '';
     renderMetrics(data.metrics || {});
     renderQueue(data.tickets || []);
     if (data.ticket) renderDetail(data.ticket);
@@ -284,7 +303,7 @@
     try {
       const data = await post({action:'snapshot', filters:filters()});
       renderSnapshot(data);
-      setStatus('Очередь поддержки загружена.', 'ok');
+      setStatus(queueMode === 'processed' ? 'Обработанные обращения загружены.' : 'Активные обращения загружены.', 'ok');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Не удалось загрузить поддержку.', 'error');
     } finally {
@@ -317,12 +336,23 @@
 
   const mutate = async payload => {
     if (busy || !currentTicket?.ticket_number) return null;
+    const ticketNumber = currentTicket.ticket_number;
     setBusy(true);
     try {
-      const data = await post({...payload, ticket:currentTicket.ticket_number, filters:filters()});
+      const data = await post({...payload, ticket:ticketNumber, filters:filters()});
+      const closedNow = payload.action === 'set_status' && payload.status === 'closed' && String(data.ticket?.status || '') === 'closed';
+      if (closedNow) {
+        currentTicket = null;
+        clearReplyFiles();
+        detail.hidden = true;
+        root.classList.remove('is-ticket-open');
+        renderSnapshot({...data, ticket:null});
+        setStatus(`${ticketNumber}: обращение закрыто и перенесено в «Обработанные».`, 'ok');
+        return data;
+      }
       renderSnapshot(data);
       if (payload.action !== 'reply') {
-        setStatus(`${currentTicket.ticket_number}: изменения сохранены в истории.`, 'ok');
+        setStatus(`${ticketNumber}: изменения сохранены.`, 'ok');
       }
       return data;
     } catch (error) {
@@ -451,7 +481,7 @@
       tournament_id:detail.querySelector('[data-support-related-tournament]').value.trim(),
       operation_id:detail.querySelector('[data-support-related-operation]').value.trim(),
     },
-  });
+  }).catch(() => {});
 
   let attachmentViewerUrl = '';
 
@@ -568,27 +598,37 @@
 
   back.addEventListener('click', () => {
     clearReplyFiles();
+    currentTicket = null;
+    detail.hidden = true;
     root.classList.remove('is-ticket-open');
     if (window.matchMedia('(max-width: 980px)').matches) queuePanel.scrollIntoView({block:'start', behavior:'smooth'});
   });
   refresh.addEventListener('click', () => void load());
+  modeButtons.forEach(button => button.addEventListener('click', () => {
+    queueMode = String(button.dataset.supportMode || 'active');
+    statusFilter.value = '';
+    currentTicket = null;
+    detail.hidden = true;
+    root.classList.remove('is-ticket-open');
+    modeButtons.forEach(node => node.classList.toggle('is-active', node === button));
+    if (queueTitle) queueTitle.textContent = queueMode === 'processed' ? 'Обработанные обращения' : 'Активные обращения';
+    void load();
+  }));
   [statusFilter, priorityFilter, categoryFilter, platformFilter].forEach(select => {
     select.addEventListener('change', () => void load());
   });
   queryInput.addEventListener('keydown', event => {
     if (event.key === 'Enter') void load();
   });
-  detail.querySelector('[data-support-detail-status]').addEventListener('change', event => {
-    if (currentTicket) void mutate({action:'set_status', status:event.target.value});
-  });
   detail.querySelector('[data-support-detail-priority]').addEventListener('change', event => {
-    if (currentTicket) void mutate({action:'set_priority', priority:event.target.value});
+    if (currentTicket && !['resolved','closed'].includes(String(currentTicket.status || ''))) {
+      void mutate({action:'set_priority', priority:event.target.value}).catch(() => {});
+    }
   });
-  detail.querySelector('[data-support-assign-self]').addEventListener('click', () => void mutate({action:'assign_self'}));
-  detail.querySelector('[data-support-unassign]').addEventListener('click', () => void mutate({action:'unassign'}));
+  detail.querySelector('[data-support-assign-self]').addEventListener('click', () => void mutate({action:'assign_self'}).catch(() => {}));
   detail.querySelector('[data-support-close]')?.addEventListener('click', () => {
-    if (!currentTicket || currentTicket.status === 'closed') return;
-    void mutate({action:'set_status', status:'closed'});
+    if (!currentTicket || !['in_progress','waiting_user'].includes(String(currentTicket.status || ''))) return;
+    void mutate({action:'set_status', status:'closed'}).catch(() => {});
   });
   detail.querySelector('[data-support-related-save]').addEventListener('click', saveRelated);
   detail.querySelector('[data-support-reply-send]').addEventListener('click', () => void sendReply());
@@ -596,6 +636,8 @@
     addReplyFiles(event.target.files);
   });
 
+  if (queueTitle) queueTitle.textContent = queueMode === 'processed' ? 'Обработанные обращения' : 'Активные обращения';
+  if (requestedTicket) modeButtons.forEach(button => button.classList.remove('is-active'));
   renderReplyFiles();
   load();
 })();

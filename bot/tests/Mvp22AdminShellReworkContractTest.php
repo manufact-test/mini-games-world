@@ -88,7 +88,9 @@ $assert(
 
 foreach ([
     'Взять в работу',
-    'Вернуть в очередь',
+    'Закрыть обращение',
+    'Активные',
+    'Обработанные',
     'Ответственный не назначен',
     'Связанные данные: нет',
     'Технические данные',
@@ -103,6 +105,17 @@ $assert(
         && str_contains($support, "back.addEventListener('click'")
         && str_contains($css, '[data-admin-support].is-ticket-open [data-support-queue-panel]{display:none}'),
     'Support must use responsive list/detail flow with human history labels and a narrow-screen back action.'
+);
+
+$assert(
+    str_contains($page, 'data-support-mode="active"')
+        && str_contains($page, 'data-support-mode="processed"')
+        && !str_contains($page, 'data-support-unassign')
+        && str_contains($support, "queueMode = requestedTicket ? 'all' : 'active'")
+        && str_contains($support, "обращение закрыто и перенесено в «Обработанные»")
+        && str_contains($support, "takeButton.hidden = String(ticket.status || '') !== 'open'")
+        && str_contains($support, "closeButton.hidden = !['in_progress','waiting_user'].includes"),
+    'Support operator lifecycle must separate active/processed tickets and expose only one-way actions.'
 );
 
 $assert(

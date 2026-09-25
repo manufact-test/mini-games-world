@@ -115,6 +115,23 @@ $assert($detail['priority'] === 'high', 'MySQL priority must persist.');
 $assert(count($detail['messages']) === 3, 'MySQL ticket thread must stay isolated across user/admin replies.');
 $assert(count($detail['history']) >= 5, 'MySQL owner/status/priority/reply history must persist.');
 
+$closed = $service->setStatus($target, 'closed', $actor);
+$assert($closed['status'] === 'closed', 'MySQL close transition must persist.');
+$assert(!empty($closed['closed_at']), 'MySQL close transition must persist closed_at.');
+$assert(!empty($closed['resolved_at']), 'MySQL close transition must persist terminal resolved_at.');
+
+$activeAfterClose = $service->adminQueue(['mode' => 'active'], 100);
+$processedAfterClose = $service->adminQueue(['mode' => 'processed'], 100);
+$assert(count($activeAfterClose) === 99, 'MySQL closed ticket must leave active queue.');
+$assert(count($processedAfterClose) === 1, 'MySQL closed ticket must move to processed queue.');
+$assert((string)$processedAfterClose[0]['ticket_number'] === $target, 'MySQL processed queue must contain exact closed ticket.');
+
+$userClosed = array_values(array_filter(
+    $service->userSnapshot($mgwId, 100),
+    static fn(array $row): bool => (string)($row['ticket_number'] ?? '') === $target
+));
+$assert(count($userClosed) === 1 && (string)$userClosed[0]['status'] === 'closed', 'MySQL user snapshot must expose closed status.');
+
 foreach ([
     'mgw_support_ticket_events',
     'mgw_support_ticket_attachments',
@@ -125,4 +142,4 @@ foreach ([
     $database->execute('DROP TABLE IF EXISTS ' . $table);
 }
 
-fwrite(STDOUT, "MVP-22.1 MySQL 8.4 support integration OK: 100 tickets + owner/status/history/thread.\n");
+fwrite(STDOUT, "MVP-22.1 MySQL 8.4 support integration OK: 100 tickets + active/processed close lifecycle + owner/status/history/thread.\n");
