@@ -64,6 +64,10 @@
       }
       if (node.type !== 'file') node.disabled = value;
     });
+    if (!value && currentTicket?.status === 'closed') {
+      const closeButton = detail.querySelector('[data-support-close]');
+      if (closeButton) closeButton.disabled = true;
+    }
   };
 
   const setStatus = (message, state = '') => {
