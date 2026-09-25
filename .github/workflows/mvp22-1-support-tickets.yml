@@ -54,6 +54,12 @@ jobs:
           grep -Fq 'mountSupportFilePicker' app/assets/js/screens/home-screen.js
           grep -Fq "menuItemMarkup('supportTicketsBtn', '🎫', 'Мои обращения', 'support-attention')" app/assets/js/screens/home-screen.js
           grep -Fq "supportTicketsBtn:'ui/navigation/notifications.webp'" app/assets/js/components/shield-king-visuals.js
+          grep -Fq 'refreshSupportTicketsCache' app/assets/js/screens/home-screen.js
+          grep -Fq 'renderSupportTicketsSheet' app/assets/js/screens/home-screen.js
+          grep -Fq 'supportTicketStatusLabel' app/assets/js/screens/home-screen.js
+          grep -Fq "if(meta)meta.textContent=supportTicketStatusLabel(ticket);" app/assets/js/screens/home-screen.js
+          ! grep -Fq 'supportTicketMeta">Загружаю…' app/assets/js/screens/home-screen.js
+          ! grep -Fq "[ticket.category_label,ticket.status_label||ticket.status,ticket.platform_label]" app/assets/js/screens/home-screen.js
           grep -Fq '.menu-item-standard.support-attention' app/assets/css/main.css
           grep -Fq '.support-thread-message.is-user{' app/assets/css/main.css
           grep -A4 -F '.support-thread-message.is-user{' app/assets/css/main.css | grep -Fq 'width:100%;'
