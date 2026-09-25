@@ -40,8 +40,15 @@ $assert(str_contains($friendsUi, "['stalling','Затягивание игры']
 $assert(str_contains($homeUi, "document.getElementById('supportBtn')?.addEventListener('click',()=>openPlayerReportSheet())"), 'Main menu complaint entry must open the player-report flow instead of Support.');
 $assert(!str_contains($homeUi, "supportBtn')?.addEventListener('click',()=>openSupportForm('complaint'))"), 'Main menu complaint entry must never create a generic Support complaint ticket.');
 $assert(str_contains($homeUi, 'PLAYER_REPORT_REASONS'), 'Main menu player-report flow must expose the canonical moderation reasons.');
-$assert(str_contains($homeUi, "action:'lookup'"), 'Main menu player-report flow must let the user find a target player.');
+$assert(str_contains($homeUi, "action:'report_lookup'"), 'Main menu player-report flow must use the report-specific lookup so self-report attempts are explicit.');
 $assert(str_contains($homeUi, "action:'report'"), 'Main menu player-report flow must submit to PlayerReportService through the Friends API.');
+$assert(str_contains($homeUi, "action:'report_history'"), 'Player report flow must expose the reporter-visible complaint lifecycle.');
+$assert(str_contains($homeUi, "selectedReason=selectedReason===reason?'':reason;"), 'Selected complaint reason must be removable with a second tap.');
+$assert(str_contains($friendsEndpoint, "'report_lookup'"), 'Friends endpoint must expose report-specific lookup.');
+$assert(str_contains($friendsEndpoint, "'report_history'"), 'Friends endpoint must expose reporter-owned report history.');
+$assert(str_contains($reports, 'public function reporterHistory('), 'PlayerReportService must expose reporter-owned lifecycle history.');
+$assert(str_contains($adminUi, 'Завершить рассмотрение'), 'Admin report queue must expose a clear complaint completion action.');
+$assert(str_contains($adminUi, 'Технические данные'), 'Admin report technical metadata must remain available behind a disclosure.');
 $assert(!str_contains($homeUi, '<option value="complaint">Жалоба</option>'), 'Support category selector must not masquerade as the player moderation flow.');
 $assert(str_contains($mainCss, '.support-ticket-select-wrap::after{'), 'Support select must retain a dedicated chevron owner.');
 $assert(str_contains($mainCss, 'border-right:2px solid currentColor;') && str_contains($mainCss, 'border-bottom:2px solid currentColor;'), 'Support select chevron must be geometry-based instead of the misaligned text glyph.');
