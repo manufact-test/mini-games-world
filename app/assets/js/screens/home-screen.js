@@ -481,12 +481,9 @@ function refreshSupportTicketsCache({force=false}={}){
 
 async function openSupportTicketsSheet(){
   try{
-    const result=supportTicketsCache||await refreshSupportTicketsCache();
+    const result=await refreshSupportTicketsCache({force:true});
     const tickets=Array.isArray(result?.tickets)?result.tickets:[];
     renderSupportTicketsSheet(tickets);
-    if(isSupportTicketsCacheStale()){
-      void refreshSupportTicketsCache({force:true}).catch(()=>{});
-    }
   }catch(error){
     toast(error.message||'Не удалось загрузить обращения.');
   }
