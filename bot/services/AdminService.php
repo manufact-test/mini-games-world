@@ -95,12 +95,6 @@ final class AdminService
         $text .= "📩 Обратная связь\n";
         $text .= "Обращений всего: {$supportCount}\n\n";
 
-        $text .= "🎮 Последние матчи\n";
-        $text .= $this->latestGamesBlock($db, 5) . "\n\n";
-
-        $text .= "🧾 Последние операции\n";
-        $text .= $this->latestTransactionsBlock($db, 5) . "\n\n";
-
         $text .= "Команды:\n";
         $text .= ($this->config['admin_command'] ?? '/mgw_private_admin_7291') . " — открыть панель\n";
         $text .= ($this->config['admin_orders_command'] ?? '/mgw_private_admin_7291_orders') . " — архив заявок\n";
