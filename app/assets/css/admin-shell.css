@@ -736,3 +736,8 @@
 .mgw-admin__report-filters label{display:flex;flex-direction:column;gap:4px;color:#858792;font-size:9px;font-weight:800}
 .mgw-admin__report-filters>button{min-height:40px;border:1px solid #3b3d47;border-radius:10px;background:#17181e;color:#eeeef2;padding:0 14px;font:inherit;font-size:11px;font-weight:800;cursor:pointer}
 @media(max-width:760px){.mgw-admin__report-tabs{display:grid;grid-template-columns:1fr 1fr}.mgw-admin__report-filters{grid-template-columns:1fr 1fr}.mgw-admin__report-filters>input{grid-column:1/-1}.mgw-admin__report-filters>button{grid-column:1/-1}}
+
+
+/* MVP-22.1 manual acceptance: explicit terminal support action */
+[data-support-close]{border-color:#5b3d43!important;background:#25171a!important;color:#f2c2ca!important}
+[data-support-close]:disabled{opacity:.55;cursor:not-allowed}
