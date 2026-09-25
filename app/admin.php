@@ -14,13 +14,13 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Панель администратора</title>
-  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=11&replay=17-6&manual_acceptance=v6-report-accordion&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
+  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=11&replay=17-6&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="./assets/js/admin-shell.js?v=6&replay=17-6&test-coins=staging" defer></script>
   <script src="./assets/js/admin-compensation.js?v=4&mvp22_2=admin-simple-flow-v4" defer></script>
   <script src="./assets/js/admin-reports.js?v=2&mvp18=reports&mvp22_3=manual-acceptance-v6" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
-  <script src="./assets/js/admin-support.js?v=7&mvp22_1=manual-close-v1&support_focus=ticket-detail-v1&attachment_viewer=inline-v2&reply_files=managed-v1&reply_delivery=bell-verified-v2" defer></script>
+  <script src="./assets/js/admin-support.js?v=7&mvp22_1=lifecycle-v3&support_focus=ticket-detail-v1&attachment_viewer=inline-v2&reply_files=managed-v1&reply_delivery=bell-verified-v2" defer></script>
   <script src="./assets/js/admin-rating.js?v=2&mvp20_8=rating-admin" defer></script>
   <script src="./assets/js/admin-tournaments.js?v=17&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3&mvp21_5=corrective-v5&mvp21_6=fixture-progression-helper-v3&mvp21_8=corrective-v12&mvp21_8_cancel=cancellation-emergency-v1&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v2" defer></script>
 </head>
@@ -320,6 +320,11 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           <div class="mgw-admin__support-status" data-support-status>Обращения ещё не загружены.</div>
           <div class="mgw-admin__support-metrics" data-support-metrics></div>
 
+          <div class="mgw-admin__support-tabs" role="tablist" aria-label="Состояние обращений">
+            <button type="button" class="is-active" data-support-mode="active">Активные</button>
+            <button type="button" data-support-mode="processed">Обработанные</button>
+          </div>
+
           <details class="mgw-admin__support-filterbox">
             <summary>Поиск и фильтры</summary>
             <div class="mgw-admin__support-filters">
@@ -349,7 +354,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
 
           <div class="mgw-admin__support-layout">
             <section class="mgw-admin__support-panel" data-support-queue-panel>
-              <h3>Очередь</h3>
+              <h3 data-support-queue-title>Активные обращения</h3>
               <div class="mgw-admin__support-queue" data-support-queue></div>
             </section>
 
@@ -369,17 +374,16 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               </div>
 
               <div class="mgw-admin__support-controls">
-                <label class="mgw-admin__field">
+                <div class="mgw-admin__support-state">
                   <span>Статус</span>
-                  <select class="mgw-admin__support-select" data-support-detail-status></select>
-                </label>
-                <label class="mgw-admin__field">
+                  <strong data-support-detail-status>—</strong>
+                </div>
+                <label class="mgw-admin__field" data-support-priority-field>
                   <span>Приоритет</span>
                   <select class="mgw-admin__support-select" data-support-detail-priority></select>
                 </label>
                 <div class="mgw-admin__support-owner-actions">
                   <button type="button" data-support-assign-self>Взять в работу</button>
-                  <button type="button" data-support-unassign>Вернуть в очередь</button>
                   <button type="button" data-support-close>Закрыть обращение</button>
                 </div>
               </div>
