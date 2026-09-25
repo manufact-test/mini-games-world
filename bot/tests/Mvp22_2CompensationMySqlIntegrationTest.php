@@ -94,6 +94,7 @@ $original = $ledger->postAvailableDelta([
     'operation_key'=>'mysql-original-operation',
     'account_ref'=>$accountRef,
     'mgw_id'=>$mgwId,
+    'legacy_user_id'=>$legacyUserId,
     'asset_code'=>'mgw_coin',
     'available_delta'=>-20000,
     'category'=>'store_purchase',
