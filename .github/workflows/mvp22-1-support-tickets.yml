@@ -50,7 +50,9 @@ jobs:
           grep -Fq 'support-ticket-create' app/assets/js/screens/home-screen.js
           grep -Fq 'support-thread-attachment' app/assets/js/screens/home-screen.js
           grep -Fq 'mountSupportFilePicker' app/assets/js/screens/home-screen.js
-          grep -Fq 'support-hub' app/assets/js/screens/home-screen.js
+          grep -Fq "menuItemMarkup('supportTicketsBtn', '🎫', 'Мои обращения')" app/assets/js/screens/home-screen.js
+          ! grep -Fq 'support-hub' app/assets/js/screens/home-screen.js
+          ! grep -Fq '.menu-item-standard.support-hub' app/assets/css/main.css
           grep -Fq 'support-ticket-select option' app/assets/css/main.css
           grep -Fq 'support-thread-message' app/assets/css/main.css
           grep -Fq 'support-file-chip' app/assets/css/main.css
