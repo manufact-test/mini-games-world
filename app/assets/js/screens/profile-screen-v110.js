@@ -273,6 +273,122 @@ function bindProfileActions(){
     }
     if (event.target.closest('[data-open-language-settings]')) {
       document.dispatchEvent(new CustomEvent('mgw:open-language-settings'));
+      return;
+    }
+    if (event.target.closest('[data-open-moderation-center]')) {
+      void openModerationCenter();
+    }
+  });
+}
+
+function moderationActionLabel(value){
+  return ({
+    warning:'Предупреждение',
+    restriction:'Ограничение',
+    permanent_ban:'Постоянная блокировка',
+  })[String(value || '')] || String(value || 'Решение');
+}
+
+function moderationStatusLabel(value){
+  return ({
+    active:'Активно',
+    pending_second_review:'На второй проверке',
+    confirmed:'Подтверждено',
+    rejected:'Отклонено',
+    revoked:'Отменено',
+    expired:'Истекло',
+  })[String(value || '')] || String(value || '—');
+}
+
+function moderationAppealStatusLabel(value){
+  return ({
+    open:'Отправлена',
+    reviewing:'На рассмотрении',
+    accepted:'Удовлетворена',
+    rejected:'Отклонена',
+  })[String(value || '')] || String(value || '—');
+}
+
+async function openModerationCenter(snapshot = null){
+  openSheet(`
+    <div class="sheet-head"><div><h2>Ограничения и апелляции</h2><p>Здесь видны решения модерации и их статус.</p></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="profile-v2-moderation-loading">Загрузка…</div>
+  `);
+
+  try {
+    const result = snapshot ? { moderation:snapshot } : await api.moderationSnapshot();
+    const moderation = result?.moderation || {};
+    const actions = Array.isArray(moderation.actions) ? moderation.actions : [];
+    const appeals = Array.isArray(moderation.appeals) ? moderation.appeals : [];
+    const activeAppeals = new Set(appeals.filter(item => ['open','reviewing'].includes(String(item?.status || ''))).map(item => String(item?.action_id || '')));
+    const activeActions = actions.filter(item => !['rejected','revoked','expired'].includes(String(item?.status || '')));
+    const accountStatus = String(moderation.account_status || 'active');
+
+    const actionsHtml = actions.length ? actions.map(item => {
+      const actionId = String(item?.action_id || '');
+      const canAppeal = ['active','confirmed','pending_second_review'].includes(String(item?.status || ''))
+        && !activeAppeals.has(actionId);
+      const scope = item?.scope_label ? ` · ${escapeHtml(item.scope_label)}` : '';
+      const until = item?.expires_at_utc ? ` · до ${escapeHtml(formatDate(item.expires_at_utc))}` : '';
+      return `
+        <div class="profile-v2-moderation-item">
+          <div><strong>${escapeHtml(moderationActionLabel(item?.action_type))}</strong><span>${escapeHtml(moderationStatusLabel(item?.status))}${scope}${until}</span></div>
+          <p>${escapeHtml(String(item?.note || 'Без комментария.'))}</p>
+          ${canAppeal ? `<button class="btn ghost full" type="button" data-moderation-appeal-action="${escapeHtml(actionId)}">Подать апелляцию</button>` : ''}
+        </div>
+      `;
+    }).join('') : '<div class="profile-v2-moderation-empty">Решений модерации нет.</div>';
+
+    const appealsHtml = appeals.length ? appeals.map(item => `
+      <div class="profile-v2-moderation-item">
+        <div><strong>Апелляция</strong><span>${escapeHtml(moderationAppealStatusLabel(item?.status))}</span></div>
+        <p>${escapeHtml(String(item?.message || ''))}</p>
+        ${item?.review_note ? `<small>Ответ: ${escapeHtml(String(item.review_note))}</small>` : ''}
+      </div>
+    `).join('') : '<div class="profile-v2-moderation-empty">Апелляций пока нет.</div>';
+
+    openSheet(`
+      <div class="sheet-head"><div><h2>Ограничения и апелляции</h2><p>${accountStatus === 'banned' ? 'Аккаунт заблокирован после ручной проверки.' : (activeActions.length ? 'Для аккаунта есть действующие решения.' : 'Действующих ограничений нет.')}</p></div><button class="close" data-close-sheet type="button">×</button></div>
+      <div class="profile-v2-moderation">
+        <section><h3>Решения модерации</h3>${actionsHtml}</section>
+        <section><h3>Апелляции</h3>${appealsHtml}</section>
+      </div>
+    `);
+
+    document.querySelectorAll('#sheet [data-moderation-appeal-action]').forEach(button => {
+      button.addEventListener('click',() => openModerationAppealComposer(
+        String(button.dataset.moderationAppealAction || ''),
+        moderation
+      ));
+    });
+  } catch (error) {
+    openSheet(`
+      <div class="sheet-head"><div><h2>Ограничения и апелляции</h2><p>Не удалось загрузить данные.</p></div><button class="close" data-close-sheet type="button">×</button></div>
+      <div class="profile-v2-moderation-empty">${escapeHtml(error?.message || 'Попробуйте ещё раз позже.')}</div>
+    `);
+  }
+}
+
+function openModerationAppealComposer(actionId, moderation){
+  if (!actionId) return;
+  openSheet(`
+    <div class="sheet-head"><div><h2>Подать апелляцию</h2><p>Кратко объясните, почему решение нужно пересмотреть.</p></div><button class="close" data-close-sheet type="button">×</button></div>
+    <textarea class="form-input" id="mgwModerationAppealText" maxlength="1200" rows="5" placeholder="Опишите причину апелляции"></textarea>
+    <button class="btn primary full" id="mgwModerationAppealSend" type="button">Отправить апелляцию</button>
+  `);
+
+  document.getElementById('mgwModerationAppealSend')?.addEventListener('click', async event => {
+    const message = String(document.getElementById('mgwModerationAppealText')?.value || '').trim();
+    if (!message) return toast('Опишите причину апелляции.');
+    const button = event.currentTarget;
+    if (button instanceof HTMLButtonElement) button.disabled = true;
+    try {
+      const result = await api.moderationAppeal(actionId,message);
+      toast('Апелляция отправлена.');
+      await openModerationCenter(result?.moderation || moderation);
+    } catch (error) {
+      toast(error?.message || 'Не удалось отправить апелляцию.');
+      if (button instanceof HTMLButtonElement && button.isConnected) button.disabled = false;
     }
   });
 }
@@ -463,6 +579,8 @@ function renderProfileV2(){
     <section class="profile-v2-section">${sectionHead('profile.achievements_title','profile.achievements_note')}<div class="profile-v2-achievements" aria-label="${escapeHtml(t('profile.achievements_title'))}">${[1,2,3].map(() => `<div class="profile-v2-achievement"><span aria-hidden="true">◇</span><strong>${escapeHtml(t('profile.achievement_locked'))}</strong><small>${escapeHtml(t('profile.achievement_soon'))}</small></div>`).join('')}</div></section>
     <section class="profile-v2-section">${sectionHead('profile.account_title','profile.account_note')}<div class="profile-v2-account-card">
       <button class="profile-v2-setting-row profile-v2-setting-button" type="button" data-open-language-settings><span><strong>${escapeHtml(t('profile.language'))}</strong><small>${escapeHtml(t('profile.language_note'))}</small></span><b>${escapeHtml(t('profile.language_value'))}</b></button>
+      <div class="profile-v2-account-divider"></div>
+      <button class="profile-v2-setting-row profile-v2-setting-button" type="button" data-open-moderation-center><span><strong>Ограничения и апелляции</strong><small>Предупреждения, ограничения и решения модерации</small></span><b>Открыть</b></button>
       <div class="profile-v2-account-divider"></div>
       <div class="profile-v2-linked-head"><strong>${escapeHtml(t('profile.linked_accounts'))}</strong><small>${escapeHtml(t('profile.linked_accounts_note'))}</small></div>
       <div class="profile-v2-linked-list">${identities.length ? identities.map(identityRow).join('') : emptyState('profile.linked_empty')}</div>
