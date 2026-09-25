@@ -26,6 +26,7 @@
 
   let busy = false;
   let currentOperation = null;
+  let operationRows = [];
   let pendingCompensation = null;
   let activeRequestToken = '';
   let limits = {large_amount_threshold:50000,max_amount:250000,asset_code:'mgw_coin'};
@@ -68,6 +69,9 @@
     operationInput.disabled = value;
     amountInput.disabled = value;
     reasonInput.disabled = value;
+    root.querySelectorAll('[data-compensation-operation-select]').forEach(button => {
+      button.disabled = value || String(button.dataset.compensationOperationSelect || '') === String(currentOperation?.entry_id || '');
+    });
   };
 
   const metric = (label, value) => {
@@ -117,12 +121,14 @@
       amountInput.value = String(suggested);
     }
     resetRequestToken();
+    renderOperations(operationRows);
     operationSummary.scrollIntoView({behavior:'smooth',block:'nearest'});
   };
 
   const renderOperations = rows => {
+    operationRows = Array.isArray(rows) ? rows : [];
     operations.replaceChildren();
-    if (!Array.isArray(rows) || rows.length === 0) {
+    if (operationRows.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'mgw-admin__history-empty';
       empty.textContent = browserQuery.value.trim()
@@ -132,7 +138,7 @@
       return;
     }
 
-    rows.forEach(item => {
+    operationRows.forEach(item => {
       const row = document.createElement('div');
       row.className = 'mgw-admin__history-item';
       const copy = document.createElement('div');
@@ -152,6 +158,7 @@
 
       const button = document.createElement('button');
       button.type = 'button';
+      button.dataset.compensationOperationSelect = String(item.entry_id || '');
       button.textContent = currentOperation?.entry_id === item.entry_id ? 'Выбрана' : 'Выбрать';
       button.disabled = busy || currentOperation?.entry_id === item.entry_id;
       button.addEventListener('click',() => chooseOperation(item));
