@@ -135,11 +135,19 @@ $assertSame($target, $queue[0]['target_mgw_id'], 'Queue must retain target MGW i
 $assertSame('cheating', $queue[0]['reason'], 'Queue must retain structured report reason');
 $assertSame('match-report-1', $queue[0]['related_match_id'], 'Queue must retain validated related match');
 
+$reporterHistory = $reports->reporterHistory($actor);
+$assertSame(1, count($reporterHistory), 'Reporter must see their submitted complaint lifecycle.');
+$assertSame('open', $reporterHistory[0]['status'], 'Reporter history must expose the new complaint state.');
+$assertSame('Beta', $reporterHistory[0]['target_nickname'], 'Reporter history must identify the reported player.');
+
 $reviewing = $reports->setStatus((string)$case['report_id'], 'reviewing', 'telegram:admin');
 $assertSame('reviewing', $reviewing['status'], 'Admin queue must support reviewing lifecycle state');
 $closed = $reports->setStatus((string)$case['report_id'], 'closed', 'telegram:admin');
 $assertSame('closed', $closed['status'], 'Admin queue must support closed lifecycle state');
 $assertTrue((string)$closed['resolved_at'] !== '', 'Closed case must have a resolution timestamp');
+$closedHistory = $reports->reporterHistory($actor);
+$assertSame('closed', $closedHistory[0]['status'], 'Reporter history must expose the completed complaint state.');
+$assertTrue((string)$closedHistory[0]['resolved_at'] !== '', 'Reporter history must expose the complaint completion time.');
 
 $invalidReasonThrown = false;
 try {
@@ -170,6 +178,7 @@ $assertTrue(str_contains($friendsUi, "action:'report'"), 'Report UI must submit 
 $assertTrue(!str_contains($friendsUi, '<select') && str_contains($friendsUi, 'data-report-reason-menu'), 'Report reason must use the managed dark dropdown instead of a native browser list');
 $assertTrue(!str_contains($friendsUi, "api.support('player_report'"), 'Legacy support text must not own player reports after MVP-18.5');
 $assertTrue(str_contains($friendsEndpoint, 'PlayerReportService'), 'Friends endpoint must use the canonical report queue owner');
+$assertTrue(str_contains($friendsEndpoint, "'report_lookup'") && str_contains($friendsEndpoint, "'report_history'"), 'Friends endpoint must expose report-specific self-safe lookup and reporter lifecycle history.');
 $assertTrue(str_contains($invitesEndpoint, 'SocialInviteGuard'), 'Invite endpoint must enforce the canonical social block graph');
 $assertTrue(str_contains($invitesEndpoint, "case 'create_direct':") && str_contains($invitesEndpoint, "case 'open_link':") && str_contains($invitesEndpoint, "case 'rematch':"), 'Block guard must cover direct, link-open and rematch invite boundaries');
 $assertTrue(str_contains($adminEndpoint, "'set_status'"), 'Admin report queue must expose explicit case lifecycle updates');

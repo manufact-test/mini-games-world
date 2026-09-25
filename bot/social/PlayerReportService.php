@@ -89,6 +89,40 @@ final class PlayerReportService
     }
 
     /** @return list<array<string,mixed>> */
+    public function reporterHistory(string $reporterMgwId, int $limit = 12): array
+    {
+        $reporterMgwId = $this->requireActiveUser($reporterMgwId);
+        $limit = max(1, min(30, $limit));
+        $rows = $this->database->fetchAll(
+            'SELECT r.report_id, r.target_mgw_id, r.reason, r.details, r.status,
+                    r.created_at_utc, r.reviewed_at_utc, r.resolved_at_utc,
+                    target.nickname AS target_nickname
+             FROM mgw_player_reports r
+             INNER JOIN mgw_users target ON target.mgw_id = r.target_mgw_id
+             WHERE r.reporter_mgw_id = :reporter_mgw_id
+             ORDER BY r.created_at_utc DESC
+             LIMIT ' . $limit,
+            ['reporter_mgw_id' => $reporterMgwId]
+        );
+
+        return array_map(function (array $row): array {
+            $reason = (string)($row['reason'] ?? 'other');
+            return [
+                'report_id' => (string)($row['report_id'] ?? ''),
+                'target_public_mgw_id' => MgwIdGenerator::toPublic((string)($row['target_mgw_id'] ?? '')),
+                'target_nickname' => (string)($row['target_nickname'] ?? 'Игрок'),
+                'reason' => $reason,
+                'reason_label' => self::REASONS[$reason] ?? self::LEGACY_REASON_LABELS[$reason] ?? $reason,
+                'details' => (string)($row['details'] ?? ''),
+                'status' => (string)($row['status'] ?? 'open'),
+                'created_at' => (string)($row['created_at_utc'] ?? ''),
+                'reviewed_at' => (string)($row['reviewed_at_utc'] ?? ''),
+                'resolved_at' => (string)($row['resolved_at_utc'] ?? ''),
+            ];
+        }, $rows);
+    }
+
+    /** @return list<array<string,mixed>> */
     public function queue(int $limit = 100): array
     {
         $limit = max(1, min(200, $limit));

@@ -297,6 +297,13 @@ function openPlayerReportSheet(){
         </label>
         <button class="btn primary full player-report-submit" id="playerReportSend" type="button" disabled>Отправить жалобу</button>
       </section>
+
+      <details class="player-report-history">
+        <summary><span>Мои жалобы</span><b id="playerReportHistoryCount">…</b></summary>
+        <div class="player-report-history-list" id="playerReportHistoryList">
+          <div class="player-report-history-empty">Загружаю историю…</div>
+        </div>
+      </details>
     </div>`);
 
   const searchInput=document.getElementById('playerReportSearch');
@@ -306,6 +313,8 @@ function openPlayerReportSheet(){
   const selected=document.getElementById('playerReportSelected');
   const reasonStep=document.getElementById('playerReportReasonStep');
   const send=document.getElementById('playerReportSend');
+  const historyList=document.getElementById('playerReportHistoryList');
+  const historyCount=document.getElementById('playerReportHistoryCount');
 
   const refreshSendState=()=>{
     if(send)send.disabled=!(selectedPlayer&&selectedReason);
@@ -367,7 +376,7 @@ function openPlayerReportSheet(){
     if(results)results.innerHTML='';
     if(searchStatus)searchStatus.textContent='Ищу игрока…';
     try{
-      const response=await api.friends({action:'lookup',query});
+      const response=await api.friends({action:'report_lookup',query});
       const players=Array.isArray(response?.result?.players)?response.result.players.filter(player=>player&&typeof player==='object'):[];
       renderPlayers(players);
     }catch(error){
@@ -385,10 +394,53 @@ function openPlayerReportSheet(){
   });
 
   document.querySelectorAll('#sheet [data-player-report-reason]').forEach(button=>button.addEventListener('click',()=>{
-    selectedReason=String(button.dataset.playerReportReason||'');
-    document.querySelectorAll('#sheet [data-player-report-reason]').forEach(item=>item.setAttribute('aria-pressed',item===button?'true':'false'));
+    const reason=String(button.dataset.playerReportReason||'');
+    selectedReason=selectedReason===reason?'':reason;
+    document.querySelectorAll('#sheet [data-player-report-reason]').forEach(item=>{
+      item.setAttribute('aria-pressed',selectedReason!==''&&String(item.dataset.playerReportReason||'')===selectedReason?'true':'false');
+    });
     refreshSendState();
   }));
+
+  const reportStatusLabel=value=>({
+    open:'Новая',
+    reviewing:'На рассмотрении',
+    closed:'Рассмотрена',
+  })[String(value||'')]||'—';
+
+  const reportStatusTone=value=>({
+    open:'is-new',
+    reviewing:'is-reviewing',
+    closed:'is-closed',
+  })[String(value||'')]||'';
+
+  const renderReportHistory=reports=>{
+    const items=Array.isArray(reports)?reports:[];
+    if(historyCount)historyCount.textContent=String(items.length);
+    if(!historyList)return;
+    if(items.length===0){
+      historyList.innerHTML='<div class="player-report-history-empty">Вы ещё не отправляли жалобы на игроков.</div>';
+      return;
+    }
+    historyList.innerHTML=items.map(report=>`<article class="player-report-history-item">
+      <div class="player-report-history-top">
+        <span><strong>${escapeHtml(report?.target_nickname||'Игрок')}</strong><small>${escapeHtml(report?.target_public_mgw_id||'')}</small></span>
+        <b class="${escapeHtml(reportStatusTone(report?.status))}">${escapeHtml(reportStatusLabel(report?.status))}</b>
+      </div>
+      <div class="player-report-history-reason">${escapeHtml(report?.reason_label||report?.reason||'Жалоба')}</div>
+      <small class="player-report-history-meta">${escapeHtml(formatDate(report?.resolved_at||report?.reviewed_at||report?.created_at||''))}${report?.status==='closed'?' · рассмотрение завершено':''}</small>
+    </article>`).join('');
+  };
+
+  const loadReportHistory=async()=>{
+    try{
+      const response=await api.friends({action:'report_history'});
+      renderReportHistory(response?.result?.reports||[]);
+    }catch(error){
+      if(historyCount)historyCount.textContent='!';
+      if(historyList)historyList.innerHTML=`<div class="player-report-history-empty">${escapeHtml(error?.message||'Не удалось загрузить историю жалоб.')}</div>`;
+    }
+  };
 
   send?.addEventListener('click',async()=>{
     if(!selectedPlayer||!selectedReason)return;
@@ -411,6 +463,7 @@ function openPlayerReportSheet(){
     }
   });
 
+  void loadReportHistory();
   searchInput?.focus();
 }
 

@@ -555,3 +555,170 @@
   .mgw-admin__moderation-panel-body .mgw-admin__economy-actions{flex-direction:column;align-items:stretch}
   .mgw-admin__moderation-panel-body .mgw-admin__economy-actions button{width:100%}
 }
+
+
+/* MVP-22.3 operator report-card redesign */
+.mgw-admin__reports .mgw-admin__history{gap:10px}
+.mgw-admin__report-card{
+  display:flex;
+  flex-direction:column;
+  gap:11px;
+  padding:13px;
+  border:1px solid #2a2c34;
+  border-radius:14px;
+  background:#101116;
+}
+.mgw-admin__report-card[data-report-status="reviewing"]{border-color:#4e472e}
+.mgw-admin__report-card[data-report-status="closed"]{border-color:#294738}
+.mgw-admin__report-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+.mgw-admin__report-identity{min-width:0}
+.mgw-admin__report-identity>span{
+  display:block;
+  margin-bottom:4px;
+  color:#7e808a;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.mgw-admin__report-id{
+  display:block;
+  overflow:hidden;
+  color:#ded9ff;
+  font-size:11px;
+  font-weight:850;
+  line-height:1.35;
+  text-decoration:none;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mgw-admin__report-id:hover,.mgw-admin__report-id:focus-visible{color:#fff;text-decoration:underline}
+.mgw-admin__report-status{
+  flex:0 0 auto;
+  padding:5px 8px;
+  border:1px solid #343641;
+  border-radius:999px;
+  background:#17181e;
+  color:#d9dae1;
+  font-size:9px;
+  font-weight:850;
+}
+.mgw-admin__report-status[data-tone="new"]{border-color:#554d8f;color:#d5ceff}
+.mgw-admin__report-status[data-tone="reviewing"]{border-color:#66562f;color:#f0cf72}
+.mgw-admin__report-status[data-tone="closed"]{border-color:#31563f;color:#aee5bc}
+.mgw-admin__report-reason{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  padding:11px 12px;
+  border:1px solid #34303f;
+  border-radius:11px;
+  background:#15131c;
+}
+.mgw-admin__report-reason>span,
+.mgw-admin__report-message>span,
+.mgw-admin__report-people>div>span{
+  color:#83858e;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.mgw-admin__report-reason>strong{color:#f3f0ff;font-size:13px;line-height:1.35}
+.mgw-admin__report-people{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.mgw-admin__report-people>div{
+  min-width:0;
+  padding:10px 11px;
+  border:1px solid #292b33;
+  border-radius:10px;
+  background:#0d0e12;
+}
+.mgw-admin__report-people>div>strong{
+  display:block;
+  margin-top:5px;
+  overflow:hidden;
+  color:#ececf0;
+  font-size:11.5px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mgw-admin__report-people>div>small{
+  display:block;
+  margin-top:2px;
+  color:#8a8c95;
+  font-size:9.5px;
+  overflow-wrap:anywhere;
+}
+.mgw-admin__report-message{
+  padding:10px 11px;
+  border:1px solid #292b33;
+  border-radius:10px;
+  background:#0d0e12;
+}
+.mgw-admin__report-message>p{
+  margin:6px 0 0;
+  color:#d5d6dc;
+  font-size:11px;
+  line-height:1.5;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.mgw-admin__report-actions{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.mgw-admin__report-action{
+  appearance:none;
+  min-height:40px;
+  border:1px solid #3b3d47;
+  border-radius:10px;
+  background:#17181e;
+  color:#eeeef2;
+  padding:0 12px;
+  font:inherit;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+}
+.mgw-admin__report-action[data-report-action-tone="primary"]{border-color:#6557d9;background:#5d4fd2;color:#fff}
+.mgw-admin__report-action[data-report-action-tone="complete"]{border-color:#31563f;background:#15251b;color:#bde8c9}
+.mgw-admin__report-action:disabled{opacity:.45;cursor:default}
+.mgw-admin__report-tech{
+  border:1px solid #292b33;
+  border-radius:10px;
+  background:#0d0e12;
+  overflow:hidden;
+}
+.mgw-admin__report-tech>summary{
+  padding:10px 11px;
+  list-style:none;
+  cursor:pointer;
+  color:#a7a9b2;
+  font-size:10px;
+  font-weight:800;
+}
+.mgw-admin__report-tech>summary::-webkit-details-marker{display:none}
+.mgw-admin__report-tech>summary::after{content:"+";float:right;color:#7f818a;font-size:13px}
+.mgw-admin__report-tech[open]>summary{border-bottom:1px solid #252730}
+.mgw-admin__report-tech[open]>summary::after{content:"−"}
+.mgw-admin__report-tech-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:#24262e}
+.mgw-admin__report-tech-grid>div{min-width:0;padding:9px 10px;background:#101116}
+.mgw-admin__report-tech-grid span{display:block;color:#777983;font-size:8.5px;text-transform:uppercase;letter-spacing:.05em}
+.mgw-admin__report-tech-grid strong{display:block;margin-top:3px;color:#c9cad0;font-size:9.5px;font-weight:650;overflow-wrap:anywhere}
+.mgw-admin__report-card>.mgw-admin__moderation-panel{grid-column:auto;width:100%}
+@media(max-width:760px){
+  .mgw-admin__report-people,.mgw-admin__report-tech-grid{grid-template-columns:1fr}
+  .mgw-admin__report-actions{grid-template-columns:1fr}
+  .mgw-admin__report-action{width:100%}
+  .mgw-admin__report-id{white-space:normal;overflow-wrap:anywhere}
+}

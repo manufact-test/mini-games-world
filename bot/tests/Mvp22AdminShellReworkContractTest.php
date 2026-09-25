@@ -187,6 +187,14 @@ $assert(
 );
 
 $assert(
+    str_contains($page, 'admin-reports.js?v=2')
+        && str_contains($css, '.mgw-admin__report-card{')
+        && str_contains($css, '.mgw-admin__report-message{')
+        && str_contains($css, '.mgw-admin__report-tech{'),
+    'Moderation queue must publish the readable report-card UI with technical metadata collapsed.'
+);
+
+$assert(
     str_contains($page, 'class="mgw-admin__reports"')
         && str_contains($page, 'class="mgw-admin__file-picker"')
         && str_contains($page, 'data-support-file-summary')
