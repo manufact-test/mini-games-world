@@ -3142,6 +3142,8 @@
 .player-report-submit.btn.primary:disabled{
   opacity:1!important;
   filter:none!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
   cursor:not-allowed!important;
 }
 .player-report-search .btn.primary:disabled:hover,
