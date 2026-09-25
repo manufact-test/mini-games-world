@@ -229,9 +229,9 @@ $event($db,'mysql_e2',2,2,'result','2026-09-25 15:10:00.000000','player-a');
 $sharedHash = str_repeat('f',64);
 $db->execute(
     "INSERT INTO mgw_devices (mgw_id,device_key_hash,platform,first_seen_at_utc,last_seen_at_utc) VALUES
-     ('MGW-A',:hash,'telegram','2026-09-20 00:00:00.000000','2026-09-25 15:09:00.000000'),
-     ('MGW-B',:hash,'telegram','2026-09-20 00:00:00.000000','2026-09-25 15:09:30.000000')",
-    ['hash'=>$sharedHash]
+     ('MGW-A',:hash_a,'telegram','2026-09-20 00:00:00.000000','2026-09-25 15:09:00.000000'),
+     ('MGW-B',:hash_b,'telegram','2026-09-20 00:00:00.000000','2026-09-25 15:09:30.000000')",
+    ['hash_a'=>$sharedHash,'hash_b'=>$sharedHash]
 );
 $devices = $db->fetchAll('SELECT device_id,mgw_id FROM mgw_devices ORDER BY device_id');
 $db->execute(
