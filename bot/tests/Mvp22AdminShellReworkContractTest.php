@@ -156,6 +156,17 @@ $assert(
 );
 
 $assert(
+    str_contains($page, 'data-economy-config-disclosure')
+        && str_contains($page, 'data-economy-simulation-disclosure')
+        && str_contains($page, '<strong>Конфигурация экономики</strong>')
+        && str_contains($page, '<strong>Детерминированная проверка</strong>')
+        && !str_contains($page, 'data-economy-config-disclosure open')
+        && !str_contains($page, 'data-economy-simulation-disclosure open')
+        && str_contains($css, '.mgw-admin__economy-disclosure[open]>summary i::after'),
+    'Economy JSON and deterministic calculation must stay collapsed by default with an obvious expandable owner.'
+);
+
+$assert(
     str_contains($page, '<h1>Панель администратора</h1>')
         && !str_contains($page, '<h1>Web Admin</h1>')
         && str_contains($page, 'data-admin-back-overview')
