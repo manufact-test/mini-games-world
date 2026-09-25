@@ -71,7 +71,14 @@ jobs:
           ! grep -Fq "[ticket.category_label,ticket.status_label||ticket.status,ticket.platform_label]" app/assets/js/screens/home-screen.js
           grep -Fq '.menu-item-standard.support-attention' app/assets/css/main.css
           grep -Fq '.support-thread-message.is-user{' app/assets/css/main.css
-          grep -A4 -F '.support-thread-message.is-user{' app/assets/css/main.css | grep -Fq 'width:100%;'
+          grep -A4 -F '.support-thread-message.is-admin{' app/assets/css/main.css | grep -Fq 'justify-self:stretch;'
+          grep -Fq '.support-thread-message{' app/assets/css/main.css
+          grep -A4 -F '.support-thread-message{' app/assets/css/main.css | grep -Fq 'width:100%;'
+          grep -Fq '.support-reply-composer[hidden]{display:none!important}' app/assets/css/main.css
+          grep -Fq '.support-thread-detail.is-reply-open .support-thread{' app/assets/css/main.css
+          grep -Fq 'id="supportReplyToggle"' app/assets/js/screens/home-screen.js
+          grep -Fq 'setSupportReplyExpanded' app/assets/js/screens/home-screen.js
+          grep -Fq "source:'notification'" app/assets/js/screens/notifications-screen-v110r13.js
           grep -Fq '.support-file-chip button::before' app/assets/css/main.css
           ! grep -Fq 'background:rgba(106,42,61,.13);' app/assets/css/main.css
           grep -Fq 'support-ticket-select option' app/assets/css/main.css

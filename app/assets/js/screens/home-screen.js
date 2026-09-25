@@ -35,8 +35,9 @@ export function initHomeScreen(){
   document.addEventListener('mgw:open-support-ticket', event => {
     const ticketNumber = String(event.detail?.ticket || '').trim();
     if (!/^SUP-[0-9]{6}-[A-F0-9]{8}$/i.test(ticketNumber)) return;
+    const preserveSheet = String(event.detail?.source || '') === 'notification';
     showScreen('home');
-    closeSheet();
+    if (!preserveSheet) closeSheet();
     void openSupportTicketDetail(ticketNumber);
   });
   document.addEventListener('mgw:game-finished', () => {
@@ -324,24 +325,38 @@ async function openSupportTicketDetail(ticketNumber,sourceButton=null){
 }
 
 function renderSupportTicketDetail(ticketNumber,ticket){
+  const closed=String(ticket?.status||'').trim().toLowerCase()==='closed';
   openSheet(`<div class="sheet-head support-thread-head"><div><h2>${escapeHtml(ticketNumber)}</h2><p id="supportTicketMeta">${escapeHtml(supportTicketStatusLabel(ticket))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="support-thread" id="supportTicketThread"></div>
-    <div class="support-reply-composer">
-      <span class="support-reply-title">Ответить</span>
-      <textarea id="supportReplyText" class="support-ticket-control support-ticket-message support-reply-text" maxlength="4000" placeholder="Напишите сообщение"></textarea>
-      <div class="support-file-picker support-file-picker--reply">
-        <div class="support-file-picker-head">
-          <div><strong>Добавить к ответу</strong><small>Необязательно · до 3 файлов, до 2 МБ каждый</small></div>
-          <button class="support-file-add" id="supportReplyFilesTrigger" type="button">＋ Файл</button>
+    <div class="support-thread-detail" id="supportThreadDetail">
+      <div class="support-thread" id="supportTicketThread"></div>
+      <div class="support-reply-panel">
+        <button class="support-reply-toggle" id="supportReplyToggle" type="button" aria-expanded="false" ${closed?'disabled':''}>
+          <span data-support-reply-toggle-label>${closed?'Обращение закрыто':'Ответить'}</span>
+          <span class="support-reply-toggle-icon" aria-hidden="true">＋</span>
+        </button>
+        <div class="support-reply-composer" id="supportReplyComposer" hidden>
+          <textarea id="supportReplyText" class="support-ticket-control support-ticket-message support-reply-text" maxlength="4000" placeholder="Напишите сообщение"></textarea>
+          <div class="support-file-picker support-file-picker--reply">
+            <div class="support-file-picker-head">
+              <div><strong>Добавить к ответу</strong><small>Необязательно · до 3 файлов, до 2 МБ каждый</small></div>
+              <button class="support-file-add" id="supportReplyFilesTrigger" type="button">＋ Файл</button>
+            </div>
+            <input id="supportReplyFiles" class="support-file-native" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain">
+            <div class="support-file-list" id="supportReplyFilesList"></div>
+          </div>
+          <button class="btn primary full support-reply-send" id="supportReplySend" type="button">Отправить</button>
         </div>
-        <input id="supportReplyFiles" class="support-file-native" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain">
-        <div class="support-file-list" id="supportReplyFilesList"></div>
       </div>
-      <button class="btn primary full support-reply-send" id="supportReplySend" type="button">Отправить</button>
     </div>`);
 
   const replyPicker=mountSupportFilePicker('supportReplyFiles','supportReplyFilesTrigger','supportReplyFilesList');
   renderSupportTicketThread(ticket);
+
+  document.getElementById('supportReplyToggle')?.addEventListener('click',()=>{
+    const toggle=document.getElementById('supportReplyToggle');
+    const expanded=toggle?.getAttribute('aria-expanded')!=='true';
+    setSupportReplyExpanded(expanded,{focus:expanded});
+  });
 
   document.getElementById('supportReplySend')?.addEventListener('click',async()=>{
     const message=document.getElementById('supportReplyText')?.value.trim()||'';
@@ -356,6 +371,7 @@ function renderSupportTicketDetail(ticketNumber,ticket){
       const input=document.getElementById('supportReplyText');
       if(input)input.value='';
       replyPicker.clear();
+      setSupportReplyExpanded(false);
       toast('Сообщение отправлено.');
     }catch(error){
       toast(error.message||'Не удалось отправить сообщение.');
@@ -365,6 +381,25 @@ function renderSupportTicketDetail(ticketNumber,ticket){
   });
 }
 
+function setSupportReplyExpanded(expanded,{focus=false}={}){
+  const detail=document.getElementById('supportThreadDetail');
+  const toggle=document.getElementById('supportReplyToggle');
+  const composer=document.getElementById('supportReplyComposer');
+  if(!toggle||!composer)return;
+  if(toggle.disabled)expanded=false;
+  composer.hidden=!expanded;
+  toggle.setAttribute('aria-expanded',expanded?'true':'false');
+  detail?.classList.toggle('is-reply-open',expanded);
+  const icon=toggle.querySelector('.support-reply-toggle-icon');
+  if(icon)icon.textContent=expanded?'−':'＋';
+  if(expanded&&focus){
+    window.requestAnimationFrame(()=>{
+      document.getElementById('supportReplyText')?.focus({preventScroll:true});
+      composer.scrollIntoView({block:'nearest',behavior:'smooth'});
+    });
+  }
+}
+
 function supportTicketStatusLabel(ticket){
   const status=String(ticket?.status||'').trim().toLowerCase();
   const labels={
@@ -372,6 +407,7 @@ function supportTicketStatusLabel(ticket){
     in_progress:'В работе',
     waiting_user:'Ждёт ответа',
     waiting_for_user:'Ждёт ответа',
+    resolved:'Решено',
     closed:'Закрыто',
   };
   return labels[status]||String(ticket?.status_label||ticket?.status||'');
@@ -404,9 +440,14 @@ function renderSupportTicketThread(ticket){
   thread.scrollTop=thread.scrollHeight;
   const send=document.getElementById('supportReplySend');
   const reply=document.querySelector('.support-reply-composer');
-  const closed=ticket.status==='closed';
+  const toggle=document.getElementById('supportReplyToggle');
+  const toggleLabel=toggle?.querySelector('[data-support-reply-toggle-label]');
+  const closed=String(ticket.status||'').toLowerCase()==='closed';
   if(send)send.disabled=closed;
   if(reply)reply.classList.toggle('is-disabled',closed);
+  if(toggle)toggle.disabled=closed;
+  if(toggleLabel)toggleLabel.textContent=closed?'Обращение закрыто':'Ответить';
+  if(closed)setSupportReplyExpanded(false);
 }
 
 function supportFileValidation(file){
