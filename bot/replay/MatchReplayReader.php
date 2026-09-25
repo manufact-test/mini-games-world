@@ -126,12 +126,21 @@ final class MatchReplayReader
 
     private function normalizePlayer(array $row): array
     {
+        $playerType = strtolower(trim((string)($row['player_type'] ?? $row['role'] ?? 'player')));
+        $isBot = array_key_exists('is_bot', $row)
+            ? (bool)$row['is_bot']
+            : $playerType === 'bot';
+
         return [
             'player_ref' => (string)($row['player_ref'] ?? ''),
-            'seat_index' => (int)($row['seat_index'] ?? 0),
-            'role' => $row['role'] ?? null,
-            'is_bot' => (bool)($row['is_bot'] ?? false),
+            'mgw_id' => trim((string)($row['mgw_id'] ?? '')),
+            'legacy_user_id' => $row['legacy_user_id'] ?? null,
+            'seat_index' => (int)($row['seat_index'] ?? $row['seat'] ?? 0),
+            'role' => $row['role'] ?? $row['player_type'] ?? null,
+            'player_type' => $row['player_type'] ?? $row['role'] ?? null,
+            'is_bot' => $isBot,
             'display_name' => $row['display_name'] ?? null,
+            'result' => $row['result'] ?? null,
         ];
     }
 
