@@ -14,7 +14,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Панель администратора</title>
-  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=11&replay=17-6&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
+  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=11&replay=17-6&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="./assets/js/admin-shell.js?v=6&replay=17-6&test-coins=staging" defer></script>
   <script src="./assets/js/admin-compensation.js?v=4&mvp22_2=admin-simple-flow-v4" defer></script>
@@ -712,25 +712,44 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
             <div><span>SHA-256</span><strong data-economy-sha>—</strong></div>
           </div>
 
-          <label class="mgw-admin__field">
-            <span>Конфигурация JSON</span>
-            <textarea data-economy-config rows="22" spellcheck="false" autocomplete="off"></textarea>
-          </label>
+          <details class="mgw-admin__economy-disclosure" data-economy-config-disclosure>
+            <summary>
+              <span>
+                <strong>Конфигурация экономики</strong>
+                <small>Редактирование JSON и создание новой версии</small>
+              </span>
+              <i aria-hidden="true"></i>
+            </summary>
+            <div class="mgw-admin__economy-disclosure-body">
+              <label class="mgw-admin__field">
+                <span>Конфигурация JSON</span>
+                <textarea data-economy-config rows="22" spellcheck="false" autocomplete="off"></textarea>
+              </label>
 
-          <label class="mgw-admin__field">
-            <span>Причина изменения / отката</span>
-            <input data-economy-reason type="text" maxlength="500" autocomplete="off" placeholder="Обязательная причина">
-          </label>
+              <label class="mgw-admin__field">
+                <span>Причина изменения / отката</span>
+                <input data-economy-reason type="text" maxlength="500" autocomplete="off" placeholder="Обязательная причина">
+              </label>
 
-          <div class="mgw-admin__economy-actions">
-            <button type="button" data-economy-save>Сохранить новую версию</button>
-            <small>Изменение конфигурации не меняет балансы пользователей.</small>
-          </div>
+              <div class="mgw-admin__economy-actions">
+                <button type="button" data-economy-save>Сохранить новую версию</button>
+                <small>Изменение конфигурации не меняет балансы пользователей.</small>
+              </div>
+            </div>
+          </details>
 
-          <div class="mgw-admin__simulation">
-            <h3>Детерминированная проверка</h3>
-            <pre data-economy-simulation>—</pre>
-          </div>
+          <details class="mgw-admin__economy-disclosure" data-economy-simulation-disclosure>
+            <summary>
+              <span>
+                <strong>Детерминированная проверка</strong>
+                <small>Технический расчёт источников и списаний</small>
+              </span>
+              <i aria-hidden="true"></i>
+            </summary>
+            <div class="mgw-admin__economy-disclosure-body mgw-admin__simulation">
+              <pre data-economy-simulation>—</pre>
+            </div>
+          </details>
 
           <div class="mgw-admin__history">
             <h3>История версий</h3>
