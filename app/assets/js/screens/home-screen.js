@@ -337,7 +337,6 @@ function openPlayerReportSheet(){
       searchInput?.focus();
     });
     refreshSendState();
-    window.setTimeout(()=>reasonStep?.scrollIntoView({behavior:'smooth',block:'nearest'}),40);
   };
 
   const renderPlayers=players=>{

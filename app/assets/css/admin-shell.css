@@ -741,3 +741,43 @@
 /* MVP-22.1 manual acceptance: explicit terminal support action */
 [data-support-close]{border-color:#5b3d43!important;background:#25171a!important;color:#f2c2ca!important}
 [data-support-close]:disabled{opacity:.55;cursor:not-allowed}
+
+
+/* MVP-22.3 manual acceptance v6: compact complaint accordion */
+.mgw-admin__report-card{display:block;padding:0;overflow:hidden}
+.mgw-admin__report-summary{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto 18px;
+  align-items:center;
+  gap:10px;
+  padding:12px 13px;
+  list-style:none;
+  cursor:pointer;
+}
+.mgw-admin__report-summary::-webkit-details-marker{display:none}
+.mgw-admin__report-summary::after{
+  content:"+";
+  display:grid;
+  place-items:center;
+  width:18px;
+  height:18px;
+  color:#a9abb5;
+  font-size:15px;
+  font-weight:800;
+  line-height:1;
+}
+.mgw-admin__report-card[open]>.mgw-admin__report-summary::after{content:"−"}
+.mgw-admin__report-card:not([open])>.mgw-admin__report-summary:hover{background:#14151b}
+.mgw-admin__report-body{
+  display:flex;
+  flex-direction:column;
+  gap:11px;
+  padding:13px;
+  border-top:1px solid #262831;
+}
+.mgw-admin__report-body>.mgw-admin__moderation-panel{width:100%}
+.mgw-admin__report-card[data-report-status="closed"] .mgw-admin__report-summary{background:#101713}
+@media(max-width:760px){
+  .mgw-admin__report-summary{grid-template-columns:minmax(0,1fr) auto 18px;padding:11px}
+  .mgw-admin__report-body{padding:11px}
+}

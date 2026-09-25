@@ -306,35 +306,37 @@
     if (!Array.isArray(reports) || reports.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'mgw-admin__history-empty';
-      empty.textContent = 'Жалоб пока нет.';
+      empty.textContent = queueMode === 'closed' ? 'Рассмотренных жалоб пока нет.' : 'Активных жалоб пока нет.';
       list.append(empty);
       return;
     }
 
     reports.forEach(report => {
-      const item = document.createElement('article');
+      const item = document.createElement('details');
       item.className = 'mgw-admin__report-card';
       item.dataset.reportCase = String(report.report_id || '');
       item.dataset.reportStatus = String(report.status || 'open');
 
-      const head = document.createElement('div');
-      head.className = 'mgw-admin__report-head';
+      const summary = document.createElement('summary');
+      summary.className = 'mgw-admin__report-summary';
 
       const identity = document.createElement('div');
       identity.className = 'mgw-admin__report-identity';
       const eyebrow = document.createElement('span');
       eyebrow.textContent = 'Жалоба игрока';
-      const caseLink = document.createElement('a');
-      caseLink.className = 'mgw-admin__report-id';
-      caseLink.href = String(report.case_link || `./admin.php?report=${encodeURIComponent(report.report_id || '')}`);
-      caseLink.textContent = String(report.report_id || 'Жалоба');
-      identity.append(eyebrow, caseLink);
+      const caseId = document.createElement('strong');
+      caseId.className = 'mgw-admin__report-id';
+      caseId.textContent = String(report.report_id || 'Жалоба');
+      identity.append(eyebrow, caseId);
 
       const badge = document.createElement('span');
       badge.className = 'mgw-admin__report-status';
       badge.dataset.tone = statusTone(String(report.status || 'open'));
       badge.textContent = labelStatus(String(report.status || 'open'));
-      head.append(identity, badge);
+      summary.append(identity, badge);
+
+      const body = document.createElement('div');
+      body.className = 'mgw-admin__report-body';
 
       const reason = document.createElement('div');
       reason.className = 'mgw-admin__report-reason';
@@ -374,9 +376,11 @@
 
       const actions = document.createElement('div');
       actions.className = 'mgw-admin__report-actions';
-      if (report.status !== 'open') actions.append(actionButton(report.report_id, 'open', 'Вернуть в новые'));
-      if (report.status !== 'reviewing') actions.append(actionButton(report.report_id, 'reviewing', 'Взять в работу'));
-      if (report.status !== 'closed') actions.append(actionButton(report.report_id, 'closed', 'Завершить рассмотрение'));
+      if (report.status === 'open') {
+        actions.append(actionButton(report.report_id, 'reviewing', 'Взять в работу'));
+      } else if (report.status === 'reviewing') {
+        actions.append(actionButton(report.report_id, 'closed', 'Завершить рассмотрение'));
+      }
 
       const technical = document.createElement('details');
       technical.className = 'mgw-admin__report-tech';
@@ -403,7 +407,12 @@
       });
       technical.append(technicalSummary, technicalGrid);
 
-      item.append(head, reason, people, message, actions, technical, moderationPanel(report));
+      body.append(reason, people, message);
+      if (actions.childElementCount > 0) body.append(actions);
+      body.append(technical, moderationPanel(report));
+      item.append(summary, body);
+
+      if (requestedCase && String(report.report_id || '') === requestedCase) item.open = true;
       list.append(item);
     });
 
@@ -429,8 +438,8 @@
       const data = await post({action:'snapshot'});
       applySnapshot(data);
       status.textContent = queueMode === 'closed'
-        ? 'Архив закрытых жалоб загружен. Используйте поиск или даты, чтобы найти нужную запись.'
-        : 'Активная очередь загружена. Закрытые жалобы находятся в отдельном архиве.';
+        ? 'Архив рассмотренных жалоб загружен. Используйте поиск или даты, чтобы найти нужную запись.'
+        : 'Активная очередь загружена. Рассмотренные жалобы находятся в отдельном архиве.';
       status.dataset.state = 'ok';
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : 'Не удалось загрузить очередь жалоб.';
