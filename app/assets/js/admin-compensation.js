@@ -58,8 +58,8 @@
   const setBusy = value => {
     busy = value;
     lookupButton.disabled = value;
-    requestButton.disabled = value || !currentOperation;
-    confirmButton.disabled = value;
+    requestButton.disabled = value || !currentOperation || !!pendingCompensation;
+    confirmButton.disabled = value || !pendingCompensation;
     operationInput.disabled = value;
     amountInput.disabled = value;
     reasonInput.disabled = value;
@@ -126,8 +126,17 @@
 
       const badge = document.createElement('button');
       badge.type = 'button';
-      badge.disabled = true;
-      badge.textContent = item.status === 'applied' ? '✓ Ledger' : '2-е подтверждение';
+      if (item.status === 'applied') {
+        badge.disabled = true;
+        badge.textContent = '✓ Ledger';
+      } else {
+        badge.textContent = 'Подтвердить';
+        badge.addEventListener('click',() => {
+          showPending(item);
+          setBusy(false);
+          confirmation.scrollIntoView({behavior:'smooth',block:'nearest'});
+        });
+      }
       row.append(copy,badge);
       history.append(row);
     });
@@ -161,6 +170,8 @@
       'Баланс ещё не изменён. Нажмите кнопку ниже для отдельного второго подтверждения.'
     ].join('\n');
     confirmation.hidden = false;
+    requestButton.disabled = true;
+    confirmButton.disabled = busy;
     setBox(statusBox,'Крупная компенсация сохранена и ждёт второго подтверждения. Баланс не изменён.','');
   };
 
