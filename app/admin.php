@@ -14,13 +14,13 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Панель администратора</title>
-  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=11&replay=17-6&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
+  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=11&replay=17-6&manual_acceptance=v4&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="./assets/js/admin-shell.js?v=6&replay=17-6&test-coins=staging" defer></script>
   <script src="./assets/js/admin-compensation.js?v=4&mvp22_2=admin-simple-flow-v4" defer></script>
-  <script src="./assets/js/admin-reports.js?v=2&mvp18=reports&mvp22_3=moderation-v2-report-cards" defer></script>
+  <script src="./assets/js/admin-reports.js?v=2&mvp18=reports&mvp22_3=manual-acceptance-v4" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
-  <script src="./assets/js/admin-support.js?v=7&mvp22_1=admin-rework&support_focus=ticket-detail-v1&attachment_viewer=inline-v2&reply_files=managed-v1&reply_delivery=bell-verified-v2" defer></script>
+  <script src="./assets/js/admin-support.js?v=7&mvp22_1=manual-close-v1&support_focus=ticket-detail-v1&attachment_viewer=inline-v2&reply_files=managed-v1&reply_delivery=bell-verified-v2" defer></script>
   <script src="./assets/js/admin-rating.js?v=2&mvp20_8=rating-admin" defer></script>
   <script src="./assets/js/admin-tournaments.js?v=17&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3&mvp21_5=corrective-v5&mvp21_6=fixture-progression-helper-v3&mvp21_8=corrective-v12&mvp21_8_cancel=cancellation-emergency-v1&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v2" defer></script>
 </head>
@@ -380,6 +380,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
                 <div class="mgw-admin__support-owner-actions">
                   <button type="button" data-support-assign-self>Взять в работу</button>
                   <button type="button" data-support-unassign>Вернуть в очередь</button>
+                  <button type="button" data-support-close>Закрыть обращение</button>
                 </div>
               </div>
 
@@ -516,9 +517,18 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           <span>Ручные решения и апелляции</span>
         </div>
         <div class="mgw-admin__reports">
-          <div class="mgw-admin__economy-actions">
-            <button type="button" data-report-queue-refresh>Обновить очередь</button>
-            <small>Предупреждения, ограничения и постоянная блокировка применяются только вручную. Постоянная блокировка требует второго администратора.</small>
+          <div class="mgw-admin__report-toolbar">
+            <div class="mgw-admin__report-tabs" role="tablist" aria-label="Состояние жалоб">
+              <button type="button" class="is-active" data-report-mode="active">Активные</button>
+              <button type="button" data-report-mode="closed">Закрытые</button>
+            </div>
+            <div class="mgw-admin__report-filters">
+              <input type="search" data-report-filter-query maxlength="120" autocomplete="off" placeholder="ID, ник, причина или текст">
+              <label><span>С</span><input type="date" data-report-filter-from></label>
+              <label><span>По</span><input type="date" data-report-filter-to></label>
+              <button type="button" data-report-queue-refresh>Применить</button>
+            </div>
+            <small>Активная очередь не смешивается с архивом. Закрытые жалобы остаются доступны через поиск и даты. Постоянная блокировка требует второго администратора.</small>
           </div>
           <div class="mgw-admin__replay-status" data-report-queue-status>Очередь ещё не загружена.</div>
           <div class="mgw-admin__history" data-report-queue-list></div>
