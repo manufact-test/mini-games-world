@@ -53,9 +53,12 @@ $assert(is_string($result) && str_contains($result, 'await api.history()'), 'Res
 $assert(is_string($result) && !str_contains($result, '${game.payout'), 'Result sheet must remain free of raw global payout arithmetic.');
 $assert(is_string($result) && str_contains($result, 'id="newOpponent"') && str_contains($result, 'id="goHome"'), 'Accepted result action IDs must remain unchanged.');
 
+$homeUrl = (string)($manifest['imports']['./assets/js/screens/home-screen.js?v=74'] ?? '');
+$homeVersionMatch = [];
 $assert(
-    str_contains((string)($manifest['imports']['./assets/js/screens/home-screen.js?v=74'] ?? ''), 'v=80&mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3&ux=ready-only-history-sheet&perf=prefetched-history'),
-    'Active v110 manifest must cache-bust prefetched History interaction while preserving the accepted home-screen prefix.'
+    preg_match('/home-screen\.js\?v=(\d+)[^\']*mvp16=settings-row-owner&mvp17=match-history-economy&live=owner-v3&ux=ready-only-history-sheet&perf=prefetched-history/', $homeUrl, $homeVersionMatch) === 1
+        && (int)($homeVersionMatch[1] ?? 0) >= 80,
+    'Active v110 manifest must preserve the accepted prefetched History owner while allowing later bounded Home cache-busting.'
 );
 foreach ([34, 38, 46, 47] as $version) {
     $url = (string)($manifest['imports']["./assets/js/api/client.js?v={$version}"] ?? '');
