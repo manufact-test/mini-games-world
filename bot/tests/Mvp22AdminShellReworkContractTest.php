@@ -158,14 +158,16 @@ foreach (['admin:dashboard','admin:orders','admin:support','admin:users','admin:
 
 $assert(
     str_contains($shell, "initialParams.has('ticket')")
-        && str_contains($shell, "initialParams.has('report')"),
+        && str_contains($shell, "initialParams.has('report')")
+        && str_contains($shell, "initialParams.has('afcase')"),
     'Existing support/report deep links must open the matching section in the new shell.'
 );
 
 $assert(
     str_contains($page, "Cache-Control: no-store, no-cache, must-revalidate")
         && str_contains($page, 'admin-shell.css?v=11')
-        && str_contains($page, 'admin-shell.js?v=6'),
+        && str_contains($page, 'admin-shell.js?v=7')
+        && str_contains($page, 'admin-antifraud.js?v=1'),
     'Admin-only rework must stay no-store and publish fresh child asset identities without changing the shared game launch owner.'
 );
 
