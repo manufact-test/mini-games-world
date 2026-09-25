@@ -123,9 +123,40 @@ final class PlayerReportService
     }
 
     /** @return list<array<string,mixed>> */
-    public function queue(int $limit = 100): array
+    public function queue(int $limit = 100, array $filters = []): array
     {
         $limit = max(1, min(200, $limit));
+        $mode = strtolower(trim((string)($filters['mode'] ?? 'active')));
+        $query = trim((string)($filters['query'] ?? ''));
+        $dateFrom = trim((string)($filters['date_from'] ?? ''));
+        $dateTo = trim((string)($filters['date_to'] ?? ''));
+
+        $where = [];
+        $parameters = [];
+        if ($mode === 'closed') {
+            $where[] = 'r.status = :queue_status';
+            $parameters['queue_status'] = 'closed';
+        } elseif ($mode !== 'all') {
+            $where[] = "r.status IN ('open','reviewing')";
+        }
+        if ($query !== '') {
+            $where[] = '(LOWER(r.report_id) LIKE :queue_query
+                OR LOWER(reporter.nickname) LIKE :queue_query
+                OR LOWER(target.nickname) LIKE :queue_query
+                OR LOWER(r.reason) LIKE :queue_query
+                OR LOWER(COALESCE(r.details, \'\')) LIKE :queue_query)';
+            $parameters['queue_query'] = '%' . strtolower($this->boundedText($query, 120)) . '%';
+        }
+        if (preg_match('/^\\d{4}-\\d{2}-\\d{2}$/', $dateFrom) === 1) {
+            $where[] = 'r.created_at_utc >= :queue_date_from';
+            $parameters['queue_date_from'] = $dateFrom . ' 00:00:00';
+        }
+        if (preg_match('/^\\d{4}-\\d{2}-\\d{2}$/', $dateTo) === 1) {
+            $where[] = 'r.created_at_utc < :queue_date_to';
+            $parameters['queue_date_to'] = (new DateTimeImmutable($dateTo, new DateTimeZone('UTC')))
+                ->modify('+1 day')->format('Y-m-d 00:00:00');
+        }
+
         $rows = $this->database->fetchAll(
             'SELECT r.report_id, r.reporter_mgw_id, r.target_mgw_id, r.reason, r.details,
                     r.related_match_id, r.status, r.created_at_utc, r.updated_at_utc,
@@ -133,10 +164,12 @@ final class PlayerReportService
                     reporter.nickname AS reporter_nickname, target.nickname AS target_nickname
              FROM mgw_player_reports r
              INNER JOIN mgw_users reporter ON reporter.mgw_id = r.reporter_mgw_id
-             INNER JOIN mgw_users target ON target.mgw_id = r.target_mgw_id
-             ORDER BY CASE r.status WHEN \'open\' THEN 0 WHEN \'reviewing\' THEN 1 ELSE 2 END,
+             INNER JOIN mgw_users target ON target.mgw_id = r.target_mgw_id'
+             . ($where !== [] ? ' WHERE ' . implode(' AND ', $where) : '')
+             . ' ORDER BY CASE r.status WHEN \'open\' THEN 0 WHEN \'reviewing\' THEN 1 ELSE 2 END,
                       r.created_at_utc DESC
-             LIMIT ' . $limit
+             LIMIT ' . $limit,
+            $parameters
         );
 
         return array_map(function (array $row): array {
