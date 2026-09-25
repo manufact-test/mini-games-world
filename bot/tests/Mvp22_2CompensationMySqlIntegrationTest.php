@@ -114,7 +114,7 @@ $runtime = new Mvp22_2MysqlMemoryStorage([
 ]);
 $service = new CompensationService($db, $ledger, $runtime);
 $recent = $service->recentOperations('MySQL Comp', 10);
-$assert(count($recent) === 2, 'MySQL operation browser must resolve canonical nickname search.');
+$assert(count($recent) === 1, 'MySQL operation browser must resolve only compensable debit operations.');
 $assert((string)$recent[0]['entry_id'] === (string)$original['entry_id'], 'MySQL operation browser must order newest source operation first.');
 
 $pending = $service->requestCompensation(
@@ -155,7 +155,7 @@ $integrity = (new LedgerIntegrityVerifier($db))->verifyAccountAsset($accountRef,
 $assert($integrity['ok'] === true, 'MySQL compensation must preserve ledger integrity.');
 $assert(count($service->history(10)) === 2, 'MySQL compensation audit must retain two records.');
 $recentAfter = $service->recentOperations('', 10);
-$assert(count($recentAfter) === 2, 'MySQL operation browser must exclude administrative compensation ledger rows.');
+$assert(count($recentAfter) === 1, 'MySQL operation browser must exclude credits and administrative compensation ledger rows.');
 
 $db->execute('SET FOREIGN_KEY_CHECKS=0');
 foreach ($tables as $table) $db->execute('DROP TABLE IF EXISTS ' . $table);
