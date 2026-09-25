@@ -292,7 +292,7 @@
 
       body.append(reason,time);
 
-      if (item.status === 'pending_confirmation') {
+      if (item.status !== 'applied') {
         const button = document.createElement('button');
         button.type = 'button';
         button.textContent = 'Продолжить подтверждение';
@@ -340,8 +340,7 @@
     confirmButton.disabled = busy;
     setMessage(
       statusBox,
-      'Компенсация подготовлена. Коins ещё не начислены — требуется второе подтверждение.'
-        .replace('Коins','Коины')
+      'Компенсация подготовлена. Коины ещё не начислены — требуется второе подтверждение.'
     );
   };
 
