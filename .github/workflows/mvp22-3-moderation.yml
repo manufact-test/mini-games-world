@@ -125,6 +125,23 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if [[ "${{ github.head_ref }}" == agent/mvp22-4-* ]]; then
+            git diff --exit-code "$base" "$head" -- \
+              bot/moderation.php \
+              bot/moderation/ModerationService.php \
+              bot/social/PlayerReportService.php \
+              bot/admin-reports.php \
+              bot/profile-v2.php \
+              bot/friends.php \
+              bot/invites.php \
+              bot/api.php \
+              app/assets/js/admin-reports.js \
+              app/assets/js/components/account-shortcuts.js \
+              app/assets/js/screens/friends-screen-v110.js \
+              app/assets/js/screens/home-screen.js \
+              app/assets/js/screens/profile-screen-v110.js
+            exit 0
+          fi
           bad=0
           while IFS= read -r path; do
             case "$path" in
