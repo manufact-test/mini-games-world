@@ -12,9 +12,11 @@ $invitesEndpoint = file_get_contents($root . '/invites.php') ?: '';
 $apiEndpoint = file_get_contents($root . '/api.php') ?: '';
 $profileEndpoint = file_get_contents($root . '/profile-v2.php') ?: '';
 $friendsUi = file_get_contents(dirname($root) . '/app/assets/js/screens/friends-screen-v110.js') ?: '';
+$homeUi = file_get_contents(dirname($root) . '/app/assets/js/screens/home-screen.js') ?: '';
 $profileUi = file_get_contents(dirname($root) . '/app/assets/js/screens/profile-screen-v110.js') ?: '';
 $adminUi = file_get_contents(dirname($root) . '/app/assets/js/admin-reports.js') ?: '';
 $client = file_get_contents(dirname($root) . '/app/assets/js/api/client.js') ?: '';
+$mainCss = file_get_contents(dirname($root) . '/app/assets/css/main.css') ?: '';
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -35,6 +37,15 @@ foreach ([
 $assert(str_contains($friendsUi, "['nickname','Недопустимый никнейм']"), 'Player report UI must expose nickname reports.');
 $assert(str_contains($friendsUi, "['avatar','Недопустимый аватар']"), 'Player report UI must expose avatar reports.');
 $assert(str_contains($friendsUi, "['stalling','Затягивание игры']"), 'Player report UI must expose stalling reports.');
+$assert(str_contains($homeUi, "document.getElementById('supportBtn')?.addEventListener('click',()=>openPlayerReportSheet())"), 'Main menu complaint entry must open the player-report flow instead of Support.');
+$assert(!str_contains($homeUi, "supportBtn')?.addEventListener('click',()=>openSupportForm('complaint'))"), 'Main menu complaint entry must never create a generic Support complaint ticket.');
+$assert(str_contains($homeUi, 'PLAYER_REPORT_REASONS'), 'Main menu player-report flow must expose the canonical moderation reasons.');
+$assert(str_contains($homeUi, "action:'lookup'"), 'Main menu player-report flow must let the user find a target player.');
+$assert(str_contains($homeUi, "action:'report'"), 'Main menu player-report flow must submit to PlayerReportService through the Friends API.');
+$assert(!str_contains($homeUi, '<option value="complaint">Жалоба</option>'), 'Support category selector must not masquerade as the player moderation flow.');
+$assert(str_contains($mainCss, '.support-ticket-select-wrap::after{'), 'Support select must retain a dedicated chevron owner.');
+$assert(str_contains($mainCss, 'border-right:2px solid currentColor;') && str_contains($mainCss, 'border-bottom:2px solid currentColor;'), 'Support select chevron must be geometry-based instead of the misaligned text glyph.');
+$assert(!str_contains($mainCss, "content:'⌄';"), 'Broken text-glyph Support arrows must not return.');
 
 $assert(str_contains($migration, 'mgw_moderation_actions'), 'Moderation actions must be durable.');
 $assert(str_contains($migration, 'mgw_moderation_appeals'), 'Appeals must be durable.');
