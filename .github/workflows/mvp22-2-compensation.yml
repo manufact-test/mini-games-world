@@ -1,0 +1,142 @@
+name: MVP-22.2 Compensation workflow
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/admin-compensation.php'
+      - 'bot/economy/CompensationService.php'
+      - 'bot/database/migrations/20260925_0062_create_compensations.php'
+      - 'bot/runtime/ProductionPrimaryApplicationEntrypoints.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
+      - 'bot/tests/Mvp22_2CompensationWorkflowTest.php'
+      - 'bot/tests/Mvp22_2CompensationMySqlIntegrationTest.php'
+      - 'bot/tests/Mvp22_2CompensationContractTest.php'
+      - 'app/admin.php'
+      - 'app/assets/js/admin-compensation.js'
+      - '.github/workflows/mvp15-8-economy-remote-config.yml'
+      - '.github/workflows/mvp22-admin-rework.yml'
+      - '.github/workflows/mvp22-2-compensation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compensation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          php -l bot/admin-compensation.php
+          php -l bot/economy/CompensationService.php
+          php -l bot/database/migrations/20260925_0062_create_compensations.php
+          php -l bot/runtime/ProductionPrimaryApplicationEntrypoints.php
+          php -l bot/tests/Mvp22_2CompensationWorkflowTest.php
+          php -l bot/tests/Mvp22_2CompensationMySqlIntegrationTest.php
+          php -l bot/tests/Mvp22_2CompensationContractTest.php
+          php -l app/admin.php
+          node --check app/assets/js/admin-compensation.js
+
+      - name: Compensation ledger workflow
+        run: php bot/tests/Mvp22_2CompensationWorkflowTest.php
+
+      - name: Compensation ownership and Admin contract
+        run: php bot/tests/Mvp22_2CompensationContractTest.php
+
+      - name: Preserve canonical ledger and DB-primary owners
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp15EconomyRemoteConfigTest.php
+
+      - name: No direct balance mutation
+        run: |
+          set -euo pipefail
+          ! grep -Eiq 'UPDATE[[:space:]]+mgw_balances' bot/economy/CompensationService.php
+          ! grep -Eiq 'INSERT[[:space:]]+INTO[[:space:]]+mgw_ledger_entries' bot/economy/CompensationService.php
+          grep -Fq 'LedgerWriteService' bot/economy/CompensationService.php
+          grep -Fq "LARGE_AMOUNT_THRESHOLD = 50000" bot/economy/CompensationService.php
+          grep -Fq "MAX_AMOUNT = 250000" bot/economy/CompensationService.php
+          grep -Fq "data-compensation-confirmation" app/admin.php
+          grep -Fq "action:'confirm'" app/assets/js/admin-compensation.js
+
+      - name: Exact staging fingerprint coverage
+        run: |
+          set -euo pipefail
+          manifest='bot/helpers/staging-e2e-runtime-files.txt'
+          grep -Fx 'bot/admin-compensation.php' "$manifest"
+          grep -Fx 'bot/economy/CompensationService.php' "$manifest"
+          grep -Fx 'bot/database/migrations/20260925_0062_create_compensations.php' "$manifest"
+          grep -Fx 'app/assets/js/admin-compensation.js' "$manifest"
+
+      - name: Scope guard
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp15-8-economy-remote-config.yml|.github/workflows/mvp22-admin-rework.yml|.github/workflows/mvp22-2-compensation.yml|app/admin.php|app/assets/js/admin-compensation.js|bot/admin-compensation.php|bot/economy/CompensationService.php|bot/database/migrations/20260925_0062_create_compensations.php|bot/runtime/ProductionPrimaryApplicationEntrypoints.php|bot/helpers/staging-e2e-runtime-files.txt|bot/tests/Mvp22_2CompensationWorkflowTest.php|bot/tests/Mvp22_2CompensationMySqlIntegrationTest.php|bot/tests/Mvp22_2CompensationContractTest.php)
+                ;;
+              *)
+                echo "Unexpected MVP-22.2 path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+          git diff --exit-code "$base" "$head" -- bot/games bot/support bot/ratings bot/tournaments bot/ledger
+
+  compensation-mysql:
+    name: Compensation workflow on MySQL 8.4
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_compensation_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring
+          coverage: none
+      - name: Lint MySQL proof
+        run: php -l bot/tests/Mvp22_2CompensationMySqlIntegrationTest.php
+      - name: Run MySQL proof
+        env:
+          MGW_COMPENSATION_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_compensation_ci;charset=utf8mb4
+          MGW_COMPENSATION_MYSQL_USER: root
+          MGW_COMPENSATION_MYSQL_PASS: root
+        run: php bot/tests/Mvp22_2CompensationMySqlIntegrationTest.php

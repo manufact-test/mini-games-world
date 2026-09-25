@@ -63,6 +63,7 @@ jobs:
           php -l bot/tests/Mvp22AdminShellReworkContractTest.php
           files=(
             app/assets/js/admin-shell.js
+            app/assets/js/admin-compensation.js
             app/assets/js/admin-support.js
             app/assets/js/admin-tournaments.js
             app/assets/js/admin-rating.js
@@ -115,6 +116,19 @@ jobs:
             done < <(git diff --name-only "$base" "$head")
             test "$bad" -eq 0
             git diff --exit-code "$base" "$head" -- bot/games bot/ratings bot/tournaments bot/economy bot/ledger
+          elif [[ "${{ github.head_ref }}" == agent/mvp22-2-compensation-* ]]; then
+            while IFS= read -r path; do
+              case "$path" in
+                .github/workflows/mvp15-8-economy-remote-config.yml|.github/workflows/mvp22-admin-rework.yml|.github/workflows/mvp22-2-compensation.yml|app/admin.php|app/assets/js/admin-compensation.js|bot/admin-compensation.php|bot/economy/CompensationService.php|bot/database/migrations/20260925_0062_create_compensations.php|bot/runtime/ProductionPrimaryApplicationEntrypoints.php|bot/helpers/staging-e2e-runtime-files.txt|bot/tests/Mvp22_2CompensationWorkflowTest.php|bot/tests/Mvp22_2CompensationMySqlIntegrationTest.php|bot/tests/Mvp22_2CompensationContractTest.php)
+                  ;;
+                *)
+                  echo "Unexpected Compensation successor path in Admin workflow: $path" >&2
+                  bad=1
+                  ;;
+              esac
+            done < <(git diff --name-only "$base" "$head")
+            test "$bad" -eq 0
+            git diff --exit-code "$base" "$head" -- bot/games bot/support bot/ratings bot/tournaments bot/ledger
           else
             allowed='^(\.github/workflows/(mvp18-5-reports-blocked-users|mvp20-8-rating-admin|mvp21-5-tournament-ready|mvp21-6-tournament-rounds|mvp21-7-tournament-technical-outcomes|mvp21-8-tournament-cancellation|mvp21-10-tournament-prize-review)\.yml|app/admin\.php|app/assets/css/admin-shell\.css|app/assets/js/admin-(shell|support|tournaments|rating|notifications|reports)\.js|bot/services/(TelegramService|AdminService)\.php|bot/tests/Mvp14WebAdminShellContractTest\.php|bot/tests/Mvp22AdminShellReworkContractTest\.php|\.github/workflows/mvp22-admin-rework\.yml)$'
             while IFS= read -r path; do

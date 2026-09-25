@@ -17,6 +17,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <link rel="stylesheet" href="./assets/css/admin-shell.css?v=11&replay=17-6&mvp22_1=support-tickets&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="./assets/js/admin-shell.js?v=6&replay=17-6&test-coins=staging" defer></script>
+  <script src="./assets/js/admin-compensation.js?v=1&mvp22_2=ledger-compensation-v1" defer></script>
   <script src="./assets/js/admin-reports.js?v=1&mvp18=reports" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
   <script src="./assets/js/admin-support.js?v=7&mvp22_1=admin-rework&support_focus=ticket-detail-v1&attachment_viewer=inline-v2&reply_files=managed-v1&reply_delivery=bell-verified-v2" defer></script>
@@ -24,7 +25,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <script src="./assets/js/admin-tournaments.js?v=17&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3&mvp21_5=corrective-v5&mvp21_6=fixture-progression-helper-v3&mvp21_8=corrective-v12&mvp21_8_cancel=cancellation-emergency-v1&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v2" defer></script>
 </head>
 <body>
-  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-support-api="../bot/admin-support.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php">
+  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-compensation-api="../bot/admin-compensation.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-support-api="../bot/admin-support.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php">
     <header class="mgw-admin__header">
       <div class="mgw-admin__title">
         <p class="mgw-admin__eyebrow">MINI GAMES WORLD</p>
@@ -575,6 +576,61 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
             <div class="mgw-admin__replay-list" data-replay-timeline></div>
             <h3>Снимки состояния</h3>
             <div class="mgw-admin__replay-list" data-replay-frames></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="mgw-admin__card mgw-admin__card--wide" data-admin-section="economy" data-compensation-card>
+        <div class="mgw-admin__card-head">
+          <h2>Компенсации</h2>
+          <span>Через канонический журнал операций</span>
+        </div>
+        <div class="mgw-admin__economy">
+          <div class="mgw-admin__replay-search">
+            <label class="mgw-admin__field">
+              <span>ID исходной операции</span>
+              <input data-compensation-operation type="text" maxlength="191" autocomplete="off" placeholder="entry_id или operation key">
+            </label>
+            <button type="button" data-compensation-lookup>Найти операцию</button>
+          </div>
+
+          <div class="mgw-admin__replay-status" data-compensation-lookup-status>
+            Сначала найдите исходную операцию. Баланс напрямую здесь не редактируется.
+          </div>
+          <div class="mgw-admin__replay-summary" data-compensation-operation-summary hidden></div>
+
+          <div class="mgw-admin__economy-meta">
+            <label class="mgw-admin__field">
+              <span>Сумма компенсации</span>
+              <input data-compensation-amount type="number" min="1" step="1" inputmode="numeric" placeholder="0">
+            </label>
+            <label class="mgw-admin__field">
+              <span>Причина</span>
+              <input data-compensation-reason type="text" maxlength="500" autocomplete="off" placeholder="Обязательная причина">
+            </label>
+          </div>
+
+          <div class="mgw-admin__economy-actions">
+            <button type="button" data-compensation-request disabled>Создать компенсацию</button>
+            <small data-compensation-limit-copy>Загрузка лимитов…</small>
+          </div>
+
+          <div class="mgw-admin__replay-status" data-compensation-status>
+            Компенсация создаёт отдельную компенсирующую запись ledger и не изменяет баланс напрямую.
+          </div>
+
+          <div class="mgw-admin__simulation" data-compensation-confirmation hidden>
+            <h3>Требуется второе подтверждение</h3>
+            <pre data-compensation-confirmation-copy>—</pre>
+            <div class="mgw-admin__economy-actions">
+              <button type="button" data-compensation-confirm>Подтвердить компенсацию</button>
+              <small>До второго подтверждения баланс пользователя не меняется.</small>
+            </div>
+          </div>
+
+          <div class="mgw-admin__history">
+            <h3>Последние компенсации</h3>
+            <div data-compensation-history><div class="mgw-admin__history-empty">Загрузка…</div></div>
           </div>
         </div>
       </article>
