@@ -144,6 +144,7 @@ final class AntiFraudCaseService
         return [
             'mode' => $mode,
             'cases' => array_map(fn(array $row): array => $this->normalizeCaseRow($row), $this->database->fetchAll($sql, $params)),
+            'recent_matches' => $this->recentMatches(),
             'decisions' => $this->decisionLabels(),
             'statuses' => $this->statusLabels(),
         ];
@@ -390,6 +391,47 @@ final class AntiFraudCaseService
             self::DECISION_MODERATION_REVIEW => 'Передать на модерацию',
             self::DECISION_RATING_REVIEW => 'Передать на проверку рейтинга',
         ];
+    }
+
+    private function recentMatches(int $limit = 20): array
+    {
+        $limit = max(1, min(50, $limit));
+        $matches = $this->database->fetchAll(
+            'SELECT match_id, game_type, status, winner_player_ref, finish_reason,
+                    created_at_utc, started_at_utc, finished_at_utc
+             FROM mgw_matches
+             ORDER BY COALESCE(finished_at_utc, started_at_utc, created_at_utc) DESC
+             LIMIT ' . $limit
+        );
+        if ($matches === []) return [];
+
+        $result = [];
+        foreach ($matches as $match) {
+            if (!is_array($match)) continue;
+            $matchId = trim((string)($match['match_id'] ?? ''));
+            if ($matchId === '') continue;
+            $players = $this->database->fetchAll(
+                'SELECT player_ref, mgw_id, display_name, player_type, result
+                 FROM mgw_match_players
+                 WHERE match_id = :match_id
+                 ORDER BY seat ASC',
+                ['match_id' => $matchId]
+            );
+            $result[] = [
+                'match_id' => $matchId,
+                'game_type' => (string)($match['game_type'] ?? ''),
+                'status' => (string)($match['status'] ?? ''),
+                'finish_reason' => $match['finish_reason'] ?? null,
+                'finished_at' => $match['finished_at_utc'] ?? $match['started_at_utc'] ?? $match['created_at_utc'] ?? null,
+                'players' => array_map(static fn(array $player): array => [
+                    'mgw_id' => trim((string)($player['mgw_id'] ?? '')),
+                    'display_name' => (string)($player['display_name'] ?? ''),
+                    'player_type' => (string)($player['player_type'] ?? ''),
+                    'result' => $player['result'] ?? null,
+                ], $players),
+            ];
+        }
+        return $result;
     }
 
     private function pairHistory(string $firstMgwId, string $secondMgwId): array
