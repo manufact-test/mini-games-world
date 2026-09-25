@@ -10,7 +10,18 @@
   const status = root.querySelector('[data-report-queue-status]');
   const list = root.querySelector('[data-report-queue-list]');
   const refresh = root.querySelector('[data-report-queue-refresh]');
+  const modeButtons = Array.from(root.querySelectorAll('[data-report-mode]'));
+  const queryInput = root.querySelector('[data-report-filter-query]');
+  const dateFromInput = root.querySelector('[data-report-filter-from]');
+  const dateToInput = root.querySelector('[data-report-filter-to]');
   const requestedCase = new URLSearchParams(window.location.search).get('report') || '';
+  let queueMode = requestedCase ? 'all' : 'active';
+  const reportFilters = () => ({
+    mode:queueMode,
+    query:String(queryInput?.value || '').trim(),
+    date_from:String(dateFromInput?.value || ''),
+    date_to:String(dateToInput?.value || ''),
+  });
   let busy = false;
   let adminRef = '';
   let moderationOptions = { restriction_scopes:{}, restriction_durations:[] };
@@ -21,7 +32,7 @@
       cache:'no-store',
       credentials:'same-origin',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({...payload, initData:telegram?.initData || ''}),
+      body:JSON.stringify({...payload, filters:payload.filters || reportFilters(), initData:telegram?.initData || ''}),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.ok !== true) throw new Error(String(data.error || 'Не удалось загрузить очередь жалоб.'));
@@ -417,7 +428,9 @@
     try {
       const data = await post({action:'snapshot'});
       applySnapshot(data);
-      status.textContent = 'Очередь загружена. Все санкции применяются вручную и сохраняются в истории.';
+      status.textContent = queueMode === 'closed'
+        ? 'Архив закрытых жалоб загружен. Используйте поиск или даты, чтобы найти нужную запись.'
+        : 'Активная очередь загружена. Закрытые жалобы находятся в отдельном архиве.';
       status.dataset.state = 'ok';
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : 'Не удалось загрузить очередь жалоб.';
@@ -449,5 +462,18 @@
   };
 
   refresh.addEventListener('click', () => void load());
+  modeButtons.forEach(button => button.addEventListener('click', () => {
+    queueMode = String(button.dataset.reportMode || 'active');
+    modeButtons.forEach(node => node.classList.toggle('is-active', node === button));
+    void load();
+  }));
+  queryInput?.addEventListener('keydown', event => {
+    if (event.key === 'Enter') void load();
+  });
+  dateFromInput?.addEventListener('change', () => void load());
+  dateToInput?.addEventListener('change', () => void load());
+  if (requestedCase) {
+    modeButtons.forEach(node => node.classList.remove('is-active'));
+  }
   load();
 })();
