@@ -99,15 +99,37 @@ $assertSame(2, $tournament['recipient_count'], 'tournament must accept the futur
 $assertSame('system_message', $db['notifications'][0]['type'], 'system event must remain a normal bell notification type');
 
 $db = $base();
+// A stale/duplicate runtime row with the same MGW-ID must not steal a Support bell
+// event from the exact authenticated transport owner supplied by Support.
+$db['users']['199'] = [
+    'id'=>'199',
+    'mgw_id'=>'MGW000000000000000000001',
+    'mgw_identity_provider'=>'development',
+];
 $supportEvent = $event('req-support-000001', 'support');
 $supportEvent['source_type'] = 'support';
 $supportEvent['audience_ref'] = 'ticket:SUP-260925-ABCDEF12';
 $supportEvent['recipient_mgw_ids'] = ['MGW000000000000000000001'];
+$supportEvent['recipient_legacy_user_ids'] = ['101'];
 $supportEvent['deep_link'] = 'support:ticket:SUP-260925-ABCDEF12';
 $support = $service->createEvent($db, $supportEvent, 'telegram:1', $now);
 $assertSame(1, $support['recipient_count'], 'support must accept an explicit case recipient snapshot');
+$assertSame('101', $db['notifications'][0]['user_id'], 'support must publish to the exact canonical legacy transport binding');
 $assertSame('support_message', $db['notifications'][0]['type'], 'support must use the same bell pipeline, not a support-specific store');
 $assertSame('support:ticket:SUP-260925-ABCDEF12', $db['notifications'][0]['deep_link'], 'support bell must retain the exact ticket deep link');
+
+$db = $base();
+$badSupportBinding = $event('req-support-000002', 'support');
+$badSupportBinding['source_type'] = 'support';
+$badSupportBinding['audience_ref'] = 'ticket:SUP-260925-ABCDEF13';
+$badSupportBinding['recipient_mgw_ids'] = ['MGW000000000000000000001'];
+$badSupportBinding['recipient_legacy_user_ids'] = ['102'];
+$badSupportBinding['deep_link'] = 'support:ticket:SUP-260925-ABCDEF13';
+$assertThrowsReason(
+    'recipient_binding_not_found',
+    fn() => $service->createEvent($db, $badSupportBinding, 'telegram:1', $now),
+    'support must fail closed when the transport binding does not belong to the requested MGW-ID'
+);
 
 $db = $base();
 $futureEvent = $event('req-future-000001', 'one');
@@ -159,9 +181,14 @@ foreach (['notification_event_id', 'source_type', 'audience_type', 'audience_ref
 }
 $producerSource = file_get_contents(dirname(__DIR__) . '/notifications/AdminNotificationEventService.php') ?: '';
 $endpointSource = file_get_contents(dirname(__DIR__) . '/admin-notifications.php') ?: '';
+$supportBridgeSource = file_get_contents(dirname(__DIR__) . '/support/SupportNotificationBridge.php') ?: '';
 $assertFalse(str_contains($producerSource, 'INSERT INTO mgw_notifications'), 'event producer must never create a parallel direct DB write path');
 $assertFalse(str_contains($endpointSource, 'INSERT INTO mgw_notifications'), 'admin endpoint must never bypass canonical JSON -> DB notification mirror');
 $assertFalse(str_contains($producerSource, 'FirebaseMessaging'), 'Android push implementation is outside MVP-18.6');
 $assertFalse(str_contains($endpointSource, 'fcm_token'), 'FCM token ownership is outside MVP-18.6');
+$assertTrue(str_contains($supportBridgeSource, 'mgw_account_ownership'), 'Support reply delivery must resolve the canonical account ownership transport binding');
+$assertTrue(str_contains($supportBridgeSource, "'recipient_legacy_user_ids'"), 'Support must pass the exact canonical legacy recipient into the existing bell producer');
+$assertTrue(str_contains($supportBridgeSource, 'NotificationService'), 'Support reply delivery must verify the event through the canonical bell feed owner');
+$assertTrue(str_contains($supportBridgeSource, "'feed_verified'"), 'Support reply delivery must expose positive feed verification before Admin reports success');
 
 fwrite(STDOUT, "Mvp18_6NotificationPipelineContractTest: {$assertions} assertions passed\n");
