@@ -1032,8 +1032,9 @@ function normalizeItem(value){
 }
 
 function safeDeepLink(value){
-  const link = String(value || '');
-  return ['home','profile','store','store:orders','friends:requests'].includes(link) ? link : '';
+  const link = String(value || '').trim();
+  if (['home','profile','store','store:orders','friends:requests'].includes(link)) return link;
+  return /^support:ticket:SUP-[0-9]{6}-[A-F0-9]{8}$/i.test(link) ? link : '';
 }
 
 function isRetainedItem(item){
