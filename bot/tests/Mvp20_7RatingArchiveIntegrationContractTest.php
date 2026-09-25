@@ -32,12 +32,16 @@ $assertTrue(!str_contains($archive, 'INSERT INTO mgw_game_rating_scores'), 'Arch
 
 $assertTrue(str_contains($endpoint, "mode === 'overview'"), 'Public archive endpoint must expose overview mode.');
 $assertTrue(str_contains($endpoint, "mode === 'season'"), 'Public archive endpoint must expose frozen season top100 mode.');
-$assertTrue(str_contains($profile, "'rating_archive'=>$ratingArchive"), 'Profile API must expose personal season history.');
+$assertTrue(str_contains($profile, "'rating_archive'=>\$ratingArchive"), 'Profile API must expose personal season history.');
 $assertTrue(str_contains($bootstrap, "ratings/RatingArchiveService.php"), 'Runtime bootstrap must load the archive owner.');
 
 $assertTrue(str_contains($api, 'RATING_ARCHIVE_URL'), 'Client API must have one rating archive endpoint owner.');
 $assertTrue(str_contains($api, 'ratingArchiveOverview'), 'Client API must expose overview read.');
 $assertTrue(str_contains($api, 'ratingArchiveSeason'), 'Client API must expose season archive read.');
+$assertTrue(str_contains($api, 'async function requestRatingArchive(payload)'), 'Rating archive reads must have one bounded read-only retry owner.');
+$assertTrue(str_contains($api, "ratingArchiveOverview: () => requestRatingArchive({ mode:'overview' })"), 'Overview archive must use the bounded retry owner.');
+$assertTrue(str_contains($api, "requestRatingArchive({ mode:'season'"), 'Season archive must use the bounded retry owner.');
+$assertTrue(str_contains($api, 'status < 500 || status > 599'), 'Rating archive retry must remain limited to transient 5xx responses.');
 $assertTrue(str_contains($tournaments, 'rating-archive-v1'), 'Arena must publish the MVP-20.7 archive surface identity.');
 $assertTrue(str_contains($tournaments, 'data-rating-history-mode="seasons"'), 'Arena archive must expose season/tournament mode tabs.');
 $assertTrue(str_contains($profileScreen, 'profileRatingArchive'), 'Profile must consume the personal rating history snapshot.');
