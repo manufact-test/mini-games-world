@@ -179,6 +179,8 @@
     pendingCompensation = null;
     confirmation.hidden = true;
     confirmationCopy.textContent = '—';
+    confirmButton.disabled = true;
+    requestButton.disabled = busy || !currentOperation;
     activeRequestToken = '';
   };
 
