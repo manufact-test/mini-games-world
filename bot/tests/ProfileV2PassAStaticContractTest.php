@@ -59,7 +59,7 @@ $assertNotContains('.sheet #settingsBtn', $mainCss, 'Settings must not need a on
 $assertContains("settingsBtn:'ui/navigation/settings.webp'", $visuals, 'Settings must use the accepted Shield King metallic settings icon.');
 $assertContains("rulesBtn:'ui/actions/rules.webp'", $visuals, 'Settings and neighboring rows must share the same dynamic metallic icon owner.');
 
-$assertContains('home-screen.js?v=80&mvp16=settings-row-owner', $versionManifest, 'Settings row cache key must stay current.');
+$assertContains('home-screen.js?v=88&mvp16=settings-row-owner', $versionManifest, 'Settings row cache key must stay current.');
 $assertions++;
 if (preg_match('/profile-screen-v110\.js\?v=(\d+)[^\']*mvp16=profile-pass-a/', $versionManifest, $profileVersionMatch) !== 1 || (int)$profileVersionMatch[1] < 1119) {
     throw new RuntimeException('Profile pass A cache identity must remain at or beyond the accepted controller baseline while allowing later bounded Profile work.');
