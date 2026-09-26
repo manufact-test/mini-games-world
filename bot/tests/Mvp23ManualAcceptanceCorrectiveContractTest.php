@@ -76,8 +76,8 @@ $assert(
         && str_contains($main, "account-shortcuts.js?v=48")
         && str_contains($versionManifest, "'./assets/js/components/account-shortcuts.js?v=48'")
         && !str_contains($versionManifest, 'mvp23=account-data-first-open-no-flash-v1')
-        && str_contains($stagingEntry, "$accountShortcutsImportKey = './assets/js/components/account-shortcuts.js?v=48';")
-        && str_contains($stagingEntry, "$imports[$accountShortcutsImportKey] .= '&mvp23=account-data-first-open-no-flash-v1';"),
+        && str_contains($stagingEntry, "\$accountShortcutsImportKey = './assets/js/components/account-shortcuts.js?v=48';")
+        && str_contains($stagingEntry, "\$imports[\$accountShortcutsImportKey] .= '&mvp23=account-data-first-open-no-flash-v1';"),
     'First-open account-data corrective must keep the canonical manifest target intact and use the active staging entry only for the acceptance cache token.'
 );
 
