@@ -274,6 +274,8 @@ $assertSame(false, AccountReauthGuard::initDataIsFresh($freshInit, strtotime('20
 $dueAt = new DateTimeImmutable((string)$scheduled['execute_after_utc'], new DateTimeZone('UTC'));
 $retention = $service->runRetention($dueAt->modify('+1 second'));
 $assertSame(1, $retention['deletions_completed'], 'Due deletion must finalize exactly once');
+$assertSame(1, $retention['exports_expired'], 'The same retention pass must clean already-expired export artifacts');
+$assertSame(false, is_file($zipPath), 'Expired ZIP must be removed from private storage');
 
 $user = $db->fetchAll('SELECT * FROM mgw_users WHERE mgw_id=:mgw_id', ['mgw_id'=>$mgwId])[0];
 $assertSame('anonymized', $user['status'], 'Finalized account must be anonymized');
@@ -310,8 +312,7 @@ $assertSame(0, $secondRetention['deletions_completed'], 'Deletion finalization m
 
 $expiry = new DateTimeImmutable((string)$export['artifact_expires_at_utc'], new DateTimeZone('UTC'));
 $expired = $service->runRetention($expiry->modify('+1 second'));
-$assertSame(1, $expired['exports_expired'], 'Expired export artifact must be cleaned by retention job');
-$assertSame(false, is_file($zipPath), 'Expired ZIP must be removed from private storage');
+$assertSame(0, $expired['exports_expired'], 'Already-cleaned export retention must be idempotent');
 
 $removeTree = static function (string $path) use (&$removeTree): void {
     if (!is_dir($path)) return;
