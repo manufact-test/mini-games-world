@@ -1926,6 +1926,84 @@
   border-color:#725f2b;
   background:#17150f;
 }
+.mgw-admin__operations-item--details{
+  padding:0;
+  overflow:hidden;
+}
+.mgw-admin__operations-item--details>summary{
+  position:relative;
+  display:grid;
+  gap:7px;
+  padding:10px 34px 10px 10px;
+  cursor:pointer;
+  list-style:none;
+}
+.mgw-admin__operations-item--details>summary::-webkit-details-marker{display:none}
+.mgw-admin__operations-item--details>summary::after{
+  content:"+";
+  position:absolute;
+  top:50%;
+  right:11px;
+  transform:translateY(-50%);
+  color:#9598a3;
+  font-size:16px;
+  line-height:1;
+}
+.mgw-admin__operations-item--details[open]>summary::after{content:"−"}
+.mgw-admin__operations-item--details[open]>summary{
+  border-bottom:1px solid #292b34;
+  background:#121319;
+}
+.mgw-admin__operations-editor--details{
+  padding:10px;
+}
+[data-admin-operations] textarea{
+  box-sizing:border-box;
+  height:auto!important;
+  min-height:76px!important;
+  max-height:180px;
+  resize:vertical;
+}
+[data-admin-operations] input[aria-invalid="true"],
+[data-admin-operations] textarea[aria-invalid="true"],
+[data-admin-operations] select[aria-invalid="true"]{
+  border-color:#a95260!important;
+  box-shadow:0 0 0 2px rgba(169,82,96,.16);
+}
+.mgw-admin__operations-feedback{
+  padding:8px 10px;
+  border:1px solid #343640;
+  border-radius:9px;
+  background:#101116;
+  color:#c8cad2;
+  font-size:9px;
+  line-height:1.45;
+}
+.mgw-admin__operations-feedback[data-state="ok"]{border-color:#28563f;color:#a9e3c2}
+.mgw-admin__operations-feedback[data-state="error"]{border-color:#713d45;color:#f2a9b4}
+.mgw-admin__operations-toast{
+  position:fixed;
+  z-index:120;
+  left:max(12px,calc((100vw - 760px)/2 + 12px));
+  right:max(12px,calc((100vw - 760px)/2 + 12px));
+  bottom:calc(70px + env(safe-area-inset-bottom));
+  padding:10px 12px;
+  border:1px solid #28563f;
+  border-radius:11px;
+  background:rgba(15,23,19,.96);
+  color:#b9eccf;
+  box-shadow:0 12px 36px rgba(0,0,0,.38);
+  font-size:10px;
+  font-weight:750;
+  line-height:1.45;
+  text-align:center;
+}
+.mgw-admin__operations-toast[data-state="error"]{
+  border-color:#713d45;
+  background:rgba(31,17,20,.97);
+  color:#f2b7bf;
+}
+.mgw-admin__operations-pager{margin-top:2px}
 .mgw-admin__operations-item-head{
   display:flex;
   align-items:flex-start;

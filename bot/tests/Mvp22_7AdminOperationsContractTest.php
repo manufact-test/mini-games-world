@@ -30,7 +30,7 @@ $assert(
     str_contains($page, 'data-admin-nav-target="operations">Задачи и релизы</button>')
         && str_contains($page, 'data-admin-section="operations" data-admin-operations')
         && str_contains($page, 'data-operations-api="../bot/admin-operations.php"')
-        && str_contains($page, 'admin-operations.js?v=1&mvp22_7=tasks-plans-releases-v1')
+        && str_contains($page, 'admin-operations.js?v=2&mvp22_7=tasks-compact-ru-v2')
         && str_contains($shell, "operations:['Задачи и релизы'"),
     'MVP-22.7 must be a first-class Web Admin workspace.'
 );
@@ -38,8 +38,8 @@ $assert(
 foreach ([
     'Регулярные задачи',
     'Подготовка следующего рейтингового сезона',
-    'Future Plans',
-    'Release log',
+    'Планы на будущее',
+    'Журнал релизов',
     'Ответственный',
     'Результат / комментарий',
     'Известные проблемы',
@@ -95,7 +95,7 @@ $assert(
         && str_contains($service, 'PLAN_CATEGORIES')
         && str_contains($migration, 'plan_status')
         && str_contains($migration, 'category'),
-    'Future Plans must persist statuses and categories.'
+    'Future plans must persist statuses and categories.'
 );
 
 $assert(
@@ -105,7 +105,7 @@ $assert(
         && str_contains($service, 'release_sha')
         && str_contains($service, 'https://github.com/manufact-test/mini-games-world/')
         && str_contains($service, 'Старые релизы не восстанавливаются задним числом.'),
-    'Release log must preserve version/SHA/known issues/rollback reference without invented history.'
+    'Release history must preserve version/SHA/known issues/rollback reference without invented history.'
 );
 
 $assert(
@@ -129,6 +129,26 @@ $assert(
         && str_contains($css, '.mgw-admin__operations-kpis')
         && str_contains($css, '@media(max-width:520px)'),
     'Operations workspace must have isolated responsive styling.'
+);
+
+$assert(
+    str_contains($page, 'data-operations-task-feedback')
+        && str_contains($client, 'const requireValue =')
+        && str_contains($client, 'focusInvalid')
+        && str_contains($client, 'renderPagedList')
+        && str_contains($client, "listPages = {tasks:1, closed:1, plans:1, releases:1}")
+        && str_contains($css, '.mgw-admin__operations-item--details')
+        && str_contains($css, '[data-admin-operations] textarea')
+        && str_contains($css, 'height:auto!important'),
+    'Manual acceptance corrective must surface validation, keep editors collapsed and bound long operation lists.'
+);
+
+$assert(
+    !str_contains($page, '<summary>Future Plans</summary>')
+        && !str_contains($page, '<summary>Release log</summary>')
+        && !str_contains($page, 'Текущая runtime-сборка')
+        && !str_contains($page, '<strong>READY</strong>'),
+    'Operator-facing MVP-22.7 copy must stay Russian.'
 );
 
 $assert(
