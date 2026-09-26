@@ -226,6 +226,11 @@ $storage->transaction(static function (array &$data) use ($legacy): void {
         'player_names'=>[$legacy=>'PlayerOne','other'=>'Other'],
         'winner_id'=>$legacy,
     ];
+    $data['queue'][] = ['id'=>'q-json','user_id'=>$legacy,'room'=>'match'];
+    $data['notifications'][] = ['id'=>'n-json','user_id'=>$legacy,'message'=>'private'];
+    $data['transactions'][] = ['id'=>'tx-json','user_id'=>$legacy,'note'=>$legacy];
+    $data['support'][] = ['id'=>'support-json','user_id'=>$legacy,'message'=>$legacy];
+    $data['payments'][] = ['id'=>'payment-json','user_id'=>$legacy,'note'=>$legacy];
 });
 
 $config = [
@@ -306,6 +311,12 @@ $assertSame(str_repeat('c',64), (string)$ledger['entry_sha256'], 'Append-only le
 $runtime = $storage->readOnly(static fn(array $data): array => $data);
 $assert(!isset($runtime['users'][$legacy]), 'Legacy runtime user must be removed');
 $assert(!in_array($legacy, array_map('strval', $runtime['games']['g1']['player_ids'] ?? []), true), 'Legacy runtime game references must be tombstoned');
+$assertSame(0, count($runtime['queue'] ?? []), 'Legacy runtime matchmaking queue must be removed');
+$assertSame(0, count($runtime['notifications'] ?? []), 'Legacy runtime personal notifications must be removed');
+$assertSame($legacy, (string)($runtime['transactions'][0]['user_id'] ?? ''), 'Rollback transactions must remain byte-stable');
+$assertSame($legacy, (string)($runtime['transactions'][0]['note'] ?? ''), 'Rollback transaction payload must not be recursively rewritten');
+$assertSame($legacy, (string)($runtime['support'][0]['user_id'] ?? ''), 'Rollback support history must remain untouched');
+$assertSame($legacy, (string)($runtime['payments'][0]['user_id'] ?? ''), 'Rollback payment history must remain untouched');
 
 $secondRetention = $service->runRetention($dueAt->modify('+2 seconds'));
 $assertSame(0, $secondRetention['deletions_completed'], 'Deletion finalization must be idempotent');
