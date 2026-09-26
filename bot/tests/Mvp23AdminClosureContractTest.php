@@ -85,7 +85,7 @@ $assert(
 );
 
 $assert(
-    str_contains($systemService, "if ($environment !== 'production')")
+    str_contains($systemService, "if (\$environment !== 'production')")
         && str_contains($systemService, 'Запуск на боевом сервере нельзя выполнить из тестовой или локальной среды.')
         && str_contains($systemService, 'READINESS_THRESHOLD = 500')
         && str_contains($systemService, 'staging_accepted_sha')
