@@ -26,9 +26,17 @@ final class RuntimeAccountIdentityResolver
         }
 
         $database = $this->database ?? PdoConnectionFactory::create($databaseConfig);
+        $initDataMaxAge = max(60, (int)($this->config['telegram_init_data_max_age_sec'] ?? 86400));
+        $initDataClockSkew = max(0, (int)($this->config['telegram_init_data_clock_skew_sec'] ?? 300));
+        $deletedIdentityBlockSec = max(
+            300,
+            (int)($this->config['account_deleted_identity_block_sec'] ?? ($initDataMaxAge + $initDataClockSkew))
+        );
         $accounts = new AccountIdentityService(
             $database,
-            (int)($this->config['mgw_account_session_ttl_sec'] ?? 2592000)
+            (int)($this->config['mgw_account_session_ttl_sec'] ?? 2592000),
+            (string)($this->config['bot_token'] ?? ''),
+            $deletedIdentityBlockSec
         );
         $identity = $accounts->resolveTelegramUser($user, $sessionId);
         $user['mgw_id'] = $identity['mgw_id'];
