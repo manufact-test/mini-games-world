@@ -108,7 +108,7 @@ final class AntiFraudCaseService
         }
 
         $requestedPerPage = (int)($filters['per_page'] ?? 12);
-        $perPage = max(5, min(50, $maxPageSize, $requestedPerPage > 0 ? $requestedPerPage : 12));
+        $perPage = max(1, min(50, $maxPageSize, $requestedPerPage > 0 ? $requestedPerPage : 12));
         $page = max(1, min(100000, (int)($filters['page'] ?? 1)));
 
         $queryWhere = [];
