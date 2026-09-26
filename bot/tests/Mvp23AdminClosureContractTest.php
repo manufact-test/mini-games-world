@@ -144,10 +144,11 @@ $assert(
 );
 
 $assert(
-    !str_contains($antifraud, 'autoBan')
-        && !str_contains($antifraud, 'auto_ban')
-        && str_contains($antifraud, 'case'),
-    'Anti-fraud signals must remain review/case based rather than one-signal automatic bans.'
+    str_contains($antifraud, "'auto_ban' => false")
+        && str_contains($antifraud, 'createCase')
+        && str_contains($antifraud, 'takeInReview')
+        && str_contains($antifraud, 'resolve'),
+    'Anti-fraud signals must remain review/case based with automatic banning explicitly disabled.'
 );
 
 $assert(
