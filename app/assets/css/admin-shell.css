@@ -1092,3 +1092,303 @@
     height:8px;
   }
 }
+
+
+/* MVP-22 · full Web Admin UX scale audit v1 */
+.mgw-admin__pager{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  margin-top:10px;
+}
+.mgw-admin__pager button{
+  appearance:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:36px;
+  height:36px;
+  padding:0 9px;
+  border:1px solid #3a3c47;
+  border-radius:9px;
+  background:#14151b;
+  color:#ececf1;
+  font:inherit;
+  font-size:11px;
+  font-weight:850;
+  cursor:pointer;
+}
+.mgw-admin__pager button:hover{border-color:#6557d9;background:#1c1930}
+.mgw-admin__pager button:disabled{opacity:.34;cursor:default}
+.mgw-admin__pager span{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:76px;
+  height:36px;
+  padding:0 10px;
+  border:1px solid #2d2f38;
+  border-radius:9px;
+  background:#0d0e12;
+  color:#a6a8b2;
+  font-size:9px;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+.mgw-admin__technical-disclosure,
+.mgw-admin__list-disclosure{
+  overflow:hidden;
+  border:1px solid #292b34;
+  border-radius:12px;
+  background:#0d0e12;
+}
+.mgw-admin__technical-disclosure>summary,
+.mgw-admin__list-disclosure>summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:11px 12px;
+  color:#d2d3da;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+  list-style:none;
+}
+.mgw-admin__technical-disclosure>summary::-webkit-details-marker,
+.mgw-admin__list-disclosure>summary::-webkit-details-marker{display:none}
+.mgw-admin__technical-disclosure>summary::after,
+.mgw-admin__list-disclosure>summary::after{
+  content:"+";
+  flex:0 0 auto;
+  color:#8f91a0;
+  font-size:16px;
+}
+.mgw-admin__technical-disclosure[open]>summary::after,
+.mgw-admin__list-disclosure[open]>summary::after{content:"−"}
+.mgw-admin__technical-disclosure[open]>summary,
+.mgw-admin__list-disclosure[open]>summary{border-bottom:1px solid #252730}
+.mgw-admin__list-disclosure>summary>span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.mgw-admin__list-disclosure>summary strong{color:#e8e8ed;font-size:12px}
+.mgw-admin__list-disclosure>summary small{color:#7e808b;font-size:9px;font-weight:650}
+.mgw-admin__list-disclosure>.mgw-admin__history,
+.mgw-admin__list-disclosure>[data-notification-event-list],
+.mgw-admin__list-disclosure>[data-rating-jobs]{
+  padding:10px;
+}
+.mgw-admin__technical-disclosure>pre,
+.mgw-admin__rating-rehearsal-wrap>pre{
+  max-height:420px;
+  margin:0!important;
+  overflow:auto;
+  border:0!important;
+  border-radius:0!important;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.mgw-admin__system-summary{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  margin-bottom:9px;
+  padding:11px 12px;
+  border:1px solid #292b34;
+  border-radius:11px;
+  background:#101116;
+}
+.mgw-admin__system-summary strong{color:#ececf1;font-size:12px}
+.mgw-admin__system-summary span{color:#858792;font-size:10px;line-height:1.45}
+.mgw-admin__compact-search{margin-bottom:2px}
+
+/* Long thread stays a workspace, not an endless page. */
+.mgw-admin__support-thread{
+  max-height:min(540px,52vh);
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:#6557d9 #171820;
+}
+.mgw-admin__support-thread::-webkit-scrollbar,
+.mgw-admin__operation-picker-list::-webkit-scrollbar,
+.mgw-admin__af-review-tabs::-webkit-scrollbar{
+  width:8px;
+  height:8px;
+}
+.mgw-admin__support-thread::-webkit-scrollbar-track,
+.mgw-admin__operation-picker-list::-webkit-scrollbar-track,
+.mgw-admin__af-review-tabs::-webkit-scrollbar-track{
+  background:#171820;
+  border-radius:999px;
+}
+.mgw-admin__support-thread::-webkit-scrollbar-thumb,
+.mgw-admin__operation-picker-list::-webkit-scrollbar-thumb,
+.mgw-admin__af-review-tabs::-webkit-scrollbar-thumb{
+  background:linear-gradient(90deg,#5d4fd2,#7a69ff);
+  border:2px solid #171820;
+  border-radius:999px;
+}
+
+/* In-app picker avoids Android full-screen native selects for operation history. */
+.mgw-admin__operation-picker{position:relative;min-width:0}
+.mgw-admin__operation-picker-trigger{
+  appearance:none;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  box-sizing:border-box;
+  width:100%;
+  min-height:42px;
+  padding:9px 11px;
+  border:1px solid #30323b;
+  border-radius:10px;
+  background:#0d0e12;
+  color:#eeeef2;
+  font:inherit;
+  font-size:11px;
+  text-align:left;
+  cursor:pointer;
+}
+.mgw-admin__operation-picker-trigger>span{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mgw-admin__operation-picker-trigger>b{flex:0 0 auto;color:#9b9da7;font-size:15px}
+.mgw-admin__operation-picker-trigger[aria-expanded="true"]{
+  border-color:#6557d9;
+  box-shadow:0 0 0 2px rgba(101,87,217,.14);
+}
+.mgw-admin__operation-picker-list{
+  position:absolute;
+  z-index:30;
+  top:calc(100% + 6px);
+  left:0;
+  right:0;
+  max-height:320px;
+  overflow:auto;
+  padding:6px;
+  border:1px solid #393b46;
+  border-radius:12px;
+  background:#111218;
+  box-shadow:0 18px 48px rgba(0,0,0,.45);
+  scrollbar-width:thin;
+  scrollbar-color:#6557d9 #171820;
+}
+.mgw-admin__operation-picker-item{
+  appearance:none;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  width:100%;
+  padding:10px;
+  border:0;
+  border-bottom:1px solid #252730;
+  background:transparent;
+  color:#eeeef2;
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+.mgw-admin__operation-picker-item:last-child{border-bottom:0}
+.mgw-admin__operation-picker-item:hover,
+.mgw-admin__operation-picker-item[aria-selected="true"]{border-radius:8px;background:#1b1928}
+.mgw-admin__operation-picker-item strong{font-size:11px;line-height:1.35}
+.mgw-admin__operation-picker-item span{color:#a3a5af;font-size:10px}
+.mgw-admin__operation-picker-item small{
+  overflow:hidden;
+  color:#686a74;
+  font-size:8px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mgw-admin__operation-picker-empty{padding:12px;color:#8e909a;font-size:10px;line-height:1.45}
+
+/* Notification and prize-review rows open only when detail is needed. */
+.mgw-admin__notification-event,
+.mgw-admin__tournament-review-item{
+  display:block!important;
+  padding:0!important;
+  overflow:hidden;
+}
+.mgw-admin__notification-event>summary,
+.mgw-admin__tournament-review-item>summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 11px;
+  cursor:pointer;
+  list-style:none;
+}
+.mgw-admin__notification-event>summary::-webkit-details-marker,
+.mgw-admin__tournament-review-item>summary::-webkit-details-marker{display:none}
+.mgw-admin__notification-event>summary>span,
+.mgw-admin__tournament-review-item>summary>span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.mgw-admin__notification-event>summary strong,
+.mgw-admin__tournament-review-item>summary strong{
+  overflow:hidden;
+  color:#e7e8ed;
+  font-size:11px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mgw-admin__notification-event>summary small,
+.mgw-admin__tournament-review-item>summary small{color:#858792;font-size:9px}
+.mgw-admin__notification-event>summary>b,
+.mgw-admin__tournament-review-item>summary>b{
+  flex:0 0 auto;
+  padding:3px 7px;
+  border-radius:999px;
+  background:#20212a;
+  color:#bbbcc6;
+  font-size:8px;
+}
+.mgw-admin__notification-event-body,
+.mgw-admin__tournament-review-body{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  padding:10px 11px;
+  border-top:1px solid #252730;
+}
+.mgw-admin__notification-event-body p,
+.mgw-admin__tournament-review-body p{margin:0;color:#b2b4bd;font-size:10px;line-height:1.5}
+.mgw-admin__notification-event-body code{color:#777984;font-size:8px;overflow-wrap:anywhere}
+
+/* Multi-tab review is a proper swipeable rail on narrow screens. */
+@media(max-width:760px){
+  .mgw-admin__af-review-tabs{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    gap:7px;
+    margin:0 -2px;
+    padding:0 2px 13px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch;
+    touch-action:pan-x pan-y;
+    scroll-snap-type:x proximity;
+    scrollbar-width:thin;
+    scrollbar-color:#6557d9 #171820;
+  }
+  .mgw-admin__af-review-tabs button{
+    flex:0 0 auto!important;
+    width:auto!important;
+    min-width:max-content;
+    scroll-snap-align:start;
+  }
+  .mgw-admin__operation-picker-list{position:static;max-height:280px;margin-top:6px}
+  .mgw-admin__pager{
+    position:sticky;
+    bottom:0;
+    z-index:4;
+    margin:10px -3px -3px;
+    padding:8px 3px calc(8px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,rgba(13,14,18,.08),#0d0e12 38%);
+  }
+  .mgw-admin__pager span{min-width:64px;font-size:8px}
+}
