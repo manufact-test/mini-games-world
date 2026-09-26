@@ -323,6 +323,7 @@ final class AccountDataLifecycleService
             'deletions_completed'=>0,
             'deletions_failed'=>0,
             'exports_expired'=>0,
+            'identity_tombstones_expired'=>0,
         ];
 
         $due = $this->database->fetchAll(
@@ -388,6 +389,29 @@ final class AccountDataLifecycleService
                 ['updated_at'=>$this->format($now),'request_id'=>$requestId]
             );
             $summary['exports_expired']++;
+        }
+
+        if ($this->tableExists('mgw_deleted_identity_tombstones')) {
+            $expiredTombstones = $this->database->fetchAll(
+                'SELECT provider, provider_subject_hmac
+                 FROM mgw_deleted_identity_tombstones
+                 WHERE block_until_utc<=:now
+                 ORDER BY block_until_utc ASC
+                 LIMIT ' . max(1, min(500, $limit * 4)),
+                ['now'=>$this->format($now)]
+            );
+            foreach ($expiredTombstones as $row) {
+                if (!is_array($row)) continue;
+                $provider = trim((string)($row['provider'] ?? ''));
+                $hmac = trim((string)($row['provider_subject_hmac'] ?? ''));
+                if ($provider === '' || $hmac === '') continue;
+                $this->database->execute(
+                    'DELETE FROM mgw_deleted_identity_tombstones
+                     WHERE provider=:provider AND provider_subject_hmac=:provider_subject_hmac',
+                    ['provider'=>$provider,'provider_subject_hmac'=>$hmac]
+                );
+                $summary['identity_tombstones_expired']++;
+            }
         }
 
         return $summary;
@@ -461,11 +485,23 @@ final class AccountDataLifecycleService
 
             if ($this->tableExists('mgw_identities')) {
                 $identities = $database->fetchAll(
-                    'SELECT identity_id FROM mgw_identities WHERE mgw_id=:mgw_id',
+                    'SELECT identity_id, provider, provider_subject
+                     FROM mgw_identities WHERE mgw_id=:mgw_id',
                     ['mgw_id'=>$mgwId]
                 );
                 foreach ($identities as $identity) {
                     $identityId = (string)($identity['identity_id'] ?? '');
+                    $provider = trim((string)($identity['provider'] ?? ''));
+                    $providerSubject = trim((string)($identity['provider_subject'] ?? ''));
+                    if ($provider !== '' && $providerSubject !== '') {
+                        $this->storeDeletedIdentityReplayTombstone(
+                            $database,
+                            $provider,
+                            $providerSubject,
+                            $requestId,
+                            $now
+                        );
+                    }
                     $subject = 'deleted:' . substr(hash('sha256', $tombstone . '|identity|' . $identityId), 0, 48);
                     $database->execute(
                         'UPDATE mgw_identities
@@ -974,6 +1010,56 @@ final class AccountDataLifecycleService
         return $this->database->driver() === 'mysql'
             ? chr(96) . $identifier . chr(96)
             : '"' . $identifier . '"';
+    }
+
+    private function storeDeletedIdentityReplayTombstone(
+        DatabaseConnectionInterface $database,
+        string $provider,
+        string $providerSubject,
+        string $requestId,
+        DateTimeImmutable $now
+    ): void {
+        if (!$this->tableExists('mgw_deleted_identity_tombstones')) return;
+        $secret = trim((string)($this->config['bot_token'] ?? ''));
+        if ($secret === '') {
+            throw new RuntimeException('Deleted identity replay protection secret is unavailable.');
+        }
+
+        $hmac = hash_hmac(
+            'sha256',
+            "mgw-deleted-identity-v1\n" . $provider . "\n" . $providerSubject,
+            $secret
+        );
+        $blockUntil = $this->format($now->modify('+' . $this->deletedIdentityBlockSec() . ' seconds'));
+        $database->execute(
+            'DELETE FROM mgw_deleted_identity_tombstones
+             WHERE provider=:provider AND provider_subject_hmac=:provider_subject_hmac',
+            ['provider'=>$provider,'provider_subject_hmac'=>$hmac]
+        );
+        $database->execute(
+            'INSERT INTO mgw_deleted_identity_tombstones (
+                provider, provider_subject_hmac, deletion_request_id, block_until_utc, created_at_utc
+             ) VALUES (
+                :provider, :provider_subject_hmac, :deletion_request_id, :block_until_utc, :created_at_utc
+             )',
+            [
+                'provider'=>$provider,
+                'provider_subject_hmac'=>$hmac,
+                'deletion_request_id'=>$requestId,
+                'block_until_utc'=>$blockUntil,
+                'created_at_utc'=>$this->format($now),
+            ]
+        );
+    }
+
+    private function deletedIdentityBlockSec(): int
+    {
+        $maxAge = max(60, (int)($this->config['telegram_init_data_max_age_sec'] ?? 86400));
+        $clockSkew = max(0, (int)($this->config['telegram_init_data_clock_skew_sec'] ?? 300));
+        return max(
+            300,
+            (int)($this->config['account_deleted_identity_block_sec'] ?? ($maxAge + $clockSkew))
+        );
     }
 
     private function requestId(): string
