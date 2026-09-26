@@ -1065,7 +1065,8 @@ final class AccountDataLifecycleService
         $clockSkew = max(0, (int)($this->config['telegram_init_data_clock_skew_sec'] ?? 300));
         return max(
             300,
-            (int)($this->config['account_deleted_identity_block_sec'] ?? ($maxAge + $clockSkew))
+            $maxAge + $clockSkew,
+            (int)($this->config['account_deleted_identity_block_sec'] ?? 0)
         );
     }
 
