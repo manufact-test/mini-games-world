@@ -53,6 +53,10 @@ final class AccountIdentityService
                         $mgwId = $this->createAccount($database, $provider, $subject, $providerUsername);
                         $created = true;
                     } else {
+                        $status = strtolower(trim((string)($identity['status'] ?? 'active')));
+                        if (in_array($status, ['deletion_finalizing', 'anonymized'], true)) {
+                            throw new RuntimeException('Аккаунт MGW недоступен: удаление данных выполняется или уже завершено.');
+                        }
                         $mgwId = (string)$identity['mgw_id'];
                         $this->touchAccount($database, $mgwId, $provider, $subject, $providerUsername);
                     }
