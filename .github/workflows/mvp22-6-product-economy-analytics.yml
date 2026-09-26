@@ -96,108 +96,14 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           if [[ "${{ github.head_ref }}" == agent/mvp22-7-* ]]; then
-            allowed='^(\.github/workflows/(mvp22-admin-rework|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations)\.yml|app/admin\.php|app/assets/css/admin-shell\.css|app/assets/js/(admin-shell|admin-operations)\.js|bot/admin-operations\.php|bot/operations/AdminOperationsService\.php|bot/database/migrations/20260926_0066_create_admin_operations\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/(Mvp22AdminShellReworkContractTest|Mvp22_7AdminOperationsTest|Mvp22_7AdminOperationsContractTest)\.php)
-          bad=0
-          while IFS= read -r path; do
-            if ! grep -Eq "$allowed" <<<"$path"; then
-              echo "Unexpected MVP-22.6 path: $path" >&2
-              bad=1
-            fi
-          done < <(git diff --name-only "$base" "$head")
-          test "$bad" -eq 0
-          git diff --exit-code "$base" "$head" -- bot/games bot/moderation bot/ratings bot/tournaments bot/economy bot/ledger bot/antifraud bot/replay
-
-
-  analytics-mysql:
-    name: Product/economy analytics on MySQL 8.4
-    runs-on: ubuntu-24.04
-    timeout-minutes: 12
-    services:
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: mgw_analytics_ci
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-          clean: true
-      - name: Set up PHP 8.3
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          extensions: pdo_mysql, mbstring
-          coverage: none
-      - name: Run Analytics model on MySQL
-        env:
-          MGW_ANALYTICS_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_analytics_ci;charset=utf8mb4
-          MGW_ANALYTICS_MYSQL_USER: root
-          MGW_ANALYTICS_MYSQL_PASS: root
-        run: php bot/tests/Mvp22_6ProductEconomyAnalyticsTest.php
-
+            allowed='^(\.github/workflows/(mvp22-admin-rework|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations)\.yml|app/admin\.php|app/assets/css/admin-shell\.css|app/assets/js/(admin-shell|admin-operations)\.js|bot/admin-operations\.php|bot/operations/AdminOperationsService\.php|bot/database/migrations/20260926_0066_create_admin_operations\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/(Mvp22AdminShellReworkContractTest|Mvp22_7AdminOperationsTest|Mvp22_7AdminOperationsContractTest)\.php)$'
           else
-            allowed='^(\.github/workflows/(mvp22-6-product-economy-analytics|mvp22-5-system-admin|mvp22-4-antifraud-replay|mvp22-3-moderation|mvp22-admin-rework)\.yml|app/admin\.php|app/assets/css/admin-shell\.css|app/assets/js/(admin-shell|admin-analytics)\.js|bot/admin-analytics\.php|bot/analytics/(RealAccountScope|ProductEconomyAnalyticsService)\.php|bot/system/SystemAdminService\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/(Mvp22_5SystemAdminTest|Mvp22_5SystemAdminContractTest|Mvp22_6ProductEconomyAnalyticsTest|Mvp22_6ProductEconomyAnalyticsContractTest|Mvp22AdminShellReworkContractTest)\.php)
-          bad=0
-          while IFS= read -r path; do
-            if ! grep -Eq "$allowed" <<<"$path"; then
-              echo "Unexpected MVP-22.6 path: $path" >&2
-              bad=1
-            fi
-          done < <(git diff --name-only "$base" "$head")
-          test "$bad" -eq 0
-          git diff --exit-code "$base" "$head" -- bot/games bot/moderation bot/ratings bot/tournaments bot/economy bot/ledger bot/antifraud bot/replay
-
-
-  analytics-mysql:
-    name: Product/economy analytics on MySQL 8.4
-    runs-on: ubuntu-24.04
-    timeout-minutes: 12
-    services:
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: mgw_analytics_ci
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-          clean: true
-      - name: Set up PHP 8.3
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          extensions: pdo_mysql, mbstring
-          coverage: none
-      - name: Run Analytics model on MySQL
-        env:
-          MGW_ANALYTICS_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_analytics_ci;charset=utf8mb4
-          MGW_ANALYTICS_MYSQL_USER: root
-          MGW_ANALYTICS_MYSQL_PASS: root
-        run: php bot/tests/Mvp22_6ProductEconomyAnalyticsTest.php
-
+            allowed='^(\.github/workflows/(mvp22-6-product-economy-analytics|mvp22-5-system-admin|mvp22-4-antifraud-replay|mvp22-3-moderation|mvp22-admin-rework)\.yml|app/admin\.php|app/assets/css/admin-shell\.css|app/assets/js/(admin-shell|admin-analytics)\.js|bot/admin-analytics\.php|bot/analytics/(RealAccountScope|ProductEconomyAnalyticsService)\.php|bot/system/SystemAdminService\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/(Mvp22_5SystemAdminTest|Mvp22_5SystemAdminContractTest|Mvp22_6ProductEconomyAnalyticsTest|Mvp22_6ProductEconomyAnalyticsContractTest|Mvp22AdminShellReworkContractTest)\.php)$'
           fi
           bad=0
           while IFS= read -r path; do
             if ! grep -Eq "$allowed" <<<"$path"; then
-              echo "Unexpected MVP-22.6 path: $path" >&2
+              echo "Unexpected MVP-22.6/successor path: $path" >&2
               bad=1
             fi
           done < <(git diff --name-only "$base" "$head")
