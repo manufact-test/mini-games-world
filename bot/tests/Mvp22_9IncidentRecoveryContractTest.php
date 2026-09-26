@@ -68,7 +68,7 @@ foreach ([
     'disable_security_mode',
     'revoke_all_sessions',
 ] as $action) {
-    $assert(str_contains($service, "'{$action}'") && str_contains($page, "data-incident-request-risk="{$action}""), 'Missing bounded high-risk action: ' . $action);
+    $assert(str_contains($service, "'{$action}'") && str_contains($page, 'data-incident-request-risk="' . $action . '"'), 'Missing bounded high-risk action: ' . $action);
 }
 
 foreach ([
@@ -76,7 +76,7 @@ foreach ([
     'database_credentials',
     'account_data_hook_secret',
 ] as $key) {
-    $assert(str_contains($service, "'{$key}'") && str_contains($page, "data-incident-key-row="{$key}""), 'Missing incident key checklist item: ' . $key);
+    $assert(str_contains($service, "'{$key}'") && str_contains($page, 'data-incident-key-row="' . $key . '"'), 'Missing incident key checklist item: ' . $key);
 }
 
 $assert(
