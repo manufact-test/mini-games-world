@@ -165,7 +165,7 @@ $assert(
 
 $assert(
     str_contains($page, "Cache-Control: no-store, no-cache, must-revalidate")
-        && str_contains($page, 'admin-shell.css?v=12')
+        && str_contains($page, 'admin-shell.css?v=13')
         && str_contains($page, 'admin-shell.js?v=8')
         && str_contains($page, 'admin-antifraud.js?v=1'),
     'Admin-only rework must stay no-store and publish fresh child asset identities without changing the shared game launch owner.'
