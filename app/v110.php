@@ -66,6 +66,17 @@ if (!isset($imports[$cleanEntryImportKey])
 }
 $imports[$cleanEntryImportKey] .= '&mvp23_profile=instant-route-v1';
 
+$profileAnimationGuardImportKey = './assets/js/profile/mgw-mobile-profile-animation-guard-v2.js?v=1';
+if (!isset($imports[$profileAnimationGuardImportKey])
+    || !is_string($imports[$profileAnimationGuardImportKey])
+    || $imports[$profileAnimationGuardImportKey] === '') {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World Profile animation guard owner is unavailable.';
+    exit;
+}
+$imports[$profileAnimationGuardImportKey] .= '&mvp23_profile=instant-resume-v1';
+
 // Mobile cold-first corrective: keep canonical manifest mappings unchanged and
 // only refresh the active staging URLs for the owners changed in this acceptance
 // pass. This avoids turning a staging UX corrective into a manifest-wide product
