@@ -14,12 +14,12 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Панель администратора</title>
-  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=16&mvp22_7=tasks-plans-releases-v1&mvp22_6=product-economy-analytics-v1&mvp22_5=system-status-ru-ux-v2&replay=17-6&mvp22_4=admin-ux-scale-v1&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
+  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=17&mvp22_7=tasks-compact-ru-v2&mvp22_6=product-economy-analytics-v1&mvp22_5=system-status-ru-ux-v2&replay=17-6&mvp22_4=admin-ux-scale-v1&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="./assets/js/admin-shell.js?v=10&mvp22_7=operations-nav-v1&mvp22_6=analytics-nav-v1&mvp22_4=admin-ux-scale-v1&test-coins=staging" defer></script>
   <script src="./assets/js/admin-system.js?v=2&mvp22_5=system-status-ru-ux-v2" defer></script>
   <script src="./assets/js/admin-analytics.js?v=1&mvp22_6=product-economy-analytics-v1" defer></script>
-  <script src="./assets/js/admin-operations.js?v=1&mvp22_7=tasks-plans-releases-v1" defer></script>
+  <script src="./assets/js/admin-operations.js?v=2&mvp22_7=tasks-compact-ru-v2" defer></script>
   <script src="./assets/js/admin-antifraud.js?v=1&mvp22_4=case-nav-v4" defer></script>
   <script src="./assets/js/admin-compensation.js?v=5&mvp22_2=admin-ux-scale-v1" defer></script>
   <script src="./assets/js/admin-reports.js?v=3&mvp18=reports&mvp22_3=admin-ux-scale-v1" defer></script>
@@ -229,12 +229,12 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
         <details class="mgw-admin__technical-disclosure mgw-admin__operations-panel" open>
           <summary>Регулярные задачи</summary>
           <div class="mgw-admin__operations-body">
-            <p class="mgw-admin__operations-help">Здесь хранится рабочий список с ответственным, сроком, статусом и результатом. Для ежедневных, еженедельных, ежемесячных и квартальных задач следующая итерация создаётся после завершения текущей — отдельный Cron для этого не добавляется.</p>
+            <p class="mgw-admin__operations-help">Здесь хранится рабочий список с ответственным, сроком, статусом и результатом. Для ежедневных, еженедельных, ежемесячных и квартальных задач следующая итерация создаётся после завершения текущей — отдельный системный планировщик для этого не добавляется.</p>
 
             <div class="mgw-admin__operations-create-grid">
               <label class="mgw-admin__field">
                 <span>Задача</span>
-                <input data-operations-task-title type="text" maxlength="240" autocomplete="off" placeholder="Например: проверить отчёт по экономике">
+                <input data-operations-task-title type="text" maxlength="240" required autocomplete="off" placeholder="Например: проверить отчёт по экономике">
               </label>
               <label class="mgw-admin__field">
                 <span>Категория</span>
@@ -270,6 +270,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               <button type="button" data-operations-create-task>Добавить задачу</button>
               <button type="button" data-operations-refresh>Обновить</button>
             </div>
+            <div class="mgw-admin__operations-feedback" data-operations-task-feedback aria-live="polite" hidden></div>
 
             <div class="mgw-admin__operations-list" data-operations-tasks></div>
 
@@ -329,17 +330,17 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
             <div class="mgw-admin__operations-actions" data-operations-season-actions hidden>
               <button type="button" data-operations-save-season>Сохранить готовность пакета</button>
             </div>
-            <p class="mgw-admin__operations-help">Финальный статус <strong>READY</strong> вычисляется существующим владельцем сезонного жизненного цикла. Контрольные точки T‑21, T‑14 и T‑7 также берутся оттуда — этот раздел не создаёт второй календарь напоминаний.</p>
+            <p class="mgw-admin__operations-help">Финальный статус <strong>«Готово»</strong> вычисляется существующим владельцем сезонного жизненного цикла. Контрольные точки T‑21, T‑14 и T‑7 также берутся оттуда — этот раздел не создаёт второй календарь напоминаний.</p>
           </div>
         </details>
 
         <details class="mgw-admin__technical-disclosure mgw-admin__operations-panel">
-          <summary>Future Plans</summary>
+          <summary>Планы на будущее</summary>
           <div class="mgw-admin__operations-body">
             <div class="mgw-admin__operations-create-grid">
               <label class="mgw-admin__field">
                 <span>План</span>
-                <input data-operations-plan-title type="text" maxlength="240" autocomplete="off" placeholder="Что хотим сделать позже">
+                <input data-operations-plan-title type="text" maxlength="240" required autocomplete="off" placeholder="Что хотим сделать позже">
               </label>
               <label class="mgw-admin__field">
                 <span>Категория</span>
@@ -379,15 +380,16 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
             <div class="mgw-admin__operations-actions">
               <button type="button" data-operations-create-plan>Добавить в планы</button>
             </div>
+            <div class="mgw-admin__operations-feedback" data-operations-plan-feedback aria-live="polite" hidden></div>
             <div class="mgw-admin__operations-list" data-operations-plans></div>
           </div>
         </details>
 
         <details class="mgw-admin__technical-disclosure mgw-admin__operations-panel">
-          <summary>Release log</summary>
+          <summary>Журнал релизов</summary>
           <div class="mgw-admin__operations-body">
             <div class="mgw-admin__release-current">
-              <span>Текущая runtime-сборка</span>
+              <span>Текущая сборка</span>
               <strong data-operations-runtime-build>—</strong>
             </div>
             <p class="mgw-admin__operations-help" data-operations-release-coverage>Журнал начинается с MVP-22.7. Старые релизы задним числом не придумываются.</p>
@@ -395,7 +397,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
             <div class="mgw-admin__operations-create-grid">
               <label class="mgw-admin__field">
                 <span>Версия</span>
-                <input data-operations-release-version type="text" maxlength="80" autocomplete="off" placeholder="Например: 1.22.7">
+                <input data-operations-release-version type="text" maxlength="80" required autocomplete="off" placeholder="Например: 1.22.7">
               </label>
               <label class="mgw-admin__field">
                 <span>Среда</span>
@@ -406,15 +408,15 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               </label>
               <label class="mgw-admin__field">
                 <span>Полный SHA</span>
-                <input data-operations-release-sha type="text" maxlength="40" autocomplete="off" placeholder="40 символов">
+                <input data-operations-release-sha type="text" maxlength="40" required autocomplete="off" placeholder="40 символов">
               </label>
               <label class="mgw-admin__field">
                 <span>Дата релиза</span>
-                <input data-operations-release-date type="datetime-local">
+                <input data-operations-release-date type="datetime-local" required>
               </label>
               <label class="mgw-admin__field mgw-admin__field--wide">
                 <span>Что вошло</span>
-                <textarea data-operations-release-summary rows="3" maxlength="5000" placeholder="Короткое описание релиза"></textarea>
+                <textarea data-operations-release-summary rows="3" maxlength="5000" required placeholder="Короткое описание релиза"></textarea>
               </label>
               <label class="mgw-admin__field mgw-admin__field--wide">
                 <span>Известные проблемы</span>
@@ -428,6 +430,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
             <div class="mgw-admin__operations-actions">
               <button type="button" data-operations-create-release>Добавить запись релиза</button>
             </div>
+            <div class="mgw-admin__operations-feedback" data-operations-release-feedback aria-live="polite" hidden></div>
             <div class="mgw-admin__operations-list" data-operations-releases></div>
           </div>
         </details>
