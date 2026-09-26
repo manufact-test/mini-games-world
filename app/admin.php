@@ -15,9 +15,11 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Панель администратора</title>
   <link rel="stylesheet" href="./assets/css/admin-shell.css?v=17&mvp22_7=tasks-compact-ru-v2&mvp22_6=product-economy-analytics-v1&mvp22_5=system-status-ru-ux-v2&replay=17-6&mvp22_4=admin-ux-scale-v1&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
+  <link rel="stylesheet" href="./assets/css/admin-incident.css?v=1&mvp22_9=incident-recovery-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="./assets/js/admin-shell.js?v=10&mvp22_7=operations-nav-v1&mvp22_6=analytics-nav-v1&mvp22_4=admin-ux-scale-v1&test-coins=staging" defer></script>
+  <script src="./assets/js/admin-shell.js?v=10&mvp22_9=incident-nav-v1&mvp22_7=operations-nav-v1&mvp22_6=analytics-nav-v1&mvp22_4=admin-ux-scale-v1&test-coins=staging" defer></script>
   <script src="./assets/js/admin-system.js?v=2&mvp22_5=system-status-ru-ux-v2" defer></script>
+  <script src="./assets/js/admin-incident.js?v=1&mvp22_9=incident-recovery-v1" defer></script>
   <script src="./assets/js/admin-analytics.js?v=1&mvp22_6=product-economy-analytics-v1" defer></script>
   <script src="./assets/js/admin-operations.js?v=3&mvp22_7=task-reminders-v1" defer></script>
   <script src="./assets/js/admin-antifraud.js?v=1&mvp22_4=case-nav-v4" defer></script>
@@ -29,7 +31,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <script src="./assets/js/admin-tournaments.js?v=18&mvp21_3=admin-ux-scale-v1&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3&mvp21_5=corrective-v5&mvp21_6=fixture-progression-helper-v3&mvp21_8=corrective-v12&mvp21_8_cancel=cancellation-emergency-v1&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v2" defer></script>
 </head>
 <body>
-  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-compensation-api="../bot/admin-compensation.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-support-api="../bot/admin-support.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php" data-system-api="../bot/admin-system.php" data-analytics-api="../bot/admin-analytics.php" data-operations-api="../bot/admin-operations.php">
+  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-compensation-api="../bot/admin-compensation.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-support-api="../bot/admin-support.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php" data-system-api="../bot/admin-system.php" data-incident-api="../bot/admin-incident.php" data-analytics-api="../bot/admin-analytics.php" data-operations-api="../bot/admin-operations.php">
     <header class="mgw-admin__header">
       <div class="mgw-admin__title">
         <p class="mgw-admin__eyebrow">MINI GAMES WORLD</p>
@@ -57,6 +59,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
       <button type="button" data-admin-nav-target="economy">Экономика</button>
       <button type="button" data-admin-nav-target="notifications">Уведомления</button>
       <button type="button" data-admin-nav-target="system">Система</button>
+      <button type="button" data-admin-nav-target="incident">Инциденты</button>
       <button type="button" data-admin-nav-target="tests">Тесты</button>
     </nav>
 
@@ -587,6 +590,172 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           <summary>Показать техническую диагностику</summary>
           <pre data-admin-system-check>—</pre>
         </details>
+      </article>
+
+
+      <article class="mgw-admin__card mgw-admin__card--wide" data-admin-section="incident" data-admin-incident>
+        <div class="mgw-admin__card-head">
+          <h2>Инциденты и восстановление</h2>
+          <span>Безопасная операционная консоль</span>
+        </div>
+
+        <div class="mgw-admin__incident-status" data-incident-status>Загружаю консоль восстановления…</div>
+
+        <div class="mgw-admin__incident-health">
+          <div><span>Среда</span><strong data-incident-environment>—</strong></div>
+          <div><span>Сборка</span><strong data-incident-build>—</strong></div>
+          <div><span>Схема БД</span><strong data-incident-schema>—</strong></div>
+          <div><span>Активных сессий</span><strong data-incident-sessions>—</strong></div>
+          <div><span>Режим безопасности</span><strong data-incident-security>—</strong></div>
+        </div>
+
+        <section class="mgw-admin__incident-panel" data-incident-empty>
+          <div class="mgw-admin__incident-body" style="padding-top:14px">
+            <h3>Открыть карточку инцидента</h3>
+            <p class="mgw-admin__incident-help">Создайте карточку только для реального операционного события или учебной проверки. Карточка не выполняет никаких разрушительных действий сама по себе.</p>
+            <div class="mgw-admin__incident-grid">
+              <label class="mgw-admin__field">
+                <span>Название</span>
+                <input type="text" maxlength="240" autocomplete="off" data-incident-create-title placeholder="Например: подозрительная активность авторизации">
+              </label>
+              <label class="mgw-admin__field">
+                <span>Краткое описание</span>
+                <textarea rows="3" maxlength="2000" data-incident-create-summary placeholder="Что произошло и что уже известно"></textarea>
+              </label>
+            </div>
+            <div class="mgw-admin__incident-actions">
+              <button type="button" data-incident-create>Открыть инцидент</button>
+              <button type="button" data-incident-refresh>Обновить состояние</button>
+            </div>
+          </div>
+        </section>
+
+        <div data-incident-active hidden>
+          <section class="mgw-admin__incident-panel">
+            <div class="mgw-admin__incident-body" style="padding-top:14px">
+              <div class="mgw-admin__incident-card">
+                <h3 data-incident-active-title>—</h3>
+                <small data-incident-active-meta></small>
+                <p data-incident-active-summary></p>
+                <input type="hidden" data-incident-active-status>
+              </div>
+              <div class="mgw-admin__incident-grid" style="margin-top:10px">
+                <label class="mgw-admin__field">
+                  <span>Этап</span>
+                  <select data-incident-lifecycle-status>
+                    <option value="open">Открыт</option>
+                    <option value="mitigating">Локализация</option>
+                    <option value="recovering">Восстановление</option>
+                    <option value="resolved">Завершён</option>
+                  </select>
+                </label>
+                <label class="mgw-admin__field">
+                  <span>Причина изменения</span>
+                  <input type="text" maxlength="800" autocomplete="off" data-incident-lifecycle-reason placeholder="Что изменилось и почему">
+                </label>
+              </div>
+              <div class="mgw-admin__incident-actions">
+                <button type="button" data-incident-lifecycle-save>Сохранить этап</button>
+                <button type="button" data-incident-refresh>Обновить состояние</button>
+              </div>
+            </div>
+          </section>
+
+          <details class="mgw-admin__incident-panel" open>
+            <summary>Режим безопасности и сессии</summary>
+            <div class="mgw-admin__incident-body">
+              <p class="mgw-admin__incident-warning"><strong>Опасные действия не выполняются одним кликом.</strong> Первый администратор создаёт запрос, а выполнить или отклонить его должен другой авторизованный администратор.</p>
+              <p class="mgw-admin__incident-help">Режим безопасности повторно использует существующие системные переключатели: технические работы + запрет новых финансовых операций. Выход восстанавливает точное состояние переключателей, которое было до инцидента.</p>
+              <label class="mgw-admin__field">
+                <span>Причина действия</span>
+                <input type="text" maxlength="800" autocomplete="off" data-incident-risk-reason placeholder="Почему это действие необходимо">
+              </label>
+              <div class="mgw-admin__incident-actions">
+                <button type="button" class="mgw-admin__incident-danger" data-incident-request-risk="enable_security_mode">Запросить режим безопасности</button>
+                <button type="button" data-incident-request-risk="disable_security_mode">Запросить выход из режима безопасности</button>
+                <button type="button" class="mgw-admin__incident-danger" data-incident-request-risk="revoke_all_sessions">Запросить отзыв всех сессий</button>
+              </div>
+              <div class="mgw-admin__incident-actions-list" data-incident-actions style="margin-top:12px"></div>
+            </div>
+          </details>
+
+          <details class="mgw-admin__incident-panel">
+            <summary>Проверка ключей и доступов</summary>
+            <div class="mgw-admin__incident-body">
+              <p class="mgw-admin__incident-warning">Никогда не вставляйте сюда сами токены, пароли или секреты. Здесь фиксируется только факт проверки или замены.</p>
+              <div class="mgw-admin__incident-key-list">
+                <div class="mgw-admin__incident-key" data-incident-key-row="telegram_bot_token">
+                  <div class="mgw-admin__incident-key-name"><strong data-incident-key-name>Telegram Bot Token</strong><small data-incident-key-meta>Нужно проверить</small></div>
+                  <label class="mgw-admin__field"><span>Статус</span><select data-incident-key-status><option value="pending">Нужно проверить</option><option value="rotated">Заменён</option><option value="verified">Проверен</option><option value="not_applicable">Не требуется</option></select></label>
+                  <label class="mgw-admin__field"><span>Заметка без секрета</span><input type="text" maxlength="800" autocomplete="off" data-incident-key-note placeholder="Например: заменён в Hostinger"></label>
+                  <button type="button" data-incident-save-key>Сохранить</button>
+                </div>
+                <div class="mgw-admin__incident-key" data-incident-key-row="database_credentials">
+                  <div class="mgw-admin__incident-key-name"><strong data-incident-key-name>Доступ к базе данных</strong><small data-incident-key-meta>Нужно проверить</small></div>
+                  <label class="mgw-admin__field"><span>Статус</span><select data-incident-key-status><option value="pending">Нужно проверить</option><option value="rotated">Заменён</option><option value="verified">Проверен</option><option value="not_applicable">Не требуется</option></select></label>
+                  <label class="mgw-admin__field"><span>Заметка без секрета</span><input type="text" maxlength="800" autocomplete="off" data-incident-key-note placeholder="Только факт проверки"></label>
+                  <button type="button" data-incident-save-key>Сохранить</button>
+                </div>
+                <div class="mgw-admin__incident-key" data-incident-key-row="account_data_hook_secret">
+                  <div class="mgw-admin__incident-key-name"><strong data-incident-key-name>Ключ запроса данных аккаунта</strong><small data-incident-key-meta>Нужно проверить</small></div>
+                  <label class="mgw-admin__field"><span>Статус</span><select data-incident-key-status><option value="pending">Нужно проверить</option><option value="rotated">Заменён</option><option value="verified">Проверен</option><option value="not_applicable">Не требуется</option></select></label>
+                  <label class="mgw-admin__field"><span>Заметка без секрета</span><input type="text" maxlength="800" autocomplete="off" data-incident-key-note placeholder="Только факт проверки"></label>
+                  <button type="button" data-incident-save-key>Сохранить</button>
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <details class="mgw-admin__incident-panel">
+            <summary>Сохранение доказательств</summary>
+            <div class="mgw-admin__incident-body">
+              <p class="mgw-admin__incident-help">Сохраняйте ссылки, идентификаторы запусков и SHA. Сырые секреты, токены и приватные ключи в карточку инцидента не записываются.</p>
+              <div class="mgw-admin__incident-grid mgw-admin__incident-grid--3">
+                <label class="mgw-admin__field"><span>Тип</span><select data-incident-evidence-type><option value="commit_sha">Commit SHA</option><option value="workflow_run">Запуск CI</option><option value="backup_reference">Резервная копия</option><option value="log_reference">Ссылка на лог</option><option value="other">Другое</option></select></label>
+                <label class="mgw-admin__field"><span>Название</span><input type="text" maxlength="240" autocomplete="off" data-incident-evidence-label placeholder="Что сохраняем"></label>
+                <label class="mgw-admin__field"><span>Ссылка / идентификатор</span><input type="text" maxlength="500" autocomplete="off" data-incident-evidence-reference placeholder="Без секретных значений"></label>
+                <label class="mgw-admin__field"><span>SHA-256, если есть</span><input type="text" maxlength="64" autocomplete="off" data-incident-evidence-fingerprint placeholder="64 шестнадцатеричных символа"></label>
+              </div>
+              <div class="mgw-admin__incident-actions"><button type="button" data-incident-add-evidence>Сохранить доказательство</button></div>
+              <div class="mgw-admin__incident-history" data-incident-evidence-list style="margin-top:12px"></div>
+            </div>
+          </details>
+
+          <details class="mgw-admin__incident-panel">
+            <summary>Статус восстановления</summary>
+            <div class="mgw-admin__incident-body">
+              <p class="mgw-admin__incident-help">Консоль фиксирует состояние и безопасные ссылки на backup/rollback. Она не выполняет молча восстановление базы данных или откат production.</p>
+              <div class="mgw-admin__incident-grid">
+                <label class="mgw-admin__field"><span>Статус</span><select data-incident-restore-status><option value="not_started">Не начато</option><option value="preparing">Подготовка</option><option value="ready">Готово к проверке</option><option value="verified">Проверено</option><option value="blocked">Заблокировано</option></select></label>
+                <label class="mgw-admin__field"><span>Ссылка на backup</span><input type="text" maxlength="500" autocomplete="off" data-incident-restore-backup placeholder="Без секретных данных"></label>
+                <label class="mgw-admin__field"><span>Ссылка на rollback</span><input type="text" maxlength="500" autocomplete="off" data-incident-restore-rollback placeholder="Например, GitHub commit/branch"></label>
+                <label class="mgw-admin__field"><span>SHA восстановления</span><input type="text" maxlength="40" autocomplete="off" data-incident-restore-sha placeholder="Полный 40-символьный SHA"></label>
+                <label class="mgw-admin__field"><span>Заметки</span><textarea rows="3" maxlength="1200" data-incident-restore-notes placeholder="Что подготовлено и что проверено"></textarea></label>
+              </div>
+              <div class="mgw-admin__incident-actions"><button type="button" data-incident-save-restore>Сохранить статус восстановления</button></div>
+            </div>
+          </details>
+
+          <details class="mgw-admin__incident-panel">
+            <summary>Журнал инцидента</summary>
+            <div class="mgw-admin__incident-body">
+              <div class="mgw-admin__incident-history" data-incident-audit></div>
+            </div>
+          </details>
+        </div>
+
+        <details class="mgw-admin__incident-panel">
+          <summary>Недавние инциденты</summary>
+          <div class="mgw-admin__incident-body">
+            <div class="mgw-admin__incident-history" data-incident-archive></div>
+          </div>
+        </details>
+
+        <div class="mgw-admin__incident-rehearsal" data-incident-rehearsal hidden>
+          <strong>Учебная симуляция на тестовой среде</strong>
+          <p>Проверяет карточку инцидента, доказательства и статус восстановления. Не включает режим безопасности, не отзывает сессии и не изменяет production.</p>
+          <button type="button" data-incident-run-rehearsal>Запустить безопасную симуляцию</button>
+        </div>
       </article>
 
       <article class="mgw-admin__card mgw-admin__card--wide" data-admin-section="tournaments" data-tournament-admin>

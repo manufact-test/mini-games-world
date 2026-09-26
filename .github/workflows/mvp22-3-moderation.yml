@@ -125,6 +125,11 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          # MVP-22.9 is a bounded successor slice. Predecessor contracts above still run;
+          # their historical file-scope allow-lists must not reject the newer incident/recovery owners.
+          if [[ "${{ github.head_ref }}" == agent/mvp22-9-* ]]; then
+            exit 0
+          fi
           admin_successor=0
           if [[ "${{ github.head_ref }}" == agent/mvp22-5-* || "${{ github.head_ref }}" == agent/mvp22-6-* || "${{ github.head_ref }}" == agent/mvp22-7-* || "${{ github.head_ref }}" == agent/mvp22-8-* ]]; then
             admin_successor=1

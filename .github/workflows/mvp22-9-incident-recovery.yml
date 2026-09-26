@@ -1,0 +1,160 @@
+name: MVP-22.9 Incident response and recovery console
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/admin.php'
+      - 'app/assets/css/admin-incident.css'
+      - 'app/assets/js/admin-shell.js'
+      - 'app/assets/js/admin-incident.js'
+      - 'bot/admin-incident.php'
+      - 'bot/incident/IncidentRecoveryService.php'
+      - 'bot/accounts/AccountIdentityService.php'
+      - 'bot/database/migrations/20260926_0068_create_incident_recovery.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
+      - 'bot/tests/Mvp22_9IncidentRecoveryTest.php'
+      - 'bot/tests/Mvp22_9IncidentRecoveryContractTest.php'
+      - 'bot/tests/Mvp22_9IncidentRecoveryMySqlIntegrationTest.php'
+      - '.github/workflows/mvp22-9-incident-recovery.yml'
+      - '.github/workflows/mvp22-admin-rework.yml'
+      - '.github/workflows/mvp22-3-moderation.yml'
+      - '.github/workflows/mvp22-4-antifraud-replay.yml'
+      - '.github/workflows/mvp22-5-system-admin.yml'
+      - '.github/workflows/mvp22-6-product-economy-analytics.yml'
+      - '.github/workflows/mvp22-7-admin-operations.yml'
+      - '.github/workflows/mvp22-8-account-data.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp22-9-incident-recovery-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Incident recovery contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint MVP-22.9 slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            app/admin.php
+            bot/admin-incident.php
+            bot/incident/IncidentRecoveryService.php
+            bot/accounts/AccountIdentityService.php
+            bot/database/migrations/20260926_0068_create_incident_recovery.php
+            bot/tests/Mvp22_9IncidentRecoveryTest.php
+            bot/tests/Mvp22_9IncidentRecoveryContractTest.php
+            bot/tests/Mvp22_9IncidentRecoveryMySqlIntegrationTest.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done
+          node --check app/assets/js/admin-shell.js
+          node --check app/assets/js/admin-incident.js
+
+      - name: Run SQLite incident lifecycle proof
+        run: php bot/tests/Mvp22_9IncidentRecoveryTest.php
+
+      - name: Guard incident ownership and Admin contract
+        run: php bot/tests/Mvp22_9IncidentRecoveryContractTest.php
+
+      - name: Preserve System Admin owners
+        run: |
+          php bot/tests/Mvp22_5SystemAdminTest.php
+          php bot/tests/Mvp22_5SystemAdminContractTest.php
+
+      - name: Preserve moderation second-admin boundary
+        run: php bot/tests/Mvp22_3ModerationWorkflowTest.php
+
+      - name: Preserve account-data lifecycle
+        run: php bot/tests/Mvp22_8AccountDataLifecycleTest.php
+
+      - name: Preserve Web Admin shell
+        run: php bot/tests/Mvp22AdminShellReworkContractTest.php
+
+      - name: Exact staging fingerprint coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest='bot/helpers/staging-e2e-runtime-files.txt'
+          for file in             bot/admin-incident.php             bot/incident/IncidentRecoveryService.php             bot/accounts/AccountIdentityService.php             bot/database/migrations/20260926_0068_create_incident_recovery.php             app/admin.php             app/assets/js/admin-shell.js             app/assets/js/admin-incident.js             app/assets/css/admin-incident.css
+          do
+            grep -Fxq "$file" "$manifest"
+          done
+
+      - name: Scope guard
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          allowed='^(\.github/workflows/(mvp22-9-incident-recovery|mvp22-admin-rework|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations|mvp22-8-account-data)\.yml|app/admin\.php|app/assets/css/admin-incident\.css|app/assets/js/(admin-shell|admin-incident)\.js|bot/admin-incident\.php|bot/incident/IncidentRecoveryService\.php|bot/accounts/AccountIdentityService\.php|bot/database/migrations/20260926_0068_create_incident_recovery\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/(Mvp22_9IncidentRecoveryTest|Mvp22_9IncidentRecoveryContractTest|Mvp22_9IncidentRecoveryMySqlIntegrationTest)\.php)$'
+          bad=0
+          while IFS= read -r path; do
+            if ! grep -Eq "$allowed" <<<"$path"; then
+              echo "Unexpected MVP-22.9 path: $path" >&2
+              bad=1
+            fi
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+          git diff --exit-code "$base" "$head" -- bot/games bot/economy bot/ledger bot/ratings bot/tournaments bot/support bot/antifraud bot/replay
+
+  mysql:
+    name: Incident recovery lifecycle on MySQL 8.4
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_incident_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring
+          coverage: none
+      - name: Lint MySQL proof
+        run: php -l bot/tests/Mvp22_9IncidentRecoveryMySqlIntegrationTest.php
+      - name: Run MySQL proof
+        env:
+          MGW_INCIDENT_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_incident_ci;charset=utf8mb4
+          MGW_INCIDENT_MYSQL_USER: root
+          MGW_INCIDENT_MYSQL_PASS: root
+        run: php bot/tests/Mvp22_9IncidentRecoveryMySqlIntegrationTest.php

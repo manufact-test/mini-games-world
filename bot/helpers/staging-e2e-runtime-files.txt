@@ -349,3 +349,12 @@ bot/accounts/AccountDataLifecycleService.php
 bot/database/migrations/20260926_0067_create_account_data_lifecycle.php
 app/assets/js/screens/account-data-sheet-v1.js
 app/assets/css/account-data-v1.css
+
+# MVP-22.9 incident response / recovery console. Runtime safety actions reuse
+# canonical system/session owners; incident state, evidence and restore references
+# are durable and included in exact staging fingerprinting.
+bot/admin-incident.php
+bot/incident/IncidentRecoveryService.php
+bot/database/migrations/20260926_0068_create_incident_recovery.php
+app/assets/js/admin-incident.js
+app/assets/css/admin-incident.css

@@ -89,6 +89,33 @@ final class AccountIdentityService
         }
     }
 
+    public function activeSessionCount(?DateTimeImmutable $now = null): int
+    {
+        $nowText = ($now ?? new DateTimeImmutable('now', new DateTimeZone('UTC')))
+            ->setTimezone(new DateTimeZone('UTC'))
+            ->format('Y-m-d H:i:s.u');
+        $rows = $this->database->fetchAll(
+            'SELECT COUNT(*) AS total
+             FROM mgw_sessions
+             WHERE revoked_at_utc IS NULL AND expires_at_utc>:now_utc',
+            ['now_utc'=>$nowText]
+        );
+        return max(0, (int)($rows[0]['total'] ?? 0));
+    }
+
+    public function revokeAllActiveSessions(?DateTimeImmutable $now = null): int
+    {
+        $nowText = ($now ?? new DateTimeImmutable('now', new DateTimeZone('UTC')))
+            ->setTimezone(new DateTimeZone('UTC'))
+            ->format('Y-m-d H:i:s.u');
+        return max(0, $this->database->execute(
+            'UPDATE mgw_sessions
+             SET revoked_at_utc=:revoked_at
+             WHERE revoked_at_utc IS NULL AND expires_at_utc>:now_utc',
+            ['revoked_at'=>$nowText,'now_utc'=>$nowText]
+        ));
+    }
+
     private function createAccount(DatabaseConnectionInterface $database, string $provider, string $subject, ?string $providerUsername): string
     {
         $now = $this->timestamp();
