@@ -145,6 +145,11 @@ $claimed = $service->claimHighRiskAction(
     'Независимая проверка.'
 );
 $assertSame(IncidentRecoveryService::ACTION_EXECUTING, $claimed['status_code'], 'Second admin must claim action before execution.');
+$assertSame(
+    false,
+    $service->securityModeBaseline($incidentId)['maintenance_mode'] ?? null,
+    'Security-mode baseline must be durable before the runtime side effect starts.'
+);
 
 $completed = $service->completeHighRiskAction(
     (string)$enable['action_id'],
