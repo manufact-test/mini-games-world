@@ -626,11 +626,34 @@ final class AccountDataLifecycleService
                 unset($invite);
             }
 
-            foreach ($data as $section => &$value) {
-                if ($section === 'users') continue;
-                $value = $this->replaceRuntimeIdentity($value, $legacyUserId, $tombstone);
+            // Keep rollback financial/support/order/payment/system history byte-stable.
+            // Only realtime/social identity projections are eligible for runtime
+            // anonymization; broad recursive replacement would corrupt audit data.
+            if (isset($data['games']) && is_array($data['games'])) {
+                $data['games'] = $this->replaceRuntimeIdentity($data['games'], $legacyUserId, $tombstone);
             }
-            unset($value);
+            if (isset($data['invites']) && is_array($data['invites'])) {
+                $data['invites'] = $this->replaceRuntimeIdentity($data['invites'], $legacyUserId, $tombstone);
+            }
+            if (isset($data['notifications']) && is_array($data['notifications'])) {
+                $data['notifications'] = array_values(array_filter(
+                    $data['notifications'],
+                    static fn(mixed $notification): bool => !is_array($notification)
+                        || (string)($notification['user_id'] ?? '') !== $legacyUserId
+                ));
+                $data['notifications'] = $this->replaceRuntimeIdentity(
+                    $data['notifications'],
+                    $legacyUserId,
+                    $tombstone
+                );
+            }
+            if (isset($data['queue']) && is_array($data['queue'])) {
+                $data['queue'] = array_values(array_filter(
+                    $data['queue'],
+                    static fn(mixed $item): bool => !is_array($item)
+                        || (string)($item['user_id'] ?? '') !== $legacyUserId
+                ));
+            }
 
             if (isset($data['users']) && is_array($data['users'])) {
                 unset($data['users'][$legacyUserId]);
