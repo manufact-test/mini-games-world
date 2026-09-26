@@ -11,6 +11,7 @@ on:
       - 'app/assets/js/components/preloader.js'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp23MobileColdFirstInteractionContractTest.php'
+      - 'bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php'
       - '.github/workflows/mvp23-mobile-cold-first-interaction.yml'
 
 permissions:
@@ -70,6 +71,6 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
-          allowed='^(\.github/workflows/mvp23-mobile-cold-first-interaction\.yml|app/assets/js/screens/account-data-sheet-v1\.js|app/assets/js/components/account-shortcuts\.js|app/assets/js/main-v110-handoff-shell\.js|app/assets/js/components/preloader\.js|app/runtime/client/version-manifest\.php|bot/tests/Mvp23MobileColdFirstInteractionContractTest\.php)$'
+          allowed='^(\.github/workflows/mvp23-mobile-cold-first-interaction\.yml|app/assets/js/screens/account-data-sheet-v1\.js|app/assets/js/components/account-shortcuts\.js|app/assets/js/main-v110-handoff-shell\.js|app/assets/js/components/preloader\.js|app/runtime/client/version-manifest\.php|bot/tests/Mvp23MobileColdFirstInteractionContractTest\.php|bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest\.php)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected corrective paths:\n%s\n' "$bad" >&2; exit 1; }
