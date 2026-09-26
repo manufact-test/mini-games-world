@@ -1,0 +1,107 @@
+name: MVP-22.6 Product and economy analytics
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/admin.php'
+      - 'app/assets/css/admin-shell.css'
+      - 'app/assets/js/admin-shell.js'
+      - 'app/assets/js/admin-analytics.js'
+      - 'bot/admin-analytics.php'
+      - 'bot/analytics/**'
+      - 'bot/system/SystemAdminService.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
+      - 'bot/tests/Mvp22_5SystemAdminTest.php'
+      - 'bot/tests/Mvp22_5SystemAdminContractTest.php'
+      - 'bot/tests/Mvp22_6ProductEconomyAnalyticsTest.php'
+      - 'bot/tests/Mvp22_6ProductEconomyAnalyticsContractTest.php'
+      - 'bot/tests/Mvp22AdminShellReworkContractTest.php'
+      - '.github/workflows/mvp22-6-product-economy-analytics.yml'
+      - '.github/workflows/mvp22-5-system-admin.yml'
+      - '.github/workflows/mvp22-4-antifraud-replay.yml'
+      - '.github/workflows/mvp22-3-moderation.yml'
+      - '.github/workflows/mvp22-admin-rework.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp22-6-analytics-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Product/economy analytics contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint Analytics server slice
+        run: |
+          set -euo pipefail
+          files=(
+            bot/admin-analytics.php
+            bot/analytics/RealAccountScope.php
+            bot/analytics/ProductEconomyAnalyticsService.php
+            bot/system/SystemAdminService.php
+            bot/tests/Mvp22_6ProductEconomyAnalyticsTest.php
+            bot/tests/Mvp22_6ProductEconomyAnalyticsContractTest.php
+            bot/tests/Mvp22_5SystemAdminTest.php
+            bot/tests/Mvp22_5SystemAdminContractTest.php
+            bot/tests/Mvp22AdminShellReworkContractTest.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done
+
+      - name: Check Analytics client syntax
+        run: |
+          node --input-type=module --check < app/assets/js/admin-analytics.js
+          node --input-type=module --check < app/assets/js/admin-shell.js
+
+      - name: Run Analytics model
+        run: php bot/tests/Mvp22_6ProductEconomyAnalyticsTest.php
+
+      - name: Run Analytics ownership/UI contract
+        run: php bot/tests/Mvp22_6ProductEconomyAnalyticsContractTest.php
+
+      - name: Preserve System readiness semantics
+        run: |
+          php bot/tests/Mvp22_5SystemAdminTest.php
+          php bot/tests/Mvp22_5SystemAdminContractTest.php
+
+      - name: Preserve Web Admin shell
+        run: php bot/tests/Mvp22AdminShellReworkContractTest.php
+
+      - name: Guard Analytics scope and frozen gameplay
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          allowed='^(\.github/workflows/(mvp22-6-product-economy-analytics|mvp22-5-system-admin|mvp22-4-antifraud-replay|mvp22-3-moderation|mvp22-admin-rework)\.yml|app/admin\.php|app/assets/css/admin-shell\.css|app/assets/js/(admin-shell|admin-analytics)\.js|bot/admin-analytics\.php|bot/analytics/(RealAccountScope|ProductEconomyAnalyticsService)\.php|bot/system/SystemAdminService\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/(Mvp22_5SystemAdminTest|Mvp22_5SystemAdminContractTest|Mvp22_6ProductEconomyAnalyticsTest|Mvp22_6ProductEconomyAnalyticsContractTest|Mvp22AdminShellReworkContractTest)\.php)$'
+          bad=0
+          while IFS= read -r path; do
+            if ! grep -Eq "$allowed" <<<"$path"; then
+              echo "Unexpected MVP-22.6 path: $path" >&2
+              bad=1
+            fi
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+          git diff --exit-code "$base" "$head" -- bot/games bot/moderation bot/ratings bot/tournaments bot/economy bot/ledger bot/antifraud bot/replay
