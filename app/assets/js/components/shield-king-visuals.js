@@ -9,6 +9,7 @@ const MENU_ICONS = {
   supportTicketsBtn:'ui/navigation/notifications.webp',
   balanceHistoryBtn:'ui/navigation/history.webp',
   matchHistoryBtn:'ui/navigation/games.webp',
+  accountDataBtn:'ui/navigation/profile.webp',
 };
 
 const SHELL_NAV_ICONS = {
