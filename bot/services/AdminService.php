@@ -65,11 +65,6 @@ final class AdminService
         $supportCount = count($db['support'] ?? []);
         $operationsCount = count($db['transactions'] ?? []);
         $paymentsCount = count($db['payments'] ?? []);
-        $orders = $db['shop_orders'] ?? [];
-        $pendingOrders = 0;
-        foreach ($orders as $order) {
-            if (($order['status'] ?? 'pending') === 'pending') $pendingOrders++;
-        }
 
         $feesMatch = (int)($db['system']['fees_match'] ?? 0);
         $feesGold = (int)($db['system']['fees_gold'] ?? 0);
@@ -88,9 +83,6 @@ final class AdminService
 
         $text .= "💰 Казна клуба\n";
         $text .= "Комиссии всего: {$feesTotal} коинов\n\n";
-
-        $text .= "🎁 Магазин\n";
-        $text .= "Заявки ожидают: {$pendingOrders}\n\n";
 
         $text .= "📩 Обратная связь\n";
         $text .= "Обращений всего: {$supportCount}\n\n";
