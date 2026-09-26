@@ -201,8 +201,11 @@
 .account-data-v1-danger:disabled,
 .account-data-v1-action:disabled,
 .account-data-v1-secondary:disabled{
-  opacity:.55;
-  cursor:default;
+  opacity:1 !important;
+  color:#fff !important;
+  -webkit-text-fill-color:#fff;
+  cursor:not-allowed !important;
+  filter:none !important;
 }
 .account-data-v1-deletion-state{
   display:flex;
