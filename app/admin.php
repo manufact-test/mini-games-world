@@ -16,7 +16,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <title>Mini Games World · Панель администратора</title>
   <link rel="stylesheet" href="./assets/css/admin-shell.css?v=17&mvp22_7=tasks-compact-ru-v2&mvp22_6=product-economy-analytics-v1&mvp22_5=system-status-ru-ux-v2&replay=17-6&mvp22_4=admin-ux-scale-v1&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">\n  <link rel="stylesheet" href="./assets/css/admin-incident.css?v=1&mvp22_9=incident-recovery-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="./assets/js/admin-shell.js?v=10&mvp22_7=operations-nav-v1&mvp22_6=analytics-nav-v1&mvp22_4=admin-ux-scale-v1&test-coins=staging" defer></script>
+  <script src="./assets/js/admin-shell.js?v=11&mvp22_9=incident-nav-v1&mvp22_7=operations-nav-v1&mvp22_6=analytics-nav-v1&mvp22_4=admin-ux-scale-v1&test-coins=staging" defer></script>
   <script src="./assets/js/admin-system.js?v=2&mvp22_5=system-status-ru-ux-v2" defer></script>\n  <script src="./assets/js/admin-incident.js?v=1&mvp22_9=incident-recovery-v1" defer></script>
   <script src="./assets/js/admin-analytics.js?v=1&mvp22_6=product-economy-analytics-v1" defer></script>
   <script src="./assets/js/admin-operations.js?v=3&mvp22_7=task-reminders-v1" defer></script>
@@ -57,6 +57,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
       <button type="button" data-admin-nav-target="economy">Экономика</button>
       <button type="button" data-admin-nav-target="notifications">Уведомления</button>
       <button type="button" data-admin-nav-target="system">Система</button>
+      <button type="button" data-admin-nav-target="incident">Инциденты</button>
       <button type="button" data-admin-nav-target="tests">Тесты</button>
     </nav>
 
