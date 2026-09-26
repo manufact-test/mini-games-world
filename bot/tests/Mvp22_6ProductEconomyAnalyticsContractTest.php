@@ -99,7 +99,7 @@ $assert(
 
 $assert(
     str_contains($service, "'method' => 'ever_active_after_threshold'")
-        && str_contains($service, 'не классический D1/D7 retention')
+        && str_contains($service, 'не классическое точное удержание D1/D7')
         && str_contains($page, 'По доступной истории'),
     'Retention must disclose the available-history approximation instead of claiming exact D1/D7 events.'
 );
