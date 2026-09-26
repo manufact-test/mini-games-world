@@ -741,6 +741,13 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           </details>
         </div>
 
+        <details class="mgw-admin__incident-panel">
+          <summary>Недавние инциденты</summary>
+          <div class="mgw-admin__incident-body">
+            <div class="mgw-admin__incident-history" data-incident-archive></div>
+          </div>
+        </details>
+
         <div class="mgw-admin__incident-rehearsal" data-incident-rehearsal hidden>
           <strong>Учебная симуляция на тестовой среде</strong>
           <p>Проверяет карточку инцидента, доказательства и статус восстановления. Не включает режим безопасности, не отзывает сессии и не изменяет production.</p>
