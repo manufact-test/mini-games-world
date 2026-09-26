@@ -62,9 +62,10 @@ function loadAccountDataModule(){
 }
 
 function warmAccountDataAssets(){
-  const warm = () => {
-    void primeAccountDataShortcut().catch(() => {});
-  };
+  // Keep the module code warm without starting a privacy/account API read during
+  // bootstrap or an active-game reload. Normal mobile shell boot explicitly
+  // primes the first snapshot once the authenticated bootstrap state exists.
+  const warm = () => { void loadAccountDataModule().catch(() => {}); };
   if (typeof window.requestIdleCallback === 'function') {
     window.requestIdleCallback(warm, { timeout:1200 });
   } else {
