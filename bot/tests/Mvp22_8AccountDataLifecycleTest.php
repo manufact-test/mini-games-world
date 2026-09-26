@@ -244,11 +244,13 @@ $config = [
     'account_deleted_identity_block_sec'=>3600,
 ];
 $service = new AccountDataLifecycleService($db, $storage, $config);
-$now = new DateTimeImmutable('2026-09-26T12:00:00+00:00');
+$now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
 
 $scheduled = $service->scheduleDeletion($mgwId, 'mini_app', 'self:telegram', $now);
 $assertSame('scheduled', $scheduled['status'], 'Deletion request must start scheduled');
-$assert(str_starts_with((string)$scheduled['execute_after_utc'], '2026-10-03 12:00:00'), 'Deletion grace must be exactly seven days');
+$scheduledAt = new DateTimeImmutable((string)$scheduled['requested_at_utc'], new DateTimeZone('UTC'));
+$scheduledExecuteAt = new DateTimeImmutable((string)$scheduled['execute_after_utc'], new DateTimeZone('UTC'));
+$assertSame(7 * 86400, $scheduledExecuteAt->getTimestamp() - $scheduledAt->getTimestamp(), 'Deletion grace must be exactly seven days');
 
 $cancelled = $service->cancelDeletion($mgwId, $now->modify('+1 minute'));
 $assertSame('cancelled', $cancelled['status'], 'Scheduled deletion must remain cancellable during grace period');
