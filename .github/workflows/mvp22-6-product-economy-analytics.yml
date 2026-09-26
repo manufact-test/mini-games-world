@@ -105,3 +105,40 @@ jobs:
           done < <(git diff --name-only "$base" "$head")
           test "$bad" -eq 0
           git diff --exit-code "$base" "$head" -- bot/games bot/moderation bot/ratings bot/tournaments bot/economy bot/ledger bot/antifraud bot/replay
+
+
+  analytics-mysql:
+    name: Product/economy analytics on MySQL 8.4
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_analytics_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring
+          coverage: none
+      - name: Run Analytics model on MySQL
+        env:
+          MGW_ANALYTICS_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_analytics_ci;charset=utf8mb4
+          MGW_ANALYTICS_MYSQL_USER: root
+          MGW_ANALYTICS_MYSQL_PASS: root
+        run: php bot/tests/Mvp22_6ProductEconomyAnalyticsTest.php
