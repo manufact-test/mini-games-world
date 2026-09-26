@@ -46,6 +46,18 @@ SQL);
             $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_account_data_user_type ON mgw_account_data_requests (mgw_id, request_type, requested_at_utc)');
             $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_account_data_due ON mgw_account_data_requests (request_type, request_status, execute_after_utc)');
             $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_account_data_artifact_expiry ON mgw_account_data_requests (request_type, request_status, artifact_expires_at_utc)');
+            $database->execute(<<<'SQL'
+CREATE TABLE IF NOT EXISTS mgw_deleted_identity_tombstones (
+    provider TEXT NOT NULL,
+    provider_subject_hmac TEXT NOT NULL,
+    deletion_request_id TEXT NOT NULL,
+    block_until_utc TEXT NOT NULL,
+    created_at_utc TEXT NOT NULL,
+    PRIMARY KEY (provider, provider_subject_hmac),
+    FOREIGN KEY (deletion_request_id) REFERENCES mgw_account_data_requests (request_id) ON DELETE CASCADE ON UPDATE RESTRICT
+)
+SQL);
+            $database->execute('CREATE INDEX IF NOT EXISTS idx_mgw_deleted_identity_tombstone_expiry ON mgw_deleted_identity_tombstones (block_until_utc)');
             return;
         }
 
@@ -74,6 +86,20 @@ CREATE TABLE IF NOT EXISTS mgw_account_data_requests (
     INDEX idx_mgw_account_data_artifact_expiry (request_type, request_status, artifact_expires_at_utc),
     CONSTRAINT fk_mgw_account_data_user FOREIGN KEY (mgw_id)
         REFERENCES mgw_users (mgw_id) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+SQL);
+
+        $database->execute(<<<'SQL'
+CREATE TABLE IF NOT EXISTS mgw_deleted_identity_tombstones (
+    provider VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    provider_subject_hmac CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    deletion_request_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    block_until_utc DATETIME(6) NOT NULL,
+    created_at_utc DATETIME(6) NOT NULL,
+    PRIMARY KEY (provider, provider_subject_hmac),
+    INDEX idx_mgw_deleted_identity_tombstone_expiry (block_until_utc),
+    CONSTRAINT fk_mgw_deleted_identity_tombstone_request FOREIGN KEY (deletion_request_id)
+        REFERENCES mgw_account_data_requests (request_id) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL);
     }
