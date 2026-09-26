@@ -10,7 +10,7 @@ Run every five minutes:
 /usr/bin/php /home/u235811320/domains/seashell-okapi-889488.hostingersite.com/public_html/ops/deploy/staging-operations-runner.php --run
 ```
 
-This replaces temporary per-operation Cron commands. Do not change the permanent backup or managed-migration Cron jobs. Safe recurring staging maintenance belongs in this runner instead of creating another five-minute Cron. Recurring staging maintenance that is safe on every tick belongs in this runner instead of creating another five-minute Cron.
+This replaces temporary per-operation Cron commands. Do not change the permanent backup or managed-migration Cron jobs. Safe recurring staging maintenance belongs in this runner instead of creating another five-minute Cron.
 
 ## Contract
 
@@ -28,7 +28,6 @@ This replaces temporary per-operation Cron commands. Do not change the permanent
 - The runner shares the managed-migration lock, so schema migration and deployment operations cannot overlap.
 - Private state and lock files stay outside `public_html` with mode `0600`.
 - Reports contain aggregate counts and fingerprints only.
-- Every successful `--run` tick also executes the idempotent Weekly Match catch-up and MVP-22.8 account-data retention.
 - Every successful `--run` tick also executes the idempotent Weekly Match catch-up and MVP-22.8 account-data retention (due deletions, expired exports, expired deleted-identity tombstones).
 
 ## Current baseline operation
@@ -73,25 +72,11 @@ Add a new `StagingOperationDefinition` to the registry with:
 
 Never reuse a completed operation ID for changed behavior.
 
-
-## Recurring maintenance hooks
-
-The permanent five-minute runner currently owns these idempotent recurring hooks after the deployment-operation pass succeeds:
-
-- Weekly Match catch-up / runtime synchronization;
-- MVP-22.8 account-data retention:
-  - finalize deletion requests whose 7-day grace period is due;
-  - expire old export archives;
-  - remove expired deleted-identity tombstones.
-
-Do **not** add a separate Hostinger Cron for `bot/account-data.php --run-retention` while this permanent staging runner is active. The direct CLI entrypoint remains available for diagnostics/manual recovery only.
-
-
 ## Recurring maintenance hooks
 
 The permanent five-minute runner currently owns:
 
-- Weekly Match catch-up/runtime synchronization;
+- Weekly Match catch-up / runtime synchronization;
 - MVP-22.8 account-data retention for due deletions, expired export archives and expired deleted-identity tombstones.
 
 Do not add a separate Hostinger Cron for `bot/account-data.php --run-retention` while this permanent staging runner is active. The direct CLI entrypoint remains available for diagnostics/manual recovery only.
