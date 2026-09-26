@@ -32,6 +32,7 @@
     recurrence_created:'Создан следующий повтор',
     season_reminder_materialized:'Создана сезонная задача',
     readiness_updated:'Готовность обновлена',
+    due_reminder_sent:'Напоминание отправлено',
   };
   const entityLabels = {
     task:'Задача',
@@ -569,24 +570,36 @@
     renderAudit(operations);
   };
 
-  const load = async () => {
+  const load = async (quiet = false) => {
     if (loading || !endpoint) return;
     loading = true;
-    refreshButtons.forEach(node => { node.disabled = true; });
-    status.textContent = 'Обновляю задачи, планы и журнал релизов…';
-    delete status.dataset.state;
+    if (!quiet) {
+      refreshButtons.forEach(node => { node.disabled = true; });
+      status.textContent = 'Обновляю задачи, планы и журнал релизов…';
+      delete status.dataset.state;
+    }
     try {
       const payload = await post('snapshot');
       snapshot = payload;
       render(payload);
-      status.textContent = 'Операционные данные актуальны.';
-      status.dataset.state = 'ok';
+      const reminderCount = Number(payload?.task_reminders?.sent || 0);
+      if (reminderCount > 0) {
+        notify(reminderCount === 1
+          ? 'Напоминание по задаче отправлено.'
+          : 'Отправлено напоминаний по задачам: ' + reminderCount + '.');
+      }
+      if (!quiet) {
+        status.textContent = 'Операционные данные актуальны.';
+        status.dataset.state = 'ok';
+      }
     } catch (error) {
-      status.textContent = error instanceof Error ? error.message : 'Не удалось загрузить раздел.';
-      status.dataset.state = 'error';
+      if (!quiet) {
+        status.textContent = error instanceof Error ? error.message : 'Не удалось загрузить раздел.';
+        status.dataset.state = 'error';
+      }
     } finally {
       loading = false;
-      refreshButtons.forEach(node => { node.disabled = false; });
+      if (!quiet) refreshButtons.forEach(node => { node.disabled = false; });
     }
   };
 
@@ -683,10 +696,17 @@
     }, 'Готовность пакета следующего сезона сохранена.');
   });
 
-  refreshButtons.forEach(node => node.addEventListener('click', load));
-  window.addEventListener('mgw:admin-refresh', load);
+  refreshButtons.forEach(node => node.addEventListener('click', () => load(false)));
+  window.addEventListener('mgw:admin-refresh', () => load(false));
 
   const releaseDate = $('[data-operations-release-date]');
   if (releaseDate && !releaseDate.value) releaseDate.value = localInputNow();
-  load();
+
+  window.setInterval(() => {
+    if (document.visibilityState !== 'visible') return;
+    if (root.getClientRects().length === 0) return;
+    load(true);
+  }, 20000);
+
+  load(false);
 })();
