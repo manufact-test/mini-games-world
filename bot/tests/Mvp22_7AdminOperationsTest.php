@@ -188,6 +188,65 @@ $nextOccurrence = array_values(array_filter($series, static fn(array $row): bool
 $assertSame(1, count($nextOccurrence), 'Recurring series must have one open next occurrence');
 $assert(str_starts_with((string)$nextOccurrence[0]['due_at_utc'], '2026-10-03 13:00:00'), 'Weekly recurrence must advance by seven days');
 
+$reminderTask = $service->createTask([
+    'title'=>'Проверить напоминание',
+    'category'=>'engineering',
+    'recurrence_code'=>'once',
+    'due_at_utc'=>'2026-09-26T12:05:00+00:00',
+    'owner_ref'=>'Влад',
+], 'telegram:1', $now);
+$beforeDue = $service->dueTaskReminderCandidates(new DateTimeImmutable('2026-09-26T12:04:59+00:00'));
+$assertSame(0, count(array_filter(
+    $beforeDue,
+    static fn(array $row): bool => (string)$row['task_id'] === (string)$reminderTask['task_id']
+)), 'Task reminder must not fire before the deadline');
+
+$atDue = $service->dueTaskReminderCandidates(new DateTimeImmutable('2026-09-26T12:05:00+00:00'));
+$dueIds = array_column($atDue, 'task_id');
+$assert(in_array((string)$reminderTask['task_id'], $dueIds, true), 'Task reminder must become due at the exact deadline');
+$assertSame(
+    true,
+    $service->claimTaskReminder((string)$reminderTask['task_id'], new DateTimeImmutable('2026-09-26T12:05:00+00:00')),
+    'First reminder worker must claim the due task'
+);
+$assertSame(
+    false,
+    $service->claimTaskReminder((string)$reminderTask['task_id'], new DateTimeImmutable('2026-09-26T12:05:30+00:00')),
+    'Concurrent reminder worker must not duplicate a live claim'
+);
+$assertSame(
+    true,
+    $service->markTaskReminderSent(
+        (string)$reminderTask['task_id'],
+        ['bell_event_id'=>'bell_test','telegram_chat_id'=>'1'],
+        new DateTimeImmutable('2026-09-26T12:05:01+00:00')
+    ),
+    'Successful reminder delivery must be recorded exactly once'
+);
+$afterReminder = $service->dueTaskReminderCandidates(new DateTimeImmutable('2026-09-26T12:06:00+00:00'));
+$assertSame(0, count(array_filter(
+    $afterReminder,
+    static fn(array $row): bool => (string)$row['task_id'] === (string)$reminderTask['task_id']
+)), 'Sent reminder must never repeat while the task stays overdue');
+$assertSame(
+    false,
+    $service->markTaskReminderSent(
+        (string)$reminderTask['task_id'],
+        ['bell_event_id'=>'bell_duplicate','telegram_chat_id'=>'1'],
+        new DateTimeImmutable('2026-09-26T12:06:01+00:00')
+    ),
+    'Reminder delivery audit must stay idempotent'
+);
+
+$futureRecurringIds = array_column(
+    $service->dueTaskReminderCandidates(new DateTimeImmutable('2026-09-26T14:00:00+00:00')),
+    'task_id'
+);
+$assert(
+    !in_array((string)$nextOccurrence[0]['task_id'], $futureRecurringIds, true),
+    'Next recurring occurrence must wait for its own future deadline'
+);
+
 $seasonReady = $service->updateSeasonReadiness('2026-q4', [
     'seasonal_awards_state'=>'ready',
     'top3_frames_state'=>'ready',
