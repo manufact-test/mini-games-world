@@ -232,19 +232,13 @@ final class AccountIdentityService
             "mgw-deleted-identity-v1\n" . $provider . "\n" . $subject,
             $this->deletedIdentitySecret
         );
-        try {
-            $rows = $database->fetchAll(
-                'SELECT block_until_utc
-                 FROM mgw_deleted_identity_tombstones
-                 WHERE provider=:provider AND provider_subject_hmac=:provider_subject_hmac
-                 LIMIT 1',
-                ['provider'=>$provider,'provider_subject_hmac'=>$hmac]
-            );
-        } catch (Throwable) {
-            // Keep pre-MVP-22.8 environments compatible until migration 0067
-            // is applied. Staging/production migration gates still require it.
-            return false;
-        }
+        $rows = $database->fetchAll(
+            'SELECT block_until_utc
+             FROM mgw_deleted_identity_tombstones
+             WHERE provider=:provider AND provider_subject_hmac=:provider_subject_hmac
+             LIMIT 1',
+            ['provider'=>$provider,'provider_subject_hmac'=>$hmac]
+        );
         if ($rows === []) return false;
 
         $blockUntil = trim((string)($rows[0]['block_until_utc'] ?? ''));
