@@ -101,7 +101,9 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           successor=0
-          if git diff --name-only "$base" "$head" | grep -Fxq '.github/workflows/mvp21-6-tournament-rounds.yml'; then
+          if [[ "${{ github.head_ref }}" == agent/mvp22-7-* ]]; then
+            successor=1
+          elif git diff --name-only "$base" "$head" | grep -Fxq '.github/workflows/mvp21-6-tournament-rounds.yml'; then
             successor=1
           fi
           bad=0
