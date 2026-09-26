@@ -96,7 +96,7 @@ final class AdminOperationsService
             'coverage'=>[
                 'release_history'=>'Журнал релизов начинается с MVP-22.7. Старые релизы не восстанавливаются задним числом.',
                 'season_schedule'=>'Контрольные точки T-21 / T-14 / T-7 читаются из существующего владельца сезонного календаря и не дублируются отдельным планировщиком.',
-                'cron'=>'MVP-22.7 не устанавливает и не меняет Cron. Регулярная Admin-задача создаёт следующую итерацию при завершении текущей.',
+                'cron'=>'MVP-22.7 не устанавливает и не меняет системный планировщик. Регулярная задача создаёт следующую итерацию при завершении текущей.',
             ],
         ];
     }
@@ -105,9 +105,9 @@ final class AdminOperationsService
     {
         $now = $this->utcNow($now);
         $actorRef = $this->requiredText($actorRef, 191, 'actor');
-        $title = $this->requiredText((string)($input['title'] ?? ''), 240, 'title');
-        $category = $this->enum((string)($input['category'] ?? 'operations'), self::TASK_CATEGORIES, 'category');
-        $recurrence = $this->enum((string)($input['recurrence_code'] ?? 'once'), self::TASK_RECURRENCES, 'recurrence');
+        $title = $this->requiredText((string)($input['title'] ?? ''), 240, 'Задача');
+        $category = $this->enum((string)($input['category'] ?? 'operations'), self::TASK_CATEGORIES, 'Категория');
+        $recurrence = $this->enum((string)($input['recurrence_code'] ?? 'once'), self::TASK_RECURRENCES, 'Повтор');
         $dueAt = $this->nullableUtc($input['due_at_utc'] ?? null);
         if ($recurrence !== 'once' && $dueAt === null) {
             throw new InvalidArgumentException('Для регулярной задачи нужно указать ближайший срок.');
@@ -150,7 +150,7 @@ final class AdminOperationsService
     ): array {
         $now = $this->utcNow($now);
         $actorRef = $this->requiredText($actorRef, 191, 'actor');
-        $taskId = $this->token($taskId, 64, 'task id');
+        $taskId = $this->token($taskId, 64, 'идентификатор задачи');
         $nowText = $this->sqlTime($now);
 
         return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
@@ -162,7 +162,7 @@ final class AdminOperationsService
         ): array {
             $before = $this->task($taskId, true);
             $status = array_key_exists('task_status', $input)
-                ? $this->enum((string)$input['task_status'], self::TASK_STATUSES, 'task status')
+                ? $this->enum((string)$input['task_status'], self::TASK_STATUSES, 'Статус')
                 : (string)$before['task_status'];
             $owner = array_key_exists('owner_ref', $input)
                 ? $this->nullableText((string)$input['owner_ref'], 191)
@@ -214,9 +214,9 @@ final class AdminOperationsService
         $planId = $this->id('plan');
         $row = [
             'plan_id'=>$planId,
-            'title'=>$this->requiredText((string)($input['title'] ?? ''), 240, 'title'),
-            'category'=>$this->enum((string)($input['category'] ?? 'product'), self::PLAN_CATEGORIES, 'category'),
-            'plan_status'=>$this->enum((string)($input['plan_status'] ?? 'idea'), self::PLAN_STATUSES, 'plan status'),
+            'title'=>$this->requiredText((string)($input['title'] ?? ''), 240, 'План'),
+            'category'=>$this->enum((string)($input['category'] ?? 'product'), self::PLAN_CATEGORIES, 'Категория'),
+            'plan_status'=>$this->enum((string)($input['plan_status'] ?? 'idea'), self::PLAN_STATUSES, 'Статус'),
             'target_period'=>$this->nullableText((string)($input['target_period'] ?? ''), 120),
             'owner_ref'=>$this->nullableText((string)($input['owner_ref'] ?? ''), 191),
             'notes'=>$this->nullableText((string)($input['notes'] ?? ''), 5000),
@@ -248,7 +248,7 @@ final class AdminOperationsService
     ): array {
         $now = $this->utcNow($now);
         $actorRef = $this->requiredText($actorRef, 191, 'actor');
-        $planId = $this->token($planId, 64, 'plan id');
+        $planId = $this->token($planId, 64, 'идентификатор плана');
         $nowText = $this->sqlTime($now);
 
         return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
@@ -260,13 +260,13 @@ final class AdminOperationsService
             $before = $this->plan($planId, true);
             $after = [
                 'title'=>array_key_exists('title', $input)
-                    ? $this->requiredText((string)$input['title'], 240, 'title')
+                    ? $this->requiredText((string)$input['title'], 240, 'План')
                     : (string)$before['title'],
                 'category'=>array_key_exists('category', $input)
-                    ? $this->enum((string)$input['category'], self::PLAN_CATEGORIES, 'category')
+                    ? $this->enum((string)$input['category'], self::PLAN_CATEGORIES, 'Категория')
                     : (string)$before['category'],
                 'plan_status'=>array_key_exists('plan_status', $input)
-                    ? $this->enum((string)$input['plan_status'], self::PLAN_STATUSES, 'plan status')
+                    ? $this->enum((string)$input['plan_status'], self::PLAN_STATUSES, 'Статус')
                     : (string)$before['plan_status'],
                 'target_period'=>array_key_exists('target_period', $input)
                     ? $this->nullableText((string)$input['target_period'], 120)
@@ -298,8 +298,8 @@ final class AdminOperationsService
         $now = $this->utcNow($now);
         $actorRef = $this->requiredText($actorRef, 191, 'actor');
         $releaseId = $this->id('release');
-        $environment = $this->enum((string)($input['environment'] ?? 'staging'), self::RELEASE_ENVIRONMENTS, 'environment');
-        $versionLabel = $this->requiredText((string)($input['version_label'] ?? ''), 80, 'version');
+        $environment = $this->enum((string)($input['environment'] ?? 'staging'), self::RELEASE_ENVIRONMENTS, 'Среда');
+        $versionLabel = $this->requiredText((string)($input['version_label'] ?? ''), 80, 'Версия');
         $existingRelease = $this->database->fetchValue(
             'SELECT COUNT(*) FROM mgw_admin_release_log
              WHERE environment=:environment AND version_label=:version_label',
@@ -315,7 +315,7 @@ final class AdminOperationsService
             'environment'=>$environment,
             'release_sha'=>$this->sha((string)($input['release_sha'] ?? '')),
             'released_at_utc'=>$this->requiredUtc($input['released_at_utc'] ?? $now->format(DATE_ATOM)),
-            'summary_text'=>$this->requiredText((string)($input['summary_text'] ?? ''), 5000, 'summary'),
+            'summary_text'=>$this->requiredText((string)($input['summary_text'] ?? ''), 5000, 'Что вошло'),
             'known_issues_text'=>$this->nullableText((string)($input['known_issues_text'] ?? ''), 5000),
             'rollback_link'=>$this->rollbackLink((string)($input['rollback_link'] ?? '')),
             'created_by_ref'=>$actorRef,
@@ -346,7 +346,7 @@ final class AdminOperationsService
     ): array {
         $now = $this->utcNow($now);
         $actorRef = $this->requiredText($actorRef, 191, 'actor');
-        $releaseId = $this->token($releaseId, 64, 'release id');
+        $releaseId = $this->token($releaseId, 64, 'идентификатор релиза');
         $nowText = $this->sqlTime($now);
 
         return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
@@ -357,7 +357,7 @@ final class AdminOperationsService
         ): array {
             $before = $this->release($releaseId, true);
             $summary = array_key_exists('summary_text', $input)
-                ? $this->requiredText((string)$input['summary_text'], 5000, 'summary')
+                ? $this->requiredText((string)$input['summary_text'], 5000, 'Что вошло')
                 : (string)$before['summary_text'];
             $issues = array_key_exists('known_issues_text', $input)
                 ? $this->nullableText((string)$input['known_issues_text'], 5000)
@@ -457,7 +457,7 @@ final class AdminOperationsService
                 if (is_array($existing) && in_array((string)$existing['task_status'], ['open','in_progress'], true)) {
                     $status = $packageReady ? 'done' : 'skipped';
                     $result = $packageReady
-                        ? 'Пакет наград следующего сезона переведён в READY.'
+                        ? 'Пакет наград следующего сезона переведён в состояние «Готово».'
                         : 'Граница сезона пройдена; дальнейшее состояние контролирует сезонная финализация.';
                     $this->database->execute(
                         'UPDATE mgw_admin_tasks
