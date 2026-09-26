@@ -320,3 +320,12 @@ bot/system/SystemAdminService.php
 bot/system/RuntimeFeatureFlagAdminService.php
 bot/database/migrations/20260926_0065_create_system_admin_control.php
 app/assets/js/admin-system.js
+
+
+# MVP-22.6 product/economy analytics. This is a read-only Admin surface over
+# existing account, match, purchase, tournament, matchmaking and ledger owners.
+# Missing historical telemetry (notably ads) stays explicitly unavailable.
+bot/admin-analytics.php
+bot/analytics/RealAccountScope.php
+bot/analytics/ProductEconomyAnalyticsService.php
+app/assets/js/admin-analytics.js
