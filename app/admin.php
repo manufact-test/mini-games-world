@@ -14,11 +14,12 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Панель администратора</title>
-  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=15&mvp22_6=product-economy-analytics-v1&mvp22_5=system-status-ru-ux-v2&replay=17-6&mvp22_4=admin-ux-scale-v1&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
+  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=16&mvp22_7=tasks-plans-releases-v1&mvp22_6=product-economy-analytics-v1&mvp22_5=system-status-ru-ux-v2&replay=17-6&mvp22_4=admin-ux-scale-v1&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="./assets/js/admin-shell.js?v=9&mvp22_6=analytics-nav-v1&mvp22_4=admin-ux-scale-v1&test-coins=staging" defer></script>
+  <script src="./assets/js/admin-shell.js?v=10&mvp22_7=operations-nav-v1&mvp22_6=analytics-nav-v1&mvp22_4=admin-ux-scale-v1&test-coins=staging" defer></script>
   <script src="./assets/js/admin-system.js?v=2&mvp22_5=system-status-ru-ux-v2" defer></script>
   <script src="./assets/js/admin-analytics.js?v=1&mvp22_6=product-economy-analytics-v1" defer></script>
+  <script src="./assets/js/admin-operations.js?v=1&mvp22_7=tasks-plans-releases-v1" defer></script>
   <script src="./assets/js/admin-antifraud.js?v=1&mvp22_4=case-nav-v4" defer></script>
   <script src="./assets/js/admin-compensation.js?v=5&mvp22_2=admin-ux-scale-v1" defer></script>
   <script src="./assets/js/admin-reports.js?v=3&mvp18=reports&mvp22_3=admin-ux-scale-v1" defer></script>
@@ -28,7 +29,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <script src="./assets/js/admin-tournaments.js?v=18&mvp21_3=admin-ux-scale-v1&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3&mvp21_5=corrective-v5&mvp21_6=fixture-progression-helper-v3&mvp21_8=corrective-v12&mvp21_8_cancel=cancellation-emergency-v1&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v2" defer></script>
 </head>
 <body>
-  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-compensation-api="../bot/admin-compensation.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-support-api="../bot/admin-support.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php" data-system-api="../bot/admin-system.php" data-analytics-api="../bot/admin-analytics.php">
+  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-compensation-api="../bot/admin-compensation.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-support-api="../bot/admin-support.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php" data-system-api="../bot/admin-system.php" data-analytics-api="../bot/admin-analytics.php" data-operations-api="../bot/admin-operations.php">
     <header class="mgw-admin__header">
       <div class="mgw-admin__title">
         <p class="mgw-admin__eyebrow">MINI GAMES WORLD</p>
@@ -48,6 +49,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
     <nav class="mgw-admin__nav" aria-label="Разделы панели администратора" data-admin-nav>
       <button type="button" data-admin-nav-target="overview">Обзор</button>
       <button type="button" data-admin-nav-target="analytics">Аналитика</button>
+      <button type="button" data-admin-nav-target="operations">Задачи и релизы</button>
       <button type="button" data-admin-nav-target="users">Пользователи</button>
       <button type="button" data-admin-nav-target="antifraud">Проверка игр</button>
       <button type="button" data-admin-nav-target="support">Поддержка</button>
@@ -207,6 +209,233 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           <span data-analytics-updated>—</span>
           <button type="button" data-analytics-refresh>Обновить аналитику</button>
         </div>
+      </article>
+
+      <article class="mgw-admin__card mgw-admin__card--wide" data-admin-section="operations" data-admin-operations>
+        <div class="mgw-admin__card-head">
+          <h2>Задачи, планы и релизы</h2>
+          <span>Операционная работа</span>
+        </div>
+
+        <div class="mgw-admin__operations-status" data-operations-status>Загружаю операционные данные…</div>
+
+        <div class="mgw-admin__operations-kpis">
+          <div><span>Активных задач</span><strong data-operations-kpi="tasks">—</strong></div>
+          <div><span>Просрочено</span><strong data-operations-kpi="overdue">—</strong></div>
+          <div><span>Планов в работе</span><strong data-operations-kpi="plans">—</strong></div>
+          <div><span>Релизов в журнале</span><strong data-operations-kpi="releases">—</strong></div>
+        </div>
+
+        <details class="mgw-admin__technical-disclosure mgw-admin__operations-panel" open>
+          <summary>Регулярные задачи</summary>
+          <div class="mgw-admin__operations-body">
+            <p class="mgw-admin__operations-help">Здесь хранится рабочий список с ответственным, сроком, статусом и результатом. Для ежедневных, еженедельных, ежемесячных и квартальных задач следующая итерация создаётся после завершения текущей — отдельный Cron для этого не добавляется.</p>
+
+            <div class="mgw-admin__operations-create-grid">
+              <label class="mgw-admin__field">
+                <span>Задача</span>
+                <input data-operations-task-title type="text" maxlength="240" autocomplete="off" placeholder="Например: проверить отчёт по экономике">
+              </label>
+              <label class="mgw-admin__field">
+                <span>Категория</span>
+                <select data-operations-task-category>
+                  <option value="operations">Операции</option>
+                  <option value="product">Продукт</option>
+                  <option value="engineering">Разработка</option>
+                  <option value="support">Поддержка</option>
+                  <option value="content">Контент</option>
+                  <option value="other">Другое</option>
+                </select>
+              </label>
+              <label class="mgw-admin__field">
+                <span>Повтор</span>
+                <select data-operations-task-recurrence>
+                  <option value="once">Один раз</option>
+                  <option value="daily">Каждый день</option>
+                  <option value="weekly">Каждую неделю</option>
+                  <option value="monthly">Каждый месяц</option>
+                  <option value="quarterly">Каждый квартал</option>
+                </select>
+              </label>
+              <label class="mgw-admin__field">
+                <span>Ближайший срок</span>
+                <input data-operations-task-due type="datetime-local">
+              </label>
+              <label class="mgw-admin__field">
+                <span>Ответственный</span>
+                <input data-operations-task-owner type="text" maxlength="191" autocomplete="off" placeholder="Имя или роль">
+              </label>
+            </div>
+            <div class="mgw-admin__operations-actions">
+              <button type="button" data-operations-create-task>Добавить задачу</button>
+              <button type="button" data-operations-refresh>Обновить</button>
+            </div>
+
+            <div class="mgw-admin__operations-list" data-operations-tasks></div>
+
+            <details class="mgw-admin__list-disclosure">
+              <summary><span><strong>Недавно завершённые</strong><small>Результат и история выполнения</small></span><i aria-hidden="true"></i></summary>
+              <div class="mgw-admin__operations-list" data-operations-closed-tasks></div>
+            </details>
+          </div>
+        </details>
+
+        <details class="mgw-admin__technical-disclosure mgw-admin__operations-panel">
+          <summary>Подготовка следующего рейтингового сезона</summary>
+          <div class="mgw-admin__operations-body">
+            <div class="mgw-admin__season-preparation-status" data-operations-season-status></div>
+            <div class="mgw-admin__season-preparation-meta" data-operations-season-meta></div>
+            <div class="mgw-admin__season-reminders" data-operations-season-reminders></div>
+
+            <div class="mgw-admin__season-checklist" data-operations-season-checklist hidden>
+              <label>
+                <span>Сезонные награды</span>
+                <select data-season-ready="seasonal_awards_state">
+                  <option value="pending">Ожидает</option>
+                  <option value="ready">Готово</option>
+                </select>
+              </label>
+              <label>
+                <span>Рамки топ-3</span>
+                <select data-season-ready="top3_frames_state">
+                  <option value="pending">Ожидает</option>
+                  <option value="ready">Готово</option>
+                  <option value="not_required">Не требуется</option>
+                </select>
+              </label>
+              <label>
+                <span>Годовая медаль / фрагмент квартала</span>
+                <select data-season-ready="yearly_medal_state">
+                  <option value="pending">Ожидает</option>
+                  <option value="ready">Готово</option>
+                  <option value="not_required">Не требуется</option>
+                </select>
+              </label>
+              <label>
+                <span>Названия, описания и тексты уведомлений</span>
+                <select data-season-ready="localization_state">
+                  <option value="pending">Ожидает</option>
+                  <option value="ready">Готово</option>
+                </select>
+              </label>
+              <label>
+                <span>Предпросмотр и проверка материалов</span>
+                <select data-season-ready="preview_validation_state">
+                  <option value="pending">Ожидает</option>
+                  <option value="ready">Готово</option>
+                </select>
+              </label>
+            </div>
+            <div class="mgw-admin__operations-actions" data-operations-season-actions hidden>
+              <button type="button" data-operations-save-season>Сохранить готовность пакета</button>
+            </div>
+            <p class="mgw-admin__operations-help">Финальный статус <strong>READY</strong> вычисляется существующим владельцем сезонного жизненного цикла. Контрольные точки T‑21, T‑14 и T‑7 также берутся оттуда — этот раздел не создаёт второй календарь напоминаний.</p>
+          </div>
+        </details>
+
+        <details class="mgw-admin__technical-disclosure mgw-admin__operations-panel">
+          <summary>Future Plans</summary>
+          <div class="mgw-admin__operations-body">
+            <div class="mgw-admin__operations-create-grid">
+              <label class="mgw-admin__field">
+                <span>План</span>
+                <input data-operations-plan-title type="text" maxlength="240" autocomplete="off" placeholder="Что хотим сделать позже">
+              </label>
+              <label class="mgw-admin__field">
+                <span>Категория</span>
+                <select data-operations-plan-category>
+                  <option value="product">Продукт</option>
+                  <option value="engineering">Разработка</option>
+                  <option value="operations">Операции</option>
+                  <option value="content">Контент</option>
+                  <option value="growth">Рост</option>
+                  <option value="other">Другое</option>
+                </select>
+              </label>
+              <label class="mgw-admin__field">
+                <span>Статус</span>
+                <select data-operations-plan-status>
+                  <option value="idea">Идея</option>
+                  <option value="planned">Запланировано</option>
+                  <option value="in_progress">В работе</option>
+                  <option value="blocked">Заблокировано</option>
+                  <option value="done">Готово</option>
+                  <option value="cancelled">Отменено</option>
+                </select>
+              </label>
+              <label class="mgw-admin__field">
+                <span>Период</span>
+                <input data-operations-plan-period type="text" maxlength="120" autocomplete="off" placeholder="Например: после MVP-22 или Q1 2027">
+              </label>
+              <label class="mgw-admin__field">
+                <span>Ответственный</span>
+                <input data-operations-plan-owner type="text" maxlength="191" autocomplete="off" placeholder="Имя или роль">
+              </label>
+              <label class="mgw-admin__field mgw-admin__field--wide">
+                <span>Заметки</span>
+                <textarea data-operations-plan-notes rows="3" maxlength="5000" placeholder="Контекст, зависимости, что считать готовым"></textarea>
+              </label>
+            </div>
+            <div class="mgw-admin__operations-actions">
+              <button type="button" data-operations-create-plan>Добавить в планы</button>
+            </div>
+            <div class="mgw-admin__operations-list" data-operations-plans></div>
+          </div>
+        </details>
+
+        <details class="mgw-admin__technical-disclosure mgw-admin__operations-panel">
+          <summary>Release log</summary>
+          <div class="mgw-admin__operations-body">
+            <div class="mgw-admin__release-current">
+              <span>Текущая runtime-сборка</span>
+              <strong data-operations-runtime-build>—</strong>
+            </div>
+            <p class="mgw-admin__operations-help" data-operations-release-coverage>Журнал начинается с MVP-22.7. Старые релизы задним числом не придумываются.</p>
+
+            <div class="mgw-admin__operations-create-grid">
+              <label class="mgw-admin__field">
+                <span>Версия</span>
+                <input data-operations-release-version type="text" maxlength="80" autocomplete="off" placeholder="Например: 1.22.7">
+              </label>
+              <label class="mgw-admin__field">
+                <span>Среда</span>
+                <select data-operations-release-environment>
+                  <option value="staging">Тестовая</option>
+                  <option value="production">Рабочая</option>
+                </select>
+              </label>
+              <label class="mgw-admin__field">
+                <span>Полный SHA</span>
+                <input data-operations-release-sha type="text" maxlength="40" autocomplete="off" placeholder="40 символов">
+              </label>
+              <label class="mgw-admin__field">
+                <span>Дата релиза</span>
+                <input data-operations-release-date type="datetime-local">
+              </label>
+              <label class="mgw-admin__field mgw-admin__field--wide">
+                <span>Что вошло</span>
+                <textarea data-operations-release-summary rows="3" maxlength="5000" placeholder="Короткое описание релиза"></textarea>
+              </label>
+              <label class="mgw-admin__field mgw-admin__field--wide">
+                <span>Известные проблемы</span>
+                <textarea data-operations-release-issues rows="3" maxlength="5000" placeholder="Оставьте пустым, если известных проблем нет"></textarea>
+              </label>
+              <label class="mgw-admin__field mgw-admin__field--wide">
+                <span>Ссылка на инструкцию / точку отката</span>
+                <input data-operations-release-rollback type="url" maxlength="500" autocomplete="off" placeholder="https://github.com/manufact-test/mini-games-world/...">
+              </label>
+            </div>
+            <div class="mgw-admin__operations-actions">
+              <button type="button" data-operations-create-release>Добавить запись релиза</button>
+            </div>
+            <div class="mgw-admin__operations-list" data-operations-releases></div>
+          </div>
+        </details>
+
+        <details class="mgw-admin__technical-disclosure mgw-admin__operations-panel">
+          <summary>Журнал изменений раздела</summary>
+          <div class="mgw-admin__history" data-operations-audit></div>
+        </details>
       </article>
 
       <article class="mgw-admin__card mgw-admin__card--wide" data-admin-section="system" data-admin-system>
