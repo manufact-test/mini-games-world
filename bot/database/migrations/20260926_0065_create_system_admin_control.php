@@ -36,6 +36,9 @@ CREATE TABLE IF NOT EXISTS mgw_system_admin_control (
     staging_accepted_at_utc DATETIME(6) NULL,
     staging_checklist_json TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
     staging_notes TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+    staging_rehearsal_active TINYINT(1) NOT NULL DEFAULT 0,
+    staging_rehearsal_started_at_utc DATETIME(6) NULL,
+    staging_rehearsal_started_by VARCHAR(191) COLLATE utf8mb4_bin NULL,
     activation_announcement_event_id VARCHAR(96) CHARACTER SET ascii COLLATE ascii_bin NULL,
     activation_announcement_sent_at_utc DATETIME(6) NULL,
     updated_at_utc DATETIME(6) NOT NULL
@@ -78,6 +81,9 @@ CREATE TABLE IF NOT EXISTS mgw_system_admin_control (
     staging_accepted_at_utc TEXT NULL,
     staging_checklist_json TEXT NULL,
     staging_notes TEXT NULL,
+    staging_rehearsal_active INTEGER NOT NULL DEFAULT 0,
+    staging_rehearsal_started_at_utc TEXT NULL,
+    staging_rehearsal_started_by TEXT NULL,
     activation_announcement_event_id TEXT NULL,
     activation_announcement_sent_at_utc TEXT NULL,
     updated_at_utc TEXT NOT NULL
