@@ -1,0 +1,74 @@
+name: MVP-23 Profile route latency
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js'
+      - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish-mobile-nav-v2.js'
+      - 'app/assets/js/profile/mgw-mobile-profile-animation-guard-v2.js'
+      - 'app/v110.php'
+      - 'bot/tests/Mvp23ProfileRouteLatencyContractTest.php'
+      - 'bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php'
+      - '.github/workflows/mvp23-profile-route-latency.yml'
+      - '.github/workflows/mvp23-mobile-cold-first-interaction.yml'
+      - '.github/workflows/mvp22-9-incident-recovery.yml'
+      - '.github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp23-profile-route-latency-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Profile route latency contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l app/v110.php
+          php -l bot/tests/Mvp23ProfileRouteLatencyContractTest.php
+          php -l bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php
+
+      - name: JavaScript syntax
+        run: |
+          node --check app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
+          node --check app/assets/js/production-clean-entry-v110-mvp19-3-final-polish-mobile-nav-v2.js
+          node --check app/assets/js/profile/mgw-mobile-profile-animation-guard-v2.js
+
+      - name: Profile route latency proof
+        run: php bot/tests/Mvp23ProfileRouteLatencyContractTest.php
+
+      - name: Preserve previous manual acceptance corrective
+        run: php bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php
+
+      - name: Frozen corrective scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(\.github/workflows/(mvp23-profile-route-latency|mvp23-mobile-cold-first-interaction|mvp22-9-incident-recovery|mvp19-3-entry-effects-runtime-diagnostic)\.yml|app/assets/js/production-clean-entry-v110-mvp19-3-final-polish\.js|app/assets/js/production-clean-entry-v110-mvp19-3-final-polish-mobile-nav-v2\.js|app/assets/js/profile/mgw-mobile-profile-animation-guard-v2\.js|app/v110\.php|bot/tests/Mvp23ProfileRouteLatencyContractTest\.php)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected Profile latency paths:\n%s\n' "$bad" >&2; exit 1; }

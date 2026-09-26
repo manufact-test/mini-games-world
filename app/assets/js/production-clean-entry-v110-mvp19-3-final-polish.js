@@ -124,57 +124,20 @@ function armMgwEntryLiveArtOwner(){
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', armMgwEntryLiveArtOwner, { once:true });
 else armMgwEntryLiveArtOwner();
 
-/* Mobile Profile first-route stabilizer.
-   The canonical boot already prepares Profile under the preloader. The remaining
-   Android/Telegram hitch is the first *real* compositor state change: Profile and
-   its metallic nav icon have never actually owned their .active CSS state. Warm
-   that exact state only while the canonical covered prewarm pass is running, then
-   use a light transition guard around every real enter/leave so the heavy Profile
-   background never owns the tap frame. No route/state/event ownership changes. */
+/* Mobile Profile warmup.
+   Profile is already rendered under the preloader and the shell now publishes
+   every primary route atomically. Keep only the covered exact-active warm pass:
+   the former 360 ms route-settle class was applied on every Profile enter/leave,
+   so Telegram WebView intentionally held Profile animation/compositor work after
+   the tap even though the DOM was already ready. That artificial window was the
+   persistent ~0.5 s Profile-only latency seen from both top and bottom buttons. */
 const MGW_MOBILE_PROFILE_MEDIA = '(max-width: 640px), (pointer: coarse)';
-const MGW_PROFILE_ROUTE_SETTLE_MS = 360;
-let mgwProfileRouteSettleTimer = 0;
 let mgwExactProfileWarmStarted = false;
 
 function isMgwMobileProfilePresentation(){
   return typeof window.matchMedia === 'function'
     && window.matchMedia(MGW_MOBILE_PROFILE_MEDIA).matches;
 }
-
-function currentMgwShellRoute(){
-  return String(document.querySelector('.screen.active')?.dataset.screen || '').trim();
-}
-
-function routeFromMgwNavigationTarget(target){
-  if (!(target instanceof Element)) return '';
-  const shellButton = target.closest('[data-shell-nav]');
-  if (shellButton instanceof HTMLElement) return String(shellButton.dataset.shellNav || '').trim();
-  if (target.closest('#profileOpen')) return 'profile';
-  return '';
-}
-
-function beginMgwProfileRouteSettle(){
-  if (!isMgwMobileProfilePresentation()) return;
-  document.documentElement.classList.add('mgw-profile-route-settling');
-  if (mgwProfileRouteSettleTimer) window.clearTimeout(mgwProfileRouteSettleTimer);
-  mgwProfileRouteSettleTimer = window.setTimeout(() => {
-    mgwProfileRouteSettleTimer = 0;
-    document.documentElement.classList.remove('mgw-profile-route-settling');
-  }, MGW_PROFILE_ROUTE_SETTLE_MS);
-}
-
-function handleMgwProfileRouteIntent(event){
-  if (!isMgwMobileProfilePresentation()) return;
-  const targetRoute = routeFromMgwNavigationTarget(event.target);
-  if (!targetRoute) return;
-  const currentRoute = currentMgwShellRoute();
-  if (targetRoute === 'profile' || currentRoute === 'profile') beginMgwProfileRouteSettle();
-}
-
-// pointerdown gets the lightweight visual guard in place before the click task.
-// click is a fallback for WebViews / keyboard activation without Pointer Events.
-document.addEventListener('pointerdown', handleMgwProfileRouteIntent, true);
-document.addEventListener('click', handleMgwProfileRouteIntent, true);
 
 function armMgwExactProfileWarm(){
   if (!isMgwMobileProfilePresentation()) return;
