@@ -11,9 +11,13 @@ final class AccountIdentityService
 
     public function __construct(
         private DatabaseConnectionInterface $database,
-        private int $sessionTtlSec = 2592000
+        private int $sessionTtlSec = 2592000,
+        private string $deletedIdentitySecret = '',
+        private int $deletedIdentityBlockSec = 86700
     ) {
         $this->sessionTtlSec = max(300, $this->sessionTtlSec);
+        $this->deletedIdentitySecret = trim($this->deletedIdentitySecret);
+        $this->deletedIdentityBlockSec = max(300, $this->deletedIdentityBlockSec);
     }
 
     public function resolveTelegramUser(array $telegramUser, string $sessionId): array
@@ -50,6 +54,9 @@ final class AccountIdentityService
                     $identity = $this->findIdentity($database, $provider, $subject, true);
                     $created = false;
                     if ($identity === null) {
+                        if ($this->deletedIdentityReplayBlocked($database, $provider, $subject)) {
+                            throw new RuntimeException('Предыдущий аккаунт был удалён. Для нового входа заново откройте MINI GAMES WORLD через Telegram позже.');
+                        }
                         $mgwId = $this->createAccount($database, $provider, $subject, $providerUsername);
                         $created = true;
                     } else {
@@ -209,6 +216,47 @@ final class AccountIdentityService
                  WHERE session_key_hash = :session_key_hash AND mgw_id = :mgw_id',
                 ['device_id' => $deviceId, 'provider' => $provider, 'last_seen_at' => $now, 'expires_at' => $expiresAt, 'session_key_hash' => $sessionHash, 'mgw_id' => $mgwId]
             );
+        }
+        return true;
+    }
+
+    private function deletedIdentityReplayBlocked(
+        DatabaseConnectionInterface $database,
+        string $provider,
+        string $subject
+    ): bool {
+        if ($this->deletedIdentitySecret === '') return false;
+
+        $hmac = hash_hmac(
+            'sha256',
+            "mgw-deleted-identity-v1\n" . $provider . "\n" . $subject,
+            $this->deletedIdentitySecret
+        );
+        try {
+            $rows = $database->fetchAll(
+                'SELECT block_until_utc
+                 FROM mgw_deleted_identity_tombstones
+                 WHERE provider=:provider AND provider_subject_hmac=:provider_subject_hmac
+                 LIMIT 1',
+                ['provider'=>$provider,'provider_subject_hmac'=>$hmac]
+            );
+        } catch (Throwable) {
+            // Keep pre-MVP-22.8 environments compatible until migration 0067
+            // is applied. Staging/production migration gates still require it.
+            return false;
+        }
+        if ($rows === []) return false;
+
+        $blockUntil = trim((string)($rows[0]['block_until_utc'] ?? ''));
+        if ($blockUntil === '') return false;
+        $expires = strtotime($blockUntil . ' UTC');
+        if ($expires === false || $expires <= time()) {
+            $database->execute(
+                'DELETE FROM mgw_deleted_identity_tombstones
+                 WHERE provider=:provider AND provider_subject_hmac=:provider_subject_hmac',
+                ['provider'=>$provider,'provider_subject_hmac'=>$hmac]
+            );
+            return false;
         }
         return true;
     }
