@@ -510,13 +510,36 @@ final class SystemAdminService
         $rows = $this->database->fetchAll(
             'SELECT COUNT(*) AS total
              FROM mgw_users u
-             WHERE NOT EXISTS (
-                 SELECT 1
-                 FROM mgw_identities dev_identity
-                 WHERE dev_identity.mgw_id = u.mgw_id
-                   AND dev_identity.provider = :development_provider
-             )',
-            ['development_provider'=>'development']
+             WHERE u.status <> :retired_fixture_status
+               AND NOT EXISTS (
+                   SELECT 1
+                   FROM mgw_identities dev_identity
+                   WHERE dev_identity.mgw_id = u.mgw_id
+                     AND dev_identity.provider = :development_provider
+               )
+               AND NOT EXISTS (
+                   SELECT 1
+                   FROM mgw_account_ownership fixture_ownership
+                   WHERE fixture_ownership.mgw_id = u.mgw_id
+                     AND (
+                         (
+                             fixture_ownership.source_type = :legacy_fixture_source_type
+                             AND substr(fixture_ownership.legacy_user_id, 1, 9) = :fixture_legacy_prefix
+                         )
+                         OR (
+                             fixture_ownership.source_type = :runtime_identity_source_type
+                             AND substr(fixture_ownership.source_ref, 1, 21) = :fixture_source_ref_prefix
+                         )
+                     )
+               )',
+            [
+                'retired_fixture_status'=>'staging_fixture_retired',
+                'development_provider'=>'development',
+                'legacy_fixture_source_type'=>'staging_fixture_repair',
+                'runtime_identity_source_type'=>'runtime_identity',
+                'fixture_legacy_prefix'=>'stg_tour_',
+                'fixture_source_ref_prefix'=>'development:stg_tour_',
+            ]
         );
         return max(0, (int)($rows[0]['total'] ?? 0));
     }

@@ -60,10 +60,16 @@ $assert(
 
 $assert(
     str_contains($system, 'FROM mgw_users u')
+        && str_contains($system, 'u.status <> :retired_fixture_status')
         && str_contains($system, "dev_identity.provider = :development_provider")
-        && str_contains($system, "['development_provider'=>'development']")
-        && str_contains($system, 'READINESS_THRESHOLD = 500'),
-    '500-user readiness must read canonical MGW accounts and exclude development identities without a parallel counter.'
+        && str_contains($system, 'FROM mgw_account_ownership fixture_ownership')
+        && str_contains($system, "fixture_ownership.source_type = :legacy_fixture_source_type")
+        && str_contains($system, "fixture_ownership.source_type = :runtime_identity_source_type")
+        && str_contains($system, "'fixture_legacy_prefix'=>'stg_tour_'")
+        && str_contains($system, "'fixture_source_ref_prefix'=>'development:stg_tour_'")
+        && str_contains($system, 'READINESS_THRESHOLD = 500')
+        && !str_contains($system, 'DELETE FROM mgw_users'),
+    '500-user readiness must exclude development and staging tournament fixtures without deleting historical accounts.'
 );
 
 $assert(

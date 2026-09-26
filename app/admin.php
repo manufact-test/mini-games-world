@@ -110,7 +110,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
         <div class="mgw-admin__system-status" data-system-status>Загружаю состояние системы…</div>
 
         <div class="mgw-admin__system-kpis">
-          <div><span>Аккаунтов</span><strong data-system-user-count>—</strong></div>
+          <div><span>Реальных аккаунтов</span><strong data-system-user-count>—</strong></div>
           <div><span>Порог сезона</span><strong data-system-user-threshold>500</strong></div>
           <div><span>Соревнования</span><strong data-system-competition>—</strong></div>
           <div><span>Готовность</span><strong data-system-readiness>—</strong></div>
