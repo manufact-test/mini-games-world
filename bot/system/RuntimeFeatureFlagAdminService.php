@@ -17,7 +17,7 @@ final class RuntimeFeatureFlagAdminService
     {
         $this->runtimeFile = trim($this->runtimeFile);
         if ($this->runtimeFile === '') {
-            throw new InvalidArgumentException('Runtime feature-flag path is required.');
+            throw new InvalidArgumentException('Не задан путь к системной конфигурации переключателей.');
         }
     }
 
@@ -66,7 +66,7 @@ final class RuntimeFeatureFlagAdminService
         if (!is_file($this->runtimeFile)) return [];
         $runtime = require $this->runtimeFile;
         if (!is_array($runtime)) {
-            throw new RuntimeException('Private runtime.php must return an array.');
+            throw new RuntimeException('Файл системной конфигурации имеет неверный формат.');
         }
         return $runtime;
     }
@@ -75,7 +75,7 @@ final class RuntimeFeatureFlagAdminService
     {
         $directory = dirname($this->runtimeFile);
         if (!is_dir($directory) || !is_writable($directory)) {
-            throw new RuntimeException('Private runtime directory is not writable.');
+            throw new RuntimeException('Каталог системной конфигурации недоступен для записи.');
         }
 
         $body = "<?php\ndeclare(strict_types=1);\n\n// Managed by MINI GAMES WORLD Web Admin.\nreturn "
@@ -84,12 +84,12 @@ final class RuntimeFeatureFlagAdminService
         $temp = $this->runtimeFile . '.mgw-' . bin2hex(random_bytes(6)) . '.tmp';
 
         if (file_put_contents($temp, $body, LOCK_EX) === false) {
-            throw new RuntimeException('Unable to write runtime feature-flag temporary file.');
+            throw new RuntimeException('Не удалось подготовить временный файл системных переключателей.');
         }
         @chmod($temp, 0640);
         if (!@rename($temp, $this->runtimeFile)) {
             @unlink($temp);
-            throw new RuntimeException('Unable to atomically publish runtime feature flags.');
+            throw new RuntimeException('Не удалось безопасно сохранить системные переключатели.');
         }
     }
 
