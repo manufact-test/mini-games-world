@@ -237,29 +237,30 @@
       return;
     }
 
-    const pages = Math.max(1, Math.ceil(rows.length / pageSize));
-    listPages[key] = Math.min(Math.max(1, Number(listPages[key] || 1)), pages);
-    const page = listPages[key];
-    const start = (page - 1) * pageSize;
-    rows.slice(start, start + pageSize).forEach(row => box.append(renderRow(row)));
+    const ux = window.MGWAdminUX;
+    const meta = ux?.paginate
+      ? ux.paginate(rows, listPages[key], pageSize)
+      : {
+          rows:rows.slice(0, pageSize),
+          page:1,
+          totalPages:Math.max(1, Math.ceil(rows.length / pageSize)),
+          total:rows.length,
+          from:1,
+          to:Math.min(rows.length, pageSize),
+        };
+    listPages[key] = Number(meta.page || 1);
+    meta.rows.forEach(row => box.append(renderRow(row)));
 
-    if (pages <= 1) return;
+    if (Number(meta.totalPages || 1) <= 1) return;
     const pager = document.createElement('div');
     pager.className = 'mgw-admin__pager mgw-admin__operations-pager';
-    const prev = button('←', () => {
-      listPages[key] = Math.max(1, listPages[key] - 1);
-      renderPagedList(box, rows, key, pageSize, renderRow, emptyText);
-    });
-    const label = document.createElement('span');
-    label.textContent = page + ' / ' + pages;
-    const next = button('→', () => {
-      listPages[key] = Math.min(pages, listPages[key] + 1);
-      renderPagedList(box, rows, key, pageSize, renderRow, emptyText);
-    });
-    prev.disabled = page <= 1;
-    next.disabled = page >= pages;
-    pager.append(prev, label, next);
     box.append(pager);
+    if (ux?.renderPager) {
+      ux.renderPager(pager, meta, target => {
+        listPages[key] = target;
+        renderPagedList(box, rows, key, pageSize, renderRow, emptyText);
+      });
+    }
   };
 
   const renderTask = (row, editable) => {
