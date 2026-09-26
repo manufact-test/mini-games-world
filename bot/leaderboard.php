@@ -38,27 +38,27 @@ try {
         clean_string($payload['game_type'] ?? 'tictactoe', 60)
     );
 
-    $database = PdoConnectionFactory::create($databaseConfig);
-
     // Leaderboards are a read-heavy public surface. Catch up only already
     // normalized DB match rows here; do not run the heavier JSON->DB realtime
     // synchronization used by Profile. Realtime projection already owns match
     // publication on API success, so this keeps the board fresh without making
     // every tab switch pay a full runtime synchronization.
     //
-    // Catch-up is opportunistic maintenance, not the read owner. A concurrent
-    // or malformed pending projection must not turn an otherwise readable
-    // leaderboard snapshot into HTTP 500. Keep retrying on later reads and log
-    // the deferred projection; the canonical snapshot below still fails closed
-    // if leaderboard storage itself is unavailable.
+    // Catch-up is opportunistic maintenance, not the read owner. It deliberately
+    // gets its own DB connection. If concurrent post-match maintenance fails or
+    // leaves its connection unusable, the public leaderboard snapshot below
+    // still starts from a fresh read connection rather than inheriting that
+    // connection state.
     try {
-        (new PerGameRatingRuntimeBridge($configRef, $router, $database))
+        $maintenanceDatabase = PdoConnectionFactory::create($databaseConfig);
+        (new PerGameRatingRuntimeBridge($configRef, $router, $maintenanceDatabase))
             ->processProjectedMatches(50);
     } catch (Throwable $catchupError) {
         error_log('MGW leaderboard rating catch-up deferred: ' . $catchupError->getMessage());
     }
 
-    $leaderboard = (new LeaderboardService($database))->snapshot(
+    $readDatabase = PdoConnectionFactory::create($databaseConfig);
+    $leaderboard = (new LeaderboardService($readDatabase))->snapshot(
         $gameType,
         $mgwId,
         LeaderboardService::MAX_LIMIT
