@@ -550,15 +550,27 @@ final class AccountDataLifecycleService
             if ($this->tableExists('mgw_invites')) {
                 $database->execute(
                     "UPDATE mgw_invites
-                     SET inviter_ref=CASE WHEN inviter_mgw_id=:mgw_id THEN :player_ref ELSE inviter_ref END,
-                         inviter_legacy_user_id=CASE WHEN inviter_mgw_id=:mgw_id THEN NULL ELSE inviter_legacy_user_id END,
-                         inviter_name=CASE WHEN inviter_mgw_id=:mgw_id THEN 'Удалённый игрок' ELSE inviter_name END,
-                         invitee_ref=CASE WHEN invitee_mgw_id=:mgw_id THEN :player_ref ELSE invitee_ref END,
-                         invitee_legacy_user_id=CASE WHEN invitee_mgw_id=:mgw_id THEN NULL ELSE invitee_legacy_user_id END,
-                         invitee_name=CASE WHEN invitee_mgw_id=:mgw_id THEN 'Удалённый игрок' ELSE invitee_name END,
+                     SET inviter_ref=CASE WHEN inviter_mgw_id=:inviter_ref_mgw_id THEN :inviter_player_ref ELSE inviter_ref END,
+                         inviter_legacy_user_id=CASE WHEN inviter_mgw_id=:inviter_legacy_mgw_id THEN NULL ELSE inviter_legacy_user_id END,
+                         inviter_name=CASE WHEN inviter_mgw_id=:inviter_name_mgw_id THEN 'Удалённый игрок' ELSE inviter_name END,
+                         invitee_ref=CASE WHEN invitee_mgw_id=:invitee_ref_mgw_id THEN :invitee_player_ref ELSE invitee_ref END,
+                         invitee_legacy_user_id=CASE WHEN invitee_mgw_id=:invitee_legacy_mgw_id THEN NULL ELSE invitee_legacy_user_id END,
+                         invitee_name=CASE WHEN invitee_mgw_id=:invitee_name_mgw_id THEN 'Удалённый игрок' ELSE invitee_name END,
                          updated_at_utc=:updated_at
-                     WHERE inviter_mgw_id=:mgw_id OR invitee_mgw_id=:mgw_id",
-                    ['mgw_id'=>$mgwId,'player_ref'=>$playerRef,'updated_at'=>$nowText]
+                     WHERE inviter_mgw_id=:where_inviter_mgw_id OR invitee_mgw_id=:where_invitee_mgw_id",
+                    [
+                        'inviter_ref_mgw_id'=>$mgwId,
+                        'inviter_player_ref'=>$playerRef,
+                        'inviter_legacy_mgw_id'=>$mgwId,
+                        'inviter_name_mgw_id'=>$mgwId,
+                        'invitee_ref_mgw_id'=>$mgwId,
+                        'invitee_player_ref'=>$playerRef,
+                        'invitee_legacy_mgw_id'=>$mgwId,
+                        'invitee_name_mgw_id'=>$mgwId,
+                        'updated_at'=>$nowText,
+                        'where_inviter_mgw_id'=>$mgwId,
+                        'where_invitee_mgw_id'=>$mgwId,
+                    ]
                 );
             }
             if ($this->tableExists('mgw_match_queue')) {
@@ -567,8 +579,8 @@ final class AccountDataLifecycleService
             if ($this->tableExists('mgw_social_relations')) {
                 $database->execute(
                     'DELETE FROM mgw_social_relations
-                     WHERE user_low_mgw_id=:mgw_id OR user_high_mgw_id=:mgw_id',
-                    ['mgw_id'=>$mgwId]
+                     WHERE user_low_mgw_id=:low_mgw_id OR user_high_mgw_id=:high_mgw_id',
+                    ['low_mgw_id'=>$mgwId,'high_mgw_id'=>$mgwId]
                 );
             }
             if ($this->tableExists('mgw_notifications')) {
