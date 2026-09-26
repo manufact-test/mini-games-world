@@ -1019,3 +1019,76 @@
   .mgw-admin__af-case-meta{font-size:8px}
   .mgw-admin__af-pagination{position:sticky;bottom:0;z-index:4;margin:10px -4px -4px;padding:8px 4px calc(8px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(13,14,18,.15),#0d0e12 35%)}
 }
+
+
+/* MVP-22.4 · case rail + return navigation polish v5 */
+.mgw-admin__af-case-filters{
+  padding:0 2px 14px;
+  margin-bottom:14px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-x pan-y;
+  scroll-behavior:smooth;
+  scroll-snap-type:x proximity;
+  scrollbar-width:thin;
+  scrollbar-color:#6b5be7 #171820;
+}
+.mgw-admin__af-case-filters button{
+  scroll-snap-align:start;
+}
+.mgw-admin__af-case-filters::-webkit-scrollbar{
+  height:9px;
+}
+.mgw-admin__af-case-filters::-webkit-scrollbar-track{
+  background:#171820;
+  border-radius:999px;
+  box-shadow:inset 0 0 0 1px rgba(107,91,231,.18);
+}
+.mgw-admin__af-case-filters::-webkit-scrollbar-thumb{
+  background:linear-gradient(90deg,#5d4fd2 0%,#7a69ff 100%);
+  border:2px solid #171820;
+  border-radius:999px;
+}
+.mgw-admin__af-case-filters::-webkit-scrollbar-thumb:hover{
+  background:linear-gradient(90deg,#6a5ae3 0%,#8a7aff 100%);
+}
+.mgw-admin__section-back,
+.mgw-admin__support-back,
+.mgw-admin__af-back{
+  border-color:#6557d9!important;
+  background:#171424!important;
+  color:#f2efff!important;
+  box-shadow:inset 0 0 0 1px rgba(101,87,217,.16),0 7px 18px rgba(48,38,114,.16);
+}
+.mgw-admin__section-back:hover,
+.mgw-admin__support-back:hover,
+.mgw-admin__af-back:hover{
+  border-color:#7b6cff!important;
+  background:#1d1930!important;
+  color:#fff!important;
+}
+.mgw-admin__section-back:active,
+.mgw-admin__support-back:active,
+.mgw-admin__af-back:active{
+  transform:translateY(1px);
+}
+.mgw-admin__section-back:focus-visible,
+.mgw-admin__support-back:focus-visible,
+.mgw-admin__af-back:focus-visible{
+  outline:none;
+  border-color:#8b7cff!important;
+  box-shadow:0 0 0 2px rgba(101,87,217,.28),0 0 0 4px rgba(101,87,217,.10);
+}
+@media(max-width:760px){
+  .mgw-admin__af-case-filters{
+    margin-left:-2px;
+    margin-right:-2px;
+    margin-bottom:14px;
+    padding:0 2px 13px;
+  }
+  .mgw-admin__af-case-filters::-webkit-scrollbar{
+    height:8px;
+  }
+}
