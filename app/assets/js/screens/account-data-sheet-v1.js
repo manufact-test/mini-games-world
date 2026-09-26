@@ -5,38 +5,116 @@ import { toast } from '../components/toast.js?v=41';
 const STYLE_URL = './assets/css/account-data-v1.css?v=4&mvp22_8=account-data-v1&ux=final-manual-polish-v2';
 
 let snapshot = null;
+let snapshotFetchedAt = 0;
+let snapshotPromise = null;
+let stylesReadyPromise = null;
 let loading = false;
 let actionPending = false;
 
+const SNAPSHOT_TTL_MS = 15000;
+const STYLE_READY_TIMEOUT_MS = 900;
+
+export async function primeAccountDataFirstOpen(){
+  await Promise.all([
+    ensureStylesReady(),
+    loadSnapshot(false),
+  ]);
+  return snapshot;
+}
+
 export async function openAccountDataSheet(){
-  ensureStyles();
+  let initialError = null;
+  try {
+    await primeAccountDataFirstOpen();
+  } catch (error) {
+    initialError = error;
+  }
+
+  // Do not expose the sheet until both the module/style and the first server
+  // snapshot are ready. On slower Telegram WebViews the previous implementation
+  // showed a real "Загружаем состояние…" frame before the first response and
+  // then replaced the whole body, which was visible as a blank/empty flash.
   openSheet(shellHtml());
   bind();
-  await refresh();
+
+  if (snapshot) {
+    render();
+    if (Date.now() - snapshotFetchedAt > SNAPSHOT_TTL_MS) void refresh(true);
+    return;
+  }
+
+  renderLoadError(initialError);
 }
 
-function ensureStyles(){
-  if (document.querySelector('link[data-mgw-account-data-style]')) return;
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = STYLE_URL;
-  link.dataset.mgwAccountDataStyle = '1';
-  document.head.append(link);
+function ensureStylesReady(){
+  let link = document.querySelector('link[data-mgw-account-data-style]');
+  if (!(link instanceof HTMLLinkElement)) {
+    link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = STYLE_URL;
+    link.dataset.mgwAccountDataStyle = '1';
+    document.head.append(link);
+  }
+
+  if (link.sheet) return Promise.resolve();
+  if (stylesReadyPromise) return stylesReadyPromise;
+
+  stylesReadyPromise = new Promise(resolve => {
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      link.removeEventListener('load', done);
+      link.removeEventListener('error', done);
+      resolve();
+    };
+    link.addEventListener('load', done, { once:true });
+    link.addEventListener('error', done, { once:true });
+    window.setTimeout(done, STYLE_READY_TIMEOUT_MS);
+  });
+  return stylesReadyPromise;
 }
 
-async function refresh(){
+function loadSnapshot(force = false){
+  const fresh = snapshot && Date.now() - snapshotFetchedAt <= SNAPSHOT_TTL_MS;
+  if (!force && fresh) return Promise.resolve(snapshot);
+  if (snapshotPromise) return snapshotPromise;
+
+  snapshotPromise = api.accountDataSnapshot()
+    .then(response => {
+      snapshot = normalizeSnapshot(response?.account_data);
+      snapshotFetchedAt = Date.now();
+      return snapshot;
+    })
+    .finally(() => {
+      snapshotPromise = null;
+    });
+
+  return snapshotPromise;
+}
+
+async function refresh(force = false){
   if (loading) return;
   loading = true;
-  render();
+  if (snapshot) render();
   try {
-    const response = await api.accountDataSnapshot();
-    snapshot = normalizeSnapshot(response?.account_data);
+    await loadSnapshot(force);
   } catch (error) {
     toast(error?.message || 'Не удалось загрузить управление данными аккаунта.');
   } finally {
     loading = false;
     render();
   }
+}
+
+function renderLoadError(error){
+  const body = document.querySelector('[data-account-data-body]');
+  if (!(body instanceof HTMLElement)) return;
+  body.innerHTML = `
+    <div class="account-data-v1-loading">
+      ${escapeHtml(error?.message || 'Не удалось загрузить управление данными аккаунта.')}
+    </div>
+  `;
 }
 
 function normalizeSnapshot(value){
