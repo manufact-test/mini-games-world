@@ -10,14 +10,19 @@
   const status = root.querySelector('[data-report-queue-status]');
   const list = root.querySelector('[data-report-queue-list]');
   const refresh = root.querySelector('[data-report-queue-refresh]');
+  const pagination = root.querySelector('[data-report-pagination]');
   const modeButtons = Array.from(root.querySelectorAll('[data-report-mode]'));
   const queryInput = root.querySelector('[data-report-filter-query]');
   const dateFromInput = root.querySelector('[data-report-filter-from]');
   const dateToInput = root.querySelector('[data-report-filter-to]');
   const requestedCase = new URLSearchParams(window.location.search).get('report') || '';
   let queueMode = requestedCase ? 'all' : 'active';
+  let queuePage = 1;
+  const queuePerPage = 12;
   const reportFilters = () => ({
     mode:queueMode,
+    page:queuePage,
+    per_page:queuePerPage,
     query:String(queryInput?.value || '').trim(),
     date_from:String(dateFromInput?.value || ''),
     date_to:String(dateToInput?.value || ''),
@@ -123,6 +128,12 @@
     adminRef = String(data.admin_ref || adminRef || '');
     moderationOptions = Object.assign({}, moderationOptions, data.moderation_options || {});
     render(data.reports || []);
+    const meta = data.pagination || {};
+    queuePage = Math.max(1, Number(meta.page || queuePage || 1));
+    window.MGWAdminUX?.renderPager(pagination, meta, nextPage => {
+      queuePage = nextPage;
+      void load();
+    });
   };
 
   const mutateModeration = async (payload, successMessage) => {
@@ -470,19 +481,33 @@
     }
   };
 
-  refresh.addEventListener('click', () => void load());
+  refresh.addEventListener('click', () => {
+    queuePage = 1;
+    void load();
+  });
   modeButtons.forEach(button => button.addEventListener('click', () => {
     queueMode = String(button.dataset.reportMode || 'active');
+    queuePage = 1;
     modeButtons.forEach(node => node.classList.toggle('is-active', node === button));
     void load();
   }));
   queryInput?.addEventListener('keydown', event => {
-    if (event.key === 'Enter') void load();
+    if (event.key === 'Enter') {
+      queuePage = 1;
+      void load();
+    }
   });
-  dateFromInput?.addEventListener('change', () => void load());
-  dateToInput?.addEventListener('change', () => void load());
+  dateFromInput?.addEventListener('change', () => {
+    queuePage = 1;
+    void load();
+  });
+  dateToInput?.addEventListener('change', () => {
+    queuePage = 1;
+    void load();
+  });
   if (requestedCase) {
     modeButtons.forEach(node => node.classList.remove('is-active'));
+    if (queryInput && !queryInput.value) queryInput.value = requestedCase;
   }
   load();
 })();
