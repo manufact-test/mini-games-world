@@ -238,9 +238,11 @@
     setStatus('Сохраняю runtime-переключатели…');
     try {
       const data = await post({action:'update_flags', flags:collectFlags(), reason});
+      const changed = data.operation?.changed === true;
+      const refreshed = await post({action:'snapshot'});
       flagReason.value = '';
-      render(data);
-      setStatus(data.operation?.changed ? 'Переключатели сохранены и записаны в аудит.' : 'Изменений в переключателях нет.', 'ok');
+      render(refreshed);
+      setStatus(changed ? 'Переключатели сохранены и записаны в аудит.' : 'Изменений в переключателях нет.', 'ok');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Не удалось сохранить переключатели.', 'error');
     } finally {
