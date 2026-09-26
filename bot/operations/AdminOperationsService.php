@@ -90,8 +90,10 @@ final class AdminOperationsService
             'recent_audit'=>$this->database->fetchAll(
                 'SELECT audit_id,entity_type,entity_id,action_code,actor_ref,created_at_utc
                  FROM mgw_admin_operations_audit
+                 WHERE action_code <> :internal_claim
                  ORDER BY audit_id DESC
-                 LIMIT 50'
+                 LIMIT 50',
+                ['internal_claim'=>'due_reminder_claimed']
             ),
             'coverage'=>[
                 'release_history'=>'Журнал релизов начинается с MVP-22.7. Старые релизы не восстанавливаются задним числом.',
@@ -238,6 +240,78 @@ final class AdminOperationsService
         );
     }
 
+    public function claimTaskReminder(
+        string $taskId,
+        ?DateTimeImmutable $now = null,
+        int $claimTtlSeconds = 120
+    ): bool {
+        $now = $this->utcNow($now);
+        $taskId = $this->token($taskId, 64, 'идентификатор задачи');
+        $claimTtlSeconds = max(30, min(900, $claimTtlSeconds));
+        $nowText = $this->sqlTime($now);
+
+        return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
+            $taskId,
+            $now,
+            $claimTtlSeconds,
+            $nowText
+        ): bool {
+            $sent = (int)$database->fetchValue(
+                'SELECT COUNT(*)
+                 FROM mgw_admin_operations_audit
+                 WHERE entity_type=:entity_type
+                   AND entity_id=:entity_id
+                   AND action_code=:action_code',
+                [
+                    'entity_type'=>'task',
+                    'entity_id'=>$taskId,
+                    'action_code'=>'due_reminder_sent',
+                ]
+            );
+            if ($sent > 0) return false;
+
+            $claims = $database->fetchAll(
+                'SELECT created_at_utc
+                 FROM mgw_admin_operations_audit
+                 WHERE entity_type=:entity_type
+                   AND entity_id=:entity_id
+                   AND action_code=:action_code
+                 ORDER BY audit_id DESC
+                 LIMIT 1',
+                [
+                    'entity_type'=>'task',
+                    'entity_id'=>$taskId,
+                    'action_code'=>'due_reminder_claimed',
+                ]
+            );
+            if (is_array($claims[0] ?? null)) {
+                try {
+                    $claimedAt = $this->calendar->utc((string)$claims[0]['created_at_utc']);
+                    if (($now->getTimestamp() - $claimedAt->getTimestamp()) < $claimTtlSeconds) return false;
+                } catch (Throwable) {
+                    return false;
+                }
+            }
+
+            $task = $this->task($taskId, true);
+            if (!in_array((string)$task['task_status'], ['open','in_progress'], true)) return false;
+            if (empty($task['due_at_utc'])) return false;
+            if ($this->calendar->utc((string)$task['due_at_utc']) > $now) return false;
+
+            $this->audit(
+                $database,
+                'task',
+                $taskId,
+                'due_reminder_claimed',
+                'system:admin-task-reminder',
+                null,
+                ['claim_ttl_seconds'=>$claimTtlSeconds],
+                $nowText
+            );
+            return true;
+        });
+    }
+
     public function markTaskReminderSent(
         string $taskId,
         array $delivery,
@@ -266,8 +340,7 @@ final class AdminOperationsService
             );
             if ($existing > 0) return false;
 
-            $task = $this->task($taskId, true);
-            if (!in_array((string)$task['task_status'], ['open','in_progress'], true)) return false;
+            $this->task($taskId, true);
 
             $this->audit(
                 $database,
