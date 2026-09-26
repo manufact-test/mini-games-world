@@ -311,3 +311,12 @@ bot/replay/MatchReplayReader.php
 bot/antifraud/AntiFraudCaseService.php
 bot/database/migrations/20260925_0064_create_antifraud_cases.php
 app/assets/js/admin-antifraud.js
+
+# MVP-22.5 System status / feature flags / first official-season activation.
+# Fingerprint the secure Admin endpoint, durable readiness/audit state and the
+# runtime.php editor so staging acceptance cannot run against a partial deploy.
+bot/admin-system.php
+bot/system/SystemAdminService.php
+bot/system/RuntimeFeatureFlagAdminService.php
+bot/database/migrations/20260926_0065_create_system_admin_control.php
+app/assets/js/admin-system.js
