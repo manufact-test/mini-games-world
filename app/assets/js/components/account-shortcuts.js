@@ -2,8 +2,11 @@ import { closeSheet } from './sheet.js?v=1109';
 
 let friendsModulePromise = null;
 let accountDataModulePromise = null;
+const ACCOUNT_DATA_STYLE_URL = './assets/css/account-data-v1.css?v=4&mvp22_8=account-data-v1&ux=final-manual-polish-v2';
 
 export function initAccountShortcuts(){
+  warmAccountDataAssets();
+
   document.addEventListener('click', event => {
     const trigger = event.target.closest('#moreMenuOpen, #gameMenuOpen');
     if (!trigger) return;
@@ -40,13 +43,30 @@ async function openAccountDataShortcut(){
 
 function loadAccountDataModule(){
   if (!accountDataModulePromise) {
-    accountDataModulePromise = import('../screens/account-data-sheet-v1.js?v=3&mvp22_8=account-data-v1&ux=final-icon-parity-v1')
+    accountDataModulePromise = import('../screens/account-data-sheet-v1.js?v=4&mvp22_8=account-data-v1&ux=final-manual-polish-v2')
       .catch(error => {
         accountDataModulePromise = null;
         throw error;
       });
   }
   return accountDataModulePromise;
+}
+
+function warmAccountDataAssets(){
+  if (!document.querySelector('link[data-mgw-account-data-style]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = ACCOUNT_DATA_STYLE_URL;
+    link.dataset.mgwAccountDataStyle = '1';
+    document.head.append(link);
+  }
+
+  const warm = () => { void loadAccountDataModule(); };
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(warm, { timeout:1200 });
+  } else {
+    window.setTimeout(warm, 0);
+  }
 }
 
 async function enhanceCurrentMenu(allowSocialNavigation = false){
@@ -83,7 +103,7 @@ async function enhanceCurrentMenu(allowSocialNavigation = false){
         decoding="async"
         data-sk-asset="ui/navigation/profile.webp"
       >
-      <span class="menu-item-label">Данные и аккаунт</span>
+      <span class="account-menu-copy"><strong>Данные и аккаунт</strong></span>
     `;
     accountData.addEventListener('click', () => {
       void openAccountDataShortcut();
