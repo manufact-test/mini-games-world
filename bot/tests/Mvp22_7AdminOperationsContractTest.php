@@ -30,7 +30,7 @@ $assert(
     str_contains($page, 'data-admin-nav-target="operations">Задачи и релизы</button>')
         && str_contains($page, 'data-admin-section="operations" data-admin-operations')
         && str_contains($page, 'data-operations-api="../bot/admin-operations.php"')
-        && str_contains($page, 'admin-operations.js?v=2&mvp22_7=tasks-compact-ru-v2')
+        && str_contains($page, 'admin-operations.js?v=3&mvp22_7=task-reminders-v1')
         && str_contains($shell, "operations:['Задачи и релизы'"),
     'MVP-22.7 must be a first-class Web Admin workspace.'
 );
@@ -51,9 +51,10 @@ foreach ([
 $assert(
     str_contains($endpoint, 'AdminWebAuth::authorize')
         && str_contains($endpoint, 'new AdminOperationsService')
-        && !str_contains($endpoint, 'mgw_notifications')
-        && !str_contains($endpoint, 'AdminNotificationEventService'),
-    'Operations endpoint must use Admin auth and must not create a second notification owner.'
+        && str_contains($endpoint, 'new AdminNotificationEventService')
+        && !str_contains($endpoint, 'INSERT INTO mgw_notifications')
+        && !str_contains($endpoint, 'UPDATE mgw_notifications'),
+    'Operations endpoint must use Admin auth and the canonical notification producer without writing notification storage directly.'
 );
 
 $assert(
@@ -113,6 +114,29 @@ $assert(
         && !str_contains($migration, 'mgw_notifications')
         && !str_contains($service, 'INSERT INTO mgw_notifications'),
     'Existing notification producer must remain the single message owner.'
+);
+
+$assert(
+    str_contains($service, 'dueTaskReminderCandidates')
+        && str_contains($service, 'claimTaskReminder')
+        && str_contains($service, 'markTaskReminderSent')
+        && str_contains($service, "action_code'=>'due_reminder_sent'")
+        && str_contains($endpoint, 'mgw_dispatch_due_admin_task_reminders')
+        && str_contains($endpoint, "'request_id'=>'admin-task-due:'")
+        && str_contains($endpoint, "'source_type'=>'system'")
+        && str_contains($endpoint, "'audience_type'=>'one'")
+        && str_contains($endpoint, "->api('sendMessage'")
+        && str_contains($endpoint, '--dispatch-task-reminders')
+        && str_contains($client, 'window.setInterval')
+        && str_contains($page, 'Срок — это момент напоминания'),
+    'Due tasks must produce exactly one canonical bell event plus one Telegram admin reminder, with CLI and in-Admin dispatch paths.'
+);
+
+$assert(
+    str_contains($service, "due_reminder_claimed")
+        && str_contains($service, "claimTtlSeconds")
+        && str_contains($service, "WHERE action_code <> :internal_claim"),
+    'Concurrent reminder workers must use a short-lived claim without polluting the visible operations audit.'
 );
 
 foreach ([
