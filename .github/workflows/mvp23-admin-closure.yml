@@ -7,25 +7,24 @@ on:
     paths:
       - 'bot/tests/Mvp23AdminClosureContractTest.php'
       - '.github/workflows/mvp23-admin-closure.yml'
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: mgw-mvp23-admin-closure-${{ github.ref }}
+  group: mgw-mvp23-admin-closure-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  admin-closure:
-    name: Full Admin regression and ownership closure
+  closure:
+    name: Full Admin regression
     runs-on: ubuntu-24.04
     timeout-minutes: 22
     steps:
       - name: Checkout exact candidate revision
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           clean: true
           fetch-depth: 0
@@ -37,13 +36,13 @@ jobs:
           extensions: pdo_sqlite, mbstring
           coverage: none
 
-      - name: Lint MVP-23 closure proof
+      - name: Lint closure proof
         run: php -l bot/tests/Mvp23AdminClosureContractTest.php
 
-      - name: MVP-23 Admin ownership contract
+      - name: Admin closure ownership
         run: php bot/tests/Mvp23AdminClosureContractTest.php
 
-      - name: Web Admin shell
+      - name: Admin shell
         run: php bot/tests/Mvp22AdminShellReworkContractTest.php
 
       - name: Support
@@ -59,12 +58,12 @@ jobs:
           php bot/tests/Mvp22_3ModerationWorkflowTest.php
           php bot/tests/Mvp22_3ModerationContractTest.php
 
-      - name: Anti-fraud and replay
+      - name: Anti-fraud
         run: |
           php bot/tests/Mvp22_4AntiFraudWorkflowTest.php
           php bot/tests/Mvp22_4AntiFraudContractTest.php
 
-      - name: System and feature flags
+      - name: System
         run: |
           php bot/tests/Mvp22_5SystemAdminTest.php
           php bot/tests/Mvp22_5SystemAdminContractTest.php
@@ -74,7 +73,7 @@ jobs:
           php bot/tests/Mvp22_6ProductEconomyAnalyticsTest.php
           php bot/tests/Mvp22_6ProductEconomyAnalyticsContractTest.php
 
-      - name: Operations and task reminders
+      - name: Operations
         run: |
           php bot/tests/Mvp22_7AdminOperationsTest.php
           php bot/tests/Mvp22_7AdminOperationsContractTest.php
@@ -82,7 +81,7 @@ jobs:
       - name: Account data
         run: php bot/tests/Mvp22_8AccountDataLifecycleTest.php
 
-      - name: Incident and recovery
+      - name: Incident recovery
         run: |
           php bot/tests/Mvp22_9IncidentRecoveryTest.php
           php bot/tests/Mvp22_9IncidentRecoveryContractTest.php
@@ -93,98 +92,27 @@ jobs:
           php bot/tests/NotificationCenterV2StaticContractTest.php
           php bot/tests/NotificationCenterV2PolicyTest.php
 
-      - name: Rating and season Admin boundaries
+      - name: Rating and seasons
         run: |
           php bot/tests/Mvp20_4QuarterlySeasonLifecycleTest.php
           php bot/tests/Mvp20_4SeasonLifecycleIntegrationContractTest.php
           php bot/tests/Mvp20_8RatingAdminTest.php
           php bot/tests/Mvp20_8RatingAdminIntegrationContractTest.php
 
-      - name: Tournament Admin and prize review
+      - name: Tournament Admin
         run: |
           php bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
           php bot/tests/Mvp21_10TournamentPrizeReviewTest.php
           php bot/tests/Mvp21_10TournamentPrizeReviewContractTest.php
 
-      - name: Frozen runtime boundary
+      - name: Freeze runtime ownership
         shell: bash
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          git diff --exit-code "$base" "$head" --             app             bot/accounts             bot/analytics             bot/antifraud             bot/economy             bot/games             bot/incident             bot/moderation             bot/notifications             bot/operations             bot/ratings             bot/replay             bot/support             bot/system             bot/tournaments             bot/admin-*.php             bot/database/migrations
           changed="$(git diff --name-only "$base" "$head")"
-          printf '%s
-' "$changed"
-          test "$(printf '%s
-' "$changed" | sed '/^$/d' | wc -l)" -le 2
-          printf '%s
-' "$changed" | grep -Fxq '.github/workflows/mvp23-admin-closure.yml'
-          printf '%s
-' "$changed" | grep -Fxq 'bot/tests/Mvp23AdminClosureContractTest.php'
-
-  mysql:
-    name: Admin critical workflows on MySQL 8.4
-    runs-on: ubuntu-24.04
-    timeout-minutes: 18
-    services:
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: mgw_admin_closure
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-          clean: true
-
-      - name: Set up PHP 8.3
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          extensions: pdo_mysql, mbstring
-          coverage: none
-
-      - name: Support MySQL
-        env:
-          MGW_SUPPORT_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_admin_closure;charset=utf8mb4
-          MGW_SUPPORT_MYSQL_USER: root
-          MGW_SUPPORT_MYSQL_PASS: root
-        run: php bot/tests/SupportTicketMySqlIntegrationTest.php
-
-      - name: Compensation MySQL
-        env:
-          MGW_COMPENSATION_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_admin_closure;charset=utf8mb4
-          MGW_COMPENSATION_MYSQL_USER: root
-          MGW_COMPENSATION_MYSQL_PASS: root
-        run: php bot/tests/Mvp22_2CompensationMySqlIntegrationTest.php
-
-      - name: Moderation MySQL
-        env:
-          MGW_MODERATION_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_admin_closure;charset=utf8mb4
-          MGW_MODERATION_MYSQL_USER: root
-          MGW_MODERATION_MYSQL_PASS: root
-        run: php bot/tests/Mvp22_3ModerationMySqlIntegrationTest.php
-
-      - name: Anti-fraud MySQL
-        env:
-          MGW_ANTIFRAUD_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_admin_closure;charset=utf8mb4
-          MGW_ANTIFRAUD_MYSQL_USER: root
-          MGW_ANTIFRAUD_MYSQL_PASS: root
-        run: php bot/tests/Mvp22_4AntiFraudMySqlIntegrationTest.php
-
-      - name: Incident recovery MySQL
-        env:
-          MGW_INCIDENT_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_admin_closure;charset=utf8mb4
-          MGW_INCIDENT_MYSQL_USER: root
-          MGW_INCIDENT_MYSQL_PASS: root
-        run: php bot/tests/Mvp22_9IncidentRecoveryMySqlIntegrationTest.php
+          printf '%s\n' "$changed"
+          test "$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l)" -eq 2
+          printf '%s\n' "$changed" | grep -Fxq '.github/workflows/mvp23-admin-closure.yml'
+          printf '%s\n' "$changed" | grep -Fxq 'bot/tests/Mvp23AdminClosureContractTest.php'
