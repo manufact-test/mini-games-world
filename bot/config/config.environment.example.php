@@ -29,7 +29,7 @@ return [
 
     /* MVP-22.8 account-data lifecycle. Real secrets and private paths belong
      * only in the environment's private config, never in source control. */
-    'account_data_website_hook_secret' => 'PASTE_LONG_RANDOM_WEBSITE_HOOK_SECRET_HERE',
+    'account_data_website_hook_secret' => '', // required to enable website hook
     'account_data_export_dir' => '',
     'account_data_media_root' => '',
     'account_data_export_rate_limit_sec' => 86400,
