@@ -82,6 +82,13 @@ $assertTrue(
         && str_contains($endpoint, 'MGW leaderboard rating catch-up deferred:'),
     'Opportunistic rating catch-up failure must be isolated from the public leaderboard read boundary.'
 );
+$assertTrue(
+    str_contains($endpoint, '$maintenanceDatabase = PdoConnectionFactory::create($databaseConfig);')
+        && str_contains($endpoint, '$readDatabase = PdoConnectionFactory::create($databaseConfig);')
+        && str_contains($endpoint, 'new PerGameRatingRuntimeBridge($configRef, $router, $maintenanceDatabase)')
+        && str_contains($endpoint, 'new LeaderboardService($readDatabase)'),
+    'Catch-up maintenance and the public leaderboard snapshot must use separate DB connections.'
+);
 $assertTrue(!str_contains($endpoint, 'snapshotForProfile('), 'Leaderboard reads must not invoke the heavy Profile synchronization path.');
 $assertTrue(str_contains($endpoint, 'new LeaderboardService'), 'Leaderboard endpoint must read through the single leaderboard owner.');
 $assertTrue(!str_contains($endpoint, 'HiddenSkillService') && !str_contains($endpoint, 'skill_score'), 'Endpoint must not expose hidden skill.');
