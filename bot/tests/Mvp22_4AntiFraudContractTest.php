@@ -163,9 +163,9 @@ $assert(
         && str_contains($service, "c.status_code IN ('open','reviewing','monitoring')")
         && str_contains($service, "['active', 'open', 'reviewing', 'monitoring', 'closed', 'all']")
         && str_contains($service, "'pagination' => [")
-        && str_contains($service, "'counts' => $counts")
-        && str_contains($service, "LIMIT " . $perPage . ' OFFSET ' . $offset")
-        && str_contains($service, "$decision === self::DECISION_MONITOR")
+        && str_contains($service, "'counts' => \$counts")
+        && str_contains($service, "LIMIT \" . \$perPage . ' OFFSET ' . \$offset")
+        && str_contains($service, "\$decision === self::DECISION_MONITOR")
         && str_contains($service, "public function takeInReview")
         && str_contains($service, "public function resolve")
         && str_contains($service, "'case_terminal'"),
