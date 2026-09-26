@@ -199,6 +199,7 @@ final class SystemAdminService
         $result = $this->database->transaction(function (DatabaseConnectionInterface $database) use (
             $actorRef,
             $reason,
+            $now,
             $nowText,
             $season
         ): array {
@@ -241,6 +242,7 @@ final class SystemAdminService
                 ]
             );
 
+            $lifecycle = (new SeasonLifecycleService($database))->reconcile($now);
             $systemAfter = $this->systemControl(true);
             $competitionAfter = $this->competitionControl(true);
             $this->audit(
@@ -252,10 +254,14 @@ final class SystemAdminService
                 ['system'=>$systemAfter, 'competition'=>$competitionAfter],
                 $nowText
             );
-            return ['system'=>$systemAfter, 'competition'=>$competitionAfter, 'already_active'=>false];
+            return [
+                'system'=>$systemAfter,
+                'competition'=>$competitionAfter,
+                'lifecycle'=>$lifecycle,
+                'already_active'=>false,
+            ];
         });
 
-        (new SeasonLifecycleService($this->database))->reconcile($now);
         return $result;
     }
 
@@ -347,6 +353,7 @@ final class SystemAdminService
         $result = $this->database->transaction(function (DatabaseConnectionInterface $database) use (
             $actorRef,
             $reason,
+            $now,
             $nowText,
             $userCount,
             $season
@@ -388,6 +395,7 @@ final class SystemAdminService
                 ]
             );
 
+            $lifecycle = (new SeasonLifecycleService($database))->reconcile($now);
             $competitionAfter = $this->competitionControl(true);
             $this->audit(
                 $database,
@@ -401,14 +409,12 @@ final class SystemAdminService
 
             return [
                 'competition'=>$competitionAfter,
+                'lifecycle'=>$lifecycle,
                 'already_active'=>false,
                 'announcement_required'=>$systemBefore['activation_announcement_sent_at_utc'] === null,
             ];
         });
 
-        if (!$result['already_active']) {
-            (new SeasonLifecycleService($this->database))->reconcile($now);
-        }
         return $result;
     }
 
