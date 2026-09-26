@@ -14,6 +14,7 @@ on:
       - '.github/workflows/mvp23-profile-route-latency.yml'
       - '.github/workflows/mvp23-mobile-cold-first-interaction.yml'
       - '.github/workflows/mvp22-9-incident-recovery.yml'
+      - '.github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml'
 
 permissions:
   contents: read
@@ -68,6 +69,6 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
-          allowed='^(\.github/workflows/(mvp23-profile-route-latency|mvp23-mobile-cold-first-interaction|mvp22-9-incident-recovery)\.yml|app/assets/js/production-clean-entry-v110-mvp19-3-final-polish\.js|app/assets/js/production-clean-entry-v110-mvp19-3-final-polish-mobile-nav-v2\.js|app/assets/js/profile/mgw-mobile-profile-animation-guard-v2\.js|app/v110\.php|bot/tests/Mvp23ProfileRouteLatencyContractTest\.php)$'
+          allowed='^(\.github/workflows/(mvp23-profile-route-latency|mvp23-mobile-cold-first-interaction|mvp22-9-incident-recovery|mvp19-3-entry-effects-runtime-diagnostic)\.yml|app/assets/js/production-clean-entry-v110-mvp19-3-final-polish\.js|app/assets/js/production-clean-entry-v110-mvp19-3-final-polish-mobile-nav-v2\.js|app/assets/js/profile/mgw-mobile-profile-animation-guard-v2\.js|app/v110\.php|bot/tests/Mvp23ProfileRouteLatencyContractTest\.php)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected Profile latency paths:\n%s\n' "$bad" >&2; exit 1; }
