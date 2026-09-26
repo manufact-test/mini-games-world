@@ -10,7 +10,7 @@ on:
       - 'app/assets/js/admin-shell.js'
       - 'app/assets/js/admin-incident.js'
       - 'app/assets/js/components/account-shortcuts.js'
-      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/v110.php'
       - 'bot/admin-incident.php'
       - 'bot/incident/IncidentRecoveryService.php'
       - 'bot/accounts/AccountIdentityService.php'
@@ -65,6 +65,7 @@ jobs:
           set -euo pipefail
           files=(
             app/admin.php
+            app/v110.php
             bot/admin-incident.php
             bot/incident/IncidentRecoveryService.php
             bot/accounts/AccountIdentityService.php
@@ -131,7 +132,7 @@ jobs:
         run: |
           set -euo pipefail
           manifest='bot/helpers/staging-e2e-runtime-files.txt'
-          for file in             bot/admin-incident.php             bot/incident/IncidentRecoveryService.php             bot/accounts/AccountIdentityService.php             bot/database/migrations/20260926_0068_create_incident_recovery.php             app/admin.php             app/assets/js/admin-shell.js             app/assets/js/admin-incident.js             app/assets/js/components/account-shortcuts.js             app/assets/js/main-v110-handoff-shell.js             app/assets/css/admin-incident.css
+          for file in             bot/admin-incident.php             bot/incident/IncidentRecoveryService.php             bot/accounts/AccountIdentityService.php             bot/database/migrations/20260926_0068_create_incident_recovery.php             app/admin.php             app/assets/js/admin-shell.js             app/assets/js/admin-incident.js             app/assets/js/components/account-shortcuts.js             app/v110.php             app/assets/css/admin-incident.css
           do
             grep -Fxq "$file" "$manifest"
           done
