@@ -1,0 +1,171 @@
+name: MVP-22.8 Account deletion and data export
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/account-data.php'
+      - 'bot/account-data-website-hook.php'
+      - 'bot/accounts/AccountDataLifecycleService.php'
+      - 'bot/accounts/AccountDataZipWriter.php'
+      - 'bot/accounts/AccountReauthGuard.php'
+      - 'bot/accounts/AccountIdentityService.php'
+      - 'bot/accounts/RuntimeAccountIdentityResolver.php'
+      - 'bot/database/migrations/20260926_0067_create_account_data_lifecycle.php'
+      - 'bot/config/config.environment.example.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
+      - 'bot/tests/Mvp22_8AccountDataLifecycleTest.php'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/components/account-shortcuts.js'
+      - 'app/assets/js/screens/account-data-sheet-v1.js'
+      - 'app/assets/css/account-data-v1.css'
+      - 'app/runtime/client/version-manifest.php'
+      - '.github/workflows/mvp22-8-account-data.yml'
+      - '.github/workflows/mvp22-3-moderation.yml'
+      - '.github/workflows/mvp22-admin-rework.yml'
+      - '.github/workflows/mvp22-4-antifraud-replay.yml'
+      - '.github/workflows/mvp22-5-system-admin.yml'
+      - '.github/workflows/mvp22-6-product-economy-analytics.yml'
+      - '.github/workflows/mvp22-7-admin-operations.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp22-8-account-data-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Account data lifecycle contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint server slice
+        run: |
+          set -euo pipefail
+          files=(
+            bot/account-data.php
+            bot/account-data-website-hook.php
+            bot/accounts/AccountDataLifecycleService.php
+            bot/accounts/AccountDataZipWriter.php
+            bot/accounts/AccountReauthGuard.php
+            bot/accounts/AccountIdentityService.php
+            bot/accounts/RuntimeAccountIdentityResolver.php
+            bot/database/migrations/20260926_0067_create_account_data_lifecycle.php
+            bot/config/config.environment.example.php
+            bot/tests/Mvp22_8AccountDataLifecycleTest.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done
+
+      - name: Check active client syntax
+        run: |
+          set -euo pipefail
+          node --check app/assets/js/api/client.js
+          node --check app/assets/js/components/account-shortcuts.js
+          node --check app/assets/js/screens/account-data-sheet-v1.js
+          php -l app/runtime/client/version-manifest.php
+
+      - name: Run SQLite lifecycle proof
+        run: php bot/tests/Mvp22_8AccountDataLifecycleTest.php
+
+      - name: Guard privacy and immutable audit boundaries
+        run: |
+          set -euo pipefail
+          grep -Fq "DELETE_GRACE_DAYS = 7" bot/accounts/AccountDataLifecycleService.php
+          grep -Fq "AccountReauthGuard::authorize" bot/account-data.php
+          grep -Fq "account_data_website_hook_secret" bot/account-data-website-hook.php
+          grep -Fq "hash_hmac('sha256'" bot/account-data-website-hook.php
+          grep -Fq "data.json" bot/accounts/AccountDataLifecycleService.php
+          grep -Fq "index.html" bot/accounts/AccountDataLifecycleService.php
+          grep -Fq "csv/" bot/accounts/AccountDataLifecycleService.php
+          grep -Fq "images/" bot/accounts/AccountDataLifecycleService.php
+          grep -Fq -- "--run-retention" bot/account-data.php
+          ! grep -Eq "UPDATE[[:space:]]+mgw_ledger_entries|DELETE[[:space:]]+FROM[[:space:]]+mgw_ledger_entries" bot/accounts/AccountDataLifecycleService.php
+          grep -Fq "deletion_finalizing" bot/accounts/AccountIdentityService.php
+          grep -Fq "deletedIdentityReplayBlocked" bot/accounts/AccountIdentityService.php
+          grep -Fq "account_deleted_identity_block_sec" bot/accounts/AccountDataLifecycleService.php
+          grep -Fq "bot_token" bot/accounts/RuntimeAccountIdentityResolver.php
+          grep -Fq "mvp22_8=account-data-v1" app/runtime/client/version-manifest.php
+          grep -Fq "Данные и аккаунт" app/assets/js/components/account-shortcuts.js
+
+      - name: Exact staging fingerprint coverage
+        run: |
+          set -euo pipefail
+          manifest='bot/helpers/staging-e2e-runtime-files.txt'
+          for file in             bot/account-data.php             bot/account-data-website-hook.php             bot/accounts/AccountDataLifecycleService.php             bot/accounts/AccountDataZipWriter.php             bot/accounts/AccountReauthGuard.php             bot/accounts/AccountIdentityService.php             bot/accounts/RuntimeAccountIdentityResolver.php             bot/database/migrations/20260926_0067_create_account_data_lifecycle.php             app/assets/js/screens/account-data-sheet-v1.js             app/assets/css/account-data-v1.css
+          do
+            grep -Fx "$file" "$manifest"
+          done
+
+      - name: Guard MVP-22.8 scope and frozen owners
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          allowed='^(\.github/workflows/(mvp22-8-account-data|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations|mvp22-admin-rework)\.yml|app/assets/css/account-data-v1\.css|app/assets/js/api/client\.js|app/assets/js/components/account-shortcuts\.js|app/assets/js/screens/account-data-sheet-v1\.js|app/runtime/client/version-manifest\.php|bot/account-data\.php|bot/account-data-website-hook\.php|bot/accounts/(AccountDataLifecycleService|AccountDataZipWriter|AccountReauthGuard|AccountIdentityService|RuntimeAccountIdentityResolver)\.php|bot/database/migrations/20260926_0067_create_account_data_lifecycle\.php|bot/config/config\.environment\.example\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/Mvp22_8AccountDataLifecycleTest\.php)$'
+          bad=0
+          while IFS= read -r path; do
+            if ! grep -Eq "$allowed" <<<"$path"; then
+              echo "Unexpected MVP-22.8 path: $path" >&2
+              bad=1
+            fi
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+          git diff --exit-code "$base" "$head" --             bot/games bot/ratings bot/tournaments bot/moderation bot/support             bot/economy bot/ledger bot/notifications bot/operations
+
+  mysql:
+    name: Account data lifecycle on MySQL 8.4
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_account_data_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring
+          coverage: none
+
+      - name: Run MySQL lifecycle proof
+        env:
+          MGW_ACCOUNT_DATA_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_account_data_ci;charset=utf8mb4
+          MGW_ACCOUNT_DATA_MYSQL_USER: root
+          MGW_ACCOUNT_DATA_MYSQL_PASS: root
+        run: php bot/tests/Mvp22_8AccountDataLifecycleTest.php

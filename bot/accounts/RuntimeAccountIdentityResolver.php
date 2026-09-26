@@ -28,7 +28,8 @@ final class RuntimeAccountIdentityResolver
         $database = $this->database ?? PdoConnectionFactory::create($databaseConfig);
         $accounts = new AccountIdentityService(
             $database,
-            (int)($this->config['mgw_account_session_ttl_sec'] ?? 2592000)
+            (int)($this->config['mgw_account_session_ttl_sec'] ?? 2592000),
+            (string)($this->config['bot_token'] ?? '')
         );
         $identity = $accounts->resolveTelegramUser($user, $sessionId);
         $user['mgw_id'] = $identity['mgw_id'];
