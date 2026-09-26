@@ -62,23 +62,28 @@ $assert(
 
 $openStart = strpos($shortcuts, 'async function openAccountDataShortcut()');
 $loadPos = strpos($shortcuts, 'const module = await loadAccountDataModule();', $openStart === false ? 0 : $openStart);
-$closePos = strpos($shortcuts, 'closeSheet();', $openStart === false ? 0 : $openStart);
+$nextOwner = strpos($shortcuts, 'export async function primeAccountDataShortcut()', $openStart === false ? 0 : $openStart);
+$shortcutBlock = ($openStart !== false && $nextOwner !== false)
+    ? substr($shortcuts, $openStart, $nextOwner - $openStart)
+    : '';
 $assert(
     $openStart !== false
         && $loadPos !== false
-        && $closePos !== false
-        && $loadPos < $closePos,
-    'Account-data first open must keep the existing menu visible until the lazy module has loaded.'
+        && $shortcutBlock !== ''
+        && !str_contains($shortcutBlock, 'closeSheet();')
+        && str_contains($shortcutBlock, 'await module.openAccountDataSheet();'),
+    'Account-data first open must keep the existing menu visible until the complete destination is ready, then replace it atomically.'
 );
 
 $assert(
-    str_contains($shortcuts, 'visible empty-sheet flash only on the first mobile open')
+    str_contains($shortcuts, 'there is no close -> empty overlay -> reopen frame')
         && str_contains($main, "account-shortcuts.js?v=48")
         && str_contains($versionManifest, "'./assets/js/components/account-shortcuts.js?v=48'")
-        && !str_contains($versionManifest, 'mvp23=account-data-first-open-no-flash-v1')
+        && str_contains($versionManifest, 'account-shortcuts.js?v=56')
+        && str_contains($versionManifest, 'mvp23=mobile-cold-first-open-v1')
         && str_contains($stagingEntry, "\$accountShortcutsImportKey = './assets/js/components/account-shortcuts.js?v=48';")
         && str_contains($stagingEntry, "\$imports[\$accountShortcutsImportKey] .= '&mvp23=account-data-first-open-no-flash-v1';"),
-    'First-open account-data corrective must keep the canonical manifest target intact and use the active staging entry only for the acceptance cache token.'
+    'Manual acceptance account-data owner must retain the canonical import key while allowing successor cache revisions and atomic first-open readiness.'
 );
 
 $assert(
