@@ -81,6 +81,8 @@ function render(){
   const exportBusy = exportState?.status === 'processing';
   const exportFailed = exportState?.status === 'failed';
   const exportExpired = exportState?.status === 'expired';
+  const nextExportAt = exportNextAllowedAt(exportState, snapshot?.policy);
+  const exportRateLimited = nextExportAt instanceof Date && nextExportAt.getTime() > Date.now();
 
   body.innerHTML = `
     <section class="account-data-v1-card account-data-v1-card--export">
@@ -95,15 +97,18 @@ function render(){
           <button class="btn primary account-data-v1-action" data-account-data-download type="button" ${actionPending ? 'disabled' : ''}>
             Скачать ZIP
           </button>
-          <button class="btn account-data-v1-secondary" data-account-data-create-export type="button" ${actionPending ? 'disabled' : ''}>
-            Создать новый
-          </button>
+          ${exportRateLimited ? '' : `
+            <button class="btn account-data-v1-secondary" data-account-data-create-export type="button" ${actionPending ? 'disabled' : ''}>
+              Создать новый
+            </button>
+          `}
         ` : `
           <button class="btn primary account-data-v1-action" data-account-data-create-export type="button" ${actionPending || exportBusy ? 'disabled' : ''}>
             ${exportBusy ? 'Создаём архив…' : 'Создать архив'}
           </button>
         `}
       </div>
+      ${exportRateLimited && nextExportAt ? '<p class="account-data-v1-note">Новый архив можно создать после ' + escapeHtml(formatDate(nextExportAt.toISOString())) + '.</p>' : ''}
       ${exportFailed ? '<p class="account-data-v1-note account-data-v1-note--error">Предыдущий экспорт не удалось подготовить. Можно повторить запрос.</p>' : ''}
       ${exportExpired ? '<p class="account-data-v1-note">Предыдущий архив уже удалён по сроку хранения.</p>' : ''}
     </section>
@@ -296,12 +301,27 @@ function actionError(error, fallback){
   return error?.message || fallback;
 }
 
-function formatDate(value){
-  if (!value) return '—';
+function parseUtcDate(value){
+  if (!value) return null;
   const raw = String(value).trim();
   const normalized = /Z$|[+-]\d\d:\d\d$/.test(raw) ? raw : raw.replace(' ', 'T') + 'Z';
   const date = new Date(normalized);
-  if (Number.isNaN(date.getTime())) return raw;
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function exportNextAllowedAt(item, policy){
+  if (!item?.requested_at_utc) return null;
+  const requested = parseUtcDate(item.requested_at_utc);
+  const rateLimitSec = Math.max(0, Number(policy?.export_rate_limit_sec || 0));
+  if (!(requested instanceof Date) || rateLimitSec <= 0) return null;
+  return new Date(requested.getTime() + rateLimitSec * 1000);
+}
+
+function formatDate(value){
+  if (!value) return '—';
+  const raw = String(value).trim();
+  const date = parseUtcDate(raw);
+  if (!(date instanceof Date)) return raw;
   return new Intl.DateTimeFormat('ru-RU', {
     day:'2-digit', month:'2-digit', year:'numeric',
     hour:'2-digit', minute:'2-digit',
