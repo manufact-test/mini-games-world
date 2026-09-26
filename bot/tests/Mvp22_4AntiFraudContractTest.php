@@ -118,6 +118,11 @@ $assert(
         && str_contains($css, '.mgw-admin__af-timeline')
         && str_contains($css, '.mgw-admin__af-case-filters')
         && str_contains($css, '.mgw-admin__af-pagination')
+        && str_contains($css, '.mgw-admin__af-case-filters::-webkit-scrollbar')
+        && str_contains($css, 'touch-action:pan-x pan-y')
+        && str_contains($css, '.mgw-admin__section-back,')
+        && str_contains($css, '.mgw-admin__support-back,')
+        && str_contains($css, '.mgw-admin__af-back{')
         && str_contains($css, '@media(max-width:640px)'),
     'Anti-fraud Admin workspace must have responsive styling.'
 );
