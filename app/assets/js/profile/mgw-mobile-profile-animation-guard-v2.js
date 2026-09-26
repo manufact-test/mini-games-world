@@ -7,20 +7,18 @@
  * style walk is visible as a short hitch exactly on Profile navigation.
  *
  * Keep route/state ownership untouched. Pause only the real Animation objects
- * while Profile is hidden or inside the existing route-settle window, then resume
- * only animations this guard paused after the active Profile has painted. Profile
- * DOM mutations are observed only for newly-created animations while hidden; route
- * class changes themselves never trigger a whole-subtree decorator/style pass.
+ * while Profile is hidden, then resume only animations this guard paused after
+ * the active Profile has painted. There is intentionally no timed route-settle
+ * window anymore: the shell switches Profile atomically and a synthetic 360 ms
+ * guard was observable as a persistent Profile-only delay on mobile.
  */
 
 const MOBILE_PROFILE_MEDIA = '(max-width: 640px), (pointer: coarse)';
-const PROFILE_ROUTE_SETTLING_CLASS = 'mgw-profile-route-settling';
 const PROFILE_CSS_FALLBACK_CLASS = 'mgw-profile-animation-css-fallback';
 
 const pausedByGuard = new Set();
 const knownProfileAnimations = new Set();
 let profileObserver = null;
-let routeClassObserver = null;
 let resumeFrameOne = 0;
 let resumeFrameTwo = 0;
 let initialized = false;
@@ -104,8 +102,6 @@ function resumePausedAnimations(){
   cancelResumeFrames();
   const screen = profileScreen();
   if (!screen || currentShellRoute() !== 'profile') return;
-  if (document.documentElement.classList.contains(PROFILE_ROUTE_SETTLING_CLASS)) return;
-
   for (const animation of [...pausedByGuard]) {
     pausedByGuard.delete(animation);
     if (!animationStillBelongsToProfile(animation, screen)) {
@@ -163,29 +159,12 @@ function handleScreenChanged(event){
     return;
   }
 
-  // Pointer navigation is still inside the existing 360 ms settle guard. Its
-  // class observer resumes after that guard; programmatic opens resume after the
-  // first two Profile paint opportunities instead.
-  if (!document.documentElement.classList.contains(PROFILE_ROUTE_SETTLING_CLASS)) {
-    resumeAfterTwoPaints();
-  }
-}
-
-function handleRouteClassMutation(){
-  if (!isMobileProfilePresentation()) return;
-  if (document.documentElement.classList.contains(PROFILE_ROUTE_SETTLING_CLASS)) {
-    cancelResumeFrames();
-    if (currentShellRoute() === 'profile') pauseKnownAnimations();
-    return;
-  }
-  if (currentShellRoute() === 'profile') resumeAfterTwoPaints();
+  resumeAfterTwoPaints();
 }
 
 function handleProfileMutations(records){
   if (!isMobileProfilePresentation()) return;
-  const hiddenOrSettling = currentShellRoute() !== 'profile'
-    || document.documentElement.classList.contains(PROFILE_ROUTE_SETTLING_CLASS);
-  if (!hiddenOrSettling) return;
+  if (currentShellRoute() === 'profile') return;
 
   for (const record of records) {
     for (const node of record.addedNodes) {
@@ -211,9 +190,6 @@ function initMobileProfileAnimationGuard(){
 
   profileObserver = new MutationObserver(handleProfileMutations);
   profileObserver.observe(screen, { childList:true, subtree:true });
-
-  routeClassObserver = new MutationObserver(handleRouteClassMutation);
-  routeClassObserver.observe(document.documentElement, { attributes:true, attributeFilter:['class'] });
 
   document.addEventListener('pointerdown', handleRouteIntent, true);
   document.addEventListener('click', handleRouteIntent, true);
