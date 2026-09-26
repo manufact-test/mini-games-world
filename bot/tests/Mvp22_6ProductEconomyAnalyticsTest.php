@@ -229,7 +229,7 @@ $assertSame(50, $snapshot['coin_flow']['reserved_now'], 'Current reserved balanc
 $assertSame(false, $snapshot['reconciliation']['ok'], 'Canonical reconciliation warning must surface');
 $assertSame(1, $snapshot['reconciliation']['warning_count'], 'Reconciliation blockers must stay visible');
 $assert(
-    str_contains($snapshot['coverage']['retention'], 'не классический D1/D7'),
+    str_contains($snapshot['coverage']['retention'], 'не классическое точное удержание D1/D7'),
     'Retention coverage must state the historical limitation explicitly'
 );
 
