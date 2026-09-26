@@ -38,3 +38,29 @@ The HTTP fallback is protected by `setup_secret`:
 ```
 
 Prefer the CLI cron command. Do not expose the real secret in source control.
+
+
+## Account data retention
+
+Runner:
+
+```text
+bot/cron/account-data-retention.php
+```
+
+Recommended staging schedule:
+
+```cron
+*/10 * * * * /usr/bin/php /FULL/PATH/TO/public_html/bot/cron/account-data-retention.php
+```
+
+The runner owns MVP-22.8 retention only:
+
+- finalizes deletion requests whose 7-day grace period has expired;
+- removes expired private ZIP export artifacts;
+- removes short-lived deleted-identity replay tombstones after stale Telegram initData can no longer be valid;
+- is idempotent and may be called repeatedly;
+- does not edit append-only ledger history;
+- does not touch production unless production is configured explicitly.
+
+Prefer the CLI runner. The account-data retention job has no public HTTP fallback.
