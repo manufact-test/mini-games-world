@@ -424,6 +424,25 @@ final class IncidentRecoveryService
                 ]
             );
             if ($affected !== 1) throw new RuntimeException('Действие уже забрал другой администратор.');
+
+            if ((string)$before['action_code'] === 'enable_security_mode') {
+                $request = $this->decodeJson($before['request_json'] ?? null);
+                $baseline = is_array($request['baseline_flags'] ?? null) ? $request['baseline_flags'] : [];
+                if ($baseline === []) {
+                    throw new RuntimeException('Не удалось зафиксировать состояние системных переключателей до режима безопасности.');
+                }
+                $database->execute(
+                    'UPDATE mgw_incidents
+                     SET security_mode_before_json=:baseline,updated_at_utc=:updated_at
+                     WHERE incident_id=:incident_id',
+                    [
+                        'baseline'=>json_encode($baseline, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
+                        'updated_at'=>$now,
+                        'incident_id'=>(string)$before['incident_id'],
+                    ]
+                );
+            }
+
             $after = $this->action($actionId, true);
             $this->audit(
                 $database,
@@ -523,17 +542,13 @@ final class IncidentRecoveryService
             $incidentId = (string)$before['incident_id'];
             $actionCode = (string)$before['action_code'];
             if ($actionCode === 'enable_security_mode') {
-                $request = $this->decodeJson($before['request_json'] ?? null);
-                $baseline = is_array($request['baseline_flags'] ?? null) ? $request['baseline_flags'] : [];
                 $database->execute(
                     'UPDATE mgw_incidents
-                     SET security_mode_before_json=COALESCE(security_mode_before_json,:baseline),
-                         security_mode_enabled_at_utc=:enabled_at,
+                     SET security_mode_enabled_at_utc=:enabled_at,
                          security_mode_disabled_at_utc=NULL,
                          updated_at_utc=:updated_at
                      WHERE incident_id=:incident_id',
                     [
-                        'baseline'=>$baseline === [] ? null : json_encode($baseline, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
                         'enabled_at'=>$now,
                         'updated_at'=>$now,
                         'incident_id'=>$incidentId,
