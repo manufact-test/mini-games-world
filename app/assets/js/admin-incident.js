@@ -45,7 +45,8 @@
   const restoreNotes = q('[data-incident-restore-notes]');
   const restoreSave = q('[data-incident-save-restore]');
   const audit = q('[data-incident-audit]');
-  const refreshButtons = qa('[data-incident-refresh]');\n  const incidentArchive = q('[data-incident-archive]');
+  const refreshButtons = qa('[data-incident-refresh]');
+  const incidentArchive = q('[data-incident-archive]');
   const rehearsal = q('[data-incident-rehearsal]');
   const rehearsalRun = q('[data-incident-run-rehearsal]');
 
