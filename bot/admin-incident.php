@@ -229,7 +229,7 @@ try {
             'active_sessions'=>$identity->activeSessionCount(),
             'security_mode'=>($persistedFlags['maintenance_mode'] ?? false) === true
                 && ($persistedFlags['financial_read_only'] ?? false) === true,
-            'production_changed'=>false,
+            'automatic_production_change'=>false,
         ],
         'incidents'=>$incidentSnapshot,
         'incident_statuses'=>IncidentRecoveryService::INCIDENT_STATUSES,
