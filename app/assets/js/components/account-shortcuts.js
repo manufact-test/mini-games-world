@@ -75,7 +75,14 @@ async function enhanceCurrentMenu(allowSocialNavigation = false){
     accountData.type = 'button';
     accountData.dataset.accountDataShortcut = '1';
     accountData.innerHTML = `
-      <span class="menu-item-icon" aria-hidden="true">◉</span>
+      <img
+        class="shield-king-menu-icon"
+        src="./assets/shield-king-icon.php?v=c1efd5af&asset=ui%2Fnavigation%2Fprofile.webp"
+        alt=""
+        aria-hidden="true"
+        decoding="async"
+        data-sk-asset="ui/navigation/profile.webp"
+      >
       <span class="menu-item-label">Данные и аккаунт</span>
     `;
     accountData.addEventListener('click', () => {
