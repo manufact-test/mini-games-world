@@ -35,6 +35,22 @@ try {
 
 $imports = $versionManifest['imports'];
 $assets = $versionManifest['assets'];
+
+// Staging manual-acceptance cache hook for the account-data first-open corrective.
+// Keep the canonical manifest mapping intact; append only a fresh query token to
+// the already-owned Account Shortcuts target so Telegram WebView cannot reuse the
+// pre-corrective module while this acceptance pass is in progress.
+$accountShortcutsImportKey = './assets/js/components/account-shortcuts.js?v=48';
+if (!isset($imports[$accountShortcutsImportKey])
+    || !is_string($imports[$accountShortcutsImportKey])
+    || $imports[$accountShortcutsImportKey] === '') {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Mini Games World account-data shortcut owner is unavailable.';
+    exit;
+}
+$imports[$accountShortcutsImportKey] .= '&mvp23=account-data-first-open-no-flash-v1';
+
 $localizationConfig = $versionManifest['localization'] ?? null;
 if (!is_array($localizationConfig)
     || ($localizationConfig['version'] ?? null) !== 'keys-v1'

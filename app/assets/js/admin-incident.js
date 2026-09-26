@@ -47,8 +47,11 @@
   const audit = q('[data-incident-audit]');
   const refreshButtons = qa('[data-incident-refresh]');
   const incidentArchive = q('[data-incident-archive]');
+  const incidentArchivePanel = q('[data-incident-archive-panel]');
   const rehearsal = q('[data-incident-rehearsal]');
   const rehearsalRun = q('[data-incident-run-rehearsal]');
+  const rehearsalResult = q('[data-incident-rehearsal-result]');
+  const rehearsalResultMeta = q('[data-incident-rehearsal-result-meta]');
 
   let current = null;
   let busy = false;
@@ -145,13 +148,14 @@
     return data;
   };
 
-  const run = async (payload, successMessage) => {
+  const run = async (payload, successMessage, onSuccess = null) => {
     if (busy) return;
     setBusy(true);
     setStatus('Выполняю действие…');
     try {
       const data = await post(payload);
       render(data);
+      if (typeof onSuccess === 'function') onSuccess(data);
       setStatus(successMessage, 'success');
     } catch (error) {
       setStatus(error?.message || 'Не удалось выполнить действие.', 'error');
@@ -161,6 +165,7 @@
   };
 
   const renderHistory = (node, rows, labelFn) => {
+    if (!(node instanceof HTMLElement)) return;
     node.replaceChildren();
     const items = Array.isArray(rows) ? rows : [];
     if (!items.length) {
@@ -177,8 +182,8 @@
       title.textContent = labelFn(row);
       const meta = document.createElement('span');
       meta.textContent = [
-        formatDate(row.created_at_utc || row.requested_at_utc),
-        row.actor_ref || row.requested_by_ref || row.captured_by_ref || '',
+        formatDate(row.created_at_utc || row.requested_at_utc || row.opened_at_utc || row.updated_at_utc),
+        row.actor_ref || row.requested_by_ref || row.captured_by_ref || row.opened_by_ref || '',
       ].filter(Boolean).join(' · ');
       const note = document.createElement('small');
       note.textContent = String(row.reason_text || row.reference_text || row.summary_text || '');
@@ -323,6 +328,15 @@
     activeState.hidden = !active;
     rehearsal.hidden = !['staging','local'].includes(env.toLowerCase());
 
+    const archiveRows = (Array.isArray(snapshot.incidents) ? snapshot.incidents : [])
+      .filter(row => String(row?.incident_status || '') === 'resolved')
+      .slice(0, 10);
+    renderHistory(
+      incidentArchive,
+      archiveRows,
+      row => String(row.title || row.incident_id || 'Инцидент') + ' · ' + incidentStatusLabel(row.incident_status)
+    );
+
     if (!active) {
       activeTitle.textContent = '—';
       activeMeta.textContent = '';
@@ -388,6 +402,7 @@
       const save = row.querySelector('[data-incident-save-key]');
       if (save) save.disabled = !active || resolved;
     });
+    if (rehearsalRun) rehearsalRun.disabled = !!active;
   };
 
   createButton?.addEventListener('click', () => {
@@ -489,8 +504,22 @@
   refreshButtons.forEach(button => button.addEventListener('click', () => run({action:'snapshot'}, 'Состояние обновлено.')));
 
   rehearsalRun?.addEventListener('click', () => {
-    if (!window.confirm('Запустить безопасную учебную симуляцию? Она не включает режим безопасности, не отзывает сессии и не меняет production.')) return;
-    run({action:'run_staging_rehearsal'}, 'Учебная симуляция завершена без изменения production.');
+    if (rehearsalResult) rehearsalResult.hidden = true;
+    run(
+      {action:'run_staging_rehearsal'},
+      'Учебная симуляция успешно завершена.',
+      data => {
+        const operation = data?.operation && typeof data.operation === 'object' ? data.operation : {};
+        if (rehearsalResultMeta) {
+          rehearsalResultMeta.textContent = [
+            String(operation.incident_id || ''),
+            formatDate(data?.generated_at || operation.resolved_at_utc || operation.updated_at_utc),
+          ].filter(Boolean).join(' · ');
+        }
+        if (rehearsalResult) rehearsalResult.hidden = false;
+        if (incidentArchivePanel instanceof HTMLDetailsElement) incidentArchivePanel.open = true;
+      }
+    );
   });
 
   const bootstrap = async () => {

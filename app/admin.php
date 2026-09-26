@@ -15,11 +15,11 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Панель администратора</title>
   <link rel="stylesheet" href="./assets/css/admin-shell.css?v=17&mvp22_7=tasks-compact-ru-v2&mvp22_6=product-economy-analytics-v1&mvp22_5=system-status-ru-ux-v2&replay=17-6&mvp22_4=admin-ux-scale-v1&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
-  <link rel="stylesheet" href="./assets/css/admin-incident.css?v=1&mvp22_9=incident-recovery-v1">
+  <link rel="stylesheet" href="./assets/css/admin-incident.css?v=2&mvp23=manual-acceptance-polish-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="./assets/js/admin-shell.js?v=10&mvp22_9=incident-nav-v1&mvp22_7=operations-nav-v1&mvp22_6=analytics-nav-v1&mvp22_4=admin-ux-scale-v1&test-coins=staging" defer></script>
   <script src="./assets/js/admin-system.js?v=2&mvp22_5=system-status-ru-ux-v2" defer></script>
-  <script src="./assets/js/admin-incident.js?v=1&mvp22_9=incident-recovery-v1" defer></script>
+  <script src="./assets/js/admin-incident.js?v=2&mvp23=manual-acceptance-polish-v1" defer></script>
   <script src="./assets/js/admin-analytics.js?v=1&mvp22_6=product-economy-analytics-v1" defer></script>
   <script src="./assets/js/admin-operations.js?v=3&mvp22_7=task-reminders-v1" defer></script>
   <script src="./assets/js/admin-antifraud.js?v=1&mvp22_4=case-nav-v4" defer></script>
@@ -744,17 +744,23 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           </details>
         </div>
 
-        <details class="mgw-admin__incident-panel">
-          <summary>Недавние инциденты</summary>
+        <details class="mgw-admin__incident-panel" data-incident-archive-panel>
+          <summary>История инцидентов</summary>
           <div class="mgw-admin__incident-body">
+            <p class="mgw-admin__incident-help">Одновременно активна только одна карточка. Завершённые инциденты хранятся здесь компактно и не растягивают страницу.</p>
             <div class="mgw-admin__incident-history" data-incident-archive></div>
           </div>
         </details>
 
         <div class="mgw-admin__incident-rehearsal" data-incident-rehearsal hidden>
           <strong>Учебная симуляция на тестовой среде</strong>
-          <p>Проверяет карточку инцидента, доказательства и статус восстановления. Не включает режим безопасности, не отзывает сессии и не изменяет production.</p>
+          <p>Безопасно проверяет весь цикл карточки: создаёт учебный инцидент, сохраняет тестовое доказательство, отмечает восстановление и сразу закрывает карточку. Режим безопасности и сессии не меняются, и симуляция не изменяет production.</p>
           <button type="button" data-incident-run-rehearsal>Запустить безопасную симуляцию</button>
+          <div class="mgw-admin__incident-rehearsal-result" data-incident-rehearsal-result hidden>
+            <strong>Симуляция завершена</strong>
+            <span>Учебная карточка создана, проверена и закрыта. Результат сохранён в «Истории инцидентов».</span>
+            <small data-incident-rehearsal-result-meta></small>
+          </div>
         </div>
       </article>
 

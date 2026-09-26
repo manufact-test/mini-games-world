@@ -9,6 +9,8 @@ on:
       - 'app/assets/css/admin-incident.css'
       - 'app/assets/js/admin-shell.js'
       - 'app/assets/js/admin-incident.js'
+      - 'app/assets/js/components/account-shortcuts.js'
+      - 'app/v110.php'
       - 'bot/admin-incident.php'
       - 'bot/incident/IncidentRecoveryService.php'
       - 'bot/accounts/AccountIdentityService.php'
@@ -18,6 +20,7 @@ on:
       - 'bot/tests/Mvp22_9IncidentRecoveryContractTest.php'
       - 'bot/tests/Mvp22_9IncidentRecoveryMySqlIntegrationTest.php'
       - 'bot/tests/Mvp23AdminClosureContractTest.php'
+      - 'bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php'
       - '.github/workflows/mvp22-9-incident-recovery.yml'
       - '.github/workflows/mvp22-admin-rework.yml'
       - '.github/workflows/mvp22-3-moderation.yml'
@@ -62,6 +65,7 @@ jobs:
           set -euo pipefail
           files=(
             app/admin.php
+            app/v110.php
             bot/admin-incident.php
             bot/incident/IncidentRecoveryService.php
             bot/accounts/AccountIdentityService.php
@@ -70,13 +74,18 @@ jobs:
             bot/tests/Mvp22_9IncidentRecoveryContractTest.php
             bot/tests/Mvp22_9IncidentRecoveryMySqlIntegrationTest.php
             bot/tests/Mvp23AdminClosureContractTest.php
+            bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
           node --check app/assets/js/admin-shell.js
           node --check app/assets/js/admin-incident.js
+          node --check app/assets/js/components/account-shortcuts.js
 
       - name: Run SQLite incident lifecycle proof
         run: php bot/tests/Mvp22_9IncidentRecoveryTest.php
+
+      - name: Guard manual-acceptance corrective
+        run: php bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php
 
       - name: Guard incident ownership and Admin contract
         run: php bot/tests/Mvp22_9IncidentRecoveryContractTest.php
@@ -123,7 +132,7 @@ jobs:
         run: |
           set -euo pipefail
           manifest='bot/helpers/staging-e2e-runtime-files.txt'
-          for file in             bot/admin-incident.php             bot/incident/IncidentRecoveryService.php             bot/accounts/AccountIdentityService.php             bot/database/migrations/20260926_0068_create_incident_recovery.php             app/admin.php             app/assets/js/admin-shell.js             app/assets/js/admin-incident.js             app/assets/css/admin-incident.css
+          for file in             bot/admin-incident.php             bot/incident/IncidentRecoveryService.php             bot/accounts/AccountIdentityService.php             bot/database/migrations/20260926_0068_create_incident_recovery.php             app/admin.php             app/assets/js/admin-shell.js             app/assets/js/admin-incident.js             app/assets/js/components/account-shortcuts.js             app/v110.php             app/assets/css/admin-incident.css
           do
             grep -Fxq "$file" "$manifest"
           done
@@ -135,7 +144,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(\.github/workflows/(mvp22-9-incident-recovery|mvp22-admin-rework|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations|mvp22-8-account-data)\.yml|app/admin\.php|app/assets/css/admin-incident\.css|app/assets/js/(admin-shell|admin-incident)\.js|bot/admin-incident\.php|bot/incident/IncidentRecoveryService\.php|bot/accounts/AccountIdentityService\.php|bot/database/migrations/20260926_0068_create_incident_recovery\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/(Mvp22_9IncidentRecoveryTest|Mvp22_9IncidentRecoveryContractTest|Mvp22_9IncidentRecoveryMySqlIntegrationTest|Mvp23AdminClosureContractTest)\.php)$'
+          allowed='^(\.github/workflows/(mvp22-9-incident-recovery|mvp22-admin-rework|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations|mvp22-8-account-data|checkers-telegram-footer-scroll-tail|mvp20-3-leaderboards-antifarming|mvp20-4-quarterly-seasons|mvp20-5-seasonal-awards|mvp20-6-yearly-medal)\.yml|app/admin\.php|app/assets/css/admin-incident\.css|app/assets/js/(admin-shell|admin-incident)\.js|app/assets/js/components/account-shortcuts\.js|app/v110\.php|bot/admin-incident\.php|bot/incident/IncidentRecoveryService\.php|bot/accounts/AccountIdentityService\.php|bot/database/migrations/20260926_0068_create_incident_recovery\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/(Mvp22_9IncidentRecoveryTest|Mvp22_9IncidentRecoveryContractTest|Mvp22_9IncidentRecoveryMySqlIntegrationTest|Mvp23AdminClosureContractTest|Mvp23ManualAcceptanceCorrectiveContractTest)\.php)$'
           bad=0
           while IFS= read -r path; do
             if ! grep -Eq "$allowed" <<<"$path"; then

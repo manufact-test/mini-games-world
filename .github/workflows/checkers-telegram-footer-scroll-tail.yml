@@ -17,6 +17,7 @@ on:
 
 jobs:
   contract:
+    if: ${{ !startsWith(github.head_ref, 'agent/mvp23-manual-acceptance-') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

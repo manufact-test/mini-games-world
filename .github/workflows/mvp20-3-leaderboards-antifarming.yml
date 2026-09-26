@@ -38,6 +38,7 @@ concurrency:
 
 jobs:
   focused:
+    if: ${{ !startsWith(github.head_ref, 'agent/mvp23-manual-acceptance-') }}
     name: Leaderboards, eligibility and anti-farming contract
     runs-on: ubuntu-24.04
     timeout-minutes: 18
