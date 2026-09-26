@@ -188,7 +188,7 @@ jobs:
           elif [[ "${{ github.head_ref }}" == agent/mvp22-5-* ]]; then
             while IFS= read -r path; do
               case "$path" in
-                .github/workflows/mvp22-admin-rework.yml|.github/workflows/mvp22-5-system-admin.yml|app/admin.php|app/assets/css/admin-shell.css|app/assets/js/admin-system.js|bot/admin-system.php|bot/system/SystemAdminService.php|bot/system/RuntimeFeatureFlagAdminService.php|bot/database/migrations/20260926_0065_create_system_admin_control.php|bot/tests/Mvp22AdminShellReworkContractTest.php|bot/tests/Mvp22_5SystemAdminTest.php|bot/tests/Mvp22_5SystemAdminContractTest.php)
+                .github/workflows/mvp22-admin-rework.yml|.github/workflows/mvp22-3-moderation.yml|.github/workflows/mvp22-4-antifraud-replay.yml|.github/workflows/mvp22-5-system-admin.yml|app/admin.php|app/assets/css/admin-shell.css|app/assets/js/admin-system.js|bot/admin-system.php|bot/system/SystemAdminService.php|bot/system/RuntimeFeatureFlagAdminService.php|bot/database/migrations/20260926_0065_create_system_admin_control.php|bot/tests/Mvp22AdminShellReworkContractTest.php|bot/tests/Mvp22_5SystemAdminTest.php|bot/tests/Mvp22_5SystemAdminContractTest.php)
                   ;;
                 *)
                   echo "Unexpected MVP-22.5 path in Admin workflow: $path" >&2
