@@ -451,7 +451,10 @@
         if (!exists) {
           renderPicker([data.operation,...operationRows]);
         }
-        picker.value = String(data.operation.entry_id);
+        pickerSelected.textContent = optionLabel(data.operation);
+        pickerList.querySelectorAll('[data-operation-id]').forEach(node => {
+          node.setAttribute('aria-selected', String(node.dataset.operationId || '') === String(data.operation.entry_id || '') ? 'true' : 'false');
+        });
       }
     } catch (error) {
       setMessage(
