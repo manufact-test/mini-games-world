@@ -14,16 +14,16 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Панель администратора</title>
-  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=11&replay=17-6&mvp22_4=case-rail-v5&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
+  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=12&replay=17-6&mvp22_4=admin-ux-scale-v1&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="./assets/js/admin-shell.js?v=7&mvp22_4=section-v2&test-coins=staging" defer></script>
+  <script src="./assets/js/admin-shell.js?v=8&mvp22_4=admin-ux-scale-v1&test-coins=staging" defer></script>
   <script src="./assets/js/admin-antifraud.js?v=1&mvp22_4=case-nav-v4" defer></script>
-  <script src="./assets/js/admin-compensation.js?v=4&mvp22_2=admin-simple-flow-v4" defer></script>
-  <script src="./assets/js/admin-reports.js?v=2&mvp18=reports&mvp22_3=manual-acceptance-v6" defer></script>
-  <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
-  <script src="./assets/js/admin-support.js?v=7&mvp22_1=lifecycle-v3&support_focus=ticket-detail-v1&attachment_viewer=inline-v2&reply_files=managed-v1&reply_delivery=bell-verified-v2" defer></script>
-  <script src="./assets/js/admin-rating.js?v=2&mvp20_8=rating-admin" defer></script>
-  <script src="./assets/js/admin-tournaments.js?v=17&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3&mvp21_5=corrective-v5&mvp21_6=fixture-progression-helper-v3&mvp21_8=corrective-v12&mvp21_8_cancel=cancellation-emergency-v1&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v2" defer></script>
+  <script src="./assets/js/admin-compensation.js?v=5&mvp22_2=admin-ux-scale-v1" defer></script>
+  <script src="./assets/js/admin-reports.js?v=3&mvp18=reports&mvp22_3=admin-ux-scale-v1" defer></script>
+  <script src="./assets/js/admin-notifications.js?v=2&mvp18=admin-ux-scale-v1" defer></script>
+  <script src="./assets/js/admin-support.js?v=8&mvp22_1=admin-ux-scale-v1&support_focus=ticket-detail-v1&attachment_viewer=inline-v2&reply_files=managed-v1&reply_delivery=bell-verified-v2" defer></script>
+  <script src="./assets/js/admin-rating.js?v=3&mvp20_8=admin-ux-scale-v1" defer></script>
+  <script src="./assets/js/admin-tournaments.js?v=18&mvp21_3=admin-ux-scale-v1&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3&mvp21_5=corrective-v5&mvp21_6=fixture-progression-helper-v3&mvp21_8=corrective-v12&mvp21_8_cancel=cancellation-emergency-v1&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v2" defer></script>
 </head>
 <body>
   <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-compensation-api="../bot/admin-compensation.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-support-api="../bot/admin-support.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php">
@@ -105,7 +105,14 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           <h2>Состояние системы</h2>
           <span>Только просмотр</span>
         </div>
-        <pre data-admin-system-check>—</pre>
+        <div class="mgw-admin__system-summary">
+          <strong>Диагностика runtime</strong>
+          <span>Подробный технический вывод скрыт, пока он не понадобится.</span>
+        </div>
+        <details class="mgw-admin__technical-disclosure">
+          <summary>Показать техническую диагностику</summary>
+          <pre data-admin-system-check>—</pre>
+        </details>
       </article>
 
       <article class="mgw-admin__card mgw-admin__card--wide" data-admin-section="tournaments" data-tournament-admin>
@@ -209,6 +216,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
                 </div>
                 <small>Углублённая проверка применяется только к призёру или участнику явно отмеченного матча. Сам сигнал не списывает и не начисляет деньги: он только удерживает затронутую призовую ветку до решения администратора.</small>
                 <div class="mgw-admin__history" data-tournament-review-list></div>
+                <nav class="mgw-admin__pager" data-tournament-review-pagination aria-label="Страницы призовых проверок" hidden></nav>
               </div>
               <div class="mgw-admin__tournament-schedule" data-tournament-schedule-panel hidden>
                 <label class="mgw-admin__field">
@@ -229,15 +237,27 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
             </section>
           </div>
 
-          <section class="mgw-admin__tournament-panel">
-            <h3>Правила турнира</h3>
+          <details class="mgw-admin__tournament-panel mgw-admin__list-disclosure">
+            <summary>
+              <span>
+                <strong>Правила турнира</strong>
+                <small>Зафиксированный снимок правил</small>
+              </span>
+              <i aria-hidden="true"></i>
+            </summary>
             <pre class="mgw-admin__tournament-rewards" data-tournament-rules>—</pre>
-          </section>
+          </details>
 
-          <section class="mgw-admin__tournament-panel">
-            <h3>Снимок наград</h3>
+          <details class="mgw-admin__tournament-panel mgw-admin__list-disclosure">
+            <summary>
+              <span>
+                <strong>Снимок наград</strong>
+                <small>Призы и условия текущего турнира</small>
+              </span>
+              <i aria-hidden="true"></i>
+            </summary>
             <pre class="mgw-admin__tournament-rewards" data-tournament-rewards>—</pre>
-          </section>
+          </details>
         </div>
       </article>
 
@@ -297,19 +317,34 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
                 <button type="button" data-rating-recalculate>Пересчитать закрытый сезон</button>
               </div>
               <small>Доступно только для финализируемого или закрытого сезона. Используются действующие ручные исключения и существующие механизмы наград.</small>
-              <pre class="mgw-admin__rating-rehearsal" data-rating-rehearsal-output>Репетиция ещё не запускалась.</pre>
+              <details class="mgw-admin__technical-disclosure mgw-admin__rating-rehearsal-wrap">
+                <summary>Технический результат репетиции</summary>
+                <pre class="mgw-admin__rating-rehearsal" data-rating-rehearsal-output>Репетиция ещё не запускалась.</pre>
+              </details>
             </section>
           </div>
 
           <section class="mgw-admin__rating-panel">
             <h3>Активные исключения</h3>
+            <label class="mgw-admin__field mgw-admin__compact-search">
+              <span>Поиск по исключениям</span>
+              <input type="search" data-rating-exclusion-query maxlength="120" autocomplete="off" placeholder="MGW-ID, ник или сезон">
+            </label>
             <div class="mgw-admin__history" data-rating-exclusions></div>
+            <nav class="mgw-admin__pager" data-rating-exclusions-pagination aria-label="Страницы исключений" hidden></nav>
           </section>
 
-          <section class="mgw-admin__rating-panel">
-            <h3>Последние пересчёты</h3>
+          <details class="mgw-admin__rating-panel mgw-admin__list-disclosure">
+            <summary>
+              <span>
+                <strong>Последние пересчёты</strong>
+                <small>История запусков и результатов</small>
+              </span>
+              <i aria-hidden="true"></i>
+            </summary>
             <div class="mgw-admin__history" data-rating-jobs></div>
-          </section>
+            <nav class="mgw-admin__pager" data-rating-jobs-pagination aria-label="Страницы пересчётов" hidden></nav>
+          </details>
         </div>
       </article>
 
@@ -358,6 +393,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
             <section class="mgw-admin__support-panel" data-support-queue-panel>
               <h3 data-support-queue-title>Активные обращения</h3>
               <div class="mgw-admin__support-queue" data-support-queue></div>
+              <nav class="mgw-admin__pager" data-support-pagination aria-label="Страницы обращений" hidden></nav>
             </section>
 
             <section class="mgw-admin__support-panel mgw-admin__support-detail" data-support-detail hidden>
@@ -513,7 +549,17 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
             <small>Отложенная отправка и срок действия используют существующий центр уведомлений.</small>
           </div>
           <div class="mgw-admin__replay-status" data-notification-event-status>Уведомления ещё не загружены.</div>
-          <div class="mgw-admin__history" data-notification-event-list></div>
+          <details class="mgw-admin__list-disclosure mgw-admin__notification-history">
+            <summary>
+              <span>
+                <strong>История уведомлений</strong>
+                <small>Последние созданные события</small>
+              </span>
+              <i aria-hidden="true"></i>
+            </summary>
+            <div class="mgw-admin__history" data-notification-event-list></div>
+            <nav class="mgw-admin__pager" data-notification-pagination aria-label="Страницы уведомлений" hidden></nav>
+          </details>
         </div>
       </article>
 
@@ -538,6 +584,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           </div>
           <div class="mgw-admin__replay-status" data-report-queue-status>Очередь ещё не загружена.</div>
           <div class="mgw-admin__history" data-report-queue-list></div>
+          <nav class="mgw-admin__pager" data-report-pagination aria-label="Страницы жалоб" hidden></nav>
         </div>
       </article>
 
@@ -764,12 +811,14 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               </div>
             </div>
 
-            <label class="mgw-admin__field">
+            <div class="mgw-admin__field mgw-admin__operation-picker" data-compensation-operation-picker>
               <span>Исходная операция</span>
-              <select data-compensation-operation-picker>
-                <option value="">Загрузка последних списаний…</option>
-              </select>
-            </label>
+              <button type="button" class="mgw-admin__operation-picker-trigger" data-compensation-operation-trigger aria-expanded="false">
+                <span data-compensation-operation-selected>Загрузка последних списаний…</span>
+                <b aria-hidden="true">⌄</b>
+              </button>
+              <div class="mgw-admin__operation-picker-list" data-compensation-operation-list role="listbox" hidden></div>
+            </div>
 
             <div class="mgw-admin__compensation-selected" data-compensation-selected hidden>
               <div class="mgw-admin__compensation-selected-main">
@@ -865,6 +914,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
             <div data-compensation-history>
               <div class="mgw-admin__history-empty">Загрузка…</div>
             </div>
+            <nav class="mgw-admin__pager" data-compensation-pagination aria-label="Страницы компенсаций" hidden></nav>
           </details>
         </div>
       </article>
@@ -919,10 +969,19 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
             </div>
           </details>
 
-          <div class="mgw-admin__history">
-            <h3>История версий</h3>
-            <div data-economy-history></div>
-          </div>
+          <details class="mgw-admin__list-disclosure mgw-admin__economy-history-wrap">
+            <summary>
+              <span>
+                <strong>История версий</strong>
+                <small>Предыдущие конфигурации и откаты</small>
+              </span>
+              <i aria-hidden="true"></i>
+            </summary>
+            <div class="mgw-admin__history">
+              <div data-economy-history></div>
+              <nav class="mgw-admin__pager" data-economy-pagination aria-label="Страницы версий экономики" hidden></nav>
+            </div>
+          </details>
         </div>
       </article>
 
