@@ -68,6 +68,10 @@ for ($index = 0; $index < 100; $index++) {
 }
 
 $queue = $service->adminQueue([], 100);
+$pagedQueue = $service->adminQueuePage(['mode' => 'active'], 1, 12);
+$assert(($pagedQueue['pagination']['total'] ?? -1) === 100, 'MySQL paged queue must report all active tickets.');
+$assert(($pagedQueue['pagination']['total_pages'] ?? -1) === 9, 'MySQL paged queue must expose total pages.');
+$assert(count($pagedQueue['tickets'] ?? []) === 12, 'MySQL first support page must stay bounded.');
 $assert(count($queue) === 100, 'MySQL queue must keep 100 tickets isolated.');
 
 $target = null;
