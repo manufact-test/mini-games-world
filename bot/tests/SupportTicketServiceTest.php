@@ -50,6 +50,12 @@ for ($index = 0; $index < 100; $index++) {
 }
 
 $queue = $service->adminQueue([], 100);
+$supportPageOne = $service->adminQueuePage(['mode' => 'active'], 1, 12);
+$supportPageNine = $service->adminQueuePage(['mode' => 'active'], 9, 12);
+support_assert(($supportPageOne['pagination']['total'] ?? -1) === 100, 'paged support queue must report all active tickets');
+support_assert(($supportPageOne['pagination']['total_pages'] ?? -1) === 9, '100 support tickets at 12/page must span 9 pages');
+support_assert(count($supportPageOne['tickets'] ?? []) === 12, 'first support page must be bounded to 12 tickets');
+support_assert(count($supportPageNine['tickets'] ?? []) === 4, 'last support page must expose only remaining tickets');
 support_assert(count($queue) === 100, '100 support tickets must remain independently visible');
 
 $normalQueue = array_values(array_filter($queue, static fn(array $row): bool => (string)($row['priority'] ?? '') === 'normal'));
