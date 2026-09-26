@@ -20,101 +20,132 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     if (!$condition) throw new RuntimeException($message);
 };
 
-$pdo = new PDO('sqlite::memory:');
+$dsn = trim((string)getenv('MGW_ANALYTICS_MYSQL_DSN'));
+if ($dsn !== '') {
+    $pdo = new PDO(
+        $dsn,
+        (string)getenv('MGW_ANALYTICS_MYSQL_USER'),
+        (string)getenv('MGW_ANALYTICS_MYSQL_PASS'),
+        [
+            PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES=>false,
+        ]
+    );
+} else {
+    $pdo = new PDO('sqlite::memory:');
+}
 $db = new PdoDatabaseConnection($pdo);
+
+$tables = [
+    'mgw_tournament_results',
+    'mgw_tournament_registrations',
+    'mgw_tournaments',
+    'mgw_cosmetic_purchases',
+    'mgw_match_players',
+    'mgw_matches',
+    'mgw_ledger_entries',
+    'mgw_balances',
+    'mgw_account_ownership',
+    'mgw_identities',
+    'mgw_users',
+];
+foreach ($tables as $table) {
+    $db->execute('DROP TABLE IF EXISTS ' . $table);
+}
 
 $db->execute(<<<'SQL'
 CREATE TABLE mgw_users (
-    mgw_id TEXT PRIMARY KEY,
-    status TEXT NOT NULL DEFAULT 'active',
-    created_at_utc TEXT NOT NULL,
-    last_seen_at_utc TEXT NULL
+    mgw_id VARCHAR(24) PRIMARY KEY,
+    status VARCHAR(32) NOT NULL DEFAULT 'active',
+    created_at_utc DATETIME(6) NOT NULL,
+    last_seen_at_utc DATETIME(6) NULL
 )
 SQL);
-$db->execute('CREATE TABLE mgw_identities (mgw_id TEXT NOT NULL, provider TEXT NOT NULL)');
+$db->execute('CREATE TABLE mgw_identities (mgw_id VARCHAR(24) NOT NULL, provider VARCHAR(32) NOT NULL)');
 $db->execute(<<<'SQL'
 CREATE TABLE mgw_account_ownership (
-    account_ref TEXT NOT NULL PRIMARY KEY,
-    mgw_id TEXT NOT NULL,
-    legacy_user_id TEXT NOT NULL,
-    ownership_status TEXT NOT NULL,
-    source_type TEXT NOT NULL,
-    source_ref TEXT NOT NULL
+    account_ref VARCHAR(255) NOT NULL PRIMARY KEY,
+    mgw_id VARCHAR(24) NOT NULL,
+    legacy_user_id VARCHAR(191) NOT NULL,
+    ownership_status VARCHAR(32) NOT NULL,
+    source_type VARCHAR(64) NOT NULL,
+    source_ref VARCHAR(255) NOT NULL
 )
 SQL);
 $db->execute(<<<'SQL'
 CREATE TABLE mgw_matches (
-    match_id TEXT PRIMARY KEY,
-    game_type TEXT NOT NULL,
-    status TEXT NOT NULL,
-    finished_at_utc TEXT NULL
+    match_id VARCHAR(96) PRIMARY KEY,
+    game_type VARCHAR(32) NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    finished_at_utc DATETIME(6) NULL
 )
 SQL);
 $db->execute(<<<'SQL'
 CREATE TABLE mgw_match_players (
-    match_id TEXT NOT NULL,
+    match_id VARCHAR(96) NOT NULL,
     seat INTEGER NOT NULL,
-    mgw_id TEXT NULL,
-    player_type TEXT NOT NULL,
+    mgw_id VARCHAR(24) NULL,
+    player_type VARCHAR(16) NOT NULL,
     PRIMARY KEY (match_id, seat)
 )
 SQL);
 $db->execute(<<<'SQL'
 CREATE TABLE mgw_cosmetic_purchases (
-    purchase_id TEXT PRIMARY KEY,
-    mgw_id TEXT NOT NULL,
-    offer_id TEXT NOT NULL,
-    price_coins INTEGER NOT NULL,
-    purchase_status TEXT NOT NULL,
-    created_at_utc TEXT NOT NULL
+    purchase_id VARCHAR(96) PRIMARY KEY,
+    mgw_id VARCHAR(24) NOT NULL,
+    offer_id VARCHAR(96) NOT NULL,
+    price_coins BIGINT NOT NULL,
+    purchase_status VARCHAR(24) NOT NULL,
+    created_at_utc DATETIME(6) NOT NULL
 )
 SQL);
 $db->execute(<<<'SQL'
 CREATE TABLE mgw_tournaments (
-    tournament_id TEXT PRIMARY KEY,
-    active_slot TEXT NULL,
-    title TEXT NOT NULL,
-    game_type TEXT NOT NULL,
+    tournament_id VARCHAR(64) PRIMARY KEY,
+    active_slot VARCHAR(32) NULL,
+    title VARCHAR(160) NOT NULL,
+    game_type VARCHAR(32) NOT NULL,
     capacity INTEGER NOT NULL,
-    tournament_state TEXT NOT NULL,
-    created_at_utc TEXT NOT NULL
+    tournament_state VARCHAR(32) NOT NULL,
+    created_at_utc DATETIME(6) NOT NULL
 )
 SQL);
 $db->execute(<<<'SQL'
 CREATE TABLE mgw_tournament_registrations (
-    registration_id TEXT PRIMARY KEY,
-    tournament_id TEXT NOT NULL,
-    mgw_id TEXT NOT NULL,
-    registration_state TEXT NOT NULL,
-    registered_at_utc TEXT NOT NULL
+    registration_id VARCHAR(96) PRIMARY KEY,
+    tournament_id VARCHAR(64) NOT NULL,
+    mgw_id VARCHAR(24) NOT NULL,
+    registration_state VARCHAR(24) NOT NULL,
+    registered_at_utc DATETIME(6) NOT NULL
 )
 SQL);
 $db->execute(<<<'SQL'
 CREATE TABLE mgw_tournament_results (
-    tournament_id TEXT NOT NULL,
-    mgw_id TEXT NOT NULL
+    tournament_id VARCHAR(64) NOT NULL,
+    mgw_id VARCHAR(24) NOT NULL
 )
 SQL);
 $db->execute(<<<'SQL'
 CREATE TABLE mgw_ledger_entries (
-    entry_id TEXT PRIMARY KEY,
-    account_ref TEXT NOT NULL,
-    mgw_id TEXT NULL,
-    asset_code TEXT NOT NULL,
-    available_delta INTEGER NOT NULL,
-    reserved_delta INTEGER NOT NULL,
-    category TEXT NOT NULL,
-    created_at_utc TEXT NOT NULL
+    entry_id VARCHAR(96) PRIMARY KEY,
+    account_ref VARCHAR(255) NOT NULL,
+    mgw_id VARCHAR(24) NULL,
+    asset_code VARCHAR(32) NOT NULL,
+    available_delta BIGINT NOT NULL,
+    reserved_delta BIGINT NOT NULL,
+    category VARCHAR(64) NOT NULL,
+    created_at_utc DATETIME(6) NOT NULL
 )
 SQL);
 $db->execute(<<<'SQL'
 CREATE TABLE mgw_balances (
-    balance_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    account_ref TEXT NOT NULL,
-    mgw_id TEXT NULL,
-    asset_code TEXT NOT NULL,
-    available_amount INTEGER NOT NULL,
-    reserved_amount INTEGER NOT NULL
+    balance_id BIGINT PRIMARY KEY,
+    account_ref VARCHAR(255) NOT NULL,
+    mgw_id VARCHAR(24) NULL,
+    asset_code VARCHAR(32) NOT NULL,
+    available_amount BIGINT NOT NULL,
+    reserved_amount BIGINT NOT NULL
 )
 SQL);
 
@@ -169,9 +200,9 @@ $db->execute("INSERT INTO mgw_ledger_entries VALUES ('l3','acc-real-1','REAL1','
 $db->execute("INSERT INTO mgw_ledger_entries VALUES ('l4','acc-real-2',NULL,'mgw_coin',200,0,'weekly_bonus','2026-09-25 12:30:00.000000')");
 $db->execute("INSERT INTO mgw_ledger_entries VALUES ('l5','acc-fix-v2','FIXV2','mgw_coin',10000,0,'weekly_bonus','2026-09-25 13:00:00.000000')");
 
-$db->execute("INSERT INTO mgw_balances (account_ref,mgw_id,asset_code,available_amount,reserved_amount) VALUES ('acc-real-1','REAL1','mgw_coin',1000,50)");
-$db->execute("INSERT INTO mgw_balances (account_ref,mgw_id,asset_code,available_amount,reserved_amount) VALUES ('acc-real-2',NULL,'mgw_coin',300,0)");
-$db->execute("INSERT INTO mgw_balances (account_ref,mgw_id,asset_code,available_amount,reserved_amount) VALUES ('acc-fix-v2','FIXV2','mgw_coin',9999,0)");
+$db->execute("INSERT INTO mgw_balances (balance_id,account_ref,mgw_id,asset_code,available_amount,reserved_amount) VALUES (1,'acc-real-1','REAL1','mgw_coin',1000,50)");
+$db->execute("INSERT INTO mgw_balances (balance_id,account_ref,mgw_id,asset_code,available_amount,reserved_amount) VALUES (2,'acc-real-2',NULL,'mgw_coin',300,0)");
+$db->execute("INSERT INTO mgw_balances (balance_id,account_ref,mgw_id,asset_code,available_amount,reserved_amount) VALUES (3,'acc-fix-v2','FIXV2','mgw_coin',9999,0)");
 
 $telemetry = [
     'matchmaking_queue_depth'=>2,
