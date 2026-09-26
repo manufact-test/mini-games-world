@@ -52,8 +52,8 @@ $assert(
 $assert(
     str_contains($wrapper, 'final-polish.js?v=1139')
         && str_contains($wrapper, 'profile_route_guard=instant-no-settle-v1')
-        && str_contains($wrapper, 'mgw-mobile-profile-animation-guard-v2.js?v=3&profile_route=instant-resume-v1'),
-    'Clean-entry wrapper must publish fresh identities for both latency owners.'
+        && str_contains($wrapper, "import './profile/mgw-mobile-profile-animation-guard-v2.js?v=1';"),
+    'Clean-entry wrapper must publish the fresh final-polish owner while retaining the canonical animation-guard specifier.'
 );
 
 $assert(
@@ -72,8 +72,10 @@ $assert(
 
 $assert(
     str_contains($stagingEntry, "\$cleanEntryImportKey = '@mgw/clean-entry';")
-        && str_contains($stagingEntry, "\$imports[\$cleanEntryImportKey] .= '&mvp23_profile=instant-route-v1';"),
-    'Staging must cache-bust the exact clean-entry owner so Telegram WebView cannot reuse the old settle guard.'
+        && str_contains($stagingEntry, "\$imports[\$cleanEntryImportKey] .= '&mvp23_profile=instant-route-v1';")
+        && str_contains($stagingEntry, "\$profileAnimationGuardImportKey = './assets/js/profile/mgw-mobile-profile-animation-guard-v2.js?v=1';")
+        && str_contains($stagingEntry, "\$imports[\$profileAnimationGuardImportKey] .= '&mvp23_profile=instant-resume-v1';"),
+    'Staging must cache-bust both canonical Profile route owners so Telegram WebView cannot reuse the old settle guard.'
 );
 
 fwrite(STDOUT, "MVP-23 Profile route latency contract OK ({$assertions} assertions).\n");
