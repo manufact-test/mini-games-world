@@ -22,6 +22,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 
 foreach ([
     'overview' => 'Обзор',
+    'analytics' => 'Аналитика',
     'users' => 'Пользователи',
     'support' => 'Поддержка',
     'tournaments' => 'Турниры и сезоны',
@@ -165,8 +166,8 @@ $assert(
 
 $assert(
     str_contains($page, "Cache-Control: no-store, no-cache, must-revalidate")
-        && str_contains($page, 'admin-shell.css?v=14')
-        && str_contains($page, 'admin-shell.js?v=8')
+        && str_contains($page, 'admin-shell.css?v=15')
+        && str_contains($page, 'admin-shell.js?v=9')
         && str_contains($page, 'admin-antifraud.js?v=1'),
     'Admin-only rework must stay no-store and publish fresh child asset identities without changing the shared game launch owner.'
 );
