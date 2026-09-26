@@ -16,6 +16,8 @@ on:
       - 'bot/tests/Mvp22_5SystemAdminContractTest.php'
       - 'bot/tests/Mvp22AdminShellReworkContractTest.php'
       - '.github/workflows/mvp22-admin-rework.yml'
+      - '.github/workflows/mvp22-3-moderation.yml'
+      - '.github/workflows/mvp22-4-antifraud-replay.yml'
       - '.github/workflows/mvp22-5-system-admin.yml'
   workflow_dispatch:
 
