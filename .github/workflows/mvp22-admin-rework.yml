@@ -198,6 +198,27 @@ jobs:
             done < <(git diff --name-only "$base" "$head")
             test "$bad" -eq 0
             git diff --exit-code "$base" "$head" -- bot/games bot/support bot/moderation bot/ratings bot/tournaments bot/economy bot/ledger
+          elif [[ "${{ github.head_ref }}" == agent/mvp22-6-* ]]; then
+            allowed='^(\.github/workflows/(mvp22-admin-rework|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics)\.yml|app/admin\.php|app/assets/css/admin-shell\.css|app/assets/js/(admin-shell|admin-analytics)\.js|bot/admin-analytics\.php|bot/analytics/(RealAccountScope|ProductEconomyAnalyticsService)\.php|bot/system/SystemAdminService\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/(Mvp22AdminShellReworkContractTest|Mvp22_5SystemAdminTest|Mvp22_5SystemAdminContractTest|Mvp22_6ProductEconomyAnalyticsTest|Mvp22_6ProductEconomyAnalyticsContractTest)\.php)
+            allowed='^(\.github/workflows/(mvp18-5-reports-blocked-users|mvp20-8-rating-admin|mvp21-5-tournament-ready|mvp21-6-tournament-rounds|mvp21-7-tournament-technical-outcomes|mvp21-8-tournament-cancellation|mvp21-10-tournament-prize-review)\.yml|app/admin\.php|app/assets/css/admin-shell\.css|app/assets/js/admin-(shell|support|tournaments|rating|notifications|reports)\.js|bot/services/(TelegramService|AdminService)\.php|bot/tests/Mvp14WebAdminShellContractTest\.php|bot/tests/Mvp22AdminShellReworkContractTest\.php|\.github/workflows/mvp22-admin-rework\.yml)$'
+            while IFS= read -r path; do
+              if ! grep -Eq "$allowed" <<<"$path"; then
+                echo "Unexpected Admin rework path: $path" >&2
+                bad=1
+              fi
+            done < <(git diff --name-only "$base" "$head")
+            test "$bad" -eq 0
+            git diff --exit-code "$base" "$head" -- bot/games bot/support bot/ratings bot/tournaments bot/economy bot/ledger
+          fi
+
+            while IFS= read -r path; do
+              if ! grep -Eq "$allowed" <<<"$path"; then
+                echo "Unexpected MVP-22.6 path in Admin workflow: $path" >&2
+                bad=1
+              fi
+            done < <(git diff --name-only "$base" "$head")
+            test "$bad" -eq 0
+            git diff --exit-code "$base" "$head" -- bot/games bot/support bot/moderation bot/ratings bot/tournaments bot/economy bot/ledger bot/antifraud bot/replay
           else
             allowed='^(\.github/workflows/(mvp18-5-reports-blocked-users|mvp20-8-rating-admin|mvp21-5-tournament-ready|mvp21-6-tournament-rounds|mvp21-7-tournament-technical-outcomes|mvp21-8-tournament-cancellation|mvp21-10-tournament-prize-review)\.yml|app/admin\.php|app/assets/css/admin-shell\.css|app/assets/js/admin-(shell|support|tournaments|rating|notifications|reports)\.js|bot/services/(TelegramService|AdminService)\.php|bot/tests/Mvp14WebAdminShellContractTest\.php|bot/tests/Mvp22AdminShellReworkContractTest\.php|\.github/workflows/mvp22-admin-rework\.yml)$'
             while IFS= read -r path; do
