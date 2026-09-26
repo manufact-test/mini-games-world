@@ -135,6 +135,11 @@ $assertSame($target, $queue[0]['target_mgw_id'], 'Queue must retain target MGW i
 $assertSame('cheating', $queue[0]['reason'], 'Queue must retain structured report reason');
 $assertSame('match-report-1', $queue[0]['related_match_id'], 'Queue must retain validated related match');
 
+$queuePage = $reports->queuePage(['mode' => 'active'], 1, 12);
+$assertSame(1, (int)($queuePage['pagination']['total'] ?? 0), 'Paged moderation queue must expose total active reports');
+$assertSame(1, (int)($queuePage['pagination']['total_pages'] ?? 0), 'Single report must fit one moderation page');
+$assertSame(1, count($queuePage['reports'] ?? []), 'Paged moderation queue must return the report');
+
 $reporterHistory = $reports->reporterHistory($actor);
 $assertSame(1, count($reporterHistory), 'Reporter must see their submitted complaint lifecycle.');
 $assertSame('open', $reporterHistory[0]['status'], 'Reporter history must expose the new complaint state.');
@@ -183,6 +188,8 @@ $assertTrue(str_contains($invitesEndpoint, 'SocialInviteGuard'), 'Invite endpoin
 $assertTrue(str_contains($invitesEndpoint, "case 'create_direct':") && str_contains($invitesEndpoint, "case 'open_link':") && str_contains($invitesEndpoint, "case 'rematch':"), 'Block guard must cover direct, link-open and rematch invite boundaries');
 $assertTrue(str_contains($adminEndpoint, "'set_status'"), 'Admin report queue must expose explicit case lifecycle updates');
 $assertTrue(str_contains($adminEndpoint, "'case_link'"), 'Admin queue must expose a stable case link');
+$assertTrue(str_contains($adminEndpoint, 'queuePage(') && str_contains($adminEndpoint, "'pagination'"), 'Admin report endpoint must use bounded server-side pagination');
+$assertTrue(str_contains($adminPage, 'data-report-pagination'), 'Web Admin must expose moderation queue page navigation');
 $assertTrue(!str_contains(strtolower($adminEndpoint), 'auto-ban') && !str_contains(strtolower($adminEndpoint), 'autoban'), 'Admin report endpoint must not implement auto-ban');
 $assertTrue(str_contains($adminPage, 'data-admin-reports'), 'Existing Web Admin must surface the report queue');
 
