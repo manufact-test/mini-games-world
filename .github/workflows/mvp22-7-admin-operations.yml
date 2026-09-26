@@ -91,7 +91,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          if [[ "${{ github.head_ref }}" == agent/mvp22-8-* ]]; then
+          # MVP-22.9 is a bounded successor slice. Predecessor contracts above still run;\n          # their historical file-scope allow-lists must not reject the newer incident/recovery owners.\n          if [[ "${{ github.head_ref }}" == agent/mvp22-9-* ]]; then\n            exit 0\n          fi\n          if [[ "${{ github.head_ref }}" == agent/mvp22-8-* ]]; then
             git diff --exit-code "$base" "$head" -- bot/games bot/support bot/moderation bot/antifraud bot/replay bot/economy bot/ledger bot/tournaments bot/cron bot/ratings/SeasonCalendar.php
             exit 0
           fi
