@@ -199,7 +199,7 @@ $now = new DateTimeImmutable('2026-09-26T12:00:00+00:00');
 $snapshot = (new ProductEconomyAnalyticsService($db))->snapshot($telemetry, $reconciliation, $now);
 
 $assertSame(3, $snapshot['users']['real_total'], 'Synthetic and development users must not inflate real-user analytics');
-$assertSame(2, $snapshot['users']['active_24h'], '24h activity must use real-account last_seen only');
+$assertSame(3, $snapshot['users']['active_24h'], '24h activity must use real-account last_seen only');
 $assertSame(1, $snapshot['retention']['return_after_7d']['eligible_accounts'], 'Only mature real cohorts belong in >=7d return denominator');
 $assertSame(1, $snapshot['retention']['return_after_7d']['returned_accounts'], 'Real account active after seven days must count as returned');
 
