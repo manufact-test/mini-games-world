@@ -337,3 +337,15 @@ bot/admin-operations.php
 bot/operations/AdminOperationsService.php
 bot/database/migrations/20260926_0066_create_admin_operations.php
 app/assets/js/admin-operations.js
+
+# MVP-22.8 account deletion + data export. The active v110 account menu,
+# self-service endpoint, website hook, lifecycle owner, schema and export assets
+# must deploy as one exact tree. Retention CLI exists here but Cron is a separate gate.
+bot/account-data.php
+bot/account-data-website-hook.php
+bot/accounts/AccountReauthGuard.php
+bot/accounts/AccountDataZipWriter.php
+bot/accounts/AccountDataLifecycleService.php
+bot/database/migrations/20260926_0067_create_account_data_lifecycle.php
+app/assets/js/screens/account-data-sheet-v1.js
+app/assets/css/account-data-v1.css
