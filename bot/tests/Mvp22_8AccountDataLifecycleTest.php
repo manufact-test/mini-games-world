@@ -254,6 +254,12 @@ $assertSame(7 * 86400, $scheduledExecuteAt->getTimestamp() - $scheduledAt->getTi
 
 $cancelled = $service->cancelDeletion($mgwId, $now->modify('+1 minute'));
 $assertSame('cancelled', $cancelled['status'], 'Scheduled deletion must remain cancellable during grace period');
+$cancelledSnapshot = $service->snapshot($mgwId);
+$assertSame('cancelled', $cancelledSnapshot['deletion']['status'] ?? null, 'Snapshot must expose cancelled deletion as cancelled');
+$cancelledRetention = $service->runRetention($scheduledExecuteAt->modify('+1 second'));
+$assertSame(0, $cancelledRetention['deletions_completed'], 'Cancelled deletion must never be finalized after its former due time');
+$activeAfterCancel = $db->fetchAll('SELECT status FROM mgw_users WHERE mgw_id=:mgw_id', ['mgw_id'=>$mgwId])[0] ?? [];
+$assertSame('active', $activeAfterCancel['status'] ?? null, 'Cancelled deletion must leave the account active');
 
 $scheduled = $service->scheduleDeletion($mgwId, 'mini_app', 'self:telegram', $now->modify('+2 minutes'));
 $assertSame('scheduled', $scheduled['status'], 'Deletion may be rescheduled after cancellation');
