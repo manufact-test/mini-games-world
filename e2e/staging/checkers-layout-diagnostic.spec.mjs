@@ -82,7 +82,10 @@ async function testProbePost(player, path, data) {
   const response = await player.context.request.post(`${ORIGIN}${path}`, {
     headers: { Accept: 'application/json' },
     data: { ...data, initData: '', ...player.transport },
-    timeout: 15_000,
+    // Synthetic staging setup can wait behind Hostinger JSON-lock traffic.
+    // Match the rest of the staging transport budget without weakening the
+    // HTTP 200 / ok=true assertions below.
+    timeout: 35_000,
   });
   return { status: response.status(), payload: await response.json().catch(() => null) };
 }
