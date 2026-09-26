@@ -22,8 +22,26 @@
   const seasonActions = $('[data-operations-season-actions]');
   const runtimeBuild = $('[data-operations-runtime-build]');
   const releaseCoverage = $('[data-operations-release-coverage]');
+  const taskFeedback = $('[data-operations-task-feedback]');
+  const planFeedback = $('[data-operations-plan-feedback]');
+  const releaseFeedback = $('[data-operations-release-feedback]');
+  const listPages = {tasks:1, closed:1, plans:1, releases:1};
+  const actionLabels = {
+    created:'Создано',
+    updated:'Обновлено',
+    recurrence_created:'Создан следующий повтор',
+    season_reminder_materialized:'Создана сезонная задача',
+    readiness_updated:'Готовность обновлена',
+  };
+  const entityLabels = {
+    task:'Задача',
+    future_plan:'План',
+    release:'Релиз',
+    season_package:'Пакет сезона',
+  };
   let snapshot = null;
   let loading = false;
+  let toastTimer = 0;
 
   const recurrenceLabels = {
     once:'Один раз',
@@ -43,6 +61,52 @@
   const environmentLabels = {staging:'Тестовая',production:'Рабочая'};
 
   const clear = node => node?.replaceChildren();
+
+  const feedback = (node, message = '', state = '') => {
+    if (!node) return;
+    node.textContent = message;
+    node.hidden = message === '';
+    if (state) node.dataset.state = state;
+    else delete node.dataset.state;
+  };
+
+  const notify = (message, state = 'ok') => {
+    let toast = root.querySelector('[data-operations-toast]');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'mgw-admin__operations-toast';
+      toast.dataset.operationsToast = '';
+      toast.setAttribute('role', 'status');
+      toast.setAttribute('aria-live', 'polite');
+      root.append(toast);
+    }
+    toast.textContent = message;
+    toast.dataset.state = state;
+    toast.hidden = false;
+    window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => { toast.hidden = true; }, state === 'error' ? 5200 : 3000);
+  };
+
+  const focusInvalid = (node, message, feedbackNode) => {
+    if (!node) return false;
+    node.setAttribute('aria-invalid', 'true');
+    feedback(feedbackNode, message, 'error');
+    notify(message, 'error');
+    node.scrollIntoView({behavior:'smooth', block:'center'});
+    window.setTimeout(() => {
+      try { node.focus({preventScroll:true}); } catch (_) { node.focus(); }
+    }, 260);
+    return false;
+  };
+
+  const requireValue = (node, label, feedbackNode) => {
+    if (String(node?.value || '').trim() !== '') {
+      node?.removeAttribute('aria-invalid');
+      return true;
+    }
+    return focusInvalid(node, 'Заполните поле «' + label + '».', feedbackNode);
+  };
+
   const num = value => Number(value || 0).toLocaleString('ru-RU');
   const dateTime = value => {
     const date = new Date(String(value || ''));
@@ -139,27 +203,70 @@
     return payload;
   };
 
-  const run = async (buttonNode, action, extra, successText) => {
+  const run = async (buttonNode, action, extra, successText, feedbackNode = null) => {
     buttonNode.disabled = true;
     try {
       const payload = await post(action, extra);
       snapshot = payload;
+      render(payload);
       status.textContent = successText;
       status.dataset.state = 'ok';
-      render(payload);
+      feedback(feedbackNode, successText, 'ok');
+      notify(successText, 'ok');
       return true;
     } catch (error) {
-      status.textContent = error instanceof Error ? error.message : 'Не удалось выполнить действие.';
+      const message = error instanceof Error ? error.message : 'Не удалось выполнить действие.';
+      status.textContent = message;
       status.dataset.state = 'error';
+      feedback(feedbackNode, message, 'error');
+      notify(message, 'error');
       return false;
     } finally {
       buttonNode.disabled = false;
     }
   };
 
+  const renderPagedList = (box, rows, key, pageSize, renderRow, emptyText) => {
+    clear(box);
+    if (!rows.length) {
+      const empty = document.createElement('p');
+      empty.className = 'mgw-admin__operations-empty';
+      empty.textContent = emptyText;
+      box.append(empty);
+      listPages[key] = 1;
+      return;
+    }
+
+    const pages = Math.max(1, Math.ceil(rows.length / pageSize));
+    listPages[key] = Math.min(Math.max(1, Number(listPages[key] || 1)), pages);
+    const page = listPages[key];
+    const start = (page - 1) * pageSize;
+    rows.slice(start, start + pageSize).forEach(row => box.append(renderRow(row)));
+
+    if (pages <= 1) return;
+    const pager = document.createElement('div');
+    pager.className = 'mgw-admin__pager mgw-admin__operations-pager';
+    const prev = button('←', () => {
+      listPages[key] = Math.max(1, listPages[key] - 1);
+      renderPagedList(box, rows, key, pageSize, renderRow, emptyText);
+    });
+    const label = document.createElement('span');
+    label.textContent = page + ' / ' + pages;
+    const next = button('→', () => {
+      listPages[key] = Math.min(pages, listPages[key] + 1);
+      renderPagedList(box, rows, key, pageSize, renderRow, emptyText);
+    });
+    prev.disabled = page <= 1;
+    next.disabled = page >= pages;
+    pager.append(prev, label, next);
+    box.append(pager);
+  };
+
   const renderTask = (row, editable) => {
-    const card = document.createElement('article');
-    card.className = 'mgw-admin__operations-item';
+    const card = document.createElement(editable ? 'details' : 'article');
+    card.className = editable
+      ? 'mgw-admin__operations-item mgw-admin__operations-item--details'
+      : 'mgw-admin__operations-item';
     if (isOverdue(row)) card.dataset.overdue = 'true';
 
     const head = document.createElement('div');
@@ -168,11 +275,11 @@
     title.textContent = String(row.title || 'Задача');
     const badges = document.createElement('div');
     badges.append(
-      badge(categoryLabels[row.category] || row.category || 'Задача'),
-      badge(taskStatusLabels[row.task_status] || row.task_status || '—', row.task_status || ''),
+      badge(categoryLabels[row.category] || 'Задача'),
+      badge(taskStatusLabels[row.task_status] || 'Неизвестный статус', row.task_status || ''),
     );
     if (row.recurrence_code && row.recurrence_code !== 'once') {
-      badges.append(badge(recurrenceLabels[row.recurrence_code] || row.recurrence_code));
+      badges.append(badge(recurrenceLabels[row.recurrence_code] || 'Повторяется'));
     }
     head.append(title, badges);
 
@@ -188,7 +295,14 @@
       meta.append(span);
     });
 
-    card.append(head, meta);
+    if (editable) {
+      const summary = document.createElement('summary');
+      summary.className = 'mgw-admin__operations-summary';
+      summary.append(head, meta);
+      card.append(summary);
+    } else {
+      card.append(head, meta);
+    }
 
     if (!editable) {
       if (row.result_text) {
@@ -201,38 +315,40 @@
     }
 
     const controls = document.createElement('div');
-    controls.className = 'mgw-admin__operations-editor';
+    controls.className = 'mgw-admin__operations-editor mgw-admin__operations-editor--details';
     const owner = textInput(row.owner_ref);
     const state = select(taskStatusLabels, row.task_status);
     const result = textarea(row.result_text);
     controls.append(field('Ответственный', owner), field('Статус', state), field('Результат / комментарий', result));
-    const save = button('Сохранить задачу', () => run(save, 'update_task', {
-      task_id:String(row.task_id || ''),
-      changes:{owner_ref:owner.value, task_status:state.value, result_text:result.value},
-    }, 'Задача обновлена.'));
+    const save = button('Сохранить изменения', () => {
+      const closing = ['done','skipped'].includes(state.value);
+      const successText = closing
+        ? 'Задача сохранена и перенесена в завершённые.'
+        : 'Задача сохранена.';
+      run(save, 'update_task', {
+        task_id:String(row.task_id || ''),
+        changes:{owner_ref:owner.value, task_status:state.value, result_text:result.value},
+      }, successText);
+    });
     controls.append(save);
     card.append(controls);
     return card;
   };
 
   const renderTasks = operations => {
-    clear(tasksBox);
-    clear(closedTasksBox);
     const active = Array.isArray(operations.tasks?.active) ? operations.tasks.active : [];
     const closed = Array.isArray(operations.tasks?.recent_closed) ? operations.tasks.recent_closed : [];
-    if (!active.length) {
-      const empty = document.createElement('p');
-      empty.className = 'mgw-admin__operations-empty';
-      empty.textContent = 'Активных задач сейчас нет.';
-      tasksBox.append(empty);
-    } else active.forEach(row => tasksBox.append(renderTask(row, true)));
 
-    if (!closed.length) {
-      const empty = document.createElement('p');
-      empty.className = 'mgw-admin__operations-empty';
-      empty.textContent = 'Завершённых задач пока нет.';
-      closedTasksBox.append(empty);
-    } else closed.forEach(row => closedTasksBox.append(renderTask(row, false)));
+    renderPagedList(
+      tasksBox, active, 'tasks', 8,
+      row => renderTask(row, true),
+      'Активных задач сейчас нет.'
+    );
+    renderPagedList(
+      closedTasksBox, closed, 'closed', 8,
+      row => renderTask(row, false),
+      'Завершённых задач пока нет.'
+    );
 
     const overdue = active.filter(isOverdue).length;
     $('[data-operations-kpi="tasks"]').textContent = num(active.length);
@@ -256,7 +372,7 @@
       return;
     }
 
-    strong.textContent = data.ready ? 'Пакет следующего сезона READY' : 'Подготовка требуется';
+    strong.textContent = data.ready ? 'Пакет следующего сезона готов' : 'Подготовка требуется';
     text.textContent = 'Текущий сезон: ' + String(data.current_season_id || '—') + ' · следующий: ' + String(data.target_season_id || '—');
     seasonStatus.append(strong, text);
     seasonStatus.dataset.state = data.ready ? 'ready' : 'pending';
@@ -285,7 +401,7 @@
       checkpoint.textContent = 'T‑' + String(row.checkpoint_days || '?');
       due.textContent = dateTime(row.due_at_utc);
       const effectiveDue = new Date(String(row.due_at_utc || '')).getTime() <= Date.now() && !data.ready;
-      state.textContent = data.ready ? 'Закрыто: READY' : (effectiveDue ? 'Требует внимания' : 'Ожидает срока');
+      state.textContent = data.ready ? 'Закрыто: готово' : (effectiveDue ? 'Требует внимания' : 'Ожидает срока');
       state.dataset.state = data.ready ? 'ready' : (effectiveDue ? 'due' : 'pending');
       item.append(checkpoint, due, state);
       seasonReminders.append(item);
@@ -302,66 +418,77 @@
   };
 
   const renderPlan = row => {
-    const card = document.createElement('article');
-    card.className = 'mgw-admin__operations-item';
+    const card = document.createElement('details');
+    card.className = 'mgw-admin__operations-item mgw-admin__operations-item--details';
+    const summary = document.createElement('summary');
+    summary.className = 'mgw-admin__operations-summary';
+
     const head = document.createElement('div');
     head.className = 'mgw-admin__operations-item-head';
     const title = document.createElement('strong');
     title.textContent = String(row.title || 'План');
     const badges = document.createElement('div');
     badges.append(
-      badge(categoryLabels[row.category] || row.category || 'План'),
-      badge(planStatusLabels[row.plan_status] || row.plan_status || '—', row.plan_status || '')
+      badge(categoryLabels[row.category] || 'План'),
+      badge(planStatusLabels[row.plan_status] || 'Неизвестный статус', row.plan_status || '')
     );
     head.append(title, badges);
-    card.append(head);
+
+    const meta = document.createElement('div');
+    meta.className = 'mgw-admin__operations-item-meta';
+    const period = document.createElement('span');
+    period.textContent = row.target_period ? 'Период · ' + row.target_period : 'Период не указан';
+    const ownerMeta = document.createElement('span');
+    ownerMeta.textContent = row.owner_ref ? 'Ответственный · ' + row.owner_ref : 'Ответственный не назначен';
+    meta.append(period, ownerMeta);
+    summary.append(head, meta);
+    card.append(summary);
 
     const controls = document.createElement('div');
-    controls.className = 'mgw-admin__operations-editor';
+    controls.className = 'mgw-admin__operations-editor mgw-admin__operations-editor--details';
     const state = select(planStatusLabels, row.plan_status);
     const owner = textInput(row.owner_ref);
-    const period = textInput(row.target_period);
-    period.maxLength = 120;
+    const targetPeriod = textInput(row.target_period);
+    targetPeriod.maxLength = 120;
     const notes = textarea(row.notes, 5000);
     controls.append(
       field('Статус', state),
       field('Ответственный', owner),
-      field('Период', period),
+      field('Период', targetPeriod),
       field('Заметки', notes)
     );
-    const save = button('Сохранить план', () => run(save, 'update_plan', {
+    const save = button('Сохранить изменения', () => run(save, 'update_plan', {
       plan_id:String(row.plan_id || ''),
-      changes:{plan_status:state.value, owner_ref:owner.value, target_period:period.value, notes:notes.value},
-    }, 'Future Plan обновлён.'));
+      changes:{plan_status:state.value, owner_ref:owner.value, target_period:targetPeriod.value, notes:notes.value},
+    }, 'План сохранён.'));
     controls.append(save);
     card.append(controls);
     return card;
   };
 
   const renderPlans = operations => {
-    clear(plansBox);
     const rows = Array.isArray(operations.future_plans) ? operations.future_plans : [];
     const active = rows.filter(row => ['planned','in_progress','blocked'].includes(String(row.plan_status || ''))).length;
     $('[data-operations-kpi="plans"]').textContent = num(active);
-    if (!rows.length) {
-      const empty = document.createElement('p');
-      empty.className = 'mgw-admin__operations-empty';
-      empty.textContent = 'Future Plans пока пуст.';
-      plansBox.append(empty);
-      return;
-    }
-    rows.forEach(row => plansBox.append(renderPlan(row)));
+    renderPagedList(
+      plansBox, rows, 'plans', 8,
+      renderPlan,
+      'Планов на будущее пока нет.'
+    );
   };
 
   const renderRelease = row => {
-    const card = document.createElement('article');
-    card.className = 'mgw-admin__operations-item';
+    const card = document.createElement('details');
+    card.className = 'mgw-admin__operations-item mgw-admin__operations-item--details';
+    const summaryNode = document.createElement('summary');
+    summaryNode.className = 'mgw-admin__operations-summary';
+
     const head = document.createElement('div');
     head.className = 'mgw-admin__operations-item-head';
     const title = document.createElement('strong');
     title.textContent = String(row.version_label || 'Релиз');
     const badges = document.createElement('div');
-    badges.append(badge(environmentLabels[row.environment] || row.environment || '—'));
+    badges.append(badge(environmentLabels[row.environment] || 'Среда не указана'));
     head.append(title, badges);
 
     const meta = document.createElement('div');
@@ -371,19 +498,20 @@
       span.textContent = value;
       meta.append(span);
     });
-    card.append(head, meta);
+    summaryNode.append(head, meta);
+    card.append(summaryNode);
 
     const controls = document.createElement('div');
-    controls.className = 'mgw-admin__operations-editor';
+    controls.className = 'mgw-admin__operations-editor mgw-admin__operations-editor--details';
     const summary = textarea(row.summary_text, 5000);
     const issues = textarea(row.known_issues_text, 5000);
     const rollback = textInput(row.rollback_link);
     rollback.maxLength = 500;
     controls.append(field('Что вошло', summary), field('Известные проблемы', issues), field('Ссылка отката', rollback));
-    const save = button('Обновить запись', () => run(save, 'update_release', {
+    const save = button('Сохранить изменения', () => run(save, 'update_release', {
       release_id:String(row.release_id || ''),
       changes:{summary_text:summary.value, known_issues_text:issues.value, rollback_link:rollback.value},
-    }, 'Запись релиза обновлена.'));
+    }, 'Запись релиза сохранена.'));
     controls.append(save);
 
     if (row.rollback_link) {
@@ -400,17 +528,13 @@
   };
 
   const renderReleases = operations => {
-    clear(releasesBox);
     const rows = Array.isArray(operations.release_log) ? operations.release_log : [];
     $('[data-operations-kpi="releases"]').textContent = num(rows.length);
-    if (!rows.length) {
-      const empty = document.createElement('p');
-      empty.className = 'mgw-admin__operations-empty';
-      empty.textContent = 'Записей релизов пока нет. История начинается с MVP-22.7.';
-      releasesBox.append(empty);
-      return;
-    }
-    rows.forEach(row => releasesBox.append(renderRelease(row)));
+    renderPagedList(
+      releasesBox, rows, 'releases', 6,
+      renderRelease,
+      'Записей релизов пока нет. История начинается с MVP-22.7.'
+    );
   };
 
   const renderAudit = operations => {
@@ -424,7 +548,8 @@
       const item = document.createElement('div');
       const strong = document.createElement('strong');
       const span = document.createElement('span');
-      strong.textContent = String(row.action_code || 'изменение') + ' · ' + String(row.entity_type || '');
+      strong.textContent = (actionLabels[row.action_code] || 'Изменение')
+        + ' · ' + (entityLabels[row.entity_type] || 'Запись');
       span.textContent = dateTime(row.created_at_utc) + ' · ' + String(row.actor_ref || '—');
       item.append(strong, span);
       auditBox.append(item);
@@ -471,6 +596,12 @@
     const recurrence = $('[data-operations-task-recurrence]');
     const due = $('[data-operations-task-due]');
     const owner = $('[data-operations-task-owner]');
+
+    feedback(taskFeedback);
+    if (!requireValue(title, 'Задача', taskFeedback)) return;
+    if (recurrence.value !== 'once' && !requireValue(due, 'Ближайший срок', taskFeedback)) return;
+
+    listPages.tasks = 1;
     run(node, 'create_task', {
       task:{
         title:title.value,
@@ -479,44 +610,64 @@
         due_at_utc:toIso(due.value),
         owner_ref:owner.value,
       },
-    }, 'Задача добавлена.').then(success => {
+    }, 'Задача добавлена в рабочий список.', taskFeedback).then(success => {
       if (!success) return;
       title.value = '';
+      title.removeAttribute('aria-invalid');
+      due.removeAttribute('aria-invalid');
       if (recurrence.value === 'once') due.value = '';
     });
   });
 
   root.querySelector('[data-operations-create-plan]')?.addEventListener('click', event => {
     const node = event.currentTarget;
+    const title = $('[data-operations-plan-title]');
+    feedback(planFeedback);
+    if (!requireValue(title, 'План', planFeedback)) return;
+
+    listPages.plans = 1;
     run(node, 'create_plan', {
       plan:{
-        title:$('[data-operations-plan-title]').value,
+        title:title.value,
         category:$('[data-operations-plan-category]').value,
         plan_status:$('[data-operations-plan-status]').value,
         target_period:$('[data-operations-plan-period]').value,
         owner_ref:$('[data-operations-plan-owner]').value,
         notes:$('[data-operations-plan-notes]').value,
       },
-    }, 'Future Plan добавлен.').then(success => {
+    }, 'План добавлен.', planFeedback).then(success => {
       if (!success) return;
-      $('[data-operations-plan-title]').value = '';
+      title.value = '';
+      title.removeAttribute('aria-invalid');
       $('[data-operations-plan-notes]').value = '';
     });
   });
 
   root.querySelector('[data-operations-create-release]')?.addEventListener('click', event => {
     const node = event.currentTarget;
+    const version = $('[data-operations-release-version]');
+    const sha = $('[data-operations-release-sha]');
+    const date = $('[data-operations-release-date]');
+    const summary = $('[data-operations-release-summary]');
+
+    feedback(releaseFeedback);
+    if (!requireValue(version, 'Версия', releaseFeedback)) return;
+    if (!requireValue(sha, 'Полный SHA', releaseFeedback)) return;
+    if (!requireValue(date, 'Дата релиза', releaseFeedback)) return;
+    if (!requireValue(summary, 'Что вошло', releaseFeedback)) return;
+
+    listPages.releases = 1;
     run(node, 'create_release', {
       release:{
-        version_label:$('[data-operations-release-version]').value,
+        version_label:version.value,
         environment:$('[data-operations-release-environment]').value,
-        release_sha:$('[data-operations-release-sha]').value,
-        released_at_utc:toIso($('[data-operations-release-date]').value),
-        summary_text:$('[data-operations-release-summary]').value,
+        release_sha:sha.value,
+        released_at_utc:toIso(date.value),
+        summary_text:summary.value,
         known_issues_text:$('[data-operations-release-issues]').value,
         rollback_link:$('[data-operations-release-rollback]').value,
       },
-    }, 'Релиз добавлен в журнал.');
+    }, 'Релиз добавлен в журнал.', releaseFeedback);
   });
 
   root.querySelector('[data-operations-save-season]')?.addEventListener('click', event => {
