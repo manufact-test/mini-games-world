@@ -9,6 +9,7 @@ $css = $read('app/assets/css/admin-shell.css');
 $js = $read('app/assets/js/admin-system.js');
 $endpoint = $read('bot/admin-system.php');
 $system = $read('bot/system/SystemAdminService.php');
+$realScope = $read('bot/analytics/RealAccountScope.php');
 $flags = $read('bot/system/RuntimeFeatureFlagAdminService.php');
 $notifications = $read('bot/notifications/AdminNotificationEventService.php');
 $migration = $read('bot/database/migrations/20260926_0065_create_system_admin_control.php');
@@ -59,17 +60,16 @@ $assert(
 );
 
 $assert(
-    str_contains($system, 'FROM mgw_users u')
-        && str_contains($system, 'u.status <> :retired_fixture_status')
-        && str_contains($system, "dev_identity.provider = :development_provider")
-        && str_contains($system, 'FROM mgw_account_ownership fixture_ownership')
-        && str_contains($system, "fixture_ownership.source_type = :legacy_fixture_source_type")
-        && str_contains($system, "fixture_ownership.source_type = :runtime_identity_source_type")
-        && str_contains($system, "'fixture_legacy_prefix'=>'stg_tour_'")
-        && str_contains($system, "'fixture_source_ref_prefix'=>'development:stg_tour_'")
+    str_contains($system, "RealAccountScope::userPredicate('u', 'readiness')")
         && str_contains($system, 'READINESS_THRESHOLD = 500')
-        && !str_contains($system, 'DELETE FROM mgw_users'),
-    '500-user readiness must exclude development and staging tournament fixtures without deleting historical accounts.'
+        && str_contains($realScope, "staging_fixture_retired")
+        && str_contains($realScope, "development")
+        && str_contains($realScope, "staging_fixture_repair")
+        && str_contains($realScope, "stg_tour_")
+        && str_contains($realScope, "development:stg_tour_")
+        && !str_contains($system, 'DELETE FROM mgw_users')
+        && !str_contains($realScope, 'DELETE FROM mgw_users'),
+    '500-user readiness and analytics must share one non-destructive real-account scope.'
 );
 
 $assert(
