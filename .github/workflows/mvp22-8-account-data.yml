@@ -21,6 +21,7 @@ on:
       - 'app/runtime/client/version-manifest.php'
       - '.github/workflows/mvp22-8-account-data.yml'
       - '.github/workflows/mvp22-3-moderation.yml'
+      - '.github/workflows/mvp22-admin-rework.yml'
       - '.github/workflows/mvp22-4-antifraud-replay.yml'
       - '.github/workflows/mvp22-5-system-admin.yml'
       - '.github/workflows/mvp22-6-product-economy-analytics.yml'
@@ -113,7 +114,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(\.github/workflows/(mvp22-8-account-data|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations)\.yml|app/assets/css/account-data-v1\.css|app/assets/js/api/client\.js|app/assets/js/components/account-shortcuts\.js|app/assets/js/screens/account-data-sheet-v1\.js|app/runtime/client/version-manifest\.php|bot/account-data\.php|bot/account-data-website-hook\.php|bot/accounts/(AccountDataLifecycleService|AccountDataZipWriter|AccountReauthGuard|AccountIdentityService)\.php|bot/database/migrations/20260926_0067_create_account_data_lifecycle\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/Mvp22_8AccountDataLifecycleTest\.php)$'
+          allowed='^(\.github/workflows/(mvp22-8-account-data|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations|mvp22-admin-rework)\.yml|app/assets/css/account-data-v1\.css|app/assets/js/api/client\.js|app/assets/js/components/account-shortcuts\.js|app/assets/js/screens/account-data-sheet-v1\.js|app/runtime/client/version-manifest\.php|bot/account-data\.php|bot/account-data-website-hook\.php|bot/accounts/(AccountDataLifecycleService|AccountDataZipWriter|AccountReauthGuard|AccountIdentityService)\.php|bot/database/migrations/20260926_0067_create_account_data_lifecycle\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/Mvp22_8AccountDataLifecycleTest\.php)$'
           bad=0
           while IFS= read -r path; do
             if ! grep -Eq "$allowed" <<<"$path"; then
