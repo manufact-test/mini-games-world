@@ -196,7 +196,7 @@ final class AdminOperationsService
             $after = $this->task($taskId, true);
             $this->audit($database, 'task', $taskId, 'updated', $actorRef, $before, $after, $nowText);
 
-            if ((string)$before['source_type'] === 'manual'
+            if (in_array((string)$before['source_type'], ['manual','manual_recurring'], true)
                 && (string)$before['task_status'] !== $status
                 && in_array($status, ['done','skipped'], true)
                 && (string)$before['recurrence_code'] !== 'once') {
