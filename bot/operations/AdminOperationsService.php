@@ -96,7 +96,7 @@ final class AdminOperationsService
             'coverage'=>[
                 'release_history'=>'Журнал релизов начинается с MVP-22.7. Старые релизы не восстанавливаются задним числом.',
                 'season_schedule'=>'Контрольные точки T-21 / T-14 / T-7 читаются из существующего владельца сезонного календаря и не дублируются отдельным планировщиком.',
-                'cron'=>'MVP-22.7 не устанавливает и не меняет системный планировщик. Регулярная задача создаёт следующую итерацию при завершении текущей.',
+                'cron'=>'Регулярная задача создаёт следующую итерацию при завершении текущей. Срок задачи обрабатывается единым напоминанием без повторного спама по просрочке.',
             ],
         ];
     }
@@ -204,6 +204,82 @@ final class AdminOperationsService
             }
 
             return $after;
+        });
+    }
+
+    public function dueTaskReminderCandidates(?DateTimeImmutable $now = null, int $limit = 50): array
+    {
+        $now = $this->utcNow($now);
+        $limit = max(1, min(200, $limit));
+
+        return $this->database->fetchAll(
+            'SELECT t.task_id,t.series_id,t.title,t.category,t.recurrence_code,t.due_at_utc,
+                    t.owner_ref,t.task_status,t.created_by_ref
+             FROM mgw_admin_tasks t
+             WHERE t.task_status IN (\'open\',\'in_progress\')
+               AND t.due_at_utc IS NOT NULL
+               AND t.due_at_utc <= :due_before
+               AND t.created_by_ref LIKE :telegram_actor
+               AND NOT EXISTS (
+                    SELECT 1
+                    FROM mgw_admin_operations_audit a
+                    WHERE a.entity_type = :entity_type
+                      AND a.entity_id = t.task_id
+                      AND a.action_code = :action_code
+               )
+             ORDER BY t.due_at_utc ASC,t.created_at_utc ASC
+             LIMIT ' . $limit,
+            [
+                'due_before'=>$this->sqlTime($now),
+                'telegram_actor'=>'telegram:%',
+                'entity_type'=>'task',
+                'action_code'=>'due_reminder_sent',
+            ]
+        );
+    }
+
+    public function markTaskReminderSent(
+        string $taskId,
+        array $delivery,
+        ?DateTimeImmutable $now = null
+    ): bool {
+        $now = $this->utcNow($now);
+        $taskId = $this->token($taskId, 64, 'идентификатор задачи');
+        $nowText = $this->sqlTime($now);
+
+        return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
+            $taskId,
+            $delivery,
+            $nowText
+        ): bool {
+            $existing = (int)$database->fetchValue(
+                'SELECT COUNT(*)
+                 FROM mgw_admin_operations_audit
+                 WHERE entity_type=:entity_type
+                   AND entity_id=:entity_id
+                   AND action_code=:action_code',
+                [
+                    'entity_type'=>'task',
+                    'entity_id'=>$taskId,
+                    'action_code'=>'due_reminder_sent',
+                ]
+            );
+            if ($existing > 0) return false;
+
+            $task = $this->task($taskId, true);
+            if (!in_array((string)$task['task_status'], ['open','in_progress'], true)) return false;
+
+            $this->audit(
+                $database,
+                'task',
+                $taskId,
+                'due_reminder_sent',
+                'system:admin-task-reminder',
+                null,
+                $delivery,
+                $nowText
+            );
+            return true;
         });
     }
 
