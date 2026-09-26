@@ -11,6 +11,7 @@ $system = $read('bot/system/SystemAdminService.php');
 $flags = $read('bot/system/RuntimeFeatureFlagAdminService.php');
 $notifications = $read('bot/notifications/AdminNotificationEventService.php');
 $migration = $read('bot/database/migrations/20260926_0065_create_system_admin_control.php');
+$stagingManifest = $read('bot/helpers/staging-e2e-runtime-files.txt');
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -23,6 +24,16 @@ $assert(
         && str_contains($page, 'admin-system.js?v=1&mvp22_5=system-status-v1')
         && str_contains($page, 'data-admin-system'),
     'MVP-22.5 must extend the existing secure Web Admin System section.'
+);
+
+
+$assert(
+    str_contains($stagingManifest, 'bot/admin-system.php')
+        && str_contains($stagingManifest, 'bot/system/SystemAdminService.php')
+        && str_contains($stagingManifest, 'bot/system/RuntimeFeatureFlagAdminService.php')
+        && str_contains($stagingManifest, 'bot/database/migrations/20260926_0065_create_system_admin_control.php')
+        && str_contains($stagingManifest, 'app/assets/js/admin-system.js'),
+    'Exact staging fingerprint must cover the complete MVP-22.5 runtime surface.'
 );
 
 $assert(
