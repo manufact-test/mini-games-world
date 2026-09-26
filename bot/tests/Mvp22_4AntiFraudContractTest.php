@@ -21,8 +21,13 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 foreach ([
     'data-admin-nav-target="antifraud"',
     'data-admin-section="antifraud" data-admin-antifraud',
-    'data-af-mode="active"',
-    'data-af-mode="closed"',
+    'data-af-home-mode="cases"',
+    'data-af-case-filter="active"',
+    'data-af-case-filter="open"',
+    'data-af-case-filter="reviewing"',
+    'data-af-case-filter="monitoring"',
+    'data-af-case-filter="closed"',
+    'data-af-pagination',
     'data-af-recent-trigger',
     'data-af-recent-list',
     'data-af-match-id',
@@ -46,6 +51,10 @@ $assert(
         && str_contains($page, 'data-af-review-tab="pair"')
         && str_contains($page, 'data-af-review-tab="devices"')
         && str_contains($page, 'data-af-review-tab="case"')
+        && str_contains($page, 'data-af-home-mode="cases"')
+        && str_contains($page, 'Все активные')
+        && str_contains($page, 'Под наблюдением')
+        && str_contains($page, 'data-af-pagination')
         && str_contains($page, 'Хронология матча')
         && str_contains($page, 'Это не видео.')
         && str_contains($page, 'Технические данные матча')
@@ -87,7 +96,10 @@ $assert(
 
 foreach ([
     "mode = 'active'",
-    "mode === 'closed' ? 'Завершённые кейсы'",
+    "const perPage = 12",
+    "const renderCaseCounts = counts =>",
+    "const renderPagination = meta =>",
+    "const renderSnapshot = data =>",
     "const renderRecentMatches = matches =>",
     "const renderSignals = review =>",
     "const renderTimeline = review =>",
@@ -104,6 +116,8 @@ $assert(
     str_contains($css, '.mgw-admin__antifraud')
         && str_contains($css, '.mgw-admin__af-review-tabs')
         && str_contains($css, '.mgw-admin__af-timeline')
+        && str_contains($css, '.mgw-admin__af-case-filters')
+        && str_contains($css, '.mgw-admin__af-pagination')
         && str_contains($css, '@media(max-width:640px)'),
     'Anti-fraud Admin workspace must have responsive styling.'
 );
@@ -147,6 +161,10 @@ $assert(
         && str_contains($service, "STATUS_MONITORING = 'monitoring'")
         && str_contains($service, "STATUS_CLOSED = 'closed'")
         && str_contains($service, "c.status_code IN ('open','reviewing','monitoring')")
+        && str_contains($service, "['active', 'open', 'reviewing', 'monitoring', 'closed', 'all']")
+        && str_contains($service, "'pagination' => [")
+        && str_contains($service, "'counts' => $counts")
+        && str_contains($service, "LIMIT " . $perPage . ' OFFSET ' . $offset")
         && str_contains($service, "$decision === self::DECISION_MONITOR")
         && str_contains($service, "public function takeInReview")
         && str_contains($service, "public function resolve")
