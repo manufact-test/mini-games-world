@@ -208,6 +208,9 @@ jobs:
             done < <(git diff --name-only "$base" "$head")
             test "$bad" -eq 0
             git diff --exit-code "$base" "$head" -- bot/games bot/support bot/moderation bot/ratings bot/tournaments bot/economy bot/ledger bot/antifraud bot/replay
+          elif [[ "${{ github.head_ref }}" == agent/mvp22-8-* ]]; then
+            git diff --exit-code "$base" "$head" -- bot/games bot/support bot/moderation bot/antifraud bot/replay bot/economy bot/ledger bot/tournaments bot/cron bot/ratings/SeasonCalendar.php
+            exit 0
           elif [[ "${{ github.head_ref }}" == agent/mvp22-7-* ]]; then
             allowed='^(\.github/workflows/(mvp20-4-quarterly-seasons|mvp20-5-seasonal-awards|mvp20-6-yearly-medal|mvp22-admin-rework|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations)\.yml|app/admin\.php|app/assets/css/admin-shell\.css|app/assets/js/(admin-shell|admin-operations)\.js|bot/admin-operations\.php|bot/operations/AdminOperationsService\.php|bot/database/migrations/20260926_0066_create_admin_operations\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/ratings/SeasonLifecycleService\.php|bot/tests/(Mvp22AdminShellReworkContractTest|Mvp22_7AdminOperationsTest|Mvp22_7AdminOperationsContractTest)\.php)$'
             while IFS= read -r path; do
