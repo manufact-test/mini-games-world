@@ -1,4 +1,4 @@
-import { api } from '../api/client.js?v=47';
+import { api } from '../api/client.js?v=1147&mvp22_8=account-data-v1';
 import { openSheet } from '../components/sheet.js?v=1109';
 import { toast } from '../components/toast.js?v=41';
 
