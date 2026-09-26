@@ -45,8 +45,18 @@ try {
     // synchronization used by Profile. Realtime projection already owns match
     // publication on API success, so this keeps the board fresh without making
     // every tab switch pay a full runtime synchronization.
-    (new PerGameRatingRuntimeBridge($configRef, $router, $database))
-        ->processProjectedMatches(50);
+    //
+    // Catch-up is opportunistic maintenance, not the read owner. A concurrent
+    // or malformed pending projection must not turn an otherwise readable
+    // leaderboard snapshot into HTTP 500. Keep retrying on later reads and log
+    // the deferred projection; the canonical snapshot below still fails closed
+    // if leaderboard storage itself is unavailable.
+    try {
+        (new PerGameRatingRuntimeBridge($configRef, $router, $database))
+            ->processProjectedMatches(50);
+    } catch (Throwable $catchupError) {
+        error_log('MGW leaderboard rating catch-up deferred: ' . $catchupError->getMessage());
+    }
 
     $leaderboard = (new LeaderboardService($database))->snapshot(
         $gameType,
