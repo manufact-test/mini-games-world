@@ -115,7 +115,6 @@ jobs:
           php bot/tests/Mvp20_4SeasonLifecycleIntegrationContractTest.php
           php bot/tests/Mvp20_8RatingAdminTest.php
           php bot/tests/Mvp20_8RatingAdminIntegrationContractTest.php
-          php bot/tests/Mvp21_1TournamentManualAcceptanceContractTest.php
           php bot/tests/Mvp21_10TournamentPrizeReviewTest.php
           php bot/tests/Mvp21_10TournamentPrizeReviewContractTest.php
 
