@@ -8,6 +8,7 @@ on:
       - 'app/admin.php'
       - 'app/assets/css/admin-shell.css'
       - 'app/assets/js/admin-shell.js'
+      - 'app/assets/js/admin-system.js'
       - 'app/assets/js/admin-support.js'
       - 'app/assets/js/admin-tournaments.js'
       - 'app/assets/js/admin-rating.js'
@@ -15,8 +16,15 @@ on:
       - 'app/assets/js/admin-reports.js'
       - 'bot/services/TelegramService.php'
       - 'bot/services/AdminService.php'
+      - 'bot/admin-system.php'
+      - 'bot/system/SystemAdminService.php'
+      - 'bot/system/RuntimeFeatureFlagAdminService.php'
+      - 'bot/database/migrations/20260926_0065_create_system_admin_control.php'
       - 'bot/tests/Mvp14WebAdminShellContractTest.php'
       - 'bot/tests/Mvp22AdminShellReworkContractTest.php'
+      - 'bot/tests/Mvp22_5SystemAdminTest.php'
+      - 'bot/tests/Mvp22_5SystemAdminContractTest.php'
+      - '.github/workflows/mvp22-5-system-admin.yml'
       - '.github/workflows/mvp18-5-reports-blocked-users.yml'
       - '.github/workflows/mvp20-8-rating-admin.yml'
       - '.github/workflows/mvp21-5-tournament-ready.yml'
@@ -61,8 +69,15 @@ jobs:
           php -l bot/services/TelegramService.php
           php -l bot/services/AdminService.php
           php -l bot/tests/Mvp22AdminShellReworkContractTest.php
+          php -l bot/admin-system.php
+          php -l bot/system/SystemAdminService.php
+          php -l bot/system/RuntimeFeatureFlagAdminService.php
+          php -l bot/database/migrations/20260926_0065_create_system_admin_control.php
+          php -l bot/tests/Mvp22_5SystemAdminTest.php
+          php -l bot/tests/Mvp22_5SystemAdminContractTest.php
           files=(
             app/assets/js/admin-shell.js
+            app/assets/js/admin-system.js
             app/assets/js/admin-compensation.js
             app/assets/js/admin-support.js
             app/assets/js/admin-tournaments.js
@@ -76,6 +91,11 @@ jobs:
 
       - name: Admin shell contract
         run: php bot/tests/Mvp22AdminShellReworkContractTest.php
+
+      - name: System Admin contract
+        run: |
+          php bot/tests/Mvp22_5SystemAdminTest.php
+          php bot/tests/Mvp22_5SystemAdminContractTest.php
 
       - name: Preserve Support backend contract
         run: php bot/tests/SupportTicketServiceTest.php
@@ -159,6 +179,19 @@ jobs:
                   ;;
                 *)
                   echo "Unexpected MVP-22.4 path in Admin workflow: $path" >&2
+                  bad=1
+                  ;;
+              esac
+            done < <(git diff --name-only "$base" "$head")
+            test "$bad" -eq 0
+            git diff --exit-code "$base" "$head" -- bot/games bot/support bot/moderation bot/ratings bot/tournaments bot/economy bot/ledger
+          elif [[ "${{ github.head_ref }}" == agent/mvp22-5-* ]]; then
+            while IFS= read -r path; do
+              case "$path" in
+                .github/workflows/mvp22-admin-rework.yml|.github/workflows/mvp22-5-system-admin.yml|app/admin.php|app/assets/css/admin-shell.css|app/assets/js/admin-system.js|bot/admin-system.php|bot/system/SystemAdminService.php|bot/system/RuntimeFeatureFlagAdminService.php|bot/database/migrations/20260926_0065_create_system_admin_control.php|bot/tests/Mvp22AdminShellReworkContractTest.php|bot/tests/Mvp22_5SystemAdminTest.php|bot/tests/Mvp22_5SystemAdminContractTest.php)
+                  ;;
+                *)
+                  echo "Unexpected MVP-22.5 path in Admin workflow: $path" >&2
                   bad=1
                   ;;
               esac
