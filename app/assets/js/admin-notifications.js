@@ -10,6 +10,7 @@
   const status = root.querySelector('[data-notification-event-status]');
   const list = root.querySelector('[data-notification-event-list]');
   const refresh = root.querySelector('[data-notification-event-refresh]');
+  const pagination = root.querySelector('[data-notification-pagination]');
   const send = root.querySelector('[data-notification-event-send]');
   const sourceType = root.querySelector('[data-notification-source-type]');
   const audienceType = root.querySelector('[data-notification-audience-type]');
@@ -24,6 +25,9 @@
   const expiresAt = root.querySelector('[data-notification-expires-at]');
   const audienceHint = root.querySelector('[data-notification-audience-hint]');
   let busy = false;
+  let eventRows = [];
+  let eventPage = 1;
+  const eventPerPage = 8;
 
   const post = async (payload) => {
     const response = await fetch(endpoint, {
@@ -77,37 +81,69 @@
     })[type] || '';
   };
 
-  const render = (events) => {
+  const renderPage = () => {
     list.replaceChildren();
-    if (!Array.isArray(events) || events.length === 0) {
+    const pageData = window.MGWAdminUX?.paginate(eventRows, eventPage, eventPerPage) || {
+      rows:eventRows, page:1, total:eventRows.length, totalPages:1, from:eventRows.length ? 1 : 0, to:eventRows.length
+    };
+    eventPage = pageData.page;
+
+    if (!pageData.total) {
       const empty = document.createElement('div');
       empty.className = 'mgw-admin__history-empty';
       empty.textContent = 'Уведомлений пока нет.';
       list.append(empty);
+      window.MGWAdminUX?.renderPager(pagination, {page:1,total_pages:1,total:0,from:0,to:0}, () => {});
       return;
     }
 
-    events.forEach(event => {
-      const item = document.createElement('div');
-      item.className = 'mgw-admin__history-item';
-      const copy = document.createElement('div');
-      copy.className = 'mgw-admin__history-copy';
+    pageData.rows.forEach(event => {
+      const item = document.createElement('details');
+      item.className = 'mgw-admin__history-item mgw-admin__notification-event';
+
+      const summary = document.createElement('summary');
+      const titleWrap = document.createElement('span');
       const head = document.createElement('strong');
-      head.textContent = `${event.title || 'Уведомление'} · ${sourceLabel(event.source_type)} / ${audienceLabel(event.audience_type)}`;
-      const body = document.createElement('span');
+      const sub = document.createElement('small');
+      head.textContent = event.title || 'Уведомление';
+      sub.textContent = `${sourceLabel(event.source_type)} · ${audienceLabel(event.audience_type)} · получателей ${event.recipient_count || 0}`;
+      titleWrap.append(head, sub);
+      const badge = document.createElement('b');
+      badge.textContent = event.expired ? 'Истекло' : 'Активно';
+      summary.append(titleWrap, badge);
+
+      const copy = document.createElement('div');
+      copy.className = 'mgw-admin__history-copy mgw-admin__notification-event-body';
+      const body = document.createElement('p');
       body.textContent = String(event.text || '');
       const lifecycle = document.createElement('span');
-      lifecycle.textContent = `Получателей: ${event.recipient_count || 0} · доставлено: ${event.delivered_count || 0} · прочитано: ${event.read_count || 0}`;
+      lifecycle.textContent = `Доставлено: ${event.delivered_count || 0} · прочитано: ${event.read_count || 0}`;
       const timing = document.createElement('span');
-      timing.textContent = `Отправка: ${event.scheduled_at || 'сразу'} · срок действия: ${event.expires_at || 'не ограничен'}${event.expired ? ' · истёк' : ''}`;
-      const meta = document.createElement('span');
-      meta.textContent = `${event.event_id || '—'} · ${event.audience_ref || '—'}${event.deep_link ? ` · → ${event.deep_link}` : ''}`;
-      copy.append(head, body, lifecycle, timing, meta);
-      item.append(copy);
+      timing.textContent = `Отправка: ${event.scheduled_at || 'сразу'} · срок: ${event.expires_at || 'не ограничен'}`;
+      const meta = document.createElement('code');
+      meta.textContent = `${event.event_id || '—'}${event.deep_link ? ` · → ${event.deep_link}` : ''}`;
+      copy.append(body, lifecycle, timing, meta);
+      item.append(summary, copy);
       list.append(item);
+    });
+
+    window.MGWAdminUX?.renderPager(pagination, {
+      page:pageData.page,
+      total_pages:pageData.totalPages,
+      total:pageData.total,
+      from:pageData.from,
+      to:pageData.to,
+    }, nextPage => {
+      eventPage = nextPage;
+      renderPage();
     });
   };
 
+  const render = events => {
+    eventRows = Array.isArray(events) ? events : [];
+    eventPage = 1;
+    renderPage();
+  };
   const load = async () => {
     if (busy) return;
     if (!telegram?.initData) {
