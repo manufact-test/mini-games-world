@@ -313,8 +313,7 @@ try {
     (new AccountIdentityService(
         $db,
         2592000,
-        (string)$config['bot_token'],
-        (int)$config['account_deleted_identity_block_sec']
+        (string)$config['bot_token']
     ))->resolveProviderIdentity('telegram', $legacy, 'telegram_web', ['username'=>'player_one'], 'stale-session');
 } catch (RuntimeException $error) {
     $blockedReplay = str_contains($error->getMessage(), 'Предыдущий аккаунт был удалён');
