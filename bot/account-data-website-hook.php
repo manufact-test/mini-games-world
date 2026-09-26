@@ -53,6 +53,12 @@ try {
     if ($verificationRef === '') {
         json_response(['ok'=>false,'error'=>'Не передана подтверждённая website verification reference.'], 422);
     }
+    $hookSecret = trim((string)($config['account_data_website_hook_secret'] ?? ''));
+    $verificationSourceRef = 'verified:' . hash_hmac(
+        'sha256',
+        "mgw-account-data-website-verification-v1\n" . $verificationRef,
+        $hookSecret
+    );
 
     $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
     $router = new RuntimeStorageRouter($config);
@@ -70,9 +76,9 @@ try {
     $action = strtolower(trim((string)($payload['action'] ?? '')));
 
     if ($action === 'schedule_delete') {
-        $request = $service->scheduleDeletion($mgwId, 'website', $verificationRef);
+        $request = $service->scheduleDeletion($mgwId, 'website', $verificationSourceRef);
     } elseif ($action === 'create_export') {
-        $request = $service->createExport($mgwId, 'website', $verificationRef);
+        $request = $service->createExport($mgwId, 'website', $verificationSourceRef);
     } else {
         json_response(['ok'=>false,'error'=>'Unsupported website account-data action.'], 400);
     }
