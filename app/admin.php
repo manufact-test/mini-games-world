@@ -754,7 +754,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
 
         <div class="mgw-admin__incident-rehearsal" data-incident-rehearsal hidden>
           <strong>Учебная симуляция на тестовой среде</strong>
-          <p>Безопасно проверяет весь цикл карточки: создаёт учебный инцидент, сохраняет тестовое доказательство, отмечает восстановление и сразу закрывает карточку. Режим безопасности и сессии не меняются, production не изменяет.</p>
+          <p>Безопасно проверяет весь цикл карточки: создаёт учебный инцидент, сохраняет тестовое доказательство, отмечает восстановление и сразу закрывает карточку. Режим безопасности и сессии не меняются, и симуляция не изменяет production.</p>
           <button type="button" data-incident-run-rehearsal>Запустить безопасную симуляцию</button>
           <div class="mgw-admin__incident-rehearsal-result" data-incident-rehearsal-result hidden>
             <strong>Симуляция завершена</strong>
