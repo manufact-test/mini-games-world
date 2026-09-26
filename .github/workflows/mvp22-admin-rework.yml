@@ -104,7 +104,7 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           bad=0
           if [[ "${{ github.head_ref }}" == agent/mvp22-admin-ux-* ]]; then
-            allowed='^(\.github/workflows/(mvp22-admin-rework|mvp22-4-antifraud-replay|mvp22-3-moderation)\.yml|app/admin\.php|app/assets/css/admin-shell\.css|app/assets/js/admin-(shell|support|tournaments|rating|notifications|reports|compensation)\.js|bot/admin-(support|reports)\.php|bot/support/SupportTicketService\.php|bot/social/PlayerReportService\.php|bot/tests/(Mvp18_5ReportsBlockedUsersContractTest|Mvp21_10TournamentPrizeReviewContractTest|Mvp22AdminShellReworkContractTest|Mvp22_2CompensationContractTest|SupportTicketServiceTest|SupportTicketMySqlIntegrationTest)\.php)$'
+            allowed='^(\.github/workflows/(mvp22-admin-rework|mvp22-4-antifraud-replay|mvp22-3-moderation)\.yml|app/admin\.php|app/assets/css/admin-shell\.css|app/assets/js/admin-(shell|support|tournaments|rating|notifications|reports|compensation)\.js|bot/admin-(support|reports)\.php|bot/services/AdminService\.php|bot/support/SupportTicketService\.php|bot/social/PlayerReportService\.php|bot/tests/(Mvp18_5ReportsBlockedUsersContractTest|Mvp21_10TournamentPrizeReviewContractTest|Mvp22AdminShellReworkContractTest|Mvp22_2CompensationContractTest|SupportTicketServiceTest|SupportTicketMySqlIntegrationTest)\.php)$'
             while IFS= read -r path; do
               if ! grep -Eq "$allowed" <<<"$path"; then
                 echo "Unexpected Admin UX audit path: $path" >&2
