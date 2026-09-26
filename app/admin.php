@@ -19,7 +19,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <script src="./assets/js/admin-shell.js?v=10&mvp22_7=operations-nav-v1&mvp22_6=analytics-nav-v1&mvp22_4=admin-ux-scale-v1&test-coins=staging" defer></script>
   <script src="./assets/js/admin-system.js?v=2&mvp22_5=system-status-ru-ux-v2" defer></script>
   <script src="./assets/js/admin-analytics.js?v=1&mvp22_6=product-economy-analytics-v1" defer></script>
-  <script src="./assets/js/admin-operations.js?v=2&mvp22_7=tasks-compact-ru-v2" defer></script>
+  <script src="./assets/js/admin-operations.js?v=3&mvp22_7=task-reminders-v1" defer></script>
   <script src="./assets/js/admin-antifraud.js?v=1&mvp22_4=case-nav-v4" defer></script>
   <script src="./assets/js/admin-compensation.js?v=5&mvp22_2=admin-ux-scale-v1" defer></script>
   <script src="./assets/js/admin-reports.js?v=3&mvp18=reports&mvp22_3=admin-ux-scale-v1" defer></script>
@@ -229,7 +229,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
         <details class="mgw-admin__technical-disclosure mgw-admin__operations-panel" open>
           <summary>Регулярные задачи</summary>
           <div class="mgw-admin__operations-body">
-            <p class="mgw-admin__operations-help">Здесь хранится рабочий список с ответственным, сроком, статусом и результатом. Для ежедневных, еженедельных, ежемесячных и квартальных задач следующая итерация создаётся после завершения текущей — отдельный системный планировщик для этого не добавляется.</p>
+            <p class="mgw-admin__operations-help">Здесь хранится рабочий список с ответственным, сроком, статусом и результатом. Срок — это момент напоминания: создатель задачи один раз получает уведомление в колокольчике и сообщение от бота. По просроченной задаче повторного спама нет. Для регулярной задачи следующая итерация создаётся после завершения текущей.</p>
 
             <div class="mgw-admin__operations-create-grid">
               <label class="mgw-admin__field">
