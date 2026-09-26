@@ -524,11 +524,11 @@ final class SystemAdminService
                      AND (
                          (
                              fixture_ownership.source_type = :legacy_fixture_source_type
-                             AND fixture_ownership.legacy_user_id LIKE :fixture_legacy_pattern
+                             AND substr(fixture_ownership.legacy_user_id, 1, 9) = :fixture_legacy_prefix
                          )
                          OR (
                              fixture_ownership.source_type = :runtime_identity_source_type
-                             AND fixture_ownership.source_ref LIKE :fixture_source_ref_pattern
+                             AND substr(fixture_ownership.source_ref, 1, 21) = :fixture_source_ref_prefix
                          )
                      )
                )',
@@ -537,8 +537,8 @@ final class SystemAdminService
                 'development_provider'=>'development',
                 'legacy_fixture_source_type'=>'staging_fixture_repair',
                 'runtime_identity_source_type'=>'runtime_identity',
-                'fixture_legacy_pattern'=>'stg_tour_%',
-                'fixture_source_ref_pattern'=>'development:stg_tour_%',
+                'fixture_legacy_prefix'=>'stg_tour_',
+                'fixture_source_ref_prefix'=>'development:stg_tour_',
             ]
         );
         return max(0, (int)($rows[0]['total'] ?? 0));
