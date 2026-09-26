@@ -12,12 +12,10 @@ final class AccountIdentityService
     public function __construct(
         private DatabaseConnectionInterface $database,
         private int $sessionTtlSec = 2592000,
-        private string $deletedIdentitySecret = '',
-        private int $deletedIdentityBlockSec = 86700
+        private string $deletedIdentitySecret = ''
     ) {
         $this->sessionTtlSec = max(300, $this->sessionTtlSec);
         $this->deletedIdentitySecret = trim($this->deletedIdentitySecret);
-        $this->deletedIdentityBlockSec = max(300, $this->deletedIdentityBlockSec);
     }
 
     public function resolveTelegramUser(array $telegramUser, string $sessionId): array
