@@ -13,6 +13,7 @@ $shortcuts = $read('app/assets/js/components/account-shortcuts.js');
 $main = $read('app/assets/js/main-v110-handoff-shell.js');
 $preloader = $read('app/assets/js/components/preloader.js');
 $manifest = $read('app/runtime/client/version-manifest.php');
+$stagingEntry = $read('app/v110.php');
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -84,11 +85,14 @@ $assert(
 );
 
 $assert(
-    str_contains($manifest, "account-shortcuts.js?v=56")
-        && str_contains($manifest, "main-v110-handoff-shell.js?v=1158")
-        && str_contains($manifest, "preloader.js?v=46")
-        && str_contains($manifest, 'mobile-cold-first-open-v1'),
-    'Active client mappings must carry fresh revisions for the corrective.'
+    str_contains($manifest, "account-shortcuts.js?v=55")
+        && str_contains($manifest, "main-v110-handoff-shell.js?v=1157")
+        && str_contains($manifest, "preloader.js?v=45")
+        && !str_contains($manifest, 'mvp23_mobile=')
+        && str_contains($stagingEntry, "&mvp23_mobile=atomic-account-data-v1")
+        && str_contains($stagingEntry, "&mvp23_mobile=cold-surfaces-v1")
+        && str_contains($stagingEntry, "&mvp23_mobile=bounded-cold-prime-v1"),
+    'Canonical manifest mappings must stay stable while the active staging entry cache-busts only the corrected mobile owners.'
 );
 
 fwrite(STDOUT, "MVP-23 mobile cold first-interaction contract OK ({$assertions} assertions).\n");
