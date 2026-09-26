@@ -2,7 +2,7 @@ import { api } from '../api/client.js?v=1147&mvp22_8=account-data-v1';
 import { openSheet } from '../components/sheet.js?v=1109';
 import { toast } from '../components/toast.js?v=41';
 
-const STYLE_URL = './assets/css/account-data-v1.css?v=1&mvp22_8=account-data-v1';
+const STYLE_URL = './assets/css/account-data-v1.css?v=2&mvp22_8=account-data-v1&ux=corrective-v2';
 
 let snapshot = null;
 let loading = false;
@@ -52,11 +52,7 @@ function shellHtml(){
   return `
     <div class="account-data-v1" data-account-data-root>
       <div class="account-data-v1-head">
-        <div>
-          <span class="account-data-v1-kicker">Приватность</span>
-          <h2>Данные и аккаунт</h2>
-          <p>Скачайте копию данных или запланируйте удаление аккаунта MINI GAMES WORLD.</p>
-        </div>
+        <h2>Данные и аккаунт</h2>
         <button class="close account-data-v1-close" data-close-sheet type="button" aria-label="Закрыть">×</button>
       </div>
       <div class="account-data-v1-body" data-account-data-body>
@@ -85,11 +81,19 @@ function render(){
   const exportRateLimited = nextExportAt instanceof Date && nextExportAt.getTime() > Date.now();
 
   body.innerHTML = `
+    <div class="account-data-v1-intro">
+      <span class="account-data-v1-intro-icon" aria-hidden="true">i</span>
+      <div>
+        <strong>Управление данными аккаунта</strong>
+        <p>Здесь можно скачать копию своих данных или запросить удаление аккаунта.</p>
+      </div>
+    </div>
+
     <section class="account-data-v1-card account-data-v1-card--export">
       <div class="account-data-v1-card-icon" aria-hidden="true">⇩</div>
       <div class="account-data-v1-card-copy">
-        <h3>Экспорт данных</h3>
-        <p>Получите ZIP-архив: удобная HTML-сводка, JSON, CSV-файлы и раздел с изображениями профиля.</p>
+        <h3>Скачать мои данные</h3>
+        <p>Создадим ZIP-архив. Внутри — удобная HTML-сводка, JSON/CSV и изображения профиля.</p>
         ${exportMeta(exportState)}
       </div>
       <div class="account-data-v1-actions">
@@ -116,16 +120,15 @@ function render(){
     <section class="account-data-v1-card account-data-v1-card--danger">
       <div class="account-data-v1-card-icon account-data-v1-card-icon--danger" aria-hidden="true">!</div>
       <div class="account-data-v1-card-copy">
-        <h3>Удаление аккаунта</h3>
+        <h3>Удалить аккаунт</h3>
         ${deletionScheduled ? `
-          <p>Удаление уже запланировано. До указанного срока вы можете отменить запрос и продолжить пользоваться аккаунтом.</p>
+          <p>Удаление уже запланировано. До указанного срока запрос можно отменить — аккаунт продолжит работать.</p>
           <div class="account-data-v1-deletion-state">
             <span>Удаление после</span>
             <strong>${escapeHtml(formatDate(deletion.execute_after_utc))}</strong>
           </div>
         ` : `
-          <p>После подтверждения начнётся 7-дневный период ожидания. Затем профиль и привязанные персональные данные будут обезличены, а активные сессии закрыты.</p>
-          <p class="account-data-v1-note">История, которую необходимо сохранять для целостности матчей и финансового аудита, может остаться в ограниченном техническом виде и не используется как активный профиль.</p>
+          <p>Удаление не происходит сразу. После подтверждения у вас будет 7 дней, чтобы передумать и отменить запрос.</p>
         `}
       </div>
       <div class="account-data-v1-actions">
@@ -140,11 +143,6 @@ function render(){
         `}
       </div>
     </section>
-
-    <div class="account-data-v1-security">
-      <span aria-hidden="true">⌁</span>
-      <p>Опасные действия требуют свежего подтверждения входа через Telegram. Если сессия устарела, закройте MINI GAMES WORLD и откройте снова.</p>
-    </div>
   `;
 
   bind();
@@ -187,20 +185,30 @@ function openDeleteConfirmation(){
   openSheet(`
     <div class="account-data-v1 account-data-v1-confirm">
       <div class="account-data-v1-head">
-        <div>
-          <span class="account-data-v1-kicker account-data-v1-kicker--danger">Необратимое действие</span>
-          <h2>Удалить аккаунт?</h2>
-          <p>Запрос можно отменить в течение 7 дней. После истечения срока профиль будет обезличен, персональные привязки удалены, а текущие сессии закрыты.</p>
-        </div>
+        <h2>Удалить аккаунт?</h2>
         <button class="close account-data-v1-close" data-close-sheet type="button" aria-label="Закрыть">×</button>
       </div>
-      <div class="account-data-v1-confirm-box">
-        <strong>Перед удалением рекомендуем скачать архив данных.</strong>
-        <span>Для подтверждения сервер потребует свежий вход через Telegram.</span>
+
+      <div class="account-data-v1-confirm-scroll">
+        <div class="account-data-v1-confirm-warning">
+          <strong>Вы действительно хотите удалить аккаунт?</strong>
+          <p>После подтверждения начнётся 7-дневный период ожидания. Всё это время запрос можно отменить.</p>
+        </div>
+
+        <div class="account-data-v1-confirm-archive">
+          <div>
+            <strong>Сначала сохранить свои данные?</strong>
+            <span>Можно вернуться на предыдущий экран, создать ZIP-архив и скачать его перед удалением.</span>
+          </div>
+          <button class="btn account-data-v1-secondary" data-account-data-save-first type="button">Сначала скачать данные</button>
+        </div>
+
+        <p class="account-data-v1-confirm-note">После завершения удаления профиль и персональные привязки будут удалены или обезличены. Ограниченная техническая история может сохраняться только там, где она нужна для целостности матчей, финансового аудита, безопасности или требований закона.</p>
       </div>
+
       <div class="account-data-v1-confirm-actions">
-        <button class="btn" data-account-data-back type="button">Отмена</button>
-        <button class="btn account-data-v1-danger" data-account-data-schedule-delete type="button">Запланировать удаление</button>
+        <button class="btn" data-account-data-back type="button">Не удалять</button>
+        <button class="btn account-data-v1-danger" data-account-data-schedule-delete type="button">Да, запланировать</button>
       </div>
     </div>
   `, { returnToPrevious:true });
@@ -210,7 +218,14 @@ function openDeleteConfirmation(){
     const button = event.target instanceof Element ? event.target.closest('button') : null;
     if (!(button instanceof HTMLButtonElement)) return;
     if (button.hasAttribute('data-account-data-back')) {
-      document.querySelector('.account-data-v1-confirm [data-close-sheet]')?.dispatchEvent(new MouseEvent('click', { bubbles:true }));
+      closeSheet();
+      return;
+    }
+    if (button.hasAttribute('data-account-data-save-first')) {
+      closeSheet();
+      window.requestAnimationFrame(() => {
+        document.querySelector('.account-data-v1-card--export')?.scrollIntoView({ block:'start', behavior:'smooth' });
+      });
       return;
     }
     if (button.hasAttribute('data-account-data-schedule-delete')) void scheduleDeletion();
