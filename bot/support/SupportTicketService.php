@@ -225,6 +225,59 @@ final class SupportTicketService
     public function adminQueue(array $filters = [], int $limit = 100): array
     {
         $limit = max(1, min(200, $limit));
+        [$whereSql, $params] = $this->adminQueueFilterSql($filters);
+
+        $sql = 'SELECT * FROM mgw_support_tickets' . $whereSql
+            . " ORDER BY
+                CASE priority_code WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,
+                CASE status_code WHEN 'open' THEN 0 WHEN 'in_progress' THEN 1 WHEN 'waiting_user' THEN 2 WHEN 'resolved' THEN 3 ELSE 4 END,
+                updated_at_utc DESC, ticket_number DESC
+                LIMIT " . $limit;
+
+        return array_map(fn(array $row): array => $this->ticketSummary($row), $this->database->fetchAll($sql, $params));
+    }
+
+    public function adminQueuePage(array $filters = [], int $page = 1, int $perPage = 12): array
+    {
+        $perPage = max(5, min(50, $perPage));
+        $page = max(1, min(100000, $page));
+        [$whereSql, $params] = $this->adminQueueFilterSql($filters);
+
+        $total = max(0, (int)$this->database->fetchValue(
+            'SELECT COUNT(*) FROM mgw_support_tickets' . $whereSql,
+            $params
+        ));
+        $totalPages = max(1, (int)ceil($total / $perPage));
+        $page = min($page, $totalPages);
+        $offset = ($page - 1) * $perPage;
+
+        $sql = 'SELECT * FROM mgw_support_tickets' . $whereSql
+            . " ORDER BY
+                CASE priority_code WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,
+                CASE status_code WHEN 'open' THEN 0 WHEN 'in_progress' THEN 1 WHEN 'waiting_user' THEN 2 WHEN 'resolved' THEN 3 ELSE 4 END,
+                updated_at_utc DESC, ticket_number DESC
+                LIMIT " . $perPage . ' OFFSET ' . $offset;
+
+        $tickets = array_map(
+            fn(array $row): array => $this->ticketSummary($row),
+            $this->database->fetchAll($sql, $params)
+        );
+
+        return [
+            'tickets' => $tickets,
+            'pagination' => [
+                'page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'total_pages' => $totalPages,
+                'from' => $total === 0 ? 0 : $offset + 1,
+                'to' => $total === 0 ? 0 : min($total, $offset + $perPage),
+            ],
+        ];
+    }
+
+    private function adminQueueFilterSql(array $filters): array
+    {
         $where = [];
         $params = [];
 
@@ -269,17 +322,8 @@ final class SupportTicketService
             $params['query_subject'] = $needle;
         }
 
-        $sql = 'SELECT * FROM mgw_support_tickets';
-        if ($where !== []) $sql .= ' WHERE ' . implode(' AND ', $where);
-        $sql .= " ORDER BY
-            CASE priority_code WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,
-            CASE status_code WHEN 'open' THEN 0 WHEN 'in_progress' THEN 1 WHEN 'waiting_user' THEN 2 WHEN 'resolved' THEN 3 ELSE 4 END,
-            updated_at_utc DESC, ticket_number DESC
-            LIMIT " . $limit;
-
-        return array_map(fn(array $row): array => $this->ticketSummary($row), $this->database->fetchAll($sql, $params));
+        return [$where !== [] ? ' WHERE ' . implode(' AND ', $where) : '', $params];
     }
-
     public function adminTicket(string $ticketRef): array
     {
         return $this->hydrateTicket($this->findTicket($ticketRef), true);
