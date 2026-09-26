@@ -1,0 +1,186 @@
+.mgw-admin__incident-status{
+  margin:14px;
+  padding:11px 12px;
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:12px;
+  background:rgba(15,23,42,.58);
+  color:#cbd5e1;
+  font-size:13px;
+  line-height:1.45;
+}
+.mgw-admin__incident-status[data-state="success"]{border-color:rgba(34,197,94,.28);color:#bbf7d0}
+.mgw-admin__incident-status[data-state="warning"]{border-color:rgba(245,158,11,.34);color:#fde68a}
+.mgw-admin__incident-status[data-state="error"]{border-color:rgba(239,68,68,.34);color:#fecaca}
+.mgw-admin__incident-health{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:8px;
+  padding:0 14px 14px;
+}
+.mgw-admin__incident-health>div{
+  min-width:0;
+  padding:10px 11px;
+  border:1px solid rgba(148,163,184,.14);
+  border-radius:12px;
+  background:rgba(15,23,42,.45);
+}
+.mgw-admin__incident-health span,.mgw-admin__incident-health small{
+  display:block;
+  color:#94a3b8;
+  font-size:11px;
+  line-height:1.35;
+}
+.mgw-admin__incident-health strong{
+  display:block;
+  margin-top:4px;
+  color:#f8fafc;
+  font-size:14px;
+  overflow-wrap:anywhere;
+}
+.mgw-admin__incident-health strong[data-state="good"]{color:#86efac}
+.mgw-admin__incident-health strong[data-state="warn"]{color:#fcd34d}
+.mgw-admin__incident-health strong[data-state="bad"]{color:#fca5a5}
+.mgw-admin__incident-panel{
+  margin:0 14px 12px;
+  border:1px solid rgba(148,163,184,.16);
+  border-radius:14px;
+  background:rgba(15,23,42,.38);
+  overflow:hidden;
+}
+.mgw-admin__incident-panel>summary{
+  cursor:pointer;
+  padding:13px 14px;
+  color:#f8fafc;
+  font-weight:700;
+  font-size:14px;
+}
+.mgw-admin__incident-body{padding:0 14px 14px}
+.mgw-admin__incident-help{
+  margin:0 0 12px;
+  color:#94a3b8;
+  font-size:12px;
+  line-height:1.5;
+}
+.mgw-admin__incident-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.mgw-admin__incident-grid--3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.mgw-admin__incident-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:10px;
+}
+.mgw-admin__incident-actions button,
+.mgw-admin__incident-review-buttons button,
+.mgw-admin__incident-key button{
+  min-height:38px;
+}
+.mgw-admin__incident-danger{
+  border-color:rgba(239,68,68,.42)!important;
+  background:rgba(127,29,29,.34)!important;
+  color:#fecaca!important;
+}
+.mgw-admin__incident-card{
+  padding:12px;
+  border:1px solid rgba(99,102,241,.25);
+  border-radius:12px;
+  background:rgba(30,41,59,.54);
+}
+.mgw-admin__incident-card h3{margin:0 0 4px;color:#f8fafc;font-size:16px}
+.mgw-admin__incident-card p{margin:8px 0 0;color:#cbd5e1;font-size:13px;line-height:1.5}
+.mgw-admin__incident-card small{color:#94a3b8;font-size:11px}
+.mgw-admin__incident-key-list{display:grid;gap:8px}
+.mgw-admin__incident-key{
+  display:grid;
+  grid-template-columns:minmax(150px,.8fr) minmax(130px,.55fr) minmax(180px,1.2fr) auto;
+  gap:8px;
+  align-items:end;
+  padding:10px;
+  border:1px solid rgba(148,163,184,.14);
+  border-radius:12px;
+  background:rgba(15,23,42,.35);
+}
+.mgw-admin__incident-key-name strong,.mgw-admin__incident-key-name small{display:block}
+.mgw-admin__incident-key-name strong{color:#f8fafc;font-size:13px}
+.mgw-admin__incident-key-name small{margin-top:3px;color:#94a3b8;font-size:11px}
+.mgw-admin__incident-actions-list,.mgw-admin__incident-history{display:grid;gap:8px}
+.mgw-admin__incident-action{
+  padding:11px;
+  border:1px solid rgba(148,163,184,.14);
+  border-radius:12px;
+  background:rgba(15,23,42,.35);
+}
+.mgw-admin__incident-action.is-pending{border-color:rgba(245,158,11,.32)}
+.mgw-admin__incident-action-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.mgw-admin__incident-action-head strong{color:#f8fafc;font-size:13px}
+.mgw-admin__incident-action-head span{
+  flex:0 0 auto;
+  padding:3px 7px;
+  border-radius:999px;
+  background:rgba(148,163,184,.12);
+  color:#cbd5e1;
+  font-size:10px;
+}
+.mgw-admin__incident-action p{margin:7px 0;color:#cbd5e1;font-size:12px;line-height:1.45}
+.mgw-admin__incident-action>small{color:#94a3b8;font-size:10px}
+.mgw-admin__incident-review{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:9px}
+.mgw-admin__incident-review-buttons{display:flex;gap:6px}
+.mgw-admin__incident-history-item{
+  display:grid;
+  gap:3px;
+  padding:9px 10px;
+  border:1px solid rgba(148,163,184,.12);
+  border-radius:10px;
+  background:rgba(15,23,42,.28);
+}
+.mgw-admin__incident-history-item strong{color:#e2e8f0;font-size:12px}
+.mgw-admin__incident-history-item span,.mgw-admin__incident-history-item small{color:#94a3b8;font-size:10px;line-height:1.4;overflow-wrap:anywhere}
+.mgw-admin__incident-empty-list{
+  padding:11px;
+  border:1px dashed rgba(148,163,184,.2);
+  border-radius:10px;
+  color:#94a3b8;
+  font-size:12px;
+}
+.mgw-admin__incident-warning{
+  margin:0 0 10px;
+  padding:10px 11px;
+  border:1px solid rgba(245,158,11,.28);
+  border-radius:10px;
+  background:rgba(120,53,15,.2);
+  color:#fde68a;
+  font-size:12px;
+  line-height:1.5;
+}
+.mgw-admin__incident-rehearsal{
+  margin:0 14px 14px;
+  padding:12px;
+  border:1px solid rgba(34,197,94,.2);
+  border-radius:12px;
+  background:rgba(20,83,45,.16);
+}
+.mgw-admin__incident-rehearsal strong{display:block;color:#bbf7d0;font-size:13px}
+.mgw-admin__incident-rehearsal p{margin:5px 0 10px;color:#a7f3d0;font-size:12px;line-height:1.45}
+@media(max-width:900px){
+  .mgw-admin__incident-health{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mgw-admin__incident-grid,.mgw-admin__incident-grid--3{grid-template-columns:1fr}
+  .mgw-admin__incident-key{grid-template-columns:1fr 1fr}
+}
+@media(max-width:640px){
+  .mgw-admin__incident-status{margin:10px}
+  .mgw-admin__incident-health{padding:0 10px 10px;gap:6px}
+  .mgw-admin__incident-health>div{padding:8px 9px}
+  .mgw-admin__incident-panel{margin:0 10px 9px}
+  .mgw-admin__incident-panel>summary{padding:11px 12px}
+  .mgw-admin__incident-body{padding:0 10px 11px}
+  .mgw-admin__incident-key{grid-template-columns:1fr}
+  .mgw-admin__incident-review{grid-template-columns:1fr}
+  .mgw-admin__incident-review-buttons{display:grid;grid-template-columns:1fr 1fr}
+  .mgw-admin__incident-action-head{display:grid}
+  .mgw-admin__incident-action-head span{width:max-content;max-width:100%}
+  .mgw-admin__incident-actions{display:grid;grid-template-columns:1fr}
+  .mgw-admin__incident-rehearsal{margin:0 10px 10px}
+}
