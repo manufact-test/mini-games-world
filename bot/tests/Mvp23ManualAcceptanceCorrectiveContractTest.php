@@ -79,11 +79,12 @@ $assert(
     str_contains($shortcuts, 'there is no close -> empty overlay -> reopen frame')
         && str_contains($main, "account-shortcuts.js?v=48")
         && str_contains($versionManifest, "'./assets/js/components/account-shortcuts.js?v=48'")
-        && str_contains($versionManifest, 'account-shortcuts.js?v=56')
-        && str_contains($versionManifest, 'mvp23=mobile-cold-first-open-v1')
+        && str_contains($versionManifest, 'account-shortcuts.js?v=55')
+        && !str_contains($versionManifest, 'mvp23_mobile=')
         && str_contains($stagingEntry, "\$accountShortcutsImportKey = './assets/js/components/account-shortcuts.js?v=48';")
-        && str_contains($stagingEntry, "\$imports[\$accountShortcutsImportKey] .= '&mvp23=account-data-first-open-no-flash-v1';"),
-    'Manual acceptance account-data owner must retain the canonical import key while allowing successor cache revisions and atomic first-open readiness.'
+        && str_contains($stagingEntry, "\$imports[\$accountShortcutsImportKey] .= '&mvp23=account-data-first-open-no-flash-v1';")
+        && str_contains($stagingEntry, "\$imports[\$accountShortcutsImportKey] .= '&mvp23_mobile=atomic-account-data-v1';"),
+    'Manual acceptance account-data owner must retain the canonical import key and use bounded staging cache tokens while opening atomically.'
 );
 
 $assert(
