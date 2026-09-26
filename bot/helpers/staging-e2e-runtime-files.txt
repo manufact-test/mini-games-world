@@ -348,4 +348,4 @@ bot/accounts/AccountDataZipWriter.php
 bot/accounts/AccountDataLifecycleService.php
 bot/database/migrations/20260926_0067_create_account_data_lifecycle.php
 app/assets/js/screens/account-data-sheet-v1.js
-app/assets/css/account-data-v1.css
+app/assets/css/account-data-v1.css\nbot/admin-incident.php\nbot/incident/IncidentRecoveryService.php\nbot/database/migrations/20260926_0068_create_incident_recovery.php\napp/assets/js/admin-incident.js\napp/assets/css/admin-incident.css\n
