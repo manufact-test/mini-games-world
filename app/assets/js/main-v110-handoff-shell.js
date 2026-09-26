@@ -9,7 +9,7 @@ import { currentScreen, onScreenEnter, registerScreenCleanup, showScreen } from 
 import { hidePreloader } from './components/preloader.js?v=42';
 import { initSheet } from './components/sheet.js?v=1109';
 import { toast } from './components/toast.js?v=1109';
-import { initAccountShortcuts } from './components/account-shortcuts.js?v=48';
+import { initAccountShortcuts, primeAccountDataShortcut } from './components/account-shortcuts.js?v=48';
 import { initUserCopy } from './components/user-copy.js?v=62';
 import { initShieldKingVisuals } from './components/shield-king-visuals.js?v=127&sk=4&icons=c1efd5af&shell=nav';
 import { showHomeActivity, showBootFailure, dispatchAppReady } from './components/boot-state.js?v=87';
@@ -45,6 +45,7 @@ let statsRouteLifecycleInitialized = false;
 let shellChromeInitialized = false;
 let balanceObserver = null;
 let storeScreenModulePromise = null;
+let shellNavigationGeneration = 0;
 
 initTelegramApp();
 initV110Presence();
@@ -121,6 +122,16 @@ async function boot(){
     // stay on the lightweight path.
     const primeMobileProfile = shouldPrimeMobileProfile(result);
     if (primeMobileProfile) initMgwProfileBackgrounds();
+
+    // Phone-only cold surfaces must finish their module/data/style preparation
+    // while the intro still covers the application. Previously Store started its
+    // heavy lazy graph only after first usable paint, and Account Data fetched its
+    // first snapshot only after the sheet was already visible. Slower Telegram
+    // WebViews therefore exposed partially painted / loading frames exactly once.
+    if (primeMobileProfile) {
+      globalThis.__MGW_MOBILE_COLD_SURFACES_READY__ = primeMobileColdFirstInteractions();
+    }
+
     dispatchAppReady();
     if (primeMobileProfile) await primeMobileProfileFirstPresentation();
 
@@ -132,9 +143,9 @@ async function boot(){
 
     startStatsPolling();
     syncAppShellChrome();
-    // Store has grown into a large module graph. Keep that graph out of the
-    // startup import chain entirely; warm it only after first usable paint.
-    warmStoreScreenAfterFirstPaint();
+    // Desktop / active-game launches keep the historical non-blocking warm path.
+    // Normal mobile shell launches were already primed under the intro above.
+    if (!primeMobileProfile) warmStoreScreenAfterFirstPaint();
   } catch (error) {
     showBootFailure();
     toast(error?.message || 'Не удалось загрузить профиль. Закройте Mini Games World и откройте снова из Telegram.');
@@ -177,8 +188,11 @@ async function primeMobileProfileFirstPresentation(){
 function loadStoreScreenModule(){
   if (!storeScreenModulePromise) {
     storeScreenModulePromise = import('./screens/store-screen.js?v=34')
-      .then(module => {
-        module.initStoreScreen();
+      .then(async module => {
+        // Some Store wrappers use initStoreScreen() as the first-open prime
+        // promise. Await it so callers never mistake "module downloaded" for
+        // "complete Store presentation ready".
+        await module.initStoreScreen();
         return module;
       })
       .catch(error => {
@@ -187,6 +201,70 @@ function loadStoreScreenModule(){
       });
   }
   return storeScreenModulePromise;
+}
+
+async function primeMobileColdFirstInteractions(){
+  const storePrime = loadStoreScreenModule()
+    .then(async () => {
+      await waitForPendingStylesheets(900);
+      await primeMobileStoreFirstPresentation();
+    });
+
+  const accountPrime = primeAccountDataShortcut();
+
+  // Account data failure must never make the whole app fail to boot; its own
+  // sheet still exposes a proper error state if the server read is unavailable.
+  await Promise.allSettled([storePrime, accountPrime]);
+}
+
+async function waitForPendingStylesheets(timeoutMs){
+  const pending = [...document.querySelectorAll('link[rel="stylesheet"]')]
+    .filter(link => link instanceof HTMLLinkElement && !link.sheet);
+  if (!pending.length) return;
+
+  await Promise.race([
+    Promise.all(pending.map(link => new Promise(resolve => {
+      let settled = false;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        link.removeEventListener('load', done);
+        link.removeEventListener('error', done);
+        resolve();
+      };
+      link.addEventListener('load', done, { once:true });
+      link.addEventListener('error', done, { once:true });
+    }))),
+    new Promise(resolve => window.setTimeout(resolve, Math.max(0, Number(timeoutMs) || 0))),
+  ]);
+}
+
+async function primeMobileStoreFirstPresentation(){
+  const screen = document.getElementById('screen-store');
+  const nav = document.querySelector('[data-shell-nav="store"]');
+  const preloader = document.getElementById('preloader');
+  if (!(screen instanceof HTMLElement)
+      || !(preloader instanceof HTMLElement)
+      || preloader.classList.contains('hidden')) return;
+
+  const screenWasActive = screen.classList.contains('active');
+  const navWasActive = nav instanceof HTMLElement && nav.classList.contains('active');
+
+  // Force the exact first visible Store style/raster underneath the z=100 intro.
+  // This warms gradients, game previews and active-nav compositing before the
+  // user's first tap instead of on that tap.
+  if (!screenWasActive) screen.classList.add('active');
+  if (nav instanceof HTMLElement && !navWasActive) nav.classList.add('active');
+  void screen.offsetHeight;
+  if (nav instanceof HTMLElement) void nav.offsetHeight;
+
+  await new Promise(resolve => window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(resolve);
+  }));
+
+  if (!screenWasActive) screen.classList.remove('active');
+  if (nav instanceof HTMLElement && !navWasActive) nav.classList.remove('active');
+  void screen.offsetHeight;
 }
 
 function warmStoreScreenAfterFirstPaint(){
@@ -332,10 +410,30 @@ function handleShellNavigation(event){
 
   const route = String(target.dataset.shellNav || 'home');
   if (!SHELL_ROUTES.has(route)) return;
+  const navigationGeneration = ++shellNavigationGeneration;
 
-  // Store's large code graph is lazy. Publish the shell route immediately;
-  // if idle warm has already completed this is instant, otherwise the existing
-  // Store shell stays visible while the module finishes loading once.
+  if (route === 'store' && isMobileShellClient()) {
+    // On phones never reveal the Store route until its complete DOM/presentation
+    // exists. Keeping the previous stable screen for the cold milliseconds is
+    // much cheaper and visually atomic compared with exposing skeleton fragments.
+    target.setAttribute('aria-busy', 'true');
+    void openStoreTabLazy()
+      .then(() => {
+        if (navigationGeneration !== shellNavigationGeneration) return;
+        showScreen('store');
+        syncAppShellChrome('store');
+      })
+      .catch(error => {
+        if (navigationGeneration === shellNavigationGeneration) {
+          toast(error?.message || 'Не удалось загрузить магазин.');
+        }
+      })
+      .finally(() => {
+        if (target.isConnected) target.removeAttribute('aria-busy');
+      });
+    return;
+  }
+
   if (route === 'store') {
     showScreen('store');
     void openStoreTabLazy().catch(error => {
@@ -346,8 +444,9 @@ function handleShellNavigation(event){
     return;
   }
 
-  // Profile follows the same synchronous shell route owner. Its accepted mobile
-  // compositor guard remains presentation-only and does not defer this route.
+  // Incrementing the generation above also cancels a still-running first Store
+  // navigation if the player immediately goes back to Home/Profile/Tournaments.
+  // That removes the old mobile "back, then Store pops in anyway" first-use hitch.
   showScreen(route);
 }
 
@@ -375,6 +474,11 @@ function syncAppShellChrome(forcedScreen = null){
     if (active) button.setAttribute('aria-current', 'page');
     else button.removeAttribute('aria-current');
   });
+}
+
+function isMobileShellClient(){
+  return typeof window.matchMedia === 'function'
+    && window.matchMedia('(max-width: 640px), (pointer: coarse)').matches;
 }
 
 function activeMatchLocksShell(){
