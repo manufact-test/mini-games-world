@@ -34,6 +34,7 @@
   const economySave = root.querySelector('[data-economy-save]');
   const economySimulation = root.querySelector('[data-economy-simulation]');
   const economyHistory = root.querySelector('[data-economy-history]');
+  const economyPagination = root.querySelector('[data-economy-pagination]');
   const testCoinsPlayer = root.querySelector('[data-test-coins-player]');
   const testCoinsAmount = root.querySelector('[data-test-coins-amount]');
   const testCoinsReason = root.querySelector('[data-test-coins-reason]');
@@ -45,6 +46,9 @@
   const telegram = window.Telegram?.WebApp || null;
   let requestInFlight = false;
   let currentEconomyVersion = 0;
+  let economyHistoryRows = [];
+  let economyHistoryPage = 1;
+  const economyHistoryPerPage = 8;
   const initialParams = new URLSearchParams(window.location.search);
   let activeSection = initialParams.has('ticket')
     ? 'support'
@@ -65,6 +69,67 @@
     system:['Система','Состояние runtime и диагностическая сводка.'],
     tests:['Тесты','Инструменты тестовой среды и диагностические сценарии.'],
   };
+  const AdminUX = {
+    paginate(items, requestedPage = 1, perPage = 10) {
+      const rows = Array.isArray(items) ? items : [];
+      const size = Math.max(1, Number(perPage || 10));
+      const total = rows.length;
+      const totalPages = Math.max(1, Math.ceil(total / size));
+      const page = Math.max(1, Math.min(totalPages, Number(requestedPage || 1)));
+      const offset = (page - 1) * size;
+      return {
+        rows:rows.slice(offset, offset + size),
+        page,
+        perPage:size,
+        total,
+        totalPages,
+        from:total === 0 ? 0 : offset + 1,
+        to:total === 0 ? 0 : Math.min(total, offset + size),
+      };
+    },
+
+    renderPager(container, meta, onPage) {
+      if (!(container instanceof HTMLElement)) return;
+      container.replaceChildren();
+      const totalPages = Math.max(1, Number(meta?.total_pages ?? meta?.totalPages ?? 1));
+      const page = Math.max(1, Math.min(totalPages, Number(meta?.page || 1)));
+      if (totalPages <= 1) {
+        container.hidden = true;
+        return;
+      }
+      container.hidden = false;
+
+      const add = (label, target, ariaLabel) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = label;
+        button.setAttribute('aria-label', ariaLabel);
+        button.disabled = target === page;
+        button.addEventListener('click', () => {
+          if (target === page || typeof onPage !== 'function') return;
+          onPage(target);
+        });
+        container.append(button);
+      };
+
+      if (page > 2) add('«', 1, 'Первая страница');
+      add('←', Math.max(1, page - 1), 'Предыдущая страница');
+
+      const indicator = document.createElement('span');
+      const total = Math.max(0, Number(meta?.total || 0));
+      const from = Math.max(0, Number(meta?.from || 0));
+      const to = Math.max(0, Number(meta?.to || 0));
+      indicator.textContent = total > 0
+        ? `${page} / ${totalPages} · ${from}–${to} из ${total}`
+        : `${page} / ${totalPages}`;
+      indicator.setAttribute('aria-current', 'page');
+      container.append(indicator);
+
+      add('→', Math.min(totalPages, page + 1), 'Следующая страница');
+      if (page < totalPages - 1) add('»', totalPages, 'Последняя страница');
+    },
+  };
+  window.MGWAdminUX = AdminUX;
 
   const renderDashboard = raw => {
     dashboard.replaceChildren();
@@ -174,6 +239,9 @@
     economyHistory.querySelectorAll('button').forEach(button => {
       button.disabled = busy;
     });
+    economyPagination?.querySelectorAll('button').forEach(button => {
+      button.disabled = busy;
+    });
   };
 
   const post = async (url, payload) => {
@@ -230,17 +298,21 @@
     return `v${entry.version} · ${type}`;
   };
 
-  const renderEconomyHistory = (history) => {
+  const renderEconomyHistoryPage = () => {
     economyHistory.replaceChildren();
-    if (!Array.isArray(history) || history.length === 0) {
+    const pageData = AdminUX.paginate(economyHistoryRows, economyHistoryPage, economyHistoryPerPage);
+    economyHistoryPage = pageData.page;
+
+    if (pageData.total === 0) {
       const empty = document.createElement('div');
       empty.className = 'mgw-admin__history-empty';
       empty.textContent = 'История пока пуста.';
       economyHistory.append(empty);
+      AdminUX.renderPager(economyPagination, {page:1,total_pages:1,total:0,from:0,to:0}, () => {});
       return;
     }
 
-    history.forEach(entry => {
+    pageData.rows.forEach(entry => {
       const item = document.createElement('div');
       item.className = 'mgw-admin__history-item';
 
@@ -264,8 +336,25 @@
 
       economyHistory.append(item);
     });
+
+    AdminUX.renderPager(economyPagination, {
+      page:pageData.page,
+      total_pages:pageData.totalPages,
+      total:pageData.total,
+      from:pageData.from,
+      to:pageData.to,
+    }, nextPage => {
+      economyHistoryPage = nextPage;
+      renderEconomyHistoryPage();
+      economyPagination?.scrollIntoView({block:'nearest'});
+    });
   };
 
+  const renderEconomyHistory = (history) => {
+    economyHistoryRows = Array.isArray(history) ? history : [];
+    economyHistoryPage = 1;
+    renderEconomyHistoryPage();
+  };
   const renderEconomy = (data) => {
     const current = data.current || {};
     currentEconomyVersion = Number(current.version || 0);
