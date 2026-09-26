@@ -101,7 +101,8 @@ jobs:
           ! grep -Eq "UPDATE[[:space:]]+mgw_ledger_entries|DELETE[[:space:]]+FROM[[:space:]]+mgw_ledger_entries" bot/accounts/AccountDataLifecycleService.php
           grep -Fq "deletion_finalizing" bot/accounts/AccountIdentityService.php
           grep -Fq "deletedIdentityReplayBlocked" bot/accounts/AccountIdentityService.php
-          grep -Fq "account_deleted_identity_block_sec" bot/accounts/RuntimeAccountIdentityResolver.php
+          grep -Fq "account_deleted_identity_block_sec" bot/accounts/AccountDataLifecycleService.php
+          grep -Fq "bot_token" bot/accounts/RuntimeAccountIdentityResolver.php
           grep -Fq "mvp22_8=account-data-v1" app/runtime/client/version-manifest.php
           grep -Fq "Данные и аккаунт" app/assets/js/components/account-shortcuts.js
 
