@@ -99,17 +99,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(.github/workflows/(mvp22-admin-rework|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin).yml|app/admin.php|app/assets/css/admin-shell.css|app/assets/js/admin-system.js|bot/admin-system.php|bot/system/(SystemAdminService|RuntimeFeatureFlagAdminService).php|bot/database/migrations/20260926_0065_create_system_admin_control.php|bot/helpers/staging-e2e-runtime-files.txt|bot/tests/(Mvp22AdminShellReworkContractTest|Mvp22_5SystemAdminTest|Mvp22_5SystemAdminContractTest).php)
-          bad=0
-          while IFS= read -r path; do
-            if ! grep -Eq "$allowed" <<<"$path"; then
-              echo "Unexpected MVP-22.5 path: $path" >&2
-              bad=1
-            fi
-          done < <(git diff --name-only "$base" "$head")
-          test "$bad" -eq 0
-          git diff --exit-code "$base" "$head" -- bot/games bot/support bot/moderation bot/ratings bot/tournaments bot/economy bot/ledger bot/antifraud bot/replay
-
+          allowed='^(\.github/workflows/(mvp22-admin-rework|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin)\.yml|app/admin\.php|app/assets/css/admin-shell\.css|app/assets/js/admin-system\.js|bot/admin-system\.php|bot/system/(SystemAdminService|RuntimeFeatureFlagAdminService)\.php|bot/database/migrations/20260926_0065_create_system_admin_control\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/(Mvp22AdminShellReworkContractTest|Mvp22_5SystemAdminTest|Mvp22_5SystemAdminContractTest)\.php)$'
           bad=0
           while IFS= read -r path; do
             if ! grep -Eq "$allowed" <<<"$path"; then
