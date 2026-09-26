@@ -2,6 +2,7 @@ const APP_ENTRY_MIN_VISIBLE_MS = 2100;
 const APP_ENTRY_FADE_MS = 380;
 const APP_ENTRY_ANIMATION_SETTLE_MS = 90;
 const STORE_FIRST_OPEN_HOLD_MAX_MS = 1400;
+const MOBILE_COLD_SURFACES_HOLD_MAX_MS = 1500;
 
 export function hidePreloader(){
   const el = document.getElementById('preloader');
@@ -26,8 +27,9 @@ export function hidePreloader(){
   // catalogue instead of head/tabs followed by a lower-content replacement.
   const visualReady = new Promise(resolve => window.setTimeout(resolve, remaining));
   const storeReady = waitForStoreFirstOpenPrime();
+  const mobileColdSurfacesReady = waitForMobileColdSurfacesPrime();
 
-  void Promise.all([visualReady, storeReady]).then(() => {
+  void Promise.all([visualReady, storeReady, mobileColdSurfacesReady]).then(() => {
     el.classList.add('hidden');
 
     // Wait for the opacity/visibility transition to finish before allowing
@@ -46,6 +48,16 @@ function waitForStoreFirstOpenPrime(){
   return Promise.race([
     Promise.resolve(ready).catch(() => {}),
     new Promise(resolve => window.setTimeout(resolve, STORE_FIRST_OPEN_HOLD_MAX_MS)),
+  ]);
+}
+
+function waitForMobileColdSurfacesPrime(){
+  const ready = globalThis.__MGW_MOBILE_COLD_SURFACES_READY__;
+  if (!ready || typeof ready.then !== 'function') return Promise.resolve();
+
+  return Promise.race([
+    Promise.resolve(ready).catch(() => {}),
+    new Promise(resolve => window.setTimeout(resolve, MOBILE_COLD_SURFACES_HOLD_MAX_MS)),
   ]);
 }
 

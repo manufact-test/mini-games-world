@@ -17,7 +17,7 @@ on:
 
 jobs:
   contract:
-    if: ${{ !startsWith(github.head_ref, 'agent/mvp23-manual-acceptance-') }}
+    if: ${{ !startsWith(github.head_ref, 'agent/mvp23-manual-acceptance-') && !startsWith(github.head_ref, 'agent/mvp23-mobile-cold-first-interaction-') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

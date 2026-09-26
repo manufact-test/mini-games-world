@@ -50,6 +50,28 @@ if (!isset($imports[$accountShortcutsImportKey])
     exit;
 }
 $imports[$accountShortcutsImportKey] .= '&mvp23=account-data-first-open-no-flash-v1';
+$imports[$accountShortcutsImportKey] .= '&mvp23_mobile=atomic-account-data-v1';
+
+// Mobile cold-first corrective: keep canonical manifest mappings unchanged and
+// only refresh the active staging URLs for the owners changed in this acceptance
+// pass. This avoids turning a staging UX corrective into a manifest-wide product
+// version change while still defeating Telegram WebView/CDN cache reuse.
+$mainShellImportKey = './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5';
+$preloaderImportKey = './assets/js/components/preloader.js?v=42';
+foreach ([
+    $mainShellImportKey => '&mvp23_mobile=cold-surfaces-v1',
+    $preloaderImportKey => '&mvp23_mobile=bounded-cold-prime-v1',
+] as $importKey => $cacheToken) {
+    if (!isset($imports[$importKey])
+        || !is_string($imports[$importKey])
+        || $imports[$importKey] === '') {
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Mini Games World mobile cold-surface owner is unavailable: ' . $importKey . '.';
+        exit;
+    }
+    $imports[$importKey] .= $cacheToken;
+}
 
 $localizationConfig = $versionManifest['localization'] ?? null;
 if (!is_array($localizationConfig)
