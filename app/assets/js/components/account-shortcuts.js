@@ -1,6 +1,7 @@
 import { closeSheet } from './sheet.js?v=1109';
 
 let friendsModulePromise = null;
+let accountDataModulePromise = null;
 
 export function initAccountShortcuts(){
   document.addEventListener('click', event => {
@@ -31,6 +32,23 @@ function loadFriendsModule(){
   return friendsModulePromise;
 }
 
+async function openAccountDataShortcut(){
+  closeSheet();
+  const module = await loadAccountDataModule();
+  if (typeof module.openAccountDataSheet === 'function') await module.openAccountDataSheet();
+}
+
+function loadAccountDataModule(){
+  if (!accountDataModulePromise) {
+    accountDataModulePromise = import('../screens/account-data-sheet-v1.js?v=1&mvp22_8=account-data-v1')
+      .catch(error => {
+        accountDataModulePromise = null;
+        throw error;
+      });
+  }
+  return accountDataModulePromise;
+}
+
 async function enhanceCurrentMenu(allowSocialNavigation = false){
   const sheet = document.getElementById('sheet');
   const menu = sheet?.querySelector('.menu-list');
@@ -50,6 +68,23 @@ async function enhanceCurrentMenu(allowSocialNavigation = false){
     });
     menu.prepend(friends);
     void loadFriendsModule();
+
+    const accountData = document.createElement('button');
+    accountData.className = 'btn menu-item account-menu-entry account-menu-entry--account-data';
+    accountData.type = 'button';
+    accountData.dataset.accountDataShortcut = '1';
+    accountData.innerHTML = `
+      <span class="account-menu-icon" aria-hidden="true">⌁</span>
+      <span class="account-menu-copy">
+        <strong>Данные и аккаунт</strong>
+        <small>Экспорт и удаление аккаунта</small>
+      </span>
+    `;
+    accountData.addEventListener('click', () => {
+      void openAccountDataShortcut();
+    });
+    friends.after(accountData);
+    void loadAccountDataModule();
   }
 
 }
