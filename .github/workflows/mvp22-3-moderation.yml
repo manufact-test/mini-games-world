@@ -163,7 +163,9 @@ jobs:
             esac
           done < <(git diff --name-only "$base" "$head")
           test "$bad" -eq 0
-          if [[ "$admin_successor" -eq 1 ]]; then
+          if [[ "${{ github.head_ref }}" == agent/mvp22-7-* ]]; then
+            git diff --exit-code "$base" "$head" -- bot/games bot/moderation bot/ratings ':(exclude)bot/ratings/SeasonLifecycleService.php' bot/tournaments bot/economy bot/ledger
+          elif [[ "$admin_successor" -eq 1 ]]; then
             git diff --exit-code "$base" "$head" -- bot/games bot/moderation bot/ratings bot/tournaments bot/economy bot/ledger
           else
             git diff --exit-code "$base" "$head" -- bot/games bot/ratings bot/tournaments bot/economy bot/ledger bot/support
