@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   focused:
-    if: ${{ !startsWith(github.head_ref, 'agent/mvp23-manual-acceptance-') }}
+    if: ${{ !startsWith(github.head_ref, 'agent/mvp23-manual-acceptance-') && !startsWith(github.head_ref, 'agent/mvp23-mobile-cold-first-interaction-') }}
     name: Quarterly calendar, FINALIZING and recovery contract
     runs-on: ubuntu-24.04
     timeout-minutes: 18
