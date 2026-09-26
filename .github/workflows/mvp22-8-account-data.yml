@@ -112,6 +112,9 @@ jobs:
           grep -Fq "Данные и аккаунт" app/assets/js/components/account-shortcuts.js
           grep -Fq "account_data_retention" ops/deploy/staging-operations-runner.php
           grep -Fq "AccountDataLifecycleService" ops/deploy/staging-operations-runner.php
+          test "$(grep -Fc "require_once \$projectRoot . '/bot/accounts/AccountDataLifecycleService.php';" ops/deploy/staging-operations-runner.php)" -eq 1
+          test "$(grep -Fc "\$runAccountDataRetention = static function (" ops/deploy/staging-operations-runner.php)" -eq 1
+          test "$(grep -Fc "\$result['account_data_retention'] = \$runAccountDataRetention(" ops/deploy/staging-operations-runner.php)" -eq 1
 
       - name: Exact staging fingerprint coverage
         run: |
