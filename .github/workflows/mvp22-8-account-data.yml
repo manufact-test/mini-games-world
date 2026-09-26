@@ -17,6 +17,8 @@ on:
       - 'bot/helpers/staging-e2e-runtime-files.txt'
       - 'bot/staging-projection-diagnostic.php'
       - 'bot/tests/Mvp22_8AccountDataLifecycleTest.php'
+      - 'ops/deploy/staging-operations-runner.php'
+      - 'ops/deploy/STAGING_OPERATIONS_RUNNER.md'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/components/account-shortcuts.js'
       - 'app/assets/js/screens/account-data-sheet-v1.js'
@@ -74,6 +76,7 @@ jobs:
             bot/config/config.environment.example.php
             bot/staging-projection-diagnostic.php
             bot/tests/Mvp22_8AccountDataLifecycleTest.php
+            ops/deploy/staging-operations-runner.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
 
@@ -107,6 +110,8 @@ jobs:
           grep -Fq "bot_token" bot/accounts/RuntimeAccountIdentityResolver.php
           grep -Fq "mvp22_8=account-data-v1" app/runtime/client/version-manifest.php
           grep -Fq "Данные и аккаунт" app/assets/js/components/account-shortcuts.js
+          grep -Fq "account_data_retention" ops/deploy/staging-operations-runner.php
+          grep -Fq "AccountDataLifecycleService" ops/deploy/staging-operations-runner.php
 
       - name: Exact staging fingerprint coverage
         run: |
@@ -123,7 +128,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(\.github/workflows/(mvp22-8-account-data|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations|mvp22-admin-rework)\.yml|app/assets/css/account-data-v1\.css|app/assets/js/api/client\.js|app/assets/js/components/account-shortcuts\.js|app/assets/js/screens/account-data-sheet-v1\.js|app/runtime/client/version-manifest\.php|bot/account-data\.php|bot/account-data-website-hook\.php|bot/accounts/(AccountDataLifecycleService|AccountDataZipWriter|AccountReauthGuard|AccountIdentityService|RuntimeAccountIdentityResolver)\.php|bot/database/migrations/20260926_0067_create_account_data_lifecycle\.php|bot/config/config\.environment\.example\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/staging-projection-diagnostic\.php|bot/tests/Mvp22_8AccountDataLifecycleTest\.php)$'
+          allowed='^(\.github/workflows/(mvp22-8-account-data|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations|mvp22-admin-rework)\.yml|app/assets/css/account-data-v1\.css|app/assets/js/api/client\.js|app/assets/js/components/account-shortcuts\.js|app/assets/js/screens/account-data-sheet-v1\.js|app/runtime/client/version-manifest\.php|bot/account-data\.php|bot/account-data-website-hook\.php|bot/accounts/(AccountDataLifecycleService|AccountDataZipWriter|AccountReauthGuard|AccountIdentityService|RuntimeAccountIdentityResolver)\.php|bot/database/migrations/20260926_0067_create_account_data_lifecycle\.php|bot/config/config\.environment\.example\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/staging-projection-diagnostic\.php|bot/tests/Mvp22_8AccountDataLifecycleTest\.php|ops/deploy/staging-operations-runner\.php|ops/deploy/STAGING_OPERATIONS_RUNNER\.md)'
           bad=0
           while IFS= read -r path; do
             if ! grep -Eq "$allowed" <<<"$path"; then
