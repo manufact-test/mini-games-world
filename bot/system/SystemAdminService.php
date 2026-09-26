@@ -138,13 +138,13 @@ final class SystemAdminService
     ): array {
         $sha = strtolower(trim($sha));
         if (preg_match('/^[a-f0-9]{40}$/', $sha) !== 1) {
-            throw new InvalidArgumentException('Нужен точный 40-символьный SHA принятого staging.');
+            throw new InvalidArgumentException('Нужен точный 40-символьный SHA принятой версии тестовой среды.');
         }
         $actorRef = $this->requiredText($actorRef, 191, 'actor');
         $notes = $this->optionalText($notes, 2000);
         $normalized = $this->normalizeChecklist($checklist);
         if (!$this->checklistComplete($normalized)) {
-            throw new InvalidArgumentException('Перед фиксацией staging acceptance нужно подтвердить все пункты checklist.');
+            throw new InvalidArgumentException('Перед фиксацией ручной приёмки нужно подтвердить все пункты проверки.');
         }
 
         return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
@@ -188,7 +188,7 @@ final class SystemAdminService
     ): array {
         $environment = $this->normalizeEnvironment($environment);
         if (!in_array($environment, ['staging', 'local'], true)) {
-            throw new RuntimeException('Staging rehearsal разрешён только в staging/local.');
+            throw new RuntimeException('Репетиция сезона разрешена только в тестовой или локальной среде.');
         }
         $actorRef = $this->requiredText($actorRef, 191, 'actor');
         $reason = $this->requiredText($reason, 800, 'reason');
@@ -209,7 +209,7 @@ final class SystemAdminService
                 return ['system'=>$systemBefore, 'competition'=>$competitionBefore, 'already_active'=>true];
             }
             if ($competitionBefore['competition_state'] !== PerGameRatingService::STATE_PRESEASON) {
-                throw new RuntimeException('Staging rehearsal можно начать только из PRESEASON.');
+                throw new RuntimeException('Репетицию можно начать только из состояния «Предсезон».');
             }
 
             $database->execute(
@@ -273,7 +273,7 @@ final class SystemAdminService
     ): array {
         $environment = $this->normalizeEnvironment($environment);
         if (!in_array($environment, ['staging', 'local'], true)) {
-            throw new RuntimeException('Staging rehearsal разрешён только в staging/local.');
+            throw new RuntimeException('Репетиция сезона разрешена только в тестовой или локальной среде.');
         }
         $actorRef = $this->requiredText($actorRef, 191, 'actor');
         $reason = $this->requiredText($reason, 800, 'reason');
@@ -340,7 +340,7 @@ final class SystemAdminService
     ): array {
         $environment = $this->normalizeEnvironment($environment);
         if ($environment !== 'production') {
-            throw new RuntimeException('Production activation нельзя выполнить из staging/local.');
+            throw new RuntimeException('Запуск на боевом сервере нельзя выполнить из тестовой или локальной среды.');
         }
         $actorRef = $this->requiredText($actorRef, 191, 'actor');
         $reason = $this->requiredText($reason, 800, 'reason');
@@ -369,14 +369,14 @@ final class SystemAdminService
                 ];
             }
             if ($competitionBefore['competition_state'] !== PerGameRatingService::STATE_PRESEASON) {
-                throw new RuntimeException('Official competition можно активировать только из PRESEASON.');
+                throw new RuntimeException('Официальный сезон можно запустить только из состояния «Предсезон».');
             }
             if ($userCount < (int)$systemBefore['readiness_threshold']) {
-                throw new RuntimeException('Production readiness threshold ещё не достигнут.');
+                throw new RuntimeException('Порог готовности для официального запуска ещё не достигнут.');
             }
             $checklist = $this->decodeChecklist($systemBefore['staging_checklist_json'] ?? null);
             if ($systemBefore['staging_accepted_sha'] === null || !$this->checklistComplete($checklist)) {
-                throw new RuntimeException('Сначала нужен полный manual staging acceptance checklist.');
+                throw new RuntimeException('Сначала нужно полностью пройти и зафиксировать ручную приёмку тестовой среды.');
             }
 
             $database->execute(
@@ -428,7 +428,7 @@ final class SystemAdminService
             if ($before['activation_announcement_sent_at_utc'] !== null) return $before;
             $competition = $this->competitionControl(true);
             if ($competition['competition_state'] !== PerGameRatingService::STATE_ACTIVE) {
-                throw new RuntimeException('Activation announcement can be marked only after ACTIVE.');
+                throw new RuntimeException('Объявление о запуске можно отметить отправленным только после активации официального сезона.');
             }
             $now = $this->timestamp();
             $database->execute(
@@ -445,7 +445,7 @@ final class SystemAdminService
                 ]
             );
             $after = $this->systemControl(true);
-            $this->audit($database, 'activation_announcement_sent', $actorRef, 'canonical global launch announcement', $before, $after, $now);
+            $this->audit($database, 'activation_announcement_sent', $actorRef, 'глобальное объявление о запуске официального сезона', $before, $after, $now);
             return $after;
         });
     }
@@ -459,7 +459,7 @@ final class SystemAdminService
     ): void {
         $actionCode = strtolower($this->requiredText($actionCode, 64, 'action'));
         if (preg_match('/^[a-z0-9_:-]+$/', $actionCode) !== 1) {
-            throw new InvalidArgumentException('Invalid system audit action.');
+            throw new InvalidArgumentException('Некорректный код системного действия.');
         }
         $actorRef = $this->requiredText($actorRef, 191, 'actor');
         $reason = $this->requiredText($reason, 800, 'reason');
@@ -497,7 +497,7 @@ final class SystemAdminService
                 $database,
                 'readiness_threshold_reached',
                 'system:user-count',
-                'Canonical MGW account count reached the official competition readiness threshold.',
+                'Количество обычных MGW-аккаунтов достигло порога готовности к официальному сезону.',
                 $before + ['canonical_user_count'=>$userCount],
                 $after + ['canonical_user_count'=>$userCount],
                 $now
@@ -539,7 +539,7 @@ final class SystemAdminService
 
         $rows = $this->database->fetchAll($sql, ['control_key'=>self::CONTROL_KEY]);
         if (count($rows) !== 1 || !is_array($rows[0])) {
-            throw new RuntimeException('MVP-22.5 system admin control is unavailable.');
+            throw new RuntimeException('Системное управление MVP-22.5 недоступно.');
         }
         $row = $rows[0];
         return [
@@ -572,7 +572,7 @@ final class SystemAdminService
 
         $rows = $this->database->fetchAll($sql, ['control_key'=>self::CONTROL_KEY]);
         if (count($rows) !== 1 || !is_array($rows[0])) {
-            throw new RuntimeException('MVP-20 rating control is unavailable.');
+            throw new RuntimeException('Управление рейтинговым сезоном недоступно.');
         }
         $row = $rows[0];
         return [
