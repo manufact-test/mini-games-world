@@ -107,7 +107,7 @@ jobs:
         run: |
           set -euo pipefail
           manifest='bot/helpers/staging-e2e-runtime-files.txt'
-          for file in             bot/account-data.php             bot/account-data-website-hook.php             bot/accounts/AccountDataLifecycleService.php             bot/accounts/AccountDataZipWriter.php             bot/accounts/AccountReauthGuard.php             bot/database/migrations/20260926_0067_create_account_data_lifecycle.php             app/assets/js/screens/account-data-sheet-v1.js             app/assets/css/account-data-v1.css
+          for file in             bot/account-data.php             bot/account-data-website-hook.php             bot/accounts/AccountDataLifecycleService.php             bot/accounts/AccountDataZipWriter.php             bot/accounts/AccountReauthGuard.php             bot/accounts/AccountIdentityService.php             bot/accounts/RuntimeAccountIdentityResolver.php             bot/database/migrations/20260926_0067_create_account_data_lifecycle.php             app/assets/js/screens/account-data-sheet-v1.js             app/assets/css/account-data-v1.css
           do
             grep -Fx "$file" "$manifest"
           done
