@@ -114,13 +114,19 @@ try {
         }
 
         $filters = is_array($payload['filters'] ?? null) ? $payload['filters'] : [];
+        $queuePage = $service->adminQueuePage(
+            $filters,
+            (int)($filters['page'] ?? 1),
+            (int)($filters['per_page'] ?? 12)
+        );
         json_response([
             'ok' => true,
             'action' => $action,
             'generated_at' => gmdate(DATE_ATOM),
             'admin_ref' => $actorRef,
             'ticket' => $ticket,
-            'tickets' => $service->adminQueue($filters, 100),
+            'tickets' => $queuePage['tickets'],
+            'pagination' => $queuePage['pagination'],
             'metrics' => $service->queueMetrics(),
             'categories' => SupportTicketService::CATEGORY_LABELS,
             'priorities' => SupportTicketService::PRIORITY_LABELS,
