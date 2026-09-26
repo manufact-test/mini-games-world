@@ -82,12 +82,13 @@ try {
     }
 
     $filters = is_array($payload['filters'] ?? null) ? $payload['filters'] : [];
-    $queue = $reports->queue(100, [
+    $queuePage = $reports->queuePage([
         'mode' => (string)($filters['mode'] ?? 'active'),
         'query' => (string)($filters['query'] ?? ''),
         'date_from' => (string)($filters['date_from'] ?? ''),
         'date_to' => (string)($filters['date_to'] ?? ''),
-    ]);
+    ], (int)($filters['page'] ?? 1), (int)($filters['per_page'] ?? 12));
+    $queue = is_array($queuePage['reports'] ?? null) ? $queuePage['reports'] : [];
     foreach ($queue as &$report) {
         $report['case_link'] = './admin.php?report=' . rawurlencode((string)$report['report_id']);
         $report['moderation'] = $moderation->reportSnapshot((string)$report['report_id']);
@@ -98,6 +99,7 @@ try {
         'ok' => true,
         'generated_at' => gmdate(DATE_ATOM),
         'reports' => $queue,
+        'pagination' => $queuePage['pagination'] ?? [],
         'statuses' => PlayerReportService::STATUSES,
         'moderation_options' => $moderation->adminOptions(),
         'admin_ref' => $adminRef,
