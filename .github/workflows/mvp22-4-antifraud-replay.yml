@@ -101,7 +101,7 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           admin_successor=0
-          if [[ "${{ github.head_ref }}" == agent/mvp22-5-* || "${{ github.head_ref }}" == agent/mvp22-6-* ]]; then
+          if [[ "${{ github.head_ref }}" == agent/mvp22-5-* || "${{ github.head_ref }}" == agent/mvp22-6-* || "${{ github.head_ref }}" == agent/mvp22-7-* ]]; then
             admin_successor=1
           elif [[ "${{ github.head_ref }}" == agent/mvp22-admin-ux-* ]] \
             && git diff --name-only "$base" "$head" | grep -Fxq '.github/workflows/mvp22-admin-rework.yml'; then
