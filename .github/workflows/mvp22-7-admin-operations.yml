@@ -1,0 +1,139 @@
+name: MVP-22.7 Admin tasks plans and release log
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/admin.php'
+      - 'app/assets/css/admin-shell.css'
+      - 'app/assets/js/admin-shell.js'
+      - 'app/assets/js/admin-operations.js'
+      - 'bot/admin-operations.php'
+      - 'bot/operations/AdminOperationsService.php'
+      - 'bot/database/migrations/20260926_0066_create_admin_operations.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
+      - 'bot/tests/Mvp22_7AdminOperationsTest.php'
+      - 'bot/tests/Mvp22_7AdminOperationsContractTest.php'
+      - 'bot/tests/Mvp22AdminShellReworkContractTest.php'
+      - '.github/workflows/mvp22-7-admin-operations.yml'
+      - '.github/workflows/mvp22-6-product-economy-analytics.yml'
+      - '.github/workflows/mvp22-5-system-admin.yml'
+      - '.github/workflows/mvp22-4-antifraud-replay.yml'
+      - '.github/workflows/mvp22-3-moderation.yml'
+      - '.github/workflows/mvp22-admin-rework.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp22-7-operations-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Admin operations contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Lint MVP-22.7 server slice
+        run: |
+          set -euo pipefail
+          files=(
+            bot/admin-operations.php
+            bot/operations/AdminOperationsService.php
+            bot/database/migrations/20260926_0066_create_admin_operations.php
+            bot/tests/Mvp22_7AdminOperationsTest.php
+            bot/tests/Mvp22_7AdminOperationsContractTest.php
+            bot/tests/Mvp22AdminShellReworkContractTest.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done
+
+      - name: Check operations client syntax
+        run: |
+          node --input-type=module --check < app/assets/js/admin-operations.js
+          node --input-type=module --check < app/assets/js/admin-shell.js
+
+      - name: Run Admin operations model
+        run: php bot/tests/Mvp22_7AdminOperationsTest.php
+
+      - name: Run ownership and UI contract
+        run: php bot/tests/Mvp22_7AdminOperationsContractTest.php
+
+      - name: Preserve Web Admin shell
+        run: php bot/tests/Mvp22AdminShellReworkContractTest.php
+
+      - name: Preserve quarterly season lifecycle
+        run: php bot/tests/Mvp20_4QuarterlySeasonLifecycleTest.php
+
+      - name: Guard MVP-22.7 scope and frozen owners
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          allowed='^(\.github/workflows/(mvp22-admin-rework|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations)\.yml|app/admin\.php|app/assets/css/admin-shell\.css|app/assets/js/(admin-shell|admin-operations)\.js|bot/admin-operations\.php|bot/operations/AdminOperationsService\.php|bot/database/migrations/20260926_0066_create_admin_operations\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/(Mvp22AdminShellReworkContractTest|Mvp22_7AdminOperationsTest|Mvp22_7AdminOperationsContractTest)\.php)$'
+          bad=0
+          while IFS= read -r path; do
+            if ! grep -Eq "$allowed" <<<"$path"; then
+              echo "Unexpected MVP-22.7 path: $path" >&2
+              bad=1
+            fi
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+          git diff --exit-code "$base" "$head" --             bot/games bot/support bot/moderation bot/antifraud bot/replay             bot/economy bot/ledger bot/tournaments bot/cron             bot/ratings/SeasonCalendar.php bot/ratings/SeasonLifecycleService.php
+
+  mysql:
+    name: Admin operations on MySQL 8.4
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_operations_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring
+          coverage: none
+
+      - name: Run Admin operations model on MySQL
+        env:
+          MGW_OPERATIONS_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_operations_ci;charset=utf8mb4
+          MGW_OPERATIONS_MYSQL_USER: root
+          MGW_OPERATIONS_MYSQL_PASS: root
+        run: php bot/tests/Mvp22_7AdminOperationsTest.php
