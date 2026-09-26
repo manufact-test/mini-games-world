@@ -17,6 +17,7 @@ require dirname(__DIR__) . '/storage/JsonStorageAdapter.php';
 require dirname(__DIR__) . '/accounts/AccountDataZipWriter.php';
 require dirname(__DIR__) . '/accounts/AccountDataLifecycleService.php';
 require dirname(__DIR__) . '/accounts/AccountReauthGuard.php';
+require dirname(__DIR__) . '/accounts/AccountIdentityService.php';
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -49,6 +50,7 @@ if ($dsn !== '') {
 $db = new PdoDatabaseConnection($pdo);
 
 $tables = [
+    'mgw_deleted_identity_tombstones',
     'mgw_account_data_requests',
     'mgw_match_players',
     'mgw_invites',
@@ -235,9 +237,11 @@ $storage->transaction(static function (array &$data) use ($legacy): void {
 
 $config = [
     'data_dir'=>$temp,
+    'bot_token'=>'test-account-data-secret',
     'account_data_export_dir'=>$temp . '/exports',
     'account_data_export_rate_limit_sec'=>3600,
     'account_data_export_retention_sec'=>3600,
+    'account_deleted_identity_block_sec'=>3600,
 ];
 $service = new AccountDataLifecycleService($db, $storage, $config);
 $now = new DateTimeImmutable('2026-09-26T12:00:00+00:00');
@@ -291,6 +295,30 @@ $identity = $db->fetchAll('SELECT * FROM mgw_identities WHERE mgw_id=:mgw_id', [
 $assert((string)$identity['provider_subject'] !== $legacy, 'Provider subject must be released from deleted account');
 $assertSame(null, $identity['provider_username'], 'Provider username must be removed');
 
+$expectedIdentityHmac = hash_hmac(
+    'sha256',
+    "mgw-deleted-identity-v1\ntelegram\n" . $legacy,
+    (string)$config['bot_token']
+);
+$tombstones = $db->fetchAll(
+    'SELECT * FROM mgw_deleted_identity_tombstones
+     WHERE provider=:provider AND provider_subject_hmac=:provider_subject_hmac',
+    ['provider'=>'telegram','provider_subject_hmac'=>$expectedIdentityHmac]
+);
+$assertSame(1, count($tombstones), 'Deletion must create one HMAC replay tombstone for the released Telegram subject');
+$blockedReplay = false;
+try {
+    (new AccountIdentityService(
+        $db,
+        2592000,
+        (string)$config['bot_token'],
+        (int)$config['account_deleted_identity_block_sec']
+    ))->resolveProviderIdentity('telegram', $legacy, 'telegram_web', ['username'=>'player_one'], 'stale-session');
+} catch (RuntimeException $error) {
+    $blockedReplay = str_contains($error->getMessage(), 'Предыдущий аккаунт был удалён');
+}
+$assert($blockedReplay, 'Released Telegram identity must reject stale replay during the tombstone window');
+
 $owner = $db->fetchAll('SELECT * FROM mgw_account_ownership WHERE mgw_id=:mgw_id', ['mgw_id'=>$mgwId])[0];
 $assert((string)$owner['legacy_user_id'] !== $legacy, 'Legacy runtime identity must be released for future fresh registration');
 $assert((string)$owner['account_ref'] !== $accountRef, 'Active account_ref must be tombstoned');
@@ -324,6 +352,19 @@ $assertSame(0, $secondRetention['deletions_completed'], 'Deletion finalization m
 $expiry = new DateTimeImmutable((string)$export['artifact_expires_at_utc'], new DateTimeZone('UTC'));
 $expired = $service->runRetention($expiry->modify('+1 second'));
 $assertSame(0, $expired['exports_expired'], 'Already-cleaned export retention must be idempotent');
+
+$tombstoneExpiry = new DateTimeImmutable((string)$tombstones[0]['block_until_utc'], new DateTimeZone('UTC'));
+$tombstoneCleanup = $service->runRetention($tombstoneExpiry->modify('+1 second'));
+$assertSame(1, $tombstoneCleanup['identity_tombstones_expired'], 'Expired deleted-identity replay tombstone must be cleaned');
+$assertSame(
+    0,
+    (int)$db->fetchValue(
+        'SELECT COUNT(*) FROM mgw_deleted_identity_tombstones
+         WHERE provider=:provider AND provider_subject_hmac=:provider_subject_hmac',
+        ['provider'=>'telegram','provider_subject_hmac'=>$expectedIdentityHmac]
+    ),
+    'Expired deleted-identity replay tombstone must be removed'
+);
 
 $removeTree = static function (string $path) use (&$removeTree): void {
     if (!is_dir($path)) return;
