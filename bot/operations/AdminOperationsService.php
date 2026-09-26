@@ -298,10 +298,21 @@ final class AdminOperationsService
         $now = $this->utcNow($now);
         $actorRef = $this->requiredText($actorRef, 191, 'actor');
         $releaseId = $this->id('release');
+        $environment = $this->enum((string)($input['environment'] ?? 'staging'), self::RELEASE_ENVIRONMENTS, 'environment');
+        $versionLabel = $this->requiredText((string)($input['version_label'] ?? ''), 80, 'version');
+        $existingRelease = $this->database->fetchValue(
+            'SELECT COUNT(*) FROM mgw_admin_release_log
+             WHERE environment=:environment AND version_label=:version_label',
+            ['environment'=>$environment,'version_label'=>$versionLabel]
+        );
+        if ((int)$existingRelease > 0) {
+            throw new InvalidArgumentException('Такая версия уже есть в журнале для выбранной среды.');
+        }
+
         $row = [
             'release_id'=>$releaseId,
-            'version_label'=>$this->requiredText((string)($input['version_label'] ?? ''), 80, 'version'),
-            'environment'=>$this->enum((string)($input['environment'] ?? 'staging'), self::RELEASE_ENVIRONMENTS, 'environment'),
+            'version_label'=>$versionLabel,
+            'environment'=>$environment,
             'release_sha'=>$this->sha((string)($input['release_sha'] ?? '')),
             'released_at_utc'=>$this->requiredUtc($input['released_at_utc'] ?? $now->format(DATE_ATOM)),
             'summary_text'=>$this->requiredText((string)($input['summary_text'] ?? ''), 5000, 'summary'),
