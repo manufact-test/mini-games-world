@@ -14,7 +14,7 @@ require_once __DIR__ . '/notifications/AdminNotificationEventService.php';
 
 try {
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
-        json_response(['ok'=>false,'error'=>'Method not allowed.'], 405);
+        json_response(['ok'=>false,'error'=>'Метод запроса не поддерживается.'], 405);
     }
 
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
@@ -24,13 +24,13 @@ try {
 
     $admin = AdminWebAuth::authorize($config, (string)($payload['initData'] ?? ''));
     $telegramId = trim((string)($admin['id'] ?? ''));
-    if ($telegramId === '') throw new RuntimeException('Authorized Telegram admin identity is unavailable.');
+    if ($telegramId === '') throw new RuntimeException('Не удалось определить авторизованного администратора Telegram.');
     $actorRef = 'telegram:' . $telegramId;
     $environment = strtolower(trim((string)($config['environment'] ?? 'production')));
 
     $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
     if (!$databaseConfig->enabled()) {
-        json_response(['ok'=>false,'error'=>'System Admin недоступен: DB отключена.'], 503);
+        json_response(['ok'=>false,'error'=>'Раздел «Система» недоступен: база данных отключена.'], 503);
     }
     $database = PdoConnectionFactory::create($databaseConfig);
     $system = new SystemAdminService($database);
@@ -46,7 +46,7 @@ try {
 
     if ($action === 'update_flags') {
         $reason = clean_string($payload['reason'] ?? '', 800);
-        if ($reason === '') throw new InvalidArgumentException('Укажите причину изменения feature flags.');
+        if ($reason === '') throw new InvalidArgumentException('Укажите причину изменения системных переключателей.');
         $flags = is_array($payload['flags'] ?? null) ? $payload['flags'] : [];
         $operation = $flagEditor->update($flags);
         if ($operation['changed']) {
@@ -105,7 +105,7 @@ try {
                 }
             );
             $eventId = trim((string)($announcement['event_id'] ?? ''));
-            if ($eventId === '') throw new RuntimeException('Canonical activation announcement did not return event id.');
+            if ($eventId === '') throw new RuntimeException('Система уведомлений не вернула идентификатор объявления о запуске.');
             $system->markActivationAnnouncement($eventId, $actorRef);
         }
 
@@ -114,7 +114,7 @@ try {
             'announcement'=>$announcement,
         ];
     } elseif ($action !== 'snapshot') {
-        json_response(['ok'=>false,'error'=>'Неизвестное действие System Admin.'], 422);
+        json_response(['ok'=>false,'error'=>'Неизвестное системное действие.'], 422);
     }
 
     json_response([
@@ -135,5 +135,5 @@ try {
     json_response(['ok'=>false,'error'=>$error->getMessage()], 409);
 } catch (Throwable $error) {
     error_log('[MiniGamesWorld system admin] ' . $error->getMessage());
-    json_response(['ok'=>false,'error'=>'Не удалось выполнить операцию System Admin.'], 500);
+    json_response(['ok'=>false,'error'=>'Не удалось выполнить системную операцию.'], 500);
 }
