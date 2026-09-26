@@ -11,6 +11,7 @@ if (PHP_SAPI !== 'cli') {
 $projectRoot = dirname(__DIR__, 2);
 require $projectRoot . '/bot/core/bootstrap.php';
 require_once $projectRoot . '/bot/helpers/StagingCronHeartbeat.php';
+require_once $projectRoot . '/bot/accounts/AccountDataLifecycleService.php';
 require_once $projectRoot . '/bot/storage/RuntimeModuleActivationController.php';
 require_once $projectRoot . '/bot/cutover/FreezeDrainRehearsalService.php';
 require_once $projectRoot . '/bot/cutover/seal/SealedSnapshotControlService.php';
@@ -45,6 +46,34 @@ $print = static function (array $result, int $code = 0): void {
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR
     ) . PHP_EOL);
 };
+$runAccountDataRetention = static function (
+    array $config,
+    DatabaseConnectionInterface $database,
+    StorageAdapterInterface $runtimeStorage
+): array {
+    $summary = (new AccountDataLifecycleService(
+        $database,
+        $runtimeStorage,
+        $config
+    ))->runRetention();
+
+    $failed = max(0, (int)($summary['deletions_failed'] ?? 0));
+    if ($failed !== 0) {
+        throw new RuntimeException('Account data retention reported deletion failures.');
+    }
+
+    return [
+        'ok' => true,
+        'deletions_checked' => max(0, (int)($summary['deletions_checked'] ?? 0)),
+        'deletions_completed' => max(0, (int)($summary['deletions_completed'] ?? 0)),
+        'deletions_failed' => $failed,
+        'exports_expired' => max(0, (int)($summary['exports_expired'] ?? 0)),
+        'identity_tombstones_expired' => max(0, (int)($summary['identity_tombstones_expired'] ?? 0)),
+        'production_changed' => false,
+        'sensitive_identifiers_exposed' => false,
+    ];
+};
+
 $runWeeklyMatchCron = static function (
     array $config,
     StorageAdapterInterface $storage,
@@ -198,6 +227,11 @@ try {
                     $config,
                     $storage,
                     $runtimeWeeklyBonusBridge ?? null
+                );
+                $result['account_data_retention'] = $runAccountDataRetention(
+                    $config,
+                    $database,
+                    $storage
                 );
             }
 
