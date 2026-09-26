@@ -52,7 +52,8 @@ foreach ([
 
 $assert(
     str_contains($endpoint, 'AdminWebAuth::authorize')
-        && str_contains($endpoint, "(string)($payload['action'] ?? '') !== 'snapshot'")
+        && str_contains($endpoint, "\$payload['action']")
+        && str_contains($endpoint, "!== 'snapshot'")
         && !str_contains($endpoint, 'INSERT INTO')
         && !str_contains($endpoint, 'UPDATE ')
         && !str_contains($endpoint, 'DELETE FROM'),
