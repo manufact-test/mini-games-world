@@ -983,3 +983,39 @@
   .mgw-admin__af-summary{grid-template-columns:1fr}
   .mgw-admin__af-timeline-head{flex-direction:column;gap:3px}
 }
+
+
+/* MVP-22.4 case queue navigation v4 */
+.mgw-admin__af-case-filters{
+  display:flex;gap:7px;margin:0 0 12px;padding-bottom:2px;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin
+}
+.mgw-admin__af-case-filters button{
+  appearance:none;display:flex;align-items:center;justify-content:center;gap:7px;flex:0 0 auto;min-height:38px;padding:0 11px;
+  border:1px solid #32343d;border-radius:10px;background:#131419;color:#c9cad1;font:inherit;font-size:10px;font-weight:800;cursor:pointer;white-space:nowrap
+}
+.mgw-admin__af-case-filters button.is-active{border-color:#6557d9;background:#26213f;color:#f2efff}
+.mgw-admin__af-case-filters button b{
+  display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;
+  background:#22242c;color:#aeb0ba;font-size:9px;font-weight:850
+}
+.mgw-admin__af-case-filters button.is-active b{background:#5d4fd2;color:#fff}
+.mgw-admin__af-pagination{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px}
+.mgw-admin__af-pagination button{
+  appearance:none;display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 9px;
+  border:1px solid #343640;border-radius:9px;background:#14151b;color:#e7e8ed;font:inherit;font-size:11px;font-weight:850;cursor:pointer
+}
+.mgw-admin__af-pagination button:disabled{opacity:.36}
+.mgw-admin__af-pagination span{
+  display:inline-flex;align-items:center;justify-content:center;min-width:54px;height:36px;padding:0 9px;
+  border:1px solid #2b2d35;border-radius:9px;background:#0d0e12;color:#a5a7b0;font-size:10px;font-weight:800
+}
+@media(max-width:760px){
+  .mgw-admin__af-case-filters{margin-left:-2px;margin-right:-2px;padding:0 2px 5px}
+  .mgw-admin__af-case-filters button{min-height:34px;padding:0 9px;font-size:9px}
+  .mgw-admin__af-case-filters button b{min-width:18px;height:18px;font-size:8px}
+  .mgw-admin__af-case-card{padding:9px 10px;gap:3px}
+  .mgw-admin__af-case-top strong{font-size:10px}
+  .mgw-admin__af-case-match{font-size:9px}
+  .mgw-admin__af-case-meta{font-size:8px}
+  .mgw-admin__af-pagination{position:sticky;bottom:0;z-index:4;margin:10px -4px -4px;padding:8px 4px calc(8px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(13,14,18,.15),#0d0e12 35%)}
+}

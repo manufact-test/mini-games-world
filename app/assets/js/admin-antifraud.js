@@ -12,11 +12,13 @@
   const home = root.querySelector('[data-af-home]');
   const homeButtons = Array.from(root.querySelectorAll('[data-af-home-mode]'));
   const homePanels = Array.from(root.querySelectorAll('[data-af-home-panel]'));
-  const modeButtons = Array.from(root.querySelectorAll('[data-af-mode]'));
+  const caseFilterButtons = Array.from(root.querySelectorAll('[data-af-case-filter]'));
+  const caseCountNodes = Array.from(root.querySelectorAll('[data-af-case-count]'));
   const queryInput = root.querySelector('[data-af-query]');
   const refreshButton = root.querySelector('[data-af-refresh]');
   const queue = root.querySelector('[data-af-queue]');
   const queueTitle = root.querySelector('[data-af-queue-title]');
+  const pagination = root.querySelector('[data-af-pagination]');
 
   const recentPicker = root.querySelector('[data-af-recent-picker]');
   const recentTrigger = root.querySelector('[data-af-recent-trigger]');
@@ -59,6 +61,8 @@
   let currentCase = null;
   let recentMatches = [];
   let selectedRecentMatchId = '';
+  let page = 1;
+  const perPage = 12;
 
   const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, ch => ({
     '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'
@@ -81,6 +85,8 @@
 
   const filters = () => ({
     mode,
+    page,
+    per_page:perPage,
     query:String(queryInput?.value || '').trim(),
   });
 
@@ -100,8 +106,9 @@
       node.disabled = value;
     });
     recentList?.querySelectorAll('button').forEach(node => { node.disabled = value; });
+    pagination?.querySelectorAll('button').forEach(node => { node.disabled = value; });
     decisionButtons.forEach(node => { node.disabled = value; });
-    modeButtons.forEach(node => { node.disabled = value; });
+    caseFilterButtons.forEach(node => { node.disabled = value; });
     homeButtons.forEach(node => { node.disabled = value; });
     reviewTabs.forEach(node => { node.disabled = value; });
     if (!value) renderCaseActions();
@@ -281,20 +288,18 @@
     currentReview = null;
     reviewBox.hidden = true;
     home.hidden = false;
-    homeMode = nextMode || 'match';
-    if (homeMode === 'active' || homeMode === 'closed') mode = homeMode;
+    homeMode = nextMode === 'cases' ? 'cases' : 'match';
 
     homeButtons.forEach(button => {
       button.classList.toggle('is-active', String(button.dataset.afHomeMode || '') === homeMode);
     });
     homePanels.forEach(panel => {
-      const panelMode = String(panel.dataset.afHomePanel || '');
-      panel.hidden = homeMode === 'match' ? panelMode !== 'match' : panelMode !== 'cases';
+      panel.hidden = String(panel.dataset.afHomePanel || '') !== homeMode;
     });
 
     closeRecentList();
 
-    if (homeMode !== 'match') {
+    if (homeMode === 'cases') {
       void loadSnapshot();
     } else {
       setStatus('Выберите недавний матч или вставьте его ID.', 'ok');
@@ -320,16 +325,76 @@
     reviewBox.scrollIntoView({block:'start', behavior:'smooth'});
   };
 
-  const renderQueue = cases => {
+  const queueLabel = value => ({
+    active:'Все активные',
+    open:'Новые',
+    reviewing:'В работе',
+    monitoring:'Под наблюдением',
+    closed:'Завершённые',
+    all:'Все кейсы',
+  })[String(value || '')] || 'Кейсы';
+
+  const renderCaseCounts = counts => {
+    caseCountNodes.forEach(node => {
+      const key = String(node.dataset.afCaseCount || '');
+      node.textContent = String(Math.max(0, Number(counts?.[key] || 0)));
+    });
+    caseFilterButtons.forEach(button => {
+      button.classList.toggle('is-active', String(button.dataset.afCaseFilter || '') === mode);
+    });
+  };
+
+  const renderPagination = meta => {
+    pagination.replaceChildren();
+    const totalPages = Math.max(1, Number(meta?.total_pages || 1));
+    const current = Math.max(1, Math.min(totalPages, Number(meta?.page || 1)));
+    page = current;
+
+    if (totalPages <= 1) {
+      pagination.hidden = true;
+      return;
+    }
+    pagination.hidden = false;
+
+    const addButton = (label,target,ariaLabel) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = label;
+      button.setAttribute('aria-label', ariaLabel);
+      button.disabled = target === current;
+      button.addEventListener('click', () => {
+        if (busy || target === current) return;
+        page = target;
+        void loadSnapshot();
+      });
+      pagination.append(button);
+    };
+
+    if (current > 2) addButton('«',1,'Первая страница');
+    addButton('←',Math.max(1,current - 1),'Предыдущая страница');
+
+    const indicator = document.createElement('span');
+    indicator.textContent = current + ' / ' + totalPages;
+    indicator.setAttribute('aria-current','page');
+    pagination.append(indicator);
+
+    addButton('→',Math.min(totalPages,current + 1),'Следующая страница');
+    if (current < totalPages - 1) addButton('»',totalPages,'Последняя страница');
+  };
+
+  const renderQueue = (cases, meta = {}) => {
     queue.replaceChildren();
-    queueTitle.textContent = mode === 'closed' ? 'Завершённые кейсы' : 'Активные кейсы';
+    const total = Math.max(0, Number(meta.total || 0));
+    const from = Math.max(0, Number(meta.from || 0));
+    const to = Math.max(0, Number(meta.to || 0));
+    queueTitle.textContent = queueLabel(mode) + (total > 0 ? ' · ' + from + '–' + to + ' из ' + total : '');
 
     if (!Array.isArray(cases) || cases.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'mgw-admin__af-empty';
       empty.textContent = mode === 'closed'
-        ? 'Завершённых кейсов пока нет.'
-        : 'Активных кейсов пока нет.';
+        ? 'Завершённых кейсов по этому фильтру нет.'
+        : 'Кейсов по этому фильтру нет.';
       queue.append(empty);
       return;
     }
@@ -352,6 +417,13 @@
       button.addEventListener('click', () => void openCase(String(item.case_id || '')));
       queue.append(button);
     });
+  };
+
+  const renderSnapshot = data => {
+    renderCaseCounts(data?.counts || {});
+    renderQueue(data?.cases || [], data?.pagination || {});
+    renderPagination(data?.pagination || {});
+    renderRecentMatches(data?.recent_matches || []);
   };
 
   const renderMatchSummary = review => {
@@ -703,22 +775,21 @@
     policy.dataset.state = 'ok';
   };
 
-  const loadSnapshot = async () => {
+  const loadSnapshot = async (silent = false) => {
     if (busy) return;
     if (!telegram?.initData) {
-      setStatus('Откройте Web Admin из Telegram.', 'error');
+      if (!silent) setStatus('Откройте Web Admin из Telegram.', 'error');
       return;
     }
 
     setBusy(true);
-    setStatus(mode === 'closed' ? 'Загружаю завершённые кейсы…' : 'Загружаю активные кейсы…');
+    if (!silent) setStatus('Загружаю ' + queueLabel(mode).toLowerCase() + '…');
     try {
       const data = await post({action:'snapshot', filters:filters()});
-      renderQueue(data.cases || []);
-      renderRecentMatches(data.recent_matches || []);
-      setStatus(mode === 'closed' ? 'Завершённые кейсы загружены.' : 'Активные кейсы загружены.', 'ok');
+      renderSnapshot(data);
+      if (!silent) setStatus(queueLabel(mode) + ' загружены.', 'ok');
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Не удалось загрузить кейсы.', 'error');
+      if (!silent) setStatus(error instanceof Error ? error.message : 'Не удалось загрузить кейсы.', 'error');
     } finally {
       setBusy(false);
     }
@@ -754,8 +825,7 @@
     try {
       const data = await post({action:'case', case_id:caseId, filters:filters()});
       currentCase = data.case || null;
-      renderQueue(data.cases || []);
-      renderRecentMatches(data.recent_matches || []);
+      renderSnapshot(data);
       renderReview(data.review || null);
       openReviewWorkspace('case');
       setStatus(caseId + ': кейс открыт.', 'ok');
@@ -772,8 +842,7 @@
     try {
       const data = await post({...payload, filters:filters()});
       currentCase = data.case || null;
-      renderQueue(data.cases || []);
-      renderRecentMatches(data.recent_matches || []);
+      renderSnapshot(data);
       renderReview(data.review || null);
       openReviewWorkspace('case');
       return data;
@@ -789,8 +858,15 @@
     showHome(String(button.dataset.afHomeMode || 'match'));
   }));
 
-  modeButtons.forEach(button => button.addEventListener('click', () => {
-    mode = String(button.dataset.afMode || 'active');
+  caseFilterButtons.forEach(button => button.addEventListener('click', () => {
+    const nextMode = String(button.dataset.afCaseFilter || 'active');
+    if (mode === nextMode && homeMode === 'cases') return;
+    mode = nextMode;
+    page = 1;
+    caseFilterButtons.forEach(node => {
+      node.classList.toggle('is-active', String(node.dataset.afCaseFilter || '') === mode);
+    });
+    void loadSnapshot();
   }));
 
   reviewTabs.forEach(button => button.addEventListener('click', () => {
@@ -798,7 +874,10 @@
   }));
 
   backButton.addEventListener('click', () => {
-    showHome(currentCase?.status === 'closed' ? 'closed' : 'match');
+    if (currentCase?.status === 'closed' && mode !== 'closed') mode = 'closed';
+    if (currentCase && currentCase.status !== 'closed' && mode === 'closed') mode = 'active';
+    page = 1;
+    showHome('cases');
   });
 
   recentTrigger.addEventListener('click', event => {
@@ -813,7 +892,10 @@
 
   refreshButton.addEventListener('click', () => void loadSnapshot());
   queryInput.addEventListener('keydown', event => {
-    if (event.key === 'Enter') void loadSnapshot();
+    if (event.key === 'Enter') {
+      page = 1;
+      void loadSnapshot();
+    }
   });
 
   matchLoad.addEventListener('click', () => void reviewMatch());
@@ -882,13 +964,17 @@
     });
   }));
 
-  openProcessedButton.addEventListener('click', () => showHome('closed'));
+  openProcessedButton.addEventListener('click', () => {
+    mode = 'closed';
+    page = 1;
+    showHome('cases');
+  });
 
   const requestedCase = new URLSearchParams(window.location.search).get('afcase') || '';
   if (requestedCase) {
     void openCase(requestedCase);
   } else {
     showHome('match');
-    void loadSnapshot();
+    void loadSnapshot(true);
   }
 })();

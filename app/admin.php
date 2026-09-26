@@ -14,10 +14,10 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Панель администратора</title>
-  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=11&replay=17-6&mvp22_4=antifraud-manual-v3&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
+  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=11&replay=17-6&mvp22_4=case-nav-v4&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="./assets/js/admin-shell.js?v=7&mvp22_4=section-v2&test-coins=staging" defer></script>
-  <script src="./assets/js/admin-antifraud.js?v=1&mvp22_4=timeline-cases-v3" defer></script>
+  <script src="./assets/js/admin-antifraud.js?v=1&mvp22_4=case-nav-v4" defer></script>
   <script src="./assets/js/admin-compensation.js?v=4&mvp22_2=admin-simple-flow-v4" defer></script>
   <script src="./assets/js/admin-reports.js?v=2&mvp18=reports&mvp22_3=manual-acceptance-v6" defer></script>
   <script src="./assets/js/admin-notifications.js?v=1&mvp18=bell-pipeline" defer></script>
@@ -584,8 +584,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           <section class="mgw-admin__af-home" data-af-home>
             <div class="mgw-admin__af-home-tabs" role="tablist" aria-label="Раздел проверки игр">
               <button type="button" class="is-active" data-af-home-mode="match">Проверить матч</button>
-              <button type="button" data-af-home-mode="active" data-af-mode="active">Активные кейсы</button>
-              <button type="button" data-af-home-mode="closed" data-af-mode="closed">Завершённые</button>
+              <button type="button" data-af-home-mode="cases">Кейсы</button>
             </div>
 
             <section class="mgw-admin__af-home-panel" data-af-home-panel="match">
@@ -618,6 +617,24 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
             </section>
 
             <section class="mgw-admin__af-home-panel" data-af-home-panel="cases" hidden>
+              <div class="mgw-admin__af-case-filters" role="tablist" aria-label="Статус кейсов">
+                <button type="button" class="is-active" data-af-case-filter="active">
+                  <span>Все активные</span><b data-af-case-count="active">0</b>
+                </button>
+                <button type="button" data-af-case-filter="open">
+                  <span>Новые</span><b data-af-case-count="open">0</b>
+                </button>
+                <button type="button" data-af-case-filter="reviewing">
+                  <span>В работе</span><b data-af-case-count="reviewing">0</b>
+                </button>
+                <button type="button" data-af-case-filter="monitoring">
+                  <span>Под наблюдением</span><b data-af-case-count="monitoring">0</b>
+                </button>
+                <button type="button" data-af-case-filter="closed">
+                  <span>Завершённые</span><b data-af-case-count="closed">0</b>
+                </button>
+              </div>
+
               <div class="mgw-admin__af-case-toolbar">
                 <label class="mgw-admin__field">
                   <span>Поиск по кейсам</span>
@@ -629,6 +646,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
               <div class="mgw-admin__support-panel">
                 <h3 data-af-queue-title>Активные кейсы</h3>
                 <div class="mgw-admin__af-queue" data-af-queue></div>
+                <nav class="mgw-admin__af-pagination" data-af-pagination aria-label="Страницы кейсов" hidden></nav>
               </div>
             </section>
           </section>

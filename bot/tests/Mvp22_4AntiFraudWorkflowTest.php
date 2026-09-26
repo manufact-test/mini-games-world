@@ -224,4 +224,31 @@ try {
 }
 $assert($blockedBackwards, 'Completed case must be read-only and cannot return to review.');
 
+$openCase = $service->createCase('pair_1', 'telegram:queue-admin');
+$reviewCase = $service->createCase('pair_2', 'telegram:queue-admin');
+$reviewCase = $service->takeInReview((string)$reviewCase['case_id'], 'telegram:queue-admin');
+$monitorCase = $service->createCase('pair_3', 'telegram:queue-admin');
+$monitorCase = $service->takeInReview((string)$monitorCase['case_id'], 'telegram:queue-admin');
+$monitorCase = $service->resolve((string)$monitorCase['case_id'], 'monitor', 'Оставляем пару под наблюдением.', 'telegram:queue-admin');
+
+$activePageOne = $service->snapshot(['mode' => 'active', 'page' => 1, 'per_page' => 2]);
+$activePageTwo = $service->snapshot(['mode' => 'active', 'page' => 2, 'per_page' => 2]);
+$monitorOnly = $service->snapshot(['mode' => 'monitoring', 'page' => 1, 'per_page' => 2]);
+$completedOnly = $service->snapshot(['mode' => 'closed', 'page' => 1, 'per_page' => 2]);
+
+$assert(($activePageOne['counts']['active'] ?? -1) === 3, 'Queue counts must include all active case states.');
+$assert(($activePageOne['counts']['open'] ?? -1) === 1, 'Queue counts must expose new cases.');
+$assert(($activePageOne['counts']['reviewing'] ?? -1) === 1, 'Queue counts must expose in-work cases.');
+$assert(($activePageOne['counts']['monitoring'] ?? -1) === 1, 'Queue counts must expose monitored cases.');
+$assert(($activePageOne['counts']['closed'] ?? -1) === 1, 'Queue counts must expose completed cases.');
+$assert(($activePageOne['counts']['all'] ?? -1) === 4, 'Queue counts must expose the total case count.');
+$assert(($activePageOne['pagination']['total'] ?? -1) === 3, 'Active queue pagination must report total rows.');
+$assert(($activePageOne['pagination']['total_pages'] ?? -1) === 2, 'Active queue pagination must report multiple pages.');
+$assert(count($activePageOne['cases'] ?? []) === 2, 'First active queue page must respect per_page.');
+$assert(count($activePageTwo['cases'] ?? []) === 1, 'Second active queue page must expose the remaining case.');
+$assert(($monitorOnly['pagination']['total'] ?? -1) === 1, 'Monitoring filter must isolate monitored cases.');
+$assert(($monitorOnly['cases'][0]['status'] ?? '') === 'monitoring', 'Monitoring filter must return only monitored cases.');
+$assert(($completedOnly['pagination']['total'] ?? -1) === 1, 'Completed filter must isolate completed cases.');
+$assert(($completedOnly['cases'][0]['status'] ?? '') === 'closed', 'Completed filter must return only completed cases.');
+
 fwrite(STDOUT, "MVP-22.4 AntiFraudWorkflowTest OK: {$assertions} assertions.\n");

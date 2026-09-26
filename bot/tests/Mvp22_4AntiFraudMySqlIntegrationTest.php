@@ -265,6 +265,12 @@ $monitoring = $service->resolve((string)$case['case_id'],'monitor','Watch for re
 $assert(($monitoring['status'] ?? '') === 'monitoring', 'MySQL monitor decision must remain active.');
 $assert(empty($monitoring['closed_at']), 'MySQL monitoring case must not have closed_at.');
 
+$monitorSnapshot = $service->snapshot(['mode'=>'monitoring','page'=>1,'per_page'=>12]);
+$assert(($monitorSnapshot['counts']['active'] ?? -1) === 1, 'MySQL queue counts must include monitored active case.');
+$assert(($monitorSnapshot['counts']['monitoring'] ?? -1) === 1, 'MySQL queue counts must expose monitored state.');
+$assert(($monitorSnapshot['pagination']['total'] ?? -1) === 1, 'MySQL monitoring filter must paginate one case.');
+$assert(($monitorSnapshot['cases'][0]['status'] ?? '') === 'monitoring', 'MySQL monitoring filter must return monitored case.');
+
 $resumed = $service->takeInReview((string)$case['case_id'],'telegram:mysql-admin-three');
 $assert(($resumed['status'] ?? '') === 'reviewing', 'MySQL monitoring case must resume to reviewing.');
 
@@ -277,6 +283,10 @@ $active = $service->snapshot(['mode'=>'active']);
 $processed = $service->snapshot(['mode'=>'closed']);
 $assert(count($active['cases']) === 0, 'MySQL closed case must leave active queue.');
 $assert(count($processed['cases']) === 1, 'MySQL closed case must remain in processed archive.');
+$assert(($processed['counts']['closed'] ?? -1) === 1, 'MySQL completed count must remain visible.');
+$assert(($processed['counts']['all'] ?? -1) === 1, 'MySQL total case count must remain visible.');
+$assert(($processed['pagination']['page'] ?? -1) === 1, 'MySQL completed queue must expose page metadata.');
+$assert(($processed['pagination']['total_pages'] ?? -1) === 1, 'MySQL completed queue must expose total page metadata.');
 $assert(count($processed['recent_matches']) >= 4, 'MySQL anti-fraud snapshot must expose recent matches for manual selection.');
 $assert($db->fetchValue("SHOW TABLES LIKE 'mgw_moderation_actions'") === null, 'Anti-fraud case workflow must not require or create moderation sanctions.');
 
