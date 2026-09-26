@@ -56,17 +56,17 @@
   border-radius:15px;
   background:linear-gradient(135deg,rgba(92,125,255,.10),rgba(255,255,255,.035));
 }
-.account-data-v1-intro-icon{
-  flex:0 0 28px;
-  width:28px;
-  height:28px;
+ .account-data-v1-intro-icon{
+  flex:0 0 42px;
+  width:42px;
+  height:42px;
   display:grid;
   place-items:center;
-  border-radius:10px;
+  border-radius:14px;
   border:1px solid rgba(132,172,255,.22);
   background:rgba(98,139,255,.12);
   color:#bcd4ff;
-  font-size:14px;
+  font-size:22px;
   font-weight:950;
   font-family:ui-sans-serif,system-ui,sans-serif;
 }
@@ -303,6 +303,13 @@
   .account-data-v1-head h2{font-size:21px}
   .account-data-v1-body{gap:10px}
   .account-data-v1-intro{padding:11px 12px}
+  .account-data-v1-intro-icon{
+    flex-basis:36px;
+    width:36px;
+    height:36px;
+    border-radius:12px;
+    font-size:18px;
+  }
   .account-data-v1-card{
     grid-template-columns:38px minmax(0,1fr);
     gap:10px;

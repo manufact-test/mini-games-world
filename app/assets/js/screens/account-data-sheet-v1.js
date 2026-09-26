@@ -2,7 +2,7 @@ import { api } from '../api/client.js?v=1147&mvp22_8=account-data-v1';
 import { openSheet } from '../components/sheet.js?v=1109';
 import { toast } from '../components/toast.js?v=41';
 
-const STYLE_URL = './assets/css/account-data-v1.css?v=2&mvp22_8=account-data-v1&ux=corrective-v2';
+const STYLE_URL = './assets/css/account-data-v1.css?v=3&mvp22_8=account-data-v1&ux=final-icon-parity-v1';
 
 let snapshot = null;
 let loading = false;
