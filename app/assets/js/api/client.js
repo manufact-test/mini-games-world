@@ -14,6 +14,7 @@ const TOURNAMENT_HALL_URL = `${window.location.origin}/bot/tournament-hall.php`;
 const GAME_REACTION_URL = `${window.location.origin}/bot/game-reaction.php`;
 const SUPPORT_URL = `${window.location.origin}/bot/support.php`;
 const MODERATION_URL = `${window.location.origin}/bot/moderation.php`;
+const ACCOUNT_DATA_URL = `${window.location.origin}/bot/account-data.php`;
 
 let profileV2ReadPromise = null;
 let tournamentPrestigeReadPromise = null;
@@ -34,6 +35,31 @@ async function requestUrl(url, payload = {}){
   return data;
 }
 async function request(action, payload = {}){ return requestUrl(APP_CONFIG.apiBase, { action, ...payload }); }
+
+async function downloadAccountExport(requestId){
+  const response = await fetch(ACCOUNT_DATA_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      initData:getInitData(),
+      sessionId:getSessionId(),
+      deviceId:getDeviceId(),
+      action:'download_export',
+      request_id:String(requestId || ''),
+    })
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    const error = new Error(data?.error || `Ошибка API: ${response.status}`);
+    error.code = data?.code || '';
+    error.status = response.status;
+    throw error;
+  }
+  const blob = await response.blob();
+  const disposition = String(response.headers.get('content-disposition') || '');
+  const match = disposition.match(/filename="?([^";]+)"?/i);
+  return { blob, filename:match?.[1] || 'mini-games-world-data.zip' };
+}
 
 async function requestTournamentStatus(){
   try {
@@ -197,6 +223,11 @@ export const api = {
   supportAttachment: attachmentId => requestUrl(SUPPORT_URL, { action:'attachment', attachment_id:attachmentId }),
   moderationSnapshot: () => requestUrl(MODERATION_URL, { action:'snapshot' }),
   moderationAppeal: (actionId, message) => requestUrl(MODERATION_URL, { action:'appeal', action_id:actionId, message }),
+  accountDataSnapshot: () => requestUrl(ACCOUNT_DATA_URL, { action:'snapshot' }),
+  accountDataScheduleDelete: () => requestUrl(ACCOUNT_DATA_URL, { action:'schedule_delete' }),
+  accountDataCancelDelete: () => requestUrl(ACCOUNT_DATA_URL, { action:'cancel_delete' }),
+  accountDataCreateExport: () => requestUrl(ACCOUNT_DATA_URL, { action:'create_export' }),
+  accountDataDownloadExport: requestId => downloadAccountExport(requestId),
   cosmeticStoreStatus: () => requestCosmeticStore({ action:'status' }),
   cosmeticStorePurchase: (offerId, requestToken) => requestCosmeticStore({ action:'purchase', offer_id:offerId, request_token:requestToken }),
   cosmeticStoreEquip: itemId => requestCosmeticStore({ action:'equip', item_id:itemId }),
