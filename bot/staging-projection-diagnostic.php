@@ -533,6 +533,52 @@ try {
         ];
     }
 
+    $accountDeletionDiagnostic = [
+        'available'=>false,
+        'scheduled_count'=>0,
+        'processing_count'=>0,
+        'cancelled_count'=>0,
+        'completed_count'=>0,
+        'latest_status'=>null,
+        'latest_requested_at_utc'=>null,
+        'latest_execute_after_utc'=>null,
+        'latest_cancelled_at_utc'=>null,
+    ];
+    try {
+        $statusRows = $db->fetchAll(
+            "SELECT request_status, COUNT(*) AS total
+             FROM mgw_account_data_requests
+             WHERE request_type='deletion'
+             GROUP BY request_status"
+        );
+        foreach ($statusRows as $row) {
+            if (!is_array($row)) continue;
+            $status = strtolower(trim((string)($row['request_status'] ?? '')));
+            $total = max(0, (int)($row['total'] ?? 0));
+            if ($status === 'scheduled') $accountDeletionDiagnostic['scheduled_count'] = $total;
+            if ($status === 'processing') $accountDeletionDiagnostic['processing_count'] = $total;
+            if ($status === 'cancelled') $accountDeletionDiagnostic['cancelled_count'] = $total;
+            if ($status === 'completed') $accountDeletionDiagnostic['completed_count'] = $total;
+        }
+        $latestRows = $db->fetchAll(
+            "SELECT request_status, requested_at_utc, execute_after_utc, cancelled_at_utc
+             FROM mgw_account_data_requests
+             WHERE request_type='deletion'
+             ORDER BY requested_at_utc DESC, request_id DESC
+             LIMIT 1"
+        );
+        $latest = is_array($latestRows[0] ?? null) ? $latestRows[0] : null;
+        $accountDeletionDiagnostic['available'] = true;
+        if ($latest !== null) {
+            $accountDeletionDiagnostic['latest_status'] = (string)($latest['request_status'] ?? '');
+            $accountDeletionDiagnostic['latest_requested_at_utc'] = (string)($latest['requested_at_utc'] ?? '');
+            $accountDeletionDiagnostic['latest_execute_after_utc'] = (string)($latest['execute_after_utc'] ?? '');
+            $accountDeletionDiagnostic['latest_cancelled_at_utc'] = (string)($latest['cancelled_at_utc'] ?? '');
+        }
+    } catch (Throwable $accountDataDiagnosticError) {
+        $accountDeletionDiagnostic['error'] = 'account_data_diagnostic_unavailable';
+    }
+
     json_response([
         'ok'=>true,
         'service'=>'staging-projection-diagnostic',
@@ -542,6 +588,7 @@ try {
             'pending_after'=>(int)($migrationResult['after']['pending_count'] ?? -1),
         ],
         'failures'=>$failures,
+        'account_data_deletion'=>$accountDeletionDiagnostic,
         'tournament'=>$tournamentSnapshot['tournament'] ?? null,
         'registered_count'=>(int)($tournamentSnapshot['tournament']['registered_count'] ?? 0),
         'tournament_fixture_ownership_repair'=>$fixtureOwnershipRepair,
