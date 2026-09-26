@@ -91,7 +91,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(\.github/workflows/(mvp20-4-quarterly-seasons|mvp22-admin-rework|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations)\.yml|app/admin\.php|app/assets/css/admin-shell\.css|app/assets/js/(admin-shell|admin-operations)\.js|bot/admin-operations\.php|bot/operations/AdminOperationsService\.php|bot/database/migrations/20260926_0066_create_admin_operations\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/ratings/SeasonLifecycleService\.php|bot/tests/(Mvp22AdminShellReworkContractTest|Mvp22_7AdminOperationsTest|Mvp22_7AdminOperationsContractTest)\.php)$'
+          allowed='^(\.github/workflows/(mvp20-4-quarterly-seasons|mvp20-5-seasonal-awards|mvp20-6-yearly-medal|mvp22-admin-rework|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations)\.yml|app/admin\.php|app/assets/css/admin-shell\.css|app/assets/js/(admin-shell|admin-operations)\.js|bot/admin-operations\.php|bot/operations/AdminOperationsService\.php|bot/database/migrations/20260926_0066_create_admin_operations\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/ratings/SeasonLifecycleService\.php|bot/tests/(Mvp22AdminShellReworkContractTest|Mvp22_7AdminOperationsTest|Mvp22_7AdminOperationsContractTest)\.php)$'
           bad=0
           while IFS= read -r path; do
             if ! grep -Eq "$allowed" <<<"$path"; then
