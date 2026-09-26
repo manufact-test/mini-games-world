@@ -17,6 +17,7 @@ on:
       - 'bot/tests/Mvp22_9IncidentRecoveryTest.php'
       - 'bot/tests/Mvp22_9IncidentRecoveryContractTest.php'
       - 'bot/tests/Mvp22_9IncidentRecoveryMySqlIntegrationTest.php'
+      - 'bot/tests/Mvp23AdminClosureContractTest.php'
       - '.github/workflows/mvp22-9-incident-recovery.yml'
       - '.github/workflows/mvp22-admin-rework.yml'
       - '.github/workflows/mvp22-3-moderation.yml'
@@ -68,6 +69,7 @@ jobs:
             bot/tests/Mvp22_9IncidentRecoveryTest.php
             bot/tests/Mvp22_9IncidentRecoveryContractTest.php
             bot/tests/Mvp22_9IncidentRecoveryMySqlIntegrationTest.php
+            bot/tests/Mvp23AdminClosureContractTest.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
           node --check app/assets/js/admin-shell.js
@@ -93,6 +95,29 @@ jobs:
       - name: Preserve Web Admin shell
         run: php bot/tests/Mvp22AdminShellReworkContractTest.php
 
+      - name: MVP-23 Admin final closure umbrella
+        run: |
+          php bot/tests/Mvp23AdminClosureContractTest.php
+          php bot/tests/SupportTicketServiceTest.php
+          php bot/tests/Mvp22_2CompensationWorkflowTest.php
+          php bot/tests/Mvp22_2CompensationContractTest.php
+          php bot/tests/Mvp22_3ModerationContractTest.php
+          php bot/tests/Mvp22_4AntiFraudWorkflowTest.php
+          php bot/tests/Mvp22_4AntiFraudContractTest.php
+          php bot/tests/Mvp22_6ProductEconomyAnalyticsTest.php
+          php bot/tests/Mvp22_6ProductEconomyAnalyticsContractTest.php
+          php bot/tests/Mvp22_7AdminOperationsTest.php
+          php bot/tests/Mvp22_7AdminOperationsContractTest.php
+          php bot/tests/Mvp18_6NotificationPipelineContractTest.php
+          php bot/tests/NotificationCenterV2StaticContractTest.php
+          php bot/tests/NotificationCenterV2PolicyTest.php
+          php bot/tests/Mvp20_4QuarterlySeasonLifecycleTest.php
+          php bot/tests/Mvp20_4SeasonLifecycleIntegrationContractTest.php
+          php bot/tests/Mvp20_8RatingAdminTest.php
+          php bot/tests/Mvp20_8RatingAdminIntegrationContractTest.php
+          php bot/tests/Mvp21_10TournamentPrizeReviewTest.php
+          php bot/tests/Mvp21_10TournamentPrizeReviewContractTest.php
+
       - name: Exact staging fingerprint coverage
         shell: bash
         run: |
@@ -110,7 +135,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(\.github/workflows/(mvp22-9-incident-recovery|mvp22-admin-rework|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations|mvp22-8-account-data)\.yml|app/admin\.php|app/assets/css/admin-incident\.css|app/assets/js/(admin-shell|admin-incident)\.js|bot/admin-incident\.php|bot/incident/IncidentRecoveryService\.php|bot/accounts/AccountIdentityService\.php|bot/database/migrations/20260926_0068_create_incident_recovery\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/(Mvp22_9IncidentRecoveryTest|Mvp22_9IncidentRecoveryContractTest|Mvp22_9IncidentRecoveryMySqlIntegrationTest)\.php)$'
+          allowed='^(\.github/workflows/(mvp22-9-incident-recovery|mvp22-admin-rework|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations|mvp22-8-account-data)\.yml|app/admin\.php|app/assets/css/admin-incident\.css|app/assets/js/(admin-shell|admin-incident)\.js|bot/admin-incident\.php|bot/incident/IncidentRecoveryService\.php|bot/accounts/AccountIdentityService\.php|bot/database/migrations/20260926_0068_create_incident_recovery\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/(Mvp22_9IncidentRecoveryTest|Mvp22_9IncidentRecoveryContractTest|Mvp22_9IncidentRecoveryMySqlIntegrationTest|Mvp23AdminClosureContractTest)\.php)$'
           bad=0
           while IFS= read -r path; do
             if ! grep -Eq "$allowed" <<<"$path"; then
