@@ -45,7 +45,7 @@
   const restoreNotes = q('[data-incident-restore-notes]');
   const restoreSave = q('[data-incident-save-restore]');
   const audit = q('[data-incident-audit]');
-  const refresh = q('[data-incident-refresh]');
+  const refreshButtons = qa('[data-incident-refresh]');\n  const incidentArchive = q('[data-incident-archive]');
   const rehearsal = q('[data-incident-rehearsal]');
   const rehearsalRun = q('[data-incident-run-rehearsal]');
 
@@ -180,7 +180,7 @@
         row.actor_ref || row.requested_by_ref || row.captured_by_ref || '',
       ].filter(Boolean).join(' · ');
       const note = document.createElement('small');
-      note.textContent = String(row.reason_text || row.reference_text || '');
+      note.textContent = String(row.reason_text || row.reference_text || row.summary_text || '');
       if (!note.textContent) note.hidden = true;
       item.append(title, meta, note);
       node.append(item);
@@ -485,7 +485,7 @@
     }, 'Статус восстановления обновлён.');
   });
 
-  refresh?.addEventListener('click', () => run({action:'snapshot'}, 'Состояние обновлено.'));
+  refreshButtons.forEach(button => button.addEventListener('click', () => run({action:'snapshot'}, 'Состояние обновлено.')));
 
   rehearsalRun?.addEventListener('click', () => {
     if (!window.confirm('Запустить безопасную учебную симуляцию? Она не включает режим безопасности, не отзывает сессии и не меняет production.')) return;
