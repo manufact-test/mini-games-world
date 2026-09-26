@@ -1582,3 +1582,45 @@
 @media(max-width:430px){
   .mgw-admin__system-actions{grid-template-columns:1fr}
 }
+
+
+/* MVP-22.5 corrective · Russian operator copy + restored System spacing */
+[data-admin-system]{padding-bottom:14px}
+[data-admin-system]>.mgw-admin__system-status{margin:14px 14px 12px}
+[data-admin-system]>.mgw-admin__system-kpis{margin:0 14px 12px}
+[data-admin-system]>.mgw-admin__system-panel,
+[data-admin-system]>.mgw-admin__technical-disclosure:not(.mgw-admin__system-panel){
+  margin-left:14px;
+  margin-right:14px;
+}
+[data-admin-system]>.mgw-admin__technical-disclosure:last-child{margin-bottom:0}
+.mgw-admin__system-body{
+  padding:12px 12px 13px;
+}
+.mgw-admin__system-body .mgw-admin__field textarea{
+  min-height:82px;
+  padding:11px 12px;
+  font-family:inherit;
+  resize:vertical;
+}
+.mgw-admin__system-body .mgw-admin__field input{
+  font-family:inherit;
+}
+[data-system-staging-notes]{min-height:96px!important}
+.mgw-admin__system-actions button,
+[data-system-ack-readiness],
+[data-system-accept-staging],
+[data-system-activate-production]{
+  height:auto;
+  padding:10px 12px;
+}
+.mgw-admin__system-help{padding:0 1px}
+@media(max-width:720px){
+  [data-admin-system]>.mgw-admin__system-status{margin:12px 12px 10px}
+  [data-admin-system]>.mgw-admin__system-kpis{margin:0 12px 10px}
+  [data-admin-system]>.mgw-admin__system-panel,
+  [data-admin-system]>.mgw-admin__technical-disclosure:not(.mgw-admin__system-panel){
+    margin-left:12px;
+    margin-right:12px;
+  }
+}

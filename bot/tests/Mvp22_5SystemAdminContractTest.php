@@ -5,6 +5,7 @@ $root = dirname(__DIR__, 2);
 $read = static fn(string $path): string => (string)file_get_contents($root . '/' . $path);
 
 $page = $read('app/admin.php');
+$css = $read('app/assets/css/admin-shell.css');
 $js = $read('app/assets/js/admin-system.js');
 $endpoint = $read('bot/admin-system.php');
 $system = $read('bot/system/SystemAdminService.php');
@@ -21,7 +22,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 
 $assert(
     str_contains($page, 'data-system-api="../bot/admin-system.php"')
-        && str_contains($page, 'admin-system.js?v=1&mvp22_5=system-status-v1')
+        && str_contains($page, 'admin-system.js?v=2&mvp22_5=system-status-ru-ux-v2')
         && str_contains($page, 'data-admin-system'),
     'MVP-22.5 must extend the existing secure Web Admin System section.'
 );
@@ -99,7 +100,7 @@ foreach ([
 
 $assert(
     str_contains($system, "$environment !== 'production'")
-        && str_contains($system, 'Production activation нельзя выполнить из staging/local.')
+        && str_contains($system, 'Запуск на боевом сервере нельзя выполнить из тестовой или локальной среды.')
         && str_contains($system, 'competition_state=:state')
         && str_contains($system, 'activated_at_utc=:activated_at'),
     'Production PRESEASON -> ACTIVE transition must be explicit and environment-gated.'
@@ -115,11 +116,31 @@ $assert(
 );
 
 $assert(
-    str_contains($page, 'PRESEASON → ACTIVE')
-        && str_contains($page, 'PRESEASON не конвертируется задним числом')
+    str_contains($page, 'Запуск на боевом сервере')
+        && str_contains($page, 'Результаты предсезона задним числом официальными не становятся.')
         && str_contains($page, 'data-system-activation-confirm')
-        && str_contains($js, "window.confirm('Запустить PRESEASON → ACTIVE в production"),
-    'Production activation UI must explain consequences and require explicit confirmation.'
+        && str_contains($js, "window.confirm('Запустить официальный рейтинговый сезон на боевом сервере"),
+    'Production activation UI must explain consequences in Russian and require explicit confirmation.'
+);
+
+$assert(
+    !str_contains($page, '</script>\\n  <script')
+        && !str_contains($page, '>Staging rehearsal<')
+        && !str_contains($page, '>Production activation<')
+        && !str_contains($page, 'PRESEASON → ACTIVE')
+        && !str_contains($js, 'Runtime: предупреждений')
+        && !str_contains($js, 'staging acceptance не зафиксирован')
+        && !str_contains($js, 'Checklist не завершён'),
+    'Visible System Admin copy must stay Russian and the page must not render a literal newline artifact.'
+);
+
+$assert(
+    str_contains($css, '[data-admin-system]>.mgw-admin__system-status{margin:14px 14px 12px}')
+        && str_contains($css, '.mgw-admin__system-body{')
+        && str_contains($css, 'padding:12px 12px 13px;')
+        && str_contains($css, '.mgw-admin__system-body .mgw-admin__field textarea{')
+        && str_contains($css, 'min-height:82px;'),
+    'System Admin must retain card gutters and compact operator textareas.'
 );
 
 $assert(

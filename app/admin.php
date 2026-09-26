@@ -14,9 +14,10 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Панель администратора</title>
-  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=13&mvp22_5=system-status-v1&replay=17-6&mvp22_4=admin-ux-scale-v1&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
+  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=14&mvp22_5=system-status-ru-ux-v2&replay=17-6&mvp22_4=admin-ux-scale-v1&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="./assets/js/admin-shell.js?v=8&mvp22_4=admin-ux-scale-v1&test-coins=staging" defer></script>\n  <script src="./assets/js/admin-system.js?v=1&mvp22_5=system-status-v1" defer></script>
+  <script src="./assets/js/admin-shell.js?v=8&mvp22_4=admin-ux-scale-v1&test-coins=staging" defer></script>
+  <script src="./assets/js/admin-system.js?v=2&mvp22_5=system-status-ru-ux-v2" defer></script>
   <script src="./assets/js/admin-antifraud.js?v=1&mvp22_4=case-nav-v4" defer></script>
   <script src="./assets/js/admin-compensation.js?v=5&mvp22_2=admin-ux-scale-v1" defer></script>
   <script src="./assets/js/admin-reports.js?v=3&mvp18=reports&mvp22_3=admin-ux-scale-v1" defer></script>
@@ -103,7 +104,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
       <article class="mgw-admin__card mgw-admin__card--wide" data-admin-section="system" data-admin-system>
         <div class="mgw-admin__card-head">
           <h2>Система</h2>
-          <span>Статус и безопасные переключатели</span>
+          <span>Состояние и безопасные переключатели</span>
         </div>
 
         <div class="mgw-admin__system-status" data-system-status>Загружаю состояние системы…</div>
@@ -118,19 +119,19 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
         <details class="mgw-admin__technical-disclosure mgw-admin__system-panel" open>
           <summary>Аварийные переключатели</summary>
           <div class="mgw-admin__system-body">
-            <p class="mgw-admin__system-help">Изменения сохраняются в существующий private runtime.php. Новая система флагов не создаётся.</p>
+            <p class="mgw-admin__system-help">Здесь можно быстро ограничить отдельные функции или игры без изменения их кода. Все изменения записываются в существующую конфигурацию системы.</p>
 
             <label class="mgw-admin__switch-row">
               <input type="checkbox" data-system-maintenance>
-              <span><strong>Технические работы</strong><small>Ограничивает runtime согласно текущему FeatureFlagService.</small></span>
+              <span><strong>Технические работы</strong><small>Временно ограничивает работу приложения и показывает пользователям заданное сообщение.</small></span>
             </label>
             <label class="mgw-admin__field">
-              <span>Сообщение режима технических работ</span>
-              <textarea data-system-maintenance-message rows="2" maxlength="500" placeholder="Идут технические работы…"></textarea>
+              <span>Сообщение пользователям</span>
+              <textarea data-system-maintenance-message rows="2" maxlength="500" placeholder="Например: идут технические работы, скоро вернёмся."></textarea>
             </label>
             <label class="mgw-admin__switch-row">
               <input type="checkbox" data-system-financial-read-only>
-              <span><strong>Финансовый режим только для чтения</strong><small>Блокирует новые финансовые операции, не переписывая ledger.</small></span>
+              <span><strong>Запретить новые финансовые операции</strong><small>Останавливает новые списания и начисления через финансовые операции. Уже записанная история баланса не меняется.</small></span>
             </label>
 
             <h3>Функции</h3>
@@ -157,7 +158,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
 
             <label class="mgw-admin__field">
               <span>Причина изменения</span>
-              <input data-system-flag-reason type="text" maxlength="800" autocomplete="off" placeholder="Что и зачем меняем">
+              <input data-system-flag-reason type="text" maxlength="800" autocomplete="off" placeholder="Коротко укажите, что меняем и зачем">
             </label>
             <div class="mgw-admin__system-actions">
               <button type="button" data-system-save-flags>Сохранить переключатели</button>
@@ -171,73 +172,74 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           <div class="mgw-admin__system-body">
             <div class="mgw-admin__system-readiness" data-system-readiness-alert hidden>
               <strong>Достигнут порог готовности.</strong>
-              <span>Это не запускает официальный сезон автоматически.</span>
+              <span>Это только сигнал администратору. Официальный сезон сам не запускается.</span>
               <label class="mgw-admin__field">
                 <span>Причина подтверждения</span>
-                <input data-system-readiness-reason type="text" maxlength="800" autocomplete="off" placeholder="Порог проверен оператором">
+                <input data-system-readiness-reason type="text" maxlength="800" autocomplete="off" placeholder="Например: порог проверен, продолжаем подготовку">
               </label>
               <button type="button" data-system-ack-readiness>Подтвердить уведомление</button>
             </div>
 
             <div class="mgw-admin__system-rehearsal" data-system-rehearsal>
-              <h3>Staging rehearsal</h3>
-              <p>Доступно только в staging/local. Переводит именно тестовую среду в ACTIVE для ручной проверки и позволяет вернуть её в PRESEASON без удаления истории.</p>
+              <h3>Репетиция запуска на тестовой среде</h3>
+              <p>Временно переводит только тестовую среду из «Предсезона» в состояние «Активно», чтобы вручную проверить официальный сезон. После проверки тестовую среду можно вернуть обратно в «Предсезон»; журнал действий при этом сохраняется.</p>
               <label class="mgw-admin__field">
                 <span>Причина</span>
-                <input data-system-rehearsal-reason type="text" maxlength="800" autocomplete="off" placeholder="Проверка официального сезона на staging">
+                <input data-system-rehearsal-reason type="text" maxlength="800" autocomplete="off" placeholder="Например: ручная проверка первого официального сезона">
               </label>
               <div class="mgw-admin__system-actions">
-                <button type="button" data-system-start-rehearsal>Начать staging rehearsal</button>
-                <button type="button" data-system-stop-rehearsal>Вернуть staging в PRESEASON</button>
+                <button type="button" data-system-start-rehearsal>Начать репетицию</button>
+                <button type="button" data-system-stop-rehearsal>Вернуть тестовую среду в «Предсезон»</button>
               </div>
             </div>
 
-            <h3>Обязательный staging checklist</h3>
+            <h3>Проверка перед первым официальным запуском</h3>
+            <p class="mgw-admin__system-help">Эти пункты подтверждаются только после реальной ручной проверки соответствующего сценария. Они не включают сезон сами по себе.</p>
             <div class="mgw-admin__system-checklist" data-system-checklist>
-              <label><input type="checkbox" data-system-check="official_season_rehearsal"><span>Официальный сезон активирован/отрепетирован на staging.</span></label>
-              <label><input type="checkbox" data-system-check="arena_presentation"><span>Арена и официальный рейтинг проверены.</span></label>
-              <label><input type="checkbox" data-system-check="profile_presentation"><span>Profile: текущий и предыдущий сезон проверены.</span></label>
-              <label><input type="checkbox" data-system-check="seasonal_badges"><span>Gold / silver / bronze seasonal badges проверены.</span></label>
-              <label><input type="checkbox" data-system-check="top3_frames"><span>Top-3 frame и срок следующего сезона проверены.</span></label>
-              <label><input type="checkbox" data-system-check="yearly_medal"><span>Q1–Q4, пропуски и сборка годовой медали проверены.</span></label>
-              <label><input type="checkbox" data-system-check="archive_hof"><span>Archive / top-100 / Hall of Fame top-3 проверены.</span></label>
-              <label><input type="checkbox" data-system-check="ready_close"><span>Закрытие сезона с READY-наградами проверено.</span></label>
-              <label><input type="checkbox" data-system-check="missing_assets_recovery"><span>ASSETS_REQUIRED и идемпотентное восстановление проверены.</span></label>
-              <label><input type="checkbox" data-system-check="review_recalculation"><span>Exclusion → recalculation → awards/archive проверены.</span></label>
-              <label><input type="checkbox" data-system-check="identity_exclusions"><span>Bot/development identities не попадают в official results.</span></label>
-              <label><input type="checkbox" data-system-check="idempotency_retries"><span>Повторы не дублируют awards/medals/close/announcement.</span></label>
-              <label><input type="checkbox" data-system-check="launch_notification_localization"><span>Launch notification и локализация проверены.</span></label>
-              <label><input type="checkbox" data-system-check="staging_e2e_green"><span>Exact staging runtime/E2E зелёный после rehearsal.</span></label>
-              <label><input type="checkbox" data-system-check="manual_acceptance"><span>Ручной staging acceptance подтверждён.</span></label>
+              <label><input type="checkbox" data-system-check="official_season_rehearsal"><span>Официальный сезон запущен и проверен на тестовой среде.</span></label>
+              <label><input type="checkbox" data-system-check="arena_presentation"><span>Арена и официальный рейтинг отображаются правильно.</span></label>
+              <label><input type="checkbox" data-system-check="profile_presentation"><span>В профиле правильно показаны текущий и предыдущий сезоны.</span></label>
+              <label><input type="checkbox" data-system-check="seasonal_badges"><span>Сезонные значки за 1-е, 2-е и 3-е места проверены.</span></label>
+              <label><input type="checkbox" data-system-check="top3_frames"><span>Рамки призёров и срок их действия в следующем сезоне проверены.</span></label>
+              <label><input type="checkbox" data-system-check="yearly_medal"><span>Четыре части годовой медали, пропуски и итоговая сборка проверены.</span></label>
+              <label><input type="checkbox" data-system-check="archive_hof"><span>Архив сезонов, топ-100 и Зал славы с тройкой лидеров проверены.</span></label>
+              <label><input type="checkbox" data-system-check="ready_close"><span>Закрытие сезона с подготовленными наградами проверено.</span></label>
+              <label><input type="checkbox" data-system-check="missing_assets_recovery"><span>Сценарий отсутствующих материалов и повторное восстановление проверены.</span></label>
+              <label><input type="checkbox" data-system-check="review_recalculation"><span>Исключение результата, пересчёт, награды и архив после пересчёта проверены.</span></label>
+              <label><input type="checkbox" data-system-check="identity_exclusions"><span>Боты и тестовые аккаунты не попадают в официальные результаты.</span></label>
+              <label><input type="checkbox" data-system-check="idempotency_retries"><span>Повторные запросы не создают дубликаты наград, медалей, закрытия сезона и объявления.</span></label>
+              <label><input type="checkbox" data-system-check="launch_notification_localization"><span>Текст объявления о запуске и его локализация проверены.</span></label>
+              <label><input type="checkbox" data-system-check="staging_e2e_green"><span>Полная автоматическая проверка тестовой среды прошла успешно после репетиции.</span></label>
+              <label><input type="checkbox" data-system-check="manual_acceptance"><span>Ручная приёмка тестовой среды подтверждена.</span></label>
             </div>
             <label class="mgw-admin__field">
-              <span>Принятый staging SHA</span>
-              <input data-system-staging-sha type="text" maxlength="40" autocomplete="off" placeholder="40 символов SHA">
+              <span>Версия тестовой среды (SHA)</span>
+              <input data-system-staging-sha type="text" maxlength="40" autocomplete="off" placeholder="Полный идентификатор из 40 символов">
             </label>
             <label class="mgw-admin__field">
-              <span>Заметки acceptance</span>
-              <textarea data-system-staging-notes rows="3" maxlength="2000" placeholder="Что проверено вручную"></textarea>
+              <span>Заметки по приёмке</span>
+              <textarea data-system-staging-notes rows="3" maxlength="2000" placeholder="Коротко запишите, что именно проверено вручную"></textarea>
             </label>
-            <button type="button" data-system-accept-staging>Зафиксировать staging acceptance</button>
+            <button type="button" data-system-accept-staging>Зафиксировать ручную приёмку</button>
 
             <div class="mgw-admin__system-activation" data-system-production-activation>
-              <h3>Production activation</h3>
-              <p>Изменение PRESEASON → ACTIVE запускает официальную сезонную историю с этого момента, включает будущие сезонные награды и части годовой медали. PRESEASON не конвертируется задним числом. После успеха один раз отправляется глобальное уведомление.</p>
+              <h3>Запуск на боевом сервере</h3>
+              <p>Перевод из «Предсезона» в состояние «Активно» начинает официальную сезонную историю с момента запуска. Результаты предсезона задним числом официальными не становятся. После успешного запуска всем пользователям один раз отправляется объявление.</p>
               <label class="mgw-admin__field">
                 <span>Причина запуска</span>
-                <input data-system-activation-reason type="text" maxlength="800" autocomplete="off" placeholder="Почему запускаем официальный сезон">
+                <input data-system-activation-reason type="text" maxlength="800" autocomplete="off" placeholder="Почему запускаем официальный рейтинговый сезон">
               </label>
               <label class="mgw-admin__switch-row mgw-admin__switch-row--danger">
                 <input type="checkbox" data-system-activation-confirm>
-                <span><strong>Подтверждаю последствия запуска</strong><small>Действие аудируется и не откатывает PRESEASON в official history.</small></span>
+                <span><strong>Подтверждаю последствия запуска</strong><small>Действие записывается в аудит. Матчи предсезона не превращаются задним числом в официальную историю.</small></span>
               </label>
-              <button type="button" data-system-activate-production disabled>Запустить официальные рейтинговые сезоны</button>
+              <button type="button" data-system-activate-production disabled>Запустить официальный рейтинговый сезон</button>
             </div>
           </div>
         </details>
 
         <details class="mgw-admin__technical-disclosure mgw-admin__system-panel">
-          <summary>Аудит системных действий</summary>
+          <summary>Журнал системных действий</summary>
           <div class="mgw-admin__history" data-system-audit></div>
         </details>
 

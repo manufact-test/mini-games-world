@@ -82,6 +82,17 @@
     return Number.isNaN(date.getTime()) ? raw : date.toLocaleString('ru-RU');
   };
 
+  const auditLabel = code => ({
+    readiness_threshold_reached:'Достигнут порог готовности',
+    readiness_acknowledged:'Порог готовности подтверждён',
+    feature_flags_updated:'Изменены системные переключатели',
+    staging_rehearsal_started:'Начата репетиция официального сезона',
+    staging_rehearsal_stopped:'Тестовая среда возвращена в «Предсезон»',
+    staging_acceptance_recorded:'Зафиксирована ручная приёмка тестовой среды',
+    official_competition_activated:'Запущен официальный рейтинговый сезон',
+    activation_announcement_sent:'Отправлено объявление о запуске сезона',
+  })[String(code || '')] || 'Системное действие';
+
   const renderAudit = rows => {
     audit.replaceChildren();
     const items = Array.isArray(rows) ? rows : [];
@@ -99,7 +110,7 @@
       copy.className = 'mgw-admin__history-copy';
       const title = document.createElement('strong');
       const details = document.createElement('span');
-      title.textContent = String(row.action_code || 'Системное действие').replaceAll('_', ' ');
+      title.textContent = auditLabel(row.action_code);
       details.textContent = formatDate(row.created_at_utc) + ' · ' + (row.actor_ref || '—')
         + (row.reason_text ? ' · ' + row.reason_text : '');
       copy.append(title, details);
@@ -159,11 +170,11 @@
 
     const runtimeAlerts = Array.isArray(data.runtime?.alerts) ? data.runtime.alerts : [];
     const runtimeLabel = runtimeAlerts.length
-      ? 'Runtime: предупреждений ' + runtimeAlerts.length
-      : 'Runtime: ограничений не обнаружено';
+      ? 'Система: предупреждений ' + runtimeAlerts.length
+      : 'Система: ограничений не обнаружено';
     const acceptanceLabel = staging.accepted
-      ? ' · staging accepted ' + String(staging.sha || '').slice(0, 8)
-      : ' · staging acceptance не зафиксирован';
+      ? ' · тестовая среда принята, версия ' + String(staging.sha || '').slice(0, 8)
+      : ' · ручная приёмка тестовой среды не зафиксирована';
     setStatus(runtimeLabel + acceptanceLabel, runtimeAlerts.length ? 'warn' : 'ok');
 
     window.dispatchEvent(new CustomEvent('mgw:admin-system-summary', {
@@ -228,14 +239,14 @@
     if (busy) return;
     const reason = flagReason.value.trim();
     if (reason.length < 3) {
-      setStatus('Укажите причину изменения feature flags.', 'error');
+      setStatus('Укажите причину изменения системных переключателей.', 'error');
       flagReason.focus();
       return;
     }
-    if (!window.confirm('Сохранить эти runtime-переключатели? Изменение начнёт действовать на новых запросах.')) return;
+    if (!window.confirm('Сохранить эти системные переключатели? Изменения начнут действовать для новых запросов.')) return;
 
     setBusy(true);
-    setStatus('Сохраняю runtime-переключатели…');
+    setStatus('Сохраняю системные переключатели…');
     try {
       const data = await post({action:'update_flags', flags:collectFlags(), reason});
       const changed = data.operation?.changed === true;
@@ -254,7 +265,7 @@
     if (busy) return;
     const reason = readinessReason.value.trim();
     if (reason.length < 3) {
-      setStatus('Укажите причину подтверждения readiness alert.', 'error');
+      setStatus('Укажите причину подтверждения уведомления о готовности.', 'error');
       readinessReason.focus();
       return;
     }
@@ -263,9 +274,9 @@
       const data = await post({action:'acknowledge_readiness', reason});
       readinessReason.value = '';
       render(data);
-      setStatus('Readiness alert подтверждён. Официальный сезон не запускался.', 'ok');
+      setStatus('Уведомление о готовности подтверждено. Официальный сезон не запускался.', 'ok');
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Не удалось подтвердить readiness alert.', 'error');
+      setStatus(error instanceof Error ? error.message : 'Не удалось подтвердить уведомление о готовности.', 'error');
     } finally {
       setBusy(false);
     }
@@ -275,25 +286,25 @@
     if (busy) return;
     const reason = rehearsalReason.value.trim();
     if (reason.length < 3) {
-      setStatus('Укажите причину staging rehearsal.', 'error');
+      setStatus('Укажите причину репетиции на тестовой среде.', 'error');
       rehearsalReason.focus();
       return;
     }
     const start = action === 'start_staging_rehearsal';
     const copy = start
-      ? 'Перевести только staging в ACTIVE для ручной репетиции официального сезона?'
-      : 'Вернуть staging control в PRESEASON? История rehearsal не удаляется.';
+      ? 'Начать репетицию? Только тестовая среда будет временно переведена из «Предсезона» в состояние «Активно».'
+      : 'Завершить репетицию и вернуть тестовую среду в «Предсезон»? Журнал действий сохранится.';
     if (!window.confirm(copy)) return;
 
     setBusy(true);
-    setStatus(start ? 'Запускаю staging rehearsal…' : 'Возвращаю staging в PRESEASON…');
+    setStatus(start ? 'Запускаю репетицию на тестовой среде…' : 'Возвращаю тестовую среду в «Предсезон»…');
     try {
       const data = await post({action, reason});
       rehearsalReason.value = '';
       render(data);
-      setStatus(start ? 'Staging rehearsal активен.' : 'Staging возвращён в PRESEASON. История сохранена.', 'ok');
+      setStatus(start ? 'Репетиция на тестовой среде активна.' : 'Тестовая среда возвращена в «Предсезон». Журнал действий сохранён.', 'ok');
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Не удалось изменить staging rehearsal.', 'error');
+      setStatus(error instanceof Error ? error.message : 'Не удалось изменить состояние репетиции.', 'error');
     } finally {
       setBusy(false);
     }
@@ -303,7 +314,7 @@
     if (busy) return;
     const sha = stagingSha.value.trim().toLowerCase();
     if (!/^[a-f0-9]{40}$/.test(sha)) {
-      setStatus('Укажите точный 40-символьный staging SHA.', 'error');
+      setStatus('Укажите полный 40-символьный SHA тестовой среды.', 'error');
       stagingSha.focus();
       return;
     }
@@ -312,11 +323,11 @@
     );
     const missing = checklistInputs.filter(input => !input.checked);
     if (missing.length) {
-      setStatus('Checklist не завершён: осталось ' + missing.length + '.', 'error');
+      setStatus('Проверка не завершена: осталось пунктов — ' + missing.length + '.', 'error');
       missing[0].focus();
       return;
     }
-    if (!window.confirm('Зафиксировать ручной staging acceptance для ' + sha.slice(0, 12) + '?')) return;
+    if (!window.confirm('Зафиксировать ручную приёмку тестовой среды для версии ' + sha.slice(0, 12) + '?')) return;
 
     setBusy(true);
     try {
@@ -327,9 +338,9 @@
         notes:stagingNotes.value.trim()
       });
       render(data);
-      setStatus('Staging acceptance зафиксирован долговечно.', 'ok');
+      setStatus('Ручная приёмка тестовой среды зафиксирована.', 'ok');
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Не удалось сохранить staging acceptance.', 'error');
+      setStatus(error instanceof Error ? error.message : 'Не удалось сохранить ручную приёмку тестовой среды.', 'error');
     } finally {
       setBusy(false);
     }
@@ -343,7 +354,7 @@
       activationReason.focus();
       return;
     }
-    if (!window.confirm('Запустить PRESEASON → ACTIVE в production и отправить одно глобальное уведомление?')) return;
+    if (!window.confirm('Запустить официальный рейтинговый сезон на боевом сервере и один раз отправить всем пользователям объявление?')) return;
 
     setBusy(true);
     setStatus('Запускаю официальный рейтинговый сезон…');
@@ -352,7 +363,7 @@
       activationConfirm.checked = false;
       activationReason.value = '';
       render(data);
-      setStatus('Официальные рейтинговые сезоны ACTIVE. Глобальное уведомление обработано каноническим notification pipeline.', 'ok');
+      setStatus('Официальный рейтинговый сезон запущен. Объявление пользователям отправлено через общую систему уведомлений.', 'ok');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Не удалось запустить официальный сезон.', 'error');
     } finally {
@@ -369,5 +380,5 @@
   activationConfirm.addEventListener('change', refreshActionState);
   activateProduction.addEventListener('click', activateOfficial);
 
-  load('Загружаю health, feature flags и readiness…');
+  load('Загружаю состояние системы и переключатели…');
 })();
