@@ -27,6 +27,16 @@ return [
     'allow_browser_dev_user' => true,
     'force_browser_dev_user' => false,
 
+    /* MVP-22.8 account-data lifecycle. Real secrets and private paths belong
+     * only in the environment's private config, never in source control. */
+    'account_data_website_hook_secret' => 'PASTE_LONG_RANDOM_WEBSITE_HOOK_SECRET_HERE',
+    'account_data_export_dir' => '',
+    'account_data_media_root' => '',
+    'account_data_export_rate_limit_sec' => 86400,
+    'account_data_export_retention_sec' => 604800,
+    // Defaults to Telegram initData max-age + clock-skew when omitted.
+    'account_deleted_identity_block_sec' => 86700,
+
     /* Runtime controls are safe by default and preserve the current product.
      * Active games remain playable even when maintenance or a game flag is off. */
     'feature_flags' => [
