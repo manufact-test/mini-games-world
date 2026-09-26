@@ -40,6 +40,16 @@ $migration->up($db);
 $db->execute('CREATE TABLE mgw_users (mgw_id TEXT PRIMARY KEY, status TEXT NOT NULL DEFAULT "active")');
 $db->execute('CREATE TABLE mgw_identities (mgw_id TEXT NOT NULL, provider TEXT NOT NULL)');
 $db->execute(<<<'SQL'
+CREATE TABLE mgw_account_ownership (
+    account_ref TEXT NOT NULL PRIMARY KEY,
+    mgw_id TEXT NOT NULL,
+    legacy_user_id TEXT NOT NULL,
+    ownership_status TEXT NOT NULL,
+    source_type TEXT NOT NULL,
+    source_ref TEXT NOT NULL
+)
+SQL);
+$db->execute(<<<'SQL'
 CREATE TABLE mgw_rating_control (
     control_key TEXT PRIMARY KEY,
     competition_state TEXT NOT NULL,
@@ -65,15 +75,41 @@ for ($i = 1; $i <= 499; $i++) {
 $db->execute('INSERT INTO mgw_users (mgw_id) VALUES ("MGWDEV001")');
 $db->execute('INSERT INTO mgw_identities (mgw_id, provider) VALUES ("MGWDEV001", "development")');
 
+$db->execute('INSERT INTO mgw_users (mgw_id, status) VALUES ("MGWFIXRET", "staging_fixture_retired")');
+
+$db->execute('INSERT INTO mgw_users (mgw_id) VALUES ("MGWFIXV2")');
+$db->execute(
+    'INSERT INTO mgw_account_ownership (
+        account_ref, mgw_id, legacy_user_id, ownership_status, source_type, source_ref
+     ) VALUES (
+        "legacy:stg_tour_v2_abcdef123456", "MGWFIXV2", "stg_tour_v2_abcdef123456",
+        "active", "runtime_identity", "development:stg_tour_v2_abcdef123456"
+     )'
+);
+
+$db->execute('INSERT INTO mgw_users (mgw_id) VALUES ("MGWFIXOLD")');
+$db->execute(
+    'INSERT INTO mgw_account_ownership (
+        account_ref, mgw_id, legacy_user_id, ownership_status, source_type, source_ref
+     ) VALUES (
+        "legacy:stg_tour_abcdef123456", "MGWFIXOLD", "stg_tour_abcdef123456",
+        "active", "staging_fixture_repair", "manual-acceptance:test"
+     )'
+);
+
 $service = new SystemAdminService($db);
 $first = $service->snapshot('production');
-$assertSame(499, $first['users']['canonical_count'], 'Development identity must not count toward readiness');
+$assertSame(
+    499,
+    $first['users']['canonical_count'],
+    'Development identities, retired staging fixtures and active tournament fixtures must not count toward readiness'
+);
 $assertSame(false, $first['readiness']['reached'], '499 real accounts must remain below readiness threshold');
 $assertSame(false, $first['activation']['production_action_available'], 'Production activation must remain gated below threshold');
 
 $db->execute('INSERT INTO mgw_users (mgw_id) VALUES ("MGW000500")');
 $threshold = $service->snapshot('production');
-$assertSame(500, $threshold['users']['canonical_count'], 'Canonical account count must read directly from mgw_users');
+$assertSame(500, $threshold['users']['canonical_count'], 'Canonical readiness count must include the next real account without synthetic fixtures');
 $assertSame(true, $threshold['readiness']['reached'], '500 users must create durable readiness state');
 $assertSame(true, $threshold['readiness']['alert_visible'], 'Readiness alert must remain visible until acknowledged or ACTIVE');
 
