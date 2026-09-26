@@ -906,9 +906,16 @@ final class AccountDataLifecycleService
         if ($mediaRoot === '') {
             return ['images/README.txt'=>"В профиле есть ссылка на изображение, но приватный media-root не настроен для экспорта. Метаданные сохранены в data.json.\n"];
         }
-        $candidate = rtrim($mediaRoot, '/') . '/' . ltrim($storageKey, '/');
-        if (!is_file($candidate)) {
-            return ['images/README.txt'=>"Файл пользовательского изображения не найден; его метаданные сохранены в data.json.\n"];
+        $rootReal = realpath($mediaRoot);
+        if (!is_string($rootReal) || !is_dir($rootReal)) {
+            return ['images/README.txt'=>"Приватный media-root недоступен; метаданные изображения сохранены в data.json.\n"];
+        }
+        $candidate = realpath($rootReal . '/' . ltrim($storageKey, '/'));
+        $rootPrefix = rtrim($rootReal, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        if (!is_string($candidate)
+            || !str_starts_with($candidate, $rootPrefix)
+            || !is_file($candidate)) {
+            return ['images/README.txt'=>"Файл пользовательского изображения не найден или недоступен; его метаданные сохранены в data.json.\n"];
         }
         $content = file_get_contents($candidate);
         if (!is_string($content)) {
