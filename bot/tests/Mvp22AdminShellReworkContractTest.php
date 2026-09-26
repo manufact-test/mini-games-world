@@ -264,6 +264,13 @@ $assert(
 );
 
 $assert(
+    !str_contains($adminService, '"🎁 Магазин')
+        && !str_contains($adminService, 'Заявки ожидают')
+        && !str_contains($adminService, '$pendingOrders'),
+    'Admin overview must not expose the legacy pending shop-order counter after commerce moved to direct cosmetic purchases.'
+);
+
+$assert(
     str_contains($page, 'data-admin-section="support"')
         && str_contains($page, 'data-admin-section="tournaments"')
         && str_contains($page, 'data-admin-section="economy"')
