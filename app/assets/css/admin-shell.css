@@ -1831,3 +1831,277 @@
   .mgw-admin__analytics-list>div{display:grid;gap:3px}
   .mgw-admin__analytics-list span{max-width:none;text-align:left}
 }
+
+
+/* MVP-22.7 · tasks, Future Plans and release log */
+[data-admin-operations]{padding-bottom:14px}
+.mgw-admin__operations-status{
+  margin:14px 14px 12px;
+  padding:10px 12px;
+  border:1px solid #343640;
+  border-radius:12px;
+  background:#101116;
+  color:#c8cad2;
+  font-size:11px;
+  line-height:1.5;
+}
+.mgw-admin__operations-status[data-state="ok"]{border-color:#28563f;color:#a9e3c2}
+.mgw-admin__operations-status[data-state="error"]{border-color:#713d45;color:#f2a9b4}
+.mgw-admin__operations-kpis{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin:0 14px 12px;
+}
+.mgw-admin__operations-kpis>div{
+  min-width:0;
+  display:grid;
+  gap:4px;
+  padding:10px 11px;
+  border:1px solid #2c2e36;
+  border-radius:12px;
+  background:#0d0e12;
+}
+.mgw-admin__operations-kpis span{color:#888b96;font-size:9px}
+.mgw-admin__operations-kpis strong{color:#f1f1f4;font-size:16px;line-height:1.2}
+.mgw-admin__operations-panel{margin:9px 14px 0}
+.mgw-admin__operations-body{
+  display:grid;
+  gap:11px;
+  padding:12px;
+}
+.mgw-admin__operations-help{
+  margin:0;
+  color:#858893;
+  font-size:9px;
+  line-height:1.55;
+}
+.mgw-admin__operations-help strong{color:#d8d9df}
+.mgw-admin__operations-create-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.mgw-admin__operations-create-grid .mgw-admin__field--wide{grid-column:1/-1}
+.mgw-admin__operations-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.mgw-admin__operations-actions button,
+.mgw-admin__operations-editor>button{
+  min-height:38px;
+  padding:9px 12px;
+  border:1px solid #6557d9;
+  border-radius:10px;
+  background:#282342;
+  color:#fff;
+  font:800 10px/1.2 inherit;
+  cursor:pointer;
+}
+.mgw-admin__operations-actions button:disabled,
+.mgw-admin__operations-editor>button:disabled{opacity:.45;cursor:not-allowed}
+.mgw-admin__operations-list{
+  display:grid;
+  gap:8px;
+}
+.mgw-admin__operations-empty{
+  margin:0;
+  padding:11px;
+  border:1px dashed #343640;
+  border-radius:10px;
+  color:#80838e;
+  font-size:9px;
+  line-height:1.5;
+}
+.mgw-admin__operations-item{
+  display:grid;
+  gap:9px;
+  padding:10px;
+  border:1px solid #2a2c34;
+  border-radius:11px;
+  background:#0f1015;
+}
+.mgw-admin__operations-item[data-overdue="true"]{
+  border-color:#725f2b;
+  background:#17150f;
+}
+.mgw-admin__operations-item-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+}
+.mgw-admin__operations-item-head>strong{
+  min-width:0;
+  color:#ececf0;
+  font-size:11px;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}
+.mgw-admin__operations-item-head>div{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:4px;
+}
+.mgw-admin__operations-badge{
+  display:inline-flex;
+  align-items:center;
+  min-height:21px;
+  padding:3px 7px;
+  border:1px solid #343641;
+  border-radius:999px;
+  background:#171820;
+  color:#9da0aa;
+  font-size:8px;
+  line-height:1.2;
+}
+.mgw-admin__operations-badge[data-state="in_progress"],
+.mgw-admin__operations-badge[data-state="planned"]{border-color:#4b4380;color:#bcb4ff}
+.mgw-admin__operations-badge[data-state="blocked"]{border-color:#725f2b;color:#ead58b}
+.mgw-admin__operations-badge[data-state="done"]{border-color:#28563f;color:#a9e3c2}
+.mgw-admin__operations-badge[data-state="skipped"],
+.mgw-admin__operations-badge[data-state="cancelled"]{border-color:#4b4d56;color:#858893}
+.mgw-admin__operations-item-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px 10px;
+  color:#777a85;
+  font-size:8px;
+  line-height:1.4;
+}
+.mgw-admin__operations-result{
+  margin:0;
+  padding:8px 9px;
+  border-radius:9px;
+  background:#13151b;
+  color:#a9abb4;
+  font-size:9px;
+  line-height:1.5;
+}
+.mgw-admin__operations-editor{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.mgw-admin__operations-editor>.mgw-admin__field:nth-child(n+3){grid-column:1/-1}
+.mgw-admin__operations-editor>button{justify-self:start}
+.mgw-admin__operations-link{
+  align-self:center;
+  color:#a99fff;
+  font-size:9px;
+  line-height:1.4;
+  text-decoration:underline;
+}
+.mgw-admin__season-preparation-status{
+  display:grid;
+  gap:4px;
+  padding:10px;
+  border:1px solid #343640;
+  border-radius:10px;
+  background:#111219;
+}
+.mgw-admin__season-preparation-status strong{color:#e6e7eb;font-size:11px}
+.mgw-admin__season-preparation-status span{color:#8b8e98;font-size:9px;line-height:1.45}
+.mgw-admin__season-preparation-status[data-state="ready"]{border-color:#28563f;background:#0f1713}
+.mgw-admin__season-preparation-status[data-state="pending"]{border-color:#725f2b;background:#18160f}
+.mgw-admin__season-preparation-meta{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+}
+.mgw-admin__season-preparation-meta>div{
+  min-width:0;
+  display:grid;
+  gap:3px;
+  padding:8px 9px;
+  border:1px solid #282a32;
+  border-radius:9px;
+  background:#101116;
+}
+.mgw-admin__season-preparation-meta span{color:#787b86;font-size:8px}
+.mgw-admin__season-preparation-meta strong{color:#dfe0e5;font-size:9px;line-height:1.35;overflow-wrap:anywhere}
+.mgw-admin__season-reminders{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;
+}
+.mgw-admin__season-reminders>div{
+  display:grid;
+  gap:3px;
+  padding:8px 9px;
+  border:1px solid #292b33;
+  border-radius:9px;
+  background:#101116;
+}
+.mgw-admin__season-reminders strong{color:#e3e4e8;font-size:10px}
+.mgw-admin__season-reminders span{color:#7d808a;font-size:8px}
+.mgw-admin__season-reminders span[data-state="due"]{color:#e8ce77}
+.mgw-admin__season-reminders span[data-state="ready"]{color:#9dd9b7}
+.mgw-admin__season-checklist{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+}
+.mgw-admin__season-checklist label{
+  display:grid;
+  gap:5px;
+  padding:9px;
+  border:1px solid #2a2c34;
+  border-radius:10px;
+  background:#0f1015;
+}
+.mgw-admin__season-checklist label>span{color:#a1a3ad;font-size:9px;line-height:1.4}
+.mgw-admin__season-checklist select{
+  min-height:34px;
+  border:1px solid #373944;
+  border-radius:8px;
+  background:#15161d;
+  color:#e6e7eb;
+  font:600 9px/1.2 inherit;
+}
+.mgw-admin__release-current{
+  display:grid;
+  gap:3px;
+  padding:10px;
+  border:1px solid #333540;
+  border-radius:10px;
+  background:#111219;
+}
+.mgw-admin__release-current span{color:#81848f;font-size:8px}
+.mgw-admin__release-current strong{color:#ececf0;font-size:11px;overflow-wrap:anywhere}
+[data-operations-audit]{
+  display:grid;
+  gap:6px;
+  padding:12px;
+}
+[data-operations-audit]>div{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  padding:7px 8px;
+  border:1px solid #282a32;
+  border-radius:8px;
+  background:#101116;
+}
+[data-operations-audit] strong{color:#d8d9de;font-size:9px}
+[data-operations-audit] span{color:#747782;font-size:8px;text-align:right}
+@media(max-width:760px){
+  .mgw-admin__operations-status{margin:12px 12px 10px}
+  .mgw-admin__operations-kpis{grid-template-columns:repeat(2,minmax(0,1fr));margin:0 12px 10px}
+  .mgw-admin__operations-panel{margin-left:12px;margin-right:12px}
+  .mgw-admin__season-preparation-meta{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mgw-admin__season-reminders{grid-template-columns:1fr}
+}
+@media(max-width:520px){
+  .mgw-admin__operations-create-grid,
+  .mgw-admin__operations-editor,
+  .mgw-admin__season-checklist{grid-template-columns:1fr}
+  .mgw-admin__operations-create-grid .mgw-admin__field--wide,
+  .mgw-admin__operations-editor>.mgw-admin__field:nth-child(n+3){grid-column:auto}
+  .mgw-admin__operations-item-head{display:grid}
+  .mgw-admin__operations-item-head>div{justify-content:flex-start}
+  [data-operations-audit]>div{display:grid}
+  [data-operations-audit] span{text-align:left}
+}

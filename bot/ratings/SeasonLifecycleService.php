@@ -717,10 +717,17 @@ final class SeasonLifecycleService
     ): array {
         if ($create) {
             $now = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s.u');
+            // Native MySQL PDO prepares do not allow one named placeholder
+            // to be reused multiple times in the same statement. Keep each
+            // readiness column explicit even though they share the same value.
             $params = [
                 'target_season_id' => $targetSeasonId,
                 'package_state' => self::PACKAGE_PENDING,
-                'pending' => self::CHECK_PENDING,
+                'seasonal_awards_state' => self::CHECK_PENDING,
+                'top3_frames_state' => self::CHECK_PENDING,
+                'yearly_medal_state' => self::CHECK_PENDING,
+                'localization_state' => self::CHECK_PENDING,
+                'preview_validation_state' => self::CHECK_PENDING,
                 'created_at_utc' => $now,
                 'updated_at_utc' => $now,
             ];
@@ -732,8 +739,8 @@ final class SeasonLifecycleService
                        ready_at_utc, created_at_utc, updated_at_utc
                    ) VALUES (
                        :target_season_id, :package_state,
-                       :pending, :pending, :pending,
-                       :pending, :pending,
+                       :seasonal_awards_state, :top3_frames_state, :yearly_medal_state,
+                       :localization_state, :preview_validation_state,
                        NULL, :created_at_utc, :updated_at_utc
                    )'
                 : 'INSERT IGNORE INTO mgw_season_reward_packages (
@@ -743,8 +750,8 @@ final class SeasonLifecycleService
                        ready_at_utc, created_at_utc, updated_at_utc
                    ) VALUES (
                        :target_season_id, :package_state,
-                       :pending, :pending, :pending,
-                       :pending, :pending,
+                       :seasonal_awards_state, :top3_frames_state, :yearly_medal_state,
+                       :localization_state, :preview_validation_state,
                        NULL, :created_at_utc, :updated_at_utc
                    )';
             $database->execute($sql, $params);

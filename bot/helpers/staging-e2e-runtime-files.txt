@@ -329,3 +329,11 @@ bot/admin-analytics.php
 bot/analytics/RealAccountScope.php
 bot/analytics/ProductEconomyAnalyticsService.php
 app/assets/js/admin-analytics.js
+
+
+# MVP-22.7 Admin tasks / Future Plans / release log.
+# Season T-21/T-14/T-7 schedule remains owned by SeasonLifecycleService.
+bot/admin-operations.php
+bot/operations/AdminOperationsService.php
+bot/database/migrations/20260926_0066_create_admin_operations.php
+app/assets/js/admin-operations.js
