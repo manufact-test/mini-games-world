@@ -12,6 +12,7 @@
   const queue = root.querySelector('[data-support-queue]');
   const queuePanel = root.querySelector('[data-support-queue-panel]');
   const queueTitle = root.querySelector('[data-support-queue-title]');
+  const pagination = root.querySelector('[data-support-pagination]');
   const modeButtons = Array.from(root.querySelectorAll('[data-support-mode]'));
   const detail = root.querySelector('[data-support-detail]');
   const back = root.querySelector('[data-support-back]');
@@ -31,6 +32,8 @@
   let currentTicket = null;
   let currentAdminRef = '';
   let queueMode = requestedTicket ? 'all' : 'active';
+  let queuePage = 1;
+  const queuePerPage = 12;
   let busy = false;
 
   const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({
@@ -52,6 +55,8 @@
 
   const filters = () => ({
     mode:queueMode,
+    page:queuePage,
+    per_page:queuePerPage,
     query:queryInput.value.trim(),
     status:statusFilter.value,
     priority:priorityFilter.value,
@@ -289,6 +294,19 @@
     if (currentTicket) detailPriority.value = currentTicket.priority || '';
     renderMetrics(data.metrics || {});
     renderQueue(data.tickets || []);
+
+    const meta = data.pagination || {};
+    queuePage = Math.max(1, Number(meta.page || queuePage || 1));
+    const baseTitle = queueMode === 'processed' ? 'Обработанные обращения' : 'Активные обращения';
+    const total = Math.max(0, Number(meta.total || 0));
+    const from = Math.max(0, Number(meta.from || 0));
+    const to = Math.max(0, Number(meta.to || 0));
+    if (queueTitle) queueTitle.textContent = total > 0 ? `${baseTitle} · ${from}–${to} из ${total}` : baseTitle;
+    window.MGWAdminUX?.renderPager(pagination, meta, nextPage => {
+      queuePage = nextPage;
+      void load();
+    });
+
     if (data.ticket) renderDetail(data.ticket);
   };
 
@@ -603,9 +621,13 @@
     root.classList.remove('is-ticket-open');
     if (window.matchMedia('(max-width: 980px)').matches) queuePanel.scrollIntoView({block:'start', behavior:'smooth'});
   });
-  refresh.addEventListener('click', () => void load());
+  refresh.addEventListener('click', () => {
+    queuePage = 1;
+    void load();
+  });
   modeButtons.forEach(button => button.addEventListener('click', () => {
     queueMode = String(button.dataset.supportMode || 'active');
+    queuePage = 1;
     statusFilter.value = '';
     currentTicket = null;
     detail.hidden = true;
@@ -615,10 +637,16 @@
     void load();
   }));
   [statusFilter, priorityFilter, categoryFilter, platformFilter].forEach(select => {
-    select.addEventListener('change', () => void load());
+    select.addEventListener('change', () => {
+      queuePage = 1;
+      void load();
+    });
   });
   queryInput.addEventListener('keydown', event => {
-    if (event.key === 'Enter') void load();
+    if (event.key === 'Enter') {
+      queuePage = 1;
+      void load();
+    }
   });
   detail.querySelector('[data-support-detail-priority]').addEventListener('change', event => {
     if (currentTicket && !['resolved','closed'].includes(String(currentTicket.status || ''))) {
