@@ -2,7 +2,7 @@ import { api } from '../api/client.js?v=1147&mvp22_8=account-data-v1';
 import { openSheet } from '../components/sheet.js?v=1109';
 import { toast } from '../components/toast.js?v=41';
 
-const STYLE_URL = './assets/css/account-data-v1.css?v=3&mvp22_8=account-data-v1&ux=final-icon-parity-v1';
+const STYLE_URL = './assets/css/account-data-v1.css?v=4&mvp22_8=account-data-v1&ux=final-manual-polish-v2';
 
 let snapshot = null;
 let loading = false;
@@ -279,7 +279,7 @@ async function cancelDeletion(){
   try {
     const response = await api.accountDataCancelDelete();
     snapshot = normalizeSnapshot(response?.account_data);
-    toast('Удаление аккаунта отменено.');
+    toast('Удаление отменено. Аккаунт сохранён.');
   } catch (error) {
     toast(actionError(error, 'Не удалось отменить удаление.'));
   } finally {
@@ -297,7 +297,10 @@ async function scheduleDeletion(){
     openSheet(shellHtml());
     bind();
     render();
-    toast('Удаление аккаунта запланировано на 7 дней.');
+    const deleteAt = snapshot?.deletion?.execute_after_utc;
+    toast(deleteAt
+      ? `Аккаунт будет удалён через 7 дней. Дата удаления: ${formatDate(deleteAt)}.`
+      : 'Аккаунт будет удалён через 7 дней.');
   } catch (error) {
     toast(actionError(error, 'Не удалось запланировать удаление.'));
   } finally {
