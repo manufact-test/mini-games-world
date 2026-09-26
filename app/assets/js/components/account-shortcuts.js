@@ -2,7 +2,6 @@ import { closeSheet } from './sheet.js?v=1109';
 
 let friendsModulePromise = null;
 let accountDataModulePromise = null;
-const ACCOUNT_DATA_STYLE_URL = './assets/css/account-data-v1.css?v=4&mvp22_8=account-data-v1&ux=final-manual-polish-v2';
 
 export function initAccountShortcuts(){
   warmAccountDataAssets();
@@ -36,17 +35,24 @@ function loadFriendsModule(){
 }
 
 async function openAccountDataShortcut(){
-  // Keep the already-rendered More menu visible while the first lazy module
-  // finishes loading. Closing the sheet before awaiting this import caused a
-  // visible empty-sheet flash only on the first mobile open.
+  // Keep the already-rendered More menu visible until the Account Data module,
+  // stylesheet and first server snapshot are all ready. The destination replaces
+  // the sheet atomically; there is no close -> empty overlay -> reopen frame.
   const module = await loadAccountDataModule();
-  closeSheet();
   if (typeof module.openAccountDataSheet === 'function') await module.openAccountDataSheet();
+}
+
+export async function primeAccountDataShortcut(){
+  const module = await loadAccountDataModule();
+  if (typeof module.primeAccountDataFirstOpen === 'function') {
+    return module.primeAccountDataFirstOpen();
+  }
+  return null;
 }
 
 function loadAccountDataModule(){
   if (!accountDataModulePromise) {
-    accountDataModulePromise = import('../screens/account-data-sheet-v1.js?v=4&mvp22_8=account-data-v1&ux=final-manual-polish-v2')
+    accountDataModulePromise = import('../screens/account-data-sheet-v1.js?v=5&mvp22_8=account-data-v1&mvp23=mobile-cold-first-open-v1')
       .catch(error => {
         accountDataModulePromise = null;
         throw error;
@@ -56,15 +62,9 @@ function loadAccountDataModule(){
 }
 
 function warmAccountDataAssets(){
-  if (!document.querySelector('link[data-mgw-account-data-style]')) {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = ACCOUNT_DATA_STYLE_URL;
-    link.dataset.mgwAccountDataStyle = '1';
-    document.head.append(link);
-  }
-
-  const warm = () => { void loadAccountDataModule(); };
+  const warm = () => {
+    void primeAccountDataShortcut().catch(() => {});
+  };
   if (typeof window.requestIdleCallback === 'function') {
     window.requestIdleCallback(warm, { timeout:1200 });
   } else {
