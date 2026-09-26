@@ -361,7 +361,7 @@
       button.type = 'button';
       button.textContent = label;
       button.setAttribute('aria-label', ariaLabel);
-      button.disabled = busy || target === current;
+      button.disabled = target === current;
       button.addEventListener('click', () => {
         if (busy || target === current) return;
         page = target;
@@ -863,7 +863,9 @@
     if (mode === nextMode && homeMode === 'cases') return;
     mode = nextMode;
     page = 1;
-    renderCaseCounts({});
+    caseFilterButtons.forEach(node => {
+      node.classList.toggle('is-active', String(node.dataset.afCaseFilter || '') === mode);
+    });
     void loadSnapshot();
   }));
 
