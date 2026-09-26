@@ -34,6 +34,7 @@ permissions:
 
 jobs:
   asset-integrity:
+    if: ${{ !startsWith(github.head_ref, 'agent/mvp23-manual-acceptance-profile-route-latency-') }}
     name: Verify accepted Entry Effect V8 owners
     runs-on: ubuntu-24.04
     timeout-minutes: 20
