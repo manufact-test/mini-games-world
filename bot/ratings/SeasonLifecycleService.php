@@ -750,8 +750,8 @@ final class SeasonLifecycleService
                        ready_at_utc, created_at_utc, updated_at_utc
                    ) VALUES (
                        :target_season_id, :package_state,
-                       :pending, :pending, :pending,
-                       :pending, :pending,
+                       :seasonal_awards_state, :top3_frames_state, :yearly_medal_state,
+                       :localization_state, :preview_validation_state,
                        NULL, :created_at_utc, :updated_at_utc
                    )';
             $database->execute($sql, $params);
