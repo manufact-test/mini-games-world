@@ -21,7 +21,7 @@ on:
       - 'ops/deploy/STAGING_OPERATIONS_RUNNER.md'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/components/account-shortcuts.js'
-      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/v110.php'
       - 'bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php'
       - 'app/assets/js/screens/account-data-sheet-v1.js'
       - 'app/assets/css/account-data-v1.css'
@@ -89,6 +89,7 @@ jobs:
           node --check app/assets/js/components/account-shortcuts.js
           node --check app/assets/js/screens/account-data-sheet-v1.js
           php -l app/runtime/client/version-manifest.php
+          php -l app/v110.php
 
       - name: Run SQLite lifecycle proof
         run: php bot/tests/Mvp22_8AccountDataLifecycleTest.php
