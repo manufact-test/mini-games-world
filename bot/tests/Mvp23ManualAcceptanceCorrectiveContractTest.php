@@ -13,6 +13,7 @@ $incidentJs = $read('app/assets/js/admin-incident.js');
 $incidentCss = $read('app/assets/css/admin-incident.css');
 $shortcuts = $read('app/assets/js/components/account-shortcuts.js');
 $main = $read('app/assets/js/main-v110-handoff-shell.js');
+$versionManifest = $read('app/runtime/client/version-manifest.php');
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -71,8 +72,10 @@ $assert(
 
 $assert(
     str_contains($shortcuts, 'visible empty-sheet flash only on the first mobile open')
-        && str_contains($main, "account-shortcuts.js?v=49&mvp23=account-data-first-open-no-flash-v1"),
-    'First-open account-data corrective must be documented and cache-busted in the active shell.'
+        && str_contains($main, "account-shortcuts.js?v=48")
+        && str_contains($versionManifest, "account-shortcuts.js?v=56")
+        && str_contains($versionManifest, "mvp23=account-data-first-open-no-flash-v1"),
+    'First-open account-data corrective must stay on the canonical import-map key and ship with a fresh mapped asset URL.'
 );
 
 $assert(
