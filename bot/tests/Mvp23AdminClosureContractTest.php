@@ -19,9 +19,9 @@ $incidentService = $read('bot/incident/IncidentRecoveryService.php');
 $accountData = $read('bot/account-data.php');
 $accountLifecycle = $read('bot/accounts/AccountDataLifecycleService.php');
 $moderation = $read('bot/moderation/ModerationService.php');
-$compensation = $read('bot/compensation/CompensationService.php');
+$compensation = $read('bot/economy/CompensationService.php');
 $antifraud = $read('bot/antifraud/AntiFraudCaseService.php');
-$tournaments = $read('bot/tournaments/TournamentAdminService.php');
+$tournaments = $read('bot/admin-tournaments.php');
 $analytics = $read('bot/analytics/ProductEconomyAnalyticsService.php');
 $notifications = $read('bot/notifications/AdminNotificationEventService.php');
 
@@ -151,9 +151,11 @@ $assert(
 );
 
 $assert(
-    str_contains($tournaments, 'audit')
-        || str_contains($tournaments, 'reason'),
-    'Tournament Admin owner must retain auditable operator actions.'
+    str_contains($tournaments, 'AdminWebAuth::authorize')
+        && str_contains($tournaments, "clean_string(\$payload['reason'] ?? '', 1200)")
+        && str_contains($tournaments, 'TournamentPrizeReviewService')
+        && str_contains($tournaments, 'TournamentCancellationService'),
+    'Tournament Admin must remain authenticated and require reasoned bounded cancellation/prize-review owners.'
 );
 
 $assert(
