@@ -708,19 +708,23 @@ final class AccountDataLifecycleService
             if (!preg_match('/^mgw_[a-z0-9_]+$/', $table)) continue;
             $predicates = [];
             $params = [];
+            $parameterOrdinal = 0;
             foreach ($columns as $column) {
                 if (preg_match('/(^|_)mgw_id$/', $column) === 1) {
-                    $predicates[] = $this->quote($column) . '=:mgw_id';
-                    $params['mgw_id'] = $mgwId;
+                    $key = 'mgw_id_' . $parameterOrdinal++;
+                    $predicates[] = $this->quote($column) . '=:' . $key;
+                    $params[$key] = $mgwId;
                 }
             }
             if ($accountRef !== '' && in_array('account_ref', $columns, true)) {
-                $predicates[] = $this->quote('account_ref') . '=:account_ref';
-                $params['account_ref'] = $accountRef;
+                $key = 'account_ref_' . $parameterOrdinal++;
+                $predicates[] = $this->quote('account_ref') . '=:' . $key;
+                $params[$key] = $accountRef;
             }
             if ($legacyUserId !== '' && in_array('legacy_user_id', $columns, true)) {
-                $predicates[] = $this->quote('legacy_user_id') . '=:legacy_user_id';
-                $params['legacy_user_id'] = $legacyUserId;
+                $key = 'legacy_user_id_' . $parameterOrdinal++;
+                $predicates[] = $this->quote('legacy_user_id') . '=:' . $key;
+                $params[$key] = $legacyUserId;
             }
             if ($predicates === []) continue;
 
