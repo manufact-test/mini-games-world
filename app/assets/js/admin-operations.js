@@ -147,9 +147,11 @@
       status.textContent = successText;
       status.dataset.state = 'ok';
       render(payload);
+      return true;
     } catch (error) {
       status.textContent = error instanceof Error ? error.message : 'Не удалось выполнить действие.';
       status.dataset.state = 'error';
+      return false;
     } finally {
       buttonNode.disabled = false;
     }
@@ -477,7 +479,8 @@
         due_at_utc:toIso(due.value),
         owner_ref:owner.value,
       },
-    }, 'Задача добавлена.').then(() => {
+    }, 'Задача добавлена.').then(success => {
+      if (!success) return;
       title.value = '';
       if (recurrence.value === 'once') due.value = '';
     });
@@ -494,7 +497,8 @@
         owner_ref:$('[data-operations-plan-owner]').value,
         notes:$('[data-operations-plan-notes]').value,
       },
-    }, 'Future Plan добавлен.').then(() => {
+    }, 'Future Plan добавлен.').then(success => {
+      if (!success) return;
       $('[data-operations-plan-title]').value = '';
       $('[data-operations-plan-notes]').value = '';
     });
