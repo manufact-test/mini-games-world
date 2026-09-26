@@ -101,32 +101,69 @@ final class AntiFraudCaseService
 
     public function snapshot(array $filters = [], int $limit = 100): array
     {
-        $limit = max(1, min(self::CASE_LIMIT, $limit));
+        $maxPageSize = max(1, min(self::CASE_LIMIT, $limit));
         $mode = strtolower(trim((string)($filters['mode'] ?? 'active')));
-        if (!in_array($mode, ['active', 'closed', 'all'], true)) {
+        if (!in_array($mode, ['active', 'open', 'reviewing', 'monitoring', 'closed', 'all'], true)) {
             throw new AntiFraudCaseException('invalid_filter', 'Некорректный режим anti-fraud очереди.');
         }
 
-        $where = [];
-        $params = [];
-        if ($mode === 'active') {
-            $where[] = "c.status_code IN ('open','reviewing','monitoring')";
-        } elseif ($mode === 'closed') {
-            $where[] = "c.status_code = 'closed'";
-        }
+        $requestedPerPage = (int)($filters['per_page'] ?? 12);
+        $perPage = max(5, min(50, $maxPageSize, $requestedPerPage > 0 ? $requestedPerPage : 12));
+        $page = max(1, min(100000, (int)($filters['page'] ?? 1)));
 
+        $queryWhere = [];
+        $queryParams = [];
         $query = $this->bounded((string)($filters['query'] ?? ''), 120);
         if ($query !== '') {
-            $where[] = '(LOWER(c.case_id) LIKE :query_case
+            $queryWhere[] = '(LOWER(c.case_id) LIKE :query_case
                 OR LOWER(c.match_id) LIKE :query_match
                 OR LOWER(c.summary) LIKE :query_summary
                 OR LOWER(COALESCE(c.owner_ref, \'\')) LIKE :query_owner)';
             $needle = '%' . strtolower($query) . '%';
-            $params['query_case'] = $needle;
-            $params['query_match'] = $needle;
-            $params['query_summary'] = $needle;
-            $params['query_owner'] = $needle;
+            $queryParams['query_case'] = $needle;
+            $queryParams['query_match'] = $needle;
+            $queryParams['query_summary'] = $needle;
+            $queryParams['query_owner'] = $needle;
         }
+
+        $countSql = 'SELECT c.status_code, COUNT(*) AS total
+                     FROM mgw_antifraud_cases c';
+        if ($queryWhere !== []) $countSql .= ' WHERE ' . implode(' AND ', $queryWhere);
+        $countSql .= ' GROUP BY c.status_code';
+
+        $counts = [
+            'active' => 0,
+            'open' => 0,
+            'reviewing' => 0,
+            'monitoring' => 0,
+            'closed' => 0,
+            'all' => 0,
+        ];
+        foreach ($this->database->fetchAll($countSql, $queryParams) as $row) {
+            if (!is_array($row)) continue;
+            $status = strtolower(trim((string)($row['status_code'] ?? '')));
+            $totalForStatus = max(0, (int)($row['total'] ?? 0));
+            if (array_key_exists($status, $counts)) $counts[$status] = $totalForStatus;
+            $counts['all'] += $totalForStatus;
+        }
+        $counts['active'] = $counts['open'] + $counts['reviewing'] + $counts['monitoring'];
+
+        $where = $queryWhere;
+        $params = $queryParams;
+        if ($mode === 'active') {
+            $where[] = "c.status_code IN ('open','reviewing','monitoring')";
+        } elseif (in_array($mode, ['open', 'reviewing', 'monitoring', 'closed'], true)) {
+            $where[] = 'c.status_code = :status_mode';
+            $params['status_mode'] = $mode;
+        }
+
+        $totalSql = 'SELECT COUNT(*)
+                     FROM mgw_antifraud_cases c';
+        if ($where !== []) $totalSql .= ' WHERE ' . implode(' AND ', $where);
+        $total = max(0, (int)$this->database->fetchValue($totalSql, $params));
+        $totalPages = max(1, (int)ceil($total / $perPage));
+        $page = min($page, $totalPages);
+        $offset = ($page - 1) * $perPage;
 
         $sql = 'SELECT c.case_id, c.match_id, c.status_code, c.priority_code, c.decision_code,
                        c.summary, c.owner_ref, c.created_by_admin_ref, c.created_at_utc,
@@ -140,11 +177,23 @@ final class AntiFraudCaseService
                     CASE c.priority_code WHEN 'high' THEN 0 WHEN 'normal' THEN 1 ELSE 2 END,
                     CASE c.status_code WHEN 'open' THEN 0 WHEN 'reviewing' THEN 1 WHEN 'monitoring' THEN 2 ELSE 3 END,
                     c.updated_at_utc DESC
-                  LIMIT " . $limit;
+                  LIMIT " . $perPage . ' OFFSET ' . $offset;
+
+        $from = $total === 0 ? 0 : $offset + 1;
+        $to = $total === 0 ? 0 : min($total, $offset + $perPage);
 
         return [
             'mode' => $mode,
             'cases' => array_map(fn(array $row): array => $this->normalizeCaseRow($row), $this->database->fetchAll($sql, $params)),
+            'counts' => $counts,
+            'pagination' => [
+                'page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'total_pages' => $totalPages,
+                'from' => $from,
+                'to' => $to,
+            ],
             'recent_matches' => $this->recentMatches(),
             'decisions' => $this->decisionLabels(),
             'statuses' => $this->statusLabels(),
