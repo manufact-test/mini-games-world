@@ -36,8 +36,11 @@ function loadFriendsModule(){
 }
 
 async function openAccountDataShortcut(){
-  closeSheet();
+  // Keep the already-rendered More menu visible while the first lazy module
+  // finishes loading. Closing the sheet before awaiting this import caused a
+  // visible empty-sheet flash only on the first mobile open.
   const module = await loadAccountDataModule();
+  closeSheet();
   if (typeof module.openAccountDataSheet === 'function') await module.openAccountDataSheet();
 }
 
