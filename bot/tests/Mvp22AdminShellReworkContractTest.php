@@ -165,8 +165,8 @@ $assert(
 
 $assert(
     str_contains($page, "Cache-Control: no-store, no-cache, must-revalidate")
-        && str_contains($page, 'admin-shell.css?v=11')
-        && str_contains($page, 'admin-shell.js?v=7')
+        && str_contains($page, 'admin-shell.css?v=12')
+        && str_contains($page, 'admin-shell.js?v=8')
         && str_contains($page, 'admin-antifraud.js?v=1'),
     'Admin-only rework must stay no-store and publish fresh child asset identities without changing the shared game launch owner.'
 );
@@ -181,7 +181,7 @@ $assert(
 );
 
 $assert(
-    str_contains($page, 'admin-support.js?v=7')
+    str_contains($page, 'admin-support.js?v=8')
         && str_contains($support, "detail.scrollIntoView({")
         && !str_contains($support, "root.scrollIntoView({block:'start', behavior:'smooth'})")
         && str_contains($support, "data-support-attachment-viewer")
@@ -203,7 +203,7 @@ $assert(
 );
 
 $assert(
-    str_contains($page, 'admin-reports.js?v=2')
+    str_contains($page, 'admin-reports.js?v=3')
         && str_contains($css, '.mgw-admin__report-card{')
         && str_contains($css, '.mgw-admin__report-message{')
         && str_contains($css, '.mgw-admin__report-tech{'),
@@ -270,6 +270,52 @@ $assert(
         && str_contains($page, 'data-admin-section="notifications"')
         && str_contains($page, 'data-admin-section="system"'),
     'Existing operational owners must be slotted into the new shell rather than replaced.'
+);
+
+
+$assert(
+    str_contains($shell, 'window.MGWAdminUX = AdminUX')
+        && str_contains($shell, 'renderPager(container, meta, onPage)')
+        && str_contains($css, '.mgw-admin__pager{'),
+    'Web Admin must expose one shared pagination pattern instead of unbounded repeated cards.'
+);
+
+foreach ([
+    'data-support-pagination',
+    'data-report-pagination',
+    'data-notification-pagination',
+    'data-compensation-pagination',
+    'data-economy-pagination',
+    'data-rating-exclusions-pagination',
+    'data-rating-jobs-pagination',
+    'data-tournament-review-pagination',
+] as $paginationSurface) {
+    $assert(
+        str_contains($page, $paginationSurface),
+        'Potentially long Admin collection must expose bounded navigation: ' . $paginationSurface
+    );
+}
+
+$assert(
+    str_contains($page, 'data-compensation-operation-trigger')
+        && str_contains($page, 'data-compensation-operation-list')
+        && !str_contains($page, '<select data-compensation-operation-picker>'),
+    'Long compensation operation choices must stay inside the managed Admin picker instead of Android native select.'
+);
+
+$assert(
+    str_contains($page, 'Показать техническую диагностику')
+        && str_contains($page, 'mgw-admin__rating-rehearsal-wrap')
+        && str_contains($page, 'mgw-admin__list-disclosure')
+        && str_contains($css, '.mgw-admin__technical-disclosure'),
+    'Technical and secondary Admin content must remain collapsed until requested.'
+);
+
+$assert(
+    str_contains($css, '.mgw-admin__support-thread{')
+        && str_contains($css, 'max-height:min(540px,52vh)')
+        && str_contains($css, '.mgw-admin__af-review-tabs::-webkit-scrollbar'),
+    'Long Support threads and mobile review rails must stay inside bounded scrollable workspaces.'
 );
 
 fwrite(STDOUT, "Mvp22AdminShellReworkContractTest: {$assertions} assertions passed\n");

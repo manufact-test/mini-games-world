@@ -126,6 +126,72 @@ final class PlayerReportService
     public function queue(int $limit = 100, array $filters = []): array
     {
         $limit = max(1, min(200, $limit));
+        [$whereSql, $parameters] = $this->queueFilterSql($filters);
+
+        $rows = $this->database->fetchAll(
+            $this->queueSelectSql()
+            . $whereSql
+            . " ORDER BY CASE r.status WHEN 'open' THEN 0 WHEN 'reviewing' THEN 1 ELSE 2 END,
+                      r.created_at_utc DESC
+             LIMIT " . $limit,
+            $parameters
+        );
+
+        return array_map(fn(array $row): array => $this->queueRow($row), $rows);
+    }
+
+    public function queuePage(array $filters = [], int $page = 1, int $perPage = 12): array
+    {
+        $perPage = max(5, min(50, $perPage));
+        $page = max(1, min(100000, $page));
+        [$whereSql, $parameters] = $this->queueFilterSql($filters);
+
+        $total = max(0, (int)$this->database->fetchValue(
+            'SELECT COUNT(*) FROM mgw_player_reports r
+             INNER JOIN mgw_users reporter ON reporter.mgw_id = r.reporter_mgw_id
+             INNER JOIN mgw_users target ON target.mgw_id = r.target_mgw_id'
+            . $whereSql,
+            $parameters
+        ));
+        $totalPages = max(1, (int)ceil($total / $perPage));
+        $page = min($page, $totalPages);
+        $offset = ($page - 1) * $perPage;
+
+        $rows = $this->database->fetchAll(
+            $this->queueSelectSql()
+            . $whereSql
+            . " ORDER BY CASE r.status WHEN 'open' THEN 0 WHEN 'reviewing' THEN 1 ELSE 2 END,
+                      r.created_at_utc DESC
+             LIMIT " . $perPage . ' OFFSET ' . $offset,
+            $parameters
+        );
+
+        return [
+            'reports' => array_map(fn(array $row): array => $this->queueRow($row), $rows),
+            'pagination' => [
+                'page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'total_pages' => $totalPages,
+                'from' => $total === 0 ? 0 : $offset + 1,
+                'to' => $total === 0 ? 0 : min($total, $offset + $perPage),
+            ],
+        ];
+    }
+
+    private function queueSelectSql(): string
+    {
+        return 'SELECT r.report_id, r.reporter_mgw_id, r.target_mgw_id, r.reason, r.details,
+                       r.related_match_id, r.status, r.created_at_utc, r.updated_at_utc,
+                       r.reviewed_at_utc, r.resolved_at_utc, r.last_admin_ref,
+                       reporter.nickname AS reporter_nickname, target.nickname AS target_nickname
+                FROM mgw_player_reports r
+                INNER JOIN mgw_users reporter ON reporter.mgw_id = r.reporter_mgw_id
+                INNER JOIN mgw_users target ON target.mgw_id = r.target_mgw_id';
+    }
+
+    private function queueFilterSql(array $filters): array
+    {
         $mode = strtolower(trim((string)($filters['mode'] ?? 'active')));
         $query = trim((string)($filters['query'] ?? ''));
         $dateFrom = trim((string)($filters['date_from'] ?? ''));
@@ -157,45 +223,32 @@ final class PlayerReportService
                 ->modify('+1 day')->format('Y-m-d 00:00:00');
         }
 
-        $rows = $this->database->fetchAll(
-            'SELECT r.report_id, r.reporter_mgw_id, r.target_mgw_id, r.reason, r.details,
-                    r.related_match_id, r.status, r.created_at_utc, r.updated_at_utc,
-                    r.reviewed_at_utc, r.resolved_at_utc, r.last_admin_ref,
-                    reporter.nickname AS reporter_nickname, target.nickname AS target_nickname
-             FROM mgw_player_reports r
-             INNER JOIN mgw_users reporter ON reporter.mgw_id = r.reporter_mgw_id
-             INNER JOIN mgw_users target ON target.mgw_id = r.target_mgw_id'
-             . ($where !== [] ? ' WHERE ' . implode(' AND ', $where) : '')
-             . ' ORDER BY CASE r.status WHEN \'open\' THEN 0 WHEN \'reviewing\' THEN 1 ELSE 2 END,
-                      r.created_at_utc DESC
-             LIMIT ' . $limit,
-            $parameters
-        );
-
-        return array_map(function (array $row): array {
-            $reason = (string)($row['reason'] ?? 'other');
-            return [
-                'report_id' => (string)($row['report_id'] ?? ''),
-                'reporter_mgw_id' => (string)($row['reporter_mgw_id'] ?? ''),
-                'reporter_public_mgw_id' => MgwIdGenerator::toPublic((string)$row['reporter_mgw_id']),
-                'reporter_nickname' => (string)($row['reporter_nickname'] ?? 'Игрок'),
-                'target_mgw_id' => (string)($row['target_mgw_id'] ?? ''),
-                'target_public_mgw_id' => MgwIdGenerator::toPublic((string)$row['target_mgw_id']),
-                'target_nickname' => (string)($row['target_nickname'] ?? 'Игрок'),
-                'reason' => $reason,
-                'reason_label' => self::REASONS[$reason] ?? self::LEGACY_REASON_LABELS[$reason] ?? $reason,
-                'details' => (string)($row['details'] ?? ''),
-                'related_match_id' => (string)($row['related_match_id'] ?? ''),
-                'status' => (string)($row['status'] ?? 'open'),
-                'created_at' => (string)($row['created_at_utc'] ?? ''),
-                'updated_at' => (string)($row['updated_at_utc'] ?? ''),
-                'reviewed_at' => (string)($row['reviewed_at_utc'] ?? ''),
-                'resolved_at' => (string)($row['resolved_at_utc'] ?? ''),
-                'last_admin_ref' => (string)($row['last_admin_ref'] ?? ''),
-            ];
-        }, $rows);
+        return [$where !== [] ? ' WHERE ' . implode(' AND ', $where) : '', $parameters];
     }
 
+    private function queueRow(array $row): array
+    {
+        $reason = (string)($row['reason'] ?? 'other');
+        return [
+            'report_id' => (string)($row['report_id'] ?? ''),
+            'reporter_mgw_id' => (string)($row['reporter_mgw_id'] ?? ''),
+            'reporter_public_mgw_id' => MgwIdGenerator::toPublic((string)$row['reporter_mgw_id']),
+            'reporter_nickname' => (string)($row['reporter_nickname'] ?? 'Игрок'),
+            'target_mgw_id' => (string)($row['target_mgw_id'] ?? ''),
+            'target_public_mgw_id' => MgwIdGenerator::toPublic((string)$row['target_mgw_id']),
+            'target_nickname' => (string)($row['target_nickname'] ?? 'Игрок'),
+            'reason' => $reason,
+            'reason_label' => self::REASONS[$reason] ?? self::LEGACY_REASON_LABELS[$reason] ?? $reason,
+            'details' => (string)($row['details'] ?? ''),
+            'related_match_id' => (string)($row['related_match_id'] ?? ''),
+            'status' => (string)($row['status'] ?? 'open'),
+            'created_at' => (string)($row['created_at_utc'] ?? ''),
+            'updated_at' => (string)($row['updated_at_utc'] ?? ''),
+            'reviewed_at' => (string)($row['reviewed_at_utc'] ?? ''),
+            'resolved_at' => (string)($row['resolved_at_utc'] ?? ''),
+            'last_admin_ref' => (string)($row['last_admin_ref'] ?? ''),
+        ];
+    }
     public function setStatus(string $reportId, string $status, string $adminRef): array
     {
         $reportId = trim($reportId);

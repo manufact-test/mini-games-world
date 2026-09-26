@@ -38,7 +38,7 @@ $assert(str_contains($endpoint, "routeFor('economy')"), 'Compensation endpoint m
 $assert(str_contains($endpoint, 'StorageFactory::create($config)'), 'Compensation endpoint must use the active runtime storage owner for projection.');
 
 $assert(str_contains($admin, 'data-compensation-api="../bot/admin-compensation.php"'), 'Web Admin must publish the compensation endpoint.');
-$assert(str_contains($admin, 'data-compensation-operation-picker'), 'Web Admin must expose one compact source-operation dropdown.');
+$assert(str_contains($admin, 'data-compensation-operation-picker') && str_contains($admin, 'data-compensation-operation-trigger') && str_contains($admin, 'data-compensation-operation-list'), 'Web Admin must expose an in-app source-operation picker instead of a native long dropdown.');
 $assert(str_contains($admin, 'data-compensation-operation'), 'Web Admin must keep exact original-operation lookup inside the advanced path.');
 $assert(str_contains($admin, 'data-compensation-browser-query'), 'Web Admin must keep optional advanced search available.');
 $assert(str_contains($admin, 'Технические данные'), 'Technical ledger details must be collapsed behind an explicit disclosure.');
@@ -48,8 +48,10 @@ $assert(str_contains($admin, 'data-compensation-confirmation'), 'Web Admin must 
 $assert(str_contains($admin, 'Возврат коинов по списанию'), 'Admin copy must describe compensation in operator language instead of ledger terminology.');
 
 $assert(str_contains($client, "action:'operations'"), 'Admin client must browse canonical source operations without requiring copied technical IDs.');
-$assert(str_contains($client, 'chooseFromPicker'), 'Admin client must use the compact dropdown as the primary selection owner.');
+$assert(str_contains($client, 'const renderPicker = rows =>') && str_contains($client, "pickerTrigger.addEventListener('click'") && !str_contains($client, 'chooseFromPicker'), 'Admin client must use the managed in-app picker as the primary selection owner.');
 $assert(str_contains($client, 'rows.filter(canCompensate)'), 'Admin client must hide ineligible credit operations from the primary picker.');
+$assert(!str_contains($admin, '<select data-compensation-operation-picker>'), 'Compensation must not regress to the Android native full-screen operation select.');
+$assert(str_contains($admin, 'data-compensation-pagination'), 'Compensation history must expose bounded pagination.');
 $assert(str_contains($client, 'selectedTech'), 'Technical operation metadata must render only inside the collapsed technical disclosure.');
 $assert(str_contains($client, "action:'lookup'"), 'Admin client must retain exact original-operation lookup.');
 $assert(str_contains($client, "action:'request'"), 'Admin client must use a dedicated compensation request action.');

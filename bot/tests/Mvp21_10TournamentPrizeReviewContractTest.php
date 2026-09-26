@@ -53,6 +53,9 @@ $assert(str_contains($files['admin_html'],'data-tournament-review-panel'),'Web A
 $assert(str_contains($files['admin_html'],'Поставить призовой путь на проверку'),'Admin serious-signal action must be explicit.');
 $assert(str_contains($files['admin_js'],'Разрешить выплату'),'Admin review queue must expose release action.');
 $assert(str_contains($files['admin_js'],'Дисквалифицировать'),'Admin review queue must expose disqualification action.');
+$assert(str_contains($files['admin_html'],'data-tournament-review-pagination'),'Prize review queue must expose bounded page navigation.');
+$assert(str_contains($files['admin_js'],'prizeReviewPerPage = 8'),'Prize review Admin must bound visible review rows.');
+$assert(str_contains($files['admin_js'],'mgw-admin__tournament-review-item'),'Prize review rows must be compact expandable details instead of fully expanded cards.');
 $assert(str_contains($files['admin_js'],'сдвинуты каноническим settlement owner'),'Admin copy must preserve single-writer placement semantics.');
 
 $assert(str_contains($files['terminal_js'],"settlement_state || '') === 'review_hold'"),'Participant terminal UI must expose provisional review hold.');

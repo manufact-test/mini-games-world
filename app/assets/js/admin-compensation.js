@@ -9,6 +9,9 @@
   const telegram = window.Telegram?.WebApp || null;
 
   const picker = root.querySelector('[data-compensation-operation-picker]');
+  const pickerTrigger = root.querySelector('[data-compensation-operation-trigger]');
+  const pickerSelected = root.querySelector('[data-compensation-operation-selected]');
+  const pickerList = root.querySelector('[data-compensation-operation-list]');
   const selectedBox = root.querySelector('[data-compensation-selected]');
   const selectedPlayer = root.querySelector('[data-compensation-selected-player]');
   const selectedAmount = root.querySelector('[data-compensation-selected-amount]');
@@ -34,12 +37,16 @@
 
   const history = root.querySelector('[data-compensation-history]');
   const historyCount = root.querySelector('[data-compensation-history-count]');
+  const historyPagination = root.querySelector('[data-compensation-pagination]');
 
   let busy = false;
   let currentOperation = null;
   let operationRows = [];
   let pendingCompensation = null;
   let activeRequestToken = '';
+  let historyRows = [];
+  let historyPage = 1;
+  const historyPerPage = 8;
   let limits = {
     large_amount_threshold:50000,
     max_amount:250000,
@@ -113,7 +120,9 @@
 
   const setBusy = value => {
     busy = value;
-    picker.disabled = value || operationRows.length === 0;
+    pickerTrigger.disabled = value || operationRows.length === 0;
+    pickerList.querySelectorAll('button').forEach(button => { button.disabled = value; });
+    historyPagination?.querySelectorAll('button').forEach(button => { button.disabled = value; });
     browserButton.disabled = value;
     lookupButton.disabled = value;
     operationInput.disabled = value;
@@ -155,41 +164,63 @@
     return `−${coins(delta)} · ${playerName(operation)} · ${localTime(operation.created_at_utc)}`;
   };
 
-  const renderPicker = rows => {
-    operationRows = Array.isArray(rows) ? rows.filter(canCompensate) : [];
-    picker.replaceChildren();
-
-    const placeholder = document.createElement('option');
-    placeholder.value = '';
-    placeholder.textContent = operationRows.length
-      ? 'Выберите списание…'
-      : 'Подходящих списаний не найдено';
-    picker.append(placeholder);
-
-    operationRows.forEach(operation => {
-      const option = document.createElement('option');
-      option.value = String(operation.entry_id || '');
-      option.textContent = optionLabel(operation);
-      picker.append(option);
-    });
-
-    picker.disabled = busy || operationRows.length === 0;
-
-    if (currentOperation && canCompensate(currentOperation)) {
-      const exists = operationRows.some(
-        item => String(item.entry_id) === String(currentOperation.entry_id)
-      );
-      if (exists) picker.value = String(currentOperation.entry_id);
-    }
+  const closePicker = () => {
+    pickerList.hidden = true;
+    pickerTrigger.setAttribute('aria-expanded','false');
   };
 
+  const renderPicker = rows => {
+    operationRows = Array.isArray(rows) ? rows.filter(canCompensate) : [];
+    pickerList.replaceChildren();
+
+    pickerSelected.textContent = operationRows.length
+      ? (currentOperation && canCompensate(currentOperation) ? optionLabel(currentOperation) : 'Выберите списание…')
+      : 'Подходящих списаний не найдено';
+    pickerTrigger.disabled = busy || operationRows.length === 0;
+
+    if (!operationRows.length) {
+      const empty = document.createElement('div');
+      empty.className = 'mgw-admin__operation-picker-empty';
+      empty.textContent = 'Подходящих списаний не найдено.';
+      pickerList.append(empty);
+      closePicker();
+      return;
+    }
+
+    operationRows.forEach(operation => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'mgw-admin__operation-picker-item';
+      button.dataset.operationId = String(operation.entry_id || '');
+      button.setAttribute('role','option');
+      button.setAttribute('aria-selected', currentOperation && String(currentOperation.entry_id) === String(operation.entry_id) ? 'true' : 'false');
+
+      const title = document.createElement('strong');
+      title.textContent = `−${coins(Math.abs(Number(operation.available_delta || 0)))} коинов · ${playerName(operation)}`;
+      const meta = document.createElement('span');
+      meta.textContent = `${localTime(operation.created_at_utc)} · ${categoryLabel(operation.category)}`;
+      const id = document.createElement('small');
+      id.textContent = String(operation.entry_id || '');
+      button.append(title,meta,id);
+      button.addEventListener('click', () => {
+        renderSelected(operation);
+        pickerSelected.textContent = optionLabel(operation);
+        pickerList.querySelectorAll('[data-operation-id]').forEach(node => {
+          node.setAttribute('aria-selected', String(node.dataset.operationId || '') === String(operation.entry_id || '') ? 'true' : 'false');
+        });
+        closePicker();
+      });
+      pickerList.append(button);
+    });
+  };
   const renderSelected = operation => {
     currentOperation = operation || null;
 
     if (!currentOperation) {
       selectedBox.hidden = true;
       requestButton.disabled = true;
-      picker.value = '';
+      pickerSelected.textContent = operationRows.length ? 'Выберите списание…' : 'Подходящих списаний не найдено';
+      pickerList.querySelectorAll('[data-operation-id]').forEach(node => node.setAttribute('aria-selected','false'));
       return;
     }
 
@@ -243,53 +274,39 @@
     resetRequestToken();
   };
 
-  const chooseFromPicker = () => {
-    const entryId = picker.value;
-    if (!entryId) {
-      renderSelected(null);
-      return;
-    }
-    const operation = operationRows.find(
-      item => String(item.entry_id) === String(entryId)
-    );
-    renderSelected(operation || null);
-  };
-
-  const renderHistory = rows => {
-    const items = Array.isArray(rows) ? rows : [];
-    historyCount.textContent = String(items.length);
+  const renderHistoryPage = () => {
     history.replaceChildren();
+    const pageData = window.MGWAdminUX?.paginate(historyRows, historyPage, historyPerPage) || {
+      rows:historyRows, page:1, total:historyRows.length, totalPages:1, from:historyRows.length ? 1 : 0, to:historyRows.length
+    };
+    historyPage = pageData.page;
 
-    if (items.length === 0) {
+    if (!pageData.total) {
       const empty = document.createElement('div');
       empty.className = 'mgw-admin__history-empty';
       empty.textContent = 'Компенсаций пока нет.';
       history.append(empty);
+      window.MGWAdminUX?.renderPager(historyPagination, {page:1,total_pages:1,total:0,from:0,to:0}, () => {});
       return;
     }
 
-    items.forEach(item => {
+    pageData.rows.forEach(item => {
       const details = document.createElement('details');
       details.className = 'mgw-admin__compensation-history-item';
 
       const summary = document.createElement('summary');
       const main = document.createElement('span');
       const state = document.createElement('strong');
-      main.textContent =
-        `${coins(item.amount)} коинов · ${playerName(item)}`;
-      state.textContent =
-        item.status === 'applied' ? 'Проведена' : 'Ждёт подтверждения';
+      main.textContent = `${coins(item.amount)} коинов · ${playerName(item)}`;
+      state.textContent = item.status === 'applied' ? 'Проведена' : 'Ждёт подтверждения';
       summary.append(main,state);
 
       const body = document.createElement('div');
       body.className = 'mgw-admin__compensation-history-body';
-
       const reason = document.createElement('p');
       reason.textContent = `Причина: ${item.reason}`;
-
       const time = document.createElement('p');
       time.textContent = `Создана: ${localTime(item.requested_at_utc)}`;
-
       body.append(reason,time);
 
       if (item.status !== 'applied') {
@@ -305,17 +322,32 @@
         const button = document.createElement('button');
         button.type = 'button';
         button.textContent = 'Показать исходное списание';
-        button.addEventListener('click',() => {
-          void openOperation(item.original_entry_id);
-        });
+        button.addEventListener('click',() => { void openOperation(item.original_entry_id); });
         body.append(button);
       }
 
       details.append(summary,body);
       history.append(details);
     });
+
+    window.MGWAdminUX?.renderPager(historyPagination, {
+      page:pageData.page,
+      total_pages:pageData.totalPages,
+      total:pageData.total,
+      from:pageData.from,
+      to:pageData.to,
+    }, nextPage => {
+      historyPage = nextPage;
+      renderHistoryPage();
+    });
   };
 
+  const renderHistory = rows => {
+    historyRows = Array.isArray(rows) ? rows : [];
+    historyCount.textContent = String(historyRows.length);
+    historyPage = 1;
+    renderHistoryPage();
+  };
   const showPending = item => {
     pendingCompensation = item;
     confirmationCopy.replaceChildren();
@@ -419,7 +451,10 @@
         if (!exists) {
           renderPicker([data.operation,...operationRows]);
         }
-        picker.value = String(data.operation.entry_id);
+        pickerSelected.textContent = optionLabel(data.operation);
+        pickerList.querySelectorAll('[data-operation-id]').forEach(node => {
+          node.setAttribute('aria-selected', String(node.dataset.operationId || '') === String(data.operation.entry_id || '') ? 'true' : 'false');
+        });
       }
     } catch (error) {
       setMessage(
@@ -568,7 +603,16 @@
     }
   };
 
-  picker.addEventListener('change',chooseFromPicker);
+  pickerTrigger.addEventListener('click', event => {
+    event.stopPropagation();
+    if (busy || operationRows.length === 0) return;
+    pickerList.hidden = !pickerList.hidden;
+    pickerTrigger.setAttribute('aria-expanded', pickerList.hidden ? 'false' : 'true');
+  });
+  pickerList.addEventListener('click', event => event.stopPropagation());
+  document.addEventListener('click', event => {
+    if (!picker.contains(event.target)) closePicker();
+  });
 
   browserButton.addEventListener('click',browseOperations);
   browserQuery.addEventListener('keydown',event => {
@@ -594,12 +638,14 @@
   telegram?.ready?.();
 
   void refreshSnapshot().catch(error => {
-    picker.replaceChildren();
-    const option = document.createElement('option');
-    option.value = '';
-    option.textContent = 'Не удалось загрузить списания';
-    picker.append(option);
-    picker.disabled = true;
+    pickerList.replaceChildren();
+    const emptyPicker = document.createElement('div');
+    emptyPicker.className = 'mgw-admin__operation-picker-empty';
+    emptyPicker.textContent = 'Не удалось загрузить списания';
+    pickerList.append(emptyPicker);
+    pickerSelected.textContent = 'Не удалось загрузить списания';
+    pickerTrigger.disabled = true;
+    closePicker();
 
     setMessage(
       statusBox,

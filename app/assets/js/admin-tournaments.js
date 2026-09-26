@@ -46,6 +46,7 @@
   const reviewNote = card.querySelector('[data-tournament-review-note]');
   const reviewFlag = card.querySelector('[data-tournament-review-flag]');
   const reviewList = card.querySelector('[data-tournament-review-list]');
+  const reviewPagination = card.querySelector('[data-tournament-review-pagination]');
   let busy = false;
   let snapshot = null;
   let manualAcceptance = null;
@@ -53,6 +54,8 @@
   let manualProgression = null;
   let cancellation = null;
   let prizeReview = null;
+  let prizeReviewPage = 1;
+  const prizeReviewPerPage = 8;
   let resetConfirmUntil = 0;
   let resetConfirmTimer = null;
   let cancelConfirmUntil = 0;
@@ -315,7 +318,10 @@
       reviewFlag.dataset.available = available ? '1' : '0';
       reviewFlag.disabled = busy || !available;
     }
-    if (!available) return;
+    if (!available) {
+      if (reviewPagination instanceof HTMLElement) reviewPagination.hidden = true;
+      return;
+    }
 
     const settlement = review.settlement && typeof review.settlement === 'object'
       ? review.settlement
@@ -325,7 +331,7 @@
     if (reviewInfo instanceof HTMLElement) {
       const topCopy = top3.length
         ? 'Топ-3: ' + top3.map(item => `#${item.canonical_placement} ${item.nickname || item.public_mgw_id || item.mgw_id}`).join(' · ')
-        : 'Top-3 появится после завершения финала и матча за 3-е место.';
+        : 'Топ-3 появится после завершения финала и матча за 3-е место.';
       reviewInfo.textContent = settlement.hold === true
         ? `ПРИЗОВАЯ ВЕТКА УДЕРЖИВАЕТСЯ: ${held.length} участн. ждут решения администратора. ${topCopy}`
         : `Серьёзных сигналов, удерживающих призовую ветку, нет. ${topCopy}`;
@@ -334,36 +340,51 @@
     if (!(reviewList instanceof HTMLElement)) return;
     reviewList.replaceChildren();
     const reviews = Array.isArray(review.reviews) ? review.reviews : [];
-    if (!reviews.length) {
+    const pageData = window.MGWAdminUX?.paginate(reviews, prizeReviewPage, prizeReviewPerPage) || {
+      rows:reviews, page:1, total:reviews.length, totalPages:1, from:reviews.length ? 1 : 0, to:reviews.length
+    };
+    prizeReviewPage = pageData.page;
+
+    if (!pageData.total) {
       const empty = document.createElement('div');
       empty.className = 'mgw-admin__history-empty';
       empty.textContent = 'Активных или завершённых призовых проверок пока нет.';
       reviewList.append(empty);
+      window.MGWAdminUX?.renderPager(reviewPagination, {page:1,total_pages:1,total:0,from:0,to:0}, () => {});
       return;
     }
 
-    reviews.forEach(item => {
-      const row = document.createElement('div');
-      row.className = 'mgw-admin__history-item';
+    pageData.rows.forEach(item => {
+      const row = document.createElement('details');
+      row.className = 'mgw-admin__history-item mgw-admin__tournament-review-item';
       row.dataset.tournamentPrizeReview = String(item.mgw_id || '');
 
-      const copy = document.createElement('div');
-      copy.className = 'mgw-admin__history-copy';
+      const summary = document.createElement('summary');
+      const summaryCopy = document.createElement('span');
       const title = document.createElement('strong');
-      title.textContent = `${item.nickname || 'Игрок'} · ${item.public_mgw_id || item.mgw_id || '—'} · ${reviewStateLabel(item.review_state)}`;
-      const signal = document.createElement('span');
-      signal.textContent = `Сигнал: ${item.signal_label || item.signal_code || '—'}${item.related_game_id ? ` · матч ${item.related_game_id}` : ''}`;
-      const note = document.createElement('span');
+      const signal = document.createElement('small');
+      title.textContent = `${item.nickname || 'Игрок'} · ${item.public_mgw_id || item.mgw_id || '—'}`;
+      signal.textContent = `${reviewStateLabel(item.review_state)} · ${item.signal_label || item.signal_code || 'сигнал'}`;
+      summaryCopy.append(title, signal);
+      const badge = document.createElement('b');
+      badge.textContent = reviewStateLabel(item.review_state);
+      summary.append(summaryCopy, badge);
+
+      const body = document.createElement('div');
+      body.className = 'mgw-admin__tournament-review-body';
+      const signalLine = document.createElement('p');
+      signalLine.textContent = `Сигнал: ${item.signal_label || item.signal_code || '—'}${item.related_game_id ? ` · матч ${item.related_game_id}` : ''}`;
+      const note = document.createElement('p');
       note.textContent = item.signal_note || 'Без описания.';
-      const resolution = document.createElement('span');
+      const resolution = document.createElement('p');
       resolution.textContent = item.resolution_note
         ? `Решение: ${item.resolution_note}`
         : `Создан: ${formatDateTime(item.signaled_at_utc)}`;
-      copy.append(title, signal, note, resolution);
+      body.append(signalLine, note, resolution);
 
-      const actions = document.createElement('div');
-      actions.className = 'mgw-admin__tournament-actions';
       if (String(item.review_state || '') === 'pending') {
+        const actions = document.createElement('div');
+        actions.className = 'mgw-admin__tournament-actions';
         const release = document.createElement('button');
         release.type = 'button';
         release.textContent = 'Разрешить выплату';
@@ -375,13 +396,24 @@
         disqualify.dataset.danger = '1';
         disqualify.addEventListener('click', () => { void resolvePrizeReview(item, 'disqualify'); });
         actions.append(release, disqualify);
+        body.append(actions);
       }
 
-      row.append(copy, actions);
+      row.append(summary, body);
       reviewList.append(row);
     });
-  };
 
+    window.MGWAdminUX?.renderPager(reviewPagination, {
+      page:pageData.page,
+      total_pages:pageData.totalPages,
+      total:pageData.total,
+      from:pageData.from,
+      to:pageData.to,
+    }, nextPage => {
+      prizeReviewPage = nextPage;
+      renderPrizeReview(tournament);
+    });
+  };
   const summaryCard = (label, value) => {
     const node = document.createElement('div');
     const span = document.createElement('span');

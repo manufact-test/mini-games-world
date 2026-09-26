@@ -15,13 +15,21 @@
   const reviewNote = card.querySelector('[data-rating-review-note]');
   const recalcReason = card.querySelector('[data-rating-recalc-reason]');
   const exclusions = card.querySelector('[data-rating-exclusions]');
+  const exclusionQuery = card.querySelector('[data-rating-exclusion-query]');
+  const exclusionPagination = card.querySelector('[data-rating-exclusions-pagination]');
   const jobs = card.querySelector('[data-rating-jobs]');
+  const jobsPagination = card.querySelector('[data-rating-jobs-pagination]');
   const rehearsalOutput = card.querySelector('[data-rating-rehearsal-output]');
   const refresh = card.querySelector('[data-rating-refresh]');
   const rehearsal = card.querySelector('[data-rating-rehearsal]');
   const exclude = card.querySelector('[data-rating-exclude]');
   const recalculate = card.querySelector('[data-rating-recalculate]');
   let busy = false;
+  let currentSnapshot = null;
+  let exclusionPage = 1;
+  let jobsPage = 1;
+  const exclusionPerPage = 10;
+  const jobsPerPage = 8;
 
   const buttons = () => card.querySelectorAll('button');
 
@@ -116,16 +124,26 @@
 
   const renderExclusions = snapshot => {
     exclusions.replaceChildren();
-    const rows = Array.isArray(snapshot?.active_exclusions) ? snapshot.active_exclusions : [];
-    if (!rows.length) {
-      exclusions.append(empty('Активных ручных исключений нет.'));
+    const allRows = Array.isArray(snapshot?.active_exclusions) ? snapshot.active_exclusions : [];
+    const needle = String(exclusionQuery?.value || '').trim().toLowerCase();
+    const rows = needle
+      ? allRows.filter(row => [row.public_mgw_id,row.mgw_id,row.nickname,row.season_id,row.review_note]
+          .some(value => String(value || '').toLowerCase().includes(needle)))
+      : allRows;
+    const pageData = window.MGWAdminUX?.paginate(rows, exclusionPage, exclusionPerPage) || {
+      rows, page:1, total:rows.length, totalPages:1, from:rows.length ? 1 : 0, to:rows.length
+    };
+    exclusionPage = pageData.page;
+
+    if (!pageData.total) {
+      exclusions.append(empty(needle ? 'По этому поиску исключений нет.' : 'Активных ручных исключений нет.'));
+      window.MGWAdminUX?.renderPager(exclusionPagination, {page:1,total_pages:1,total:0,from:0,to:0}, () => {});
       return;
     }
 
-    rows.forEach(row => {
+    pageData.rows.forEach(row => {
       const item = document.createElement('div');
       item.className = 'mgw-admin__history-item';
-
       const copy = document.createElement('div');
       copy.className = 'mgw-admin__history-copy';
       const title = document.createElement('strong');
@@ -141,16 +159,27 @@
       item.append(copy, restore);
       exclusions.append(item);
     });
-  };
 
+    window.MGWAdminUX?.renderPager(exclusionPagination, {
+      page:pageData.page,total_pages:pageData.totalPages,total:pageData.total,from:pageData.from,to:pageData.to
+    }, nextPage => {
+      exclusionPage = nextPage;
+      renderExclusions(snapshot);
+    });
+  };
   const renderJobs = snapshot => {
     jobs.replaceChildren();
     const rows = Array.isArray(snapshot?.recent_jobs) ? snapshot.recent_jobs : [];
-    if (!rows.length) {
+    const pageData = window.MGWAdminUX?.paginate(rows, jobsPage, jobsPerPage) || {
+      rows, page:1, total:rows.length, totalPages:1, from:rows.length ? 1 : 0, to:rows.length
+    };
+    jobsPage = pageData.page;
+    if (!pageData.total) {
       jobs.append(empty('Пересчёты ещё не запускались.'));
+      window.MGWAdminUX?.renderPager(jobsPagination, {page:1,total_pages:1,total:0,from:0,to:0}, () => {});
       return;
     }
-    rows.forEach(row => {
+    pageData.rows.forEach(row => {
       const item = document.createElement('div');
       item.className = 'mgw-admin__history-item';
       const copy = document.createElement('div');
@@ -164,12 +193,20 @@
       item.append(copy);
       jobs.append(item);
     });
+    window.MGWAdminUX?.renderPager(jobsPagination, {
+      page:pageData.page,total_pages:pageData.totalPages,total:pageData.total,from:pageData.from,to:pageData.to
+    }, nextPage => {
+      jobsPage = nextPage;
+      renderJobs(snapshot);
+    });
   };
-
   const renderSnapshot = snapshot => {
-    renderMetrics(snapshot);
-    renderExclusions(snapshot);
-    renderJobs(snapshot);
+    currentSnapshot = snapshot || {};
+    exclusionPage = 1;
+    jobsPage = 1;
+    renderMetrics(currentSnapshot);
+    renderExclusions(currentSnapshot);
+    renderJobs(currentSnapshot);
   };
 
   const withBusy = async (message, action) => {
@@ -277,6 +314,11 @@
       );
     } catch (_) {}
   };
+
+  exclusionQuery?.addEventListener('input', () => {
+    exclusionPage = 1;
+    renderExclusions(currentSnapshot || {});
+  });
 
   refresh?.addEventListener('click', load);
   rehearsal?.addEventListener('click', runRehearsal);
