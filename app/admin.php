@@ -14,10 +14,11 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Mini Games World · Панель администратора</title>
-  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=14&mvp22_5=system-status-ru-ux-v2&replay=17-6&mvp22_4=admin-ux-scale-v1&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
+  <link rel="stylesheet" href="./assets/css/admin-shell.css?v=15&mvp22_6=product-economy-analytics-v1&mvp22_5=system-status-ru-ux-v2&replay=17-6&mvp22_4=admin-ux-scale-v1&manual_acceptance=v7-support-lifecycle-v3&mvp22_1=support-tickets&mvp22_2=compensation-ux-v4&economy_ui=collapsed-technical-v1&mvp22_3=moderation-v2-report-cards&mvp20_8=rating-admin&mvp21_1=tournament-registration&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="./assets/js/admin-shell.js?v=8&mvp22_4=admin-ux-scale-v1&test-coins=staging" defer></script>
+  <script src="./assets/js/admin-shell.js?v=9&mvp22_6=analytics-nav-v1&mvp22_4=admin-ux-scale-v1&test-coins=staging" defer></script>
   <script src="./assets/js/admin-system.js?v=2&mvp22_5=system-status-ru-ux-v2" defer></script>
+  <script src="./assets/js/admin-analytics.js?v=1&mvp22_6=product-economy-analytics-v1" defer></script>
   <script src="./assets/js/admin-antifraud.js?v=1&mvp22_4=case-nav-v4" defer></script>
   <script src="./assets/js/admin-compensation.js?v=5&mvp22_2=admin-ux-scale-v1" defer></script>
   <script src="./assets/js/admin-reports.js?v=3&mvp18=reports&mvp22_3=admin-ux-scale-v1" defer></script>
@@ -27,7 +28,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
   <script src="./assets/js/admin-tournaments.js?v=18&mvp21_3=admin-ux-scale-v1&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3&mvp21_5=corrective-v5&mvp21_6=fixture-progression-helper-v3&mvp21_8=corrective-v12&mvp21_8_cancel=cancellation-emergency-v1&mvp21_10=prize-review-v1&mvp21_manual=admin-ui-v2" defer></script>
 </head>
 <body>
-  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-compensation-api="../bot/admin-compensation.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-support-api="../bot/admin-support.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php" data-system-api="../bot/admin-system.php">
+  <main class="mgw-admin" data-admin-api="../bot/admin-read.php" data-economy-api="../bot/admin-economy.php" data-compensation-api="../bot/admin-compensation.php" data-test-coins-api="../bot/admin-test-coins.php" data-replay-api="../bot/admin-replay.php" data-reports-api="../bot/admin-reports.php" data-support-api="../bot/admin-support.php" data-notifications-api="../bot/admin-notifications.php" data-rating-api="../bot/admin-rating.php" data-tournament-api="../bot/admin-tournaments.php" data-system-api="../bot/admin-system.php" data-analytics-api="../bot/admin-analytics.php">
     <header class="mgw-admin__header">
       <div class="mgw-admin__title">
         <p class="mgw-admin__eyebrow">MINI GAMES WORLD</p>
@@ -46,6 +47,7 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
 
     <nav class="mgw-admin__nav" aria-label="Разделы панели администратора" data-admin-nav>
       <button type="button" data-admin-nav-target="overview">Обзор</button>
+      <button type="button" data-admin-nav-target="analytics">Аналитика</button>
       <button type="button" data-admin-nav-target="users">Пользователи</button>
       <button type="button" data-admin-nav-target="antifraud">Проверка игр</button>
       <button type="button" data-admin-nav-target="support">Поддержка</button>
@@ -99,6 +101,112 @@ header("Content-Security-Policy: default-src 'none'; script-src 'self' https://t
           </button>
         </div>
         <div class="mgw-admin__overview" data-admin-dashboard>—</div>
+      </article>
+
+      <article class="mgw-admin__card mgw-admin__card--wide" data-admin-section="analytics" data-admin-analytics>
+        <div class="mgw-admin__card-head">
+          <h2>Аналитика</h2>
+          <span>Продукт и экономика</span>
+        </div>
+
+        <div class="mgw-admin__analytics-status" data-analytics-status>Загружаю показатели…</div>
+
+        <div class="mgw-admin__analytics-kpis">
+          <div><span>Реальных аккаунтов</span><strong data-analytics-kpi="users">—</strong><small>без тестовых участников</small></div>
+          <div><span>Активны за 30 дней</span><strong data-analytics-kpi="active30">—</strong><small>по последней активности</small></div>
+          <div><span>Матчей за 30 дней</span><strong data-analytics-kpi="games30">—</strong><small>с реальным игроком</small></div>
+          <div><span>Баланс экономики за 30 дней</span><strong data-analytics-kpi="net30">—</strong><small>источники минус сжигание</small></div>
+        </div>
+
+        <div class="mgw-admin__analytics-grid">
+          <section class="mgw-admin__analytics-panel">
+            <div class="mgw-admin__analytics-head">
+              <h3>Пользователи</h3>
+              <span>Регистрации и активность</span>
+            </div>
+            <div class="mgw-admin__analytics-metrics" data-analytics-users></div>
+          </section>
+
+          <section class="mgw-admin__analytics-panel">
+            <div class="mgw-admin__analytics-head">
+              <h3>Возврат пользователей</h3>
+              <span>По доступной истории</span>
+            </div>
+            <div class="mgw-admin__analytics-metrics" data-analytics-retention></div>
+            <p class="mgw-admin__analytics-note" data-analytics-retention-note></p>
+          </section>
+
+          <section class="mgw-admin__analytics-panel mgw-admin__analytics-panel--wide">
+            <div class="mgw-admin__analytics-head">
+              <h3>Игры</h3>
+              <span>Матчи с реальными игроками</span>
+            </div>
+            <div class="mgw-admin__analytics-metrics mgw-admin__analytics-metrics--4" data-analytics-games-summary></div>
+            <div class="mgw-admin__analytics-bars" data-analytics-games></div>
+          </section>
+
+          <section class="mgw-admin__analytics-panel">
+            <div class="mgw-admin__analytics-head">
+              <h3>Подбор соперников</h3>
+              <span>Существующая телеметрия</span>
+            </div>
+            <div class="mgw-admin__analytics-metrics" data-analytics-matchmaking></div>
+            <p class="mgw-admin__analytics-note" data-analytics-matchmaking-note></p>
+          </section>
+
+          <section class="mgw-admin__analytics-panel">
+            <div class="mgw-admin__analytics-head">
+              <h3>Покупки</h3>
+              <span>Косметика за коины</span>
+            </div>
+            <div class="mgw-admin__analytics-metrics" data-analytics-purchases></div>
+            <div class="mgw-admin__analytics-list" data-analytics-offers></div>
+          </section>
+
+          <section class="mgw-admin__analytics-panel">
+            <div class="mgw-admin__analytics-head">
+              <h3>Реклама</h3>
+              <span>Показы и доход</span>
+            </div>
+            <div class="mgw-admin__analytics-empty" data-analytics-ads></div>
+          </section>
+
+          <section class="mgw-admin__analytics-panel">
+            <div class="mgw-admin__analytics-head">
+              <h3>Турниры</h3>
+              <span>Только реальные участники в продуктовых счётчиках</span>
+            </div>
+            <div class="mgw-admin__analytics-metrics" data-analytics-tournaments></div>
+            <div class="mgw-admin__analytics-current" data-analytics-current-tournament></div>
+          </section>
+
+          <section class="mgw-admin__analytics-panel mgw-admin__analytics-panel--wide">
+            <div class="mgw-admin__analytics-head">
+              <h3>Коины: источники и сжигание</h3>
+              <span>Чистое изменение доступных + зарезервированных коинов</span>
+            </div>
+            <div class="mgw-admin__analytics-metrics mgw-admin__analytics-metrics--4" data-analytics-coins></div>
+            <div class="mgw-admin__analytics-list" data-analytics-coin-categories></div>
+          </section>
+
+          <section class="mgw-admin__analytics-panel mgw-admin__analytics-panel--wide">
+            <div class="mgw-admin__analytics-head">
+              <h3>Согласованность экономики</h3>
+              <span>Только чтение</span>
+            </div>
+            <div class="mgw-admin__analytics-reconciliation" data-analytics-reconciliation></div>
+          </section>
+        </div>
+
+        <details class="mgw-admin__technical-disclosure mgw-admin__analytics-coverage">
+          <summary>Что именно умеет и не умеет эта статистика</summary>
+          <div class="mgw-admin__analytics-coverage-body" data-analytics-coverage></div>
+        </details>
+
+        <div class="mgw-admin__analytics-footer">
+          <span data-analytics-updated>—</span>
+          <button type="button" data-analytics-refresh>Обновить аналитику</button>
+        </div>
       </article>
 
       <article class="mgw-admin__card mgw-admin__card--wide" data-admin-section="system" data-admin-system>
