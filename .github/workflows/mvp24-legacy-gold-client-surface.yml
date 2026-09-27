@@ -1,0 +1,67 @@
+name: MVP-24 Legacy Gold client surface
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'docs/mvp24-legacy-gold-dependency-map.md'
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/assets/js/screens/home-screen.js'
+      - 'app/assets/js/screens/store-order.js'
+      - 'app/assets/js/screens/store-orders.js'
+      - 'app/assets/css/main.css'
+      - 'app/assets/css/screens/store-order.css'
+      - 'app/assets/css/screens/store-orders.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp24LegacyGoldClientSurfaceContractTest.php'
+      - '.github/workflows/mvp24-legacy-gold-client-surface.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp24-legacy-gold-client-surface-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Legacy Gold client surface contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax
+        run: |
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/tests/Mvp24LegacyGoldClientSurfaceContractTest.php
+          node --check app/assets/js/main-v110-handoff-shell.js
+          node --check app/assets/js/screens/home-screen.js
+
+      - name: Gold client surface proof
+        run: php bot/tests/Mvp24LegacyGoldClientSurfaceContractTest.php
+
+      - name: Bounded removal scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(docs/mvp24-legacy-gold-dependency-map\.md|app/assets/js/main-v110-handoff-shell\.js|app/assets/js/screens/(home-screen|store-order|store-orders)\.js|app/assets/css/main\.css|app/assets/css/screens/(store-order|store-orders)\.css|app/runtime/client/version-manifest\.php|bot/tests/Mvp24LegacyGoldClientSurfaceContractTest\.php|\.github/workflows/mvp24-legacy-gold-client-surface\.yml)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-24 client paths:\n%s\n' "$bad" >&2; exit 1; }
