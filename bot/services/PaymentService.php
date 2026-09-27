@@ -92,9 +92,9 @@ final class PaymentService
             }
         }
 
-        $lines = ["💳 Платежи"];
+        $lines = ["🗂 Архив платежей"];
         $lines[] = "
-Заявки создаются из Mini App. Начисление делает админ вручную.";
+Только просмотр. Старые ручные пополнения больше не создаются и не обрабатываются.";
         $lines[] = "Всего заявок: " . $summary['total'];
         $lines[] = "Ожидают решения: " . $summary['waiting'];
         $lines[] = "Начислены: " . $summary['paid'];
@@ -114,7 +114,7 @@ final class PaymentService
             $visibleWaiting = array_slice($waitingPayments, 0, max(0, $limit));
             if ($visibleWaiting) {
                 $lines[] = "
-⏳ Ожидают решения:";
+⏳ Ожидают решения: (исторический статус, обработка отключена)";
                 foreach ($visibleWaiting as $payment) {
                     $lines[] = "
 " . $this->adminPaymentCard($payment, $db);
@@ -351,12 +351,7 @@ final class PaymentService
         }
 
         $lines[] = "\nАрхив доступен только для просмотра.";
-        if ($this->isActionablePayment($payment)) {
-            $lines[] = "/mgw_private_admin_7291_payment_apply {$short} — подтвердить и начислить";
-            $lines[] = "/mgw_private_admin_7291_payment_reject {$short} причина — отклонить";
-        } else {
-            $lines[] = "действий нет";
-        }
+        $lines[] = "Действий с платежом нет.";
 
         return implode("\n", $lines);
     }
@@ -406,12 +401,7 @@ final class PaymentService
         $lines[] = "Сумма: {$price} {$currency} → {$coins} коинов";
         $lines[] = "Создана: {$date}";
 
-        if ($this->isActionablePayment($payment)) {
-            $lines[] = "Начислить: /mgw_private_admin_7291_payment_apply {$short}";
-            $lines[] = "Отклонить: /mgw_private_admin_7291_payment_reject {$short} причина";
-        } else {
-            $lines[] = "Действие: уже обработана";
-        }
+        $lines[] = "Действие: архив, только просмотр";
 
         return implode("\n", $lines);
     }

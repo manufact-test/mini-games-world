@@ -25,7 +25,7 @@ final class AdminService
             'inline_keyboard' => [
                 [
                     ['text' => '📊 Обзор', 'callback_data' => 'admin:dashboard'],
-                    ['text' => '🎁 Заявки', 'callback_data' => 'admin:orders'],
+                    ['text' => '🗂 Архив заявок', 'callback_data' => 'admin:orders'],
                 ],
                 [
                     ['text' => '📩 Обращения', 'callback_data' => 'admin:support'],
@@ -33,7 +33,7 @@ final class AdminService
                 ],
                 [
                     ['text' => '🔎 Найти игрока', 'callback_data' => 'admin:user_search_help'],
-                    ['text' => '💳 Платежи', 'callback_data' => 'admin:payments'],
+                    ['text' => '🗂 Архив платежей', 'callback_data' => 'admin:payments'],
                 ],
                 [
                     ['text' => '🧹 Убрать payout_done warning', 'callback_data' => 'admin:fix_payout_done'],
@@ -345,61 +345,45 @@ final class AdminService
 
     public function orders(array $db): string
     {
-        $orders = $db['shop_orders'] ?? [];
+        $orders = array_values(array_filter(
+            $db['shop_orders'] ?? [],
+            static fn(mixed $order): bool => is_array($order)
+        ));
         if (!$orders) {
-            return "🎁 Заявки магазина\n\nЗаявок пока нет.\n\nКоманда: "
+            return "🗂 Архив заявок магазина\n\nАрхив пока пуст.\n\nКоманда: "
                 . ($this->config['admin_orders_command'] ?? '/mgw_private_admin_7291_orders');
         }
 
-        $pending = [];
-        $done = [];
-        $rejected = [];
-        $other = [];
+        usort($orders, fn(array $a, array $b): int => strcmp(
+            (string)(($b['updated_at'] ?? '') ?: ($b['created_at'] ?? '')),
+            (string)(($a['updated_at'] ?? '') ?: ($a['created_at'] ?? ''))
+        ));
 
+        $statusCounts = [];
         foreach ($orders as $order) {
-            $status = (string)($order['status'] ?? 'pending');
-            if ($status === 'pending') $pending[] = $order;
-            elseif ($status === 'done') $done[] = $order;
-            elseif ($status === 'rejected') $rejected[] = $order;
-            else $other[] = $order;
+            $status = (string)($order['status'] ?? 'unknown');
+            $statusCounts[$status] = (int)($statusCounts[$status] ?? 0) + 1;
         }
 
-        $sortDesc = fn($a, $b) => strcmp((string)($b['created_at'] ?? ''), (string)($a['created_at'] ?? ''));
-        usort($pending, $sortDesc);
-        usort($done, $sortDesc);
-        usort($rejected, $sortDesc);
-        usort($other, $sortDesc);
+        $lines = ["🗂 Архив заявок магазина"];
+        $lines[] = "\nТолько просмотр. Старые сертификатные/призовые заявки больше не обрабатываются.";
+        $lines[] = "Всего записей: " . count($orders);
+        $lines[] = "Legacy pending: " . (int)($statusCounts['pending'] ?? 0);
+        $lines[] = "Выполнено: " . (int)($statusCounts['done'] ?? 0);
+        $lines[] = "Отклонено: " . (int)($statusCounts['rejected'] ?? 0);
 
-        $lines = ["🎁 Заявки магазина"];
-        $lines[] = "\nОжидают: " . count($pending);
-        $lines[] = "Выполнено: " . count($done);
-        $lines[] = "Отклонено: " . count($rejected);
-
-        if ($pending) {
-            $lines[] = "\n⏳ Ожидают обработки";
-            foreach (array_slice($pending, 0, 10) as $order) $lines[] = $this->orderListLine($order);
-        } else {
-            $lines[] = "\n⏳ Ожидают обработки\nНет ожидающих заявок.";
-        }
-
-        $recentProcessed = array_merge($done, $rejected, $other);
-        usort($recentProcessed, fn($a, $b) => strcmp((string)(($b['updated_at'] ?? '') ?: ($b['created_at'] ?? '')), (string)(($a['updated_at'] ?? '') ?: ($a['created_at'] ?? ''))));
-
-        if ($recentProcessed) {
-            $lines[] = "\n📦 Последние обработанные";
-            foreach (array_slice($recentProcessed, 0, 5) as $order) $lines[] = $this->orderListLine($order);
+        $lines[] = "\nПоследние записи:";
+        foreach (array_slice($orders, 0, 12) as $order) {
+            $lines[] = $this->orderListLine($order);
         }
 
         $orderCmd = $this->config['admin_order_command'] ?? '/mgw_private_admin_7291_order';
-
-        $lines[] = "\nКоманды:";
-        $lines[] = "{$orderCmd} ABC123 — открыть заявку";
-        $lines[] = "{$doneCmd} ABC123 — отметить выполненной";
-        $lines[] = "{$rejectCmd} ABC123 причина — отклонить и вернуть коины";
+        $lines[] = "\nОткрыть архивную карточку:";
+        $lines[] = "{$orderCmd} ABC123";
+        $lines[] = "Изменение статуса и возвраты через этот архив отключены.";
 
         return implode("\n", $lines);
     }
-
     public function orderDetails(array $db, string $query): string
     {
         $query = trim($query);
@@ -677,10 +661,10 @@ final class AdminService
         $user = $userId !== '' ? ($db['users'][$userId] ?? null) : null;
         $userLabel = is_array($user) ? $this->userLabel($user) : ('ID ' . ($userId ?: '—'));
 
-        $lines = ["🎁 Карточка заявки"];
+        $lines = ["🗂 Архивная карточка заявки"];
         $lines[] = "\nЗаявка №{$short}";
         $lines[] = "Полный ID: {$orderId}";
-        $lines[] = "Статус: " . $this->orderStatusLabel($status);
+        $lines[] = "Исторический статус: " . $this->orderStatusLabel($status);
         $lines[] = "Пользователь: {$userLabel}";
         $lines[] = "User ID: " . ($userId ?: '—');
         $lines[] = "Страна: " . ((string)($order['country'] ?? '') ?: '—');
@@ -691,20 +675,13 @@ final class AdminService
 
         if (!empty($order['completed_at'])) $lines[] = "Выполнена: " . $this->formatDate((string)$order['completed_at']);
         if (!empty($order['rejected_at'])) $lines[] = "Отклонена: " . $this->formatDate((string)$order['rejected_at']);
-        if (!empty($order['refund_done'])) $lines[] = "Возврат: +" . (int)($order['refund_amount'] ?? $order['amount'] ?? 0) . " коинов";
-        if (!empty($order['admin_note'])) $lines[] = "Заметка: " . (string)$order['admin_note'];
+        if (!empty($order['refund_done'])) $lines[] = "Исторический возврат: +" . (int)($order['refund_amount'] ?? $order['amount'] ?? 0) . " коинов";
+        if (!empty($order['admin_note'])) $lines[] = "Архивная заметка: " . (string)$order['admin_note'];
 
-        if ($status === 'pending') {
-            $lines[] = "\nДействия:";
-            $lines[] = "{$done} {$short}";
-            $lines[] = "{$reject} {$short} причина";
-        } else {
-            $lines[] = "\nДействия недоступны: заявка уже обработана.";
-        }
+        $lines[] = "\nАрхив доступен только для просмотра. Действий с заявкой нет.";
 
         return implode("\n", $lines);
     }
-
     private function orderListLine(array $order): string
     {
         $short = $this->prettyId((string)($order['id'] ?? ''));

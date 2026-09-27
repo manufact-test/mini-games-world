@@ -1,0 +1,69 @@
+name: MVP-24 Legacy Admin commerce read-only
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/webhook.php'
+      - 'bot/handlers/WebhookHandler.php'
+      - 'bot/services/AdminService.php'
+      - 'bot/services/PaymentService.php'
+      - 'bot/tests/Mvp24LegacyAdminCommerceReadOnlyContractTest.php'
+      - '.github/workflows/mvp24-legacy-admin-commerce-readonly.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp24-legacy-admin-commerce-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Legacy Admin commerce read-only contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: PHP syntax
+        run: |
+          php -l bot/webhook.php
+          php -l bot/handlers/WebhookHandler.php
+          php -l bot/services/AdminService.php
+          php -l bot/services/PaymentService.php
+          php -l bot/tests/Mvp24LegacyAdminCommerceReadOnlyContractTest.php
+
+      - name: Archive-only Admin proof
+        run: php bot/tests/Mvp24LegacyAdminCommerceReadOnlyContractTest.php
+
+      - name: Preserve archive readers
+        run: |
+          php bot/tests/LegacyFinancialArchiveStatusMapTest.php
+          php -l bot/ledger/LegacyFinancialArchiveImportService.php
+          php -l bot/ledger/LegacyFinancialArchiveDeltaService.php
+
+      - name: Bounded backend slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(bot/(webhook\.php|handlers/WebhookHandler\.php|services/(AdminService|PaymentService)\.php|tests/Mvp24LegacyAdminCommerceReadOnlyContractTest\.php)|\.github/workflows/mvp24-legacy-admin-commerce-readonly\.yml)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-24.3a paths:\n%s\n' "$bad" >&2; exit 1; }
