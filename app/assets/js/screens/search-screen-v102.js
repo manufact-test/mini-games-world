@@ -3,7 +3,7 @@ import { api } from '../api/client.js?v=47';
 import { toast } from '../components/toast.js?v=41';
 import { closeSheet } from '../components/sheet.js?v=68';
 import { registerScreenCleanup, showScreen } from '../router.js?v=27';
-import { clearTimer, renderBalances, roomName } from '../ui.js?v=89';
+import { clearTimer, renderBalances } from '../ui.js?v=89';
 import { APP_CONFIG } from '../config.js?v=38';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 import { enterGame, clearGameView } from './game-screen-v102-safe.js?v=102';
@@ -125,8 +125,6 @@ export async function beginSearch(rawContext){
   state.timers.game = clearTimer(state.timers.game);
   state.activeGame = null;
   state.selectedGame = context.gameType;
-  state.room = context.room;
-  state.selectedBet = context.bet;
   rememberBoardSelection(context.gameType, context.size);
   clearGameView();
   closeSheet();
@@ -196,7 +194,7 @@ export async function beginSearch(rawContext){
     return null;
   }
 
-  const startPromise = api.startSearch(context.room, context.bet, context.size, context.gameType);
+  const startPromise = api.startSearch(context.size, context.gameType);
   searchRuntime.startPromise = startPromise;
 
   try {
@@ -361,8 +359,6 @@ function currentMatchReleaseBarrier(){
 }
 
 function searchContext(buttonId){
-  const room = state.room === 'gold' ? 'gold' : 'match';
-  const bet = room === 'match' ? APP_CONFIG.matchBet : Number(state.selectedBet || APP_CONFIG.goldBets[0]);
   const options = {
     startSearchBtn:{ gameType:'tictactoe', size:Number(state.selectedBoardSize || 3), title:'Крестики-нолики' },
     startFourSearchBtn:{ gameType:'four_in_a_row', size:Number(state.selectedFourBoardSize || 7), title:'4 в ряд' },
@@ -373,23 +369,19 @@ function searchContext(buttonId){
     startGoSearchBtn:{ gameType:'go', size:Number(state.selectedGoBoardSize || 9), title:'Го' },
     startDominoSearchBtn:{ gameType:'domino', size:7, title:'Домино' },
   };
-  const selected = options[buttonId] || options.startSearchBtn;
-  return normalizeContext({ ...selected, room, bet });
+  return normalizeContext(options[buttonId] || options.startSearchBtn);
 }
 
 function normalizeContext(value){
   const gameType = String(value?.gameType || 'tictactoe');
-  const room = String(value?.room || state.room || 'match') === 'gold' ? 'gold' : 'match';
   const size = Number(value?.size || defaultSize(gameType));
-  const bet = room === 'match' ? APP_CONFIG.matchBet : Number(value?.bet || state.selectedBet || APP_CONFIG.goldBets[0]);
+  const bet = Number(APP_CONFIG.matchBet);
   const title = String(value?.title || titleFor(gameType));
   return {
     gameType,
-    room,
     size,
-    bet,
     title,
-    label:`${title} · ${roomName(room)} · участие ${bet} коинов${gameType === 'domino' ? '' : ` · поле ${size}×${size}`}`,
+    label:`${title} · участие ${bet} коинов${gameType === 'domino' ? '' : ` · поле ${size}×${size}`}`,
   };
 }
 

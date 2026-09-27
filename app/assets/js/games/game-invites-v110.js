@@ -238,8 +238,8 @@ function openInviteSetup(gameType, preserved = null){
         `).join('')}
       </div>
       <div class="section-title"><h2>Стоимость участия</h2></div>
-      <div class="choice-grid single-choice" data-invite-bets>
-        <button class="choice active" data-invite-bet="${bet}" type="button">${bet} коинов</button>
+      <div class="choice-grid single-choice">
+        <div class="choice active" role="status">${bet} коинов</div>
       </div>
     </div>
 
@@ -252,7 +252,7 @@ function openInviteSetup(gameType, preserved = null){
     <div class="invite-method-note">${socialInviteTarget ? 'Приглашение получит выбранный игрок.' : 'Игроку из списка приглашение сразу придёт в приложение. Ссылка нужна для нового человека.'}</div>
   `);
 
-  const currentContext = () => normalizeInviteContext({ gameType, boardSize, bet });
+  const currentContext = () => normalizeInviteContext({ gameType, boardSize });
   document.querySelectorAll('[data-invite-size]').forEach(button => button.addEventListener('click', () => {
     boardSize = Number(button.dataset.inviteSize || option.defaultSize);
     document.querySelectorAll('[data-invite-size]').forEach(item => item.classList.toggle('active', item === button));
@@ -715,20 +715,18 @@ function normalizeInviteContext(value){
   const option = GAME_OPTIONS[gameType] || GAME_OPTIONS.tictactoe;
   return {
     gameType,
-    room:'match',
     boardSize:Number(value?.boardSize || option.defaultSize),
-    bet:Number(APP_CONFIG.matchBet),
   };
 }
 
 function defaultInviteContext(gameType){
   const option = GAME_OPTIONS[gameType] || GAME_OPTIONS.tictactoe;
-  return normalizeInviteContext({ gameType, boardSize:option.defaultSize, bet:APP_CONFIG.matchBet });
+  return normalizeInviteContext({ gameType, boardSize:option.defaultSize });
 }
 
 function inviteContextKey(context){
   const normalized = normalizeInviteContext(context);
-  return `${normalized.gameType}|${normalized.boardSize}|${normalized.bet}`;
+  return `${normalized.gameType}|${normalized.boardSize}`;
 }
 
 function showPreparedLink(invite, context){
@@ -977,7 +975,6 @@ async function createRematch(gameId, button){
     : (String(state.activeGame?.id || '') === gameId ? state.activeGame : null);
   const gameType = String(finished?.game_type || finished?.type || state.selectedGame || 'tictactoe');
   const boardSize = Number(finished?.board_size || GAME_OPTIONS[gameType]?.defaultSize || 3);
-  const bet = Number(finished?.bet || APP_CONFIG.matchBet || 0);
 
   openSheet(`
     <span data-rematch-pending="${escapeHtml(gameId)}" hidden></span>
@@ -985,7 +982,7 @@ async function createRematch(gameId, button){
       <div><h2>Реванш предложен</h2><p>${escapeHtml(gameTitle(gameType))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
-    ${contextSummary({ gameType, boardSize, bet })}
+    ${contextSummary({ gameType, boardSize })}
     <div class="small-note invite-status-note">Ждём ответа соперника.</div>
   `);
 
@@ -1212,7 +1209,7 @@ function contextSummary(context){
     <div class="topup-success">
       <div><span>Игра</span><strong>${escapeHtml(gameTitle(context?.gameType))}</strong></div>
       <div><span>Вариант</span><strong>${escapeHtml(boardLabel(String(context?.gameType || ''), Number(context?.boardSize || 0)))}</strong></div>
-      <div><span>Ставка</span><strong>${Number(context?.bet || 0)} коинов</strong></div>
+      <div><span>Участие</span><strong>${Number(APP_CONFIG.matchBet || 0)} коинов</strong></div>
     </div>
   `;
 }
@@ -1537,7 +1534,7 @@ function inviteSummary(invite){
     <div class="topup-success">
       <div><span>Игра</span><strong>${escapeHtml(invite?.game_title || 'Игра')}</strong></div>
       <div><span>Вариант</span><strong>${escapeHtml(inviteBoardLabel(invite))}</strong></div>
-      <div><span>Ставка</span><strong>${Number(invite?.bet || 0)} коинов</strong></div>
+      <div><span>Участие</span><strong>${Number(invite?.bet || APP_CONFIG.matchBet || 0)} коинов</strong></div>
     </div>
   `;
 }
