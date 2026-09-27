@@ -15,10 +15,8 @@ import { initShieldKingVisuals } from './components/shield-king-visuals.js?v=127
 import { showHomeActivity, showBootFailure, dispatchAppReady } from './components/boot-state.js?v=87';
 import { initTypography } from './utils/typography.js?v=39';
 import { renderUser, renderBalances, clearTimer } from './ui.js?v=89';
-import { initHomeScreen, setRoom } from './screens/home-screen.js?v=74';
+import { initHomeScreen } from './screens/home-screen.js?v=74';
 import { initTournamentsScreen } from './screens/tournaments-screen-v1.js?v=4&arena=final-table-polish-v1';
-import { initStoreOrder } from './screens/store-order.js?v=38';
-import { initStoreOrders } from './screens/store-orders.js?v=36';
 import { initNotificationsScreen } from './screens/notifications-screen-v110r13.js?v=1162&mvp18=friend-request-lifecycle';
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=79&complete=green';
 import { initSearchScreen } from './screens/search-screen-v102.js?v=103';
@@ -66,8 +64,6 @@ initSearchScreen();
 initSearchInviteReconciliation();
 initDominoChainLayout();
 initUnifiedGameLauncher();
-initStoreOrder();
-initStoreOrders();
 initWeeklyMatchInfo();
 initHomeScreen();
 initAccountShortcuts();
@@ -96,7 +92,6 @@ async function boot(){
     }
     APP_CONFIG.matchBet = matchEntryCost;
     state.selectedBet = matchEntryCost;
-    setRoom(APP_CONFIG.defaultRoom);
     const [mgwProfileResult, prestigeResult] = await Promise.all([profilePromise, prestigePromise]);
     state.mgwProfile = mgwProfileResult.profile || null;
     if (prestigeResult?.tournament_rewards && typeof prestigeResult.tournament_rewards === 'object') {

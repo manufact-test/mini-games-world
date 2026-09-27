@@ -123,7 +123,7 @@ async function openBalanceHistorySheet(){
   try {
     const result=historyCache || await refreshHistoryCache({ force:true });
     if(result.user){state.user=result.user;renderBalances(state.user);}
-    renderHistorySheet(result.history||{},result.topups||[]);
+    renderHistorySheet(result.history||{});
     void refreshHistoryCache({ force:isHistoryCacheStale() }).catch(() => {});
   } catch(error){ openSheet(`<div class="sheet-head"><div><h2>История баланса</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="small-note">${escapeHtml(error.message)}</div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`); }
 }
@@ -143,11 +143,10 @@ function refreshHistoryCache({force=false}={}){
     .finally(()=>{historyCachePromise=null;});
   return historyCachePromise;
 }
-function renderHistorySheet(history,topups=[]){
+function renderHistorySheet(history){
   const operations=history.operations||[];
-  const topupHtml=topups.length?topups.slice(0,20).map(item=>{const room=item.room==='match'?'Match':'Gold';const status=topupStatusText(item.status);const tone=topupTone(item.status);const price=Number(item.price||item.amount_rub||0).toLocaleString('ru-RU');const coins=Number(item.coins||0).toLocaleString('ru-RU');const reason=item.status==='rejected'&&item.reject_reason?`<span>Причина: ${escapeHtml(item.reject_reason)}</span>`:'';return `<div class="history-item"><div><strong>${escapeHtml(status)}</strong><span>${escapeHtml(room)} · ${price} ₽ → ${coins} коинов</span>${reason}<em>#${escapeHtml(item.short_id||'')} · ${escapeHtml(formatDate(item.created_at))}</em></div><b class="${tone}">${escapeHtml(topupAmountLabel(item))}</b></div>`;}).join(''):`<div class="small-note">Заявок на пополнение пока нет.</div>`;
   const operationHtml=operations.length?operations.slice(0,20).map(item=>`<div class="history-item"><div><strong>${escapeHtml(item.title||'Операция')}</strong><span>${escapeHtml(item.description||'')}</span><em>${escapeHtml(formatDate(item.created_at))}</em></div><b class="${item.tone==='pos'?'pos':(item.tone==='neg'?'neg':'')}">${escapeHtml(item.amount_label||'0 коинов')}</b></div>`).join(''):`<div class="small-note">Операций пока нет.</div>`;
-  openSheet(`<div class="sheet-head"><div><h2>История баланса</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="history-tabs" role="tablist"><button class="history-tab active" data-history-tab="operations" type="button">Операции</button><button class="history-tab" data-history-tab="topups" type="button">Пополнения</button></div><div class="history-scroll"><div class="history-tab-panel active" data-history-panel="operations"><div class="history-section"><h3>Операции баланса</h3><div class="history-list">${operationHtml}</div></div></div><div class="history-tab-panel" data-history-panel="topups"><div class="history-section"><h3>Пополнения</h3><div class="history-list">${topupHtml}</div></div></div></div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`); bindHistoryTabs();
+  openSheet(`<div class="sheet-head"><div><h2>История баланса</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="history-scroll"><div class="history-section"><h3>Операции баланса</h3><div class="history-list">${operationHtml}</div></div></div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`);
 }
 function renderMatchHistorySheet(matches=[]){
   const matchHtml=matches.length?matches.slice(0,20).map(item=>{
@@ -166,10 +165,6 @@ function renderMatchHistorySheet(matches=[]){
   openSheet(`<div class="sheet-head"><div><h2>История матчей</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="history-scroll"><div class="history-section"><h3>Последние игры</h3><div class="history-list">${matchHtml}</div></div></div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`);
 }
 function matchDelta(value){if(value===null||value===undefined||!Number.isFinite(Number(value)))return'—';const normalized=Math.trunc(Number(value));return `${normalized>0?'+':''}${normalized} коинов`;}
-function bindHistoryTabs(){const tabs=document.querySelectorAll('[data-history-tab]');const panels=document.querySelectorAll('[data-history-panel]');tabs.forEach(tab=>tab.addEventListener('click',()=>{const target=tab.dataset.historyTab;tabs.forEach(item=>item.classList.toggle('active',item===tab));panels.forEach(panel=>panel.classList.toggle('active',panel.dataset.historyPanel===target));}));}
-function topupStatusText(status){if(status==='paid')return'Пополнение начислено';if(status==='rejected')return'Заявка отклонена';if(status==='cancelled')return'Заявка отменена';if(status==='pending')return'Ожидает оплаты';return'Заявка на пополнение';}
-function topupTone(status){if(status==='paid')return'pos';if(status==='rejected'||status==='cancelled')return'neg';return'';}
-function topupAmountLabel(item){if(item.status==='paid')return'+'+Number(item.coins||0).toLocaleString('ru-RU')+' коинов';if(item.status==='rejected'||item.status==='cancelled')return'0 коинов';return'ожидает';}
 function formatDate(value){if(!value)return'';const date=new Date(value);if(Number.isNaN(date.getTime()))return String(value);return date.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}
 function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[char]));}
 function openSupportForm(type){
