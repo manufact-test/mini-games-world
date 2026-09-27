@@ -327,9 +327,4 @@ final class WebhookHandler
         $parts = explode(':', $action);
         return trim((string)end($parts));
     }
-
-
-
-
-
-
+}
