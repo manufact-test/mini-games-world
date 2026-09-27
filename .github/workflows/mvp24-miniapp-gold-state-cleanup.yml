@@ -1,0 +1,75 @@
+name: MVP-24 Mini App Gold state cleanup
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/assets/js/screens/home-screen.js'
+      - 'app/assets/js/screens/search-screen-v102.js'
+      - 'app/assets/js/games/unified-game-launcher.js'
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'app/assets/js/games/invite-link-entry-v110r12.js'
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/state.js'
+      - 'app/assets/js/config.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp24MiniAppGoldStateCleanupContractTest.php'
+      - '.github/workflows/mvp24-miniapp-gold-state-cleanup.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp24-miniapp-gold-state-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Room-neutral Mini App contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax
+        run: |
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/tests/Mvp24MiniAppGoldStateCleanupContractTest.php
+          node --check app/assets/js/main-v110-handoff-shell.js
+          node --check app/assets/js/screens/home-screen.js
+          node --check app/assets/js/screens/search-screen-v102.js
+          node --check app/assets/js/games/unified-game-launcher.js
+          node --check app/assets/js/games/game-invites-v110.js
+          node --check app/assets/js/games/invite-link-entry-v110r12.js
+          node --check app/assets/js/api/client.js
+          node --check app/assets/js/state.js
+          node --check app/assets/js/config.js
+
+      - name: Room-neutral Mini App proof
+        run: php bot/tests/Mvp24MiniAppGoldStateCleanupContractTest.php
+
+      - name: Bounded removal scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(app/assets/js/(main-v110-handoff-shell\.js|state\.js|config\.js|api/client\.js|screens/(home-screen|search-screen-v102)\.js|games/(unified-game-launcher|game-invites-v110|invite-link-entry-v110r12)\.js)|app/runtime/client/version-manifest\.php|bot/tests/Mvp24MiniAppGoldStateCleanupContractTest\.php|\.github/workflows/mvp24-miniapp-gold-state-cleanup\.yml)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-24.2 Mini App paths:\n%s\n' "$bad" >&2; exit 1; }

@@ -80,8 +80,6 @@ function openUnifiedSetup(gameType){
   activeGameType = gameType;
   activeSize = selectedSizeFor(gameType);
   state.selectedGame = gameType;
-  state.room = 'match';
-  state.selectedBet = bet;
 
   renderSetup();
 }
@@ -168,8 +166,6 @@ async function startUnifiedSearch(){
   if (button instanceof HTMLButtonElement) button.disabled = true;
 
   state.selectedGame = gameType;
-  state.room = 'match';
-  state.selectedBet = bet;
 
   const variant = variantLabel(gameType, size);
   const label = t('setup.search_label', {
@@ -181,8 +177,6 @@ async function startUnifiedSearch(){
   try {
     const searchPromise = beginSearch({
       gameType,
-      room:'match',
-      bet,
       size,
       title:gameTitle(gameType),
       label,

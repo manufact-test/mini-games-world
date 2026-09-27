@@ -28,7 +28,7 @@ import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static';
 import { initGameInvites } from './games/game-invites-v110.js?v=1137&ux=1';
 import { initUnifiedGameLauncher } from './games/unified-game-launcher.js?v=1&mvp16=unified-game-setup';
-import { openIncomingInviteFromTelegram } from './games/invite-link-entry-v110r12.js?v=1123';
+import { openIncomingInviteFromTelegram } from './games/invite-link-entry-v110r12.js?v=1124&mvp24=room-copy-removed-v1';
 import { initSearchInviteReconciliation } from './games/search-invite-reconciliation-v110r12.js?v=1124';
 import { initDominoChainLayout } from './games/domino/chain-layout.js?v=82';
 import { currentV99PassiveLock } from './production-v99-session-transport.js?v=99';
@@ -91,7 +91,6 @@ async function boot(){
       throw new Error('Серверная стоимость участия недоступна.');
     }
     APP_CONFIG.matchBet = matchEntryCost;
-    state.selectedBet = matchEntryCost;
     const [mgwProfileResult, prestigeResult] = await Promise.all([profilePromise, prestigePromise]);
     state.mgwProfile = mgwProfileResult.profile || null;
     if (prestigeResult?.tournament_rewards && typeof prestigeResult.tournament_rewards === 'object') {

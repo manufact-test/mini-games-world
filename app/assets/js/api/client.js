@@ -181,7 +181,7 @@ export const api = {
   bootstrap: () => request('bootstrap'),
   stats: () => request('stats'),
   weeklyMatchStatus: () => request('weekly_match_status'),
-  startSearch: (room, bet, boardSize, gameType = 'tictactoe') => request('start_search', { room, bet, boardSize, gameType }),
+  startSearch: (boardSize, gameType = 'tictactoe') => request('start_search', { boardSize, gameType }),
   leaveSearch: () => request('leave_search'),
   gameState: (gameId = null) => request('game_state', { gameId }),
   gameAction: (gameId, gameAction) => request('game_action', { gameId, gameAction }),
@@ -232,9 +232,5 @@ export const api = {
   cosmeticStorePurchase: (offerId, requestToken) => requestCosmeticStore({ action:'purchase', offer_id:offerId, request_token:requestToken }),
   cosmeticStoreEquip: itemId => requestCosmeticStore({ action:'equip', item_id:itemId }),
   cosmeticStoreUnequip: equipSlot => requestCosmeticStore({ action:'unequip', equip_slot:equipSlot }),
-  shopStatus: () => request('shop_status'),
-  shopOrders: () => requestUrl(APP_CONFIG.shopHistoryBase),
-  notifications: (markRead = false) => requestUrl(APP_CONFIG.notificationsBase, { markRead }),
-  shopOrder: (itemId, denominationId, requestToken) => request('shop_order', { itemId, denominationId, requestToken }),
-  paymentCreateDraft: (room, amount) => request('payment_create_draft', { room, amount })
+  notifications: (markRead = false) => requestUrl(APP_CONFIG.notificationsBase, { markRead })
 };

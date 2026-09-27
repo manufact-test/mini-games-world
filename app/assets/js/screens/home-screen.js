@@ -62,8 +62,6 @@ export function initHomeScreen(){
   }, { once:true });
 }
 function openProfileFromTop(){ document.dispatchEvent(new CustomEvent('mgw:open-profile')); }
-export function setRoom(){ state.room='match'; state.selectedBet=APP_CONFIG.matchBet; renderRoomCard(); }
-export function renderRoomCard(){}
 export function renderStats(stats){
   const el=document.getElementById('activityGrid'); if(!el)return; const safe=stats||{};
   el.innerHTML=`<div class="activity-card"><div class="label">Игроков онлайн</div><div class="num">${safe.online_players ?? '—'}</div></div><div class="activity-card"><div class="label">Активных матчей</div><div class="num">${safe.active_games ?? '—'}</div></div>`;

@@ -85,9 +85,8 @@ function inviteSummary(invite){
   return `
     <div class="topup-success">
       <div><span>Игра</span><strong>${escapeHtml(invite?.game_title || 'Игра')}</strong></div>
-      <div><span>Комната</span><strong>${escapeHtml(invite?.room_label || roomLabel(invite?.room))}</strong></div>
       <div><span>Вариант</span><strong>${escapeHtml(inviteBoardLabel(invite))}</strong></div>
-      <div><span>Ставка</span><strong>${Number(invite?.bet || 0)} коинов</strong></div>
+      <div><span>Участие</span><strong>${Number(invite?.bet || 0)} коинов</strong></div>
     </div>
   `;
 }
@@ -100,10 +99,6 @@ function inviteBoardLabel(invite){
   if (gameType === 'domino') return 'Классика 0–6';
   const size = Number(invite?.board_size || 0);
   return `${size}×${size}`;
-}
-
-function roomLabel(room){
-  return String(room || '') === 'gold' ? 'Gold-комната' : 'Матч-комната';
 }
 
 function incomingToken(){
