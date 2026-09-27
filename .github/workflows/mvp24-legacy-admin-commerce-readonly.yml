@@ -50,10 +50,11 @@ jobs:
       - name: Archive-only Admin proof
         run: php bot/tests/Mvp24LegacyAdminCommerceReadOnlyContractTest.php
 
-      - name: Preserve archive constraints
+      - name: Preserve archive readers
         run: |
           php bot/tests/LegacyFinancialArchiveStatusMapTest.php
-          php bot/tests/LegacyFinancialArchiveImportServiceTest.php
+          php -l bot/ledger/LegacyFinancialArchiveImportService.php
+          php -l bot/ledger/LegacyFinancialArchiveDeltaService.php
 
       - name: Bounded backend slice
         shell: bash
