@@ -61,8 +61,8 @@ $assert(
 $assert(
     !str_contains($handler, "['text' => '✅ Начислить'")
         && !str_contains($handler, "['text' => '🚫 Отклонить'")
-        && str_contains($handler, "str_starts_with($action, 'order_open:')")
-        && str_contains($handler, "str_starts_with($action, 'payment_open:')"),
+        && str_contains($handler, "str_starts_with(\$action, 'order_open:')")
+        && str_contains($handler, "str_starts_with(\$action, 'payment_open:')"),
     'Admin callback compatibility must keep archive reads without write buttons.'
 );
 
