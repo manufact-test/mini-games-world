@@ -1,4 +1,5 @@
 name: MVP-21.6 Tournament rounds and draw replays
+# Successor marker: bounded MVP-24 backend slices are outside frozen MVP-20 presentation scope.
 
 on:
   pull_request:
