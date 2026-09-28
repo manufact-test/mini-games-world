@@ -140,7 +140,6 @@ try {
     $matchPreparationRuntime = new MatchPreparationRuntimeService($config);
     $shop = new ShopService($config, $users);
     $payments = new PaymentService($config, $users);
-    $telegram = new TelegramService($config);
     $sessions = new SessionService($config);
     $presenceService = new PresenceService();
     $statsService = new StatsService($presenceService);
@@ -719,21 +718,23 @@ try {
                 ];
 
             case 'payment_plans':
+            case 'payment_create_draft':
                 return [
-                    'payments' => [
-                        'enabled' => false,
-                        'mode' => 'prepared',
-                        'message' => 'Заявку на пополнение можно создать. Реальная оплата подключается отдельно.',
-                        'plans' => $payments->plans(),
-                    ],
+                    'saved' => false,
+                    'deprecated' => true,
+                    'payments' => $payments->status($data, $user),
                     'session' => $sessions->publicState($user, $sessionId),
+                    'message' => UnifiedGameZonePolicy::legacyArchiveMessage(),
                 ];
 
-            case 'payment_create_draft':
-                UnifiedGameZonePolicy::rejectLegacyCommerceWrite();
-
             case 'shop_order':
-                UnifiedGameZonePolicy::rejectLegacyCommerceWrite();
+                return [
+                    'saved' => false,
+                    'deprecated' => true,
+                    'shop' => $shop->status($user),
+                    'session' => $sessions->publicState($user, $sessionId),
+                    'message' => UnifiedGameZonePolicy::legacyArchiveMessage(),
+                ];
 
             case 'start_search':
                 $sessions->assertCanPlay($user, $sessionId);
@@ -1004,17 +1005,6 @@ try {
             // Registration is already authoritative DB state. Notification
             // failure must never roll back or misreport the successful last seat.
             error_log('Mini Games World tournament-full admin notification failed: ' . $notifyError->getMessage());
-        }
-    }
-
-    if ($action === 'payment_create_draft'
-        && !empty($result['saved'])
-        && isset($result['payment'])
-        && is_array($result['payment'])) {
-        try {
-            $telegram->notifyAdminsAboutPayment($result['payment']);
-        } catch (Throwable $notifyError) {
-            error_log('Mini Games World payment admin notification failed: ' . $notifyError->getMessage());
         }
     }
 
