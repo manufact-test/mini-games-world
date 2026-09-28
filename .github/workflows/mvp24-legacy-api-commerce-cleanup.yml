@@ -61,6 +61,9 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
-          allowed='^(bot/(api\.php|tests/Mvp24LegacyApiCommerceCleanupContractTest\.php)|\.github/workflows/mvp24-legacy-api-commerce-cleanup\.yml)$'
+          allowed='^(bot/(api\.php|tests/Mvp24LegacyApiCommerceCleanupContractTest\.php)|\.github/workflows/(mvp24-legacy-api-commerce-cleanup|mvp20-2-hidden-skill)\.yml)
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-24.3b paths:\n%s\n' "$bad" >&2; exit 1; }
+
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-24.3b paths:\n%s\n' "$bad" >&2; exit 1; }
