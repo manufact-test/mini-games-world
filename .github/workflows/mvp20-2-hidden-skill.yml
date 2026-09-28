@@ -114,6 +114,8 @@ jobs:
           while IFS= read -r path; do
             case "$path" in
               .github/workflows/mvp20-2-hidden-skill.yml|\
+              .github/workflows/mvp24-legacy-api-commerce-cleanup.yml|\
+              bot/tests/Mvp24LegacyApiCommerceCleanupContractTest.php|\
               .github/workflows/mvp20-1-per-game-visible-rating.yml|\
               .github/workflows/mvp20-3-leaderboards-antifarming.yml|\
               .github/workflows/mvp20-4-quarterly-seasons.yml|\
