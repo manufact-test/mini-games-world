@@ -168,7 +168,6 @@ require_once __DIR__ . '/../handlers/WebhookHandler.php';
 $runtimeStorageRouter = new RuntimeStorageRouter($config);
 $runtimeRealtimeBridge = new RealtimeRuntimeBridge($config, $runtimeStorageRouter);
 $runtimeEconomyBridge = new EconomyRuntimeBridge($config, $runtimeStorageRouter);
-$runtimeShopBridge = new ShopRuntimeBridge($config, $runtimeStorageRouter);
 $runtimePaymentBridge = new PaymentRuntimeBridge($config, $runtimeStorageRouter);
 $runtimeWeeklyBonusBridge = new WeeklyBonusRuntimeBridge($config, $runtimeStorageRouter);
 $runtimeRatingBridge = new PerGameRatingRuntimeBridge($config, $runtimeStorageRouter);
@@ -188,23 +187,9 @@ if ($runtimeScript === 'api.php' && $runtimeEconomyBridge->shouldAttachToCurrent
         $runtimeEconomyBridge->synchronizeCurrentJson();
     };
 }
-if ($runtimeScript === 'api.php' && $runtimeShopBridge->shouldAttachToCurrentRequest($_SERVER)) {
-    $runtimeApiSuccessHooks[] = static function () use ($runtimeShopBridge): void {
-        if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return;
-        $action = (string)($GLOBALS['mgw_api_action'] ?? '');
-        if ($runtimeShopBridge->shouldSynchronizeApiAction($action)) {
-            $runtimeShopBridge->synchronizeCurrentJson();
-        }
-    };
-}
 if ($runtimeScript === 'api.php' && $runtimePaymentBridge->shouldAttachToCurrentRequest($_SERVER)) {
-    $runtimeApiSuccessHooks[] = static function () use ($runtimePaymentBridge): void {
-        if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return;
-        $action = (string)($GLOBALS['mgw_api_action'] ?? '');
-        if ($runtimePaymentBridge->shouldSynchronizeApiAction($action)) {
-            $runtimePaymentBridge->synchronizeCurrentJson();
-        }
-    };
+    // MVP-24.3b: legacy payment runtime remains read-only for archive/history projection.
+    // No API success hook may synchronize legacy payment JSON into the DB mirror.
     $runtimeApiDataFilters = $GLOBALS['mgw_api_data_filters'] ?? [];
     if (!is_array($runtimeApiDataFilters)) $runtimeApiDataFilters = [];
     $runtimeApiDataFilters[] = static function (array $data) use ($runtimePaymentBridge): array {
@@ -264,16 +249,6 @@ $runtimeWebhookSuccessHooks = [];
 if ($runtimeScript === 'webhook.php' && $runtimeEconomyBridge->shouldAttachToCurrentRequest($_SERVER)) {
     $runtimeWebhookSuccessHooks[] = static function () use ($runtimeEconomyBridge): void {
         $runtimeEconomyBridge->synchronizeCurrentJson();
-    };
-}
-if ($runtimeScript === 'webhook.php' && $runtimeShopBridge->shouldAttachToCurrentRequest($_SERVER)) {
-    $runtimeWebhookSuccessHooks[] = static function () use ($runtimeShopBridge): void {
-        $runtimeShopBridge->synchronizeCurrentJson();
-    };
-}
-if ($runtimeScript === 'webhook.php' && $runtimePaymentBridge->shouldAttachToCurrentRequest($_SERVER)) {
-    $runtimeWebhookSuccessHooks[] = static function () use ($runtimePaymentBridge): void {
-        $runtimePaymentBridge->synchronizeCurrentJson();
     };
 }
 if ($runtimeWebhookSuccessHooks !== []) {
