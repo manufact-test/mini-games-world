@@ -6,6 +6,10 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'bot/api.php'
+      - 'bot/core/bootstrap.php'
+      - 'bot/shop/ShopRuntimeBridge.php'
+      - 'bot/payments/PaymentRuntimeBridge.php'
+      - 'bot/tests/ShopPaymentApiActionGateRegressionTest.php'
       - 'bot/tests/Mvp24LegacyApiCommerceCleanupContractTest.php'
       - '.github/workflows/mvp24-legacy-api-commerce-cleanup.yml'
 
@@ -39,13 +43,19 @@ jobs:
       - name: PHP syntax
         run: |
           php -l bot/api.php
+          php -l bot/core/bootstrap.php
+          php -l bot/shop/ShopRuntimeBridge.php
+          php -l bot/payments/PaymentRuntimeBridge.php
+          php -l bot/tests/ShopPaymentApiActionGateRegressionTest.php
           php -l bot/tests/Mvp24LegacyApiCommerceCleanupContractTest.php
           php -l bot/services/PaymentService.php
           php -l bot/services/ShopService.php
           php -l bot/runtime/UnifiedGameZonePolicy.php
 
       - name: Legacy API archive-only proof
-        run: php bot/tests/Mvp24LegacyApiCommerceCleanupContractTest.php
+        run: |
+          php bot/tests/Mvp24LegacyApiCommerceCleanupContractTest.php
+          php bot/tests/ShopPaymentApiActionGateRegressionTest.php
 
       - name: Preserve predecessor contracts and archive readers
         run: |
@@ -61,6 +71,6 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
-          allowed='^(bot/(api\.php|tests/Mvp24LegacyApiCommerceCleanupContractTest\.php)|\.github/workflows/mvp24-legacy-api-commerce-cleanup\.yml)$'
+          allowed='^(bot/(api\.php|core/bootstrap\.php|shop/ShopRuntimeBridge\.php|payments/PaymentRuntimeBridge\.php|tests/(ShopPaymentApiActionGateRegressionTest|Mvp24LegacyApiCommerceCleanupContractTest)\.php)|\.github/workflows/mvp24-legacy-api-commerce-cleanup\.yml)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-24.3b paths:\n%s\n' "$bad" >&2; exit 1; }
