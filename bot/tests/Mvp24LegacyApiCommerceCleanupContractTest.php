@@ -49,8 +49,8 @@ $assert(
 );
 
 $assert(
-    str_contains($api, "'payments' => $payments->status($data, $user)")
-        && str_contains($api, "'shop' => $shop->status($user)"),
+    str_contains($api, "'payments' => \$payments->status(\$data, \$user)")
+        && str_contains($api, "'shop' => \$shop->status(\$user)"),
     'Compatibility responses must expose only existing read-only archive status.'
 );
 
