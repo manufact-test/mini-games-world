@@ -62,6 +62,9 @@ const directSecretPatterns = [
 const assignmentPatterns = [
   { pattern: /['"]bot_token['"]\s*(?:=>|:)\s*['"]([^'"]*)['"]/g, label: 'Telegram bot token value' },
   { pattern: /['"]setup_secret['"]\s*(?:=>|:)\s*['"]([^'"]*)['"]/g, label: 'webhook setup secret' },
+  { pattern: /['"]telegram_webhook_secret['"]\s*(?:=>|:)\s*['"]([^'"]*)['"]/g, label: 'Telegram webhook secret_token' },
+  { pattern: /['"]staging_test_auth_secret['"]\s*(?:=>|:)\s*['"]([^'"]*)['"]/g, label: 'staging test auth secret' },
+  { pattern: /['"]account_data_website_hook_secret['"]\s*(?:=>|:)\s*['"]([^'"]*)['"]/g, label: 'account-data website hook secret' },
   { pattern: /['"]staging_setup_key['"]\s*(?:=>|:)\s*['"]([^'"]*)['"]/g, label: 'staging setup key' },
 ];
 
