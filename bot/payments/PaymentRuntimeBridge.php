@@ -33,9 +33,9 @@ final class PaymentRuntimeBridge
 
     public function shouldSynchronizeApiAction(string $action): bool
     {
-        if (!$this->enabled()) return false;
-        if (trim($action) === '') $action = (string)($GLOBALS['action'] ?? '');
-        return strtolower(trim($action)) === 'payment_create_draft';
+        // MVP-24.3b: legacy Shop/Payment mirrors are archive-only.
+        // No live API action may trigger JSON -> DB synchronization.
+        return false;
     }
 
     public function synchronizeCurrentJson(): ?array

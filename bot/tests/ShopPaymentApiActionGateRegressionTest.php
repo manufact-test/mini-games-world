@@ -45,22 +45,27 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
     if (!$condition) throw new RuntimeException($message);
 };
 
-foreach (['bootstrap', 'profile', 'history', 'game_state', 'game_action', 'make_move', 'leave_game'] as $action) {
-    $assert(!$shop->shouldSynchronizeApiAction($action), "Shop bridge must not run for {$action}.");
-    $assert(!$payments->shouldSynchronizeApiAction($action), "Payment bridge must not run for {$action}.");
+foreach ([
+    'bootstrap',
+    'profile',
+    'history',
+    'game_state',
+    'game_action',
+    'make_move',
+    'leave_game',
+    'shop_order',
+    'payment_create_draft',
+] as $action) {
+    $assert(!$shop->shouldSynchronizeApiAction($action), "Shop bridge must never synchronize live API action {$action}.");
+    $assert(!$payments->shouldSynchronizeApiAction($action), "Payment bridge must never synchronize live API action {$action}.");
 }
 
-$assert($shop->shouldSynchronizeApiAction('shop_order'), 'Shop bridge must run for shop_order.');
-$assert(!$shop->shouldSynchronizeApiAction('payment_create_draft'), 'Shop bridge must not run for payment_create_draft.');
-$assert($payments->shouldSynchronizeApiAction('payment_create_draft'), 'Payment bridge must run for payment_create_draft.');
-$assert(!$payments->shouldSynchronizeApiAction('shop_order'), 'Payment bridge must not run for shop_order.');
-
 $GLOBALS['action'] = 'shop_order';
-$assert($shop->shouldSynchronizeApiAction(''), 'Shop bridge empty bootstrap argument must resolve the real API action.');
-$assert(!$payments->shouldSynchronizeApiAction(''), 'Payment bridge must reject a resolved shop_order action.');
+$assert(!$shop->shouldSynchronizeApiAction(''), 'Shop bridge global fallback must not revive legacy shop_order synchronization.');
+$assert(!$payments->shouldSynchronizeApiAction(''), 'Payment bridge global fallback must not synchronize shop_order.');
 $GLOBALS['action'] = 'payment_create_draft';
-$assert(!$shop->shouldSynchronizeApiAction(''), 'Shop bridge must reject a resolved payment_create_draft action.');
-$assert($payments->shouldSynchronizeApiAction(''), 'Payment bridge empty bootstrap argument must resolve the real API action.');
+$assert(!$shop->shouldSynchronizeApiAction(''), 'Shop bridge global fallback must not synchronize payment_create_draft.');
+$assert(!$payments->shouldSynchronizeApiAction(''), 'Payment bridge global fallback must not revive legacy payment synchronization.');
 unset($GLOBALS['action']);
 
 $gameResponse = [

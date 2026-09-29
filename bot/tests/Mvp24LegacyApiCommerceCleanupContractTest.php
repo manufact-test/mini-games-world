@@ -18,6 +18,9 @@ $payments = $read('bot/services/PaymentService.php');
 $shop = $read('bot/services/ShopService.php');
 $policy = $read('bot/runtime/UnifiedGameZonePolicy.php');
 $client = $read('app/assets/js/api/client.js');
+$bootstrap = $read('bot/core/bootstrap.php');
+$shopBridge = $read('bot/shop/ShopRuntimeBridge.php');
+$paymentBridge = $read('bot/payments/PaymentRuntimeBridge.php');
 
 foreach (['payment_plans', 'payment_create_draft', 'shop_order'] as $compatAction) {
     $assert(
@@ -85,6 +88,33 @@ foreach (['createOrder', 'createCatalogOrder'] as $method) {
     $assert(
         str_contains($slice, 'UnifiedGameZonePolicy::rejectLegacyCommerceWrite();'),
         'Shop compatibility method must reject writes: ' . $method
+    );
+}
+
+$assert(
+    !str_contains($bootstrap, '$runtimeShopBridge = new ShopRuntimeBridge')
+        && !str_contains($bootstrap, '$runtimeShopBridge->synchronizeCurrentJson()')
+        && !str_contains($bootstrap, '$runtimePaymentBridge->synchronizeCurrentJson()'),
+    'Live bootstrap must not own legacy Shop/Payment JSON-to-DB synchronization.'
+);
+
+$assert(
+    str_contains($bootstrap, '$runtimePaymentBridge->normalizeApiData('),
+    'Read-only payment archive projection must remain available without a write hook.'
+);
+
+foreach ([
+    'shop' => $shopBridge,
+    'payment' => $paymentBridge,
+] as $bridgeName => $bridgeSource) {
+    $position = strpos($bridgeSource, 'public function shouldSynchronizeApiAction');
+    $assert($position !== false, ucfirst($bridgeName) . ' bridge synchronization gate must remain explicit.');
+    $slice = substr($bridgeSource, (int)$position, 420);
+    $assert(
+        str_contains($slice, 'return false;')
+            && !str_contains($slice, "=== 'shop_order'")
+            && !str_contains($slice, "=== 'payment_create_draft'"),
+        ucfirst($bridgeName) . ' bridge must never synchronize a live legacy commerce API action.'
     );
 }
 
