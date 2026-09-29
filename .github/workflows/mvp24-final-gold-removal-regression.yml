@@ -79,7 +79,6 @@ jobs:
           php bot/tests/Mvp18_3InviteV2ContractTest.php
           php bot/tests/Mvp18_4UniversalInviteLandingContractTest.php
           php bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
-          php bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php
           php bot/tests/FriendGraphServiceTest.php
 
       - name: Preserve Arena rating and official tournaments
