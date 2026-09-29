@@ -154,21 +154,43 @@ jobs:
           coverage: none
 
       - name: Critical DB owners
-        env:
-          MGW_TEST_MYSQL_DSN: 'mysql:host=127.0.0.1;port=3306;dbname=mgw_test'
-          MGW_TEST_MYSQL_HOST: 127.0.0.1
-          MGW_TEST_MYSQL_PORT: 3306
-          MGW_TEST_MYSQL_DATABASE: mgw_test
-          MGW_TEST_MYSQL_USER: root
-          MGW_TEST_MYSQL_PASSWORD: root
         run: |
-          php bot/tests/Mvp22_2CompensationMySqlIntegrationTest.php
-          php bot/tests/Mvp21_11TournamentReleaseProofTest.php
-          php bot/tests/SupportTicketMySqlIntegrationTest.php
-          php bot/tests/Mvp22_3ModerationMySqlIntegrationTest.php
-          php bot/tests/Mvp22_4AntiFraudMySqlIntegrationTest.php
-          php bot/tests/Mvp22_9IncidentRecoveryMySqlIntegrationTest.php
-          php bot/tests/LegacyFinancialArchiveDatabaseIntegrationTest.php
+          set -euo pipefail
+          php -r '
+            $pdo=new PDO("mysql:host=127.0.0.1;port=3306;charset=utf8mb4","root","root",[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
+            foreach (["mgw_archive","mgw_compensation","mgw_support","mgw_moderation","mgw_antifraud","mgw_incident","mgw_tournament"] as $db) {
+              $pdo->exec("DROP DATABASE IF EXISTS \`".$db."\`");
+              $pdo->exec("CREATE DATABASE \`".$db."\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+            }
+          '
+
+          MGW_TEST_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_archive' \
+          MGW_TEST_MYSQL_USER=root MGW_TEST_MYSQL_PASSWORD=root \
+            php bot/tests/LegacyFinancialArchiveDatabaseIntegrationTest.php
+
+          MGW_COMPENSATION_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_compensation' \
+          MGW_COMPENSATION_MYSQL_USER=root MGW_COMPENSATION_MYSQL_PASS=root \
+            php bot/tests/Mvp22_2CompensationMySqlIntegrationTest.php
+
+          MGW_SUPPORT_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_support' \
+          MGW_SUPPORT_MYSQL_USER=root MGW_SUPPORT_MYSQL_PASS=root \
+            php bot/tests/SupportTicketMySqlIntegrationTest.php
+
+          MGW_MODERATION_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_moderation' \
+          MGW_MODERATION_MYSQL_USER=root MGW_MODERATION_MYSQL_PASS=root \
+            php bot/tests/Mvp22_3ModerationMySqlIntegrationTest.php
+
+          MGW_ANTIFRAUD_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_antifraud' \
+          MGW_ANTIFRAUD_MYSQL_USER=root MGW_ANTIFRAUD_MYSQL_PASS=root \
+            php bot/tests/Mvp22_4AntiFraudMySqlIntegrationTest.php
+
+          MGW_INCIDENT_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_incident' \
+          MGW_INCIDENT_MYSQL_USER=root MGW_INCIDENT_MYSQL_PASS=root \
+            php bot/tests/Mvp22_9IncidentRecoveryMySqlIntegrationTest.php
+
+          MGW_TEST_MYSQL_HOST=127.0.0.1 MGW_TEST_MYSQL_PORT=3306 \
+          MGW_TEST_MYSQL_DATABASE=mgw_tournament MGW_TEST_MYSQL_USER=root MGW_TEST_MYSQL_PASSWORD=root \
+            php bot/tests/Mvp21_11TournamentReleaseProofTest.php
 
   final-gate:
     name: MVP-24.5 regression gate
