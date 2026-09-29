@@ -34,28 +34,6 @@ Canonical staging Playwright reuses the existing GitHub Actions OIDC verifier to
 reconcile the staging Telegram webhook after exact deployment readiness and before
 normal projection/E2E work. No repository or client secret is introduced.
 
-## Slice 1 post-merge proof
-
-PR #1820 merged to staging as `c4d596420ef9509232de362f5b4a22ace2d640b8`.
-Canonical staging Playwright run `36631956523` passed on that exact merge:
-exact deployment readiness, webhook-security reconciliation, projection/migration
-preflight and two-context TEST PLAYER A/B all completed successfully.
-
-## Classified findings — slice 2
-
-### REAL DEFECT — repository secret scanner was not enforced by CI
-`scripts/ci/check-secrets.mjs` already rejected tracked private config, private keys,
-Telegram/GitHub/AWS credentials and real Admin IDs, but no inspected staging/release
-workflow executed it. This left accidental credential commits without an automated gate.
-
-Corrective:
-- run the scanner on every pull request to staging;
-- run it again on every staging push;
-- keep checkout credentials non-persistent;
-- expand literal assignment checks to `telegram_webhook_secret`,
-  `staging_test_auth_secret` and `account_data_website_hook_secret`;
-- add a static ownership contract proving the workflow still invokes the scanner.
-
 ## Explicitly unchanged
 - game engines and accepted game rules;
 - economy/ledger semantics;
@@ -71,6 +49,6 @@ Still open after this slice:
 - Admin isolation beyond the already verified initData boundary;
 - staging/production separation outside this webhook slice;
 - public error/log sanitization;
-- repository/client secret exposure audit (tracked-secret gate corrective in progress).
+- repository/client secret exposure audit.
 
 MVP-25.5 is **not closed** by this slice.
