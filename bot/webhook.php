@@ -1,11 +1,23 @@
 <?php
 declare(strict_types=1);
+
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+
 require __DIR__ . '/core/bootstrap.php';
+require_once __DIR__ . '/helpers/TelegramWebhookSecurity.php';
 require_once __DIR__ . '/helpers/RuntimeAdminGuard.php';
 require_once __DIR__ . '/helpers/AdminSystemCheckGuard.php';
 require_once __DIR__ . '/helpers/UserWelcomeGuard.php';
 require_once __DIR__ . '/helpers/MaintenanceWebhookGuard.php';
 require_once __DIR__ . '/helpers/StagingMenuButtonReconciler.php';
+
+if (!TelegramWebhookSecurity::incomingAuthorized($config, $_SERVER)) {
+    http_response_code(403);
+    exit('forbidden');
+}
 
 try {
     $update = json_decode(file_get_contents('php://input') ?: '{}', true);
@@ -28,18 +40,11 @@ try {
         exit('ok');
     }
 
-    // Install the guarded request storage before any remaining guard or handler.
-    // Maintenance is intercepted above without opening a storage transaction, so
-    // DB-primary remains configured while user writes stay fully quiescent.
     $requestStorage = StorageFactory::createJson((string)($config['data_dir'] ?? ''));
 
     $runtimeGuard = new RuntimeAdminGuard($telegram, $config);
     $auditGuard = new AdminSystemCheckGuard($telegram, $config);
 
-    // UserWelcomeGuard is the single private-chat /start owner. For an
-    // invite_TOKEN start it binds the authenticated Telegram recipient to the
-    // canonical invite before replying. A later ordinary Mini App launch can
-    // therefore hydrate the same still-pending invite through Notification Center.
     $welcomeGuard = new UserWelcomeGuard($telegram, $config);
     if (!$runtimeGuard->handle($update)
         && !$auditGuard->handle($update)
