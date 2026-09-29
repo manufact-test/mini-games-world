@@ -1,0 +1,67 @@
+name: MVP-25.2 Notification legacy Store deep-link
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/screens/notifications-screen-v110r13.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest.php'
+      - 'bot/tests/NotificationCenterV2StaticContractTest.php'
+      - '.github/workflows/mvp25-2-notification-legacy-order-deeplink.yml'
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/screens/notifications-screen-v110r13.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest.php'
+      - 'bot/tests/NotificationCenterV2StaticContractTest.php'
+      - '.github/workflows/mvp25-2-notification-legacy-order-deeplink.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  notification-legacy-deeplink:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax
+        run: |
+          node --check app/assets/js/screens/notifications-screen-v110r13.js
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest.php
+          php -l bot/tests/NotificationCenterV2StaticContractTest.php
+
+      - name: Successor-safe notification deep-link contract
+        run: |
+          php bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest.php
+          php bot/tests/NotificationCenterV2StaticContractTest.php
+
+      - name: Guard bounded scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          allowed='^(app/assets/js/screens/notifications-screen-v110r13\.js|app/runtime/client/version-manifest\.php|bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest\.php|bot/tests/NotificationCenterV2StaticContractTest\.php|\.github/workflows/mvp25-2-notification-legacy-order-deeplink\.yml)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-25.2 notification paths:\n%s\n' "$bad" >&2; exit 1; }
