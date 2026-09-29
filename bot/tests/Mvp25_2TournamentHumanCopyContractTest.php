@@ -69,6 +69,11 @@ $assert(
     'Canonical manifest must publish the fresh tournament human-copy identity.'
 );
 
+$assert(
+    str_contains($tournaments, "return TOURNAMENT_TERMINAL_REWARD_LABELS[code] || 'Награда турнира';"),
+    'Unknown tournament reward codes must use a human fallback instead of exposing an enum.'
+);
+
 // "Техническое поражение" is intentional product language: it tells the player
 // the actual game outcome and must not be erased by a blanket terminology pass.
 $assert(
