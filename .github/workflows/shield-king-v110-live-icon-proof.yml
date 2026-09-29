@@ -1,0 +1,106 @@
+name: Shield King live Telegram v110 icon proof
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    if: github.event.pull_request.head.ref == 'agent/shield-king-v110-live-icon-proof'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 3b96586c59b8e9d4489e1b27d124735198e0f379
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned Playwright
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.62.0
+          npx --no-install playwright install --with-deps chromium
+      - name: Diagnose deployed public v110 module bytes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          origin='https://seashell-okapi-889488.hostingersite.com'
+          c='curl --fail --silent --show-error --connect-timeout 10 --max-time 25'
+          $c "$origin/app/v110.php?v=1123&icon_proof=4" > /tmp/v110.html
+          $c "$origin/app/assets/js/main-v110.js?v=1138&ux=1&sk=3&icons=c1efd5af&render=4" > /tmp/main-v110.js
+          $c "$origin/app/assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=4" > /tmp/shell.js
+          $c "$origin/app/assets/js/games/game-card-copy.js?v=82&sk=4&icons=c1efd5af" > /tmp/game-card-copy.js
+          $c "$origin/app/assets/js/components/shield-king-visuals.js?v=126&sk=4&icons=c1efd5af" > /tmp/visuals.js
+          printf '%s\n' '--- deployed v110 anchors ---'
+          grep -F './assets/js/main-v110.js?v=1138&ux=1&sk=3&icons=c1efd5af&render=4' /tmp/v110.html
+          grep -F "main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=4" /tmp/main-v110.js
+          grep -F "shield-king-visuals.js?v=126&sk=4&icons=c1efd5af" /tmp/shell.js
+          grep -F "game-card-copy.js?v=82&sk=4&icons=c1efd5af" /tmp/shell.js
+          grep -F "games/tic-tac-toe.webp" /tmp/game-card-copy.js
+          grep -F "ui/navigation/notifications.webp" /tmp/visuals.js
+          printf '%s\n' '--- accepted endpoint headers ---'
+          $c --dump-header /tmp/icon.headers --output /dev/null "$origin/app/assets/shield-king-icon.php?v=c1efd5af&asset=games%2Ftic-tac-toe.webp"
+          grep -Ei 'HTTP/|content-type:|content-length:|x-mgw-shield-king-icon-export:' /tmp/icon.headers
+      - name: Diagnose real v110 browser execution
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cat > .tmp-prove.mjs <<'JS'
+          import { chromium } from 'playwright';
+          const origin = 'https://seashell-okapi-889488.hostingersite.com';
+          const browser = await chromium.launch({ headless:true });
+          const context = await browser.newContext({ viewport:{ width:390, height:600 }, locale:'ru-RU' });
+          const page = await context.newPage();
+          const pageErrors = [];
+          const failed = [];
+          const consoleErrors = [];
+          page.on('pageerror', e => pageErrors.push(String(e?.message || e)));
+          page.on('requestfailed', r => {
+            if (r.url().startsWith(origin)) failed.push({url:r.url(), failure:r.failure()?.errorText || ''});
+          });
+          page.on('console', msg => {
+            if (msg.type() === 'error') consoleErrors.push(msg.text());
+          });
+          const response = await page.goto(`${origin}/app/v110.php?v=1123&icon_proof=4`, { waitUntil:'domcontentloaded', timeout:35000 });
+          const header = response?.headers()['x-mgw-icon-render'] || '';
+          await page.waitForTimeout(4000);
+          const diag = await page.evaluate(() => {
+            const resources = performance.getEntriesByType('resource').map(e => e.name).filter(url => /main-v110|handoff-shell|game-card-copy|shield-king-visuals|shield-king-icon\.php/.test(url));
+            const gameIcons = [...document.querySelectorAll('[data-game-icon]')].slice(0,3).map(el => ({
+              html:el.innerHTML,
+              text:el.textContent,
+              children:el.childElementCount,
+            }));
+            return {
+              build:window.__MGW_BUILD__ || null,
+              gameCardCount:document.querySelectorAll('[data-game-card]').length,
+              acceptedGameImgCount:document.querySelectorAll('.game-card img.shield-king-game-art[data-sk-asset^="games/"]').length,
+              acceptedAssetCount:document.querySelectorAll('img[data-sk-asset]').length,
+              acceptedAssets:[...document.querySelectorAll('img[data-sk-asset]')].map(img => img.dataset.skAsset),
+              notificationHTML:document.getElementById('notificationsOpen')?.innerHTML || null,
+              moreHTML:document.getElementById('moreMenuOpen')?.innerHTML || null,
+              gameIcons,
+              scripts:[...document.scripts].map(s => s.src).filter(Boolean),
+              resources,
+            };
+          });
+          const endpoint = await context.request.get(`${origin}/app/assets/shield-king-icon.php?v=c1efd5af&asset=games%2Ftic-tac-toe.webp`, { timeout:15000 });
+          const endpointInfo = {
+            status:endpoint.status(),
+            contentType:endpoint.headers()['content-type'] || '',
+            contentLength:endpoint.headers()['content-length'] || '',
+            export:endpoint.headers()['x-mgw-shield-king-icon-export'] || '',
+          };
+          console.log('[MGW_V110_ICON_DIAG]', JSON.stringify({header,diag,pageErrors,failed,consoleErrors,endpointInfo}));
+          if (!response?.ok()) throw new Error(`v110 response ${response?.status()}`);
+          if (header !== 'accepted-v4-authoritative-v110') throw new Error(`wrong icon render header ${header}`);
+          if (diag.acceptedGameImgCount !== 8) throw new Error(`accepted game art did not initialize: ${diag.acceptedGameImgCount}/8`);
+          await browser.close();
+          JS
+          node .tmp-prove.mjs
