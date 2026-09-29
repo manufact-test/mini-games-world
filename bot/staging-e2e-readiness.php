@@ -43,6 +43,8 @@ try {
         'oidc_verifier' => __DIR__ . '/services/GitHubActionsOidcVerifier.php',
         'rsa_jwk_public_key' => __DIR__ . '/helpers/RsaJwkPublicKey.php',
         'test_auth_broker' => __DIR__ . '/staging-test-auth.php',
+        'telegram_webhook_security_owner' => __DIR__ . '/helpers/TelegramWebhookSecurity.php',
+        'staging_webhook_security_reconciler' => __DIR__ . '/staging-webhook-security.php',
         'runtime_fingerprint_helper' => __DIR__ . '/helpers/StagingE2eSourceFingerprint.php',
         'runtime_fingerprint_manifest' => __DIR__ . '/helpers/staging-e2e-runtime-files.txt',
         'canonical_profile_endpoint' => __DIR__ . '/profile.php',
