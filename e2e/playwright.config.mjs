@@ -5,6 +5,7 @@ const runLiveTournamentMutation = process.env.MGW_STAGING_LIVE_TOURNAMENT_E2E ==
 const currentTests = [
   'current-core-final.spec.mjs',
   'mvp25-4-performance-baseline.spec.mjs',
+  'mvp25-4-reliability.spec.mjs',
   'checkers-layout-diagnostic.spec.mjs',
   'go-store-live-catalog.spec.mjs',
 ];
