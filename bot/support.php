@@ -9,6 +9,7 @@ header('Referrer-Policy: no-referrer');
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/support/SupportTicketService.php';
 require_once __DIR__ . '/support/SupportTelegramNotifier.php';
+require_once __DIR__ . '/services/UserActionRateLimiter.php';
 
 function mgw_support_status(string $reason): int
 {
@@ -65,10 +66,12 @@ try {
 
     $database = PdoConnectionFactory::create($databaseConfig);
     $service = new SupportTicketService($database);
+    $rateLimiter = new UserActionRateLimiter($database, $config);
     $action = strtolower(trim((string)($payload['action'] ?? 'snapshot')));
 
     try {
         if ($action === 'create') {
+            $rateLimiter->assertAllowed('support_create', $mgwId);
             $ticket = $service->createTicket(
                 $mgwId,
                 mgw_support_platform($authenticatedUser),
@@ -95,6 +98,7 @@ try {
         }
 
         if ($action === 'reply') {
+            $rateLimiter->assertAllowed('support_reply', $mgwId);
             $ticket = $service->replyByUser(
                 (string)($payload['ticket'] ?? $payload['ticket_number'] ?? ''),
                 $mgwId,
@@ -142,6 +146,13 @@ try {
             'statuses' => SupportTicketService::STATUS_LABELS,
             'platforms' => SupportTicketService::PLATFORM_LABELS,
         ]);
+    } catch (UserActionRateLimitException $error) {
+        header('Retry-After: ' . $error->retryAfterSec);
+        json_response([
+            'ok'=>false,
+            'code'=>'rate_limited',
+            'error'=>'Слишком много обращений. Попробуйте немного позже.',
+        ], 429);
     } catch (SupportTicketException $error) {
         json_response([
             'ok' => false,
