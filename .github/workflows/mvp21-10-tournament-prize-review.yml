@@ -142,6 +142,9 @@ jobs:
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp21_10TournamentPrizeReviewTest.php|\
               bot/tests/Mvp21_10TournamentPrizeReviewContractTest.php|\
+              bot/tests/Mvp21_8CorrectiveV9ContractTest.php|\
+              bot/tests/PhaseBClientLaunchUxContractTest.php|\
+              e2e/staging/current-core-final.spec.mjs|\
               bot/tournaments/TournamentRoundProgressionService.php|\
               bot/tests/Mvp21_6TournamentRoundProgressionTest.php|\
               bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php)
