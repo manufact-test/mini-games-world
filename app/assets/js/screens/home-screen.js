@@ -33,7 +33,6 @@ export function initHomeScreen(){
   document.addEventListener('click', event => {
     const target = event.target.closest('button, [role="button"]');
     if (!target) return;
-    if (target.id === 'inviteFriend') return toast('Приглашения друзей появятся позже.');
     if (target.id === 'moreMenuOpen' || target.id === 'gameMenuOpen') return openMoreMenuSheet();
     if (target.id === 'profileOpen') return openProfileFromTop();
     if (target.matches('[data-back-home]')) return showScreen('home');

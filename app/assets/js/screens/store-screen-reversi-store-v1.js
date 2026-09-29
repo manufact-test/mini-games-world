@@ -36,7 +36,7 @@ export function upgradeReversiStorePresentation(){
 }
 
 function ensureStyles(){
-  const href = new URL('../../css/games/reversi/store-cosmetics-v1.css?v=2&mvp19_7=manual-review-corrective-v2', import.meta.url).href;
+  const href = new URL('../../css/games/reversi/store-cosmetics-v1.css?v=3&mvp19_7=accepted-store-cosmetics-v1', import.meta.url).href;
   const existing = document.querySelector('link[data-mgw-reversi-store]');
   if (existing instanceof HTMLLinkElement) {
     if (existing.href !== href) existing.href = href;

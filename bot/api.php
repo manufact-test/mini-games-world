@@ -988,10 +988,6 @@ try {
 
                 return ['saved' => true];
 
-            case 'request_rematch':
-                $sessions->assertCanPlay($user, $sessionId);
-                return ['message' => 'Реванш будет подключён следующим этапом.'];
-
             default:
                 throw new RuntimeException('Неизвестное действие.');
         }
