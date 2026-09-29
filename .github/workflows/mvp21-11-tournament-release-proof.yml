@@ -135,6 +135,10 @@ jobs:
               bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php|\
               bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php|\
               bot/tests/Mvp21_8CorrectiveContractTest.php|\
+              bot/tests/Mvp21_8CorrectiveV9ContractTest.php|\
+              bot/tests/PhaseBClientLaunchUxContractTest.php|\
+              bot/tests/Mvp21_10TournamentPrizeReviewContractTest.php|\
+              e2e/staging/current-core-final.spec.mjs|\
               bot/tests/Mvp21_9TerminalUxContractTest.php|\
               .github/workflows/mvp20-7-rating-archives.yml|\
               .github/workflows/mvp21-9-tournament-rewards.yml|\
