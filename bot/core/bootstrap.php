@@ -1,6 +1,14 @@
 <?php
 declare(strict_types=1);
 
+// Fail closed before private config/runtime loading. Most endpoints include this
+// bootstrap before their own try/catch, so browser diagnostics must be disabled
+// before any path, config-loader or validator exception can reach HTTP output.
+if (PHP_SAPI !== 'cli') {
+    ini_set('display_errors', '0');
+    ini_set('html_errors', '0');
+}
+
 define('MINIGAMES_INTERNAL', true);
 
 require_once __DIR__ . '/Environment.php';
