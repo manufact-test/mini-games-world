@@ -59,6 +59,23 @@ This check is visual/interaction only. It does not reopen accepted game mechanic
    - no game-board/cosmetic layout change;
    - no raw API/HTTP/DB/runtime/owner text appears.
 
-## Acceptance
+## Acceptance result
 
-If all checks pass, MVP-25.3 can be marked **CLOSED / MANUALLY ACCEPTED / FROZEN** and work can advance to MVP-25.4.
+**PASS — CLOSED / MANUALLY ACCEPTED / FROZEN**
+
+Product-owner review:
+- the MVP-25.3 manual sweep was reported as good;
+- the expanded More → Rules guide was reviewed on the large-screen presentation;
+- one final screenshot-driven correction was requested: reduce the empty space above the first rules section;
+- PR #1808 reduced only that top inset to 8px and preserved the remaining section/bottom rhythm;
+- the product owner explicitly authorized MVP-25.3 closure after that exact correction.
+
+Final accepted implementation SHA:
+- `b2c60acce74375e21eef3b0824a66b69c34502e1`
+
+Final exact staging proof:
+- focused MVP-25.3 gate — SUCCESS;
+- Staging Playwright E2E `36608738815` — SUCCESS;
+- `staging-playwright-e2e` — SUCCESS.
+
+**NEXT: MVP-25.4 — Performance / reliability.**
