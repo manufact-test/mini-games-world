@@ -39,9 +39,18 @@ foreach ([
     'bot/tournament-status.php'=>$tournamentStatus,
     'bot/tournament-hall.php'=>$tournamentHall,
 ] as $path=>$source) {
-    $assert(str_contains($source, "'environment'] ?? '') === 'staging'"), $path . ' debug exception must be staging-only.');
-    $assert(str_contains($source, "['is_staging_test_user']"), $path . ' debug exception must require authenticated staging-test identity.');
-    $assert(str_contains($source, "['debug_error']"), $path . ' diagnostic owner must remain explicit for staging test evidence.');
+    $assert(
+        str_contains($source, "'environment'] ?? '') === 'staging'"),
+        $path . ' debug exception must be staging-only.'
+    );
+    $assert(
+        str_contains($source, "['is_staging_test_user']"),
+        $path . ' debug exception must require authenticated staging-test identity.'
+    );
+    $assert(
+        str_contains($source, "['debug_error']"),
+        $path . ' diagnostic owner must remain explicit for staging test evidence.'
+    );
 }
 
 fwrite(STDOUT, "Mvp25_5PublicErrorLogSanitizationContractTest: {$assertions} assertions passed\n");
