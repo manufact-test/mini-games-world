@@ -1,0 +1,61 @@
+name: MVP-25.1 route and dead residue
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/.htaccess'
+      - 'app/assets/js/screens/home-screen.js'
+      - 'app/assets/js/screens/store-screen-reversi-store-v1.js'
+      - 'bot/api.php'
+      - 'bot/tests/Mvp25_1RouteAndDeadResidueContractTest.php'
+      - '.github/workflows/mvp25-1-route-dead-residue.yml'
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/.htaccess'
+      - 'app/assets/js/screens/home-screen.js'
+      - 'app/assets/js/screens/store-screen-reversi-store-v1.js'
+      - 'bot/api.php'
+      - 'bot/tests/Mvp25_1RouteAndDeadResidueContractTest.php'
+      - '.github/workflows/mvp25-1-route-dead-residue.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  route-dead-residue:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax
+        run: |
+          php -l bot/api.php
+          php -l bot/tests/Mvp25_1RouteAndDeadResidueContractTest.php
+
+      - name: Product-completion contract
+        run: php bot/tests/Mvp25_1RouteAndDeadResidueContractTest.php
+
+      - name: Guard bounded scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          allowed='^(app/\.htaccess|app/assets/js/screens/home-screen\.js|app/assets/js/screens/store-screen-reversi-store-v1\.js|bot/api\.php|bot/tests/Mvp25_1RouteAndDeadResidueContractTest\.php|\.github/workflows/mvp25-1-route-dead-residue\.yml)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-25.1 paths:\n%s\n' "$bad" >&2; exit 1; }
