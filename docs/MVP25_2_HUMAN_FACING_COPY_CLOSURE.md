@@ -88,17 +88,26 @@ A final pre-manual audit found two additional ordinary-player wording boundaries
 
 Both are part of the same MVP-25.2 human-facing-copy contract and must be corrected before manual acceptance.
 
+## Final manual acceptance
+
+Final corrective PR #1803 was merged to staging as `2661c2b0c166c0dc767108de6df2ee0538a31a55`.
+
+Exact post-merge staging verification:
+- Staging Playwright E2E run `36595264108`: SUCCESS on Linux;
+- exact Hostinger deployment readiness: GREEN;
+- managed staging migrations / projection diagnostics: GREEN;
+- staging A/B preflight: GREEN;
+- full two-context Playwright suite: GREEN;
+- current MVP-25.2 focused gates: GREEN.
+
+On 2026-09-29 the product owner completed the requested manual review, reported the result as normal, and explicitly instructed that MVP-25.2 be closed.
+
 ## Current status
 
-**TECHNICALLY COMPLETE / MANUAL ACCEPTANCE PENDING**
+**CLOSED / MANUALLY ACCEPTED / FROZEN**
 
-Formal MVP-25.2 closure requires:
-
-1. final focused contracts green;
-2. exact staging E2E green on the deployed final SHA;
-3. product-owner manual review using `docs/MVP25_2_MANUAL_ACCEPTANCE.md`;
-4. no player-visible technical wording found during that review.
-
-Target closure statement after manual acceptance:
+Closure statement:
 
 **Ordinary Russian Telegram Mini App users receive product-language explanations and actions instead of MGW implementation terminology or raw technical/browser exceptions on the audited current product path.**
+
+Next roadmap point: **MVP-25.3 — Final UX consistency.**
