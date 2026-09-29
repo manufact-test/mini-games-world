@@ -27,9 +27,10 @@ RewriteRule ^legal\.css$ site/legal/legal.css [L]
 # Russian-only main landing page.
 RewriteRule ^$ site/landing/landing-v18.php [L]
 
-# Russian-only blog pages. Static assets retain their existing URLs.
+# Russian-only blog pages. Retired Match/Gold commerce articles redirect to the blog index.
+RewriteRule ^blog/(?:gold-room|bot-and-match-coins)(?:/.*)?$ /blog/ [R=301,L]
 RewriteRule ^blog/?$ site/russian-page.php?page=blog [L,QSA]
-RewriteRule ^blog/(tic-tac-toe-online|telegram-mini-app-games|telegram-games-with-friends|upcoming-games|gold-room|bot-and-match-coins)/?$ site/russian-page.php?page=$1 [L,QSA]
+RewriteRule ^blog/(tic-tac-toe-online|telegram-mini-app-games|telegram-games-with-friends|upcoming-games)/?$ site/russian-page.php?page=$1 [L,QSA]
 RewriteRule ^blog/(.+)$ site/blog/$1 [L]
 
 # Russian-only legal pages.
