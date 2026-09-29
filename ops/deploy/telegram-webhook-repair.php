@@ -8,6 +8,7 @@ if (PHP_SAPI !== 'cli') {
 
 $projectRoot = dirname(__DIR__, 2);
 require $projectRoot . '/bot/core/bootstrap.php';
+require_once $projectRoot . '/bot/helpers/TelegramWebhookSecurity.php';
 
 $exitCode = 0;
 
@@ -46,6 +47,7 @@ try {
     if ($repair) {
         $request($telegram, 'setWebhook', [
             'url' => $expectedUrl,
+            'secret_token' => TelegramWebhookSecurity::secretToken($config),
             'allowed_updates' => ['message', 'edited_message', 'callback_query'],
             'drop_pending_updates' => false,
         ]);
@@ -82,6 +84,7 @@ try {
         'url_matches' => $urlMatches,
         'receives_messages' => $receivesMessages,
         'receives_callbacks' => $receivesCallbacks,
+        'secret_token_configured' => $repair,
         'pending_updates_preserved' => true,
         'sensitive_identifiers_exposed' => false,
         'execution_mode' => $repair ? 'repair' : 'read-only',
