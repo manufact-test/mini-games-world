@@ -162,7 +162,7 @@ jobs:
           MGW_TEST_MYSQL_USER: root
           MGW_TEST_MYSQL_PASSWORD: root
         run: |
-          php bot/tests/LedgerWriteServiceDatabaseIntegrationTest.php
+          php bot/tests/Mvp22_2CompensationMySqlIntegrationTest.php
           php bot/tests/Mvp21_11TournamentReleaseProofTest.php
           php bot/tests/SupportTicketMySqlIntegrationTest.php
           php bot/tests/Mvp22_3ModerationMySqlIntegrationTest.php
