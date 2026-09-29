@@ -146,7 +146,10 @@ function mgw_send_invite_message(array $config, array $invite, string $recipient
         ]);
         return !empty($response['ok']);
     } catch (Throwable $e) {
-        error_log('Mini Games World invite Telegram notification failed for ' . $recipientId . ': ' . $e->getMessage());
+        $message = trim($e->getMessage());
+        $botToken = trim((string)($config['bot_token'] ?? ''));
+        if ($botToken !== '') $message = str_replace($botToken, '[redacted-bot-token]', $message);
+        error_log('Mini Games World invite Telegram notification failed: ' . substr($message, 0, 600));
         return false;
     }
 }
