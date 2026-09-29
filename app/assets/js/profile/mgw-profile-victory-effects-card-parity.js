@@ -1,4 +1,4 @@
-import { initMgwProfileVictoryEffects as initBaseVictoryEffects } from './mgw-profile-victory-effects-v4.js?v=1&mvp19_3=victory-nova&preview=on-demand-v1';
+import { initMgwProfileVictoryEffects as initBaseVictoryEffects } from './mgw-profile-victory-effects-v4.js?v=2&mvp19_3=victory-nova&preview=on-demand-v1&mvp25_4=profile-post-paint-v1';
 
 let profileTabPreserverInstalled = false;
 
