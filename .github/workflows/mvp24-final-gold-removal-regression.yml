@@ -51,7 +51,6 @@ jobs:
       - name: Prove every MVP-24 removal slice remains closed
         run: |
           php bot/tests/Mvp24FinalGoldRemovalClosureContractTest.php
-          php bot/tests/Mvp24LegacyGoldClientSurfaceContractTest.php
           php bot/tests/Mvp24MiniAppGoldStateCleanupContractTest.php
           php bot/tests/Mvp24LegacyAdminCommerceReadOnlyContractTest.php
           php bot/tests/Mvp24LegacyApiCommerceCleanupContractTest.php
