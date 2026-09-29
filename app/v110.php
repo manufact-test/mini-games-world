@@ -36,67 +36,8 @@ try {
 $imports = $versionManifest['imports'];
 $assets = $versionManifest['assets'];
 
-// Staging manual-acceptance cache hook for the account-data first-open corrective.
-// Keep the canonical manifest mapping intact; append only a fresh query token to
-// the already-owned Account Shortcuts target so Telegram WebView cannot reuse the
-// pre-corrective module while this acceptance pass is in progress.
-$accountShortcutsImportKey = './assets/js/components/account-shortcuts.js?v=48';
-if (!isset($imports[$accountShortcutsImportKey])
-    || !is_string($imports[$accountShortcutsImportKey])
-    || $imports[$accountShortcutsImportKey] === '') {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World account-data shortcut owner is unavailable.';
-    exit;
-}
-$imports[$accountShortcutsImportKey] .= '&mvp23=account-data-first-open-no-flash-v1';
-$imports[$accountShortcutsImportKey] .= '&mvp23_mobile=atomic-account-data-v1';
-
-// Final mobile Profile acceptance cache hook. Both top identity and bottom Profile
-// tab resolve through the same clean-entry owner; refresh that wrapper so Telegram
-// WebView cannot keep the old 360 ms route-settle guard from cache.
-$cleanEntryImportKey = '@mgw/clean-entry';
-if (!isset($imports[$cleanEntryImportKey])
-    || !is_string($imports[$cleanEntryImportKey])
-    || $imports[$cleanEntryImportKey] === '') {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World clean-entry Profile route owner is unavailable.';
-    exit;
-}
-$imports[$cleanEntryImportKey] .= '&mvp23_profile=instant-route-v1';
-
-$profileAnimationGuardImportKey = './assets/js/profile/mgw-mobile-profile-animation-guard-v2.js?v=1';
-if (!isset($imports[$profileAnimationGuardImportKey])
-    || !is_string($imports[$profileAnimationGuardImportKey])
-    || $imports[$profileAnimationGuardImportKey] === '') {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Profile animation guard owner is unavailable.';
-    exit;
-}
-$imports[$profileAnimationGuardImportKey] .= '&mvp23_profile=instant-resume-v1';
-
-// Mobile cold-first corrective: keep canonical manifest mappings unchanged and
-// only refresh the active staging URLs for the owners changed in this acceptance
-// pass. This avoids turning a staging UX corrective into a manifest-wide product
-// version change while still defeating Telegram WebView/CDN cache reuse.
-$mainShellImportKey = './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5';
-$preloaderImportKey = './assets/js/components/preloader.js?v=42';
-foreach ([
-    $mainShellImportKey => '&mvp23_mobile=cold-surfaces-v1',
-    $preloaderImportKey => '&mvp23_mobile=bounded-cold-prime-v1',
-] as $importKey => $cacheToken) {
-    if (!isset($imports[$importKey])
-        || !is_string($imports[$importKey])
-        || $imports[$importKey] === '') {
-        http_response_code(500);
-        header('Content-Type: text/plain; charset=utf-8');
-        echo 'Mini Games World mobile cold-surface owner is unavailable: ' . $importKey . '.';
-        exit;
-    }
-    $imports[$importKey] .= $cacheToken;
-}
+// Accepted client/cache identities are canonicalized in version-manifest.php.
+// The entrypoint only renders the manifest; it no longer mutates accepted owners at runtime.
 
 $localizationConfig = $versionManifest['localization'] ?? null;
 if (!is_array($localizationConfig)
@@ -117,81 +58,43 @@ foreach (['@mgw/clean-entry', '@mgw/main', '@mgw/i18n', './assets/js/state.js?v=
     }
 }
 
-// Temporary staging-only MVP-19.5 acceptance hook: while Effect 3 / Check is equipped,
-// the active Chess renderer shows the real Check presentation on every move so it can
-// be manually reviewed without playing until a natural check. Remove immediately after acceptance.
+// Accepted game/render owners are read directly from the canonical manifest.
 $chessRendererImportKey = './assets/js/games/chess/renderer.js?v=68';
-if (!isset($imports[$chessRendererImportKey])
-    || !is_string($imports[$chessRendererImportKey])
-    || $imports[$chessRendererImportKey] === '') {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Chess staging Check test renderer is unavailable.';
-    exit;
-}
-$imports[$chessRendererImportKey] .= '&staging_check_test=any-move-v1';
-
-// Temporary staging-only Go manual-review cache hook. This changes only the module
-// identity so the current corrective renderer cannot be hidden behind an older WebView cache.
 $goRendererImportKey = './assets/js/games/go/renderer.js?v=70';
-if (!isset($imports[$goRendererImportKey])
-    || !is_string($imports[$goRendererImportKey])
-    || $imports[$goRendererImportKey] === '') {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Go staging corrective renderer is unavailable.';
-    exit;
-}
-$imports[$goRendererImportKey] .= '&manual_review=effect2-stable-overlay-v9';
-
-// Staging Domino cache hook: keep the current live wrapper on a fresh static URL
-// so Hostinger CDN and Telegram WebView cannot reuse an older effect implementation.
 $dominoRendererImportKey = './assets/js/games/domino/renderer.js?v=74';
-if (!isset($imports[$dominoRendererImportKey])
-    || !is_string($imports[$dominoRendererImportKey])
-    || $imports[$dominoRendererImportKey] === '') {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Domino hand gesture renderer is unavailable.';
-    exit;
-}
-$imports[$dominoRendererImportKey] .= '&gesture_owner=v27&precision_static=2';
-$imports[$dominoRendererImportKey] .= '&live_effects=v41';
-
-// Staging Battleship manual-review cache hook: keep the accepted manifest target intact
-// while giving the accepted Shot + Hit/Destroy review build a fresh module URL. Fold
-// the reviewed effects into the canonical manifest only after manual acceptance.
 $battleshipRendererImportKey = './assets/js/games/battleship/renderer.js?v=56';
-if (!isset($imports[$battleshipRendererImportKey])
-    || !is_string($imports[$battleshipRendererImportKey])
-    || $imports[$battleshipRendererImportKey] === '') {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Battleship LIVE effects renderer is unavailable.';
-    exit;
-}
-$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v7&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-core-v4';
-
-// Battleship fire reliability review: refresh only the active game-screen owner so a
-// queued fire can drive the accepted Shot visual and reconcile a lost HTTP response.
 $battleshipGameScreenImportKey = './assets/js/screens/game-screen-v102.js?v=102';
-if (!isset($imports[$battleshipGameScreenImportKey])
-    || !is_string($imports[$battleshipGameScreenImportKey])
-    || $imports[$battleshipGameScreenImportKey] === '') {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Battleship fire reliability owner is unavailable.';
-    exit;
+
+foreach ([
+    $chessRendererImportKey,
+    $goRendererImportKey,
+    $dominoRendererImportKey,
+    $battleshipRendererImportKey,
+    $battleshipGameScreenImportKey,
+] as $requiredGameOwner) {
+    if (!isset($imports[$requiredGameOwner])
+        || !is_string($imports[$requiredGameOwner])
+        || $imports[$requiredGameOwner] === '') {
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Mini Games World accepted game owner is unavailable: ' . $requiredGameOwner . '.';
+        exit;
+    }
 }
-$imports[$battleshipGameScreenImportKey] .= '&battleship_fire=direct-result-v4';
 
-
-
-if (isset($assets['main_css']) && is_string($assets['main_css']) && $assets['main_css'] !== '') {
-    $assets['main_css'] .= '&battleship_fire=direct-result-v4';
-}
-
-foreach (['main_css', 'consistency_css', 'bootstrap'] as $requiredAsset) {
+foreach ([
+    'main_css',
+    'consistency_css',
+    'bootstrap',
+    'checkers_height_fit',
+    'battleship_exit_fit',
+    'chess_capture_parity',
+    'go_exit_fit',
+    'go_live_effects',
+    'go_capture_overlay_v8',
+    'go_capture_overlay_v9',
+    'go_rules_alignment',
+] as $requiredAsset) {
     if (!isset($assets[$requiredAsset]) || !is_string($assets[$requiredAsset]) || $assets[$requiredAsset] === '') {
         http_response_code(500);
         header('Content-Type: text/plain; charset=utf-8');
@@ -200,77 +103,35 @@ foreach (['main_css', 'consistency_css', 'bootstrap'] as $requiredAsset) {
     }
 }
 
-$checkersTelegramHeightFitPath = __DIR__ . '/assets/css/games/checkers/telegram-height-fit-v1.css';
-if (!is_file($checkersTelegramHeightFitPath)) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Checkers Telegram height fit is unavailable.';
-    exit;
-}
-$checkersTelegramHeightFitTarget = './assets/css/games/checkers/telegram-height-fit-v1.css?v=5&checkers=bounded-screen-scroll-c15';
+$checkersTelegramHeightFitTarget = $assets['checkers_height_fit'];
+$battleshipExitFitTarget = $assets['battleship_exit_fit'];
+$chessCaptureParityTarget = $assets['chess_capture_parity'];
+$goExitFitTarget = $assets['go_exit_fit'];
+$goEffectsV7Target = $assets['go_live_effects'];
+$goCaptureOverlayV8Target = $assets['go_capture_overlay_v8'];
+$goCaptureOverlayV9Target = $assets['go_capture_overlay_v9'];
+$goRulesAlignmentTarget = $assets['go_rules_alignment'];
 
-$battleshipExitFitPath = __DIR__ . '/assets/css/games/battleship/live-exit-fit-v1.css';
-if (!is_file($battleshipExitFitPath)) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Battleship viewport scroll stylesheet is unavailable.';
-    exit;
+foreach ([
+    'checkers_height_fit' => $checkersTelegramHeightFitTarget,
+    'battleship_exit_fit' => $battleshipExitFitTarget,
+    'chess_capture_parity' => $chessCaptureParityTarget,
+    'go_exit_fit' => $goExitFitTarget,
+    'go_live_effects' => $goEffectsV7Target,
+    'go_capture_overlay_v8' => $goCaptureOverlayV8Target,
+    'go_capture_overlay_v9' => $goCaptureOverlayV9Target,
+    'go_rules_alignment' => $goRulesAlignmentTarget,
+] as $styleName => $styleTarget) {
+    $stylePath = parse_url($styleTarget, PHP_URL_PATH);
+    if (!is_string($stylePath)
+        || !str_starts_with($stylePath, './assets/css/')
+        || !is_file(__DIR__ . '/' . substr($stylePath, 2))) {
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Mini Games World accepted stylesheet is unavailable: ' . $styleName . '.';
+        exit;
+    }
 }
-$battleshipExitFitTarget = './assets/css/games/battleship/live-exit-fit-v1.css?v=1&mvp19_12=bounded-screen-scroll-v1';
-
-$chessCaptureParityPath = __DIR__ . '/assets/css/games/chess/capture-preview-parity-v1.css';
-if (!is_file($chessCaptureParityPath)) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Chess Capture parity stylesheet is unavailable.';
-    exit;
-}
-$chessCaptureParityTarget = './assets/css/games/chess/capture-preview-parity-v1.css?v=2&mvp19_5=capture-store-parity-explosion-v2';
-
-$goExitFitPath = __DIR__ . '/assets/css/games/go/live-exit-fit-v1.css';
-if (!is_file($goExitFitPath)) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Go exit fit stylesheet is unavailable.';
-    exit;
-}
-$goExitFitTarget = './assets/css/games/go/live-exit-fit-v1.css?v=3&mvp19_8=full-width-scroll-v3';
-
-$goEffectsV7Path = __DIR__ . '/assets/css/games/go/live-effects-corrective-v7.css';
-if (!is_file($goEffectsV7Path)) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Go live effects corrective v7 is unavailable.';
-    exit;
-}
-$goEffectsV7Target = './assets/css/games/go/live-effects-corrective-v7.css?v=1&mvp19_8=effect2-single-pass-territory-final-v7';
-
-$goCaptureOverlayV8Path = __DIR__ . '/assets/css/games/go/live-capture-overlay-v8.css';
-if (!is_file($goCaptureOverlayV8Path)) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Go capture overlay v8 is unavailable.';
-    exit;
-}
-$goCaptureOverlayV8Target = './assets/css/games/go/live-capture-overlay-v8.css?v=1&mvp19_8=capture-overlay-v8';
-
-$goCaptureOverlayV9Path = __DIR__ . '/assets/css/games/go/live-capture-overlay-v9.css';
-if (!is_file($goCaptureOverlayV9Path)) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Go stable capture overlay v9 is unavailable.';
-    exit;
-}
-$goCaptureOverlayV9Target = './assets/css/games/go/live-capture-overlay-v9.css?v=1&mvp19_8=stable-capture-overlay-v9';
-
-$goRulesAlignmentPath = __DIR__ . '/assets/css/games/go/rules-alignment-v1.css';
-if (!is_file($goRulesAlignmentPath)) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World Go rules alignment corrective is unavailable.';
-    exit;
-}
-$goRulesAlignmentTarget = './assets/css/games/go/rules-alignment-v1.css?v=3&mvp19_8=rule-marker-size-parity-v3';
 
 $headClose = '</head>';
 $cssAnchor = './assets/css/main.css?v=93-wallet-15-3';
@@ -355,9 +216,11 @@ $requiredRenderedTargets = [
     'go_capture_overlay_v8' => $goCaptureOverlayV8Target,
     'go_capture_overlay_v9' => $goCaptureOverlayV9Target,
     'go_rules_marker_alignment' => $goRulesAlignmentTarget,
-    'go_manual_review_renderer' => $imports[$goRendererImportKey],
-    'chess_check_test_hook' => $imports[$chessRendererImportKey],
-    'domino_hand_gesture_owner' => $imports[$dominoRendererImportKey],
+    'go_renderer' => $imports[$goRendererImportKey],
+    'chess_renderer' => $imports[$chessRendererImportKey],
+    'domino_renderer' => $imports[$dominoRendererImportKey],
+    'battleship_renderer' => $imports[$battleshipRendererImportKey],
+    'battleship_game_screen' => $imports[$battleshipGameScreenImportKey],
     'unified_ui_cache' => $imports['./assets/js/ui.js?v=89'] ?? '',
     'match_config_cache' => $imports['./assets/js/config.js?v=38'] ?? '',
     'app_state_v2_cache' => $imports['./assets/js/state.js?v=27'],
@@ -432,7 +295,6 @@ header('X-MGW-Battleship-Ready: authoritative-reset-after-edit');
 header('X-MGW-Battleship-Miss-Handoff: 900ms');
 header('X-MGW-Battleship-Shot-Feedback: hit-sunk-impact-miss-static');
 header('X-MGW-Battleship-Pending-Paint: none-legacy-owner-removed');
-header('X-MGW-Chess-Check-Test: staging-any-move-v1');
 header('X-MGW-Go-Viewport: full-width-scroll-v3');
 header('X-MGW-Go-Live-Effects: effect2-stable-overlay-v9-territory-final-v7');
 header('X-MGW-Go-Rules-Markers: size-parity-v3');
