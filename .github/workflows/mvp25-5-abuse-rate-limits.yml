@@ -1,0 +1,84 @@
+name: MVP-25.5 Authenticated abuse rate limits
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.github/workflows/mvp25-5-abuse-rate-limits.yml'
+      - 'bot/services/UserActionRateLimiter.php'
+      - 'bot/support.php'
+      - 'bot/friends.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
+      - 'bot/tests/UserActionRateLimiterTest.php'
+      - 'bot/tests/Mvp25_5RateLimitContractTest.php'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp25-5-abuse-rate-limits-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Authenticated write abuse limits
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Syntax
+        run: |
+          php -l bot/services/UserActionRateLimiter.php
+          php -l bot/support.php
+          php -l bot/friends.php
+          php -l bot/tests/UserActionRateLimiterTest.php
+          php -l bot/tests/Mvp25_5RateLimitContractTest.php
+
+      - name: Rate limiter model
+        run: php bot/tests/UserActionRateLimiterTest.php
+
+      - name: HTTP ownership contract
+        run: php bot/tests/Mvp25_5RateLimitContractTest.php
+
+      - name: Preserve Support domain owner
+        run: php bot/tests/SupportTicketServiceTest.php
+
+      - name: Preserve Moderation domain owner
+        run: |
+          php bot/tests/Mvp22_3ModerationWorkflowTest.php
+          php bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
+
+      - name: Frozen game/economy/tournament guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- bot/games bot/economy bot/ledger bot/tournaments app/assets/js/games app/assets/css/games
+
+      - name: Bounded slice guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(\.github/workflows/mvp25-5-abuse-rate-limits\.yml|bot/(services/UserActionRateLimiter\.php|support\.php|friends\.php|helpers/staging-e2e-runtime-files\.txt|tests/(UserActionRateLimiterTest\.php|Mvp25_5RateLimitContractTest\.php)))$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-25.5 abuse-limit paths:\n%s\n' "$bad" >&2; exit 1; }
