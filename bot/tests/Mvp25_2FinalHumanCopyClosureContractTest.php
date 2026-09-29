@@ -21,13 +21,19 @@ $client = $read('app/assets/js/api/client.js');
 $response = $read('bot/helpers/response.php');
 $tournaments = $read('app/assets/js/screens/tournaments-screen-v1.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r13.js');
+$accountData = $read('app/assets/js/screens/account-data-sheet-v1.js');
+$accountShortcuts = $read('app/assets/js/components/account-shortcuts.js');
+$invites = $read('app/assets/js/games/game-invites-v110.js');
+$manifest = $read('app/runtime/client/version-manifest.php');
 $localeSource = $read('app/locales/ru.json');
 $locale = json_decode($localeSource, true, 512, JSON_THROW_ON_ERROR);
 $audit = $read('docs/MVP25_2_HUMAN_FACING_COPY_AUDIT.md');
 $closure = $read('docs/MVP25_2_HUMAN_FACING_COPY_CLOSURE.md');
+$manual = $read('docs/MVP25_2_MANUAL_ACCEPTANCE.md');
 
 $assert(str_contains($audit, 'MANDATORY HUMAN-FACING COPY AUDIT') || str_contains($audit, 'Mandatory human-facing copy audit'), 'MVP-25.2 source audit must remain recorded.');
-$assert(str_contains($closure, 'MVP-25.2 is closed'), 'MVP-25.2 closure statement must be recorded.');
+$assert(str_contains($closure, 'TECHNICALLY COMPLETE / MANUAL ACCEPTANCE PENDING'), 'MVP-25.2 must remain manual-acceptance pending until product-owner review.');
+$assert(str_contains($manual, 'Manual acceptance checklist'), 'MVP-25.2 manual acceptance checklist must be recorded.');
 
 $assert(str_contains($entry, 'function mgw_v110_public_failure'), 'v110 must own one public fatal boundary.');
 $assert(str_contains($entry, 'Не удалось открыть Mini Games World. Попробуйте ещё раз через минуту.'), 'v110 must present a human fatal message.');
@@ -37,6 +43,17 @@ foreach (['client version manifest is unavailable', 'accepted game owner is unav
 
 $assert(!str_contains($client, 'Ошибка API:'), 'Canonical client must not show API/HTTP fallback wording.');
 $assert(str_contains($client, 'Не удалось выполнить запрос. Попробуйте ещё раз.'), 'Canonical client must have a human request fallback.');
+$assert(str_contains($client, 'Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.'), 'Canonical client must humanize transport/network failures.');
+$assert(str_contains($client, "error.code = 'network_unavailable';"), 'Canonical client must classify network failure without exposing browser exception text.');
+$assert(str_contains($invites, 'Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.'), 'Invite direct transport must humanize network failures.');
+$assert(str_contains($invites, "if (error?.name === 'AbortError') throw error;"), 'Invite cancellation must remain distinguishable from real network failure.');
+$assert(!str_contains($accountData, 'Ограниченная техническая история'), 'Account deletion copy must not expose developer-style technical-history wording.');
+$assert(!str_contains($accountData, 'финансового аудита'), 'Account deletion copy must not expose audit terminology to ordinary players.');
+$assert(str_contains($accountData, 'операций с игровыми монетами'), 'Account deletion copy must explain retained history in product language.');
+$assert(str_contains($accountShortcuts, 'account-data-sheet-v1.js?v=6') && str_contains($accountShortcuts, 'mvp25_2=human-copy-v1'), 'Account Data child copy change must have a fresh import identity.');
+$assert(substr_count($manifest, './assets/js/api/client.js?v=1149&mvp25_2=network-human-error-v2') === 4, 'All canonical API client aliases must publish the final MVP-25.2 network-safe identity.');
+$assert(substr_count($manifest, './assets/js/games/game-invites-v110.js?v=1148&mvp25_2=network-human-error-v1') === 3, 'All canonical invite aliases must publish the final MVP-25.2 network-safe identity.');
+$assert(str_contains($manifest, 'account-shortcuts.js?v=56') && str_contains($manifest, 'mvp25_2=account-data-human-copy-v1'), 'Account shortcut parent must publish a fresh identity for the copy change.');
 $assert(str_contains($response, 'function mgw_public_api_error'), 'Shared public error sanitizer must remain active.');
 foreach ([
     'SQLSTATE[HY000] database failure',

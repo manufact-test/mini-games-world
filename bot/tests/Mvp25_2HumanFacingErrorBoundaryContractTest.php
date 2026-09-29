@@ -61,7 +61,7 @@ $assert(!preg_match('/echo\s+[\'\"]Mini Games World .*?(manifest|owner|styleshee
 
 $manifest = $read('app/runtime/client/version-manifest.php');
 $assert(
-    substr_count($manifest, './assets/js/api/client.js?v=1148&mvp25_2=human-error-boundary-v1') === 4,
+    substr_count($manifest, './assets/js/api/client.js?v=1149&mvp25_2=network-human-error-v2') === 4,
     'All active API client import aliases must publish the fresh human-error-boundary identity.'
 );
 
