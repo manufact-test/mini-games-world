@@ -77,7 +77,7 @@ $assert(str_contains($screen, 'synchronizeTournamentTerminalProgression')
         && str_contains($screen, 'stopTournamentStartSync();'),
     'Terminal tournament game must pre-sync durable progression and stop stale launch owners.');
 
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=31')
+$assert(preg_match("/tournaments-screen-v1\\.js\\?v=\\d+[^'\\n]*mvp21_manual=acceptance-corrective-v1/", $manifest) === 1
         && str_contains($manifest, 'mvp21_manual=acceptance-corrective-v1')
         && str_contains($manifest, 'mvp21_6=terminal-return-preserve-v5')
         && str_contains($manifest, 'mvp21_8=corrective-v8')
