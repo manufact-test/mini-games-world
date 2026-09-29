@@ -89,12 +89,15 @@ $assert(
     'ShopService must retain an explicit archive/read-only boundary.'
 );
 
-$assert(
-    !str_contains($adminService, 'approvePayment(')
-        && !str_contains($adminService, 'rejectPayment(')
-        && !str_contains($adminService, 'completeOrder('),
-    'Legacy Telegram Admin must not expose old commerce mutation methods.'
-);
+foreach (['completeOrder', 'rejectOrder', 'applyPayment', 'rejectPayment', 'addGoldToUser'] as $compatMethod) {
+    $position = strpos($adminService, 'public function ' . $compatMethod);
+    $assert($position !== false, 'Archive compatibility method missing: ' . $compatMethod);
+    $slice = substr($adminService, (int)$position, 280);
+    $assert(
+        str_contains($slice, 'UnifiedGameZonePolicy::legacyArchiveMessage()'),
+        'Legacy Telegram Admin compatibility method must terminate at archive-only boundary: ' . $compatMethod
+    );
+}
 
 foreach ([
     'bot/payments/RuntimePaymentRepository.php',
