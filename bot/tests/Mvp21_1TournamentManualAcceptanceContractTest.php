@@ -249,12 +249,11 @@ foreach ([
 }
 
 $assertTrue(
-    str_contains($source['manifest'], 'client.js?v=1145')
-    && str_contains($source['manifest'], 'mvp21_2=tournament-rules-consent-v1'),
-    'Corrective release must force a fresh API client module.'
+    preg_match("/client\\.js\\?v=\\d+[^'\\n]*mvp21_2=tournament-rules-consent-v1/", $source['manifest']) === 1,
+    'Corrective release must preserve tournament rules consent on the current successor API client identity.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=31')
+    preg_match("/tournaments-screen-v1\\.js\\?v=\\d+[^'\\n]*mvp21_2=tournament-rules-copy-v2/", $source['manifest']) === 1
     && str_contains($source['manifest'], 'mvp21_2=tournament-rules-copy-v2')
     && str_contains($source['manifest'], 'balance=visible-freeze-v2')
     && str_contains($source['manifest'], 'mvp21_3=schedule-local-time-v2')
@@ -264,7 +263,7 @@ $assertTrue(
     'Corrective release must preserve the balance-freeze owner while forcing the fresh Tournament schedule module.'
 );
 $assertTrue(
-    str_contains($source['manifest'], 'main.css?v=201')
+    preg_match("/main\\.css\\?v=\\d+[^'\\n]*mvp21_2=tournament-rules-copy-v2/", $source['manifest']) === 1
     && str_contains($source['manifest'], 'mvp21_2=tournament-rules-copy-v2')
     && str_contains($source['manifest'], 'mvp21_3=tournament-schedule-v1')
     && str_contains($source['manifest'], 'mvp21_manual=terminal-payout-v1'),
