@@ -1,13 +1,10 @@
 name: MVP-25.4 Performance baseline
 
 on:
-  pull_request:
-    branches:
-      - agent/mvp-13-2-staging
-    paths:
-      - '.github/workflows/mvp25-4-performance-baseline.yml'
-      - 'e2e/playwright.mvp25-4-performance.config.mjs'
-      - 'e2e/staging/mvp25-4-performance-baseline.spec.mjs'
+  # Staging OIDC intentionally accepts the branch/push subject used by the
+  # canonical staging E2E. PR subjects are not authorized by the test-only
+  # authentication endpoints, so baseline execution happens after this
+  # diagnostic-only slice lands on staging.
   push:
     branches:
       - agent/mvp-13-2-staging
