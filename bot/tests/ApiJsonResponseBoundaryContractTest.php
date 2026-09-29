@@ -17,6 +17,6 @@ $assertContains("ini_set('html_errors', '0')", $response, 'HTML-formatted PHP di
 $assertContains('JSON_INVALID_UTF8_SUBSTITUTE', $response, 'Malformed legacy/database UTF-8 must not produce an empty HTTP 200 body');
 $assertContains('if ($json === false)', $response, 'JSON encoding failure must fail closed');
 $assertContains('http_response_code(500)', $response, 'Encoding failure must not remain HTTP 200');
-$assertContains('Не удалось сформировать ответ API.', $response, 'Encoding failure must still return a valid public JSON error');
+$assertContains('Не удалось выполнить действие. Попробуйте ещё раз.', $response, 'Encoding failure must still return the accepted human-facing public JSON error');
 
 fwrite(STDOUT, "ApiJsonResponseBoundaryContractTest: {$assertions} assertions passed\n");
