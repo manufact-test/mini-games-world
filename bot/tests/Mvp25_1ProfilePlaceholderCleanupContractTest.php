@@ -15,6 +15,7 @@ $read = static function (string $path) use ($root): string {
 
 $profile = $read('app/assets/js/screens/profile-screen-v110.js');
 $ru = $read('app/locales/ru.json');
+$manifest = $read('app/runtime/client/version-manifest.php');
 
 $assert(
     !str_contains($profile, 'profile-v2-achievements')
@@ -32,6 +33,11 @@ $assert(
         && str_contains($profile, 'const achievements = permanent.filter')
         && str_contains($profile, 'Достижения'),
     'Real tournament achievement/reward presentation must remain intact.'
+);
+
+$assert(
+    str_contains($manifest, "profile-screen-v110.js?v=1133&mvp25_1=real-achievements-only-v1"),
+    'Changed Profile source must publish a fresh cache identity so cached placeholder code cannot execute against the new locale catalog.'
 );
 
 fwrite(STDOUT, "Mvp25_1ProfilePlaceholderCleanupContractTest: {$assertions} assertions passed\n");
