@@ -83,9 +83,6 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
-          allowed='^(.github/workflows/(mvp25-5-webhook-ingress-security.yml|staging-playwright-e2e.yml|mvp22-5-system-admin.yml|mvp24-legacy-admin-commerce-readonly.yml)|bot/(helpers/TelegramWebhookSecurity.php|staging-webhook-security.php|webhook.php|webhook-diagnostic.php|setup-webhook.php|check-webhook.php|staging-e2e-readiness.php|helpers/staging-e2e-runtime-files.txt|config/config.example.php|tests/(Mvp25_5WebhookIngressSecurityContractTest.php|ApiJsonResponseBoundaryContractTest.php))|ops/deploy/(telegram-webhook-repair.php|telegram-webhook-diagnostic-route.php)|docs/MVP25_5_SECURITY_RESILIENCE_AUDIT.md)
-          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
-          test -z "$bad" || { printf 'Unexpected MVP-25.5 webhook-security paths:\n%s\n' "$bad" >&2; exit 1; }
-
+          allowed='^(\.github/workflows/(mvp25-5-webhook-ingress-security\.yml|staging-playwright-e2e\.yml|mvp22-5-system-admin\.yml|mvp24-legacy-admin-commerce-readonly\.yml)|bot/(helpers/TelegramWebhookSecurity\.php|staging-webhook-security\.php|webhook\.php|webhook-diagnostic\.php|setup-webhook\.php|check-webhook\.php|staging-e2e-readiness\.php|helpers/staging-e2e-runtime-files\.txt|config/config\.example\.php|tests/(Mvp25_5WebhookIngressSecurityContractTest\.php|ApiJsonResponseBoundaryContractTest\.php))|ops/deploy/(telegram-webhook-repair\.php|telegram-webhook-diagnostic-route\.php)|docs/MVP25_5_SECURITY_RESILIENCE_AUDIT\.md)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-25.5 webhook-security paths:\n%s\n' "$bad" >&2; exit 1; }
