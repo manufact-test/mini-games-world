@@ -34,13 +34,6 @@ Canonical staging Playwright reuses the existing GitHub Actions OIDC verifier to
 reconcile the staging Telegram webhook after exact deployment readiness and before
 normal projection/E2E work. No repository or client secret is introduced.
 
-## Regression-suite compatibility
-Two predecessor CI guards used historical PR-wide scope rules that reject any later
-cross-cutting slice touching shared webhook/fingerprint files. Their product checks stay
-active; only the stale scope ownership is delegated to the current MVP-25.5 focused gate.
-A separate baseline-stale exact-copy assertion was aligned to the already accepted generic
-human-facing API error; runtime copy was not changed.
-
 ## Explicitly unchanged
 - game engines and accepted game rules;
 - economy/ledger semantics;
