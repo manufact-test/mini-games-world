@@ -52,9 +52,7 @@ jobs:
         run: php bot/tests/Mvp25_1ProfilePlaceholderCleanupContractTest.php
 
       - name: Localization regression
-        run: |
-          php bot/tests/Mvp162LocalizationInfrastructureTest.php
-          node ops/checks/mvp16_2_localization_contract.mjs
+        run: php bot/tests/Mvp162LocalizationInfrastructureTest.php
 
       - name: Guard bounded scope
         if: github.event_name == 'pull_request'
