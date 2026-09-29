@@ -70,9 +70,6 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
-          allowed='^(app/assets/css/(main\.css|mvp25-3-ux-consistency-v1\.css)|app/assets/js/(main-v110-handoff-shell\.js|screens/home-screen\.js)|app/runtime/client/version-manifest\.php|docs/MVP25_3_(FINAL_UX_CONSISTENCY|MANUAL_ACCEPTANCE)\.md|bot/tests/(Mvp25_3FinalUxConsistencyContractTest|Mvp25_3RulesGuideContractTest)\.php|\.github/workflows/mvp25-3-final-ux-consistency\.yml)
-          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
-          test -z "$bad" || { printf 'Unexpected MVP-25.3 paths:\n%s\n' "$bad" >&2; exit 1; }
-
+          allowed='^(app/assets/css/(main\.css|mvp25-3-ux-consistency-v1\.css)|app/assets/js/(main-v110-handoff-shell\.js|screens/home-screen\.js)|app/runtime/client/version-manifest\.php|docs/MVP25_3_(FINAL_UX_CONSISTENCY|MANUAL_ACCEPTANCE)\.md|bot/tests/(Mvp25_3FinalUxConsistencyContractTest|Mvp25_3RulesGuideContractTest)\.php|\.github/workflows/mvp25-3-final-ux-consistency\.yml)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-25.3 paths:\n%s\n' "$bad" >&2; exit 1; }
