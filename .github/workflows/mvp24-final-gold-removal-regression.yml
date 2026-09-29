@@ -67,7 +67,6 @@ jobs:
         run: |
           php bot/tests/UnifiedEconomyRuntimeSyncTest.php
           php bot/tests/UnifiedEconomyUninitializedRuntimeHydrationTest.php
-          php bot/tests/LedgerWriteServiceTest.php
           php bot/tests/Mvp19_1ProductInventoryTest.php
           php bot/tests/Mvp19_2CosmeticStoreTest.php
           php bot/tests/Mvp19_3ProfileAvatarsTest.php
@@ -158,6 +157,7 @@ jobs:
 
       - name: Critical DB owners
         env:
+          MGW_TEST_MYSQL_DSN: 'mysql:host=127.0.0.1;port=3306;dbname=mgw_test'
           MGW_TEST_MYSQL_HOST: 127.0.0.1
           MGW_TEST_MYSQL_PORT: 3306
           MGW_TEST_MYSQL_DATABASE: mgw_test
