@@ -173,6 +173,28 @@ async function openPlayer(browser, slot) {
   });
   const cookie = await authorize(context, slot);
   const page = await context.newPage();
+  const coldRequestStartedAt = new WeakMap();
+  const coldRequestTimings = [];
+  page.on('request', request => {
+    if (!request.url().startsWith(ORIGIN)) return;
+    coldRequestStartedAt.set(request, Date.now());
+  });
+  page.on('response', response => {
+    const request = response.request();
+    if (!request.url().startsWith(ORIGIN)) return;
+    const startedAt = coldRequestStartedAt.get(request);
+    const endedAt = Date.now();
+    let path = '';
+    try { path = new URL(response.url()).pathname; } catch (_) {}
+    coldRequestTimings.push({
+      method:request.method(),
+      path,
+      action:requestAction(request) || '',
+      status:response.status(),
+      start_ms:Number.isFinite(startedAt) ? startedAt - coldStartStartedAt : null,
+      duration_ms:Number.isFinite(startedAt) ? endedAt - startedAt : null,
+    });
+  });
   const report = diagnostics(page, slot);
   const bootstrapPromise = page.waitForResponse(response => (
     response.url() === `${ORIGIN}/bot/api.php`
@@ -195,6 +217,30 @@ async function openPlayer(browser, slot) {
   await expect(page.locator('#screen-home')).toHaveClass(/active/, { timeout: 25_000 });
   await page.waitForFunction(() => document.getElementById('preloader')?.classList.contains('hidden') === true, null, { timeout: 25_000 });
   const firstUsablePaintAt = Date.now();
+  const coldResourceTimings = await page.evaluate(() => (
+    performance.getEntriesByType('resource')
+      .filter(entry => entry && typeof entry.name === 'string')
+      .map(entry => {
+        let path = entry.name;
+        try { path = new URL(entry.name).pathname; } catch (_) {}
+        return {
+          path,
+          start_ms:Math.round(entry.startTime),
+          duration_ms:Math.round(entry.duration),
+          transfer_size:Number(entry.transferSize || 0),
+          initiator_type:String(entry.initiatorType || ''),
+        };
+      })
+      .sort((a, b) => b.duration_ms - a.duration_ms)
+      .slice(0, 20)
+  ));
+  console.log('[MGW_COLD_START_NETWORK] ' + JSON.stringify({
+    slot,
+    requests:coldRequestTimings
+      .filter(item => item.start_ms !== null && item.start_ms <= firstUsablePaintAt - coldStartStartedAt)
+      .sort((a, b) => a.start_ms - b.start_ms),
+    slowest_resources:coldResourceTimings,
+  }));
   console.log('[MGW_COLD_START_TIMING] ' + JSON.stringify({
     slot,
     navigation_to_dom_ms: domContentLoadedAt - coldStartStartedAt,
