@@ -99,11 +99,6 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          # Later bounded slices keep the predecessor functional contracts above,
-          # but own their file-scope policy in their current focused workflow.
-          if [[ "${{ github.head_ref }}" == agent/mvp25-5-* ]]; then
-            exit 0
-          fi
           # MVP-22.9 is a bounded successor slice. Predecessor contracts above still run;
           # their historical file-scope allow-lists must not reject the newer incident/recovery owners.
           if [[ "${{ github.head_ref }}" == agent/mvp22-9-* || "${{ github.head_ref }}" == agent/mvp23-manual-acceptance-* ]]; then
