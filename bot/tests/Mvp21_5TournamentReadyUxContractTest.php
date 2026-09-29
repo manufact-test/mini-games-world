@@ -178,10 +178,9 @@ foreach ([
     $assert(str_contains($source['css'], $needle), 'Ready UI CSS missing: ' . $needle);
 }
 
-$assert(str_contains($source['manifest'], 'client.js?v=1145')
-        && str_contains($source['manifest'], 'mvp21_5=ready-v1'),
-    'API client must publish a fresh MVP-21.5 cache identity.');
-$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=31')
+$assert(preg_match("/client\\.js\\?v=\\d+[^'\\n]*mvp21_5=ready-v1/", $source['manifest']) === 1,
+    'API client must preserve the MVP-21.5 Ready owner on the current successor cache identity.');
+$assert(preg_match("/tournaments-screen-v1\\.js\\?v=\\d+[^'\\n]*mvp21_8=corrective-v8/", $source['manifest']) === 1
         && str_contains($source['manifest'], 'mvp21_8=corrective-v8')
         && str_contains($source['manifest'], 'registration=server-publish-barrier-v1')
         && str_contains($source['manifest'], 'ready=t0-burst-250ms-peer-adoption-v4')
@@ -191,8 +190,8 @@ $assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=31')
 $assert(str_contains($source['manifest'], 'production-v110-acceptance-runtime.js?v=132')
         && str_contains($source['manifest'], 'mvp21_5=countdown-10-fresh60-v2'),
     'Shared Phase-B presentation must publish the fresh server-active/fresh-60 cache identity.');
-$assert(str_contains($source['manifest'], 'main.css?v=201'),
-    'Readiness presentation CSS must publish a fresh cache identity.');
+$assert(preg_match("/main\\.css\\?v=\\d+[^'\\n]*mvp21_5=ready-first-match-v1/", $source['manifest']) === 1,
+    'Readiness presentation CSS must preserve the MVP-21.5 owner on the current successor cache identity.');
 
 if ($assertions < 40) throw new RuntimeException('MVP-21.5 UX contract is too shallow.');
 fwrite(STDOUT, "Mvp21_5TournamentReadyUxContractTest: {$assertions} assertions passed\n");
