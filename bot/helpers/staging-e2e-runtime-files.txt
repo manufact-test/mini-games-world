@@ -369,3 +369,4 @@ bot/webhook-diagnostic.php
 bot/setup-webhook.php
 bot/check-webhook.php
 ops/deploy/telegram-webhook-repair.php
+ops/deploy/telegram-webhook-diagnostic-route.php
