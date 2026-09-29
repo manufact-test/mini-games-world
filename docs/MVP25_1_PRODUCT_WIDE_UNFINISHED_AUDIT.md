@@ -213,6 +213,28 @@ No product behavior depends on a “manual-review” label. It is acceptance res
 
 ---
 
+## RM-04 — fake future Achievements placeholder in Profile
+
+Late audit finding after the first route/manifest correctives:
+
+`app/assets/js/screens/profile-screen-v110.js` still renders three fake locked achievement cards using:
+
+- `profile.achievements_note = "Места под будущие достижения и награды."`
+- `profile.achievement_locked = "Закрыто"`
+- `profile.achievement_soon = "Скоро"`
+
+This is not the real tournament achievement system. Real permanent tournament achievements are already rendered by the tournament prestige showcase from authoritative reward data.
+
+Classification:
+
+**REMOVE**
+
+Reason:
+
+A finished product must not show dummy “future feature” cards when a real achievement/reward owner already exists elsewhere in the Profile.
+
+---
+
 # 3. POST-LAUNCH
 
 ## PL-01 — large inactive historical frontend asset population
