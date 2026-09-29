@@ -159,8 +159,7 @@ jobs:
           php -r '
             $pdo=new PDO("mysql:host=127.0.0.1;port=3306;charset=utf8mb4","root","root",[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
             foreach (["mgw_archive","mgw_compensation","mgw_support","mgw_moderation","mgw_antifraud","mgw_incident","mgw_tournament"] as $db) {
-              $pdo->exec("DROP DATABASE IF EXISTS \`".$db."\`");
-              $pdo->exec("CREATE DATABASE \`".$db."\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+              $pdo->exec("CREATE DATABASE IF NOT EXISTS ".$db." CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
             }
           '
 
