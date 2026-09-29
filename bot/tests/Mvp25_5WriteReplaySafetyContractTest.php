@@ -26,7 +26,7 @@ $assert(str_contains($supportService, 'storedAttachmentsMatch'), 'Support replay
 $assert(str_contains($supportService, "'_request_replayed'"), 'Support service must signal replay to the HTTP notifier owner.');
 
 $assert(str_contains($supportEndpoint, 'if (!$requestReplayed)'), 'Support create notifier must be skipped on replay.');
-$assert(str_contains($supportEndpoint, '$requestReplayed ? false'), 'Support reply notifier must be skipped on replay.');
+$assert(preg_match('/\\$adminAlertSent\\s*=\\s*\\$requestReplayed\\s*\\?\\s*false\\s*:/s', $supportEndpoint) === 1, 'Support reply notifier must be skipped on replay.');
 $assert(substr_count($supportEndpoint, "'request_replayed' => $requestReplayed") === 2, 'Support responses must expose replay outcome for both writes.');
 
 $assert(str_contains($reportService, 'SUBMIT_REPLAY_WINDOW_SECONDS'), 'Player report replay window must be explicit and server-side.');
