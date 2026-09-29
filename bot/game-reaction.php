@@ -62,7 +62,7 @@ try {
     $event = $service->send($mgwId, $providerUserId, $gameId, $code);
     json_response(['ok' => true, 'reaction' => $event]);
 } catch (GameReactionException $error) {
-    json_response(['ok' => false, 'error' => $error->getMessage()], $error->status);
+    json_response(['ok' => false, 'error'=>mgw_public_api_error($error->getMessage())], $error->status);
 } catch (Throwable $error) {
     error_log('[MiniGamesWorld reaction] ' . $error->getMessage());
     json_response(['ok' => false, 'error' => 'Не удалось выполнить действие с реакцией.'], 500);

@@ -65,7 +65,7 @@ try {
         'appeal_exists' => 409,
         default => 422,
     };
-    json_response(['ok'=>false,'code'=>$error->reason,'error'=>$error->getMessage()], $status);
+    json_response(['ok'=>false,'code'=>$error->reason,'error'=>mgw_public_api_error($error->getMessage())], $status);
 } catch (Throwable $error) {
     error_log('[MiniGamesWorld moderation] ' . $error->getMessage());
     json_response(['ok'=>false,'error'=>'Не удалось загрузить данные модерации.'], 500);

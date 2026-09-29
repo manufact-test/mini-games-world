@@ -81,7 +81,7 @@ try {
             $canonicalProfile = $profileService->publicProfile($mgwId);
         }
     } catch (ModerationException $error) {
-        json_response(['ok'=>false,'error'=>$error->getMessage(),'code'=>$error->reason], 403);
+        json_response(['ok'=>false,'error'=>mgw_public_api_error($error->getMessage()),'code'=>$error->reason], 403);
     } catch (InvalidArgumentException $error) {
         [$code, $message] = mgw_profile_v2_validation_error($error);
         json_response(['ok'=>false,'error'=>$message,'code'=>$code], 422);

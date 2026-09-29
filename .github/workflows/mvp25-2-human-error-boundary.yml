@@ -1,0 +1,97 @@
+name: MVP-25.2 Human-facing error boundary
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/v110.php'
+      - 'app/assets/js/api/client.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/helpers/response.php'
+      - 'bot/friends.php'
+      - 'bot/support.php'
+      - 'bot/moderation.php'
+      - 'bot/account-data.php'
+      - 'bot/profile-v2.php'
+      - 'bot/rating-archive.php'
+      - 'bot/leaderboard.php'
+      - 'bot/game-reaction.php'
+      - 'bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php'
+      - '.github/workflows/mvp25-2-human-error-boundary.yml'
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/v110.php'
+      - 'app/assets/js/api/client.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/helpers/response.php'
+      - 'bot/friends.php'
+      - 'bot/support.php'
+      - 'bot/moderation.php'
+      - 'bot/account-data.php'
+      - 'bot/profile-v2.php'
+      - 'bot/rating-archive.php'
+      - 'bot/leaderboard.php'
+      - 'bot/game-reaction.php'
+      - 'bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php'
+      - '.github/workflows/mvp25-2-human-error-boundary.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  human-error-boundary:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax
+        run: |
+          node --check app/assets/js/api/client.js
+          php -l app/v110.php
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/helpers/response.php
+          php -l bot/friends.php
+          php -l bot/support.php
+          php -l bot/moderation.php
+          php -l bot/account-data.php
+          php -l bot/profile-v2.php
+          php -l bot/rating-archive.php
+          php -l bot/leaderboard.php
+          php -l bot/game-reaction.php
+          php -l bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php
+
+      - name: Human-facing error contract
+        run: php bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php
+
+      - name: Preserve focused neighboring contracts
+        run: |
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+          php bot/tests/ProfileV2CorrectiveStaticContractTest.php
+
+      - name: Guard bounded scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          allowed='^(app/v110\.php|app/assets/js/api/client\.js|app/runtime/client/version-manifest\.php|bot/helpers/response\.php|bot/(friends|support|moderation|account-data|profile-v2|rating-archive|leaderboard|game-reaction)\.php|bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest\.php|\.github/workflows/mvp25-2-human-error-boundary\.yml)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-25.2 error-boundary paths:\n%s\n' "$bad" >&2; exit 1; }

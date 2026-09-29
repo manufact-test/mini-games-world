@@ -146,7 +146,7 @@ try {
         json_response([
             'ok' => false,
             'code' => $error->reason,
-            'error' => $error->getMessage(),
+            'error'=>mgw_public_api_error($error->getMessage()),
         ], mgw_support_status($error->reason));
     }
 } catch (Throwable $error) {

@@ -21,7 +21,8 @@ function json_response(array $data, int $status = 200): void {
     );
     if ($json === false) {
         http_response_code(500);
-        $json = '{"ok":false,"error":"Не удалось сформировать ответ API."}';
+        error_log('[MiniGamesWorld public response] JSON encoding failed: ' . json_last_error_msg());
+        $json = '{"ok":false,"error":"Не удалось выполнить действие. Попробуйте ещё раз."}';
     }
 
     echo $json;
@@ -469,7 +470,7 @@ function mgw_public_api_error(string $message): string {
     }
 
     $technical = preg_match(
-        '/(?:Runtime module|projection|parity|DB-primary|database fingerprint|state fingerprint|Production atomic|SQLSTATE|PDO|stack trace|internal contract)/i',
+        '/(?:Runtime module|runtime storage|projection|parity|DB-primary|database(?:\\s+fingerprint|\\s+snapshot)?|state fingerprint|Production atomic|SQLSTATE|PDO|stack trace|internal contract|JSON snapshot|snapshot capability|transactional runtime storage|canonical(?:\\s+MGW)?\\s+account identity|канонич[^|]*account identity|request token|unexpected game|persisted|unknown_action|settlement|idempotent|backend|frontend|provider subject|Tournament\\s+(?:balance result|pair|launch|game)|\\bStaging\\b|\\bAPI\\b|\\bHTTP\\b)/i',
         $message
     ) === 1;
 
@@ -478,9 +479,9 @@ function mgw_public_api_error(string $message): string {
     }
 
     $incident = substr(hash('sha256', $message . '|' . microtime(true)), 0, 10);
-    error_log('[MiniGamesWorld API ' . $incident . '] ' . $message);
+    error_log('[MiniGamesWorld public error ' . $incident . '] ' . $message);
 
-    return 'Не удалось загрузить данные. Закройте и снова откройте приложение.';
+    return 'Не удалось выполнить действие. Попробуйте ещё раз.';
 }
 
 function api_ok(array $data = []): void {

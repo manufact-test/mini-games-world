@@ -120,7 +120,7 @@ try {
         json_response([
             'ok'=>false,
             'code'=>$error->reason,
-            'error'=>$error->getMessage(),
+            'error'=>mgw_public_api_error($error->getMessage()),
         ], 403);
     } catch (FriendGraphException|PlayerReportException $error) {
         json_response([

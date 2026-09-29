@@ -57,7 +57,7 @@ try {
 
     json_response(['ok'=>false,'error'=>'Неизвестный режим архива рейтинга.'], 422);
 } catch (InvalidArgumentException $error) {
-    json_response(['ok'=>false,'error'=>$error->getMessage()], 422);
+    json_response(['ok'=>false,'error'=>mgw_public_api_error($error->getMessage())], 422);
 } catch (Throwable $error) {
     error_log('MGW rating archive failed: ' . $error->getMessage());
 
