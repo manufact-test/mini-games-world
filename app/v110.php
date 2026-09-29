@@ -1,13 +1,20 @@
 <?php
 declare(strict_types=1);
 
+function mgw_v110_public_failure(string $technicalMessage): never
+{
+    error_log('[MiniGamesWorld v110 entry] ' . $technicalMessage);
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    echo 'Не удалось открыть Mini Games World. Попробуйте ещё раз через минуту.';
+    exit;
+}
+
 $indexPath = __DIR__ . '/index.html';
 $html = file_get_contents($indexPath);
 if (!is_string($html)) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World entrypoint is unavailable.';
-    exit;
+    mgw_v110_public_failure((string)('Mini Games World entrypoint is unavailable.'));
 }
 
 $manifestPath = __DIR__ . '/runtime/client/version-manifest.php';
@@ -16,10 +23,7 @@ if (!is_array($versionManifest)
     || !is_array($versionManifest['imports'] ?? null)
     || !is_array($versionManifest['assets'] ?? null)
     || ($versionManifest['version'] ?? null) !== 'v2-route-scoped-polling') {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World client version manifest is unavailable.';
-    exit;
+    mgw_v110_public_failure((string)('Mini Games World client version manifest is unavailable.'));
 }
 
 require_once __DIR__ . '/runtime/localization/LocalizationCatalog.php';
@@ -27,10 +31,7 @@ try {
     $localizationCatalog = new LocalizationCatalog(__DIR__ . '/locales');
     $localizationPayload = $localizationCatalog->clientPayload();
 } catch (Throwable $error) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World localization catalog is unavailable.';
-    exit;
+    mgw_v110_public_failure((string)('Mini Games World localization catalog is unavailable.'));
 }
 
 $imports = $versionManifest['imports'];
@@ -43,18 +44,12 @@ $localizationConfig = $versionManifest['localization'] ?? null;
 if (!is_array($localizationConfig)
     || ($localizationConfig['version'] ?? null) !== 'keys-v1'
     || ($localizationConfig['default_locale'] ?? null) !== $localizationCatalog->defaultLocale()) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World localization version manifest is unavailable.';
-    exit;
+    mgw_v110_public_failure((string)('Mini Games World localization version manifest is unavailable.'));
 }
 
 foreach (['@mgw/clean-entry', '@mgw/main', '@mgw/i18n', './assets/js/state.js?v=27', './assets/js/router.js?v=27'] as $requiredImport) {
     if (!isset($imports[$requiredImport]) || !is_string($imports[$requiredImport]) || $imports[$requiredImport] === '') {
-        http_response_code(500);
-        header('Content-Type: text/plain; charset=utf-8');
-        echo 'Mini Games World client version manifest import is unavailable: ' . $requiredImport . '.';
-        exit;
+        mgw_v110_public_failure((string)('Mini Games World client version manifest import is unavailable: ' . $requiredImport . '.'));
     }
 }
 
@@ -75,10 +70,7 @@ foreach ([
     if (!isset($imports[$requiredGameOwner])
         || !is_string($imports[$requiredGameOwner])
         || $imports[$requiredGameOwner] === '') {
-        http_response_code(500);
-        header('Content-Type: text/plain; charset=utf-8');
-        echo 'Mini Games World accepted game owner is unavailable: ' . $requiredGameOwner . '.';
-        exit;
+        mgw_v110_public_failure((string)('Mini Games World accepted game owner is unavailable: ' . $requiredGameOwner . '.'));
     }
 }
 
@@ -96,10 +88,7 @@ foreach ([
     'go_rules_alignment',
 ] as $requiredAsset) {
     if (!isset($assets[$requiredAsset]) || !is_string($assets[$requiredAsset]) || $assets[$requiredAsset] === '') {
-        http_response_code(500);
-        header('Content-Type: text/plain; charset=utf-8');
-        echo 'Mini Games World client version manifest asset is unavailable: ' . $requiredAsset . '.';
-        exit;
+        mgw_v110_public_failure((string)('Mini Games World client version manifest asset is unavailable: ' . $requiredAsset . '.'));
     }
 }
 
@@ -126,10 +115,7 @@ foreach ([
     if (!is_string($stylePath)
         || !str_starts_with($stylePath, './assets/css/')
         || !is_file(__DIR__ . '/' . substr($stylePath, 2))) {
-        http_response_code(500);
-        header('Content-Type: text/plain; charset=utf-8');
-        echo 'Mini Games World accepted stylesheet is unavailable: ' . $styleName . '.';
-        exit;
+        mgw_v110_public_failure((string)('Mini Games World accepted stylesheet is unavailable: ' . $styleName . '.'));
     }
 }
 
@@ -148,10 +134,7 @@ foreach ([
     'hotfix_build' => $hotfixAnchor,
 ] as $anchorName => $anchor) {
     if (!str_contains($html, $anchor)) {
-        http_response_code(500);
-        header('Content-Type: text/plain; charset=utf-8');
-        echo 'Mini Games World v110 source anchor is unavailable: ' . $anchorName . '.';
-        exit;
+        mgw_v110_public_failure((string)('Mini Games World v110 source anchor is unavailable: ' . $anchorName . '.'));
     }
 }
 
@@ -165,10 +148,7 @@ try {
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR
     );
 } catch (JsonException $error) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World client manifests cannot be rendered.';
-    exit;
+    mgw_v110_public_failure((string)('Mini Games World client manifests cannot be rendered.'));
 }
 $localizationTag = '<script type="application/json" id="mgw-localization">' . $localizationJson . '</script>';
 $importMap = "<script type=\"importmap\">\n{$importMapPayload}\n</script>";
@@ -232,25 +212,16 @@ $requiredRenderedTargets = [
 ];
 foreach ($requiredRenderedTargets as $targetName => $target) {
     if ($target === '' || !str_contains($html, $target)) {
-        http_response_code(500);
-        header('Content-Type: text/plain; charset=utf-8');
-        echo 'Mini Games World v110 transformed target is unavailable: ' . $targetName . '.';
-        exit;
+        mgw_v110_public_failure((string)('Mini Games World v110 transformed target is unavailable: ' . $targetName . '.'));
     }
 }
 
 if (!str_contains($html, 'id="mgw-localization"')) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World localization payload is unavailable.';
-    exit;
+    mgw_v110_public_failure((string)('Mini Games World localization payload is unavailable.'));
 }
 
 if (substr_count($html, '<script type="module" src="') !== 1) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Mini Games World v110 must expose exactly one top-level module bootstrap.';
-    exit;
+    mgw_v110_public_failure((string)('Mini Games World v110 must expose exactly one top-level module bootstrap.'));
 }
 
 header('Content-Type: text/html; charset=utf-8');
