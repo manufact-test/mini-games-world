@@ -7,7 +7,6 @@ on:
     paths:
       - 'app/v110.php'
       - 'app/assets/js/api/client.js'
-      - 'app/assets/js/games/game-invites-v110.js'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/response.php'
       - 'bot/friends.php'
@@ -26,7 +25,6 @@ on:
     paths:
       - 'app/v110.php'
       - 'app/assets/js/api/client.js'
-      - 'app/assets/js/games/game-invites-v110.js'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/helpers/response.php'
       - 'bot/friends.php'
@@ -65,7 +63,6 @@ jobs:
       - name: Syntax
         run: |
           node --check app/assets/js/api/client.js
-          node --check app/assets/js/games/game-invites-v110.js
           php -l app/v110.php
           php -l app/runtime/client/version-manifest.php
           php -l bot/helpers/response.php
@@ -88,7 +85,7 @@ jobs:
           php bot/tests/ProfileV2CorrectiveStaticContractTest.php
 
       - name: Guard bounded scope
-        if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'agent/mvp25-2-manual-readiness-')
+        if: github.event_name == 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
