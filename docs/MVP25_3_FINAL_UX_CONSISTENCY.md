@@ -133,3 +133,38 @@ No current product behavior was regressed to satisfy those stale predecessor ide
 Formal closure now requires product-owner review using `docs/MVP25_3_MANUAL_ACCEPTANCE.md`.
 
 Do not advance to MVP-25.4 until that review passes.
+
+
+## Product-owner corrective and final acceptance
+
+During manual review, the product owner accepted the cross-product MVP-25.3 UX pass and requested one visible product polish before closure: the ordinary-match Rules sheet under More needed to become a human-readable guide instead of a thin machine-like summary.
+
+PR #1807:
+- expanded More → Rules into a player-facing guide covering matchmaking, friend invites, entry cost, pot, winner payout, commission, draw refund, early exit, per-game rules, history, weekly bonus, tournaments and support;
+- sourced all displayed match-economy amounts from the authoritative `match_economy` bootstrap snapshot instead of hard-coded UI values;
+- added readable section/card styling without changing settlement math or game rules.
+
+The product owner reviewed the expanded Rules sheet and said the large-screen presentation was good. One final visual correction was requested from the supplied screenshot: reduce the oversized empty inset above the first rules section while leaving the remaining section rhythm intact.
+
+PR #1808 applied exactly that final correction:
+- `.rules-guide` top inset reduced to `8px`;
+- inter-section gap and bottom inset preserved;
+- fresh CSS identities published so Telegram/WebView receives the corrected styling.
+
+Final accepted implementation staging SHA:
+- `b2c60acce74375e21eef3b0824a66b69c34502e1`
+
+Final exact staging proof:
+- focused **MVP-25.3 Final UX consistency** push gate: SUCCESS;
+- Staging Playwright E2E run `36608738815`: SUCCESS;
+- final `staging-playwright-e2e` commit status: SUCCESS.
+
+The product owner explicitly authorized closure after that exact spacing correction.
+
+## Final status
+
+**CLOSED / MANUALLY ACCEPTED / FROZEN**
+
+MVP-25.3 must not be reopened without a reproducible defect.
+
+**NEXT: MVP-25.4 — Performance / reliability.**
