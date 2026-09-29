@@ -87,10 +87,26 @@ async function boot(){
     const prestigePromise = api.tournamentPrestige().catch(() => null);
     const result = await api.bootstrap();
     const matchEntryCost = Number(result.match_economy?.entry_cost);
-    if (!Number.isFinite(matchEntryCost) || matchEntryCost <= 0) {
-      throw new Error('Серверная стоимость участия недоступна.');
+    const matchWinnerReward = Number(result.match_economy?.winner_reward);
+    const matchSystemSink = Number(result.match_economy?.system_sink);
+    const matchDrawRefund = Number(result.match_economy?.draw_refund);
+    if (
+      !Number.isFinite(matchEntryCost) || matchEntryCost <= 0
+      || !Number.isFinite(matchWinnerReward) || matchWinnerReward < 0
+      || !Number.isFinite(matchSystemSink) || matchSystemSink < 0
+      || !Number.isFinite(matchDrawRefund) || matchDrawRefund < 0
+      || matchWinnerReward + matchSystemSink !== matchEntryCost * 2
+      || matchDrawRefund !== matchEntryCost
+    ) {
+      throw new Error('Серверные условия обычного матча недоступны.');
     }
     APP_CONFIG.matchBet = matchEntryCost;
+    APP_CONFIG.matchEconomy = Object.freeze({
+      entry_cost:matchEntryCost,
+      winner_reward:matchWinnerReward,
+      system_sink:matchSystemSink,
+      draw_refund:matchDrawRefund,
+    });
     const [mgwProfileResult, prestigeResult] = await Promise.all([profilePromise, prestigePromise]);
     state.mgwProfile = mgwProfileResult.profile || null;
     if (prestigeResult?.tournament_rewards && typeof prestigeResult.tournament_rewards === 'object') {

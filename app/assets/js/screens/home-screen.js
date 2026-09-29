@@ -113,7 +113,83 @@ function openLanguageSettingsSheet(){
 }
 
 function openRulesSheet(){
-  openSheet(`<div class="sheet-head"><div><h2>Правила обычных матчей</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="rules-content"><p><strong>Обычные матчи</strong> используют единый баланс Mini Games World.</p><p>Стоимость участия в обычном матче — <strong>${APP_CONFIG.matchBet} коинов</strong>.</p><p>Матч начинается после подбора соперника с подходящими условиями игры.</p><p>При победе награда начисляется по действующим серверным правилам экономики. При ничьей стоимость участия возвращается обоим игрокам.</p><p>Все списания, начисления и результаты сохраняются в истории баланса и матчей.</p><p>Условия бесплатного еженедельного начисления всегда доступны по кнопке <strong>«Еженедельный бонус»</strong> в карточке баланса.</p><p>Если вы заметили ошибку в балансе или результате матча, отправьте обращение через меню помощи.</p></div><button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">Понятно</button>`);
+  const economy = APP_CONFIG.matchEconomy || {};
+  const entry = Number(economy.entry_cost ?? APP_CONFIG.matchBet);
+  const winnerReward = Number(economy.winner_reward);
+  const commission = Number(economy.system_sink);
+  const drawRefund = Number(economy.draw_refund);
+  const pot = Number.isFinite(entry) ? entry * 2 : 0;
+  const winnerNet = Number.isFinite(winnerReward) && Number.isFinite(entry) ? winnerReward - entry : 0;
+
+  const amount = value => Number.isFinite(Number(value))
+    ? `${Math.trunc(Number(value))} коинов`
+    : 'текущая сумма';
+
+  openSheet(`
+    <div class="sheet-head">
+      <div>
+        <h2>Как работают обычные матчи</h2>
+        <p>Коротко о поиске соперника, коинах, победе, ничьей и истории игры.</p>
+      </div>
+      <button class="close" data-close-sheet type="button" aria-label="Закрыть">×</button>
+    </div>
+
+    <div class="rules-content rules-guide">
+      <section class="rules-guide-section">
+        <h3>1. Как начать игру</h3>
+        <p>Выберите игру на главном экране, настройте доступные для неё параметры и запустите поиск соперника. Пока идёт поиск, коины не списываются. Ставка снимается только тогда, когда матч действительно создан.</p>
+        <p>Сначала система старается подобрать другого игрока с подходящими условиями. Если подходящего игрока долго нет, в обычном поиске соперником может стать бот.</p>
+        <p>Хотите сыграть с конкретным человеком — откройте <strong>«Друзья»</strong>, найдите его по нику или MGW-ID, откройте меню <strong>«…»</strong> и выберите <strong>«Пригласить в игру»</strong>.</p>
+      </section>
+
+      <section class="rules-guide-section rules-guide-economy">
+        <h3>2. Сколько стоит матч</h3>
+        <p>Участие стоит <strong>${escapeHtml(amount(entry))}</strong> с каждого игрока. Поэтому общий банк обычного матча сейчас составляет <strong>${escapeHtml(amount(pot))}</strong>.</p>
+        <div class="rules-guide-numbers" role="list" aria-label="Расчёт обычного матча">
+          <div role="listitem"><span>Ставка игрока</span><strong>${escapeHtml(amount(entry))}</strong></div>
+          <div role="listitem"><span>Банк матча</span><strong>${escapeHtml(amount(pot))}</strong></div>
+          <div role="listitem"><span>Получает победитель</span><strong>${escapeHtml(amount(winnerReward))}</strong></div>
+          <div role="listitem"><span>Комиссия системы</span><strong>${escapeHtml(amount(commission))}</strong></div>
+        </div>
+        <p>Например, при текущих условиях победитель получает обратно свою ставку вместе с выигрышем: на баланс начисляется <strong>${escapeHtml(amount(winnerReward))}</strong>. Чистый результат победителя относительно баланса до матча — <strong>+${escapeHtml(amount(winnerNet))}</strong>.</p>
+      </section>
+
+      <section class="rules-guide-section">
+        <h3>3. Победа, поражение и ничья</h3>
+        <p><strong>Победа:</strong> победитель получает <strong>${escapeHtml(amount(winnerReward))}</strong> из общего банка, а <strong>${escapeHtml(amount(commission))}</strong> составляет комиссия системы.</p>
+        <p><strong>Поражение:</strong> ставка за этот матч не возвращается.</p>
+        <p><strong>Ничья:</strong> каждому игроку возвращается его ставка — сейчас <strong>${escapeHtml(amount(drawRefund))}</strong>. При ничьей комиссии нет.</p>
+      </section>
+
+      <section class="rules-guide-section">
+        <h3>4. Не выходите из незавершённого матча</h3>
+        <p>Если матч уже начался и вы вручную выходите из него до завершения, приложение предупредит о последствиях. Такой выход может быть засчитан как техническое поражение, поэтому лучше закончить партию или вернуться в неё после временного обрыва связи.</p>
+      </section>
+
+      <section class="rules-guide-section">
+        <h3>5. Правила конкретной игры</h3>
+        <p>У каждой игры свои правила, размеры поля и доступные варианты. Перед матчем или внутри игрового интерфейса откройте кнопку <strong>«Правила»</strong> — там описана именно выбранная игра. Этот раздел объясняет общие правила обычных матчей и коинов.</p>
+      </section>
+
+      <section class="rules-guide-section">
+        <h3>6. Где проверить результат</h3>
+        <p>В меню <strong>«Ещё»</strong> доступны <strong>«История баланса»</strong> и <strong>«История матчей»</strong>. Там можно посмотреть списание за участие, возврат при ничьей, начисление за победу и последние сыгранные партии.</p>
+      </section>
+
+      <section class="rules-guide-section">
+        <h3>7. Бонусы и турниры</h3>
+        <p>Условия еженедельного бесплатного бонуса показываются отдельно в карточке баланса — используйте кнопку <strong>«Еженедельный бонус»</strong>, чтобы увидеть актуальные условия.</p>
+        <p>Турниры — отдельный режим со своими условиями регистрации, матчей и наград. Правила обычного матча из этого окна не заменяют правила конкретного турнира.</p>
+      </section>
+
+      <section class="rules-guide-section">
+        <h3>8. Если что-то пошло не так</h3>
+        <p>Если баланс, результат матча или другое действие выглядит неправильно, откройте <strong>«Ещё» → «Обратная связь»</strong>. Для жалобы на другого игрока используйте отдельный пункт <strong>«Пожаловаться»</strong>.</p>
+      </section>
+    </div>
+
+    <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">Понятно</button>
+  `);
 }
 
 async function openBalanceHistorySheet(){
