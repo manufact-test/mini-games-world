@@ -51,8 +51,10 @@ jobs:
       - name: Current compositor ownership contract
         run: php bot/tests/Mvp25_4MobileProfileCompositorContractTest.php
 
-      - name: Preserve accepted Profile latency corrective
-        run: php bot/tests/Mvp23ProfileRouteLatencyContractTest.php
+      # The historical MVP-23 contract pins a staging-entry cache hook that was
+      # intentionally removed by later manifest normalization. The current
+      # successor-safe contract above proves the preserved no-settle/direct-route
+      # behavior without requiring that obsolete cache identity.
 
       - name: Frozen engine and bounded corrective scope
         shell: bash
