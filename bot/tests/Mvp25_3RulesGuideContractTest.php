@@ -68,6 +68,7 @@ foreach ([
 
 $assert(str_contains($manifest, 'home-screen.js?v=90&mvp25_3=human-rules-guide-v1'), 'Manifest must publish the fresh Home rules owner.');
 $assert(str_contains($manifest, 'main-v110-handoff-shell.js?v=1159&mvp25_3=match-economy-guide-v1'), 'Manifest must publish the fresh bootstrap economy owner.');
-$assert(str_contains($manifest, 'main.css?v=208&mvp25_3=ux-consistency-v1&rules=human-guide-v1'), 'Manifest must publish the fresh rules CSS identity.');
+$assert(str_contains($manifest, 'main.css?v=209&mvp25_3=ux-consistency-v2&rules=human-guide-top-spacing-v1'), 'Manifest must publish the fresh rules CSS identity.');
+$assert(str_contains($css, 'padding-top:8px'), 'Rules guide must use the reduced first-card top inset accepted by the product owner.');
 
 fwrite(STDOUT, "Mvp25_3RulesGuideContractTest: {$assertions} assertions passed\n");
