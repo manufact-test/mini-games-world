@@ -35,26 +35,28 @@
 .history-tab,
 .notification-mark-all,
 .notification-actions .btn,
-.notification-card-actions .btn,
-.friends-v110-tab,
-.friends-v110-actions .btn,
-.friends-v110-report-select-menu button,
-.account-data-v1-action,
-.account-data-v1-secondary,
-.account-data-v1-danger,
-.account-data-v1-confirm-archive .btn,
-.player-report-reasons button{
-  min-height:44px;
+.notification-card-actions .btn{
+  min-height:44px !important;
 }
-.friends-v110-more{
-  width:44px;
-  height:44px;
-  min-width:44px;
-  min-height:44px;
-  flex:0 0 44px;
+#screen-friends .friends-v110-tab,
+#screen-friends .friends-v110-actions .btn,
+#screen-friends .friends-v110-report-select-menu button,
+#sheet .account-data-v1-action,
+#sheet .account-data-v1-secondary,
+#sheet .account-data-v1-danger,
+#sheet .account-data-v1-confirm-archive .btn,
+#sheet .player-report-reasons button{
+  min-height:44px !important;
+}
+#screen-friends .friends-v110-more{
+  width:44px !important;
+  height:44px !important;
+  min-width:44px !important;
+  min-height:44px !important;
+  flex:0 0 44px !important;
 }
 @media (max-width:639px){
-  .friends-v110-tab{min-height:44px}
+  #screen-friends .friends-v110-tab{min-height:44px !important}
 }
 
 /* The More menu can exceed the usable height on short Telegram viewports.
@@ -107,11 +109,11 @@
 }
 
 /* Final state consistency: disabled actions must look disabled, not merely stop clicks. */
-.account-data-v1-danger:disabled,
-.account-data-v1-action:disabled,
-.account-data-v1-secondary:disabled,
-.player-report-search .btn.primary:disabled,
-.player-report-submit.btn.primary:disabled{
+#sheet .account-data-v1-danger:disabled,
+#sheet .account-data-v1-action:disabled,
+#sheet .account-data-v1-secondary:disabled,
+#sheet .player-report-search .btn.primary:disabled,
+#sheet .player-report-submit.btn.primary:disabled{
   opacity:1 !important;
   color:var(--sk-disabled-fg) !important;
   -webkit-text-fill-color:var(--sk-disabled-fg) !important;
@@ -123,16 +125,16 @@
 }
 
 /* Friends loading should reserve the same visual rhythm as an empty list. */
-.friends-v110-loading{
-  min-height:72px;
-  padding:16px 14px;
-  border:1px dashed rgba(233,236,244,.15);
-  border-radius:16px;
-  display:grid;
-  place-items:center;
-  background:rgba(255,255,255,.018);
-  color:var(--muted,#a6a1af);
-  text-align:center;
-  font-size:11.5px;
-  line-height:1.45;
+#screen-friends .friends-v110-loading{
+  min-height:72px !important;
+  padding:16px 14px !important;
+  border:1px dashed rgba(233,236,244,.15) !important;
+  border-radius:16px !important;
+  display:grid !important;
+  place-items:center !important;
+  background:rgba(255,255,255,.018) !important;
+  color:var(--muted,#a6a1af) !important;
+  text-align:center !important;
+  font-size:11.5px !important;
+  line-height:1.45 !important;
 }
