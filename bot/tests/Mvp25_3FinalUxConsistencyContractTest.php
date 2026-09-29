@@ -58,7 +58,9 @@ foreach ([
     $assert(!str_contains($ux, $acceptedOwner), 'MVP-25.3 cross-product overlay must not resize accepted game/cosmetic owner: ' . $acceptedOwner);
 }
 
-$assert(str_contains($audit, 'IMPLEMENTATION IN PROGRESS / MANUAL ACCEPTANCE REQUIRED'), 'MVP-25.3 audit must remain open until staging proof and manual review.');
+$assert(str_contains($audit, 'TECHNICALLY COMPLETE / MANUAL ACCEPTANCE PENDING'), 'MVP-25.3 must remain open until product-owner manual UX acceptance.');
+$assert(str_contains($audit, '36603236354'), 'MVP-25.3 audit must record the exact green staging E2E run.');
+$assert(str_contains($audit, 'c28d83f27b71d69a0ef0a5285ce92b3b3b50c2ff'), 'MVP-25.3 audit must record the exact accepted technical staging SHA.');
 $assert(str_contains($manual, 'Manual acceptance checklist'), 'MVP-25.3 manual checklist must be recorded.');
 $assert(str_contains($manual, 'Home → More on a short/mobile viewport'), 'Manual acceptance must cover the short-viewport More menu.');
 $assert(str_contains($manual, 'Desktop keyboard spot-check'), 'Manual acceptance must cover visible focus state.');

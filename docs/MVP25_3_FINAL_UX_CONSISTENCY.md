@@ -105,8 +105,31 @@ This slice does **not**:
 - alter player copy already accepted in MVP-25.2 except if a new reproduced leakage is found;
 - touch main/production/production DB/Cron.
 
+## Technical readiness
+
+Corrective PR #1805 was merged to staging as `c28d83f27b71d69a0ef0a5285ce92b3b3b50c2ff`.
+
+Exact post-merge evidence:
+- focused **MVP-25.3 Final UX consistency** gate: SUCCESS;
+- Staging Playwright E2E run `36603236354`: SUCCESS;
+- Hostinger exact-deployment wait: GREEN;
+- managed staging migrations / projection diagnostics: GREEN;
+- staging A/B preflight: GREEN;
+- full two-context Playwright run: GREEN on Linux;
+- final `staging-playwright-e2e` commit status: SUCCESS.
+
+Relevant predecessor failures observed on the PR were inspected rather than treated as product regressions:
+- Notification Center functional/static/visual contracts passed; its old cache-bust identity check expected a superseded manifest identity;
+- Friends server/social proofs passed; old frozen owner/cache assertions expected superseded invite identities;
+- Account Data SQLite lifecycle (50 assertions) and MySQL 8.4 lifecycle passed; the failing old first-open guard expected a bounded historical cache token;
+- Profile corrective/static proofs passed; its old JSON boundary test expected the technical phrase `Не удалось сформировать ответ API.`, which MVP-25.2 intentionally removed from public copy.
+
+No current product behavior was regressed to satisfy those stale predecessor identities.
+
 ## Status
 
-**IMPLEMENTATION IN PROGRESS / MANUAL ACCEPTANCE REQUIRED**
+**TECHNICALLY COMPLETE / MANUAL ACCEPTANCE PENDING**
 
-After focused contracts and exact staging E2E are green, product-owner manual UX acceptance is required.
+Formal closure now requires product-owner review using `docs/MVP25_3_MANUAL_ACCEPTANCE.md`.
+
+Do not advance to MVP-25.4 until that review passes.
