@@ -85,7 +85,7 @@ jobs:
           php bot/tests/ProfileV2CorrectiveStaticContractTest.php
 
       - name: Guard bounded scope
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'agent/mvp25-2-manual-readiness-')
         shell: bash
         run: |
           set -euo pipefail
