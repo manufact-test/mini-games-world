@@ -110,7 +110,9 @@ $assertContains('fallbackLocale', $i18n, 'Locale precedence must include fallbac
 $assertNotContains('geo', strtolower($i18n), 'Locale selection must not depend on geolocation');
 $assertNotContains('photo_url: avatarUrl', $model, 'Canonical projection must not restore provider photo ownership');
 $assertContains("photo_url: ''", $model, 'Canonical projection must explicitly suppress provider photo URL');
-$assertSame(3, substr_count($profile, '[1,2,3].map') === 1 ? 3 : 0, 'Achievements preview must remain exactly three placeholders');
+$assertNotContains('[1,2,3].map', $profile, 'Profile must not restore fake future-achievement placeholders');
+$assertContains('const achievements = permanent.filter', $profile, 'Profile must preserve real permanent tournament achievements');
+$assertContains('tournamentRewardCard(item, false)', $profile, 'Real tournament achievements must remain data-driven');
 
 $assertions++;
 if (preg_match('/profile-corrective\.css\?v=(\d+)[^\']*mvp19=profile-collection/', $mainCss, $profileCssVersionMatch) !== 1 || (int)$profileCssVersionMatch[1] < 4) {
