@@ -28,6 +28,7 @@ final class PlayerReportService
     ];
 
     public const STATUSES = ['open', 'reviewing', 'closed'];
+    private const SUBMIT_REPLAY_WINDOW_SECONDS = 120;
 
     public function __construct(private DatabaseConnectionInterface $database) {}
 
@@ -56,36 +57,54 @@ final class PlayerReportService
             }
         }
 
-        $reportId = 'RPT-' . strtoupper(bin2hex(random_bytes(10)));
-        $now = $this->timestamp();
-        $this->database->execute(
-            'INSERT INTO mgw_player_reports (
-                report_id, reporter_mgw_id, target_mgw_id, reason, details, related_match_id,
-                status, created_at_utc, updated_at_utc, reviewed_at_utc, resolved_at_utc, last_admin_ref
-             ) VALUES (
-                :report_id, :reporter_mgw_id, :target_mgw_id, :reason, :details, :related_match_id,
-                :status, :created_at, :updated_at, NULL, NULL, NULL
-             )',
-            [
-                'report_id' => $reportId,
-                'reporter_mgw_id' => $reporterMgwId,
-                'target_mgw_id' => $targetMgwId,
-                'reason' => $reason,
-                'details' => $details !== '' ? $details : null,
-                'related_match_id' => $relatedMatchId !== '' ? $relatedMatchId : null,
-                'status' => 'open',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]
-        );
+        return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
+            $reporterMgwId,
+            $targetMgwId,
+            $reason,
+            $details,
+            $relatedMatchId
+        ): array {
+            $this->lockReporterWriteScope($database, $reporterMgwId);
+            $existing = $this->findRecentExactReplay(
+                $database,
+                $reporterMgwId,
+                $targetMgwId,
+                $reason,
+                $details,
+                $relatedMatchId
+            );
+            if (is_array($existing)) return $this->submitResult($existing);
 
-        return [
-            'report_id' => $reportId,
-            'status' => 'open',
-            'reason' => $reason,
-            'reason_label' => self::REASONS[$reason],
-            'created_at' => $now,
-        ];
+            $reportId = 'RPT-' . strtoupper(bin2hex(random_bytes(10)));
+            $now = $this->timestamp();
+            $database->execute(
+                'INSERT INTO mgw_player_reports (
+                    report_id, reporter_mgw_id, target_mgw_id, reason, details, related_match_id,
+                    status, created_at_utc, updated_at_utc, reviewed_at_utc, resolved_at_utc, last_admin_ref
+                 ) VALUES (
+                    :report_id, :reporter_mgw_id, :target_mgw_id, :reason, :details, :related_match_id,
+                    :status, :created_at, :updated_at, NULL, NULL, NULL
+                 )',
+                [
+                    'report_id' => $reportId,
+                    'reporter_mgw_id' => $reporterMgwId,
+                    'target_mgw_id' => $targetMgwId,
+                    'reason' => $reason,
+                    'details' => $details !== '' ? $details : null,
+                    'related_match_id' => $relatedMatchId !== '' ? $relatedMatchId : null,
+                    'status' => 'open',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]
+            );
+
+            return $this->submitResult([
+                'report_id' => $reportId,
+                'status' => 'open',
+                'reason' => $reason,
+                'created_at_utc' => $now,
+            ]);
+        });
     }
 
     /** @return list<array<string,mixed>> */
@@ -310,6 +329,64 @@ final class PlayerReportService
             if ((string)$report['report_id'] === $reportId) return $report;
         }
         throw new PlayerReportException('report_not_found', 'Жалоба не найдена.');
+    }
+
+    private function lockReporterWriteScope(DatabaseConnectionInterface $database, string $reporterMgwId): void
+    {
+        $lockClause = $database->driver() === 'sqlite' ? '' : ' FOR UPDATE';
+        $rows = $database->fetchAll(
+            'SELECT mgw_id FROM mgw_users WHERE mgw_id = :mgw_id AND status = :status' . $lockClause,
+            ['mgw_id' => $reporterMgwId, 'status' => 'active']
+        );
+        if ($rows === []) throw new PlayerReportException('user_unavailable', 'Игрок MGW не найден.');
+    }
+
+    private function findRecentExactReplay(
+        DatabaseConnectionInterface $database,
+        string $reporterMgwId,
+        string $targetMgwId,
+        string $reason,
+        string $details,
+        string $relatedMatchId
+    ): ?array {
+        $cutoff = (new DateTimeImmutable('now', new DateTimeZone('UTC')))
+            ->modify('-' . self::SUBMIT_REPLAY_WINDOW_SECONDS . ' seconds')
+            ->format('Y-m-d H:i:s.u');
+        $rows = $database->fetchAll(
+            'SELECT report_id, status, reason, details, related_match_id, created_at_utc
+             FROM mgw_player_reports
+             WHERE reporter_mgw_id = :reporter_mgw_id
+               AND target_mgw_id = :target_mgw_id
+               AND reason = :reason
+               AND created_at_utc >= :cutoff
+             ORDER BY created_at_utc DESC, report_id DESC
+             LIMIT 8',
+            [
+                'reporter_mgw_id' => $reporterMgwId,
+                'target_mgw_id' => $targetMgwId,
+                'reason' => $reason,
+                'cutoff' => $cutoff,
+            ]
+        );
+        foreach ($rows as $row) {
+            if ((string)($row['reason'] ?? '') !== $reason) continue;
+            if ((string)($row['details'] ?? '') !== $details) continue;
+            if ((string)($row['related_match_id'] ?? '') !== $relatedMatchId) continue;
+            return $row;
+        }
+        return null;
+    }
+
+    private function submitResult(array $row): array
+    {
+        $reason = (string)($row['reason'] ?? 'other');
+        return [
+            'report_id' => (string)($row['report_id'] ?? ''),
+            'status' => (string)($row['status'] ?? 'open'),
+            'reason' => $reason,
+            'reason_label' => self::REASONS[$reason] ?? self::LEGACY_REASON_LABELS[$reason] ?? $reason,
+            'created_at' => (string)($row['created_at_utc'] ?? $row['created_at'] ?? ''),
+        ];
     }
 
     private function requireActiveUser(string $mgwId): string

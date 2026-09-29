@@ -83,17 +83,22 @@ try {
                 is_array($payload['attachments'] ?? null) ? $payload['attachments'] : []
             );
 
-            $notifier = new SupportTelegramNotifier($config, new TelegramService($config));
-            $kind = (string)($ticket['priority'] ?? '') === 'critical' ? 'critical' : 'summary';
-            if ($notifier->notifyCreated($ticket, $service->queueMetrics())) {
-                $service->markTelegramAlerted((string)$ticket['ticket_number'], $kind);
-                $ticket = $service->ticketForUser((string)$ticket['ticket_number'], $mgwId);
+            $requestReplayed = !empty($ticket['_request_replayed']);
+            unset($ticket['_request_replayed']);
+            if (!$requestReplayed) {
+                $notifier = new SupportTelegramNotifier($config, new TelegramService($config));
+                $kind = (string)($ticket['priority'] ?? '') === 'critical' ? 'critical' : 'summary';
+                if ($notifier->notifyCreated($ticket, $service->queueMetrics())) {
+                    $service->markTelegramAlerted((string)$ticket['ticket_number'], $kind);
+                    $ticket = $service->ticketForUser((string)$ticket['ticket_number'], $mgwId);
+                }
             }
 
             json_response([
                 'ok' => true,
                 'action' => 'create',
                 'ticket' => $ticket,
+                'request_replayed' => $requestReplayed,
             ]);
         }
 
@@ -106,14 +111,18 @@ try {
                 is_array($payload['attachments'] ?? null) ? $payload['attachments'] : []
             );
 
-            $adminAlertSent = (new SupportTelegramNotifier($config, new TelegramService($config)))
-                ->notifyUserReply($ticket);
+            $requestReplayed = !empty($ticket['_request_replayed']);
+            unset($ticket['_request_replayed']);
+            $adminAlertSent = $requestReplayed
+                ? false
+                : (new SupportTelegramNotifier($config, new TelegramService($config)))->notifyUserReply($ticket);
 
             json_response([
                 'ok' => true,
                 'action' => 'reply',
                 'ticket' => $ticket,
                 'admin_alert_sent' => $adminAlertSent,
+                'request_replayed' => $requestReplayed,
             ]);
         }
 
