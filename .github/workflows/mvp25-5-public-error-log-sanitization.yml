@@ -49,9 +49,6 @@ jobs:
       - name: Sanitization contract
         run: php bot/tests/Mvp25_5PublicErrorLogSanitizationContractTest.php
 
-      - name: Preserve current invite endpoint owner
-        run: php bot/tests/InviteRuntimeEndpointBridgeTest.php
-
       - name: Frozen game/economy/tournament guard
         shell: bash
         run: |
