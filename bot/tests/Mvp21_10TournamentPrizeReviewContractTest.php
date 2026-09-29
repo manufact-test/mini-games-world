@@ -59,7 +59,9 @@ $assert(str_contains($files['admin_js'],'mgw-admin__tournament-review-item'),'Pr
 $assert(str_contains($files['admin_js'],'сдвинуты каноническим settlement owner'),'Admin copy must preserve single-writer placement semantics.');
 
 $assert(str_contains($files['terminal_js'],"settlement_state || '') === 'review_hold'"),'Participant terminal UI must expose provisional review hold.');
-$assert(str_contains($files['terminal_js'],'Ваша призовая ветка временно удержана'),'Affected player must see the hold state.');
+$assert(str_contains($files['terminal_js'],'Ваша награда временно на проверке')
+        && str_contains($files['terminal_js'],'selfHeld'),
+    'Affected player must see the human-readable prize review hold state.');
 $assert(str_contains($files['terminal_js'],"result_code || '') === 'disqualified'"),'Disqualification must be visible in terminal result.');
 $assert(str_contains($files['bootstrap'],'TournamentPrizeReviewService.php'),'Runtime bootstrap must load prize review before settlement.');
 
