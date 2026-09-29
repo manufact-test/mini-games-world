@@ -24,6 +24,10 @@ $exists = static function (string $path) use ($root): bool {
 };
 
 $client = $read('app/assets/js/api/client.js');
+$shell = $read('app/assets/js/main-v110-handoff-shell.js');
+$home = $read('app/assets/js/screens/home-screen.js');
+$mainCss = $read('app/assets/css/main.css');
+$storeScreen = $read('app/assets/js/screens/store-screen.js');
 $bootstrap = $read('bot/core/bootstrap.php');
 $shopBridge = $read('bot/shop/ShopRuntimeBridge.php');
 $paymentBridge = $read('bot/payments/PaymentRuntimeBridge.php');
@@ -41,6 +45,30 @@ $assert(
         && !str_contains($client, 'shopOrder:')
         && !str_contains($client, 'shopOrder('),
     'Active Mini App API client must not expose legacy payment/order write methods.'
+);
+
+$assert(
+    !str_contains($shell, 'screens/store-order.js')
+        && !str_contains($shell, 'screens/store-orders.js')
+        && !is_file($root . '/app/assets/js/screens/store-order.js')
+        && !is_file($root . '/app/assets/js/screens/store-orders.js')
+        && !str_contains($mainCss, 'screens/store-order.css')
+        && !str_contains($mainCss, 'screens/store-orders.css'),
+    'Legacy Gold certificate/order UI owners must remain absent from the active Mini App.'
+);
+$assert(
+    !str_contains($home, 'result.topups')
+        && !str_contains($home, 'data-history-tab="topups"')
+        && !str_contains($home, "?'Match':'Gold'")
+        && !str_contains($home, 'amount_rub'),
+    'Player Home/history must not expose legacy RUB/Match/Gold top-up presentation.'
+);
+$assert(
+    str_contains($storeScreen, 'cosmeticStoreStatus')
+        && str_contains($storeScreen, 'cosmeticStorePurchase')
+        && str_contains($client, 'cosmeticStoreStatus')
+        && str_contains($client, 'cosmeticStorePurchase'),
+    'Modern cosmetics Store must remain the active product Store.'
 );
 
 $assert(
@@ -129,7 +157,6 @@ $assert(
 );
 
 foreach ([
-    'bot/tests/Mvp24LegacyGoldClientSurfaceContractTest.php',
     'bot/tests/Mvp24MiniAppGoldStateCleanupContractTest.php',
     'bot/tests/Mvp24LegacyAdminCommerceReadOnlyContractTest.php',
     'bot/tests/Mvp24LegacyApiCommerceCleanupContractTest.php',
