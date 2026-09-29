@@ -8,6 +8,7 @@ on:
       - 'app/assets/js/screens/notifications-screen-v110r13.js'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest.php'
+      - 'bot/tests/NotificationCenterV2StaticContractTest.php'
       - '.github/workflows/mvp25-2-notification-legacy-order-deeplink.yml'
   push:
     branches:
