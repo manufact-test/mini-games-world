@@ -1,0 +1,138 @@
+/* MVP-25.3 — final cross-product UX consistency.
+ * This file intentionally overlays accepted historical screen owners instead of
+ * rewriting their game/cosmetic-specific geometry.
+ */
+
+/* Safe-area ownership: generic sheets/toasts must stay clear of Telegram/WebView chrome. */
+.overlay{
+  padding:
+    max(12px, env(safe-area-inset-top, 0px))
+    12px
+    max(12px, env(safe-area-inset-bottom, 0px));
+}
+.toast{
+  top:max(16px, calc(env(safe-area-inset-top, 0px) + 8px));
+}
+
+/* Shared interactive geometry: primary shell/sheet controls use one practical tap floor. */
+.icon-btn,
+.close{
+  width:44px;
+  height:44px;
+  min-width:44px;
+  min-height:44px;
+}
+@media (max-height:620px){
+  .close{
+    width:44px;
+    height:44px;
+    min-width:44px;
+    min-height:44px;
+  }
+  .btn{min-height:44px}
+}
+
+.history-tab,
+.notification-mark-all,
+.notification-actions .btn,
+.notification-card-actions .btn,
+.friends-v110-tab,
+.friends-v110-actions .btn,
+.friends-v110-report-select-menu button,
+.account-data-v1-action,
+.account-data-v1-secondary,
+.account-data-v1-danger,
+.account-data-v1-confirm-archive .btn,
+.player-report-reasons button{
+  min-height:44px;
+}
+.friends-v110-more{
+  width:44px;
+  height:44px;
+  min-width:44px;
+  min-height:44px;
+  flex:0 0 44px;
+}
+@media (max-width:639px){
+  .friends-v110-tab{min-height:44px}
+}
+
+/* The More menu can exceed the usable height on short Telegram viewports.
+ * The sheet owns the frame; its direct menu list owns the scroll.
+ */
+.sheet > .menu-list{
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  padding-right:1px;
+}
+.sheet > .menu-list::-webkit-scrollbar{display:none}
+
+/* Moderation can grow with account history. Keep the header stable and the list scrollable. */
+.sheet > .profile-v2-moderation{
+  min-height:0;
+  max-height:calc(86dvh - 118px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  padding-right:1px;
+}
+.sheet > .profile-v2-moderation::-webkit-scrollbar{display:none}
+@media (max-height:680px){
+  .sheet > .profile-v2-moderation{max-height:calc(88dvh - 108px)}
+}
+@media (max-height:620px){
+  .sheet > .profile-v2-moderation{max-height:calc(92dvh - 100px)}
+}
+
+/* Visible keyboard focus: legacy sheet rules intentionally removed it.
+ * Keep pointer visuals unchanged while restoring an explicit focus-visible state.
+ */
+.sheet button:focus-visible,
+.app-shell-topbar button:focus-visible,
+.app-bottom-nav-item:focus-visible,
+#screen-friends button:focus-visible{
+  outline:2px solid var(--sk-brand-violet) !important;
+  outline-offset:2px;
+}
+.sheet .menu-item:focus-visible{
+  border-color:rgba(178,116,255,.66) !important;
+  background:rgba(115,91,255,.14) !important;
+  box-shadow:0 0 0 3px rgba(115,91,255,.15) !important;
+}
+
+/* Final state consistency: disabled actions must look disabled, not merely stop clicks. */
+.account-data-v1-danger:disabled,
+.account-data-v1-action:disabled,
+.account-data-v1-secondary:disabled,
+.player-report-search .btn.primary:disabled,
+.player-report-submit.btn.primary:disabled{
+  opacity:1 !important;
+  color:var(--sk-disabled-fg) !important;
+  -webkit-text-fill-color:var(--sk-disabled-fg) !important;
+  background:var(--sk-disabled-bg) !important;
+  border-color:var(--sk-border-separator) !important;
+  box-shadow:none !important;
+  filter:none !important;
+  cursor:not-allowed !important;
+}
+
+/* Friends loading should reserve the same visual rhythm as an empty list. */
+.friends-v110-loading{
+  min-height:72px;
+  padding:16px 14px;
+  border:1px dashed rgba(233,236,244,.15);
+  border-radius:16px;
+  display:grid;
+  place-items:center;
+  background:rgba(255,255,255,.018);
+  color:var(--muted,#a6a1af);
+  text-align:center;
+  font-size:11.5px;
+  line-height:1.45;
+}
