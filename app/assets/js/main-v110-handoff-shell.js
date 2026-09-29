@@ -171,10 +171,10 @@ function shouldPrimeMobileProfile(result){
 }
 
 async function primeMobileProfileFirstPresentation(){
-  // profileV2 is read-only/coalesced. Awaiting it under the preloader lets the
-  // existing Profile/background owners finish their cold state work before the
-  // first user gesture instead of racing that gesture.
-  try { await api.profileV2(); } catch (_) {}
+  // Profile owns its full profileV2 warm in the background from initProfileScreen().
+  // Keep this covered raster pass presentation-only: a slow profileV2 response must
+  // never hold Home behind the startup preloader. The API client still coalesces the
+  // background read, so the first Profile open keeps its existing warm-data path.
   await Promise.resolve();
 
   const screen = document.getElementById('screen-profile');

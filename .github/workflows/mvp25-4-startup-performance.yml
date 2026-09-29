@@ -1,0 +1,71 @@
+name: MVP-25.4 Startup performance ownership
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.github/workflows/mvp25-4-startup-performance.yml'
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/js/api/client.js'
+      - 'e2e/staging/mvp25-4-performance-baseline.spec.mjs'
+      - 'bot/tests/Mvp25_4StartupPerformanceContractTest.php'
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.github/workflows/mvp25-4-startup-performance.yml'
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/js/api/client.js'
+      - 'e2e/staging/mvp25-4-performance-baseline.spec.mjs'
+      - 'bot/tests/Mvp25_4StartupPerformanceContractTest.php'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: Nonblocking Profile warm contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax
+        run: |
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/tests/Mvp25_4StartupPerformanceContractTest.php
+          node --check app/assets/js/main-v110-handoff-shell.js
+          node --check app/assets/js/screens/profile-screen-v110.js
+          node --check app/assets/js/api/client.js
+          node --check e2e/staging/mvp25-4-performance-baseline.spec.mjs
+
+      - name: Startup ownership contract
+        run: php bot/tests/Mvp25_4StartupPerformanceContractTest.php
+
+      - name: Frozen engine guard
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- bot/games app/assets/js/games app/assets/css/games
