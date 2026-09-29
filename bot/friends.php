@@ -12,6 +12,7 @@ require_once __DIR__ . '/social/SocialFriendNotificationService.php';
 require_once __DIR__ . '/social/SocialPlayerProfileReader.php';
 require_once __DIR__ . '/social/PlayerReportService.php';
 require_once __DIR__ . '/moderation/ModerationService.php';
+require_once __DIR__ . '/services/UserActionRateLimiter.php';
 
 function mgw_friend_error_status(string $reason): int
 {
@@ -65,6 +66,7 @@ try {
     $profileReader = new SocialPlayerProfileReader($database);
     $reports = new PlayerReportService($database);
     $moderation = new ModerationService($database);
+    $rateLimiter = new UserActionRateLimiter($database, $configRef);
     $action = strtolower(trim((string)($payload['action'] ?? 'snapshot')));
     $target = trim((string)($payload['target_mgw_id'] ?? ''));
 
@@ -73,6 +75,9 @@ try {
         // for safety. Social restrictions stop new relationship creation.
         if (in_array($action, ['request','accept'], true)) {
             $moderation->assertAllowed($actorMgwId, 'social');
+        }
+        if ($action === 'report') {
+            $rateLimiter->assertAllowed('player_report', $actorMgwId);
         }
         $result = match ($action) {
             'snapshot' => $service->snapshot($actorMgwId),
@@ -116,6 +121,13 @@ try {
             ),
             default => throw new InvalidArgumentException('unknown_action'),
         };
+    } catch (UserActionRateLimitException $error) {
+        header('Retry-After: ' . $error->retryAfterSec);
+        json_response([
+            'ok'=>false,
+            'code'=>'rate_limited',
+            'error'=>'Слишком много действий. Попробуйте немного позже.',
+        ], 429);
     } catch (ModerationException $error) {
         json_response([
             'ok'=>false,
