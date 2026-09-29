@@ -308,6 +308,34 @@
   #screen-profile [data-profile-avatar-preview]>.profile-v2-collection-avatar,
   #screen-profile [data-profile-frame-preview]>.profile-v2-collection-avatar{width:72px!important;height:72px!important;flex-basis:72px!important}
 }
+/* MVP-25.4 — mobile Profile compositor corrective.
+   The live Profile background remains fully visible/animated, but each card no
+   longer owns a separate backdrop blur on phone-class clients. The translucent
+   glass gradient preserves the accepted look while removing repeated compositor
+   surfaces during Profile route entry. */
+@media (max-width:640px), (pointer:coarse){
+  #screen-profile[data-profile-background-item-id] :is(
+    .profile-v2-identity,
+    .profile-v2-balance,
+    .profile-v2-summary-stat,
+    .profile-v2-game-stat,
+    .profile-v2-history-row,
+    .profile-v2-achievement,
+    .profile-v2-account-card,
+    .profile-v2-collection-card,
+    .profile-v2-name-color-card,
+    .profile-v2-badge-card,
+    .profile-v2-frame-card,
+    .profile-v2-background-card,
+    .profile-v2-game-card,
+    .profile-v2-game-tab,
+    .profile-v2-id-card button
+  ){
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+}
+
 @media (prefers-reduced-motion:reduce){
   [data-profile-background-item-id],#screen-profile[data-profile-background-item-id]::before,#screen-profile[data-profile-background-item-id]::after{transition:none!important;animation:none!important;filter:none!important}
   #screen-profile[data-profile-background-item-id]::before{transform:none!important}
