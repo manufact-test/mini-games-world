@@ -57,8 +57,8 @@ jobs:
 
       - name: Preserve tournament product projection contracts
         run: |
-          php bot/tests/Mvp219TournamentProductProjectionContractTest.php
-          php bot/tests/Mvp217TournamentTechnicalOutcomeContractTest.php
+          php bot/tests/Mvp21_9TournamentProductProjectionContractTest.php
+          php bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php
 
       - name: Guard bounded scope
         if: github.event_name == 'pull_request'
