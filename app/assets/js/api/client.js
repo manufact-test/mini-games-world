@@ -27,7 +27,7 @@ async function requestUrl(url, payload = {}){
   });
   const data = await response.json().catch(() => null);
   if (!response.ok || !data || data.ok === false) {
-    const error = new Error(data?.error || `Ошибка API: ${response.status}`);
+    const error = new Error(data?.error || 'Не удалось выполнить запрос. Попробуйте ещё раз.');
     error.code = data?.code || '';
     error.status = response.status;
     throw error;
@@ -50,7 +50,7 @@ async function downloadAccountExport(requestId){
   });
   if (!response.ok) {
     const data = await response.json().catch(() => null);
-    const error = new Error(data?.error || `Ошибка API: ${response.status}`);
+    const error = new Error(data?.error || 'Не удалось выполнить запрос. Попробуйте ещё раз.');
     error.code = data?.code || '';
     error.status = response.status;
     throw error;
