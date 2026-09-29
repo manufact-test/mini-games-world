@@ -2,9 +2,9 @@
 
 Date: 2026-09-29
 
-Status before human review:
+Final status:
 
-**TECHNICALLY COMPLETE / MANUAL ACCEPTANCE PENDING**
+**CLOSED / MANUALLY ACCEPTED / FROZEN**
 
 This check is intentionally short. It validates only ordinary-player wording and visible error language; it does not reopen accepted game mechanics, economy, tournament logic or MVP-24.
 
@@ -42,8 +42,14 @@ This check is intentionally short. It validates only ordinary-player wording and
    - if network is unavailable during an invite request, the user must see the same human network message, not browser exception text;
    - after network returns, normal invite flow must still work.
 
-## Acceptance
+## Acceptance result
 
-If all six checks pass, MVP-25.2 can be marked **CLOSED / MANUALLY ACCEPTED / FROZEN** and work may advance to MVP-25.3.
+Accepted by the product owner on 2026-09-29 after the final staging build `2661c2b0c166c0dc767108de6df2ee0538a31a55`.
 
-If any item fails, record the exact screen, action and visible wording; keep MVP-25.2 open and fix only the reproduced defect.
+The product owner reported the manual review as normal and explicitly instructed closure.
+
+Result: **PASS**
+
+MVP-25.2 is **CLOSED / MANUALLY ACCEPTED / FROZEN**.
+
+Next roadmap point: **MVP-25.3 — Final UX consistency.**

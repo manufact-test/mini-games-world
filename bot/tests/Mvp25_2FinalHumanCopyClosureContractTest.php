@@ -32,8 +32,11 @@ $closure = $read('docs/MVP25_2_HUMAN_FACING_COPY_CLOSURE.md');
 $manual = $read('docs/MVP25_2_MANUAL_ACCEPTANCE.md');
 
 $assert(str_contains($audit, 'MANDATORY HUMAN-FACING COPY AUDIT') || str_contains($audit, 'Mandatory human-facing copy audit'), 'MVP-25.2 source audit must remain recorded.');
-$assert(str_contains($closure, 'TECHNICALLY COMPLETE / MANUAL ACCEPTANCE PENDING'), 'MVP-25.2 must remain manual-acceptance pending until product-owner review.');
-$assert(str_contains($manual, 'Manual acceptance checklist'), 'MVP-25.2 manual acceptance checklist must be recorded.');
+$assert(str_contains($closure, 'CLOSED / MANUALLY ACCEPTED / FROZEN'), 'MVP-25.2 must record final manual acceptance and freeze.');
+$assert(str_contains($closure, '36595264108'), 'MVP-25.2 must record the exact final green staging E2E run.');
+$assert(str_contains($manual, 'Manual acceptance checklist'), 'MVP-25.2 manual acceptance checklist must remain recorded.');
+$assert(str_contains($manual, 'Result: **PASS**'), 'MVP-25.2 manual acceptance result must be recorded as PASS.');
+$assert(str_contains($manual, 'MVP-25.3 — Final UX consistency'), 'MVP-25.2 closure must point to MVP-25.3 as the next roadmap step.');
 
 $assert(str_contains($entry, 'function mgw_v110_public_failure'), 'v110 must own one public fatal boundary.');
 $assert(str_contains($entry, 'Не удалось открыть Mini Games World. Попробуйте ещё раз через минуту.'), 'v110 must present a human fatal message.');
