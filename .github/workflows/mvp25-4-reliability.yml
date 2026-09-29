@@ -1,0 +1,69 @@
+name: MVP-25.4 Reliability ownership
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.github/workflows/mvp25-4-reliability.yml'
+      - 'app/assets/js/production-v110-presence.js'
+      - 'app/assets/js/production-v110-reconnect-v174.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'e2e/playwright.config.mjs'
+      - 'e2e/staging/mvp25-4-reliability.spec.mjs'
+      - 'bot/tests/Mvp25_4ReliabilityContractTest.php'
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.github/workflows/mvp25-4-reliability.yml'
+      - 'app/assets/js/production-v110-presence.js'
+      - 'app/assets/js/production-v110-reconnect-v174.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'e2e/playwright.config.mjs'
+      - 'e2e/staging/mvp25-4-reliability.spec.mjs'
+      - 'bot/tests/Mvp25_4ReliabilityContractTest.php'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: Presence / reconnect reliability contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax
+        run: |
+          php -l bot/tests/Mvp25_4ReliabilityContractTest.php
+          node --check app/assets/js/production-v110-presence.js
+          node --check app/assets/js/production-v110-reconnect-v174.js
+          node --check e2e/staging/mvp25-4-reliability.spec.mjs
+
+      - name: Reliability ownership contract
+        run: php bot/tests/Mvp25_4ReliabilityContractTest.php
+
+      - name: Frozen engine guard
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- bot/games app/assets/js/games app/assets/css/games
