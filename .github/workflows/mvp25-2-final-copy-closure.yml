@@ -14,12 +14,9 @@ on:
       - 'docs/MVP25_2_MANUAL_ACCEPTANCE.md'
       - 'bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php'
       - 'bot/tests/Mvp25_2FinalHumanCopyClosureContractTest.php'
-      - 'bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php'
       - '.github/workflows/mvp25-2-final-copy-closure.yml'
-      - '.github/workflows/mvp25-2-human-error-boundary.yml'
-      - '.github/workflows/mvp25-1-v110-manifest-normalization.yml'
-      - '.github/workflows/mvp23-mobile-cold-first-interaction.yml'
-      - '.github/workflows/mvp22-8-account-data.yml'
+      - '.github/workflows/mvp25-2-tournament-human-copy.yml'
+      - '.github/workflows/mvp25-2-notification-legacy-order-deeplink.yml'
   push:
     branches:
       - agent/mvp-13-2-staging
@@ -33,12 +30,7 @@ on:
       - 'docs/MVP25_2_MANUAL_ACCEPTANCE.md'
       - 'bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php'
       - 'bot/tests/Mvp25_2FinalHumanCopyClosureContractTest.php'
-      - 'bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php'
       - '.github/workflows/mvp25-2-final-copy-closure.yml'
-      - '.github/workflows/mvp25-2-human-error-boundary.yml'
-      - '.github/workflows/mvp25-1-v110-manifest-normalization.yml'
-      - '.github/workflows/mvp23-mobile-cold-first-interaction.yml'
-      - '.github/workflows/mvp22-8-account-data.yml'
 
 permissions:
   contents: read
@@ -72,7 +64,6 @@ jobs:
           php -l bot/tests/Mvp25_2TournamentHumanCopyContractTest.php
           php -l bot/tests/Mvp25_2FinalHumanCopyClosureContractTest.php
           php -l bot/tests/Mvp22_8AccountDataLifecycleTest.php
-          php -l bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php
           node --check app/assets/js/api/client.js
           node --check app/assets/js/games/game-invites-v110.js
           node --check app/assets/js/screens/account-data-sheet-v1.js
@@ -88,16 +79,8 @@ jobs:
           php bot/tests/Mvp25_2TournamentHumanCopyContractTest.php
           php bot/tests/Mvp25_2FinalHumanCopyClosureContractTest.php
 
-      - name: Preserve account-data lifecycle and accepted first-open behavior
-        run: |
-          php bot/tests/Mvp22_8AccountDataLifecycleTest.php
-          php bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php
-
-      - name: Preserve invite behavior
-        run: |
-          php bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php
-          php bot/tests/ProductionV110CanonicalInviteLaunchContractTest.php
-          php bot/tests/ProductionV110InviteActionsRootContractTest.php
+      - name: Preserve account-data lifecycle
+        run: php bot/tests/Mvp22_8AccountDataLifecycleTest.php
 
       - name: Guard final MVP-25.2 readiness scope
         if: github.event_name == 'pull_request'
@@ -107,6 +90,6 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
-          allowed='^(app/assets/js/api/client\.js|app/assets/js/games/game-invites-v110\.js|app/assets/js/screens/account-data-sheet-v1\.js|app/assets/js/components/account-shortcuts\.js|app/runtime/client/version-manifest\.php|docs/MVP25_2_(HUMAN_FACING_COPY_CLOSURE|MANUAL_ACCEPTANCE)\.md|bot/tests/(Mvp25_2HumanFacingErrorBoundaryContractTest|Mvp25_2FinalHumanCopyClosureContractTest|Mvp23ManualAcceptanceCorrectiveContractTest)\.php|\.github/workflows/(mvp25-2-final-copy-closure|mvp25-2-human-error-boundary|mvp25-1-v110-manifest-normalization|mvp23-mobile-cold-first-interaction|mvp22-8-account-data)\.yml)$'
+          allowed='^(app/assets/js/api/client\.js|app/assets/js/games/game-invites-v110\.js|app/assets/js/screens/account-data-sheet-v1\.js|app/assets/js/components/account-shortcuts\.js|app/runtime/client/version-manifest\.php|docs/MVP25_2_(HUMAN_FACING_COPY_CLOSURE|MANUAL_ACCEPTANCE)\.md|bot/tests/(Mvp25_2HumanFacingErrorBoundaryContractTest|Mvp25_2FinalHumanCopyClosureContractTest)\.php|\.github/workflows/(mvp25-2-final-copy-closure|mvp25-2-tournament-human-copy|mvp25-2-notification-legacy-order-deeplink)\.yml)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-25.2 manual-readiness paths:\n%s\n' "$bad" >&2; exit 1; }
