@@ -470,7 +470,7 @@ function mgw_public_api_error(string $message): string {
     }
 
     $technical = preg_match(
-        '/(?:Runtime module|runtime storage|projection|parity|DB-primary|database(?:\\s+fingerprint|\\s+snapshot)?|state fingerprint|Production atomic|SQLSTATE|PDO|stack trace|internal contract|JSON snapshot|snapshot capability|transactional runtime storage|canonical account identity|request token|unexpected game|persisted|unknown_action|settlement|idempotent|backend|frontend|provider subject|\\bAPI\\b|\\bHTTP\\b)/i',
+        '/(?:Runtime module|runtime storage|projection|parity|DB-primary|database(?:\\s+fingerprint|\\s+snapshot)?|state fingerprint|Production atomic|SQLSTATE|PDO|stack trace|internal contract|JSON snapshot|snapshot capability|transactional runtime storage|canonical(?:\\s+MGW)?\\s+account identity|request token|unexpected game|persisted|unknown_action|settlement|idempotent|backend|frontend|provider subject|Tournament\\s+(?:balance result|pair|launch|game)|\\bStaging\\b|\\bAPI\\b|\\bHTTP\\b)/i',
         $message
     ) === 1;
 
