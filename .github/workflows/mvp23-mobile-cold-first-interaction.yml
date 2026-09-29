@@ -31,7 +31,7 @@ concurrency:
 
 jobs:
   focused:
-    if: ${{ !startsWith(github.head_ref, 'agent/mvp23-manual-acceptance-profile-route-latency-') && !startsWith(github.head_ref, 'agent/mvp25-2-manual-readiness-') }}
+    if: ${{ !startsWith(github.head_ref, 'agent/mvp23-manual-acceptance-profile-route-latency-') }}
     name: Mobile cold first-interaction contract
     runs-on: ubuntu-24.04
     timeout-minutes: 15
