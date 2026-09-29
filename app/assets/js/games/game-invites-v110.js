@@ -1543,19 +1543,25 @@ async function inviteRequest(action, payload = {}, options = {}){
   return postJson(INVITES_URL, { action, ...payload }, options);
 }
 async function postJson(url, payload, options = {}){
-  const response = await fetch(url, {
-    method:'POST',
-    headers:{ 'Content-Type':'application/json' },
-    body:JSON.stringify({
-      initData:getInitData(),
-      sessionId:getSessionId(),
-      ...payload,
-    }),
-    signal:options.signal,
-    priority:'high',
-    cache:'no-store',
-    mgwPrefetch:Boolean(options.prefetch),
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body:JSON.stringify({
+        initData:getInitData(),
+        sessionId:getSessionId(),
+        ...payload,
+      }),
+      signal:options.signal,
+      priority:'high',
+      cache:'no-store',
+      mgwPrefetch:Boolean(options.prefetch),
+    });
+  } catch (error) {
+    if (error?.name === 'AbortError') throw error;
+    throw new Error('Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.');
+  }
   const data = await response.json().catch(() => null);
   if (!response.ok || !data || data.ok === false) {
     if (response.status === 429) throw new Error('Связь перегружена. Попробуйте ещё раз через несколько секунд.');

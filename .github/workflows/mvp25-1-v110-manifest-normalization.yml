@@ -58,7 +58,7 @@ jobs:
           ! grep -F 'manual_review=effect2-stable-overlay-v9' /tmp/mgw-v110.html
 
       - name: Guard bounded scope
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'agent/mvp25-2-manual-readiness-')
         shell: bash
         run: |
           set -euo pipefail

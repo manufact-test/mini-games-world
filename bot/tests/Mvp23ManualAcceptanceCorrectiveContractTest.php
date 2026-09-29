@@ -79,7 +79,7 @@ $assert(
     str_contains($shortcuts, 'there is no close -> empty overlay -> reopen frame')
         && str_contains($main, "account-shortcuts.js?v=48")
         && str_contains($versionManifest, "'./assets/js/components/account-shortcuts.js?v=48'")
-        && str_contains($versionManifest, 'account-shortcuts.js?v=55')
+        && preg_match('/account-shortcuts\\.js\\?v=\\d+[^\n]*mvp23_mobile=atomic-account-data-v1/', $versionManifest) === 1
         && !str_contains($versionManifest, 'mvp23_mobile=')
         && str_contains($stagingEntry, "\$accountShortcutsImportKey = './assets/js/components/account-shortcuts.js?v=48';")
         && str_contains($stagingEntry, "\$imports[\$accountShortcutsImportKey] .= '&mvp23=account-data-first-open-no-flash-v1';")

@@ -1,27 +1,52 @@
-name: MVP-25.2 Final human-facing copy closure
+name: MVP-25.2 Manual acceptance readiness
 
 on:
   pull_request:
     branches:
       - agent/mvp-13-2-staging
     paths:
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'app/assets/js/screens/account-data-sheet-v1.js'
+      - 'app/assets/js/components/account-shortcuts.js'
+      - 'app/runtime/client/version-manifest.php'
       - 'docs/MVP25_2_HUMAN_FACING_COPY_CLOSURE.md'
+      - 'docs/MVP25_2_MANUAL_ACCEPTANCE.md'
+      - 'bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php'
       - 'bot/tests/Mvp25_2FinalHumanCopyClosureContractTest.php'
+      - 'bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php'
       - '.github/workflows/mvp25-2-final-copy-closure.yml'
+      - '.github/workflows/mvp25-2-human-error-boundary.yml'
+      - '.github/workflows/mvp25-1-v110-manifest-normalization.yml'
+      - '.github/workflows/mvp23-mobile-cold-first-interaction.yml'
+      - '.github/workflows/mvp22-8-account-data.yml'
   push:
     branches:
       - agent/mvp-13-2-staging
     paths:
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'app/assets/js/screens/account-data-sheet-v1.js'
+      - 'app/assets/js/components/account-shortcuts.js'
+      - 'app/runtime/client/version-manifest.php'
       - 'docs/MVP25_2_HUMAN_FACING_COPY_CLOSURE.md'
+      - 'docs/MVP25_2_MANUAL_ACCEPTANCE.md'
+      - 'bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php'
       - 'bot/tests/Mvp25_2FinalHumanCopyClosureContractTest.php'
+      - 'bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php'
       - '.github/workflows/mvp25-2-final-copy-closure.yml'
+      - '.github/workflows/mvp25-2-human-error-boundary.yml'
+      - '.github/workflows/mvp25-1-v110-manifest-normalization.yml'
+      - '.github/workflows/mvp23-mobile-cold-first-interaction.yml'
+      - '.github/workflows/mvp22-8-account-data.yml'
 
 permissions:
   contents: read
 
 jobs:
-  final-human-copy-closure:
+  manual-readiness:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,6 +57,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
           coverage: none
 
       - uses: actions/setup-node@v4
@@ -40,23 +66,40 @@ jobs:
 
       - name: Syntax
         run: |
-          php -l bot/tests/Mvp25_2FinalHumanCopyClosureContractTest.php
+          php -l app/runtime/client/version-manifest.php
           php -l bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php
           php -l bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest.php
           php -l bot/tests/Mvp25_2TournamentHumanCopyContractTest.php
+          php -l bot/tests/Mvp25_2FinalHumanCopyClosureContractTest.php
+          php -l bot/tests/Mvp22_8AccountDataLifecycleTest.php
+          php -l bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php
           node --check app/assets/js/api/client.js
+          node --check app/assets/js/games/game-invites-v110.js
+          node --check app/assets/js/screens/account-data-sheet-v1.js
+          node --check app/assets/js/components/account-shortcuts.js
           node --check app/assets/js/screens/notifications-screen-v110r13.js
           node --check app/assets/js/screens/tournaments-screen-v1.js
           python3 -m json.tool app/locales/ru.json >/dev/null
 
-      - name: Final successor-safe copy proof
+      - name: Final MVP-25.2 human-copy proof
         run: |
           php bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php
           php bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest.php
           php bot/tests/Mvp25_2TournamentHumanCopyContractTest.php
           php bot/tests/Mvp25_2FinalHumanCopyClosureContractTest.php
 
-      - name: Guard closure-only scope
+      - name: Preserve account-data lifecycle and accepted first-open behavior
+        run: |
+          php bot/tests/Mvp22_8AccountDataLifecycleTest.php
+          php bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php
+
+      - name: Preserve invite behavior
+        run: |
+          php bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php
+          php bot/tests/ProductionV110CanonicalInviteLaunchContractTest.php
+          php bot/tests/ProductionV110InviteActionsRootContractTest.php
+
+      - name: Guard final MVP-25.2 readiness scope
         if: github.event_name == 'pull_request'
         shell: bash
         run: |
@@ -64,6 +107,6 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
-          allowed='^(docs/MVP25_2_HUMAN_FACING_COPY_CLOSURE\.md|bot/tests/Mvp25_2FinalHumanCopyClosureContractTest\.php|\.github/workflows/mvp25-2-final-copy-closure\.yml)$'
+          allowed='^(app/assets/js/api/client\.js|app/assets/js/games/game-invites-v110\.js|app/assets/js/screens/account-data-sheet-v1\.js|app/assets/js/components/account-shortcuts\.js|app/runtime/client/version-manifest\.php|docs/MVP25_2_(HUMAN_FACING_COPY_CLOSURE|MANUAL_ACCEPTANCE)\.md|bot/tests/(Mvp25_2HumanFacingErrorBoundaryContractTest|Mvp25_2FinalHumanCopyClosureContractTest|Mvp23ManualAcceptanceCorrectiveContractTest)\.php|\.github/workflows/(mvp25-2-final-copy-closure|mvp25-2-human-error-boundary|mvp25-1-v110-manifest-normalization|mvp23-mobile-cold-first-interaction|mvp22-8-account-data)\.yml)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
-          test -z "$bad" || { printf 'Unexpected MVP-25.2 closure paths:\n%s\n' "$bad" >&2; exit 1; }
+          test -z "$bad" || { printf 'Unexpected MVP-25.2 manual-readiness paths:\n%s\n' "$bad" >&2; exit 1; }

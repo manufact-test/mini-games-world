@@ -52,7 +52,7 @@ export async function primeAccountDataShortcut(){
 
 function loadAccountDataModule(){
   if (!accountDataModulePromise) {
-    accountDataModulePromise = import('../screens/account-data-sheet-v1.js?v=5&mvp22_8=account-data-v1&mvp23=mobile-cold-first-open-v1')
+    accountDataModulePromise = import('../screens/account-data-sheet-v1.js?v=6&mvp22_8=account-data-v1&mvp23=mobile-cold-first-open-v1&mvp25_2=human-copy-v1')
       .catch(error => {
         accountDataModulePromise = null;
         throw error;

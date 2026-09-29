@@ -77,10 +77,28 @@ Intentional examples:
 
 Provider-disabled Store coin-package copy/state identified by MVP-25.1 remains owned by **MVP-25.6 monetization-disabled complete-product mode**. It is not silently reclassified as a 25.2 defect.
 
-## Closure
+## Final technical readiness correction
 
-MVP-25.2 is closed when the final successor-safe closure contract is green on this accepted corrective chain.
+The PR #1802 proof established automated technical closure, but the roadmap requires a separate human review for MVP-25.2. Therefore green CI alone does **not** formally close this slice.
 
-Closure statement:
+A final pre-manual audit found two additional ordinary-player wording boundaries:
 
-**Ordinary Russian Telegram Mini App users receive product-language explanations and actions instead of MGW implementation terminology or raw technical exceptions on the audited current product path.**
+- browser/network transport failures could still surface native `Failed to fetch` text through direct client/invite fetch paths;
+- Account Data deletion confirmation still used developer-style `техническая история / финансовый аудит` wording.
+
+Both are part of the same MVP-25.2 human-facing-copy contract and must be corrected before manual acceptance.
+
+## Current status
+
+**TECHNICALLY COMPLETE / MANUAL ACCEPTANCE PENDING**
+
+Formal MVP-25.2 closure requires:
+
+1. final focused contracts green;
+2. exact staging E2E green on the deployed final SHA;
+3. product-owner manual review using `docs/MVP25_2_MANUAL_ACCEPTANCE.md`;
+4. no player-visible technical wording found during that review.
+
+Target closure statement after manual acceptance:
+
+**Ordinary Russian Telegram Mini App users receive product-language explanations and actions instead of MGW implementation terminology or raw technical/browser exceptions on the audited current product path.**

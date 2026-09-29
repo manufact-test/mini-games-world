@@ -20,11 +20,19 @@ let profileV2ReadPromise = null;
 let tournamentPrestigeReadPromise = null;
 
 async function requestUrl(url, payload = {}){
-  const response = await fetch(url, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId(), deviceId:getDeviceId(), ...payload })
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId(), deviceId:getDeviceId(), ...payload })
+    });
+  } catch (_) {
+    const error = new Error('Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.');
+    error.code = 'network_unavailable';
+    error.status = 0;
+    throw error;
+  }
   const data = await response.json().catch(() => null);
   if (!response.ok || !data || data.ok === false) {
     const error = new Error(data?.error || 'Не удалось выполнить запрос. Попробуйте ещё раз.');
@@ -37,17 +45,25 @@ async function requestUrl(url, payload = {}){
 async function request(action, payload = {}){ return requestUrl(APP_CONFIG.apiBase, { action, ...payload }); }
 
 async function downloadAccountExport(requestId){
-  const response = await fetch(ACCOUNT_DATA_URL, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      initData:getInitData(),
-      sessionId:getSessionId(),
-      deviceId:getDeviceId(),
-      action:'download_export',
-      request_id:String(requestId || ''),
-    })
-  });
+  let response;
+  try {
+    response = await fetch(ACCOUNT_DATA_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        initData:getInitData(),
+        sessionId:getSessionId(),
+        deviceId:getDeviceId(),
+        action:'download_export',
+        request_id:String(requestId || ''),
+      })
+    });
+  } catch (_) {
+    const error = new Error('Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.');
+    error.code = 'network_unavailable';
+    error.status = 0;
+    throw error;
+  }
   if (!response.ok) {
     const data = await response.json().catch(() => null);
     const error = new Error(data?.error || 'Не удалось выполнить запрос. Попробуйте ещё раз.');
@@ -55,7 +71,15 @@ async function downloadAccountExport(requestId){
     error.status = response.status;
     throw error;
   }
-  const blob = await response.blob();
+  let blob;
+  try {
+    blob = await response.blob();
+  } catch (_) {
+    const error = new Error('Не удалось скачать архив. Проверьте интернет и попробуйте ещё раз.');
+    error.code = 'download_failed';
+    error.status = response.status;
+    throw error;
+  }
   const disposition = String(response.headers.get('content-disposition') || '');
   const match = disposition.match(/filename="?([^";]+)"?/i);
   return { blob, filename:match?.[1] || 'mini-games-world-data.zip' };
