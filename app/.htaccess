@@ -1,7 +1,13 @@
-DirectoryIndex v114.php index.html
+DirectoryIndex v110.php index.html
+
+RewriteEngine On
+
+# Historical Telegram/WebView links remain valid, but every retired executable
+# entrypoint now converges on the single accepted v110 product owner.
+RewriteRule ^v(?:97|98|99|10[0-9]|114)\.php$ /app/v110.php [R=302,L,NE]
 
 <IfModule mod_headers.c>
-  <Files "v114.php">
+  <Files "v110.php">
     Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
     Header set Pragma "no-cache"
     Header set Expires "0"
