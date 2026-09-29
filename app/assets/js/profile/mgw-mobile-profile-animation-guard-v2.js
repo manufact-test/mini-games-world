@@ -19,8 +19,11 @@ const PROFILE_CSS_FALLBACK_CLASS = 'mgw-profile-animation-css-fallback';
 const pausedByGuard = new Set();
 const knownProfileAnimations = new Set();
 let profileObserver = null;
+const RESUME_BATCH_SIZE = 4;
+
 let resumeFrameOne = 0;
 let resumeFrameTwo = 0;
+let resumeBatchFrame = 0;
 let initialized = false;
 
 function isMobileProfilePresentation(){
@@ -102,22 +105,47 @@ function resumePausedAnimations(){
   cancelResumeFrames();
   const screen = profileScreen();
   if (!screen || currentShellRoute() !== 'profile') return;
-  for (const animation of [...pausedByGuard]) {
-    pausedByGuard.delete(animation);
-    if (!animationStillBelongsToProfile(animation, screen)) {
-      knownProfileAnimations.delete(animation);
-      continue;
+
+  // Do not wake the whole cosmetic compositor graph in one phone frame. The
+  // prepared Profile has already painted; resume the exact same animations in
+  // small batches so paid motion is preserved without one large GPU spike.
+  const pending = [...pausedByGuard];
+  let index = 0;
+
+  const resumeBatch = () => {
+    resumeBatchFrame = 0;
+    if (currentShellRoute() !== 'profile') return;
+
+    let resumed = 0;
+    while (index < pending.length && resumed < RESUME_BATCH_SIZE) {
+      const animation = pending[index++];
+      pausedByGuard.delete(animation);
+      if (!animationStillBelongsToProfile(animation, screen)) {
+        knownProfileAnimations.delete(animation);
+        continue;
+      }
+      if (String(animation?.playState || '') !== 'paused') continue;
+      try {
+        animation.play();
+        resumed++;
+      } catch (_) {}
     }
-    if (String(animation?.playState || '') !== 'paused') continue;
-    try { animation.play(); } catch (_) {}
-  }
+
+    if (index < pending.length && currentShellRoute() === 'profile') {
+      resumeBatchFrame = window.requestAnimationFrame(resumeBatch);
+    }
+  };
+
+  resumeBatch();
 }
 
 function cancelResumeFrames(){
   if (resumeFrameOne) window.cancelAnimationFrame(resumeFrameOne);
   if (resumeFrameTwo) window.cancelAnimationFrame(resumeFrameTwo);
+  if (resumeBatchFrame) window.cancelAnimationFrame(resumeBatchFrame);
   resumeFrameOne = 0;
   resumeFrameTwo = 0;
+  resumeBatchFrame = 0;
 }
 
 function resumeAfterTwoPaints(){
