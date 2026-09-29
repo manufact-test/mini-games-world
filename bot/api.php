@@ -588,7 +588,7 @@ try {
                     if ($aId === '' || $bId === '' || $aId === $bId
                         || !isset($data['users'][$aId]) || !is_array($data['users'][$aId])
                         || !isset($data['users'][$bId]) || !is_array($data['users'][$bId])) {
-                        throw new RuntimeException('Один из игроков ещё не синхронизировал игровой клиент.');
+                        throw new RuntimeException('Один из игроков ещё не готов к запуску матча.');
                     }
 
                     $gameType = $gameCatalog->normalizeGameType((string)$launch['game_type']);
