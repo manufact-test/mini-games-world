@@ -128,13 +128,13 @@ try {
     json_response([
         'ok'=>false,
         'code'=>$error->reason,
-        'error'=>$error->getMessage(),
+        'error'=>mgw_public_api_error($error->getMessage()),
     ], mgw_account_data_http_status($error->reason));
 } catch (AccountDataLifecycleException $error) {
     json_response([
         'ok'=>false,
         'code'=>$error->reason,
-        'error'=>$error->getMessage(),
+        'error'=>mgw_public_api_error($error->getMessage()),
     ], mgw_account_data_http_status($error->reason));
 } catch (Throwable $error) {
     error_log('[MiniGamesWorld account data] ' . $error->getMessage());
