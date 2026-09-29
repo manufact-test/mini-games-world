@@ -3,7 +3,6 @@ import { haptic, getInitData } from '../telegram/telegram-app.js?v=27';
 import { getSessionId } from '../session.js?v=27';
 import { state } from '../state.js?v=27';
 import { currentScreen, showScreen } from '../router.js?v=27';
-import { openStoreOrders } from './store-orders.js?v=36';
 import { t } from '@mgw/i18n';
 
 const NOTIFICATIONS_URL = `${window.location.origin}/bot/notifications.php`;
@@ -421,11 +420,6 @@ async function openNotificationDeepLink(id){
   }
   if (deepLink === 'store') {
     showScreen('store');
-    return;
-  }
-  if (deepLink === 'store:orders') {
-    showScreen('store');
-    queueMicrotask(() => void openStoreOrders());
     return;
   }
 }
@@ -1039,7 +1033,8 @@ function normalizeItem(value){
 
 function safeDeepLink(value){
   const link = String(value || '').trim();
-  if (['home','profile','store','store:orders','friends:requests'].includes(link)) return link;
+  if (link === 'store:orders') return 'store';
+  if (['home','profile','store','friends:requests'].includes(link)) return link;
   return /^support:ticket:SUP-[0-9]{6}-[A-F0-9]{8}$/i.test(link) ? link : '';
 }
 
