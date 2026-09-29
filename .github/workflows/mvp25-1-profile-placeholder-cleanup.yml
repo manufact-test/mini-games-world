@@ -7,6 +7,7 @@ on:
     paths:
       - 'app/assets/js/screens/profile-screen-v110.js'
       - 'app/locales/ru.json'
+      - 'app/runtime/client/version-manifest.php'
       - 'docs/MVP25_1_PRODUCT_WIDE_UNFINISHED_AUDIT.md'
       - 'bot/tests/Mvp25_1ProfilePlaceholderCleanupContractTest.php'
       - 'bot/tests/ProfileV2CorrectiveStaticContractTest.php'
@@ -17,6 +18,7 @@ on:
     paths:
       - 'app/assets/js/screens/profile-screen-v110.js'
       - 'app/locales/ru.json'
+      - 'app/runtime/client/version-manifest.php'
       - 'docs/MVP25_1_PRODUCT_WIDE_UNFINISHED_AUDIT.md'
       - 'bot/tests/Mvp25_1ProfilePlaceholderCleanupContractTest.php'
       - '.github/workflows/mvp25-1-profile-placeholder-cleanup.yml'
@@ -47,6 +49,7 @@ jobs:
         run: |
           node --check app/assets/js/screens/profile-screen-v110.js
           node -e "JSON.parse(require('fs').readFileSync('app/locales/ru.json','utf8'))"
+          php -l app/runtime/client/version-manifest.php
           php -l bot/tests/Mvp25_1ProfilePlaceholderCleanupContractTest.php
           php -l bot/tests/ProfileV2CorrectiveStaticContractTest.php
 
@@ -66,6 +69,8 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
-          allowed='^(app/assets/js/screens/profile-screen-v110\.js|app/locales/ru\.json|docs/MVP25_1_PRODUCT_WIDE_UNFINISHED_AUDIT\.md|bot/tests/Mvp25_1ProfilePlaceholderCleanupContractTest\.php|bot/tests/ProfileV2CorrectiveStaticContractTest\.php|\.github/workflows/mvp25-1-profile-placeholder-cleanup\.yml)$'
+          allowed='^(app/assets/js/screens/profile-screen-v110\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|docs/MVP25_1_PRODUCT_WIDE_UNFINISHED_AUDIT\.md|bot/tests/Mvp25_1ProfilePlaceholderCleanupContractTest\.php|bot/tests/ProfileV2CorrectiveStaticContractTest\.php|\.github/workflows/mvp25-1-profile-placeholder-cleanup\.yml)
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-25.1 paths:\n%s\n' "$bad" >&2; exit 1; }
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-25.1 paths:\n%s\n' "$bad" >&2; exit 1; }
