@@ -51,8 +51,8 @@ jobs:
 
       - name: Preserve Telegram launch and invite owners
         run: |
-          php bot/tests/WebAppLaunchUrlContractTest.php
-          php bot/tests/InviteStartGuardContractTest.php
+          php bot/tests/ProductionV110CanonicalInviteLaunchContractTest.php
+          php bot/tests/Mvp18_4UniversalInviteLandingContractTest.php
 
       - name: Frozen game/economy/tournament guard
         shell: bash
