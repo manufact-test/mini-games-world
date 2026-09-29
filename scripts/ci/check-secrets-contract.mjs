@@ -4,9 +4,9 @@ const scanner = readFileSync('scripts/ci/check-secrets.mjs', 'utf8');
 const workflow = readFileSync('.github/workflows/mvp25-5-secret-scan.yml', 'utf8');
 
 const requiredScannerTerms = [
-  "bot/config/config\\.php",
-  "bot/config/runtime\\.php",
-  "_private_mgw",
+  "live bot config",
+  "private runtime config",
+  "private config directory",
   "Telegram bot token value",
   "webhook setup secret",
   "Telegram webhook secret_token",
