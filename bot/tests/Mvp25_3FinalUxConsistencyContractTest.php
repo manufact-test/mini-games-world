@@ -61,11 +61,13 @@ foreach ([
     $assert(!str_contains($ux, $acceptedOwner), 'MVP-25.3 cross-product overlay must not resize accepted game/cosmetic owner: ' . $acceptedOwner);
 }
 
-$assert(str_contains($audit, 'TECHNICALLY COMPLETE / MANUAL ACCEPTANCE PENDING'), 'MVP-25.3 must remain open until product-owner manual UX acceptance.');
-$assert(str_contains($audit, '36603236354'), 'MVP-25.3 audit must record the exact green staging E2E run.');
-$assert(str_contains($audit, 'c28d83f27b71d69a0ef0a5285ce92b3b3b50c2ff'), 'MVP-25.3 audit must record the exact accepted technical staging SHA.');
+$assert(str_contains($audit, 'CLOSED / MANUALLY ACCEPTED / FROZEN'), 'MVP-25.3 must record final product-owner acceptance and freeze.');
+$assert(str_contains($audit, '36608738815'), 'MVP-25.3 audit must record the final exact green staging E2E run.');
+$assert(str_contains($audit, 'b2c60acce74375e21eef3b0824a66b69c34502e1'), 'MVP-25.3 audit must record the final accepted staging SHA.');
 $assert(str_contains($manual, 'Manual acceptance checklist'), 'MVP-25.3 manual checklist must be recorded.');
 $assert(str_contains($manual, 'Home → More on a short/mobile viewport'), 'Manual acceptance must cover the short-viewport More menu.');
 $assert(str_contains($manual, 'Desktop keyboard spot-check'), 'Manual acceptance must cover visible focus state.');
+$assert(str_contains($manual, 'PASS — CLOSED / MANUALLY ACCEPTED / FROZEN'), 'MVP-25.3 manual acceptance result must be PASS and frozen.');
+$assert(str_contains($manual, 'NEXT: MVP-25.4'), 'MVP-25.3 closure must hand off to MVP-25.4.');
 
 fwrite(STDOUT, "Mvp25_3FinalUxConsistencyContractTest: {$assertions} assertions passed\n");
