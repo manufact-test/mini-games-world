@@ -39,7 +39,7 @@ $assert(
     'Telegram launch owner must remain v110.'
 );
 $assert(
-    str_contains($v120, "header('Location: ' . $target, true, 302);"),
+    str_contains($v120, "header('Location: ' . " . '$target' . ", true, 302);"),
     'v120 compatibility tombstone must remain a redirect.'
 );
 $assert(
