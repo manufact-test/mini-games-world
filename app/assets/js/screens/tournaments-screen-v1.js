@@ -1323,7 +1323,7 @@ const TOURNAMENT_TERMINAL_REWARD_LABELS = Object.freeze({
 
 function tournamentTerminalRewardLabel(entitlement){
   const code = String(entitlement?.reward_code || '');
-  return TOURNAMENT_TERMINAL_REWARD_LABELS[code] || code;
+  return TOURNAMENT_TERMINAL_REWARD_LABELS[code] || 'Награда турнира';
 }
 
 function tournamentTerminalMarkup(progression){
