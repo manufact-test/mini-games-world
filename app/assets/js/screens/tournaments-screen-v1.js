@@ -964,7 +964,7 @@ function tournamentHallMarkup(registered, scheduled, scheduledStart){
       : present
         ? 'В зале'
         : enteredPlayer
-          ? 'Нет активного присутствия'
+          ? 'Сейчас не в зале'
           : 'Не вошёл';
     return `<div class="tournaments-v2-hall-player${present ? ' is-present' : ''}">
       <i aria-hidden="true"></i>
@@ -1110,8 +1110,8 @@ const TOURNAMENT_TECHNICAL_RESULT_LABELS = Object.freeze({
   disconnect_timeout:'Технический исход · 60 секунд на возврат истекли.',
   tournament_disconnect_timeout:'Технический исход · один игрок не вернулся за 3 минуты.',
   tournament_both_absent_timeout:'Оба игрока не вернулись за 3 минуты · победитель не назначен.',
-  technical_restart_scheduled:'Технический перезапуск через 1 минуту.',
-  technical_restart_exhausted:'Технический сбой повторился · матч закрыт без победителя.',
+  technical_restart_scheduled:'Матч перезапустится через 1 минуту.',
+  technical_restart_exhausted:'Матч не удалось продолжить · он завершён без победителя.',
 });
 
 function tournamentTechnicalOutcomeLabel(match){
@@ -1246,7 +1246,7 @@ function tournamentRoundCardMarkup(match){
         : `${String(winner?.nickname || 'Игрок')} проходит дальше.`;
   } else if (done) outcome = 'Матч завершён · победитель не назначен.';
   else if (String(match?.launch_state || '') === 'launched') outcome = 'Матч идёт.';
-  else if (String(match?.wait_kind || '') === 'technical_restart') outcome = 'Технический перезапуск через 1 минуту.';
+  else if (String(match?.wait_kind || '') === 'technical_restart') outcome = 'Матч перезапустится через 1 минуту.';
   else if (String(match?.wait_kind || '') === 'round_break') outcome = 'Перерыв между раундами.';
 
   return `<article class="tournaments-v2-bracket-pair">
@@ -1337,11 +1337,13 @@ function tournamentTerminalMarkup(progression){
       <section class="tournaments-v2-terminal is-pending${reviewHold ? ' is-review-hold' : ''}">
         <div class="tournaments-v2-terminal-kicker">${reviewHold ? 'Призовая проверка' : 'Турнир завершён'}</div>
         <h3>${reviewHold
-          ? (selfHeld ? 'Ваша призовая ветка временно удержана' : 'Часть призовой ветки временно удержана')
+          ? (selfHeld ? 'Ваша награда временно на проверке' : 'Одна из наград временно на проверке')
           : 'Подводим итоги и начисляем награды…'}</h3>
         <p>${reviewHold
-          ? 'Зафиксирован серьёзный сигнал. Выплата не потеряна и не передана другому владельцу: после Admin review канонический settlement либо разрешит награду, либо применит дисквалификацию и сдвиг мест.'
-          : 'Результат сетки уже зафиксирован. Начисление выполняется идемпотентно и будет повторено автоматически.'}</p>
+          ? (selfHeld
+            ? 'Мы проверяем результат. Ничего повторно делать не нужно: после проверки здесь появится окончательный итог и, если результат подтвердится, награда.'
+            : 'Один из призовых результатов находится на проверке. После проверки итоговые места и награды обновятся автоматически.')
+          : 'Результат сетки уже зафиксирован. Награды появятся автоматически после завершения обработки.'}</p>
       </section>
     `;
   }
