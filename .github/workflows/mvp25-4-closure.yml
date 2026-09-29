@@ -1,0 +1,56 @@
+name: MVP-25.4 closure
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'docs/MVP25_4_PERFORMANCE_RELIABILITY.md'
+      - 'docs/MVP25_4_MANUAL_ACCEPTANCE.md'
+      - 'bot/tests/Mvp25_4PerformanceReliabilityClosureContractTest.php'
+      - '.github/workflows/mvp25-4-closure.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp25-4-closure-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  closure:
+    name: Manual acceptance closure contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax
+        run: php -l bot/tests/Mvp25_4PerformanceReliabilityClosureContractTest.php
+
+      - name: Closure contract
+        run: php bot/tests/Mvp25_4PerformanceReliabilityClosureContractTest.php
+
+      - name: Docs-only closure scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(.github/workflows/mvp25-4-closure.yml|docs/MVP25_4_PERFORMANCE_RELIABILITY.md|docs/MVP25_4_MANUAL_ACCEPTANCE.md|bot/tests/Mvp25_4PerformanceReliabilityClosureContractTest.php)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-25.4 closure paths:\n%s\n' "$bad" >&2; exit 1; }
