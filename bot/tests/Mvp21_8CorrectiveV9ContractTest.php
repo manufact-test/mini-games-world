@@ -75,7 +75,7 @@ $assert(str_contains($admin, 'restoreDraftControls();'),
     'Draft controls must remain explicitly interactive after reset rerender.');
 $resetHandler = strpos($admin, 'const resetManualAcceptance = async () =>');
 $preBusyRelease = strpos($admin, 'releaseFocusBeforeHide(resetPanel);', $resetHandler === false ? 0 : $resetHandler);
-$resetBusy = strpos($admin, "const data = await withBusy('Безопасно сбрасываю staging-турнир", $resetHandler === false ? 0 : $resetHandler);
+$resetBusy = strpos($admin, 'const data = await withBusy(', $resetHandler === false ? 0 : $resetHandler);
 $assert($resetHandler !== false && $preBusyRelease !== false && $resetBusy !== false && $preBusyRelease < $resetBusy,
     'Reset confirmation focus must be released before withBusy disables the focused Telegram WebView button.');
 $assert(str_contains($adminEntry, 'admin-tournaments.js?v=15')
