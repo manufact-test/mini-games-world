@@ -9,6 +9,7 @@ on:
       - 'app/locales/ru.json'
       - 'docs/MVP25_1_PRODUCT_WIDE_UNFINISHED_AUDIT.md'
       - 'bot/tests/Mvp25_1ProfilePlaceholderCleanupContractTest.php'
+      - 'bot/tests/ProfileV2CorrectiveStaticContractTest.php'
       - '.github/workflows/mvp25-1-profile-placeholder-cleanup.yml'
   push:
     branches:
@@ -47,9 +48,12 @@ jobs:
           node --check app/assets/js/screens/profile-screen-v110.js
           node -e "JSON.parse(require('fs').readFileSync('app/locales/ru.json','utf8'))"
           php -l bot/tests/Mvp25_1ProfilePlaceholderCleanupContractTest.php
+          php -l bot/tests/ProfileV2CorrectiveStaticContractTest.php
 
       - name: Placeholder cleanup contract
-        run: php bot/tests/Mvp25_1ProfilePlaceholderCleanupContractTest.php
+        run: |
+          php bot/tests/Mvp25_1ProfilePlaceholderCleanupContractTest.php
+          php bot/tests/ProfileV2CorrectiveStaticContractTest.php
 
       - name: Localization regression
         run: php bot/tests/Mvp162LocalizationInfrastructureTest.php
