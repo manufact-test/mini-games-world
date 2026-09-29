@@ -2,7 +2,12 @@ import { defineConfig } from '@playwright/test';
 
 const outputRoot = 'artifacts/playwright';
 const runLiveTournamentMutation = process.env.MGW_STAGING_LIVE_TOURNAMENT_E2E === '1';
-const currentTests = ['current-core-final.spec.mjs', 'checkers-layout-diagnostic.spec.mjs', 'go-store-live-catalog.spec.mjs'];
+const currentTests = [
+  'current-core-final.spec.mjs',
+  'mvp25-4-performance-baseline.spec.mjs',
+  'checkers-layout-diagnostic.spec.mjs',
+  'go-store-live-catalog.spec.mjs',
+];
 if (runLiveTournamentMutation) currentTests.push('tournament-registration-live.spec.mjs');
 
 // Blocking staging acceptance follows the exact Telegram launch entry and the
