@@ -17,6 +17,7 @@ on:
       - 'app/assets/js/screens/notifications-screen-v110r13.js'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest.php'
+      - 'bot/tests/NotificationCenterV2StaticContractTest.php'
       - '.github/workflows/mvp25-2-notification-legacy-order-deeplink.yml'
 
 permissions:
@@ -46,6 +47,7 @@ jobs:
           node --check app/assets/js/screens/notifications-screen-v110r13.js
           php -l app/runtime/client/version-manifest.php
           php -l bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest.php
+          php -l bot/tests/NotificationCenterV2StaticContractTest.php
 
       - name: Successor-safe notification deep-link contract
         run: php bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest.php
@@ -58,6 +60,9 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
-          allowed='^(app/assets/js/screens/notifications-screen-v110r13\.js|app/runtime/client/version-manifest\.php|bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest\.php|\.github/workflows/mvp25-2-notification-legacy-order-deeplink\.yml)$'
+          allowed='^(app/assets/js/screens/notifications-screen-v110r13\.js|app/runtime/client/version-manifest\.php|bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest\.php|bot/tests/NotificationCenterV2StaticContractTest\.php|\.github/workflows/mvp25-2-notification-legacy-order-deeplink\.yml)
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-25.2 notification paths:\n%s\n' "$bad" >&2; exit 1; }
+
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-25.2 notification paths:\n%s\n' "$bad" >&2; exit 1; }
