@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
+require_once $root . '/bot/helpers/response.php';
 $assertions = 0;
 
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -37,9 +38,20 @@ foreach (['client version manifest is unavailable', 'accepted game owner is unav
 $assert(!str_contains($client, 'Ошибка API:'), 'Canonical client must not show API/HTTP fallback wording.');
 $assert(str_contains($client, 'Не удалось выполнить запрос. Попробуйте ещё раз.'), 'Canonical client must have a human request fallback.');
 $assert(str_contains($response, 'function mgw_public_api_error'), 'Shared public error sanitizer must remain active.');
-foreach (['SQLSTATE', 'JSON snapshot', 'transactional runtime storage', 'settlement', '\\bAPI\\b', '\\bHTTP\\b'] as $technicalPattern) {
-    $assert(str_contains($response, $technicalPattern), 'Public sanitizer must cover technical pattern: ' . $technicalPattern);
+foreach ([
+    'SQLSTATE[HY000] database failure',
+    'Invite DB bridge requires a stable JSON snapshot capability.',
+    'Ошибка API: 500',
+] as $technicalMessage) {
+    $assert(
+        mgw_public_api_error($technicalMessage) === 'Не удалось выполнить действие. Попробуйте ещё раз.',
+        'Public sanitizer must hide technical message: ' . $technicalMessage
+    );
 }
+$assert(
+    mgw_public_api_error('Недостаточно коинов для принятия приглашения.') === 'Недостаточно коинов для принятия приглашения.',
+    'Public sanitizer must preserve useful player-domain errors.'
+);
 
 foreach ([
     'Admin review',
