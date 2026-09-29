@@ -370,3 +370,12 @@ bot/setup-webhook.php
 bot/check-webhook.php
 ops/deploy/telegram-webhook-repair.php
 ops/deploy/telegram-webhook-diagnostic-route.php
+
+
+# MVP-25.5 authenticated user abuse limits. Support/report HTTP owners and the
+# shared limiter must deploy atomically; otherwise staging could accept writes
+# without the intended server-side throttle or fail on a missing class.
+bot/services/UserActionRateLimiter.php
+bot/support.php
+bot/support/SupportTicketService.php
+bot/support/SupportTelegramNotifier.php
