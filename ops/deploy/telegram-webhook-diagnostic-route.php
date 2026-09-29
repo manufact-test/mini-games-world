@@ -8,6 +8,7 @@ if (PHP_SAPI !== 'cli') {
 
 $projectRoot = dirname(__DIR__, 2);
 require $projectRoot . '/bot/core/bootstrap.php';
+require_once $projectRoot . '/bot/helpers/TelegramWebhookSecurity.php';
 
 $exitCode = 0;
 
@@ -38,6 +39,7 @@ try {
 
     $setResponse = $telegram->api('setWebhook', [
         'url' => $targetUrl,
+        'secret_token' => TelegramWebhookSecurity::secretToken($config),
         'allowed_updates' => ['message', 'edited_message', 'callback_query'],
         'drop_pending_updates' => false,
     ]);
@@ -65,6 +67,7 @@ try {
         'after_url' => $actualUrl,
         'pending_update_count' => (int)($after['pending_update_count'] ?? 0),
         'last_error_message' => (string)($after['last_error_message'] ?? ''),
+        'secret_token_configured' => true,
         'pending_updates_preserved' => true,
         'sensitive_identifiers_exposed' => false,
         'generated_at_utc' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM),

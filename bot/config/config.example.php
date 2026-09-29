@@ -7,6 +7,9 @@ return [
     // Never commit real tokens or admin IDs.
     'bot_token' => 'PUT_TELEGRAM_BOT_TOKEN_HERE',
     'setup_secret' => 'CHANGE_ME_TO_LONG_RANDOM_SECRET',
+    // Optional dedicated Telegram webhook secret_token. If omitted, the server
+    // derives a stable token from setup_secret; never expose either value to clients.
+    'telegram_webhook_secret' => '',
     'admin_ids' => [
         'PUT_ADMIN_TELEGRAM_ID_HERE',
     ],

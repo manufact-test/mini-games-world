@@ -358,3 +358,15 @@ bot/incident/IncidentRecoveryService.php
 bot/database/migrations/20260926_0068_create_incident_recovery.php
 app/assets/js/admin-incident.js
 app/assets/css/admin-incident.css
+
+
+# MVP-25.5 Telegram webhook ingress security. The webhook verifier, protected
+# setup/diagnostic surfaces and staging OIDC reconciler must deploy atomically
+# before the canonical staging E2E reconfigures Telegram to send secret_token.
+bot/helpers/TelegramWebhookSecurity.php
+bot/staging-webhook-security.php
+bot/webhook-diagnostic.php
+bot/setup-webhook.php
+bot/check-webhook.php
+ops/deploy/telegram-webhook-repair.php
+ops/deploy/telegram-webhook-diagnostic-route.php

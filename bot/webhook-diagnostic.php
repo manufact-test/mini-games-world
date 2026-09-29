@@ -1,6 +1,13 @@
 <?php
 declare(strict_types=1);
+
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+
 require __DIR__ . '/core/bootstrap.php';
+require_once __DIR__ . '/helpers/TelegramWebhookSecurity.php';
 require_once __DIR__ . '/helpers/RuntimeAdminGuard.php';
 require_once __DIR__ . '/helpers/AdminPaymentRejectGuard.php';
 require_once __DIR__ . '/helpers/AdminGoldTopupNotificationGuard.php';
@@ -11,6 +18,10 @@ require_once __DIR__ . '/helpers/TelegramWebhookDiagnostic.php';
 if (strtolower(trim((string)($config['environment'] ?? 'production'))) !== 'staging') {
     http_response_code(404);
     exit;
+}
+if (!TelegramWebhookSecurity::incomingAuthorized($config, $_SERVER)) {
+    http_response_code(403);
+    exit('forbidden');
 }
 
 $update = [];

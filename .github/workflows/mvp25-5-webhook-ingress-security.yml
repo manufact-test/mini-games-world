@@ -1,0 +1,85 @@
+name: MVP-25.5 Webhook ingress security
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.github/workflows/mvp25-5-webhook-ingress-security.yml'
+      - '.github/workflows/staging-playwright-e2e.yml'
+      - 'bot/helpers/TelegramWebhookSecurity.php'
+      - 'bot/staging-webhook-security.php'
+      - 'bot/webhook.php'
+      - 'bot/webhook-diagnostic.php'
+      - 'bot/setup-webhook.php'
+      - 'bot/check-webhook.php'
+      - 'bot/staging-e2e-readiness.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
+      - 'bot/config/config.example.php'
+      - 'ops/deploy/telegram-webhook-repair.php'
+      - 'ops/deploy/telegram-webhook-diagnostic-route.php'
+      - 'bot/tests/Mvp25_5WebhookIngressSecurityContractTest.php'
+      - 'docs/MVP25_5_SECURITY_RESILIENCE_AUDIT.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp25-5-webhook-ingress-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: Webhook ingress security contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax
+        run: |
+          php -l bot/helpers/TelegramWebhookSecurity.php
+          php -l bot/staging-webhook-security.php
+          php -l bot/webhook.php
+          php -l bot/webhook-diagnostic.php
+          php -l bot/setup-webhook.php
+          php -l bot/check-webhook.php
+          php -l bot/staging-e2e-readiness.php
+          php -l ops/deploy/telegram-webhook-repair.php
+          php -l ops/deploy/telegram-webhook-diagnostic-route.php
+          php -l bot/tests/Mvp25_5WebhookIngressSecurityContractTest.php
+
+      - name: Security ownership contract
+        run: php bot/tests/Mvp25_5WebhookIngressSecurityContractTest.php
+
+      - name: Frozen engine guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- bot/games app/assets/js/games app/assets/css/games
+
+      - name: Bounded slice guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(\.github/workflows/(mvp25-5-webhook-ingress-security\.yml|staging-playwright-e2e\.yml)|bot/(helpers/TelegramWebhookSecurity\.php|staging-webhook-security\.php|webhook\.php|webhook-diagnostic\.php|setup-webhook\.php|check-webhook\.php|staging-e2e-readiness\.php|helpers/staging-e2e-runtime-files\.txt|config/config\.example\.php|tests/Mvp25_5WebhookIngressSecurityContractTest\.php)|ops/deploy/(telegram-webhook-repair\.php|telegram-webhook-diagnostic-route\.php)|docs/MVP25_5_SECURITY_RESILIENCE_AUDIT\.md)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-25.5 webhook-security paths:\n%s\n' "$bad" >&2; exit 1; }

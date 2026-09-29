@@ -1,12 +1,30 @@
 <?php
 declare(strict_types=1);
-require __DIR__ . '/core/bootstrap.php';
 
-$key = (string)($_GET['key'] ?? '');
-if ($key === '' || $key !== (string)$config['setup_secret'] || $key === 'CHANGE_THIS_SETUP_SECRET') {
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+
+if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
+    http_response_code(405);
+    header('Allow: POST');
+    echo json_encode(['ok'=>false,'error'=>'method_not_allowed'], JSON_UNESCAPED_SLASHES) . PHP_EOL;
+    exit;
+}
+if ($_GET !== []) {
+    http_response_code(400);
+    echo json_encode(['ok'=>false,'error'=>'query_not_allowed'], JSON_UNESCAPED_SLASHES) . PHP_EOL;
+    exit;
+}
+
+require __DIR__ . '/core/bootstrap.php';
+require_once __DIR__ . '/helpers/TelegramWebhookSecurity.php';
+
+if (!TelegramWebhookSecurity::setupBearerAuthorized($config, $_SERVER)) {
     http_response_code(403);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo "Доступ запрещён. Укажите свой setup_secret в bot/config/config.php и откройте setup-webhook.php?key=ВАШ_КЛЮЧ";
+    echo json_encode(['ok'=>false,'error'=>'forbidden'], JSON_UNESCAPED_SLASHES) . PHP_EOL;
     exit;
 }
 
@@ -15,14 +33,22 @@ try {
     $webhookUrl = rtrim((string)$config['base_url'], '/') . '/bot/webhook.php';
     $result = $telegram->api('setWebhook', [
         'url' => $webhookUrl,
-        'allowed_updates' => ['message', 'callback_query'],
-        'drop_pending_updates' => true,
+        'secret_token' => TelegramWebhookSecurity::secretToken($config),
+        'allowed_updates' => ['message', 'edited_message', 'callback_query'],
+        'drop_pending_updates' => false,
     ]);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo "Webhook URL: {$webhookUrl}\n\n";
-    echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    if (($result['ok'] ?? false) !== true) {
+        throw new RuntimeException('Telegram rejected webhook configuration.');
+    }
+
+    echo json_encode([
+        'ok'=>true,
+        'webhook_url'=>$webhookUrl,
+        'secret_token_configured'=>true,
+        'pending_updates_preserved'=>true,
+    ], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . PHP_EOL;
 } catch (Throwable $e) {
+    error_log('[MiniGamesWorld setup webhook] ' . $e->getMessage());
     http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'Ошибка: ' . $e->getMessage();
+    echo json_encode(['ok'=>false,'error'=>'webhook_setup_failed'], JSON_UNESCAPED_SLASHES) . PHP_EOL;
 }
