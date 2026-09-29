@@ -1,0 +1,70 @@
+name: MVP-25.1 v110 manifest normalization
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/v110.php'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp25_1V110ManifestNormalizationContractTest.php'
+      - '.github/workflows/mvp25-1-v110-manifest-normalization.yml'
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/v110.php'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp25_1V110ManifestNormalizationContractTest.php'
+      - '.github/workflows/mvp25-1-v110-manifest-normalization.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  v110-manifest-normalization:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax
+        run: |
+          php -l app/v110.php
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/tests/Mvp25_1V110ManifestNormalizationContractTest.php
+
+      - name: Manifest ownership contract
+        run: php bot/tests/Mvp25_1V110ManifestNormalizationContractTest.php
+
+      - name: Render canonical v110 entry
+        shell: bash
+        run: |
+          set -euo pipefail
+          php app/v110.php > /tmp/mgw-v110.html
+          test -s /tmp/mgw-v110.html
+          grep -F 'mvp23_profile=instant-route-v1' /tmp/mgw-v110.html >/dev/null
+          grep -F 'live_effects=stable-overlay-v9' /tmp/mgw-v110.html >/dev/null
+          grep -F 'battleship_fire=direct-result-v4' /tmp/mgw-v110.html >/dev/null
+          ! grep -F 'staging_check_test=any-move-v1' /tmp/mgw-v110.html
+          ! grep -F 'manual_review=effect2-stable-overlay-v9' /tmp/mgw-v110.html
+
+      - name: Guard bounded scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          allowed='^(app/v110\.php|app/runtime/client/version-manifest\.php|bot/tests/Mvp25_1V110ManifestNormalizationContractTest\.php|\.github/workflows/mvp25-1-v110-manifest-normalization\.yml)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-25.1 paths:\n%s\n' "$bad" >&2; exit 1; }
