@@ -40,7 +40,7 @@ foreach ([
     'bot/tournament-hall.php'=>$tournamentHall,
 ] as $path=>$source) {
     $assert(
-        str_contains($source, "'environment'] ?? '') === 'staging'"),
+        preg_match('/environment[^\n]{0,160}===\\s*[\'"]staging[\'"]/s', $source) === 1,
         $path . ' debug exception must be staging-only.'
     );
     $assert(
