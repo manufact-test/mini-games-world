@@ -1,0 +1,70 @@
+name: MVP-25.5 Public error and log sanitization
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.github/workflows/mvp25-5-public-error-log-sanitization.yml'
+      - 'bot/core/bootstrap.php'
+      - 'bot/services/TelegramService.php'
+      - 'bot/invites.php'
+      - 'bot/tests/Mvp25_5PublicErrorLogSanitizationContractTest.php'
+      - 'docs/MVP25_5_SECURITY_RESILIENCE_AUDIT.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp25-5-error-log-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Public error and log sanitization
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax
+        run: |
+          php -l bot/core/bootstrap.php
+          php -l bot/services/TelegramService.php
+          php -l bot/invites.php
+          php -l bot/tests/Mvp25_5PublicErrorLogSanitizationContractTest.php
+
+      - name: Sanitization contract
+        run: php bot/tests/Mvp25_5PublicErrorLogSanitizationContractTest.php
+
+      - name: Frozen game/economy/tournament guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- bot/games bot/economy bot/ledger bot/tournaments app/assets/js/games app/assets/css/games
+
+      - name: Bounded slice guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(\.github/workflows/mvp25-5-public-error-log-sanitization\.yml|bot/(core/bootstrap\.php|services/TelegramService\.php|invites\.php|tests/Mvp25_5PublicErrorLogSanitizationContractTest\.php)|docs/MVP25_5_SECURITY_RESILIENCE_AUDIT\.md)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-25.5 sanitization paths:\n%s\n' "$bad" >&2; exit 1; }

@@ -60,6 +60,49 @@ Corrective in this slice:
 - replayed Support writes suppress Telegram admin notifications;
 - changed payloads remain independent writes.
 
+### REAL DEFECT — browser bootstrap and Telegram delivery logs exposed unnecessary diagnostics
+Most HTTP endpoints include `core/bootstrap.php` before their local try/catch. Browser
+`display_errors` was disabled only later by `helpers/response.php`, after private config
+discovery and validation. A sufficiently early failure could therefore expose PHP path/
+diagnostic output if the host enabled display errors.
+
+Telegram delivery failure logs also embedded raw admin/user chat IDs and invite recipient IDs.
+
+Corrective:
+- browser `display_errors` and `html_errors` are disabled at the first bootstrap boundary,
+  before private config discovery, while CLI diagnostics remain unchanged;
+- Telegram delivery logs no longer include raw chat/recipient IDs;
+- bot tokens are defensively redacted from delivery exception text;
+- existing staging-only raw exception diagnostics remain available only to authenticated
+  staging test users.
+
+### NO DEFECT — Web Admin authorization isolation
+All inspected `bot/admin-*.php` HTTP owners authorize through `AdminWebAuth`. The owner
+requires Telegram-signed initData no older than 15 minutes and then checks the verified
+Telegram subject against private `admin_ids`. Admin actor references are derived from that
+verified subject; the public `app/admin.php` shell contains endpoint names but no admin IDs
+or private credentials and ships with no-store, no-referrer and a restrictive CSP.
+
+### NO DEFECT — public social profile projection
+The Friends `player_profile` action uses `SocialPlayerProfileReader`, not the full account
+profile reader. Its public projection is limited to canonical nickname/avatar, public MGW ID,
+membership date and game stats; provider usernames/display names and last-seen data are not
+exposed.
+
+### NO DEFECT — staging / production isolation
+Inspected staging HTTP owners either provide read-only safe readiness/audit output or are
+guarded by exact staging environment/host checks. Write/recovery owners additionally require
+the canonical GitHub Actions OIDC verifier, whose claims are pinned to the repository ID,
+owner ID, staging branch ref, exact staging Playwright workflow, push event and dedicated
+audience, with short token lifetime and JTI replay rejection. The staging test-auth owner
+also requires the exact HTTPS staging host, disables live payment modes, issues 15-minute
+Secure/HttpOnly/SameSite=Strict sessions and binds sessions to device-session identity.
+
+### CLOSED — repository / client secret exposure gate
+PR #1821 makes tracked-secret scanning an enforced PR + staging-push gate. The current
+staging post-merge secret-scan proof is green, and private runtime config remains outside
+the tracked repository.
+
 ## Explicitly unchanged
 - game engines and accepted game rules;
 - economy/ledger semantics;
@@ -69,10 +112,5 @@ Corrective in this slice:
 ## Remaining MVP-25.5 audit
 Still open after this slice:
 - finish remaining player API authorization/ownership classification;
-- finish hidden/private information exposure classification;
-- Admin isolation beyond the already verified initData boundary;
-- staging/production separation outside the completed webhook slice;
-- public error/log sanitization;
-- confirm repository/client secret-exposure closure evidence.
 
 MVP-25.5 is **not closed** by this slice.

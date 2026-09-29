@@ -84,7 +84,7 @@ final class TelegramService
                     'disable_web_page_preview' => true,
                 ]);
             } catch (Throwable $e) {
-                error_log('Mini Games World admin notification failed for ' . $chatId . ': ' . $e->getMessage());
+                error_log('Mini Games World admin notification failed: ' . $this->safeDeliveryError($e));
             }
         }
     }
@@ -107,7 +107,7 @@ final class TelegramService
                 'disable_web_page_preview' => true,
             ]);
         } catch (Throwable $e) {
-            error_log('Mini Games World user payment notification failed for ' . $chatId . ': ' . $e->getMessage());
+            error_log('Mini Games World user payment notification failed: ' . $this->safeDeliveryError($e));
         }
     }
 
@@ -140,8 +140,23 @@ final class TelegramService
                 }
             });
         } catch (Throwable $e) {
-            error_log('Mini Games World in-app payment notification failed: ' . $e->getMessage());
+            error_log('Mini Games World in-app payment notification failed: ' . $this->safeDeliveryError($e));
         }
+    }
+
+    private function safeDeliveryError(Throwable $error): string
+    {
+        $message = trim($error->getMessage());
+        $token = trim((string)($this->config['bot_token'] ?? ''));
+        if ($token !== '') {
+            $message = str_replace($token, '[redacted-bot-token]', $message);
+        }
+        if ($message === '') {
+            $message = get_class($error);
+        }
+        return function_exists('mb_substr')
+            ? mb_substr($message, 0, 600)
+            : substr($message, 0, 600);
     }
 
     private function prepareAdminUxRequest(string $method, array $params): array
