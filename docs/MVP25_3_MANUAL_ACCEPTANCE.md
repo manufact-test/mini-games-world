@@ -4,7 +4,11 @@ Date: 2026-09-29
 
 Status before human review:
 
-**TECHNICALLY COMPLETE / MANUAL ACCEPTANCE PENDING** once the final staging gate is green.
+**TECHNICALLY COMPLETE / MANUAL ACCEPTANCE PENDING**
+
+Technical staging proof:
+- implementation SHA: `c28d83f27b71d69a0ef0a5285ce92b3b3b50c2ff`;
+- exact Staging Playwright E2E: `36603236354` — SUCCESS.
 
 This check is visual/interaction only. It does not reopen accepted game mechanics, economy, tournament settlement or cosmetic behavior.
 
