@@ -44,7 +44,8 @@ $contains("deleteNotificationId:String(options.deleteNotificationId", $sources['
 $contains("const eventId = String(item?.event_id", $sources['client'], 'Client dedupe must use stable event IDs');
 $contains('if (eventId) return `event:${eventId}`', $sources['client'], 'Stable event ID must own non-invite dedupe identity');
 $contains("safeDeepLink", $sources['client'], 'Client deep links must be allow-listed');
-$contains("['home','profile','store','store:orders','friends:requests']", $sources['client'], 'Client must reject arbitrary external notification links');
+$contains("if (link === 'store:orders') return 'store';", $sources['client'], 'Historical Store-order links must converge to the current Store');
+$contains("['home','profile','store','friends:requests']", $sources['client'], 'Client must reject arbitrary external notification links');
 $contains("item.type === 'friend_request'", $sources['client'], 'Friend request events must own a dedicated review action');
 $contains('Посмотреть', $sources['client'], 'Friend request notification must describe navigation instead of implying immediate acceptance');
 $notContains('>Добавить в друзья</button>', $sources['client'], 'Friend request notification must not claim that navigation accepts the request');
