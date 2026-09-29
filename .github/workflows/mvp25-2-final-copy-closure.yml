@@ -15,6 +15,7 @@ on:
       - 'bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php'
       - 'bot/tests/Mvp25_2FinalHumanCopyClosureContractTest.php'
       - '.github/workflows/mvp25-2-final-copy-closure.yml'
+      - '.github/workflows/mvp25-2-human-error-boundary.yml'
       - '.github/workflows/mvp25-2-tournament-human-copy.yml'
       - '.github/workflows/mvp25-2-notification-legacy-order-deeplink.yml'
   push:
@@ -31,6 +32,7 @@ on:
       - 'bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php'
       - 'bot/tests/Mvp25_2FinalHumanCopyClosureContractTest.php'
       - '.github/workflows/mvp25-2-final-copy-closure.yml'
+      - '.github/workflows/mvp25-2-human-error-boundary.yml'
 
 permissions:
   contents: read
@@ -90,6 +92,6 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
-          allowed='^(app/assets/js/api/client\.js|app/assets/js/games/game-invites-v110\.js|app/assets/js/screens/account-data-sheet-v1\.js|app/assets/js/components/account-shortcuts\.js|app/runtime/client/version-manifest\.php|docs/MVP25_2_(HUMAN_FACING_COPY_CLOSURE|MANUAL_ACCEPTANCE)\.md|bot/tests/(Mvp25_2HumanFacingErrorBoundaryContractTest|Mvp25_2FinalHumanCopyClosureContractTest)\.php|\.github/workflows/(mvp25-2-final-copy-closure|mvp25-2-tournament-human-copy|mvp25-2-notification-legacy-order-deeplink)\.yml)$'
+          allowed='^(app/assets/js/api/client\.js|app/assets/js/games/game-invites-v110\.js|app/assets/js/screens/account-data-sheet-v1\.js|app/assets/js/components/account-shortcuts\.js|app/runtime/client/version-manifest\.php|docs/MVP25_2_(HUMAN_FACING_COPY_CLOSURE|MANUAL_ACCEPTANCE)\.md|bot/tests/(Mvp25_2HumanFacingErrorBoundaryContractTest|Mvp25_2FinalHumanCopyClosureContractTest)\.php|\.github/workflows/(mvp25-2-final-copy-closure|mvp25-2-human-error-boundary|mvp25-2-tournament-human-copy|mvp25-2-notification-legacy-order-deeplink)\.yml)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-25.2 manual-readiness paths:\n%s\n' "$bad" >&2; exit 1; }
