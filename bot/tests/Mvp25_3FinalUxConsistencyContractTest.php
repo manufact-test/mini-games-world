@@ -26,7 +26,10 @@ $manual = $read('docs/MVP25_3_MANUAL_ACCEPTANCE.md');
 
 $assert(str_contains($launch, "private const ENTRY_PATH = '/app/v110.php"), 'MVP-25.3 must audit the real v110 launch owner.');
 $assert(str_contains($entry, "version-manifest.php"), 'v110 must still consume the canonical version manifest.');
-$assert(str_contains($manifest, "./assets/css/main.css?v=207&mvp25_3=ux-consistency-v1"), 'Manifest must publish the fresh MVP-25.3 main CSS identity.');
+$assert(
+    str_contains($manifest, "./assets/css/main.css?v=208&mvp25_3=ux-consistency-v1&rules=human-guide-v1"),
+    'Manifest must publish the current MVP-25.3 main CSS identity including the accepted rules-guide successor.'
+);
 $assert(str_contains($main, "@import url('./mvp25-3-ux-consistency-v1.css?v=1');"), 'Main CSS must import the final UX overlay.');
 $assert(strpos($main, "@import url('./mvp25-3-ux-consistency-v1.css?v=1');") > strpos($main, "@import url('./shield-king-icons-v12.css"), 'MVP-25.3 overlay must load after accepted historical imports.');
 
