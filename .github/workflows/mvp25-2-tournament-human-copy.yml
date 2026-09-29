@@ -1,0 +1,73 @@
+name: MVP-25.2 Tournament human-facing copy
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/screens/tournaments-screen-v1.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/locales/ru.json'
+      - 'bot/api.php'
+      - 'bot/tests/Mvp25_2TournamentHumanCopyContractTest.php'
+      - '.github/workflows/mvp25-2-tournament-human-copy.yml'
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/screens/tournaments-screen-v1.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/locales/ru.json'
+      - 'bot/api.php'
+      - 'bot/tests/Mvp25_2TournamentHumanCopyContractTest.php'
+      - '.github/workflows/mvp25-2-tournament-human-copy.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  tournament-human-copy:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax
+        run: |
+          node --check app/assets/js/screens/tournaments-screen-v1.js
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/api.php
+          php -l bot/tests/Mvp25_2TournamentHumanCopyContractTest.php
+          python3 -m json.tool app/locales/ru.json >/dev/null
+
+      - name: Human-facing tournament copy contract
+        run: php bot/tests/Mvp25_2TournamentHumanCopyContractTest.php
+
+      - name: Preserve tournament product projection contracts
+        run: |
+          php bot/tests/Mvp219TournamentProductProjectionContractTest.php
+          php bot/tests/Mvp217TournamentTechnicalOutcomeContractTest.php
+
+      - name: Guard bounded scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          allowed='^(app/assets/js/screens/tournaments-screen-v1\.js|app/runtime/client/version-manifest\.php|app/locales/ru\.json|bot/api\.php|bot/tests/Mvp25_2TournamentHumanCopyContractTest\.php|\.github/workflows/mvp25-2-tournament-human-copy\.yml)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-25.2 tournament-copy paths:\n%s\n' "$bad" >&2; exit 1; }
