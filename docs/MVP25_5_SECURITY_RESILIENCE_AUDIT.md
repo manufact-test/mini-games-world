@@ -89,6 +89,20 @@ profile reader. Its public projection is limited to canonical nickname/avatar, p
 membership date and game stats; provider usernames/display names and last-seen data are not
 exposed.
 
+### NO DEFECT — staging / production isolation
+Inspected staging HTTP owners either provide read-only safe readiness/audit output or are
+guarded by exact staging environment/host checks. Write/recovery owners additionally require
+the canonical GitHub Actions OIDC verifier, whose claims are pinned to the repository ID,
+owner ID, staging branch ref, exact staging Playwright workflow, push event and dedicated
+audience, with short token lifetime and JTI replay rejection. The staging test-auth owner
+also requires the exact HTTPS staging host, disables live payment modes, issues 15-minute
+Secure/HttpOnly/SameSite=Strict sessions and binds sessions to device-session identity.
+
+### CLOSED — repository / client secret exposure gate
+PR #1821 makes tracked-secret scanning an enforced PR + staging-push gate. The current
+staging post-merge secret-scan proof is green, and private runtime config remains outside
+the tracked repository.
+
 ## Explicitly unchanged
 - game engines and accepted game rules;
 - economy/ledger semantics;
@@ -98,7 +112,5 @@ exposed.
 ## Remaining MVP-25.5 audit
 Still open after this slice:
 - finish remaining player API authorization/ownership classification;
-- staging/production separation outside the completed webhook slice;
-- confirm repository/client secret-exposure closure evidence.
 
 MVP-25.5 is **not closed** by this slice.
