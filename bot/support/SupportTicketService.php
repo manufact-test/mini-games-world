@@ -47,6 +47,7 @@ final class SupportTicketService
     private const MAX_SUBJECT_LENGTH = 160;
     private const MAX_ATTACHMENTS_PER_MESSAGE = 3;
     private const MAX_ATTACHMENT_BYTES = 2_000_000;
+    private const USER_WRITE_REPLAY_WINDOW_SECONDS = 120;
     private const ALLOWED_MIME_TYPES = [
         'image/jpeg',
         'image/png',
@@ -78,26 +79,40 @@ final class SupportTicketService
         $preparedAttachments = $this->prepareAttachments($attachments);
         $related = $this->normalizeRelated($related);
 
-        $ticketId = 'ticket_' . bin2hex(random_bytes(16));
-        $ticketNumber = $this->newTicketNumber();
-        $messageId = 'ticketmsg_' . bin2hex(random_bytes(16));
-        $now = $this->timestamp();
-
-        $this->database->transaction(function () use (
-            $ticketId,
-            $ticketNumber,
+        return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
             $requesterMgwId,
             $platformCode,
             $categoryCode,
             $priorityCode,
             $subject,
             $message,
-            $messageId,
             $preparedAttachments,
-            $related,
-            $now
-        ): void {
-            $this->database->execute(
+            $related
+        ): array {
+            $this->lockUserWriteScope($database, $requesterMgwId);
+            $existing = $this->findRecentCreateReplay(
+                $database,
+                $requesterMgwId,
+                $platformCode,
+                $categoryCode,
+                $priorityCode,
+                $subject,
+                $message,
+                $related,
+                $preparedAttachments
+            );
+            if (is_array($existing)) {
+                $ticket = $this->hydrateTicket($existing, false);
+                $ticket['_request_replayed'] = true;
+                return $ticket;
+            }
+
+            $ticketId = 'ticket_' . bin2hex(random_bytes(16));
+            $ticketNumber = $this->newTicketNumber();
+            $messageId = 'ticketmsg_' . bin2hex(random_bytes(16));
+            $now = $this->timestamp();
+
+            $database->execute(
                 'INSERT INTO mgw_support_tickets (
                     ticket_id, ticket_number, requester_mgw_id, platform_code, category_code,
                     status_code, priority_code, owner_ref, subject,
@@ -136,9 +151,11 @@ final class SupportTicketService
                 'category' => $categoryCode,
                 'priority' => $priorityCode,
             ], $now);
-        });
 
-        return $this->ticketForUser($ticketNumber, $requesterMgwId);
+            $ticket = $this->ticketForUser($ticketNumber, $requesterMgwId);
+            $ticket['_request_replayed'] = false;
+            return $ticket;
+        });
     }
 
     public function userSnapshot(string $requesterMgwId, int $limit = 30): array
@@ -172,34 +189,38 @@ final class SupportTicketService
         array $attachments = []
     ): array {
         $requesterMgwId = $this->requireUser($requesterMgwId);
-        $ticket = $this->findTicket($ticketRef);
-        if ((string)$ticket['requester_mgw_id'] !== $requesterMgwId) {
-            throw new SupportTicketException('ticket_not_found', 'Обращение не найдено.');
-        }
-        if ((string)$ticket['status_code'] === 'closed') {
-            throw new SupportTicketException('ticket_closed', 'Закрытое обращение нельзя продолжить. Создайте новое.');
-        }
-
         $message = $this->requiredMessage($message);
         $preparedAttachments = $this->prepareAttachments($attachments);
-        $messageId = 'ticketmsg_' . bin2hex(random_bytes(16));
-        $now = $this->timestamp();
-        $previousStatus = (string)$ticket['status_code'];
-        $nextStatus = in_array($previousStatus, ['waiting_user', 'resolved'], true) ? 'open' : $previousStatus;
 
-        $this->database->transaction(function () use (
-            $ticket,
+        return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
+            $ticketRef,
             $requesterMgwId,
             $message,
-            $messageId,
-            $preparedAttachments,
-            $now,
-            $previousStatus,
-            $nextStatus
-        ): void {
+            $preparedAttachments
+        ): array {
+            $this->lockUserWriteScope($database, $requesterMgwId);
+            $ticket = $this->findTicket($ticketRef);
+            if ((string)$ticket['requester_mgw_id'] !== $requesterMgwId) {
+                throw new SupportTicketException('ticket_not_found', 'Обращение не найдено.');
+            }
+            if ((string)$ticket['status_code'] === 'closed') {
+                throw new SupportTicketException('ticket_closed', 'Закрытое обращение нельзя продолжить. Создайте новое.');
+            }
+
+            if ($this->isRecentReplyReplay($database, $ticket, $requesterMgwId, $message, $preparedAttachments)) {
+                $result = $this->hydrateTicket($ticket, false);
+                $result['_request_replayed'] = true;
+                return $result;
+            }
+
+            $messageId = 'ticketmsg_' . bin2hex(random_bytes(16));
+            $now = $this->timestamp();
+            $previousStatus = (string)$ticket['status_code'];
+            $nextStatus = in_array($previousStatus, ['waiting_user', 'resolved'], true) ? 'open' : $previousStatus;
+
             $this->insertMessage($messageId, (string)$ticket['ticket_id'], 'user', $requesterMgwId, $message, $now);
             $this->insertAttachments((string)$ticket['ticket_id'], $messageId, $preparedAttachments, $now);
-            $this->database->execute(
+            $database->execute(
                 'UPDATE mgw_support_tickets
                  SET status_code = :status, updated_at_utc = :updated_at, last_message_at_utc = :last_message,
                      resolved_at_utc = NULL
@@ -217,9 +238,11 @@ final class SupportTicketService
             if ($nextStatus !== $previousStatus) {
                 $this->insertEvent((string)$ticket['ticket_id'], 'status_changed', $requesterMgwId, $previousStatus, $nextStatus, [], $now);
             }
-        });
 
-        return $this->ticketForUser((string)$ticket['ticket_number'], $requesterMgwId);
+            $result = $this->ticketForUser((string)$ticket['ticket_number'], $requesterMgwId);
+            $result['_request_replayed'] = false;
+            return $result;
+        });
     }
 
     public function adminQueue(array $filters = [], int $limit = 100): array
@@ -527,6 +550,174 @@ final class SupportTicketService
         });
 
         return $this->adminTicket((string)$ticket['ticket_number']);
+    }
+
+    private function lockUserWriteScope(DatabaseConnectionInterface $database, string $mgwId): void
+    {
+        $lockClause = $database->driver() === 'sqlite' ? '' : ' FOR UPDATE';
+        $rows = $database->fetchAll(
+            'SELECT mgw_id FROM mgw_users WHERE mgw_id = :mgw_id' . $lockClause,
+            ['mgw_id' => $mgwId]
+        );
+        if ($rows === []) {
+            throw new SupportTicketException('user_unavailable', 'Профиль MGW недоступен.');
+        }
+    }
+
+    private function replayCutoff(): string
+    {
+        return (new DateTimeImmutable('now', new DateTimeZone('UTC')))
+            ->modify('-' . self::USER_WRITE_REPLAY_WINDOW_SECONDS . ' seconds')
+            ->format('Y-m-d H:i:s.u');
+    }
+
+    private function findRecentCreateReplay(
+        DatabaseConnectionInterface $database,
+        string $requesterMgwId,
+        string $platformCode,
+        string $categoryCode,
+        string $priorityCode,
+        string $subject,
+        string $message,
+        array $related,
+        array $attachments
+    ): ?array {
+        $candidates = $database->fetchAll(
+            'SELECT * FROM mgw_support_tickets
+             WHERE requester_mgw_id = :requester_mgw_id
+               AND platform_code = :platform_code
+               AND category_code = :category_code
+               AND priority_code = :priority_code
+               AND subject = :subject
+               AND created_at_utc >= :cutoff
+             ORDER BY created_at_utc DESC, ticket_number DESC
+             LIMIT 8',
+            [
+                'requester_mgw_id' => $requesterMgwId,
+                'platform_code' => $platformCode,
+                'category_code' => $categoryCode,
+                'priority_code' => $priorityCode,
+                'subject' => $subject,
+                'cutoff' => $this->replayCutoff(),
+            ]
+        );
+
+        foreach ($candidates as $candidate) {
+            if ((string)($candidate['platform_code'] ?? '') !== $platformCode
+                || (string)($candidate['category_code'] ?? '') !== $categoryCode
+                || (string)($candidate['priority_code'] ?? '') !== $priorityCode
+                || (string)($candidate['subject'] ?? '') !== $subject) {
+                continue;
+            }
+            $candidateRelated = [
+                'game_id' => $candidate['related_game_id'] !== null ? (string)$candidate['related_game_id'] : null,
+                'payment_id' => $candidate['related_payment_id'] !== null ? (string)$candidate['related_payment_id'] : null,
+                'tournament_id' => $candidate['related_tournament_id'] !== null ? (string)$candidate['related_tournament_id'] : null,
+                'operation_id' => $candidate['related_operation_id'] !== null ? (string)$candidate['related_operation_id'] : null,
+            ];
+            if ($candidateRelated !== $related) continue;
+
+            $messages = $database->fetchAll(
+                "SELECT message_id, body
+                 FROM mgw_support_ticket_messages
+                 WHERE ticket_id = :ticket_id
+                   AND actor_type = 'user'
+                   AND actor_ref = :actor_ref
+                 ORDER BY created_at_utc ASC, message_id ASC
+                 LIMIT 1",
+                [
+                    'ticket_id' => (string)$candidate['ticket_id'],
+                    'actor_ref' => $requesterMgwId,
+                ]
+            );
+            $initial = is_array($messages[0] ?? null) ? $messages[0] : null;
+            if (!is_array($initial) || (string)($initial['body'] ?? '') !== $message) continue;
+            if (!$this->storedAttachmentsMatch($database, (string)$initial['message_id'], $attachments)) continue;
+
+            return $candidate;
+        }
+
+        return null;
+    }
+
+    private function isRecentReplyReplay(
+        DatabaseConnectionInterface $database,
+        array $ticket,
+        string $requesterMgwId,
+        string $message,
+        array $attachments
+    ): bool {
+        $initialRows = $database->fetchAll(
+            "SELECT message_id
+             FROM mgw_support_ticket_messages
+             WHERE ticket_id = :ticket_id
+               AND actor_type = 'user'
+               AND actor_ref = :actor_ref
+             ORDER BY created_at_utc ASC, message_id ASC
+             LIMIT 1",
+            [
+                'ticket_id' => (string)$ticket['ticket_id'],
+                'actor_ref' => $requesterMgwId,
+            ]
+        );
+        $initialMessageId = trim((string)($initialRows[0]['message_id'] ?? ''));
+
+        $rows = $database->fetchAll(
+            "SELECT message_id, body
+             FROM mgw_support_ticket_messages
+             WHERE ticket_id = :ticket_id
+               AND actor_type = 'user'
+               AND actor_ref = :actor_ref
+               AND created_at_utc >= :cutoff
+             ORDER BY created_at_utc DESC, message_id DESC
+             LIMIT 8",
+            [
+                'ticket_id' => (string)$ticket['ticket_id'],
+                'actor_ref' => $requesterMgwId,
+                'cutoff' => $this->replayCutoff(),
+            ]
+        );
+
+        foreach ($rows as $row) {
+            $messageId = trim((string)($row['message_id'] ?? ''));
+            if ($messageId === '' || $messageId === $initialMessageId) continue;
+            if ((string)($row['body'] ?? '') !== $message) continue;
+            if ($this->storedAttachmentsMatch($database, $messageId, $attachments)) return true;
+        }
+
+        return false;
+    }
+
+    private function storedAttachmentsMatch(
+        DatabaseConnectionInterface $database,
+        string $messageId,
+        array $expected
+    ): bool {
+        $stored = $database->fetchAll(
+            'SELECT file_name, mime_type, size_bytes, content_base64
+             FROM mgw_support_ticket_attachments
+             WHERE message_id = :message_id',
+            ['message_id' => $messageId]
+        );
+        return $this->attachmentSignatures($stored) === $this->attachmentSignatures($expected);
+    }
+
+    /** @return list<string> */
+    private function attachmentSignatures(array $attachments): array
+    {
+        $signatures = [];
+        foreach ($attachments as $attachment) {
+            if (!is_array($attachment)) continue;
+            $payload = implode("\n", [
+                (string)($attachment['file_name'] ?? ''),
+                strtolower((string)($attachment['mime_type'] ?? '')),
+                (string)((int)($attachment['size_bytes'] ?? 0)),
+                hash('sha256', (string)($attachment['content_base64'] ?? '')),
+            ]);
+            $signatures[] = hash('sha256', $payload);
+        }
+        sort($signatures, SORT_STRING);
+        return $signatures;
     }
 
     private function hydrateTicket(array $ticket, bool $includeHistory): array
