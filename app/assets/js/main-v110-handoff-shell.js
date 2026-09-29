@@ -406,11 +406,11 @@ function ensureBottomNavigation(app){
 
 function handleShellNavigation(event){
   const target = event.target instanceof Element ? event.target.closest('[data-shell-nav]') : null;
-  if (!(target instanceof HTMLButtonElement)) return;
+  if (!(target instanceof HTMLElement)) return;
 
   event.preventDefault();
   event.stopImmediatePropagation();
-  if (target.disabled) return;
+  if (target instanceof HTMLButtonElement && target.disabled) return;
 
   if (activeMatchLocksShell()) {
     showScreen('game');
