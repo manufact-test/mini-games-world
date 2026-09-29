@@ -1,0 +1,64 @@
+name: MVP-24 Public Gold sanitation
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.htaccess'
+      - 'sitemap.xml'
+      - 'site/**'
+      - 'bot/tests/Mvp24PublicGoldSanitationContractTest.php'
+      - '.github/workflows/mvp24-public-gold-sanitation.yml'
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.htaccess'
+      - 'sitemap.xml'
+      - 'site/**'
+      - 'bot/tests/Mvp24PublicGoldSanitationContractTest.php'
+      - '.github/workflows/mvp24-public-gold-sanitation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  public-gold-sanitation:
+    name: Retire stale public Match/Gold claims
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax
+        run: |
+          php -l site/russian-page.php
+          php -l site/landing/landing-v18.php
+          php -l bot/tests/Mvp24PublicGoldSanitationContractTest.php
+
+      - name: Public sanitation contract
+        run: php bot/tests/Mvp24PublicGoldSanitationContractTest.php
+
+      - name: Guard bounded public-site scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(\.htaccess|sitemap\.xml|site/(russian-page\.php|blog/(index\.html|telegram-games-with-friends/index\.html|telegram-mini-app-games/index\.html|tic-tac-toe-online/index\.html|upcoming-games/index\.html)|legal/terms/index\.html)|bot/tests/Mvp24PublicGoldSanitationContractTest\.php|\.github/workflows/mvp24-public-gold-sanitation\.yml)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-24.4 paths:\n%s\n' "$bad" >&2; exit 1; }
