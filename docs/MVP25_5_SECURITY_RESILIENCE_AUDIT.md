@@ -34,6 +34,32 @@ Canonical staging Playwright reuses the existing GitHub Actions OIDC verifier to
 reconcile the staging Telegram webhook after exact deployment readiness and before
 normal projection/E2E work. No repository or client secret is introduced.
 
+## Classified findings — subsequent slices
+
+### REAL DEFECT — repository secret scanner existed but was not enforced
+The repository already contained a tracked-file secret scanner, but no inspected
+staging/release workflow executed it. PR #1821 added a dedicated PR + staging-push
+gate and expanded checks for webhook, staging test-auth and website-hook secrets.
+
+### REAL DEFECT — authenticated write amplification had no server-side throttle
+Support ticket creation, Support user replies and player report submission could
+create durable DB/storage rows and outbound notification load without a server-side
+abuse limit. PR #1822 added one `UserActionRateLimiter` owner using canonical
+existing tables, bounded private overrides, HTTP 429 and `Retry-After`.
+
+### REAL DEFECT — exact sensitive-write replay created duplicate durable objects
+Even with rate limits, replaying the same authenticated request created a second
+Support ticket/message/report and could repeat Telegram Support notifications.
+
+Corrective in this slice:
+- exact recent duplicate detection is server-side and requires no new client field;
+- Support create/reply and player report writes serialize by authenticated user
+  inside the same DB transaction before replay lookup + insert;
+- MySQL uses `FOR UPDATE`; SQLite retains the same transactional contract;
+- Support replay identity includes canonical attachment bytes;
+- replayed Support writes suppress Telegram admin notifications;
+- changed payloads remain independent writes.
+
 ## Explicitly unchanged
 - game engines and accepted game rules;
 - economy/ledger semantics;
@@ -42,13 +68,11 @@ normal projection/E2E work. No repository or client secret is introduced.
 
 ## Remaining MVP-25.5 audit
 Still open after this slice:
-- remaining player API authorization/ownership checks;
-- server-side rate limiting and abuse boundaries;
-- idempotency/replay safety of sensitive writes;
-- hidden/private information exposure;
+- finish remaining player API authorization/ownership classification;
+- finish hidden/private information exposure classification;
 - Admin isolation beyond the already verified initData boundary;
-- staging/production separation outside this webhook slice;
+- staging/production separation outside the completed webhook slice;
 - public error/log sanitization;
-- repository/client secret exposure audit.
+- confirm repository/client secret-exposure closure evidence.
 
 MVP-25.5 is **not closed** by this slice.
