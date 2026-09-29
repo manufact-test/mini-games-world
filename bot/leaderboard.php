@@ -69,7 +69,7 @@ try {
         'leaderboard' => $leaderboard,
     ]);
 } catch (InvalidArgumentException $error) {
-    json_response(['ok'=>false,'error'=>$error->getMessage()], 422);
+    json_response(['ok'=>false,'error'=>mgw_public_api_error($error->getMessage())], 422);
 } catch (Throwable $error) {
     error_log('MGW leaderboard failed: ' . $error->getMessage());
     json_response(['ok'=>false,'error'=>'Не удалось загрузить таблицу лидеров.'], 500);
