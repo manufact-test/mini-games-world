@@ -57,7 +57,8 @@ export function initMgwProfileVictoryEffects(){
     document.addEventListener('mgw:screen-changed', event => {
       const next = String(event?.detail?.to || '').trim();
       stopCatalogPreview();
-      if (next === 'profile' || next === 'store') {
+      if (next === 'profile') scheduleProfileRouteWorkAfterPaint();
+      else if (next === 'store') {
         scheduleDecorate();
         void ensureSnapshot();
       }
@@ -92,6 +93,20 @@ export function initMgwProfileVictoryEffects(){
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once:true });
   else start();
+}
+
+function scheduleProfileRouteWorkAfterPaint(){
+  const run = () => {
+    const active = String(document.querySelector('.screen.active')?.dataset.screen || '').trim();
+    if (active !== 'profile') return;
+    scheduleDecorate();
+    void ensureSnapshot();
+  };
+  if (typeof window.requestAnimationFrame !== 'function') {
+    window.setTimeout(run, 0);
+    return;
+  }
+  window.requestAnimationFrame(() => window.requestAnimationFrame(run));
 }
 
 function ensureStylesheet(){
