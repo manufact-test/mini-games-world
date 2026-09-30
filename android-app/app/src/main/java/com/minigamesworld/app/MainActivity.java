@@ -431,8 +431,8 @@ public final class MainActivity extends Activity {
 
                 String credential = credentialStore.getOrCreate();
                 String form = "action=confirm_native"
-                        + "&challenge_id=" + URLEncoder.encode(challengeId, StandardCharsets.UTF_8)
-                        + "&credential=" + URLEncoder.encode(credential, StandardCharsets.UTF_8);
+                        + "&challenge_id=" + URLEncoder.encode(challengeId, StandardCharsets.UTF_8.name())
+                        + "&credential=" + URLEncoder.encode(credential, StandardCharsets.UTF_8.name());
                 byte[] body = form.getBytes(StandardCharsets.UTF_8);
 
                 connection = (HttpsURLConnection) new URL(endpoint).openConnection();
@@ -444,7 +444,9 @@ public final class MainActivity extends Activity {
                 connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
                 connection.setRequestProperty("Accept", "application/json");
                 connection.setFixedLengthStreamingMode(body.length);
-                connection.getOutputStream().write(body);
+                try (java.io.OutputStream output = connection.getOutputStream()) {
+                    output.write(body);
+                }
 
                 int status = connection.getResponseCode();
                 String responseBody = readResponseBody(connection, status);
