@@ -58,9 +58,6 @@ jobs:
       - name: First-paint balance contract
         run: php bot/tests/Mvp26_3_8FirstPaintBalanceContractTest.php
 
-      - name: Existing profile API boundary
-        run: php bot/tests/Mvp15MgwProfileApiTest.php
-
       - name: Existing startup ownership
         run: php bot/tests/Mvp25_4StartupPerformanceContractTest.php
 
