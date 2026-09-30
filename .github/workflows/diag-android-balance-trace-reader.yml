@@ -1,0 +1,32 @@
+name: DIAG Read Android balance trace
+
+on:
+  push:
+    branches:
+      - diag/mvp26-3-android-balance-trace-reader
+    paths:
+      - '.github/workflows/diag-android-balance-trace-reader.yml'
+      - 'ops/diag/android-balance-trace-read-trigger.txt'
+
+permissions:
+  contents: read
+
+jobs:
+  read-trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Read recent anonymous Android balance traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error             --connect-timeout 10             --max-time 20             -H 'Accept: application/json'             'https://seashell-okapi-889488.hostingersite.com/bot/staging-android-balance-trace.php'             | tee /tmp/android-balance-trace.json
+          python3 - <<'PY'
+          import json
+          with open('/tmp/android-balance-trace.json', 'r', encoding='utf-8') as fh:
+              payload = json.load(fh)
+          assert payload.get('ok') is True
+          assert payload.get('service') == 'staging-android-balance-trace-v1'
+          traces = payload.get('traces') or []
+          print(json.dumps({'trace_count': len(traces), 'traces': traces[-4:]}, ensure_ascii=False, indent=2))
+          PY
