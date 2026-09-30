@@ -2,7 +2,9 @@
 
 Base staging: `065e664e71a46e8441307767feec689de98eb86e`.
 
-This is a proof-only slice. It changes no runtime source.
+The first full-flow proof exposed one MySQL-only runtime defect: native PDO prepared statements reject repeated named placeholders inside one statement. The pristine-activity scan used the same `:mgw_id` name in multi-column OR predicates.
+
+The correction keeps native prepares and generates one parameter per column (`:mgw_id_0`, `:mgw_id_1`, ...). No driver emulation or weaker SQL mode is introduced.
 
 The dedicated integration test runs the complete MVP-26.3 account-link lifecycle against a clean **MySQL 8.4** database with the full current migration set:
 
