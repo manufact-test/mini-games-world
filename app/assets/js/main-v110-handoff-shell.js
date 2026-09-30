@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp26-3-11-profile-v2-balance-owner-v1166';
+window.__MGW_BUILD__ = 'v110-mvp26-3-balance-writer-trace-v1167';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -37,7 +37,7 @@ import { initV110Presence } from './production-v110-presence.js?v=1121&b=f5a28b0
 import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1121';
 import { t } from '@mgw/i18n';
 import { settlePendingAccountLinkBeforeBoot } from './profile/mgw-account-link-ui.js?v=3';
-import { installBalanceDomTrace, traceBalanceEvent } from './diagnostics/android-balance-trace-v1.js?v=2';
+import { installBalanceDomTrace, traceBalanceEvent } from './diagnostics/android-balance-trace-v1.js?v=3';
 
 const SHELL_ROUTES = new Set(['home', 'tournaments', 'store', 'profile']);
 let statsRefreshing = false;

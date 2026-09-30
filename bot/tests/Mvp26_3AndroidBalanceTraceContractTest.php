@@ -25,6 +25,7 @@ $assert(!str_contains($endpoint, "'balance'=>") && !str_contains($endpoint, "'mg
 $assert(str_contains($client, "balanceState(value)") && str_contains($client, "'zero'") && str_contains($client, "'nonzero'"), 'Client must reduce balances to state classes.');
 $assert(str_contains($v110, "window.__MGW_ANDROID_SHELL__=true") && str_contains($v110, "mgw_android_auth"), 'v110 must mark only requests carrying the Android auth cookie.');
 $assert(str_contains($client, "window.__MGW_ANDROID_SHELL__ !== true"), 'Client trace must remain silent outside the authenticated Android shell.');
+$assert(str_contains($client, 'writerFromStack') && str_contains($client, "dom.writer."), 'Client trace must identify the exact module writing the visible balance DOM.');
 $assert(str_contains($shell, "api.bootstrap.response"), 'Bootstrap response must be traced.');
 $assert(str_contains($shell, "api.profile.response"), 'Profile response must be traced.');
 $assert(str_contains($shell, "api.profile_v2.response"), 'Profile V2 response must be traced.');
@@ -32,6 +33,6 @@ $assert(str_contains($shell, "api.store.response"), 'Store response must be trac
 $assert(str_contains($shell, "boot.balance.selected"), 'Selected first-paint balance must be traced.');
 $assert(str_contains($client, "dom.balance.change"), 'Visible DOM balance changes must be traced.');
 $assert(str_contains($profileScreen, 'delete profileRuntimeUser.balance;'), 'Profile V2 must not own the unified wallet balance.');
-$assert(str_contains($manifest, 'main-v110-handoff-shell.js?v=1166') && str_contains($manifest, 'diag=android-balance-trace-v2') && str_contains($manifest, 'mvp26_3_11=profile-v2-wallet-nonowner-v1'), 'Manifest must publish the current diagnostic and wallet-ownership shell cache identity.');
+$assert(str_contains($manifest, 'main-v110-handoff-shell.js?v=1167') && str_contains($manifest, 'diag=android-balance-writer-trace-v3') && str_contains($manifest, 'mvp26_3_11=profile-v2-wallet-nonowner-v1'), 'Manifest must publish the current diagnostic and wallet-ownership shell cache identity.');
 
 fwrite(STDOUT, "Mvp26_3AndroidBalanceTraceContractTest: {$assertions} assertions passed\n");
