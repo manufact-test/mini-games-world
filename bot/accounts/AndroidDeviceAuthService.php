@@ -93,6 +93,89 @@ final class AndroidDeviceAuthService
         return $this->projectUser($this->database(), $record);
     }
 
+    public function reauthenticateCredential(
+        string $credential,
+        string $sessionToken,
+        string $remoteAddress
+    ): array {
+        $this->assertEnabled();
+        $subject = $this->credentialSubject($credential);
+        $database = $this->database();
+        (new AndroidAuthAttemptLimiter($database, $this->config))->assertReauthAllowed($remoteAddress, $subject);
+
+        $record = $this->sessionRecord($sessionToken);
+        if (!is_array($record)
+            || !hash_equals($subject, trim((string)($record['provider_subject'] ?? '')))) {
+            throw new InvalidArgumentException('Android reauthentication identity does not match the active session.');
+        }
+
+        $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        $nowText = $now->format('Y-m-d H:i:s.u');
+        $affected = $database->execute(
+            'UPDATE mgw_sessions
+             SET last_reauthenticated_at_utc=:reauthenticated_at_utc,
+                 last_seen_at_utc=:last_seen_at_utc
+             WHERE session_key_hash=:session_key_hash
+               AND provider=:provider
+               AND revoked_at_utc IS NULL
+               AND expires_at_utc>:now_utc',
+            [
+                'reauthenticated_at_utc'=>$nowText,
+                'last_seen_at_utc'=>$nowText,
+                'session_key_hash'=>(string)$record['session_key_hash'],
+                'provider'=>self::PROVIDER,
+                'now_utc'=>$nowText,
+            ]
+        );
+        if ($affected !== 1) {
+            throw new RuntimeException('Android reauthentication session is no longer active.');
+        }
+
+        return [
+            'user'=>$this->projectUser($database, $record),
+            'reauthenticated_at_utc'=>$nowText,
+        ];
+    }
+
+    public function authenticateRecentlyReauthenticatedCookie(
+        string $sessionToken,
+        int $maxAgeSeconds,
+        ?int $now = null
+    ): ?array {
+        if (!$this->enabled()) return null;
+        $record = $this->sessionRecord($sessionToken);
+        if (!is_array($record)) return null;
+
+        $rows = $this->database()->fetchAll(
+            'SELECT last_reauthenticated_at_utc
+             FROM mgw_sessions
+             WHERE session_key_hash=:session_key_hash
+               AND provider=:provider
+               AND revoked_at_utc IS NULL
+             LIMIT 1',
+            [
+                'session_key_hash'=>(string)$record['session_key_hash'],
+                'provider'=>self::PROVIDER,
+            ]
+        );
+        $lastText = trim((string)($rows[0]['last_reauthenticated_at_utc'] ?? ''));
+        if ($lastText === '') return null;
+
+        try {
+            $last = new DateTimeImmutable($lastText, new DateTimeZone('UTC'));
+        } catch (Throwable) {
+            return null;
+        }
+
+        $now ??= time();
+        $lastTs = $last->getTimestamp();
+        $maxAgeSeconds = max(1, min(3600, $maxAgeSeconds));
+        if ($lastTs > $now + 60 || $now - $lastTs > $maxAgeSeconds) return null;
+
+        $this->touchSession((string)$record['session_key_hash']);
+        return $this->projectUser($this->database(), $record);
+    }
+
     public function cookieTtlSec(): int
     {
         return max(300, min(31536000, (int)($this->config['mgw_account_session_ttl_sec'] ?? 2592000)));
