@@ -76,6 +76,19 @@ require("protected void onSaveInstanceState(Bundle outState)" in main and "webVi
         "process/activity recovery must keep WebView saveState fallback")
 require("webView.restoreState(webState)" in main,
         "process/activity recovery must keep WebView restoreState fallback")
+
+restore_match = re.search(
+    r"if \(webState != null && webView\.restoreState\(webState\) != null\) \{(?P<body>.*?)\n\s*\}",
+    main,
+    re.S,
+)
+require(restore_match is not None, "Could not isolate restored-WebView recovery branch")
+if restore_match is not None:
+    restore_body = restore_match.group("body")
+    require("showLoading(true);" in restore_body,
+            "restored WebView must remain covered until the current frame finishes")
+    require("showLoading(false);" not in restore_body,
+            "restored WebView must not expose a stale saved frame immediately")
 require("versionCode 2604" in build, "orientation APK must use versionCode 2604")
 require("applicationId 'com.minigamesworld.app.acceptance'" in build,
         "accepted Android package must remain unchanged")
