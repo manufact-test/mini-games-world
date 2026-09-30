@@ -39,7 +39,7 @@ export function initAccountLinkUi(){
 }
 
 export async function openAccountLinkSheet(){
-  if (!isAndroidProvider(state.profileAuth)) {
+  if (!isCurrentAndroidProvider()) {
     toast('Привязка Telegram доступна только в Android-приложении.');
     return;
   }
@@ -147,7 +147,7 @@ async function finalizePending(challengeId, options = {}){
 }
 
 async function resumePendingSilently(){
-  if (busy || !isAndroidProvider(state.profileAuth)) return;
+  if (busy || !isCurrentAndroidProvider()) return;
   if (hasTelegramIdentity(state.mgwProfile?.identities)) {
     clearPending();
     return;
@@ -267,6 +267,11 @@ function bindSheetButton(selector, handler){
     event.preventDefault();
     void handler();
   }, { once:true });
+}
+
+function isCurrentAndroidProvider(){
+  const provider = state.profileAuth?.provider || state.user?.mgw_identity_provider || '';
+  return String(provider).trim().toLowerCase() === 'android_device';
 }
 
 function isAndroidProvider(auth){

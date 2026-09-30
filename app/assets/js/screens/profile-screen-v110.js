@@ -6,7 +6,8 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { renderUser, renderBalances } from '../ui.js?v=89';
 import { canonicalAvatarItemId, mergeCanonicalMgwUser, publicMgwId } from '../profile/mgw-profile-model.js?v=1';
 import { t, formatNumber, formatDate, formatDateTime } from '@mgw/i18n';
-import { accountLinkProfileMarkup, initAccountLinkUi, openAccountLinkSheet } from '../profile/mgw-account-link-ui.js?v=1';
+import { accountLinkProfileMarkup, initAccountLinkUi, openAccountLinkSheet } from '../profile/mgw-account-link-ui.js?v=2';
+import { initAccountLinkHomeOnboarding } from '../profile/mgw-account-link-onboarding.js?v=1';
 
 const PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v2';
 const PROFILE_ROUTE_TRANSITION_MS = 240;
@@ -49,6 +50,7 @@ export function initProfileScreen(){
   }
   bindProfileActions();
   initAccountLinkUi();
+  initAccountLinkHomeOnboarding();
   renderProfileV2();
   document.addEventListener('mgw:open-profile', openProfile);
   const warm = () => warmProfileSnapshot();
@@ -587,7 +589,10 @@ function renderProfileV2(){
       <div class="profile-v2-account-divider"></div>
       <button class="profile-v2-setting-row profile-v2-setting-button" type="button" data-open-moderation-center><span><strong>Ограничения и апелляции</strong><small>Предупреждения, ограничения и решения модерации</small></span><b>Открыть</b></button>
       <div class="profile-v2-account-divider"></div>
-      ${accountLinkProfileMarkup(state.profileAuth, identities)}
+      ${accountLinkProfileMarkup(
+        state.profileAuth || { provider:state.user?.mgw_identity_provider || '' },
+        identities
+      )}
       <div class="profile-v2-linked-head"><strong>${escapeHtml(t('profile.linked_accounts'))}</strong><small>${escapeHtml(t('profile.linked_accounts_note'))}</small></div>
       <div class="profile-v2-linked-list">${identities.length ? identities.map(identityRow).join('') : emptyState('profile.linked_empty')}</div>
     </div></section>
