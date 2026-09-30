@@ -1,0 +1,133 @@
+name: MVP-26.3.1 Account Link Backend
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/account-link.php'
+      - 'bot/accounts/AccountLinkService.php'
+      - 'bot/accounts/AndroidDeviceAuthService.php'
+      - 'bot/accounts/RuntimeAccountOwnershipService.php'
+      - 'bot/helpers/AccountLinkTelegramGuard.php'
+      - 'bot/webhook.php'
+      - 'bot/database/migrations/20260930_0070_create_account_link_challenges.php'
+      - 'bot/tests/Mvp26_3AccountLinkServiceTest.php'
+      - 'docs/MVP26_3_1_ACCOUNT_LINK_BACKEND.md'
+      - '.github/workflows/mvp26-3-1-account-link-backend.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  account-link-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          php -l bot/account-link.php
+          php -l bot/accounts/AccountLinkService.php
+          php -l bot/accounts/AndroidDeviceAuthService.php
+          php -l bot/accounts/RuntimeAccountOwnershipService.php
+          php -l bot/helpers/AccountLinkTelegramGuard.php
+          php -l bot/webhook.php
+          php -l bot/database/migrations/20260930_0070_create_account_link_challenges.php
+          php -l bot/tests/Mvp26_3AccountLinkServiceTest.php
+
+      - name: Provider-neutral link proof
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp26_3AccountLinkServiceTest.php
+          php bot/tests/Mvp26_2AndroidDeviceAuthTest.php
+          php bot/tests/Mvp15ProviderNeutralIdentityCoreTest.php
+          php bot/tests/Mvp25_5SecurityResilienceClosureContractTest.php
+
+      - name: Telegram transport ownership contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "AccountLinkTelegramGuard" bot/webhook.php
+          grep -F "account_link:confirm:" bot/helpers/AccountLinkTelegramGuard.php
+          grep -F "account_link:cancel:" bot/helpers/AccountLinkTelegramGuard.php
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path("bot/webhook.php").read_text()
+          assert s.index("$accountLinkGuard->handle") < s.index("$welcomeGuard->handle")
+          e=Path("bot/account-link.php").read_text()
+          assert "android_auth_required" in e
+          assert "finalizeForAndroid" in e
+          PY
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
+      - name: Scope guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(\.github/workflows/mvp26-3-1-account-link-backend\.yml|docs/MVP26_3_1_ACCOUNT_LINK_BACKEND\.md|bot/account-link\.php|bot/accounts/(AccountLinkService|AndroidDeviceAuthService|RuntimeAccountOwnershipService)\.php|bot/helpers/AccountLinkTelegramGuard\.php|bot/webhook\.php|bot/database/migrations/20260930_0070_create_account_link_challenges\.php|bot/tests/Mvp26_3AccountLinkServiceTest\.php)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-26.3.1 paths:\n%s\n' "$bad" >&2; exit 1; }
+
+  mysql-migration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_link
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql
+          coverage: none
+
+      - name: Prove account-link migration on MySQL 8.4
+        run: |
+          php -r '
+            require "bot/database/DatabaseConnectionInterface.php";
+            require "bot/database/PdoDatabaseConnection.php";
+            require "bot/database/DatabaseMigrationInterface.php";
+            $pdo=new PDO("mysql:host=127.0.0.1;port=3306;dbname=mgw_link;charset=utf8mb4","root","root",[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
+            $db=new PdoDatabaseConnection($pdo);
+            $db->execute("CREATE TABLE mgw_users (mgw_id VARCHAR(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL PRIMARY KEY) ENGINE=InnoDB");
+            $migration=require "bot/database/migrations/20260930_0070_create_account_link_challenges.php";
+            $migration->up($db);
+            $migration->up($db);
+            $count=(int)$db->fetchValue("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=\"mgw_account_link_challenges\"");
+            if ($count !== 1) throw new RuntimeException("Account-link table missing.");
+            echo "MVP-26.3.1 MySQL migration PASS\n";
+          '
