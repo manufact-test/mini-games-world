@@ -16,7 +16,7 @@ $checks = [
     str_contains($invites, "Object.prototype.hasOwnProperty.call(state.user, 'balance')"),
     str_contains($invites, "balance:state.user.balance"),
     str_contains($invites, "syncState(result);"),
-    str_contains($endpoint, "if ($action === 'sync')"),
+    str_contains($endpoint, "if (\$action === 'sync')"),
     str_contains($endpoint, "readOnlySections("),
     str_contains($main, "game-invites-v110.js?v=1137&ux=1"),
     str_contains($manifest, "game-invites-v110.js?v=1149"),
