@@ -6,7 +6,7 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { renderUser, renderBalances } from '../ui.js?v=89';
 import { canonicalAvatarItemId, mergeCanonicalMgwUser, publicMgwId } from '../profile/mgw-profile-model.js?v=1';
 import { t, formatNumber, formatDate, formatDateTime } from '@mgw/i18n';
-import { accountLinkProfileMarkup, initAccountLinkUi, openAccountLinkSheet } from '../profile/mgw-account-link-ui.js?v=2';
+import { accountLinkProfileMarkup, initAccountLinkUi, openAccountLinkSheet } from '../profile/mgw-account-link-ui.js?v=3';
 import { initAccountLinkHomeOnboarding } from '../profile/mgw-account-link-onboarding.js?v=1';
 
 const PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v2';
