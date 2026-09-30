@@ -14,6 +14,8 @@ final class AndroidAuthAttemptLimiter
     private const WINDOW_SECONDS = 900;
     private const NETWORK_MAX = 240;
     private const SUBJECT_MAX = 60;
+    private const REAUTH_NETWORK_MAX = 120;
+    private const REAUTH_SUBJECT_MAX = 20;
     private const RETENTION_SECONDS = 172800;
 
     public function __construct(
@@ -23,6 +25,42 @@ final class AndroidAuthAttemptLimiter
 
     public function assertAllowed(string $remoteAddress, string $providerSubject): void
     {
+        $this->assertPolicy(
+            $remoteAddress,
+            $providerSubject,
+            'android-auth',
+            'network',
+            'subject',
+            $this->boundedInt('window_seconds', self::WINDOW_SECONDS, 60, 86400),
+            $this->boundedInt('network_max_requests', self::NETWORK_MAX, 1, 2000),
+            $this->boundedInt('subject_max_requests', self::SUBJECT_MAX, 1, 1000)
+        );
+    }
+
+    public function assertReauthAllowed(string $remoteAddress, string $providerSubject): void
+    {
+        $this->assertPolicy(
+            $remoteAddress,
+            $providerSubject,
+            'android-reauth',
+            'reauth_network',
+            'reauth_subject',
+            $this->boundedInt('reauth_window_seconds', self::WINDOW_SECONDS, 60, 86400),
+            $this->boundedInt('reauth_network_max_requests', self::REAUTH_NETWORK_MAX, 1, 2000),
+            $this->boundedInt('reauth_subject_max_requests', self::REAUTH_SUBJECT_MAX, 1, 1000)
+        );
+    }
+
+    private function assertPolicy(
+        string $remoteAddress,
+        string $providerSubject,
+        string $actorNamespace,
+        string $networkScope,
+        string $subjectScope,
+        int $window,
+        int $networkMax,
+        int $subjectMax
+    ): void {
         $secret = trim((string)($this->config['bot_token'] ?? ''));
         if ($secret === '') {
             throw new RuntimeException('Android auth rate-limit secret is unavailable.');
@@ -31,11 +69,8 @@ final class AndroidAuthAttemptLimiter
         $remoteAddress = trim($remoteAddress);
         if ($remoteAddress === '') $remoteAddress = 'unknown';
 
-        $networkActor = hash_hmac('sha256', 'android-auth-network|' . $remoteAddress, $secret);
-        $subjectActor = hash_hmac('sha256', 'android-auth-subject|' . $providerSubject, $secret);
-        $window = $this->boundedInt('window_seconds', self::WINDOW_SECONDS, 60, 86400);
-        $networkMax = $this->boundedInt('network_max_requests', self::NETWORK_MAX, 1, 2000);
-        $subjectMax = $this->boundedInt('subject_max_requests', self::SUBJECT_MAX, 1, 1000);
+        $networkActor = hash_hmac('sha256', $actorNamespace . '-network|' . $remoteAddress, $secret);
+        $subjectActor = hash_hmac('sha256', $actorNamespace . '-subject|' . $providerSubject, $secret);
         $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
         $nowText = $now->format('Y-m-d H:i:s.u');
         $cutoff = $now->modify('-' . $window . ' seconds')->format('Y-m-d H:i:s.u');
@@ -44,6 +79,8 @@ final class AndroidAuthAttemptLimiter
         $this->database->transaction(function (DatabaseConnectionInterface $database) use (
             $networkActor,
             $subjectActor,
+            $networkScope,
+            $subjectScope,
             $window,
             $networkMax,
             $subjectMax,
@@ -58,8 +95,8 @@ final class AndroidAuthAttemptLimiter
             );
 
             foreach ([
-                ['scope'=>'network', 'actor'=>$networkActor, 'max'=>$networkMax],
-                ['scope'=>'subject', 'actor'=>$subjectActor, 'max'=>$subjectMax],
+                ['scope'=>$networkScope, 'actor'=>$networkActor, 'max'=>$networkMax],
+                ['scope'=>$subjectScope, 'actor'=>$subjectActor, 'max'=>$subjectMax],
             ] as $policy) {
                 $rows = $database->fetchAll(
                     'SELECT COUNT(*) AS total, MIN(created_at_utc) AS oldest_created_at
@@ -89,8 +126,8 @@ final class AndroidAuthAttemptLimiter
             }
 
             foreach ([
-                ['scope'=>'network', 'actor'=>$networkActor],
-                ['scope'=>'subject', 'actor'=>$subjectActor],
+                ['scope'=>$networkScope, 'actor'=>$networkActor],
+                ['scope'=>$subjectScope, 'actor'=>$subjectActor],
             ] as $entry) {
                 $database->execute(
                     'INSERT INTO mgw_android_auth_attempts (scope_code, actor_hash, created_at_utc)
