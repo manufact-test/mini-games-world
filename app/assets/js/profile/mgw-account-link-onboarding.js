@@ -5,6 +5,8 @@ import { openAccountLinkSheet } from './mgw-account-link-ui.js?v=2';
 
 const DISMISS_KEY = 'mgw_android_account_link_onboarding_v1';
 const PENDING_LINK_KEY = 'mgw_android_account_link_v1';
+const ONBOARDING_OVERLAY_CLASS = 'mgw-account-link-onboarding-overlay';
+const ONBOARDING_SHEET_CLASS = 'mgw-account-link-onboarding-sheet';
 
 let initialized = false;
 let appReady = false;
@@ -25,6 +27,7 @@ export function initAccountLinkHomeOnboarding(){
   });
 
   document.addEventListener('mgw:sheet-closed', () => {
+    clearOnboardingPresentation();
     if (onboardingVisible) {
       onboardingVisible = false;
       persistDismissal();
@@ -76,31 +79,50 @@ function tryShowOnboarding(){
 
   onboardingVisible = true;
   openSheet(`
-    <div class="sheet-head">
-      <div>
-        <h2>Уже играете в MINI GAMES WORLD в Telegram?</h2>
-        <p>Привяжите аккаунт и используйте в Android тот же профиль.</p>
-      </div>
-      <button class="close" data-close-sheet type="button">×</button>
-    </div>
-    <div class="profile-v2-account-card">
-      <div class="profile-v2-setting-row">
-        <span>
-          <strong>Всё важное останется с вами</strong>
-          <small>Баланс, покупки, статистика, рейтинг, друзья и прогресс будут взяты из вашего существующего Telegram-профиля.</small>
+    <div class="mgw-account-link-onboarding" role="dialog" aria-labelledby="mgwAccountLinkOnboardingTitle">
+      <button class="close mgw-account-link-onboarding-close" data-close-sheet type="button" aria-label="Закрыть">×</button>
+
+      <div class="mgw-account-link-onboarding-brand">
+        <span class="mgw-account-link-onboarding-eyebrow">ANDROID · ЕДИНЫЙ ПРОФИЛЬ</span>
+        <span class="mgw-account-link-onboarding-mark" aria-hidden="true">
+          <img src="./assets/icons/shield-king/mgw-mark.svg" alt="">
         </span>
       </div>
-    </div>
-    <div class="btn-row">
-      <button class="btn primary full" type="button" data-account-link-onboarding-connect>Привязать Telegram</button>
-      <button class="btn ghost full" type="button" data-account-link-onboarding-later>Позже</button>
+
+      <div class="mgw-account-link-onboarding-copy">
+        <h2 id="mgwAccountLinkOnboardingTitle">Уже играете в MINI GAMES WORLD в Telegram?</h2>
+        <p>Подключите Telegram и продолжайте в Android с тем же игровым профилем.</p>
+      </div>
+
+      <div class="mgw-account-link-onboarding-bridge" aria-label="Один профиль в Telegram и Android">
+        <span>Telegram</span>
+        <i aria-hidden="true">→</i>
+        <span>Android</span>
+      </div>
+
+      <div class="mgw-account-link-onboarding-benefits">
+        <div><b>✓</b><span>Баланс и покупки</span></div>
+        <div><b>✓</b><span>Статистика и рейтинг</span></div>
+        <div><b>✓</b><span>Друзья и прогресс</span></div>
+      </div>
+
+      <p class="mgw-account-link-onboarding-note">
+        После привязки Android использует ваш существующий Telegram-профиль. Временные стартовые коины Android к нему не добавляются.
+      </p>
+
+      <div class="mgw-account-link-onboarding-actions">
+        <button class="btn primary full" type="button" data-account-link-onboarding-connect>Привязать Telegram</button>
+        <button class="btn ghost full" type="button" data-account-link-onboarding-later>Позже</button>
+      </div>
     </div>
   `);
+  applyOnboardingPresentation();
 
   document.querySelector('[data-account-link-onboarding-connect]')?.addEventListener('click', event => {
     event.preventDefault();
     persistDismissal();
     onboardingVisible = false;
+    clearOnboardingPresentation();
     closeSheet();
     queueMicrotask(() => { void openAccountLinkSheet(); });
   }, { once:true });
@@ -109,8 +131,19 @@ function tryShowOnboarding(){
     event.preventDefault();
     persistDismissal();
     onboardingVisible = false;
+    clearOnboardingPresentation();
     closeSheet();
   }, { once:true });
+}
+
+function applyOnboardingPresentation(){
+  document.getElementById('sheetOverlay')?.classList.add(ONBOARDING_OVERLAY_CLASS);
+  document.getElementById('sheet')?.classList.add(ONBOARDING_SHEET_CLASS);
+}
+
+function clearOnboardingPresentation(){
+  document.getElementById('sheetOverlay')?.classList.remove(ONBOARDING_OVERLAY_CLASS);
+  document.getElementById('sheet')?.classList.remove(ONBOARDING_SHEET_CLASS);
 }
 
 function currentEligibilitySnapshot(){

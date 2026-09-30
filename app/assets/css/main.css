@@ -3165,3 +3165,226 @@
 }
 .player-report-step{background:#242033;border-color:rgba(255,255,255,.13)}
 #playerReportReasonStep{margin-top:2px}
+
+
+/* MVP-26.3.16 — Android account-link Home onboarding presentation.
+   Presentation only: existing account-link security/runtime ownership is unchanged. */
+.overlay.mgw-account-link-onboarding-overlay{
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:
+    radial-gradient(circle at 50% 26%,rgba(115,91,255,.20),transparent 34%),
+    rgba(3,4,8,.78);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+.sheet.mgw-account-link-onboarding-sheet{
+  position:relative;
+  width:min(100%,400px);
+  max-width:400px;
+  max-height:min(720px,94dvh);
+  padding:0;
+  gap:0;
+  overflow:auto!important;
+  border-radius:30px;
+  border-color:rgba(233,236,244,.36);
+  background:
+    radial-gradient(circle at 50% -4%,rgba(178,116,255,.28),transparent 38%),
+    linear-gradient(145deg,rgba(247,248,252,.06),transparent 34%),
+    linear-gradient(180deg,#302641 0%,#171923 52%,#0E1118 100%);
+  box-shadow:
+    0 28px 80px rgba(0,0,0,.58),
+    0 0 42px rgba(115,91,255,.16),
+    inset 0 1px 0 rgba(255,255,255,.10);
+}
+.mgw-account-link-onboarding{
+  position:relative;
+  display:grid;
+  gap:16px;
+  padding:22px 18px 18px;
+  text-align:center;
+}
+.mgw-account-link-onboarding-close{
+  position:absolute;
+  z-index:2;
+  top:14px;
+  right:14px;
+  width:36px;
+  height:36px;
+  border-radius:13px;
+}
+.mgw-account-link-onboarding-brand{
+  display:grid;
+  justify-items:center;
+  gap:11px;
+  padding:2px 44px 0;
+}
+.mgw-account-link-onboarding-eyebrow{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:26px;
+  padding:0 10px;
+  border:1px solid rgba(255,212,92,.30);
+  border-radius:999px;
+  background:rgba(255,212,92,.08);
+  color:#FFE59A;
+  font-size:9.5px;
+  line-height:1;
+  font-weight:950;
+  letter-spacing:.095em;
+}
+.mgw-account-link-onboarding-mark{
+  width:76px;
+  height:76px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(233,236,244,.26);
+  border-radius:25px;
+  background:
+    radial-gradient(circle at 50% 35%,rgba(178,116,255,.24),transparent 62%),
+    linear-gradient(180deg,rgba(247,248,252,.08),rgba(15,17,24,.84));
+  box-shadow:
+    0 16px 30px rgba(0,0,0,.26),
+    0 0 28px rgba(115,91,255,.16),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
+.mgw-account-link-onboarding-mark img{
+  width:49px;
+  height:49px;
+  object-fit:contain;
+  filter:drop-shadow(0 0 10px rgba(233,236,244,.13));
+}
+.mgw-account-link-onboarding-copy{
+  display:grid;
+  gap:7px;
+  padding:0 4px;
+}
+.sheet .mgw-account-link-onboarding-copy h2{
+  margin:0;
+  color:var(--sk-text-primary);
+  font-size:24px;
+  line-height:1.08;
+  letter-spacing:-.045em;
+}
+.sheet .mgw-account-link-onboarding-copy p{
+  margin:0;
+  color:var(--sk-text-secondary);
+  font-size:13.5px;
+  line-height:1.48;
+}
+.mgw-account-link-onboarding-bridge{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 34px minmax(0,1fr);
+  align-items:center;
+  gap:7px;
+}
+.mgw-account-link-onboarding-bridge span{
+  min-height:42px;
+  display:grid;
+  place-items:center;
+  padding:0 10px;
+  border:1px solid rgba(233,236,244,.20);
+  border-radius:14px;
+  background:linear-gradient(180deg,rgba(247,248,252,.07),rgba(255,255,255,.025));
+  color:var(--sk-silver-bright);
+  font-size:12px;
+  font-weight:950;
+}
+.mgw-account-link-onboarding-bridge i{
+  color:#FFE07A;
+  font-size:20px;
+  line-height:1;
+  font-style:normal;
+  font-weight:950;
+  text-shadow:0 0 12px rgba(255,212,92,.24);
+}
+.mgw-account-link-onboarding-benefits{
+  display:grid;
+  gap:7px;
+  text-align:left;
+}
+.mgw-account-link-onboarding-benefits>div{
+  min-height:39px;
+  display:grid;
+  grid-template-columns:24px minmax(0,1fr);
+  align-items:center;
+  gap:9px;
+  padding:7px 10px;
+  border:1px solid rgba(233,236,244,.15);
+  border-radius:13px;
+  background:rgba(255,255,255,.025);
+}
+.mgw-account-link-onboarding-benefits b{
+  width:22px;
+  height:22px;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  background:rgba(72,214,165,.13);
+  color:#A8F2D7;
+  font-size:12px;
+}
+.mgw-account-link-onboarding-benefits span{
+  color:var(--sk-text-secondary);
+  font-size:11.5px;
+  line-height:1.25;
+  font-weight:850;
+}
+.sheet .mgw-account-link-onboarding-note{
+  margin:0;
+  padding:10px 11px;
+  border:1px solid rgba(178,116,255,.22);
+  border-radius:14px;
+  background:rgba(115,91,255,.07);
+  color:var(--sk-text-muted);
+  font-size:10.5px;
+  line-height:1.42;
+}
+.mgw-account-link-onboarding-actions{
+  display:grid;
+  gap:9px;
+}
+.mgw-account-link-onboarding-actions .btn{
+  min-height:50px;
+}
+.mgw-account-link-onboarding-actions .btn.primary{
+  box-shadow:
+    0 12px 30px rgba(115,91,255,.32),
+    inset 0 1px 0 rgba(255,255,255,.22);
+}
+
+@media (max-width:360px){
+  .overlay.mgw-account-link-onboarding-overlay{padding:12px}
+  .mgw-account-link-onboarding{gap:13px;padding:18px 14px 14px}
+  .mgw-account-link-onboarding-brand{gap:9px;padding-left:40px;padding-right:40px}
+  .mgw-account-link-onboarding-mark{width:66px;height:66px;border-radius:22px}
+  .mgw-account-link-onboarding-mark img{width:43px;height:43px}
+  .sheet .mgw-account-link-onboarding-copy h2{font-size:21px}
+  .mgw-account-link-onboarding-bridge span{font-size:11px}
+}
+@media (max-height:650px){
+  .sheet.mgw-account-link-onboarding-sheet{max-height:95dvh}
+  .mgw-account-link-onboarding{gap:10px;padding-top:15px;padding-bottom:13px}
+  .mgw-account-link-onboarding-brand{gap:7px}
+  .mgw-account-link-onboarding-mark{width:58px;height:58px;border-radius:19px}
+  .mgw-account-link-onboarding-mark img{width:38px;height:38px}
+  .sheet .mgw-account-link-onboarding-copy h2{font-size:20px}
+  .sheet .mgw-account-link-onboarding-copy p{font-size:12.5px}
+  .mgw-account-link-onboarding-bridge span{min-height:36px}
+  .mgw-account-link-onboarding-benefits{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .mgw-account-link-onboarding-benefits>div{
+    min-height:54px;
+    grid-template-columns:1fr;
+    justify-items:center;
+    align-content:center;
+    gap:4px;
+    padding:6px;
+    text-align:center;
+  }
+  .mgw-account-link-onboarding-benefits span{font-size:9.5px}
+  .sheet .mgw-account-link-onboarding-note{font-size:9.5px;padding:8px 9px}
+  .mgw-account-link-onboarding-actions{grid-template-columns:1.4fr .8fr;gap:7px}
+  .mgw-account-link-onboarding-actions .btn{min-height:44px;font-size:12px}
+}

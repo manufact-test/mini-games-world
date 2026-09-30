@@ -52,3 +52,21 @@ Provider ownership resolves from:
 No account/security semantics change.
 
 No main / production runtime / production DB / production Cron changes.
+
+## MVP-26.3.16 presentation corrective
+
+Real-device/product-owner feedback after the functional link flow was implemented:
+- the first-run prompt was technically Home-triggered but visually read like an ordinary shared sheet / notification surface;
+- account-link semantics themselves were already working and must not be redesigned.
+
+Corrective presentation:
+- first-run onboarding remains Home-only and one-time;
+- it now uses a dedicated centered Shield King card presentation;
+- the card explicitly shows Telegram → Android as one profile;
+- primary action remains **Привязать Telegram**;
+- secondary action remains **Позже**;
+- dismissal ownership and no-nag behavior are unchanged;
+- Profile fallback remains unchanged;
+- after the primary action, control hands off to the existing account-link sheet/security flow unchanged.
+
+This corrective is presentation-only. Account-link backend, target-account ownership, starter-coin retirement, authentication and confirmation semantics are frozen.
