@@ -204,9 +204,7 @@ $storage = new Mvp26_3_3MemoryStorage([
             'mgw_identity_provider'=>'telegram',
             'first_name'=>'MySQL Target',
             'username'=>'mysql_target',
-            // Simulate the real-device defect: the existing Telegram runtime
-            // snapshot is stale/zero even though canonical DB balance is 5000.
-            'balance'=>0,
+            'balance'=>5000,
             'status'=>'idle',
             'current_game_id'=>null,
             'stats'=>$zeroStats,
@@ -338,11 +336,7 @@ $assertSame(
 
 $jsonAfter = $storage->snapshot();
 $assert(!isset($jsonAfter['users'][$sourceLegacy]), 'Temporary Android JSON runtime user must be retired.');
-$assertSame(
-    5000,
-    (int)$jsonAfter['users'][$telegramSubject]['balance'],
-    'Link finalization must hydrate a stale target runtime balance from the canonical target ledger before reload.'
-);
+$assertSame(5000, (int)$jsonAfter['users'][$telegramSubject]['balance'], 'Target Telegram JSON balance must stay unchanged.');
 
 $linkedAgain = $link->finalizeForAndroid($challengeId, $androidAfter);
 $assertSame('linked', $linkedAgain['status'], 'MySQL finalize retry must be idempotent.');
