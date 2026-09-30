@@ -5,6 +5,7 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.net.Uri;
 import android.net.http.SslError;
@@ -25,6 +26,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -37,6 +39,7 @@ public final class MainActivity extends Activity {
 
     private FrameLayout root;
     private WebView webView;
+    private LinearLayout loadingPanel;
     private ProgressBar loading;
     private LinearLayout errorPanel;
     private TextView errorTitle;
@@ -83,13 +86,46 @@ public final class MainActivity extends Activity {
         root.setBackgroundColor(Color.BLACK);
         attachFreshWebView();
 
-        loading = new ProgressBar(this);
-        FrameLayout.LayoutParams loadingParams = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.CENTER
+        // Native-to-web handoff only. The system splash stays visually neutral,
+        // this panel restores the accepted Shield King raster, then the shared
+        // MGW animated web preloader becomes the visible loading owner.
+        loadingPanel = new LinearLayout(this);
+        loadingPanel.setOrientation(LinearLayout.VERTICAL);
+        loadingPanel.setGravity(Gravity.CENTER);
+        loadingPanel.setPadding(dp(28), dp(28), dp(28), dp(28));
+        loadingPanel.setBackgroundColor(getColor(R.color.mgw_splash_background));
+
+        ImageView brandMark = new ImageView(this);
+        brandMark.setImageResource(R.drawable.ic_mgw_launcher_art);
+        brandMark.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        LinearLayout.LayoutParams markParams = new LinearLayout.LayoutParams(dp(156), dp(156));
+        markParams.gravity = Gravity.CENTER_HORIZONTAL;
+        loadingPanel.addView(brandMark, markParams);
+
+        TextView loadingText = new TextView(this);
+        loadingText.setText(R.string.loading);
+        loadingText.setTextColor(getColor(R.color.mgw_brand_silver));
+        loadingText.setAlpha(0.72f);
+        loadingText.setTextSize(14f);
+        loadingText.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams loadingTextParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
         );
-        root.addView(loading, loadingParams);
+        loadingTextParams.topMargin = dp(12);
+        loadingPanel.addView(loadingText, loadingTextParams);
+
+        loading = new ProgressBar(this);
+        loading.setIndeterminateTintList(ColorStateList.valueOf(getColor(R.color.mgw_brand_violet)));
+        LinearLayout.LayoutParams loadingParams = new LinearLayout.LayoutParams(dp(32), dp(32));
+        loadingParams.gravity = Gravity.CENTER_HORIZONTAL;
+        loadingParams.topMargin = dp(18);
+        loadingPanel.addView(loading, loadingParams);
+
+        root.addView(loadingPanel, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+        ));
 
         errorPanel = new LinearLayout(this);
         errorPanel.setOrientation(LinearLayout.VERTICAL);
@@ -270,7 +306,7 @@ public final class MainActivity extends Activity {
     }
 
     private void showLoading(boolean visible) {
-        loading.setVisibility(visible ? View.VISIBLE : View.GONE);
+        loadingPanel.setVisibility(visible ? View.VISIBLE : View.GONE);
         if (visible) {
             errorPanel.setVisibility(View.GONE);
         }
@@ -278,7 +314,7 @@ public final class MainActivity extends Activity {
 
     private void showNetworkError(int textResource) {
         mainFrameFailed = true;
-        loading.setVisibility(View.GONE);
+        showLoading(false);
         errorTitle.setText(R.string.network_error_title);
         errorText.setText(textResource);
         errorPanel.setVisibility(View.VISIBLE);
@@ -286,7 +322,7 @@ public final class MainActivity extends Activity {
 
     private void showConfigurationError() {
         mainFrameFailed = true;
-        loading.setVisibility(View.GONE);
+        showLoading(false);
         errorTitle.setText(R.string.configuration_error_title);
         errorText.setText(R.string.configuration_error_text);
         errorPanel.setVisibility(View.VISIBLE);
