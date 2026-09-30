@@ -2,12 +2,16 @@ package com.minigamesworld.app;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 final class NavigationPolicy {
     private static final Set<String> EXTERNAL_SCHEMES = Set.of("https", "http", "mailto", "tel", "tg");
     private static final Set<String> BLOCKED_SCHEMES = Set.of("file", "content", "javascript", "data", "intent");
+    private static final Pattern NATIVE_REAUTH_REQUEST = Pattern.compile("^rea_[a-f0-9]{32}$");
 
     private final URI baseUri;
 
@@ -33,6 +37,30 @@ final class NavigationPolicy {
             return false;
         }
         return sameOrigin(baseUri, uri);
+    }
+
+    String nativeReauthRequestId(String candidate) {
+        URI uri = parse(candidate);
+        if (uri == null
+                || !"mgw-native".equalsIgnoreCase(uri.getScheme())
+                || !"reauth".equalsIgnoreCase(uri.getHost())
+                || (uri.getPath() != null && !uri.getPath().isEmpty())) {
+            return null;
+        }
+
+        String rawQuery = uri.getRawQuery();
+        if (rawQuery == null || rawQuery.isEmpty()) return null;
+        String requestId = null;
+        for (String pair : rawQuery.split("&")) {
+            String[] parts = pair.split("=", 2);
+            if (parts.length != 2 || !"request".equals(parts[0]) || requestId != null) {
+                return null;
+            }
+            requestId = URLDecoder.decode(parts[1], StandardCharsets.UTF_8);
+        }
+        return requestId != null && NATIVE_REAUTH_REQUEST.matcher(requestId).matches()
+                ? requestId
+                : null;
     }
 
     boolean mayOpenExternally(String candidate) {
