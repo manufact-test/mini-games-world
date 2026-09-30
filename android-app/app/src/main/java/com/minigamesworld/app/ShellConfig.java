@@ -33,4 +33,27 @@ final class ShellConfig {
             return "";
         }
     }
+
+    static String androidReauthUrl(String configuredBaseUrl) {
+        try {
+            URI base = new URI(configuredBaseUrl == null ? "" : configuredBaseUrl.trim());
+            if (!"https".equalsIgnoreCase(base.getScheme())
+                    || base.getHost() == null
+                    || base.getHost().isBlank()
+                    || base.getUserInfo() != null) {
+                return "";
+            }
+            return new URI(
+                    "https",
+                    null,
+                    base.getHost(),
+                    base.getPort(),
+                    "/bot/android-reauth.php",
+                    null,
+                    null
+            ).toASCIIString();
+        } catch (URISyntaxException ignored) {
+            return "";
+        }
+    }
 }
