@@ -1,4 +1,4 @@
-name: MVP-26.3.8 First-paint live balance
+name: MVP-26.3.9 Prepaint runtime ensure
 
 on:
   pull_request:
@@ -6,31 +6,26 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'bot/profile.php'
-      - 'app/assets/js/main-v110-handoff-shell.js'
-      - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp26_3_8FirstPaintBalanceContractTest.php'
-      - 'bot/tests/Mvp25_4StartupPerformanceContractTest.php'
-      - '.github/workflows/mvp26-3-8-first-paint-live-balance.yml'
+      - 'bot/tests/Mvp26_3_9PrepaintRuntimeEnsureTest.php'
+      - '.github/workflows/mvp26-3-9-prepaint-runtime-ensure.yml'
   push:
     branches:
       - agent/mvp-13-2-staging
     paths:
       - 'bot/profile.php'
-      - 'app/assets/js/main-v110-handoff-shell.js'
-      - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp26_3_8FirstPaintBalanceContractTest.php'
-      - 'bot/tests/Mvp25_4StartupPerformanceContractTest.php'
-      - '.github/workflows/mvp26-3-8-first-paint-live-balance.yml'
+      - 'bot/tests/Mvp26_3_9PrepaintRuntimeEnsureTest.php'
+      - '.github/workflows/mvp26-3-9-prepaint-runtime-ensure.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  contract:
-    name: Primary-runtime balance before first Home paint
+  prepaint-runtime-ensure:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 12
 
     steps:
       - name: Checkout exact candidate revision
@@ -44,22 +39,24 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
+          extensions: pdo_sqlite
           coverage: none
 
       - name: Syntax
         run: |
           set -euo pipefail
           php -l bot/profile.php
-          php -l app/runtime/client/version-manifest.php
           php -l bot/tests/Mvp26_3_8FirstPaintBalanceContractTest.php
-          php -l bot/tests/Mvp25_4StartupPerformanceContractTest.php
-          node --check app/assets/js/main-v110-handoff-shell.js
+          php -l bot/tests/Mvp26_3_9PrepaintRuntimeEnsureTest.php
 
-      - name: First-paint balance contract
+      - name: Safe missing-vs-zero runtime rehydration
+        run: php bot/tests/Mvp26_3_9PrepaintRuntimeEnsureTest.php
+
+      - name: First-paint lifecycle contract
         run: php bot/tests/Mvp26_3_8FirstPaintBalanceContractTest.php
 
-      - name: Existing startup ownership
-        run: php bot/tests/Mvp25_4StartupPerformanceContractTest.php
+      - name: Existing account-link regression
+        run: php bot/tests/Mvp26_3AccountLinkServiceTest.php
 
       - name: Tracked secret scan
         run: node scripts/ci/check-secrets.mjs
@@ -73,6 +70,6 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
-          allowed='^(\.github/workflows/mvp26-3-8-first-paint-live-balance\.yml|\.github/workflows/mvp26-3-9-prepaint-runtime-ensure\.yml|bot/profile\.php|app/assets/js/main-v110-handoff-shell\.js|app/runtime/client/version-manifest\.php|bot/tests/Mvp26_3_8FirstPaintBalanceContractTest\.php|bot/tests/Mvp26_3_9PrepaintRuntimeEnsureTest\.php|bot/tests/Mvp25_4StartupPerformanceContractTest\.php|bot/tests/Mvp15UnifiedProfileAvatarClientTest\.php)$'
+          allowed='^(\.github/workflows/mvp26-3-9-prepaint-runtime-ensure\.yml|\.github/workflows/mvp26-3-8-first-paint-live-balance\.yml|bot/profile\.php|bot/tests/Mvp26_3_8FirstPaintBalanceContractTest\.php|bot/tests/Mvp26_3_9PrepaintRuntimeEnsureTest\.php)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
-          test -z "$bad" || { printf 'Unexpected MVP-26.3.8 paths:\n%s\n' "$bad" >&2; exit 1; }
+          test -z "$bad" || { printf 'Unexpected MVP-26.3.9 paths:\n%s\n' "$bad" >&2; exit 1; }

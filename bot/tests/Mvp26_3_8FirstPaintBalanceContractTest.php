@@ -20,16 +20,18 @@ $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $manifest = $read('app/runtime/client/version-manifest.php');
 
 $assert(
-    str_contains($profile, 'function mgw_profile_live_runtime_balance')
+    str_contains($profile, 'function mgw_profile_ensure_runtime_balance')
         && str_contains($profile, 'StorageFactory::create($config)')
-        && str_contains($profile, 'readOnlySections([\'users\'], $readBalance)'),
-    'Early profile hydration must read only the primary runtime user balance when selective storage reads are available.'
+        && str_contains($profile, '$users = new UserService($config, $database);')
+        && str_contains($profile, '$storage->transaction(')
+        && str_contains($profile, '$runtimeUser = $users->ensureUser($data, $authenticatedUser);'),
+    'Early profile hydration must converge the primary runtime user through the canonical UserService before first paint.'
 );
 $assert(
     str_contains($profile, "'runtime' => [")
         && str_contains($profile, "'balance' => \$liveRuntimeBalance")
-        && str_contains($profile, "'source' => 'primary_runtime'"),
-    'Profile response must expose the primary runtime balance explicitly without moving profile identity ownership.'
+        && str_contains($profile, "'source' => 'primary_runtime_ensured'"),
+    'Profile response must expose the ensured primary runtime balance explicitly without moving profile identity ownership.'
 );
 $assert(
     str_contains($profile, '$profile = (new MgwProfileService($database))->publicProfile($mgwId);')
@@ -37,8 +39,10 @@ $assert(
     'Canonical profile identity and inventory must remain DB-owned.'
 );
 $assert(
-    !str_contains($profile, 'UnifiedBalanceRuntimeState::ensureUser('),
-    'First-paint balance hydration must stay read-only and must not migrate or synthesize runtime balance.'
+    !str_contains($profile, 'LedgerWriteService')
+        && !str_contains($profile, 'available_delta')
+        && !str_contains($profile, 'mgw_balances'),
+    'First-paint convergence must not implement a competing balance mutation or direct ledger copy in profile.php.'
 );
 
 $assert(

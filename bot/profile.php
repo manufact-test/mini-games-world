@@ -9,62 +9,35 @@ header('Referrer-Policy: no-referrer');
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/accounts/MgwProfileService.php';
 
-function mgw_profile_live_runtime_balance(array $config, array $authenticatedUser): ?int
-{
-    $legacyUserId = trim((string)($authenticatedUser['id'] ?? ''));
-    if ($legacyUserId === '') {
-        return null;
-    }
-
-    // profile.php is outside the bounded staging API DB-primary rehearsal, so
-    // StorageFactory resolves the actual primary runtime instead of inheriting an
-    // api.php-only rehearsal snapshot. Identity/inventory remain canonical DB-owned
-    // below; this narrow read only carries the mutable first-paint balance.
+function mgw_profile_ensure_runtime_balance(
+    array $config,
+    array $authenticatedUser,
+    DatabaseConnectionInterface $database
+): int {
+    // Use the same canonical runtime initializer that the Store already uses.
+    // This is intentionally a transaction rather than a read: after account-link
+    // the target runtime user may exist without the unified balance field (or be
+    // absent from rollback JSON entirely). UserService::ensureUser() owns the
+    // safe post-cutover rehydration rule:
+    //   - missing balance => restore the verified canonical amount;
+    //   - explicit zero => preserve zero;
+    //   - ownership mismatch => fail closed.
+    //
+    // profile.php is outside the bounded staging api.php DB-primary rehearsal,
+    // so this reaches the real primary runtime before Home is first painted.
     $storage = StorageFactory::create($config);
-    $readBalance = static function (array $data) use ($legacyUserId): ?int {
-        $users = is_array($data['users'] ?? null) ? $data['users'] : [];
-        $matches = [];
+    $users = new UserService($config, $database);
 
-        $direct = $users[$legacyUserId] ?? null;
-        if (is_array($direct)
-            && trim((string)($direct['id'] ?? $legacyUserId)) === $legacyUserId) {
-            $matches[] = $direct;
-        } else {
-            foreach ($users as $candidate) {
-                if (!is_array($candidate)) continue;
-                if (trim((string)($candidate['id'] ?? '')) !== $legacyUserId) continue;
-                $matches[] = $candidate;
+    return $storage->transaction(
+        static function (array &$data) use ($users, $authenticatedUser): int {
+            $runtimeUser = $users->ensureUser($data, $authenticatedUser);
+            $balance = $runtimeUser[UnifiedBalanceRuntimeState::FIELD] ?? null;
+            if (!is_int($balance) || $balance < 0) {
+                throw new RuntimeException('Ensured runtime balance is invalid.');
             }
+            return $balance;
         }
-
-        if ($matches === []) return null;
-        if (count($matches) !== 1) {
-            throw new RuntimeException('Live runtime balance owner is ambiguous.');
-        }
-
-        $raw = $matches[0][UnifiedBalanceRuntimeState::FIELD] ?? null;
-        if (is_int($raw)) {
-            if ($raw < 0) throw new RuntimeException('Live runtime balance is negative.');
-            return $raw;
-        }
-        if (is_string($raw) && preg_match('/^\\d+$/', trim($raw)) === 1) {
-            $normalized = trim($raw);
-            if (strlen($normalized) > strlen((string)PHP_INT_MAX)
-                || (strlen($normalized) === strlen((string)PHP_INT_MAX)
-                    && strcmp($normalized, (string)PHP_INT_MAX) > 0)) {
-                throw new RuntimeException('Live runtime balance exceeds integer range.');
-            }
-            return (int)$normalized;
-        }
-
-        if ($raw === null) return null;
-        throw new RuntimeException('Live runtime balance is invalid.');
-    };
-
-    if ($storage instanceof SelectiveReadStorageInterface) {
-        return $storage->readOnlySections(['users'], $readBalance);
-    }
-    return $storage->readOnly($readBalance);
+    );
 }
 
 try {
@@ -98,7 +71,7 @@ try {
     $database = PdoConnectionFactory::create($databaseConfig);
     $profile = (new MgwProfileService($database))->publicProfile($mgwId);
     $inventory = (new ProductInventoryService($database))->snapshot($mgwId);
-    $liveRuntimeBalance = mgw_profile_live_runtime_balance($config, $authenticatedUser);
+    $liveRuntimeBalance = mgw_profile_ensure_runtime_balance($config, $authenticatedUser, $database);
 
     $provider = strtolower(trim((string)($authenticatedUser['mgw_identity_provider'] ?? '')));
     json_response([
@@ -107,7 +80,7 @@ try {
         'inventory' => $inventory,
         'runtime' => [
             'balance' => $liveRuntimeBalance,
-            'source' => 'primary_runtime',
+            'source' => 'primary_runtime_ensured',
         ],
         'auth' => [
             'provider' => $provider !== '' ? $provider : null,
