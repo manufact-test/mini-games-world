@@ -22,7 +22,7 @@ export function balanceState(value){
 }
 
 export function traceBalanceEvent(event, states = {}){
-  if (location.hostname !== 'seashell-okapi-889488.hostingersite.com') return;
+  if (location.hostname !== 'seashell-okapi-889488.hostingersite.com' || window.__MGW_ANDROID_SHELL__ !== true) return;
   const normalized = {};
   for (const [key, value] of Object.entries(states || {})) {
     normalized[String(key).slice(0, 32)] = balanceState(value);
@@ -48,7 +48,7 @@ export function traceBalanceEvent(event, states = {}){
 }
 
 export function installBalanceDomTrace(){
-  if (domObserver || location.hostname !== 'seashell-okapi-889488.hostingersite.com') return;
+  if (domObserver || location.hostname !== 'seashell-okapi-889488.hostingersite.com' || window.__MGW_ANDROID_SHELL__ !== true) return;
   const attach = () => {
     const target = document.getElementById('balanceUnified');
     if (!(target instanceof HTMLElement)) return false;

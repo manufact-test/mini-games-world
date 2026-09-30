@@ -6,7 +6,8 @@ $endpoint = file_get_contents($root . '/bot/staging-android-balance-trace.php');
 $client = file_get_contents($root . '/app/assets/js/diagnostics/android-balance-trace-v1.js');
 $shell = file_get_contents($root . '/app/assets/js/main-v110-handoff-shell.js');
 $manifest = file_get_contents($root . '/app/runtime/client/version-manifest.php');
-if (!is_string($endpoint) || !is_string($client) || !is_string($shell) || !is_string($manifest)) {
+$v110 = file_get_contents($root . '/app/v110.php');
+if (!is_string($endpoint) || !is_string($client) || !is_string($shell) || !is_string($manifest) || !is_string($v110)) {
     throw new RuntimeException('Diagnostic sources unavailable.');
 }
 
@@ -21,11 +22,13 @@ $assert(str_contains($endpoint, 'AndroidDeviceAuthService::COOKIE_NAME'), 'Write
 $assert(str_contains($endpoint, "'zero'=>true") && str_contains($endpoint, "'nonzero'=>true"), 'Only balance state classes must be accepted.');
 $assert(!str_contains($endpoint, "'balance'=>") && !str_contains($endpoint, "'mgw_id'=>"), 'Endpoint must not persist exact balance or identity.');
 $assert(str_contains($client, "balanceState(value)") && str_contains($client, "'zero'") && str_contains($client, "'nonzero'"), 'Client must reduce balances to state classes.');
+$assert(str_contains($v110, "window.__MGW_ANDROID_SHELL__=true") && str_contains($v110, "mgw_android_auth"), 'v110 must mark only requests carrying the Android auth cookie.');
+$assert(str_contains($client, "window.__MGW_ANDROID_SHELL__ !== true"), 'Client trace must remain silent outside the authenticated Android shell.');
 $assert(str_contains($shell, "api.bootstrap.response"), 'Bootstrap response must be traced.');
 $assert(str_contains($shell, "api.profile.response"), 'Profile response must be traced.');
 $assert(str_contains($shell, "api.store.response"), 'Store response must be traced.');
 $assert(str_contains($shell, "boot.balance.selected"), 'Selected first-paint balance must be traced.');
 $assert(str_contains($client, "dom.balance.change"), 'Visible DOM balance changes must be traced.');
-$assert(str_contains($manifest, 'main-v110-handoff-shell.js?v=1164') && str_contains($manifest, 'diag=android-balance-trace-v1'), 'Manifest must publish a fresh diagnostic shell cache identity.');
+$assert(str_contains($manifest, 'main-v110-handoff-shell.js?v=1165') && str_contains($manifest, 'diag=android-balance-trace-v2'), 'Manifest must publish a fresh diagnostic shell cache identity.');
 
 fwrite(STDOUT, "Mvp26_3AndroidBalanceTraceContractTest: {$assertions} assertions passed\n");
