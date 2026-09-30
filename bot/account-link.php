@@ -8,6 +8,7 @@ header('Referrer-Policy: no-referrer');
 
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/accounts/AccountLinkService.php';
+require_once __DIR__ . '/services/PresenceService.php';
 
 try {
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
@@ -39,7 +40,7 @@ try {
 
     $database = PdoConnectionFactory::create($databaseConfig);
     $storage = new JsonStorageAdapter((string)$config['data_dir']);
-    $service = new AccountLinkService($config, $database, $storage);
+    $service = new AccountLinkService($config, $database, $storage, new PresenceService());
     $action = strtolower(trim((string)($payload['action'] ?? 'status')));
 
     if ($action === 'create') {
