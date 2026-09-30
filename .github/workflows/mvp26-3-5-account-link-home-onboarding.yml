@@ -1,0 +1,96 @@
+name: MVP-26.3.5 Account Link Home Onboarding
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/js/profile/mgw-account-link-ui.js'
+      - 'app/assets/js/profile/mgw-account-link-onboarding.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'docs/MVP26_3_5_ACCOUNT_LINK_HOME_ONBOARDING.md'
+      - '.github/workflows/mvp26-3-5-account-link-home-onboarding.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  onboarding-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: JavaScript syntax
+        run: |
+          set -euo pipefail
+          node --check app/assets/js/screens/profile-screen-v110.js
+          node --check app/assets/js/profile/mgw-account-link-ui.js
+          node --check app/assets/js/profile/mgw-account-link-onboarding.js
+
+      - name: Home onboarding ownership contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const profile=fs.readFileSync('app/assets/js/screens/profile-screen-v110.js','utf8');
+          const link=fs.readFileSync('app/assets/js/profile/mgw-account-link-ui.js','utf8');
+          const onboarding=fs.readFileSync('app/assets/js/profile/mgw-account-link-onboarding.js','utf8');
+          const manifest=fs.readFileSync('app/runtime/client/version-manifest.php','utf8');
+          const need=(ok,msg)=>{ if(!ok) throw new Error(msg); };
+
+          need(profile.includes('initAccountLinkHomeOnboarding();'), 'onboarding init missing');
+          need(link.includes("state.user?.mgw_identity_provider"), 'fast Android provider fallback missing');
+          need(onboarding.includes("currentScreen() !== 'home'"), 'Home-only guard missing');
+          need(onboarding.includes("preloader.classList.contains('hidden')"), 'post-preloader guard missing');
+          need(onboarding.includes("overlay.classList.contains('active')"), 'sheet collision guard missing');
+          need(onboarding.includes("provider !== 'android_device'"), 'Android-only guard missing');
+          need(onboarding.includes("=== 'telegram'"), 'linked Telegram guard missing');
+          need(onboarding.includes("data-account-link-onboarding-connect"), 'primary action missing');
+          need(onboarding.includes("data-account-link-onboarding-later"), 'later action missing');
+          need(onboarding.includes("localStorage.setItem(DISMISS_KEY"), 'persistent dismissal missing');
+          need(onboarding.includes("mgw_id:mgwId"), 'dismissal must be keyed to MGW id');
+          need(onboarding.includes("PENDING_LINK_KEY"), 'pending link suppression missing');
+          need(manifest.includes('profile-screen-v110.js?v=1135'), 'Profile cache-bust missing');
+          NODE
+
+      - name: Existing account-link backend regression
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp26_3AccountLinkServiceTest.php
+          php bot/tests/Mvp26_2AndroidDeviceAuthTest.php
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
+      - name: Scope guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          while IFS= read -r path; do
+            [[ -z "$path" ]] && continue
+            case "$path" in
+              .github/workflows/mvp26-3-5-account-link-home-onboarding.yml|app/assets/js/screens/profile-screen-v110.js|app/assets/js/profile/mgw-account-link-ui.js|app/assets/js/profile/mgw-account-link-onboarding.js|app/runtime/client/version-manifest.php|docs/MVP26_3_5_ACCOUNT_LINK_HOME_ONBOARDING.md)
+                ;;
+              *)
+                printf 'Unexpected MVP-26.3.5 path: %s\n' "$path" >&2
+                exit 1
+                ;;
+            esac
+          done <<< "$changed"
