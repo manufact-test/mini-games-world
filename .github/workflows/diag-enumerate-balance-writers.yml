@@ -32,3 +32,10 @@ jobs:
           grep -RInE --include='*.js' 'state\.user[^\n]*(balance|result\.user)|balance:[^,}]+' app/assets/js || true
           echo '=== readiness/profile callsites ==='
           grep -RInE --include='*.js' 'warmFirstInteractionData|initFirstInteractionReadinessEarly|first-interaction-readiness|api\.profile\(' app/assets/js || true
+          echo '=== timed/app-ready balance-writer files ==='
+          for f in $(grep -Rl --include='*.js' 'renderBalances[[:space:]]*(' app/assets/js); do
+            if grep -Eq 'mgw:app-ready|setTimeout|setInterval|requestIdleCallback|DOMContentLoaded|visibilitychange|pageshow' "$f"; then
+              echo "--- $f";
+              grep -nE 'renderBalances[[:space:]]*\(|mgw:app-ready|setTimeout|setInterval|requestIdleCallback|DOMContentLoaded|visibilitychange|pageshow' "$f" | head -80;
+            fi
+          done
