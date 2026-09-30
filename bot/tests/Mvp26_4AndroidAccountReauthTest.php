@@ -106,7 +106,43 @@ $rawCredential = str_repeat("\x52", 32);
 $credential = rtrim(strtr(base64_encode($rawCredential), '+/', '-_'), '=');
 $boot = $service->bootstrapCredential($credential, '203.0.113.80');
 $token = (string)$boot['session_token'];
-$mgwId = (string)$boot['user']['mgw_id'];
+$sourceMgwId = (string)$boot['user']['mgw_id'];
+$sessionHash = hash('sha256', 'session|' . $token);
+
+// Reproduce the accepted account-link end-state: the Android identity/session are
+// moved onto an existing Telegram MGW owner while the native credential stays the
+// same. Reauth must follow the moved canonical session, not the retired source.
+$accounts = new AccountIdentityService($database, 3600, (string)$config['bot_token']);
+$telegram = $accounts->resolveProviderIdentity(
+    'telegram',
+    '900000001',
+    'telegram_web',
+    ['username'=>'linked_reauth_target'],
+    'telegram-reauth-target-session'
+);
+$mgwId = (string)$telegram['mgw_id'];
+(new RuntimeAccountOwnershipService($database))->ensure('telegram', '900000001', $mgwId);
+$database->execute(
+    'UPDATE mgw_identities SET mgw_id=:target_mgw_id
+     WHERE mgw_id=:source_mgw_id AND provider=:provider',
+    [
+        'target_mgw_id'=>$mgwId,
+        'source_mgw_id'=>$sourceMgwId,
+        'provider'=>'android_device',
+    ]
+);
+$database->execute(
+    'UPDATE mgw_sessions SET mgw_id=:target_mgw_id
+     WHERE session_key_hash=:session_key_hash AND provider=:provider',
+    [
+        'target_mgw_id'=>$mgwId,
+        'session_key_hash'=>$sessionHash,
+        'provider'=>'android_device',
+    ]
+);
+$linked = $service->authenticateCookie($token);
+$assertSame($mgwId, $linked['mgw_id'] ?? null, 'Android session must resolve the linked Telegram MGW owner before reauth.');
+$assertSame('900000001', $linked['id'] ?? null, 'Linked Android session must preserve the target Telegram runtime owner.');
 
 $assertSame(
     null,
@@ -152,7 +188,6 @@ $guarded = AccountReauthGuard::authorize(
 );
 $assertSame($mgwId, $guarded['mgw_id'] ?? null, 'Sensitive Account Data action must accept the fresh Android proof.');
 
-$sessionHash = hash('sha256', 'session|' . $token);
 $expired = (new DateTimeImmutable('now', new DateTimeZone('UTC')))
     ->modify('-10 minutes')
     ->format('Y-m-d H:i:s.u');
