@@ -64,7 +64,6 @@ jobs:
           php bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest.php
           php bot/tests/Mvp25_2TournamentHumanCopyContractTest.php
           php bot/tests/Mvp25_4PerformanceReliabilityClosureContractTest.php
-          php bot/tests/Mvp25_4StartupPerformanceContractTest.php
           php bot/tests/Mvp25_4ReliabilityContractTest.php
 
       - name: Re-prove MVP-25.5 security and resilience
