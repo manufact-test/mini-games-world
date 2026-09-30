@@ -39,7 +39,6 @@ import org.json.JSONObject;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -469,8 +468,7 @@ public final class MainActivity extends Activity {
                 connection.setRequestProperty("Accept", "application/json");
                 connection.setRequestProperty("Cookie", cookieHeader);
 
-                byte[] body = ("credential=" + URLEncoder.encode(credential, StandardCharsets.UTF_8))
-                        .getBytes(StandardCharsets.UTF_8);
+                byte[] body = ("credential=" + credential).getBytes(StandardCharsets.UTF_8);
                 connection.setFixedLengthStreamingMode(body.length);
                 connection.getOutputStream().write(body);
 
