@@ -66,9 +66,9 @@ jobs:
           need(onboarding.includes("localStorage.setItem(DISMISS_KEY"), 'persistent dismissal missing');
           need(onboarding.includes("mgw_id:mgwId"), 'dismissal must be keyed to MGW id');
           need(onboarding.includes("PENDING_LINK_KEY"), 'pending link suppression missing');
-          need(profile.includes("mgw-account-link-onboarding.js?v=4"), 'Onboarding module cache-bust missing');
+          need(profile.includes("mgw-account-link-onboarding.js?v=5"), 'Onboarding module cache-bust missing');
           need(shell.includes("profile-screen-v110.js?v=1109"), 'active shell Profile specifier changed unexpectedly');
-          need(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1140"), 'active Profile import must resolve to a fresh canonical URL');
+          need(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1141"), 'active Profile import must resolve to a fresh canonical URL');
           need(onboarding.includes("mgw-account-link-onboarding-overlay"), 'dedicated Home onboarding overlay owner missing');
           need(onboarding.includes("mgw-account-link-onboarding-sheet"), 'dedicated Home onboarding sheet owner missing');
           need(onboarding.includes("mgw-account-link-onboarding-bridge"), 'Telegram → Android bridge presentation missing');
@@ -77,14 +77,11 @@ jobs:
           need(css.includes(".sheet.mgw-account-link-onboarding-sheet"), 'dedicated onboarding card CSS missing');
           need(css.includes("align-items:center"), 'Home onboarding must be visually centered');
           need(manifest.includes('profile-screen-v110.js?v=1139'), 'Profile cache-bust missing');
-          need(onboarding.includes("STAGING_PREVIEW_HOST = 'seashell-okapi-889488.hostingersite.com'"), 'preview must be staging-host scoped');
-          need(onboarding.includes("data-open-account-link-onboarding-preview"), 'linked Android preview entry missing');
-          need(onboarding.includes("previewVisible"), 'preview lifecycle owner missing');
-          need(onboarding.includes("isTelegramMiniAppContext()"), 'preview must exclude Telegram Mini App');
-          need(onboarding.includes("globalThis.Telegram?.WebApp?.initData"), 'Telegram runtime detection missing');
-          need(onboarding.includes("if (preview)"), 'preview actions must not enter real linking flow');
-          need(profile.includes("openAccountLinkOnboardingPreview();"), 'Profile preview action binding missing');
-          need(profile.includes("accountLinkOnboardingPreviewMarkup("), 'Profile preview markup missing');
+          need(!onboarding.includes("STAGING_PREVIEW_HOST"), 'temporary staging preview host must be removed after manual acceptance');
+          need(!onboarding.includes("data-open-account-link-onboarding-preview"), 'temporary onboarding preview entry must be removed');
+          need(!onboarding.includes("previewVisible"), 'temporary preview lifecycle owner must be removed');
+          need(!profile.includes("openAccountLinkOnboardingPreview"), 'Profile preview action binding must be removed');
+          need(!profile.includes("accountLinkOnboardingPreviewMarkup"), 'Profile preview markup must be removed');
           need(manifest.includes('main.css?v=211'), 'Onboarding CSS cache-bust missing');
           NODE
 
