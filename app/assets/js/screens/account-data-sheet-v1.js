@@ -10,6 +10,7 @@ let snapshotPromise = null;
 let stylesReadyPromise = null;
 let loading = false;
 let actionPending = false;
+let nativeReauthPromise = null;
 
 const SNAPSHOT_TTL_MS = 15000;
 const STYLE_READY_TIMEOUT_MS = 900;
@@ -315,7 +316,7 @@ async function createExport(){
   actionPending = true;
   render();
   try {
-    const response = await api.accountDataCreateExport();
+    const response = await withSensitiveReauth(() => api.accountDataCreateExport());
     snapshot = normalizeSnapshot(response?.account_data);
     toast('Архив данных готов.');
   } catch (error) {
@@ -332,7 +333,7 @@ async function downloadExport(){
   actionPending = true;
   render();
   try {
-    const result = await api.accountDataDownloadExport(requestId);
+    const result = await withSensitiveReauth(() => api.accountDataDownloadExport(requestId));
     const url = URL.createObjectURL(result.blob);
     const anchor = document.createElement('a');
     anchor.href = url;
@@ -355,7 +356,7 @@ async function cancelDeletion(){
   actionPending = true;
   render();
   try {
-    const response = await api.accountDataCancelDelete();
+    const response = await withSensitiveReauth(() => api.accountDataCancelDelete());
     snapshot = normalizeSnapshot(response?.account_data);
     toast('Удаление отменено. Аккаунт сохранён.');
   } catch (error) {
@@ -370,7 +371,7 @@ async function scheduleDeletion(){
   if (actionPending) return;
   actionPending = true;
   try {
-    const response = await api.accountDataScheduleDelete();
+    const response = await withSensitiveReauth(() => api.accountDataScheduleDelete());
     snapshot = normalizeSnapshot(response?.account_data);
     openSheet(shellHtml());
     bind();
@@ -387,9 +388,91 @@ async function scheduleDeletion(){
   }
 }
 
+async function withSensitiveReauth(operation){
+  try {
+    return await operation();
+  } catch (error) {
+    if (String(error?.code || '') !== 'android_reauth_required') throw error;
+    await requestNativeAndroidReauth();
+    return operation();
+  }
+}
+
+function requestNativeAndroidReauth(){
+  if (nativeReauthPromise) return nativeReauthPromise;
+  if (!globalThis.crypto || typeof globalThis.crypto.getRandomValues !== 'function') {
+    return Promise.reject(nativeReauthError(
+      'native_unavailable',
+      'Не удалось открыть защищённое подтверждение Android.'
+    ));
+  }
+
+  const bytes = new Uint8Array(16);
+  globalThis.crypto.getRandomValues(bytes);
+  const requestId = 'rea_' + [...bytes].map(value => value.toString(16).padStart(2, '0')).join('');
+
+  nativeReauthPromise = new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      window.removeEventListener('mgw:native-reauth-result', onResult);
+      nativeReauthPromise = null;
+      callback(value);
+    };
+    const onResult = event => {
+      const detail = event?.detail && typeof event.detail === 'object' ? event.detail : {};
+      if (String(detail.requestId || '') !== requestId) return;
+      if (detail.ok === true) {
+        finish(resolve);
+        return;
+      }
+      const reason = String(detail.reason || 'rejected');
+      finish(reject, nativeReauthError(reason, nativeReauthMessage(reason)));
+    };
+    const timeout = window.setTimeout(() => {
+      finish(reject, nativeReauthError(
+        'timeout',
+        'Подтверждение Android не завершилось. Попробуйте ещё раз.'
+      ));
+    }, 90_000);
+
+    window.addEventListener('mgw:native-reauth-result', onResult);
+    // The Android shell intercepts this exact top-level navigation before WebView
+    // leaves the trusted HTTPS origin. No credential or account data is placed in
+    // the URL; it carries only a random correlation id.
+    window.location.href = 'mgw-native://reauth?request=' + requestId;
+  });
+
+  return nativeReauthPromise;
+}
+
+function nativeReauthError(reason, message){
+  const error = new Error(message);
+  error.code = 'android_reauth_failed';
+  error.reason = reason;
+  return error;
+}
+
+function nativeReauthMessage(reason){
+  if (reason === 'cancelled') return 'Подтверждение отменено.';
+  if (reason === 'device_lock_required' || reason === 'device_lock_unavailable') {
+    return 'Для защищённых действий настройте PIN-код, пароль или графический ключ экрана Android.';
+  }
+  if (reason === 'rate_limited') return 'Слишком много попыток подтверждения. Попробуйте немного позже.';
+  if (reason === 'session_required') return 'Сессия Android устарела. Полностью закройте приложение и откройте снова.';
+  if (reason === 'network') return 'Не удалось подтвердить действие. Проверьте интернет и попробуйте ещё раз.';
+  if (reason === 'busy') return 'Другое защищённое подтверждение уже выполняется.';
+  return 'Не удалось подтвердить действие на устройстве Android.';
+}
+
 function actionError(error, fallback){
   if (String(error?.code || '') === 'reauth_required') {
     return error?.message || 'Для подтверждения заново откройте MINI GAMES WORLD из Telegram.';
+  }
+  if (String(error?.code || '') === 'android_reauth_required') {
+    return 'Подтвердите действие на устройстве Android.';
   }
   if (String(error?.code || '') === 'rate_limited') {
     return error?.message || 'Новый экспорт можно запросить позже.';
