@@ -13,8 +13,20 @@ require_once $dbDir . '/MigrationRunner.php';
 require_once $root . '/bot/accounts/MgwIdGenerator.php';
 require_once $root . '/bot/accounts/MgwIdentityPolicy.php';
 require_once $root . '/bot/accounts/AccountIdentityService.php';
+require_once $root . '/bot/economy/UnifiedBalanceRuntimeState.php';
 require_once $root . '/bot/catalog/ProductInventoryService.php';
 require_once $root . '/bot/catalog/CosmeticStoreService.php';
+
+if (!function_exists('now_iso')) {
+    function now_iso(): string { return gmdate('c'); }
+}
+if (!function_exists('make_id')) {
+    function make_id(string $prefix = 'id'): string {
+        static $sequence = 0;
+        $sequence++;
+        return $prefix . '_mvp25_6_' . $sequence;
+    }
+}
 
 if (!extension_loaded('pdo_sqlite')) {
     fwrite(STDOUT, "SKIP: pdo_sqlite is unavailable\n");
