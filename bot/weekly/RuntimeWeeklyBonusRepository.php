@@ -226,7 +226,8 @@ final class RuntimeWeeklyBonusRepository
             'SELECT status_json, status_sha256 FROM mgw_runtime_weekly_bonus_state WHERE legacy_user_id = :legacy_user_id',
             ['legacy_user_id' => $legacyUserId]
         );
-        if (count($rows) !== 1) throw new RuntimeException('Weekly bonus DB state is missing or ambiguous.');
+        if ($rows === []) throw new RuntimeException('Weekly bonus DB state is missing.');
+        if (count($rows) !== 1) throw new RuntimeException('Weekly bonus DB state is ambiguous.');
 
         $json = (string)($rows[0]['status_json'] ?? '');
         $hash = strtolower(trim((string)($rows[0]['status_sha256'] ?? '')));
