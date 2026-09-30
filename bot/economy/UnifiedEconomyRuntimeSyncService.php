@@ -204,17 +204,27 @@ final class UnifiedEconomyRuntimeSyncService
         }
 
         // A canonical DB balance may belong to an account that is simply absent
-        // from this partial runtime snapshot. That is valid post-cutover. Only a
-        // DB balance with no active ownership is actually unmanaged/corrupt.
+        // from this partial runtime snapshot. That is valid post-cutover.
+        //
+        // Account linking has one additional legitimate terminal shape: the
+        // temporary Android shell is retired, its starter balance is debited to
+        // exactly zero, and active ownership is then deleted. The zero balance
+        // row remains as an append-only ledger projection/audit anchor. Treat
+        // only that exact linked_retired + zero/zero state as retired history;
+        // every non-zero, reserved, unknown or otherwise unowned balance still
+        // fails closed as unmanaged/corrupt.
         foreach ($this->database->fetchAll(
-            'SELECT account_ref FROM mgw_balances WHERE asset_code = :asset_code',
+            'SELECT account_ref, mgw_id, available_amount, reserved_amount
+             FROM mgw_balances
+             WHERE asset_code = :asset_code',
             ['asset_code' => UnifiedBalanceMigrationRule::TARGET_ASSET]
         ) as $row) {
             $accountRef = trim((string)($row['account_ref'] ?? ''));
-            if ($accountRef !== '' && !isset($activeAccountRefs[$accountRef])) {
-                $blocking[] = 'Database contains a unified balance without active ownership.';
-                break;
-            }
+            if ($accountRef === '' || isset($activeAccountRefs[$accountRef])) continue;
+            if ($this->isLinkedRetiredZeroBalance($row)) continue;
+
+            $blocking[] = 'Database contains a unified balance without active ownership.';
+            break;
         }
 
         sort($fingerprintParts, SORT_STRING);
@@ -228,6 +238,23 @@ final class UnifiedEconomyRuntimeSyncService
             'blocking_reasons' => array_values(array_unique($blocking)),
             'items' => $items,
         ];
+    }
+
+    private function isLinkedRetiredZeroBalance(array $balanceRow): bool
+    {
+        $mgwId = trim((string)($balanceRow['mgw_id'] ?? ''));
+        if ($mgwId === ''
+            || (int)($balanceRow['available_amount'] ?? -1) !== 0
+            || (int)($balanceRow['reserved_amount'] ?? -1) !== 0) {
+            return false;
+        }
+
+        $rows = $this->database->fetchAll(
+            'SELECT status FROM mgw_users WHERE mgw_id = :mgw_id',
+            ['mgw_id' => $mgwId]
+        );
+        return count($rows) === 1
+            && trim((string)($rows[0]['status'] ?? '')) === 'linked_retired';
     }
 
     private function publicPlan(array $plan, bool $readOnly): array
