@@ -93,6 +93,45 @@ final class AndroidDeviceAuthService
         return $this->projectUser($this->database(), $record);
     }
 
+    /**
+     * Native-only proof path for short-lived sensitive-action reauthentication.
+     * It verifies the Keystore-held credential against the existing Android
+     * identity but deliberately does not create or rotate a browser session.
+     */
+    public function verifyCredentialIdentity(string $credential, string $remoteAddress): array
+    {
+        $this->assertEnabled();
+        $subject = $this->credentialSubject($credential);
+        $database = $this->database();
+        (new AndroidAuthAttemptLimiter($database, $this->config))->assertAllowed($remoteAddress, $subject);
+
+        $rows = $database->fetchAll(
+            "SELECT i.mgw_id, i.provider_subject, u.status
+             FROM mgw_identities i
+             INNER JOIN mgw_users u ON u.mgw_id=i.mgw_id
+             WHERE i.provider=:provider
+               AND i.provider_subject=:provider_subject
+             LIMIT 1",
+            [
+                'provider'=>self::PROVIDER,
+                'provider_subject'=>$subject,
+            ]
+        );
+        if ($rows === []) {
+            throw new RuntimeException('Android device credential is not linked to an MGW account.');
+        }
+
+        $row = $rows[0];
+        if (strtolower(trim((string)($row['status'] ?? ''))) !== 'active') {
+            throw new RuntimeException('Android MGW account is not active.');
+        }
+
+        return [
+            'mgw_id'=>(string)$row['mgw_id'],
+            'provider_subject'=>(string)$row['provider_subject'],
+        ];
+    }
+
     public function cookieTtlSec(): int
     {
         return max(300, min(31536000, (int)($this->config['mgw_account_session_ttl_sec'] ?? 2592000)));

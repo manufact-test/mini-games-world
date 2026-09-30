@@ -44,6 +44,19 @@ public final class NavigationPolicyTest {
     }
 
     @Test
+    public void nativeReauthRouteIsExactAndDoesNotBecomeAnExternalScheme() {
+        assertEquals(
+                "ar_0123456789abcdef01234567",
+                policy.nativeReauthChallenge("mgw://android-reauth?challenge=ar_0123456789abcdef01234567")
+        );
+        assertEquals(null, policy.nativeReauthChallenge("mgw://android-reauth?challenge=bad"));
+        assertEquals(null, policy.nativeReauthChallenge("mgw://android-reauth/other?challenge=ar_0123456789abcdef01234567"));
+        assertEquals(null, policy.nativeReauthChallenge("mgw://other?challenge=ar_0123456789abcdef01234567"));
+        assertEquals(null, policy.nativeReauthChallenge("mgw://android-reauth?challenge=ar_0123456789abcdef01234567&next=https://evil.example"));
+        assertFalse(policy.mayOpenExternally("mgw://android-reauth?challenge=ar_0123456789abcdef01234567"));
+    }
+
+    @Test
     public void unsafeIncomingDeepLinkFallsBackToConfiguredBase() {
         assertEquals("https://example.com/game/1", policy.initialUrl("https://example.com/game/1"));
         assertEquals("https://example.com/app/", policy.initialUrl("https://evil.example/game/1"));

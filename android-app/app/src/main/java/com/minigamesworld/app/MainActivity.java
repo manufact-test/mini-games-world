@@ -3,6 +3,7 @@ package com.minigamesworld.app;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.KeyguardManager;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.res.ColorStateList;
@@ -33,10 +34,20 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+
+import javax.net.ssl.HttpsURLConnection;
+
+import org.json.JSONObject;
 
 public final class MainActivity extends Activity {
     private static final String STATE_WEBVIEW = "mgw_webview_state";
+    private static final int REQUEST_ANDROID_REAUTH = 26041;
 
     private FrameLayout root;
     private WebView webView;
@@ -49,6 +60,8 @@ public final class MainActivity extends Activity {
     private DeviceCredentialStore credentialStore;
     private String configuredBaseUrl;
     private boolean mainFrameFailed;
+    private boolean reauthInProgress;
+    private String pendingReauthChallenge;
     private Object backCallback;
 
     @Override
@@ -64,7 +77,8 @@ public final class MainActivity extends Activity {
 
         configuredBaseUrl = ShellConfig.configuredBaseUrl();
         if (!NavigationPolicy.isSafeHttpsBase(configuredBaseUrl)
-                || ShellConfig.androidAuthUrl(configuredBaseUrl).isEmpty()) {
+                || ShellConfig.androidAuthUrl(configuredBaseUrl).isEmpty()
+                || ShellConfig.androidReauthUrl(configuredBaseUrl).isEmpty()) {
             showConfigurationError();
             return;
         }
@@ -339,6 +353,11 @@ public final class MainActivity extends Activity {
 
     private boolean handleTopLevelNavigation(Uri uri) {
         String candidate = uri == null ? null : uri.toString();
+        String reauthChallenge = candidate == null ? null : navigationPolicy.nativeReauthChallenge(candidate);
+        if (reauthChallenge != null) {
+            beginNativeReauth(reauthChallenge);
+            return true;
+        }
         if (candidate != null && navigationPolicy.isInternal(candidate)) {
             return false;
         }
@@ -346,6 +365,153 @@ public final class MainActivity extends Activity {
             openExternal(uri);
         }
         return true;
+    }
+
+    @SuppressWarnings("deprecation")
+    private void beginNativeReauth(String challengeId) {
+        if (reauthInProgress || navigationPolicy == null || credentialStore == null) {
+            dispatchNativeReauthEvent("mgw:android-reauth-failed");
+            return;
+        }
+
+        String current = webView == null ? null : webView.getUrl();
+        if (current == null || !navigationPolicy.isInternal(current)) {
+            dispatchNativeReauthEvent("mgw:android-reauth-failed");
+            return;
+        }
+
+        KeyguardManager keyguard = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+        if (keyguard == null || !keyguard.isDeviceSecure()) {
+            Toast.makeText(this, R.string.reauth_device_lock_required, Toast.LENGTH_LONG).show();
+            dispatchNativeReauthEvent("mgw:android-reauth-failed");
+            return;
+        }
+
+        Intent intent = keyguard.createConfirmDeviceCredentialIntent(
+                getString(R.string.reauth_prompt_title),
+                getString(R.string.reauth_prompt_text)
+        );
+        if (intent == null) {
+            Toast.makeText(this, R.string.reauth_failed, Toast.LENGTH_SHORT).show();
+            dispatchNativeReauthEvent("mgw:android-reauth-failed");
+            return;
+        }
+
+        pendingReauthChallenge = challengeId;
+        reauthInProgress = true;
+        startActivityForResult(intent, REQUEST_ANDROID_REAUTH);
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_ANDROID_REAUTH) {
+            if (!reauthInProgress || pendingReauthChallenge == null) {
+                dispatchNativeReauthEvent("mgw:android-reauth-failed");
+            } else if (resultCode == RESULT_OK) {
+                confirmNativeReauth(pendingReauthChallenge);
+            } else {
+                finishNativeReauth("mgw:android-reauth-cancelled", false);
+            }
+            super.onActivityResult(requestCode, resultCode, data);
+            return;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void confirmNativeReauth(String challengeId) {
+        new Thread(() -> {
+            boolean confirmed = false;
+            HttpsURLConnection connection = null;
+            try {
+                String endpoint = ShellConfig.androidReauthUrl(configuredBaseUrl);
+                if (navigationPolicy == null || endpoint.isEmpty() || !navigationPolicy.isInternal(endpoint)) {
+                    throw new IllegalStateException("Android reauth endpoint is unavailable.");
+                }
+
+                String credential = credentialStore.getOrCreate();
+                String form = "action=confirm_native"
+                        + "&challenge_id=" + URLEncoder.encode(challengeId, StandardCharsets.UTF_8.name())
+                        + "&credential=" + URLEncoder.encode(credential, StandardCharsets.UTF_8.name());
+                byte[] body = form.getBytes(StandardCharsets.UTF_8);
+
+                connection = (HttpsURLConnection) new URL(endpoint).openConnection();
+                connection.setRequestMethod("POST");
+                connection.setConnectTimeout(12000);
+                connection.setReadTimeout(12000);
+                connection.setInstanceFollowRedirects(false);
+                connection.setDoOutput(true);
+                connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=utf-8");
+                connection.setRequestProperty("Accept", "application/json");
+                connection.setFixedLengthStreamingMode(body.length);
+                try (java.io.OutputStream output = connection.getOutputStream()) {
+                    output.write(body);
+                }
+
+                int status = connection.getResponseCode();
+                String responseBody = readResponseBody(connection, status);
+                if (status == 200) {
+                    JSONObject payload = new JSONObject(responseBody);
+                    confirmed = payload.optBoolean("ok", false)
+                            && "confirmed".equals(payload.optJSONObject("reauth") == null
+                            ? ""
+                            : payload.optJSONObject("reauth").optString("status", ""));
+                }
+            } catch (Exception ignored) {
+                confirmed = false;
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            }
+
+            boolean finalConfirmed = confirmed;
+            runOnUiThread(() -> {
+                if (finalConfirmed) {
+                    finishNativeReauth("mgw:android-reauth-success", false);
+                } else {
+                    finishNativeReauth("mgw:android-reauth-failed", true);
+                }
+            });
+        }, "mgw-android-reauth").start();
+    }
+
+    private static String readResponseBody(HttpsURLConnection connection, int status) throws Exception {
+        InputStream stream = status >= 400 ? connection.getErrorStream() : connection.getInputStream();
+        if (stream == null) return "";
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+            StringBuilder result = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                result.append(line);
+            }
+            return result.toString();
+        }
+    }
+
+    private void finishNativeReauth(String eventName, boolean showFailureToast) {
+        reauthInProgress = false;
+        pendingReauthChallenge = null;
+        if (showFailureToast) {
+            Toast.makeText(this, R.string.reauth_failed, Toast.LENGTH_SHORT).show();
+        }
+        dispatchNativeReauthEvent(eventName);
+    }
+
+    private void dispatchNativeReauthEvent(String eventName) {
+        if (webView == null || navigationPolicy == null) return;
+        String current = webView.getUrl();
+        if (current == null || !navigationPolicy.isInternal(current)) return;
+
+        final String script;
+        if ("mgw:android-reauth-success".equals(eventName)) {
+            script = "window.dispatchEvent(new Event('mgw:android-reauth-success'));";
+        } else if ("mgw:android-reauth-cancelled".equals(eventName)) {
+            script = "window.dispatchEvent(new Event('mgw:android-reauth-cancelled'));";
+        } else {
+            script = "window.dispatchEvent(new Event('mgw:android-reauth-failed'));";
+        }
+        webView.evaluateJavascript(script, null);
     }
 
     private void configureBackNavigation() {

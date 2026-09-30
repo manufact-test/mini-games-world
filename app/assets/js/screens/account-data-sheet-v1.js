@@ -1,4 +1,4 @@
-import { api } from '../api/client.js?v=1147&mvp22_8=account-data-v1';
+import { api } from '../api/client.js?v=1151&mvp22_8=account-data-v1&mvp26_4=android-reauth-v1';
 import { openSheet } from '../components/sheet.js?v=1109';
 import { toast } from '../components/toast.js?v=41';
 
@@ -10,8 +10,10 @@ let snapshotPromise = null;
 let stylesReadyPromise = null;
 let loading = false;
 let actionPending = false;
+let androidReauthPromise = null;
 
 const SNAPSHOT_TTL_MS = 15000;
+const ANDROID_REAUTH_TIMEOUT_MS = 135000;
 const STYLE_READY_TIMEOUT_MS = 900;
 
 export async function primeAccountDataFirstOpen(){
@@ -310,12 +312,81 @@ function openDeleteConfirmation(){
   });
 }
 
+async function withSensitiveReauth(operation){
+  try {
+    return await operation();
+  } catch (error) {
+    if (String(error?.code || '') !== 'android_reauth_required') throw error;
+    await requestAndroidNativeReauth();
+    // Exactly one retry. If the short-lived grant was not established, surface
+    // the second server response instead of entering a prompt loop.
+    return operation();
+  }
+}
+
+function requestAndroidNativeReauth(){
+  if (androidReauthPromise) return androidReauthPromise;
+
+  androidReauthPromise = api.androidReauthCreate()
+    .then(response => {
+      const nativeUrl = String(response?.reauth?.native_url || '').trim();
+      if (!/^mgw:\/\/android-reauth\?challenge=ar_[a-f0-9]{24}$/.test(nativeUrl)) {
+        const error = new Error('Android не смог подготовить безопасное подтверждение.');
+        error.code = 'android_reauth_unavailable';
+        throw error;
+      }
+      return waitForNativeReauth(nativeUrl);
+    })
+    .finally(() => {
+      androidReauthPromise = null;
+    });
+
+  return androidReauthPromise;
+}
+
+function waitForNativeReauth(nativeUrl){
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = callback => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      window.removeEventListener('mgw:android-reauth-success', onSuccess);
+      window.removeEventListener('mgw:android-reauth-cancelled', onCancelled);
+      window.removeEventListener('mgw:android-reauth-failed', onFailed);
+      callback();
+    };
+    const onSuccess = () => finish(resolve);
+    const onCancelled = () => finish(() => {
+      const error = new Error('Подтверждение отменено.');
+      error.code = 'android_reauth_cancelled';
+      reject(error);
+    });
+    const onFailed = () => finish(() => {
+      const error = new Error('Не удалось подтвердить действие на устройстве.');
+      error.code = 'android_reauth_failed';
+      reject(error);
+    });
+    const timer = window.setTimeout(() => finish(() => {
+      const error = new Error('Время подтверждения истекло. Повторите действие.');
+      error.code = 'android_reauth_timeout';
+      reject(error);
+    }), ANDROID_REAUTH_TIMEOUT_MS);
+
+    window.addEventListener('mgw:android-reauth-success', onSuccess, { once:true });
+    window.addEventListener('mgw:android-reauth-cancelled', onCancelled, { once:true });
+    window.addEventListener('mgw:android-reauth-failed', onFailed, { once:true });
+
+    window.location.assign(nativeUrl);
+  });
+}
+
 async function createExport(){
   if (actionPending) return;
   actionPending = true;
   render();
   try {
-    const response = await api.accountDataCreateExport();
+    const response = await withSensitiveReauth(() => api.accountDataCreateExport());
     snapshot = normalizeSnapshot(response?.account_data);
     toast('Архив данных готов.');
   } catch (error) {
@@ -332,7 +403,7 @@ async function downloadExport(){
   actionPending = true;
   render();
   try {
-    const result = await api.accountDataDownloadExport(requestId);
+    const result = await withSensitiveReauth(() => api.accountDataDownloadExport(requestId));
     const url = URL.createObjectURL(result.blob);
     const anchor = document.createElement('a');
     anchor.href = url;
@@ -355,7 +426,7 @@ async function cancelDeletion(){
   actionPending = true;
   render();
   try {
-    const response = await api.accountDataCancelDelete();
+    const response = await withSensitiveReauth(() => api.accountDataCancelDelete());
     snapshot = normalizeSnapshot(response?.account_data);
     toast('Удаление отменено. Аккаунт сохранён.');
   } catch (error) {
@@ -370,7 +441,7 @@ async function scheduleDeletion(){
   if (actionPending) return;
   actionPending = true;
   try {
-    const response = await api.accountDataScheduleDelete();
+    const response = await withSensitiveReauth(() => api.accountDataScheduleDelete());
     snapshot = normalizeSnapshot(response?.account_data);
     openSheet(shellHtml());
     bind();
@@ -388,7 +459,7 @@ async function scheduleDeletion(){
 }
 
 function actionError(error, fallback){
-  if (String(error?.code || '') === 'reauth_required') {
+  if (['reauth_required','android_reauth_required'].includes(String(error?.code || ''))) {
     return error?.message || 'Для подтверждения заново откройте MINI GAMES WORLD из Telegram.';
   }
   if (String(error?.code || '') === 'rate_limited') {
