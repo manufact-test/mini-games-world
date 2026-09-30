@@ -9,4 +9,8 @@
     <string name="configuration_error_text">Для этой сборки не задан безопасный HTTPS-адрес Mini Games World.</string>
     <string name="security_error_text">Страница не была открыта из-за проверки безопасности соединения.</string>
     <string name="external_link_error">Не удалось открыть внешнюю ссылку.</string>
+    <string name="reauth_prompt_title">Подтвердите действие</string>
+    <string name="reauth_prompt_text">Разблокируйте устройство, чтобы продолжить работу с данными аккаунта.</string>
+    <string name="reauth_device_lock_required">Для этого действия нужна настроенная блокировка экрана устройства.</string>
+    <string name="reauth_failed">Не удалось подтвердить действие. Попробуйте ещё раз.</string>
 </resources>
