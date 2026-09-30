@@ -75,7 +75,13 @@ public final class MainActivity extends Activity {
 
         Bundle webState = savedInstanceState == null ? null : savedInstanceState.getBundle(STATE_WEBVIEW);
         if (webState != null && webView.restoreState(webState) != null) {
-            showLoading(false);
+            // A restored WebView can briefly expose the previous composited page before
+            // the restored document has completed its fresh network/JS lifecycle.
+            // Keep the native handoff owner above it until WebViewClient confirms the
+            // current main frame has finished. This prevents a stale wallet frame from
+            // becoming user-visible during process/activity recovery.
+            mainFrameFailed = false;
+            showLoading(true);
             return;
         }
 
