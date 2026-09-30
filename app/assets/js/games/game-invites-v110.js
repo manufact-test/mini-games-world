@@ -1027,7 +1027,7 @@ async function syncNow({ announce = true } = {}){
   syncBusy = true;
   try {
     const result = await inviteRequest('sync', { token:requestedInviteToken });
-    syncState(result);
+    syncState(result, { preserveBalance:true });
     if (syncUiTransitionGeneration !== inviteUiTransitionGeneration) return result;
     processInviteEvents(result.invite_events, Number(result.unread_count || 0), announce);
 
@@ -1439,10 +1439,24 @@ function dispatchNotificationCount(unreadCount){
   }));
 }
 
-function syncState(result){
+function syncState(result, options = {}){
   if (result?.user) {
-    state.user = result.user;
-    renderBalances(state.user);
+    const preserveBalance = options?.preserveBalance === true;
+    const currentHasBalance = Boolean(
+      state.user
+      && typeof state.user === 'object'
+      && Object.prototype.hasOwnProperty.call(state.user, 'balance')
+    );
+
+    if (preserveBalance && currentHasBalance) {
+      state.user = {
+        ...result.user,
+        balance:state.user.balance,
+      };
+    } else {
+      state.user = result.user;
+      renderBalances(state.user);
+    }
   }
   if (result?.session) state.session = result.session;
 }

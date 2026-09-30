@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp26-3-balance-writer-trace-v1167';
+window.__MGW_BUILD__ = 'v110-mvp26-3-12-invite-sync-wallet-nonowner-v1168';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
