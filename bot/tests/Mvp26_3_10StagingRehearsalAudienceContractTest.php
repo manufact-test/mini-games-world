@@ -15,7 +15,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 $auth = strpos($api, '$tgUser = $auth->getUserFromRequest($payload);');
-$audience = strpos($api, "$GLOBALS['mgw_staging_db_primary_authenticated_eligible']");
+$audience = strpos($api, '$GLOBALS[\'mgw_staging_db_primary_authenticated_eligible\']');
 $storageCreate = strpos($api, '$db = StorageFactory::createJson(');
 
 $assert($auth !== false, 'api.php must authenticate the request explicitly.');
@@ -26,15 +26,15 @@ $assert(
     'Authentication and audience classification must happen before staging runtime storage selection.'
 );
 $assert(
-    str_contains($api, "!empty($tgUser['is_staging_test_user'])"),
+    str_contains($api, '!empty($tgUser[\'is_staging_test_user\'])'),
     'Only positively authenticated staging test users may be marked rehearsal-eligible.'
 );
 
-$guard = strpos($storage, "$GLOBALS['mgw_staging_db_primary_authenticated_eligible'] ?? null");
+$guard = strpos($storage, '$GLOBALS[\'mgw_staging_db_primary_authenticated_eligible\'] ?? null');
 $return = strpos($storage, 'if ($audienceEligible === false)');
 $assert($guard !== false && $return !== false && $guard < $return, 'StorageFactory must consume the authenticated audience gate.');
 $assert(
-    str_contains($storage, "$environment === 'staging' && $script === 'api.php'"),
+    str_contains($storage, '$environment === \'staging\' && $script === \'api.php\''),
     'Audience gate must remain staging API-only.'
 );
 $assert(
