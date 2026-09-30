@@ -58,8 +58,8 @@ export function accountLinkOnboardingEligibility(snapshot = {}){
 
 export function accountLinkOnboardingPreviewMarkup(auth, identities){
   if (!isStagingPreviewContext()) return '';
-  const provider = String(auth?.provider || state.user?.mgw_identity_provider || '').trim().toLowerCase();
-  if (provider !== 'android_device' || !hasTelegramIdentity(identities)) return '';
+  if (isTelegramMiniAppContext()) return '';
+  if (!hasTelegramIdentity(identities)) return '';
   return `
     <button class="profile-v2-setting-row profile-v2-setting-button" type="button" data-open-account-link-onboarding-preview>
       <span>
@@ -206,6 +206,10 @@ function hasTelegramIdentity(identities){
 
 function isStagingPreviewContext(){
   return String(globalThis.location?.hostname || '').trim().toLowerCase() === STAGING_PREVIEW_HOST;
+}
+
+function isTelegramMiniAppContext(){
+  return String(globalThis.Telegram?.WebApp?.initData || '').trim() !== '';
 }
 
 function persistDismissal(){
