@@ -7,12 +7,10 @@ const DISMISS_KEY = 'mgw_android_account_link_onboarding_v1';
 const PENDING_LINK_KEY = 'mgw_android_account_link_v1';
 const ONBOARDING_OVERLAY_CLASS = 'mgw-account-link-onboarding-overlay';
 const ONBOARDING_SHEET_CLASS = 'mgw-account-link-onboarding-sheet';
-const STAGING_PREVIEW_HOST = 'seashell-okapi-889488.hostingersite.com';
 
 let initialized = false;
 let appReady = false;
 let onboardingVisible = false;
-let previewVisible = false;
 let attemptTimer = null;
 
 export function initAccountLinkHomeOnboarding(){
@@ -30,10 +28,6 @@ export function initAccountLinkHomeOnboarding(){
 
   document.addEventListener('mgw:sheet-closed', () => {
     clearOnboardingPresentation();
-    if (previewVisible) {
-      previewVisible = false;
-      return;
-    }
     if (onboardingVisible) {
       onboardingVisible = false;
       persistDismissal();
@@ -56,29 +50,6 @@ export function accountLinkOnboardingEligibility(snapshot = {}){
   return dismissedMgwId !== mgwId;
 }
 
-export function accountLinkOnboardingPreviewMarkup(auth, identities){
-  if (!isStagingPreviewContext()) return '';
-  if (isTelegramMiniAppContext()) return '';
-  if (!hasTelegramIdentity(identities)) return '';
-  return `
-    <button class="profile-v2-setting-row profile-v2-setting-button" type="button" data-open-account-link-onboarding-preview>
-      <span>
-        <strong>Предпросмотр приветствия Android</strong>
-        <small>Только staging: посмотреть первый экран привязки без отвязки Telegram</small>
-      </span>
-      <b>Показать</b>
-    </button>
-    <div class="profile-v2-account-divider"></div>
-  `;
-}
-
-export function openAccountLinkOnboardingPreview(){
-  if (!isStagingPreviewContext()) return;
-  previewVisible = true;
-  onboardingVisible = false;
-  renderOnboardingCard({ preview:true });
-}
-
 function scheduleAttempt(delay){
   if (attemptTimer !== null) window.clearTimeout(attemptTimer);
   attemptTimer = window.setTimeout(() => {
@@ -88,7 +59,7 @@ function scheduleAttempt(delay){
 }
 
 function tryShowOnboarding(){
-  if (!appReady || onboardingVisible || previewVisible) return;
+  if (!appReady || onboardingVisible) return;
 
   const preloader = document.getElementById('preloader');
   if (preloader instanceof HTMLElement && !preloader.classList.contains('hidden')) {
@@ -105,10 +76,10 @@ function tryShowOnboarding(){
   if (!accountLinkOnboardingEligibility(snapshot)) return;
 
   onboardingVisible = true;
-  renderOnboardingCard({ preview:false });
+  renderOnboardingCard();
 }
 
-function renderOnboardingCard({ preview = false } = {}){
+function renderOnboardingCard(){
   openSheet(`
     <div class="mgw-account-link-onboarding" role="dialog" aria-labelledby="mgwAccountLinkOnboardingTitle">
       <button class="close mgw-account-link-onboarding-close" data-close-sheet type="button" aria-label="Закрыть">×</button>
@@ -151,12 +122,6 @@ function renderOnboardingCard({ preview = false } = {}){
 
   document.querySelector('[data-account-link-onboarding-connect]')?.addEventListener('click', event => {
     event.preventDefault();
-    if (preview) {
-      previewVisible = false;
-      clearOnboardingPresentation();
-      closeSheet();
-      return;
-    }
     persistDismissal();
     onboardingVisible = false;
     clearOnboardingPresentation();
@@ -166,12 +131,6 @@ function renderOnboardingCard({ preview = false } = {}){
 
   document.querySelector('[data-account-link-onboarding-later]')?.addEventListener('click', event => {
     event.preventDefault();
-    if (preview) {
-      previewVisible = false;
-      clearOnboardingPresentation();
-      closeSheet();
-      return;
-    }
     persistDismissal();
     onboardingVisible = false;
     clearOnboardingPresentation();
@@ -202,14 +161,6 @@ function currentEligibilitySnapshot(){
 function hasTelegramIdentity(identities){
   return (Array.isArray(identities) ? identities : [])
     .some(identity => String(identity?.provider || '').trim().toLowerCase() === 'telegram');
-}
-
-function isStagingPreviewContext(){
-  return String(globalThis.location?.hostname || '').trim().toLowerCase() === STAGING_PREVIEW_HOST;
-}
-
-function isTelegramMiniAppContext(){
-  return String(globalThis.Telegram?.WebApp?.initData || '').trim() !== '';
 }
 
 function persistDismissal(){
