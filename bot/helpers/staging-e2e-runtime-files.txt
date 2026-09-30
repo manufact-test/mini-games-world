@@ -350,6 +350,16 @@ bot/database/migrations/20260926_0067_create_account_data_lifecycle.php
 app/assets/js/screens/account-data-sheet-v1.js
 app/assets/css/account-data-v1.css
 
+# MVP-26.4 Android sensitive-action reauthentication. The native Android shell
+# sends the Keystore credential only to this narrow HTTPS endpoint after the
+# system device-unlock prompt. These server owners must deploy atomically with
+# the Account Data guard so staging can never accept a partial reauth rollout.
+bot/android-reauth.php
+bot/accounts/AndroidAccountReauthService.php
+bot/accounts/AndroidDeviceAuthService.php
+bot/accounts/AndroidAuthAttemptLimiter.php
+bot/database/migrations/20261001_0071_create_android_reauth_challenges.php
+
 # MVP-22.9 incident response / recovery console. Runtime safety actions reuse
 # canonical system/session owners; incident state, evidence and restore references
 # are durable and included in exact staging fingerprinting.
