@@ -115,8 +115,18 @@ final class AndroidAccountReauthService
         $this->assertEnabled();
         $challengeId = $this->normalizeChallengeId($challengeId);
 
-        $identity = (new AndroidDeviceAuthService($this->config, $this->database))
-            ->verifyCredentialIdentity($credential, $remoteAddress);
+        try {
+            $identity = (new AndroidDeviceAuthService($this->config, $this->database))
+                ->verifyCredentialIdentity($credential, $remoteAddress);
+        } catch (AndroidAuthRateLimitException|InvalidArgumentException $error) {
+            throw $error;
+        } catch (Throwable) {
+            throw new AndroidAccountReauthException(
+                'credential_mismatch',
+                'Не удалось подтвердить это устройство.',
+                403
+            );
+        }
 
         return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
             $challengeId,
