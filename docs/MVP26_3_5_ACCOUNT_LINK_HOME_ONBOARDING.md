@@ -70,3 +70,16 @@ Corrective presentation:
 - after the primary action, control hands off to the existing account-link sheet/security flow unchanged.
 
 This corrective is presentation-only. Account-link backend, target-account ownership, starter-coin retirement, authentication and confirmation semantics are frozen.
+
+## MVP-26.3.17 temporary staging preview
+
+The product owner's current Android account is already linked, therefore the real one-time onboarding correctly no longer appears there.
+
+For final visual acceptance only, staging exposes a temporary non-mutating Profile row:
+- visible only on the exact staging hostname;
+- visible only for Android provider + already-linked Telegram identity;
+- opens the exact onboarding card presentation;
+- both visible onboarding actions only close the preview;
+- does not unlink, relink, create challenges, write dismissal state, move balance, or change account ownership.
+
+This preview is temporary acceptance tooling and must be removed immediately after visual manual PASS.
