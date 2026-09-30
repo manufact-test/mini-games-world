@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp26-3-balance-writer-trace-v1167';
+window.__MGW_BUILD__ = 'v110-mvp26-3-12-invite-sync-wallet-nonowner-v1168';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -26,7 +26,7 @@ import { applyCanonicalMgwProfile } from './profile/mgw-profile-model.js?v=1';
 import { initMgwProfileBackgrounds } from './profile/mgw-profile-backgrounds.js?v=2&mvp19_3=profile-backgrounds-ux-corrective';
 import { initGameRules } from './games/game-rules.js?v=75';
 import { initGameCardCopy } from './games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static';
-import { initGameInvites } from './games/game-invites-v110.js?v=1137&ux=1';
+import { initGameInvites } from './games/game-invites-v110.js?v=1138&ux=1&mvp26_3_12=invite-sync-wallet-nonowner-v1';
 import { initUnifiedGameLauncher } from './games/unified-game-launcher.js?v=1&mvp16=unified-game-setup';
 import { openIncomingInviteFromTelegram } from './games/invite-link-entry-v110r12.js?v=1124&mvp24=room-copy-removed-v1';
 import { initSearchInviteReconciliation } from './games/search-invite-reconciliation-v110r12.js?v=1124';
