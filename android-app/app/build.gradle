@@ -47,8 +47,8 @@ android {
         applicationId 'com.minigamesworld.app.acceptance'
         minSdk 26
         targetSdk 36
-        versionCode 2604
-        versionName '0.26.3.4-orientation-lifecycle'
+        versionCode 2605
+        versionName '0.26.3.5-runtime-proof'
         buildConfigField 'String', 'MGW_BASE_URL', '"' + escapedMgwBaseUrl + '"'
     }
 
