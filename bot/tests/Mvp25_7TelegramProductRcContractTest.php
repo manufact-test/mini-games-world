@@ -48,6 +48,9 @@ $mvp256 = $read('docs/MVP25_6_MONETIZATION_DISABLED_COMPLETE_PRODUCT.md');
 $launch = $read('bot/helpers/WebAppLaunchUrl.php');
 $store = $read('app/assets/js/screens/store-screen.js');
 $storeService = $read('bot/catalog/CosmeticStoreService.php');
+$home = $read('app/assets/js/screens/home-screen.js');
+$handoff = $read('app/assets/js/main-v110-handoff-shell.js');
+$uxCss = $read('app/assets/css/mvp25-3-ux-consistency-v1.css');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 
 $assert(
@@ -96,6 +99,40 @@ $assert(
         && str_contains($mainCss, 'rules=human-guide-top-spacing-v1')
         && str_contains($mainCss, 'mvp25_4=profile-mobile-compositor-v1'),
     'Telegram Product RC must preserve accepted MVP-25.3 UX/rules semantics inside the current MVP-25.4 main CSS identity.'
+);
+
+$homeTarget = is_string($imports['./assets/js/screens/home-screen.js?v=74'] ?? null)
+    ? $imports['./assets/js/screens/home-screen.js?v=74']
+    : '';
+$handoffTarget = is_string($imports['./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5'] ?? null)
+    ? $imports['./assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5']
+    : '';
+
+$assert(
+    str_contains($homeTarget, 'mvp25_3=human-rules-guide-v1')
+        && str_contains($handoffTarget, 'mvp25_3=match-economy-guide-v1'),
+    'Telegram Product RC must preserve the accepted MVP-25.3 Home rules and bootstrap economy owners regardless of later cache versions.'
+);
+$assert(
+    str_contains($home, 'Как работают обычные матчи')
+        && str_contains($home, 'Пока идёт поиск, коины не списываются.')
+        && str_contains($home, 'amount(entry)')
+        && str_contains($home, 'amount(winnerReward)')
+        && str_contains($home, 'amount(commission)')
+        && str_contains($home, 'amount(drawRefund)'),
+    'Telegram Product RC must preserve the accepted human rules guide and live economy values.'
+);
+$assert(
+    str_contains($handoff, 'matchWinnerReward')
+        && str_contains($handoff, 'matchSystemSink')
+        && str_contains($handoff, 'matchDrawRefund'),
+    'Telegram Product RC must preserve authoritative public match economy bootstrap fields.'
+);
+$assert(
+    str_contains($uxCss, '.rules-guide-section')
+        && str_contains($uxCss, '.rules-guide-economy')
+        && str_contains($uxCss, 'padding-top:8px'),
+    'Telegram Product RC must preserve the product-owner accepted rules-guide styling and top inset.'
 );
 
 $assert(
