@@ -9,6 +9,60 @@ header('Referrer-Policy: no-referrer');
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/accounts/MgwProfileService.php';
 
+function mgw_profile_live_runtime_balance(array $config, array $authenticatedUser): ?int
+{
+    $legacyUserId = trim((string)($authenticatedUser['id'] ?? ''));
+    $dataDir = trim((string)($config['data_dir'] ?? ''));
+    if ($legacyUserId === '' || $dataDir === '') {
+        return null;
+    }
+
+    // profile.php intentionally bypasses the bounded staging API DB-primary
+    // rehearsal. Identity/inventory remain canonical DB-owned below; this narrow
+    // read exists only so the already-awaited first-profile response can carry the
+    // live mutable runtime balance used by Home before the preloader is released.
+    $storage = new JsonStorageAdapter($dataDir);
+    return $storage->readOnlySections(['users'], static function (array $data) use ($legacyUserId): ?int {
+        $users = is_array($data['users'] ?? null) ? $data['users'] : [];
+        $matches = [];
+
+        $direct = $users[$legacyUserId] ?? null;
+        if (is_array($direct)
+            && trim((string)($direct['id'] ?? $legacyUserId)) === $legacyUserId) {
+            $matches[] = $direct;
+        } else {
+            foreach ($users as $candidate) {
+                if (!is_array($candidate)) continue;
+                if (trim((string)($candidate['id'] ?? '')) !== $legacyUserId) continue;
+                $matches[] = $candidate;
+            }
+        }
+
+        if ($matches === []) return null;
+        if (count($matches) !== 1) {
+            throw new RuntimeException('Live runtime balance owner is ambiguous.');
+        }
+
+        $raw = $matches[0][UnifiedBalanceRuntimeState::FIELD] ?? null;
+        if (is_int($raw)) {
+            if ($raw < 0) throw new RuntimeException('Live runtime balance is negative.');
+            return $raw;
+        }
+        if (is_string($raw) && preg_match('/^\\d+$/', trim($raw)) === 1) {
+            $normalized = trim($raw);
+            if (strlen($normalized) > strlen((string)PHP_INT_MAX)
+                || (strlen($normalized) === strlen((string)PHP_INT_MAX)
+                    && strcmp($normalized, (string)PHP_INT_MAX) > 0)) {
+                throw new RuntimeException('Live runtime balance exceeds integer range.');
+            }
+            return (int)$normalized;
+        }
+
+        if ($raw === null) return null;
+        throw new RuntimeException('Live runtime balance is invalid.');
+    });
+}
+
 try {
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
         json_response(['ok' => false, 'error' => 'Method not allowed.'], 405);
@@ -40,12 +94,17 @@ try {
     $database = PdoConnectionFactory::create($databaseConfig);
     $profile = (new MgwProfileService($database))->publicProfile($mgwId);
     $inventory = (new ProductInventoryService($database))->snapshot($mgwId);
+    $liveRuntimeBalance = mgw_profile_live_runtime_balance($config, $authenticatedUser);
 
     $provider = strtolower(trim((string)($authenticatedUser['mgw_identity_provider'] ?? '')));
     json_response([
         'ok' => true,
         'profile' => $profile,
         'inventory' => $inventory,
+        'runtime' => [
+            'balance' => $liveRuntimeBalance,
+            'source' => 'live_json_runtime',
+        ],
         'auth' => [
             'provider' => $provider !== '' ? $provider : null,
             'provider_neutral' => true,
