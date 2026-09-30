@@ -83,11 +83,19 @@ $assert(
 );
 
 $imports = is_array($manifest['imports'] ?? null) ? $manifest['imports'] : [];
+$assets = is_array($manifest['assets'] ?? null) ? $manifest['assets'] : [];
 $assert(
     isset($imports['@mgw/main'])
         && is_string($imports['@mgw/main'])
         && str_contains($imports['@mgw/main'], 'main-v110-reconnect-v174.js'),
     'Telegram Product RC must preserve the accepted current v110 main owner.'
+);
+$mainCss = is_string($assets['main_css'] ?? null) ? $assets['main_css'] : '';
+$assert(
+    str_contains($mainCss, 'mvp25_3=ux-consistency-v2')
+        && str_contains($mainCss, 'rules=human-guide-top-spacing-v1')
+        && str_contains($mainCss, 'mvp25_4=profile-mobile-compositor-v1'),
+    'Telegram Product RC must preserve accepted MVP-25.3 UX/rules semantics inside the current MVP-25.4 main CSS identity.'
 );
 
 $assert(
