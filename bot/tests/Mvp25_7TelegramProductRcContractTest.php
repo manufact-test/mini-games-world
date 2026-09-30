@@ -51,6 +51,8 @@ $storeService = $read('bot/catalog/CosmeticStoreService.php');
 $profile = $read('app/assets/js/screens/profile-screen-v110.js');
 $home = $read('app/assets/js/screens/home-screen.js');
 $handoff = $read('app/assets/js/main-v110-handoff-shell.js');
+$invites = $read('app/assets/js/games/game-invites-v110.js');
+$inviteEndpoint = $read('bot/invites.php');
 $uxCss = $read('app/assets/css/mvp25-3-ux-consistency-v1.css');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 
@@ -116,6 +118,36 @@ $assert(
         && str_contains($profileTarget, 'profile_card_runtime=checkers-hard-square-v1')
         && str_contains($apiTarget, 'profile_inventory=store-sync-v1'),
     'Telegram Product RC must preserve the current Store/Profile game-cosmetics and inventory-sync owners regardless of later cache revisions.'
+);
+
+$inviteTarget = is_string($imports['./assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent'] ?? null)
+    ? $imports['./assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent']
+    : '';
+$assert(
+    str_contains($inviteTarget, 'social=1')
+        && str_contains($inviteTarget, 'share=telegram-native')
+        && str_contains($inviteTarget, 'waiting=draft-safe')
+        && str_contains($inviteTarget, 'mvp21_6=tournament-rematch-exclusion-v1')
+        && str_contains($inviteTarget, 'mvp25_2=network-human-error-v1')
+        && str_contains($inviteTarget, 'mvp24=room-copy-removed-v1'),
+    'Telegram Product RC must preserve the current draft-safe Telegram-native invite owner, tournament rematch exclusion, human network errors and retired room copy regardless of cache revision.'
+);
+$assert(
+    str_contains($invites, "tg.onEvent('shareMessageSent', () => settleNativeShare(true));")
+        && str_contains($invites, "inviteRequest('confirm_shared', { token:String(attempt.invite?.token || '') });")
+        && str_contains($invites, 'restoreWarmShareDraft(attempt);')
+        && str_contains($invites, 'void discardDraft(attempt.invite);')
+        && str_contains($invites, 'const SHARE_CALLBACK_TIMEOUT_MS = 12000;')
+        && str_contains($invites, 'showOwnerWaiting(currentInvite);'),
+    'Telegram Product RC must preserve the accepted native-share draft lifecycle and owner-waiting recovery semantics.'
+);
+$assert(
+    str_contains($inviteEndpoint, 'function mgw_invite_share_url(array $config, string $token): string')
+        && str_contains($inviteEndpoint, "return $baseUrl . '/invite/' . rawurlencode($normalizedToken);")
+        && str_contains($inviteEndpoint, 'function mgw_invite_telegram_open_url(array $config, string $token): string')
+        && str_contains($inviteEndpoint, "'?start=invite_' . rawurlencode($normalizedToken)")
+        && !str_contains($inviteEndpoint, 'leaveSearch('),
+    'Telegram Product RC must preserve separate public/Telegram invite ingress and must not cancel matchmaking implicitly.'
 );
 
 $mainCss = is_string($assets['main_css'] ?? null) ? $assets['main_css'] : '';
