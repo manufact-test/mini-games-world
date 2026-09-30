@@ -48,6 +48,7 @@ $mvp256 = $read('docs/MVP25_6_MONETIZATION_DISABLED_COMPLETE_PRODUCT.md');
 $launch = $read('bot/helpers/WebAppLaunchUrl.php');
 $store = $read('app/assets/js/screens/store-screen.js');
 $storeService = $read('bot/catalog/CosmeticStoreService.php');
+$profile = $read('app/assets/js/screens/profile-screen-v110.js');
 $home = $read('app/assets/js/screens/home-screen.js');
 $handoff = $read('app/assets/js/main-v110-handoff-shell.js');
 $uxCss = $read('app/assets/css/mvp25-3-ux-consistency-v1.css');
@@ -85,6 +86,16 @@ $assert(
     'Telegram Product RC must preserve the completed monetization-disabled Store state.'
 );
 
+$assert(
+    str_contains($profile, "item.owned === true && item.item_type === 'game'")
+        && str_contains($profile, 'data-profile-game-tab')
+        && str_contains($profile, 'state.profileInventory.equipped')
+        && str_contains($profile, 'api.cosmeticStoreEquip(itemId)')
+        && str_contains($profile, 'api.cosmeticStoreUnequip(slot)')
+        && !str_contains($profile, 'cosmeticStorePurchase('),
+    'Telegram Product RC must preserve Profile as a read/equip owner for authoritative owned game cosmetics without becoming a purchase owner.'
+);
+
 $imports = is_array($manifest['imports'] ?? null) ? $manifest['imports'] : [];
 $assets = is_array($manifest['assets'] ?? null) ? $manifest['assets'] : [];
 $assert(
@@ -93,6 +104,20 @@ $assert(
         && str_contains($imports['@mgw/main'], 'main-v110-reconnect-v174.js'),
     'Telegram Product RC must preserve the accepted current v110 main owner.'
 );
+$profileTarget = is_string($imports['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? null)
+    ? $imports['./assets/js/screens/profile-screen-v110.js?v=1108']
+    : '';
+$apiTarget = is_string($imports['./assets/js/api/client.js?v=47'] ?? null)
+    ? $imports['./assets/js/api/client.js?v=47']
+    : '';
+$assert(
+    str_contains($profileTarget, 'mvp19_3_2=game-cosmetics')
+        && str_contains($profileTarget, 'mvp19_6=checkers-profile-manual-repair-v3')
+        && str_contains($profileTarget, 'profile_card_runtime=checkers-hard-square-v1')
+        && str_contains($apiTarget, 'profile_inventory=store-sync-v1'),
+    'Telegram Product RC must preserve the current Store/Profile game-cosmetics and inventory-sync owners regardless of later cache revisions.'
+);
+
 $mainCss = is_string($assets['main_css'] ?? null) ? $assets['main_css'] : '';
 $assert(
     str_contains($mainCss, 'mvp25_3=ux-consistency-v2')
