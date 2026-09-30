@@ -12,7 +12,10 @@ on:
       - 'bot/android-auth.php'
       - 'bot/database/migrations/20260930_0069_create_android_auth_attempts.php'
       - 'bot/services/AuthService.php'
+      - 'bot/weekly/WeeklyBonusRuntimeBridge.php'
+      - 'bot/weekly/RuntimeWeeklyBonusRepository.php'
       - 'bot/tests/Mvp26_2AndroidDeviceAuthTest.php'
+      - 'bot/tests/Mvp26_2FreshAccountWeeklyBootstrapTest.php'
       - '.github/workflows/mvp26-2-android-device-auth.yml'
 
 permissions:
@@ -46,12 +49,16 @@ jobs:
           php -l bot/android-auth.php
           php -l bot/database/migrations/20260930_0069_create_android_auth_attempts.php
           php -l bot/services/AuthService.php
+          php -l bot/weekly/WeeklyBonusRuntimeBridge.php
+          php -l bot/weekly/RuntimeWeeklyBonusRepository.php
           php -l bot/tests/Mvp26_2AndroidDeviceAuthTest.php
+          php -l bot/tests/Mvp26_2FreshAccountWeeklyBootstrapTest.php
 
       - name: Android provider-neutral auth proof
         run: |
           set -euo pipefail
           php bot/tests/Mvp26_2AndroidDeviceAuthTest.php
+          php bot/tests/Mvp26_2FreshAccountWeeklyBootstrapTest.php
           php bot/tests/AccountIdentityServiceTest.php
           php bot/tests/Mvp15ProviderNeutralIdentityCoreTest.php
           php bot/tests/Mvp25_5PublicErrorLogSanitizationContractTest.php
@@ -68,7 +75,7 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
-          allowed='^(\.github/workflows/mvp26-2-android-device-auth\.yml|android-app/README\.md|android-app/docs/MVP26_2_ANDROID_DEVICE_AUTH\.md|android-app/app/build\.gradle|android-app/app/src/main/java/com/minigamesworld/app/(MainActivity|ShellConfig|DeviceCredentialStore)\.java|android-app/tools/verify-foundation\.py|bot/accounts/(AndroidAuthAttemptLimiter|AndroidDeviceAuthService|RuntimeAccountOwnershipService)\.php|bot/android-auth\.php|bot/database/migrations/20260930_0069_create_android_auth_attempts\.php|bot/services/AuthService\.php|bot/tests/Mvp26_2AndroidDeviceAuthTest\.php)$'
+          allowed='^(\.github/workflows/mvp26-2-(android-device-auth|android-live-auth-probe)\.yml|android-app/README\.md|android-app/docs/MVP26_2_(ANDROID_DEVICE_AUTH|REAL_DEVICE_REGRESSION_REPAIR)\.md|android-app/branding/(shield_king_launcher_384\.webp\.b64|mgw-acceptance-stable\.keystore\.b64)|android-app/app/build\.gradle|android-app/app/src/main/java/com/minigamesworld/app/(MainActivity|ShellConfig|DeviceCredentialStore)\.java|android-app/app/src/main/res/drawable/(ic_mgw_launcher_art_inset|ic_mgw_splash_transparent|ic_mgw_splash_mark|mgw_splash_background)\.xml|android-app/app/src/main/res/mipmap-anydpi-v(26|33)/ic_launcher(_round)?\.xml|android-app/app/src/main/res/values(-v31)?/(styles|colors)\.xml|android-app/tools/verify-foundation\.py|bot/accounts/(AndroidAuthAttemptLimiter|AndroidDeviceAuthService|RuntimeAccountOwnershipService)\.php|bot/android-auth\.php|bot/database/migrations/20260930_0069_create_android_auth_attempts\.php|bot/services/AuthService\.php|bot/weekly/(WeeklyBonusRuntimeBridge|RuntimeWeeklyBonusRepository)\.php|bot/tests/Mvp26_2(AndroidDeviceAuth|FreshAccountWeeklyBootstrap)Test\.php)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-26.2 paths:\n%s\n' "$bad" >&2; exit 1; }
 
@@ -115,6 +122,18 @@ jobs:
         env:
           MGW_BASE_URL: https://seashell-okapi-889488.hostingersite.com/
         run: gradle --no-daemon clean test lint assembleDebug
+
+      - name: Verify accepted package signing identity
+        working-directory: android-app
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$apk"
+          apksigner="${ANDROID_SDK_ROOT}/build-tools/36.0.0/apksigner"
+          test -x "$apksigner"
+          "$apksigner" verify --print-certs "$apk" | tee /tmp/mgw-apk-signing.txt
+          grep -F 'CN=MGW Acceptance, O=Mini Games World, C=PL' /tmp/mgw-apk-signing.txt
 
       - name: Upload staging APK
         if: success()

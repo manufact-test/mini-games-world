@@ -194,15 +194,29 @@ final class WeeklyBonusRuntimeBridge
         try {
             $data['weekly_match'] = $this->repository()->statusForLegacyUser($legacyUserId);
         } catch (RuntimeException $error) {
-            if ($error->getMessage() !== 'Weekly bonus DB state is missing or ambiguous.') {
+            if ($error->getMessage() !== 'Weekly bonus DB state is missing.') {
+                // Ambiguous or corrupted projection state is never a safe
+                // availability fallback and must remain fail-closed.
                 throw $error;
             }
 
             $fallback = $this->statusForExcludedDevelopmentUser($legacyUserId);
-            if ($fallback === null) {
-                throw $error;
+            if ($fallback !== null) {
+                $data['weekly_match'] = $fallback;
+                return $data;
             }
-            $data['weekly_match'] = $fallback;
+
+            // The weekly DB table is a projection of the canonical JSON runtime.
+            // Bootstrap and other latency-critical actions intentionally skip
+            // projection I/O before first paint. A freshly-created provider-
+            // neutral account can therefore have a valid action-local
+            // weekly_match before its first DB projection row exists.
+            //
+            // Keep the exact weekly_match produced inside this request's
+            // authoritative JSON transaction. The next ordinary API boundary
+            // performs the normal projection catch-up. This preserves first
+            // launch without weakening ambiguous/corrupt DB-state handling.
+            return $data;
         }
         return $data;
     }
