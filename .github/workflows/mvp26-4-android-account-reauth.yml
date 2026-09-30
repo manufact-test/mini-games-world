@@ -11,6 +11,7 @@ on:
       - 'android-app/app/src/main/java/com/minigamesworld/app/ShellConfig.java'
       - 'android-app/app/src/main/res/values/strings.xml'
       - 'android-app/app/src/test/java/com/minigamesworld/app/NavigationPolicyTest.java'
+      - 'android-app/tools/verify-foundation.py'
       - 'app/assets/js/api/client.js'
       - 'app/assets/js/components/account-shortcuts.js'
       - 'app/assets/js/screens/account-data-sheet-v1.js'
@@ -104,7 +105,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(.github/workflows/(mvp26-4-android-account-reauth|mvp26-2-android-device-auth|mvp26-3-1-account-link-backend|mvp22-8-account-data).yml|android-app/app/build.gradle|android-app/app/src/main/java/com/minigamesworld/app/(MainActivity|NavigationPolicy|ShellConfig).java|android-app/app/src/main/res/values/strings.xml|android-app/app/src/test/java/com/minigamesworld/app/NavigationPolicyTest.java|app/assets/js/api/client.js|app/assets/js/components/account-shortcuts.js|app/assets/js/screens/account-data-sheet-v1.js|app/runtime/client/version-manifest.php|bot/account-data.php|bot/android-reauth.php|bot/accounts/(AccountReauthGuard|AndroidAccountReauthService|AndroidDeviceAuthService).php|bot/database/migrations/20261001_0071_create_android_reauth_challenges.php|bot/tests/Mvp26_4AndroidAccountReauthTest.php|docs/MVP26_4_ANDROID_ACCOUNT_REAUTH.md)$'
+          allowed='^(.github/workflows/(mvp26-4-android-account-reauth|mvp26-2-android-device-auth|mvp26-3-1-account-link-backend|mvp22-8-account-data).yml|android-app/app/build.gradle|android-app/app/src/main/java/com/minigamesworld/app/(MainActivity|NavigationPolicy|ShellConfig).java|android-app/app/src/main/res/values/strings.xml|android-app/app/src/test/java/com/minigamesworld/app/NavigationPolicyTest.java|android-app/tools/verify-foundation.py|app/assets/js/api/client.js|app/assets/js/components/account-shortcuts.js|app/assets/js/screens/account-data-sheet-v1.js|app/runtime/client/version-manifest.php|bot/account-data.php|bot/android-reauth.php|bot/accounts/(AccountReauthGuard|AndroidAccountReauthService|AndroidDeviceAuthService).php|bot/database/migrations/20261001_0071_create_android_reauth_challenges.php|bot/tests/Mvp26_4AndroidAccountReauthTest.php|docs/MVP26_4_ANDROID_ACCOUNT_REAUTH.md)$'
           bad=0
           while IFS= read -r path; do
             if ! grep -Eq "$allowed" <<<"$path"; then
