@@ -36,6 +36,7 @@ import { initV110ReadonlyGameSync } from './production-v110-readonly-game-sync.j
 import { initV110Presence } from './production-v110-presence.js?v=1121&b=f5a28b030c69';
 import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1121';
 import { t } from '@mgw/i18n';
+import { settlePendingAccountLinkBeforeBoot } from './profile/mgw-account-link-ui.js?v=3';
 
 const SHELL_ROUTES = new Set(['home', 'tournaments', 'store', 'profile']);
 let statsRefreshing = false;
@@ -79,6 +80,11 @@ document.addEventListener('mgw:v99-game-found', event => {
 
 async function boot(){
   try {
+    // If Android was linked in Telegram while this WebView was away/restarted,
+    // finish that ownership transition before bootstrap/profile reads can expose
+    // the temporary Android account. No balance value is synthesized here.
+    await settlePendingAccountLinkBeforeBoot();
+
     const statsTicket = beginStatsRequest('api');
     // Profile used to start only after bootstrap completed, adding a full extra
     // network round-trip before the preloader could disappear. Both reads are
