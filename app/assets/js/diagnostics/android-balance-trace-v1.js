@@ -2,6 +2,7 @@ const TRACE_ENDPOINT = '/bot/staging-android-balance-trace.php';
 const START_MS = performance.now();
 const TRACE_ID = makeTraceId();
 let domObserver = null;
+let textContentPatched = false;
 
 function makeTraceId(){
   const bytes = new Uint8Array(8);
@@ -47,7 +48,41 @@ export function traceBalanceEvent(event, states = {}){
   }).catch(() => {});
 }
 
+
+function writerFromStack(stack){
+  for (const line of String(stack || '').split('\n')) {
+    const match = line.match(/\/([^/?#\\s]+\.js)(?:[?#][^:\\s)]*)?:\\d+:\\d+/i);
+    if (!match) continue;
+    const file = String(match[1] || '').toLowerCase();
+    if (!file || file === 'android-balance-trace-v1.js' || file === 'ui.js') continue;
+    return file.replace(/[^a-z0-9._:-]+/g, '_').slice(0, 32) || 'unknown';
+  }
+  return 'unknown';
+}
+
+function installBalanceWriterTrace(){
+  if (textContentPatched
+      || location.hostname !== 'seashell-okapi-889488.hostingersite.com'
+      || window.__MGW_ANDROID_SHELL__ !== true) return;
+
+  const descriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent');
+  if (!descriptor?.get || !descriptor?.set || descriptor.configurable !== true) return;
+
+  Object.defineProperty(Node.prototype, 'textContent', {
+    ...descriptor,
+    set(value){
+      if (this instanceof HTMLElement && this.id === 'balanceUnified') {
+        const writer = writerFromStack(new Error().stack);
+        traceBalanceEvent(`dom.writer.${writer}`, { dom:value });
+      }
+      return descriptor.set.call(this, value);
+    },
+  });
+  textContentPatched = true;
+}
+
 export function installBalanceDomTrace(){
+  installBalanceWriterTrace();
   if (domObserver || location.hostname !== 'seashell-okapi-889488.hostingersite.com' || window.__MGW_ANDROID_SHELL__ !== true) return;
   const attach = () => {
     const target = document.getElementById('balanceUnified');
