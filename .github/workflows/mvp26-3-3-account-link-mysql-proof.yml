@@ -1,0 +1,74 @@
+name: MVP-26.3.3 Account Link MySQL Full Flow
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/tests/Mvp26_3_3AccountLinkMysqlFullFlowTest.php'
+      - 'docs/MVP26_3_3_ACCOUNT_LINK_MYSQL_PROOF.md'
+      - '.github/workflows/mvp26-3-3-account-link-mysql-proof.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  mysql-full-flow:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_link_full
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Syntax
+        run: php -l bot/tests/Mvp26_3_3AccountLinkMysqlFullFlowTest.php
+
+      - name: Existing SQLite account-link regression
+        run: php bot/tests/Mvp26_3AccountLinkServiceTest.php
+
+      - name: Full create-claim-confirm-finalize on MySQL 8.4
+        env:
+          MGW_ACCOUNT_LINK_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_link_full;charset=utf8mb4
+          MGW_ACCOUNT_LINK_MYSQL_USER: root
+          MGW_ACCOUNT_LINK_MYSQL_PASSWORD: root
+        run: php bot/tests/Mvp26_3_3AccountLinkMysqlFullFlowTest.php
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
+      - name: Scope guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(\.github/workflows/mvp26-3-3-account-link-mysql-proof\.yml|docs/MVP26_3_3_ACCOUNT_LINK_MYSQL_PROOF\.md|bot/tests/Mvp26_3_3AccountLinkMysqlFullFlowTest\.php)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-26.3.3 paths:\n%s\n' "$bad" >&2; exit 1; }
