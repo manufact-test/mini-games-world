@@ -65,7 +65,7 @@ jobs:
           need(onboarding.includes("localStorage.setItem(DISMISS_KEY"), 'persistent dismissal missing');
           need(onboarding.includes("mgw_id:mgwId"), 'dismissal must be keyed to MGW id');
           need(onboarding.includes("PENDING_LINK_KEY"), 'pending link suppression missing');
-          need(profile.includes("mgw-account-link-onboarding.js?v=2"), 'Onboarding module cache-bust missing');
+          need(profile.includes("mgw-account-link-onboarding.js?v=3"), 'Onboarding module cache-bust missing');
           need(onboarding.includes("mgw-account-link-onboarding-overlay"), 'dedicated Home onboarding overlay owner missing');
           need(onboarding.includes("mgw-account-link-onboarding-sheet"), 'dedicated Home onboarding sheet owner missing');
           need(onboarding.includes("mgw-account-link-onboarding-bridge"), 'Telegram → Android bridge presentation missing');
@@ -73,7 +73,13 @@ jobs:
           need(css.includes(".overlay.mgw-account-link-onboarding-overlay"), 'centered onboarding overlay CSS missing');
           need(css.includes(".sheet.mgw-account-link-onboarding-sheet"), 'dedicated onboarding card CSS missing');
           need(css.includes("align-items:center"), 'Home onboarding must be visually centered');
-          need(manifest.includes('profile-screen-v110.js?v=1137'), 'Profile cache-bust missing');
+          need(manifest.includes('profile-screen-v110.js?v=1138'), 'Profile cache-bust missing');
+          need(onboarding.includes("STAGING_PREVIEW_HOST = 'seashell-okapi-889488.hostingersite.com'"), 'preview must be staging-host scoped');
+          need(onboarding.includes("data-open-account-link-onboarding-preview"), 'linked Android preview entry missing');
+          need(onboarding.includes("previewVisible"), 'preview lifecycle owner missing');
+          need(onboarding.includes("if (preview)"), 'preview actions must not enter real linking flow');
+          need(profile.includes("openAccountLinkOnboardingPreview();"), 'Profile preview action binding missing');
+          need(profile.includes("accountLinkOnboardingPreviewMarkup("), 'Profile preview markup missing');
           need(manifest.includes('main.css?v=211'), 'Onboarding CSS cache-bust missing');
           NODE
 
