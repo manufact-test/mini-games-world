@@ -11,6 +11,7 @@ on:
       - 'app/assets/css/main.css'
       - 'app/runtime/client/version-manifest.php'
       - 'docs/MVP26_3_5_ACCOUNT_LINK_HOME_ONBOARDING.md'
+      - 'android-app/README.md'
       - '.github/workflows/mvp26-3-5-account-link-home-onboarding.yml'
 
 permissions:
@@ -105,7 +106,7 @@ jobs:
           while IFS= read -r path; do
             [[ -z "$path" ]] && continue
             case "$path" in
-              .github/workflows/mvp26-3-5-account-link-home-onboarding.yml|app/assets/js/screens/profile-screen-v110.js|app/assets/js/profile/mgw-account-link-ui.js|app/assets/js/profile/mgw-account-link-onboarding.js|app/assets/css/main.css|app/runtime/client/version-manifest.php|docs/MVP26_3_5_ACCOUNT_LINK_HOME_ONBOARDING.md)
+              .github/workflows/mvp26-3-5-account-link-home-onboarding.yml|app/assets/js/screens/profile-screen-v110.js|app/assets/js/profile/mgw-account-link-ui.js|app/assets/js/profile/mgw-account-link-onboarding.js|app/assets/css/main.css|app/runtime/client/version-manifest.php|docs/MVP26_3_5_ACCOUNT_LINK_HOME_ONBOARDING.md|android-app/README.md)
                 ;;
               *)
                 printf 'Unexpected MVP-26.3.5 path: %s\n' "$path" >&2
