@@ -2,8 +2,6 @@ package com.minigamesworld.app;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -56,7 +54,7 @@ final class NavigationPolicy {
             if (parts.length != 2 || !"request".equals(parts[0]) || requestId != null) {
                 return null;
             }
-            requestId = URLDecoder.decode(parts[1], StandardCharsets.UTF_8);
+            requestId = parts[1];
         }
         return requestId != null && NATIVE_REAUTH_REQUEST.matcher(requestId).matches()
                 ? requestId
