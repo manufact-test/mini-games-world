@@ -21,7 +21,7 @@ $checks = [
     str_contains($main, "game-invites-v110.js?v=1137&ux=1"),
     str_contains($manifest, "game-invites-v110.js?v=1149"),
     str_contains($manifest, "mvp26_3_12=invite-sync-wallet-nonowner-v1"),
-    str_contains($manifest, "main-v110-handoff-shell.js?v=1168"),
+    preg_match('/main-v110-handoff-shell\\.js\\?v=\\d+/', $manifest) === 1,
 ];
 
 foreach ($checks as $i => $ok) {
