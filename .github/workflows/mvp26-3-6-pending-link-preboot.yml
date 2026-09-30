@@ -1,0 +1,66 @@
+name: MVP-26.3.6 Pending Link Preboot
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/profile/mgw-account-link-ui.js'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp26_3_6PendingLinkPrebootStaticContractTest.php'
+      - '.github/workflows/mvp26-3-6-pending-link-preboot.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  pending-link-preboot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          node --check app/assets/js/profile/mgw-account-link-ui.js
+          node --check app/assets/js/screens/profile-screen-v110.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/tests/Mvp26_3_6PendingLinkPrebootStaticContractTest.php
+
+      - name: Pending-link preboot contract
+        run: php bot/tests/Mvp26_3_6PendingLinkPrebootStaticContractTest.php
+
+      - name: Existing account-link and Android auth regressions
+        run: |
+          php bot/tests/Mvp26_3AccountLinkServiceTest.php
+          php bot/tests/Mvp26_2AndroidDeviceAuthTest.php
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
+      - name: Scope guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(\.github/workflows/mvp26-3-6-pending-link-preboot\.yml|app/assets/js/profile/mgw-account-link-ui\.js|app/assets/js/screens/profile-screen-v110\.js|app/assets/js/main-v110-handoff-shell\.js|app/runtime/client/version-manifest\.php|bot/tests/Mvp26_3_6PendingLinkPrebootStaticContractTest\.php)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-26.3.6 paths:\n%s\n' "$bad" >&2; exit 1; }
