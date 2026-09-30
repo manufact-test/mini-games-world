@@ -8,6 +8,7 @@ on:
       - 'app/assets/js/screens/profile-screen-v110.js'
       - 'app/assets/js/profile/mgw-account-link-ui.js'
       - 'app/assets/js/profile/mgw-account-link-onboarding.js'
+      - 'app/assets/css/main.css'
       - 'app/runtime/client/version-manifest.php'
       - 'docs/MVP26_3_5_ACCOUNT_LINK_HOME_ONBOARDING.md'
       - '.github/workflows/mvp26-3-5-account-link-home-onboarding.yml'
@@ -49,6 +50,7 @@ jobs:
           const link=fs.readFileSync('app/assets/js/profile/mgw-account-link-ui.js','utf8');
           const onboarding=fs.readFileSync('app/assets/js/profile/mgw-account-link-onboarding.js','utf8');
           const manifest=fs.readFileSync('app/runtime/client/version-manifest.php','utf8');
+          const css=fs.readFileSync('app/assets/css/main.css','utf8');
           const need=(ok,msg)=>{ if(!ok) throw new Error(msg); };
 
           need(profile.includes('initAccountLinkHomeOnboarding();'), 'onboarding init missing');
@@ -63,7 +65,16 @@ jobs:
           need(onboarding.includes("localStorage.setItem(DISMISS_KEY"), 'persistent dismissal missing');
           need(onboarding.includes("mgw_id:mgwId"), 'dismissal must be keyed to MGW id');
           need(onboarding.includes("PENDING_LINK_KEY"), 'pending link suppression missing');
-          need(manifest.includes('profile-screen-v110.js?v=1135'), 'Profile cache-bust missing');
+          need(profile.includes("mgw-account-link-onboarding.js?v=2"), 'Onboarding module cache-bust missing');
+          need(onboarding.includes("mgw-account-link-onboarding-overlay"), 'dedicated Home onboarding overlay owner missing');
+          need(onboarding.includes("mgw-account-link-onboarding-sheet"), 'dedicated Home onboarding sheet owner missing');
+          need(onboarding.includes("mgw-account-link-onboarding-bridge"), 'Telegram → Android bridge presentation missing');
+          need(onboarding.includes("./assets/icons/shield-king/mgw-mark.svg"), 'Shield King onboarding mark missing');
+          need(css.includes(".overlay.mgw-account-link-onboarding-overlay"), 'centered onboarding overlay CSS missing');
+          need(css.includes(".sheet.mgw-account-link-onboarding-sheet"), 'dedicated onboarding card CSS missing');
+          need(css.includes("align-items:center"), 'Home onboarding must be visually centered');
+          need(manifest.includes('profile-screen-v110.js?v=1137'), 'Profile cache-bust missing');
+          need(manifest.includes('main.css?v=211'), 'Onboarding CSS cache-bust missing');
           NODE
 
       - name: Existing account-link backend regression
@@ -86,7 +97,7 @@ jobs:
           while IFS= read -r path; do
             [[ -z "$path" ]] && continue
             case "$path" in
-              .github/workflows/mvp26-3-5-account-link-home-onboarding.yml|app/assets/js/screens/profile-screen-v110.js|app/assets/js/profile/mgw-account-link-ui.js|app/assets/js/profile/mgw-account-link-onboarding.js|app/runtime/client/version-manifest.php|docs/MVP26_3_5_ACCOUNT_LINK_HOME_ONBOARDING.md)
+              .github/workflows/mvp26-3-5-account-link-home-onboarding.yml|app/assets/js/screens/profile-screen-v110.js|app/assets/js/profile/mgw-account-link-ui.js|app/assets/js/profile/mgw-account-link-onboarding.js|app/assets/css/main.css|app/runtime/client/version-manifest.php|docs/MVP26_3_5_ACCOUNT_LINK_HOME_ONBOARDING.md)
                 ;;
               *)
                 printf 'Unexpected MVP-26.3.5 path: %s\n' "$path" >&2
