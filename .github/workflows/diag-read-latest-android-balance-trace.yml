@@ -1,0 +1,21 @@
+name: DIAG read latest Android balance trace
+
+on:
+  push:
+    branches:
+      - diag/mvp26-3-read-latest-balance-trace-v1
+
+permissions:
+  contents: read
+
+jobs:
+  read-trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Fetch privacy-minimal staging trace
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://seashell-okapi-889488.hostingersite.com/bot/staging-android-balance-trace.php'
+          curl --fail --silent --show-error --connect-timeout 15 --max-time 30 "$url" | python3 -m json.tool
