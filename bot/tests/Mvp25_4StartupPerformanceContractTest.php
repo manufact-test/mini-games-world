@@ -26,9 +26,8 @@ $baseline = $read('e2e/staging/mvp25-4-performance-baseline.spec.mjs');
 $assert(str_contains($launch, "private const ENTRY_PATH = '/app/v110.php"), 'MVP-25.4 must preserve the real Telegram v110 entry.');
 $assert(str_contains($entry, 'version-manifest.php'), 'v110 must keep the canonical client manifest.');
 $assert(
-    str_contains($manifest, 'main-v110-handoff-shell.js?v=1160')
-        && str_contains($manifest, 'mvp25_4=profile-preloader-unblock-v1'),
-    'Manifest must publish the MVP-25.4 startup owner.'
+    preg_match('/main-v110-handoff-shell\\.js\\?v=\\d+[^\\n]*mvp25_4=profile-preloader-unblock-v1/', $manifest) === 1,
+    'Manifest must preserve the MVP-25.4 startup owner across later main-shell cache revisions.'
 );
 
 $start = strpos($shell, 'async function primeMobileProfileFirstPresentation(){');
