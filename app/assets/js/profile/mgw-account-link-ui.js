@@ -38,6 +38,53 @@ export function initAccountLinkUi(){
   queueMicrotask(resume);
 }
 
+export async function settlePendingAccountLinkBeforeBoot(){
+  const pending = loadPending();
+  if (!pending) return { status:'none' };
+
+  try {
+    // This path intentionally does not depend on state.user/profile hydration.
+    // The Android HttpOnly auth cookie is already authoritative at the endpoint,
+    // so a confirmed link can finish before bootstrap paints any account data.
+    for (const delay of [0, 180, 360, 720]) {
+      if (delay > 0) await new Promise(resolve => globalThis.setTimeout(resolve, delay));
+      const result = await api.accountLinkStatus(pending.challenge_id);
+      const link = result?.link || {};
+      const status = String(link.status || '');
+
+      if (status === 'linked') {
+        clearPending();
+        return { status:'linked' };
+      }
+
+      if (status === 'confirmed' || status === 'db_linked') {
+        const finalized = await api.accountLinkFinalize(pending.challenge_id);
+        if (String(finalized?.link?.status || '') !== 'linked') {
+          throw new Error('Сервер не подтвердил завершение привязки.');
+        }
+        clearPending();
+        return { status:'linked' };
+      }
+
+      if (TERMINAL_RESTART_STATUSES.has(status)) {
+        clearPending();
+        return { status };
+      }
+
+      if (!['pending','claimed'].includes(status)) return { status:status || 'unknown' };
+    }
+    return { status:'waiting' };
+  } catch (error) {
+    if (['challenge_not_found','challenge_expired'].includes(String(error?.code || ''))) {
+      clearPending();
+      return { status:'expired' };
+    }
+    // A transient link-status failure must not turn the whole application boot
+    // into a hard failure. Normal authenticated bootstrap remains the fallback.
+    return { status:'error', code:String(error?.code || '') };
+  }
+}
+
 export async function openAccountLinkSheet(){
   if (!isCurrentAndroidProvider()) {
     toast('Привязка Telegram доступна только в Android-приложении.');
@@ -152,9 +199,22 @@ async function resumePendingSilently(){
     clearPending();
     return;
   }
+
   const pending = loadPending();
   if (!pending) return;
-  await refreshPending(pending, { showSheet:false });
+
+  // Returning from Telegram can race the confirmation callback by a fraction of
+  // a second. Keep the existing sheet as the visible owner and perform a bounded
+  // confirmation watch instead of one silent check that may miss the transition.
+  renderLoading('Проверяем подтверждение в Telegram…');
+  for (const delay of [0, 220, 420, 780, 1200]) {
+    if (!loadPending()) return;
+    if (delay > 0) await new Promise(resolve => globalThis.setTimeout(resolve, delay));
+    const current = loadPending();
+    if (!current) return;
+    await refreshPending(current, { showSheet:true });
+    if (!loadPending()) return;
+  }
 }
 
 function renderIntro(note = ''){
