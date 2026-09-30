@@ -128,7 +128,7 @@ final class AndroidAccountReauthService
             );
         }
 
-        return $this->database->transaction(function (DatabaseConnectionInterface $database) use (
+        $result = $this->database->transaction(function (DatabaseConnectionInterface $database) use (
             $challengeId,
             $identity
         ): array {
@@ -165,11 +165,7 @@ final class AndroidAccountReauthService
                      WHERE challenge_id=:challenge_id AND challenge_status='pending'",
                     ['challenge_id'=>$challengeId]
                 );
-                throw new AndroidAccountReauthException(
-                    'challenge_expired',
-                    'Подтверждение устарело. Повторите действие.',
-                    410
-                );
+                return ['status'=>'expired'];
             }
 
             if (!hash_equals((string)$row['mgw_id'], (string)$identity['mgw_id'])
@@ -211,6 +207,15 @@ final class AndroidAccountReauthService
                 'grant_expires_at'=>$grantExpiresAt,
             ];
         });
+
+        if (($result['status'] ?? '') === 'expired') {
+            throw new AndroidAccountReauthException(
+                'challenge_expired',
+                'Подтверждение устарело. Повторите действие.',
+                410
+            );
+        }
+        return $result;
     }
 
     public function hasRecentGrant(array $androidUser, string $sessionToken): bool
