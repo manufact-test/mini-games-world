@@ -143,9 +143,9 @@ $assert(
 );
 $assert(
     str_contains($inviteEndpoint, 'function mgw_invite_share_url(array $config, string $token): string')
-        && str_contains($inviteEndpoint, "return $baseUrl . '/invite/' . rawurlencode($normalizedToken);")
+        && str_contains($inviteEndpoint, "return \$baseUrl . '/invite/' . rawurlencode(\$normalizedToken);")
         && str_contains($inviteEndpoint, 'function mgw_invite_telegram_open_url(array $config, string $token): string')
-        && str_contains($inviteEndpoint, "'?start=invite_' . rawurlencode($normalizedToken)")
+        && str_contains($inviteEndpoint, "'?start=invite_' . rawurlencode(\$normalizedToken)")
         && !str_contains($inviteEndpoint, 'leaveSearch('),
     'Telegram Product RC must preserve separate public/Telegram invite ingress and must not cancel matchmaking implicitly.'
 );
