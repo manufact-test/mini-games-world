@@ -15,6 +15,7 @@ const GAME_REACTION_URL = `${window.location.origin}/bot/game-reaction.php`;
 const SUPPORT_URL = `${window.location.origin}/bot/support.php`;
 const MODERATION_URL = `${window.location.origin}/bot/moderation.php`;
 const ACCOUNT_DATA_URL = `${window.location.origin}/bot/account-data.php`;
+const ACCOUNT_LINK_URL = `${window.location.origin}/bot/account-link.php`;
 
 let profileV2ReadPromise = null;
 let tournamentPrestigeReadPromise = null;
@@ -252,6 +253,9 @@ export const api = {
   accountDataCancelDelete: () => requestUrl(ACCOUNT_DATA_URL, { action:'cancel_delete' }),
   accountDataCreateExport: () => requestUrl(ACCOUNT_DATA_URL, { action:'create_export' }),
   accountDataDownloadExport: requestId => downloadAccountExport(requestId),
+  accountLinkCreate: () => requestUrl(ACCOUNT_LINK_URL, { action:'create' }),
+  accountLinkStatus: challengeId => requestUrl(ACCOUNT_LINK_URL, { action:'status', challenge_id:String(challengeId || '') }),
+  accountLinkFinalize: challengeId => requestUrl(ACCOUNT_LINK_URL, { action:'finalize', challenge_id:String(challengeId || '') }),
   cosmeticStoreStatus: () => requestCosmeticStore({ action:'status' }),
   cosmeticStorePurchase: (offerId, requestToken) => requestCosmeticStore({ action:'purchase', offer_id:offerId, request_token:requestToken }),
   cosmeticStoreEquip: itemId => requestCosmeticStore({ action:'equip', item_id:itemId }),

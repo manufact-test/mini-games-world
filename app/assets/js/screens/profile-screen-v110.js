@@ -6,6 +6,7 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { renderUser, renderBalances } from '../ui.js?v=89';
 import { canonicalAvatarItemId, mergeCanonicalMgwUser, publicMgwId } from '../profile/mgw-profile-model.js?v=1';
 import { t, formatNumber, formatDate, formatDateTime } from '@mgw/i18n';
+import { accountLinkProfileMarkup, initAccountLinkUi, openAccountLinkSheet } from '../profile/mgw-account-link-ui.js?v=1';
 
 const PROFILE_STATS_CACHE_KEY = 'mgw_profile_stats_v2';
 const PROFILE_ROUTE_TRANSITION_MS = 240;
@@ -47,6 +48,7 @@ export function initProfileScreen(){
     if (cached) state.profileStats = cached;
   }
   bindProfileActions();
+  initAccountLinkUi();
   renderProfileV2();
   document.addEventListener('mgw:open-profile', openProfile);
   const warm = () => warmProfileSnapshot();
@@ -269,6 +271,10 @@ function bindProfileActions(){
     const gameCosmeticCard = event.target.closest('[data-profile-game-cosmetic]');
     if (gameCosmeticCard) {
       openGameCosmeticPreview(String(gameCosmeticCard.dataset.profileGameCosmetic || ''));
+      return;
+    }
+    if (event.target.closest('[data-open-account-link]')) {
+      void openAccountLinkSheet();
       return;
     }
     if (event.target.closest('[data-open-language-settings]')) {
@@ -581,6 +587,7 @@ function renderProfileV2(){
       <div class="profile-v2-account-divider"></div>
       <button class="profile-v2-setting-row profile-v2-setting-button" type="button" data-open-moderation-center><span><strong>Ограничения и апелляции</strong><small>Предупреждения, ограничения и решения модерации</small></span><b>Открыть</b></button>
       <div class="profile-v2-account-divider"></div>
+      ${accountLinkProfileMarkup(state.profileAuth, identities)}
       <div class="profile-v2-linked-head"><strong>${escapeHtml(t('profile.linked_accounts'))}</strong><small>${escapeHtml(t('profile.linked_accounts_note'))}</small></div>
       <div class="profile-v2-linked-list">${identities.length ? identities.map(identityRow).join('') : emptyState('profile.linked_empty')}</div>
     </div></section>
