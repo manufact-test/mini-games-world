@@ -14,18 +14,19 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Read privacy-minimal Android staging traces
         shell: bash
         run: |
           set -euo pipefail
           url='https://seashell-okapi-889488.hostingersite.com/bot/staging-android-balance-trace.php'
-          echo "Fetching $url"
           curl --fail --silent --show-error --connect-timeout 15 --max-time 30 "$url" | tee /tmp/trace.json
           python3 - <<'PY'
           import json
           from pathlib import Path
-          p=Path('/tmp/trace.json')
-          data=json.loads(p.read_text())
+          data=json.loads(Path('/tmp/trace.json').read_text())
           print("service:", data.get("service"))
           print("server_time_utc:", data.get("server_time_utc"))
           traces=data.get("traces") or []
@@ -35,3 +36,15 @@ jobs:
               for ev in tr.get("events") or []:
                   print(json.dumps(ev, ensure_ascii=False, sort_keys=True))
           PY
+      - name: Locate every balance DOM/state writer in current graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '=== balanceUnified occurrences ==='
+          grep -RIn --exclude-dir=.git -- 'balanceUnified' app bot android-app || true
+          echo '=== renderBalances occurrences ==='
+          grep -RIn --exclude-dir=.git -- 'renderBalances' app bot android-app || true
+          echo '=== state.user assignments in app/assets/js ==='
+          grep -RIn --include='*.js' -- 'state\.user[[:space:]]*=' app/assets/js || true
+          echo '=== balance-value / unified-balance occurrences ==='
+          grep -RIn --exclude-dir=.git -E -- 'balance-value|unified-balance' app bot android-app || true
