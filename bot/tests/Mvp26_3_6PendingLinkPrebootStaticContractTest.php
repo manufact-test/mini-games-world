@@ -68,8 +68,7 @@ $assert(
 );
 
 $assert(
-    str_contains($manifest, 'main-v110-handoff-shell.js?v=1162')
-    && str_contains($manifest, 'mvp26_3_6=pending-link-preboot-v1'),
+    preg_match('/main-v110-handoff-shell\\.js\\?v=\\d+[^\\n]*mvp26_3_6=pending-link-preboot-v1/', $manifest) === 1,
     'Active v110 shell cache identity must include the pending-link corrective.'
 );
 $assert(

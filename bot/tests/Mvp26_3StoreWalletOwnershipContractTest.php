@@ -32,8 +32,7 @@ $assert(
     'Purchase/equip/unequip responses must retain the existing mutation path.'
 );
 $assert(
-    str_contains($manifest, 'store-screen.js?v=70')
-    && str_contains($manifest, 'mvp26_3_13=store-status-wallet-nonowner-v1'),
+    preg_match('/store-screen\\.js\\?v=\\d+[^\\n]*mvp26_3_13=store-status-wallet-nonowner-v1/', $manifest) === 1,
     'Manifest must publish the new Store wallet-ownership cache identity.'
 );
 

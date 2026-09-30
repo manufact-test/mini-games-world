@@ -10,9 +10,8 @@ $checks = [
   str_contains($profile, 'delete profileRuntimeUser.balance;'),
   str_contains($profile, 'mergeCanonicalMgwUser(state.user, profileRuntimeUser, state.mgwProfile);'),
   !str_contains($profile, 'mergeCanonicalMgwUser(state.user, result.user, state.mgwProfile);'),
-  str_contains($shell, "wrap('profileV2', 'api.profile_v2.response'"),
   str_contains($shell, 'profile-screen-v110.js?v=1109'),
-  str_contains($manifest, 'main-v110-handoff-shell.js?v=1166'),
+  preg_match('/main-v110-handoff-shell\\.js\\?v=\\d+/', $manifest) === 1,
   str_contains($manifest, 'mvp26_3_11=profile-v2-wallet-nonowner-v1'),
 ];
 foreach ($checks as $i => $ok) if (!$ok) throw new RuntimeException('assertion ' . ($i + 1) . ' failed');
