@@ -294,6 +294,7 @@ final class AccountLinkService
         $this->assertAndroidChallengeOwner($row, $context);
 
         if ((string)$row['link_status'] === 'linked') {
+            $this->hydrateTargetRuntime($row);
             return $this->linkedResult((string)$row['target_mgw_id'], false);
         }
 
@@ -314,6 +315,7 @@ final class AccountLinkService
             $this->cleanupSourceRuntime($row);
             $retired = $this->retireSourceBalance($row);
             $this->completeLink($row, $retired);
+            $this->hydrateTargetRuntime($row);
         } catch (Throwable $error) {
             $this->recordCleanupError($challengeId, $error);
             throw $error;
@@ -711,6 +713,78 @@ final class AccountLinkService
             throw new RuntimeException('Temporary Android balance retirement did not reach zero.');
         }
         return $available;
+    }
+
+    private function hydrateTargetRuntime(array $row): void
+    {
+        $targetMgw = trim((string)($row['target_mgw_id'] ?? ''));
+        $targetLegacy = trim((string)($row['target_legacy_user_id'] ?? ''));
+        if (!MgwIdGenerator::isValid($targetMgw) || $targetLegacy === '') {
+            throw new AccountLinkException('target_runtime_invalid', 'Целевой runtime-профиль недействителен.');
+        }
+
+        $ownership = $this->ownershipForMgwDb($this->database, $targetMgw, false);
+        if ($ownership === null
+            || (string)$ownership['legacy_user_id'] !== $targetLegacy) {
+            throw new AccountLinkException('target_ownership_changed', 'Владелец целевого MGW-профиля изменился.');
+        }
+
+        $balance = (new LedgerWriteService($this->database))->getBalance(
+            (string)$ownership['account_ref'],
+            'mgw_coin'
+        );
+        if (!is_array($balance)) {
+            throw new AccountLinkException('target_balance_unavailable', 'Баланс целевого MGW-профиля недоступен.');
+        }
+        $available = (int)($balance['available_amount'] ?? -1);
+        $reserved = (int)($balance['reserved_amount'] ?? -1);
+        if ($available < 0 || $reserved < 0) {
+            throw new AccountLinkException('target_balance_invalid', 'Баланс целевого MGW-профиля недействителен.');
+        }
+
+        $target = $this->targetSummary($targetMgw);
+        $accountRef = (string)$ownership['account_ref'];
+        $nickname = trim((string)($target['nickname'] ?? ''));
+        $avatarItemId = trim((string)($target['avatar_item_id'] ?? ''));
+
+        $this->storage->transaction(function (array &$data) use (
+            $targetMgw,
+            $targetLegacy,
+            $accountRef,
+            $nickname,
+            $avatarItemId,
+            $available
+        ): void {
+            if (!isset($data['users'][$targetLegacy]) || !is_array($data['users'][$targetLegacy])) {
+                // A genuinely absent target runtime user is safe: UserService will
+                // create it on the next request and run the normal missing-field
+                // canonical balance rehydration path. Only an existing stale
+                // snapshot needs correction at this ownership-transition boundary.
+                return;
+            }
+
+            $runtime =& $data['users'][$targetLegacy];
+            $runtimeMgw = trim((string)($runtime['mgw_id'] ?? ''));
+            if ($runtimeMgw !== '' && $runtimeMgw !== $targetMgw) {
+                throw new AccountLinkException(
+                    'target_runtime_conflict',
+                    'Целевой runtime-профиль принадлежит другому MGW-аккаунту.'
+                );
+            }
+
+            $runtime['mgw_id'] = $targetMgw;
+            $runtime['mgw_account_ref'] = $accountRef;
+            $runtime['balance'] = $available;
+            if ($nickname !== '') {
+                $runtime['mgw_nickname'] = $nickname;
+                $runtime['first_name'] = $nickname;
+                $runtime['username'] = '';
+                $runtime['photo_url'] = '';
+            }
+            if ($avatarItemId !== '') {
+                $runtime['mgw_avatar_item_id'] = $avatarItemId;
+            }
+        });
     }
 
     private function completeLink(array $row, int $retiredBalance): void
