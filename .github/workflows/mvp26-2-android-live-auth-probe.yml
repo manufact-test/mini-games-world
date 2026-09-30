@@ -90,11 +90,14 @@ jobs:
           echo '--- sanitized profile-v2 ---'
           jq '{ok,error,auth,profile:{mgw_id:(.profile.mgw_id // null),nickname:(.profile.nickname // null)},user:{id:(.user.id // null)}}' "$tmp/profile-v2.json"
 
-          jq -e '.ok == true and (.user.id | startswith("android_")) and (.user.mgw_id | startswith("MGW-"))' "$tmp/bootstrap.json" >/dev/null
+          jq -e '.ok == true and (.user.id | startswith("android_")) and .weekly_match.enabled == true' "$tmp/bootstrap.json" >/dev/null
           jq -e '.ok == true and .auth.provider == "android_device" and (.profile.mgw_id | startswith("MGW-"))' "$tmp/profile.json" >/dev/null
           jq -e '.ok == true and .auth.provider == "android_device" and (.profile.mgw_id | startswith("MGW-")) and (.user.id | startswith("android_"))' "$tmp/profile-v2.json" >/dev/null
 
-          bootstrap_mgw="$(jq -r '.user.mgw_id' "$tmp/bootstrap.json")"
-          test "$bootstrap_mgw" = "$(jq -r '.profile.mgw_id' "$tmp/profile.json")"
-          test "$bootstrap_mgw" = "$(jq -r '.profile.mgw_id' "$tmp/profile-v2.json")"
+          bootstrap_user="$(jq -r '.user.id' "$tmp/bootstrap.json")"
+          profile_mgw="$(jq -r '.profile.mgw_id' "$tmp/profile.json")"
+          profile_v2_mgw="$(jq -r '.profile.mgw_id' "$tmp/profile-v2.json")"
+          profile_v2_user="$(jq -r '.user.id' "$tmp/profile-v2.json")"
+          test "$bootstrap_user" = "$profile_v2_user"
+          test "$profile_mgw" = "$profile_v2_mgw"
           echo "Android live auth chain PASS"
