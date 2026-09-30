@@ -5,6 +5,7 @@ on:
     branches:
       - agent/mvp-13-2-staging
     paths:
+      - 'app/v110.php'
       - 'app/assets/js/main-v110-handoff-shell.js'
       - 'app/assets/js/diagnostics/android-balance-trace-v1.js'
       - 'app/runtime/client/version-manifest.php'
@@ -16,6 +17,7 @@ on:
     branches:
       - agent/mvp-13-2-staging
     paths:
+      - 'app/v110.php'
       - 'app/assets/js/main-v110-handoff-shell.js'
       - 'app/assets/js/diagnostics/android-balance-trace-v1.js'
       - 'app/runtime/client/version-manifest.php'
@@ -47,6 +49,7 @@ jobs:
       - name: Syntax
         run: |
           set -euo pipefail
+          php -l app/v110.php
           php -l bot/staging-android-balance-trace.php
           php -l bot/tests/Mvp26_3AndroidBalanceTraceContractTest.php
           php -l app/runtime/client/version-manifest.php
@@ -68,6 +71,6 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
-          allowed='^(\.github/workflows/diag-android-balance-runtime-trace\.yml|app/assets/js/main-v110-handoff-shell\.js|app/assets/js/diagnostics/android-balance-trace-v1\.js|app/runtime/client/version-manifest\.php|bot/staging-android-balance-trace\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/Mvp26_3AndroidBalanceTraceContractTest\.php)$'
+          allowed='^(\.github/workflows/diag-android-balance-runtime-trace\.yml|app/v110\.php|app/assets/js/main-v110-handoff-shell\.js|app/assets/js/diagnostics/android-balance-trace-v1\.js|app/runtime/client/version-manifest\.php|bot/staging-android-balance-trace\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/Mvp26_3AndroidBalanceTraceContractTest\.php)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected diagnostic paths:\n%s\n' "$bad" >&2; exit 1; }
