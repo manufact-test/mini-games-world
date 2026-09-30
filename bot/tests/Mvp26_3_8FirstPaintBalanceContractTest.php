@@ -76,8 +76,7 @@ $assert(
     'Primary runtime balance must be hydrated before the first visible balance render and before preloader release.'
 );
 $assert(
-    str_contains($manifest, 'main-v110-handoff-shell.js?v=1163')
-        && str_contains($manifest, 'mvp26_3_8=first-paint-live-balance-v1'),
+    preg_match('/main-v110-handoff-shell\\.js\\?v=\\d+[^\\n]*mvp26_3_8=first-paint-live-balance-v1/', $manifest) === 1,
     'Version manifest must publish the first-paint live-balance client cache identity.'
 );
 
