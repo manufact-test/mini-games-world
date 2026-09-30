@@ -30,3 +30,5 @@ jobs:
           traces = payload.get('traces') or []
           print(json.dumps({'trace_count': len(traces), 'traces': traces[-4:]}, ensure_ascii=False, indent=2))
           PY
+
+# trace-read-probe-2
