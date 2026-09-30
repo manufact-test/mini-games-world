@@ -1,8 +1,9 @@
 # MVP-25.5 — Security / resilience audit
 
-**Status:** IN PROGRESS  
+**Status:** CLOSED  
 **Base staging:** `67bd8a30b2e41c2da36fc7f030bbefdd15c189d2`  
-**Base tree:** `139516fd937b6f6e563b13a2279e62945b5afc5a`
+**Base tree:** `139516fd937b6f6e563b13a2279e62945b5afc5a`  
+**Closure candidate staging:** `f53bd48d6f114ebf2dc395cac1a637ef9a1eba9f`
 
 ## Classified findings — slice 1
 
@@ -76,6 +77,19 @@ Corrective:
 - existing staging-only raw exception diagnostics remain available only to authenticated
   staging test users.
 
+### NO DEFECT — player API authorization / ownership
+The final endpoint pass classified the player-facing HTTP surface by actor ownership.
+Authenticated self/action owners resolve their actor through `AuthService::getUserFromRequest`
+(or `AccountReauthGuard` for destructive account-data actions) before reading or mutating
+user state. Client-supplied game IDs, invite tokens and target MGW IDs are resource selectors,
+not actor identity; game/watch/action owners additionally require participant membership,
+friend/report owners retain authenticated actor/target separation, and self profile/account/
+store/tournament surfaces derive MGW identity from the authenticated subject.
+
+The website account-data hook is the explicit non-Telegram exception: it authenticates the
+exact raw body with HMAC, constant-time comparison and a five-minute timestamp window before
+accepting a payload MGW ID.
+
 ### NO DEFECT — Web Admin authorization isolation
 All inspected `bot/admin-*.php` HTTP owners authorize through `AdminWebAuth`. The owner
 requires Telegram-signed initData no older than 15 minutes and then checks the verified
@@ -109,8 +123,17 @@ the tracked repository.
 - tournament state machine/settlement;
 - production, production DB and production Cron.
 
-## Remaining MVP-25.5 audit
-Still open after this slice:
-- finish remaining player API authorization/ownership classification;
+## Closure evidence
+MVP-25.5 closure is guarded by `Mvp25_5SecurityResilienceClosureContractTest` plus the
+aggregate closure workflow. It re-runs the accepted webhook-ingress, tracked-secret,
+authenticated rate-limit, sensitive-write replay and public-error/log contracts and keeps
+the product runtime frozen in the closure-only PR.
 
-MVP-25.5 is **not closed** by this slice.
+Completed corrective sequence:
+- PR #1820 — Telegram webhook ingress + setup/check authorization;
+- PR #1821 — enforced repository secret scan;
+- PR #1822 — authenticated write abuse limits;
+- PR #1823 — sensitive-write replay/idempotency safety;
+- PR #1824 — public error + Telegram delivery-log sanitization.
+
+No MVP-25.5 open security/resilience item remains in the authoritative audit scope.

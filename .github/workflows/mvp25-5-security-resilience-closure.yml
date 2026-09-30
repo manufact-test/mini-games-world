@@ -1,0 +1,90 @@
+name: MVP-25.5 Security resilience closure
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.github/workflows/mvp25-5-security-resilience-closure.yml'
+      - 'bot/tests/Mvp25_5SecurityResilienceClosureContractTest.php'
+      - 'docs/MVP25_5_SECURITY_RESILIENCE_AUDIT.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp25-5-security-closure-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  closure:
+    name: MVP-25.5 aggregate security closure
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax
+        run: php -l bot/tests/Mvp25_5SecurityResilienceClosureContractTest.php
+
+      - name: Aggregate ownership and isolation contract
+        run: php bot/tests/Mvp25_5SecurityResilienceClosureContractTest.php
+
+      - name: Preserve webhook ingress security
+        run: php bot/tests/Mvp25_5WebhookIngressSecurityContractTest.php
+
+      - name: Preserve authenticated abuse limits
+        run: |
+          php bot/tests/UserActionRateLimiterTest.php
+          php bot/tests/Mvp25_5RateLimitContractTest.php
+
+      - name: Preserve sensitive-write replay safety
+        run: |
+          php bot/tests/Mvp25_5WriteReplaySafetyTest.php
+          php bot/tests/Mvp25_5WriteReplaySafetyContractTest.php
+
+      - name: Preserve public error and log sanitization
+        run: php bot/tests/Mvp25_5PublicErrorLogSanitizationContractTest.php
+
+      - name: Preserve repository secret gate
+        run: |
+          node scripts/ci/check-secrets-contract.mjs
+          node scripts/ci/check-secrets.mjs
+
+      - name: Frozen product runtime guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- bot/games bot/economy bot/ledger bot/tournaments app/assets app/admin.php bot/api.php
+
+      - name: Closure-only scope guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(\.github/workflows/mvp25-5-security-resilience-closure\.yml|bot/tests/Mvp25_5SecurityResilienceClosureContractTest\.php|docs/MVP25_5_SECURITY_RESILIENCE_AUDIT\.md)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-25.5 closure paths:\n%s\n' "$bad" >&2; exit 1; }
