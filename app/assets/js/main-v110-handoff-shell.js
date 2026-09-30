@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp26-3-8-first-paint-live-balance-v1163';
+window.__MGW_BUILD__ = 'v110-mvp26-3-balance-trace-v1164';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -37,6 +37,7 @@ import { initV110Presence } from './production-v110-presence.js?v=1121&b=f5a28b0
 import { beginStatsRequest, applyStatsSnapshot } from './stats-owner-v110.js?v=1121';
 import { t } from '@mgw/i18n';
 import { settlePendingAccountLinkBeforeBoot } from './profile/mgw-account-link-ui.js?v=3';
+import { installBalanceDomTrace, traceBalanceEvent } from './diagnostics/android-balance-trace-v1.js?v=1';
 
 const SHELL_ROUTES = new Set(['home', 'tournaments', 'store', 'profile']);
 let statsRefreshing = false;
@@ -71,12 +72,52 @@ initAccountShortcuts();
 initGameRules();
 initStatsRouteLifecycle();
 
+installBalanceDomTrace();
+traceBalanceEvent('shell.loaded');
+installBalanceApiTrace();
+
 document.addEventListener('mgw:v99-game-found', event => {
   const game = event.detail?.game || null;
   if (game?.id && !currentV99PassiveLock()?.locked) {
     enterGame(game, event.detail?.me || null);
   }
 });
+
+function installBalanceApiTrace(){
+  if (api.__mgwBalanceTraceInstalled) return;
+  Object.defineProperty(api, '__mgwBalanceTraceInstalled', { value:true });
+
+  const wrap = (methodName, responseEvent, extractStates) => {
+    const current = api?.[methodName];
+    if (typeof current !== 'function') return;
+    api[methodName] = async (...args) => {
+      traceBalanceEvent(`${responseEvent}.request`);
+      const started = performance.now();
+      try {
+        const result = await current.apply(api, args);
+        const states = typeof extractStates === 'function' ? extractStates(result) : {};
+        traceBalanceEvent(responseEvent, states);
+        return result;
+      } catch (error) {
+        traceBalanceEvent(`${responseEvent}.error`);
+        throw error;
+      } finally {
+        const duration = Math.round(performance.now() - started);
+        if (duration >= 3000) traceBalanceEvent(`${responseEvent}.slow`);
+      }
+    };
+  };
+
+  wrap('bootstrap', 'api.bootstrap.response', result => ({
+    bootstrap_user:result?.user?.balance,
+  }));
+  wrap('mgwProfile', 'api.profile.response', result => ({
+    profile_runtime:result?.runtime?.balance,
+  }));
+  wrap('cosmeticStoreStatus', 'api.store.response', result => ({
+    store:result?.store?.balance,
+  }));
+}
 
 async function boot(){
   try {
@@ -130,6 +171,11 @@ async function boot(){
       ? { ...(result.user || {}), balance:liveFirstPaintBalance }
       : (result.user || {});
     state.user = applyCanonicalMgwProfile(firstPaintRuntimeUser, state.mgwProfile);
+    traceBalanceEvent('boot.balance.selected', {
+      bootstrap_user:result?.user?.balance,
+      profile_runtime:mgwProfileResult?.runtime?.balance,
+      selected_user:state.user?.balance,
+    });
     state.session = result.session || state.session;
     renderUser(state.user);
     renderBalances(state.user);

@@ -1,0 +1,73 @@
+name: DIAG Android balance runtime trace
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/assets/js/diagnostics/android-balance-trace-v1.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/staging-android-balance-trace.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
+      - 'bot/tests/Mvp26_3AndroidBalanceTraceContractTest.php'
+      - '.github/workflows/diag-android-balance-runtime-trace.yml'
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/assets/js/diagnostics/android-balance-trace-v1.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/staging-android-balance-trace.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
+      - 'bot/tests/Mvp26_3AndroidBalanceTraceContractTest.php'
+      - '.github/workflows/diag-android-balance-runtime-trace.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          php -l bot/staging-android-balance-trace.php
+          php -l bot/tests/Mvp26_3AndroidBalanceTraceContractTest.php
+          php -l app/runtime/client/version-manifest.php
+          node --check app/assets/js/diagnostics/android-balance-trace-v1.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+
+      - name: Privacy and wiring contract
+        run: php bot/tests/Mvp26_3AndroidBalanceTraceContractTest.php
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
+      - name: Scope guard
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(\.github/workflows/diag-android-balance-runtime-trace\.yml|app/assets/js/main-v110-handoff-shell\.js|app/assets/js/diagnostics/android-balance-trace-v1\.js|app/runtime/client/version-manifest\.php|bot/staging-android-balance-trace\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/tests/Mvp26_3AndroidBalanceTraceContractTest\.php)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected diagnostic paths:\n%s\n' "$bad" >&2; exit 1; }
