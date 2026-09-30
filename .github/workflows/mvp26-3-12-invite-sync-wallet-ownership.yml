@@ -1,0 +1,76 @@
+name: MVP-26.3.12 Invite sync wallet ownership
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp26_3_12InviteSyncBalanceOwnershipContractTest.php'
+      - '.github/workflows/mvp26-3-12-invite-sync-wallet-ownership.yml'
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp26_3_12InviteSyncBalanceOwnershipContractTest.php'
+      - '.github/workflows/mvp26-3-12-invite-sync-wallet-ownership.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ownership:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          node --check app/assets/js/games/game-invites-v110.js
+          node --check app/assets/js/main-v110-handoff-shell.js
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/tests/Mvp26_3_12InviteSyncBalanceOwnershipContractTest.php
+
+      - name: Invite sync wallet ownership contract
+        run: php bot/tests/Mvp26_3_12InviteSyncBalanceOwnershipContractTest.php
+
+      - name: Startup ownership regression
+        run: php bot/tests/Mvp25_4StartupPerformanceContractTest.php
+
+      - name: Unified balance regression
+        run: php bot/tests/Mvp15UnifiedBalanceFoundationContractTest.php
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
+      - name: Scope guard
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(\.github/workflows/mvp26-3-12-invite-sync-wallet-ownership\.yml|app/assets/js/games/game-invites-v110\.js|app/assets/js/main-v110-handoff-shell\.js|app/runtime/client/version-manifest\.php|bot/tests/Mvp26_3_12InviteSyncBalanceOwnershipContractTest\.php)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-26.3.12 paths:\n%s\n' "$bad" >&2; exit 1; }
