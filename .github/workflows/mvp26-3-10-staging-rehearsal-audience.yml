@@ -1,0 +1,80 @@
+name: MVP-26.3.10 Staging rehearsal audience isolation
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/api.php'
+      - 'bot/storage/StorageFactory.php'
+      - 'bot/tests/Mvp26_3_10StagingRehearsalAudienceContractTest.php'
+      - '.github/workflows/mvp26-3-10-staging-rehearsal-audience.yml'
+  push:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/api.php'
+      - 'bot/storage/StorageFactory.php'
+      - 'bot/tests/Mvp26_3_10StagingRehearsalAudienceContractTest.php'
+      - '.github/workflows/mvp26-3-10-staging-rehearsal-audience.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audience-isolation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          php -l bot/api.php
+          php -l bot/storage/StorageFactory.php
+          php -l bot/tests/Mvp26_3_10StagingRehearsalAudienceContractTest.php
+
+      - name: Rehearsal audience contract
+        run: php bot/tests/Mvp26_3_10StagingRehearsalAudienceContractTest.php
+
+      - name: Android auth regression
+        run: php bot/tests/Mvp26_2AndroidDeviceAuthTest.php
+
+      - name: Staging request-session config regression
+        run: php bot/tests/RuntimePrimaryStagingRequestSessionConfigTest.php
+
+      - name: StorageFactory entrypoint context regression
+        run: php bot/tests/RuntimePrimaryStorageFactoryEntrypointContextTest.php
+
+      - name: Staging selector enabled regression
+        run: php bot/tests/RuntimePrimaryStagingEntrypointStorageSelectorEnabledTest.php
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
+      - name: Scope guard
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(\.github/workflows/mvp26-3-10-staging-rehearsal-audience\.yml|bot/api\.php|bot/storage/StorageFactory\.php|bot/tests/Mvp26_3_10StagingRehearsalAudienceContractTest\.php)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-26.3.10 paths:\n%s\n' "$bad" >&2; exit 1; }

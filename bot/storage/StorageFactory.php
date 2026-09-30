@@ -134,6 +134,18 @@ final class StorageFactory
             }
         }
 
+        // The staging DB-primary API session is acceptance/test infrastructure.
+        // api.php publishes this flag only after AuthService has positively
+        // authenticated the request. A verified staging test player may enter the
+        // rehearsal; ordinary Android/Telegram users must stay on live JSON even
+        // while a global rehearsal lease is active.
+        if ($environment === 'staging' && $script === 'api.php') {
+            $audienceEligible = $GLOBALS['mgw_staging_db_primary_authenticated_eligible'] ?? null;
+            if ($audienceEligible === false) {
+                return;
+            }
+        }
+
         // The DB-primary API selector is a bounded staging rehearsal, while
         // JSON remains the rollback/live source outside that rehearsal. If the
         // retained DB-primary snapshot is missing notification events OR still
