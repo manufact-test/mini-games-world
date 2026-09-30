@@ -53,6 +53,9 @@ $home = $read('app/assets/js/screens/home-screen.js');
 $handoff = $read('app/assets/js/main-v110-handoff-shell.js');
 $invites = $read('app/assets/js/games/game-invites-v110.js');
 $inviteEndpoint = $read('bot/invites.php');
+$cleanEntry = $read('app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js');
+$profileGuard = $read('app/assets/js/profile/mgw-mobile-profile-animation-guard-v2.js');
+$profileMotionCss = $read('app/assets/css/production-v99-profile-reaction-polish.css');
 $uxCss = $read('app/assets/css/mvp25-3-ux-consistency-v1.css');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 
@@ -186,6 +189,33 @@ $assert(
         && str_contains($handoff, 'matchSystemSink')
         && str_contains($handoff, 'matchDrawRefund'),
     'Telegram Product RC must preserve authoritative public match economy bootstrap fields.'
+);
+
+$assert(
+    !str_contains($cleanEntry, 'MGW_PROFILE_ROUTE_SETTLE_MS')
+        && !str_contains($cleanEntry, 'mgwProfileRouteSettleTimer')
+        && !str_contains($cleanEntry, "classList.add('mgw-profile-route-settling')")
+        && str_contains($cleanEntry, "screen.classList.contains('mgw-profile-prewarm-pass')"),
+    'Telegram Product RC must preserve instant Profile routing without the retired timed settle guard while keeping covered prewarm.'
+);
+$assert(
+    !str_contains($profileGuard, 'PROFILE_ROUTE_SETTLING_CLASS')
+        && !str_contains($profileGuard, 'routeClassObserver')
+        && str_contains($profileGuard, "if (currentShellRoute() === 'profile') return;")
+        && str_contains($profileGuard, 'resumeAfterTwoPaints();'),
+    'Telegram Product RC must keep Profile animation lifecycle tied to the real shell route rather than a synthetic settle class.'
+);
+$assert(
+    str_contains($handoff, "profileTrigger.dataset.shellNav = 'profile';")
+        && str_contains($handoff, "['profile', 'nav.profile']")
+        && str_contains($handoff, 'showScreen(route);'),
+    'Telegram Product RC must preserve one synchronous shell Profile route for top identity and bottom navigation.'
+);
+$assert(
+    str_contains($profileMotionCss, '#app #screen-profile.screen.active')
+        && str_contains($profileMotionCss, 'transition: none !important;')
+        && str_contains($profileMotionCss, '#app #screen-profile.screen.active > .content'),
+    'Telegram Product RC must preserve atomic Profile screen/content presentation.'
 );
 $assert(
     str_contains($uxCss, '.rules-guide-section')
