@@ -131,8 +131,17 @@ try {
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
     $deviceId = clean_string($payload['deviceId'] ?? '', 120);
 
-    $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
+    // Authenticate before staging runtime storage selection. The bounded
+    // DB-primary rehearsal is test infrastructure and must never capture a real
+    // Android/Telegram acceptance session merely because its global lease is active.
     $auth = new AuthService($config);
+    $tgUser = $auth->getUserFromRequest($payload);
+    if (strtolower(trim((string)($config['environment'] ?? ''))) === 'staging') {
+        $GLOBALS['mgw_staging_db_primary_authenticated_eligible'] =
+            !empty($tgUser['is_staging_test_user']);
+    }
+
+    $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $users = new UserService($config);
     $gameCatalog = new GameCatalogService($config);
     $games = new ChessRuntimeService($config, $gameCatalog, new GameService($config));
@@ -145,8 +154,6 @@ try {
     $statsService = new StatsService($presenceService);
     $history = new HistoryService($config, $users);
     $weeklyMatch = new WeeklyMatchEconomyService($config, new NotificationService());
-
-    $tgUser = $auth->getUserFromRequest($payload);
 
     // MVP-22.3 restrictions guard only creation/entry paths. Read-only state,
     // leaving an activity, support and already-running game completion remain
