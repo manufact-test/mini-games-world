@@ -30,7 +30,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 public final class MainActivity extends Activity {
@@ -211,7 +210,9 @@ public final class MainActivity extends Activity {
             return;
         }
 
-        String form = "credential=" + URLEncoder.encode(credential, StandardCharsets.UTF_8);
+        // Credential format is strict Base64URL without padding, therefore all
+        // bytes are already application/x-www-form-urlencoded safe on API 26+.
+        String form = "credential=" + credential;
         mainFrameFailed = false;
         showLoading(true);
         webView.postUrl(authUrl, form.getBytes(StandardCharsets.UTF_8));
