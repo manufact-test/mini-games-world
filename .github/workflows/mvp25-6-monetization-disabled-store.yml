@@ -1,0 +1,90 @@
+name: MVP-25.6 Monetization-disabled complete Store
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.github/workflows/mvp25-6-monetization-disabled-store.yml'
+      - 'app/assets/js/screens/store-screen.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/catalog/CosmeticStoreService.php'
+      - 'bot/tests/Mvp25_6MonetizationDisabledStoreTest.php'
+      - 'bot/tests/Mvp25_6StoreClientContractTest.mjs'
+      - 'docs/MVP25_6_MONETIZATION_DISABLED_COMPLETE_PRODUCT.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp25-6-store-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Completed Store with billing disabled
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax
+        run: |
+          php -l bot/catalog/CosmeticStoreService.php
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/tests/Mvp25_6MonetizationDisabledStoreTest.php
+          node --check app/assets/js/screens/store-screen.js
+          node --check bot/tests/Mvp25_6StoreClientContractTest.mjs
+
+      - name: Disabled-billing Store runtime
+        run: php bot/tests/Mvp25_6MonetizationDisabledStoreTest.php
+
+      - name: Completed Store client contract
+        run: node bot/tests/Mvp25_6StoreClientContractTest.mjs
+
+      - name: Preserve accepted cosmetic Store mechanics
+        run: php bot/tests/Mvp19_2CosmeticStoreTest.php
+
+      - name: Preserve MVP-24 final Gold retirement boundary
+        run: php bot/tests/Mvp24FinalGoldRemovalClosureContractTest.php
+
+      - name: Preserve canonical v110 manifest ownership
+        run: php bot/tests/Mvp25_1V110ManifestNormalizationContractTest.php
+
+      - name: Frozen monetization/economy/game owners
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" --             bot/economy bot/ledger bot/payments bot/services/PaymentService.php             bot/games bot/tournaments app/assets/js/games
+
+      - name: Bounded slice guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(\.github/workflows/mvp25-6-monetization-disabled-store\.yml|app/assets/js/screens/store-screen\.js|app/runtime/client/version-manifest\.php|bot/catalog/CosmeticStoreService\.php|bot/tests/Mvp25_6MonetizationDisabledStoreTest\.php|bot/tests/Mvp25_6StoreClientContractTest\.mjs|docs/MVP25_6_MONETIZATION_DISABLED_COMPLETE_PRODUCT\.md)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-25.6 paths:\n%s\n' "$bad" >&2; exit 1; }

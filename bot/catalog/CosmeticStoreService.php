@@ -26,6 +26,7 @@ final class CosmeticStoreService
     public const PURCHASE_PENDING_STATUS = 'debited';
     public const PURCHASE_COMPLETED_STATUS = 'completed';
 
+    private const EXTERNAL_BILLING_AVAILABLE = false;
     private const OFFER_ID_PATTERN = '/^[a-z0-9][a-z0-9_.-]{0,63}$/';
     private const REQUEST_TOKEN_PATTERN = '/^[A-Za-z0-9][A-Za-z0-9_.:-]{7,95}$/';
     private const GAME_TITLES = [
@@ -185,33 +186,35 @@ final class CosmeticStoreService
             return $leftKey <=> $rightKey;
         });
 
+        $billingAvailable = self::EXTERNAL_BILLING_AVAILABLE;
         $packages = [];
-        foreach ($coinPackages as $package) {
-            if (!is_array($package) || empty($package['enabled'])) continue;
-            $id = trim((string)($package['id'] ?? ''));
-            $coins = (int)($package['coins'] ?? 0);
-            $price = (int)($package['price_eur_cents'] ?? 0);
-            if ($id === '' || $coins <= 0 || $price <= 0) continue;
-            $packages[] = [
-                'id' => $id,
-                'coins' => $coins,
-                'price_eur_cents' => $price,
-                'billing_available' => false,
-            ];
+        if ($billingAvailable) {
+            foreach ($coinPackages as $package) {
+                if (!is_array($package) || empty($package['enabled'])) continue;
+                $id = trim((string)($package['id'] ?? ''));
+                $coins = (int)($package['coins'] ?? 0);
+                $price = (int)($package['price_eur_cents'] ?? 0);
+                if ($id === '' || $coins <= 0 || $price <= 0) continue;
+                $packages[] = [
+                    'id' => $id,
+                    'coins' => $coins,
+                    'price_eur_cents' => $price,
+                ];
+            }
         }
 
         return [
             'currency' => 'mgw_coin',
             'balance' => $balance,
             'tabs' => [
-                ['id' => 'coins', 'label' => 'Коины', 'available' => true],
+                ['id' => 'coins', 'label' => 'Коины', 'available' => $billingAvailable],
                 ['id' => 'profile', 'label' => 'Профиль', 'available' => true],
                 ['id' => 'games', 'label' => 'Игры', 'available' => true],
                 ['id' => 'bundles', 'label' => 'Наборы', 'available' => true],
             ],
             'coins' => [
                 'packages' => $packages,
-                'billing_available' => false,
+                'billing_available' => $billingAvailable,
             ],
             'profile' => [
                 'avatars' => $profileAvatars,
