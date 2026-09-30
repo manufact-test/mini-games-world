@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.res.ColorStateList;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
 import android.net.http.SslError;
@@ -384,6 +385,22 @@ public final class MainActivity extends Activity {
         super.onResume();
         if (webView != null) {
             webView.onResume();
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+
+        // Ordinary rotation/window configuration changes are owned by this
+        // Activity so the accepted WebView, Android session and current route
+        // remain alive. Never re-authenticate or replace the WebView here.
+        if (root != null) {
+            root.requestApplyInsets();
+            root.requestLayout();
+        }
+        if (webView != null) {
+            webView.requestLayout();
         }
     }
 

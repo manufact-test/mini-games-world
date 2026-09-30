@@ -1,0 +1,120 @@
+name: MVP-26.3.4 Android Orientation Lifecycle
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'android-app/app/src/main/AndroidManifest.xml'
+      - 'android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java'
+      - 'android-app/app/build.gradle'
+      - 'android-app/tools/verify-foundation.py'
+      - 'android-app/tools/verify-orientation-lifecycle.py'
+      - 'android-app/docs/MVP26_3_4_ORIENTATION_LIFECYCLE.md'
+      - '.github/workflows/mvp26-3-4-android-orientation-lifecycle.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  orientation-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Verify orientation lifecycle ownership
+        working-directory: android-app
+        run: |
+          set -euo pipefail
+          python3 tools/verify-orientation-lifecycle.py
+          python3 tools/verify-foundation.py
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
+      - name: Scope guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          while IFS= read -r path; do
+            [[ -z "$path" ]] && continue
+            case "$path" in
+              .github/workflows/mvp26-3-4-android-orientation-lifecycle.yml|android-app/app/src/main/AndroidManifest.xml|android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java|android-app/app/build.gradle|android-app/tools/verify-foundation.py|android-app/tools/verify-orientation-lifecycle.py|android-app/docs/MVP26_3_4_ORIENTATION_LIFECYCLE.md)
+                ;;
+              *)
+                printf 'Unexpected MVP-26.3.4 path: %s\n' "$path" >&2
+                exit 1
+                ;;
+            esac
+          done <<< "$changed"
+
+  android-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 9.5
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.5.0'
+
+      - name: Ensure Android SDK 36
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v sdkmanager >/dev/null 2>&1; then
+            SDKMANAGER="$(command -v sdkmanager)"
+          elif [[ -x "${ANDROID_SDK_ROOT:-}/cmdline-tools/latest/bin/sdkmanager" ]]; then
+            SDKMANAGER="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          else
+            echo 'sdkmanager is unavailable' >&2
+            exit 1
+          fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0'
+
+      - name: Test lint assemble orientation corrective APK
+        working-directory: android-app
+        env:
+          MGW_BASE_URL: https://seashell-okapi-889488.hostingersite.com/
+        run: gradle --no-daemon clean test lint assembleDebug
+
+      - name: Verify accepted package/signing
+        working-directory: android-app
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$apk"
+          apksigner="${ANDROID_SDK_ROOT}/build-tools/36.0.0/apksigner"
+          "$apksigner" verify --print-certs "$apk" | tee /tmp/mgw-orientation-signing.txt
+          grep -F 'CN=MGW Acceptance, O=Mini Games World, C=PL' /tmp/mgw-orientation-signing.txt
+
+      - name: Upload direct candidate artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgw-mvp26-3-4-orientation-staging-debug
+          path: android-app/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
