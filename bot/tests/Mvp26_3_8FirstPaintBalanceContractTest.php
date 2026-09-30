@@ -22,12 +22,12 @@ $manifest = $read('app/runtime/client/version-manifest.php');
 $assert(
     str_contains($profile, 'function mgw_profile_live_runtime_balance')
         && str_contains($profile, 'StorageFactory::create($config)')
-        && str_contains($profile, "readOnlySections(['users'], $readBalance)"),
+        && str_contains($profile, 'readOnlySections([\'users\'], $readBalance)'),
     'Early profile hydration must read only the primary runtime user balance when selective storage reads are available.'
 );
 $assert(
     str_contains($profile, "'runtime' => [")
-        && str_contains($profile, "'balance' => $liveRuntimeBalance")
+        && str_contains($profile, "'balance' => \$liveRuntimeBalance")
         && str_contains($profile, "'source' => 'primary_runtime'"),
     'Profile response must expose the primary runtime balance explicitly without moving profile identity ownership.'
 );
