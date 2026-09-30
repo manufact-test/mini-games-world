@@ -63,8 +63,8 @@ jobs:
       - name: Preserve accepted cosmetic Store mechanics
         run: php bot/tests/Mvp19_2CosmeticStoreTest.php
 
-      - name: Preserve MVP-24 Gold retirement boundary
-        run: php bot/tests/Mvp24LegacyGoldClientSurfaceContractTest.php
+      - name: Preserve MVP-24 final Gold retirement boundary
+        run: php bot/tests/Mvp24FinalGoldRemovalClosureContractTest.php
 
       - name: Preserve canonical v110 manifest ownership
         run: php bot/tests/Mvp25_1V110ManifestNormalizationContractTest.php
