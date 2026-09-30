@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp18-friend-notification-lifecycle-v1158';
+window.__MGW_BUILD__ = 'v110-mvp26-3-8-first-paint-live-balance-v1163';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -118,7 +118,18 @@ async function boot(){
     if (prestigeResult?.tournament_rewards && typeof prestigeResult.tournament_rewards === 'object') {
       state.profileTournamentRewards = prestigeResult.tournament_rewards;
     }
-    state.user = applyCanonicalMgwProfile(result.user || {}, state.mgwProfile);
+
+    // Staging may temporarily route api.php through a bounded DB-primary
+    // rehearsal snapshot while profile.php still reads the live JSON runtime.
+    // The already-awaited profile response therefore owns first-paint balance
+    // convergence: prefer only its strict integer balance and never fabricate a
+    // value client-side. Identity remains owned by the canonical MGW profile.
+    const liveFirstPaintBalance = mgwProfileResult?.runtime?.balance;
+    const firstPaintRuntimeUser = Number.isSafeInteger(liveFirstPaintBalance)
+      && liveFirstPaintBalance >= 0
+      ? { ...(result.user || {}), balance:liveFirstPaintBalance }
+      : (result.user || {});
+    state.user = applyCanonicalMgwProfile(firstPaintRuntimeUser, state.mgwProfile);
     state.session = result.session || state.session;
     renderUser(state.user);
     renderBalances(state.user);
