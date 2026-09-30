@@ -495,26 +495,33 @@ final class AccountLinkService
         }
 
         $activityChecks = [
-            ['mgw_match_players', 'mgw_id=:mgw_id'],
-            ['mgw_match_queue', 'mgw_id=:mgw_id'],
-            ['mgw_invites', '(inviter_mgw_id=:mgw_id OR invitee_mgw_id=:mgw_id)'],
-            ['mgw_social_relations', '(user_low_mgw_id=:mgw_id OR user_high_mgw_id=:mgw_id OR requested_by_mgw_id=:mgw_id)'],
-            ['mgw_player_reports', '(reporter_mgw_id=:mgw_id OR target_mgw_id=:mgw_id)'],
-            ['mgw_hidden_skill_scores', 'mgw_id=:mgw_id'],
-            ['mgw_hidden_skill_outcomes', '(player_a_mgw_id=:mgw_id OR player_b_mgw_id=:mgw_id)'],
-            ['mgw_tournament_registrations', 'mgw_id=:mgw_id'],
-            ['mgw_tournament_results', 'mgw_id=:mgw_id'],
-            ['mgw_tournament_reward_entitlements', 'mgw_id=:mgw_id'],
-            ['mgw_tournament_golden_tickets', 'mgw_id=:mgw_id'],
-            ['mgw_support_tickets', 'requester_mgw_id=:mgw_id'],
-            ['mgw_moderation_actions', 'target_mgw_id=:mgw_id'],
-            ['mgw_moderation_appeals', 'target_mgw_id=:mgw_id'],
-            ['mgw_compensations', 'mgw_id=:mgw_id'],
+            ['mgw_match_players', ['mgw_id']],
+            ['mgw_match_queue', ['mgw_id']],
+            ['mgw_invites', ['inviter_mgw_id', 'invitee_mgw_id']],
+            ['mgw_social_relations', ['user_low_mgw_id', 'user_high_mgw_id', 'requested_by_mgw_id']],
+            ['mgw_player_reports', ['reporter_mgw_id', 'target_mgw_id']],
+            ['mgw_hidden_skill_scores', ['mgw_id']],
+            ['mgw_hidden_skill_outcomes', ['player_a_mgw_id', 'player_b_mgw_id']],
+            ['mgw_tournament_registrations', ['mgw_id']],
+            ['mgw_tournament_results', ['mgw_id']],
+            ['mgw_tournament_reward_entitlements', ['mgw_id']],
+            ['mgw_tournament_golden_tickets', ['mgw_id']],
+            ['mgw_support_tickets', ['requester_mgw_id']],
+            ['mgw_moderation_actions', ['target_mgw_id']],
+            ['mgw_moderation_appeals', ['target_mgw_id']],
+            ['mgw_compensations', ['mgw_id']],
         ];
-        foreach ($activityChecks as [$table, $where]) {
+        foreach ($activityChecks as [$table, $columns]) {
+            $conditions = [];
+            $parameters = [];
+            foreach ($columns as $index => $column) {
+                $parameter = 'mgw_id_' . $index;
+                $conditions[] = $column . '=:' . $parameter;
+                $parameters[$parameter] = $sourceMgw;
+            }
             $count = (int)$this->database->fetchValue(
-                'SELECT COUNT(*) FROM ' . $table . ' WHERE ' . $where,
-                ['mgw_id'=>$sourceMgw]
+                'SELECT COUNT(*) FROM ' . $table . ' WHERE (' . implode(' OR ', $conditions) . ')',
+                $parameters
             );
             if ($count > 0) {
                 throw new AccountLinkException(
