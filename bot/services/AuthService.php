@@ -42,11 +42,12 @@ final class AuthService
         // credential. The server exchanges it for this HttpOnly staging session
         // cookie and resolves the existing provider-neutral MGW account owner.
         // No Telegram initData is forged and no second account model is created.
-        $androidUser = (new AndroidDeviceAuthService($this->config))->authenticateCookie(
-            (string)($_COOKIE[AndroidDeviceAuthService::COOKIE_NAME] ?? '')
-        );
-        if (is_array($androidUser)) {
-            return $androidUser;
+        $androidSessionToken = trim((string)($_COOKIE[AndroidDeviceAuthService::COOKIE_NAME] ?? ''));
+        if ($androidSessionToken !== '') {
+            $androidUser = (new AndroidDeviceAuthService($this->config))->authenticateCookie($androidSessionToken);
+            if (is_array($androidUser)) {
+                return $androidUser;
+            }
         }
 
         if ($this->browserDevUserAllowed()) {
