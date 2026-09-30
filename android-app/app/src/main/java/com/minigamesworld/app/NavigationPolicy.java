@@ -4,10 +4,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 final class NavigationPolicy {
     private static final Set<String> EXTERNAL_SCHEMES = Set.of("https", "http", "mailto", "tel", "tg");
     private static final Set<String> BLOCKED_SCHEMES = Set.of("file", "content", "javascript", "data", "intent");
+    private static final Pattern REAUTH_CHALLENGE = Pattern.compile("^ar_[a-f0-9]{24}$");
 
     private final URI baseUri;
 
@@ -51,6 +53,30 @@ final class NavigationPolicy {
             return uri.getHost() != null && !uri.getHost().isBlank() && uri.getUserInfo() == null;
         }
         return true;
+    }
+
+    String nativeReauthChallenge(String candidate) {
+        URI uri = parse(candidate);
+        if (uri == null
+                || !"mgw".equalsIgnoreCase(uri.getScheme())
+                || !"android-reauth".equalsIgnoreCase(uri.getHost())
+                || uri.getUserInfo() != null
+                || uri.getPort() >= 0
+                || uri.getFragment() != null) {
+            return null;
+        }
+
+        String path = uri.getPath();
+        if (path != null && !path.isEmpty() && !"/".equals(path)) {
+            return null;
+        }
+
+        String query = uri.getRawQuery();
+        if (query == null || !query.startsWith("challenge=") || query.indexOf('&') >= 0) {
+            return null;
+        }
+        String challenge = query.substring("challenge=".length());
+        return REAUTH_CHALLENGE.matcher(challenge).matches() ? challenge : null;
     }
 
     String initialUrl(String incomingUrl) {
