@@ -152,7 +152,16 @@ try {
 }
 $localizationTag = '<script type="application/json" id="mgw-localization">' . $localizationJson . '</script>';
 $importMap = "<script type=\"importmap\">\n{$importMapPayload}\n</script>";
-$html = str_replace($headClose, "  " . $localizationTag . "\n  " . $importMap . "\n" . $headClose, $html);
+$androidShellMarker = trim((string)($_COOKIE['mgw_android_auth'] ?? '')) !== ''
+    ? '<script>window.__MGW_ANDROID_SHELL__=true;</script>'
+    : '';
+$html = str_replace(
+    $headClose,
+    "  " . $localizationTag . "\n  " . $importMap
+        . ($androidShellMarker !== '' ? "\n  " . $androidShellMarker : '')
+        . "\n" . $headClose,
+    $html
+);
 
 $cssTarget = $assets['main_css'];
 $consistencyCssTarget = $assets['consistency_css'];
