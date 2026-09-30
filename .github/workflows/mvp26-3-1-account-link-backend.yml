@@ -89,7 +89,8 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
-          allowed='^(\.github/workflows/mvp26-3-1-account-link-backend\.yml|docs/MVP26_3_1_ACCOUNT_LINK_BACKEND\.md|bot/account-link\.php|bot/accounts/(AccountLinkService|AndroidDeviceAuthService|RuntimeAccountOwnershipService)\.php|bot/services/PresenceService\.php|bot/helpers/AccountLinkTelegramGuard\.php|bot/webhook\.php|bot/database/migrations/20260930_0070_create_account_link_challenges\.php|bot/tests/Mvp26_3AccountLinkServiceTest\.php)          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          allowed='^(\.github/workflows/mvp26-3-1-account-link-backend\.yml|docs/MVP26_3_1_ACCOUNT_LINK_BACKEND\.md|bot/account-link\.php|bot/accounts/(AccountLinkService|AndroidDeviceAuthService|RuntimeAccountOwnershipService)\.php|bot/services/PresenceService\.php|bot/helpers/AccountLinkTelegramGuard\.php|bot/webhook\.php|bot/database/migrations/20260930_0070_create_account_link_challenges\.php|bot/tests/Mvp26_3AccountLinkServiceTest\.php)
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-26.3.1 paths:\n%s\n' "$bad" >&2; exit 1; }
 
   mysql-migration:
