@@ -7,7 +7,7 @@ import { haptic } from '../telegram/telegram-app.js?v=27';
 import { dominoPreviewMarkup, dominoHeaderMarksMarkup } from './store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48';
 
 const STORE_TABS = Object.freeze([
-  { id:'coins', label:'Коины' },
+  { id:'coins', label:'Коины', available:false },
   { id:'profile', label:'Профиль' },
   { id:'games', label:'Игры' },
   { id:'bundles', label:'Наборы' },
@@ -134,7 +134,8 @@ function applyStoreResponse(result){
     state.user = { ...state.user, balance:Number(storeState.balance || 0) };
     renderBalances(state.user);
   }
-  if (!STORE_TABS.some(tab => tab.id === activeTab)) activeTab = 'profile';
+  const visibleTabs = storeTabs();
+  if (!visibleTabs.some(tab => String(tab.id) === activeTab)) activeTab = String(visibleTabs[0]?.id || 'profile');
   const catalogs = storeState?.games?.catalogs && typeof storeState.games.catalogs === 'object' ? storeState.games.catalogs : {};
   if (!catalogs[activeGameCatalog]) activeGameCatalog = orderedGameCatalogs(catalogs)[0]?.game_type || 'tictactoe';
 }
@@ -191,7 +192,9 @@ function updateVisibleBalance(){
 function storeTabs(){
   const serverTabs = Array.isArray(storeState?.tabs) ? storeState.tabs : [];
   const serverById = new Map(serverTabs.map(tab => [String(tab?.id || ''), tab]));
-  return STORE_TABS.map(tab => ({ ...tab, ...(serverById.get(tab.id) || {}) }));
+  return STORE_TABS
+    .map(tab => ({ ...tab, ...(serverById.get(tab.id) || {}) }))
+    .filter(tab => tab.available !== false);
 }
 
 function renderTabs(){
@@ -217,22 +220,7 @@ function renderActiveTab(){
 }
 
 function renderCoinsTab(){
-  const packages = Array.isArray(storeState?.coins?.packages) ? storeState.coins.packages : [];
-  return `
-    <div class="store-v2-coin-grid">
-      ${packages.map(pkg => `
-        <article class="store-v2-coin-card">
-          <div class="store-v2-coin-mark" aria-hidden="true"><span>MG</span></div>
-          <div class="store-v2-coin-copy">
-            <strong>${formatNumber(pkg.coins)}</strong>
-            <span>коинов</span>
-            <b>${formatEuro(pkg.price_eur_cents)}</b>
-          </div>
-          <em>Скоро</em>
-        </article>
-      `).join('') || emptyState('Пакеты пока недоступны')}
-    </div>
-  `;
+  return emptyState('Пополнение коинов недоступно');
 }
 
 function renderProfileTab(){
@@ -925,7 +913,7 @@ function bindPanelEvents(root){
 }
 
 function activateStoreTab(nextTab){
-  if (!STORE_TABS.some(tab => tab.id === nextTab) || nextTab === activeTab) return;
+  if (!storeTabs().some(tab => String(tab.id) === nextTab) || nextTab === activeTab) return;
   activeTab = nextTab;
   haptic('light');
   const root = currentRoot();
