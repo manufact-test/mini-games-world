@@ -1,0 +1,32 @@
+name: DIAG enumerate balance writers
+
+on:
+  push:
+    branches:
+      - diag/mvp26-3-render-balance-callers
+    paths:
+      - '.github/workflows/diag-enumerate-balance-writers.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  grep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Enumerate balance writers
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '=== renderBalances imports/calls ==='
+          grep -RInE --include='*.js' 'renderBalances[[:space:]]*\(' app/assets/js || true
+          echo '=== direct balanceUnified writes ==='
+          grep -RInE --include='*.js' 'balanceUnified|textContent[[:space:]]*=[^;]*balance|innerHTML[[:space:]]*=[^;]*balance' app/assets/js || true
+          echo '=== state.user balance writes ==='
+          grep -RInE --include='*.js' 'state\.user[^\n]*(balance|result\.user)|balance:[^,}]+' app/assets/js || true
