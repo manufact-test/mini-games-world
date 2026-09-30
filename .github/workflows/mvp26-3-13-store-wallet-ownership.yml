@@ -1,0 +1,55 @@
+name: MVP-26.3.13 Store Wallet Ownership
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/screens/store-screen.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp26_3StoreWalletOwnershipContractTest.php'
+      - '.github/workflows/mvp26-3-13-store-wallet-ownership.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax and contract
+        run: |
+          set -euo pipefail
+          php -l bot/tests/Mvp26_3StoreWalletOwnershipContractTest.php
+          node --check app/assets/js/screens/store-screen.js
+          php -l app/runtime/client/version-manifest.php
+          php bot/tests/Mvp26_3StoreWalletOwnershipContractTest.php
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
+      - name: Scope guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(app/assets/js/screens/store-screen\.js|app/runtime/client/version-manifest\.php|bot/tests/Mvp26_3StoreWalletOwnershipContractTest\.php|\.github/workflows/mvp26-3-13-store-wallet-ownership\.yml)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-26.3.13 paths:\n%s\n' "$bad" >&2; exit 1; }

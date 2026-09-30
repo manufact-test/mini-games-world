@@ -96,7 +96,7 @@ function fetchStore(){
   if (storeLoadPromise) return storeLoadPromise;
   storeLoadPromise = api.cosmeticStoreStatus()
     .then(result => {
-      if (!purchaseBusy && !equipBusy) applyStoreResponse(result);
+      if (!purchaseBusy && !equipBusy) applyStoreResponse(result, { preserveBalance:true });
       return storeState;
     })
     .finally(() => {
@@ -127,10 +127,28 @@ async function refreshStoreSilently(){
   }
 }
 
-function applyStoreResponse(result){
-  storeState = result?.store && typeof result.store === 'object' ? result.store : null;
-  if (!storeState) throw new Error('Магазин вернул неполный ответ.');
-  if (state.user && typeof state.user === 'object') {
+function applyStoreResponse(result, options = {}){
+  const incomingStore = result?.store && typeof result.store === 'object' ? result.store : null;
+  if (!incomingStore) throw new Error('Магазин вернул неполный ответ.');
+
+  const preserveBalance = options?.preserveBalance === true;
+  const currentHasBalance = Boolean(
+    state.user
+    && typeof state.user === 'object'
+    && Object.prototype.hasOwnProperty.call(state.user, 'balance')
+  );
+
+  // Read-only Store status is a catalogue/inventory owner, not a wallet owner.
+  // During mobile startup it is intentionally warmed under the preloader and can
+  // race the already-authoritative bootstrap/profile balance. Keep the current
+  // exact wallet value (including a legitimate zero) and normalize the Store
+  // snapshot to it. Purchase/equip/unequip responses keep their existing
+  // mutation path and may still advance the wallet after a real Store action.
+  storeState = preserveBalance && currentHasBalance
+    ? { ...incomingStore, balance:state.user.balance }
+    : incomingStore;
+
+  if (state.user && typeof state.user === 'object' && (!preserveBalance || !currentHasBalance)) {
     state.user = { ...state.user, balance:Number(storeState.balance || 0) };
     renderBalances(state.user);
   }
