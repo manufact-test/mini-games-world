@@ -108,7 +108,16 @@ function applyProfileResponse(result, options = {}){
 
   state.mgwProfile = result.profile || state.mgwProfile || null;
   state.profileInventory = result.inventory || state.profileInventory || null;
-  state.user = mergeCanonicalMgwUser(state.user, result.user, state.mgwProfile);
+
+  // Profile V2 owns profile/statistics/inventory data, not the unified wallet.
+  // Its runtime user snapshot may lag the already-authoritative boot/economy
+  // balance during background warm-up. Never let that stale snapshot overwrite
+  // the current wallet value in the shared shell.
+  const profileRuntimeUser = result?.user && typeof result.user === 'object'
+    ? { ...result.user }
+    : {};
+  delete profileRuntimeUser.balance;
+  state.user = mergeCanonicalMgwUser(state.user, profileRuntimeUser, state.mgwProfile);
   const confirmedAvatar = canonicalAvatarItemId(state.mgwProfile?.avatar || { item_id:state.user?.avatar_item_id });
   if (confirmedAvatar) state.selectedAvatarId = confirmedAvatar;
   state.profileStats = result.stats || state.profileStats || null;
