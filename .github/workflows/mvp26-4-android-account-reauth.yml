@@ -23,6 +23,7 @@ on:
       - 'bot/accounts/AndroidDeviceAuthService.php'
       - 'bot/database/migrations/20261001_0071_create_android_reauth_challenges.php'
       - 'bot/tests/Mvp26_4AndroidAccountReauthTest.php'
+      - 'bot/helpers/staging-e2e-runtime-files.txt'
       - 'docs/MVP26_4_ANDROID_ACCOUNT_REAUTH.md'
       - '.github/workflows/mvp26-4-android-account-reauth.yml'
       - '.github/workflows/mvp26-2-android-device-auth.yml'
@@ -94,6 +95,15 @@ jobs:
           grep -Fq "GRANT_TTL_SECONDS = 300" bot/accounts/AndroidAccountReauthService.php
           grep -Fq "session_key_hash" bot/accounts/AndroidAccountReauthService.php
           grep -Fq "mvp26_4=android-reauth-v1" app/runtime/client/version-manifest.php
+          for file in \
+            bot/android-reauth.php \
+            bot/accounts/AndroidAccountReauthService.php \
+            bot/accounts/AndroidDeviceAuthService.php \
+            bot/accounts/AndroidAuthAttemptLimiter.php \
+            bot/database/migrations/20261001_0071_create_android_reauth_challenges.php
+          do
+            grep -Fxq "$file" bot/helpers/staging-e2e-runtime-files.txt
+          done
 
       - name: Tracked secret scan
         run: node scripts/ci/check-secrets.mjs
@@ -105,7 +115,146 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(.github/workflows/(mvp26-4-android-account-reauth|mvp26-2-android-device-auth|mvp26-3-1-account-link-backend|mvp22-8-account-data).yml|android-app/app/build.gradle|android-app/app/src/main/java/com/minigamesworld/app/(MainActivity|NavigationPolicy|ShellConfig).java|android-app/app/src/main/res/values/strings.xml|android-app/app/src/test/java/com/minigamesworld/app/NavigationPolicyTest.java|android-app/tools/verify-foundation.py|app/assets/js/api/client.js|app/assets/js/components/account-shortcuts.js|app/assets/js/screens/account-data-sheet-v1.js|app/runtime/client/version-manifest.php|bot/account-data.php|bot/android-reauth.php|bot/accounts/(AccountReauthGuard|AndroidAccountReauthService|AndroidDeviceAuthService).php|bot/database/migrations/20261001_0071_create_android_reauth_challenges.php|bot/tests/Mvp26_4AndroidAccountReauthTest.php|docs/MVP26_4_ANDROID_ACCOUNT_REAUTH.md)$'
+          allowed='^(.github/workflows/(mvp26-4-android-account-reauth|mvp26-2-android-device-auth|mvp26-3-1-account-link-backend|mvp22-8-account-data).yml|android-app/app/build.gradle|android-app/app/src/main/java/com/minigamesworld/app/(MainActivity|NavigationPolicy|ShellConfig).java|android-app/app/src/main/res/values/strings.xml|android-app/app/src/test/java/com/minigamesworld/app/NavigationPolicyTest.java|android-app/tools/verify-foundation.py|app/assets/js/api/client.js|app/assets/js/components/account-shortcuts.js|app/assets/js/screens/account-data-sheet-v1.js|app/runtime/client/version-manifest.php|bot/account-data.php|bot/android-reauth.php|bot/accounts/(AccountReauthGuard|AndroidAccountReauthService|AndroidDeviceAuthService).php|bot/database/migrations/20261001_0071_create_android_reauth_challenges.php|bot/tests/Mvp26_4AndroidAccountReauthTest.php|bot/helpers/staging-e2e-runtime-files.txt|docs/MVP26_4_ANDROID_ACCOUNT_REAUTH.md)
+          bad=0
+          while IFS= read -r path; do
+            if ! grep -Eq "$allowed" <<<"$path"; then
+              echo "Unexpected MVP-26.4 path: $path" >&2
+              bad=1
+            fi
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+          git diff --exit-code "$base" "$head" -- bot/games bot/ratings bot/tournaments bot/economy bot/ledger bot/notifications
+
+  android-build:
+    name: Android build/lint/unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 9.5
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.5.0'
+
+      - name: Ensure Android SDK 36
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v sdkmanager >/dev/null 2>&1; then
+            SDKMANAGER="$(command -v sdkmanager)"
+          elif [[ -x "${ANDROID_SDK_ROOT:-}/cmdline-tools/latest/bin/sdkmanager" ]]; then
+            SDKMANAGER="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          elif [[ -x "${ANDROID_HOME:-}/cmdline-tools/latest/bin/sdkmanager" ]]; then
+            SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          else
+            echo 'sdkmanager is unavailable' >&2
+            exit 1
+          fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0'
+
+      - name: Verify accepted Android foundation
+        working-directory: android-app
+        run: python3 tools/verify-foundation.py
+
+      - name: Test lint and assemble reauth APK
+        working-directory: android-app
+        env:
+          MGW_BASE_URL: https://seashell-okapi-889488.hostingersite.com/
+        run: gradle --no-daemon clean test lint assembleDebug
+
+      - name: Verify accepted package signing identity
+        working-directory: android-app
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$apk"
+          apksigner="${ANDROID_SDK_ROOT}/build-tools/36.0.0/apksigner"
+          test -x "$apksigner"
+          "$apksigner" verify --print-certs "$apk" | tee /tmp/mgw-apk-signing.txt
+          grep -F 'CN=MGW Acceptance, O=Mini Games World, C=PL' /tmp/mgw-apk-signing.txt
+
+      - name: Upload staging reauth APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgw-mvp26-4-android-reauth-staging-debug
+          path: android-app/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgw-mvp26-4-android-reauth-reports
+          path: |
+            android-app/app/build/reports/**
+            android-app/app/build/test-results/**
+          if-no-files-found: warn
+          retention-days: 7
+
+  mysql-migration:
+    name: Android reauth migration on MySQL 8.4
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_android_reauth
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql
+          coverage: none
+
+      - name: Prove idempotent MySQL migration
+        run: |
+          php -r '
+            require "bot/database/DatabaseConnectionInterface.php";
+            require "bot/database/PdoDatabaseConnection.php";
+            require "bot/database/DatabaseMigrationInterface.php";
+            $pdo=new PDO("mysql:host=127.0.0.1;port=3306;dbname=mgw_android_reauth;charset=utf8mb4","root","root",[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
+            $db=new PdoDatabaseConnection($pdo);
+            $db->execute("CREATE TABLE mgw_users (mgw_id VARCHAR(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL PRIMARY KEY) ENGINE=InnoDB");
+            $migration=require "bot/database/migrations/20261001_0071_create_android_reauth_challenges.php";
+            $migration->up($db);
+            $migration->up($db);
+            $count=(int)$db->fetchValue("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=\"mgw_android_reauth_challenges\"");
+            if ($count !== 1) throw new RuntimeException("Android reauth table missing.");
+            $indexes=(int)$db->fetchValue("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name=\"mgw_android_reauth_challenges\" AND index_name=\"idx_mgw_android_reauth_session\"");
+            if ($indexes < 1) throw new RuntimeException("Android reauth session index missing.");
+            echo "MVP-26.4 MySQL migration PASS\n";
+          '
+
           bad=0
           while IFS= read -r path; do
             if ! grep -Eq "$allowed" <<<"$path"; then
