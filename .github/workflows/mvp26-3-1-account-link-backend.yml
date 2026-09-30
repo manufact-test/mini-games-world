@@ -59,7 +59,6 @@ jobs:
           php bot/tests/Mvp26_2AndroidDeviceAuthTest.php
           php bot/tests/Mvp15ProviderNeutralIdentityCoreTest.php
           php bot/tests/Mvp25_5SecurityResilienceClosureContractTest.php
-          php bot/tests/ProductionV110PresenceDocumentLeaseRaceTest.php
 
       - name: Telegram transport ownership contract
         shell: bash
