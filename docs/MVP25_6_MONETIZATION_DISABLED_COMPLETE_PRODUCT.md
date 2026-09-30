@@ -1,7 +1,8 @@
 # MVP-25.6 — Monetization-disabled complete-product mode
 
-**Status:** IMPLEMENTED CANDIDATE / POST-MERGE PROOF PENDING  
-**Base staging:** `a90168cb84bf89631b97526684c13c2cdc8c0536`
+**Status:** CLOSED / AUTOMATED + STAGING ACCEPTED / FROZEN  
+**Base staging:** `a90168cb84bf89631b97526684c13c2cdc8c0536`  
+**Accepted staging:** `822c45d7db2ccb327925fa66fd0376dd05ecdcc8`
 
 ## Scope
 
@@ -58,5 +59,29 @@ Automated candidate gates must prove:
 5. the accepted MVP-19 Store purchase mechanics remain intact;
 6. frozen economy/ledger/payment/game/tournament owners are unchanged.
 
-MVP-25.6 closes only after the exact merged staging SHA passes the normal staging
-deployment/projection and TEST PLAYER A/B Playwright proof.
+## Closure evidence
+
+The implementation PR #1826 merged to exact staging SHA
+`822c45d7db2ccb327925fa66fd0376dd05ecdcc8`.
+
+Focused MVP-25.6 candidate proof passed before merge:
+- disabled-billing Store runtime: SUCCESS;
+- completed Store client contract: SUCCESS;
+- accepted MVP-19 Store purchase mechanics: SUCCESS;
+- final MVP-24 Gold retirement contract: SUCCESS;
+- canonical v110 manifest normalization: SUCCESS;
+- frozen monetization/economy/game owners: SUCCESS;
+- tracked repository secret scan: SUCCESS.
+
+Post-merge staging proof on the exact accepted SHA:
+- Hostinger deployment readiness: SUCCESS;
+- staging Telegram webhook reconciliation: SUCCESS;
+- managed migrations/projection diagnostics: SUCCESS;
+- TEST PLAYER A/B two-context browser flow: SUCCESS;
+- final staging commit status: SUCCESS;
+- GitHub Actions workflow: **Staging Playwright E2E**, run **36682313363**.
+
+Real-money purchasing remains intentionally **not implemented** in MVP-25.
+The player Store is complete in the accepted monetization-disabled state.
+
+MVP-25.6 is **CLOSED / AUTOMATED + STAGING ACCEPTED / FROZEN**.
