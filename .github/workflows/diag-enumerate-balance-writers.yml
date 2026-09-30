@@ -30,3 +30,5 @@ jobs:
           grep -RInE --include='*.js' 'balanceUnified|textContent[[:space:]]*=[^;]*balance|innerHTML[[:space:]]*=[^;]*balance' app/assets/js || true
           echo '=== state.user balance writes ==='
           grep -RInE --include='*.js' 'state\.user[^\n]*(balance|result\.user)|balance:[^,}]+' app/assets/js || true
+          echo '=== readiness/profile callsites ==='
+          grep -RInE --include='*.js' 'warmFirstInteractionData|initFirstInteractionReadinessEarly|first-interaction-readiness|api\.profile\(' app/assets/js || true
