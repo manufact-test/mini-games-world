@@ -41,8 +41,9 @@ $assert(
     'Boot must load the canonical MGW profile before visible identity rendering.'
 );
 $assert(
-    str_contains($sources['shell'], 'state.user = applyCanonicalMgwProfile(result.user || {}, state.mgwProfile);'),
-    'Boot must overlay canonical identity onto the compatibility runtime user.'
+    str_contains($sources['shell'], 'const liveFirstPaintBalance = mgwProfileResult?.runtime?.balance;')
+        && str_contains($sources['shell'], 'state.user = applyCanonicalMgwProfile(firstPaintRuntimeUser, state.mgwProfile);'),
+    'Boot must preserve canonical identity while allowing the already-awaited profile response to converge first-paint runtime balance.'
 );
 $assert(
     str_contains($sources['profile'], 'const canonicalResult = await api.mgwProfile();'),
