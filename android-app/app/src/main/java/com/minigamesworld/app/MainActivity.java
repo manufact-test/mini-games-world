@@ -3,6 +3,7 @@ package com.minigamesworld.app;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.KeyguardManager;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.res.ColorStateList;
@@ -33,10 +34,21 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONObject;
+
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import javax.net.ssl.HttpsURLConnection;
 
 public final class MainActivity extends Activity {
     private static final String STATE_WEBVIEW = "mgw_webview_state";
+    private static final String STATE_NATIVE_REAUTH_REQUEST = "mgw_native_reauth_request";
+    private static final int REQUEST_CONFIRM_DEVICE_CREDENTIAL = 26041;
 
     private FrameLayout root;
     private WebView webView;
@@ -50,6 +62,8 @@ public final class MainActivity extends Activity {
     private String configuredBaseUrl;
     private boolean mainFrameFailed;
     private Object backCallback;
+    private String pendingNativeReauthRequestId;
+    private final ExecutorService nativeReauthExecutor = Executors.newSingleThreadExecutor();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,13 +78,17 @@ public final class MainActivity extends Activity {
 
         configuredBaseUrl = ShellConfig.configuredBaseUrl();
         if (!NavigationPolicy.isSafeHttpsBase(configuredBaseUrl)
-                || ShellConfig.androidAuthUrl(configuredBaseUrl).isEmpty()) {
+                || ShellConfig.androidAuthUrl(configuredBaseUrl).isEmpty()
+                || ShellConfig.androidReauthUrl(configuredBaseUrl).isEmpty()) {
             showConfigurationError();
             return;
         }
 
         navigationPolicy = new NavigationPolicy(configuredBaseUrl);
         credentialStore = new DeviceCredentialStore(this);
+        pendingNativeReauthRequestId = savedInstanceState == null
+                ? null
+                : savedInstanceState.getString(STATE_NATIVE_REAUTH_REQUEST);
         configureWebView(webView);
 
         Bundle webState = savedInstanceState == null ? null : savedInstanceState.getBundle(STATE_WEBVIEW);
@@ -339,6 +357,13 @@ public final class MainActivity extends Activity {
 
     private boolean handleTopLevelNavigation(Uri uri) {
         String candidate = uri == null ? null : uri.toString();
+        String reauthRequestId = navigationPolicy == null
+                ? null
+                : navigationPolicy.nativeReauthRequestId(candidate);
+        if (reauthRequestId != null) {
+            beginNativeReauth(reauthRequestId);
+            return true;
+        }
         if (candidate != null && navigationPolicy.isInternal(candidate)) {
             return false;
         }
@@ -346,6 +371,171 @@ public final class MainActivity extends Activity {
             openExternal(uri);
         }
         return true;
+    }
+
+    @SuppressWarnings("deprecation")
+    private void beginNativeReauth(String requestId) {
+        if (navigationPolicy == null
+                || webView == null
+                || !navigationPolicy.isInternal(webView.getUrl())) {
+            emitNativeReauthResult(requestId, false, "invalid_context");
+            return;
+        }
+        if (pendingNativeReauthRequestId != null) {
+            emitNativeReauthResult(requestId, false, "busy");
+            return;
+        }
+
+        KeyguardManager keyguard = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+        if (keyguard == null || !keyguard.isDeviceSecure()) {
+            emitNativeReauthResult(requestId, false, "device_lock_required");
+            return;
+        }
+
+        Intent confirmation = keyguard.createConfirmDeviceCredentialIntent(
+                getString(R.string.reauth_title),
+                getString(R.string.reauth_text)
+        );
+        if (confirmation == null) {
+            emitNativeReauthResult(requestId, false, "device_lock_required");
+            return;
+        }
+
+        pendingNativeReauthRequestId = requestId;
+        try {
+            startActivityForResult(confirmation, REQUEST_CONFIRM_DEVICE_CREDENTIAL);
+        } catch (ActivityNotFoundException error) {
+            pendingNativeReauthRequestId = null;
+            emitNativeReauthResult(requestId, false, "device_lock_unavailable");
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQUEST_CONFIRM_DEVICE_CREDENTIAL) return;
+
+        String requestId = pendingNativeReauthRequestId;
+        if (requestId == null) return;
+        if (resultCode != RESULT_OK) {
+            pendingNativeReauthRequestId = null;
+            emitNativeReauthResult(requestId, false, "cancelled");
+            return;
+        }
+        performNativeReauth(requestId);
+    }
+
+    private void performNativeReauth(String requestId) {
+        if (credentialStore == null || navigationPolicy == null) {
+            completeNativeReauth(requestId, false, "configuration");
+            return;
+        }
+
+        final String credential;
+        final String reauthUrl = ShellConfig.androidReauthUrl(configuredBaseUrl);
+        try {
+            credential = credentialStore.getOrCreate();
+        } catch (RuntimeException error) {
+            completeNativeReauth(requestId, false, "credential_unavailable");
+            return;
+        }
+        if (!DeviceCredentialStore.isCredentialFormatValid(credential)
+                || reauthUrl.isEmpty()
+                || !navigationPolicy.isInternal(reauthUrl)) {
+            completeNativeReauth(requestId, false, "configuration");
+            return;
+        }
+
+        final String cookieHeader = CookieManager.getInstance().getCookie(reauthUrl);
+        if (cookieHeader == null || cookieHeader.isBlank()) {
+            completeNativeReauth(requestId, false, "session_required");
+            return;
+        }
+
+        nativeReauthExecutor.execute(() -> {
+            HttpsURLConnection connection = null;
+            String reason = "network";
+            boolean ok = false;
+            try {
+                connection = (HttpsURLConnection) new URL(reauthUrl).openConnection();
+                connection.setConnectTimeout(10_000);
+                connection.setReadTimeout(15_000);
+                connection.setRequestMethod("POST");
+                connection.setInstanceFollowRedirects(false);
+                connection.setDoOutput(true);
+                connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+                connection.setRequestProperty("Accept", "application/json");
+                connection.setRequestProperty("Cookie", cookieHeader);
+
+                byte[] body = ("credential=" + credential).getBytes(StandardCharsets.UTF_8);
+                connection.setFixedLengthStreamingMode(body.length);
+                connection.getOutputStream().write(body);
+
+                int status = connection.getResponseCode();
+                String raw = readBoundedResponse(
+                        status >= 200 && status < 400
+                                ? connection.getInputStream()
+                                : connection.getErrorStream()
+                );
+                JSONObject payload = raw.isEmpty() ? new JSONObject() : new JSONObject(raw);
+                ok = status == 200 && payload.optBoolean("ok", false);
+                reason = ok ? "" : payload.optString("code", status == 429 ? "rate_limited" : "rejected");
+            } catch (Exception ignored) {
+                reason = "network";
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+
+            final boolean finalOk = ok;
+            final String finalReason = reason;
+            runOnUiThread(() -> completeNativeReauth(requestId, finalOk, finalReason));
+        });
+    }
+
+    private static String readBoundedResponse(InputStream stream) throws Exception {
+        if (stream == null) return "";
+        StringBuilder output = new StringBuilder();
+        try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+            char[] buffer = new char[1024];
+            int total = 0;
+            while (true) {
+                int count = reader.read(buffer);
+                if (count < 0) break;
+                total += count;
+                if (total > 16_384) throw new IllegalStateException("Android reauth response is too large.");
+                output.append(buffer, 0, count);
+            }
+        }
+        return output.toString();
+    }
+
+    private void completeNativeReauth(String requestId, boolean ok, String reason) {
+        if (requestId.equals(pendingNativeReauthRequestId)) {
+            pendingNativeReauthRequestId = null;
+        }
+        emitNativeReauthResult(requestId, ok, reason);
+    }
+
+    private void emitNativeReauthResult(String requestId, boolean ok, String reason) {
+        if (webView == null
+                || navigationPolicy == null
+                || !navigationPolicy.isInternal(webView.getUrl())) {
+            return;
+        }
+        try {
+            JSONObject detail = new JSONObject();
+            detail.put("requestId", requestId);
+            detail.put("ok", ok);
+            detail.put("reason", reason == null ? "" : reason);
+            String script = "window.dispatchEvent(new CustomEvent('mgw:native-reauth-result',{detail:"
+                    + detail
+                    + "}));";
+            webView.evaluateJavascript(script, null);
+        } catch (Exception ignored) {
+            // The JS caller owns a bounded timeout; native never exposes credentials
+            // or retries an unacknowledged sensitive action on its own.
+        }
     }
 
     private void configureBackNavigation() {
@@ -411,6 +601,9 @@ public final class MainActivity extends Activity {
             webView.saveState(webState);
             outState.putBundle(STATE_WEBVIEW, webState);
         }
+        if (pendingNativeReauthRequestId != null) {
+            outState.putString(STATE_NATIVE_REAUTH_REQUEST, pendingNativeReauthRequestId);
+        }
         super.onSaveInstanceState(outState);
     }
 
@@ -420,6 +613,7 @@ public final class MainActivity extends Activity {
             Api33Back.unregister(this, backCallback);
             backCallback = null;
         }
+        nativeReauthExecutor.shutdownNow();
         destroyWebView();
         super.onDestroy();
     }

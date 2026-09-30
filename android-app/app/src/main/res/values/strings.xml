@@ -9,4 +9,6 @@
     <string name="configuration_error_text">Для этой сборки не задан безопасный HTTPS-адрес Mini Games World.</string>
     <string name="security_error_text">Страница не была открыта из-за проверки безопасности соединения.</string>
     <string name="external_link_error">Не удалось открыть внешнюю ссылку.</string>
+    <string name="reauth_title">Подтвердите действие</string>
+    <string name="reauth_text">Подтвердите, что это вы, чтобы продолжить в Mini Games World.</string>
 </resources>

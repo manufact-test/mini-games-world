@@ -350,6 +350,17 @@ bot/database/migrations/20260926_0067_create_account_data_lifecycle.php
 app/assets/js/screens/account-data-sheet-v1.js
 app/assets/css/account-data-v1.css
 
+# MVP-26 provider-neutral Android auth + sensitive-action reauth.
+# The native container is built separately, but every server/client owner it calls
+# must be included in the exact staging fingerprint before real-device acceptance.
+bot/android-auth.php
+bot/android-reauth.php
+bot/accounts/AndroidAuthAttemptLimiter.php
+bot/accounts/AndroidDeviceAuthService.php
+bot/database/migrations/20260930_0069_create_android_auth_attempts.php
+bot/database/migrations/20260930_0070_create_account_link_challenges.php
+bot/database/migrations/20261001_0071_add_android_session_reauth.php
+
 # MVP-22.9 incident response / recovery console. Runtime safety actions reuse
 # canonical system/session owners; incident state, evidence and restore references
 # are durable and included in exact staging fingerprinting.
