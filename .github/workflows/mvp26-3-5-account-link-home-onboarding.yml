@@ -47,6 +47,7 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const profile=fs.readFileSync('app/assets/js/screens/profile-screen-v110.js','utf8');
+          const shell=fs.readFileSync('app/assets/js/main-v110-handoff-shell.js','utf8');
           const link=fs.readFileSync('app/assets/js/profile/mgw-account-link-ui.js','utf8');
           const onboarding=fs.readFileSync('app/assets/js/profile/mgw-account-link-onboarding.js','utf8');
           const manifest=fs.readFileSync('app/runtime/client/version-manifest.php','utf8');
@@ -66,6 +67,8 @@ jobs:
           need(onboarding.includes("mgw_id:mgwId"), 'dismissal must be keyed to MGW id');
           need(onboarding.includes("PENDING_LINK_KEY"), 'pending link suppression missing');
           need(profile.includes("mgw-account-link-onboarding.js?v=4"), 'Onboarding module cache-bust missing');
+          need(shell.includes("profile-screen-v110.js?v=1109"), 'active shell Profile specifier changed unexpectedly');
+          need(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1140"), 'active Profile import must resolve to a fresh canonical URL');
           need(onboarding.includes("mgw-account-link-onboarding-overlay"), 'dedicated Home onboarding overlay owner missing');
           need(onboarding.includes("mgw-account-link-onboarding-sheet"), 'dedicated Home onboarding sheet owner missing');
           need(onboarding.includes("mgw-account-link-onboarding-bridge"), 'Telegram → Android bridge presentation missing');
