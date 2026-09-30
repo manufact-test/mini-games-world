@@ -9,6 +9,7 @@ final class PresenceService
     private const BACKGROUND_RECONNECT_FALLBACK_SEC = 15;
     private const GAMEPLAY_STATE_RETENTION_SEC = 21600;
     private const MARKER_FILE = '.enabled';
+    private const RETIRED_MARKER_FILE = '.retired';
 
     private string $directory;
 
@@ -51,6 +52,9 @@ final class PresenceService
         $presenceLeaseId = trim($presenceLeaseId);
         if ($accountId === '' || $sessionId === '') return;
 
+        $accountDirectory = $this->accountDirectoryPath($accountId);
+        if ($this->isRetiredAccountDirectory($accountDirectory)) return;
+
         $this->ensureDirectory();
         @touch($this->directory . DIRECTORY_SEPARATOR . self::MARKER_FILE);
         $path = $this->sessionPath($accountId, $sessionId, $presenceLeaseId);
@@ -64,6 +68,40 @@ final class PresenceService
         ], JSON_UNESCAPED_SLASHES);
         if (is_string($payload)) @file_put_contents($path, $payload, LOCK_EX);
         $this->pruneAccountDirectory($this->accountDirectory($accountId));
+    }
+
+    /**
+     * Permanently retire the legacy presence owner after an account merge.
+     *
+     * The marker is written before lease deletion so an in-flight heartbeat
+     * cannot recreate the retired source account after the canonical runtime
+     * owner has moved. writeLease() also re-checks the marker after rename to
+     * close the opposite race ordering.
+     */
+    public function retireAccount(string $accountId): void
+    {
+        $accountId = trim($accountId);
+        if ($accountId === '' || str_starts_with($accountId, 'bot_')) return;
+
+        $this->ensureDirectory();
+        $accountDirectory = $this->accountDirectoryPath($accountId);
+        if (!is_dir($accountDirectory)
+            && !@mkdir($accountDirectory, 0700, true)
+            && !is_dir($accountDirectory)) {
+            throw new RuntimeException('Не удалось завершить присутствие старого аккаунта.');
+        }
+
+        $retiredMarker = $accountDirectory . DIRECTORY_SEPARATOR . self::RETIRED_MARKER_FILE;
+        $payload = json_encode(['retired_at'=>time()], JSON_UNESCAPED_SLASHES);
+        if (!is_string($payload) || @file_put_contents($retiredMarker, $payload, LOCK_EX) === false) {
+            throw new RuntimeException('Не удалось завершить присутствие старого аккаунта.');
+        }
+        @chmod($retiredMarker, 0600);
+
+        foreach (glob($accountDirectory . DIRECTORY_SEPARATOR . 'session-*.presence') ?: [] as $path) {
+            @unlink($path);
+        }
+        @unlink($accountDirectory . DIRECTORY_SEPARATOR . '.account');
     }
 
     /**
@@ -203,6 +241,9 @@ final class PresenceService
         $presenceLeaseId = trim($presenceLeaseId);
         if ($accountId === '' || $sessionId === '' || str_starts_with($accountId, 'bot_')) return;
 
+        $accountDirectory = $this->accountDirectoryPath($accountId);
+        if ($this->isRetiredAccountDirectory($accountDirectory)) return;
+
         $this->ensureDirectory();
         @touch($this->directory . DIRECTORY_SEPARATOR . self::MARKER_FILE);
 
@@ -228,6 +269,12 @@ final class PresenceService
         if (!@rename($temporary, $path)) {
             @unlink($temporary);
             throw new RuntimeException('Не удалось обновить присутствие игрока.');
+        }
+
+        if ($this->isRetiredAccountDirectory($accountDirectory)) {
+            @unlink($path);
+            @unlink($accountDirectory . DIRECTORY_SEPARATOR . '.account');
+            return;
         }
 
         $this->pruneAccountDirectory($accountDirectory);
@@ -272,6 +319,14 @@ final class PresenceService
     private function pruneAccountDirectory(string $accountDirectory): void
     {
         if (!is_dir($accountDirectory)) return;
+        if ($this->isRetiredAccountDirectory($accountDirectory)) {
+            foreach (glob($accountDirectory . DIRECTORY_SEPARATOR . 'session-*.presence') ?: [] as $path) {
+                @unlink($path);
+            }
+            @unlink($accountDirectory . DIRECTORY_SEPARATOR . '.account');
+            return;
+        }
+
         $now = time();
         $retentionCutoff = $now - self::GAMEPLAY_STATE_RETENTION_SEC;
 
@@ -300,6 +355,11 @@ final class PresenceService
             @unlink($accountDirectory . DIRECTORY_SEPARATOR . '.account');
             @rmdir($accountDirectory);
         }
+    }
+
+    private function isRetiredAccountDirectory(string $accountDirectory): bool
+    {
+        return is_file($accountDirectory . DIRECTORY_SEPARATOR . self::RETIRED_MARKER_FILE);
     }
 
     private function directoryHasLiveSession(string $accountDirectory): bool
