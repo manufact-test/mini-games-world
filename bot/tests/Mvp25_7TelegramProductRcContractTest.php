@@ -110,8 +110,10 @@ $handoffTarget = is_string($imports['./assets/js/main-v110-handoff-shell.js?v=11
 
 $assert(
     str_contains($homeTarget, 'mvp25_3=human-rules-guide-v1')
-        && str_contains($handoffTarget, 'mvp25_3=match-economy-guide-v1'),
-    'Telegram Product RC must preserve the accepted MVP-25.3 Home rules and bootstrap economy owners regardless of later cache versions.'
+        && str_contains($handoffTarget, 'mvp25_3=match-economy-guide-v1')
+        && str_contains($handoffTarget, 'mvp25_4=profile-preloader-unblock-v1')
+        && str_contains($handoffTarget, 'profile_tap=post-paint-v1'),
+    'Telegram Product RC must preserve accepted MVP-25.3 rules/economy semantics and MVP-25.4 startup/Profile owners regardless of later cache versions.'
 );
 $assert(
     str_contains($home, 'Как работают обычные матчи')
