@@ -54,3 +54,16 @@ Unchanged:
 VersionCode is bumped to 2604 so the corrective APK updates the accepted installation.
 
 No main / production runtime / production DB / production Cron changes.
+
+
+---
+
+## Follow-up — MVP-26.3.13 restored WebView handoff
+
+A later real-device wallet trace proved the current v1168 web document never renders a zero balance: bootstrap, profile and selected first-paint balance are already non-zero, and the unified balance DOM becomes non-zero before the shared web preloader can reveal the page.
+
+The remaining visible zero therefore exists before the current document owns presentation. The native recovery branch was the only accepted path that could expose a restored WebView immediately: after `restoreState()` it called `showLoading(false)` and returned.
+
+The follow-up keeps the native Shield King handoff panel visible after successful `restoreState()`. The restored WebView remains covered until the existing `WebViewClient` finishes the current main frame and releases the native loading owner. Rotation behavior remains unchanged because ordinary orientation changes still keep the same Activity/WebView instance.
+
+No wallet/economy/account state is rewritten by this corrective.
