@@ -17,12 +17,12 @@ function mgw_profile_live_runtime_balance(array $config, array $authenticatedUse
         return null;
     }
 
-    // profile.php intentionally bypasses the bounded staging API DB-primary
-    // rehearsal. Identity/inventory remain canonical DB-owned below; this narrow
-    // read exists only so the already-awaited first-profile response can carry the
-    // live mutable runtime balance used by Home before the preloader is released.
-    $storage = new JsonStorageAdapter($dataDir);
-    return $storage->readOnlySections(['users'], static function (array $data) use ($legacyUserId): ?int {
+    // profile.php is outside the bounded staging API DB-primary rehearsal, so
+    // StorageFactory resolves the actual primary runtime instead of inheriting an
+    // api.php-only rehearsal snapshot. Identity/inventory remain canonical DB-owned
+    // below; this narrow read only carries the mutable first-paint balance.
+    $storage = StorageFactory::create($config);
+    $readBalance = static function (array $data) use ($legacyUserId): ?int {
         $users = is_array($data['users'] ?? null) ? $data['users'] : [];
         $matches = [];
 
@@ -60,7 +60,12 @@ function mgw_profile_live_runtime_balance(array $config, array $authenticatedUse
 
         if ($raw === null) return null;
         throw new RuntimeException('Live runtime balance is invalid.');
-    });
+    };
+
+    if ($storage instanceof SelectiveReadStorageInterface) {
+        return $storage->readOnlySections(['users'], $readBalance);
+    }
+    return $storage->readOnly($readBalance);
 }
 
 try {
@@ -103,7 +108,7 @@ try {
         'inventory' => $inventory,
         'runtime' => [
             'balance' => $liveRuntimeBalance,
-            'source' => 'live_json_runtime',
+            'source' => 'primary_runtime',
         ],
         'auth' => [
             'provider' => $provider !== '' ? $provider : null,
