@@ -12,8 +12,7 @@ require_once __DIR__ . '/accounts/MgwProfileService.php';
 function mgw_profile_live_runtime_balance(array $config, array $authenticatedUser): ?int
 {
     $legacyUserId = trim((string)($authenticatedUser['id'] ?? ''));
-    $dataDir = trim((string)($config['data_dir'] ?? ''));
-    if ($legacyUserId === '' || $dataDir === '') {
+    if ($legacyUserId === '') {
         return null;
     }
 
