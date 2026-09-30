@@ -1,0 +1,65 @@
+name: MVP-26.2 Android Live Auth Probe
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.github/workflows/mvp26-2-android-live-auth-probe.yml'
+      - 'android-app/**'
+      - 'bot/accounts/AndroidDeviceAuthService.php'
+      - 'bot/services/AuthService.php'
+      - 'bot/android-auth.php'
+      - 'bot/profile.php'
+      - 'bot/profile-v2.php'
+
+permissions:
+  contents: read
+
+jobs:
+  live-android-auth:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Probe deployed staging Android auth chain
+        shell: bash
+        env:
+          STAGING_ORIGIN: https://seashell-okapi-889488.hostingersite.com
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+
+          credential="$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=\n')"
+          test "${#credential}" -eq 43
+
+          status="$(
+            curl -sS               -o "$tmp/auth-body.txt"               -D "$tmp/auth-headers.txt"               -c "$tmp/cookies.txt"               -w '%{http_code}'               -X POST               -H 'Content-Type: application/x-www-form-urlencoded'               --data "credential=$credential"               "$STAGING_ORIGIN/bot/android-auth.php"
+          )"
+
+          echo "android-auth status=$status"
+          test "$status" = "303"
+          grep -qi '^set-cookie: mgw_android_auth=' "$tmp/auth-headers.txt"
+          grep -qi '^location: .*\/app\/v110\.php' "$tmp/auth-headers.txt"
+
+          payload='{"action":"bootstrap","initData":"","sessionId":"android-live-probe","deviceId":"android-live-probe"}'
+          curl -sS -b "$tmp/cookies.txt"             -H 'Content-Type: application/json'             --data "$payload"             "$STAGING_ORIGIN/bot/api.php" > "$tmp/bootstrap.json"
+
+          curl -sS -b "$tmp/cookies.txt"             -H 'Content-Type: application/json'             --data '{"initData":"","sessionId":"android-live-probe","deviceId":"android-live-probe"}'             "$STAGING_ORIGIN/bot/profile.php" > "$tmp/profile.json"
+
+          curl -sS -b "$tmp/cookies.txt"             -H 'Content-Type: application/json'             --data '{"initData":"","sessionId":"android-live-probe","deviceId":"android-live-probe"}'             "$STAGING_ORIGIN/bot/profile-v2.php" > "$tmp/profile-v2.json"
+
+          jq -e '.ok == true and (.user.id | startswith("android_")) and (.user.mgw_id | startswith("MGW-"))' "$tmp/bootstrap.json" >/dev/null
+          jq -e '.ok == true and .auth.provider == "android_device" and (.profile.mgw_id | startswith("MGW-"))' "$tmp/profile.json" >/dev/null
+          jq -e '.ok == true and .auth.provider == "android_device" and (.profile.mgw_id | startswith("MGW-")) and (.user.id | startswith("android_"))' "$tmp/profile-v2.json" >/dev/null
+
+          bootstrap_mgw="$(jq -r '.user.mgw_id' "$tmp/bootstrap.json")"
+          profile_mgw="$(jq -r '.profile.mgw_id' "$tmp/profile.json")"
+          profile_v2_mgw="$(jq -r '.profile.mgw_id' "$tmp/profile-v2.json")"
+          test "$bootstrap_mgw" = "$profile_mgw"
+          test "$bootstrap_mgw" = "$profile_v2_mgw"
+
+          echo "Android live auth chain PASS"
+          jq '{ok,user:{id:.user.id,mgw_id:.user.mgw_id},session_locked:(.session.locked // false)}' "$tmp/bootstrap.json"
+          jq '{ok,auth,profile:{mgw_id:.profile.mgw_id,nickname:.profile.nickname}}' "$tmp/profile.json"
+          jq '{ok,auth,profile:{mgw_id:.profile.mgw_id,nickname:.profile.nickname},user:{id:.user.id}}' "$tmp/profile-v2.json"
