@@ -12,6 +12,14 @@ final class ShellConfig {
     }
 
     static String androidAuthUrl(String configuredBaseUrl) {
+        return endpointUrl(configuredBaseUrl, "/bot/android-auth.php");
+    }
+
+    static String androidReauthUrl(String configuredBaseUrl) {
+        return endpointUrl(configuredBaseUrl, "/bot/android-reauth.php");
+    }
+
+    private static String endpointUrl(String configuredBaseUrl, String path) {
         try {
             URI base = new URI(configuredBaseUrl == null ? "" : configuredBaseUrl.trim());
             if (!"https".equalsIgnoreCase(base.getScheme())
@@ -25,7 +33,7 @@ final class ShellConfig {
                     null,
                     base.getHost(),
                     base.getPort(),
-                    "/bot/android-auth.php",
+                    path,
                     null,
                     null
             ).toASCIIString();
