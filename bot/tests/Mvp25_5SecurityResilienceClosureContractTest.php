@@ -56,8 +56,8 @@ $assert(str_contains($auth, 'StagingTestAuthService'), 'Test identity must remai
 $website = $read('bot/account-data-website-hook.php');
 $assert(str_contains($website, "hash_hmac('sha256'"), 'Website lifecycle hook must use SHA-256 HMAC.');
 $assert(str_contains($website, '$timestamp . "\\n" . $body'), 'Website lifecycle hook must sign timestamp plus exact raw body.');
-$assert(str_contains($website, 'abs(time() - $timestamp) > 300'), 'Website lifecycle hook must reject stale signed requests.');
-$assert(str_contains($website, 'hash_equals($expected, $provided)'), 'Website lifecycle hook HMAC comparison must be constant-time.');
+$assert(str_contains($website, '$now - $timestamp > 300'), 'Website lifecycle hook must reject stale signed requests.');
+$assert(str_contains($website, 'hash_equals($expected, $signature)'), 'Website lifecycle hook HMAC comparison must be constant-time.');
 
 $adminEndpoints = [
     'bot/admin-analytics.php','bot/admin-compensation.php','bot/admin-economy.php',
