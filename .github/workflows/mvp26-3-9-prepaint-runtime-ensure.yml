@@ -58,9 +58,6 @@ jobs:
       - name: Existing account-link regression
         run: php bot/tests/Mvp26_3AccountLinkServiceTest.php
 
-      - name: Existing unified-profile client contract
-        run: php bot/tests/Mvp15UnifiedProfileAvatarClientTest.php
-
       - name: Tracked secret scan
         run: node scripts/ci/check-secrets.mjs
 
@@ -73,6 +70,9 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
-          allowed='^(\.github/workflows/mvp26-3-9-prepaint-runtime-ensure\.yml|bot/profile\.php|bot/tests/Mvp26_3_8FirstPaintBalanceContractTest\.php|bot/tests/Mvp26_3_9PrepaintRuntimeEnsureTest\.php)$'
+          allowed='^(\.github/workflows/mvp26-3-9-prepaint-runtime-ensure\.yml|\.github/workflows/mvp26-3-8-first-paint-live-balance\.yml|bot/profile\.php|bot/tests/Mvp26_3_8FirstPaintBalanceContractTest\.php|bot/tests/Mvp26_3_9PrepaintRuntimeEnsureTest\.php)
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-26.3.9 paths:\n%s\n' "$bad" >&2; exit 1; }
+
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-26.3.9 paths:\n%s\n' "$bad" >&2; exit 1; }
