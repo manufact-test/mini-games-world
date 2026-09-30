@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.CookieManager;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
@@ -29,6 +30,9 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 public final class MainActivity extends Activity {
     private static final String STATE_WEBVIEW = "mgw_webview_state";
 
@@ -39,6 +43,8 @@ public final class MainActivity extends Activity {
     private TextView errorTitle;
     private TextView errorText;
     private NavigationPolicy navigationPolicy;
+    private DeviceCredentialStore credentialStore;
+    private String configuredBaseUrl;
     private boolean mainFrameFailed;
     private Object backCallback;
 
@@ -53,13 +59,15 @@ public final class MainActivity extends Activity {
         applySystemInsets();
         configureBackNavigation();
 
-        String configuredBaseUrl = ShellConfig.configuredBaseUrl();
-        if (!NavigationPolicy.isSafeHttpsBase(configuredBaseUrl)) {
+        configuredBaseUrl = ShellConfig.configuredBaseUrl();
+        if (!NavigationPolicy.isSafeHttpsBase(configuredBaseUrl)
+                || ShellConfig.androidAuthUrl(configuredBaseUrl).isEmpty()) {
             showConfigurationError();
             return;
         }
 
         navigationPolicy = new NavigationPolicy(configuredBaseUrl);
+        credentialStore = new DeviceCredentialStore(this);
         configureWebView(webView);
 
         Bundle webState = savedInstanceState == null ? null : savedInstanceState.getBundle(STATE_WEBVIEW);
@@ -168,16 +176,45 @@ public final class MainActivity extends Activity {
         settings.setGeolocationEnabled(false);
         settings.setSafeBrowsingEnabled(true);
 
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        cookieManager.setAcceptThirdPartyCookies(target, false);
+
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
         target.setWebChromeClient(new WebChromeClient());
         target.setWebViewClient(new MgwWebViewClient());
     }
 
     private void loadInitialIntent(Intent intent) {
-        String incoming = safeIntentUrl(intent);
+        // MVP-26.2 always establishes the server-owned Android session before
+        // entering the web product. App/deep-link routing is added after this
+        // identity boundary is accepted.
+        beginAndroidAuthentication();
+    }
+
+    private void beginAndroidAuthentication() {
+        if (navigationPolicy == null || credentialStore == null) {
+            showConfigurationError();
+            return;
+        }
+        String authUrl = ShellConfig.androidAuthUrl(configuredBaseUrl);
+        if (authUrl.isEmpty() || !navigationPolicy.isInternal(authUrl)) {
+            showConfigurationError();
+            return;
+        }
+
+        final String credential;
+        try {
+            credential = credentialStore.getOrCreate();
+        } catch (RuntimeException error) {
+            showNetworkError(R.string.security_error_text);
+            return;
+        }
+
+        String form = "credential=" + URLEncoder.encode(credential, StandardCharsets.UTF_8);
         mainFrameFailed = false;
         showLoading(true);
-        webView.loadUrl(navigationPolicy.initialUrl(incoming));
+        webView.postUrl(authUrl, form.getBytes(StandardCharsets.UTF_8));
     }
 
     private String safeIntentUrl(Intent intent) {
@@ -222,10 +259,12 @@ public final class MainActivity extends Activity {
         errorPanel.setVisibility(View.GONE);
         showLoading(true);
         String current = webView.getUrl();
-        if (current != null && navigationPolicy.isInternal(current)) {
+        if (current == null || current.contains("/bot/android-auth.php")) {
+            beginAndroidAuthentication();
+        } else if (navigationPolicy.isInternal(current)) {
             webView.reload();
         } else {
-            webView.loadUrl(navigationPolicy.initialUrl(null));
+            beginAndroidAuthentication();
         }
     }
 

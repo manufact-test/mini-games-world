@@ -10,7 +10,7 @@ final class RuntimeAccountOwnershipService
         $provider = strtolower(trim($provider));
         $legacyUserId = trim($legacyUserId);
         $mgwId = trim($mgwId);
-        if (!in_array($provider, ['telegram', 'development'], true)) {
+        if (!in_array($provider, ['telegram', 'development', 'android_device'], true)) {
             throw new RuntimeException('Runtime account ownership provider is invalid.');
         }
         if ($legacyUserId === '' || strlen($legacyUserId) > 191) {

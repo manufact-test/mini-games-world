@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/StagingTestAuthService.php';
+require_once dirname(__DIR__) . '/accounts/AndroidDeviceAuthService.php';
 
 final class AuthService
 {
@@ -35,6 +36,17 @@ final class AuthService
         );
         if (is_array($stagingTestUser)) {
             return $this->finishAuthenticatedUser($stagingTestUser, $sessionId, $attachIdentity);
+        }
+
+        // MVP-26.2: the Android container owns only a high-entropy device
+        // credential. The server exchanges it for this HttpOnly staging session
+        // cookie and resolves the existing provider-neutral MGW account owner.
+        // No Telegram initData is forged and no second account model is created.
+        $androidUser = (new AndroidDeviceAuthService($this->config))->authenticateCookie(
+            (string)($_COOKIE[AndroidDeviceAuthService::COOKIE_NAME] ?? '')
+        );
+        if (is_array($androidUser)) {
+            return $androidUser;
         }
 
         if ($this->browserDevUserAllowed()) {

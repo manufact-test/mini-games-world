@@ -1,0 +1,180 @@
+name: MVP-26.2 Android Device Auth
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'android-app/**'
+      - 'bot/accounts/AndroidAuthAttemptLimiter.php'
+      - 'bot/accounts/AndroidDeviceAuthService.php'
+      - 'bot/accounts/RuntimeAccountOwnershipService.php'
+      - 'bot/android-auth.php'
+      - 'bot/database/migrations/20260930_0069_create_android_auth_attempts.php'
+      - 'bot/services/AuthService.php'
+      - 'bot/tests/Mvp26_2AndroidDeviceAuthTest.php'
+      - '.github/workflows/mvp26-2-android-device-auth.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  provider-neutral-auth:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          php -l bot/accounts/AndroidAuthAttemptLimiter.php
+          php -l bot/accounts/AndroidDeviceAuthService.php
+          php -l bot/accounts/RuntimeAccountOwnershipService.php
+          php -l bot/android-auth.php
+          php -l bot/database/migrations/20260930_0069_create_android_auth_attempts.php
+          php -l bot/services/AuthService.php
+          php -l bot/tests/Mvp26_2AndroidDeviceAuthTest.php
+
+      - name: Android provider-neutral auth proof
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp26_2AndroidDeviceAuthTest.php
+          php bot/tests/AccountIdentityServiceTest.php
+          php bot/tests/Mvp15ProviderNeutralIdentityCoreTest.php
+          php bot/tests/Mvp25_5PublicErrorLogSanitizationContractTest.php
+          php bot/tests/Mvp25_5SecurityResilienceClosureContractTest.php
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
+      - name: MVP-26.2 scope guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(\.github/workflows/mvp26-2-android-device-auth\.yml|android-app/README\.md|android-app/docs/MVP26_2_ANDROID_DEVICE_AUTH\.md|android-app/app/build\.gradle|android-app/app/src/main/java/com/minigamesworld/app/(MainActivity|ShellConfig|DeviceCredentialStore)\.java|android-app/tools/verify-foundation\.py|bot/accounts/(AndroidAuthAttemptLimiter|AndroidDeviceAuthService|RuntimeAccountOwnershipService)\.php|bot/android-auth\.php|bot/database/migrations/20260930_0069_create_android_auth_attempts\.php|bot/services/AuthService\.php|bot/tests/Mvp26_2AndroidDeviceAuthTest\.php)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-26.2 paths:\n%s\n' "$bad" >&2; exit 1; }
+
+  android-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 9.5
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.5.0'
+
+      - name: Ensure Android SDK 36
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v sdkmanager >/dev/null 2>&1; then
+            SDKMANAGER="$(command -v sdkmanager)"
+          elif [[ -x "${ANDROID_SDK_ROOT:-}/cmdline-tools/latest/bin/sdkmanager" ]]; then
+            SDKMANAGER="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          elif [[ -x "${ANDROID_HOME:-}/cmdline-tools/latest/bin/sdkmanager" ]]; then
+            SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          else
+            echo 'sdkmanager is unavailable' >&2
+            exit 1
+          fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0'
+
+      - name: Verify Android auth shell
+        working-directory: android-app
+        run: python3 tools/verify-foundation.py
+
+      - name: Test lint assemble installable staging APK
+        working-directory: android-app
+        env:
+          MGW_BASE_URL: https://seashell-okapi-889488.hostingersite.com/
+        run: gradle --no-daemon clean test lint assembleDebug
+
+      - name: Upload staging APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgw-mvp26-2-android-staging-debug
+          path: android-app/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgw-mvp26-2-android-reports
+          path: |
+            android-app/app/build/reports/**
+            android-app/app/build/test-results/**
+          if-no-files-found: warn
+          retention-days: 7
+
+  mysql-migration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_android_auth
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql
+          coverage: none
+
+      - name: Prove Android auth attempt migration on MySQL 8.4
+        run: |
+          php -r '
+            require "bot/database/DatabaseConnectionInterface.php";
+            require "bot/database/PdoDatabaseConnection.php";
+            require "bot/database/DatabaseMigrationInterface.php";
+            $pdo=new PDO("mysql:host=127.0.0.1;port=3306;dbname=mgw_android_auth;charset=utf8mb4","root","root",[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
+            $db=new PdoDatabaseConnection($pdo);
+            $migration=require "bot/database/migrations/20260930_0069_create_android_auth_attempts.php";
+            $migration->up($db);
+            $migration->up($db);
+            $count=(int)$db->fetchValue("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=\"mgw_android_auth_attempts\"");
+            if ($count !== 1) throw new RuntimeException("Android auth attempt table missing.");
+            echo "MVP-26.2 MySQL migration PASS\n";
+          '
