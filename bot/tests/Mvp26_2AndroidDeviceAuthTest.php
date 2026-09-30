@@ -62,7 +62,7 @@ $assertSame(
 $config = [
     'environment'=>'staging',
     'storage_driver'=>'json',
-    'bot_token'=>'123456789:mvp26-android-test-secret-not-live',
+    'bot_token'=>'mvp26-android-test-secret-not-live',
     'mgw_account_session_ttl_sec'=>3600,
     'database'=>[
         'enabled'=>true,
@@ -166,8 +166,8 @@ $assertThrows(
 $authSource = file_get_contents($root . '/services/AuthService.php') ?: '';
 $telegramPos = strpos($authSource, '$initData !==');
 $stagingPos = strpos($authSource, 'StagingTestAuthService');
-$androidPos = strpos($authSource, 'AndroidDeviceAuthService');
-$browserPos = strpos($authSource, 'browserDevUserAllowed');
+$androidPos = strpos($authSource, '$androidUser = (new AndroidDeviceAuthService');
+$browserPos = strpos($authSource, 'if ($this->browserDevUserAllowed())');
 $assert($telegramPos !== false && $stagingPos !== false && $androidPos !== false && $browserPos !== false, 'AuthService must expose all reviewed auth boundaries.');
 $assert($telegramPos < $androidPos, 'Telegram signed auth must remain ahead of the Android cookie adapter.');
 $assert($stagingPos < $androidPos, 'Canonical staging E2E auth must remain ahead of Android device auth.');
