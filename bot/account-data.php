@@ -16,7 +16,7 @@ require_once __DIR__ . '/accounts/AccountDataLifecycleService.php';
 function mgw_account_data_http_status(string $reason): int
 {
     return match ($reason) {
-        'reauth_required', 'identity_unavailable' => 401,
+        'reauth_required', 'android_reauth_required', 'identity_unavailable' => 401,
         'account_not_found', 'export_missing' => 404,
         'deletion_locked', 'deletion_not_cancellable', 'export_not_ready', 'export_expired', 'rate_limited' => 409,
         'invalid_mgw_id', 'invalid_source' => 422,
