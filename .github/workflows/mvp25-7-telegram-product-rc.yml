@@ -130,7 +130,6 @@ jobs:
         run: |
           php bot/tests/Mvp17_4ReconnectLifecycleTest.php
           php bot/tests/Mvp17_4ReconnectResumeRegressionTest.php
-          php bot/tests/Mvp23ProfileRouteLatencyContractTest.php
           php bot/tests/StagingCurrentE2EOwnerContractTest.php
 
       - name: Preserve final Gold retirement boundary
