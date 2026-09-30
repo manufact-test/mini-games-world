@@ -137,7 +137,7 @@ $records = [];
 if (is_file($path)) {
     $lines = @file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     if (is_array($lines)) {
-        $cutoff = time() - 1800;
+        $cutoff = time() - 21600; // temporary 6h diagnostic readback to recover the last real-device trace
         foreach (array_slice($lines, -300) as $line) {
             $item = json_decode($line, true);
             if (!is_array($item)) continue;
