@@ -5,7 +5,8 @@ Status: Android product workstream integrated on the manually accepted MVP-25 Te
 ## Current checkpoint
 
 - MVP-26.1 foundation: accepted on staging.
-- MVP-26.2: provider-neutral Android device authentication for internal staging validation.
+- MVP-26.2 provider-neutral Android device authentication: accepted.
+- MVP-26.3 Android ↔ Telegram account-link closure: automated + real-device manual acceptance complete.
 - Android branch history from the old prototype was not merged; only isolated technical assets were transplanted.
 
 ## Architecture
@@ -54,4 +55,6 @@ MGW_BASE_URL="https://staging.example.invalid/" gradle --no-daemon clean test li
 
 ## Current limitations
 
-MVP-26.2 uses a staging-only internal Android identity. It does not yet link an existing Telegram account automatically, and destructive account actions retain the existing Telegram reauth contract until a later Android reauth slice.
+- Google/commercial platform providers remain intentionally disabled; core MGW product behavior does not depend on them.
+- Destructive account actions retain the existing Telegram reauth contract until a dedicated Android reauth owner is introduced.
+- The accepted Android ↔ Telegram link flow uses MGW as the canonical account owner and preserves the existing Telegram profile, wallet, purchases, statistics, rating, friends and progress.
