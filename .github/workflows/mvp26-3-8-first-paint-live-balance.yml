@@ -73,7 +73,12 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
-          allowed='^(\.github/workflows/mvp26-3-8-first-paint-live-balance\.yml|\.github/workflows/mvp26-3-9-prepaint-runtime-ensure\.yml|bot/profile\.php|app/assets/js/main-v110-handoff-shell\.js|app/runtime/client/version-manifest\.php|bot/tests/Mvp26_3_8FirstPaintBalanceContractTest\.php|bot/tests/Mvp26_3_9PrepaintRuntimeEnsureTest\.php|bot/tests/Mvp25_4StartupPerformanceContractTest\.php|bot/tests/Mvp15UnifiedProfileAvatarClientTest\.php)
+          allowed='^(\.github/workflows/mvp26-3-8-first-paint-live-balance\.yml|\.github/workflows/mvp26-3-9-prepaint-runtime-ensure\.yml|bot/profile\.php|app/assets/js/main-v110-handoff-shell\.js|app/runtime/client/version-manifest\.php|bot/tests/Mvp26_3_8FirstPaintBalanceContractTest\.php|bot/tests/Mvp26_3_9PrepaintRuntimeEnsureTest\.php|bot/tests/Mvp25_4StartupPerformanceContractTest\.php|bot/tests/Mvp15UnifiedProfileAvatarClientTest\.php)          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-26.3.8 paths:\n%s\n' "$bad" >&2; exit 1; }
+
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-26.3.8 paths:\n%s\n' "$bad" >&2; exit 1; }
+
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-26.3.8 paths:\n%s\n' "$bad" >&2; exit 1; }
 
