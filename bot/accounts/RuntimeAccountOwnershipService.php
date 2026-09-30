@@ -102,6 +102,36 @@ final class RuntimeAccountOwnershipService
         });
     }
 
+    public function findByMgwId(string $mgwId): ?array
+    {
+        $mgwId = trim($mgwId);
+        if (!MgwIdGenerator::isValid($mgwId)) {
+            throw new RuntimeException('Runtime account ownership MGW ID is invalid.');
+        }
+
+        $rows = $this->database->fetchAll(
+            'SELECT account_ref, mgw_id, legacy_user_id, ownership_status
+             FROM mgw_account_ownership
+             WHERE mgw_id = :mgw_id',
+            ['mgw_id'=>$mgwId]
+        );
+        if (count($rows) > 1) {
+            throw new RuntimeException('Runtime account ownership collides with multiple rows.');
+        }
+        if ($rows === []) return null;
+
+        $row = $rows[0];
+        if ((string)($row['ownership_status'] ?? '') !== 'active') {
+            throw new RuntimeException('Runtime account ownership is not active.');
+        }
+        return [
+            'account_ref'=>(string)$row['account_ref'],
+            'mgw_id'=>(string)$row['mgw_id'],
+            'legacy_user_id'=>(string)$row['legacy_user_id'],
+            'created'=>false,
+        ];
+    }
+
     private function timestamp(): string
     {
         return (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s.u');

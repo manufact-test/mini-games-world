@@ -65,13 +65,16 @@ final class AndroidDeviceAuthService
             [],
             $sessionToken
         );
-        $ownership = (new RuntimeAccountOwnershipService($database))->ensure(
-            self::PROVIDER,
-            $this->runtimeUserId($subject),
-            (string)$identity['mgw_id']
-        );
+        $ownershipService = new RuntimeAccountOwnershipService($database);
+        $ownership = $ownershipService->findByMgwId((string)$identity['mgw_id'])
+            ?? $ownershipService->ensure(
+                self::PROVIDER,
+                $this->runtimeUserId($subject),
+                (string)$identity['mgw_id']
+            );
         $record = $this->identityRecord((string)$identity['mgw_id'], $subject);
         $record['account_ref'] = (string)$ownership['account_ref'];
+        $record['legacy_user_id'] = (string)$ownership['legacy_user_id'];
 
         return [
             'session_token'=>$sessionToken,
@@ -125,12 +128,15 @@ final class AndroidDeviceAuthService
         if ($rows === []) return null;
 
         $record = $rows[0];
-        $ownership = (new RuntimeAccountOwnershipService($database))->ensure(
-            self::PROVIDER,
-            $this->runtimeUserId((string)$record['provider_subject']),
-            (string)$record['mgw_id']
-        );
+        $ownershipService = new RuntimeAccountOwnershipService($database);
+        $ownership = $ownershipService->findByMgwId((string)$record['mgw_id'])
+            ?? $ownershipService->ensure(
+                self::PROVIDER,
+                $this->runtimeUserId((string)$record['provider_subject']),
+                (string)$record['mgw_id']
+            );
         $record['account_ref'] = (string)$ownership['account_ref'];
+        $record['legacy_user_id'] = (string)$ownership['legacy_user_id'];
         return $record;
     }
 
@@ -153,7 +159,8 @@ final class AndroidDeviceAuthService
         $subject = trim((string)($record['provider_subject'] ?? ''));
         $mgwId = trim((string)($record['mgw_id'] ?? ''));
         $accountRef = trim((string)($record['account_ref'] ?? ''));
-        if ($subject === '' || $mgwId === '' || $accountRef === '') {
+        $legacyUserId = trim((string)($record['legacy_user_id'] ?? ''));
+        if ($subject === '' || $mgwId === '' || $accountRef === '' || $legacyUserId === '') {
             throw new RuntimeException('Android authenticated identity is incomplete.');
         }
 
@@ -161,7 +168,7 @@ final class AndroidDeviceAuthService
         if ($nickname === '') $nickname = 'Игрок';
 
         return [
-            'id'=>$this->runtimeUserId($subject),
+            'id'=>$legacyUserId,
             'first_name'=>$nickname,
             'username'=>$nickname,
             'photo_url'=>'',

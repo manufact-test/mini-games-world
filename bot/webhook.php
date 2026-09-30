@@ -11,6 +11,7 @@ require_once __DIR__ . '/helpers/TelegramWebhookSecurity.php';
 require_once __DIR__ . '/helpers/RuntimeAdminGuard.php';
 require_once __DIR__ . '/helpers/AdminSystemCheckGuard.php';
 require_once __DIR__ . '/helpers/UserWelcomeGuard.php';
+require_once __DIR__ . '/helpers/AccountLinkTelegramGuard.php';
 require_once __DIR__ . '/helpers/MaintenanceWebhookGuard.php';
 require_once __DIR__ . '/helpers/StagingMenuButtonReconciler.php';
 
@@ -45,9 +46,11 @@ try {
     $runtimeGuard = new RuntimeAdminGuard($telegram, $config);
     $auditGuard = new AdminSystemCheckGuard($telegram, $config);
 
+    $accountLinkGuard = new AccountLinkTelegramGuard($telegram, $config);
     $welcomeGuard = new UserWelcomeGuard($telegram, $config);
     if (!$runtimeGuard->handle($update)
         && !$auditGuard->handle($update)
+        && !$accountLinkGuard->handle($update)
         && !$welcomeGuard->handle($update)) {
         $handler = new WebhookHandler($telegram, $config);
         $handler->handle($update);
