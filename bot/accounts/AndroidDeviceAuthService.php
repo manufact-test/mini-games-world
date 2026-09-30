@@ -67,7 +67,7 @@ final class AndroidDeviceAuthService
         );
         $ownership = (new RuntimeAccountOwnershipService($database))->ensure(
             self::PROVIDER,
-            $subject,
+            $this->runtimeUserId($subject),
             (string)$identity['mgw_id']
         );
         $record = $this->identityRecord((string)$identity['mgw_id'], $subject);
@@ -127,7 +127,7 @@ final class AndroidDeviceAuthService
         $record = $rows[0];
         $ownership = (new RuntimeAccountOwnershipService($database))->ensure(
             self::PROVIDER,
-            (string)$record['provider_subject'],
+            $this->runtimeUserId((string)$record['provider_subject']),
             (string)$record['mgw_id']
         );
         $record['account_ref'] = (string)$ownership['account_ref'];
@@ -161,7 +161,7 @@ final class AndroidDeviceAuthService
         if ($nickname === '') $nickname = 'Игрок';
 
         return [
-            'id'=>'android_' . $subject,
+            'id'=>$this->runtimeUserId($subject),
             'first_name'=>$nickname,
             'username'=>$nickname,
             'photo_url'=>'',
@@ -187,6 +187,11 @@ final class AndroidDeviceAuthService
                 'provider'=>self::PROVIDER,
             ]
         );
+    }
+
+    private function runtimeUserId(string $subject): string
+    {
+        return 'android_' . $subject;
     }
 
     private function credentialSubject(string $credential): string
