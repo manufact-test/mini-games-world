@@ -1,0 +1,37 @@
+name: DIAG MVP-26.3 post-1849 trace read
+
+on:
+  push:
+    branches:
+      - diag/mvp26-3-post1849-trace-read-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Read privacy-minimal Android staging traces
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://seashell-okapi-889488.hostingersite.com/bot/staging-android-balance-trace.php'
+          echo "Fetching $url"
+          curl --fail --silent --show-error --connect-timeout 15 --max-time 30 "$url" | tee /tmp/trace.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('/tmp/trace.json')
+          data=json.loads(p.read_text())
+          print("service:", data.get("service"))
+          print("server_time_utc:", data.get("server_time_utc"))
+          traces=data.get("traces") or []
+          print("trace_count:", len(traces))
+          for tr in traces:
+              print("TRACE", tr.get("trace_id"))
+              for ev in tr.get("events") or []:
+                  print(json.dumps(ev, ensure_ascii=False, sort_keys=True))
+          PY
