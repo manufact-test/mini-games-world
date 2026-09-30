@@ -1,0 +1,100 @@
+name: MVP-26.3.2 Account Link UI
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/api/client.js'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/js/profile/mgw-account-link-ui.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'docs/MVP26_3_2_ACCOUNT_LINK_UI.md'
+      - '.github/workflows/mvp26-3-2-account-link-ui.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  ui-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: JavaScript syntax
+        run: |
+          set -euo pipefail
+          node --check app/assets/js/api/client.js
+          node --check app/assets/js/screens/profile-screen-v110.js
+          node --check app/assets/js/profile/mgw-account-link-ui.js
+
+      - name: Account-link UI ownership contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const client=fs.readFileSync('app/assets/js/api/client.js','utf8');
+          const profile=fs.readFileSync('app/assets/js/screens/profile-screen-v110.js','utf8');
+          const ui=fs.readFileSync('app/assets/js/profile/mgw-account-link-ui.js','utf8');
+          const manifest=fs.readFileSync('app/runtime/client/version-manifest.php','utf8');
+
+          const need=(ok,msg)=>{ if(!ok) throw new Error(msg); };
+          need(client.includes('/bot/account-link.php'), 'account-link endpoint missing');
+          need(client.includes('accountLinkCreate:'), 'create API owner missing');
+          need(client.includes('accountLinkStatus:'), 'status API owner missing');
+          need(client.includes('accountLinkFinalize:'), 'finalize API owner missing');
+
+          need(profile.includes('accountLinkProfileMarkup(state.profileAuth, identities)'), 'Profile projection missing');
+          need(profile.includes('data-open-account-link'), 'Profile click owner missing');
+          need(profile.includes('initAccountLinkUi()'), 'resume owner missing');
+
+          need(ui.includes("=== 'android_device'"), 'Android-only gate missing');
+          need(ui.includes("=== 'telegram'"), 'Telegram identity gate missing');
+          need(ui.includes("globalThis.location.assign(candidate)"), 'external top-level navigation missing');
+          need(ui.includes("globalThis.location.reload()"), 'post-link canonical reload missing');
+          need(ui.includes("localStorage.setItem(STORAGE_KEY"), 'bounded continuation state missing');
+          need(!ui.includes('telegram_url:telegramUrl'), 'raw Telegram URL must not be persisted');
+          need(!ui.includes('localStorage.setItem(STORAGE_KEY, telegram'), 'raw Telegram URL must not be persisted');
+          need(manifest.includes('client.js?v=1150'), 'client cache-bust missing');
+          need(manifest.includes('profile-screen-v110.js?v=1134'), 'Profile cache-bust missing');
+          NODE
+
+      - name: Backend regression proof
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp26_3AccountLinkServiceTest.php
+          php bot/tests/Mvp26_2AndroidDeviceAuthTest.php
+
+      - name: Navigation policy remains external-link capable
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'Set.of("https", "http", "mailto", "tel", "tg")' android-app/app/src/main/java/com/minigamesworld/app/NavigationPolicy.java
+          grep -F 'openExternal(uri);' android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
+      - name: Scope guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(\.github/workflows/mvp26-3-2-account-link-ui\.yml|docs/MVP26_3_2_ACCOUNT_LINK_UI\.md|app/assets/js/api/client\.js|app/assets/js/screens/profile-screen-v110\.js|app/assets/js/profile/mgw-account-link-ui\.js|app/runtime/client/version-manifest\.php)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-26.3.2 paths:\n%s\n' "$bad" >&2; exit 1; }
