@@ -1,0 +1,234 @@
+name: MVP-25.7 Telegram Product Release Candidate
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.github/workflows/mvp25-7-telegram-product-rc.yml'
+      - 'bot/tests/Mvp25_7TelegramProductRcContractTest.php'
+      - 'docs/MVP25_7_TELEGRAM_PRODUCT_RELEASE_CANDIDATE.md'
+      - 'docs/MVP25_7_MANUAL_ACCEPTANCE.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp25-7-rc-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  product-regression:
+    name: Telegram Product RC — full product regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          clean: true
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: RC syntax and ownership
+        run: |
+          set -Eeuo pipefail
+          php -l bot/tests/Mvp25_7TelegramProductRcContractTest.php
+          php bot/tests/Mvp25_7TelegramProductRcContractTest.php
+          node --check bot/tests/Mvp25_6StoreClientContractTest.mjs
+
+      - name: Re-prove MVP-25.1 product-owner cleanup
+        run: |
+          php bot/tests/Mvp25_1RouteAndDeadResidueContractTest.php
+          php bot/tests/Mvp25_1ProfilePlaceholderCleanupContractTest.php
+          php bot/tests/Mvp25_1V110ManifestNormalizationContractTest.php
+
+      - name: Re-prove MVP-25.2 through MVP-25.4 closure
+        run: |
+          php bot/tests/Mvp25_2FinalHumanCopyClosureContractTest.php
+          php bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php
+          php bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest.php
+          php bot/tests/Mvp25_2TournamentHumanCopyContractTest.php
+          php bot/tests/Mvp25_4PerformanceReliabilityClosureContractTest.php
+          php bot/tests/Mvp25_4ReliabilityContractTest.php
+
+      - name: Re-prove MVP-25.5 security and resilience
+        run: |
+          php bot/tests/Mvp25_5WebhookIngressSecurityContractTest.php
+          php bot/tests/Mvp25_5RateLimitContractTest.php
+          php bot/tests/Mvp25_5WriteReplaySafetyTest.php
+          php bot/tests/Mvp25_5WriteReplaySafetyContractTest.php
+          php bot/tests/Mvp25_5PublicErrorLogSanitizationContractTest.php
+          php bot/tests/Mvp25_5SecurityResilienceClosureContractTest.php
+
+      - name: Re-prove MVP-25.6 complete monetization-disabled Store
+        run: |
+          php bot/tests/Mvp25_6MonetizationDisabledStoreTest.php
+          node bot/tests/Mvp25_6StoreClientContractTest.mjs
+          php bot/tests/Mvp25_6ClosureContractTest.php
+
+      - name: Preserve all eight games and rematch
+        run: |
+          php bot/tests/Mvp167AllGamesRegressionContractTest.php
+          php bot/tests/Mvp14r2GamesContractTest.php
+          php bot/tests/Mvp14r2GamesBaselineTest.php
+          php bot/tests/RematchOptimisticUxContractTest.php
+
+      - name: Preserve economy Store Profile and cosmetics
+        run: |
+          php bot/tests/UnifiedEconomyRuntimeSyncTest.php
+          php bot/tests/UnifiedEconomyUninitializedRuntimeHydrationTest.php
+          php bot/tests/Mvp19_1ProductInventoryTest.php
+          php bot/tests/Mvp19_2CosmeticStoreTest.php
+          php bot/tests/Mvp19_3ProfileAvatarsTest.php
+          php bot/tests/Mvp19_3ProfileBackgroundsTest.php
+
+      - name: Preserve friends invites matchmaking and notifications
+        run: |
+          php bot/tests/Mvp17_1MatchmakingQueueTest.php
+          php bot/tests/Mvp17_2HumanPriorityFallbackTest.php
+          php bot/tests/Mvp18_3InviteV2ContractTest.php
+          php bot/tests/Mvp18_4UniversalInviteLandingContractTest.php
+          php bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
+          php bot/tests/FriendGraphServiceTest.php
+          php bot/tests/Mvp18_6NotificationPipelineContractTest.php
+
+      - name: Preserve Arena rating and official tournaments
+        run: |
+          php bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php
+          php bot/tests/Mvp20_7RatingArchiveTest.php
+          php bot/tests/Mvp21_11TournamentReleaseProofTest.php
+          php bot/tests/Mvp21_9TournamentProductProjectionContractTest.php
+          php bot/tests/GamePublicIdentityResponseProjectionTest.php
+
+      - name: Preserve Support moderation Admin account and incident lifecycle
+        run: |
+          php bot/tests/SupportTicketServiceTest.php
+          php bot/tests/Mvp22_2CompensationWorkflowTest.php
+          php bot/tests/Mvp22_3ModerationWorkflowTest.php
+          php bot/tests/Mvp22_4AntiFraudWorkflowTest.php
+          php bot/tests/Mvp22_5SystemAdminTest.php
+          php bot/tests/Mvp22_7AdminOperationsTest.php
+          php bot/tests/Mvp22_8AccountDataLifecycleTest.php
+          php bot/tests/Mvp22_9IncidentRecoveryTest.php
+          php bot/tests/Mvp23AdminClosureContractTest.php
+
+      - name: Preserve reconnect and current staging owner
+        run: |
+          php bot/tests/Mvp17_4ReconnectLifecycleTest.php
+          php bot/tests/Mvp17_4ReconnectResumeRegressionTest.php
+          php bot/tests/StagingCurrentE2EOwnerContractTest.php
+
+      - name: Preserve final Gold retirement boundary
+        run: |
+          php bot/tests/Mvp24FinalGoldRemovalClosureContractTest.php
+          php bot/tests/Mvp24MiniAppGoldStateCleanupContractTest.php
+          php bot/tests/Mvp24LegacyAdminCommerceReadOnlyContractTest.php
+          php bot/tests/Mvp24LegacyApiCommerceCleanupContractTest.php
+          php bot/tests/ShopPaymentApiActionGateRegressionTest.php
+          php bot/tests/Mvp24PublicGoldSanitationContractTest.php
+
+      - name: Tracked repository secret scan
+        run: |
+          node scripts/ci/check-secrets-contract.mjs
+          node scripts/ci/check-secrets.mjs
+
+      - name: RC proof-only scope guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          printf '%s\n' "$changed"
+          allowed='^(\.github/workflows/mvp25-7-telegram-product-rc\.yml|bot/tests/Mvp25_7TelegramProductRcContractTest\.php|docs/MVP25_7_TELEGRAM_PRODUCT_RELEASE_CANDIDATE\.md|docs/MVP25_7_MANUAL_ACCEPTANCE\.md)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-25.7 RC paths:\n%s\n' "$bad" >&2; exit 1; }
+
+          git diff --exit-code "$base" "$head" --             app bot/games bot/economy bot/ledger bot/payments bot/shop bot/tournaments             bot/services/PaymentService.php bot/cron site
+
+  mysql-persistence:
+    name: Telegram Product RC — critical MySQL persistence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          clean: true
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring
+          coverage: none
+
+      - name: Create isolated RC databases
+        run: |
+          php -r '
+            $pdo=new PDO("mysql:host=127.0.0.1;port=3306;charset=utf8mb4","root","root",[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
+            foreach (["mgw_archive","mgw_compensation","mgw_support","mgw_moderation","mgw_antifraud","mgw_incident","mgw_tournament"] as $db) {
+              $pdo->exec("CREATE DATABASE IF NOT EXISTS ".$db." CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+            }
+          '
+
+      - name: Critical MySQL owners
+        run: |
+          set -euo pipefail
+
+          MGW_TEST_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_archive'           MGW_TEST_MYSQL_USER=root MGW_TEST_MYSQL_PASSWORD=root             php bot/tests/Mvp24LegacyArchiveCurrentMySqlContractTest.php
+
+          MGW_COMPENSATION_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_compensation'           MGW_COMPENSATION_MYSQL_USER=root MGW_COMPENSATION_MYSQL_PASS=root             php bot/tests/Mvp22_2CompensationMySqlIntegrationTest.php
+
+          MGW_SUPPORT_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_support'           MGW_SUPPORT_MYSQL_USER=root MGW_SUPPORT_MYSQL_PASS=root             php bot/tests/SupportTicketMySqlIntegrationTest.php
+
+          MGW_MODERATION_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_moderation'           MGW_MODERATION_MYSQL_USER=root MGW_MODERATION_MYSQL_PASS=root             php bot/tests/Mvp22_3ModerationMySqlIntegrationTest.php
+
+          MGW_ANTIFRAUD_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_antifraud'           MGW_ANTIFRAUD_MYSQL_USER=root MGW_ANTIFRAUD_MYSQL_PASS=root             php bot/tests/Mvp22_4AntiFraudMySqlIntegrationTest.php
+
+          MGW_INCIDENT_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_incident'           MGW_INCIDENT_MYSQL_USER=root MGW_INCIDENT_MYSQL_PASS=root             php bot/tests/Mvp22_9IncidentRecoveryMySqlIntegrationTest.php
+
+          MGW_TEST_MYSQL_HOST=127.0.0.1 MGW_TEST_MYSQL_PORT=3306           MGW_TEST_MYSQL_DATABASE=mgw_tournament MGW_TEST_MYSQL_USER=root MGW_TEST_MYSQL_PASSWORD=root             php bot/tests/Mvp21_11TournamentReleaseProofTest.php
+
+  rc-gate:
+    name: MVP-25.7 automated RC gate
+    runs-on: ubuntu-24.04
+    needs: [product-regression, mysql-persistence]
+    if: always()
+    steps:
+      - name: Require both RC lanes
+        shell: bash
+        run: |
+          test "${{ needs.product-regression.result }}" = "success"
+          test "${{ needs.mysql-persistence.result }}" = "success"
+          echo "MVP-25.7 automated Telegram Product RC proof passed."
