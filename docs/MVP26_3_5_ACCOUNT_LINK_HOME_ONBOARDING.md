@@ -83,3 +83,24 @@ For final visual acceptance only, staging exposes a temporary non-mutating Profi
 - does not unlink, relink, create challenges, write dismissal state, move balance, or change account ownership.
 
 This preview is temporary acceptance tooling and must be removed immediately after visual manual PASS.
+
+## MVP-26.3.20 manual acceptance and cleanup
+
+Manual Android staging acceptance completed after the active Profile import-cache owner was corrected.
+
+Accepted on a real Android device:
+- onboarding is delivered to Android;
+- centered Shield King presentation renders correctly;
+- Telegram → Android bridge is readable;
+- balance/purchases, statistics/rating, friends/progress rows are visible;
+- starter-coin warning is visible;
+- primary and secondary actions are fully visible;
+- no clipping was reported.
+
+The acceptance exercise also exposed a real cache-ownership defect:
+- the active shell imports `profile-screen-v110.js?v=1109`;
+- that exact specifier previously had no version-manifest mapping;
+- Android WebView could therefore keep serving the historical raw module and hide later Profile changes;
+- the active `v=1109` specifier is now permanently owned by a fresh canonical manifest target.
+
+After manual PASS, the temporary staging-only preview row and all preview-only runtime code were removed. The production onboarding remains Home-only, Android-only, one-time and non-repeating for an already-linked account.
