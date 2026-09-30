@@ -18,8 +18,8 @@ android {
         applicationId 'com.minigamesworld.app'
         minSdk 26
         targetSdk 36
-        versionCode 2601
-        versionName '0.26.1-foundation'
+        versionCode 2602
+        versionName '0.26.2-android-auth'
 
         buildConfigField 'String', 'MGW_BASE_URL', '"' + escapedMgwBaseUrl + '"'
     }
