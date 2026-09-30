@@ -1,4 +1,5 @@
 name: DIAG MVP-26.3.13 Android APK 2606
+# staging-only installable candidate
 
 on:
   push:
