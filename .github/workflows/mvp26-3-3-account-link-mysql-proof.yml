@@ -5,6 +5,7 @@ on:
     branches:
       - agent/mvp-13-2-staging
     paths:
+      - 'bot/accounts/AccountLinkService.php'
       - 'bot/tests/Mvp26_3_3AccountLinkMysqlFullFlowTest.php'
       - 'docs/MVP26_3_3_ACCOUNT_LINK_MYSQL_PROOF.md'
       - '.github/workflows/mvp26-3-3-account-link-mysql-proof.yml'
@@ -46,7 +47,9 @@ jobs:
           coverage: none
 
       - name: Syntax
-        run: php -l bot/tests/Mvp26_3_3AccountLinkMysqlFullFlowTest.php
+        run: |
+          php -l bot/accounts/AccountLinkService.php
+          php -l bot/tests/Mvp26_3_3AccountLinkMysqlFullFlowTest.php
 
       - name: Existing SQLite account-link regression
         run: php bot/tests/Mvp26_3AccountLinkServiceTest.php
@@ -69,6 +72,9 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
-          allowed='^(\.github/workflows/mvp26-3-3-account-link-mysql-proof\.yml|docs/MVP26_3_3_ACCOUNT_LINK_MYSQL_PROOF\.md|bot/tests/Mvp26_3_3AccountLinkMysqlFullFlowTest\.php)$'
+          allowed='^(\.github/workflows/mvp26-3-3-account-link-mysql-proof\.yml|docs/MVP26_3_3_ACCOUNT_LINK_MYSQL_PROOF\.md|bot/accounts/AccountLinkService\.php|bot/tests/Mvp26_3_3AccountLinkMysqlFullFlowTest\.php)
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-26.3.3 paths:\n%s\n' "$bad" >&2; exit 1; }
+
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-26.3.3 paths:\n%s\n' "$bad" >&2; exit 1; }
