@@ -1,4 +1,4 @@
-window.__MGW_BUILD__ = 'v110-mvp26-3-balance-trace-android-only-v1165';
+window.__MGW_BUILD__ = 'v110-mvp26-3-11-profile-v2-balance-owner-v1166';
 
 import { initTelegramApp } from './telegram/telegram-app.js?v=27';
 import { initRuntimeStatus } from './runtime-status.js?v=86';
@@ -21,7 +21,7 @@ import { initNotificationsScreen } from './screens/notifications-screen-v110r13.
 import { initWeeklyMatchInfo, syncWeeklyMatchButton } from './screens/weekly-match-info.js?v=79&complete=green';
 import { initSearchScreen } from './screens/search-screen-v102.js?v=103';
 import { initGameScreen, enterGame } from './screens/game-screen-v102-safe.js?v=102';
-import { initProfileScreen } from './screens/profile-screen-v110.js?v=1108';
+import { initProfileScreen } from './screens/profile-screen-v110.js?v=1109';
 import { applyCanonicalMgwProfile } from './profile/mgw-profile-model.js?v=1';
 import { initMgwProfileBackgrounds } from './profile/mgw-profile-backgrounds.js?v=2&mvp19_3=profile-backgrounds-ux-corrective';
 import { initGameRules } from './games/game-rules.js?v=75';
@@ -113,6 +113,9 @@ function installBalanceApiTrace(){
   }));
   wrap('mgwProfile', 'api.profile.response', result => ({
     profile_runtime:result?.runtime?.balance,
+  }));
+  wrap('profileV2', 'api.profile_v2.response', result => ({
+    profile_v2_user:result?.user?.balance,
   }));
   wrap('cosmeticStoreStatus', 'api.store.response', result => ({
     store:result?.store?.balance,
