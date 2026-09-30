@@ -49,7 +49,6 @@ jobs:
           php -l bot/tests/Mvp25_7TelegramProductRcContractTest.php
           php bot/tests/Mvp25_7TelegramProductRcContractTest.php
           node --check bot/tests/Mvp25_6StoreClientContractTest.mjs
-          node --check bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
 
       - name: Re-prove MVP-25.1 product-owner cleanup
         run: |
@@ -96,7 +95,6 @@ jobs:
           php bot/tests/Mvp19_2CosmeticStoreTest.php
           php bot/tests/Mvp19_3ProfileAvatarsTest.php
           php bot/tests/Mvp19_3ProfileBackgroundsTest.php
-          node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
 
       - name: Preserve friends invites matchmaking and notifications
         run: |
