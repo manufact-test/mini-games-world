@@ -107,7 +107,12 @@ $assertSame(false, $first['reused'], 'First Android device bootstrap must issue 
 $assert(MgwIdGenerator::isValid((string)($first['user']['mgw_id'] ?? '')), 'Android identity must resolve one canonical MGW account.');
 $assertSame('android_' . $subject, $first['user']['id'] ?? null, 'Legacy runtime key must be stable and derived only from the one-way provider subject.');
 $assertSame('android_device', $first['user']['mgw_identity_provider'] ?? null, 'Android provider must remain explicit.');
-$assertSame('legacy:' . $subject, $first['user']['mgw_account_ref'] ?? null, 'Android runtime must reuse the existing account ownership owner.');
+$assertSame(
+    (string)$first['user']['id'],
+    (string)$database->fetchValue("SELECT legacy_user_id FROM mgw_account_ownership WHERE mgw_id=:mgw_id", ['mgw_id'=>$first['user']['mgw_id']]),
+    'Legacy runtime user id must be the exact ownership legacy key.'
+);
+$assertSame('legacy:android_' . $subject, $first['user']['mgw_account_ref'] ?? null, 'Android runtime user id and account ownership key must remain identical.');
 
 $assertSame(
     $subject,
