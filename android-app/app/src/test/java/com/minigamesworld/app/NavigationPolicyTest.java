@@ -44,6 +44,16 @@ public final class NavigationPolicyTest {
     }
 
     @Test
+    public void nativeReauthSignalIsNarrowAndNeverExternal() {
+        String requestId = "rea_0123456789abcdef0123456789abcdef";
+        assertEquals(requestId, policy.nativeReauthRequestId("mgw-native://reauth?request=" + requestId));
+        assertEquals(null, policy.nativeReauthRequestId("mgw-native://reauth?request=bad"));
+        assertEquals(null, policy.nativeReauthRequestId("mgw-native://other?request=" + requestId));
+        assertEquals(null, policy.nativeReauthRequestId("mgw-native://reauth?request=" + requestId + "&extra=1"));
+        assertFalse(policy.mayOpenExternally("mgw-native://reauth?request=" + requestId));
+    }
+
+    @Test
     public void unsafeIncomingDeepLinkFallsBackToConfiguredBase() {
         assertEquals("https://example.com/game/1", policy.initialUrl("https://example.com/game/1"));
         assertEquals("https://example.com/app/", policy.initialUrl("https://evil.example/game/1"));
