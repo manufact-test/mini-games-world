@@ -205,6 +205,53 @@ $assertSame(true, $emptyPreview['ready'], 'Empty stripped rollback snapshot must
 $assertSame(0, $emptyPreview['planned_delta_count'], 'Empty stripped rollback snapshot must never modify durable balances');
 $assertSame(25, (int)$database->fetchValue("SELECT available_amount FROM mgw_balances WHERE account_ref = 'legacy:222002' AND asset_code = 'mgw_coin'"), 'Absent account balance must remain unchanged');
 
+// MVP-26.3 account-link terminal state: the temporary Android MGW shell is
+// retained as linked_retired audit history after its canonical starter balance
+// reaches zero and active ownership is removed. That exact zero projection must
+// not poison post-cutover parity, while any non-zero orphan still fails closed.
+$retiredIdentity = $accounts->resolveTelegramUser([
+    'id' => '333003',
+    'first_name' => 'Retired Link Shell',
+], 'sync-retired-link-session');
+$retiredMgwId = (string)$retiredIdentity['mgw_id'];
+$database->execute(
+    "UPDATE mgw_users SET status='linked_retired' WHERE mgw_id=:mgw_id",
+    ['mgw_id'=>$retiredMgwId]
+);
+$database->execute(
+    'INSERT INTO mgw_balances (
+        account_ref, mgw_id, legacy_user_id, asset_code,
+        available_amount, reserved_amount, version, created_at_utc, updated_at_utc
+     ) VALUES (
+        :account_ref, :mgw_id, :legacy_user_id, :asset_code,
+        0, 0, 1, :created_at_utc, :updated_at_utc
+     )',
+    [
+        'account_ref'=>'legacy:333003',
+        'mgw_id'=>$retiredMgwId,
+        'legacy_user_id'=>'333003',
+        'asset_code'=>'mgw_coin',
+        'created_at_utc'=>$now,
+        'updated_at_utc'=>$now,
+    ]
+);
+$retiredZeroPreview = $sync->preview($snapshot);
+$assertSame(true, $retiredZeroPreview['ready'], 'Linked-retired zero balance audit row must not be classified as unmanaged');
+$assertSame(0, $retiredZeroPreview['planned_delta_count'], 'Linked-retired zero balance audit row must never create a runtime delta');
+
+$database->execute(
+    "UPDATE mgw_balances SET available_amount=1 WHERE account_ref='legacy:333003' AND asset_code='mgw_coin'"
+);
+$retiredNonZeroPreview = $sync->preview($snapshot);
+$assertSame(false, $retiredNonZeroPreview['ready'], 'Linked-retired non-zero orphan balance must still fail closed');
+$assertTrue(
+    in_array('Database contains a unified balance without active ownership.', $retiredNonZeroPreview['blocking_reasons'], true),
+    'Non-zero retired orphan must retain the unmanaged-balance blocker'
+);
+$database->execute(
+    "UPDATE mgw_balances SET available_amount=0 WHERE account_ref='legacy:333003' AND asset_code='mgw_coin'"
+);
+
 $runtimeConfig = [
     'environment' => 'local',
     'storage_driver' => 'json',
