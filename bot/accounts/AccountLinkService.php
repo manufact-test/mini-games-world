@@ -23,7 +23,8 @@ final class AccountLinkService
     public function __construct(
         private array $config,
         private DatabaseConnectionInterface $database,
-        private StorageAdapterInterface $storage
+        private StorageAdapterInterface $storage,
+        private ?PresenceService $presence = null
     ) {}
 
     public function enabled(): bool
@@ -647,6 +648,14 @@ final class AccountLinkService
     {
         $sourceMgw = (string)$row['source_mgw_id'];
         $legacyUserId = (string)$row['source_legacy_user_id'];
+
+        // Presence is keyed by the active legacy runtime owner. During account
+        // link the Android identity moves from its temporary legacy owner onto
+        // the existing Telegram owner. Retire the old owner immediately so its
+        // still-live document lease cannot keep one canonical person counted as
+        // two online accounts until the ordinary 75-second presence window ends.
+        $this->presence?->retireAccount($legacyUserId);
+
         $ownership = $this->ownershipForMgwDb($this->database, $sourceMgw, false);
         if ($ownership === null) return;
         $accountRef = (string)$ownership['account_ref'];

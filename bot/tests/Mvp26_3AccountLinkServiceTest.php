@@ -26,6 +26,7 @@ require $root . '/economy/EconomyConfigDefinition.php';
 require $root . '/economy/EconomyConfigService.php';
 require $root . '/ledger/LedgerIntegrity.php';
 require $root . '/ledger/LedgerWriteService.php';
+require $root . '/services/PresenceService.php';
 require $root . '/accounts/AccountLinkService.php';
 
 if (!extension_loaded('pdo_sqlite')) {
@@ -264,7 +265,18 @@ $storage = new Mvp26AccountLinkMemoryStorage([
     ],
 ]);
 
-$link = new AccountLinkService($config, $database, $storage);
+$presence = new PresenceService(
+    sys_get_temp_dir() . '/mgw_mvp26_link_presence_' . bin2hex(random_bytes(6))
+);
+$presence->touch($telegramSubject, 'telegram-link-presence-session', 'telegram-page');
+$presence->touch($sourceLegacy, 'android-link-presence-session', 'android-page');
+$assertSame(
+    2,
+    count($presence->onlineAccountIds()),
+    'Before linking, separate Telegram and temporary Android owners are two online accounts.'
+);
+
+$link = new AccountLinkService($config, $database, $storage, $presence);
 $challenge = $link->createChallenge($androidUser);
 $assertSame('pending', $challenge['status'], 'Android must create one pending link challenge.');
 $assert(
@@ -321,6 +333,26 @@ $assert(is_array($androidAfter), 'The existing Android HttpOnly session must sur
 $assertSame($telegramMgw, $androidAfter['mgw_id'], 'Existing Android session must now resolve the Telegram MGW account.');
 $assertSame($telegramSubject, $androidAfter['id'], 'Existing Android session must now use the target runtime user id.');
 $assertSame('android_device', $androidAfter['mgw_identity_provider'], 'Provider metadata must remain Android after linking.');
+
+$onlineAfterLink = $presence->onlineAccountIds();
+sort($onlineAfterLink, SORT_STRING);
+$assertSame(
+    [$telegramSubject],
+    $onlineAfterLink,
+    'After linking, the retired temporary Android presence owner must disappear immediately.'
+);
+
+// A heartbeat authenticated immediately before the ownership switch may arrive
+// after finalization. The retirement tombstone must reject that stale source
+// lease instead of resurrecting a second online account for up to 75 seconds.
+$presence->touch($sourceLegacy, 'android-link-presence-session', 'late-old-page');
+$onlineAfterLateSourcePing = $presence->onlineAccountIds();
+sort($onlineAfterLateSourcePing, SORT_STRING);
+$assertSame(
+    [$telegramSubject],
+    $onlineAfterLateSourcePing,
+    'A late heartbeat from the retired source owner must not recreate duplicate online presence.'
+);
 
 $androidIdentity = $accounts->findByIdentity('android_device', hash('sha256', $credentialRaw));
 $assertSame($telegramMgw, $androidIdentity['mgw_id'] ?? null, 'Android identity row must move to the existing Telegram MGW account.');
