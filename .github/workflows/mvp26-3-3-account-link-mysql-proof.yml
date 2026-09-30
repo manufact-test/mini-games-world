@@ -73,8 +73,6 @@ jobs:
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
           allowed='^(\.github/workflows/mvp26-3-3-account-link-mysql-proof\.yml|docs/MVP26_3_3_ACCOUNT_LINK_MYSQL_PROOF\.md|bot/accounts/AccountLinkService\.php|bot/tests/Mvp26_3_3AccountLinkMysqlFullFlowTest\.php)
-          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
-          test -z "$bad" || { printf 'Unexpected MVP-26.3.3 paths:\n%s\n' "$bad" >&2; exit 1; }
 
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-26.3.3 paths:\n%s\n' "$bad" >&2; exit 1; }
