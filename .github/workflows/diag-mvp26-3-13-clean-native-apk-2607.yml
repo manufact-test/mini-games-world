@@ -1,4 +1,5 @@
 name: DIAG MVP-26.3.13 Clean Native APK 2607
+# trigger clean native install-over build
 # rollback rejected v2606 native experiment; keep canonical staging Android shell
 
 on:
