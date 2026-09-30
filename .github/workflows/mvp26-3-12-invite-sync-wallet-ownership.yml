@@ -56,8 +56,8 @@ jobs:
       - name: Startup ownership regression
         run: php bot/tests/Mvp25_4StartupPerformanceContractTest.php
 
-      - name: Unified balance regression
-        run: php bot/tests/Mvp15UnifiedBalanceFoundationContractTest.php
+      - name: Unified balance legacy identity regression
+        run: php bot/tests/UnifiedBalanceLegacyIdentityReconciliationTest.php
 
       - name: Tracked secret scan
         run: node scripts/ci/check-secrets.mjs
