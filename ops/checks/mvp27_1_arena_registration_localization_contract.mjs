@@ -57,7 +57,7 @@ for (const invariant of [
 }
 
 for (const removed of [
-  'Прокрутить игры влево','Прокрутить игры вправо','Официальный турнир',
+  'Прокрутить игры влево','Прокрутить игры вправо',
   'Не удалось синхронизировать старт турнира.','Не удалось синхронизировать запуск матча.',
   'Не удалось обновить Турнирный зал.','Не удалось обновить турнир.',
   'Не удалось синхронизировать результат турнира.','Не удалось подтвердить готовность.',
@@ -67,10 +67,13 @@ for (const removed of [
   'Подтвердить обновлённые правила турнира?','Регистрация не сохранилась. Попробуйте ещё раз.',
   'Отмена регистрации не сохранилась. Попробуйте ещё раз.',
   'Регистрация сохранилась, но ещё не опубликована. Повторите попытку.',
-  'Не удалось изменить регистрацию.'
 ]) {
   assert(!arena.includes(removed), `Migrated Arena copy remains hardcoded: ${removed}`);
 }
+assert(!arena.includes('<h2>Официальный турнир</h2>'),
+  'Official tournament top-level heading must use the Arena catalog.');
+assert(!arena.includes("humanizeTournamentError(error?.message || 'Не удалось изменить регистрацию.')"),
+  'Registration mutation fallback must use the Arena catalog.');
 
 assert(manifest.includes('mvp27_1=registration-sync-i18n-v1'),
   'Active Arena owner must publish registration localization cache identity.');
