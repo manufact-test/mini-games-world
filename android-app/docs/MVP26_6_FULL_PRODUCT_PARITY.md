@@ -37,10 +37,6 @@ active version manifest and accepted shared Telegram/client JS owners are kept
 byte-for-byte frozen; Android-only capability gaps are filled in the native
 container after page initialization.
 
-A new APK version forces one fresh shared-runtime load, then returns WebView to
-its normal cache policy. This avoids stale Android assets without cache-busting
-the frozen Telegram import graph.
-
 The eight accepted game renderers remain present for:
 
 1. Tic-Tac-Toe
