@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.app.DownloadManager;
 import android.app.KeyguardManager;
 import android.content.ActivityNotFoundException;
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
@@ -31,6 +32,8 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.URLUtil;
+import android.webkit.ValueCallback;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -56,6 +59,16 @@ public final class MainActivity extends Activity {
     private static final String STATE_WEBVIEW = "mgw_webview_state";
     private static final int REQUEST_ANDROID_REAUTH = 26041;
     private static final int REQUEST_LEGACY_DOWNLOAD_STORAGE = 26042;
+    private static final int REQUEST_WEB_FILE_CHOOSER = 26043;
+    private static final int REQUEST_LEGACY_WEB_DOWNLOAD_STORAGE = 26044;
+    private static final String[] WEB_UPLOAD_MIME_TYPES = new String[]{
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/gif",
+            "application/pdf",
+            "text/plain"
+    };
 
     // MVP-26.5: all external platform providers are deliberately disabled by default.
     // The shared MGW product must remain complete without Google/commercial services.
@@ -76,6 +89,11 @@ public final class MainActivity extends Activity {
     private String pendingReauthChallenge;
     private String pendingDownloadRequestId;
     private String pendingLaunchInviteToken;
+    private ValueCallback<Uri[]> fileChooserCallback;
+    private String pendingWebDownloadUrl;
+    private String pendingWebDownloadUserAgent;
+    private String pendingWebDownloadContentDisposition;
+    private String pendingWebDownloadMimeType;
     private Object backCallback;
 
     @Override
@@ -262,8 +280,9 @@ public final class MainActivity extends Activity {
         cookieManager.setAcceptThirdPartyCookies(target, false);
 
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
-        target.setWebChromeClient(new WebChromeClient());
+        target.setWebChromeClient(new MgwWebChromeClient());
         target.setWebViewClient(new MgwWebViewClient());
+        target.setDownloadListener(this::beginWebDownload);
     }
 
     private void loadInitialIntent(Intent intent) {
@@ -686,7 +705,143 @@ public final class MainActivity extends Activity {
             }
             return;
         }
+
+        if (requestCode == REQUEST_LEGACY_WEB_DOWNLOAD_STORAGE) {
+            String url = pendingWebDownloadUrl;
+            String userAgent = pendingWebDownloadUserAgent;
+            String contentDisposition = pendingWebDownloadContentDisposition;
+            String mimeType = pendingWebDownloadMimeType;
+            clearPendingWebDownload();
+            if (url != null
+                    && grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                enqueueWebDownload(url, userAgent, contentDisposition, mimeType);
+            } else {
+                Toast.makeText(this, R.string.download_permission_required, Toast.LENGTH_LONG).show();
+            }
+            return;
+        }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_WEB_FILE_CHOOSER) {
+            ValueCallback<Uri[]> callback = fileChooserCallback;
+            fileChooserCallback = null;
+            if (callback == null) {
+                return;
+            }
+
+            if (resultCode != RESULT_OK || data == null) {
+                callback.onReceiveValue(null);
+                return;
+            }
+
+            ClipData clipData = data.getClipData();
+            if (clipData != null && clipData.getItemCount() > 0) {
+                Uri[] values = new Uri[clipData.getItemCount()];
+                for (int index = 0; index < clipData.getItemCount(); index++) {
+                    values[index] = clipData.getItemAt(index).getUri();
+                }
+                callback.onReceiveValue(values);
+                return;
+            }
+
+            Uri selected = data.getData();
+            callback.onReceiveValue(selected == null ? null : new Uri[]{selected});
+            return;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void beginWebDownload(
+            String url,
+            String userAgent,
+            String contentDisposition,
+            String mimeType,
+            long contentLength
+    ) {
+        if (navigationPolicy == null || url == null || !navigationPolicy.isInternal(url)) {
+            Toast.makeText(this, R.string.download_failed, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P
+                && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            pendingWebDownloadUrl = url;
+            pendingWebDownloadUserAgent = userAgent;
+            pendingWebDownloadContentDisposition = contentDisposition;
+            pendingWebDownloadMimeType = mimeType;
+            requestPermissions(
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    REQUEST_LEGACY_WEB_DOWNLOAD_STORAGE
+            );
+            return;
+        }
+
+        enqueueWebDownload(url, userAgent, contentDisposition, mimeType);
+    }
+
+    private void enqueueWebDownload(
+            String url,
+            String userAgent,
+            String contentDisposition,
+            String mimeType
+    ) {
+        if (navigationPolicy == null || url == null || !navigationPolicy.isInternal(url)) {
+            Toast.makeText(this, R.string.download_failed, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String cookie = CookieManager.getInstance().getCookie(url);
+        if (cookie == null || !cookie.contains("mgw_android_auth=")) {
+            Toast.makeText(this, R.string.download_failed, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+            DownloadManager manager = (DownloadManager)getSystemService(DOWNLOAD_SERVICE);
+            if (manager == null) {
+                throw new IllegalStateException("DownloadManager unavailable");
+            }
+
+            String normalizedMime = mimeType == null || mimeType.isBlank()
+                    ? "application/octet-stream"
+                    : mimeType;
+            String fileName = URLUtil.guessFileName(url, contentDisposition, normalizedMime)
+                    .replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]+", "_");
+            if (fileName.isBlank()) {
+                fileName = "MiniGamesWorld-attachment";
+            }
+
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+            request.setMimeType(normalizedMime);
+            request.setTitle(fileName);
+            request.setDescription(getString(R.string.download_description));
+            request.setNotificationVisibility(
+                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+            );
+            request.setAllowedOverMetered(true);
+            request.setAllowedOverRoaming(true);
+            request.addRequestHeader("Cookie", cookie);
+            if (userAgent != null && !userAgent.isBlank()) {
+                request.addRequestHeader("User-Agent", userAgent);
+            }
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
+            manager.enqueue(request);
+            Toast.makeText(this, R.string.download_started, Toast.LENGTH_SHORT).show();
+        } catch (RuntimeException error) {
+            Toast.makeText(this, R.string.download_failed, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void clearPendingWebDownload() {
+        pendingWebDownloadUrl = null;
+        pendingWebDownloadUserAgent = null;
+        pendingWebDownloadContentDisposition = null;
+        pendingWebDownloadMimeType = null;
     }
 
     private void dispatchNativeDownloadEvent(boolean success) {
@@ -796,6 +951,11 @@ public final class MainActivity extends Activity {
             Api33Back.unregister(this, backCallback);
             backCallback = null;
         }
+        if (fileChooserCallback != null) {
+            fileChooserCallback.onReceiveValue(null);
+            fileChooserCallback = null;
+        }
+        clearPendingWebDownload();
         destroyWebView();
         super.onDestroy();
     }
@@ -815,6 +975,44 @@ public final class MainActivity extends Activity {
 
     private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    private final class MgwWebChromeClient extends WebChromeClient {
+        @Override
+        public boolean onShowFileChooser(
+                WebView view,
+                ValueCallback<Uri[]> filePathCallback,
+                FileChooserParams fileChooserParams
+        ) {
+            if (filePathCallback == null) {
+                return false;
+            }
+            if (fileChooserCallback != null) {
+                fileChooserCallback.onReceiveValue(null);
+            }
+            fileChooserCallback = filePathCallback;
+
+            Intent chooser = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            chooser.addCategory(Intent.CATEGORY_OPENABLE);
+            chooser.setType("*/*");
+            chooser.putExtra(Intent.EXTRA_MIME_TYPES, WEB_UPLOAD_MIME_TYPES);
+            chooser.putExtra(
+                    Intent.EXTRA_ALLOW_MULTIPLE,
+                    fileChooserParams != null
+                            && fileChooserParams.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE
+            );
+
+            try {
+                startActivityForResult(chooser, REQUEST_WEB_FILE_CHOOSER);
+                return true;
+            } catch (ActivityNotFoundException error) {
+                ValueCallback<Uri[]> callback = fileChooserCallback;
+                fileChooserCallback = null;
+                if (callback != null) callback.onReceiveValue(null);
+                Toast.makeText(MainActivity.this, R.string.external_link_error, Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        }
     }
 
     private final class MgwWebViewClient extends WebViewClient {
