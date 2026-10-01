@@ -41,7 +41,7 @@ require("minSdk 26" in build, "minSdk must remain 26")
 require("MGW_BASE_URL" in build, "MGW URL must remain build-configurable")
 require("applicationId 'com.minigamesworld.app.acceptance'" in build, "accepted package identity must be restored")
 require("applicationIdSuffix" not in build, "repair must not create a parallel .mvp26dev app")
-require("versionCode 2608" in build, "Android reauth install-fix versionCode must remain monotonic")
+require("versionCode 2609" in build, "Android account-data download versionCode must remain monotonic")
 require("mgw-acceptance-stable.keystore" in build, "stable acceptance signing must be restored")
 require("usesCleartextTraffic=\"false\"" in manifest, "cleartext traffic must be disabled")
 require('android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden"' in manifest,
