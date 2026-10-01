@@ -35,7 +35,7 @@ public final class PlatformAdaptersTest {
         PlatformAdapters adapters = PlatformAdapters.disabled();
 
         assertEquals(PushAdapter.RegistrationResult.UNAVAILABLE, adapters.push().ensureRegistered());
-        assertTrue(adapters.integrity().requestToken("nonce").isEmpty());
+        assertFalse(adapters.integrity().requestToken("nonce").isPresent());
     }
 
     @Test
@@ -43,6 +43,6 @@ public final class PlatformAdaptersTest {
         PlatformAdapters adapters = PlatformAdapters.disabled();
 
         adapters.analytics().track("cold_start", Collections.singletonMap("surface", "android"));
-        assertTrue(adapters.deepLink().resolveProviderLink("https://example.invalid/path").isEmpty());
+        assertFalse(adapters.deepLink().resolveProviderLink("https://example.invalid/path").isPresent());
     }
 }
