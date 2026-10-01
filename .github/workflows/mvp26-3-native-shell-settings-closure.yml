@@ -7,6 +7,7 @@ on:
     paths:
       - 'android-app/**'
       - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/assets/css/main.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp26_4_2AndroidAccountDataDownloadContractTest.php'
       - '.github/workflows/mvp26-3-native-shell-settings-closure.yml'
@@ -81,6 +82,7 @@ jobs:
               android-app/tools/verify-orientation-lifecycle.py|\
               android-app/tools/verify-native-shell-settings.py|\
               app/assets/js/main-v110-handoff-shell.js|\
+              app/assets/css/main.css|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp26_4_2AndroidAccountDataDownloadContractTest.php)
                 ;;
