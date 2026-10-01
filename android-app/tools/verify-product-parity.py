@@ -77,6 +77,12 @@ require("installAndroidParityHooks" in main
         and "navigator.vibrate" in main
         and "event.isTrusted" in main,
         "standalone Android user-action haptic compatibility hook missing")
+require("queueVibrate" in main
+        and "requestAnimationFrame" in main
+        and "window.setTimeout(vibrate,0)" in main
+        and "if(event&&event.isTrusted!==false)queueVibrate();" in main
+        and "if(event&&event.isTrusted!==false)vibrate();" not in main,
+        "Android haptic must stay off the critical click-dispatch path")
 require("https://t.me/" in main
         and "__mgwAndroidOriginalOpen" in main
         and "window.location.assign(value)" in main,
