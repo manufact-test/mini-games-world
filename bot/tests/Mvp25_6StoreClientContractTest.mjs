@@ -39,8 +39,9 @@ assert(
   'Defensive direct coin-tab rendering must show a complete disabled state, not a future promise.'
 );
 assert(
-  manifest.includes("./assets/js/screens/store-screen.js?v=69&intent_base=1"),
-  'Canonical client manifest must cache-bust the completed Store base module.'
+  manifest.includes("./assets/js/screens/store-screen.js?v=70&intent_base=1")
+    && manifest.includes("mvp19_13=bundle-selector-click-hint-v11-performance"),
+  'Canonical client manifest must cache-bust the current completed Store base module.'
 );
 assert(
   manifest.includes('mvp25_6=monetization-disabled-complete-v1'),
