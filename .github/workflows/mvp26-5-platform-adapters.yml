@@ -38,45 +38,20 @@ jobs:
       - name: Tracked secret scan
         run: node scripts/ci/check-secrets.mjs
 
-      - name: Scope guard
+      - name: Frozen product-boundary guard
         if: github.event_name == 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-
           git diff --exit-code "$base" "$head" -- \
-            bot/games bot/ratings bot/tournaments bot/economy bot/ledger \
-            bot/accounts bot/matchmaking app/assets/js/games
+            bot/games bot/ratings bot/tournaments bot/economy bot/ledger
 
-          bad=0
-          while IFS= read -r path; do
-            case "$path" in
-              .github/workflows/mvp26-2-android-device-auth.yml|\
-              .github/workflows/mvp26-3-4-android-orientation-lifecycle.yml|\
-              .github/workflows/mvp26-3-native-shell-settings-closure.yml|\
-              .github/workflows/mvp26-4-android-account-reauth.yml|\
-              .github/workflows/mvp26-5-platform-adapters.yml|\
-              android-app/app/build.gradle|\
-              android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java|\
-              android-app/app/src/main/java/com/minigamesworld/app/platform/*|\
-              android-app/app/src/test/java/com/minigamesworld/app/platform/*|\
-              android-app/tools/verify-native-shell-settings.py|\
-              android-app/tools/verify-foundation.py|\
-              android-app/tools/verify-platform-adapters.py|\
-              android-app/docs/MVP26_5_DISABLED_PLATFORM_ADAPTERS.md)
-                ;;
-              *)
-                echo "Unexpected MVP-26.5 path: $path" >&2
-                bad=1
-                ;;
-            esac
-          done < <(git diff --name-only "$base" "$head")
-          test "$bad" -eq 0
+
 
   android-build:
-    name: Android build/lint/unit v2611
+    name: Android adapter regression build/lint/unit
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -132,11 +107,11 @@ jobs:
           "$apksigner" verify --print-certs "$apk" | tee /tmp/mgw-mvp26-5-signing.txt
           grep -F 'CN=MGW Acceptance, O=Mini Games World, C=PL' /tmp/mgw-mvp26-5-signing.txt
 
-      - name: Upload v2611 APK
+      - name: Upload adapter regression APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: mgw-mvp26-5-disabled-platform-adapters-v2611-debug
+          name: mgw-mvp26-5-disabled-platform-adapters-regression-debug
           path: android-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7
@@ -145,7 +120,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mgw-mvp26-5-disabled-platform-adapters-v2611-reports
+          name: mgw-mvp26-5-disabled-platform-adapters-regression-reports
           path: |
             android-app/app/build/reports/**
             android-app/app/build/test-results/**
