@@ -1101,22 +1101,23 @@ function tournamentMatchMarkup(){
   `;
 }
 
-const TOURNAMENT_TECHNICAL_RESULT_LABELS = Object.freeze({
-  technical_loss_at_start:'Технический исход · соперник отсутствовал.',
-  both_absent_at_start:'Оба участника отсутствовали · победитель не назначен.',
-  technical_bye_vacant_slot:'Технический проход · свободный слот.',
-  vacant_bracket_slot:'Пара закрыта без участников.',
-  player_left:'Технический исход · соперник покинул матч.',
-  disconnect_timeout:'Технический исход · 60 секунд на возврат истекли.',
-  tournament_disconnect_timeout:'Технический исход · один игрок не вернулся за 3 минуты.',
-  tournament_both_absent_timeout:'Оба игрока не вернулись за 3 минуты · победитель не назначен.',
-  technical_restart_scheduled:'Матч перезапустится через 1 минуту.',
-  technical_restart_exhausted:'Матч не удалось продолжить · он завершён без победителя.',
+const TOURNAMENT_TECHNICAL_RESULT_KEYS = Object.freeze({
+  technical_loss_at_start:'arena.technical.technical_loss_at_start',
+  both_absent_at_start:'arena.technical.both_absent_at_start',
+  technical_bye_vacant_slot:'arena.technical.technical_bye_vacant_slot',
+  vacant_bracket_slot:'arena.technical.vacant_bracket_slot',
+  player_left:'arena.technical.player_left',
+  disconnect_timeout:'arena.technical.disconnect_timeout',
+  tournament_disconnect_timeout:'arena.technical.tournament_disconnect_timeout',
+  tournament_both_absent_timeout:'arena.technical.tournament_both_absent_timeout',
+  technical_restart_scheduled:'arena.technical.technical_restart_scheduled',
+  technical_restart_exhausted:'arena.technical.technical_restart_exhausted',
 });
 
 function tournamentTechnicalOutcomeLabel(match){
   const reason = String(match?.result_reason || '');
-  return TOURNAMENT_TECHNICAL_RESULT_LABELS[reason] || '';
+  const key = TOURNAMENT_TECHNICAL_RESULT_KEYS[reason] || '';
+  return key ? t(key) : '';
 }
 
 function tournamentSeedFallbackRound(bracket){
@@ -1155,7 +1156,7 @@ function tournamentSeedFallbackRound(bracket){
           const winner = completed && winnerMgw !== '' && winnerMgw === id;
           return {
             mgw_id:id,
-            nickname:String(player?.nickname || 'Игрок'),
+            nickname:String(player?.nickname || t('arena.bracket.player_fallback')),
             self:false,
             winner,
             loser:completed && !winner,
@@ -1187,7 +1188,7 @@ function tournamentRoundLabel(round, rounds){
   const matches = Array.isArray(round?.matches) ? round.matches : [];
   const roundNo = Number(round?.round_no || 0);
   if (matches.some(match => ['final','third_place'].includes(String(match?.match_kind || '')))) {
-    return 'Финальный раунд';
+    return t('arena.bracket.final_round');
   }
 
   const ordered = Array.isArray(rounds) ? rounds : [];
@@ -1195,9 +1196,9 @@ function tournamentRoundLabel(round, rounds){
   const nextRound = currentIndex >= 0 ? ordered[currentIndex + 1] : null;
   const nextMatches = Array.isArray(nextRound?.matches) ? nextRound.matches : [];
   const nextIsFinal = nextMatches.some(match => ['final','third_place'].includes(String(match?.match_kind || '')));
-  if (nextIsFinal && matches.length === 2) return 'Полуфинал';
+  if (nextIsFinal && matches.length === 2) return t('arena.bracket.semifinal');
 
-  return `Раунд ${roundNo}`;
+  return t('arena.bracket.round',{round_no:roundNo});
 }
 
 function tournamentRoundCardMarkup(match){
@@ -1207,47 +1208,47 @@ function tournamentRoundCardMarkup(match){
   const done = match?.completed === true;
   const hasWinner = players.some(player => player?.winner === true);
 
-  let title = `Пара ${pairNo}`;
-  if (matchKind === 'final') title = 'Финал';
-  else if (matchKind === 'third_place') title = 'Матч за 3-е место';
+  let title = t('arena.bracket.pair',{pair_no:pairNo});
+  if (matchKind === 'final') title = t('arena.bracket.final');
+  else if (matchKind === 'third_place') title = t('arena.bracket.third_place');
 
   const playerMarkup = players.length
     ? players.map(player => {
         const winner = player?.winner === true;
-        let status = player?.self === true ? 'вы' : 'участник';
+        let status = player?.self === true ? t('arena.bracket.self') : t('arena.bracket.participant');
         if (done) {
           if (matchKind === 'final') {
-            status = winner ? 'чемпион' : (hasWinner ? '2 место' : 'без результата');
+            status = winner ? t('arena.bracket.champion') : (hasWinner ? t('arena.bracket.second_place') : t('arena.bracket.no_result'));
           } else if (matchKind === 'third_place') {
-            status = winner ? '3 место' : (hasWinner ? '4 место' : 'без результата');
+            status = winner ? t('arena.bracket.third_place_status') : (hasWinner ? t('arena.bracket.fourth_place') : t('arena.bracket.no_result'));
           } else {
-            status = winner ? 'прошёл дальше' : 'выбыл';
+            status = winner ? t('arena.bracket.advanced') : t('arena.bracket.eliminated');
           }
         } else if (String(match?.launch_state || '') === 'launched') {
-          status = player?.self === true ? 'вы · играет' : 'играет';
+          status = player?.self === true ? t('arena.bracket.self_playing') : t('arena.bracket.playing');
         }
 
         return `<div class="tournaments-v2-bracket-player${done && !winner ? ' is-loss' : ''}">
-          <strong>${escapeHtml(String(player?.nickname || 'Игрок'))}${player?.self === true ? ' · вы' : ''}</strong>
+          <strong>${escapeHtml(String(player?.nickname || t('arena.bracket.player_fallback')))}${player?.self === true ? escapeHtml(t('arena.bracket.self_suffix')) : ''}</strong>
           <span>${escapeHtml(status)}</span>
         </div>`;
       }).join('')
-    : '<div class="tournaments-v2-bracket-player is-loss"><strong>Свободный слот</strong><span>без участника</span></div>';
+    : `<div class="tournaments-v2-bracket-player is-loss"><strong>${escapeHtml(t('arena.bracket.free_slot'))}</strong><span>${escapeHtml(t('arena.bracket.no_participant'))}</span></div>`;
 
   const technicalOutcome = tournamentTechnicalOutcomeLabel(match);
-  let outcome = 'Ожидает запуска.';
+  let outcome = t('arena.bracket.waiting_launch');
   if (technicalOutcome) outcome = technicalOutcome;
   else if (done && hasWinner) {
     const winner = players.find(player => player?.winner === true);
     outcome = matchKind === 'final'
-      ? 'Финал завершён.'
+      ? t('arena.bracket.final_complete')
       : matchKind === 'third_place'
-        ? 'Матч за 3-е место завершён.'
-        : `${String(winner?.nickname || 'Игрок')} проходит дальше.`;
-  } else if (done) outcome = 'Матч завершён · победитель не назначен.';
-  else if (String(match?.launch_state || '') === 'launched') outcome = 'Матч идёт.';
-  else if (String(match?.wait_kind || '') === 'technical_restart') outcome = 'Матч перезапустится через 1 минуту.';
-  else if (String(match?.wait_kind || '') === 'round_break') outcome = 'Перерыв между раундами.';
+        ? t('arena.bracket.third_place_complete')
+        : t('arena.bracket.winner_advances',{name:String(winner?.nickname || t('arena.bracket.player_fallback'))});
+  } else if (done) outcome = t('arena.bracket.match_complete_no_winner');
+  else if (String(match?.launch_state || '') === 'launched') outcome = t('arena.bracket.match_live');
+  else if (String(match?.wait_kind || '') === 'technical_restart') outcome = t('arena.bracket.technical_restart');
+  else if (String(match?.wait_kind || '') === 'round_break') outcome = t('arena.bracket.round_break');
 
   return `<article class="tournaments-v2-bracket-pair">
     <header><span>${escapeHtml(title)}</span></header>
@@ -1297,7 +1298,7 @@ function tournamentRoundSectionsMarkup(bracket, progression){
       class="tournaments-v2-tournament-rules tournaments-v2-round-archive${roundNo === latestRoundNo ? ' is-current' : ''}"
       data-tournament-round-archive="${escapeHtml(String(roundNo))}"
       ${open ? 'open' : ''}>
-      <summary><span>${escapeHtml(heading)} · ${escapeHtml(`${completed}/${total} завершено`)}</span></summary>
+      <summary><span>${escapeHtml(heading)} · ${escapeHtml(t('arena.bracket.completed',{completed,total}))}</span></summary>
       <div class="tournaments-v2-tournament-rules-body">
         <div class="tournaments-v2-bracket-grid">${cards}</div>
       </div>
@@ -1414,19 +1415,19 @@ function tournamentProgressionMarkup(match, progression){
     const latestRound = Number(latest.round_no || 0);
     const activeRoundNo = Number(progression?.active_round?.round_no || 0);
     const eliminated = progression?.participant_eliminated === true;
-    let message = 'Ваш матч завершён · ждём остальные матчи раунда.';
+    let message = t('arena.progression.finished_wait_round');
     if (eliminated && activeRoundNo > latestRound) {
-      message = 'Вы выбыли из турнира · сетка уже перешла в следующий раунд.';
+      message = t('arena.progression.eliminated_next_round');
     } else if (eliminated) {
-      message = 'Вы выбыли из турнира.';
+      message = t('arena.progression.eliminated');
     } else if (activeRoundNo > latestRound) {
-      message = 'Ваш матч завершён · следующий раунд уже сформирован.';
+      message = t('arena.progression.next_round_ready');
     }
     return `
       <section class="tournaments-v2-ready">
         <div class="tournaments-v2-ready-head">
           <div>
-            <span>Раунд ${escapeHtml(String(latest.round_no || ''))}</span>
+            <span>${escapeHtml(t('arena.bracket.round',{round_no:String(latest.round_no || '')}))}</span>
             <strong>${escapeHtml(message)}</strong>
           </div>
         </div>
@@ -1441,29 +1442,29 @@ function tournamentProgressionMarkup(match, progression){
   const matchKind = String(match.match_kind || 'elimination');
   const opensAt = parseTournamentUtc(match.opens_at_utc);
   const waiting = opensAt instanceof Date && opensAt.getTime() > Date.now();
-  let stage = `Раунд ${roundNo} · пара ${pairNo}`;
-  if (matchKind === 'final') stage = 'Финал';
-  else if (matchKind === 'third_place') stage = 'Матч за 3-е место';
+  let stage = t('arena.progression.stage_round_pair',{round_no:roundNo,pair_no:pairNo});
+  if (matchKind === 'final') stage = t('arena.bracket.final');
+  else if (matchKind === 'third_place') stage = t('arena.bracket.third_place');
 
-  let message = 'Следующий матч готовится к запуску.';
+  let message = t('arena.progression.next_match_preparing');
   if (waitKind === 'draw_replay') {
     message = waiting
-      ? 'Ничья · переигровка начнётся через минуту. Стороны меняются.'
-      : 'Переигровка готова · запускаем матч.';
+      ? t('arena.progression.draw_replay_wait')
+      : t('arena.progression.draw_replay_ready');
   } else if (waitKind === 'round_break') {
     message = waiting
-      ? 'Раунд завершён · перерыв перед следующим матчем.'
-      : 'Перерыв завершён · запускаем следующий матч.';
+      ? t('arena.progression.round_break_wait')
+      : t('arena.progression.round_break_ready');
   }
   if (attemptNo > 1 && waitKind !== 'draw_replay') {
-    message = waiting ? 'Повторный матч готовится.' : 'Повторный матч готов · запускаем.';
+    message = waiting ? t('arena.progression.repeat_preparing') : t('arena.progression.repeat_ready');
   }
 
   return `
     <section class="tournaments-v2-ready">
       <div class="tournaments-v2-ready-head">
         <div>
-          <span>${escapeHtml(stage)}${attemptNo > 1 ? ` · попытка ${attemptNo}` : ''}</span>
+          <span>${escapeHtml(stage)}${attemptNo > 1 ? escapeHtml(t('arena.progression.attempt_suffix',{attempt_no:attemptNo})) : ''}</span>
           <strong>${escapeHtml(message)}</strong>
         </div>
         ${opensAt && waiting ? `<b data-tournament-progression-countdown data-progression-opens-at="${opensAt.getTime()}">${escapeHtml(formatReadyCountdown(opensAt.getTime() - Date.now()))}</b>` : ''}
@@ -1496,7 +1497,7 @@ function startTournamentRenderedCountdownTicker(body, scheduledStart = null){
     if (countdown instanceof HTMLElement && scheduledStart instanceof Date) {
       const remainingMs = scheduledStart.getTime() - Date.now();
       const startedNow = remainingMs <= 0;
-      countdown.textContent = startedNow ? 'Турнир начался' : formatTournamentCountdown(remainingMs);
+      countdown.textContent = startedNow ? t('arena.progression.tournament_started') : formatTournamentCountdown(remainingMs);
       if (countdownLabel instanceof HTMLElement) countdownLabel.hidden = startedNow;
       countdown.parentElement?.classList.toggle('is-started', startedNow);
     }
@@ -1518,7 +1519,7 @@ function startTournamentRenderedCountdownTicker(body, scheduledStart = null){
       const opensAt = Number(hallButton.dataset.hallOpensAt || 0);
       const openNow = opensAt > 0 && Date.now() >= opensAt;
       hallButton.disabled = !openNow;
-      hallButton.textContent = 'Вход';
+      hallButton.textContent = t('arena.hall.enter');
     }
   };
 
