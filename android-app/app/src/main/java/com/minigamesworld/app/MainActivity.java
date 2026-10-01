@@ -508,6 +508,34 @@ public final class MainActivity extends Activity {
             super.onActivityResult(requestCode, resultCode, data);
             return;
         }
+
+        if (requestCode == REQUEST_WEB_FILE_CHOOSER) {
+            ValueCallback<Uri[]> callback = fileChooserCallback;
+            fileChooserCallback = null;
+            if (callback == null) {
+                return;
+            }
+
+            if (resultCode != RESULT_OK || data == null) {
+                callback.onReceiveValue(null);
+                return;
+            }
+
+            ClipData clipData = data.getClipData();
+            if (clipData != null && clipData.getItemCount() > 0) {
+                Uri[] values = new Uri[clipData.getItemCount()];
+                for (int index = 0; index < clipData.getItemCount(); index++) {
+                    values[index] = clipData.getItemAt(index).getUri();
+                }
+                callback.onReceiveValue(values);
+                return;
+            }
+
+            Uri selected = data.getData();
+            callback.onReceiveValue(selected == null ? null : new Uri[]{selected});
+            return;
+        }
+
         super.onActivityResult(requestCode, resultCode, data);
     }
 
@@ -722,37 +750,6 @@ public final class MainActivity extends Activity {
             return;
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_WEB_FILE_CHOOSER) {
-            ValueCallback<Uri[]> callback = fileChooserCallback;
-            fileChooserCallback = null;
-            if (callback == null) {
-                return;
-            }
-
-            if (resultCode != RESULT_OK || data == null) {
-                callback.onReceiveValue(null);
-                return;
-            }
-
-            ClipData clipData = data.getClipData();
-            if (clipData != null && clipData.getItemCount() > 0) {
-                Uri[] values = new Uri[clipData.getItemCount()];
-                for (int index = 0; index < clipData.getItemCount(); index++) {
-                    values[index] = clipData.getItemAt(index).getUri();
-                }
-                callback.onReceiveValue(values);
-                return;
-            }
-
-            Uri selected = data.getData();
-            callback.onReceiveValue(selected == null ? null : new Uri[]{selected});
-            return;
-        }
-        super.onActivityResult(requestCode, resultCode, data);
     }
 
     private void beginWebDownload(
