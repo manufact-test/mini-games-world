@@ -8,6 +8,7 @@ on:
       - 'android-app/**'
       - 'app/assets/js/main-v110-handoff-shell.js'
       - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp26_4_2AndroidAccountDataDownloadContractTest.php'
       - '.github/workflows/mvp26-3-native-shell-settings-closure.yml'
       - '.github/workflows/mvp26-2-android-device-auth.yml'
       - '.github/workflows/mvp26-3-4-android-orientation-lifecycle.yml'
@@ -80,7 +81,8 @@ jobs:
               android-app/tools/verify-orientation-lifecycle.py|\
               android-app/tools/verify-native-shell-settings.py|\
               app/assets/js/main-v110-handoff-shell.js|\
-              app/runtime/client/version-manifest.php)
+              app/runtime/client/version-manifest.php|\
+              bot/tests/Mvp26_4_2AndroidAccountDataDownloadContractTest.php)
                 ;;
               *)
                 echo "Unexpected master MVP-26.3 closure path: $path" >&2
