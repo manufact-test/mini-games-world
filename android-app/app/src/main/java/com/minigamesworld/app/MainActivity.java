@@ -9,6 +9,7 @@ import android.app.KeyguardManager;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
@@ -61,6 +62,8 @@ public final class MainActivity extends Activity {
     private static final int REQUEST_LEGACY_DOWNLOAD_STORAGE = 26042;
     private static final int REQUEST_WEB_FILE_CHOOSER = 26043;
     private static final int REQUEST_LEGACY_WEB_DOWNLOAD_STORAGE = 26044;
+    private static final String SHELL_PREFERENCES = "mgw_android_shell";
+    private static final String ASSET_CACHE_VERSION_KEY = "shared_asset_cache_version";
     private static final String[] WEB_UPLOAD_MIME_TYPES = new String[]{
             "image/jpeg",
             "image/png",
@@ -94,6 +97,7 @@ public final class MainActivity extends Activity {
     private String pendingWebDownloadUserAgent;
     private String pendingWebDownloadContentDisposition;
     private String pendingWebDownloadMimeType;
+    private boolean refreshSharedAssetsForVersion;
     private Object backCallback;
 
     @Override
@@ -106,6 +110,10 @@ public final class MainActivity extends Activity {
         buildShellUi();
         applySystemInsets();
         configureBackNavigation();
+
+        SharedPreferences shellPreferences = getSharedPreferences(SHELL_PREFERENCES, MODE_PRIVATE);
+        refreshSharedAssetsForVersion = shellPreferences.getInt(ASSET_CACHE_VERSION_KEY, -1)
+                != BuildConfig.VERSION_CODE;
 
         configuredBaseUrl = ShellConfig.configuredBaseUrl();
         if (!NavigationPolicy.isSafeHttpsBase(configuredBaseUrl)
@@ -270,6 +278,13 @@ public final class MainActivity extends Activity {
         settings.setDisplayZoomControls(false);
         settings.setGeolocationEnabled(false);
         settings.setSafeBrowsingEnabled(true);
+        if (refreshSharedAssetsForVersion) {
+            // Shared Android parity patches intentionally keep Telegram asset
+            // specifiers frozen. On the first launch of a new APK, force one
+            // fresh shared-runtime load without touching cookies/session state.
+            settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+            target.clearCache(true);
+        }
         String userAgent = settings.getUserAgentString();
         if (userAgent != null && !userAgent.contains("MiniGamesWorldAndroid/")) {
             settings.setUserAgentString(userAgent + " MiniGamesWorldAndroid/" + BuildConfig.VERSION_CODE);
@@ -1033,6 +1048,18 @@ public final class MainActivity extends Activity {
                 showLoading(false);
                 if (url != null && !url.contains("/bot/android-auth.php")) {
                     pendingLaunchInviteToken = null;
+                }
+                if (refreshSharedAssetsForVersion
+                        && url != null
+                        && navigationPolicy != null
+                        && navigationPolicy.isInternal(url)
+                        && url.contains("/app/")) {
+                    view.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
+                    getSharedPreferences(SHELL_PREFERENCES, MODE_PRIVATE)
+                            .edit()
+                            .putInt(ASSET_CACHE_VERSION_KEY, BuildConfig.VERSION_CODE)
+                            .apply();
+                    refreshSharedAssetsForVersion = false;
                 }
             }
         }
