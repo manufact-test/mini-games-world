@@ -33,6 +33,13 @@ if (!is_array($form) || trim((string)($form['credential'] ?? '')) === '') {
 }
 
 $credential = trim((string)($form['credential'] ?? ''));
+$inviteToken = strtolower(trim((string)($form['invite'] ?? '')));
+if ($inviteToken !== '' && preg_match('/^[a-f0-9]{24}$/', $inviteToken) !== 1) {
+    http_response_code(400);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Некорректная ссылка приглашения.';
+    exit;
+}
 $existingToken = trim((string)($_COOKIE[AndroidDeviceAuthService::COOKIE_NAME] ?? ''));
 $remoteAddress = trim((string)($_SERVER['REMOTE_ADDR'] ?? ''));
 
@@ -49,7 +56,9 @@ try {
         'samesite'=>'Strict',
     ]);
 
-    $launchUrl = WebAppLaunchUrl::base($config);
+    $launchUrl = $inviteToken !== ''
+        ? WebAppLaunchUrl::invitation($config, $inviteToken)
+        : WebAppLaunchUrl::base($config);
     if ($launchUrl === '') throw new RuntimeException('Android launch URL is unavailable.');
 
     header('Location: ' . $launchUrl, true, 303);

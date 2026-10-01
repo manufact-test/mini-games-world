@@ -70,6 +70,23 @@ public final class NavigationPolicyTest {
     }
 
     @Test
+    public void publicInviteLandingIsExactSameOriginDeepLink() {
+        assertEquals(
+                "0123456789abcdef01234567",
+                policy.inviteTokenFromLanding("https://example.com/invite/0123456789abcdef01234567")
+        );
+        assertEquals(
+                "0123456789abcdef01234567",
+                policy.inviteTokenFromLanding("https://example.com/invite/0123456789abcdef01234567/")
+        );
+        assertEquals(null, policy.inviteTokenFromLanding("https://other.example.com/invite/0123456789abcdef01234567"));
+        assertEquals(null, policy.inviteTokenFromLanding("http://example.com/invite/0123456789abcdef01234567"));
+        assertEquals(null, policy.inviteTokenFromLanding("https://example.com/invite/bad"));
+        assertEquals(null, policy.inviteTokenFromLanding("https://example.com/invite/0123456789abcdef01234567?next=https://evil.example"));
+        assertEquals(null, policy.inviteTokenFromLanding("https://example.com/app/v110.php?invite=0123456789abcdef01234567"));
+    }
+
+    @Test
     public void unsafeIncomingDeepLinkFallsBackToConfiguredBase() {
         assertEquals("https://example.com/game/1", policy.initialUrl("https://example.com/game/1"));
         assertEquals("https://example.com/app/", policy.initialUrl("https://evil.example/game/1"));

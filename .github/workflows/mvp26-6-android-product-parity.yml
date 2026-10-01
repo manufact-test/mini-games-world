@@ -1,25 +1,24 @@
-name: MVP-26.5 Disabled Platform Adapters
+name: MVP-26.6 Android Product Parity
 
 on:
   pull_request:
     branches:
       - agent/mvp-13-2-staging
     paths:
-      - 'android-app/app/build.gradle'
-      - 'android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java'
-      - 'android-app/app/src/main/java/com/minigamesworld/app/platform/**'
-      - 'android-app/app/src/test/java/com/minigamesworld/app/platform/**'
-      - 'android-app/tools/verify-platform-adapters.py'
-      - 'android-app/docs/MVP26_5_DISABLED_PLATFORM_ADAPTERS.md'
+      - '.well-known/assetlinks.json'
+      - 'android-app/**'
+      - 'bot/android-auth.php'
+      - 'bot/support-attachment-download.php'
       - '.github/workflows/mvp26-5-platform-adapters.yml'
+      - '.github/workflows/mvp26-6-android-product-parity.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  adapter-contract:
-    name: Disabled adapter contracts
+  parity-contract:
+    name: Full Android product parity contracts
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -30,15 +29,27 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Verify provider-neutral adapter ownership
+      - name: Verify MVP-26.6 ownership
+        run: python3 android-app/tools/verify-product-parity.py
+
+      - name: Verify accepted disabled adapters remain active
+        run: python3 android-app/tools/verify-platform-adapters.py
+
+      - name: PHP syntax
         run: |
           set -euo pipefail
-          python3 android-app/tools/verify-platform-adapters.py
+          php -l bot/android-auth.php
+          php -l bot/support-attachment-download.php
 
-      - name: Tracked secret scan
-        run: node scripts/ci/check-secrets.mjs
+      - name: Focused shared-product regressions
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp18_4UniversalInviteLandingContractTest.php
+          php bot/tests/Mvp26_2AndroidDeviceAuthTest.php
+          php bot/tests/Mvp26_4AndroidAccountReauthTest.php
+          php bot/tests/SupportTicketServiceTest.php
 
-      - name: Frozen product-boundary guard
+      - name: Frozen game/economy/tournament engine guard
         if: github.event_name == 'pull_request'
         shell: bash
         run: |
@@ -46,12 +57,25 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           git diff --exit-code "$base" "$head" -- \
-            bot/games bot/ratings bot/tournaments bot/economy bot/ledger
+            bot/games bot/ratings bot/tournaments bot/economy bot/ledger \
+            app/runtime/client/version-manifest.php \
+            app/assets/js/telegram/telegram-app.js \
+            app/assets/js/games/game-invites-v110.js \
+            app/assets/js/screens/home-screen.js \
+            app/assets/js/games/tictactoe \
+            app/assets/js/games/checkers \
+            app/assets/js/games/chess \
+            app/assets/js/games/reversi \
+            app/assets/js/games/go \
+            app/assets/js/games/four-in-a-row \
+            app/assets/js/games/domino \
+            app/assets/js/games/battleship
 
-
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
 
   android-build:
-    name: Android adapter regression build/lint/unit
+    name: Android build/lint/unit v2612
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -104,14 +128,15 @@ jobs:
           test -f "$apk"
           apksigner="${ANDROID_SDK_ROOT}/build-tools/36.0.0/apksigner"
           test -x "$apksigner"
-          "$apksigner" verify --print-certs "$apk" | tee /tmp/mgw-mvp26-5-signing.txt
-          grep -F 'CN=MGW Acceptance, O=Mini Games World, C=PL' /tmp/mgw-mvp26-5-signing.txt
+          "$apksigner" verify --print-certs "$apk" | tee /tmp/mgw-mvp26-6-signing.txt
+          grep -F 'CN=MGW Acceptance, O=Mini Games World, C=PL' /tmp/mgw-mvp26-6-signing.txt
+          grep -Fi 'efda9b86b0b0edfaa22064864aaddc025f15bdc063bf53cfb58d569f504f5484' /tmp/mgw-mvp26-6-signing.txt
 
-      - name: Upload adapter regression APK
+      - name: Upload v2612 APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: mgw-mvp26-5-disabled-platform-adapters-regression-debug
+          name: mgw-mvp26-6-product-parity-v2612-debug
           path: android-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7
@@ -120,7 +145,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mgw-mvp26-5-disabled-platform-adapters-regression-reports
+          name: mgw-mvp26-6-product-parity-v2612-reports
           path: |
             android-app/app/build/reports/**
             android-app/app/build/test-results/**
