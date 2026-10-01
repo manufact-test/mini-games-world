@@ -15,12 +15,12 @@ let historyCachePromise = null;
 
 const SUPPORT_TICKETS_CACHE_MAX_AGE_MS = 15000;
 const PLAYER_REPORT_REASONS = Object.freeze([
-  ['nickname','Недопустимый никнейм'],
-  ['avatar','Недопустимый аватар'],
-  ['spam','Спам'],
-  ['cheating','Нечестная игра'],
-  ['stalling','Затягивание игры'],
-  ['other','Другое'],
+  ['nickname',t('home.report.reasons.nickname')],
+  ['avatar',t('home.report.reasons.avatar')],
+  ['spam',t('home.report.reasons.spam')],
+  ['cheating',t('home.report.reasons.cheating')],
+  ['stalling',t('home.report.reasons.stalling')],
+  ['other',t('home.report.reasons.other')],
 ]);
 let supportTicketsCache = null;
 let supportTicketsCacheAt = 0;
@@ -63,21 +63,21 @@ export function initHomeScreen(){
 function openProfileFromTop(){ document.dispatchEvent(new CustomEvent('mgw:open-profile')); }
 export function renderStats(stats){
   const el=document.getElementById('activityGrid'); if(!el)return; const safe=stats||{};
-  el.innerHTML=`<div class="activity-card"><div class="label">Игроков онлайн</div><div class="num">${safe.online_players ?? '—'}</div></div><div class="activity-card"><div class="label">Активных матчей</div><div class="num">${safe.active_games ?? '—'}</div></div>`;
+  el.innerHTML=`<div class="activity-card"><div class="label">${escapeHtml(t('home.stats.online_players'))}</div><div class="num">${safe.online_players ?? '—'}</div></div><div class="activity-card"><div class="label">${escapeHtml(t('home.stats.active_matches'))}</div><div class="num">${safe.active_games ?? '—'}</div></div>`;
 }
 
 function openMoreMenuSheet(){
   void refreshHistoryCache().catch(() => {});
   void refreshSupportTicketsCache().catch(() => {});
-  openSheet(`<div class="sheet-head"><div><h2>Меню</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="menu-list">
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(t('home.menu.title'))}</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="menu-list">
     ${menuItemMarkup('settingsBtn', '⚙️', t('settings.title'))}
-    ${menuItemMarkup('rulesBtn', '📘', 'Правила')}
-    ${menuItemMarkup('feedbackBtn', '💬', 'Обратная связь')}
-    ${menuItemMarkup('ideaBtn', '💡', 'Предложить идею')}
-    ${menuItemMarkup('supportBtn', '⚠️', 'Пожаловаться', 'danger')}
-    ${menuItemMarkup('supportTicketsBtn', '🎫', 'Мои обращения', 'support-attention')}
-    ${menuItemMarkup('balanceHistoryBtn', '🧾', 'История баланса')}
-    ${menuItemMarkup('matchHistoryBtn', '🎮', 'История матчей')}
+    ${menuItemMarkup('rulesBtn', '📘', t('rules.open'))}
+    ${menuItemMarkup('feedbackBtn', '💬', t('home.menu.feedback'))}
+    ${menuItemMarkup('ideaBtn', '💡', t('home.menu.idea'))}
+    ${menuItemMarkup('supportBtn', '⚠️', t('home.menu.report'), 'danger')}
+    ${menuItemMarkup('supportTicketsBtn', '🎫', t('home.menu.tickets'), 'support-attention')}
+    ${menuItemMarkup('balanceHistoryBtn', '🧾', t('home.menu.balance_history'))}
+    ${menuItemMarkup('matchHistoryBtn', '🎮', t('home.menu.match_history'))}
   </div>`);
   document.getElementById('settingsBtn')?.addEventListener('click', openSettingsSheet);
   document.getElementById('rulesBtn')?.addEventListener('click', openRulesSheet);
@@ -198,14 +198,14 @@ async function openBalanceHistorySheet(){
     if(result.user){state.user=result.user;renderBalances(state.user);}
     renderHistorySheet(result.history||{});
     void refreshHistoryCache({ force:isHistoryCacheStale() }).catch(() => {});
-  } catch(error){ openSheet(`<div class="sheet-head"><div><h2>История баланса</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="small-note">${escapeHtml(error.message)}</div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`); }
+  } catch(error){ openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(t('home.history.balance_title'))}</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="small-note">${escapeHtml(error.message)}</div><button class="btn ghost full" data-close-sheet type="button">${escapeHtml(t('rules.understood'))}</button>`); }
 }
 async function openMatchHistorySheet(){
   try {
     const result=historyCache || await refreshHistoryCache({ force:true });
     renderMatchHistorySheet(result.history?.matches||[]);
     void refreshHistoryCache({ force:isHistoryCacheStale() }).catch(() => {});
-  } catch(error){ openSheet(`<div class="sheet-head"><div><h2>История матчей</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="small-note">${escapeHtml(error.message)}</div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`); }
+  } catch(error){ openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(t('home.history.match_title'))}</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="small-note">${escapeHtml(error.message)}</div><button class="btn ghost full" data-close-sheet type="button">${escapeHtml(t('rules.understood'))}</button>`); }
 }
 function isHistoryCacheStale(){return !historyCache || (Date.now()-historyCacheAt)>=HISTORY_CACHE_MAX_AGE_MS;}
 function refreshHistoryCache({force=false}={}){
@@ -218,26 +218,26 @@ function refreshHistoryCache({force=false}={}){
 }
 function renderHistorySheet(history){
   const operations=history.operations||[];
-  const operationHtml=operations.length?operations.slice(0,20).map(item=>`<div class="history-item"><div><strong>${escapeHtml(item.title||'Операция')}</strong><span>${escapeHtml(item.description||'')}</span><em>${escapeHtml(formatDate(item.created_at))}</em></div><b class="${item.tone==='pos'?'pos':(item.tone==='neg'?'neg':'')}">${escapeHtml(item.amount_label||'0 коинов')}</b></div>`).join(''):`<div class="small-note">Операций пока нет.</div>`;
-  openSheet(`<div class="sheet-head"><div><h2>История баланса</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="history-scroll"><div class="history-section"><h3>Операции баланса</h3><div class="history-list">${operationHtml}</div></div></div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`);
+  const operationHtml=operations.length?operations.slice(0,20).map(item=>`<div class="history-item"><div><strong>${escapeHtml(item.title||t('home.history.operation'))}</strong><span>${escapeHtml(item.description||'')}</span><em>${escapeHtml(formatDate(item.created_at))}</em></div><b class="${item.tone==='pos'?'pos':(item.tone==='neg'?'neg':'')}">${escapeHtml(item.amount_label||t('home.history.coin_amount',{count:0}))}</b></div>`).join(''):`<div class="small-note">${escapeHtml(t('home.history.operations_empty'))}</div>`;
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(t('home.history.balance_title'))}</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="history-scroll"><div class="history-section"><h3>${escapeHtml(t('home.history.operations_title'))}</h3><div class="history-list">${operationHtml}</div></div></div><button class="btn ghost full" data-close-sheet type="button">${escapeHtml(t('rules.understood'))}</button>`);
 }
 function renderMatchHistorySheet(matches=[]){
   const matchHtml=matches.length?matches.slice(0,20).map(item=>{
-    const result=item.result||'Матч';
+    const result=item.result||t('home.history.match');
     const tone=item.tone==='pos'?'pos':(item.tone==='neg'?'neg':'');
-    const game=item.game_title||'Матч';
+    const game=item.game_title||t('home.history.match');
     const columns=Number(item.board_columns||item.board_size||0);
     const rows=Number(item.board_rows||item.board_size||0);
     const board=columns>0&&rows>0?`${columns}×${rows}`:'';
-    const opponent=item.opponent||'Соперник';
+    const opponent=item.opponent||t('home.history.opponent');
     const economy=item.economy&&typeof item.economy==='object'?item.economy:null;
     const date=formatDate(item.finished_at||item.created_at);
     const delta=economy?matchDelta(economy.ledger_delta):'';
-    return `<div class="history-item match-history-item"><div><strong>${escapeHtml(result)}</strong><span>${escapeHtml([game,board].filter(Boolean).join(' · '))}</span><span>Соперник: ${escapeHtml(opponent)}</span><em>${escapeHtml(date)}</em></div><b class="${tone}">${escapeHtml(delta)}</b></div>`;
-  }).join(''):`<div class="small-note">Истории матчей пока нет.</div>`;
-  openSheet(`<div class="sheet-head"><div><h2>История матчей</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="history-scroll"><div class="history-section"><h3>Последние игры</h3><div class="history-list">${matchHtml}</div></div></div><button class="btn ghost full" data-close-sheet type="button">Понятно</button>`);
+    return `<div class="history-item match-history-item"><div><strong>${escapeHtml(result)}</strong><span>${escapeHtml([game,board].filter(Boolean).join(' · '))}</span><span>${escapeHtml(t('home.history.opponent_line',{opponent}))}</span><em>${escapeHtml(date)}</em></div><b class="${tone}">${escapeHtml(delta)}</b></div>`;
+  }).join(''):`<div class="small-note">${escapeHtml(t('home.history.matches_empty'))}</div>`;
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(t('home.history.match_title'))}</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="history-scroll"><div class="history-section"><h3>${escapeHtml(t('home.history.latest_games'))}</h3><div class="history-list">${matchHtml}</div></div></div><button class="btn ghost full" data-close-sheet type="button">${escapeHtml(t('rules.understood'))}</button>`);
 }
-function matchDelta(value){if(value===null||value===undefined||!Number.isFinite(Number(value)))return'—';const normalized=Math.trunc(Number(value));return `${normalized>0?'+':''}${normalized} коинов`;}
+function matchDelta(value){if(value===null||value===undefined||!Number.isFinite(Number(value)))return'—';const normalized=Math.trunc(Number(value));return `${normalized>0?'+':''}${t('home.history.coin_amount',{count:normalized})}`;}
 function formatDate(value){if(!value)return'';const date=new Date(value);if(Number.isNaN(date.getTime()))return String(value);return date.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}
 function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[char]));}
 function openSupportForm(type){
