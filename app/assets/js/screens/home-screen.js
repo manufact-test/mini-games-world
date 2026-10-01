@@ -4,7 +4,7 @@ import { api } from '../api/client.js?v=47';
 import { toast } from '../components/toast.js?v=41';
 import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { showScreen } from '../router.js?v=27';
-import { haptic, isAndroidShell } from '../telegram/telegram-app.js?v=27';
+import { haptic } from '../telegram/telegram-app.js?v=27';
 import { renderBalances } from '../ui.js?v=90-wallet-15-3';
 import { t, setExplicitLocale } from '@mgw/i18n';
 
@@ -690,7 +690,7 @@ function renderSupportTicketThread(ticket){
     const own=message.actor_type!=='admin';
     const files=(message.attachments||[]).map(file=>`
       <div class="support-thread-attachment-wrap">
-        <button class="support-thread-attachment" type="button" data-support-attachment="${escapeHtml(file.attachment_id||'')}" data-support-attachment-mime="${escapeHtml(file.mime_type||'')}">
+        <button class="support-thread-attachment" type="button" data-support-attachment="${escapeHtml(file.attachment_id||'')}">
           <span aria-hidden="true">⌁</span>
           <span class="support-thread-attachment-name">${escapeHtml(file.file_name||'Вложение')}</span>
           <em>Открыть</em>
@@ -796,16 +796,6 @@ async function supportFilesPayload(source){
 
 async function openSupportAttachment(attachmentId,button){
   if(!attachmentId)return;
-  const declaredMime=String(button?.dataset?.supportAttachmentMime||'').toLowerCase();
-  if(isAndroidShell()&&declaredMime&&!declaredMime.startsWith('image/')){
-    const label=button?.querySelector('em');
-    if(label)label.textContent='Загрузка…';
-    const download=new URL('/bot/support-attachment-download.php',window.location.origin);
-    download.searchParams.set('attachment_id',attachmentId);
-    window.location.assign(download.toString());
-    window.setTimeout(()=>{if(label)label.textContent='Открыть';},1200);
-    return;
-  }
   const preview=Array.from(document.querySelectorAll('[data-support-attachment-preview]'))
     .find(node=>node.dataset.supportAttachmentPreview===attachmentId)||null;
   if(preview?.dataset.loaded==='1'){
