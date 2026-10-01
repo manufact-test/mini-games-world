@@ -16,7 +16,7 @@ on:
       - 'bot/social/SocialInviteGuard.php'
       - 'bot/tests/Mvp26_6AndroidParityCorrectiveTest.php'
       - 'app/assets/css/main.css'
-      - 'app/runtime/client/version-manifest.php'
+      - 'app/v110.php'
       - '.github/workflows/mvp26-5-platform-adapters.yml'
       - '.github/workflows/mvp26-6-android-product-parity.yml'
   workflow_dispatch:
@@ -52,6 +52,7 @@ jobs:
           php -l bot/storage/JsonDatabase.php
           php -l bot/invites.php
           php -l bot/invite-opponents.php
+          php -l app/v110.php
           php -l bot/social/SocialInviteGuard.php
 
       - name: Focused shared-product regressions
@@ -75,6 +76,7 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           git diff --exit-code "$base" "$head" -- \
             bot/games bot/ratings bot/tournaments bot/economy bot/ledger \
+            app/runtime/client/version-manifest.php \
             app/assets/js/telegram/telegram-app.js \
             app/assets/js/games/game-invites-v110.js \
             app/assets/js/screens/home-screen.js \
