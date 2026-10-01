@@ -115,7 +115,7 @@ expect(storeOuterEntry.includes("from './store-screen-intent-wrapper.js?v=19&mvp
 expect(storeEntry.includes("./store-screen.js?v=44&intent_base=1"), 'Store entry must delegate to the accepted versioned Store owner');
 expect(store.includes('Один выбранный эффект срабатывает при каждом ходе') && store.includes('data-store-v2-unequip'), 'delegated Store owner must preserve C2.1 single-effect selection UI');
 expect(manifest.includes('c2_1=effect-unequip'), 'active runtime manifest must cache-bust the API unequip client');
-expect(store.includes('if (!purchaseBusy && !equipBusy) applyStoreResponse(result);') && store.includes('if (!purchaseBusy && !equipBusy) {\n      renderStore();'), 'delegated Store owner must preserve C2.2 selection consistency under background refresh');
+expect(store.includes('if (!purchaseBusy && !equipBusy) applyStoreResponse(result, { preserveBalance:true });') && store.includes('if (!purchaseBusy && !equipBusy) {\n      renderStore();'), 'delegated Store owner must preserve C2.2 selection consistency under background refresh and wallet preservation');
 expect(manifest.includes('c2_4=poll-persistent-effects'), 'active runtime manifest must preserve the poll-persistent Tic Tac Toe renderer');
 expect(manifest.includes('c2_5=visible-mark-layer'), 'active runtime manifest must preserve C2.5 visible mark layering');
 expect(manifest.includes('c2_6=cell-native-dom-fx'), 'active runtime manifest must publish C2.6 cell-native DOM FX');
