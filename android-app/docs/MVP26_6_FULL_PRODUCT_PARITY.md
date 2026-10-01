@@ -59,11 +59,11 @@ The eight accepted game renderers remain present for:
 Telegram uses Telegram WebApp HapticFeedback.
 
 Standalone Android has no Telegram bridge. The native container therefore
-installs one small, idempotent compatibility shim **after** the accepted shared
-shell has initialized. It supplies only the HapticFeedback surface used by the
-existing product helper and maps it to standards-based `navigator.vibrate()`.
+installs one small, idempotent post-init hook for trusted user click events and
+maps them to a short standards-based `navigator.vibrate()` pulse.
 
-The accepted Telegram/web JavaScript remains unchanged.
+The accepted Telegram/web JavaScript and Telegram HapticFeedback ownership remain
+unchanged; Android does not pretend to be a Telegram WebApp.
 
 The Android manifest declares `android.permission.VIBRATE`.
 
