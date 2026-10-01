@@ -13,6 +13,7 @@ final class SupportTicketService
 {
     public const PLATFORM_LABELS = [
         'telegram' => 'Приложение в Telegram',
+        'android' => 'Android-приложение',
         'google_play' => 'Приложение из Google Play',
     ];
 
