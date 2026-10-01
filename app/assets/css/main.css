@@ -3391,3 +3391,73 @@
   .mgw-account-link-onboarding-actions{grid-template-columns:1.4fr .8fr;gap:7px}
   .mgw-account-link-onboarding-actions .btn{min-height:44px;font-size:12px}
 }
+
+
+/* MVP-26.3 Android landscape IME corrective v2.
+ * Android WebView can resize the visual viewport before CSS dvh catches up.
+ * The sheet component publishes the measured visual viewport and marks the
+ * short landscape/IME state so the whole dialog stays reachable above IME.
+ */
+#sheetOverlay.overlay{
+  inset:auto 0 auto 0;
+  top:var(--mgw-sheet-viewport-top,0px);
+  height:var(--mgw-sheet-viewport-height,100dvh);
+}
+#sheetOverlay.overlay.mgw-short-visual-viewport{
+  align-items:stretch;
+  padding:6px 10px;
+}
+#sheetOverlay.overlay.mgw-short-visual-viewport .sheet{
+  width:min(720px,100%);
+  height:100%;
+  max-width:720px;
+  max-height:none!important;
+  margin:0 auto;
+  padding:10px 12px;
+  gap:8px;
+  border-radius:18px;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+#sheetOverlay.overlay.mgw-short-visual-viewport .sheet-head{
+  gap:10px;
+}
+#sheetOverlay.overlay.mgw-short-visual-viewport .sheet-head h2{
+  font-size:18px;
+  line-height:1.1;
+}
+#sheetOverlay.overlay.mgw-short-visual-viewport .sheet-head p{
+  margin-top:3px;
+  font-size:11.5px;
+  line-height:1.3;
+}
+#sheetOverlay.overlay.mgw-short-visual-viewport .close{
+  width:40px;
+  height:40px;
+  min-width:40px;
+  min-height:40px;
+}
+#sheetOverlay.overlay.mgw-short-visual-viewport .player-report-create{
+  flex:none;
+  min-height:auto;
+  overflow:visible;
+  gap:8px;
+}
+#sheetOverlay.overlay.mgw-short-visual-viewport .player-report-step{
+  padding:9px 10px;
+  gap:8px;
+}
+#sheetOverlay.overlay.mgw-short-visual-viewport .player-report-step-title small,
+#sheetOverlay.overlay.mgw-short-visual-viewport .player-report-search-status{
+  display:none;
+}
+#sheetOverlay.overlay.mgw-short-visual-viewport .player-report-search{
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:7px;
+}
+#sheetOverlay.overlay.mgw-short-visual-viewport .player-report-search .btn{
+  width:auto;
+  min-width:78px;
+}
