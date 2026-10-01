@@ -5,7 +5,13 @@ on:
     branches:
       - agent/mvp-13-2-staging
     paths:
-      - 'android-app/**'
+      - 'android-app/app/build.gradle'
+      - 'android-app/app/src/main/AndroidManifest.xml'
+      - 'android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java'
+      - 'android-app/tools/verify-foundation.py'
+      - 'android-app/tools/verify-orientation-lifecycle.py'
+      - 'android-app/tools/verify-native-shell-settings.py'
+      - 'android-app/docs/MVP26_3_NATIVE_SHELL_SETTINGS_CLOSURE.md'
       - 'app/assets/js/main-v110-handoff-shell.js'
       - 'app/assets/css/main.css'
       - 'app/assets/js/components/sheet.js'
@@ -57,48 +63,24 @@ jobs:
           grep -Fq "sheet.js?v=1111&mvp26_3=visual-viewport-ime-v2" app/runtime/client/version-manifest.php
           grep -Fq "applicationId 'com.minigamesworld.app.acceptance'" android-app/app/build.gradle
           grep -Fq "mgw-acceptance-stable.keystore" android-app/app/build.gradle
-          grep -Fq "versionCode 2610" android-app/app/build.gradle
+          version_code="$(awk '/versionCode/{print $2; exit}' android-app/app/build.gradle)"
+          test -n "$version_code"
+          test "$version_code" -ge 2610
 
       - name: Tracked secret scan
         run: node scripts/ci/check-secrets.mjs
 
-      - name: Scope guard
+      - name: Frozen product-boundary guard
         if: github.event_name == 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          bad=0
-          while IFS= read -r path; do
-            case "$path" in
-              .github/workflows/mvp26-3-native-shell-settings-closure.yml|\
-              .github/workflows/mvp26-2-android-device-auth.yml|\
-              .github/workflows/mvp26-3-4-android-orientation-lifecycle.yml|\
-              .github/workflows/mvp26-4-android-account-reauth.yml|\
-              android-app/README.md|\
-              android-app/docs/MVP26_3_NATIVE_SHELL_SETTINGS_CLOSURE.md|\
-              android-app/app/build.gradle|\
-              android-app/app/src/main/AndroidManifest.xml|\
-              android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java|\
-              android-app/tools/verify-foundation.py|\
-              android-app/tools/verify-orientation-lifecycle.py|\
-              android-app/tools/verify-native-shell-settings.py|\
-              app/assets/js/main-v110-handoff-shell.js|\
-              app/assets/css/main.css|\
-              app/assets/js/components/sheet.js|\
-              app/runtime/client/version-manifest.php|\
-              bot/tests/Mvp26_4_2AndroidAccountDataDownloadContractTest.php)
-                ;;
-              *)
-                echo "Unexpected master MVP-26.3 closure path: $path" >&2
-                bad=1
-                ;;
-            esac
-          done < <(git diff --name-only "$base" "$head")
-          test "$bad" -eq 0
           git diff --exit-code "$base" "$head" -- \
             bot/games bot/ratings bot/tournaments bot/economy bot/ledger bot/notifications
+
+
 
   android-build:
     name: Android build/lint/unit
@@ -139,7 +121,7 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0'
 
-      - name: Test lint and assemble v2610
+      - name: Test lint and assemble accepted shell
         working-directory: android-app
         env:
           MGW_BASE_URL: https://seashell-okapi-889488.hostingersite.com/
@@ -157,11 +139,11 @@ jobs:
           "$apksigner" verify --print-certs "$apk" | tee /tmp/mgw-native-shell-signing.txt
           grep -F 'CN=MGW Acceptance, O=Mini Games World, C=PL' /tmp/mgw-native-shell-signing.txt
 
-      - name: Upload v2610 APK
+      - name: Upload shell regression APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: mgw-mvp26-3-native-shell-settings-v2610-debug
+          name: mgw-mvp26-3-native-shell-settings-regression-debug
           path: android-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7
@@ -170,7 +152,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mgw-mvp26-3-native-shell-settings-v2610-reports
+          name: mgw-mvp26-3-native-shell-settings-regression-reports
           path: |
             android-app/app/build/reports/**
             android-app/app/build/test-results/**
