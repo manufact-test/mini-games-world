@@ -441,7 +441,20 @@ final class JsonDatabase
     private function writeFile(string $file, array $data): void
     {
         $path = $this->dataDir . '/' . $file;
-        $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-        file_put_contents($path, $json === false ? '[]' : $json, LOCK_EX);
+        $json = json_encode(
+            $data,
+            JSON_UNESCAPED_UNICODE
+            | JSON_PRETTY_PRINT
+            | JSON_UNESCAPED_SLASHES
+            | JSON_INVALID_UTF8_SUBSTITUTE
+        );
+        if ($json === false) {
+            throw new RuntimeException('Не удалось сериализовать JSON-хранилище.');
+        }
+
+        $written = file_put_contents($path, $json, LOCK_EX);
+        if ($written === false) {
+            throw new RuntimeException('Не удалось записать JSON-хранилище.');
+        }
     }
 }

@@ -10,6 +10,9 @@ on:
       - 'bot/android-auth.php'
       - 'bot/profile.php'
       - 'bot/profile-v2.php'
+      - 'bot/helpers/validators.php'
+      - 'bot/storage/JsonDatabase.php'
+      - 'bot/api.php'
       - 'bot/weekly/WeeklyBonusRuntimeBridge.php'
       - 'bot/weekly/RuntimeWeeklyBonusRepository.php'
       - 'android-app/**'
@@ -100,4 +103,23 @@ jobs:
           profile_v2_user="$(jq -r '.user.id' "$tmp/profile-v2.json")"
           test "$bootstrap_user" = "$profile_v2_user"
           test "$profile_mgw" = "$profile_v2_mgw"
-          echo "Android live auth chain PASS"
+
+          # MVP-26.6 corrective: exercise one real mutating gameplay seam through
+          # the same Android HttpOnly session. Go 13x13 minimizes accidental
+          # human pairing; leave immediately after the authoritative queued state.
+          start_search='{"action":"start_search","initData":"","sessionId":"android-live-probe","deviceId":"android-live-probe","gameType":"go","boardSize":13}'
+          leave_search='{"action":"leave_search","initData":"","sessionId":"android-live-probe","deviceId":"android-live-probe"}'
+
+          curl -sS -b "$tmp/cookies.txt" -H 'Content-Type: application/json' \
+            --data "$start_search" "$MGW_STAGING_ORIGIN/bot/api.php" > "$tmp/start-search.json"
+          echo '--- sanitized Android start_search ---'
+          jq '{ok,error,user:{id:(.user.id // null),status:(.user.status // null)},session:(.session // null),queued:(.queued // null),game_id:(.game.id // null)}' "$tmp/start-search.json"
+          jq -e '.ok == true and .session.locked != true and (.user.status == "searching" or (.game.id | type == "string"))' "$tmp/start-search.json" >/dev/null
+
+          if jq -e '.user.status == "searching"' "$tmp/start-search.json" >/dev/null; then
+            curl -sS -b "$tmp/cookies.txt" -H 'Content-Type: application/json' \
+              --data "$leave_search" "$MGW_STAGING_ORIGIN/bot/api.php" > "$tmp/leave-search.json"
+            jq -e '.ok == true and .user.status == "idle"' "$tmp/leave-search.json" >/dev/null
+          fi
+
+          echo "Android live auth + matchmaking chain PASS"

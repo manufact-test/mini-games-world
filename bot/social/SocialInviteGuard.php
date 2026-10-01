@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/FriendGraphService.php';
 require_once dirname(__DIR__) . '/accounts/MgwIdGenerator.php';
+require_once dirname(__DIR__) . '/accounts/RuntimeAccountOwnershipService.php';
 
 final class SocialInviteGuardException extends RuntimeException {}
 
@@ -27,6 +28,26 @@ final class SocialInviteGuard
             throw new SocialInviteGuardException('Игрок MGW недоступен.');
         }
         $this->assertNotBlocked($actorMgwId, $targetMgwId);
+
+        // Provider-neutral runtime ownership is the canonical bridge from MGW
+        // account identity back to the active legacy/runtime subject. This keeps
+        // Android-linked and Android-only accounts inviteable without inventing
+        // a second invite owner. Historical provider lookup remains fallback.
+        $ownership = null;
+        try {
+            $ownership = (new RuntimeAccountOwnershipService($this->database))->findByMgwId($targetMgwId);
+        } catch (Throwable $ownershipError) {
+            $message = strtolower($ownershipError->getMessage());
+            if (str_contains($message, 'not active')
+                || str_contains($message, 'collides')
+                || str_contains($message, 'invalid')) {
+                throw $ownershipError;
+            }
+            // Historical/minimal test schemas may predate runtime ownership.
+            // Keep the established provider lookup as compatibility fallback.
+        }
+        $ownedRuntimeSubject = trim((string)($ownership['legacy_user_id'] ?? ''));
+        if ($ownedRuntimeSubject !== '') return $ownedRuntimeSubject;
 
         $rows = $this->database->fetchAll(
             'SELECT provider_subject FROM mgw_identities

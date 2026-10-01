@@ -129,8 +129,8 @@ no-op/disabled, and none owns gameplay/product state.
 
 ## Candidate
 
-- versionCode: `2612`
-- versionName: `0.26.6.1-android-product-parity`
+- versionCode: `2613`
+- versionName: `0.26.6.2-android-product-parity-corrective`
 - applicationId: unchanged
 - signing identity: unchanged
 
@@ -149,6 +149,16 @@ Required:
 9. PHP/JS syntax passes;
 10. package/signing identity remains accepted;
 11. post-merge staging E2E remains green.
+
+## v2613 corrective before manual closure
+
+The v2612 real-device pass exposed four product-parity blockers:
+- Android search could fall back to Home after a malformed UTF-8 runtime string corrupted JSON persistence;
+- the direct invite picker omitted canonical friends that were not recent/online JSON candidates;
+- Share could expose a raw malformed-UTF-8 serialization error;
+- Support attachment remove controls were vertically offset.
+
+v2613 repairs those root causes without forking the shared product owners. Runtime JSON persistence no longer has a destructive `[]` encode fallback, invite target resolution prefers canonical runtime-account ownership, and the accepted shared game/economy/rating/tournament owners stay frozen.
 
 ## Manual acceptance
 

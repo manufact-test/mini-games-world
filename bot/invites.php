@@ -162,7 +162,13 @@ function mgw_invite_row_fingerprints(array $invites): array
         if (!is_array($invite)) continue;
         $token = strtolower(trim((string)($invite['token'] ?? '')));
         if ($token === '') continue;
-        $encoded = json_encode($invite, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        $encoded = json_encode(
+            $invite,
+            JSON_UNESCAPED_UNICODE
+            | JSON_UNESCAPED_SLASHES
+            | JSON_INVALID_UTF8_SUBSTITUTE
+            | JSON_THROW_ON_ERROR
+        );
         $result[$token] = hash('sha256', $encoded);
     }
     return $result;

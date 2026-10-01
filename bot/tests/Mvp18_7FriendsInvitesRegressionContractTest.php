@@ -53,17 +53,17 @@ $assertContains(
     'MVP-18.7 must retain the accepted reconnect wrapper'
 );
 $assertContains(
-    "'./assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent' => './assets/js/games/game-invites-v110.js?v=1146&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native&waiting=draft-safe&mvp21_6=tournament-rematch-exclusion-v1'",
+    "'./assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent' => './assets/js/games/game-invites-v110.js?v=1149&mvp25_2=network-human-error-v1&mvp24=room-copy-removed-v1&mvp26_3_12=invite-sync-wallet-nonowner-v1&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native&waiting=draft-safe&mvp21_6=tournament-rematch-exclusion-v1'",
     $manifest,
     'MVP-18.7 must route the frozen wrapper specifier to the draft-safe Telegram-native invite owner'
 );
 $assertContains(
-    "'./assets/js/games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1' => './assets/js/games/game-invites-v110.js?v=1146&mvp21_6=tournament-rematch-exclusion-v1'",
+    "'./assets/js/games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1' => './assets/js/games/game-invites-v110.js?v=1149&mvp25_2=network-human-error-v1&mvp24=room-copy-removed-v1&mvp26_3_12=invite-sync-wallet-nonowner-v1&mvp21_6=tournament-rematch-exclusion-v1'",
     $manifest,
     'Friends and the wrapper must converge on one draft-safe invite owner identity'
 );
 $assertContains(
-    "'./assets/js/games/game-invites-v110.js?v=1144&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native' => './assets/js/games/game-invites-v110.js?v=1146&mvp21_6=tournament-rematch-exclusion-v1'",
+    "'./assets/js/games/game-invites-v110.js?v=1144&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native' => './assets/js/games/game-invites-v110.js?v=1149&mvp25_2=network-human-error-v1&mvp24=room-copy-removed-v1&mvp26_3_12=invite-sync-wallet-nonowner-v1&mvp21_6=tournament-rematch-exclusion-v1'",
     $manifest,
     'Previously resolved Telegram-native invite owner must cache-bust to the waiting corrective'
 );
