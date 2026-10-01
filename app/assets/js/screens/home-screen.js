@@ -6,7 +6,7 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { showScreen } from '../router.js?v=27';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 import { renderBalances } from '../ui.js?v=90-wallet-15-3';
-import { t, setExplicitLocale } from '@mgw/i18n';
+import { t, setExplicitLocale, formatDateTime as formatLocalizedDateTime } from '@mgw/i18n';
 
 const HISTORY_CACHE_MAX_AGE_MS = 15000;
 let historyCache = null;
@@ -261,73 +261,73 @@ function renderMatchHistorySheet(matches=[]){
   openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(t('home.history.match_title'))}</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="history-scroll"><div class="history-section"><h3>${escapeHtml(t('home.history.latest_games'))}</h3><div class="history-list">${matchHtml}</div></div></div><button class="btn ghost full" data-close-sheet type="button">${escapeHtml(t('rules.understood'))}</button>`);
 }
 function matchDelta(value){if(value===null||value===undefined||!Number.isFinite(Number(value)))return'—';const normalized=Math.trunc(Number(value));return `${normalized>0?'+':''}${t('home.history.coin_amount',{count:normalized})}`;}
-function formatDate(value){if(!value)return'';const date=new Date(value);if(Number.isNaN(date.getTime()))return String(value);return date.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}
+function formatDate(value){if(!value)return'';const date=new Date(value);if(Number.isNaN(date.getTime()))return String(value);return formatLocalizedDateTime(date,'short',{year:undefined});}
 function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[char]));}
 function openSupportForm(type){
   const defaults={feedback:'feedback',idea:'idea'};
   const category=defaults[type]||'other';
   const titles={
-    feedback:'Обратная связь',
-    idea:'Предложить идею',
+    feedback:t('home.menu.feedback'),
+    idea:t('home.menu.idea'),
   };
   const messagePlaceholders={
-    feedback:'Напишите сообщение',
-    idea:'Опишите идею',
+    feedback:t('home.support.message_feedback'),
+    idea:t('home.support.message_idea'),
   };
-  const title=titles[type]||'Обращение';
-  const messagePlaceholder=messagePlaceholders[type]||'Опишите ситуацию';
+  const title=titles[type]||t('home.support.title_default');
+  const messagePlaceholder=messagePlaceholders[type]||t('home.support.message_default');
 
   openSheet(`<div class="sheet-head support-ticket-create-head"><div><h2>${escapeHtml(title)}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="support-ticket-create">
       <div class="support-ticket-create-scroll">
         <label class="support-ticket-field">
-          <span class="support-ticket-label">Категория</span>
+          <span class="support-ticket-label">${escapeHtml(t('home.support.category_label'))}</span>
           <span class="support-ticket-select-wrap">
             <select id="supportCategory" class="support-ticket-control support-ticket-select">
-              <option value="feedback">Обратная связь</option>
-              <option value="idea">Предложение</option>
-              <option value="technical">Техническая проблема</option>
-              <option value="payment">Платёж / коины</option>
-              <option value="game">Игра / матч</option>
-              <option value="tournament">Турнир</option>
-              <option value="account">Аккаунт</option>
-              <option value="other">Другое</option>
+              <option value="feedback">${escapeHtml(t('home.support.category_feedback'))}</option>
+              <option value="idea">${escapeHtml(t('home.support.category_idea'))}</option>
+              <option value="technical">${escapeHtml(t('home.support.category_technical'))}</option>
+              <option value="payment">${escapeHtml(t('home.support.category_payment'))}</option>
+              <option value="game">${escapeHtml(t('home.support.category_game'))}</option>
+              <option value="tournament">${escapeHtml(t('home.support.category_tournament'))}</option>
+              <option value="account">${escapeHtml(t('home.support.category_account'))}</option>
+              <option value="other">${escapeHtml(t('home.support.category_other'))}</option>
             </select>
           </span>
         </label>
 
         <label class="support-ticket-field">
-          <span class="support-ticket-label">Тема</span>
-          <input id="supportSubject" class="support-ticket-control" maxlength="160" placeholder="Короткая тема">
+          <span class="support-ticket-label">${escapeHtml(t('home.support.subject_label'))}</span>
+          <input id="supportSubject" class="support-ticket-control" maxlength="160" placeholder="${escapeHtml(t('home.support.subject_placeholder'))}">
         </label>
 
         <label class="support-ticket-field">
-          <span class="support-ticket-label">Приоритет</span>
+          <span class="support-ticket-label">${escapeHtml(t('home.support.priority_label'))}</span>
           <span class="support-ticket-select-wrap">
             <select id="supportPriority" class="support-ticket-control support-ticket-select">
-              <option value="normal">Обычный</option>
-              <option value="high">Высокий</option>
-              <option value="critical">Критический</option>
-              <option value="low">Низкий</option>
+              <option value="normal">${escapeHtml(t('home.support.priority_normal'))}</option>
+              <option value="high">${escapeHtml(t('home.support.priority_high'))}</option>
+              <option value="critical">${escapeHtml(t('home.support.priority_critical'))}</option>
+              <option value="low">${escapeHtml(t('home.support.priority_low'))}</option>
             </select>
           </span>
         </label>
 
         <label class="support-ticket-field support-ticket-message-field">
-          <span class="support-ticket-label">Сообщение</span>
+          <span class="support-ticket-label">${escapeHtml(t('home.support.message_label'))}</span>
           <textarea id="supportText" class="support-ticket-control support-ticket-message" maxlength="4000" placeholder="${escapeHtml(messagePlaceholder)}"></textarea>
         </label>
 
         <div class="support-file-picker">
           <div class="support-file-picker-head">
-            <div><strong>Вложения</strong><small>Необязательно · до 3 файлов, до 2 МБ каждый</small></div>
-            <button class="support-file-add" id="supportFilesTrigger" type="button">＋ Добавить</button>
+            <div><strong>${escapeHtml(t('home.support.attachments'))}</strong><small>${escapeHtml(t('home.support.attachments_note'))}</small></div>
+            <button class="support-file-add" id="supportFilesTrigger" type="button">${escapeHtml(t('home.support.add_file'))}</button>
           </div>
           <input id="supportFiles" class="support-file-native" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain">
           <div class="support-file-list" id="supportFilesList"></div>
         </div>
       </div>
-      <button class="btn primary full support-ticket-submit" id="sendSupport" type="button">Создать обращение</button>
+      <button class="btn primary full support-ticket-submit" id="sendSupport" type="button">${escapeHtml(t('home.support.create'))}</button>
     </div>`);
 
   const categoryNode=document.getElementById('supportCategory');
@@ -336,7 +336,7 @@ function openSupportForm(type){
 
   document.getElementById('sendSupport')?.addEventListener('click',async()=>{
     const message=document.getElementById('supportText')?.value.trim()||'';
-    if(!message)return toast('Напишите сообщение.');
+    if(!message)return toast(t('home.support.message_required'));
     const button=document.getElementById('sendSupport');
     if(button)button.disabled=true;
     try{
@@ -351,9 +351,9 @@ function openSupportForm(type){
       const number=result?.ticket?.ticket_number||'';
       supportTicketsCacheAt=0;
       closeSheet();
-      toast(number?(`Обращение ${number} создано.`):'Обращение создано.');
+      toast(number?t('home.support.created_case',{number}):t('home.support.created'));
     }catch(error){
-      toast(error.message||'Не удалось создать обращение.');
+      toast(error.message||t('home.support.create_error'));
     }finally{
       if(button)button.disabled=false;
     }
@@ -576,7 +576,7 @@ async function openSupportTicketsSheet(){
     const tickets=Array.isArray(result?.tickets)?result.tickets:[];
     renderSupportTicketsSheet(tickets);
   }catch(error){
-    toast(error.message||'Не удалось загрузить обращения.');
+    toast(error.message||t('home.support.tickets_load_error'));
   }
 }
 
@@ -587,14 +587,14 @@ function renderSupportTicketsSheet(tickets){
     const category=escapeHtml(ticket.category_label||'');
     const date=escapeHtml(formatDate(ticket.updated_at||''));
     return `<button class="support-ticket-row" type="button" data-support-ticket="${escapeHtml(ticket.ticket_number||'')}">
-      <span class="support-ticket-row-top"><strong>${escapeHtml(ticket.ticket_number||'Обращение')}</strong><em>${status}</em></span>
+      <span class="support-ticket-row-top"><strong>${escapeHtml(ticket.ticket_number||t('home.support.ticket_fallback'))}</strong><em>${status}</em></span>
       <span class="support-ticket-row-subject">${escapeHtml(ticket.subject||ticket.category_label||'')}</span>
       <span class="support-ticket-row-meta"><span>${category}</span><span>${priority}</span><time>${date}</time></span>
     </button>`;
   }).join('');
 
-  openSheet(`<div class="sheet-head support-hub-head"><div><h2>Мои обращения</h2></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="support-ticket-summary">${tickets.length?`Обращений: ${tickets.length}`:'Обращений пока нет.'}</div>
+  openSheet(`<div class="sheet-head support-hub-head"><div><h2>${escapeHtml(t('home.menu.tickets'))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="support-ticket-summary">${tickets.length?escapeHtml(t('home.support.tickets_count',{count:tickets.length})):escapeHtml(t('home.support.tickets_empty'))}</div>
     <div class="support-ticket-list">${rows}</div>`);
 
   document.querySelectorAll('[data-support-ticket]').forEach(button=>button.addEventListener('click',()=>void openSupportTicketDetail(button.dataset.supportTicket||'',button)));
@@ -606,10 +606,10 @@ async function openSupportTicketDetail(ticketNumber,sourceButton=null){
   try{
     const result=await api.supportTicket(ticketNumber);
     const ticket=result?.ticket;
-    if(!ticket)throw new Error('Не удалось открыть обращение.');
+    if(!ticket)throw new Error(t('home.support.open_error'));
     renderSupportTicketDetail(ticketNumber,ticket);
   }catch(error){
-    toast(error.message||'Не удалось открыть обращение.');
+    toast(error.message||t('home.support.open_error'));
     if(sourceButton?.isConnected)sourceButton.disabled=false;
   }
 }
@@ -621,20 +621,20 @@ function renderSupportTicketDetail(ticketNumber,ticket){
       <div class="support-thread" id="supportTicketThread"></div>
       <div class="support-reply-panel">
         <button class="support-reply-toggle" id="supportReplyToggle" type="button" aria-expanded="false" ${closed?'disabled':''}>
-          <span data-support-reply-toggle-label>${closed?'Обращение закрыто':'Ответить'}</span>
+          <span data-support-reply-toggle-label>${escapeHtml(closed?t('home.support.closed'):t('home.support.reply'))}</span>
           <span class="support-reply-toggle-icon" aria-hidden="true">＋</span>
         </button>
         <div class="support-reply-composer" id="supportReplyComposer" hidden>
-          <textarea id="supportReplyText" class="support-ticket-control support-ticket-message support-reply-text" maxlength="4000" placeholder="Напишите сообщение"></textarea>
+          <textarea id="supportReplyText" class="support-ticket-control support-ticket-message support-reply-text" maxlength="4000" placeholder="${escapeHtml(t('home.support.reply_placeholder'))}"></textarea>
           <div class="support-file-picker support-file-picker--reply">
             <div class="support-file-picker-head">
-              <div><strong>Добавить к ответу</strong><small>Необязательно · до 3 файлов, до 2 МБ каждый</small></div>
-              <button class="support-file-add" id="supportReplyFilesTrigger" type="button">＋ Файл</button>
+              <div><strong>${escapeHtml(t('home.support.reply_add'))}</strong><small>${escapeHtml(t('home.support.attachments_note'))}</small></div>
+              <button class="support-file-add" id="supportReplyFilesTrigger" type="button">${escapeHtml(t('home.support.reply_file'))}</button>
             </div>
             <input id="supportReplyFiles" class="support-file-native" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain">
             <div class="support-file-list" id="supportReplyFilesList"></div>
           </div>
-          <button class="btn primary full support-reply-send" id="supportReplySend" type="button">Отправить</button>
+          <button class="btn primary full support-reply-send" id="supportReplySend" type="button">${escapeHtml(t('home.support.send'))}</button>
         </div>
       </div>
     </div>`);
@@ -650,7 +650,7 @@ function renderSupportTicketDetail(ticketNumber,ticket){
 
   document.getElementById('supportReplySend')?.addEventListener('click',async()=>{
     const message=document.getElementById('supportReplyText')?.value.trim()||'';
-    if(!message)return toast('Напишите сообщение.');
+    if(!message)return toast(t('home.support.message_required'));
     const send=document.getElementById('supportReplySend');
     if(send)send.disabled=true;
     try{
@@ -662,9 +662,9 @@ function renderSupportTicketDetail(ticketNumber,ticket){
       if(input)input.value='';
       replyPicker.clear();
       setSupportReplyExpanded(false);
-      toast('Сообщение отправлено.');
+      toast(t('home.support.sent'));
     }catch(error){
-      toast(error.message||'Не удалось отправить сообщение.');
+      toast(error.message||t('home.support.send_error'));
     }finally{
       if(send)send.disabled=false;
     }
@@ -693,12 +693,12 @@ function setSupportReplyExpanded(expanded,{focus=false}={}){
 function supportTicketStatusLabel(ticket){
   const status=String(ticket?.status||'').trim().toLowerCase();
   const labels={
-    open:'Открыто',
-    in_progress:'В работе',
-    waiting_user:'Ждёт ответа',
-    waiting_for_user:'Ждёт ответа',
-    resolved:'Решено',
-    closed:'Закрыто',
+    open:t('home.support.status_open'),
+    in_progress:t('home.support.status_in_progress'),
+    waiting_user:t('home.support.status_waiting'),
+    waiting_for_user:t('home.support.status_waiting'),
+    resolved:t('home.support.status_resolved'),
+    closed:t('home.support.status_closed'),
   };
   return labels[status]||String(ticket?.status_label||ticket?.status||'');
 }
@@ -715,13 +715,13 @@ function renderSupportTicketThread(ticket){
       <div class="support-thread-attachment-wrap">
         <button class="support-thread-attachment" type="button" data-support-attachment="${escapeHtml(file.attachment_id||'')}">
           <span aria-hidden="true">⌁</span>
-          <span class="support-thread-attachment-name">${escapeHtml(file.file_name||'Вложение')}</span>
-          <em>Открыть</em>
+          <span class="support-thread-attachment-name">${escapeHtml(file.file_name||t('home.support.attachment_fallback'))}</span>
+          <em>${escapeHtml(t('home.support.open'))}</em>
         </button>
         <div class="support-thread-attachment-preview" data-support-attachment-preview="${escapeHtml(file.attachment_id||'')}"></div>
       </div>`).join('');
     return `<article class="support-thread-message ${own?'is-user':'is-admin'}">
-      <header><strong>${own?'Ваше сообщение':'Поддержка'}</strong><time>${escapeHtml(formatDate(message.created_at_utc||''))}</time></header>
+      <header><strong>${escapeHtml(own?t('home.support.your_message'):t('home.support.support'))}</strong><time>${escapeHtml(formatDate(message.created_at_utc||''))}</time></header>
       <div class="support-thread-body">${escapeHtml(message.body||'')}</div>
       ${files?`<div class="support-thread-attachments">${files}</div>`:''}
     </article>`;
@@ -736,16 +736,16 @@ function renderSupportTicketThread(ticket){
   if(send)send.disabled=closed;
   if(reply)reply.classList.toggle('is-disabled',closed);
   if(toggle)toggle.disabled=closed;
-  if(toggleLabel)toggleLabel.textContent=closed?'Обращение закрыто':'Ответить';
+  if(toggleLabel)toggleLabel.textContent=closed?t('home.support.closed'):t('home.support.reply');
   if(closed)setSupportReplyExpanded(false);
 }
 
 function supportFileValidation(file){
   const allowed=['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain'];
-  if(!file)return 'Файл не выбран.';
-  if(Number(file.size||0)>2000000)return 'Файл больше 2 МБ.';
+  if(!file)return t('home.support.file_not_selected');
+  if(Number(file.size||0)>2000000)return t('home.support.file_too_large');
   const mime=String(file.type||'').toLowerCase();
-  if(!allowed.includes(mime))return 'Поддерживаются изображения, PDF и TXT.';
+  if(!allowed.includes(mime))return t('home.support.file_type_error');
   return '';
 }
 
@@ -759,8 +759,8 @@ function mountSupportFilePicker(inputId,triggerId,listId){
   const render=()=>{
     if(!list)return;
     list.innerHTML=files.map((file,index)=>`<div class="support-file-chip">
-      <span><strong>${escapeHtml(file.name)}</strong><small>${Math.max(1,Math.ceil(file.size/1024))} КБ</small></span>
-      <button type="button" data-support-file-remove="${index}" aria-label="Удалить файл">×</button>
+      <span><strong>${escapeHtml(file.name)}</strong><small>${escapeHtml(t('home.support.file_size_kb',{count:Math.max(1,Math.ceil(file.size/1024))}))}</small></span>
+      <button type="button" data-support-file-remove="${index}" aria-label="${escapeHtml(t('home.support.remove_file'))}">×</button>
     </div>`).join('');
     list.querySelectorAll('[data-support-file-remove]').forEach(button=>button.addEventListener('click',()=>{
       const index=Number(button.dataset.supportFileRemove);
@@ -769,7 +769,7 @@ function mountSupportFilePicker(inputId,triggerId,listId){
     }));
     if(trigger){
       trigger.disabled=files.length>=3;
-      trigger.textContent=files.length>=3?'Лимит 3 файла':(triggerId==='supportReplyFilesTrigger'?'＋ Файл':'＋ Добавить');
+      trigger.textContent=files.length>=3?t('home.support.file_limit_button'):(triggerId==='supportReplyFilesTrigger'?t('home.support.reply_file'):t('home.support.add_file'));
     }
   };
 
@@ -785,7 +785,7 @@ function mountSupportFilePicker(inputId,triggerId,listId){
       }
       if(files.some(item=>key(item)===key(file)))continue;
       if(files.length>=3){
-        toast('Можно приложить не более 3 файлов.');
+        toast(t('home.support.file_limit_error'));
         break;
       }
       files.push(file);
@@ -802,12 +802,12 @@ function mountSupportFilePicker(inputId,triggerId,listId){
 
 async function supportFilesPayload(source){
   const files=Array.isArray(source)?source:Array.from(source?.files||[]);
-  if(files.length>3)throw new Error('Можно приложить не более 3 файлов.');
+  if(files.length>3)throw new Error(t('home.support.file_limit_error'));
   return Promise.all(files.map(file=>new Promise((resolve,reject)=>{
     const validation=supportFileValidation(file);
     if(validation)return reject(new Error(`${file.name}: ${validation}`));
     const reader=new FileReader();
-    reader.onerror=()=>reject(new Error(`${file.name}: не удалось прочитать файл.`));
+    reader.onerror=()=>reject(new Error(t('home.support.read_error',{file:file.name})));
     reader.onload=()=>resolve({
       file_name:file.name,
       mime_type:String(file.type||'').toLowerCase(),
@@ -825,11 +825,11 @@ async function openSupportAttachment(attachmentId,button){
     const hidden=preview.hidden;
     preview.hidden=!hidden;
     const action=button?.querySelector('em');
-    if(action)action.textContent=hidden?'Скрыть':'Открыть';
+    if(action)action.textContent=hidden?t('home.support.hide'):t('home.support.open');
     return;
   }
   const label=button?.querySelector('em');
-  if(label)label.textContent='Загрузка…';
+  if(label)label.textContent=t('home.support.loading');
   if(button)button.disabled=true;
   try{
     const result=await api.supportAttachment(attachmentId);
@@ -841,10 +841,10 @@ async function openSupportAttachment(attachmentId,button){
     const blob=new Blob([bytes],{type:mime});
     const url=URL.createObjectURL(blob);
     if(mime.startsWith('image/')&&preview){
-      preview.innerHTML=`<img src="${url}" alt="${escapeHtml(file.file_name||'Вложение')}">`;
+      preview.innerHTML=`<img src="${url}" alt="${escapeHtml(file.file_name||t('home.support.attachment_fallback'))}">`;
       preview.dataset.loaded='1';
       preview.hidden=false;
-      if(label)label.textContent='Скрыть';
+      if(label)label.textContent=t('home.support.hide');
       window.setTimeout(()=>URL.revokeObjectURL(url),300000);
     }else{
       const anchor=document.createElement('a');
@@ -854,11 +854,11 @@ async function openSupportAttachment(attachmentId,button){
       anchor.click();
       anchor.remove();
       window.setTimeout(()=>URL.revokeObjectURL(url),60000);
-      if(label)label.textContent='Открыть';
+      if(label)label.textContent=t('home.support.open');
     }
   }catch(error){
-    toast(error.message||'Не удалось открыть вложение.');
-    if(label)label.textContent='Открыть';
+    toast(error.message||t('home.support.attachment_open_error'));
+    if(label)label.textContent=t('home.support.open');
   }finally{
     if(button)button.disabled=false;
   }
