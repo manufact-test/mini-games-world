@@ -57,6 +57,19 @@ public final class NavigationPolicyTest {
     }
 
     @Test
+    public void nativeAccountDownloadRouteIsExactAndDoesNotBecomeExternal() {
+        assertEquals(
+                "adr_0123456789abcdef0123456789abcdef",
+                policy.nativeAccountDownloadRequest("mgw://android-account-download?request=adr_0123456789abcdef0123456789abcdef")
+        );
+        assertEquals(null, policy.nativeAccountDownloadRequest("mgw://android-account-download?request=bad"));
+        assertEquals(null, policy.nativeAccountDownloadRequest("mgw://android-account-download/other?request=adr_0123456789abcdef0123456789abcdef"));
+        assertEquals(null, policy.nativeAccountDownloadRequest("mgw://other?request=adr_0123456789abcdef0123456789abcdef"));
+        assertEquals(null, policy.nativeAccountDownloadRequest("mgw://android-account-download?request=adr_0123456789abcdef0123456789abcdef&next=https://evil.example"));
+        assertFalse(policy.mayOpenExternally("mgw://android-account-download?request=adr_0123456789abcdef0123456789abcdef"));
+    }
+
+    @Test
     public void unsafeIncomingDeepLinkFallsBackToConfiguredBase() {
         assertEquals("https://example.com/game/1", policy.initialUrl("https://example.com/game/1"));
         assertEquals("https://example.com/app/", policy.initialUrl("https://evil.example/game/1"));
