@@ -32,7 +32,14 @@ Parity surface:
 This slice does not fork or rewrite any game engine, timer, rating, tournament,
 economy, Store, Profile or matchmaking owner.
 
-The same shared runtime remains authoritative on Telegram and Android.
+The same shared runtime remains authoritative on Telegram and Android. The
+active version manifest and accepted shared Telegram/client JS owners are kept
+byte-for-byte frozen; Android-only capability gaps are filled in the native
+container after page initialization.
+
+A new APK version forces one fresh shared-runtime load, then returns WebView to
+its normal cache policy. This avoids stale Android assets without cache-busting
+the frozen Telegram import graph.
 
 The eight accepted game renderers remain present for:
 
@@ -51,13 +58,16 @@ The eight accepted game renderers remain present for:
 
 Telegram uses Telegram WebApp HapticFeedback.
 
-Standalone Android has no Telegram bridge, so the shared haptic helper now uses
-the standards-based `navigator.vibrate()` fallback only when the trusted
-`MiniGamesWorldAndroid/<version>` user agent is present.
+Standalone Android has no Telegram bridge. The native container therefore
+installs one small, idempotent compatibility shim **after** the accepted shared
+shell has initialized. It supplies only the HapticFeedback surface used by the
+existing product helper and maps it to standards-based `navigator.vibrate()`.
+
+The accepted Telegram/web JavaScript remains unchanged.
 
 The Android manifest declares `android.permission.VIBRATE`.
 
-No privileged JavaScript interface is introduced.
+No privileged Java object or `addJavascriptInterface` bridge is introduced.
 
 ### 2. Invite links
 
@@ -82,11 +92,11 @@ rejected.
 
 The Android container has no Telegram WebApp share API.
 
-When the existing fallback share action is used, Android performs a top-level
-HTTPS navigation to `t.me`; the native navigation policy then hands it to
-Telegram/the browser. This avoids reliance on WebView popup support.
+The native post-init compatibility hook intercepts only `https://t.me/...`
+popup attempts and converts them to top-level navigation. The existing native
+navigation policy then hands the HTTPS URL to Telegram/the browser.
 
-Copy-link fallback remains unchanged.
+The accepted shared invite client and copy-link fallback remain unchanged.
 
 ### 4. Support file upload
 
@@ -101,9 +111,10 @@ Allowed MIME types remain identical to the Support service contract.
 
 Images keep the existing inline preview.
 
-PDF/TXT attachments in standalone Android use an authenticated same-origin
-download endpoint and Android DownloadManager. Cookies and user agent are
-forwarded only to the same MGW origin.
+The native post-init hook leaves image attachments on the accepted inline
+preview path. Non-image Support attachment clicks are routed to an authenticated
+same-origin download endpoint and Android DownloadManager. Cookies and user
+agent are forwarded only to the same MGW origin.
 
 API 26-28 retains the existing runtime storage-permission boundary.
 
