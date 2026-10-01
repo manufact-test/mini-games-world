@@ -40,10 +40,10 @@ support_download = read(BOT / "support-attachment-download.php")
 assetlinks_raw = read(REPO / ".well-known/assetlinks.json")
 
 version = re.search(r"\bversionCode\s+(\d+)\b", build)
-require(version is not None and int(version.group(1)) == 2613,
-        "MVP-26.6 corrective candidate must use versionCode 2613")
-require("versionName '0.26.6.2-android-product-parity-corrective'" in build,
-        "MVP-26.6 versionName missing")
+require(version is not None and int(version.group(1)) >= 2613,
+        "future Android candidates must not regress below accepted MVP-26.6 versionCode 2613")
+require(re.search(r"\bversionName\s+'0\.26\.[0-9]+\.[^']+'", build) is not None,
+        "Android candidate versionName missing or malformed")
 require("applicationId 'com.minigamesworld.app.acceptance'" in build,
         "accepted Android package changed")
 require("mgw-acceptance-stable.keystore" in build,
