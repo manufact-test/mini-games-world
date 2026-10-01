@@ -75,6 +75,7 @@ public final class MainActivity extends Activity {
     private boolean reauthInProgress;
     private String pendingReauthChallenge;
     private String pendingDownloadRequestId;
+    private String pendingLaunchInviteToken;
     private Object backCallback;
 
     @Override
@@ -266,13 +267,17 @@ public final class MainActivity extends Activity {
     }
 
     private void loadInitialIntent(Intent intent) {
-        // MVP-26.2 always establishes the server-owned Android session before
-        // entering the web product. App/deep-link routing is added after this
-        // identity boundary is accepted.
-        beginAndroidAuthentication();
+        // Every cold launch establishes the canonical server-owned Android
+        // session first. A validated public /invite/<token> App Link is carried
+        // through that same POST and only becomes a product route after auth.
+        beginAndroidAuthentication(inviteTokenFromIntent(intent));
     }
 
     private void beginAndroidAuthentication() {
+        beginAndroidAuthentication(pendingLaunchInviteToken);
+    }
+
+    private void beginAndroidAuthentication(String inviteToken) {
         if (navigationPolicy == null || credentialStore == null) {
             showConfigurationError();
             return;
@@ -291,12 +296,29 @@ public final class MainActivity extends Activity {
             return;
         }
 
-        // Credential format is strict Base64URL without padding, therefore all
-        // bytes are already application/x-www-form-urlencoded safe on API 26+.
+        String normalizedInvite = inviteToken == null ? "" : inviteToken.trim().toLowerCase(java.util.Locale.ROOT);
+        if (!normalizedInvite.isEmpty()
+                && !normalizedInvite.matches("^[a-f0-9]{24}$")) {
+            normalizedInvite = "";
+        }
+        pendingLaunchInviteToken = normalizedInvite.isEmpty() ? null : normalizedInvite;
+
+        // Credential and invite token formats are strict Base64URL / lowercase
+        // hex, so both values are application/x-www-form-urlencoded safe.
         String form = "credential=" + credential;
+        if (pendingLaunchInviteToken != null) {
+            form += "&invite=" + pendingLaunchInviteToken;
+        }
         mainFrameFailed = false;
         showLoading(true);
         webView.postUrl(authUrl, form.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String inviteTokenFromIntent(Intent intent) {
+        if (intent == null || intent.getData() == null || navigationPolicy == null) {
+            return null;
+        }
+        return navigationPolicy.inviteTokenFromLanding(intent.getData().toString());
     }
 
     private String safeIntentUrl(Intent intent) {
@@ -314,6 +336,13 @@ public final class MainActivity extends Activity {
         if (navigationPolicy == null) {
             return;
         }
+        String inviteToken = inviteTokenFromIntent(intent);
+        if (inviteToken != null) {
+            ensureWebView();
+            beginAndroidAuthentication(inviteToken);
+            return;
+        }
+
         String candidate = safeIntentUrl(intent);
         if (candidate != null) {
             ensureWebView();
@@ -807,6 +836,9 @@ public final class MainActivity extends Activity {
         public void onPageFinished(WebView view, String url) {
             if (!mainFrameFailed) {
                 showLoading(false);
+                if (url != null && !url.contains("/bot/android-auth.php")) {
+                    pendingLaunchInviteToken = null;
+                }
             }
         }
 
