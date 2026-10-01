@@ -95,12 +95,15 @@ for marker in provider_markers:
     require(marker.lower() not in combined_java.lower(),
             f"provider SDK must stay absent from Android Java before MVP-29: {marker}")
 
-require("balance" not in read(PLATFORM / "BillingAdapter.java").lower(),
-        "BillingAdapter must not expose direct MGW balance mutation")
-require("inventory" not in read(PLATFORM / "BillingAdapter.java").lower(),
-        "BillingAdapter must not expose direct MGW inventory mutation")
-require("balance" not in read(PLATFORM / "AdsAdapter.java").lower(),
-        "AdsAdapter must not expose direct MGW balance mutation")
+billing_api = read(PLATFORM / "BillingAdapter.java")
+ads_api = read(PLATFORM / "AdsAdapter.java")
+require("launchPurchase(String productId)" in billing_api,
+        "BillingAdapter must stay a transport-only purchase launch seam")
+require("showRewarded(String placementId)" in ads_api,
+        "AdsAdapter must stay a transport-only presentation seam")
+for forbidden_method in ["creditBalance(", "grantInventory(", "applyReward(", "settlePurchase("]:
+    require(forbidden_method not in billing_api and forbidden_method not in ads_api,
+            f"provider adapter must not expose canonical economy mutation: {forbidden_method}")
 
 if errors:
     print("MVP-26.5 disabled platform adapters verification FAILED", file=sys.stderr)
