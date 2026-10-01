@@ -682,9 +682,10 @@ function renderBundlesTab(){
           <div
             class="store-v2-bundle-reference-panel ${active ? 'active' : ''}"
             data-store-v2-bundle-panel="${escapeAttr(gameType)}"
+            data-store-v2-bundle-hydrated="${active ? '1' : '0'}"
             aria-hidden="${active ? 'false' : 'true'}"
           >
-            ${renderGameBundle(bundle)}
+            ${active ? renderGameBundle(bundle) : ''}
           </div>
         `;
       }).join('')}
@@ -970,6 +971,14 @@ function activateBundleGame(gameType){
   const panel = root?.querySelector('[data-store-v2-panel="bundles"]');
   if (!panel) return;
 
+  const targetBundle = bundles.find(bundle => bundleGameType(bundle) === activeBundleGame) || null;
+  const targetPanel = panel.querySelector(`[data-store-v2-bundle-panel="${CSS.escape(activeBundleGame)}"]`);
+  if (targetBundle && targetPanel instanceof HTMLElement && targetPanel.dataset.storeV2BundleHydrated !== '1') {
+    targetPanel.innerHTML = renderGameBundle(targetBundle);
+    targetPanel.dataset.storeV2BundleHydrated = '1';
+    bindPanelEvents(targetPanel);
+  }
+
   panel.querySelectorAll('[data-store-v2-bundle-game]').forEach(button => {
     const active = String(button.dataset.storeV2BundleGame || '') === activeBundleGame;
     button.classList.toggle('active', active);
@@ -986,7 +995,7 @@ function activateBundleGame(gameType){
     bundlePanel.setAttribute('aria-hidden', active ? 'false' : 'true');
   });
   centerBundlePickerOption(panel, activeBundleGame);
-  scheduleBundlePreviewFit(panel);
+  scheduleBundlePreviewFit(targetPanel instanceof HTMLElement ? targetPanel : panel);
 }
 
 function hydrateCheckersBundleConfirmFromVisibleCard(){
@@ -1050,6 +1059,8 @@ function fitBundleNativePreviews(root){
   if (!(root instanceof HTMLElement)) return;
   root.querySelectorAll('[data-store-v2-native-preview-viewport]').forEach(viewport => {
     if (!(viewport instanceof HTMLElement)) return;
+    const bundlePanel = viewport.closest('[data-store-v2-bundle-panel]');
+    if (bundlePanel instanceof HTMLElement && !bundlePanel.classList.contains('active')) return;
     const source = viewport.querySelector('[data-store-v2-native-preview-source]');
     if (!(source instanceof HTMLElement)) return;
     const viewportWidth = viewport.clientWidth;
@@ -1067,14 +1078,10 @@ function scheduleBundlePreviewFit(root){
   const fit = () => fitBundleNativePreviews(root);
   queueMicrotask(fit);
   if (typeof globalThis.requestAnimationFrame === 'function') {
-    globalThis.requestAnimationFrame(() => {
-      fit();
-      globalThis.requestAnimationFrame(fit);
-    });
+    globalThis.requestAnimationFrame(fit);
   } else {
     globalThis.setTimeout(fit, 0);
   }
-  globalThis.setTimeout(fit, 90);
 }
 
 function findOffer(offerId){
