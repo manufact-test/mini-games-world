@@ -38,7 +38,7 @@ $assert(str_contains($accountData, "ACTION_SCHEDULE_DELETE = 'schedule_delete'")
 $assert(str_contains($accountData, 'pendingButtonContent(ACTION_DOWNLOAD_EXPORT'), 'Download button must render its own pending spinner.');
 $assert(str_contains($accountData, 'if (isAndroidShell())'), 'Android download must split from browser blob delivery.');
 $assert(str_contains($accountData, 'api.accountDataAuthorizeDownload(requestId)'), 'Android must authorize the archive before native handoff.');
-$assert(str_contains($accountData, 'mgw://android-account-download?request='), 'Android WebView must hand off only the public request id.');
+$assert(str_contains($accountData, 'android-account-download\\?request=adr_[a-f0-9]{32}'), 'Android WebView must validate the exact public request-id route.');
 $assert(str_contains($accountData, "mgw:android-download-enqueued"), 'Android native enqueue success event must exist.');
 $assert(str_contains($accountData, 'URL.createObjectURL(result.blob)'), 'Browser/Telegram blob download fallback must remain intact.');
 $assert(
