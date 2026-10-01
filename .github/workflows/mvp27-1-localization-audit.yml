@@ -8,6 +8,7 @@ on:
       - 'ops/checks/mvp16_2_localization_contract.mjs'
       - 'ops/checks/mvp27_1_localization_architecture_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - 'bot/tests/Mvp27_1LocalizationArchitectureAuditTest.php'
       - 'docs/MVP27_1_LOCALIZATION_ARCHITECTURE_AUDIT.md'
       - '.github/workflows/mvp27-1-localization-audit.yml'
@@ -31,6 +32,7 @@ jobs:
       - name: JavaScript syntax
         run: |
           set -euo pipefail
+          node --check ops/checks/mvp16_2_localization_contract.mjs
           node --check ops/checks/mvp27_1_localization_architecture_contract.mjs
           node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
           node --check app/assets/js/localization/i18n.js
@@ -57,13 +59,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(ops/checks/mvp16_2_localization_contract\.mjs|ops/checks/mvp27_1_localization_architecture_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|bot/tests/Mvp27_1LocalizationArchitectureAuditTest\.php|docs/MVP27_1_LOCALIZATION_ARCHITECTURE_AUDIT\.md|\.github/workflows/mvp27-1-localization-audit\.yml)
-          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
-          test -z "$bad" || { printf 'Unexpected MVP-27.1 audit paths:\n%s\n' "$bad" >&2; exit 1; }
-
-      - name: Tracked secret scan
-        run: node scripts/ci/check-secrets.mjs
-
+          allowed='^(ops/checks/mvp16_2_localization_contract\.mjs|ops/checks/mvp27_1_localization_architecture_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|bot/tests/Mvp27_1LocalizationArchitectureAuditTest\.php|docs/MVP27_1_LOCALIZATION_ARCHITECTURE_AUDIT\.md|\.github/workflows/mvp27-1-localization-audit\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-27.1 audit paths:\n%s\n' "$bad" >&2; exit 1; }
 
