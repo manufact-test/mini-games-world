@@ -16,6 +16,15 @@ const SKIP_PREFIXES = [
   'app/locales/',
   'app/runtime/localization/',
   'bot/tests/',
+  'bot/incident/',
+];
+
+const ADMIN_CONTROL_PLANE_PATTERNS = [
+  /^app\/admin\.php$/,
+  /^app\/assets\/js\/admin(?:-|\/)/,
+  /^bot\/services\/Admin[^/]*\.php$/,
+  /^bot\/helpers\/Admin[^/]*\.php$/,
+  /^bot\/operations\/Admin[^/]*\.php$/,
 ];
 
 function normalized(file) {
@@ -25,6 +34,7 @@ function normalized(file) {
 function shouldSkip(file) {
   const n = normalized(file);
   if (SKIP_PREFIXES.some(prefix => n.startsWith(prefix))) return true;
+  if (ADMIN_CONTROL_PLANE_PATTERNS.some(pattern => pattern.test(n))) return true;
   return n.split('/').some(part => SKIP_PARTS.has(part));
 }
 
