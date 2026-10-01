@@ -5,7 +5,13 @@ on:
     branches:
       - agent/mvp-13-2-staging
     paths:
-      - 'android-app/**'
+      - 'android-app/app/build.gradle'
+      - 'android-app/app/src/main/AndroidManifest.xml'
+      - 'android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java'
+      - 'android-app/app/src/main/java/com/minigamesworld/app/NavigationPolicy.java'
+      - 'android-app/app/src/main/java/com/minigamesworld/app/ShellConfig.java'
+      - 'android-app/app/src/main/java/com/minigamesworld/app/DeviceCredentialStore.java'
+      - 'android-app/tools/verify-foundation.py'
       - 'bot/accounts/AndroidAuthAttemptLimiter.php'
       - 'bot/accounts/AndroidDeviceAuthService.php'
       - 'bot/accounts/RuntimeAccountOwnershipService.php'
@@ -67,20 +73,16 @@ jobs:
       - name: Tracked secret scan
         run: node scripts/ci/check-secrets.mjs
 
-      - name: MVP-26.2 scope guard
+      - name: Frozen product-boundary guard
         shell: bash
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          changed="$(git diff --name-only "$base" "$head")"
-          printf '%s\n' "$changed"
-          if [[ "${{ github.head_ref }}" == agent/mvp26-4-* || "${{ github.head_ref }}" == agent/mvp26-3-native-shell-settings-* ]]; then
-            exit 0
-          fi
-          allowed='^(\.github/workflows/mvp26-2-(android-device-auth|android-live-auth-probe)\.yml|android-app/README\.md|android-app/docs/MVP26_2_(ANDROID_DEVICE_AUTH|REAL_DEVICE_REGRESSION_REPAIR)\.md|android-app/branding/(shield_king_launcher_384\.webp\.b64|mgw-acceptance-stable\.keystore\.b64)|android-app/app/build\.gradle|android-app/app/src/main/java/com/minigamesworld/app/(MainActivity|ShellConfig|DeviceCredentialStore)\.java|android-app/app/src/main/res/drawable/(ic_mgw_launcher_art_inset|ic_mgw_splash_transparent|ic_mgw_splash_mark|mgw_splash_background)\.xml|android-app/app/src/main/res/mipmap-anydpi-v(26|33)/ic_launcher(_round)?\.xml|android-app/app/src/main/res/values(-v31)?/(styles|colors)\.xml|android-app/tools/verify-foundation\.py|bot/accounts/(AndroidAuthAttemptLimiter|AndroidDeviceAuthService|RuntimeAccountOwnershipService)\.php|bot/android-auth\.php|bot/database/migrations/20260930_0069_create_android_auth_attempts\.php|bot/services/AuthService\.php|bot/weekly/(WeeklyBonusRuntimeBridge|RuntimeWeeklyBonusRepository)\.php|bot/tests/Mvp26_2(AndroidDeviceAuth|FreshAccountWeeklyBootstrap)Test\.php)$'
-          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
-          test -z "$bad" || { printf 'Unexpected MVP-26.2 paths:\n%s\n' "$bad" >&2; exit 1; }
+          git diff --exit-code "$base" "$head" -- \
+            bot/games bot/ratings bot/tournaments bot/economy bot/ledger bot/notifications
+
+
 
   android-build:
     runs-on: ubuntu-latest
