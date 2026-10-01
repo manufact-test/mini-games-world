@@ -43,8 +43,14 @@ for name in required_interfaces:
     require(f"interface {name} extends PlatformAdapter" in text,
             f"{name} must remain provider-neutral through PlatformAdapter")
 
-require("PlatformAdapters.disabled()" in main,
-        "Android shell must own an explicit disabled platform-adapter registry")
+require(re.search(
+            r"^\\s*private\\s+final\\s+PlatformAdapters\\s+platformAdapters\\s*=\\s*PlatformAdapters\\.disabled\\(\\);\\s*$",
+            main,
+            re.MULTILINE
+        ) is not None,
+        "Android shell must actively own a disabled platform-adapter registry")
+require("\\\\n" not in main,
+        "MainActivity must not contain literal escaped newline tokens that can hide runtime ownership inside comments")
 require("new DisabledBillingAdapter()" in registry, "disabled billing owner missing")
 require("new DisabledAdsAdapter()" in registry, "disabled ads owner missing")
 require("new DisabledPushAdapter()" in registry, "disabled push owner missing")
