@@ -83,10 +83,10 @@ mgw_assert(
     'support attachment remove control must be centered without glyph offset'
 );
 
-$manifest = file_get_contents(dirname(__DIR__, 2) . '/app/runtime/client/version-manifest.php') ?: '';
+$v110 = file_get_contents(dirname(__DIR__, 2) . '/app/v110.php') ?: '';
 mgw_assert(
-    str_contains($manifest, 'mvp26_6=support-remove-align-v1'),
-    'active CSS cache identity must publish the support alignment corrective'
+    str_contains($v110, "\$assets['main_css'] . '&mvp26_6=support-remove-align-v1'"),
+    'active v110 renderer must cache-bust the support alignment corrective'
 );
 
 echo "MVP-26.6 Android parity corrective PASS\n";
