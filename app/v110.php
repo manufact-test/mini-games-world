@@ -158,7 +158,7 @@ $html = str_replace(
     $html
 );
 
-$cssTarget = $assets['main_css'];
+$cssTarget = $assets['main_css'] . '&mvp26_6=support-remove-align-v1';
 $consistencyCssTarget = $assets['consistency_css'];
 $bootstrapTarget = $assets['bootstrap'];
 $bootstrapTag = '  <script type="module" src="' . $bootstrapTarget . '"></script>';
