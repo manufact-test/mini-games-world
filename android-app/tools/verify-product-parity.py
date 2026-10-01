@@ -73,12 +73,14 @@ require("WebAppLaunchUrl::invitation" in android_auth
         and "$inviteToken" in android_auth,
         "server Android auth must preserve validated invite token")
 
-require("navigator.vibrate" in telegram
-        and "isAndroidShell" in telegram
-        and "notificationOccurred" in telegram,
-        "standalone Android haptic fallback missing")
-require("window.location.assign(url)" in invites
-        and "isAndroidShell()" in invites,
+require("installAndroidParityHooks" in main
+        and "__mgwAndroidParityHooksV1" in main
+        and "HapticFeedback" in main
+        and "navigator.vibrate" in main,
+        "standalone Android native haptic compatibility hook missing")
+require("https://t.me/" in main
+        and "__mgwAndroidOriginalOpen" in main
+        and "window.location.assign(value)" in main,
         "standalone Android invite share handoff missing")
 
 require("MgwWebChromeClient" in main
@@ -93,9 +95,10 @@ require("setDownloadListener(this::beginWebDownload)" in main
         and "DownloadManager.Request" in main
         and "navigationPolicy.isInternal(url)" in main,
         "authenticated same-origin Android download owner missing")
-require("support-attachment-download.php" in home
-        and "isAndroidShell()" in home,
-        "Support document download handoff missing")
+require("data-support-attachment" in main
+        and "support-thread-attachment-name" in main
+        and "support-attachment-download.php" in main,
+        "Android Support document download compatibility hook missing")
 require("attachmentForUser" in support_download
         and "Content-Disposition: attachment" in support_download
         and "getUserFromRequest([])" in support_download,
@@ -167,6 +170,10 @@ require("supportCreate" in home and "supportTickets" in home,
 
 require("setMediaPlaybackRequiresUserGesture(true)" in main,
         "Android must preserve user-gesture media policy instead of muting shared media")
+require("LOAD_NO_CACHE" in main
+        and "ASSET_CACHE_VERSION_KEY" in main
+        and "clearCache(true)" in main,
+        "new Android APK versions must refresh the frozen shared runtime once")
 require("PlatformAdapters.disabled()" in main,
         "provider-neutral adapters must remain disabled during product parity")
 
