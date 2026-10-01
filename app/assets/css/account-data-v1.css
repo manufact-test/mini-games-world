@@ -207,6 +207,36 @@
   cursor:not-allowed !important;
   filter:none !important;
 }
+.account-data-v1-action:disabled{
+  background:var(--sk-gradient-primary) !important;
+  border-color:rgba(255,255,255,.08) !important;
+  box-shadow:0 10px 24px rgba(106,76,255,.22) !important;
+}
+.account-data-v1-secondary:disabled{
+  background:rgba(255,255,255,.055) !important;
+  border-color:rgba(235,239,248,.14) !important;
+  box-shadow:none !important;
+}
+.account-data-v1-danger:disabled{
+  background:linear-gradient(180deg,#9b383f,#70272e) !important;
+  border-color:rgba(255,101,101,.32) !important;
+  box-shadow:0 7px 18px rgba(120,34,42,.22) !important;
+}
+.account-data-v1-spinner{
+  width:14px;
+  height:14px;
+  flex:0 0 14px;
+  border:2px solid currentColor;
+  border-right-color:transparent;
+  border-radius:50%;
+  animation:account-data-v1-spin .72s linear infinite;
+}
+@keyframes account-data-v1-spin{
+  to{transform:rotate(360deg)}
+}
+@media (prefers-reduced-motion:reduce){
+  .account-data-v1-spinner{animation-duration:1.35s}
+}
 .account-data-v1-deletion-state{
   display:flex;
   flex-direction:column;
