@@ -69,7 +69,7 @@ try {
 
     $requiresFreshReauth = in_array(
         $action,
-        ['schedule_delete','cancel_delete','create_export','download_export'],
+        ['schedule_delete','cancel_delete','create_export','authorize_download','download_export'],
         true
     );
     $authenticated = $requiresFreshReauth
@@ -104,6 +104,16 @@ try {
             'ok'=>true,
             'request'=>$request,
             'account_data'=>$service->snapshot($mgwId),
+        ]);
+    }
+    if ($action === 'authorize_download') {
+        $requestId = trim((string)($payload['request_id'] ?? ''));
+        $service->exportPathForUser($requestId, $mgwId);
+        json_response([
+            'ok'=>true,
+            'download'=>[
+                'native_url'=>'mgw://android-account-download?request=' . rawurlencode($requestId),
+            ],
         ]);
     }
     if ($action === 'download_export') {

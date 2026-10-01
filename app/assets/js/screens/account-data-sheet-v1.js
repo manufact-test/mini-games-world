@@ -1,16 +1,22 @@
-import { api } from '../api/client.js?v=1151&mvp22_8=account-data-v1&mvp26_4=android-reauth-v1';
+import { api } from '../api/client.js?v=1152&mvp22_8=account-data-v1&mvp26_4=android-reauth-v1&mvp26_4_2=android-download-v1';
 import { openSheet } from '../components/sheet.js?v=1109';
 import { toast } from '../components/toast.js?v=41';
 
-const STYLE_URL = './assets/css/account-data-v1.css?v=4&mvp22_8=account-data-v1&ux=final-manual-polish-v2';
+const STYLE_URL = './assets/css/account-data-v1.css?v=5&mvp22_8=account-data-v1&ux=final-manual-polish-v2&mvp26_4_2=per-action-pending-v1';
 
 let snapshot = null;
 let snapshotFetchedAt = 0;
 let snapshotPromise = null;
 let stylesReadyPromise = null;
 let loading = false;
-let actionPending = false;
+const pendingActions = new Set();
 let androidReauthPromise = null;
+let androidDownloadPromise = null;
+
+const ACTION_CREATE_EXPORT = 'create_export';
+const ACTION_DOWNLOAD_EXPORT = 'download_export';
+const ACTION_CANCEL_DELETE = 'cancel_delete';
+const ACTION_SCHEDULE_DELETE = 'schedule_delete';
 
 const SNAPSHOT_TTL_MS = 15000;
 const ANDROID_REAUTH_TIMEOUT_MS = 135000;
@@ -178,17 +184,17 @@ function render(){
       </div>
       <div class="account-data-v1-actions">
         ${exportReady ? `
-          <button class="btn primary account-data-v1-action" data-account-data-download type="button" ${actionPending ? 'disabled' : ''}>
-            Скачать ZIP
+          <button class="btn primary account-data-v1-action" data-account-data-download type="button" ${pendingAttr(ACTION_DOWNLOAD_EXPORT)}>
+            ${pendingButtonContent(ACTION_DOWNLOAD_EXPORT, 'Скачать ZIP', 'Скачиваем…')}
           </button>
           ${exportRateLimited ? '' : `
-            <button class="btn account-data-v1-secondary" data-account-data-create-export type="button" ${actionPending ? 'disabled' : ''}>
-              Создать новый
+            <button class="btn account-data-v1-secondary" data-account-data-create-export type="button" ${pendingAttr(ACTION_CREATE_EXPORT)}>
+              ${pendingButtonContent(ACTION_CREATE_EXPORT, 'Создать новый', 'Создаём…')}
             </button>
           `}
         ` : `
-          <button class="btn primary account-data-v1-action" data-account-data-create-export type="button" ${actionPending || exportBusy ? 'disabled' : ''}>
-            ${exportBusy ? 'Создаём архив…' : 'Создать архив'}
+          <button class="btn primary account-data-v1-action" data-account-data-create-export type="button" ${pendingAttr(ACTION_CREATE_EXPORT, exportBusy)}>
+            ${pendingButtonContent(ACTION_CREATE_EXPORT, 'Создать архив', exportBusy ? 'Создаём архив…' : 'Создаём…', exportBusy)}
           </button>
         `}
       </div>
@@ -213,11 +219,11 @@ function render(){
       </div>
       <div class="account-data-v1-actions">
         ${deletionScheduled ? `
-          <button class="btn account-data-v1-secondary" data-account-data-cancel-delete type="button" ${actionPending ? 'disabled' : ''}>
-            Отменить удаление
+          <button class="btn account-data-v1-secondary" data-account-data-cancel-delete type="button" ${pendingAttr(ACTION_CANCEL_DELETE)}>
+            ${pendingButtonContent(ACTION_CANCEL_DELETE, 'Отменить удаление', 'Отменяем…')}
           </button>
         ` : `
-          <button class="btn account-data-v1-danger" data-account-data-confirm-delete type="button" ${actionPending ? 'disabled' : ''}>
+          <button class="btn account-data-v1-danger" data-account-data-confirm-delete type="button">
             Удалить аккаунт
           </button>
         `}
@@ -245,6 +251,38 @@ function exportMeta(item){
   return '<div class="account-data-v1-meta">Последний запрос: ' + escapeHtml(String(item.status || 'неизвестно')) + '</div>';
 }
 
+function isActionPending(action){
+  return pendingActions.has(String(action || ''));
+}
+
+function beginAction(action){
+  const key = String(action || '');
+  if (!key || pendingActions.has(key)) return false;
+  pendingActions.add(key);
+  render();
+  return true;
+}
+
+function finishAction(action){
+  pendingActions.delete(String(action || ''));
+  render();
+}
+
+function pendingAttr(action, forced = false){
+  return isActionPending(action) || forced
+    ? 'disabled aria-busy="true"'
+    : '';
+}
+
+function pendingButtonContent(action, idleLabel, pendingLabel, forced = false){
+  if (!isActionPending(action) && !forced) return escapeHtml(idleLabel);
+  return '<span class="account-data-v1-spinner" aria-hidden="true"></span><span>' + escapeHtml(pendingLabel) + '</span>';
+}
+
+function isAndroidShell(){
+  return /MiniGamesWorldAndroid\/\d+/.test(String(navigator.userAgent || ''));
+}
+
 function bind(){
   const root = document.querySelector('[data-account-data-root]');
   if (!(root instanceof HTMLElement) || root.dataset.bound === '1') return;
@@ -257,7 +295,7 @@ function bind(){
     if (target.hasAttribute('data-account-data-download')) void downloadExport();
     if (target.hasAttribute('data-account-data-cancel-delete')) void cancelDeletion();
     if (target.hasAttribute('data-account-data-confirm-delete')) openDeleteConfirmation();
-    if (target.hasAttribute('data-account-data-schedule-delete')) void scheduleDeletion();
+    if (target.hasAttribute('data-account-data-schedule-delete')) void scheduleDeletion(target);
   });
 }
 
@@ -308,7 +346,7 @@ function openDeleteConfirmation(){
       });
       return;
     }
-    if (button.hasAttribute('data-account-data-schedule-delete')) void scheduleDeletion();
+    if (button.hasAttribute('data-account-data-schedule-delete')) void scheduleDeletion(button);
   });
 }
 
@@ -382,9 +420,7 @@ function waitForNativeReauth(nativeUrl){
 }
 
 async function createExport(){
-  if (actionPending) return;
-  actionPending = true;
-  render();
+  if (!beginAction(ACTION_CREATE_EXPORT)) return;
   try {
     const response = await withSensitiveReauth(() => api.accountDataCreateExport());
     snapshot = normalizeSnapshot(response?.account_data);
@@ -392,17 +428,20 @@ async function createExport(){
   } catch (error) {
     toast(actionError(error, 'Не удалось создать архив данных.'));
   } finally {
-    actionPending = false;
-    render();
+    finishAction(ACTION_CREATE_EXPORT);
   }
 }
 
 async function downloadExport(){
   const requestId = String(snapshot?.export?.request_id || '');
-  if (!requestId || actionPending) return;
-  actionPending = true;
-  render();
+  if (!requestId || !beginAction(ACTION_DOWNLOAD_EXPORT)) return;
   try {
+    if (isAndroidShell()) {
+      await beginAndroidDownload(requestId);
+      toast('Скачивание ZIP началось.');
+      return;
+    }
+
     const result = await withSensitiveReauth(() => api.accountDataDownloadExport(requestId));
     const url = URL.createObjectURL(result.blob);
     const anchor = document.createElement('a');
@@ -416,15 +455,58 @@ async function downloadExport(){
   } catch (error) {
     toast(actionError(error, 'Не удалось скачать архив данных.'));
   } finally {
-    actionPending = false;
-    render();
+    finishAction(ACTION_DOWNLOAD_EXPORT);
   }
 }
 
+async function beginAndroidDownload(requestId){
+  const response = await withSensitiveReauth(() => api.accountDataAuthorizeDownload(requestId));
+  const nativeUrl = String(response?.download?.native_url || '').trim();
+  if (!/^mgw:\/\/android-account-download\?request=adr_[a-f0-9]{32}$/.test(nativeUrl)) {
+    const error = new Error('Android не смог подготовить скачивание архива.');
+    error.code = 'android_download_unavailable';
+    throw error;
+  }
+  await waitForAndroidDownloadEnqueue(nativeUrl);
+}
+
+function waitForAndroidDownloadEnqueue(nativeUrl){
+  if (androidDownloadPromise) return androidDownloadPromise;
+
+  androidDownloadPromise = new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = callback => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      window.removeEventListener('mgw:android-download-enqueued', onSuccess);
+      window.removeEventListener('mgw:android-download-failed', onFailed);
+      callback();
+    };
+    const onSuccess = () => finish(resolve);
+    const onFailed = () => finish(() => {
+      const error = new Error('Android не смог начать скачивание архива.');
+      error.code = 'android_download_failed';
+      reject(error);
+    });
+    const timer = window.setTimeout(() => finish(() => {
+      const error = new Error('Скачивание не запустилось. Попробуйте ещё раз.');
+      error.code = 'android_download_timeout';
+      reject(error);
+    }), 15000);
+
+    window.addEventListener('mgw:android-download-enqueued', onSuccess, { once:true });
+    window.addEventListener('mgw:android-download-failed', onFailed, { once:true });
+    window.location.assign(nativeUrl);
+  }).finally(() => {
+    androidDownloadPromise = null;
+  });
+
+  return androidDownloadPromise;
+}
+
 async function cancelDeletion(){
-  if (actionPending) return;
-  actionPending = true;
-  render();
+  if (!beginAction(ACTION_CANCEL_DELETE)) return;
   try {
     const response = await withSensitiveReauth(() => api.accountDataCancelDelete());
     snapshot = normalizeSnapshot(response?.account_data);
@@ -432,14 +514,18 @@ async function cancelDeletion(){
   } catch (error) {
     toast(actionError(error, 'Не удалось отменить удаление.'));
   } finally {
-    actionPending = false;
-    render();
+    finishAction(ACTION_CANCEL_DELETE);
   }
 }
 
-async function scheduleDeletion(){
-  if (actionPending) return;
-  actionPending = true;
+async function scheduleDeletion(triggerButton = null){
+  if (isActionPending(ACTION_SCHEDULE_DELETE)) return;
+  pendingActions.add(ACTION_SCHEDULE_DELETE);
+  if (triggerButton instanceof HTMLButtonElement) {
+    triggerButton.disabled = true;
+    triggerButton.setAttribute('aria-busy', 'true');
+    triggerButton.innerHTML = pendingButtonContent(ACTION_SCHEDULE_DELETE, 'Да, запланировать', 'Планируем…');
+  }
   try {
     const response = await withSensitiveReauth(() => api.accountDataScheduleDelete());
     snapshot = normalizeSnapshot(response?.account_data);
@@ -453,7 +539,7 @@ async function scheduleDeletion(){
   } catch (error) {
     toast(actionError(error, 'Не удалось запланировать удаление.'));
   } finally {
-    actionPending = false;
+    pendingActions.delete(ACTION_SCHEDULE_DELETE);
     render();
   }
 }

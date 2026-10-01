@@ -253,6 +253,7 @@ export const api = {
   accountDataScheduleDelete: () => requestUrl(ACCOUNT_DATA_URL, { action:'schedule_delete' }),
   accountDataCancelDelete: () => requestUrl(ACCOUNT_DATA_URL, { action:'cancel_delete' }),
   accountDataCreateExport: () => requestUrl(ACCOUNT_DATA_URL, { action:'create_export' }),
+  accountDataAuthorizeDownload: requestId => requestUrl(ACCOUNT_DATA_URL, { action:'authorize_download', request_id:String(requestId || '') }),
   accountDataDownloadExport: requestId => downloadAccountExport(requestId),
   accountLinkCreate: () => requestUrl(ACCOUNT_LINK_URL, { action:'create' }),
   accountLinkStatus: challengeId => requestUrl(ACCOUNT_LINK_URL, { action:'status', challenge_id:String(challengeId || '') }),

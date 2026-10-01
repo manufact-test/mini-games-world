@@ -342,6 +342,7 @@ app/assets/js/admin-operations.js
 # self-service endpoint, website hook, lifecycle owner, schema and export assets
 # must deploy as one exact tree. Retention CLI exists here but Cron is a separate gate.
 bot/account-data.php
+bot/account-data-download.php
 bot/account-data-website-hook.php
 bot/accounts/AccountReauthGuard.php
 bot/accounts/AccountDataZipWriter.php
