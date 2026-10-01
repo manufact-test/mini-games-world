@@ -73,9 +73,9 @@ require("WebAppLaunchUrl::invitation" in android_auth
 
 require("installAndroidParityHooks" in main
         and "__mgwAndroidParityHooksV1" in main
-        and "HapticFeedback" in main
-        and "navigator.vibrate" in main,
-        "standalone Android native haptic compatibility hook missing")
+        and "navigator.vibrate" in main
+        and "event.isTrusted" in main,
+        "standalone Android user-action haptic compatibility hook missing")
 require("https://t.me/" in main
         and "__mgwAndroidOriginalOpen" in main
         and "window.location.assign(value)" in main,
