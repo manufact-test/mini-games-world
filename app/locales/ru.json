@@ -1,5 +1,5 @@
 {
-  "_meta": {"locale":"ru","version":16},
+  "_meta": {"locale":"ru","version":17},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
   "topbar": {"balance":"Баланс","notifications":"Уведомления"},
@@ -7,6 +7,12 @@
   "shell": {"navigation_label":"Основная навигация","tournaments_title":"Соревнования","tournaments_note":"Рейтинг игроков и турниры Mini Games World.","competition_rating":"Рейтинг","competition_tournaments":"Турниры","competition_archive_title":"Архив рейтинга","competition_archive_note":"Итоги завершённых официальных сезонов.","competition_archive_seasons":"Сезоны","competition_archive_tournaments":"Турниры","competition_hall_of_fame":"Зал славы","competition_archive_empty":"Архив появится после завершения первого официального сезона.","competition_archive_tournaments_empty":"Турнирный архив появится после запуска официальных турниров.","competition_archive_top100":"Топ-100","competition_tournaments_note":"Здесь будут отдельные турнирные события, расписание и их собственные результаты.","store_title":"Магазин","store_note":"Откройте текущую витрину Mini Games World.","store_open":"Открыть магазин"},
   "settings": {"title":"Настройки","language":"Язык","language_note":"Выберите язык интерфейса Mini Games World.","language_ru":"Русский","language_saved":"Язык сохранён"},
   "setup": {"subtitle":"Выберите условия матча и подтвердите участие.","variant_label":"Размер / вариант","entry_label":"Стоимость участия","entry_value":"{count} коинов","confirm":"Начать поиск","invite":"Пригласить друга","one_on_one":"1 на 1","search_label":"{game} · участие {count} коинов · {variant}","insufficient_title":"Недостаточно коинов","insufficient_note":"Для начала матча нужно {needed} коинов. Сейчас доступно {balance}.","economy_unavailable":"Стоимость участия временно недоступна."},
+  "home": {
+    "stats":{"online_players":"Игроков онлайн","active_matches":"Активных матчей"},
+    "menu":{"title":"Меню","feedback":"Обратная связь","idea":"Предложить идею","report":"Пожаловаться","tickets":"Мои обращения","balance_history":"История баланса","match_history":"История матчей"},
+    "report":{"reasons":{"nickname":"Недопустимый никнейм","avatar":"Недопустимый аватар","spam":"Спам","cheating":"Нечестная игра","stalling":"Затягивание игры","other":"Другое"}},
+    "history":{"balance_title":"История баланса","match_title":"История матчей","operation":"Операция","coin_amount":"{count} коинов","operations_empty":"Операций пока нет.","operations_title":"Операции баланса","match":"Матч","opponent":"Соперник","opponent_line":"Соперник: {opponent}","matches_empty":"Истории матчей пока нет.","latest_games":"Последние игры"}
+  },
   "games": {
     "tictactoe":{"name":"Крестики-нолики"},"four_in_a_row":{"name":"Четыре в ряд"},"battleship":{"name":"Морской бой"},"checkers":{"name":"Русские шашки"},"reversi":{"name":"Реверси"},"chess":{"name":"Шахматы"},"go":{"name":"Го"},"domino":{"name":"Домино"}
   },
