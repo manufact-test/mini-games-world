@@ -10,6 +10,7 @@ on:
       - 'bot/catalog/CosmeticStoreService.php'
       - 'bot/tests/Mvp19_6CheckersBoardsTest.php'
       - 'bot/tests/Mvp19_6CheckersEffectPreviewContractTest.mjs'
+      - 'bot/tests/Mvp19_6CheckersMoveTrailAlignmentContractTest.mjs'
       - 'app/assets/css/games/checkers/cosmetics.css'
       - 'app/assets/css/games/checkers/store-visual-corrective-v2.css'
       - 'app/assets/css/games/checkers/store-visual-corrective-v3.css'
@@ -62,6 +63,7 @@ jobs:
           php -l bot/tests/Mvp19_6CheckersBoardsTest.php
           php -l app/runtime/client/version-manifest.php
           node --check bot/tests/Mvp19_6CheckersEffectPreviewContractTest.mjs
+          node --check bot/tests/Mvp19_6CheckersMoveTrailAlignmentContractTest.mjs
           node --check app/assets/js/screens/store-screen.js
           node --check app/assets/js/screens/store-screen-checkers-wrapper.js
           node --check app/assets/js/checkers-cosmetics/renderer-board-themes.js
@@ -72,6 +74,7 @@ jobs:
         run: |
           php bot/tests/Mvp19_6CheckersBoardsTest.php
           node bot/tests/Mvp19_6CheckersEffectPreviewContractTest.mjs
+          node bot/tests/Mvp19_6CheckersMoveTrailAlignmentContractTest.mjs
 
       - name: Re-run shared cosmetics contracts
         run: |

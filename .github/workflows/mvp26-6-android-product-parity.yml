@@ -93,9 +93,9 @@ jobs:
           manifest_changes="$(git diff --unified=0 "$base" "$head" -- app/runtime/client/version-manifest.php \
             | grep -E '^[+-]' \
             | grep -Ev '^---|^\+\+\+' \
-            | grep -v 'game-screen-v102\.js?v=102' || true)"
+            | grep -Ev 'game-screen-v102\.js\?v=102|renderer-board-themes\.js\?v=1&mvp19_6=board-themes' || true)"
           test -z "$manifest_changes" || {
-            printf 'Unexpected manifest change outside the bounded game-screen cache-bust:\n%s\n' "$manifest_changes" >&2
+            printf 'Unexpected manifest change outside bounded active-owner cache-busts:\n%s\n' "$manifest_changes" >&2
             exit 1
           }
 

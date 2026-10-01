@@ -6,6 +6,7 @@ import {
 } from '../games/checkers/renderer.js?v=57&base=mvp16-accepted';
 
 const REAL_MOVE_DURATION_MS = 1780;
+const REAL_MOVE_TRAIL_FOLLOW_MS = Math.ceil(REAL_MOVE_DURATION_MS * .5);
 const REAL_MOVE_STATE_TTL_MS = 1940;
 const realMoveStates = new Map();
 
@@ -114,6 +115,8 @@ function captureRealMoveOrigin({ game, me, container }){
     container,
     timer:0,
     renderRevision:0,
+    trailFrame:0,
+    trailFollowRevision:0,
   };
   state.timer = window.setTimeout(() => {
     const active = realMoveStates.get(gameKey);
@@ -241,7 +244,18 @@ function queueRealMoveOverlayTakeover({ container, state, finalDestinationRect, 
     if (duplicatePiece instanceof HTMLElement) duplicatePiece.remove();
 
     alignMoveDecorations(layer, liveBoard, state, finalDestinationRect);
-    layer.dataset.mgwMovePieceOwner = 'real-board-piece-flip-v2';
+    const movingPiece = destinationCell?.querySelector('.checkers-piece.mgw-checkers-live-real-move-piece');
+    if (movingPiece instanceof HTMLElement) {
+      followMoveTrailToRealPiece({
+        layer,
+        board:liveBoard,
+        state,
+        movingPiece,
+        finalDestinationRect,
+        renderRevision,
+      });
+    }
+    layer.dataset.mgwMovePieceOwner = 'real-board-piece-flip-v3-trail-center';
   };
 
   if (typeof globalThis.queueMicrotask === 'function') globalThis.queueMicrotask(run);
@@ -252,36 +266,90 @@ function queueRealMoveOverlayTakeover({ container, state, finalDestinationRect, 
 function alignMoveDecorations(layer, board, state, finalDestinationRect){
   if (!(layer instanceof HTMLElement) || !(board instanceof HTMLElement)) return;
   if (!finalDestinationRect || !(finalDestinationRect.width > 0) || !(finalDestinationRect.height > 0)) return;
-  const boardRect = board.getBoundingClientRect();
 
-  // IMPORTANT: never re-read the destination piece here. By the time this
-  // microtask runs the real checker already carries the FLIP transform, so its
-  // getBoundingClientRect() describes the in-flight visual box near the source.
-  // Use the final untransformed layout box captured synchronously before the
-  // animation class was applied. This keeps trail/ring geometry independent from
-  // compositor progress and from optimistic -> authoritative rerenders.
-  const fromX = state.sourceRect.left - boardRect.left + state.sourceRect.width / 2;
-  const fromY = state.sourceRect.top - boardRect.top + state.sourceRect.height / 2;
-  const toX = finalDestinationRect.left - boardRect.left + finalDestinationRect.width / 2;
-  const toY = finalDestinationRect.top - boardRect.top + finalDestinationRect.height / 2;
+  // The detached effect layer is fixed-position while the real checker belongs to
+  // the board. Convert both viewport rects into the layer's ACTUAL local coordinate
+  // space instead of assuming the board rect and fixed layer rect are pixel-identical
+  // on every Android visual viewport / DPI combination.
+  alignMoveTrailPath(layer, state.sourceRect, finalDestinationRect);
+
+  const layerRect = layer.getBoundingClientRect();
+  const toX = finalDestinationRect.left - layerRect.left + finalDestinationRect.width / 2;
+  const toY = finalDestinationRect.top - layerRect.top + finalDestinationRect.height / 2;
+  const impact = layer.querySelector('.mgw-checkers-live-fx-impact');
+  if (impact instanceof HTMLElement) {
+    impact.style.left = `${toX}px`;
+    impact.style.top = `${toY}px`;
+  }
+}
+
+function followMoveTrailToRealPiece({ layer, board, state, movingPiece, finalDestinationRect, renderRevision }){
+  if (!(layer instanceof HTMLElement)
+    || !(board instanceof HTMLElement)
+    || !(movingPiece instanceof HTMLElement)
+    || !state) return;
+
+  if (state.trailFrame && state.trailFollowRevision === renderRevision) return;
+  if (state.trailFrame) cancelAnimationFrame(state.trailFrame);
+
+  state.trailFollowRevision = renderRevision;
+
+  const tick = () => {
+    state.trailFrame = 0;
+    const gameKey = gameKeyForState(state);
+    const active = gameKey ? realMoveStates.get(gameKey) : state;
+    if (active !== state
+      || realMoveExpired(state)
+      || state.renderRevision !== renderRevision
+      || !layer.isConnected
+      || !board.isConnected
+      || !movingPiece.isConnected
+      || movingPiece.dataset.mgwRealMove !== state.signature) {
+      return;
+    }
+
+    const currentRect = movingPiece.getBoundingClientRect();
+    if (currentRect.width > 0 && currentRect.height > 0) {
+      alignMoveTrailPath(layer, state.sourceRect, currentRect);
+    }
+
+    const elapsed = performance.now() - Number(state.startedAt || 0);
+    if (elapsed < REAL_MOVE_TRAIL_FOLLOW_MS) {
+      state.trailFrame = requestAnimationFrame(tick);
+      return;
+    }
+
+    // Once the FLIP has settled, pin the decoration to the immutable final layout
+    // rect so the short remaining fade cannot drift with sub-pixel compositor state.
+    alignMoveTrailPath(layer, state.sourceRect, finalDestinationRect);
+  };
+
+  state.trailFrame = requestAnimationFrame(tick);
+}
+
+function alignMoveTrailPath(layer, sourceRect, targetRect){
+  if (!(layer instanceof HTMLElement)
+    || !sourceRect
+    || !targetRect
+    || !(targetRect.width > 0)
+    || !(targetRect.height > 0)) return;
+
+  const layerRect = layer.getBoundingClientRect();
+  const fromX = sourceRect.left - layerRect.left + sourceRect.width / 2;
+  const fromY = sourceRect.top - layerRect.top + sourceRect.height / 2;
+  const toX = targetRect.left - layerRect.left + targetRect.width / 2;
+  const toY = targetRect.top - layerRect.top + targetRect.height / 2;
   const dx = toX - fromX;
   const dy = toY - fromY;
   const distance = Math.hypot(dx, dy);
   const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
   const path = layer.querySelector('.mgw-checkers-live-fx-path');
-  if (path instanceof HTMLElement) {
-    path.style.left = `${fromX}px`;
-    path.style.top = `${fromY}px`;
-    path.style.width = `${distance}px`;
-    path.style.transform = `translateY(-50%) rotate(${angle}deg)`;
-  }
-
-  const impact = layer.querySelector('.mgw-checkers-live-fx-impact');
-  if (impact instanceof HTMLElement) {
-    impact.style.left = `${toX}px`;
-    impact.style.top = `${toY}px`;
-  }
+  if (!(path instanceof HTMLElement)) return;
+  path.style.left = `${fromX}px`;
+  path.style.top = `${fromY}px`;
+  path.style.width = `${distance}px`;
+  path.style.transform = `translateY(-50%) rotate(${angle}deg)`;
 }
 
 function nearestLiveEffectLayer(board){
@@ -326,6 +394,8 @@ function gameKeyForState(state){
 
 function clearRealMoveState(gameKey, state){
   if (state?.timer) clearTimeout(state.timer);
+  if (state?.trailFrame) cancelAnimationFrame(state.trailFrame);
+  if (state) state.trailFrame = 0;
   const container = state?.container;
   if (container instanceof HTMLElement) {
     delete container.dataset.mgwCheckersRealMove;

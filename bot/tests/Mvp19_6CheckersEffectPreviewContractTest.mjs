@@ -73,7 +73,7 @@ ok(boardThemeWrapper.includes('renderRevision') && boardThemeWrapper.includes('s
 ok(boardThemeWrapper.includes('alignMoveDecorations(layer, liveBoard, state, finalDestinationRect)'), 'trail and ring target the captured final box rather than the transformed in-flight checker box');
 ok(boardThemeWrapper.includes("destinationPiece.classList.add('mgw-checkers-live-real-move-piece')"), 'real destination checker becomes the moving checker itself');
 ok(boardThemeWrapper.includes('duplicatePiece.remove()'), 'detached live layer removes its duplicate moving checker before paint');
-ok(boardThemeWrapper.includes("mgwMovePieceOwner = 'real-board-piece-flip-v2'"), 'trail layer records final-rect real-board-piece ownership for the moving checker');
+ok(boardThemeWrapper.includes("mgwMovePieceOwner = 'real-board-piece-flip-v3-trail-center'"), 'trail layer records centered real-board-piece ownership for the moving checker');
 ok(boardThemeWrapper.includes('stableLegend'), 'accepted stable legend DOM owner remains intact');
 ok(boardThemeWrapper.includes('runtime-handoff-mobile-v1.css?v=7') && boardThemeWrapper.includes('mvp19_6=real-piece-flip-v1'), 'board-theme owner loads the real-piece FLIP corrective stylesheet');
 
@@ -110,7 +110,7 @@ ok(liveEffectCss.includes('.mgw-checkers-live-fx-crown::after') && liveEffectCss
 ok(liveEffectCss.includes('pointer-events:none'), 'live effect layer leaves board hit targets untouched');
 ok(liveEffectCss.includes('@media (prefers-reduced-motion:reduce)'), 'live effects preserve reduced-motion handling');
 
-ok(manifest.includes('renderer-board-themes.js?v=12&mvp19_6=equal-grid-rows-v1') && manifest.includes('landing=real-piece-flip-final-rect-v2') && manifest.includes('legend=stable-paint-v1') && manifest.includes('mobile=insets=v1') && manifest.includes('renderer-real-flight-cascade-v1.js?v=2&mvp19_6=all-paid-real-flight-v1') && manifest.includes('parent=single-flight-dom-v2'), 'active Checkers import map routes through accepted final-rect real-piece FLIP plus paid-effect cascade owner');
+ok(manifest.includes('renderer-board-themes.js?v=13&mvp19_6=equal-grid-rows-v1') && manifest.includes('landing=real-piece-flip-final-rect-v2') && manifest.includes('legend=stable-paint-v1') && manifest.includes('mobile=insets=v1') && manifest.includes('trail=real-piece-center-follow-v1') && manifest.includes('renderer-real-flight-cascade-v1.js?v=2&mvp19_6=all-paid-real-flight-v1') && manifest.includes('parent=single-flight-dom-v2'), 'active Checkers import map routes through accepted final-rect real-piece FLIP plus centered Move-trail owner and paid-effect cascade');
 ok(manifest.includes('all_paid_flight=v1') && manifest.includes('real_flight=cascade-v2'), 'accepted paid Checkers effects remain on the canonical cascade owner');
 ok(manifest.includes('mvp19_6=checkers-real-piece-flip-v12'), 'bootstrap cache-bust activates the accepted final-rect real-piece FLIP graph');
 ok(!manifest.includes('renderer-live-effects-final-handoff.js') && !fs.existsSync(failedFinalHandoffPath), 'failed detached final-handoff wrapper is fully retired');

@@ -81,7 +81,7 @@ expect(store.includes('function isKnownSelectableSlot(slot)'), 'Store must valid
 expect(store.includes("if (itemType === 'game' && normalized.startsWith('game_')) return true;"), 'Store selectable slot validation must preserve all active game cosmetics');
 expect(store.includes("return itemType === 'profile' && itemFamily === 'name_color' && normalized === 'profile_name_color';"), 'Store selectable slot validation must explicitly allow Profile name colors');
 expect(!store.includes("slot !== 'game_tictactoe_effect'"), 'Store client must not hardcode unequip to effects only');
-expect(store.includes('if (!purchaseBusy && !equipBusy) applyStoreResponse(result);'), 'background Store refresh must not overwrite an active cosmetic mutation');
+expect(store.includes('if (!purchaseBusy && !equipBusy) applyStoreResponse(result, { preserveBalance:true });'), 'background Store refresh must not overwrite an active cosmetic mutation while preserving the authoritative wallet');
 expect(store.includes('if (!purchaseBusy && !equipBusy) {\n      renderStore();'), 'fresh background Store snapshot must repaint product cards, not only the balance');
 expect(toast.includes("'Предмет выбран.'"), 'redundant Store equip acknowledgement must be explicitly silent');
 expect(toast.includes("'Оформление снято.'"), 'redundant Store unequip acknowledgement must be explicitly silent');
@@ -115,7 +115,7 @@ expect(storeOuterEntry.includes("from './store-screen-intent-wrapper.js?v=19&mvp
 expect(storeEntry.includes("./store-screen.js?v=44&intent_base=1"), 'Store entry must delegate to the accepted versioned Store owner');
 expect(store.includes('Один выбранный эффект срабатывает при каждом ходе') && store.includes('data-store-v2-unequip'), 'delegated Store owner must preserve C2.1 single-effect selection UI');
 expect(manifest.includes('c2_1=effect-unequip'), 'active runtime manifest must cache-bust the API unequip client');
-expect(store.includes('if (!purchaseBusy && !equipBusy) applyStoreResponse(result);') && store.includes('if (!purchaseBusy && !equipBusy) {\n      renderStore();'), 'delegated Store owner must preserve C2.2 selection consistency under background refresh');
+expect(store.includes('if (!purchaseBusy && !equipBusy) applyStoreResponse(result, { preserveBalance:true });') && store.includes('if (!purchaseBusy && !equipBusy) {\n      renderStore();'), 'delegated Store owner must preserve C2.2 selection consistency under background refresh and wallet preservation');
 expect(manifest.includes('c2_4=poll-persistent-effects'), 'active runtime manifest must preserve the poll-persistent Tic Tac Toe renderer');
 expect(manifest.includes('c2_5=visible-mark-layer'), 'active runtime manifest must preserve C2.5 visible mark layering');
 expect(manifest.includes('c2_6=cell-native-dom-fx'), 'active runtime manifest must publish C2.6 cell-native DOM FX');

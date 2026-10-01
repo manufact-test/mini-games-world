@@ -57,8 +57,13 @@ foreach ([
     }
 }
 
-if (!str_contains($manifest, "production-v108-profile-entry-preview-live-owner-checkers-fit.css?v=10&checkers=pre-b94d-exact-restore-v1")) {
-    throw new RuntimeException('Exact pre-b94d Checkers restore is not cache-busted in the runtime manifest.');
+if (!str_contains($manifest, "production-v108-profile-entry-preview-live-owner-checkers-fit-granite-v2.css?v=1&mvp19_6=granite-store-exact-v2&profile_mobile=animation-runtime-guard-v2")) {
+    throw new RuntimeException('Current Checkers consistency wrapper is not active in the runtime manifest.');
+}
+$graniteWrapper = file_get_contents($root . '/app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit-granite-v2.css');
+if (!is_string($graniteWrapper)
+    || !str_contains($graniteWrapper, "production-v108-profile-entry-preview-live-owner-checkers-fit.css?v=12&checkers=pre-b94d-exact-restore-v1")) {
+    throw new RuntimeException('Exact pre-b94d Checkers restore must remain under the current Granite consistency wrapper.');
 }
 
 foreach ([$css, $wrapper] as $presentationSource) {
