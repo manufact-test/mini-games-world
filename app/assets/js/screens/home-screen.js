@@ -14,14 +14,12 @@ let historyCacheAt = 0;
 let historyCachePromise = null;
 
 const SUPPORT_TICKETS_CACHE_MAX_AGE_MS = 15000;
-const PLAYER_REPORT_REASONS = Object.freeze([
-  ['nickname',t('home.report.reasons.nickname')],
-  ['avatar',t('home.report.reasons.avatar')],
-  ['spam',t('home.report.reasons.spam')],
-  ['cheating',t('home.report.reasons.cheating')],
-  ['stalling',t('home.report.reasons.stalling')],
-  ['other',t('home.report.reasons.other')],
+const PLAYER_REPORT_REASON_CODES = Object.freeze([
+  'nickname','avatar','spam','cheating','stalling','other',
 ]);
+function playerReportReasons(){
+  return PLAYER_REPORT_REASON_CODES.map(value => [value, t(`home.report.reasons.${value}`)]);
+}
 let supportTicketsCache = null;
 let supportTicketsCacheAt = 0;
 let supportTicketsCachePromise = null;
@@ -366,35 +364,35 @@ function openPlayerReportSheet(){
   let selectedPlayer=null;
   let selectedReason='';
 
-  openSheet(`<div class="sheet-head player-report-head"><div><h2>Пожаловаться на игрока</h2><p>Найдите игрока и выберите причину жалобы.</p></div><button class="close" data-close-sheet type="button">×</button></div>
+  openSheet(`<div class="sheet-head player-report-head"><div><h2>${escapeHtml(t('home.report.title'))}</h2><p>${escapeHtml(t('home.report.subtitle'))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="player-report-create">
       <section class="player-report-step">
-        <div class="player-report-step-title"><b>1</b><span><strong>На кого вы хотите пожаловаться?</strong><small>Поиск по нику или MGW-ID</small></span></div>
+        <div class="player-report-step-title"><b>1</b><span><strong>${escapeHtml(t('home.report.target_question'))}</strong><small>${escapeHtml(t('home.report.search_note'))}</small></span></div>
         <div class="player-report-search">
-          <input id="playerReportSearch" class="form-input" maxlength="40" autocomplete="off" placeholder="Ник или MGW-ID">
-          <button class="btn primary" id="playerReportSearchBtn" type="button">Найти</button>
+          <input id="playerReportSearch" class="form-input" maxlength="40" autocomplete="off" placeholder="${escapeHtml(t('home.report.search_placeholder'))}">
+          <button class="btn primary" id="playerReportSearchBtn" type="button">${escapeHtml(t('home.report.search_action'))}</button>
         </div>
-        <div class="player-report-search-status" id="playerReportSearchStatus">Введите минимум 2 символа ника или полный MGW-ID.</div>
+        <div class="player-report-search-status" id="playerReportSearchStatus">${escapeHtml(t('home.report.search_hint'))}</div>
         <div class="player-report-results" id="playerReportResults"></div>
         <div class="player-report-selected" id="playerReportSelected" hidden></div>
       </section>
 
       <section class="player-report-step" id="playerReportReasonStep" hidden>
-        <div class="player-report-step-title"><b>2</b><span><strong>Причина жалобы</strong><small>Выберите один вариант</small></span></div>
+        <div class="player-report-step-title"><b>2</b><span><strong>${escapeHtml(t('home.report.reason_title'))}</strong><small>${escapeHtml(t('home.report.choose_one'))}</small></span></div>
         <div class="player-report-reasons" id="playerReportReasons">
-          ${PLAYER_REPORT_REASONS.map(([value,label])=>`<button type="button" data-player-report-reason="${escapeHtml(value)}" aria-pressed="false">${escapeHtml(label)}</button>`).join('')}
+          ${playerReportReasons().map(([value,label])=>`<button type="button" data-player-report-reason="${escapeHtml(value)}" aria-pressed="false">${escapeHtml(label)}</button>`).join('')}
         </div>
         <label class="player-report-comment">
-          <span>Комментарий <small>необязательно</small></span>
-          <textarea id="playerReportComment" class="form-input" maxlength="800" placeholder="Кратко опишите ситуацию"></textarea>
+          <span>${escapeHtml(t('home.report.comment'))} <small>${escapeHtml(t('home.report.optional'))}</small></span>
+          <textarea id="playerReportComment" class="form-input" maxlength="800" placeholder="${escapeHtml(t('home.report.comment_placeholder'))}"></textarea>
         </label>
-        <button class="btn primary full player-report-submit" id="playerReportSend" type="button" disabled>Отправить жалобу</button>
+        <button class="btn primary full player-report-submit" id="playerReportSend" type="button" disabled>${escapeHtml(t('home.report.send'))}</button>
       </section>
 
       <details class="player-report-history">
-        <summary><span>Мои жалобы</span><b id="playerReportHistoryCount">…</b></summary>
+        <summary><span>${escapeHtml(t('home.report.history_title'))}</span><b id="playerReportHistoryCount">…</b></summary>
         <div class="player-report-history-list" id="playerReportHistoryList">
-          <div class="player-report-history-empty">Загружаю историю…</div>
+          <div class="player-report-history-empty">${escapeHtml(t('home.report.history_loading'))}</div>
         </div>
       </details>
     </div>`);
@@ -417,10 +415,10 @@ function openPlayerReportSheet(){
     selectedPlayer=player;
     if(selected){
       selected.hidden=false;
-      selected.innerHTML=`<span><strong>${escapeHtml(player?.nickname||'Игрок')}</strong><small>${escapeHtml(player?.public_mgw_id||'')}</small></span><button type="button" id="playerReportChangeTarget">Изменить</button>`;
+      selected.innerHTML=`<span><strong>${escapeHtml(player?.nickname||t('home.report.player_fallback'))}</strong><small>${escapeHtml(player?.public_mgw_id||'')}</small></span><button type="button" id="playerReportChangeTarget">${escapeHtml(t('home.report.change'))}</button>`;
     }
     if(results)results.innerHTML='';
-    if(searchStatus)searchStatus.textContent='Игрок выбран.';
+    if(searchStatus)searchStatus.textContent=t('home.report.selected');
     if(reasonStep)reasonStep.hidden=false;
     document.getElementById('playerReportChangeTarget')?.addEventListener('click',()=>{
       selectedPlayer=null;
@@ -436,12 +434,12 @@ function openPlayerReportSheet(){
     if(!results)return;
     if(!Array.isArray(players)||players.length===0){
       results.innerHTML='';
-      if(searchStatus)searchStatus.textContent='Игроки не найдены. Попробуйте другой ник или MGW-ID.';
+      if(searchStatus)searchStatus.textContent=t('home.report.not_found');
       return;
     }
-    if(searchStatus)searchStatus.textContent=`Найдено: ${players.length}. Выберите игрока.`;
+    if(searchStatus)searchStatus.textContent=t('home.report.found',{count:players.length});
     results.innerHTML=players.map((player,index)=>`<button class="player-report-result" type="button" data-player-report-target="${index}">
-      <span><strong>${escapeHtml(player?.nickname||'Игрок')}</strong><small>${escapeHtml(player?.public_mgw_id||'')}</small></span><em>Выбрать</em>
+      <span><strong>${escapeHtml(player?.nickname||t('home.report.player_fallback'))}</strong><small>${escapeHtml(player?.public_mgw_id||'')}</small></span><em>${escapeHtml(t('home.report.choose'))}</em>
     </button>`).join('');
     results.querySelectorAll('[data-player-report-target]').forEach(button=>button.addEventListener('click',()=>{
       const index=Number(button.dataset.playerReportTarget);
@@ -455,24 +453,24 @@ function openPlayerReportSheet(){
     const nicknameQuery=query.replace(/^@/u,'');
     const looksLikeMgwId=/^MGW-(?:ID-)?/iu.test(query);
     if(!query){
-      if(searchStatus)searchStatus.textContent='Введите ник или MGW-ID.';
+      if(searchStatus)searchStatus.textContent=t('home.report.enter_query');
       searchInput?.focus();
       return;
     }
     if(!looksLikeMgwId&&Array.from(nicknameQuery).length<2){
-      if(searchStatus)searchStatus.textContent='Для поиска по нику введите минимум 2 символа.';
+      if(searchStatus)searchStatus.textContent=t('home.report.nickname_min');
       searchInput?.focus();
       return;
     }
     if(searchButton)searchButton.disabled=true;
     if(results)results.innerHTML='';
-    if(searchStatus)searchStatus.textContent='Ищу игрока…';
+    if(searchStatus)searchStatus.textContent=t('home.report.searching');
     try{
       const response=await api.friends({action:'report_lookup',query});
       const players=Array.isArray(response?.result?.players)?response.result.players.filter(player=>player&&typeof player==='object'):[];
       renderPlayers(players);
     }catch(error){
-      if(searchStatus)searchStatus.textContent=error?.message||'Не удалось выполнить поиск.';
+      if(searchStatus)searchStatus.textContent=error?.message||t('home.report.search_error');
     }finally{
       if(searchButton)searchButton.disabled=false;
     }
@@ -495,9 +493,9 @@ function openPlayerReportSheet(){
   }));
 
   const reportStatusLabel=value=>({
-    open:'Новая',
-    reviewing:'На рассмотрении',
-    closed:'Рассмотрена',
+    open:t('home.report.status_open'),
+    reviewing:t('home.report.status_reviewing'),
+    closed:t('home.report.status_closed'),
   })[String(value||'')]||'—';
 
   const reportStatusTone=value=>({
@@ -511,16 +509,16 @@ function openPlayerReportSheet(){
     if(historyCount)historyCount.textContent=String(items.length);
     if(!historyList)return;
     if(items.length===0){
-      historyList.innerHTML='<div class="player-report-history-empty">Вы ещё не отправляли жалобы на игроков.</div>';
+      historyList.innerHTML=`<div class="player-report-history-empty">${escapeHtml(t('home.report.history_empty'))}</div>`;
       return;
     }
     historyList.innerHTML=items.map(report=>`<article class="player-report-history-item">
       <div class="player-report-history-top">
-        <span><strong>${escapeHtml(report?.target_nickname||'Игрок')}</strong><small>${escapeHtml(report?.target_public_mgw_id||'')}</small></span>
+        <span><strong>${escapeHtml(report?.target_nickname||t('home.report.player_fallback'))}</strong><small>${escapeHtml(report?.target_public_mgw_id||'')}</small></span>
         <b class="${escapeHtml(reportStatusTone(report?.status))}">${escapeHtml(reportStatusLabel(report?.status))}</b>
       </div>
-      <div class="player-report-history-reason">${escapeHtml(report?.reason_label||report?.reason||'Жалоба')}</div>
-      <small class="player-report-history-meta">${escapeHtml(formatDate(report?.resolved_at||report?.reviewed_at||report?.created_at||''))}${report?.status==='closed'?' · рассмотрение завершено':''}</small>
+      <div class="player-report-history-reason">${escapeHtml(report?.reason_label||report?.reason||t('home.report.complaint_fallback'))}</div>
+      <small class="player-report-history-meta">${escapeHtml(formatDate(report?.resolved_at||report?.reviewed_at||report?.created_at||''))}${report?.status==='closed'?escapeHtml(t('home.report.review_complete')):''}</small>
     </article>`).join('');
   };
 
@@ -530,7 +528,7 @@ function openPlayerReportSheet(){
       renderReportHistory(response?.result?.reports||[]);
     }catch(error){
       if(historyCount)historyCount.textContent='!';
-      if(historyList)historyList.innerHTML=`<div class="player-report-history-empty">${escapeHtml(error?.message||'Не удалось загрузить историю жалоб.')}</div>`;
+      if(historyList)historyList.innerHTML=`<div class="player-report-history-empty">${escapeHtml(error?.message||t('home.report.history_error'))}</div>`;
     }
   };
 
@@ -548,9 +546,9 @@ function openPlayerReportSheet(){
       });
       const caseId=String(response?.result?.report_id||'');
       closeSheet();
-      toast(caseId?`Жалоба отправлена · ${caseId}`:'Жалоба отправлена.');
+      toast(caseId?t('home.report.sent_case',{case_id:caseId}):t('home.report.sent'));
     }catch(error){
-      toast(error?.message||'Не удалось отправить жалобу.');
+      toast(error?.message||t('home.report.send_error'));
       if(send.isConnected)send.disabled=false;
     }
   });
