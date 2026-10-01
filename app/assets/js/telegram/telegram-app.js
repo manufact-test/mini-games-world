@@ -17,7 +17,7 @@ export function initTelegramApp(){
   return tg;
 }
 export function getInitData(){ return getTelegram()?.initData || ''; }
-function isAndroidShell(){
+export function isAndroidShell(){
   return /(?:^|\s)MiniGamesWorldAndroid\/\d+(?:\s|$)/.test(String(navigator.userAgent || ''));
 }
 
