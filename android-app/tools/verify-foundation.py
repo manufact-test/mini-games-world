@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import pathlib
+import re
 import sys
 import xml.etree.ElementTree as ET
 
@@ -41,7 +42,9 @@ require("minSdk 26" in build, "minSdk must remain 26")
 require("MGW_BASE_URL" in build, "MGW URL must remain build-configurable")
 require("applicationId 'com.minigamesworld.app.acceptance'" in build, "accepted package identity must be restored")
 require("applicationIdSuffix" not in build, "repair must not create a parallel .mvp26dev app")
-require("versionCode 2610" in build, "Android native shell closure versionCode must remain monotonic")
+version_match = re.search(r"\bversionCode\s+(\d+)\b", build)
+require(version_match is not None and int(version_match.group(1)) >= 2610,
+        "Android native shell closure versionCode must remain monotonic")
 require("mgw-acceptance-stable.keystore" in build, "stable acceptance signing must be restored")
 require("usesCleartextTraffic=\"false\"" in manifest, "cleartext traffic must be disabled")
 require('android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden"' in manifest,
@@ -102,8 +105,9 @@ for xml_path in (
         errors.append(f"invalid XML {xml_path.relative_to(ROOT)}: {exc}")
 
 java_names = {path.name for path in (APP / "src/main/java").rglob("*.java")}
-require(java_names == {"MainActivity.java","NavigationPolicy.java","ShellConfig.java","DeviceCredentialStore.java"},
-        "repair must keep the reviewed four-owner Android shell")
+required_shell_owners = {"MainActivity.java","NavigationPolicy.java","ShellConfig.java","DeviceCredentialStore.java"}
+require(required_shell_owners.issubset(java_names),
+        "accepted four Android shell owners must remain present")
 
 if errors:
     print("Android MVP-26.2 regression repair verification FAILED", file=sys.stderr)

@@ -79,7 +79,9 @@ require("replacement.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILI
         "WebView product surface must remain accessibility-visible")
 
 # Cache/version/signing/package boundaries.
-require("versionCode 2610" in build, "native-shell closure candidate must use versionCode 2610")
+version_match = re.search(r"\bversionCode\s+(\d+)\b", build)
+require(version_match is not None and int(version_match.group(1)) >= 2610,
+        "future Android candidates must not regress below accepted native-shell versionCode 2610")
 require("applicationId 'com.minigamesworld.app.acceptance'" in build,
         "accepted package identity must remain unchanged")
 require("mgw-acceptance-stable.keystore" in build,
