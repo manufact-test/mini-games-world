@@ -49,6 +49,11 @@ function collect(dir, extensions, out = []) {
   return out;
 }
 
+const baselinePath = 'ops/checks/mvp27_1_hardcoded_text_baseline.json';
+const baseline = fs.existsSync(baselinePath)
+  ? JSON.parse(fs.readFileSync(baselinePath, 'utf8'))
+  : null;
+
 const findings = [];
 const scanned = new Set();
 
@@ -95,3 +100,19 @@ if (process.argv.includes('--sample')) {
 }
 
 if (scanned.size === 0) throw new Error('Localization audit scanned no runtime files.');
+
+if (baseline) {
+  const limits = [
+    ['total', findings.length, Number(baseline.cyrillic_lines_total)],
+    ['client', byScope.get('client') || 0, Number(baseline.by_scope?.client)],
+    ['backend', byScope.get('backend') || 0, Number(baseline.by_scope?.backend)],
+    ['client-entry', byScope.get('client-entry') || 0, Number(baseline.by_scope?.['client-entry'])],
+  ];
+  for (const [label,current,limit] of limits) {
+    if (!Number.isFinite(limit)) throw new Error(`Invalid localization baseline for ${label}.`);
+    if (current > limit) {
+      throw new Error(`Localization debt regression: ${label} increased from baseline ${limit} to ${current}.`);
+    }
+  }
+  console.log('MVP27_1_BASELINE_RATCHET=PASS');
+}
