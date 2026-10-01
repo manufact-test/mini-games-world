@@ -47,8 +47,8 @@ android {
         applicationId 'com.minigamesworld.app.acceptance'
         minSdk 26
         targetSdk 36
-        versionCode 2605
-        versionName '0.26.4.1-account-reauth'
+        versionCode 2608
+        versionName '0.26.4.2-account-reauth-install-fix'
         buildConfigField 'String', 'MGW_BASE_URL', '"' + escapedMgwBaseUrl + '"'
     }
 
