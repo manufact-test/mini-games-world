@@ -1,5 +1,5 @@
 {
-  "_meta": {"locale":"ru","version":19},
+  "_meta": {"locale":"ru","version":20},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
   "topbar": {"balance":"Баланс","notifications":"Уведомления"},
@@ -13,6 +13,17 @@
     "report":{
       "reasons":{"nickname":"Недопустимый никнейм","avatar":"Недопустимый аватар","spam":"Спам","cheating":"Нечестная игра","stalling":"Затягивание игры","other":"Другое"},
       "title":"Пожаловаться на игрока","subtitle":"Найдите игрока и выберите причину жалобы.","target_question":"На кого вы хотите пожаловаться?","search_note":"Поиск по нику или MGW-ID","search_placeholder":"Ник или MGW-ID","search_action":"Найти","search_hint":"Введите минимум 2 символа ника или полный MGW-ID.","reason_title":"Причина жалобы","choose_one":"Выберите один вариант","comment":"Комментарий","optional":"необязательно","comment_placeholder":"Кратко опишите ситуацию","send":"Отправить жалобу","history_title":"Мои жалобы","history_loading":"Загружаю историю…","player_fallback":"Игрок","change":"Изменить","selected":"Игрок выбран.","not_found":"Игроки не найдены. Попробуйте другой ник или MGW-ID.","found":"Найдено: {count}. Выберите игрока.","choose":"Выбрать","enter_query":"Введите ник или MGW-ID.","nickname_min":"Для поиска по нику введите минимум 2 символа.","searching":"Ищу игрока…","search_error":"Не удалось выполнить поиск.","status_open":"Новая","status_reviewing":"На рассмотрении","status_closed":"Рассмотрена","history_empty":"Вы ещё не отправляли жалобы на игроков.","complaint_fallback":"Жалоба","review_complete":" · рассмотрение завершено","history_error":"Не удалось загрузить историю жалоб.","sent_case":"Жалоба отправлена · {case_id}","sent":"Жалоба отправлена.","send_error":"Не удалось отправить жалобу."
+    },
+    "support":{
+      "title_default":"Обращение","message_feedback":"Напишите сообщение","message_idea":"Опишите идею","message_default":"Опишите ситуацию",
+      "category_label":"Категория","category_feedback":"Обратная связь","category_idea":"Предложение","category_technical":"Техническая проблема","category_payment":"Платёж / коины","category_game":"Игра / матч","category_tournament":"Турнир","category_account":"Аккаунт","category_other":"Другое",
+      "subject_label":"Тема","subject_placeholder":"Короткая тема","priority_label":"Приоритет","priority_normal":"Обычный","priority_high":"Высокий","priority_critical":"Критический","priority_low":"Низкий","message_label":"Сообщение",
+      "attachments":"Вложения","attachments_note":"Необязательно · до 3 файлов, до 2 МБ каждый","add_file":"＋ Добавить","create":"Создать обращение","message_required":"Напишите сообщение.","created_case":"Обращение {number} создано.","created":"Обращение создано.","create_error":"Не удалось создать обращение.",
+      "tickets_load_error":"Не удалось загрузить обращения.","ticket_fallback":"Обращение","tickets_count":"Обращений: {count}","tickets_empty":"Обращений пока нет.","open_error":"Не удалось открыть обращение.",
+      "closed":"Обращение закрыто","reply":"Ответить","reply_placeholder":"Напишите сообщение","reply_add":"Добавить к ответу","reply_file":"＋ Файл","send":"Отправить","sent":"Сообщение отправлено.","send_error":"Не удалось отправить сообщение.",
+      "status_open":"Открыто","status_in_progress":"В работе","status_waiting":"Ждёт ответа","status_resolved":"Решено","status_closed":"Закрыто",
+      "attachment_fallback":"Вложение","open":"Открыть","hide":"Скрыть","your_message":"Ваше сообщение","support":"Поддержка",
+      "file_not_selected":"Файл не выбран.","file_too_large":"Файл больше 2 МБ.","file_type_error":"Поддерживаются изображения, PDF и TXT.","file_size_kb":"{count} КБ","remove_file":"Удалить файл","file_limit_button":"Лимит 3 файла","file_limit_error":"Можно приложить не более 3 файлов.","read_error":"{file}: не удалось прочитать файл.","loading":"Загрузка…","attachment_open_error":"Не удалось открыть вложение."
     },
     "history":{"balance_title":"История баланса","match_title":"История матчей","operation":"Операция","coin_amount":"{count} коинов","operations_empty":"Операций пока нет.","operations_title":"Операции баланса","match":"Матч","opponent":"Соперник","opponent_line":"Соперник: {opponent}","matches_empty":"Истории матчей пока нет.","latest_games":"Последние игры"},
     "rules_guide":{
