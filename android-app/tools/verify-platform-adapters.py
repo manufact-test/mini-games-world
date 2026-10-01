@@ -49,7 +49,7 @@ require(re.search(
             re.MULTILINE
         ) is not None,
         "Android shell must actively own a disabled platform-adapter registry")
-require("\\\\n" not in main,
+require("\\n" not in main,
         "MainActivity must not contain literal escaped newline tokens that can hide runtime ownership inside comments")
 require("new DisabledBillingAdapter()" in registry, "disabled billing owner missing")
 require("new DisabledAdsAdapter()" in registry, "disabled ads owner missing")
