@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-01",
-  "staging_base": "8ad9dfd8665cbfbab1300e58f0b0eb3c3d9abff5",
+  "staging_base": "c33c546f8ae6e3050aa3d6e048b5146a43dc44fb",
   "scanned_files": 776,
-  "cyrillic_lines_total": 4605,
+  "cyrillic_lines_total": 4536,
   "by_scope": {
-    "client": 2924,
+    "client": 2855,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 Home player-report migration; active Home owner reduced from 99 to 69 Cyrillic source lines."
+  "note": "MVP-27.1 final Home Support/time migration; active home-screen.js reduced from 69 to 0 Cyrillic source lines and removed direct ru-RU formatting."
 }
