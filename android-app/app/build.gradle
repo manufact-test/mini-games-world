@@ -10,6 +10,16 @@ def escapedMgwBaseUrl = configuredMgwBaseUrl
         .replace('\\', '\\\\')
         .replace('"', '\\"')
 
+def configuredMgwInviteHost = 'invalid.mgw.local'
+try {
+    def parsedMgwBase = new java.net.URI(configuredMgwBaseUrl)
+    if ('https'.equalsIgnoreCase(parsedMgwBase.scheme) && parsedMgwBase.host) {
+        configuredMgwInviteHost = parsedMgwBase.host
+    }
+} catch (Exception ignored) {
+    // The existing runtime configuration guard remains the final authority.
+}
+
 def brandingInputDir = file("${rootDir}/branding")
 def launcherArtSource = file("${brandingInputDir}/shield_king_launcher_384.webp.b64")
 def acceptanceKeystoreSource = file("${brandingInputDir}/mgw-acceptance-stable.keystore.b64")
@@ -47,9 +57,10 @@ android {
         applicationId 'com.minigamesworld.app.acceptance'
         minSdk 26
         targetSdk 36
-        versionCode 2611
-        versionName '0.26.5.1-disabled-platform-adapters'
+        versionCode 2612
+        versionName '0.26.6.1-android-product-parity'
         buildConfigField 'String', 'MGW_BASE_URL', '"' + escapedMgwBaseUrl + '"'
+        manifestPlaceholders = [mgwInviteHost: configuredMgwInviteHost]
     }
 
     sourceSets {
