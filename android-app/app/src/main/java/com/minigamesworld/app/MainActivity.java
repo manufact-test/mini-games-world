@@ -12,7 +12,6 @@ import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Color;
-import android.graphics.Insets;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
@@ -218,10 +217,7 @@ public final class MainActivity extends Activity {
     private void applySystemInsets() {
         root.setOnApplyWindowInsetsListener((view, insets) -> {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                Insets safe = insets.getInsets(
-                        WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout()
-                );
-                view.setPadding(safe.left, safe.top, safe.right, safe.bottom);
+                Api30Insets.apply(view, insets);
             } else {
                 view.setPadding(
                         insets.getSystemWindowInsetLeft(),
@@ -835,6 +831,19 @@ public final class MainActivity extends Activity {
             }
             showNetworkError(R.string.network_error_text);
             return true;
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.R)
+    private static final class Api30Insets {
+        private Api30Insets() {
+        }
+
+        static void apply(View view, WindowInsets insets) {
+            android.graphics.Insets safe = insets.getInsets(
+                    WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout()
+            );
+            view.setPadding(safe.left, safe.top, safe.right, safe.bottom);
         }
     }
 
