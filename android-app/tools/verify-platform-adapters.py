@@ -44,7 +44,7 @@ for name in required_interfaces:
             f"{name} must remain provider-neutral through PlatformAdapter")
 
 require(re.search(
-            r"^\\s*private\\s+final\\s+PlatformAdapters\\s+platformAdapters\\s*=\\s*PlatformAdapters\\.disabled\\(\\);\\s*$",
+            r"^\s*private\s+final\s+PlatformAdapters\s+platformAdapters\s*=\s*PlatformAdapters\.disabled\(\);\s*$",
             main,
             re.MULTILINE
         ) is not None,
