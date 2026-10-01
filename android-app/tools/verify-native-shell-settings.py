@@ -24,7 +24,7 @@ manifest = read(manifest_path)
 main = read(APP / "src/main/java/com/minigamesworld/app/MainActivity.java")
 build = read(APP / "build.gradle")
 shell = read(REPO / "app/assets/js/main-v110-handoff-shell.js")
-version_manifest = read(REPO / "app/runtime/client/version-manifest.php")
+version_manifest = read(REPO / "app/runtime/client/version-manifest.php")\nmain_css = read(REPO / "app/assets/css/main.css")
 
 # Back ownership: fixed native -> web event, no privileged JS bridge, safe fallback.
 require("mgw:android-back-request" in main, "native Back must dispatch the fixed Android-back request event")
@@ -54,7 +54,7 @@ if activity is not None:
 require("Api30Insets.apply(view, insets)" in main, "Android 11+ safe-area owner missing")
 require("WindowInsets.Type.systemBars()" in main, "modern safe-area must include system bars")
 require("WindowInsets.Type.displayCutout()" in main, "modern safe-area must include display cutout")
-require("getSystemWindowInsetBottom()" in main, "API26-29 inset fallback must remain available")
+require("getSystemWindowInsetBottom()" in main, "API26-29 inset fallback must remain available")\nrequire("flex:1 1 auto;min-height:0" in main_css and "overflow-y:auto" in main_css,\n        "short landscape/IME report sheet must keep its form body scrollable")\nrequire("scroll-margin-block:10px" in main_css,\n        "focused report inputs must retain scroll margin above the IME")
 
 # Native accessibility basics.
 require("brandMark.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO)" in main,
@@ -77,7 +77,7 @@ require("applicationId 'com.minigamesworld.app.acceptance'" in build,
 require("mgw-acceptance-stable.keystore" in build,
         "accepted signing owner must remain unchanged")
 require("main-v110-handoff-shell.js?v=1169&mvp26_3=native-shell-settings-v1" in version_manifest,
-        "active shell cache owner must publish the Android Back corrective")
+        "active shell cache owner must publish the Android Back corrective")\nrequire("mvp26_3=landscape-ime-sheet-v1" in version_manifest,\n        "active CSS cache owner must publish the landscape IME sheet corrective")
 
 if errors:
     print("MVP-26.3 native shell/settings closure verification FAILED", file=sys.stderr)
@@ -86,4 +86,4 @@ if errors:
     raise SystemExit(1)
 
 print("MVP-26.3 native shell/settings closure verification PASS")
-print("checks: Back ownership + keyboard resize + safe-area/cutout + accessibility basics + frozen package/signing")
+print("checks: Back ownership + keyboard resize + landscape IME reachability + safe-area/cutout + accessibility basics + frozen package/signing")
