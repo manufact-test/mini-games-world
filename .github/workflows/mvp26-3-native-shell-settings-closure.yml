@@ -8,6 +8,7 @@ on:
       - 'android-app/**'
       - 'app/assets/js/main-v110-handoff-shell.js'
       - 'app/assets/css/main.css'
+      - 'app/assets/js/components/sheet.js'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp26_4_2AndroidAccountDataDownloadContractTest.php'
       - '.github/workflows/mvp26-3-native-shell-settings-closure.yml'
@@ -39,6 +40,7 @@ jobs:
           python3 android-app/tools/verify-orientation-lifecycle.py
           python3 android-app/tools/verify-foundation.py
           node --check app/assets/js/main-v110-handoff-shell.js
+          node --check app/assets/js/components/sheet.js
           php -l app/runtime/client/version-manifest.php
 
       - name: Guard frozen security boundaries
@@ -52,6 +54,7 @@ jobs:
           ! grep -Fq "addJavascriptInterface" android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java
           grep -Fq "['profile','store','tournaments'].includes(screen)" app/assets/js/main-v110-handoff-shell.js
           grep -Fq "main-v110-handoff-shell.js?v=1169&mvp26_3=native-shell-settings-v1" app/runtime/client/version-manifest.php
+          grep -Fq "sheet.js?v=1111&mvp26_3=visual-viewport-ime-v2" app/runtime/client/version-manifest.php
           grep -Fq "applicationId 'com.minigamesworld.app.acceptance'" android-app/app/build.gradle
           grep -Fq "mgw-acceptance-stable.keystore" android-app/app/build.gradle
           grep -Fq "versionCode 2610" android-app/app/build.gradle
@@ -83,6 +86,7 @@ jobs:
               android-app/tools/verify-native-shell-settings.py|\
               app/assets/js/main-v110-handoff-shell.js|\
               app/assets/css/main.css|\
+              app/assets/js/components/sheet.js|\
               app/runtime/client/version-manifest.php|\
               bot/tests/Mvp26_4_2AndroidAccountDataDownloadContractTest.php)
                 ;;
