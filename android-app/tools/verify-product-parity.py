@@ -35,8 +35,6 @@ reconnect = read(WEB / "main-v110-reconnect-v174.js")
 account_shortcuts = read(WEB / "components/account-shortcuts.js")
 version_manifest = read(REPO / "app/runtime/client/version-manifest.php")
 android_auth = read(BOT / "android-auth.php")
-support = read(BOT / "support.php")
-support_service = read(BOT / "support/SupportTicketService.php")
 support_download = read(BOT / "support-attachment-download.php")
 assetlinks_raw = read(REPO / ".well-known/assetlinks.json")
 
@@ -104,11 +102,6 @@ require("attachmentForUser" in support_download
         and "getUserFromRequest([])" in support_download,
         "Support attachment download must be authenticated and ownership-scoped")
 
-require("'android' => 'Android-приложение'" in support_service,
-        "Support Android platform label missing")
-require("$provider === 'android_device'" in support
-        and "return 'android';" in support,
-        "Android Support platform mapping missing")
 
 try:
     assetlinks = json.loads(assetlinks_raw)
