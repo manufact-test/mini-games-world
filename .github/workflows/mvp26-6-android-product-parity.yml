@@ -9,6 +9,14 @@ on:
       - 'android-app/**'
       - 'bot/android-auth.php'
       - 'bot/support-attachment-download.php'
+      - 'bot/helpers/validators.php'
+      - 'bot/storage/JsonDatabase.php'
+      - 'bot/invites.php'
+      - 'bot/invite-opponents.php'
+      - 'bot/social/SocialInviteGuard.php'
+      - 'bot/tests/Mvp26_6AndroidParityCorrectiveTest.php'
+      - 'app/assets/css/main.css'
+      - 'app/runtime/client/version-manifest.php'
       - '.github/workflows/mvp26-5-platform-adapters.yml'
       - '.github/workflows/mvp26-6-android-product-parity.yml'
   workflow_dispatch:
@@ -40,14 +48,23 @@ jobs:
           set -euo pipefail
           php -l bot/android-auth.php
           php -l bot/support-attachment-download.php
+          php -l bot/helpers/validators.php
+          php -l bot/storage/JsonDatabase.php
+          php -l bot/invites.php
+          php -l bot/invite-opponents.php
+          php -l bot/social/SocialInviteGuard.php
 
       - name: Focused shared-product regressions
         run: |
           set -euo pipefail
           php bot/tests/Mvp18_4UniversalInviteLandingContractTest.php
+          php bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php
+          php bot/tests/ProductionV110PendingInviteSearchNonBlockingRuntimeTest.php
+          php bot/tests/InviteOpponentServiceTest.php
           php bot/tests/Mvp26_2AndroidDeviceAuthTest.php
           php bot/tests/Mvp26_4AndroidAccountReauthTest.php
           php bot/tests/SupportTicketServiceTest.php
+          php bot/tests/Mvp26_6AndroidParityCorrectiveTest.php
 
       - name: Frozen game/economy/tournament engine guard
         if: github.event_name == 'pull_request'
@@ -58,7 +75,6 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           git diff --exit-code "$base" "$head" -- \
             bot/games bot/ratings bot/tournaments bot/economy bot/ledger \
-            app/runtime/client/version-manifest.php \
             app/assets/js/telegram/telegram-app.js \
             app/assets/js/games/game-invites-v110.js \
             app/assets/js/screens/home-screen.js \
@@ -75,7 +91,7 @@ jobs:
         run: node scripts/ci/check-secrets.mjs
 
   android-build:
-    name: Android build/lint/unit v2612
+    name: Android build/lint/unit v2613
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -132,11 +148,11 @@ jobs:
           grep -F 'CN=MGW Acceptance, O=Mini Games World, C=PL' /tmp/mgw-mvp26-6-signing.txt
           grep -Fi 'efda9b86b0b0edfaa22064864aaddc025f15bdc063bf53cfb58d569f504f5484' /tmp/mgw-mvp26-6-signing.txt
 
-      - name: Upload v2612 APK
+      - name: Upload v2613 APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: mgw-mvp26-6-product-parity-v2612-debug
+          name: mgw-mvp26-6-product-parity-corrective-v2613-debug
           path: android-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7
@@ -145,7 +161,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mgw-mvp26-6-product-parity-v2612-reports
+          name: mgw-mvp26-6-product-parity-corrective-v2613-reports
           path: |
             android-app/app/build/reports/**
             android-app/app/build/test-results/**
