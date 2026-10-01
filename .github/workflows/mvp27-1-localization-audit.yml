@@ -1,0 +1,64 @@
+name: MVP-27.1 Localization Architecture Audit
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'ops/checks/mvp27_1_localization_architecture_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
+      - 'bot/tests/Mvp27_1LocalizationArchitectureAuditTest.php'
+      - 'docs/MVP27_1_LOCALIZATION_ARCHITECTURE_AUDIT.md'
+      - '.github/workflows/mvp27-1-localization-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  localization-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: JavaScript syntax
+        run: |
+          set -euo pipefail
+          node --check ops/checks/mvp27_1_localization_architecture_contract.mjs
+          node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
+          node --check app/assets/js/localization/i18n.js
+
+      - name: Existing localization foundation
+        run: |
+          set -euo pipefail
+          node ops/checks/mvp16_2_localization_contract.mjs
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+
+      - name: MVP-27.1 architecture proof
+        run: |
+          set -euo pipefail
+          node ops/checks/mvp27_1_localization_architecture_contract.mjs
+          php bot/tests/Mvp27_1LocalizationArchitectureAuditTest.php
+
+      - name: Hardcoded player text audit
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs --sample
+
+      - name: Audit-only scope guard
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          allowed='^(ops/checks/mvp27_1_localization_architecture_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|bot/tests/Mvp27_1LocalizationArchitectureAuditTest\.php|docs/MVP27_1_LOCALIZATION_ARCHITECTURE_AUDIT\.md|\.github/workflows/mvp27-1-localization-audit\.yml)$'
+          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected MVP-27.1 audit paths:\n%s\n' "$bad" >&2; exit 1; }
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
