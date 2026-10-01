@@ -2,10 +2,13 @@ package com.minigamesworld.app;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.Manifest;
 import android.app.Activity;
+import android.app.DownloadManager;
 import android.app.KeyguardManager;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -13,6 +16,7 @@ import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -48,6 +52,7 @@ import org.json.JSONObject;
 public final class MainActivity extends Activity {
     private static final String STATE_WEBVIEW = "mgw_webview_state";
     private static final int REQUEST_ANDROID_REAUTH = 26041;
+    private static final int REQUEST_LEGACY_DOWNLOAD_STORAGE = 26042;
 
     private FrameLayout root;
     private WebView webView;
@@ -62,6 +67,7 @@ public final class MainActivity extends Activity {
     private boolean mainFrameFailed;
     private boolean reauthInProgress;
     private String pendingReauthChallenge;
+    private String pendingDownloadRequestId;
     private Object backCallback;
 
     @Override
@@ -78,7 +84,11 @@ public final class MainActivity extends Activity {
         configuredBaseUrl = ShellConfig.configuredBaseUrl();
         if (!NavigationPolicy.isSafeHttpsBase(configuredBaseUrl)
                 || ShellConfig.androidAuthUrl(configuredBaseUrl).isEmpty()
-                || ShellConfig.androidReauthUrl(configuredBaseUrl).isEmpty()) {
+                || ShellConfig.androidReauthUrl(configuredBaseUrl).isEmpty()
+                || ShellConfig.accountDataDownloadUrl(
+                        configuredBaseUrl,
+                        "adr_0123456789abcdef0123456789abcdef"
+                ).isEmpty()) {
             showConfigurationError();
             return;
         }
@@ -225,6 +235,10 @@ public final class MainActivity extends Activity {
         settings.setDisplayZoomControls(false);
         settings.setGeolocationEnabled(false);
         settings.setSafeBrowsingEnabled(true);
+        String userAgent = settings.getUserAgentString();
+        if (userAgent != null && !userAgent.contains("MiniGamesWorldAndroid/")) {
+            settings.setUserAgentString(userAgent + " MiniGamesWorldAndroid/" + BuildConfig.VERSION_CODE);
+        }
 
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
@@ -356,6 +370,11 @@ public final class MainActivity extends Activity {
         String reauthChallenge = candidate == null ? null : navigationPolicy.nativeReauthChallenge(candidate);
         if (reauthChallenge != null) {
             beginNativeReauth(reauthChallenge);
+            return true;
+        }
+        String downloadRequest = candidate == null ? null : navigationPolicy.nativeAccountDownloadRequest(candidate);
+        if (downloadRequest != null) {
+            beginNativeAccountDownload(downloadRequest);
             return true;
         }
         if (candidate != null && navigationPolicy.isInternal(candidate)) {
@@ -512,6 +531,118 @@ public final class MainActivity extends Activity {
             script = "window.dispatchEvent(new Event('mgw:android-reauth-failed'));";
         }
         webView.evaluateJavascript(script, null);
+    }
+
+    private void beginNativeAccountDownload(String requestId) {
+        if (navigationPolicy == null || webView == null) {
+            dispatchNativeDownloadEvent(false);
+            return;
+        }
+
+        String current = webView.getUrl();
+        if (current == null || !navigationPolicy.isInternal(current)) {
+            dispatchNativeDownloadEvent(false);
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P
+                && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            pendingDownloadRequestId = requestId;
+            requestPermissions(
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    REQUEST_LEGACY_DOWNLOAD_STORAGE
+            );
+            return;
+        }
+
+        enqueueNativeAccountDownload(requestId);
+    }
+
+    private void enqueueNativeAccountDownload(String requestId) {
+        String endpoint = ShellConfig.accountDataDownloadUrl(configuredBaseUrl, requestId);
+        if (navigationPolicy == null || endpoint.isEmpty() || !navigationPolicy.isInternal(endpoint)) {
+            dispatchNativeDownloadEvent(false);
+            return;
+        }
+
+        String cookie = CookieManager.getInstance().getCookie(endpoint);
+        if (cookie == null || !cookie.contains("mgw_android_auth=")) {
+            Toast.makeText(this, R.string.download_failed, Toast.LENGTH_SHORT).show();
+            dispatchNativeDownloadEvent(false);
+            return;
+        }
+
+        try {
+            DownloadManager manager = (DownloadManager)getSystemService(DOWNLOAD_SERVICE);
+            if (manager == null) {
+                throw new IllegalStateException("DownloadManager unavailable");
+            }
+
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(endpoint));
+            request.setMimeType("application/zip");
+            request.setTitle(getString(R.string.download_title));
+            request.setDescription(getString(R.string.download_description));
+            request.setNotificationVisibility(
+                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+            );
+            request.setAllowedOverMetered(true);
+            request.setAllowedOverRoaming(true);
+            request.addRequestHeader("Cookie", cookie);
+            String userAgent = webView.getSettings().getUserAgentString();
+            if (userAgent != null && !userAgent.isBlank()) {
+                request.addRequestHeader("User-Agent", userAgent);
+            }
+
+            String suffix = requestId.length() >= 12 ? requestId.substring(4, 12) : "archive";
+            request.setDestinationInExternalPublicDir(
+                    Environment.DIRECTORY_DOWNLOADS,
+                    "MiniGamesWorld-data-" + suffix + ".zip"
+            );
+
+            manager.enqueue(request);
+            Toast.makeText(this, R.string.download_started, Toast.LENGTH_SHORT).show();
+            dispatchNativeDownloadEvent(true);
+        } catch (RuntimeException error) {
+            Toast.makeText(this, R.string.download_failed, Toast.LENGTH_SHORT).show();
+            dispatchNativeDownloadEvent(false);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            String[] permissions,
+            int[] grantResults
+    ) {
+        if (requestCode == REQUEST_LEGACY_DOWNLOAD_STORAGE) {
+            String requestId = pendingDownloadRequestId;
+            pendingDownloadRequestId = null;
+            if (requestId != null
+                    && grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                enqueueNativeAccountDownload(requestId);
+            } else {
+                Toast.makeText(this, R.string.download_permission_required, Toast.LENGTH_LONG).show();
+                dispatchNativeDownloadEvent(false);
+            }
+            return;
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    private void dispatchNativeDownloadEvent(boolean success) {
+        if (webView == null || navigationPolicy == null) return;
+        String current = webView.getUrl();
+        if (current == null || !navigationPolicy.isInternal(current)) return;
+
+        String eventName = success
+                ? "mgw:android-download-enqueued"
+                : "mgw:android-download-failed";
+        webView.evaluateJavascript(
+                "window.dispatchEvent(new Event('" + eventName + "'));",
+                null
+        );
     }
 
     private void configureBackNavigation() {
