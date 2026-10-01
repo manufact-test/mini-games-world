@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-01",
-  "staging_base": "c33c546f8ae6e3050aa3d6e048b5146a43dc44fb",
+  "staging_base": "10aade084d3bb11dc872ad353c79803c3becccbf",
   "scanned_files": 776,
-  "cyrillic_lines_total": 4536,
+  "cyrillic_lines_total": 4515,
   "by_scope": {
-    "client": 2855,
+    "client": 2834,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 final Home Support/time migration; active home-screen.js reduced from 69 to 0 Cyrillic source lines and removed direct ru-RU formatting."
+  "note": "MVP-27.1 Arena registration/sync localization; active tournaments-screen-v1.js reduced from 192 to 171 Cyrillic source lines."
 }
