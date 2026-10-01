@@ -595,9 +595,13 @@ public final class MainActivity extends Activity {
             }
 
             String suffix = requestId.length() >= 12 ? requestId.substring(4, 12) : "archive";
+            String attempt = Long.toString(System.currentTimeMillis());
+            if (attempt.length() > 6) {
+                attempt = attempt.substring(attempt.length() - 6);
+            }
             request.setDestinationInExternalPublicDir(
                     Environment.DIRECTORY_DOWNLOADS,
-                    "MiniGamesWorld-data-" + suffix + ".zip"
+                    "MiniGamesWorld-data-" + suffix + "-" + attempt + ".zip"
             );
 
             manager.enqueue(request);
