@@ -1,0 +1,224 @@
+name: MVP-26.7 Android Device Lifecycle QA
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'android-app/**'
+      - '.github/workflows/mvp26-6-android-product-parity.yml'
+      - '.github/workflows/mvp26-7-android-device-lifecycle-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lifecycle-contract:
+    name: Device/lifecycle ownership contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Verify MVP-26.7 lifecycle ownership
+        run: |
+          set -euo pipefail
+          python3 android-app/tools/verify-device-lifecycle-qa.py
+          python3 android-app/tools/verify-orientation-lifecycle.py
+          python3 android-app/tools/verify-native-shell-settings.py
+          python3 android-app/tools/verify-product-parity.py
+          bash -n android-app/tools/device-lifecycle-smoke.sh
+
+      - name: Frozen product boundary guard
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" --             bot/games bot/ratings bot/tournaments bot/economy bot/ledger             app/assets/js/games             app/assets/js/screens             app/runtime/client/version-manifest.php             app/v110.php
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
+  build-candidate:
+    name: Build signed v2615 candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 9.5
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.5.0'
+
+      - name: Ensure Android SDK 36
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v sdkmanager >/dev/null 2>&1; then
+            SDKMANAGER="$(command -v sdkmanager)"
+          elif [[ -x "${ANDROID_SDK_ROOT:-}/cmdline-tools/latest/bin/sdkmanager" ]]; then
+            SDKMANAGER="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          else
+            echo 'sdkmanager is unavailable' >&2
+            exit 1
+          fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0'
+
+      - name: Unit lint assemble
+        working-directory: android-app
+        env:
+          MGW_BASE_URL: https://seashell-okapi-889488.hostingersite.com/
+        run: gradle --no-daemon clean test lint assembleDebug
+
+      - name: Verify accepted package signing
+        working-directory: android-app
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk='app/build/outputs/apk/debug/app-debug.apk'
+          test -f "$apk"
+          apksigner="${ANDROID_SDK_ROOT}/build-tools/36.0.0/apksigner"
+          "$apksigner" verify --print-certs "$apk" | tee /tmp/mgw-v2615-signing.txt
+          grep -F 'CN=MGW Acceptance, O=Mini Games World, C=PL' /tmp/mgw-v2615-signing.txt
+          grep -Fi 'efda9b86b0b0edfaa22064864aaddc025f15bdc063bf53cfb58d569f504f5484' /tmp/mgw-v2615-signing.txt
+
+      - name: Upload v2615 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgw-mvp26-7-device-lifecycle-v2615-debug
+          path: android-app/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload build reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgw-mvp26-7-device-lifecycle-v2615-reports
+          path: |
+            android-app/app/build/reports/**
+            android-app/app/build/test-results/**
+          if-no-files-found: warn
+          retention-days: 7
+
+  emulator-matrix:
+    name: API ${{ matrix.api }} · ${{ matrix.size }} · ${{ matrix.density }}dpi
+    needs: build-candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - api: 26
+            size: 360x640
+            density: 320
+          - api: 30
+            size: 412x915
+            density: 420
+          - api: 36
+            size: 1280x800
+            density: 240
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Download signed candidate
+        uses: actions/download-artifact@v4
+        with:
+          name: mgw-mvp26-7-device-lifecycle-v2615-debug
+          path: /tmp/mgw-apk
+
+      - name: Enable KVM access
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -e /dev/kvm ]]; then
+            sudo chmod 666 /dev/kvm
+          fi
+
+      - name: Install emulator image
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v sdkmanager >/dev/null 2>&1; then
+            SDKMANAGER="$(command -v sdkmanager)"
+          else
+            SDKMANAGER="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          fi
+          if command -v avdmanager >/dev/null 2>&1; then
+            AVDMANAGER="$(command -v avdmanager)"
+          else
+            AVDMANAGER="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/avdmanager"
+          fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          image="system-images;android-${{ matrix.api }};google_apis;x86_64"
+          "$SDKMANAGER" 'platform-tools' 'emulator' "$image"
+          echo no | "$AVDMANAGER" create avd --force             --name "mgw-api-${{ matrix.api }}"             --package "$image"
+
+      - name: Boot emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          emulator="${ANDROID_SDK_ROOT}/emulator/emulator"
+          nohup "$emulator"             -avd "mgw-api-${{ matrix.api }}"             -no-window             -no-audio             -no-boot-anim             -no-snapshot             -wipe-data             -gpu swiftshader_indirect             > /tmp/mgw-emulator.log 2>&1 &
+          adb wait-for-device
+          timeout 360 bash -c 'until [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" == "1" ]]; do sleep 5; done'
+          adb shell input keyevent KEYCODE_WAKEUP || true
+          adb shell wm dismiss-keyguard || true
+
+      - name: Run lifecycle smoke
+        shell: bash
+        env:
+          MGW_DEVICE_API: ${{ matrix.api }}
+          MGW_DEVICE_SIZE: ${{ matrix.size }}
+          MGW_DEVICE_DENSITY: ${{ matrix.density }}
+        run: |
+          set -euo pipefail
+          bash android-app/tools/device-lifecycle-smoke.sh /tmp/mgw-apk/app-debug.apk
+
+      - name: Collect emulator evidence
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          dir="android-app/build/device-lifecycle-evidence/api-${{ matrix.api }}"
+          mkdir -p "$dir"
+          cp /tmp/mgw-device-lifecycle-final.png "$dir/" 2>/dev/null
+          cp /tmp/mgw-window.xml "$dir/" 2>/dev/null
+          cp /tmp/mgw-activity.txt "$dir/" 2>/dev/null
+          cp /tmp/mgw-meminfo.txt "$dir/" 2>/dev/null
+          cp /tmp/mgw-logcat.txt "$dir/" 2>/dev/null
+          cp /tmp/mgw-emulator.log "$dir/" 2>/dev/null
+
+      - name: Upload emulator evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgw-mvp26-7-api-${{ matrix.api }}-evidence
+          path: android-app/build/device-lifecycle-evidence/api-${{ matrix.api }}/
+          if-no-files-found: warn
+          retention-days: 7
