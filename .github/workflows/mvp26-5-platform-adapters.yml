@@ -53,7 +53,10 @@ jobs:
           bad=0
           while IFS= read -r path; do
             case "$path" in
+              .github/workflows/mvp26-2-android-device-auth.yml|\
+              .github/workflows/mvp26-3-4-android-orientation-lifecycle.yml|\
               .github/workflows/mvp26-3-native-shell-settings-closure.yml|\
+              .github/workflows/mvp26-4-android-account-reauth.yml|\
               .github/workflows/mvp26-5-platform-adapters.yml|\
               android-app/app/build.gradle|\
               android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java|\
