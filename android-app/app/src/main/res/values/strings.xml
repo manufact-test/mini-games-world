@@ -13,4 +13,9 @@
     <string name="reauth_prompt_text">Разблокируйте устройство, чтобы продолжить работу с данными аккаунта.</string>
     <string name="reauth_device_lock_required">Для этого действия нужна настроенная блокировка экрана устройства.</string>
     <string name="reauth_failed">Не удалось подтвердить действие. Попробуйте ещё раз.</string>
+    <string name="download_title">Mini Games World — архив данных</string>
+    <string name="download_description">Скачивание ZIP-архива данных аккаунта</string>
+    <string name="download_started">Скачивание ZIP началось.</string>
+    <string name="download_failed">Не удалось начать скачивание ZIP.</string>
+    <string name="download_permission_required">Разрешите сохранение файлов, чтобы скачать ZIP.</string>
 </resources>
