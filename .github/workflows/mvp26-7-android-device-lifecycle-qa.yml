@@ -169,11 +169,7 @@ jobs:
           profile: pixel_2
           disable-animations: true
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
-          script: |
-            export MGW_DEVICE_API='${{ matrix.api }}'
-            export MGW_DEVICE_SIZE='${{ matrix.size }}'
-            export MGW_DEVICE_DENSITY='${{ matrix.density }}'
-            bash android-app/tools/device-lifecycle-smoke.sh /tmp/mgw-apk/app-debug.apk
+          script: MGW_DEVICE_API='${{ matrix.api }}' MGW_DEVICE_SIZE='${{ matrix.size }}' MGW_DEVICE_DENSITY='${{ matrix.density }}' bash android-app/tools/device-lifecycle-smoke.sh /tmp/mgw-apk/app-debug.apk
 
       - name: Collect emulator evidence
         if: always()
@@ -189,6 +185,7 @@ jobs:
           cp /tmp/mgw-meminfo.txt "$dir/" 2>/dev/null
           cp /tmp/mgw-logcat.txt "$dir/" 2>/dev/null
           cp /tmp/mgw-emulator.log "$dir/" 2>/dev/null
+          true
 
       - name: Upload emulator evidence
         if: always()
