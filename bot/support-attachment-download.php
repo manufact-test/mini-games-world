@@ -49,8 +49,9 @@ try {
 
     header('Content-Type: ' . $mime);
     header('Content-Length: ' . (string)strlen($binary));
+    $asciiName = preg_replace('/[^A-Za-z0-9._-]+/', '_', $fileName) ?: 'attachment';
     header(
-        'Content-Disposition: attachment; filename="' . addcslashes($fileName, "\\"") . '"; filename*=UTF-8\'\'' . rawurlencode($fileName)
+        'Content-Disposition: attachment; filename="' . $asciiName . '"; filename*=UTF-8\'\'' . rawurlencode($fileName)
     );
     echo $binary;
     exit;
