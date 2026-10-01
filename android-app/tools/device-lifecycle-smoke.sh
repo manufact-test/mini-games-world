@@ -74,7 +74,7 @@ launch_app
 first_pid="$(pid_of_app)"
 first_record="$(activity_record_token)"
 
-echo '== background / foreground =="
+echo '== background / foreground =='
 adb shell input keyevent KEYCODE_HOME
 sleep 2
 background_pid="$(pid_of_app)"
@@ -86,7 +86,7 @@ test "$(pid_of_app)" = "$first_pid"
 assert_activity_visible
 assert_no_java_crash
 
-echo '== orientation without Activity/WebView cold recreation =="
+echo '== orientation without Activity/WebView cold recreation =='
 before_record="$(activity_record_token)"
 adb shell settings put system user_rotation 1
 sleep 3
@@ -102,14 +102,14 @@ assert_package_alive
 assert_activity_visible
 assert_no_java_crash
 
-echo '== low-memory callback pressure =="
+echo '== low-memory callback pressure =='
 adb shell am send-trim-memory "$PKG" RUNNING_CRITICAL || true
 sleep 2
 assert_package_alive
 assert_activity_visible
 assert_no_java_crash
 
-echo '== network loss / recovery shell resilience =="
+echo '== network loss / recovery shell resilience =='
 if adb shell cmd connectivity airplane-mode enable >/dev/null 2>&1; then
   sleep 3
   assert_package_alive
@@ -122,7 +122,7 @@ else
   echo 'airplane-mode shell command unavailable on this API; manual network recovery remains required'
 fi
 
-echo '== process death / task restore =="
+echo '== process death / task restore =='
 adb shell input keyevent KEYCODE_HOME
 sleep 1
 pre_kill_pid="$(pid_of_app)"
@@ -143,7 +143,7 @@ if [[ -n "$pre_kill_pid" ]]; then
   test "$post_kill_pid" != "$pre_kill_pid" || true
 fi
 
-echo '== explicit cold restart =="
+echo '== explicit cold restart =='
 adb shell am force-stop "$PKG"
 sleep 2
 launch_app
