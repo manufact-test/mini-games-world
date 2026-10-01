@@ -72,10 +72,8 @@ for phrase in [
     require(phrase in tests, f"missing unit contract: {phrase}")
 
 version = re.search(r"\bversionCode\s+(\d+)\b", build)
-require(version is not None and int(version.group(1)) == 2611,
-        "MVP-26.5 candidate must use versionCode 2611")
-require("versionName '0.26.5.1-disabled-platform-adapters'" in build,
-        "MVP-26.5 candidate versionName missing")
+require(version is not None and int(version.group(1)) >= 2611,
+        "future Android candidates must not regress below accepted platform-adapter versionCode 2611")
 require("applicationId 'com.minigamesworld.app.acceptance'" in build,
         "accepted Android package identity changed")
 require("mgw-acceptance-stable.keystore" in build,
