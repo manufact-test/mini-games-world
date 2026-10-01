@@ -54,4 +54,18 @@ assert(manifest.includes('home-screen.js?v=90&mvp25_3=human-rules-guide-v1'));
 assert(manifest.includes('mvp27_1=home-shell-history-i18n-v1'),
   'Active Home owner must carry the MVP-27.1 localization cache identity.');
 
+for (const acceptedOwner of [
+  'function openRulesSheet()',
+  'amount(entry)',
+  'amount(winnerReward)',
+  'amount(commission)',
+  'amount(drawRefund)',
+  "menuItemMarkup('matchHistoryBtn'",
+  "document.getElementById('rulesBtn')",
+  "document.getElementById('balanceHistoryBtn')",
+  "document.getElementById('matchHistoryBtn')",
+]) {
+  assert(home.includes(acceptedOwner), `Accepted Home owner missing after localization migration: ${acceptedOwner}`);
+}
+
 console.log('MVP27_1_HOME_SHELL_LOCALIZATION_CONTRACT=PASS');
