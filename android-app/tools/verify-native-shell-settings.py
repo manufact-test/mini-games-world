@@ -26,6 +26,7 @@ build = read(APP / "build.gradle")
 shell = read(REPO / "app/assets/js/main-v110-handoff-shell.js")
 version_manifest = read(REPO / "app/runtime/client/version-manifest.php")
 main_css = read(REPO / "app/assets/css/main.css")
+sheet_component = read(REPO / "app/assets/js/components/sheet.js")
 
 # Back ownership: fixed native -> web event, no privileged JS bridge, safe fallback.
 require("mgw:android-back-request" in main, "native Back must dispatch the fixed Android-back request event")
@@ -56,10 +57,12 @@ require("Api30Insets.apply(view, insets)" in main, "Android 11+ safe-area owner 
 require("WindowInsets.Type.systemBars()" in main, "modern safe-area must include system bars")
 require("WindowInsets.Type.displayCutout()" in main, "modern safe-area must include display cutout")
 require("getSystemWindowInsetBottom()" in main, "API26-29 inset fallback must remain available")
-require("flex:1 1 auto;min-height:0" in main_css and "overflow-y:auto" in main_css,
-        "short landscape/IME report sheet must keep its form body scrollable")
-require("scroll-margin-block:10px" in main_css,
-        "focused report inputs must retain scroll margin above the IME")
+require("mgw-short-visual-viewport" in main_css and "--mgw-sheet-viewport-height" in main_css,
+        "short landscape/IME sheet must bind to the measured visual viewport")
+require("visualViewport" in sheet_component and "scrollIntoView" in sheet_component,
+        "sheet runtime must follow keyboard visual-viewport changes and reveal focused inputs")
+require("overflow-y:auto!important" in main_css,
+        "short landscape/IME sheet must remain whole-dialog scrollable")
 
 # Native accessibility basics.
 require("brandMark.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO)" in main,
@@ -83,8 +86,10 @@ require("mgw-acceptance-stable.keystore" in build,
         "accepted signing owner must remain unchanged")
 require("main-v110-handoff-shell.js?v=1169&mvp26_3=native-shell-settings-v1" in version_manifest,
         "active shell cache owner must publish the Android Back corrective")
-require("mvp26_3=landscape-ime-sheet-v1" in version_manifest,
-        "active CSS cache owner must publish the landscape IME sheet corrective")
+require("mvp26_3=landscape-ime-sheet-v2" in version_manifest,
+        "active CSS cache owner must publish the visual-viewport landscape IME corrective")
+require("sheet.js?v=1111&mvp26_3=visual-viewport-ime-v2" in version_manifest,
+        "active sheet runtime cache owner must publish the visual-viewport corrective")
 
 if errors:
     print("MVP-26.3 native shell/settings closure verification FAILED", file=sys.stderr)
