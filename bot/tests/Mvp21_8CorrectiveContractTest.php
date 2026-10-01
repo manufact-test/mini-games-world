@@ -35,8 +35,8 @@ $assert(str_contains($screen, 'let tournamentTerminalSyncPromise = null;')
     'Tournament return must own an explicit terminal synchronization state.');
 $assert(!str_contains($screen, "tournamentProgressionSnapshot = null;\n    tournamentMatchError = '';\n    tournamentTerminalReturnPending = true;"),
     'Returning from a result must not erase the already-synchronized durable progression snapshot.');
-$assert(str_contains($screen, 'Сохраняем результат турнира…'),
-    'Terminal return must show result persistence rather than falling back to old readiness copy.');
+$assert(str_contains($screen, "t('arena.ready.saving_result')"),
+    'Terminal return must show localized result persistence rather than falling back to old readiness copy.');
 $assert(str_contains($screen, 'if (tournamentTerminalSyncPromise) return tournamentTerminalSyncPromise;'),
     'Terminal progression synchronization must be single-flight.');
 $assert(str_contains($screen, "document.addEventListener('mgw:game-finished'")
