@@ -130,7 +130,7 @@ $assertTrue(str_contains($storeClient, 'const previousStoreState = cloneObject(s
 $assertTrue(str_contains($storeClient, 'const previousProfileInventory = cloneObject(state.profileInventory);'), 'Optimistic purchase must snapshot Profile inventory for rollback');
 $assertTrue(str_contains($storeClient, 'storeState = previousStoreState;'), 'Failed purchase must restore Store snapshot');
 $assertTrue(str_contains($storeClient, 'state.profileInventory = previousProfileInventory;'), 'Failed purchase must restore Profile inventory snapshot');
-$assertTrue(str_contains($storeClient, 'if (!purchaseBusy && !equipBusy) applyStoreResponse(result);'), 'Background Store refresh must not overwrite a pending optimistic purchase or equipment mutation');
+$assertTrue(str_contains($storeClient, 'if (!purchaseBusy && !equipBusy) applyStoreResponse(result, { preserveBalance:true });'), 'Background Store refresh must not overwrite a pending optimistic purchase or equipment mutation while preserving the authoritative wallet');
 $assertTrue(str_contains($storeClient, 'state.selectedAvatarId || storeState?.inventory?.equipped?.profile_avatar'), 'Store selected check must follow the same selected avatar owner');
 $assertTrue(str_contains($storeClient, 'class="store-v2-confirm-avatar store-v2-avatar-preview" data-avatar-item-id="${escapeAttr(itemId)}"'), 'Purchase confirmation must render the selected illustrated avatar instead of the numeric placeholder');
 $assertTrue(str_contains($storeEntry, "from './store-screen.js?v=44&intent_base=1';") && str_contains($storeEntry, 'export { openStoreTab, openStoreSheet };'), 'Mobile Store entry must delegate all Store behavior to the accepted base Store owner');
