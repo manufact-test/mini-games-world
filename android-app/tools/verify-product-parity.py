@@ -74,7 +74,7 @@ require("WebAppLaunchUrl::invitation" in android_auth
         "server Android auth must preserve validated invite token")
 
 require("navigator.vibrate" in telegram
-        and "MiniGamesWorldAndroid/" in telegram
+        and "isAndroidShell" in telegram
         and "notificationOccurred" in telegram,
         "standalone Android haptic fallback missing")
 require("window.location.assign(url)" in invites
