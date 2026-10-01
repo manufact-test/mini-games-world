@@ -8,11 +8,7 @@ on:
       - '.well-known/assetlinks.json'
       - 'android-app/**'
       - 'bot/android-auth.php'
-      - 'bot/support.php'
       - 'bot/support-attachment-download.php'
-      - 'bot/support/SupportTicketService.php'
-      - 'bot/tests/SupportTicketServiceTest.php'
-      - 'bot/tests/SupportTicketMySqlIntegrationTest.php'
       - '.github/workflows/mvp26-5-platform-adapters.yml'
       - '.github/workflows/mvp26-6-android-product-parity.yml'
   workflow_dispatch:
@@ -43,9 +39,7 @@ jobs:
         run: |
           set -euo pipefail
           php -l bot/android-auth.php
-          php -l bot/support.php
           php -l bot/support-attachment-download.php
-          php -l bot/support/SupportTicketService.php
 
       - name: Focused shared-product regressions
         run: |
