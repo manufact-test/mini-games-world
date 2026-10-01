@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-01",
-  "staging_base": "42cd7ee18a802a839ea538a43d17fbfc7dc58d7a",
+  "staging_base": "05663167c25074477889b69b599522ea4d59d8c4",
   "scanned_files": 776,
-  "cyrillic_lines_total": 4668,
+  "cyrillic_lines_total": 4635,
   "by_scope": {
-    "client": 2987,
+    "client": 2954,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 Home shell/menu/history migration; active Home owner reduced from 158 to 132 Cyrillic source lines."
+  "note": "MVP-27.1 Home rules-guide migration; active Home owner reduced from 132 to 99 Cyrillic source lines."
 }
