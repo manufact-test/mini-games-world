@@ -1,0 +1,172 @@
+name: MVP-26.3 Native Shell Settings Closure
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'android-app/**'
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp26_4_2AndroidAccountDataDownloadContractTest.php'
+      - '.github/workflows/mvp26-3-native-shell-settings-closure.yml'
+      - '.github/workflows/mvp26-2-android-device-auth.yml'
+      - '.github/workflows/mvp26-3-4-android-orientation-lifecycle.yml'
+      - '.github/workflows/mvp26-4-android-account-reauth.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shell-contract:
+    name: Native shell/settings contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Verify shell/settings ownership
+        run: |
+          set -euo pipefail
+          python3 android-app/tools/verify-native-shell-settings.py
+          python3 android-app/tools/verify-orientation-lifecycle.py
+          python3 android-app/tools/verify-foundation.py
+          node --check app/assets/js/main-v110-handoff-shell.js
+          php -l app/runtime/client/version-manifest.php
+
+      - name: Guard frozen security boundaries
+        run: |
+          set -euo pipefail
+          grep -Fq "mgw:android-back-request" android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java
+          grep -Fq "moveTaskToBack(true)" android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java
+          grep -Fq "android:windowSoftInputMode=\"adjustResize\"" android-app/app/src/main/AndroidManifest.xml
+          grep -Fq "WindowInsets.Type.displayCutout()" android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java
+          grep -Fq "ACCESSIBILITY_LIVE_REGION_ASSERTIVE" android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java
+          ! grep -Fq "addJavascriptInterface" android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java
+          grep -Fq "['profile','store','tournaments'].includes(screen)" app/assets/js/main-v110-handoff-shell.js
+          grep -Fq "main-v110-handoff-shell.js?v=1169&mvp26_3=native-shell-settings-v1" app/runtime/client/version-manifest.php
+          grep -Fq "applicationId 'com.minigamesworld.app.acceptance'" android-app/app/build.gradle
+          grep -Fq "mgw-acceptance-stable.keystore" android-app/app/build.gradle
+          grep -Fq "versionCode 2610" android-app/app/build.gradle
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
+      - name: Scope guard
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          bad=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/mvp26-3-native-shell-settings-closure.yml|\
+              .github/workflows/mvp26-2-android-device-auth.yml|\
+              .github/workflows/mvp26-3-4-android-orientation-lifecycle.yml|\
+              .github/workflows/mvp26-4-android-account-reauth.yml|\
+              android-app/README.md|\
+              android-app/docs/MVP26_3_NATIVE_SHELL_SETTINGS_CLOSURE.md|\
+              android-app/app/build.gradle|\
+              android-app/app/src/main/AndroidManifest.xml|\
+              android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java|\
+              android-app/tools/verify-foundation.py|\
+              android-app/tools/verify-orientation-lifecycle.py|\
+              android-app/tools/verify-native-shell-settings.py|\
+              app/assets/js/main-v110-handoff-shell.js|\
+              app/runtime/client/version-manifest.php|\
+              bot/tests/Mvp26_4_2AndroidAccountDataDownloadContractTest.php)
+                ;;
+              *)
+                echo "Unexpected master MVP-26.3 closure path: $path" >&2
+                bad=1
+                ;;
+            esac
+          done < <(git diff --name-only "$base" "$head")
+          test "$bad" -eq 0
+          git diff --exit-code "$base" "$head" -- \
+            bot/games bot/ratings bot/tournaments bot/economy bot/ledger bot/notifications
+
+  android-build:
+    name: Android build/lint/unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 9.5
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.5.0'
+
+      - name: Ensure Android SDK 36
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v sdkmanager >/dev/null 2>&1; then
+            SDKMANAGER="$(command -v sdkmanager)"
+          elif [[ -x "${ANDROID_SDK_ROOT:-}/cmdline-tools/latest/bin/sdkmanager" ]]; then
+            SDKMANAGER="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          elif [[ -x "${ANDROID_HOME:-}/cmdline-tools/latest/bin/sdkmanager" ]]; then
+            SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          else
+            echo 'sdkmanager is unavailable' >&2
+            exit 1
+          fi
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0'
+
+      - name: Test lint and assemble v2610
+        working-directory: android-app
+        env:
+          MGW_BASE_URL: https://seashell-okapi-889488.hostingersite.com/
+        run: gradle --no-daemon clean test lint assembleDebug
+
+      - name: Verify accepted package signing identity
+        working-directory: android-app
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$apk"
+          apksigner="${ANDROID_SDK_ROOT}/build-tools/36.0.0/apksigner"
+          test -x "$apksigner"
+          "$apksigner" verify --print-certs "$apk" | tee /tmp/mgw-native-shell-signing.txt
+          grep -F 'CN=MGW Acceptance, O=Mini Games World, C=PL' /tmp/mgw-native-shell-signing.txt
+
+      - name: Upload v2610 APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgw-mvp26-3-native-shell-settings-v2610-debug
+          path: android-app/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mgw-mvp26-3-native-shell-settings-v2610-reports
+          path: |
+            android-app/app/build/reports/**
+            android-app/app/build/test-results/**
+          if-no-files-found: warn
+          retention-days: 7

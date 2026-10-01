@@ -71,7 +71,9 @@ $assert(str_contains($manifest, 'android:maxSdkVersion="28"'), 'Legacy storage p
 $assert(str_contains($styles, '.account-data-v1-spinner'), 'Account Data must render an inline spinner.');
 $assert(str_contains($styles, '.account-data-v1-action:disabled'), 'Primary pending action must preserve explicit styling.');
 $assert(str_contains($styles, '.account-data-v1-danger:disabled'), 'Danger pending action must preserve explicit styling.');
-$assert(str_contains($build, 'versionCode 2609'), 'Corrective APK must advance monotonically to versionCode 2609.');
+preg_match('/versionCode\\s+(\\d+)/', $build, $versionMatch);
+$versionCode = isset($versionMatch[1]) ? (int)$versionMatch[1] : 0;
+$assert($versionCode >= 2609, 'Android APK must remain on or above accepted Account Data download versionCode 2609.');
 $assert(str_contains($fingerprint, 'bot/account-data-download.php'), 'Exact staging fingerprint must include the native download owner.');
 
 fwrite(STDOUT, "Mvp26_4_2AndroidAccountDataDownloadContractTest: {$assertions} assertions passed\n");

@@ -6,7 +6,9 @@ Status: Android product workstream integrated on the manually accepted MVP-25 Te
 
 - MVP-26.1 foundation: accepted on staging.
 - MVP-26.2 provider-neutral Android device authentication: accepted.
-- MVP-26.3 Android ↔ Telegram account-link closure: automated + real-device manual acceptance complete.
+- Android ↔ Telegram account-link closure: automated + real-device manual acceptance complete.
+- MVP-26.4 provider-neutral sensitive-action reauth + native Account Data download: real-device accepted.
+- Master MVP-26.3 native shell/settings: closure candidate v2610 covers Back, keyboard/safe-area and native accessibility basics while preserving accepted navigation/orientation.
 - Android branch history from the old prototype was not merged; only isolated technical assets were transplanted.
 
 ## Architecture
@@ -56,5 +58,6 @@ MGW_BASE_URL="https://staging.example.invalid/" gradle --no-daemon clean test li
 ## Current limitations
 
 - Google/commercial platform providers remain intentionally disabled; core MGW product behavior does not depend on them.
-- Destructive account actions retain the existing Telegram reauth contract until a dedicated Android reauth owner is introduced.
+- Sensitive Account Data actions now have a dedicated Android native reauth owner; ordinary Android session-cookie auth alone is still insufficient.
 - The accepted Android ↔ Telegram link flow uses MGW as the canonical account owner and preserves the existing Telegram profile, wallet, purchases, statistics, rating, friends and progress.
+- A duplicate native Profile/settings product is intentionally not introduced; only platform-specific responsibilities are native-owned.

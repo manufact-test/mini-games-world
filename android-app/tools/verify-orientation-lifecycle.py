@@ -76,7 +76,10 @@ require("protected void onSaveInstanceState(Bundle outState)" in main and "webVi
         "process/activity recovery must keep WebView saveState fallback")
 require("webView.restoreState(webState)" in main,
         "process/activity recovery must keep WebView restoreState fallback")
-require("versionCode 2604" in build, "orientation APK must use versionCode 2604")
+version_match = re.search(r"versionCode\s+(\d+)", build)
+require(version_match is not None, "Android versionCode missing")
+if version_match is not None:
+    require(int(version_match.group(1)) >= 2604, "orientation lifecycle must remain on or above accepted versionCode 2604")
 require("applicationId 'com.minigamesworld.app.acceptance'" in build,
         "accepted Android package must remain unchanged")
 require("mgw-acceptance-stable.keystore" in build,
