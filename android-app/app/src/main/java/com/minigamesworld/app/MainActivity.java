@@ -12,6 +12,7 @@ import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
@@ -19,6 +20,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.view.Gravity;
 import android.view.View;
+import android.view.WindowInsets;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
 import android.webkit.RenderProcessGoneDetail;
@@ -123,6 +125,7 @@ public final class MainActivity extends Activity {
         ImageView brandMark = new ImageView(this);
         brandMark.setImageResource(R.drawable.ic_mgw_launcher_art);
         brandMark.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        brandMark.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         LinearLayout.LayoutParams markParams = new LinearLayout.LayoutParams(dp(156), dp(156));
         markParams.gravity = Gravity.CENTER_HORIZONTAL;
         loadingPanel.addView(brandMark, markParams);
@@ -133,6 +136,7 @@ public final class MainActivity extends Activity {
         loadingText.setAlpha(0.72f);
         loadingText.setTextSize(14f);
         loadingText.setGravity(Gravity.CENTER);
+        loadingText.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         LinearLayout.LayoutParams loadingTextParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -142,6 +146,7 @@ public final class MainActivity extends Activity {
 
         loading = new ProgressBar(this);
         loading.setIndeterminateTintList(ColorStateList.valueOf(getColor(R.color.mgw_brand_violet)));
+        loading.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         LinearLayout.LayoutParams loadingParams = new LinearLayout.LayoutParams(dp(32), dp(32));
         loadingParams.gravity = Gravity.CENTER_HORIZONTAL;
         loadingParams.topMargin = dp(18);
@@ -163,6 +168,7 @@ public final class MainActivity extends Activity {
         errorTitle.setTextColor(Color.WHITE);
         errorTitle.setTextSize(20f);
         errorTitle.setGravity(Gravity.CENTER);
+        errorTitle.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_ASSERTIVE);
         errorPanel.addView(errorTitle, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -200,6 +206,7 @@ public final class MainActivity extends Activity {
     private void attachFreshWebView() {
         WebView replacement = new WebView(this);
         replacement.setBackgroundColor(Color.BLACK);
+        replacement.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
         root.addView(replacement, 0, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
@@ -210,12 +217,19 @@ public final class MainActivity extends Activity {
     @SuppressWarnings("deprecation")
     private void applySystemInsets() {
         root.setOnApplyWindowInsetsListener((view, insets) -> {
-            view.setPadding(
-                    insets.getSystemWindowInsetLeft(),
-                    insets.getSystemWindowInsetTop(),
-                    insets.getSystemWindowInsetRight(),
-                    insets.getSystemWindowInsetBottom()
-            );
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Insets safe = insets.getInsets(
+                        WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout()
+                );
+                view.setPadding(safe.left, safe.top, safe.right, safe.bottom);
+            } else {
+                view.setPadding(
+                        insets.getSystemWindowInsetLeft(),
+                        insets.getSystemWindowInsetTop(),
+                        insets.getSystemWindowInsetRight(),
+                        insets.getSystemWindowInsetBottom()
+                );
+            }
             return insets;
         });
         root.requestApplyInsets();
@@ -347,6 +361,7 @@ public final class MainActivity extends Activity {
         errorTitle.setText(R.string.network_error_title);
         errorText.setText(textResource);
         errorPanel.setVisibility(View.VISIBLE);
+        announceCurrentError();
     }
 
     private void showConfigurationError() {
@@ -355,6 +370,14 @@ public final class MainActivity extends Activity {
         errorTitle.setText(R.string.configuration_error_title);
         errorText.setText(R.string.configuration_error_text);
         errorPanel.setVisibility(View.VISIBLE);
+        announceCurrentError();
+    }
+
+    private void announceCurrentError() {
+        if (errorPanel == null || errorTitle == null || errorText == null) return;
+        errorPanel.post(() -> errorPanel.announceForAccessibility(
+                errorTitle.getText() + ". " + errorText.getText()
+        ));
     }
 
     private void openExternal(Uri uri) {
@@ -656,10 +679,31 @@ public final class MainActivity extends Activity {
     }
 
     private void handleBack() {
+        if (webView != null && navigationPolicy != null) {
+            String current = webView.getUrl();
+            if (current != null && navigationPolicy.isInternal(current)) {
+                String script = "(function(){"
+                        + "var e=new Event('mgw:android-back-request',{cancelable:true});"
+                        + "document.dispatchEvent(e);"
+                        + "return e.defaultPrevented;"
+                        + "})()";
+                webView.evaluateJavascript(script, result -> {
+                    if ("true".equalsIgnoreCase(String.valueOf(result))) {
+                        return;
+                    }
+                    handleBackFallback();
+                });
+                return;
+            }
+        }
+        handleBackFallback();
+    }
+
+    private void handleBackFallback() {
         if (webView != null && webView.canGoBack()) {
             webView.goBack();
         } else {
-            finish();
+            moveTaskToBack(true);
         }
     }
 
