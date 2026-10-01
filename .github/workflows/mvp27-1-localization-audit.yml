@@ -5,6 +5,7 @@ on:
     branches:
       - agent/mvp-13-2-staging
     paths:
+      - 'ops/checks/mvp16_2_localization_contract.mjs'
       - 'ops/checks/mvp27_1_localization_architecture_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
       - 'bot/tests/Mvp27_1LocalizationArchitectureAuditTest.php'
