@@ -112,6 +112,21 @@ function openLanguageSettingsSheet(){
   });
 }
 
+function localizedStrongHtml(key, values = {}){
+  const params = {};
+  const replacements = [];
+  let index = 0;
+  Object.entries(values).forEach(([name, value]) => {
+    const token = `__MGW_STRONG_${index++}_${name}__`;
+    params[name] = token;
+    replacements.push([token, `<strong>${escapeHtml(value)}</strong>`]);
+  });
+  let html = escapeHtml(t(key, params));
+  replacements.forEach(([token, markup]) => { html = html.split(token).join(markup); });
+  return html;
+}
+function quotedLabel(value){ return `«${String(value ?? '')}»`; }
+
 function openRulesSheet(){
   const economy = APP_CONFIG.matchEconomy || {};
   const entry = Number(economy.entry_cost ?? APP_CONFIG.matchBet);
@@ -122,73 +137,83 @@ function openRulesSheet(){
   const winnerNet = Number.isFinite(winnerReward) && Number.isFinite(entry) ? winnerReward - entry : 0;
 
   const amount = value => Number.isFinite(Number(value))
-    ? `${Math.trunc(Number(value))} коинов`
-    : 'текущая сумма';
+    ? t('home.rules_guide.coin_amount', { count:Math.trunc(Number(value)) })
+    : t('home.rules_guide.current_amount');
+
+  const friends = quotedLabel(t('home.rules_guide.friends'));
+  const more = quotedLabel(t('home.rules_guide.more'));
+  const invite = quotedLabel(t('home.rules_guide.invite'));
+  const rules = quotedLabel(t('rules.open'));
+  const balanceHistory = quotedLabel(t('home.menu.balance_history'));
+  const matchHistory = quotedLabel(t('home.menu.match_history'));
+  const weeklyBonus = quotedLabel(t('home.rules_guide.weekly_bonus'));
+  const moreFeedback = `${more} → ${quotedLabel(t('home.menu.feedback'))}`;
+  const report = quotedLabel(t('home.menu.report'));
 
   openSheet(`
     <div class="sheet-head">
       <div>
-        <h2>Как работают обычные матчи</h2>
-        <p>Коротко о поиске соперника, коинах, победе, ничьей и истории игры.</p>
+        <h2>${escapeHtml(t('home.rules_guide.title'))}</h2>
+        <p>${escapeHtml(t('home.rules_guide.subtitle'))}</p>
       </div>
-      <button class="close" data-close-sheet type="button" aria-label="Закрыть">×</button>
+      <button class="close" data-close-sheet type="button" aria-label="${escapeHtml(t('common.close'))}">×</button>
     </div>
 
     <div class="rules-content rules-guide">
       <section class="rules-guide-section">
-        <h3>1. Как начать игру</h3>
-        <p>Выберите игру на главном экране, настройте доступные для неё параметры и запустите поиск соперника. Пока идёт поиск, коины не списываются. Ставка снимается только тогда, когда матч действительно создан.</p>
-        <p>Сначала система старается подобрать другого игрока с подходящими условиями. Если подходящего игрока долго нет, в обычном поиске соперником может стать бот.</p>
-        <p>Хотите сыграть с конкретным человеком — откройте <strong>«Друзья»</strong>, найдите его по нику или MGW-ID, откройте меню <strong>«…»</strong> и выберите <strong>«Пригласить в игру»</strong>.</p>
+        <h3>${escapeHtml(t('home.rules_guide.start_title'))}</h3>
+        <p>${escapeHtml(t('home.rules_guide.start_text_1'))}</p>
+        <p>${escapeHtml(t('home.rules_guide.start_text_2'))}</p>
+        <p>${localizedStrongHtml('home.rules_guide.start_text_3', { friends, more, invite })}</p>
       </section>
 
       <section class="rules-guide-section rules-guide-economy">
-        <h3>2. Сколько стоит матч</h3>
-        <p>Участие стоит <strong>${escapeHtml(amount(entry))}</strong> с каждого игрока. Поэтому общий банк обычного матча сейчас составляет <strong>${escapeHtml(amount(pot))}</strong>.</p>
-        <div class="rules-guide-numbers" role="list" aria-label="Расчёт обычного матча">
-          <div role="listitem"><span>Ставка игрока</span><strong>${escapeHtml(amount(entry))}</strong></div>
-          <div role="listitem"><span>Банк матча</span><strong>${escapeHtml(amount(pot))}</strong></div>
-          <div role="listitem"><span>Получает победитель</span><strong>${escapeHtml(amount(winnerReward))}</strong></div>
-          <div role="listitem"><span>Комиссия системы</span><strong>${escapeHtml(amount(commission))}</strong></div>
+        <h3>${escapeHtml(t('home.rules_guide.cost_title'))}</h3>
+        <p>${localizedStrongHtml('home.rules_guide.cost_text', { entry:amount(entry), pot:amount(pot) })}</p>
+        <div class="rules-guide-numbers" role="list" aria-label="${escapeHtml(t('home.rules_guide.calculation_label'))}">
+          <div role="listitem"><span>${escapeHtml(t('home.rules_guide.entry_label'))}</span><strong>${escapeHtml(amount(entry))}</strong></div>
+          <div role="listitem"><span>${escapeHtml(t('home.rules_guide.pot_label'))}</span><strong>${escapeHtml(amount(pot))}</strong></div>
+          <div role="listitem"><span>${escapeHtml(t('home.rules_guide.winner_label'))}</span><strong>${escapeHtml(amount(winnerReward))}</strong></div>
+          <div role="listitem"><span>${escapeHtml(t('home.rules_guide.commission_label'))}</span><strong>${escapeHtml(amount(commission))}</strong></div>
         </div>
-        <p>Например, при текущих условиях победитель получает обратно свою ставку вместе с выигрышем: на баланс начисляется <strong>${escapeHtml(amount(winnerReward))}</strong>. Чистый результат победителя относительно баланса до матча — <strong>+${escapeHtml(amount(winnerNet))}</strong>.</p>
+        <p>${localizedStrongHtml('home.rules_guide.cost_example', { winner_reward:amount(winnerReward), winner_net:`+${amount(winnerNet)}` })}</p>
       </section>
 
       <section class="rules-guide-section">
-        <h3>3. Победа, поражение и ничья</h3>
-        <p><strong>Победа:</strong> победитель получает <strong>${escapeHtml(amount(winnerReward))}</strong> из общего банка, а <strong>${escapeHtml(amount(commission))}</strong> составляет комиссия системы.</p>
-        <p><strong>Поражение:</strong> ставка за этот матч не возвращается.</p>
-        <p><strong>Ничья:</strong> каждому игроку возвращается его ставка — сейчас <strong>${escapeHtml(amount(drawRefund))}</strong>. При ничьей комиссии нет.</p>
+        <h3>${escapeHtml(t('home.rules_guide.result_title'))}</h3>
+        <p>${localizedStrongHtml('home.rules_guide.win_text', { label:t('home.rules_guide.win_label'), winner_reward:amount(winnerReward), commission:amount(commission) })}</p>
+        <p>${localizedStrongHtml('home.rules_guide.loss_text', { label:t('home.rules_guide.loss_label') })}</p>
+        <p>${localizedStrongHtml('home.rules_guide.draw_text', { label:t('home.rules_guide.draw_label'), draw_refund:amount(drawRefund) })}</p>
       </section>
 
       <section class="rules-guide-section">
-        <h3>4. Не выходите из незавершённого матча</h3>
-        <p>Если матч уже начался и вы вручную выходите из него до завершения, приложение предупредит о последствиях. Такой выход может быть засчитан как техническое поражение, поэтому лучше закончить партию или вернуться в неё после временного обрыва связи.</p>
+        <h3>${escapeHtml(t('home.rules_guide.leave_title'))}</h3>
+        <p>${escapeHtml(t('home.rules_guide.leave_text'))}</p>
       </section>
 
       <section class="rules-guide-section">
-        <h3>5. Правила конкретной игры</h3>
-        <p>У каждой игры свои правила, размеры поля и доступные варианты. Перед матчем или внутри игрового интерфейса откройте кнопку <strong>«Правила»</strong> — там описана именно выбранная игра. Этот раздел объясняет общие правила обычных матчей и коинов.</p>
+        <h3>${escapeHtml(t('home.rules_guide.game_rules_title'))}</h3>
+        <p>${localizedStrongHtml('home.rules_guide.game_rules_text', { rules })}</p>
       </section>
 
       <section class="rules-guide-section">
-        <h3>6. Где проверить результат</h3>
-        <p>В меню <strong>«Ещё»</strong> доступны <strong>«История баланса»</strong> и <strong>«История матчей»</strong>. Там можно посмотреть списание за участие, возврат при ничьей, начисление за победу и последние сыгранные партии.</p>
+        <h3>${escapeHtml(t('home.rules_guide.history_title'))}</h3>
+        <p>${localizedStrongHtml('home.rules_guide.history_text', { more, balance_history:balanceHistory, match_history:matchHistory })}</p>
       </section>
 
       <section class="rules-guide-section">
-        <h3>7. Бонусы и турниры</h3>
-        <p>Условия еженедельного бесплатного бонуса показываются отдельно в карточке баланса — используйте кнопку <strong>«Еженедельный бонус»</strong>, чтобы увидеть актуальные условия.</p>
-        <p>Турниры — отдельный режим со своими условиями регистрации, матчей и наград. Правила обычного матча из этого окна не заменяют правила конкретного турнира.</p>
+        <h3>${escapeHtml(t('home.rules_guide.bonus_title'))}</h3>
+        <p>${localizedStrongHtml('home.rules_guide.bonus_text', { weekly_bonus:weeklyBonus })}</p>
+        <p>${escapeHtml(t('home.rules_guide.tournaments_text'))}</p>
       </section>
 
       <section class="rules-guide-section">
-        <h3>8. Если что-то пошло не так</h3>
-        <p>Если баланс, результат матча или другое действие выглядит неправильно, откройте <strong>«Ещё» → «Обратная связь»</strong>. Для жалобы на другого игрока используйте отдельный пункт <strong>«Пожаловаться»</strong>.</p>
+        <h3>${escapeHtml(t('home.rules_guide.problems_title'))}</h3>
+        <p>${localizedStrongHtml('home.rules_guide.problems_text', { more_feedback:moreFeedback, report })}</p>
       </section>
     </div>
 
-    <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">Понятно</button>
+    <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">${escapeHtml(t('rules.understood'))}</button>
   `);
 }
 
