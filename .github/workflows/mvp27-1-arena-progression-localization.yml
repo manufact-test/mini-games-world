@@ -11,6 +11,7 @@ on:
       - 'bot/tests/Mvp21_6TournamentProgressionUxContractTest.php'
       - 'bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php'
       - 'bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php'
+      - 'bot/tests/Mvp21_8CorrectiveContractTest.php'
       - 'ops/checks/mvp27_1_arena_progression_localization_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - '.github/workflows/mvp27-1-arena-progression-localization.yml'
@@ -39,11 +40,13 @@ jobs:
           php -l bot/tests/Mvp21_6TournamentProgressionUxContractTest.php
           php -l bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php
           php -l bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php
+          php -l bot/tests/Mvp21_8CorrectiveContractTest.php
           php -l app/runtime/client/version-manifest.php
           node ops/checks/mvp27_1_arena_progression_localization_contract.mjs
           php bot/tests/Mvp21_6TournamentProgressionUxContractTest.php
           php bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php
           php bot/tests/Mvp21_5_6CorrectiveV7ContractTest.php
+          php bot/tests/Mvp21_8CorrectiveContractTest.php
           node ops/checks/mvp16_2_localization_contract.mjs
           php bot/tests/Mvp162LocalizationInfrastructureTest.php
 
@@ -57,7 +60,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(app/assets/js/screens/tournaments-screen-v1\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|bot/tests/Mvp21_6TournamentProgressionUxContractTest\.php|bot/tests/Mvp21_5_6CorrectiveV4ContractTest\.php|bot/tests/Mvp21_5_6CorrectiveV7ContractTest\.php|ops/checks/mvp27_1_arena_progression_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-arena-progression-localization\.yml)$'
+          allowed='^(app/assets/js/screens/tournaments-screen-v1\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|bot/tests/Mvp21_6TournamentProgressionUxContractTest\.php|bot/tests/Mvp21_5_6CorrectiveV4ContractTest\.php|bot/tests/Mvp21_5_6CorrectiveV7ContractTest\.php|bot/tests/Mvp21_8CorrectiveContractTest\.php|ops/checks/mvp27_1_arena_progression_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-arena-progression-localization\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected Arena progression localization paths:\n%s\n' "$bad" >&2; exit 1; }
 
