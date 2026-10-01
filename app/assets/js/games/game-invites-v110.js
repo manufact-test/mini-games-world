@@ -2,7 +2,7 @@ import { state } from '../state.js?v=27';
 import { APP_CONFIG } from '../config.js?v=38';
 import { openSheet, closeSheet } from '../components/sheet.js?v=1109';
 import { toast } from '../components/toast.js?v=1109';
-import { getTelegram, getInitData, haptic } from '../telegram/telegram-app.js?v=27';
+import { getTelegram, getInitData, haptic, isAndroidShell } from '../telegram/telegram-app.js?v=27';
 import { getSessionId } from '../session.js?v=27';
 import { showScreen } from '../router.js?v=27';
 import { startGamePolling } from '../screens/game-screen.js?v=74';
@@ -766,10 +766,19 @@ function openFallbackShare(invite){
   const url = `https://t.me/share/url?url=${encodeURIComponent(telegramOpenUrl)}&text=${encodeURIComponent(text)}`;
   const tg = getTelegram();
   try {
-    if (tg?.openTelegramLink) tg.openTelegramLink(url);
-    else window.open(url, '_blank', 'noopener,noreferrer');
+    if (tg?.openTelegramLink) {
+      tg.openTelegramLink(url);
+    } else if (isAndroidShell()) {
+      // Standalone Android has no Telegram WebApp bridge. Use a top-level
+      // navigation so the native shell can safely hand the HTTPS t.me URL to
+      // Telegram/the browser instead of relying on WebView popup support.
+      window.location.assign(url);
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   } catch (error) {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    if (isAndroidShell()) window.location.assign(url);
+    else window.open(url, '_blank', 'noopener,noreferrer');
   }
 }
 
