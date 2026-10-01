@@ -81,7 +81,7 @@ expect(store.includes('function isKnownSelectableSlot(slot)'), 'Store must valid
 expect(store.includes("if (itemType === 'game' && normalized.startsWith('game_')) return true;"), 'Store selectable slot validation must preserve all active game cosmetics');
 expect(store.includes("return itemType === 'profile' && itemFamily === 'name_color' && normalized === 'profile_name_color';"), 'Store selectable slot validation must explicitly allow Profile name colors');
 expect(!store.includes("slot !== 'game_tictactoe_effect'"), 'Store client must not hardcode unequip to effects only');
-expect(store.includes('if (!purchaseBusy && !equipBusy) applyStoreResponse(result);'), 'background Store refresh must not overwrite an active cosmetic mutation');
+expect(store.includes('if (!purchaseBusy && !equipBusy) applyStoreResponse(result, { preserveBalance:true });'), 'background Store refresh must not overwrite an active cosmetic mutation while preserving the authoritative wallet');
 expect(store.includes('if (!purchaseBusy && !equipBusy) {\n      renderStore();'), 'fresh background Store snapshot must repaint product cards, not only the balance');
 expect(toast.includes("'Предмет выбран.'"), 'redundant Store equip acknowledgement must be explicitly silent');
 expect(toast.includes("'Оформление снято.'"), 'redundant Store unequip acknowledgement must be explicitly silent');
