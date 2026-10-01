@@ -176,8 +176,14 @@ async function refreshGame(gameId){
     renderGame(game, viewer, false);
     if (String(game.status || '') === 'finished') finishGame(game, viewer);
   } catch (error) {
-    const message = String(error?.message || '');
-    if (message) toast(message);
+    // Background game-state polling is best-effort. The active read-only watcher
+    // and the next poll will reconcile state, so an Android/WebView transport
+    // blip must not surface a false "server unavailable" toast while the match
+    // itself is still healthy. Action failures remain user-visible below.
+    if (String(error?.code || '') !== 'network_unavailable') {
+      const message = String(error?.message || '');
+      if (message) toast(message);
+    }
   } finally {
     item.pollBusy = false;
   }
