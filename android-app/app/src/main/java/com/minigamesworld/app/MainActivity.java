@@ -134,6 +134,7 @@ public final class MainActivity extends Activity {
         Bundle webState = savedInstanceState == null ? null : savedInstanceState.getBundle(STATE_WEBVIEW);
         if (webState != null && webView.restoreState(webState) != null) {
             showLoading(false);
+            webView.post(() -> installAndroidParityHooks(webView, webView.getUrl()));
             return;
         }
 
@@ -989,6 +990,64 @@ public final class MainActivity extends Activity {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
+    private void installAndroidParityHooks(WebView target, String url) {
+        if (target == null
+                || navigationPolicy == null
+                || url == null
+                || !navigationPolicy.isInternal(url)
+                || !url.contains("/app/")) {
+            return;
+        }
+
+        // MVP-26.6 keeps the accepted Telegram/web runtime byte-for-byte frozen.
+        // These hooks only fill capabilities that a standalone Android WebView
+        // otherwise lacks. They are installed after the shared shell initializes
+        // and expose no privileged Java object to page JavaScript.
+        String script = "(function(){"
+                + "if(window.__mgwAndroidParityHooksV1)return;"
+                + "window.__mgwAndroidParityHooksV1=true;"
+                + "var vibrate=function(type){"
+                + "if(typeof navigator.vibrate!=='function')return;"
+                + "var t=String(type||'light'),p=16;"
+                + "if(t==='medium')p=28;else if(t==='heavy')p=42;"
+                + "else if(t==='success')p=[16,34,24];"
+                + "else if(t==='warning')p=[22,28,22];"
+                + "else if(t==='error')p=[30,28,30];"
+                + "try{navigator.vibrate(p);}catch(e){}"
+                + "};"
+                + "if(!window.Telegram)window.Telegram={};"
+                + "if(!window.Telegram.WebApp){"
+                + "window.Telegram.WebApp={"
+                + "__mgwAndroidShim:true,initData:'',initDataUnsafe:{},"
+                + "HapticFeedback:{impactOccurred:vibrate,notificationOccurred:function(type){vibrate(type);}}"
+                + "};"
+                + "}"
+                + "if(!window.__mgwAndroidOriginalOpen){"
+                + "window.__mgwAndroidOriginalOpen=window.open.bind(window);"
+                + "window.open=function(url,target,features){"
+                + "var value=String(url||'');"
+                + "if(value.toLowerCase().indexOf('https://t.me/')===0){"
+                + "window.location.assign(value);return window;"
+                + "}"
+                + "return window.__mgwAndroidOriginalOpen(url,target,features);"
+                + "};"
+                + "}"
+                + "document.addEventListener('click',function(event){"
+                + "var node=event.target;"
+                + "var button=node&&node.closest?node.closest('[data-support-attachment]'):null;"
+                + "if(!button)return;"
+                + "var nameNode=button.querySelector('.support-thread-attachment-name');"
+                + "var name=String(nameNode?nameNode.textContent:'').trim().toLowerCase();"
+                + "if(/\\.(?:jpe?g|png|webp|gif)$/.test(name))return;"
+                + "var id=String(button.getAttribute('data-support-attachment')||'');"
+                + "if(!/^ticketatt_[a-f0-9]{32}$/.test(id))return;"
+                + "event.preventDefault();event.stopImmediatePropagation();"
+                + "window.location.assign('/bot/support-attachment-download.php?attachment_id='+encodeURIComponent(id));"
+                + "},true);"
+                + "})();";
+        target.evaluateJavascript(script, null);
+    }
+
     private final class MgwWebChromeClient extends WebChromeClient {
         @Override
         public boolean onShowFileChooser(
@@ -1061,6 +1120,7 @@ public final class MainActivity extends Activity {
                             .apply();
                     refreshSharedAssetsForVersion = false;
                 }
+                installAndroidParityHooks(view, url);
             }
         }
 
