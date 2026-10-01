@@ -16,6 +16,8 @@ on:
       - 'bot/social/SocialInviteGuard.php'
       - 'bot/tests/Mvp26_6AndroidParityCorrectiveTest.php'
       - 'app/assets/css/main.css'
+      - 'app/assets/js/screens/game-screen-v102.js'
+      - 'app/runtime/client/version-manifest.php'
       - 'app/v110.php'
       - '.github/workflows/mvp26-5-platform-adapters.yml'
       - '.github/workflows/mvp26-6-android-product-parity.yml'
@@ -76,7 +78,6 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           git diff --exit-code "$base" "$head" -- \
             bot/games bot/ratings bot/tournaments bot/economy bot/ledger \
-            app/runtime/client/version-manifest.php \
             app/assets/js/telegram/telegram-app.js \
             app/assets/js/games/game-invites-v110.js \
             app/assets/js/screens/home-screen.js \
@@ -89,11 +90,20 @@ jobs:
             app/assets/js/games/domino \
             app/assets/js/games/battleship
 
+          manifest_changes="$(git diff --unified=0 "$base" "$head" -- app/runtime/client/version-manifest.php \
+            | grep -E '^[+-]' \
+            | grep -Ev '^---|^\+\+\+' \
+            | grep -v 'game-screen-v102\.js?v=102' || true)"
+          test -z "$manifest_changes" || {
+            printf 'Unexpected manifest change outside the bounded game-screen cache-bust:\n%s\n' "$manifest_changes" >&2
+            exit 1
+          }
+
       - name: Tracked secret scan
         run: node scripts/ci/check-secrets.mjs
 
   android-build:
-    name: Android build/lint/unit v2613
+    name: Android build/lint/unit v2614
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -150,11 +160,11 @@ jobs:
           grep -F 'CN=MGW Acceptance, O=Mini Games World, C=PL' /tmp/mgw-mvp26-6-signing.txt
           grep -Fi 'efda9b86b0b0edfaa22064864aaddc025f15bdc063bf53cfb58d569f504f5484' /tmp/mgw-mvp26-6-signing.txt
 
-      - name: Upload v2613 APK
+      - name: Upload v2614 APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: mgw-mvp26-6-product-parity-corrective-v2613-debug
+          name: mgw-mvp26-6-product-parity-corrective-v2614-debug
           path: android-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7
@@ -163,7 +173,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mgw-mvp26-6-product-parity-corrective-v2613-reports
+          name: mgw-mvp26-6-product-parity-corrective-v2614-reports
           path: |
             android-app/app/build/reports/**
             android-app/app/build/test-results/**

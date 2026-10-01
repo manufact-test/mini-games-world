@@ -89,4 +89,26 @@ mgw_assert(
     'active v110 renderer must cache-bust the support alignment corrective'
 );
 
+$gameScreen = file_get_contents(dirname(__DIR__, 2) . '/app/assets/js/screens/game-screen-v102.js') ?: '';
+mgw_assert(
+    str_contains($gameScreen, "String(error?.code || '') !== 'network_unavailable'"),
+    'background game polling must not surface transient network-unavailable toast'
+);
+
+$manifest = file_get_contents(dirname(__DIR__, 2) . '/app/runtime/client/version-manifest.php') ?: '';
+mgw_assert(
+    str_contains($manifest, 'game-screen-v102.js?v=114')
+        && str_contains($manifest, 'mvp26_6=android-poll-network-silent-v1'),
+    'active game-screen owner must cache-bust the Android poll corrective'
+);
+
+$navigation = file_get_contents(dirname(__DIR__, 2) . '/android-app/app/src/main/java/com/minigamesworld/app/NavigationPolicy.java') ?: '';
+$activity = file_get_contents(dirname(__DIR__, 2) . '/android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java') ?: '';
+mgw_assert(
+    str_contains($navigation, 'nativeTelegramShareDeepLink')
+        && str_contains($navigation, 'tg://msg_url?')
+        && str_contains($activity, 'openTelegramShareDirect'),
+    'standalone Android Telegram share must use the direct native deep link with browser fallback'
+);
+
 echo "MVP-26.6 Android parity corrective PASS\n";

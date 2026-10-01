@@ -31,6 +31,7 @@ telegram = read(WEB / "telegram/telegram-app.js")
 invites = read(WEB / "games/game-invites-v110.js")
 home = read(WEB / "screens/home-screen.js")
 handoff = read(WEB / "main-v110-handoff-shell.js")
+game_screen = read(WEB / "screens/game-screen-v102.js")
 reconnect = read(WEB / "main-v110-reconnect-v174.js")
 account_shortcuts = read(WEB / "components/account-shortcuts.js")
 version_manifest = read(REPO / "app/runtime/client/version-manifest.php")
@@ -80,6 +81,13 @@ require("https://t.me/" in main
         and "__mgwAndroidOriginalOpen" in main
         and "window.location.assign(value)" in main,
         "standalone Android invite share handoff missing")
+require("nativeTelegramShareDeepLink" in navigation
+        and "tg://msg_url?" in navigation
+        and "openTelegramShareDirect" in main,
+        "standalone Android Telegram share must bypass the browser when Telegram is installed")
+require("network_unavailable" in game_screen
+        and "android-poll-network-silent-v1" in version_manifest,
+        "background game polling must suppress transient transport toasts with a fresh active cache identity")
 
 require("MgwWebChromeClient" in main
         and "onShowFileChooser" in main

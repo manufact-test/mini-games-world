@@ -44,6 +44,19 @@ public final class NavigationPolicyTest {
     }
 
     @Test
+    public void telegramShareUsesDirectNativeDeepLinkWithoutBrowserHop() {
+        assertEquals(
+                "tg://msg_url?url=https%3A%2F%2Ft.me%2Fmgw_bot%3Fstart%3Dinvite_abc&text=hello",
+                policy.nativeTelegramShareDeepLink(
+                        "https://t.me/share/url?url=https%3A%2F%2Ft.me%2Fmgw_bot%3Fstart%3Dinvite_abc&text=hello"
+                )
+        );
+        assertEquals(null, policy.nativeTelegramShareDeepLink("https://t.me/example"));
+        assertEquals(null, policy.nativeTelegramShareDeepLink("https://evil.example/share/url?url=x"));
+        assertEquals(null, policy.nativeTelegramShareDeepLink("tg://msg_url?url=x"));
+    }
+
+    @Test
     public void nativeReauthRouteIsExactAndDoesNotBecomeAnExternalScheme() {
         assertEquals(
                 "ar_0123456789abcdef01234567",

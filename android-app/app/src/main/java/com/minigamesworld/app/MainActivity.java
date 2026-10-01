@@ -439,8 +439,21 @@ public final class MainActivity extends Activity {
         }
     }
 
+    private void openTelegramShareDirect(String directUrl, Uri browserFallback) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(directUrl)));
+        } catch (ActivityNotFoundException ignored) {
+            openExternal(browserFallback);
+        }
+    }
+
     private boolean handleTopLevelNavigation(Uri uri) {
         String candidate = uri == null ? null : uri.toString();
+        String telegramShare = candidate == null ? null : navigationPolicy.nativeTelegramShareDeepLink(candidate);
+        if (telegramShare != null) {
+            openTelegramShareDirect(telegramShare, uri);
+            return true;
+        }
         String reauthChallenge = candidate == null ? null : navigationPolicy.nativeReauthChallenge(candidate);
         if (reauthChallenge != null) {
             beginNativeReauth(reauthChallenge);

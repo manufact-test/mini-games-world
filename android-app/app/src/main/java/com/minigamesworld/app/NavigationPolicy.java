@@ -58,6 +58,22 @@ final class NavigationPolicy {
         return true;
     }
 
+    String nativeTelegramShareDeepLink(String candidate) {
+        URI uri = parse(candidate);
+        if (uri == null
+                || !"https".equalsIgnoreCase(uri.getScheme())
+                || !"t.me".equalsIgnoreCase(uri.getHost())
+                || uri.getUserInfo() != null
+                || uri.getPort() >= 0
+                || uri.getFragment() != null
+                || !"/share/url".equals(uri.getPath())
+                || uri.getRawQuery() == null
+                || uri.getRawQuery().isBlank()) {
+            return null;
+        }
+        return "tg://msg_url?" + uri.getRawQuery();
+    }
+
     String nativeReauthChallenge(String candidate) {
         URI uri = parse(candidate);
         if (uri == null
