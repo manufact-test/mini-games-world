@@ -34,21 +34,21 @@ $assert(str_contains($screen, 'startTournamentRenderedCountdownTicker(')
         && str_contains($screen, 'window.setInterval(updateCountdown, 1000)')
         && str_contains($screen, 'tournamentCountdownTimer = timerId;'),
     'Started Tournament Hall must keep exactly one owned round/replay countdown ticker.');
-$assert(str_contains($screen, 'Ничья · переигровка начнётся через минуту. Стороны меняются.'),
+$assert(str_contains($screen, "t('arena.progression.draw_replay_wait')"),
     'Draw UX must clearly explain the one-minute replay and side swap.');
-$assert(str_contains($screen, 'Раунд завершён · перерыв перед следующим матчем.'),
+$assert(str_contains($screen, "t('arena.progression.round_break_wait')"),
     'Round UX must clearly explain the inter-round break.');
-$assert(str_contains($screen, "if (matchKind === 'final') stage = 'Финал';"),
+$assert(str_contains($screen, "if (matchKind === 'final') stage = t('arena.bracket.final');"),
     'Final must have an explicit tournament label.');
-$assert(str_contains($screen, "else if (matchKind === 'third_place') stage = 'Матч за 3-е место';"),
+$assert(str_contains($screen, "else if (matchKind === 'third_place') stage = t('arena.bracket.third_place');"),
     'Third-place match must have an explicit tournament label.');
-$assert(str_contains($screen, 'Ваш матч завершён · ждём остальные матчи раунда.'),
+$assert(str_contains($screen, "t('arena.progression.finished_wait_round')"),
     'A player who finishes early must be told that the round waits for all matches.');
 $assert(str_contains($screen, 'tournamentRoundSectionsMarkup(')
         && str_contains($screen, 'data-tournament-round-archive=')
-        && str_contains($screen, "'Полуфинал'")
-        && str_contains($screen, "'Финальный раунд'")
-        && str_contains($screen, 'Вы выбыли из турнира · сетка уже перешла в следующий раунд.'),
+        && str_contains($screen, "t('arena.bracket.semifinal')")
+        && str_contains($screen, "t('arena.bracket.final_round')")
+        && str_contains($screen, "t('arena.progression.eliminated_next_round')"),
     'Every materialized round must remain available as its own collapsible bracket section.');
 $assert(str_contains($screen, 'tournamentRoundArchiveOpen')
         && str_contains($screen, 'tournamentRoundArchiveScrollTop')
@@ -58,8 +58,8 @@ $assert(str_contains($screen, 'tournamentRoundArchiveOpen')
 $assert(str_contains($progression, "'rounds'=>\$rounds")
         && str_contains($progression, "'first_round_archive'=>\$firstRoundArchive")
         && str_contains($progression, "'winner'=>\$completed && \$winner !== '' && \$winner === \$participantId")
-        && str_contains($screen, "status = winner ? 'прошёл дальше' : 'выбыл'")
-        && str_contains($screen, "outcome = 'Матч завершён · победитель не назначен.'"),
+        && str_contains($screen, "status = winner ? t('arena.bracket.advanced') : t('arena.bracket.eliminated')")
+        && str_contains($screen, "outcome = t('arena.bracket.match_complete_no_winner')"),
     'Durable round history must preserve winners, losers and no-winner technical outcomes for every stage.');
 $assert(str_contains($screen, 'function tournamentLiveRenderFingerprint()')
         && substr_count($screen, 'const renderBefore = tournamentLiveRenderFingerprint();') >= 2
@@ -77,7 +77,7 @@ $assert(str_contains($screen, 'synchronizeTournamentTerminalProgression')
         && str_contains($screen, 'stopTournamentStartSync();'),
     'Terminal tournament game must pre-sync durable progression and stop stale launch owners.');
 
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=31')
+$assert(preg_match('/tournaments-screen-v1\\.js\\?v=\\d+/', $manifest) === 1
         && str_contains($manifest, 'mvp21_manual=acceptance-corrective-v1')
         && str_contains($manifest, 'mvp21_6=terminal-return-preserve-v5')
         && str_contains($manifest, 'mvp21_8=corrective-v8')
@@ -86,7 +86,8 @@ $assert(str_contains($manifest, 'tournaments-screen-v1.js?v=31')
         && str_contains($manifest, 'mvp21_6=smooth-round-countdown-v1')
         && str_contains($manifest, 'archive=first-round-results-v1')
         && str_contains($manifest, 'archive=per-round-v1')
-        && str_contains($manifest, 'desktop=endurance-v1'),
+        && str_contains($manifest, 'desktop=endurance-v1')
+        && str_contains($manifest, 'mvp27_1_progression=bracket-i18n-v1'),
     'Tournament screen must publish the per-round archive and desktop endurance identity.');
 
 $assert(str_contains($api, "'progression'=>\$progressionSnapshot"),
