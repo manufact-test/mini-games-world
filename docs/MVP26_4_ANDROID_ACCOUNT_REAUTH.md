@@ -132,3 +132,51 @@ No change to:
 - Telegram reauth semantics;
 - main/production runtime;
 - production DB/Cron.
+
+## MVP-26.4.2 Android Account Data download corrective
+
+Real-device acceptance on Android versionCode 2608 confirmed:
+- **Создать архив** works and produces a fresh ready archive;
+- the visible archive date/state updates correctly.
+
+The same acceptance exposed two blockers:
+1. **Скачать ZIP** previously fetched the file into WebView as a `Blob` and clicked a hidden `<a download>`. Android WebView had no native download owner, so the UI completed while no file reached the phone.
+2. one global `actionPending` disabled multiple unrelated Account Data buttons and let the shared disabled style visually wash them out.
+
+Corrective ownership:
+- Telegram / ordinary browser keeps the existing Blob download fallback;
+- Android shell advertises only a non-secret User-Agent capability marker;
+- Android asks the existing Account Data POST owner to authorize the ready request after normal sensitive-action reauth;
+- JavaScript receives only the public `adr_...` request id in an exact `mgw://android-account-download?request=...` route;
+- `NavigationPolicy` intercepts only that exact route;
+- native Android `DownloadManager` downloads from `/bot/account-data-download.php`;
+- native code copies the existing HttpOnly Android session cookie from `CookieManager` into the system download request;
+- the GET download owner independently re-checks recent reauth, Android session and archive ownership before streaming the ZIP;
+- no Android credential or session token is exposed to JavaScript.
+
+Download destination:
+- public Android **Downloads** directory;
+- Android 10+ uses the platform download owner without legacy storage permission;
+- Android 8/9 request `WRITE_EXTERNAL_STORAGE` only when download is actually requested, and the permission is capped with `maxSdkVersion=28`.
+
+Pending UX corrective:
+- global `actionPending` is removed;
+- each operation owns its own pending key;
+- pressing **Скачать ZIP** no longer disables or visually changes **Удалить аккаунт**;
+- only the active asynchronous button is disabled;
+- the active button preserves its normal visual treatment and shows an inline spinner;
+- delete scheduling/cancel/export creation keep independent pending states.
+
+Corrective APK:
+- versionCode **2609**;
+- versionName `0.26.4.3-account-data-download`;
+- same applicationId and accepted signing identity.
+
+Manual acceptance after deployment:
+1. install v2609 over v2608;
+2. open `⋯ → Данные и аккаунт`;
+3. press **Скачать ZIP** for the already-ready archive;
+4. verify only **Скачать ZIP** shows a spinner; **Удалить аккаунт** remains visually unchanged;
+5. verify Android shows a download notification and the ZIP appears in the system Downloads folder;
+6. open the ZIP;
+7. repeat after the five-minute reauth grant expires and verify the native device confirmation returns before download authorization.
