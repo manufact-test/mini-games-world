@@ -7,7 +7,7 @@ import { state } from './state.js?v=27';
 import { APP_CONFIG } from './config.js?v=38';
 import { currentScreen, onScreenEnter, registerScreenCleanup, showScreen } from './router.js?v=27';
 import { hidePreloader } from './components/preloader.js?v=42';
-import { initSheet } from './components/sheet.js?v=1109';
+import { closeSheet, initSheet } from './components/sheet.js?v=1109';
 import { toast } from './components/toast.js?v=1109';
 import { initAccountShortcuts, primeAccountDataShortcut } from './components/account-shortcuts.js?v=48';
 import { initUserCopy } from './components/user-copy.js?v=62';
@@ -53,6 +53,7 @@ initTypography();
 initSheet();
 initUserCopy();
 initAppShellChrome();
+initAndroidBackOwnership();
 initTournamentsScreen();
 initShieldKingVisuals();
 initGameCardCopy();
@@ -355,6 +356,30 @@ function initAppShellChrome(){
   document.addEventListener('mgw:game-finished', () => syncAppShellChrome());
   document.addEventListener('mgw:game-dismissed', () => syncAppShellChrome());
   syncAppShellChrome();
+}
+
+function initAndroidBackOwnership(){
+  document.addEventListener('mgw:android-back-request', event => {
+    if (!(event instanceof Event) || !event.cancelable) return;
+
+    const overlay = document.getElementById('sheetOverlay');
+    if (overlay?.classList.contains('active')) {
+      closeSheet();
+      event.preventDefault();
+      return;
+    }
+
+    const screen = currentScreen();
+    if (['profile','store','tournaments'].includes(screen) && !activeMatchLocksShell()) {
+      // Native Back from the persistent shell returns to Home. Search/game and
+      // other live flows intentionally fall through to native Activity behavior
+      // so Back never silently abandons matchmaking or an active match.
+      ++shellNavigationGeneration;
+      showScreen('home');
+      syncAppShellChrome('home');
+      event.preventDefault();
+    }
+  });
 }
 
 function ensureShellScreens(app){
