@@ -103,7 +103,7 @@ jobs:
         run: node scripts/ci/check-secrets.mjs
 
   android-build:
-    name: Android build/lint/unit v2614
+    name: Android build/lint/unit current candidate
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -160,11 +160,11 @@ jobs:
           grep -F 'CN=MGW Acceptance, O=Mini Games World, C=PL' /tmp/mgw-mvp26-6-signing.txt
           grep -Fi 'efda9b86b0b0edfaa22064864aaddc025f15bdc063bf53cfb58d569f504f5484' /tmp/mgw-mvp26-6-signing.txt
 
-      - name: Upload v2614 APK
+      - name: Upload current candidate APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: mgw-mvp26-6-product-parity-corrective-v2614-debug
+          name: mgw-android-product-parity-current-debug
           path: android-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7
@@ -173,7 +173,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mgw-mvp26-6-product-parity-corrective-v2614-reports
+          name: mgw-android-product-parity-current-reports
           path: |
             android-app/app/build/reports/**
             android-app/app/build/test-results/**
