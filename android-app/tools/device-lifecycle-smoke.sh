@@ -33,7 +33,7 @@ adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
 adb shell settings put system accelerometer_rotation 0
 adb shell settings put system user_rotation 0
-adb logcat -c
+adb logcat -c >/dev/null 2>&1 || true
 
 pid_of_app() {
   adb shell pidof "$PKG" 2>/dev/null | tr -d '\r' | awk '{print $1}'
