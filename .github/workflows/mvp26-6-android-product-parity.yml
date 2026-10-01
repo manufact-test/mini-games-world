@@ -7,10 +7,6 @@ on:
     paths:
       - '.well-known/assetlinks.json'
       - 'android-app/**'
-      - 'app/assets/js/telegram/telegram-app.js'
-      - 'app/assets/js/games/game-invites-v110.js'
-      - 'app/assets/js/screens/home-screen.js'
-      - 'app/runtime/client/version-manifest.php'
       - 'bot/android-auth.php'
       - 'bot/support.php'
       - 'bot/support-attachment-download.php'
@@ -51,13 +47,6 @@ jobs:
           php -l bot/support-attachment-download.php
           php -l bot/support/SupportTicketService.php
 
-      - name: Shared JavaScript syntax
-        run: |
-          set -euo pipefail
-          node --check app/assets/js/telegram/telegram-app.js
-          node --check app/assets/js/games/game-invites-v110.js
-          node --check app/assets/js/screens/home-screen.js
-
       - name: Focused shared-product regressions
         run: |
           set -euo pipefail
@@ -75,6 +64,10 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           git diff --exit-code "$base" "$head" -- \
             bot/games bot/ratings bot/tournaments bot/economy bot/ledger \
+            app/runtime/client/version-manifest.php \
+            app/assets/js/telegram/telegram-app.js \
+            app/assets/js/games/game-invites-v110.js \
+            app/assets/js/screens/home-screen.js \
             app/assets/js/games/tictactoe \
             app/assets/js/games/checkers \
             app/assets/js/games/chess \
