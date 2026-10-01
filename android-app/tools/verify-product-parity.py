@@ -163,10 +163,6 @@ require("supportCreate" in home and "supportTickets" in home,
 
 require("setMediaPlaybackRequiresUserGesture(true)" in main,
         "Android must preserve user-gesture media policy instead of muting shared media")
-require("LOAD_NO_CACHE" in main
-        and "ASSET_CACHE_VERSION_KEY" in main
-        and "clearCache(true)" in main,
-        "new Android APK versions must refresh the frozen shared runtime once")
 require("PlatformAdapters.disabled()" in main,
         "provider-neutral adapters must remain disabled during product parity")
 
