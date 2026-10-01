@@ -1,13 +1,8 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import assert from 'node:assert/strict';
 
-const root = path.resolve(import.meta.dirname, '../..');
-const ownerPath = path.join(root, 'app/assets/js/checkers-cosmetics/renderer-board-themes.js');
-const manifestPath = path.join(root, 'app/runtime/client/version-manifest.php');
-
-const owner = fs.readFileSync(ownerPath, 'utf8');
-const manifest = fs.readFileSync(manifestPath, 'utf8');
+const owner = fs.readFileSync('app/assets/js/checkers-cosmetics/renderer-board-themes.js', 'utf8');
+const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 
 assert.match(owner, /REAL_MOVE_TRAIL_FOLLOW_MS/);
 assert.match(owner, /movingPiece\.getBoundingClientRect\(\)/);
