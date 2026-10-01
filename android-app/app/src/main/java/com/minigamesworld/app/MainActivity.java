@@ -57,7 +57,10 @@ public final class MainActivity extends Activity {
     private static final int REQUEST_ANDROID_REAUTH = 26041;
     private static final int REQUEST_LEGACY_DOWNLOAD_STORAGE = 26042;
 
-    // MVP-26.5: all external platform providers are deliberately disabled by default.\n    // The shared MGW product must remain complete without Google/commercial services.\n    private final PlatformAdapters platformAdapters = PlatformAdapters.disabled();\n
+    // MVP-26.5: all external platform providers are deliberately disabled by default.
+    // The shared MGW product must remain complete without Google/commercial services.
+    private final PlatformAdapters platformAdapters = PlatformAdapters.disabled();
+
     private FrameLayout root;
     private WebView webView;
     private LinearLayout loadingPanel;
