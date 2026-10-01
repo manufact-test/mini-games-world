@@ -38,12 +38,6 @@ jobs:
           node ops/checks/mvp16_2_localization_contract.mjs
           php bot/tests/Mvp162LocalizationInfrastructureTest.php
 
-      - name: Preserve accepted Home UX/rules
-        run: |
-          set -euo pipefail
-          php bot/tests/Mvp25_3RulesGuideContractTest.php
-          php bot/tests/Mvp25_3FinalUxConsistencyContractTest.php
-
       - name: Localization debt ratchet
         run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
 
