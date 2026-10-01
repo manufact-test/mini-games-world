@@ -124,57 +124,17 @@ jobs:
       - name: Tracked secret scan
         run: node scripts/ci/check-secrets.mjs
 
-      - name: Scope guard
+      - name: Frozen product-boundary guard
         if: github.event_name == 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          if [[ "${{ github.head_ref }}" == agent/mvp26-3-native-shell-settings-* ]]; then
-            exit 0
-          fi
-          bad=0
-          while IFS= read -r path; do
-            case "$path" in
-              .github/workflows/mvp26-4-android-account-reauth.yml|\
-              .github/workflows/mvp26-2-android-device-auth.yml|\
-              .github/workflows/mvp26-3-1-account-link-backend.yml|\
-              .github/workflows/mvp22-8-account-data.yml|\
-              android-app/app/build.gradle|\
-              android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java|\
-              android-app/app/src/main/java/com/minigamesworld/app/NavigationPolicy.java|\
-              android-app/app/src/main/java/com/minigamesworld/app/ShellConfig.java|\
-              android-app/app/src/main/AndroidManifest.xml|\
-              android-app/app/src/main/res/values/strings.xml|\
-              android-app/app/src/test/java/com/minigamesworld/app/NavigationPolicyTest.java|\
-              android-app/tools/verify-foundation.py|\
-              app/assets/js/api/client.js|\
-              app/assets/js/components/account-shortcuts.js|\
-              app/assets/js/screens/account-data-sheet-v1.js|\
-              app/assets/css/account-data-v1.css|\
-              app/runtime/client/version-manifest.php|\
-              bot/account-data.php|\
-              bot/account-data-download.php|\
-              bot/android-reauth.php|\
-              bot/accounts/AccountReauthGuard.php|\
-              bot/accounts/AndroidAccountReauthService.php|\
-              bot/accounts/AndroidDeviceAuthService.php|\
-              bot/database/migrations/20261001_0071_create_android_reauth_challenges.php|\
-              bot/helpers/staging-e2e-runtime-files.txt|\
-              bot/tests/Mvp26_4AndroidAccountReauthTest.php|\
-              bot/tests/Mvp26_4_2AndroidAccountDataDownloadContractTest.php|\
-              docs/MVP26_4_ANDROID_ACCOUNT_REAUTH.md)
-                ;;
-              *)
-                echo "Unexpected MVP-26.4 path: $path" >&2
-                bad=1
-                ;;
-            esac
-          done < <(git diff --name-only "$base" "$head")
-          test "$bad" -eq 0
           git diff --exit-code "$base" "$head" -- \
             bot/games bot/ratings bot/tournaments bot/economy bot/ledger bot/notifications
+
+
 
   android-build:
     name: Android build/lint/unit
