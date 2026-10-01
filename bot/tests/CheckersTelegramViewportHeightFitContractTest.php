@@ -6,8 +6,9 @@ $fitCss = file_get_contents($root . '/app/assets/css/games/checkers/telegram-hei
 $checkersCss = file_get_contents($root . '/app/assets/css/games/checkers/game.css');
 $renderer = file_get_contents($root . '/app/assets/js/games/checkers/renderer.js');
 $v110 = file_get_contents($root . '/app/v110.php');
+$manifest = file_get_contents($root . '/app/runtime/client/version-manifest.php');
 
-if (!is_string($fitCss) || !is_string($checkersCss) || !is_string($renderer) || !is_string($v110)) {
+if (!is_string($fitCss) || !is_string($checkersCss) || !is_string($renderer) || !is_string($v110) || !is_string($manifest)) {
     throw new RuntimeException('Checkers Telegram viewport corrective sources are unavailable.');
 }
 
@@ -68,19 +69,24 @@ if ($gitBlobSha($renderer) !== 'e362239b1388a1f752d2d0e67ae69a7cc9207926') {
     throw new RuntimeException('Checkers renderer/game logic must remain untouched.');
 }
 
+if (!str_contains($manifest, "'checkers_height_fit' => './assets/css/games/checkers/telegram-height-fit-v1.css?v=5&checkers=bounded-screen-scroll-c15'")) {
+    throw new RuntimeException('Runtime manifest must preserve the accepted Checkers Telegram C15 asset.');
+}
+
 foreach ([
-    './assets/css/games/checkers/telegram-height-fit-v1.css?v=5&checkers=bounded-screen-scroll-c15',
+    "'checkers_height_fit'",
+    "\$checkersTelegramHeightFitTarget = \$assets['checkers_height_fit'];",
+    "'checkers_height_fit' => \$checkersTelegramHeightFitTarget",
     "'checkers_telegram_height_fit' => \$checkersTelegramHeightFitTarget",
-    'STG A1 · v110 · C15',
-    'stg-a1-v110-c15',
 ] as $runtimeToken) {
     if (!str_contains($v110, $runtimeToken)) {
-        throw new RuntimeException('v110 does not wire the Checkers Telegram C15 corrective: ' . $runtimeToken);
+        throw new RuntimeException('v110 does not wire the current Checkers Telegram C15 owner: ' . $runtimeToken);
     }
 }
 
-if (!str_contains($v110, 'is_file($checkersTelegramHeightFitPath)')) {
-    throw new RuntimeException('v110 must fail closed when the Telegram height-fit asset is missing.');
+if (!str_contains($v110, "str_starts_with(\$stylePath, './assets/css/')")
+    || !str_contains($v110, "is_file(__DIR__ . '/' . substr(\$stylePath, 2))")) {
+    throw new RuntimeException('v110 must fail closed when an accepted stylesheet asset is missing.');
 }
 
 echo "checkers-telegram-bounded-screen-scroll-c15=ok\n";
