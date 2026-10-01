@@ -54,7 +54,7 @@ $ticketNumbers = [];
 for ($index = 0; $index < 100; $index++) {
     $ticket = $service->createTicket(
         $mgwId,
-        ['telegram', 'google_play', 'android'][$index % 3],
+        $index % 2 === 0 ? 'telegram' : 'google_play',
         $index % 4 === 0 ? 'technical' : 'feedback',
         $index === 0 ? 'critical' : 'normal',
         'MySQL support ticket ' . $index,
