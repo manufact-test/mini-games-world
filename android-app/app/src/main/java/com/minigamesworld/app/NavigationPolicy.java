@@ -10,6 +10,7 @@ final class NavigationPolicy {
     private static final Set<String> EXTERNAL_SCHEMES = Set.of("https", "http", "mailto", "tel", "tg");
     private static final Set<String> BLOCKED_SCHEMES = Set.of("file", "content", "javascript", "data", "intent");
     private static final Pattern REAUTH_CHALLENGE = Pattern.compile("^ar_[a-f0-9]{24}$");
+    private static final Pattern ACCOUNT_DATA_REQUEST = Pattern.compile("^adr_[a-f0-9]{32}$");
 
     private final URI baseUri;
 
@@ -77,6 +78,30 @@ final class NavigationPolicy {
         }
         String challenge = query.substring("challenge=".length());
         return REAUTH_CHALLENGE.matcher(challenge).matches() ? challenge : null;
+    }
+
+    String nativeAccountDownloadRequest(String candidate) {
+        URI uri = parse(candidate);
+        if (uri == null
+                || !"mgw".equalsIgnoreCase(uri.getScheme())
+                || !"android-account-download".equalsIgnoreCase(uri.getHost())
+                || uri.getUserInfo() != null
+                || uri.getPort() >= 0
+                || uri.getFragment() != null) {
+            return null;
+        }
+
+        String path = uri.getPath();
+        if (path != null && !path.isEmpty() && !"/".equals(path)) {
+            return null;
+        }
+
+        String query = uri.getRawQuery();
+        if (query == null || !query.startsWith("request=") || query.indexOf('&') >= 0) {
+            return null;
+        }
+        String requestId = query.substring("request=".length());
+        return ACCOUNT_DATA_REQUEST.matcher(requestId).matches() ? requestId : null;
     }
 
     String initialUrl(String incomingUrl) {
