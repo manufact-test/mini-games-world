@@ -50,11 +50,14 @@ import javax.net.ssl.HttpsURLConnection;
 
 import org.json.JSONObject;
 
+import com.minigamesworld.app.platform.PlatformAdapters;
+
 public final class MainActivity extends Activity {
     private static final String STATE_WEBVIEW = "mgw_webview_state";
     private static final int REQUEST_ANDROID_REAUTH = 26041;
     private static final int REQUEST_LEGACY_DOWNLOAD_STORAGE = 26042;
 
+    // MVP-26.5: all external platform providers are deliberately disabled by default.\n    // The shared MGW product must remain complete without Google/commercial services.\n    private final PlatformAdapters platformAdapters = PlatformAdapters.disabled();\n
     private FrameLayout root;
     private WebView webView;
     private LinearLayout loadingPanel;
