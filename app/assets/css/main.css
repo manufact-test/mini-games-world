@@ -2960,7 +2960,7 @@
 
 /* MVP-22.3 report-entry corrective: player reports are not Support tickets */
 .player-report-head p{margin-top:3px;color:var(--muted);font-size:11px;line-height:1.4}
-.player-report-create{display:flex;flex-direction:column;gap:12px}
+.player-report-create{display:flex;flex:1 1 auto;min-height:0;flex-direction:column;gap:12px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-right:1px}\n.player-report-create::-webkit-scrollbar{display:none}
 .player-report-step{display:flex;flex-direction:column;gap:10px;padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.035)}
 .player-report-step-title{display:flex;align-items:flex-start;gap:9px}
 .player-report-step-title>b{display:grid;place-items:center;flex:0 0 24px;width:24px;height:24px;border:1px solid rgba(135,109,255,.7);border-radius:8px;background:rgba(95,74,210,.18);color:#ded7ff;font-size:11px}
@@ -3035,7 +3035,7 @@
   border-color:rgba(153,121,255,.85)!important;
   box-shadow:0 0 0 3px rgba(124,92,255,.13)!important;
 }
-.player-report-search .btn{min-height:44px}
+.player-report-search .form-input,\n.player-report-comment .form-input{scroll-margin-block:10px}\n.player-report-search .btn{min-height:44px}
 .player-report-search-status{margin-top:1px}
 .player-report-reasons button{transition:border-color .15s ease,background .15s ease,box-shadow .15s ease,transform .12s ease}
 .player-report-reasons button:active{transform:translateY(1px)}
