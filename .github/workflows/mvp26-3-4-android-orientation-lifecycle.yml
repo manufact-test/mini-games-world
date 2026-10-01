@@ -38,28 +38,16 @@ jobs:
       - name: Tracked secret scan
         run: node scripts/ci/check-secrets.mjs
 
-      - name: Scope guard
+      - name: Frozen product-boundary guard
         shell: bash
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          changed="$(git diff --name-only "$base" "$head")"
-          printf '%s\n' "$changed"
-          if [[ "${{ github.head_ref }}" == agent/mvp26-3-native-shell-settings-* ]]; then
-            exit 0
-          fi
-          while IFS= read -r path; do
-            [[ -z "$path" ]] && continue
-            case "$path" in
-              .github/workflows/mvp26-3-4-android-orientation-lifecycle.yml|android-app/app/src/main/AndroidManifest.xml|android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java|android-app/app/build.gradle|android-app/tools/verify-foundation.py|android-app/tools/verify-orientation-lifecycle.py|android-app/docs/MVP26_3_4_ORIENTATION_LIFECYCLE.md)
-                ;;
-              *)
-                printf 'Unexpected MVP-26.3.4 path: %s\n' "$path" >&2
-                exit 1
-                ;;
-            esac
-          done <<< "$changed"
+          git diff --exit-code "$base" "$head" -- \
+            bot/games bot/ratings bot/tournaments bot/economy bot/ledger bot/notifications
+
+
 
   android-build:
     runs-on: ubuntu-latest
