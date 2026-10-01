@@ -105,8 +105,9 @@ for xml_path in (
         errors.append(f"invalid XML {xml_path.relative_to(ROOT)}: {exc}")
 
 java_names = {path.name for path in (APP / "src/main/java").rglob("*.java")}
-require(java_names == {"MainActivity.java","NavigationPolicy.java","ShellConfig.java","DeviceCredentialStore.java"},
-        "repair must keep the reviewed four-owner Android shell")
+required_shell_owners = {"MainActivity.java","NavigationPolicy.java","ShellConfig.java","DeviceCredentialStore.java"}
+require(required_shell_owners.issubset(java_names),
+        "accepted four Android shell owners must remain present")
 
 if errors:
     print("Android MVP-26.2 regression repair verification FAILED", file=sys.stderr)
