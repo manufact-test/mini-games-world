@@ -60,6 +60,7 @@ jobs:
               android-app/app/src/main/java/com/minigamesworld/app/platform/*|\
               android-app/app/src/test/java/com/minigamesworld/app/platform/*|\
               android-app/tools/verify-native-shell-settings.py|\
+              android-app/tools/verify-foundation.py|\
               android-app/tools/verify-platform-adapters.py|\
               android-app/docs/MVP26_5_DISABLED_PLATFORM_ADAPTERS.md)
                 ;;
