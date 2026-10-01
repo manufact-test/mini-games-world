@@ -937,13 +937,13 @@ function tournamentHallMarkup(registered, scheduled, scheduledStart){
   const entered = hall?.entered === true;
 
   if (!entered) {
-    const buttonLabel = tournamentHallBusy ? 'Входим в зал…' : 'Вход';
+    const buttonLabel = tournamentHallBusy ? t('arena.hall.entering') : t('arena.hall.enter');
     return `
       <section class="tournaments-v2-hall-gate">
         <div>
-          <span>Турнирный зал</span>
-          <strong>${started ? 'Турнир стартовал' : openByClock ? 'Зал открыт' : 'Откроется за 15 минут до старта'}</strong>
-          <small>В зал допускаются только участники этого турнира. Сетка появится в момент старта.</small>
+          <span>${escapeHtml(t('arena.hall.label'))}</span>
+          <strong>${escapeHtml(started ? t('arena.hall.started') : openByClock ? t('arena.hall.open') : t('arena.hall.opens_15'))}</strong>
+          <small>${escapeHtml(t('arena.hall.gate_note'))}</small>
         </div>
         <button type="button" class="tournaments-v2-tournament-action"
           data-tournament-hall-enter
@@ -960,15 +960,15 @@ function tournamentHallMarkup(registered, scheduled, scheduledStart){
     const present = player?.present === true;
     const enteredPlayer = player?.entered === true;
     const status = bracket
-      ? (present ? 'В зале на старте' : 'Техническое поражение')
+      ? (present ? t('arena.hall.present_at_start') : t('arena.hall.technical_loss'))
       : present
-        ? 'В зале'
+        ? t('arena.hall.present')
         : enteredPlayer
-          ? 'Сейчас не в зале'
-          : 'Не вошёл';
+          ? t('arena.hall.left')
+          : t('arena.hall.not_entered');
     return `<div class="tournaments-v2-hall-player${present ? ' is-present' : ''}">
       <i aria-hidden="true"></i>
-      <strong>${escapeHtml(String(player?.nickname || 'Игрок'))}</strong>
+      <strong>${escapeHtml(String(player?.nickname || t('arena.hall.player_fallback')))}</strong>
       <span>${escapeHtml(status)}</span>
     </div>`;
   }).join('');
@@ -976,8 +976,8 @@ function tournamentHallMarkup(registered, scheduled, scheduledStart){
   const bracketMarkup = bracket
     ? tournamentBracketMarkup(bracket)
     : `<div class="tournaments-v2-hall-waiting">
-        <strong>Сетка ещё скрыта</strong>
-        <span>Она сформируется случайно ровно на старте турнира.</span>
+        <strong>${escapeHtml(t('arena.hall.bracket_hidden'))}</strong>
+        <span>${escapeHtml(t('arena.hall.bracket_hidden_note'))}</span>
       </div>`;
 
   if (bracket) {
@@ -985,10 +985,10 @@ function tournamentHallMarkup(registered, scheduled, scheduledStart){
       <section class="tournaments-v2-hall tournaments-v2-hall--started">
         <div class="tournaments-v2-hall-head">
           <div>
-            <span>Турнирный зал</span>
-            <h3>Сетка турнира</h3>
+            <span>${escapeHtml(t('arena.hall.label'))}</span>
+            <h3>${escapeHtml(t('arena.hall.bracket_title'))}</h3>
           </div>
-          <b>СТАРТ</b>
+          <b>${escapeHtml(t('arena.hall.start'))}</b>
         </div>
         ${tournamentHallError ? `<div class="tournaments-v2-tournament-error">${escapeHtml(tournamentHallError)}</div>` : ''}
         ${bracketMarkup}
@@ -999,14 +999,14 @@ function tournamentHallMarkup(registered, scheduled, scheduledStart){
     <section class="tournaments-v2-hall">
       <div class="tournaments-v2-hall-head">
         <div>
-          <span>Турнирный зал</span>
-          <h3>Вы в турнирном зале</h3>
+          <span>${escapeHtml(t('arena.hall.label'))}</span>
+          <h3>${escapeHtml(t('arena.hall.inside_title'))}</h3>
         </div>
         <b>LIVE</b>
       </div>
       ${tournamentHallError ? `<div class="tournaments-v2-tournament-error">${escapeHtml(tournamentHallError)}</div>` : ''}
       <div class="tournaments-v2-hall-roster">
-        <div class="tournaments-v2-hall-section-title"><strong>Участники</strong><span>${escapeHtml(String(roster.length))}</span></div>
+        <div class="tournaments-v2-hall-section-title"><strong>${escapeHtml(t('arena.hall.participants'))}</strong><span>${escapeHtml(String(roster.length))}</span></div>
         <div class="tournaments-v2-hall-roster-grid">${rosterMarkup}</div>
       </div>
       ${bracketMarkup}
@@ -1052,11 +1052,11 @@ function tournamentMatchMarkup(){
       </section>`;
     }
     const pendingCopy = tournamentTerminalReturnPending
-      ? 'Сохраняем результат турнира…'
-      : 'Загружаем готовность вашей пары…';
+      ? t('arena.ready.saving_result')
+      : t('arena.ready.loading_pair');
     return `<section class="tournaments-v2-ready">
       <div class="tournaments-v2-ready-head">
-        <div><span>Турнирный матч</span><strong>${escapeHtml(pendingCopy)}</strong></div>
+        <div><span>${escapeHtml(t('arena.ready.match_label'))}</span><strong>${escapeHtml(pendingCopy)}</strong></div>
       </div>
     </section>`;
   }
@@ -1064,8 +1064,8 @@ function tournamentMatchMarkup(){
   const players = Array.isArray(match.players) ? match.players : [];
   const playerRows = players.map(player => `
     <div class="tournaments-v2-ready-player${player?.ready === true ? ' is-ready' : ''}">
-      <strong>${escapeHtml(String(player?.nickname || 'Игрок'))}${player?.self === true ? ' · вы' : ''}</strong>
-      <span>${player?.ready === true ? 'Готов' : 'Ожидаем'}</span>
+      <strong>${escapeHtml(String(player?.nickname || t('arena.hall.player_fallback')))}${player?.self === true ? escapeHtml(t('arena.ready.self_suffix')) : ''}</strong>
+      <span>${escapeHtml(player?.ready === true ? t('arena.ready.ready') : t('arena.ready.waiting'))}</span>
     </div>
   `).join('');
   const deadline = parseTournamentUtc(match.readiness_deadline_at_utc);
@@ -1075,23 +1075,23 @@ function tournamentMatchMarkup(){
   const selfReady = match.self_ready === true;
   const canReady = match.can_ready === true && !tournamentMatchBusy;
 
-  let message = 'Подтвердите готовность в течение двух минут.';
-  if (expired) message = 'Двухминутное окно готовности завершено.';
-  else if (launched) message = 'Матч запущен.';
-  else if (bothReady) message = 'Оба готовы · запускаем матч.';
-  else if (selfReady) message = 'Вы готовы · ждём соперника.';
+  let message = t('arena.ready.prompt');
+  if (expired) message = t('arena.ready.expired');
+  else if (launched) message = t('arena.ready.launched');
+  else if (bothReady) message = t('arena.ready.both_ready');
+  else if (selfReady) message = t('arena.ready.self_ready');
 
   const action = !selfReady && !expired && !launched
     ? `<button type="button" class="tournaments-v2-tournament-action tournaments-v2-ready-action"
         data-tournament-ready ${canReady ? '' : 'disabled'} ${tournamentMatchBusy ? 'aria-busy="true"' : ''}>
-        ${tournamentMatchBusy ? 'Подтверждаем…' : 'Я готов'}
+        ${escapeHtml(tournamentMatchBusy ? t('arena.ready.confirming') : t('arena.ready.action'))}
       </button>`
     : '';
 
   return `
     <section class="tournaments-v2-ready">
       <div class="tournaments-v2-ready-head">
-        <div><span>Первый матч · пара ${escapeHtml(String(match.pair_no || ''))}</span><strong>${escapeHtml(message)}</strong></div>
+        <div><span>${escapeHtml(t('arena.ready.first_match_pair',{pair_no:String(match.pair_no || '')}))}</span><strong>${escapeHtml(message)}</strong></div>
         ${deadline && !launched ? `<b data-tournament-ready-countdown data-ready-deadline="${deadline.getTime()}">${escapeHtml(formatReadyCountdown(deadline.getTime() - Date.now()))}</b>` : ''}
       </div>
       <div class="tournaments-v2-ready-players">${playerRows}</div>

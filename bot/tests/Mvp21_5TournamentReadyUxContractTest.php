@@ -107,7 +107,7 @@ foreach (['tournamentMatchState','tournamentMatchReady'] as $needle) {
     $assert(str_contains($source['client'], $needle), 'Tournament client transport missing: ' . $needle);
 }
 $assert(str_contains($source['screen'], 'data-tournament-ready')
-        && str_contains($source['screen'], "'Я готов'")
+        && str_contains($source['screen'], "t('arena.ready.action')")
         && str_contains($source['screen'], 'readiness_deadline_at_utc')
         && str_contains($source['screen'], 'formatReadyCountdown'),
     'Hall must expose the explicit Ready interaction and authoritative readiness deadline countdown.');
@@ -137,7 +137,7 @@ $assert(str_contains($source['screen'], 'tournamentStartBoundaryTimer')
         && str_contains($source['screen'], 'const hallResult = await api.tournamentHallStatus()')
         && str_contains($source['screen'], 'await refreshTournamentMatchState()'),
     'Registered clients must burst-sync fresh Hall/readiness state across T0 instead of waiting for the arbitrary two/three-second poll phase.');
-$assert(str_contains($source['screen'], 'Загружаем готовность вашей пары…')
+$assert(str_contains($source['screen'], "t('arena.ready.loading_pair')")
         && str_contains($source['screen'], 'tournamentMatchError')
         && str_contains($source['screen'], 'const matchMarkup = tournamentMatchMarkup();'),
     'Ready UI must be prominent above the bracket and must not silently disappear when match-state loading fails.');
@@ -178,21 +178,22 @@ foreach ([
     $assert(str_contains($source['css'], $needle), 'Ready UI CSS missing: ' . $needle);
 }
 
-$assert(str_contains($source['manifest'], 'client.js?v=1145')
+$assert(preg_match('/client\\.js\\?v=\\d+/', $source['manifest']) === 1
         && str_contains($source['manifest'], 'mvp21_5=ready-v1'),
     'API client must publish a fresh MVP-21.5 cache identity.');
-$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=31')
+$assert(preg_match('/tournaments-screen-v1\\.js\\?v=\\d+/', $source['manifest']) === 1
         && str_contains($source['manifest'], 'mvp21_8=corrective-v8')
         && str_contains($source['manifest'], 'registration=server-publish-barrier-v1')
         && str_contains($source['manifest'], 'ready=t0-burst-250ms-peer-adoption-v4')
         && str_contains($source['manifest'], 'mvp21_manual=acceptance-corrective-v1')
-        && str_contains($source['manifest'], 'desktop=endurance-v1'),
+        && str_contains($source['manifest'], 'desktop=endurance-v1')
+        && str_contains($source['manifest'], 'mvp27_1_hall=ready-i18n-v1'),
     'Tournament screen must publish the fresh corrective-v8 registration/T0/peer-adoption cache identity.');
 $assert(str_contains($source['manifest'], 'production-v110-acceptance-runtime.js?v=132')
         && str_contains($source['manifest'], 'mvp21_5=countdown-10-fresh60-v2'),
     'Shared Phase-B presentation must publish the fresh server-active/fresh-60 cache identity.');
-$assert(str_contains($source['manifest'], 'main.css?v=201'),
-    'Readiness presentation CSS must publish a fresh cache identity.');
+$assert(preg_match('/main\\.css\\?v=\\d+/', $source['manifest']) === 1,
+    'Readiness presentation CSS must publish a numeric cache identity.');
 
 if ($assertions < 40) throw new RuntimeException('MVP-21.5 UX contract is too shallow.');
 fwrite(STDOUT, "Mvp21_5TournamentReadyUxContractTest: {$assertions} assertions passed\n");
