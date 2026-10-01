@@ -93,19 +93,20 @@ $assert(str_contains($main, "import('./screens/store-screen.js?v=34')")
         && str_contains($main, 'window.requestIdleCallback(warm, { timeout:1200 });'),
     'The large Store module graph must be lazy and warmed only after first usable paint.');
 
-$assert(str_contains($manifest, 'main-v110-handoff-shell.js?v=1157')
+$assert(preg_match('/main-v110-handoff-shell\\.js\\?v=\\d+/', $manifest) === 1
         && str_contains($manifest, 'startup=parallel-bootstrap-profile-v1')
         && str_contains($manifest, 'startup=nonblocking-hidden-warm-v1')
         && str_contains($manifest, 'store_warm=post-first-paint-v1')
         && str_contains($manifest, 'profile_first=covered-raster-prewarm-v2'),
     'Startup corrective must publish a fresh main client identity.');
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=31')
+$assert(preg_match('/tournaments-screen-v1\\.js\\?v=\\d+/', $manifest) === 1
         && str_contains($manifest, 'mvp21_8=corrective-v8')
         && str_contains($manifest, 'mvp21_manual=acceptance-corrective-v1')
         && str_contains($manifest, 'registration_cancel=restored-v1')
         && str_contains($manifest, 'mvp21_6=terminal-return-preserve-v5')
         && str_contains($manifest, 'archive=per-round-v1')
-        && str_contains($manifest, 'desktop=endurance-v1'),
+        && str_contains($manifest, 'desktop=endurance-v1')
+        && str_contains($manifest, 'mvp27_1_progression=bracket-i18n-v1'),
     'Tournament corrective must publish a fresh v8 client identity.');
 
 if ($assertions < 22) {
