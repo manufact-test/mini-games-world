@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import pathlib
+import re
 import sys
 import xml.etree.ElementTree as ET
 
@@ -41,7 +42,7 @@ require("minSdk 26" in build, "minSdk must remain 26")
 require("MGW_BASE_URL" in build, "MGW URL must remain build-configurable")
 require("applicationId 'com.minigamesworld.app.acceptance'" in build, "accepted package identity must be restored")
 require("applicationIdSuffix" not in build, "repair must not create a parallel .mvp26dev app")
-require("versionCode 2610" in build, "Android native shell closure versionCode must remain monotonic")
+version_match = re.search(r"\bversionCode\s+(\d+)\b", build)\nrequire(version_match is not None and int(version_match.group(1)) >= 2610,\n        "Android native shell closure versionCode must remain monotonic")
 require("mgw-acceptance-stable.keystore" in build, "stable acceptance signing must be restored")
 require("usesCleartextTraffic=\"false\"" in manifest, "cleartext traffic must be disabled")
 require('android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden"' in manifest,
