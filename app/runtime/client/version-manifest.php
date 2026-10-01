@@ -70,7 +70,7 @@ return [
         './assets/js/components/shield-king-visuals.js?v=125&sk=2' => './assets/js/components/shield-king-visuals.js?v=130&sk=4&icons=c1efd5af&shell=nav&settings=metallic&friends=1&support=metallic',
         './assets/js/components/shield-king-visuals.js?v=127&sk=4&icons=c1efd5af&shell=nav' => './assets/js/components/shield-king-visuals.js?v=130&sk=4&icons=c1efd5af&shell=nav&settings=metallic&friends=1&support=metallic',
         './assets/js/components/preloader.js?v=42' => './assets/js/components/preloader.js?v=45&intro=v1141&store_first=preloader-ready-v1&mvp23_mobile=bounded-cold-prime-v1',
-        './assets/js/telegram/telegram-app.js?v=27' => './assets/js/telegram/telegram-app.js?v=28&haptic=preloader-silent-v1',
+        './assets/js/telegram/telegram-app.js?v=27' => './assets/js/telegram/telegram-app.js?v=29&haptic=preloader-silent-v1&mvp26_6=android-vibration-v1',
         './assets/js/games/game-card-copy.js?v=81&sk=2' => './assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static',
     ],
     'assets' => [
