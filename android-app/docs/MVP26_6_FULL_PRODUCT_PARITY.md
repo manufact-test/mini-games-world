@@ -118,14 +118,6 @@ agent are forwarded only to the same MGW origin.
 
 API 26-28 retains the existing runtime storage-permission boundary.
 
-### 6. Support platform identity
-
-Tickets created from `android_device` identities are now recorded as
-`android` / `Android-приложение`, rather than being mislabeled as Telegram.
-
-The future `google_play` platform value remains separate and unused until the
-provider stage.
-
 ## Sound/media
 
 No native audio owner is added. Android continues to render the canonical shared
