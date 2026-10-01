@@ -25,9 +25,7 @@ function mgw_support_status(string $reason): int
 function mgw_support_platform(array $user): string
 {
     $provider = strtolower(trim((string)($user['mgw_identity_provider'] ?? '')));
-    if ($provider === 'android_device') return 'android';
-    if (in_array($provider, ['google', 'google_play'], true)) return 'google_play';
-    return 'telegram';
+    return in_array($provider, ['google', 'google_play'], true) ? 'google_play' : 'telegram';
 }
 
 function mgw_support_category(array $payload): string
