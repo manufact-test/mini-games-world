@@ -34,6 +34,31 @@ final class ShellConfig {
         }
     }
 
+    static String accountDataDownloadUrl(String configuredBaseUrl, String requestId) {
+        try {
+            URI base = new URI(configuredBaseUrl == null ? "" : configuredBaseUrl.trim());
+            String normalizedRequest = requestId == null ? "" : requestId.trim();
+            if (!"https".equalsIgnoreCase(base.getScheme())
+                    || base.getHost() == null
+                    || base.getHost().isBlank()
+                    || base.getUserInfo() != null
+                    || !normalizedRequest.matches("^adr_[a-f0-9]{32}$")) {
+                return "";
+            }
+            return new URI(
+                    "https",
+                    null,
+                    base.getHost(),
+                    base.getPort(),
+                    "/bot/account-data-download.php",
+                    "request_id=" + normalizedRequest,
+                    null
+            ).toASCIIString();
+        } catch (URISyntaxException ignored) {
+            return "";
+        }
+    }
+
     static String androidReauthUrl(String configuredBaseUrl) {
         try {
             URI base = new URI(configuredBaseUrl == null ? "" : configuredBaseUrl.trim());
