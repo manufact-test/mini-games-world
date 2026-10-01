@@ -73,7 +73,7 @@ ok(boardThemeWrapper.includes('renderRevision') && boardThemeWrapper.includes('s
 ok(boardThemeWrapper.includes('alignMoveDecorations(layer, liveBoard, state, finalDestinationRect)'), 'trail and ring target the captured final box rather than the transformed in-flight checker box');
 ok(boardThemeWrapper.includes("destinationPiece.classList.add('mgw-checkers-live-real-move-piece')"), 'real destination checker becomes the moving checker itself');
 ok(boardThemeWrapper.includes('duplicatePiece.remove()'), 'detached live layer removes its duplicate moving checker before paint');
-ok(boardThemeWrapper.includes("mgwMovePieceOwner = 'real-board-piece-flip-v2'"), 'trail layer records final-rect real-board-piece ownership for the moving checker');
+ok(boardThemeWrapper.includes("mgwMovePieceOwner = 'real-board-piece-flip-v3-trail-center'"), 'trail layer records centered real-board-piece ownership for the moving checker');
 ok(boardThemeWrapper.includes('stableLegend'), 'accepted stable legend DOM owner remains intact');
 ok(boardThemeWrapper.includes('runtime-handoff-mobile-v1.css?v=7') && boardThemeWrapper.includes('mvp19_6=real-piece-flip-v1'), 'board-theme owner loads the real-piece FLIP corrective stylesheet');
 
