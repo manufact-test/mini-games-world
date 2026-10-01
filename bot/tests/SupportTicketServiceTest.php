@@ -34,7 +34,7 @@ $numbers = [];
 for ($index = 0; $index < 100; $index++) {
     $ticket = $service->createTicket(
         $userA,
-        $index % 2 === 0 ? 'telegram' : 'google_play',
+        ['telegram', 'google_play', 'android'][$index % 3],
         $index % 3 === 0 ? 'technical' : 'feedback',
         $index === 99 ? 'critical' : 'normal',
         'Isolation ticket ' . $index,
