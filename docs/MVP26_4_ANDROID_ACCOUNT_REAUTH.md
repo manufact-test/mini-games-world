@@ -88,6 +88,11 @@ The only native → WebView signals are fixed event names:
 
 No secret or token is included in those events.
 
+
+## Real-device install corrective
+
+The first reauth candidate used versionCode 2605, but real-device acceptance had already advanced through later 2606/2607 Android candidates. Huawei/EMUI therefore rejected 2605 as a downgrade. The installable reauth acceptance candidate is versionCode 2608 with the same package and accepted signing identity.
+
 ## Acceptance gates
 
 Automated:
