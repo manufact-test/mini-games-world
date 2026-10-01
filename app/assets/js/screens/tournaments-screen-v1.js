@@ -131,11 +131,11 @@ export function initTournamentsScreen(){
         </div>
 
         <div class="tournaments-v2-tabs-shell">
-          <button class="tournaments-v2-scroll tournaments-v2-scroll--left" type="button" data-tournaments-scroll="-1" aria-label="Прокрутить игры влево">${scrollIcon('left')}</button>
+          <button class="tournaments-v2-scroll tournaments-v2-scroll--left" type="button" data-tournaments-scroll="-1" aria-label="${escapeHtml(t('arena.scroll_left'))}">${scrollIcon('left')}</button>
           <div class="tournaments-v2-tabs" id="tournamentsLeaderboardTabs" aria-label="${escapeHtml(t('profile.leaderboard_title'))}">
             ${GAME_TYPES.map(type => tabMarkup(type, activeGame)).join('')}
           </div>
-          <button class="tournaments-v2-scroll tournaments-v2-scroll--right" type="button" data-tournaments-scroll="1" aria-label="Прокрутить игры вправо">${scrollIcon('right')}</button>
+          <button class="tournaments-v2-scroll tournaments-v2-scroll--right" type="button" data-tournaments-scroll="1" aria-label="${escapeHtml(t('arena.scroll_right'))}">${scrollIcon('right')}</button>
         </div>
 
         <div class="tournaments-v2-body" id="tournamentsLeaderboardBody" aria-live="polite">
@@ -166,7 +166,7 @@ export function initTournamentsScreen(){
       <div class="tournaments-v2-panel" data-competition-panel="tournaments" hidden>
         <section class="tournaments-v2-board tournaments-v2-tournament-card">
           <div class="tournaments-v2-board-head">
-            <div>              <h2>Официальный турнир</h2>
+            <div>              <h2>${escapeHtml(t('arena.official_title'))}</h2>
             </div>
           </div>
           <div class="tournaments-v2-tournament-body" id="officialTournamentBody" aria-live="polite">
@@ -503,7 +503,7 @@ function startTournamentT0SyncBurst(scheduledStart){
         await refreshTournamentMatchState();
       }
     } catch (error) {
-      tournamentMatchError = String(error?.message || 'Не удалось синхронизировать старт турнира.');
+      tournamentMatchError = String(error?.message || t('arena.errors.sync_start'));
     }
 
     renderTournamentSnapshot();
@@ -533,7 +533,7 @@ function startTournamentLaunchWatch(){
     try {
       await refreshTournamentMatchState();
     } catch (error) {
-      tournamentMatchError = String(error?.message || 'Не удалось синхронизировать запуск матча.');
+      tournamentMatchError = String(error?.message || t('arena.errors.sync_launch'));
     }
     if (!tournamentHallPanelVisible()) return;
     renderTournamentSnapshot();
@@ -568,13 +568,13 @@ function startTournamentVisibleRefresh(){
             await refreshTournamentMatchState();
           }
         } catch (error) {
-          tournamentHallError = String(error?.message || 'Не удалось обновить Турнирный зал.');
+          tournamentHallError = String(error?.message || t('arena.errors.update_hall'));
         }
       } else if (!hallOpenByClock && tournamentHallSnapshot?.hall?.entered !== true) {
         tournamentHallError = '';
       }
     } catch (error) {
-      tournamentHallError = String(error?.message || 'Не удалось обновить турнир.');
+      tournamentHallError = String(error?.message || t('arena.errors.update_tournament'));
     }
 
     if (tournamentLiveRenderFingerprint() !== renderBefore) {
@@ -616,7 +616,7 @@ async function synchronizeTournamentTerminalProgression(){
       return result;
     })
     .catch(error => {
-      tournamentMatchError = String(error?.message || 'Не удалось синхронизировать результат турнира.');
+      tournamentMatchError = String(error?.message || t('arena.errors.sync_result'));
       throw error;
     })
     .finally(() => { tournamentTerminalSyncPromise = null; });
@@ -672,7 +672,7 @@ async function markTournamentReady(){
     }
     startTournamentLaunchWatch();
   } catch (error) {
-    tournamentMatchError = String(error?.message || 'Не удалось подтвердить готовность.');
+    tournamentMatchError = String(error?.message || t('arena.errors.ready'));
   } finally {
     tournamentMatchBusy = false;
     if (currentScreen() === 'tournaments') renderTournamentSnapshot();
@@ -691,7 +691,7 @@ async function enterTournamentHall(){
       ? result.snapshot
       : null;
   } catch (error) {
-    tournamentHallError = String(error?.message || 'Не удалось войти в Турнирный зал.');
+    tournamentHallError = String(error?.message || t('arena.errors.enter_hall'));
   } finally {
     tournamentHallBusy = false;
     renderTournamentSnapshot();
@@ -733,7 +733,7 @@ function startTournamentHallHeartbeat(){
       tournamentHallError = '';
       if (tournamentHallSnapshot?.bracket) {
         try { await refreshTournamentMatchState(); } catch (error) {
-          tournamentMatchError = String(error?.message || 'Не удалось обновить готовность пары.');
+          tournamentMatchError = String(error?.message || t('arena.errors.update_pair_ready'));
         }
       }
     } catch (error) {
@@ -747,7 +747,7 @@ function startTournamentHallHeartbeat(){
         renderTournamentSnapshot();
         return;
       }
-      tournamentHallError = String(error?.message || 'Не удалось обновить присутствие в Турнирный зал.');
+      tournamentHallError = String(error?.message || t('arena.errors.update_presence'));
     }
     if (tournamentLiveRenderFingerprint() !== renderBefore) {
       renderTournamentSnapshot();
@@ -798,7 +798,7 @@ async function loadTournamentSnapshot(){
       startTournamentHallHeartbeat();
     }
   } catch (error) {
-    body.innerHTML = `<div class="tournaments-v2-empty">${escapeHtml(error?.message || 'Не удалось загрузить турнир.')}</div>`;
+    body.innerHTML = `<div class="tournaments-v2-empty">${escapeHtml(error?.message || t('arena.errors.load'))}</div>`;
   }
 }
 
@@ -814,18 +814,18 @@ async function mutateTournament(action){
         || !rules.version
         || !rules.language
         || !rules.sha256) {
-      renderTournamentSnapshot('Перед регистрацией прочитайте правила и подтвердите согласие.');
+      renderTournamentSnapshot(t('arena.registration.read_rules'));
       return;
     }
     const alreadyRegistered = String(tournamentSnapshot?.registration?.state || '') === 'registered';
     if (alreadyRegistered) {
-      if (!window.confirm('Подтвердить обновлённые правила турнира?')) return;
+      if (!window.confirm(t('arena.registration.confirm_updated_rules'))) return;
     } else {
       const fee = formatNumber(Math.max(0, Number(tournament?.entry_fee?.amount || 50000)));
-      if (!window.confirm(`Подтвердить правила и зарезервировать ${fee} коинов для участия в официальном турнире?`)) return;
+      if (!window.confirm(t('arena.registration.confirm_register',{fee}))) return;
     }
   } else if (action === 'leave') {
-    if (!window.confirm('Отменить регистрацию? Зарезервированные 50 000 коинов вернутся в доступный баланс.')) return;
+    if (!window.confirm(t('arena.registration.confirm_leave'))) return;
   }
 
   const releaseVisibleBalance = lockVisibleBalance();
@@ -866,10 +866,10 @@ async function mutateTournament(action){
 
     const registrationState = String(verifiedSnapshot?.registration?.state || '');
     if (action === 'register' && registrationState !== 'registered') {
-      throw new Error('Регистрация не сохранилась. Попробуйте ещё раз.');
+      throw new Error(t('arena.registration.register_not_saved'));
     }
     if (action === 'leave' && registrationState === 'registered') {
-      throw new Error('Отмена регистрации не сохранилась. Попробуйте ещё раз.');
+      throw new Error(t('arena.registration.leave_not_saved'));
     }
 
     let publicationSnapshot = verifiedSnapshot;
@@ -881,7 +881,7 @@ async function mutateTournament(action){
         ? published.snapshot
         : verifiedSnapshot;
       if (publicationSnapshot?.registration?.published !== true) {
-        throw new Error('Регистрация сохранилась, но ещё не опубликована. Повторите попытку.');
+        throw new Error(t('arena.registration.publish_not_saved'));
       }
     }
 
@@ -896,7 +896,7 @@ async function mutateTournament(action){
           ? { ...state.user, balance:verifiedAvailable }
           : null);
   } catch (error) {
-    errorMessage = humanizeTournamentError(error?.message || 'Не удалось изменить регистрацию.');
+    errorMessage = humanizeTournamentError(error?.message || t('arena.registration.change_error'));
   } finally {
     // End the pending state first. Only then publish the verified tournament
     // snapshot and balance, so the user never sees money move under a live spinner.
