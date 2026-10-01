@@ -37,6 +37,6 @@ if (i18n.rules('battleship').title !== 'Морской бой') throw new Error(
 
 const clientManifestSource = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 if (!clientManifestSource.includes("'@mgw/i18n'")) throw new Error('Stable i18n alias is missing.');
-if (!clientManifestSource.includes("'version' => 'keys-v1'")) throw new Error('Localization manifest version owner is missing.');
+if (!/'version'\\s*=>\\s*'keys-v1'/.test(clientManifestSource)) throw new Error('Localization manifest version owner is missing.');
 
 console.log('MVP16_2_LOCALIZATION_CONTRACT=PASS');
