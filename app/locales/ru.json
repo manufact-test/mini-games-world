@@ -1,5 +1,5 @@
 {
-  "_meta": {"locale":"ru","version":18},
+  "_meta": {"locale":"ru","version":19},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
   "topbar": {"balance":"Баланс","notifications":"Уведомления"},
@@ -10,7 +10,10 @@
   "home": {
     "stats":{"online_players":"Игроков онлайн","active_matches":"Активных матчей"},
     "menu":{"title":"Меню","feedback":"Обратная связь","idea":"Предложить идею","report":"Пожаловаться","tickets":"Мои обращения","balance_history":"История баланса","match_history":"История матчей"},
-    "report":{"reasons":{"nickname":"Недопустимый никнейм","avatar":"Недопустимый аватар","spam":"Спам","cheating":"Нечестная игра","stalling":"Затягивание игры","other":"Другое"}},
+    "report":{
+      "reasons":{"nickname":"Недопустимый никнейм","avatar":"Недопустимый аватар","spam":"Спам","cheating":"Нечестная игра","stalling":"Затягивание игры","other":"Другое"},
+      "title":"Пожаловаться на игрока","subtitle":"Найдите игрока и выберите причину жалобы.","target_question":"На кого вы хотите пожаловаться?","search_note":"Поиск по нику или MGW-ID","search_placeholder":"Ник или MGW-ID","search_action":"Найти","search_hint":"Введите минимум 2 символа ника или полный MGW-ID.","reason_title":"Причина жалобы","choose_one":"Выберите один вариант","comment":"Комментарий","optional":"необязательно","comment_placeholder":"Кратко опишите ситуацию","send":"Отправить жалобу","history_title":"Мои жалобы","history_loading":"Загружаю историю…","player_fallback":"Игрок","change":"Изменить","selected":"Игрок выбран.","not_found":"Игроки не найдены. Попробуйте другой ник или MGW-ID.","found":"Найдено: {count}. Выберите игрока.","choose":"Выбрать","enter_query":"Введите ник или MGW-ID.","nickname_min":"Для поиска по нику введите минимум 2 символа.","searching":"Ищу игрока…","search_error":"Не удалось выполнить поиск.","status_open":"Новая","status_reviewing":"На рассмотрении","status_closed":"Рассмотрена","history_empty":"Вы ещё не отправляли жалобы на игроков.","complaint_fallback":"Жалоба","review_complete":" · рассмотрение завершено","history_error":"Не удалось загрузить историю жалоб.","sent_case":"Жалоба отправлена · {case_id}","sent":"Жалоба отправлена.","send_error":"Не удалось отправить жалобу."
+    },
     "history":{"balance_title":"История баланса","match_title":"История матчей","operation":"Операция","coin_amount":"{count} коинов","operations_empty":"Операций пока нет.","operations_title":"Операции баланса","match":"Матч","opponent":"Соперник","opponent_line":"Соперник: {opponent}","matches_empty":"Истории матчей пока нет.","latest_games":"Последние игры"},
     "rules_guide":{
       "coin_amount":"{count} коинов","current_amount":"текущая сумма","title":"Как работают обычные матчи","subtitle":"Коротко о поиске соперника, коинах, победе, ничьей и истории игры.",
