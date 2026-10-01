@@ -48,7 +48,32 @@ A repository audit scans runtime client/backend sources for remaining Cyrillic l
 
 This first slice records the debt; it does **not** fail merely because hardcoded text exists. Subsequent MVP-27.1 migration slices will move player-facing strings into canonical keys and ratchet the baseline downward until the player runtime has no unowned user-visible text.
 
-Numeric baseline and top offenders will be recorded from the exact CI candidate before this audit slice is closed.
+Exact player-facing baseline recorded from the PR candidate after excluding admin/control-plane sources:
+
+- scanned runtime source files: **776**;
+- Cyrillic lines total: **4,694**;
+- client JS: **3,013**;
+- backend PHP: **1,653**;
+- client entry PHP: **28**.
+
+Largest current source owners:
+
+1. `app/assets/js/screens/tournaments-screen-v1.js` — 192 lines;
+2. `app/assets/js/screens/home-screen.js` — 158;
+3. `app/assets/js/screens/store-screen.js` — 132;
+4. `app/assets/js/games/game-invites-v110.js` — 106;
+5. `app/assets/js/screens/profile-screen-v110.js` — 105;
+6. `app/assets/js/screens/friends-screen-v110.js` — 65;
+7. `app/assets/js/screens/account-data-sheet-v1.js` — 62;
+8. `app/assets/js/screens/game-screen-v102.js` — 54;
+9. `bot/tournaments/TournamentRegistrationService.php` — 68;
+10. `bot/accounts/AccountLinkService.php` — 55;
+11. `bot/moderation/ModerationService.php` — 51;
+12. `bot/support/SupportTicketService.php` — 44.
+
+The broad source baseline can still contain superseded/legacy runtime owners. Migration work must prioritize the current v110 import graph and current backend owners first; legacy files are not allowed to masquerade as active product work.
+
+The baseline is stored in `ops/checks/mvp27_1_hardcoded_text_baseline.json`. The audit now fails if total/client/backend/client-entry Cyrillic debt increases above this recorded baseline. Later migration slices are expected to ratchet these numbers downward.
 
 ## Frozen boundaries
 
