@@ -100,6 +100,16 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-* ]]; then
+            git diff --exit-code "$base" "$head" -- \
+              app/assets/js/admin-antifraud.js \
+              bot/admin-replay.php \
+              bot/replay/MatchReplayReader.php \
+              bot/antifraud/AntiFraudCaseService.php \
+              bot/database/migrations/20260925_0064_create_antifraud_cases.php
+            echo 'MVP-27.1 successor localization slice: anti-fraud/replay product owners unchanged; historical whole-PR scope allow-list is not applicable.'
+            exit 0
+          fi
           # MVP-22.9 is a bounded successor slice. Predecessor contracts above still run;
           # their historical file-scope allow-lists must not reject the newer incident/recovery owners.
           if [[ "${{ github.head_ref }}" == agent/mvp22-9-* || "${{ github.head_ref }}" == agent/mvp23-manual-acceptance-* ]]; then

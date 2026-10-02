@@ -60,13 +60,13 @@ $assert(str_contains($files['profile_js'],'tournamentShowcaseMarkup(snapshot)'),
 $assert(str_contains($files['profile_js'],'data-tournament-showcase-scroll'),'Tournament Showcase must have a dedicated bounded scroll owner.');
 $assert(str_contains($files['profile_js'],'tournamentPrestigeIconSvg'),'Tournament rewards must use the shared SVG icon language instead of platform emoji.');
 $assert(str_contains($files['profile_js'],"TOURNAMENT_HIDDEN_REWARD_CODES = new Set(['champion_cosmetics'])"),'Undefined champion cosmetics entitlement must stay durable but hidden until real inventory items exist.');
-$assert(str_contains($files['profile_js'],'Golden Ticket'),'Profile must visibly expose Golden Ticket.');
-$assert(str_contains($files['profile_js'],'Допуск к Большому турниру'),'Golden Ticket must communicate Big Tournament access.');
-$assert(str_contains($files['profile_js'],'не продаётся и не передаётся'),'Golden Ticket must not be presented as inventory commerce.');
+$assert(str_contains($files['profile_js'],"t('profile.tournament.rewards.golden_ticket')") && (($locale['profile']['tournament']['rewards']['golden_ticket'] ?? null) === 'Golden Ticket'),'Profile must visibly expose localized Golden Ticket.');
+$assert(str_contains($files['profile_js'],"t('profile.tournament.ticket_title')") && (($locale['profile']['tournament']['ticket_title'] ?? null) === 'Допуск к Большому турниру'),'Golden Ticket must communicate localized Big Tournament access.');
+$assert(str_contains($files['profile_js'],"t('profile.tournament.ticket_note')") && str_contains((string)($locale['profile']['tournament']['ticket_note'] ?? ''),'не продаётся и не передаётся'),'Golden Ticket must preserve localized non-commerce copy.');
 $assert(str_contains($files['profile_js'],'champion_crown'),'Champion crown must remain a persistent Profile projection.');
 $assert(str_contains($files['profile_js'],'silver_frame'),'Silver frame must remain a persistent Profile projection.');
 $assert(str_contains($files['profile_js'],'bronze_mark'),'Bronze mark must remain a persistent Profile projection.');
-$assert(str_contains($files['profile_js'],'Активна до'),'Temporary tournament styling must visibly expose expiry.');
+$assert(str_contains($files['profile_js'],"t('profile.tournament.reward_active_until'") && str_contains((string)($locale['profile']['tournament']['reward_active_until'] ?? ''),'Активна до'),'Temporary tournament styling must visibly expose localized expiry.');
 $assert(str_contains($files['profile_js'],'has-tournament-crown'),'Active crown must project onto the Profile identity.');
 $assert(str_contains($files['profile_js'],'has-tournament-silver-frame'),'Active silver frame must project onto the Profile identity.');
 $assert(str_contains($files['profile_js'],'has-tournament-bronze-mark'),'Active bronze mark must project onto the Profile identity.');

@@ -3,7 +3,7 @@ import {
   reversiMeta,
   reversiPlayerMark,
   reversiStatus,
-} from './renderer.js?v=66&base=mvp14r-accepted';
+} from './renderer.js?v=67&base=mvp14r-accepted&mvp27_1=localized-v1';
 
 const FIELD_PREFIX = 'game-reversi-field-';
 const PIECES_PREFIX = 'game-reversi-pieces-';

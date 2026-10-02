@@ -63,6 +63,7 @@ SQL);
 (require $root . '/database/migrations/20260920_0050_add_tournament_rules_consent.php')->up($db);
 (require $root . '/database/migrations/20260920_0051_refresh_tournament_rules_copy.php')->up($db);
 (require $root . '/database/migrations/20260921_0052_add_tournament_schedule.php')->up($db);
+(require $root . '/database/migrations/20260922_0056_add_tournament_registration_publication.php')->up($db);
 
 $db->execute(<<<'SQL'
 CREATE TABLE mgw_runtime_primary_state (
@@ -162,7 +163,8 @@ $result = $storage->transaction(function (array &$state) use (
 });
 
 $assertSame('registered', $result['registration']['state'], 'MySQL registration must be durable.');
-$assertSame(1, $result['tournament']['registered_count'], 'MySQL registration must occupy one seat.');
+$assertSame(false, $result['registration']['published'], 'Durable registration must remain private until explicit publication.');
+$assertSame(0, $result['tournament']['registered_count'], 'Unpublished durable registration must not occupy a public seat.');
 $assertSame(104702, $result['balance']['available_amount'], 'Entry hold must reduce spendable amount.');
 $assertSame(50000, $result['balance']['reserved_amount'], 'Entry hold must reserve exactly 50,000.');
 
@@ -173,8 +175,16 @@ $assertSame(
     'DB-primary runtime state must publish the spendable amount in the same outer transaction.'
 );
 
+$published = $service->publishRegistration(
+    $mgwId,
+    $accountRef,
+    new DateTimeImmutable('2026-09-20T14:03:01Z')
+);
+$assertSame(true, $published['registration']['published'], 'Explicit publication must expose the durable registration.');
+$assertSame(1, $published['tournament']['registered_count'], 'Published registration must occupy one public seat.');
+
 $fresh = $service->snapshot($mgwId, $accountRef);
-$assertSame(1, $fresh['tournament']['registered_count'], 'Fresh server snapshot must remain 1/8.');
+$assertSame(1, $fresh['tournament']['registered_count'], 'Fresh server snapshot must remain 1/8 after publication.');
 $assertSame('registered', $fresh['registration']['state'], 'Fresh server snapshot must expose registration.');
 
 $duplicate = $storage->transaction(function (array &$state) use (

@@ -68,6 +68,10 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
+          if git diff --quiet "$base" "$head" -- app/assets/js/screens/tournaments-screen-v1.js bot/api.php; then
+            echo "Successor slice: tournament human-copy owners unchanged; original bounded scope does not apply."
+            exit 0
+          fi
           allowed='^(app/assets/js/screens/tournaments-screen-v1\.js|app/runtime/client/version-manifest\.php|app/locales/ru\.json|bot/api\.php|bot/tests/Mvp25_2TournamentHumanCopyContractTest\.php|\.github/workflows/mvp25-2-tournament-human-copy\.yml)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-25.2 tournament-copy paths:\n%s\n' "$bad" >&2; exit 1; }

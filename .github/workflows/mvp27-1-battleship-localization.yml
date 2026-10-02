@@ -67,6 +67,10 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if git diff --quiet "$base" "$head" -- app/assets/js/games/battleship/renderer.js; then
+            echo "Successor localization slice: predecessor owner unchanged; original bounded migration scope does not apply."
+            exit 0
+          fi
           allowed='^(app/assets/js/games/battleship/renderer\.js|app/assets/js/games/battleship/renderer-cosmetics-v1\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_battleship_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|bot/tests/Mvp19_12BattleshipLiveMapsFleetsTest\.mjs|bot/tests/Mvp19_12BattleshipLiveShotEffectTest\.mjs|bot/tests/Mvp19_12BattleshipLiveResultEffectsTest\.mjs|bot/tests/ProductionV110BattleshipSetupPresentationContractTest\.php|bot/tests/ProductionV110BattleshipShotFeedbackContractTest\.php|bot/tests/ProductionV110BattleshipMissHandoffContractTest\.php|\.github/workflows/mvp27-1-battleship-localization\.yml|\.github/workflows/mvp26-6-android-product-parity\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected Battleship localization paths:\n%s\n' "$bad" >&2; exit 1; }

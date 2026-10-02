@@ -81,7 +81,7 @@ assert(manifest.includes("'./assets/js/profile/mgw-profile-model.js?v=1' => './a
     && manifest.includes('mvp27_1=localized-v1'),
   'Canonical Profile model alias must cache-bust localization.');
 
-assert(ru._meta?.version === 31, 'RU locale revision must publish Profile catalog v31.');
+assert(Number(ru._meta?.version || 0) >= 31, 'RU locale revision must retain Profile catalog v31 or a newer successor.');
 for (const key of ['moderation','collection','tournament','history_economy']) {
   assert(ru.profile?.[key], `Profile locale namespace missing: ${key}`);
 }

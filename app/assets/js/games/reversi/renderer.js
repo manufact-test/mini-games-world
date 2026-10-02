@@ -1,4 +1,7 @@
 import { toast } from '../../components/toast.js?v=41';
+import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
+
+const reversiText = (key, params = {}) => t(`games.reversi.ui.${key}`, params);
 
 let activeGameId = '';
 let previousBoard = '';
@@ -32,23 +35,25 @@ export function renderReversiSurface({ game, me, container, onAction }){
 }
 
 export function reversiMeta(game){
-  const room = String(game?.room_name || 'Игра');
-  const bet = Number(game?.bet || 0);
+  const room = String(game?.room_name || reversiText('meta.fallback_room'));
+  const bet = formatLocalizedNumber(Number(game?.bet || 0));
   const size = normalizeSize(game?.board_size);
-  return `${room} · ${bet} коинов · ${size}×${size}`;
+  return reversiText('meta.summary', { room, bet, size });
 }
 
 export function reversiPlayerMark(player){
-  return String(player?.side || '') === 'black' ? '● чёрные' : '○ белые';
+  return String(player?.side || '') === 'black'
+    ? reversiText('player_mark.black')
+    : reversiText('player_mark.white');
 }
 
 export function reversiStatus(game, me){
   if (game?.status === 'finished') return finalStatus(game, me);
   if (String(game?.turn || '') === String(me?.id || '')) {
-    if (String(game?.last_passed_player_id || '') !== '') return 'Ход соперника пропущен — ваш ход';
-    return 'Ваш ход';
+    if (String(game?.last_passed_player_id || '') !== '') return reversiText('status.opponent_passed');
+    return reversiText('status.your_turn');
   }
-  return 'Ход соперника';
+  return reversiText('status.opponent_turn');
 }
 
 function shouldAnimateMove(game, finalBoard, size, moveCount){
@@ -124,9 +129,9 @@ function renderSurface({ game, me, container, onAction, size, board, interactive
   container.innerHTML = `
     <div class="reversi-panel">
       <div class="reversi-score-line">
-        <span><i class="reversi-mini-disc ${myDiscClass}"></i>Вы <strong data-reversi-my-count>${counts.mine}</strong></span>
+        <span><i class="reversi-mini-disc ${myDiscClass}"></i>${reversiText('score.you')} <strong data-reversi-my-count>${formatLocalizedNumber(counts.mine)}</strong></span>
         <b>:</b>
-        <span><i class="reversi-mini-disc ${enemyDiscClass}"></i>Соперник <strong data-reversi-enemy-count>${counts.enemy}</strong></span>
+        <span><i class="reversi-mini-disc ${enemyDiscClass}"></i>${reversiText('score.opponent')} <strong data-reversi-enemy-count>${formatLocalizedNumber(counts.enemy)}</strong></span>
       </div>
 
       ${statusMarkup({ game, me, myTurn, animating })}
@@ -144,8 +149,8 @@ function renderSurface({ game, me, container, onAction, size, board, interactive
       </div>
 
       <div class="reversi-legend">
-        <span><i class="available"></i>доступный ход</span>
-        <span><i class="last"></i>последний ход</span>
+        <span><i class="available"></i>${reversiText('legend.available')}</span>
+        <span><i class="last"></i>${reversiText('legend.last')}</span>
       </div>
     </div>
   `;
@@ -160,30 +165,30 @@ function renderSurface({ game, me, container, onAction, size, board, interactive
 
   container.querySelectorAll('[data-reversi-empty]').forEach(button => button.addEventListener('click', () => {
     if (!myTurn || legalByCell.has(Number(button.dataset.reversiCell))) return;
-    toast('Здесь нельзя поставить фишку. Выберите подсвеченную клетку.');
+    toast(reversiText('errors.illegal_move'));
   }));
 }
 
 function statusMarkup({ game, me, myTurn, animating }){
   if (animating) {
     const movedByMe = String(game?.last_move?.player_id || '') === String(me?.id || '');
-    return `<div class="reversi-event-banner move-sequence">${movedByMe ? 'Ваш ход — переворачиваем фишки' : 'Соперник сделал ход — переворачиваем фишки'}</div>`;
+    return `<div class="reversi-event-banner move-sequence">${reversiText(movedByMe ? 'events.animating_self' : 'events.animating_opponent')}</div>`;
   }
 
   if (game?.status === 'finished') {
     const black = Number(game?.final_counts?.black ?? game?.black_count ?? 0);
     const white = Number(game?.final_counts?.white ?? game?.white_count ?? 0);
-    return `<div class="reversi-event-banner finished">Партия завершена · ● ${black} : ${white} ○</div>`;
+    return `<div class="reversi-event-banner finished">${reversiText('events.finished', { black:formatLocalizedNumber(black), white:formatLocalizedNumber(white) })}</div>`;
   }
 
   const passedId = String(game?.last_passed_player_id || '');
   if (passedId !== '') {
     const passedMe = passedId === String(me?.id || '');
-    return `<div class="reversi-event-banner pass">${passedMe ? 'У вас не было ходов — ход пропущен' : 'У соперника нет ходов — ход снова ваш'}</div>`;
+    return `<div class="reversi-event-banner pass">${reversiText(passedMe ? 'events.pass_self' : 'events.pass_opponent')}</div>`;
   }
 
-  if (myTurn) return `<div class="reversi-event-banner your-turn">Ваш ход — выберите подсвеченную клетку</div>`;
-  return `<div class="reversi-event-banner opponent">Ход соперника — следите за полем</div>`;
+  if (myTurn) return `<div class="reversi-event-banner your-turn">${reversiText('events.your_turn_hint')}</div>`;
+  return `<div class="reversi-event-banner opponent">${reversiText('events.opponent_turn_hint')}</div>`;
 }
 
 function cellMarkup({ cell, size, value, legalMove, myTurn, lastMoveCell, placedCell }){
@@ -246,8 +251,8 @@ function boardCounts(board, viewerSide){
 
 function finalStatus(game, me){
   const winnerId = String(game?.winner_id || '');
-  if (!winnerId) return 'Ничья';
-  return winnerId === String(me?.id || '') ? 'Победа' : 'Поражение';
+  if (!winnerId) return reversiText('result.draw');
+  return winnerId === String(me?.id || '') ? reversiText('result.victory') : reversiText('result.defeat');
 }
 
 function normalizeSize(value){
@@ -303,8 +308,9 @@ function resetForGame(game){
 function cellLabel(cell, size, value, legalMove){
   const file = String.fromCharCode(97 + (cell % size));
   const rank = size - Math.floor(cell / size);
-  if (legalMove) return `${file}${rank}: поставить фишку`;
-  if (value === 'B') return `${file}${rank}: чёрная фишка`;
-  if (value === 'W') return `${file}${rank}: белая фишка`;
-  return `${file}${rank}: пустая клетка`;
+  const coordinate = `${file}${rank}`;
+  if (legalMove) return reversiText('cell.legal', { cell:coordinate });
+  if (value === 'B') return reversiText('cell.black', { cell:coordinate });
+  if (value === 'W') return reversiText('cell.white', { cell:coordinate });
+  return reversiText('cell.empty', { cell:coordinate });
 }

@@ -65,7 +65,7 @@ assert(manifest.includes("./assets/js/screens/store-screen-checkers-board-source
 assert(manifest.includes('mvp27_1=store-wrappers-localized-v1'),
   'Canonical manifest must expose Store wrapper localization identity.');
 
-assert(ru._meta?.version === 28, 'RU locale revision must publish Store wrapper catalog v28.');
+assert(Number(ru._meta?.version || 0) >= 28, 'RU locale revision must retain Store wrapper catalog v28 or a newer successor.');
 for (const gameType of ['tictactoe','chess','checkers','reversi','go','domino','four_in_a_row','battleship']) {
   assert(typeof ru.store?.games?.catalog_titles?.[gameType] === 'string',
     `Store game catalog title must be localized by stable game_type: ${gameType}`);

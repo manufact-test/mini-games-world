@@ -81,6 +81,7 @@ $db->execute(
 );
 
 (require $root . '/database/migrations/20260920_0050_add_tournament_rules_consent.php')->up($db);
+(require $root . '/database/migrations/20260922_0056_add_tournament_registration_publication.php')->up($db);
 
 $mgwId = 'MGW-0123456789ABCDEF';
 $accountRef = 'legacy:777001';

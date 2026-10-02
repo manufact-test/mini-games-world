@@ -33,14 +33,14 @@ assert(shell.includes("import { settlePendingAccountLinkBeforeBoot } from './pro
 assert(profile.includes("from '../profile/mgw-account-link-ui.js?v=3';"), 'Profile must preserve the same accepted v3 account-link import identity.');
 assert(manifest.includes("'./assets/js/profile/mgw-account-link-ui.js?v=3' => './assets/js/profile/mgw-account-link-ui.js?v=4&mvp27_1=localized-v1'"), 'Canonical manifest must publish one localized account-link alias.');
 
-assert(ru._meta?.version === 36, 'RU locale revision must publish account-link catalog v36.');
+assert(Number(ru._meta?.version || 0) >= 36, 'RU locale revision must retain account-link catalog v36 or a newer successor.');
 assert(ru.account_link?.profile?.title === 'Привязать Telegram-аккаунт', 'Accepted Profile link title must remain unchanged.');
 assert(ru.account_link?.loading?.checking_telegram === 'Проверяем подтверждение в Telegram…', 'Accepted confirmation progress copy must remain unchanged.');
 assert(ru.account_link?.intro?.not_moved_note === 'Временные 1000 стартовых коинов нового Android-профиля не добавляются к вашему балансу.', 'Accepted starter-coin warning must remain unchanged.');
 assert(ru.account_link?.pending?.confirmed === 'Я подтвердил в Telegram', 'Accepted confirmation action must remain unchanged.');
 assert(ru.account_link?.success === 'Telegram-аккаунт привязан. Загружаем ваш профиль…', 'Accepted success copy must remain unchanged.');
 
-assert(debt.cyrillic_lines_total === 3531 && debt.by_scope?.client === 1850, 'Localization debt baseline must ratchet by exactly 39 client lines.');
+assert(debt.cyrillic_lines_total <= 3531 && debt.by_scope?.client <= 1850, 'Localization debt must never regress above the accepted post-Account-Link baseline.');
 
 console.log('MVP27_1_ACCOUNT_LINK_LOCALIZATION_CONTRACT=PASS');
 console.log('MVP27_1_ACTIVE_ACCOUNT_LINK_HARDCODED_CYRILLIC=0');

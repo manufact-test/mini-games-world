@@ -56,6 +56,10 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if git diff --quiet "$base" "$head" -- app/assets/js/screens/tournaments-screen-v1.js; then
+            echo "Successor localization slice: predecessor owner unchanged; original bounded migration scope does not apply."
+            exit 0
+          fi
           allowed='^(app/assets/js/screens/tournaments-screen-v1\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|bot/tests/Mvp21_6TournamentProgressionUxContractTest\.php|ops/checks/mvp27_1_arena_bracket_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-arena-bracket-localization\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected Arena bracket localization paths:\n%s\n' "$bad" >&2; exit 1; }

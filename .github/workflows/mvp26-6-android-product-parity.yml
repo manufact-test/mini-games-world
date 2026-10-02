@@ -76,6 +76,23 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          android_owner_changes="$(git diff --name-only "$base" "$head" -- \
+            .well-known/assetlinks.json \
+            android-app \
+            bot/android-auth.php \
+            bot/support-attachment-download.php \
+            bot/helpers/validators.php \
+            bot/storage/JsonDatabase.php \
+            bot/invites.php \
+            bot/invite-opponents.php \
+            bot/social/SocialInviteGuard.php \
+            bot/tests/Mvp26_6AndroidParityCorrectiveTest.php \
+            app/v110.php \
+            .github/workflows/mvp26-5-platform-adapters.yml)"
+          if [[ -z "$android_owner_changes" ]]; then
+            echo 'MVP-26.6 Android product owners unchanged; successor web/localization slice skips the frozen Android boundary guard.'
+            exit 0
+          fi
           git diff --exit-code "$base" "$head" -- \
             bot/games bot/ratings bot/tournaments bot/economy bot/ledger \
             app/assets/js/telegram/telegram-app.js \

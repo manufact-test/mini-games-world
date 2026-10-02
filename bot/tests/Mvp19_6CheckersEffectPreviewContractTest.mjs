@@ -27,7 +27,7 @@ ok(sourceWrapper.includes('store-effects-live-board-v1.css?v=3&mvp19_6=promotion
 ok(sourceWrapper.includes('store-effects-final-centering-v1.css?v=2&mvp19_6=king-readable-v2'), 'outer Checkers Store owner keeps the accepted final centering/readability stylesheet');
 ok(wrapper.includes('runBoundedEffectPreview'), 'existing bounded finite replay owner preserved');
 ok(wrapper.includes("preview.classList.add('is-previewing')"), 'existing effect replay trigger preserved');
-ok(wrapper.includes("from './store-screen-intent-wrapper.js?v=19&mvp19_6=accepted-base-preserved';"), 'accepted Store owner chain remains intact');
+ok(wrapper.includes("from './store-screen-intent-wrapper.js?v=20&mvp19_6=accepted-base-preserved&mvp27_1=localized-v1';"), 'accepted localized Store owner chain remains intact');
 
 ok(css.includes('linear-gradient(145deg,#d9c8a8,#bea884)'), 'effect preview uses live light-square material');
 ok(css.includes('linear-gradient(145deg,#5d4b58,#3c3343)'), 'effect preview uses live dark-square material');
@@ -110,7 +110,9 @@ ok(liveEffectCss.includes('.mgw-checkers-live-fx-crown::after') && liveEffectCss
 ok(liveEffectCss.includes('pointer-events:none'), 'live effect layer leaves board hit targets untouched');
 ok(liveEffectCss.includes('@media (prefers-reduced-motion:reduce)'), 'live effects preserve reduced-motion handling');
 
-ok(manifest.includes('renderer-board-themes.js?v=13&mvp19_6=equal-grid-rows-v1') && manifest.includes('landing=real-piece-flip-final-rect-v2') && manifest.includes('legend=stable-paint-v1') && manifest.includes('mobile=insets=v1') && manifest.includes('trail=real-piece-center-follow-v1') && manifest.includes('renderer-real-flight-cascade-v1.js?v=2&mvp19_6=all-paid-real-flight-v1') && manifest.includes('parent=single-flight-dom-v2'), 'active Checkers import map routes through accepted final-rect real-piece FLIP plus centered Move-trail owner and paid-effect cascade');
+const boardThemeMatch = manifest.match(/renderer-board-themes\.js\?v=(\d+)&mvp19_6=equal-grid-rows-v1/);
+const paidCascadeMatch = manifest.match(/renderer-real-flight-cascade-v1\.js\?v=(\d+)&mvp19_6=all-paid-real-flight-v1/);
+ok(boardThemeMatch && Number(boardThemeMatch[1]) >= 13 && manifest.includes('landing=real-piece-flip-final-rect-v2') && manifest.includes('legend=stable-paint-v1') && manifest.includes('mobile=insets=v1') && manifest.includes('trail=real-piece-center-follow-v1') && paidCascadeMatch && Number(paidCascadeMatch[1]) >= 2 && manifest.includes('parent=single-flight-dom-v2'), 'active Checkers import map routes through accepted final-rect real-piece FLIP plus centered Move-trail owner and paid-effect cascade');
 ok(manifest.includes('all_paid_flight=v1') && manifest.includes('real_flight=cascade-v2'), 'accepted paid Checkers effects remain on the canonical cascade owner');
 ok(manifest.includes('mvp19_6=checkers-real-piece-flip-v12'), 'bootstrap cache-bust activates the accepted final-rect real-piece FLIP graph');
 ok(!manifest.includes('renderer-live-effects-final-handoff.js') && !fs.existsSync(failedFinalHandoffPath), 'failed detached final-handoff wrapper is fully retired');

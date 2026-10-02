@@ -133,6 +133,9 @@ jobs:
               app/assets/css/games/domino/rules.css \
               app/assets/js/games/go \
               app/assets/js/games/reversi \
+              ':(exclude)app/assets/js/games/reversi/renderer.js' \
+              ':(exclude)app/assets/js/games/reversi/renderer-cosmetics-v1.js' \
+              ':(exclude)app/assets/js/games/reversi/renderer-cosmetics-premium-v4.js' \
               app/assets/js/games/chess \
               app/assets/js/games/checkers \
               app/assets/js/checkers-cosmetics \

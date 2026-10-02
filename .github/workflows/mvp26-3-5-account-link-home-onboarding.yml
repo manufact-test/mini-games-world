@@ -101,6 +101,10 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if git diff --quiet "$base" "$head" -- app/assets/js/profile/mgw-account-link-ui.js; then
+            echo "Successor slice: Account Link UI owner unchanged; original onboarding scope guard does not apply."
+            exit 0
+          fi
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
           while IFS= read -r path; do

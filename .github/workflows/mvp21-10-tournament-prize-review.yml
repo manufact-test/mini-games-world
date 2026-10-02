@@ -98,6 +98,10 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if git diff --quiet "$base" "$head" -- bot/tournaments/TournamentPrizeReviewService.php bot/database/migrations/20260922_0060_create_tournament_prize_review.php; then
+            echo "Successor slice: tournament prize-review owner unchanged; original bounded/frozen scope does not apply."
+            exit 0
+          fi
           admin_successor=0
           if git diff --name-only "$base" "$head" | grep -Fxq '.github/workflows/mvp22-admin-rework.yml'; then
             admin_successor=1

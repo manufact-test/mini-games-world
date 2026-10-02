@@ -44,7 +44,7 @@ for (const key of [
 assert(manifest.includes('mvp27_1=localized-v1'),
   'Canonical invite graph must expose localization cache identity.');
 
-assert(ru._meta?.version === 29, 'RU locale revision must publish invite catalog v29.');
+assert(Number(ru._meta?.version || 0) >= 29, 'RU locale revision must retain invite catalog v29 or a newer successor.');
 for (const key of [
   'game_titles','social','rematch','direct','incoming','summary','owner_wait',
   'ready','accepted','terminal','loading','status','network','board'

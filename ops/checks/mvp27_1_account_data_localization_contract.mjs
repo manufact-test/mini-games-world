@@ -19,7 +19,7 @@ assert(!/[\u0400-\u04FF]/.test(shortcuts), 'Active account shortcut owner must c
 assert(shortcuts.includes("t('friends.menu.title')") && shortcuts.includes("t('account_data.menu.title')"), 'More menu social/account labels must resolve through canonical locale ownership.');
 assert(shortcuts.includes('account-data-sheet-v1.js?v=8&mvp22_8=account-data-v1&mvp23=mobile-cold-first-open-v1&mvp25_2=human-copy-v1&mvp26_4=android-reauth-v1&mvp26_4_2=android-download-pending-v1&mvp27_1=localized-v1'), 'Active Account Data lazy import must publish the localized cache identity.');
 assert(manifest.includes('mvp27_1=friends-localized-v1&mvp27_1=account-data-localized-v1'), 'Canonical manifest must publish the localized account-shortcuts owner.');
-assert(ru._meta?.version === 33, 'RU locale revision must publish Account Data v33.');
+assert(Number(ru._meta?.version || 0) >= 33, 'RU locale revision must retain Account Data v33 or a newer successor.');
 assert(ru.account_data?.menu?.title === 'Данные и аккаунт', 'RU Account Data menu copy must preserve accepted wording.');
 assert(ru.account_data?.export?.download === 'Скачать ZIP', 'RU export action must preserve accepted wording.');
 assert(ru.account_data?.delete?.action === 'Удалить аккаунт', 'RU delete action must preserve accepted wording.');

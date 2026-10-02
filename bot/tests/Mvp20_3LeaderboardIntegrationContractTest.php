@@ -25,6 +25,9 @@ $mainCss = $read('app/assets/css/main.css');
 $mainShell = $read('app/assets/js/main-v110-handoff-shell.js');
 $locale = json_decode($read('app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 $manifest = $read('app/runtime/client/version-manifest.php');
+$nav = $locale['nav'] ?? [];
+$shell = $locale['shell'] ?? [];
+$profileKeys = $locale['profile'] ?? [];
 
 $assertTrue(str_contains($bootstrap, "../ratings/LeaderboardService.php"), 'Bootstrap must load one leaderboard owner.');
 $assertTrue(str_contains($migration, 'min_rated_matches') && str_contains($migration, 'DEFAULT 5'), 'Leaderboard minimum must stay five rated matches.');
@@ -109,7 +112,7 @@ $assertTrue(str_contains($arena, 'data-tournaments-game'), 'Arena must own the p
 $assertTrue(str_contains($arena, "addEventListener('wheel'"), 'Arena game selector must support mouse-wheel overflow.');
 $assertTrue(str_contains($arena, "addEventListener('pointermove'"), 'Arena game selector must support mouse drag overflow.');
 $assertTrue(str_contains($arena, 'data-tournaments-scroll'), 'Arena game selector must expose explicit left/right overflow controls.');
-$assertTrue(str_contains($arena, 'tournaments-v2-table-head') && str_contains($arena, '>Игрок<') && str_contains($arena, '>Очки<'), 'Arena leaderboard must label rank, player and points columns.');
+$assertTrue(str_contains($arena, 'tournaments-v2-table-head') && str_contains($arena, "t('profile.player')") && str_contains($arena, "t('profile.rating_points')") && (($profileKeys['player'] ?? null) === 'Игрок') && (($profileKeys['rating_points'] ?? null) === 'Очки'), 'Arena leaderboard must label rank, player and points columns through locale ownership.');
 $assertTrue(str_contains($arena, 'tournaments-v2-scroll-icon') && str_contains($arena, '<svg'), 'Arena overflow controls must use centered SVG chevrons rather than font glyph baselines.');
 $assertTrue(str_contains($mainCss, '#screen-tournaments .tournaments-v2-tabs-shell{') && str_contains($mainCss, 'display:block;'), 'Arena game strip must start at the board content edge instead of reserving a left arrow column.');
 $assertTrue(str_contains($mainCss, '.tournaments-v2-scroll--left{left:0}') && str_contains($mainCss, '.tournaments-v2-scroll--right{right:0}'), 'Arena overflow arrows must be centered overlays rather than layout columns.');
@@ -120,9 +123,6 @@ $assertTrue(!str_contains($arena, 'leaderboard_preseason'), 'Arena must not rend
 $assertTrue(!str_contains($arena, 'leaderboard_progress'), 'Arena must not render the rejected eligibility progress strip above the board.');
 $assertTrue(!str_contains($arena, 'skill_score') && !str_contains($arena, 'hidden_skill'), 'Arena must not display hidden skill.');
 
-$nav = $locale['nav'] ?? [];
-$shell = $locale['shell'] ?? [];
-$profileKeys = $locale['profile'] ?? [];
 $assertTrue(($nav['tournaments'] ?? null) === 'Арена', 'Bottom navigation label must be Арена.');
 $assertTrue(($shell['tournaments_title'] ?? null) === 'Соревнования', 'Arena page heading must be Соревнования.');
 $assertTrue(($shell['competition_rating'] ?? null) === 'Рейтинг', 'Competition primary tab must include Рейтинг.');

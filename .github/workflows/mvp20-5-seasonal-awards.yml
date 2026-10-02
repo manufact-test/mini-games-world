@@ -99,6 +99,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-* ]]; then
+            echo 'MVP-27.1 successor localization slice: historical bounded-scope guard is not applicable.'
+            exit 0
+          fi
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           successor=0

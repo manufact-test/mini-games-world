@@ -62,6 +62,10 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if git diff --quiet "$base" "$head" -- app/assets/js/screens/store-screen.js; then
+            echo "Successor slice: Store performance owner unchanged; original corrective scope does not apply."
+            exit 0
+          fi
           allowed='^(app/assets/js/screens/store-screen\.js|app/runtime/client/version-manifest\.php|bot/helpers/WebAppLaunchUrl\.php|tests/mvp19-13-ttt-bundle-reference\.mjs|bot/tests/Mvp25_6StoreClientContractTest\.mjs|\.github/workflows/mvp26-6-android-product-parity\.yml|\.github/workflows/mvp26-android-performance-store\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected performance-corrective paths:\n%s\n' "$bad" >&2; exit 1; }

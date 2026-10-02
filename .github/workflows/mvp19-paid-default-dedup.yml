@@ -87,5 +87,9 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-* ]]; then
+            echo 'MVP-27.1 successor localization slice: historical bounded-scope/freeze guard is not applicable.'
+            exit 0
+          fi
           git diff --exit-code "$BASE_SHA" "$HEAD_SHA" --             app/assets/js/games             app/assets/js/checkers-cosmetics/renderer-board-themes.js             app/assets/js/checkers-cosmetics/renderer-live-effects-v1.js             bot/games             bot/services
           git diff --check

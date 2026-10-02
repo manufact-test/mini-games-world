@@ -51,7 +51,8 @@ $assertSame('Ник может содержать максимум 13 симво
 $assertContains('От 3 до 13 символов', (string)($catalog['profile']['nickname_edit_note'] ?? ''), 'Nickname editor note must show the final cap.');
 
 $assertContains("menuItemMarkup('settingsBtn', '⚙️', t('settings.title'))", $home, 'Settings must use the shared standard menu-row markup.');
-$assertContains("menuItemMarkup('rulesBtn', '📘', 'Правила')", $home, 'Neighboring rows must use the same shared markup.');
+$assertContains("menuItemMarkup('rulesBtn', '📘', t('rules.open'))", $home, 'Neighboring rows must use the same shared localized markup.');
+$assertSame('Правила', $catalog['rules']['open'] ?? null, 'Rules row must preserve accepted RU copy through locale ownership.');
 $assertContains('menu-item-standard', $home, 'Shared More-menu row class must own standard geometry.');
 $assertContains('.sheet .menu-item-standard', $mainCss, 'Standard menu geometry must have one shared CSS owner.');
 $assertContains('.sheet .menu-item:focus,.sheet .menu-item:focus-visible', $mainCss, 'All menu rows must share one focus geometry rule.');

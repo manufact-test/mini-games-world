@@ -36,9 +36,14 @@ foreach ([
 ] as $category) {
     $assert(str_contains($reports, $category), 'Player reports must expose MVP-22.3 category: ' . $category);
 }
-$assert(str_contains($friendsUi, "['nickname','Недопустимый никнейм']"), 'Player report UI must expose nickname reports.');
-$assert(str_contains($friendsUi, "['avatar','Недопустимый аватар']"), 'Player report UI must expose avatar reports.');
-$assert(str_contains($friendsUi, "['stalling','Затягивание игры']"), 'Player report UI must expose stalling reports.');
+$assert(
+    str_contains($friendsUi, 'REPORT_REASON_CODES')
+        && str_contains($friendsUi, 't(`home.report.reasons.${value}`)')
+        && (($locale['home']['report']['reasons']['nickname'] ?? null) === 'Недопустимый никнейм')
+        && (($locale['home']['report']['reasons']['avatar'] ?? null) === 'Недопустимый аватар')
+        && (($locale['home']['report']['reasons']['stalling'] ?? null) === 'Затягивание игры'),
+    'Friends player-report UI must expose canonical localized moderation reasons.'
+);
 $assert(str_contains($homeUi, "document.getElementById('supportBtn')?.addEventListener('click',()=>openPlayerReportSheet())"), 'Main menu complaint entry must open the player-report flow instead of Support.');
 $assert(!str_contains($homeUi, "supportBtn')?.addEventListener('click',()=>openSupportForm('complaint'))"), 'Main menu complaint entry must never create a generic Support complaint ticket.');
 $assert(str_contains($homeUi, 'PLAYER_REPORT_REASON_CODES') && str_contains($homeUi, "t(`home.report.reasons.\${value}`)") && (($locale['home']['report']['reasons']['nickname'] ?? null) === 'Недопустимый никнейм') && (($locale['home']['report']['reasons']['stalling'] ?? null) === 'Затягивание игры'), 'Main menu player-report flow must expose canonical localized moderation reasons.');

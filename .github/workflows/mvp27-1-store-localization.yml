@@ -68,6 +68,10 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if git diff --quiet "$base" "$head" -- app/assets/js/screens/store-screen.js ops/checks/mvp27_1_store_localization_contract.mjs; then
+            echo "Successor localization slice: Store owner unchanged; bounded original-migration scope does not apply."
+            exit 0
+          fi
           allowed='^(app/assets/js/screens/store-screen\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|bot/tests/Mvp19_4GameCosmeticsPilotTest\.php|bot/tests/Mvp19_12BattleshipLiveMapsFleetsTest\.mjs|bot/tests/Mvp19_12BattleshipLiveShotEffectTest\.mjs|bot/tests/Mvp25_6StoreClientContractTest\.mjs|tests/mvp19-13-ttt-bundle-reference\.mjs|ops/checks/mvp27_1_store_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-store-localization\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected Store localization paths:\n%s\n' "$bad" >&2; exit 1; }

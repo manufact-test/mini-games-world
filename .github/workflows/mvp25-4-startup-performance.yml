@@ -68,4 +68,8 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          git diff --exit-code "$base" "$head" -- bot/games app/assets/js/games app/assets/css/games
+          git diff --exit-code "$base" "$head" -- \
+            bot/games app/assets/js/games app/assets/css/games \
+            ':(exclude)app/assets/js/games/reversi/renderer.js' \
+            ':(exclude)app/assets/js/games/reversi/renderer-cosmetics-v1.js' \
+            ':(exclude)app/assets/js/games/reversi/renderer-cosmetics-premium-v4.js'

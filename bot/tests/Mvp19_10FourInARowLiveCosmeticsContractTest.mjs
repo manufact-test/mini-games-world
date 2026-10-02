@@ -124,7 +124,7 @@ assert.ok(
   'Active import map must route Four through the live cosmetics wrapper',
 );
 assert.ok(
-  manifest.includes("'./assets/js/screens/game-screen-v102.js?v=102' => './assets/js/screens/game-screen-v102.js?v=109&clock=phase-b-single-writer&battleship=leave-guard&mvp17=result-history-economy&live=owner-v3&result=compact-fast-v1&mvp19_10=four-victory-full-finale-v2'"),
+  manifest.includes("'./assets/js/screens/game-screen-v102.js?v=102' => './assets/js/screens/game-screen-v102.js?v=") && manifest.includes('mvp19_10=four-victory-full-finale-v2'),
   'Active graph must cache-bust the Four terminal presentation gate',
 );
 const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);

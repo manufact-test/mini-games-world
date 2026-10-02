@@ -16,6 +16,7 @@ $read = static function (string $path) use ($root): string {
 $profile = $read('app/assets/js/screens/profile-screen-v110.js');
 $ru = $read('app/locales/ru.json');
 $manifest = $read('app/runtime/client/version-manifest.php');
+$catalog = json_decode($ru, true, 512, JSON_THROW_ON_ERROR);
 
 $assert(
     !str_contains($profile, 'profile-v2-achievements')
@@ -31,13 +32,16 @@ $assert(
 $assert(
     str_contains($profile, 'tournamentVisiblePermanentRewards')
         && str_contains($profile, 'const achievements = permanent.filter')
-        && str_contains($profile, 'Достижения'),
-    'Real tournament achievement/reward presentation must remain intact.'
+        && str_contains($profile, "t('profile.tournament.achievements')")
+        && (($catalog['profile']['tournament']['achievements'] ?? null) === 'Достижения'),
+    'Real tournament achievement/reward presentation must remain intact through canonical localization.'
 );
 
+$profileVersionMatch = [];
 $assert(
-    str_contains($manifest, "profile-screen-v110.js?v=1133&mvp25_1=real-achievements-only-v1"),
-    'Changed Profile source must publish a fresh cache identity so cached placeholder code cannot execute against the new locale catalog.'
+    preg_match('/profile-screen-v110\\.js\\?v=(\\d+)[^\']*mvp25_1=real-achievements-only-v1/', $manifest, $profileVersionMatch) === 1
+        && (int)$profileVersionMatch[1] >= 1133,
+    'Changed Profile source must stay at or beyond the accepted placeholder-cleanup cache identity.'
 );
 
 fwrite(STDOUT, "Mvp25_1ProfilePlaceholderCleanupContractTest: {$assertions} assertions passed\n");

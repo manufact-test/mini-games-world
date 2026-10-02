@@ -71,6 +71,10 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
+          if git diff --quiet "$base" "$head" -- app/assets/js/games/game-invites-v110.js app/assets/js/main-v110-handoff-shell.js app/assets/js/state.js; then
+            echo "Successor slice: invite-sync wallet ownership files unchanged; original bounded scope does not apply."
+            exit 0
+          fi
           allowed='^(\.github/workflows/mvp26-3-12-invite-sync-wallet-ownership\.yml|app/assets/js/games/game-invites-v110\.js|app/assets/js/main-v110-handoff-shell\.js|app/runtime/client/version-manifest\.php|bot/tests/Mvp26_3_12InviteSyncBalanceOwnershipContractTest\.php)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-26.3.12 paths:\n%s\n' "$bad" >&2; exit 1; }

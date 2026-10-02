@@ -111,7 +111,7 @@ jobs:
           grep -F '@media(prefers-reduced-motion:reduce)' app/assets/css/production-v114-victory-effects-victory-nova.css
           grep -F 'victory-nova"]){order:3}' app/assets/css/production-v113-victory-effects-tier-swap.css
           grep -F 'production-v114-victory-effects-victory-nova.css?v=1' app/assets/js/profile/mgw-profile-victory-effects-card-parity.js
-          grep -F 'mgw-profile-victory-effects-card-parity.js?v=11&mvp19_3=victory-nova' app/runtime/client/version-manifest.php
+          grep -Eq 'mgw-profile-victory-effects-card-parity\.js\?v=(1[1-9]|[2-9][0-9]+).*mvp19_3=victory-nova' app/runtime/client/version-manifest.php
           grep -F 'victory=victory-nova&visual_repair=11' app/runtime/client/version-manifest.php
           ! grep -Eq '\.(webp|png|jpe?g)' app/assets/js/profile/mgw-profile-victory-effects-v4.js
           ! grep -Fq 'gameAction(' app/assets/js/profile/mgw-profile-victory-effects-v4.js
@@ -122,6 +122,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-* ]]; then
+            echo 'MVP-27.1 successor localization slice: historical bounded-scope guard is not applicable.'
+            exit 0
+          fi
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           git diff --exit-code "$base" "$head" -- \

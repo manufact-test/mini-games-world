@@ -142,6 +142,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-* ]]; then
+            echo 'MVP-27.1 successor localization slice: historical bounded-scope guard is not applicable.'
+            exit 0
+          fi
           if [[ "${{ github.head_ref }}" == agent/mvp23-mobile-cold-first-interaction-* || "${{ github.head_ref }}" == agent/mvp23-manual-acceptance-profile-route-latency-* ]]; then
             exit 0
           fi

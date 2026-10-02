@@ -1,5 +1,5 @@
 {
-  "_meta": {"locale":"ru","version":39},
+  "_meta": {"locale":"ru","version":40},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
   "topbar": {"balance":"Баланс","notifications":"Уведомления"},
@@ -854,7 +854,20 @@
         "event":{"finished":"Игра завершена","opponent_turn":"Ход соперника — следите за доской","continue_capture":"Продолжайте взятие этой же шашкой","capture_required":"Обязательное взятие — выберите подсвеченную шашку","your_turn":"Ваш ход — выберите шашку"},
         "cell":{"capture_target":"взять шашку","move_target":"сделать ход","white_piece":"белая шашка","white_king":"белая дамка","black_piece":"чёрная шашка","black_king":"чёрная дамка"}
       }
-    },"reversi":{"name":"Реверси"},"chess":{"name":"Шахматы"},"go":{"name":"Го"},"domino":{
+    },"reversi":{
+      "name":"Реверси",
+      "ui":{
+        "meta":{"fallback_room":"Игра","summary":"{room} · {bet} коинов · {size}×{size}"},
+        "player_mark":{"black":"● чёрные","white":"○ белые"},
+        "status":{"opponent_passed":"Ход соперника пропущен — ваш ход","your_turn":"Ваш ход","opponent_turn":"Ход соперника"},
+        "score":{"you":"Вы","opponent":"Соперник"},
+        "legend":{"available":"доступный ход","last":"последний ход"},
+        "errors":{"illegal_move":"Здесь нельзя поставить фишку. Выберите подсвеченную клетку."},
+        "events":{"animating_self":"Ваш ход — переворачиваем фишки","animating_opponent":"Соперник сделал ход — переворачиваем фишки","finished":"Партия завершена · ● {black} : {white} ○","pass_self":"У вас не было ходов — ход пропущен","pass_opponent":"У соперника нет ходов — ход снова ваш","your_turn_hint":"Ваш ход — выберите подсвеченную клетку","opponent_turn_hint":"Ход соперника — следите за полем"},
+        "result":{"draw":"Ничья","victory":"Победа","defeat":"Поражение"},
+        "cell":{"legal":"{cell}: поставить фишку","black":"{cell}: чёрная фишка","white":"{cell}: белая фишка","empty":"{cell}: пустая клетка"}
+      }
+    },"chess":{"name":"Шахматы"},"go":{"name":"Го"},"domino":{
       "name":"Домино",
       "ui":{
         "game_fallback":"Игра","meta":"{room} · {bet} коинов · классическое домино",

@@ -70,6 +70,10 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
+          if git diff --quiet "$base" "$head" -- app/assets/js/main-v110-handoff-shell.js app/assets/js/state.js app/assets/js/config.js app/assets/js/api/client.js app/assets/js/screens/home-screen.js app/assets/js/screens/search-screen-v102.js; then
+            echo "Successor slice: Mini App Gold cleanup owners unchanged; original bounded scope does not apply."
+            exit 0
+          fi
           allowed='^(app/assets/js/(main-v110-handoff-shell\.js|state\.js|config\.js|api/client\.js|screens/(home-screen|search-screen-v102)\.js|games/(unified-game-launcher|game-invites-v110|invite-link-entry-v110r12)\.js)|app/runtime/client/version-manifest\.php|bot/tests/Mvp24MiniAppGoldStateCleanupContractTest\.php|\.github/workflows/mvp24-miniapp-gold-state-cleanup\.yml)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-24.2 Mini App paths:\n%s\n' "$bad" >&2; exit 1; }

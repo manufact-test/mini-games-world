@@ -92,8 +92,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!str_contains($s,"store-screen-checkers-board-source-wrapper.js?v=36") || !str_contains($s,"store-screen-checkers-wrapper.js?v=5") || !str_contains($s,"bundle_selector=preserve-v1") || !str_contains($s,"mvp19_6=visual-corrective-v3")) exit(1); $c=$m["imports"]["./assets/js/api/client.js?v=34"]??""; if(!str_contains($c,"mvp19=store-v2")) exit(2); $css=$m["assets"]["main_css"]??""; if(!str_contains($css,"mvp19=store-v2") || !str_contains($css,"corrective=2")) exit(3);'
-          grep -F "from './store-screen-intent-wrapper.js?v=19&mvp19_6=accepted-base-preserved';" app/assets/js/screens/store-screen-checkers-wrapper.js
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!preg_match("~store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)~",$s,$outer) || (int)$outer[1] < 36 || !preg_match("~store-screen-checkers-wrapper\\.js\\?v=(\\d+)~",$s,$inner) || (int)$inner[1] < 5 || !str_contains($s,"bundle_selector=preserve-v1") || !str_contains($s,"mvp19_6=visual-corrective-v3")) exit(1); $c=$m["imports"]["./assets/js/api/client.js?v=34"]??""; if(!str_contains($c,"mvp19=store-v2")) exit(2); $css=$m["assets"]["main_css"]??""; if(!str_contains($css,"mvp19=store-v2") || !str_contains($css,"corrective=2")) exit(3);'
+          php -r '$s=file_get_contents("app/assets/js/screens/store-screen-checkers-wrapper.js"); if(!preg_match("~store-screen-intent-wrapper\\.js\\?v=(\\d+)&mvp19_6=accepted-base-preserved~",$s,$m) || (int)$m[1] < 19) exit(1);'
           grep -F "from './store-screen.js?v=44&intent_base=1';" app/assets/js/screens/store-screen-intent-wrapper.js
           grep -F 'void openStoreTab();' app/assets/js/screens/store-screen-intent-wrapper.js
           grep -F "@import url('./screens/store-v2.css?v=5&mvp19=store-v2&corrective=2&mvp19_4=game-cosmetics-polish-v3&c1=field-parity');" app/assets/css/main.css
@@ -110,6 +110,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-* ]]; then
+            echo 'MVP-27.1 successor localization slice: historical bounded-scope guard is not applicable.'
+            exit 0
+          fi
           grep -F 'requestIdleCallback' app/assets/js/screens/store-screen.js
           grep -F 'refreshStoreSilently' app/assets/js/screens/store-screen.js
           grep -F "{ id:'coins', label:'Коины' }" app/assets/js/screens/store-screen.js

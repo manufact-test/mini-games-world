@@ -62,6 +62,10 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
+          if git diff --quiet "$base" "$head" -- app/assets/js/main-v110-handoff-shell.js app/assets/js/screens/home-screen.js app/assets/js/screens/store-order.js app/assets/js/screens/store-orders.js app/assets/css/screens/store-order.css app/assets/css/screens/store-orders.css; then
+            echo "Successor slice: legacy Gold client owners unchanged; original bounded removal scope does not apply."
+            exit 0
+          fi
           allowed='^(docs/mvp24-legacy-gold-dependency-map\.md|app/assets/js/main-v110-handoff-shell\.js|app/assets/js/screens/(home-screen|store-order|store-orders)\.js|app/assets/css/main\.css|app/assets/css/screens/(store-order|store-orders)\.css|app/runtime/client/version-manifest\.php|bot/tests/Mvp24LegacyGoldClientSurfaceContractTest\.php|\.github/workflows/mvp24-legacy-gold-client-surface\.yml)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-24 client paths:\n%s\n' "$bad" >&2; exit 1; }
