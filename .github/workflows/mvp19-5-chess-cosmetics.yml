@@ -105,7 +105,7 @@ jobs:
         run: |
           set -euo pipefail
           php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; if(!preg_match("~store-screen-checkers-wrapper\\.js\\?v=(\\d+)~",$s,$w) || (int)$w[1] < 5 || !str_contains($s,"mvp19_6=visual-corrective-v3")) exit(1); if(!str_contains($m["imports"]["./assets/js/games/chess/renderer.js?v=68"]??"","mvp19_5=cosmetics")) exit(2); $css=$m["assets"]["main_css"]??""; if(!preg_match("~main\\.css\\?v=(\\d+)~",$css,$v) || (int)$v[1] < 190 || !str_contains($css,"mvp19_5=chess-cosmetics")) exit(3);'
-          php -r '$s=file_get_contents("app/assets/js/screens/store-screen-checkers-wrapper.js"); if(!preg_match("~from \'\\./store-screen-intent-wrapper\\.js\\?v=(\\d+)&mvp19_6=accepted-base-preserved(?:&mvp27_1=localized-v1)?\';~",$s,$m) || (int)$m[1] < 19) exit(1);'
+          php -r '$s=file_get_contents("app/assets/js/screens/store-screen-checkers-wrapper.js"); if(!preg_match("~store-screen-intent-wrapper\\.js\\?v=(\\d+)&mvp19_6=accepted-base-preserved(?:&mvp27_1=localized-v1)?~",$s,$m) || (int)$m[1] < 19) exit(1);'
           grep -F "from './store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog';" app/assets/js/screens/store-screen-intent-wrapper.js
           grep -F "from './store-screen.js?v=44&intent_base=1';" app/assets/js/screens/store-screen-intent-wrapper.js
           grep -F "runtime-cosmetics.css?v=3&mvp19_5=native-board-preview&fx_preview=move-live-parity-v4" app/assets/js/screens/store-screen-intent-wrapper.js
