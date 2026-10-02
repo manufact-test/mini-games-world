@@ -11,6 +11,7 @@ const exactCheckersCss = fs.readFileSync('app/assets/css/screens/profile-checker
 const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 const store = fs.readFileSync('app/assets/js/screens/store-screen-checkers-wrapper.js', 'utf8');
 const storeSource = fs.readFileSync('app/assets/js/screens/store-screen-checkers-board-source-wrapper.js', 'utf8');
+const locale = JSON.parse(fs.readFileSync('app/locales/ru.json', 'utf8'));
 
 function expect(condition, message){
   if (!condition) throw new Error(message);
@@ -20,7 +21,7 @@ function expect(condition, message){
 expect(checkers.includes('state.profileInventory'), 'Checkers Profile must consume authoritative Profile inventory');
 expect(checkers.includes('item.owned === true') && checkers.includes("item.item_type === 'game'"), 'Checkers Profile must render authoritative owned game items');
 expect(checkers.includes("checkersGameType(item) === 'checkers'"), 'Checkers Profile must filter canonical Checkers inventory');
-expect(checkers.includes("theme:'Доски'") && checkers.includes("elements:'Шашки'") && checkers.includes("effect:'Эффекты'"), 'Checkers Profile must expose boards, checker sets and effects');
+expect(checkers.includes('profile.collection.games.checkers.groups.theme') && checkers.includes('profile.collection.games.checkers.groups.elements') && checkers.includes('profile.collection.games.checkers.groups.effect') && JSON.stringify(locale.profile?.collection?.games?.checkers?.groups) === JSON.stringify({ theme:'Доски', elements:'Шашки', effect:'Эффекты' }), 'Checkers Profile must expose localized boards, checker sets and effects');
 expect(!checkers.includes('CHECKERS_PROFILE_ITEMS'), 'Checkers Profile must not restore a manually maintained item catalogue');
 expect(!checkers.includes('game-checkers-board-wood') && !checkers.includes('game-checkers-board-neon'), 'Checkers Profile must not hard-code the old four-board subset');
 expect(checkers.includes('isCheckersItemEquipped(item)') && checkers.includes('inventory?.equipped'), 'equipped state must come from authoritative inventory');
@@ -45,7 +46,7 @@ expect(checkers.includes('mgw-checkers-piece-crown') && checkers.includes('mgw-c
 expect(checkers.includes('IntersectionObserver') && checkers.includes("classList.toggle('is-previewing', visible)"), 'Profile Checkers effects must remain visibility-owned');
 expect(checkers.includes('observedCheckersEffects') && checkers.includes('pruneDisconnectedCheckersEffectPreviews'), 'detached Checkers effect cards must be pruned from the observer');
 expect(!checkers.includes('void preview.offsetWidth') && !checkers.includes('1900') && !checkers.includes('260'), 'Profile Checkers effects must not force reflow/restart timers on every animation cycle');
-expect(checkers.includes("checkersDisplayName(item)") && checkers.includes("return 'Гранитные шашки'"), 'accepted granite checker presentation must carry into Profile');
+expect(checkers.includes("checkersDisplayName(item)") && checkers.includes('store.products.') && locale.store?.products?.['game-checkers-pieces-marble'] === 'Гранитные шашки', 'accepted granite checker presentation must carry into Profile through stable localization');
 expect(store.includes('startPassiveEffectPreview(preview)') && store.includes('runBoundedEffectPreview(preview)'), 'accepted Store passive effect owner must remain intact');
 expect(storeSource.includes('store-effects-live-board-v1.css?v=3&mvp19_6=promotion-destination-parity-v1'), 'Profile parity must target the current accepted Store effect CSS identity');
 
@@ -112,7 +113,7 @@ expect(manualRepairCss.includes('data-profile-game-panel="chess"') && manualRepa
 expect(manualRepairCss.includes('store-v2-mini-chess-board') && manualRepairCss.includes('justify-self:center!important'), 'Chess board, piece and effect primitives must be centered inside their Profile frames');
 
 // Runtime graph/caches must point at this exact repair layer while accepted gameplay stays frozen.
-expect(layout.includes("mgw-profile-checkers-parity.js?v=3&mvp19_6=checkers-profile-manual-repair-v3"), 'active Profile wrapper must import the repaired Checkers owner');
+expect(layout.includes("mgw-profile-checkers-parity.js?v=4&mvp19_6=checkers-profile-manual-repair-v3&mvp27_1=localized-v1"), 'active Profile wrapper must import the repaired Checkers owner');
 expect(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/profile/mgw-profile-chess-layout-v2.js?v=") && manifest.includes('mvp19_6=checkers-profile-manual-repair-v3') && manifest.includes('profile_card_visual=checkers-board-effect-store-exact-v2') && manifest.includes('profile_card_runtime=checkers-hard-square-v1') && manifest.includes('profile_perf=observer-cycle-v2'), 'manifest must publish the hard-square Checkers board/effect Profile owner identity independent of cache revision');
 expect(manifest.includes('client.js?v=1136') && manifest.includes('profile_inventory=store-sync-v1'), 'manifest must retain Store/Profile inventory synchronization');
 expect(manifest.includes("'./assets/js/games/checkers/renderer.js?v=57' => './assets/js/checkers-cosmetics/renderer-real-flight-cascade-v1.js?v=2&mvp19_6=all-paid-real-flight-v1&parent=single-flight-dom-v2&css=live-effects-v6&move=trail-only-v1'"), 'accepted Checkers gameplay/effect runtime identity must remain frozen');
