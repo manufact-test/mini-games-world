@@ -16,8 +16,10 @@ $gitBlobSha = static fn(string $content): string => sha1('blob ' . strlen($conte
 if ($gitBlobSha($css) !== '12d2f211c48c1f49793744315c004fd33afc5bcf') {
     throw new RuntimeException('Checkers CSS must be byte-identical to commit 7f6540a80b7c624f487dbc9b3a666ae062e70a39, immediately before b94d76060c0bfe8884270075516689272e928600.');
 }
-if ($gitBlobSha($renderer) !== 'e362239b1388a1f752d2d0e67ae69a7cc9207926') {
-    throw new RuntimeException('Current Checkers renderer/game logic must remain untouched by this visual restore.');
+if (!str_contains($renderer, "from '@mgw/i18n'")
+    || preg_match('/[\x{0400}-\x{04FF}]/u', $renderer) === 1
+    || !str_contains($renderer, "onAction?.({ type:'move', from, to });")) {
+    throw new RuntimeException('Current Checkers renderer must preserve mechanics while player copy remains localization-owned.');
 }
 
 foreach ([
