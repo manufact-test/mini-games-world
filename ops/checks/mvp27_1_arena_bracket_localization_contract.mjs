@@ -9,7 +9,7 @@ const ru = JSON.parse(fs.readFileSync('app/locales/ru.json', 'utf8'));
 const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 
 const start = arena.indexOf('const TOURNAMENT_TECHNICAL_RESULT_KEYS = Object.freeze({');
-const end = arena.indexOf('\nconst TOURNAMENT_TERMINAL_REWARD_LABELS = Object.freeze({', start);
+const end = arena.indexOf('\nconst TOURNAMENT_TERMINAL_REWARD_KEYS = Object.freeze({', start);
 assert(start >= 0 && end > start, 'Arena bracket localization boundary missing.');
 const bracketRegion = arena.slice(start, end);
 
