@@ -25,6 +25,9 @@ $mainCss = $read('app/assets/css/main.css');
 $mainShell = $read('app/assets/js/main-v110-handoff-shell.js');
 $locale = json_decode($read('app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 $manifest = $read('app/runtime/client/version-manifest.php');
+$nav = $locale['nav'] ?? [];
+$shell = $locale['shell'] ?? [];
+$profileKeys = $locale['profile'] ?? [];
 
 $assertTrue(str_contains($bootstrap, "../ratings/LeaderboardService.php"), 'Bootstrap must load one leaderboard owner.');
 $assertTrue(str_contains($migration, 'min_rated_matches') && str_contains($migration, 'DEFAULT 5'), 'Leaderboard minimum must stay five rated matches.');
@@ -120,9 +123,6 @@ $assertTrue(!str_contains($arena, 'leaderboard_preseason'), 'Arena must not rend
 $assertTrue(!str_contains($arena, 'leaderboard_progress'), 'Arena must not render the rejected eligibility progress strip above the board.');
 $assertTrue(!str_contains($arena, 'skill_score') && !str_contains($arena, 'hidden_skill'), 'Arena must not display hidden skill.');
 
-$nav = $locale['nav'] ?? [];
-$shell = $locale['shell'] ?? [];
-$profileKeys = $locale['profile'] ?? [];
 $assertTrue(($nav['tournaments'] ?? null) === 'Арена', 'Bottom navigation label must be Арена.');
 $assertTrue(($shell['tournaments_title'] ?? null) === 'Соревнования', 'Arena page heading must be Соревнования.');
 $assertTrue(($shell['competition_rating'] ?? null) === 'Рейтинг', 'Competition primary tab must include Рейтинг.');
