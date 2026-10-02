@@ -7,6 +7,7 @@ import { getSessionId } from '../session.js?v=27';
 import { showScreen } from '../router.js?v=27';
 import { startGamePolling } from '../screens/game-screen.js?v=74';
 import { renderBalances } from '../ui.js?v=27';
+import { t, getI18n } from '@mgw/i18n';
 
 const INVITES_URL = `${window.location.origin}/bot/invites.php`;
 const OPPONENTS_URL = `${window.location.origin}/bot/invite-opponents.php`;
@@ -19,15 +20,17 @@ const SHARE_WARM_DELAY_MS = 40;
 const SHARE_WARM_KEEPALIVE_MS = 180000;
 const MAX_OPPONENTS = 10;
 
+const inviteText = (key, params = {}) => t(`game_invites.${key}`, params);
+
 const GAME_OPTIONS = {
-  tictactoe: { title:'Крестики-нолики', sizes:[3,5,9], defaultSize:3 },
-  four_in_a_row: { title:'4 в ряд', sizes:[6,7,8], defaultSize:7 },
-  battleship: { title:'Морской бой', sizes:[10], defaultSize:10 },
-  checkers: { title:'Шашки', sizes:[8], defaultSize:8 },
-  reversi: { title:'Реверси', sizes:[6,8,10], defaultSize:8 },
-  chess: { title:'Шахматы', sizes:[8], defaultSize:8 },
-  go: { title:'Го', sizes:[9,13], defaultSize:9 },
-  domino: { title:'Домино', sizes:[7], defaultSize:7 },
+  tictactoe: { titleKey:'game_titles.tictactoe', sizes:[3,5,9], defaultSize:3 },
+  four_in_a_row: { titleKey:'game_titles.four_in_a_row', sizes:[6,7,8], defaultSize:7 },
+  battleship: { titleKey:'game_titles.battleship', sizes:[10], defaultSize:10 },
+  checkers: { titleKey:'game_titles.checkers', sizes:[8], defaultSize:8 },
+  reversi: { titleKey:'game_titles.reversi', sizes:[6,8,10], defaultSize:8 },
+  chess: { titleKey:'game_titles.chess', sizes:[8], defaultSize:8 },
+  go: { titleKey:'game_titles.go', sizes:[9,13], defaultSize:9 },
+  domino: { titleKey:'game_titles.domino', sizes:[7], defaultSize:7 },
 };
 
 let initialized = false;
@@ -122,9 +125,9 @@ export function initGameInvites(){
   }
 }
 
-export function openSocialPlayerInvite(inviteeId, opponentName = 'Игрок'){
+export function openSocialPlayerInvite(inviteeId, opponentName = inviteText('player')){
   const id = String(inviteeId || '').trim();
-  const name = String(opponentName || 'Игрок').trim() || 'Игрок';
+  const name = String(opponentName || inviteText('player')).trim() || inviteText('player');
   if (!id) return;
   if (hasActionableInvite()) {
     openCurrentInvite();
@@ -139,7 +142,7 @@ export function openSocialPlayerInvite(inviteeId, opponentName = 'Игрок'){
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="choice-grid" data-social-invite-games>
-      ${Object.entries(GAME_OPTIONS).map(([gameType, option]) => `<button class="choice" data-social-invite-game="${escapeHtml(gameType)}" type="button">${escapeHtml(option.title)}</button>`).join('')}
+      ${Object.entries(GAME_OPTIONS).map(([gameType, option]) => `<button class="choice" data-social-invite-game="${escapeHtml(gameType)}" type="button">${escapeHtml(gameTitle(gameType))}</button>`).join('')}
     </div>
   `);
   document.querySelectorAll('[data-social-invite-game]').forEach(button => {
@@ -157,7 +160,7 @@ export async function openIncomingInviteIfPresent(){
       currentInvite = result.invite || null;
       announceLinkedInviteNotification(result, token);
     } catch (error) {
-      toast(error.message || 'Приглашение уже недоступно.');
+      toast(error.message || inviteText('network.unavailable'));
     }
   }
 
@@ -221,7 +224,7 @@ function openInviteSetup(gameType, preserved = null){
     <span data-invite-setup hidden></span>
     <div class="sheet-head">
       <div>
-        <h2>Пригласить в «${escapeHtml(option.title)}»</h2>
+        <h2>Пригласить в «${escapeHtml(gameTitle(gameType))}»</h2>
         <p>Выберите вариант игры.</p>
       </div>
       <button class="close" data-close-sheet type="button">×</button>
@@ -350,7 +353,7 @@ function renderPlayerPickerError(requestGeneration, error){
   surface.results.innerHTML = `
     <div class="notifications-empty invite-empty-state">
       <div>⚠️</div><strong>Не удалось загрузить игроков</strong>
-      <span>${escapeHtml(error?.message || 'Попробуйте ещё раз.')}</span>
+      <span>${escapeHtml(error?.message || inviteText('network.retry'))}</span>
     </div>`;
   surface.results.setAttribute('aria-busy', 'false');
 }
@@ -364,7 +367,7 @@ function bindPlayerPickerBack(context){
 
 function playerCard(item){
   const id = String(item?.id || '');
-  const name = String(item?.name || 'Игрок');
+  const name = String(item?.name || inviteText('player'));
   const statusClass = item?.busy ? 'busy' : (item?.online ? 'online' : 'offline');
   return `
     <button class="invite-player-card" data-direct-opponent="${escapeHtml(id)}" type="button">
@@ -381,7 +384,7 @@ function playerCard(item){
 async function createDirectInvite(context, inviteeId, button, opponentNameOverride = ''){
   if (!inviteeId || button.disabled) return;
   haptic('light');
-  const opponentName = String(opponentNameOverride || button.querySelector('strong')?.textContent || 'Игрок').trim() || 'Игрок';
+  const opponentName = String(opponentNameOverride || button.querySelector('strong')?.textContent || inviteText('player')).trim() || inviteText('player');
   const requestGeneration = ++directInviteRequestGeneration;
 
   showDirectInvitePending(context, opponentName, requestGeneration);
@@ -390,7 +393,7 @@ async function createDirectInvite(context, inviteeId, button, opponentNameOverri
     const result = await inviteRequest('create_direct', { ...context, inviteeId });
     syncState(result);
     currentInvite = result.invite || null;
-    if (!currentInvite?.token) throw new Error('Не удалось создать приглашение.');
+    if (!currentInvite?.token) throw new Error(inviteText('social.create_failed'));
 
     if (directInviteCancelIntents.has(requestGeneration)) {
       await settleQueuedDirectInviteCancel(currentInvite, requestGeneration);
@@ -414,7 +417,7 @@ async function createDirectInvite(context, inviteeId, button, opponentNameOverri
       scheduleWatch(0);
       return;
     }
-    toast(error.message || 'Не удалось отправить приглашение.');
+    toast(error.message || inviteText('social.send_failed'));
     if (isDirectInvitePendingSurfaceOpen(requestGeneration)) {
       if (opponentNameOverride) {
         socialInviteTarget = { id:String(inviteeId), name:opponentName };
@@ -440,8 +443,8 @@ async function settleQueuedDirectInviteCancel(invite, requestGeneration){
     scheduleWatch(0);
   } catch (error) {
     currentInvite = invite;
-    showOwnerWaiting(invite, 'Не удалось отменить приглашение. Попробуйте ещё раз.');
-    toast(error.message || 'Не удалось отменить приглашение.');
+    showOwnerWaiting(invite, inviteText('social.cancel_failed_retry'));
+    toast(error.message || inviteText('social.cancel_failed'));
   } finally {
     directInviteCancelIntents.delete(requestGeneration);
   }
@@ -457,7 +460,7 @@ async function createLinkDraft(context, button){
     syncState(result);
     const draftInvite = result?.invite || null;
     const draftToken = String(draftInvite?.token || '');
-    if (!draftToken) throw new Error('Не удалось подготовить ссылку.');
+    if (!draftToken) throw new Error(inviteText('social.link_prepare_failed'));
 
     const tg = getTelegram();
     const preparedId = String(draftInvite.prepared_message_id || '');
@@ -472,7 +475,7 @@ async function createLinkDraft(context, button){
     showPreparedLink(draftInvite, context);
   } catch (error) {
     if (String(error?.name || '') !== 'AbortError') {
-      toast(error.message || 'Не удалось подготовить приглашение.');
+      toast(error.message || inviteText('social.invite_prepare_failed'));
     }
   } finally {
     shareClickPending = false;
@@ -517,7 +520,7 @@ function warmShareDraft(context){
       // PreparedInlineMessage is warmed before the user taps Share so the
       // accepted Telegram shareMessage surface remains the visible owner.
       const result = await inviteRequest('create_link_draft', { ...normalized, prepareMessage:true }, { prefetch:true });
-      if (!result?.invite?.token) throw new Error('Не удалось подготовить ссылку.');
+      if (!result?.invite?.token) throw new Error(inviteText('social.link_prepare_failed'));
       if (shareWarm?.id !== entry.id) {
         void discardDraft(result.invite);
         return null;
@@ -590,9 +593,9 @@ async function obtainPreparedShareResult(context){
     await warmShareDraft(normalized);
     warm = shareWarm;
   }
-  if (!warm?.promise) throw new Error('Не удалось подготовить ссылку.');
+  if (!warm?.promise) throw new Error(inviteText('social.link_prepare_failed'));
   const result = await warm.promise;
-  if (!result?.invite?.token) throw new Error('Не удалось подготовить ссылку.');
+  if (!result?.invite?.token) throw new Error(inviteText('social.link_prepare_failed'));
   if (shareWarm?.id === warm.id) {
     shareWarm = null;
     window.clearTimeout(shareWarmExpiryTimer);
@@ -675,7 +678,7 @@ function settleNativeShare(sent, errorCode = '', targetAttempt = null){
   currentInvite = null;
   void discardDraft(attempt.invite);
   openInviteSetup(attempt.context.gameType, attempt.context);
-  toast('Не удалось отправить приглашение. Попробуйте ещё раз.');
+  toast(inviteText('social.send_failed_retry'));
 }
 
 async function confirmSharedInvite(attempt){
@@ -758,7 +761,7 @@ function showPreparedLink(invite, context){
 function openFallbackShare(invite){
   const publicShareUrl = String(invite.share_url || '');
   const telegramOpenUrl = String(invite.telegram_open_url || publicShareUrl);
-  if (!telegramOpenUrl) return toast('Ссылка временно недоступна.');
+  if (!telegramOpenUrl) return toast(inviteText('social.link_unavailable'));
   const text = String(invite.share_text || '')
     .replace(publicShareUrl, '')
     .replace(telegramOpenUrl, '')
@@ -774,12 +777,12 @@ function openFallbackShare(invite){
 }
 
 async function copyInviteLink(url){
-  if (!url) return toast('Ссылка временно недоступна.');
+  if (!url) return toast(inviteText('social.link_unavailable'));
   try {
     await navigator.clipboard.writeText(url);
-    toast('Ссылка скопирована.');
+    toast(inviteText('social.link_copied'));
   } catch (error) {
-    window.prompt('Скопируйте ссылку:', url);
+    window.prompt(inviteText('social.copy_prompt'), url);
   }
 }
 
@@ -880,7 +883,7 @@ async function performInviteAction(action, token, button){
     currentInvite = rollbackInvite;
     if (terminalContext.notificationSurface) dispatchNotificationsRefresh();
     else if (rollbackHtml) openSheet(rollbackHtml);
-    toast(error.message || 'Не удалось выполнить действие.');
+    toast(error.message || inviteText('social.action_failed'));
     setInviteButtonsDisabled(false);
     const restored = [...document.querySelectorAll('[data-invite-action][data-invite-token]')].find(candidate =>
       String(candidate.dataset.inviteAction || '') === action
@@ -995,7 +998,7 @@ async function createRematch(gameId, button){
     }
 
     currentInvite = result.invite || null;
-    if (!currentInvite?.token) throw new Error('Не удалось создать реванш.');
+    if (!currentInvite?.token) throw new Error(inviteText('rematch.create_failed'));
     const optimisticSurfaceOpen = String(
       document.querySelector('#sheet [data-rematch-pending]')?.dataset.rematchPending || ''
     ) === gameId;
@@ -1012,7 +1015,7 @@ async function createRematch(gameId, button){
       document.querySelector('#sheet [data-rematch-pending]')?.dataset.rematchPending || ''
     ) === gameId;
     if (optimisticSurfaceOpen && rollbackHtml) openSheet(rollbackHtml);
-    toast(error.message || 'Не удалось предложить реванш.');
+    toast(error.message || inviteText('rematch.propose_failed'));
   } finally {
     rematchPendingGameIds.delete(gameId);
   }
@@ -1139,7 +1142,7 @@ function showDirectInvitePending(context, opponentName, requestGeneration){
   openSheet(`
     <span data-invite-sheet data-direct-invite-pending="${Number(requestGeneration || 0)}" hidden></span>
     <div class="sheet-head">
-      <div><h2>Приглашение отправлено</h2><p>Для ${escapeHtml(opponentName || 'игрока')}</p></div>
+      <div><h2>Приглашение отправлено</h2><p>Для ${escapeHtml(opponentName || inviteText('player_genitive'))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${contextSummary(context)}
@@ -1184,14 +1187,14 @@ function finalizeDirectInvitePendingSurface(invite, requestGeneration){
   button.removeAttribute('data-direct-invite-cancel-reserved');
   button.dataset.inviteAction = 'cancel';
   button.dataset.inviteToken = token;
-  mountInviteCountdown(invite, 'Ожидаем ответ');
+  mountInviteCountdown(invite, inviteText('owner_wait.waiting_response'));
 }
 
 function showIncomingInvite(invite){
   openSheet(`
     ${inviteMarker(invite)}
     <div class="sheet-head">
-      <div><h2>Вас приглашают сыграть</h2><p>От ${escapeHtml(invite.inviter_name || 'игрока')}</p></div>
+      <div><h2>Вас приглашают сыграть</h2><p>От ${escapeHtml(invite.inviter_name || inviteText('player_genitive'))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${inviteSummary(invite)}
@@ -1201,7 +1204,7 @@ function showIncomingInvite(invite){
       <button class="btn ghost full" data-invite-action="decline" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отклонить</button>
     </div>
   `);
-  mountInviteCountdown(invite, 'Ответьте на приглашение');
+  mountInviteCountdown(invite, inviteText('incoming.respond'));
 }
 
 function contextSummary(context){
@@ -1225,14 +1228,14 @@ function showOwnerWaiting(invite, message = ''){
     <div class="small-note invite-status-note" data-invite-countdown>${message ? escapeHtml(message) : ''}</div>
     <button class="btn primary full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить приглашение</button>
   `);
-  mountInviteCountdown(invite, 'Ожидаем ответ');
+  mountInviteCountdown(invite, inviteText('owner_wait.waiting_response'));
 }
 
 function showOwnerReady(invite){
   openSheet(`
     ${inviteMarker(invite)}
     <div class="sheet-head">
-      <div><h2>Соперник согласен</h2><p>${escapeHtml(invite.invitee_name || 'Игрок')} готов играть.</p></div>
+      <div><h2>Соперник согласен</h2><p>${escapeHtml(invite.invitee_name || inviteText('player'))} готов играть.</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${inviteSummary(invite)}
@@ -1242,21 +1245,21 @@ function showOwnerReady(invite){
       <button class="btn ghost full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить</button>
     </div>
   `);
-  mountInviteCountdown(invite, 'Запустите матч');
+  mountInviteCountdown(invite, inviteText('status.start_match'));
 }
 
 function showInviteeWaiting(invite){
   openSheet(`
     ${inviteMarker(invite)}
     <div class="sheet-head">
-      <div><h2>Приглашение принято</h2><p>Ждём запуска матча от ${escapeHtml(invite.inviter_name || 'игрока')}.</p></div>
+      <div><h2>Приглашение принято</h2><p>Ждём запуска матча от ${escapeHtml(invite.inviter_name || inviteText('player_genitive'))}.</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${inviteSummary(invite)}
     <div class="small-note invite-status-note" data-invite-countdown>${escapeHtml(inviteeWaitingNote(invite))}</div>
     <button class="btn ghost full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить участие</button>
   `);
-  mountInviteCountdown(invite, 'Ждём запуск матча');
+  mountInviteCountdown(invite, inviteText('status.wait_start'));
 }
 
 function reconcileInviteeWaiting(invite){
@@ -1266,13 +1269,13 @@ function reconcileInviteeWaiting(invite){
   const note = document.querySelector('#sheet .invite-status-note');
   if (!marker || !note) return false;
   marker.dataset.inviteState = inviteSheetState(invite);
-  mountInviteCountdown(invite, 'Ждём запуск матча');
+  mountInviteCountdown(invite, inviteText('status.wait_start'));
   return true;
 }
 
 function inviteeWaitingNote(invite){
   const formatted = formatTime(invite?.ready_deadline_at);
-  return formatted === '—' ? 'Ожидаем запуск матча.' : `Ожидание до ${formatted}.`;
+  return formatted === '—' ? inviteText('accepted.wait_start_sentence') : `Ожидание до ${formatted}.`;
 }
 
 function showTerminalInvite(invite){
@@ -1408,7 +1411,7 @@ function enhanceResultSheet(){
   button.className = 'btn primary full';
   button.type = 'button';
   button.dataset.createRematch = String(finished.id);
-  button.textContent = 'Предложить реванш';
+  button.textContent = inviteText('rematch.play_again');
   newOpponent.classList.remove('primary');
   newOpponent.classList.add('ghost');
   newOpponent.insertAdjacentElement('beforebegin', button);
@@ -1467,11 +1470,11 @@ function setInviteButtonsDisabled(disabled){
 
 function actionText(action){
   return {
-    accept:'Принимаем…',
-    start:'Запускаем…',
-    decline:'Отклоняем…',
-    cancel:'Отменяем…',
-  }[action] || 'Подождите…';
+    accept:inviteText('loading.accept'),
+    start:inviteText('loading.start'),
+    decline:inviteText('loading.decline'),
+    cancel:inviteText('loading.cancel'),
+  }[action] || inviteText('loading.wait');
 }
 
 function hasActionableInvite(){
@@ -1511,9 +1514,9 @@ function inviteMarker(invite){
 
 function inviteCountdownLabel(invite){
   const status = String(invite?.status || '');
-  if (status === 'accepted') return invite?.is_owner ? 'Запустите матч' : 'Ждём запуск матча';
-  if (status === 'pending') return invite?.is_invitee ? 'Ответьте на приглашение' : 'Ожидаем ответ';
-  return 'Ожидание';
+  if (status === 'accepted') return invite?.is_owner ? inviteText('status.start_match') : inviteText('status.wait_start');
+  if (status === 'pending') return invite?.is_invitee ? inviteText('incoming.respond') : inviteText('owner_wait.waiting_response');
+  return inviteText('status.waiting');
 }
 
 function clearInviteCountdown(){
@@ -1546,7 +1549,7 @@ function mountInviteCountdown(invite, label){
 function inviteSummary(invite){
   return `
     <div class="topup-success">
-      <div><span>Игра</span><strong>${escapeHtml(invite?.game_title || 'Игра')}</strong></div>
+      <div><span>Игра</span><strong>${escapeHtml(invite?.game_title || inviteText('game_fallback'))}</strong></div>
       <div><span>Вариант</span><strong>${escapeHtml(inviteBoardLabel(invite))}</strong></div>
       <div><span>Участие</span><strong>${Number(invite?.bet || APP_CONFIG.matchBet || 0)} коинов</strong></div>
     </div>
@@ -1574,12 +1577,12 @@ async function postJson(url, payload, options = {}){
     });
   } catch (error) {
     if (error?.name === 'AbortError') throw error;
-    throw new Error('Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.');
+    throw new Error(inviteText('network.server_unreachable'));
   }
   const data = await response.json().catch(() => null);
   if (!response.ok || !data || data.ok === false) {
-    if (response.status === 429) throw new Error('Связь перегружена. Попробуйте ещё раз через несколько секунд.');
-    throw new Error(data?.error || 'Сервис приглашений временно недоступен.');
+    if (response.status === 429) throw new Error(inviteText('network.overloaded'));
+    throw new Error(data?.error || inviteText('network.service_unavailable'));
   }
   return data;
 }
@@ -1608,20 +1611,21 @@ function isDraft(invite){
 
 function terminalTitle(status){
   return {
-    declined:'Приглашение отклонено',
-    cancelled:'Приглашение отменено',
-    expired:'Срок приглашения истёк',
-    timed_out:'Время ожидания истекло',
-  }[String(status || '')] || 'Приглашение закрыто';
+    declined:inviteText('terminal.declined'),
+    cancelled:inviteText('terminal.cancelled'),
+    expired:inviteText('terminal.expired'),
+    timed_out:inviteText('terminal.timed_out'),
+  }[String(status || '')] || inviteText('terminal.closed');
 }
 
 function gameTitle(gameType){
-  return GAME_OPTIONS[gameType]?.title || 'Игра';
+  const titleKey = GAME_OPTIONS[gameType]?.titleKey;
+  return titleKey ? inviteText(titleKey) : inviteText('game_fallback');
 }
 
 function boardLabel(gameType, size){
-  if (gameType === 'four_in_a_row') return `${size}×${size - 1}${size === 7 ? ' · классика' : ''}`;
-  if (gameType === 'domino') return 'Классика 0–6';
+  if (gameType === 'four_in_a_row') return `${size}×${size - 1}${size === 7 ? inviteText('board.four_classic_suffix') : ''}`;
+  if (gameType === 'domino') return inviteText('board.domino_classic');
   return `${size}×${size}`;
 }
 
@@ -1633,19 +1637,19 @@ function inviteBoardLabel(invite){
 }
 
 function roomLabel(){
-  return 'Обычный матч';
+  return inviteText('board.normal_match');
 }
 
 function formatTime(value){
   const date = new Date(String(value || ''));
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
+  return new Intl.DateTimeFormat(getI18n().locale, { hour:'2-digit', minute:'2-digit' }).format(date);
 }
 
 function initials(name){
-  const cleaned = String(name || 'И').replace(/^@/, '').replace(/[_-]+/g, ' ').trim();
+  const cleaned = String(name || inviteText('initial')).replace(/^@/, '').replace(/[_-]+/g, ' ').trim();
   const parts = cleaned.split(/\s+/).filter(Boolean);
-  return (parts[0]?.[0] || 'И') + (parts[1]?.[0] || parts[0]?.[1] || '');
+  return (parts[0]?.[0] || inviteText('initial')) + (parts[1]?.[0] || parts[0]?.[1] || '');
 }
 
 function avatarHue(value){
