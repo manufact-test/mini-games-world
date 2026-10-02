@@ -416,7 +416,7 @@ function renderGameOffer(offer, gameType){
   const description = gameCosmeticDescription(gameType, layer, variant);
   return `
     <article class="store-v2-game-product ${owned ? 'owned' : ''} ${equipped ? 'equipped' : ''}" data-store-game-product="${escapeAttr(gameType)}">
-      ${gameCosmeticPreview(gameType, layer, variant, offer?.display_name || '')}
+      ${gameCosmeticPreview(gameType, layer, variant, localizedOfferName(offer, offer?.display_name || itemId))}
       <div class="store-v2-game-product-copy">
         <span>${escapeHtml(kind)}</span>
         <strong>${escapeHtml(localizedOfferName(offer, offer?.display_name || itemId))}</strong>
