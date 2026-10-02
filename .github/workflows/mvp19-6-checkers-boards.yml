@@ -16,6 +16,10 @@ on:
       - 'app/assets/css/games/checkers/store-visual-corrective-v3.css'
       - 'app/assets/css/games/checkers/store-effects-live-board-v1.css'
       - 'app/assets/js/checkers-cosmetics/renderer-board-themes.js'
+      - 'app/assets/js/games/checkers/renderer.js'
+      - 'app/locales/ru.json'
+      - 'ops/checks/mvp27_1_checkers_renderer_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - 'app/assets/js/screens/store-screen.js'
       - 'app/assets/js/screens/store-screen-checkers-wrapper.js'
       - 'app/assets/js/profile/mgw-profile-checkers-parity.js'
@@ -66,7 +70,9 @@ jobs:
           node --check bot/tests/Mvp19_6CheckersMoveTrailAlignmentContractTest.mjs
           node --check app/assets/js/screens/store-screen.js
           node --check app/assets/js/screens/store-screen-checkers-wrapper.js
+          node --check app/assets/js/games/checkers/renderer.js
           node --check app/assets/js/checkers-cosmetics/renderer-board-themes.js
+          node --check ops/checks/mvp27_1_checkers_renderer_localization_contract.mjs
           node --check app/assets/js/profile/mgw-profile-checkers-parity.js
           node --check app/assets/js/profile/mgw-profile-chess-layout-v2.js
 
@@ -75,6 +81,7 @@ jobs:
           php bot/tests/Mvp19_6CheckersBoardsTest.php
           node bot/tests/Mvp19_6CheckersEffectPreviewContractTest.mjs
           node bot/tests/Mvp19_6CheckersMoveTrailAlignmentContractTest.mjs
+          node ops/checks/mvp27_1_checkers_renderer_localization_contract.mjs
 
       - name: Re-run shared cosmetics contracts
         run: |
@@ -112,7 +119,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; $b=$m["imports"]["./assets/js/screens/store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog"]??""; $c=$m["imports"]["./assets/js/games/checkers/renderer.js?v=57"]??""; if(!str_contains($s,"store-screen-checkers-board-source-wrapper.js?v=36") || !str_contains($s,"store-screen-checkers-wrapper.js?v=5") || !str_contains($s,"bundle_selector=preserve-v1") || !str_contains($s,"mvp19_6=visual-corrective-v3") || !str_contains($s,"effects_live_board=v1")) exit(1); if(!str_contains($b,"mvp19_6=full-checkers-store")) exit(2); if(!str_contains($c,"renderer-real-flight-cascade-v1.js?v=2") || !str_contains($c,"mvp19_6=all-paid-real-flight-v1") || !str_contains($c,"parent=single-flight-dom-v2")) exit(3);'
+          php -r '$m=require "app/runtime/client/version-manifest.php"; $s=$m["imports"]["./assets/js/screens/store-screen.js?v=34"]??""; $b=$m["imports"]["./assets/js/screens/store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog"]??""; $c=$m["imports"]["./assets/js/games/checkers/renderer.js?v=57"]??""; if(!str_contains($s,"store-screen-checkers-board-source-wrapper.js?v=37") || !str_contains($s,"store-screen-checkers-wrapper.js?v=6") || !str_contains($s,"bundle_selector=preserve-v1") || !str_contains($s,"mvp19_6=visual-corrective-v3") || !str_contains($s,"effects_live_board=v1")) exit(1); if(!str_contains($b,"mvp19_6=full-checkers-store")) exit(2); if(!str_contains($c,"renderer-real-flight-cascade-v1.js?v=3") || !str_contains($c,"mvp19_6=all-paid-real-flight-v1") || !str_contains($c,"parent=single-flight-dom-v2") || !str_contains($c,"mvp27_1=checkers-renderer-localized-v1")) exit(3);'
           grep -F "gameType === 'checkers'" app/assets/js/screens/store-screen.js
           grep -F 'checkersMiniBoardMarkup' app/assets/js/screens/store-screen.js
           grep -F 'gameBundlesFromSnapshot' app/assets/js/screens/store-screen.js
@@ -148,7 +155,6 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
           git diff --exit-code "$base" "$head" -- \
-            app/assets/js/games/checkers/renderer.js \
             app/assets/css/games/checkers/game.css \
             app/assets/js/games/checkers/rules.js \
             app/assets/js/games/checkers/entry.js \
