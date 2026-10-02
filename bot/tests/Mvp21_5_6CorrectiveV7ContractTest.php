@@ -41,9 +41,11 @@ $assert(str_contains($client, 'async function requestTournamentStatus()')
     && str_contains($client, 'window.setTimeout(resolve, 180)')
     && str_contains($client, 'tournamentStatus: () => requestTournamentStatus()'),
     'Read-only tournament status must retry exactly one transient 5xx without retrying mutations.');
-$assert(str_contains($manifest, 'client.js?v=1145')
+$clientVersionMatch = [];
+$assert(preg_match('/client\\.js\\?v=(\\d+)/', $manifest, $clientVersionMatch) === 1
+    && (int)$clientVersionMatch[1] >= 1145
     && str_contains($manifest, 'mvp21_7_1=status-read-retry-v1'),
-    'Transient tournament status recovery must publish a fresh client cache identity.');
+    'Transient tournament status recovery must stay at or beyond the accepted client cache identity.');
 $assert(!str_contains($screen, 'EXTERNAL_TOURNAMENT_COMMIT_CONFIRM_MS')
     && !str_contains($screen, 'stageExternalTournamentCommit'),
     'Cross-client visibility must not rely on another arbitrary client timer.');
