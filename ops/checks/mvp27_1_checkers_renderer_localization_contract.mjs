@@ -19,12 +19,12 @@ assert(renderer.includes("const targetMoves = selectedFrom === null") && rendere
 assert(boardTheme.includes("../games/checkers/renderer.js?v=58&base=mvp16-accepted&mvp27_1=localized-v1"), 'Accepted board-theme owner must load the localized base renderer.');
 assert(manifest.includes("renderer-board-themes.js?v=14&mvp19_6=equal-grid-rows-v1") && manifest.includes("mvp27_1=checkers-renderer-localized-v1"), 'Manifest must publish a fresh board-theme localization identity.');
 assert(manifest.includes("renderer-real-flight-cascade-v1.js?v=3&mvp19_6=all-paid-real-flight-v1") && manifest.includes("mvp27_1=checkers-renderer-localized-v1"), 'Manifest must publish a fresh outer Checkers owner.');
-assert(ru._meta?.version === 38, 'RU locale revision must publish Checkers renderer localization v38.');
+assert(Number(ru._meta?.version || 0) >= 38, 'RU locale revision must retain Checkers renderer localization v38 or a newer successor.');
 assert(ru.games?.checkers?.ui?.status?.your_turn === 'Ваш ход', 'Accepted RU Checkers turn status copy must remain unchanged.');
 assert(ru.games?.checkers?.ui?.errors?.capture_required === 'Есть обязательное взятие — выберите подсвеченную шашку.', 'Accepted RU mandatory-capture copy must remain unchanged.');
 assert(ru.games?.checkers?.ui?.event?.your_turn === 'Ваш ход — выберите шашку', 'Accepted RU Checkers event copy must remain unchanged.');
 assert(ru.games?.checkers?.ui?.cell?.white_king === 'белая дамка', 'Accepted RU Checkers accessibility copy must remain unchanged.');
-assert(baseline.cyrillic_lines_total === 3478 && baseline.by_scope?.client === 1797, 'Checkers renderer localization debt baseline must ratchet by exactly 25 client lines.');
+assert(baseline.cyrillic_lines_total <= 3478 && baseline.by_scope?.client <= 1797, 'Checkers renderer localization debt must never regress above the accepted post-Checkers baseline.');
 
 console.log('MVP27_1_CHECKERS_RENDERER_LOCALIZATION_CONTRACT=PASS');
 console.log('MVP27_1_ACTIVE_CHECKERS_RENDERER_HARDCODED_CYRILLIC=0');
