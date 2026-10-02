@@ -16,6 +16,7 @@ $read = static function (string $path) use ($root): string {
 $profile = $read('app/assets/js/screens/profile-screen-v110.js');
 $ru = $read('app/locales/ru.json');
 $manifest = $read('app/runtime/client/version-manifest.php');
+$catalog = json_decode($ru, true, 512, JSON_THROW_ON_ERROR);
 
 $assert(
     !str_contains($profile, 'profile-v2-achievements')
@@ -31,8 +32,9 @@ $assert(
 $assert(
     str_contains($profile, 'tournamentVisiblePermanentRewards')
         && str_contains($profile, 'const achievements = permanent.filter')
-        && str_contains($profile, 'Достижения'),
-    'Real tournament achievement/reward presentation must remain intact.'
+        && str_contains($profile, "t('profile.tournament.achievements')")
+        && (($catalog['profile']['tournament']['achievements'] ?? null) === 'Достижения'),
+    'Real tournament achievement/reward presentation must remain intact through canonical localization.'
 );
 
 $assert(

@@ -53,8 +53,10 @@ $assert(
 $assert(
     str_contains($server, "case 'payment_create_draft':")
         && str_contains($server, "case 'shop_order':")
-        && substr_count($server, 'UnifiedGameZonePolicy::rejectLegacyCommerceWrite();') >= 2,
-    'Server must continue rejecting legacy commerce writes while client surfaces are removed.'
+        && substr_count($server, "'saved' => false") >= 2
+        && substr_count($server, "'deprecated' => true") >= 2
+        && substr_count($server, 'UnifiedGameZonePolicy::legacyArchiveMessage()') >= 2,
+    'Server must continue rejecting legacy commerce writes through the accepted deprecated archive response.'
 );
 
 fwrite(STDOUT, "Mvp24LegacyGoldClientSurfaceContractTest: {$assertions} assertions passed\n");
