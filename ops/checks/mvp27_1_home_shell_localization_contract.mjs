@@ -39,8 +39,11 @@ for (const [key,value] of requiredKeys) {
 
 for (const reason of ['nickname','avatar','spam','cheating','stalling','other']) {
   assert(typeof ru.home?.report?.reasons?.[reason] === 'string', `Report reason key missing: ${reason}`);
-  assert(home.includes(`t('home.report.reasons.${reason}')`), `Report reason is not localized: ${reason}`);
 }
+assert(home.includes("const PLAYER_REPORT_REASON_CODES") || home.includes("PLAYER_REPORT_REASON_CODES"),
+  'Home report owner must keep stable report reason codes.');
+assert(home.includes("t(\`home.report.reasons.\${value}\`)"),
+  'Home report reasons must resolve dynamically through locale ownership.');
 
 assert(!home.includes('<h2>Меню</h2>'), 'Home menu title must not remain hardcoded.');
 assert(!home.includes("item.title||'Операция'"), 'History operation fallback must not remain hardcoded.');
