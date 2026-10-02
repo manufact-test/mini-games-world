@@ -1,5 +1,5 @@
 {
-  "_meta": {"locale":"ru","version":34},
+  "_meta": {"locale":"ru","version":35},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
   "topbar": {"balance":"Баланс","notifications":"Уведомления"},
@@ -827,7 +827,22 @@
     }
   },
   "games": {
-    "tictactoe":{"name":"Крестики-нолики"},"four_in_a_row":{"name":"Четыре в ряд"},"battleship":{"name":"Морской бой"},"checkers":{"name":"Русские шашки"},"reversi":{"name":"Реверси"},"chess":{"name":"Шахматы"},"go":{"name":"Го"},"domino":{"name":"Домино"}
+    "tictactoe":{"name":"Крестики-нолики"},"four_in_a_row":{"name":"Четыре в ряд"},"battleship":{
+      "name":"Морской бой",
+      "ui":{
+        "game_fallback":"Игра","meta":"{room} · {bet} коинов · 10×10",
+        "player":{"ready":"⚓ готов","fleet":"⚓ флот"},
+        "status":{"finished":"Игра завершена","starting":"Начинаем бой…","waiting_opponent":"Ждём соперника","place_ships":"Расставьте корабли","your_shot":"Ваш выстрел","opponent_turn":"Ход соперника"},
+        "setup":{"title":"Расставьте флот","ship_count":"{count}/10 кораблей","fleet_ready":"Флот готов","placing":"Ставите","ready_title":"Флот готов к бою","ready_note":"Все 10 кораблей размещены. Подтвердите расстановку.","ready_button":"Готов к бою","remaining":"осталось {count}","done":"готово","guide_ship":"Корабль на {size} {cells}","guide_next":"Выберите следующий корабль","guide_selected":"Выбрано {selected}/{size}. Выбранные клетки подсвечены фиолетовым.","guide_press":"Нажмите {size} {cells} подряд по горизонтали или вертикали.","guide_choose_remaining":"Выберите корабль, который ещё остался во флоте.","randomize":"🎲 Перемешать флот","clear":"↺ Очистить поле","note":"Выберите корабль и отмечайте его клетки прямо на поле. Нажмите на уже поставленный корабль, чтобы убрать его целиком."},
+        "errors":{"selection_reset":"Выбор клеток сброшен. Начните корабль заново.","straight_no_gaps":"Корабль должен идти по прямой без пропусков.","too_many_cells":"Вы уже выбрали все клетки этого корабля.","straight_continuous":"Так нельзя: корабль должен идти по прямой без изгибов и пропусков.","touching":"Здесь нельзя: корабли не должны соприкасаться даже по диагонали."},
+        "battle":{"my_fleet":"Ваш флот","opponent":"Соперник","enemy_field":"Поле соперника","own_field":"Моё поле","legend_miss":"мимо","legend_hit":"попадание","legend_sunk":"потоплен"},
+        "shot":{"self_miss":"Мимо — ход соперника","self_hit":"Попадание! Стреляйте ещё","self_sunk":"Корабль потоплен! Стреляйте ещё","opponent_miss":"Соперник промахнулся — ваш ход","opponent_hit":"По вашему кораблю попали — соперник стреляет ещё","opponent_sunk":"Ваш корабль потоплен — соперник стреляет ещё"},
+        "turn":{"your_choose":"Ваш ход — выберите клетку","your_open_enemy":"Ваш ход — откройте поле соперника","opponent":"Ход соперника","opponent_own_field":"Ход соперника — следим за вашим полем"},
+        "aria":{"cell":"Клетка {coord}: {state}","selected_for_ship":"выбрано для корабля"},
+        "cell":{"ship":"ваш корабль","miss":"мимо","hit":"попадание","sunk":"потопленный корабль","water":"вода","unknown":"неизвестно"},
+        "cell_word":{"one":"клетку","few":"клетки","many":"клеток"}
+      }
+    },"checkers":{"name":"Русские шашки"},"reversi":{"name":"Реверси"},"chess":{"name":"Шахматы"},"go":{"name":"Го"},"domino":{"name":"Домино"}
   },
   "rules": {
     "open":"Правила","version":"Версия правил: {version}","understood":"Понятно",

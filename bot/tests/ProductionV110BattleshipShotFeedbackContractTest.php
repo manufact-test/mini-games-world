@@ -8,7 +8,8 @@ $mainCss = file_get_contents($root . '/app/assets/css/main.css');
 $gameCss = file_get_contents($root . '/app/assets/css/games/battleship/game.css');
 $consistencyCss = file_get_contents($root . '/app/assets/css/production-v95-consistency.css');
 $v110 = file_get_contents($root . '/app/v110.php');
-if (!is_string($model) || !is_string($renderer) || !is_string($mainCss) || !is_string($gameCss) || !is_string($consistencyCss) || !is_string($v110)) {
+$manifest = file_get_contents($root . '/app/runtime/client/version-manifest.php');
+if (!is_string($model) || !is_string($renderer) || !is_string($mainCss) || !is_string($gameCss) || !is_string($consistencyCss) || !is_string($v110) || !is_string($manifest)) {
     throw new RuntimeException('Cannot read Battleship authoritative shot feedback sources.');
 }
 
@@ -73,10 +74,9 @@ $assert(
 );
 
 $assert(
-    str_contains($v110, 'main.css?v=152&sk=3&icons=c1efd5af&render=28&palette=notification-semantic&battleship=authoritative-shot-only')
-        && str_contains($v110, 'production-v95-consistency.css?v=96&battleship=pending-lock-only')
-        && str_contains($v110, 'games/battleship/renderer.js?v=60&shot=miss-no-impact')
-        && str_contains($v110, 'v110-mvp14-battleship-miss-clean-v1156')
+    str_contains($manifest, "'./assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer-cosmetics-v1.js?v=6")
+        && str_contains($manifest, 'base=v61-shot-miss-no-impact')
+        && str_contains($manifest, 'battleship_fire=direct-result-v4')
         && str_contains($v110, 'X-MGW-Battleship-Shot-Feedback: hit-sunk-impact-miss-static')
         && str_contains($v110, 'X-MGW-Battleship-Pending-Paint: none-legacy-owner-removed'),
     'Canonical Telegram v110 must publish static miss with no legacy yellow pending paint while retaining hit/sunk impact.'

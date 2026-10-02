@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-02",
-  "staging_base": "a23280105e28aa7bb42afd323e52f8039b921a87",
+  "staging_base": "9ad8fdd40cab7738032bfffb5c79d4927cd09354",
   "scanned_files": 776,
-  "cyrillic_lines_total": 3619,
+  "cyrillic_lines_total": 3570,
   "by_scope": {
-    "client": 1938,
+    "client": 1889,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 active Game Screen localization; factual v110 Game Screen owner reduced by 54 hardcoded Cyrillic source lines to zero while preserving action queue, surrender, Result hydration, tournament return/dedupe and all eight game mechanics."
+  "note": "MVP-27.1 active Battleship renderer localization; factual LIVE base renderer reduced by 49 hardcoded Cyrillic source lines to zero while preserving setup, placement validation, fire feedback, field handoff timing and cosmetics wrapper ownership."
 }
