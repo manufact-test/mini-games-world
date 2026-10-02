@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-02",
-  "staging_base": "6e99a6ad55fa4a137bfe49b5ad564e789e22e05b",
+  "staging_base": "d631bc79cb59180fce567b762908f5d4bb8b5660",
   "scanned_files": 776,
-  "cyrillic_lines_total": 3802,
+  "cyrillic_lines_total": 3736,
   "by_scope": {
-    "client": 2121,
+    "client": 2055,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 active Profile surface localization; base Profile owner plus active Profile model and Chess/Checkers/Reversi/Go/Domino/Four-in-a-Row/Battleship parity chain reduced by 159 hardcoded Cyrillic source lines in total, with zero direct ru-RU remaining in the active Profile chain."
+  "note": "MVP-27.1 active Friends surface localization; factual lazy-loaded Friends owner reduced by 65 hardcoded Cyrillic source lines, More-menu Friends entry by 1, with zero direct ru-RU remaining in the active Friends screen. Account Data copy remains a separate later slice."
 }

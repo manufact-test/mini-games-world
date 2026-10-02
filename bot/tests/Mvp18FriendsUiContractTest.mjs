@@ -17,6 +17,7 @@ const shortcutCss = read('app/assets/css/components/account-shortcuts.css');
 const inviteWrapper = read('app/assets/js/games/game-invites-v110-rematch-policy-v175.js');
 const inviteOwner = read('app/assets/js/games/game-invites-v110.js');
 const endpoint = read('bot/friends.php');
+const ru = JSON.parse(read('app/locales/ru.json'));
 
 assert(launch.includes("private const ENTRY_PATH = '/app/v110.php?v=1233&"), 'Telegram launch owner must remain on the current canonical versioned v110 entry');
 assert(entry.includes("app/runtime/client/version-manifest.php") || entry.includes("runtime/client/version-manifest.php"), 'v110 entry must still render version manifest');
@@ -24,7 +25,7 @@ assert(manifest.includes("'@mgw/main' => './assets/js/main-v110-reconnect-v174.j
 assert(activeMain.includes("import './production-v110-reconnect-v174.js?v=1';"), 'Active main must preserve accepted reconnect owner');
 assert(activeMain.includes("import './main-v110.js?v=1139"), 'Active main must preserve accepted shell graph');
 assert(!activeMain.includes('friends-screen-v110.js'), 'Friends must not modify the frozen reconnect composition owner');
-assert(accountShortcuts.includes("import('../screens/friends-screen-v110.js?v=6&mvp18=instant-route&optimistic-relations&mvp22_3=report-categories-v1')"), 'Existing account shortcut owner must lazy-load the instant Friends module on demand');
+assert(accountShortcuts.includes("import('../screens/friends-screen-v110.js?v=6&mvp18=instant-route&optimistic-relations&mvp22_3=report-categories-v1&mvp27_1=localized-v1')"), 'Existing account shortcut owner must lazy-load the localized instant Friends module on demand');
 assert(accountShortcuts.includes('closeSheet();') && accountShortcuts.indexOf('closeSheet();') < accountShortcuts.indexOf('await loadFriendsModule()'), 'Friends shortcut must close the menu synchronously before awaiting its module');
 assert(accountShortcuts.includes('void loadFriendsModule();'), 'Friends module must prewarm while the menu is visible');
 assert(manifest.includes("game-invites-v110-rematch-policy-v175.js?v=3&fp=2&mvp21_6=tournament-exclusion-v1&mvp27_1=localized-v1"), 'Accepted rematch wrapper must stay on the current tournament-aware cache identity');
@@ -42,12 +43,13 @@ assert(api.includes("const FRIENDS_URL = `${window.location.origin}/bot/friends.
 assert(api.includes('friends: (payload = {}) => requestUrl(FRIENDS_URL, payload)'), 'Active API client must expose Friends request helper');
 assert(accountShortcuts.includes("trigger.id === 'moreMenuOpen'"), 'Friends shortcut must be limited to normal topbar menu');
 assert(!accountShortcuts.includes("trigger.id === 'gameMenuOpen' ? true"), 'Game menu must not bypass active-match navigation lock');
-assert(accountShortcuts.includes('account-menu-entry--friends'), 'Friends must keep an explicit menu presentation role');
+assert(accountShortcuts.includes('account-menu-entry--friends') && accountShortcuts.includes("t('friends.menu.title')"), 'Friends must keep an explicit localized menu presentation role');
 assert(!accountShortcuts.includes('account-menu-entry--orders') && !accountShortcuts.includes('Мои заявки'), 'Obsolete Store orders shortcut must stay removed from the main menu');
 assert(shieldVisuals.includes("setIconOnly(icon, 'ui/navigation/friends.webp')"), 'Friends menu must use the accepted full-size navigation artwork');
 assert(shortcutCss.includes('.account-menu-entry--friends .account-menu-copy strong') && shortcutCss.includes('font-size:16px'), 'Friends menu title must stay large and white');
 assert(friendsCss.includes('linear-gradient(145deg,#1c1d28,#12151e)') && !friendsCss.includes('background:rgba(255,255,255,.86)'), 'Friend cards must use the dark MGW surface, never the old white card');
-assert(friends.includes("tabButton('friends', 'Друзья'") && friends.includes("tabButton('requests', 'Заявки'") && friends.includes("tabButton('recent', 'Недавние'") && friends.includes("tabButton('blocked', 'Блокировки'"), 'Friends data groups must use compact explicit tabs');
+assert(friends.includes("tabButton('friends', friendsText('tabs.friends')") && friends.includes("tabButton('requests', friendsText('tabs.requests')") && friends.includes("tabButton('recent', friendsText('tabs.recent')") && friends.includes("tabButton('blocked', friendsText('tabs.blocked')"), 'Friends data groups must use compact explicit localized tabs');
+assert(ru.friends?.tabs?.friends === 'Друзья' && ru.friends?.tabs?.requests === 'Заявки' && ru.friends?.tabs?.recent === 'Недавние' && ru.friends?.tabs?.blocked === 'Блокировки', 'RU Friends tab copy must preserve accepted wording');
 assert(friends.includes("response?.result?.players") && friends.includes('searchResults.map'), 'Partial lookup must render a bounded explicit result list');
 assert(endpoint.includes("'players' => $service->searchPlayers") && endpoint.includes("'limit' => FriendGraphService::SEARCH_LIMIT"), 'Friends endpoint must expose bounded canonical partial nickname search');
 assert(!friends.includes('Минимум 2 символа ника или полный MGW-ID.'), 'Search must not repeat the self-evident minimum-length hint below the input');
@@ -60,11 +62,12 @@ assert(friends.includes('applyOptimisticRelation(action, targetMgwId)') && frien
 assert(!friends.includes('await refreshSnapshot();'), 'Friend mutations must never replace the page with the blocking loading state');
 assert(friendsCss.includes('#screen-friends{') && friendsCss.includes('transition:none'), 'Friends route must cover the previous screen without a visible cross-fade underlayer');
 assert(friends.includes("new CustomEvent('mgw:notifications-refresh')"), 'Changed social snapshots must immediately refresh the existing bell owner');
-assert(friends.includes("section('Входящие заявки'"), 'Friends UI must render incoming requests');
-assert(friends.includes("section('Исходящие заявки'"), 'Friends UI must render outgoing requests');
-assert(friends.includes("section('Друзья'"), 'Friends UI must render friends');
-assert(friends.includes("section('Недавние соперники'"), 'Friends UI must render recent opponents');
-assert(friends.includes("section('Заблокированные'"), 'Friends settings must render the canonical blocked list');
+assert(friends.includes("section(friendsText('sections.incoming')"), 'Friends UI must render incoming requests through locale ownership');
+assert(friends.includes("section(friendsText('sections.outgoing')"), 'Friends UI must render outgoing requests through locale ownership');
+assert(friends.includes("section(friendsText('sections.friends')"), 'Friends UI must render friends through locale ownership');
+assert(friends.includes("section(friendsText('sections.recent')"), 'Friends UI must render recent opponents through locale ownership');
+assert(friends.includes("section(friendsText('sections.blocked')"), 'Friends settings must render the canonical blocked list through locale ownership');
+assert(ru.friends?.sections?.incoming === 'Входящие заявки' && ru.friends?.sections?.outgoing === 'Исходящие заявки' && ru.friends?.sections?.friends === 'Друзья' && ru.friends?.sections?.recent === 'Недавние соперники' && ru.friends?.sections?.blocked === 'Заблокированные', 'RU Friends section copy must preserve accepted wording');
 for (const action of ['invite','profile','remove','report','block']) {
   assert(friends.includes(`data-social-menu-action=\\\"${action}\\\"`) || friends.includes(`data-social-menu-action="${action}"`), `Player context menu must include ${action}`);
 }
