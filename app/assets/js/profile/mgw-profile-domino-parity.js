@@ -1,8 +1,9 @@
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
 import { dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48';
+import { t } from '@mgw/i18n';
 
-const GROUP_TITLES = Object.freeze({ theme:'Столы', elements:'Костяшки', effect:'Эффекты' });
+const GROUP_TITLES = Object.freeze({ theme:'profile.collection.games.domino.groups.theme', elements:'profile.collection.games.domino.groups.elements', effect:'profile.collection.games.domino.groups.effect' });
 const ITEM_ORDER = Object.freeze([
   'game-domino-table-felt',
   'game-domino-table-midnight',
@@ -130,7 +131,7 @@ function ensureDominoTab(screen){
     tabs.appendChild(dominoTab);
   }
 
-  dominoTab.innerHTML = '<span class="profile-v2-game-tab-mark mgw-domino-profile-tab-mark" aria-hidden="true"></span><span class="profile-v2-game-tab-label">Домино</span>';
+  dominoTab.innerHTML = `<span class="profile-v2-game-tab-mark mgw-domino-profile-tab-mark" aria-hidden="true"></span><span class="profile-v2-game-tab-label">${t('profile.collection.games.domino.title')}</span>`;
   return dominoTab;
 }
 
@@ -176,11 +177,11 @@ function renderDominoGroups(items){
     .map(layer => ({ layer, items:items.filter(item => dominoLayer(item) === layer) }))
     .filter(group => group.items.length > 0);
   if (!groups.length) {
-    return '<div class="profile-v2-game-empty" data-mgw-domino-profile-empty="1">Купленные предметы для Домино появятся здесь.</div>';
+    return `<div class="profile-v2-game-empty" data-mgw-domino-profile-empty="1">${t('profile.collection.games.domino.empty')}</div>`;
   }
   return groups.map(group => `
     <div class="profile-v2-game-group" data-mgw-domino-profile-group="${group.layer}">
-      <div class="profile-v2-game-group-title">${GROUP_TITLES[group.layer]}</div>
+      <div class="profile-v2-game-group-title">${t(GROUP_TITLES[group.layer])}</div>
       <div class="profile-v2-game-grid">${group.items.map(dominoCardMarkup).join('')}</div>
     </div>
   `).join('');
@@ -204,9 +205,9 @@ function upgradeDominoSheet(itemId){
   const title = sheet.querySelector('.sheet-head h2');
   if (title instanceof HTMLElement) title.textContent = dominoDisplayName(item);
   const strong = sheet.querySelector('.profile-v2-game-preview-meta strong');
-  if (strong instanceof HTMLElement) strong.textContent = 'Домино';
+  if (strong instanceof HTMLElement) strong.textContent = t('profile.collection.games.domino.title');
   const group = sheet.querySelector('.profile-v2-game-preview-meta small');
-  if (group instanceof HTMLElement) group.textContent = GROUP_TITLES[dominoLayer(item)] || 'Оформление';
+  if (group instanceof HTMLElement) group.textContent = GROUP_TITLES[dominoLayer(item)] ? t(GROUP_TITLES[dominoLayer(item)]) : t('profile.collection.cosmetics_label');
 }
 
 function ownedDominoItems(){
@@ -249,8 +250,12 @@ function dominoVariant(item){
 }
 
 function dominoDisplayName(item){
+  const itemId = String(item?.item_id || '').trim();
+  if (itemId) {
+    try { return t(`store.products.${itemId}`); } catch (_) {}
+  }
   const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata : {};
-  return String(metadata.display_name || item?.item_id || 'Оформление Домино').trim();
+  return String(metadata.display_name || itemId || t('profile.collection.games.domino.fallback')).trim();
 }
 
 function isDominoItemEquipped(item){

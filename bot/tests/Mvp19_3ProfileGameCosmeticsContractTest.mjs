@@ -11,14 +11,15 @@ const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf
 const inventory = fs.readFileSync('bot/catalog/ProductInventoryService.php', 'utf8');
 const storeService = fs.readFileSync('bot/catalog/CosmeticStoreService.php', 'utf8');
 const endpoint = fs.readFileSync('bot/cosmetic-store.php', 'utf8');
+const locale = JSON.parse(fs.readFileSync('app/locales/ru.json', 'utf8'));
 
 function expect(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-expect(profile.includes("{ layer:'theme', title:'Поля' }"), 'Profile must group owned game fields');
-expect(profile.includes("{ layer:'elements', title:'Знаки' }"), 'Profile must group owned game marks');
-expect(profile.includes("{ layer:'effect', title:'Эффекты' }"), 'Profile must group owned game effects');
+expect(profile.includes("{ layer:'theme', titleKey:'profile.collection.game_groups.theme' }") && locale.profile?.collection?.game_groups?.theme === 'Поля', 'Profile must group owned game fields through localization');
+expect(profile.includes("{ layer:'elements', titleKey:'profile.collection.game_groups.elements' }") && locale.profile?.collection?.game_groups?.elements === 'Знаки', 'Profile must group owned game marks through localization');
+expect(profile.includes("{ layer:'effect', titleKey:'profile.collection.game_groups.effect' }") && locale.profile?.collection?.game_groups?.effect === 'Эффекты', 'Profile must group owned game effects through localization');
 expect(profile.includes("item.owned === true && item.item_type === 'game'"), 'Profile collection must display owned game items only');
 expect(profile.includes('function ownedGameCosmeticGames()'), 'Profile must group owned cosmetics by game before rendering');
 expect(profile.includes("const explicit = String(metadata.game_type || '').trim();"), 'Profile game grouping must prefer canonical metadata game_type');
@@ -85,7 +86,7 @@ expect(profile.includes('Date.now() - lastFullProfileSnapshotAt < 5000'), 'Fresh
 expect(!mobileProfileCss.includes('\n  #screen-profile.screen:not(.active) *,'), 'mobile Profile route CSS must not invalidate the whole descendant tree on normal active flips');
 expect(mobileProfileCss.includes('html.mgw-profile-animation-css-fallback #screen-profile.screen:not(.active) *'), 'legacy WebViews must retain a CSS-only hidden-animation fallback');
 expect(cleanEntryWrapper.includes("import './profile/mgw-mobile-profile-animation-guard-v2.js?v=1';"), 'accepted clean-entry wrapper must retain the canonical Profile animation guard specifier');
-expect(manifest.includes("'./assets/js/profile/mgw-mobile-profile-animation-guard-v2.js?v=1' => './assets/js/profile/mgw-mobile-profile-animation-guard-v2.js?v=2&profile_input=known-animation-set-v1'"), 'import-map owner must cache-bust the first-input Profile animation guard without changing clean-entry bytes');
+expect(manifest.includes("'./assets/js/profile/mgw-mobile-profile-animation-guard-v2.js?v=1' => './assets/js/profile/mgw-mobile-profile-animation-guard-v2.js?v=3&profile_input=known-animation-set-v1&mvp23_profile=instant-resume-v1&mvp25_4=batched-resume-v1'"), 'import-map owner must preserve the current accepted first-input Profile animation guard without changing clean-entry bytes');
 expect(mobileAnimationGuard.includes("root.getAnimations({ subtree:true })"), 'mobile Profile animation guard may enumerate animations only during off-input discovery');
 expect(mobileAnimationGuard.includes('const knownProfileAnimations = new Set();') && mobileAnimationGuard.includes('function pauseKnownAnimations()'), 'route input must operate on already-known Profile animation objects');
 const routeIntentStart = mobileAnimationGuard.indexOf('function handleRouteIntent(event){');
@@ -96,7 +97,7 @@ expect(mobileAnimationGuard.includes("document.addEventListener('mgw:app-ready'"
 expect(mobileAnimationGuard.includes("profileObserver.observe(screen, { childList:true, subtree:true })"), 'new hidden Profile animations must be paused without observing route class changes on the Profile subtree');
 expect(manifest.includes('profile_route_guard=animation-runtime-v2') && manifest.includes('profile_input=known-animation-set-v1'), 'active clean-entry identity must preserve the accepted guard identity while publishing the no-full-scan first-input cache key');
 expect(shellMain.includes("profileTrigger.dataset.shellNav = 'profile';"), 'top identity must use the same canonical shell Profile route owner as bottom navigation');
-expect(manifest.includes('profile_topbar=direct-shell-v2'), 'active shell mapping must cache-bust the direct topbar Profile route owner');
+expect(manifest.includes('profile_topbar=direct-shell-v3'), 'active shell mapping must preserve the current direct topbar Profile route owner');
 expect(shellMain.includes('function shouldPrimeMobileProfile(result)') && shellMain.includes('await primeMobileProfileFirstPresentation()'), 'mobile cold-start must complete Profile preparation under the preloader before interaction');
 expect(shellMain.includes("classList.add('mgw-profile-prewarm-pass')") && shellMain.includes('window.requestAnimationFrame(() => {'), 'mobile cold-start must force a covered real Profile raster rather than leaving first rasterization to the first tap');
 expect(shellMain.includes("if (String(result?.active_game?.id || '').trim()) return false;"), 'covered Profile raster warm must remain disabled on active-game reloads');

@@ -1,13 +1,13 @@
-import { initProfileScreen as initCheckersParityProfileScreen } from './mgw-profile-checkers-parity.js?v=3&mvp19_6=checkers-profile-manual-repair-v3';
+import { initProfileScreen as initCheckersParityProfileScreen } from './mgw-profile-checkers-parity.js?v=4&mvp19_6=checkers-profile-manual-repair-v3&mvp27_1=localized-v1';
 import { initProfileCheckersHardSquare } from './mgw-profile-checkers-hard-square-v1.js?v=1&mvp19_6=profile-board-effect-hard-square-v1';
-import { initProfileReversiParity } from './mgw-profile-reversi-parity.js?v=2&mvp19_7=reversi-profile-parity-v1&card_geometry=full-square-v2';
+import { initProfileReversiParity } from './mgw-profile-reversi-parity.js?v=3&mvp19_7=reversi-profile-parity-v1&card_geometry=full-square-v2&mvp27_1=localized-v1';
 import { initProfileReversiHardSquare } from './mgw-profile-reversi-hard-square-v1.js?v=1&mvp19_7=profile-hard-square-v1';
-import { initProfileGoParity } from './mgw-profile-go-parity.js?v=2&mvp19_8=go-profile-corrective-v2';
+import { initProfileGoParity } from './mgw-profile-go-parity.js?v=3&mvp19_8=go-profile-corrective-v2&mvp27_1=localized-v1';
 import { initProfileGoHardSquare } from './mgw-profile-go-hard-square-v1.js?v=1&mvp19_8=go-profile-hard-square-v1';
-import { initProfileDominoParity } from './mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1';
+import { initProfileDominoParity } from './mgw-profile-domino-parity.js?v=2&mvp19_9=store-profile-parity-8x5-v1&mvp27_1=localized-v1';
 import { initProfileDominoHardRatio } from './mgw-profile-domino-hard-ratio-v1.js?v=1&mvp19_9=hard-8x5-v1';
-import { initProfileFourInARowParity } from './mgw-profile-four-in-a-row-parity.js?v=8&four_profile=live-previews-v3&four_module=export-v11&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&copy=compact-v3';
-import { initProfileBattleshipParity } from './mgw-profile-battleship-parity.js?v=14&mvp19_12=profile-four-parity-v3&store=preview-parity-v14&geometry=square&header=steel-ship&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=live-parity-destroy-v3&copy=four-pattern';
+import { initProfileFourInARowParity } from './mgw-profile-four-in-a-row-parity.js?v=9&four_profile=live-previews-v3&four_module=export-v11&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&copy=compact-v3&mvp27_1=localized-v1';
+import { initProfileBattleshipParity } from './mgw-profile-battleship-parity.js?v=15&mvp19_12=profile-four-parity-v3&store=preview-parity-v14&geometry=square&header=steel-ship&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=live-parity-destroy-v3&copy=four-pattern&mvp27_1=localized-v1';
 
 const profileChessArtworkPrewarm = [];
 const PROFILE_GAME_TAB_DRAG_THRESHOLD = 5;

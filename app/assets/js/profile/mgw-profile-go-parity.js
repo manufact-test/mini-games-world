@@ -1,7 +1,8 @@
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
+import { t } from '@mgw/i18n';
 
-const GROUP_TITLES = Object.freeze({ theme:'Доски', elements:'Камни', effect:'Эффекты' });
+const GROUP_TITLES = Object.freeze({ theme:'profile.collection.games.go.groups.theme', elements:'profile.collection.games.go.groups.elements', effect:'profile.collection.games.go.groups.effect' });
 const ITEM_ORDER = Object.freeze([
   'game-go-board-wood',
   'game-go-board-dark',
@@ -121,14 +122,14 @@ function ensureGoTab(screen){
     goTab.setAttribute('role', 'tab');
     goTab.dataset.profileGameTab = 'go';
     goTab.setAttribute('aria-selected', 'false');
-    goTab.innerHTML = '<span class="profile-v2-game-tab-mark" aria-hidden="true">●○</span><span>Го</span>';
+    goTab.innerHTML = `<span class="profile-v2-game-tab-mark" aria-hidden="true">●○</span><span>${t('profile.collection.games.go.title')}</span>`;
 
     const dominoTab = tabs.querySelector('[data-profile-game-tab="domino"]');
     tabs.insertBefore(goTab, dominoTab instanceof HTMLElement ? dominoTab : null);
   }
 
   const label = goTab.querySelector('span:last-child');
-  if (label instanceof HTMLElement) label.textContent = 'Го';
+  if (label instanceof HTMLElement) label.textContent = t('profile.collection.games.go.title');
   return goTab;
 }
 
@@ -173,11 +174,11 @@ function renderGoGroups(items){
     .map(layer => ({ layer, items:items.filter(item => goLayer(item) === layer) }))
     .filter(group => group.items.length > 0);
   if (!groups.length) {
-    return '<div class="profile-v2-game-empty" data-mgw-go-profile-empty="1">Купленные предметы для Го появятся здесь.</div>';
+    return `<div class="profile-v2-game-empty" data-mgw-go-profile-empty="1">${t('profile.collection.games.go.empty')}</div>`;
   }
   return groups.map(group => `
     <div class="profile-v2-game-group" data-mgw-go-profile-group="${group.layer}">
-      <div class="profile-v2-game-group-title">${GROUP_TITLES[group.layer]}</div>
+      <div class="profile-v2-game-group-title">${t(GROUP_TITLES[group.layer])}</div>
       <div class="profile-v2-game-grid">${group.items.map(goCardMarkup).join('')}</div>
     </div>
   `).join('');
@@ -201,9 +202,9 @@ function upgradeGoSheet(itemId){
   const title = sheet.querySelector('.sheet-head h2');
   if (title instanceof HTMLElement) title.textContent = goDisplayName(item);
   const strong = sheet.querySelector('.profile-v2-game-preview-meta strong');
-  if (strong instanceof HTMLElement) strong.textContent = 'Го';
+  if (strong instanceof HTMLElement) strong.textContent = t('profile.collection.games.go.title');
   const group = sheet.querySelector('.profile-v2-game-preview-meta small');
-  if (group instanceof HTMLElement) group.textContent = GROUP_TITLES[goLayer(item)] || 'Оформление';
+  if (group instanceof HTMLElement) group.textContent = GROUP_TITLES[goLayer(item)] ? t(GROUP_TITLES[goLayer(item)]) : t('profile.collection.cosmetics_label');
 }
 
 function ownedGoItems(){
@@ -246,8 +247,12 @@ function goVariant(item){
 }
 
 function goDisplayName(item){
+  const itemId = String(item?.item_id || '').trim();
+  if (itemId) {
+    try { return t(`store.products.${itemId}`); } catch (_) {}
+  }
   const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata : {};
-  return String(metadata.display_name || item?.item_id || 'Оформление Го').trim();
+  return String(metadata.display_name || itemId || t('profile.collection.games.go.fallback')).trim();
 }
 
 function isGoItemEquipped(item){

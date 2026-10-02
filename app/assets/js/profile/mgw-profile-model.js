@@ -1,4 +1,4 @@
-import { applyAccountLocalePreference } from '@mgw/i18n';
+import { applyAccountLocalePreference, t } from '@mgw/i18n';
 
 // No client-side starter identity is authoritative before Profile API hydration.
 // Fresh accounts still receive starter-default-01 from the canonical backend.
@@ -11,7 +11,7 @@ export function applyCanonicalMgwProfile(runtimeUser = {}, profile = null){
   const mgwId = String(profile.mgw_id || '').trim();
   if (!mgwId) throw new Error('Canonical MGW profile id is unavailable.');
   const current = runtimeUser && typeof runtimeUser === 'object' ? runtimeUser : {};
-  const nickname = String(profile.nickname || profile.display_name || '').trim() || 'Игрок';
+  const nickname = String(profile.nickname || profile.display_name || '').trim() || t('profile.player');
   const avatarItemId = canonicalAvatarItemId(profile.avatar);
   applyAccountLocalePreference(profile.preferred_locale || null);
   return {

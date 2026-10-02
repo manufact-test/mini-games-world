@@ -11,6 +11,7 @@ const storeCssPath = path.join(root, 'app/assets/css/games/go/store-cosmetics-v1
 const storeWrapperPath = path.join(root, 'app/assets/js/screens/store-screen-go-store-v1.js');
 const manifestPath = path.join(root, 'app/runtime/client/version-manifest.php');
 const migrationPath = path.join(root, 'bot/database/migrations/20260914_0034_add_go_store_cosmetics.php');
+const localePath = path.join(root, 'app/locales/ru.json');
 
 const profile = fs.readFileSync(profilePath, 'utf8');
 const hardSquare = fs.readFileSync(hardSquarePath, 'utf8');
@@ -20,6 +21,7 @@ const storeCss = fs.readFileSync(storeCssPath, 'utf8');
 const storeWrapper = fs.readFileSync(storeWrapperPath, 'utf8');
 const manifest = fs.readFileSync(manifestPath, 'utf8');
 const migration = fs.readFileSync(migrationPath, 'utf8');
+const locale = JSON.parse(fs.readFileSync(localePath, 'utf8'));
 
 const itemIds = [
   'game-go-board-wood',
@@ -39,7 +41,8 @@ for (const id of itemIds) {
   assert.ok(profile.includes(`'${id}'`), `Profile parity must know ${id}`);
   assert.ok(migration.includes(`'${id}'`), `Catalog migration must still own ${id}`);
 }
-for (const group of ['Доски','Камни','Эффекты']) assert.ok(profile.includes(group), `Profile must expose ${group}`);
+assert.deepEqual(locale.profile?.collection?.games?.go?.groups, { theme:'Доски', elements:'Камни', effect:'Эффекты' });
+for (const layer of ['theme','elements','effect']) assert.ok(profile.includes(`profile.collection.games.go.groups.${layer}`), `Profile must expose localized Go ${layer}`);
 for (const variant of ['wood','dark','stone','neon','classic','marble','glass','placement','group-capture','territory-finish']) {
   assert.ok(profile.includes(variant), `Profile preview must support ${variant}`);
 }
@@ -59,12 +62,12 @@ assert.ok(profile.includes('mgw-go-territory'), 'Profile must render the accepte
 
 assert.ok(profile.includes('function ensureGoTab(screen)'), 'Go corrective must create the missing Profile tab itself');
 assert.ok(profile.includes("goTab.dataset.profileGameTab = 'go'"), 'Injected tab must use the canonical Go tab identity');
-assert.ok(profile.includes("goTab.innerHTML = '<span class=\"profile-v2-game-tab-mark\" aria-hidden=\"true\">●○</span><span>Го</span>'"), 'Injected Go tab must include its mark and label');
+assert.ok(profile.includes("t('profile.collection.games.go.title')") && locale.profile?.collection?.games?.go?.title === 'Го', 'Injected Go tab must include its localized mark and label');
 assert.ok(profile.includes('activateGoTab(screen, gameTab);'), 'Go click must activate even when the cached base collection did not know Go yet');
 assert.ok(profile.includes("panel.dataset.profileGamePanel = 'go'"), 'Corrective must hand the panel to Go before rendering');
 assert.ok(profile.includes('globalThis.setTimeout(repair, 260)'), 'Go tab must receive a late repair after deferred Profile refresh');
 
-assert.ok(layout.includes("mgw-profile-go-parity.js?v=2&mvp19_8=go-profile-corrective-v2"), 'Active Profile owner must import the fresh Go corrective module');
+assert.ok(layout.includes("mgw-profile-go-parity.js?v=3&mvp19_8=go-profile-corrective-v2&mvp27_1=localized-v1"), 'Active Profile owner must import the fresh Go corrective module');
 assert.ok(layout.includes("mgw-profile-go-hard-square-v1.js?v=1&mvp19_8=go-profile-hard-square-v1"), 'Active Profile owner must import Go hard-square runtime');
 assert.ok(layout.includes('initProfileGoParity();'), 'Active Profile owner must initialize Go parity');
 assert.ok(layout.includes('initProfileGoHardSquare();'), 'Active Profile owner must initialize Go hard-square runtime');

@@ -1,8 +1,9 @@
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
 import { fourInARowPreviewMarkup } from '../screens/store-screen-four-in-a-row-store-v1.js?v=11&four_store=live-previews-v3&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&export=profile-preview-v4&copy=compact-v3';
+import { t } from '@mgw/i18n';
 
-const GROUP_TITLES = Object.freeze({ theme:'Поля', elements:'Фишки', effect:'Эффекты' });
+const GROUP_TITLES = Object.freeze({ theme:'profile.collection.games.four_in_a_row.groups.theme', elements:'profile.collection.games.four_in_a_row.groups.elements', effect:'profile.collection.games.four_in_a_row.groups.effect' });
 const ITEM_ORDER = Object.freeze([
   'game-four-field-blue',
   'game-four-field-dark',
@@ -125,7 +126,7 @@ function ensureFourTab(screen){
     tab.setAttribute('role', 'tab');
     tab.dataset.profileGameTab = 'four_in_a_row';
     tab.setAttribute('aria-selected', 'false');
-    tab.innerHTML = '<span class="profile-v2-game-tab-mark mgw-four-profile-tab-mark" aria-hidden="true"></span><span>4 в ряд</span>';
+    tab.innerHTML = `<span class="profile-v2-game-tab-mark mgw-four-profile-tab-mark" aria-hidden="true"></span><span>${t('profile.collection.games.four_in_a_row.title')}</span>`;
 
     const tttTab = tabs.querySelector('[data-profile-game-tab="tictactoe"]');
     if (tttTab instanceof HTMLElement && tttTab.nextSibling) tabs.insertBefore(tab, tttTab.nextSibling);
@@ -134,7 +135,7 @@ function ensureFourTab(screen){
 
   tab.querySelector('.profile-v2-game-tab-mark')?.classList.add('mgw-four-profile-tab-mark');
   const label = tab.querySelector('span:last-child');
-  if (label instanceof HTMLElement) label.textContent = '4 в ряд';
+  if (label instanceof HTMLElement) label.textContent = t('profile.collection.games.four_in_a_row.title');
   return tab;
 }
 
@@ -182,12 +183,12 @@ function renderFourGroups(items){
     .filter(group => group.items.length > 0);
 
   if (!groups.length) {
-    return '<div class="profile-v2-game-empty" data-mgw-four-profile-empty="1">Купленные предметы для 4 в ряд появятся здесь.</div>';
+    return `<div class="profile-v2-game-empty" data-mgw-four-profile-empty="1">${t('profile.collection.games.four_in_a_row.empty')}</div>`;
   }
 
   return groups.map(group => `
     <div class="profile-v2-game-group" data-mgw-four-profile-group="${group.layer}">
-      <div class="profile-v2-game-group-title">${GROUP_TITLES[group.layer]}</div>
+      <div class="profile-v2-game-group-title">${t(GROUP_TITLES[group.layer])}</div>
       <div class="profile-v2-game-grid">${group.items.map(fourCardMarkup).join('')}</div>
     </div>
   `).join('');
@@ -214,10 +215,10 @@ function upgradeFourSheet(itemId){
   if (title instanceof HTMLElement) title.textContent = fourDisplayName(item);
 
   const strong = sheet.querySelector('.profile-v2-game-preview-meta strong');
-  if (strong instanceof HTMLElement) strong.textContent = '4 в ряд';
+  if (strong instanceof HTMLElement) strong.textContent = t('profile.collection.games.four_in_a_row.title');
 
   const group = sheet.querySelector('.profile-v2-game-preview-meta small');
-  if (group instanceof HTMLElement) group.textContent = GROUP_TITLES[fourLayer(item)] || 'Оформление';
+  if (group instanceof HTMLElement) group.textContent = GROUP_TITLES[fourLayer(item)] ? t(GROUP_TITLES[fourLayer(item)]) : t('profile.collection.cosmetics_label');
 }
 
 function ownedFourItems(){
@@ -260,15 +261,15 @@ function fourVariant(item){
 }
 
 function fourDisplayName(item){
-  if (fourLayer(item) === 'effect') {
-    return ({
-      drop:'Лазерное наведение',
-      four:'Энергетический импульс',
-      'victory-wave':'Победный овердрайв',
-    })[fourVariant(item)] || 'Эффект партии';
+  const itemId = String(item?.item_id || '').trim();
+  if (itemId) {
+    try { return t(`store.products.${itemId}`); } catch (_) {}
   }
   const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata : {};
-  return String(metadata.display_name || item?.item_id || 'Предмет 4 в ряд').trim();
+  const fallbackKey = fourLayer(item) === 'effect'
+    ? 'profile.collection.games.four_in_a_row.effect_fallback'
+    : 'profile.collection.games.four_in_a_row.fallback';
+  return String(metadata.display_name || itemId || t(fallbackKey)).trim();
 }
 
 function isFourItemEquipped(item){

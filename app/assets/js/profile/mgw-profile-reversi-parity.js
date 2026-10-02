@@ -1,7 +1,8 @@
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
+import { t } from '@mgw/i18n';
 
-const GROUP_TITLES = Object.freeze({ theme:'Поля', elements:'Фишки', effect:'Эффекты' });
+const GROUP_TITLES = Object.freeze({ theme:'profile.collection.games.reversi.groups.theme', elements:'profile.collection.games.reversi.groups.elements', effect:'profile.collection.games.reversi.groups.effect' });
 const ITEM_ORDER = Object.freeze([
   'game-reversi-field-green',
   'game-reversi-field-dark',
@@ -116,7 +117,7 @@ function upgradeProfileReversiPresentation(){
   const reversiTab = screen.querySelector('[data-profile-game-tab="reversi"]');
   if (reversiTab instanceof HTMLElement) {
     const label = reversiTab.querySelector('span:last-child');
-    if (label instanceof HTMLElement) label.textContent = 'Реверси';
+    if (label instanceof HTMLElement) label.textContent = t('profile.collection.games.reversi.title');
   }
 
   const activeReversi = reversiTab instanceof HTMLElement
@@ -142,12 +143,12 @@ function renderReversiGroups(items){
     .filter(group => group.items.length > 0);
 
   if (!groups.length) {
-    return '<div class="profile-v2-game-empty" data-mgw-reversi-profile-empty="1">Купленные предметы для Реверси появятся здесь.</div>';
+    return `<div class="profile-v2-game-empty" data-mgw-reversi-profile-empty="1">${t('profile.collection.games.reversi.empty')}</div>`;
   }
 
   return groups.map(group => `
     <div class="profile-v2-game-group" data-mgw-reversi-profile-group="${group.layer}">
-      <div class="profile-v2-game-group-title">${GROUP_TITLES[group.layer]}</div>
+      <div class="profile-v2-game-group-title">${t(GROUP_TITLES[group.layer])}</div>
       <div class="profile-v2-game-grid">${group.items.map(reversiCardMarkup).join('')}</div>
     </div>
   `).join('');
@@ -174,10 +175,10 @@ function upgradeReversiSheet(itemId){
   if (title instanceof HTMLElement) title.textContent = reversiDisplayName(item);
 
   const strong = sheet.querySelector('.profile-v2-game-preview-meta strong');
-  if (strong instanceof HTMLElement) strong.textContent = 'Реверси';
+  if (strong instanceof HTMLElement) strong.textContent = t('profile.collection.games.reversi.title');
 
   const group = sheet.querySelector('.profile-v2-game-preview-meta small');
-  if (group instanceof HTMLElement) group.textContent = GROUP_TITLES[reversiLayer(item)] || 'Оформление';
+  if (group instanceof HTMLElement) group.textContent = GROUP_TITLES[reversiLayer(item)] ? t(GROUP_TITLES[reversiLayer(item)]) : t('profile.collection.cosmetics_label');
 }
 
 function ownedReversiItems(){
@@ -220,8 +221,12 @@ function reversiVariant(item){
 }
 
 function reversiDisplayName(item){
+  const itemId = String(item?.item_id || '').trim();
+  if (itemId) {
+    try { return t(`store.products.${itemId}`); } catch (_) {}
+  }
   const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata : {};
-  return String(metadata.display_name || item?.item_id || 'Оформление Реверси').trim();
+  return String(metadata.display_name || itemId || t('profile.collection.games.reversi.fallback')).trim();
 }
 
 function isReversiItemEquipped(item){

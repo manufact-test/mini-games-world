@@ -10,6 +10,7 @@ const cssPath = path.join(root, 'app/assets/css/screens/profile-four-in-a-row-st
 const storeCssPath = path.join(root, 'app/assets/css/games/four-in-a-row/store-cosmetics-v1.css');
 const manifestPath = path.join(root, 'app/runtime/client/version-manifest.php');
 const profileApiPath = path.join(root, 'bot/profile-v2.php');
+const localePath = path.join(root, 'app/locales/ru.json');
 
 const profile = fs.readFileSync(profilePath, 'utf8');
 const layout = fs.readFileSync(layoutPath, 'utf8');
@@ -18,6 +19,7 @@ const css = fs.readFileSync(cssPath, 'utf8');
 const storeCss = fs.readFileSync(storeCssPath, 'utf8');
 const manifest = fs.readFileSync(manifestPath, 'utf8');
 const profileApi = fs.readFileSync(profileApiPath, 'utf8');
+const locale = JSON.parse(fs.readFileSync(localePath, 'utf8'));
 
 const itemIds = [
   'game-four-field-blue',
@@ -35,7 +37,8 @@ const itemIds = [
 
 for (const id of itemIds) assert.ok(profile.includes(`'${id}'`), `Four Profile parity must know ${id}`);
 for (const layer of ['theme','elements','effect']) assert.ok(profile.includes(layer), `Four Profile must support ${layer}`);
-for (const title of ['Поля','Фишки','Эффекты']) assert.ok(profile.includes(title), `Four Profile must expose ${title}`);
+assert.deepEqual(locale.profile?.collection?.games?.four_in_a_row?.groups, { theme:'Поля', elements:'Фишки', effect:'Эффекты' });
+for (const layer of ['theme','elements','effect']) assert.ok(profile.includes(`profile.collection.games.four_in_a_row.groups.${layer}`), `Four Profile must expose localized ${layer}`);
 
 assert.ok(profile.includes("item.owned === true"), 'Profile must render owned Four cosmetics only');
 assert.ok(profile.includes('state.profileInventory'), 'Profile must use canonical profile inventory');
@@ -47,7 +50,7 @@ assert.ok(profile.includes('api.profileV2'), 'Four parity must converge from aut
 assert.ok(profile.includes('mgw:cosmetic-inventory-changed'), 'Four parity must react to Store ownership/equip refresh');
 assert.ok(profile.includes('data-game-type="four_in_a_row"'), 'Four Profile previews must identify game type explicitly');
 assert.ok(profile.includes('fourInARowPreviewMarkup(layer, variant)'), 'Profile must reuse the accepted Store preview primitive');
-assert.ok(profile.includes("drop:'Лазерное наведение'") && profile.includes("four:'Энергетический импульс'") && profile.includes("'victory-wave':'Победный овердрайв'"), 'Profile cards and equip sheet must use player-facing effect names');
+assert.ok(profile.includes('store.products.') && locale.store?.products?.['game-four-effect-drop'] === 'Лазерное наведение' && locale.store?.products?.['game-four-effect-four'] === 'Энергетический импульс' && locale.store?.products?.['game-four-effect-victory-wave'] === 'Победный овердрайв', 'Profile cards and equip sheet must use localized player-facing effect names');
 assert.ok(store.includes('upgradePurchaseCopy(root)') && store.includes('.store-v2-confirm-copy strong'), 'Store purchase sheet must use the same shared preview/name presentation as Profile');
 assert.ok(profile.includes("store-screen-four-in-a-row-store-v1.js?v=11&four_store=live-previews-v3&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&export=profile-preview-v4&copy=compact-v3"), 'Profile must request the shared accepted animated Four preview primitive and player-facing copy');
 assert.ok(profile.includes("four_profile=live-previews-v3"), 'Four Profile must publish the corrected animated-preview presentation identity');
@@ -63,7 +66,7 @@ assert.ok(store.includes('[22,23,24,25]') && store.includes('M1.5 3.5 L2.5 3.5 L
 assert.ok(storeCss.includes('left:42.857%') && storeCss.includes('.effect-victory-wave .mgw-four-fx-board-shell') && storeCss.includes('overflow:hidden'), 'Shared Victory preview must keep the exact test center and clip the finale inside the board');
 assert.ok(css.includes('width:86%!important') && css.includes('width:82%!important'), 'Profile card and detail sheet must scale the same proportional effect board without stretching it');
 
-assert.ok(layout.includes("mgw-profile-four-in-a-row-parity.js?v=8&four_profile=live-previews-v3&four_module=export-v11&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&copy=compact-v3"), 'Active Profile wrapper must import the accepted animated Four preview module');
+assert.ok(layout.includes("mgw-profile-four-in-a-row-parity.js?v=9&four_profile=live-previews-v3&four_module=export-v11&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&copy=compact-v3&mvp27_1=localized-v1"), 'Active Profile wrapper must import the localized accepted animated Four preview module');
 assert.ok(layout.includes('initProfileFourInARowParity();'), 'Active Profile wrapper must initialize Four parity');
 assert.ok(layout.indexOf('initProfileDominoHardRatio();') < layout.indexOf('initProfileFourInARowParity();'), 'Four parity must be added after accepted existing game owners without replacing them');
 
