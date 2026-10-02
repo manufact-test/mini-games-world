@@ -142,6 +142,10 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if git diff --quiet "$base" "$head" -- bot/accounts/AccountDataLifecycleService.php bot/account-data.php app/assets/js/screens/account-data-sheet-v1.js; then
+            echo "Successor slice: Account Data lifecycle owners unchanged; original bounded/frozen scope does not apply."
+            exit 0
+          fi
           # MVP-22.9 is a bounded successor slice. Predecessor contracts above still run;
           # their historical file-scope allow-lists must not reject the newer incident/recovery owners.
           if [[ "${{ github.head_ref }}" == agent/mvp22-9-* || "${{ github.head_ref }}" == agent/mvp23-manual-acceptance-* || "${{ github.head_ref }}" == agent/mvp23-mobile-cold-first-interaction-* || "${{ github.head_ref }}" == agent/mvp26-4-* ]]; then
