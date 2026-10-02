@@ -7,6 +7,7 @@ const live = fs.readFileSync(path.join(root, 'app/assets/js/games/battleship/ren
 const liveCss = fs.readFileSync(path.join(root, 'app/assets/css/games/battleship/live-cosmetics-v1.css'), 'utf8');
 const base = fs.readFileSync(path.join(root, 'app/assets/js/games/battleship/renderer.js'), 'utf8');
 const entry = fs.readFileSync(path.join(root, 'app/v110.php'), 'utf8');
+const manifest = fs.readFileSync(path.join(root, 'app/runtime/client/version-manifest.php'), 'utf8');
 const launch = fs.readFileSync(path.join(root, 'bot/helpers/WebAppLaunchUrl.php'), 'utf8');
 
 assert.ok(live.includes("const HIT_ID = 'game-battleship-effect-hit'"), 'Hit must use the catalog Hit item id');
@@ -70,7 +71,12 @@ assert.ok(live.includes("duration:2050") && live.includes("opacity:.96") && live
 assert.ok(liveCss.includes('.mgw-bs-live-destroy-wreck{\n  z-index:2;'), 'Destroy wreck must remain below the bright fire core');
 assert.ok(liveCss.includes('.mgw-bs-live-destroy-shard{\n  z-index:5;'), 'Destroy debris must remain readable without covering the fire core');
 
-assert.ok(entry.includes("$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v7&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-core-v4';"), 'Active v110 runtime must publish the accepted three-effect queued-fire module');
+assert.ok(
+  manifest.includes("renderer-cosmetics-v1.js?v=5&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&base=v60-shot-miss-no-impact&live_effects=accepted-three-v7&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-core-v4")
+    && entry.includes("$battleshipRendererImportKey = './assets/js/games/battleship/renderer.js?v=56'")
+    && !entry.includes('$imports[$battleshipRendererImportKey] .='),
+  'Active v110 runtime must consume the accepted three-effect Battleship owner directly from the canonical manifest'
+);
 assert.ok(launch.includes('battleship_shot=live-v2') && launch.includes('battleship_impacts=live-v2') && launch.includes('battleship_destroy=live-v4') && launch.includes('battleship_fire=direct-result-v4'), 'Telegram route must publish all accepted effects plus reliable-fire identity');
 
 console.log('Battleship LIVE Hit/Destroy effect contract passed.');
