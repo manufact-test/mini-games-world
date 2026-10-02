@@ -81,6 +81,7 @@ $assert(
 );
 
 $clientPolicy = file_get_contents($repoRoot . '/app/assets/js/games/game-invites-v110-rematch-policy-v175.js');
+$locale = json_decode((string)file_get_contents($repoRoot . '/app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 $manifest = require $repoRoot . '/app/runtime/client/version-manifest.php';
 $launch = file_get_contents($root . '/helpers/WebAppLaunchUrl.php');
 $inviteServiceSource = file_get_contents($root . '/services/GameInviteService.php');
@@ -93,8 +94,11 @@ $assert(
     'Client result UX must use the neutral capability rather than a bot marker.'
 );
 $assert(
-    is_string($clientPolicy) && str_contains($clientPolicy, "playAgain.textContent = 'Сыграть ещё';"),
-    'The ordinary replay path must use neutral Play again copy.'
+    is_string($clientPolicy)
+        && str_contains($clientPolicy, "const playAgainText = t('game_invites.rematch.play_again');")
+        && str_contains($clientPolicy, 'playAgain.textContent = playAgainText')
+        && (($locale['game_invites']['rematch']['play_again'] ?? null) === 'Сыграть ещё'),
+    'The ordinary replay path must use canonical localized neutral Play again copy.'
 );
 $assert(
     is_string($clientPolicy)
@@ -122,7 +126,7 @@ $assert(
     is_array($manifest)
         && str_contains(
             (string)($manifest['imports']['./assets/js/games/game-invites-v110.js?v=1137&ux=1'] ?? ''),
-            'game-invites-v110-rematch-policy-v175.js?v=2&fp=2&mvp21_6=tournament-exclusion-v1'
+            'game-invites-v110-rematch-policy-v175.js?v=3&fp=2&mvp21_6=tournament-exclusion-v1&mvp27_1=localized-v1'
         ),
     'The active v110 invite import must cache-bust to the safe prepaint policy without changing frozen v1 contract identity.'
 );

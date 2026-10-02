@@ -23,6 +23,7 @@ $fixture = $read('bot/tournaments/StagingTournamentManualAcceptanceService.php')
 $adminApi = $read('bot/admin-tournaments.php');
 $adminJs = $read('app/assets/js/admin-tournaments.js');
 $manifest = $read('app/runtime/client/version-manifest.php');
+$locale = json_decode($read('app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 $css = $read('app/assets/css/main.css');
 
 $assertions = 0;
@@ -89,11 +90,13 @@ $assert(str_contains($gameRuntime, "'rematch_available'=>false")
 
 $assert(str_contains($gameScreen, "String(game?.match_source || '') === 'tournament'")
         && str_contains($gameScreen, 'id="goTournament"')
-        && str_contains($gameScreen, 'Вернуться в турнир')
+        && str_contains($gameScreen, "gameText('result.go_tournament')")
+        && (($locale['game_screen']['result']['go_tournament'] ?? null) === 'Вернуться в турнир')
         && str_contains($gameScreen, 'id="goTournament" type="button"'),
     'Tournament result must expose a dedicated return-to-tournament action.');
 $assert(str_contains($gameScreen, 'tournamentResultSummaryMarkup')
-        && str_contains($gameScreen, 'Турнирный поединок ·')
+        && str_contains($gameScreen, "gameText('result.tournament_duel', { title })")
+        && (($locale['game_screen']['result']['tournament_duel'] ?? null) === 'Турнирный поединок · {title}')
         && str_contains($gameScreen, 'if (!options.pending && !tournamentMatch)')
         && str_contains($gameScreen, "if (String(game?.match_source || '') === 'tournament') return;"),
     'Tournament result must never hydrate ordinary economy/history summary or expose unavailable balance copy.');
@@ -161,19 +164,20 @@ $assert(str_contains($adminJs, "progressionReason !== 'staging_only'")
         && str_contains($adminJs, "progressionPanel.hidden = !progressionVisible"),
     'Staging Admin must keep the fixture progression panel visible even when the action is temporarily disabled.');
 
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=31')
-        && str_contains($manifest, 'main.css?v=201')
+$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=32')
+        && str_contains($manifest, 'main.css?v=211')
         && str_contains($manifest, 'mvp21_6=round-grid-spacing-v1')
         && str_contains($manifest, 'mvp21_8=corrective-v8')
         && str_contains($manifest, 'mvp21_manual=acceptance-corrective-v1')
         && str_contains($manifest, 'archive=per-round-v1')
         && str_contains($manifest, 'desktop=endurance-v1')
-        && str_contains($manifest, 'game-screen-v102.js?v=113')
+        && str_contains($manifest, 'game-screen-v102.js?v=114')
+        && str_contains($manifest, 'mvp27_1=game-screen-localized-v1')
         && str_contains($manifest, 'mvp21_manual=tournament-result-return-v1')
         && str_contains($manifest, 'mvp21_6=tournament-result-dedupe-v3')
         && str_contains($manifest, 'production-v110-acceptance-runtime.js?v=132')
-        && str_contains($manifest, 'game-invites-v110.js?v=1146')
-        && str_contains($manifest, 'game-invites-v110-rematch-policy-v175.js?v=2'),
+        && str_contains($manifest, 'game-invites-v110.js?v=1150')
+        && str_contains($manifest, 'game-invites-v110-rematch-policy-v175.js?v=3'),
     'Corrective v8 client owners must publish fresh active cache identities without replacing the accepted Phase-B presentation owner.');
 
 if ($assertions < 41) throw new RuntimeException('Corrective v4 contract is too shallow: ' . $assertions);

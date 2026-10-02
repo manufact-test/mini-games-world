@@ -18,7 +18,7 @@ $gameWatch = file_get_contents($root . '/game-watch.php');
 $manifest = require $repoRoot . '/app/runtime/client/version-manifest.php';
 
 $matchHistoryStart = is_string($home) ? strpos($home, 'function renderMatchHistorySheet') : false;
-$matchHistoryEnd = is_string($home) ? strpos($home, 'function bindHistoryTabs', is_int($matchHistoryStart) ? $matchHistoryStart : 0) : false;
+$matchHistoryEnd = is_string($home) ? strpos($home, 'function matchDelta', is_int($matchHistoryStart) ? $matchHistoryStart : 0) : false;
 $matchHistory = is_int($matchHistoryStart) && is_int($matchHistoryEnd)
     ? substr($home, $matchHistoryStart, $matchHistoryEnd - $matchHistoryStart)
     : '';

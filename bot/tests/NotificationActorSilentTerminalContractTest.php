@@ -6,7 +6,8 @@ $invites = file_get_contents($root . '/app/assets/js/games/game-invites-v110.js'
 $rematchPolicy = file_get_contents($root . '/app/assets/js/games/game-invites-v110-rematch-policy-v175.js');
 $notifications = file_get_contents($root . '/app/assets/js/screens/notifications-screen-v110r13.js');
 $manifest = file_get_contents($root . '/app/runtime/client/version-manifest.php');
-if (!is_string($invites) || !is_string($rematchPolicy) || !is_string($notifications) || !is_string($manifest)) {
+$locale = json_decode((string)file_get_contents($root . '/app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
+if (!is_string($invites) || !is_string($rematchPolicy) || !is_string($notifications) || !is_string($manifest) || !is_array($locale)) {
     throw new RuntimeException('Unable to read notification terminal runtime files.');
 }
 
@@ -59,14 +60,15 @@ if (!str_contains($notifications, "document.addEventListener('mgw:notification-r
 }
 
 if (!str_contains($invites, 'data-rematch-pending')
-    || !str_contains($invites, 'Реванш предложен')
+    || !str_contains($invites, "inviteText('rematch.proposed')")
+    || (($locale['game_invites']['rematch']['proposed'] ?? null) !== 'Реванш предложен')
     || str_contains($invites, 'Предлагаем реванш…')) {
-    throw new RuntimeException('Silent terminal correction must preserve the accepted optimistic rematch UX.');
+    throw new RuntimeException('Silent terminal correction must preserve the accepted localized optimistic rematch UX.');
 }
 
 // MVP-17.5 adds a presentation-only rematch policy in front of this accepted
 // invite/notification runtime. It must preserve the exact silent-terminal owner.
-if (!str_contains($manifest, 'game-invites-v110-rematch-policy-v175.js?v=2&fp=2&mvp21_6=tournament-exclusion-v1')) {
+if (!str_contains($manifest, 'game-invites-v110-rematch-policy-v175.js?v=3&fp=2&mvp21_6=tournament-exclusion-v1&mvp27_1=localized-v1')) {
     throw new RuntimeException('Bot-opaque rematch policy cache-bust missing.');
 }
 if (!str_contains($rematchPolicy, './game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent')) {

@@ -90,12 +90,14 @@ $profileChessParity = file_get_contents($repoRoot . '/app/assets/js/profile/mgw-
 $profileCheckersParity = file_get_contents($repoRoot . '/app/assets/js/profile/mgw-profile-checkers-parity.js');
 $profileLayout = file_get_contents($repoRoot . '/app/assets/js/profile/mgw-profile-chess-layout-v2.js');
 $manifest = require $repoRoot . '/app/runtime/client/version-manifest.php';
+$locale = json_decode((string)file_get_contents($repoRoot . '/app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 $launch = file_get_contents($root . '/helpers/WebAppLaunchUrl.php');
 
 $assert(is_string($resultClient) && str_contains($resultClient, 'await api.history()'), 'Result sheet must hydrate from canonical server history.');
 $assert(is_string($resultClient) && str_contains($resultClient, 'economy.ledger_delta'), 'Result sheet must display the server-projected ledger delta.');
 $assert(is_string($resultClient) && str_contains($resultClient, 'economy.new_balance'), 'Result sheet must display server-projected new balance.');
-$assert(is_string($resultClient) && str_contains($resultClient, 'За игру: ${escapeHtml(delta)} · Баланс: ${escapeHtml(balance)}'), 'Result must show only viewer net delta and final balance.');
+$assert(is_string($resultClient) && str_contains($resultClient, "gameText('result.summary', { delta, balance })"), 'Result must render viewer net delta and final balance through canonical localization.');
+$assert((($locale['game_screen']['result']['summary'] ?? null) === 'За игру: {delta} · Баланс: {balance}'), 'Accepted RU Result summary copy must remain unchanged in the canonical catalog.');
 $assert(is_string($resultClient) && !str_contains($resultClient, 'Вход: ${escapeHtml(entry)}'), 'Result must not repeat the entry debit as a separate visible row.');
 $assert(is_string($resultClient) && !str_contains($resultClient, 'Награда: ${escapeHtml(reward)}'), 'Result must not repeat the reward credit as a separate visible row.');
 $assert(is_string($resultClient) && str_contains($resultClient, 'resultSummaryPlaceholder(game, me'), 'Result must reserve the final two-line summary shape before economy hydration.');
@@ -107,7 +109,8 @@ $assert(is_string($resultClient) && str_contains($resultClient, 'id="newOpponent
 $assert(is_string($profileClient) && str_contains($profileClient, 'match?.economy'), 'Profile history must consume the same canonical match economy projection.');
 $assert(is_string($profileClient) && str_contains($profileClient, 'economy.ledger_delta'), 'Profile history must display canonical ledger delta.');
 $assert(
-    str_contains((string)($manifest['imports']['./assets/js/screens/game-screen-v102.js?v=102'] ?? ''), 'clock=phase-b-single-writer&battleship=leave-guard&mvp17=result-history-economy&live=owner-v3&result=compact-fast-v1'),
+    str_contains((string)($manifest['imports']['./assets/js/screens/game-screen-v102.js?v=102'] ?? ''), 'clock=phase-b-single-writer&battleship=leave-guard&mvp17=result-history-economy&live=owner-v3&result=compact-fast-v1')
+        && str_contains((string)($manifest['imports']['./assets/js/screens/game-screen-v102.js?v=102'] ?? ''), 'mvp27_1=game-screen-localized-v1'),
     'Active v110 manifest must publish the compact fast Result owner while preserving accepted game ownership prefixes.'
 );
 $profileTarget = (string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? '');

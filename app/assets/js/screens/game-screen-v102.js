@@ -20,6 +20,10 @@ import {
   invalidateInFlightPoll,
   pendingSurfaceDescriptor,
 } from '../production-v100-optimistic-models.js?v=102';
+import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
+
+const GAME_TYPES = new Set(['tictactoe','four_in_a_row','battleship','checkers','reversi','chess','go','domino']);
+const gameText = (key, params = {}) => t(`game_screen.${key}`, params);
 
 const runtime = window.__MGW_V100_GAME_RUNTIME__ ||= {
   initialized:false,
@@ -138,7 +142,7 @@ export function clearGameView(){
   }
   document.getElementById('playersRow')?.replaceChildren();
   const turn = document.getElementById('turnText');
-  if (turn) turn.textContent = 'Ожидаем начало матча';
+  if (turn) turn.textContent = gameText('waiting_start');
   const timer = document.getElementById('timerText');
   if (timer) timer.textContent = '—';
 }
@@ -274,7 +278,7 @@ async function drainActions(gameId, item){
         item.queue.length = 0;
         if (item.surrenderPending) break;
         restoreAuthoritative(item);
-        toast(error?.message || 'Не удалось выполнить действие. Поле восстановлено.');
+        toast(error?.message || gameText('errors.action_restore'));
         break;
       }
 
@@ -374,7 +378,7 @@ function renderGame(game, me, forceSurface){
   const phaseClockOwned = type === 'tictactoe'
     && Object.prototype.hasOwnProperty.call(game || {}, 'launch_phase');
   if (String(game.status || '') !== 'active') timer.textContent = '—';
-  else if (!phaseClockOwned) timer.textContent = `${game.time_left ?? 60} сек`;
+  else if (!phaseClockOwned) timer.textContent = gameText('timer_seconds', { count:formatLocalizedNumber(game.time_left ?? 60, { maximumFractionDigits:0 }) });
 
   const playersMarkup = (game.players || []).map(player => {
     const champion = player?.tournament_prestige?.champion_crown === true;
@@ -386,7 +390,7 @@ function renderGame(game, me, forceSurface){
           ${champion ? gameTournamentCrownSvg() : ''}
           <span class="mgw-game-player-mark-symbol">${escapeHtml(playerMarkText(game, player))}</span>
         </span>
-        <span class="mgw-game-player-role">· ${String(player.id) === String(me.id) ? 'вы' : 'соперник'}</span>
+        <span class="mgw-game-player-role">· ${String(player.id) === String(me.id) ? gameText('roles.you') : gameText('roles.opponent')}</span>
       </div>
     </div>
   `;
@@ -476,13 +480,13 @@ function requestLeaveGame(){
 
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Выйти из матча?</h2></div>
+      <div><h2>${escapeHtml(gameText('leave.title'))}</h2></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
-    <div class="small-note">Матч ещё не завершён. Если выйти сейчас, вам будет засчитано техническое поражение.</div>
+    <div class="small-note">${escapeHtml(gameText('leave.note'))}</div>
     <div class="stack">
-      <button class="btn primary full" data-close-sheet type="button">Продолжить игру</button>
-      <button class="btn danger full" id="confirmLeaveGame" type="button">Выйти и завершить матч</button>
+      <button class="btn primary full" data-close-sheet type="button">${escapeHtml(gameText('leave.continue'))}</button>
+      <button class="btn danger full" id="confirmLeaveGame" type="button">${escapeHtml(gameText('leave.confirm'))}</button>
     </div>
   `);
 
@@ -504,7 +508,7 @@ async function confirmLeaveGame(){
   if (item.surrenderPending) return;
   const viewer = item.viewer || resolveViewer(game);
   if (!viewer?.id) {
-    toast('Не удалось определить игрока для завершения матча.');
+    toast(gameText('errors.viewer'));
     return;
   }
 
@@ -540,7 +544,7 @@ async function confirmLeaveGame(){
     closeSheet();
     restoreAuthoritative(item);
     startGamePolling(id);
-    toast(error?.message || 'Не удалось выйти из матча.');
+    toast(error?.message || gameText('errors.leave'));
   }
 }
 
@@ -559,31 +563,31 @@ function buildOptimisticSurrender(game, viewerId){
 function openResultSheet(game, me, options = {}){
   if (options.notify !== false) notifyWeeklyProgress(game);
   const tournamentMatch = String(game?.match_source || '') === 'tournament';
-  let title = 'Ничья';
-  let text = chessDrawText(game) || 'Матч завершён вничью.';
+  let title = gameText('result.draw_title');
+  let text = chessDrawText(game) || gameText('result.draw_text');
 
   if (game.finish_reason === 'preparation_timeout') {
-    title = 'Матч не начался';
-    text = 'Соперник не подключился вовремя. Ставка возвращена на баланс.';
+    title = gameText('result.not_started_title');
+    text = gameText('result.not_started_text');
   } else if (game.winner_id) {
     const isWin = String(game.winner_id) === String(me.id);
-    title = isWin ? 'Победа!' : 'Поражение';
+    title = isWin ? gameText('result.win_title') : gameText('result.loss_title');
     if (game.finish_reason === 'timeout') {
       text = isWin
-        ? 'Соперник не сделал ход вовремя.'
-        : 'Время хода вышло. Засчитано техническое поражение.';
+        ? gameText('result.timeout_win')
+        : gameText('result.timeout_loss');
     } else if (game.finish_reason === 'player_left') {
       text = isWin
-        ? 'Соперник вышел из матча.'
-        : 'Вы вышли из матча. Засчитано техническое поражение.';
+        ? gameText('result.left_win')
+        : gameText('result.left_loss');
     } else if (gameTypeOf(game) === 'chess' && game.chess_end_reason === 'checkmate') {
-      text = isWin ? 'Мат.' : 'Вашему королю поставлен мат.';
+      text = isWin ? gameText('result.checkmate_win') : gameText('result.checkmate_loss');
     } else if (gameTypeOf(game) === 'domino' && game.end_reason === 'empty_hand') {
       text = isWin
-        ? 'Вы первыми избавились от всех костяшек.'
-        : 'Соперник первым избавился от всех костяшек.';
+        ? gameText('result.domino_empty_win')
+        : gameText('result.domino_empty_loss');
     } else {
-      text = isWin ? 'Матч завершён в вашу пользу.' : 'Соперник оказался сильнее.';
+      text = isWin ? gameText('result.normal_win') : gameText('result.normal_loss');
     }
   }
 
@@ -596,10 +600,10 @@ function openResultSheet(game, me, options = {}){
     : resultSummaryPlaceholder(
         game,
         me,
-        options.pending ? 'подтверждаем…' : 'считаем…'
+        options.pending ? gameText('result.pending_confirming') : gameText('result.pending_counting')
       );
 
-  if (tournamentMatch) text += ' Турнирный результат сохранён в сетке.';
+  if (tournamentMatch) text += ` ${gameText('result.tournament_saved')}`;
 
   openSheet(`
     <div class="sheet-head">
@@ -609,9 +613,9 @@ function openResultSheet(game, me, options = {}){
     <div class="small-note" id="resultSummary" data-result-game-id="${escapeHtml(game?.id || '')}">${summaryMarkup}</div>
     <div class="stack">
       ${tournamentMatch
-        ? `<button class="btn primary full" id="goTournament" type="button" ${disabled}>Вернуться в турнир</button>`
-        : `<button class="btn primary full" id="newOpponent" type="button" ${disabled}>Найти нового соперника</button>
-           <button class="btn ghost full" id="goHome" type="button" ${disabled}>В меню</button>`}
+        ? `<button class="btn primary full" id="goTournament" type="button" ${disabled}>${escapeHtml(gameText('result.go_tournament'))}</button>`
+        : `<button class="btn primary full" id="newOpponent" type="button" ${disabled}>${escapeHtml(gameText('result.new_opponent'))}</button>
+           <button class="btn ghost full" id="goHome" type="button" ${disabled}>${escapeHtml(gameText('result.home'))}</button>`}
     </div>
   `);
 
@@ -666,66 +670,73 @@ async function hydrateResultSummary(game, me){
     if (!(current instanceof HTMLElement) || String(current.dataset.resultGameId || '') !== gameId) return;
     current.innerHTML = match
       ? resultSummaryMarkup(match)
-      : resultSummaryPlaceholder(game, me, 'итог пока недоступен');
+      : resultSummaryPlaceholder(game, me, gameText('result.unavailable'));
   } catch (error) {
     const current = document.getElementById('resultSummary');
     if (!(current instanceof HTMLElement) || String(current.dataset.resultGameId || '') !== gameId) return;
-    current.innerHTML = resultSummaryPlaceholder(game, me, 'итог пока недоступен');
+    current.innerHTML = resultSummaryPlaceholder(game, me, gameText('result.unavailable'));
   }
 }
 
 function tournamentResultSummaryMarkup(game){
-  const title = String(game?.game_title || 'Матч');
+  const title = localizedGameTitle(game);
   const names = (Array.isArray(game?.players) ? game.players : [])
     .map(player => String(player?.name || '').trim())
     .filter(Boolean);
   const pairing = names.length >= 2
-    ? `${names[0]} против ${names[1]}`
-    : 'Участники турнирной пары';
-  return `<strong>Турнирный поединок · ${escapeHtml(title)}</strong><br>${escapeHtml(pairing)}`;
+    ? gameText('result.tournament_pair', { first:names[0], second:names[1] })
+    : gameText('result.tournament_participants');
+  return `<strong>${escapeHtml(gameText('result.tournament_duel', { title }))}</strong><br>${escapeHtml(pairing)}`;
 }
 
 function resultSummaryMarkup(match){
   const context = resultContextFromMatch(match);
   const economy = match?.economy && typeof match.economy === 'object' ? match.economy : null;
-  if (!economy) return `<strong>${escapeHtml(context)}</strong><br>За игру: итог пока недоступен · Баланс: —`;
+  if (!economy) return `<strong>${escapeHtml(context)}</strong><br>${escapeHtml(gameText('result.summary_unavailable'))}`;
 
   const delta = formatCoinDelta(economy.ledger_delta);
   const balance = economy.new_balance === null || economy.new_balance === undefined
     ? '—'
     : formatCoins(economy.new_balance);
-  return `<strong>${escapeHtml(context)}</strong><br>За игру: ${escapeHtml(delta)} · Баланс: ${escapeHtml(balance)}`;
+  return `<strong>${escapeHtml(context)}</strong><br>${escapeHtml(gameText('result.summary', { delta, balance }))}`;
 }
 
 function resultSummaryPlaceholder(game, me, status){
   const context = resultContextFromGame(game, me);
-  return `<strong>${escapeHtml(context)}</strong><br>За игру: ${escapeHtml(status)} · Баланс: —`;
+  return `<strong>${escapeHtml(context)}</strong><br>${escapeHtml(gameText('result.summary_status', { status }))}`;
 }
 
 function resultContextFromMatch(match){
-  const title = String(match?.game_title || 'Матч');
-  const opponent = String(match?.opponent || 'Соперник');
-  return [title, `против ${opponent}`].filter(Boolean).join(' · ');
+  const title = localizedGameTitle(match);
+  const opponent = String(match?.opponent || gameText('result.opponent_fallback'));
+  return [title, gameText('result.versus', { opponent })].filter(Boolean).join(' · ');
 }
 
 function resultContextFromGame(game, me){
-  const title = String(game?.game_title || 'Матч');
+  const title = localizedGameTitle(game);
   const opponent = (Array.isArray(game?.players) ? game.players : [])
     .find(player => String(player?.id || '') !== String(me?.id || ''));
-  const opponentName = String(opponent?.name || 'Соперник');
-  return [title, `против ${opponentName}`].filter(Boolean).join(' · ');
+  const opponentName = String(opponent?.name || gameText('result.opponent_fallback'));
+  return [title, gameText('result.versus', { opponent:opponentName })].filter(Boolean).join(' · ');
 }
 
 function formatCoins(value){
   const number = Number(value);
-  return Number.isFinite(number) ? `${Math.trunc(number)} коинов` : '—';
+  return Number.isFinite(number) ? gameText('result.coins', { value:formatLocalizedNumber(Math.trunc(number), { maximumFractionDigits:0 }) }) : '—';
 }
 
 function formatCoinDelta(value){
   const number = Number(value);
   if (!Number.isFinite(number)) return '—';
   const normalized = Math.trunc(number);
-  return `${normalized > 0 ? '+' : ''}${normalized} коинов`;
+  return gameText('result.coins', { value:`${normalized > 0 ? '+' : ''}${formatLocalizedNumber(normalized, { maximumFractionDigits:0 })}` });
+}
+
+function localizedGameTitle(value){
+  const type = String(gameTypeOf(value) || value?.game_type || '').trim();
+  if (GAME_TYPES.has(type)) return t(`games.${type}.name`);
+  const supplied = String(value?.game_title || '').trim();
+  return supplied || gameText('result.match_fallback');
 }
 
 function searchContextFromGame(game){
@@ -798,11 +809,11 @@ function normalizeViewer(viewer){
 function chessDrawText(game){
   if (gameTypeOf(game) !== 'chess') return '';
   return {
-    stalemate:'Пат.',
-    insufficient_material:'Недостаточно фигур для мата.',
-    threefold_repetition:'Позиция повторилась три раза.',
-    fifty_move:'Сработало правило 50 ходов.',
-  }[String(game?.chess_end_reason || '')] || 'Партия завершилась вничью.';
+    stalemate:gameText('result.chess_draw.stalemate'),
+    insufficient_material:gameText('result.chess_draw.insufficient_material'),
+    threefold_repetition:gameText('result.chess_draw.threefold_repetition'),
+    fifty_move:gameText('result.chess_draw.fifty_move'),
+  }[String(game?.chess_end_reason || '')] || gameText('result.chess_draw.fallback');
 }
 
 function reversiScoreText(game, me){
@@ -811,7 +822,7 @@ function reversiScoreText(game, me){
   const side = String(player?.side || game?.viewer_side || 'black');
   const black = Number(game?.final_counts?.black ?? game?.black_count ?? 0);
   const white = Number(game?.final_counts?.white ?? game?.white_count ?? 0);
-  return ` Итоговый счёт: ${side === 'black' ? black : white}:${side === 'black' ? white : black}.`;
+  return ` ${gameText('result.final_score', { mine:side === 'black' ? black : white, theirs:side === 'black' ? white : black })}`;
 }
 
 function goScoreText(game, me){
@@ -820,7 +831,7 @@ function goScoreText(game, me){
   const side = String(player?.side || game?.viewer_side || 'black');
   const black = formatScore(game.final_score.black_total);
   const white = formatScore(game.final_score.white_total);
-  return ` Итоговый счёт: ${side === 'black' ? black : white}:${side === 'black' ? white : black}.`;
+  return ` ${gameText('result.final_score', { mine:side === 'black' ? black : white, theirs:side === 'black' ? white : black })}`;
 }
 
 function dominoScoreText(game){
@@ -828,13 +839,13 @@ function dominoScoreText(game){
   const mine = Number(game.my_points || 0);
   const theirs = Number(game.opponent_points || 0);
   return game?.end_reason === 'blocked'
-    ? ` Партия заблокирована. Оставшиеся точки: ${mine}:${theirs}.`
-    : ` Оставшиеся точки: ${mine}:${theirs}.`;
+    ? ` ${gameText('result.domino_blocked_score', { mine, theirs })}`
+    : ` ${gameText('result.domino_score', { mine, theirs })}`;
 }
 
 function formatScore(value){
   const number = Number(value || 0);
-  return Number.isInteger(number) ? String(number) : number.toFixed(1).replace('.', ',');
+  return formatLocalizedNumber(number, Number.isInteger(number) ? { maximumFractionDigits:0 } : { minimumFractionDigits:1, maximumFractionDigits:1 });
 }
 
 function notifyWeeklyProgress(game){
