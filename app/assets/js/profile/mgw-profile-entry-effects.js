@@ -4,6 +4,9 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
 import { arbitratePlayerEntryEffects } from './mgw-entry-effect-player-arbitration.js?v=1';
+import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
+
+const entryText = (key, params = {}) => t(`profile.entry_effects.${key}`, params);
 
 const ENTRY_EFFECT_SLOT = 'profile_entry_effect';
 const ENTRY_EFFECT_IDS = Object.freeze([
@@ -12,9 +15,9 @@ const ENTRY_EFFECT_IDS = Object.freeze([
   'profile-entry-effect-03',
 ]);
 const ENTRY_EFFECT_PRESENTATION = Object.freeze({
-  'profile-entry-effect-01':Object.freeze({ variant:'entry-01', duration:2400, fallbackName:'Эффект входа I' }),
-  'profile-entry-effect-02':Object.freeze({ variant:'entry-02', duration:3000, fallbackName:'Эффект входа II' }),
-  'profile-entry-effect-03':Object.freeze({ variant:'entry-03', duration:3600, fallbackName:'Эффект входа III' }),
+  'profile-entry-effect-01':Object.freeze({ variant:'entry-01', duration:2400, fallbackKey:'names.entry_01' }),
+  'profile-entry-effect-02':Object.freeze({ variant:'entry-02', duration:3000, fallbackKey:'names.entry_02' }),
+  'profile-entry-effect-03':Object.freeze({ variant:'entry-03', duration:3600, fallbackKey:'names.entry_03' }),
 });
 
 let initialized = false;
@@ -180,12 +183,16 @@ function currentEntryEffectId(){
 }
 
 function meta(item){ return item?.metadata && typeof item.metadata === 'object' ? item.metadata : {}; }
-function itemName(item){ return String(meta(item).display_name || ENTRY_EFFECT_PRESENTATION[item?.item_id]?.fallbackName || 'Эффект входа'); }
+function itemName(item){
+  const fallbackKey = ENTRY_EFFECT_PRESENTATION[item?.item_id]?.fallbackKey || 'names.fallback';
+  return String(meta(item).display_name || entryText(fallbackKey));
+}
 function itemPrice(item){ return Math.max(0, Number(meta(item).price_coins || 0)); }
 function itemOfferId(item){ return String(meta(item).offer_id || String(item?.item_id || '').replace(/^profile-/, '')); }
 function itemTier(item){
   const tier = String(meta(item).tier || '');
-  return ({ 'tier-1':'Уровень I', 'tier-2':'Уровень II', 'tier-3':'Уровень III' })[tier] || 'Эффект входа';
+  const key = ({ 'tier-1':'tiers.tier_1', 'tier-2':'tiers.tier_2', 'tier-3':'tiers.tier_3' })[tier] || 'tiers.fallback';
+  return entryText(key);
 }
 function presentationFor(itemId){ return ENTRY_EFFECT_PRESENTATION[String(itemId || '')] || null; }
 
@@ -214,7 +221,7 @@ function renderStoreSection(catalog){
   if (section instanceof HTMLElement && section.dataset.profileEntryEffectSignature === signature) return;
 
   const markup = `<section class="store-v2-entry-effect-section" data-profile-entry-effect-store-section data-profile-entry-effect-signature="${escapeAttr(signature)}">
-    <div class="store-v2-title-row"><h2>Эффекты входа</h2></div>
+    <div class="store-v2-title-row"><h2>${escapeHtml(entryText('title'))}</h2></div>
     <div class="store-v2-entry-effect-grid">${catalog.map(item => storeCard(item, active)).join('')}</div>
   </section>`;
 
@@ -236,9 +243,9 @@ function storeCard(item, activeId){
     <div class="store-v2-product-foot store-v2-entry-effect-foot mgw-profile-cosmetic-foot">
       ${owned
         ? (active
-          ? '<b data-mgw-profile-cosmetic-status>Выбрано</b><button class="store-v2-equip active mgw-profile-cosmetic-action" data-entry-effect-unequip type="button">Снять</button>'
-          : `<b data-mgw-profile-cosmetic-status>В коллекции</b><button class="store-v2-equip mgw-profile-cosmetic-action" data-entry-effect-equip="${escapeAttr(itemId)}" type="button">Выбрать</button>`)
-        : `<b>${formatNumber(itemPrice(item))}</b><button class="store-v2-buy mgw-profile-cosmetic-action" data-entry-effect-buy="${escapeAttr(itemId)}" type="button">Купить</button>`}
+          ? `<b data-mgw-profile-cosmetic-status>${escapeHtml(entryText('status.selected'))}</b><button class="store-v2-equip active mgw-profile-cosmetic-action" data-entry-effect-unequip type="button">${escapeHtml(entryText('actions.remove'))}</button>`
+          : `<b data-mgw-profile-cosmetic-status>${escapeHtml(entryText('status.owned'))}</b><button class="store-v2-equip mgw-profile-cosmetic-action" data-entry-effect-equip="${escapeAttr(itemId)}" type="button">${escapeHtml(entryText('actions.select'))}</button>`)
+        : `<b>${formatLocalizedNumber(itemPrice(item))}</b><button class="store-v2-buy mgw-profile-cosmetic-action" data-entry-effect-buy="${escapeAttr(itemId)}" type="button">${escapeHtml(entryText('actions.buy'))}</button>`}
     </div>
   </article>`;
 }
@@ -267,8 +274,8 @@ function renderProfileCollection(catalog){
   const active = currentEntryEffectId();
   const signature = owned.map(item => item.item_id).join('|') + `|${active}`;
   if (section instanceof HTMLElement && section.dataset.profileEntryEffectSignature === signature) return;
-  const markup = `<div class="profile-v2-entry-effect-collection" data-profile-entry-effect-collection data-profile-entry-effect-signature="${escapeAttr(signature)}" aria-label="Эффекты входа">
-    <div class="profile-v2-collection-title">Эффекты входа</div>
+  const markup = `<div class="profile-v2-entry-effect-collection" data-profile-entry-effect-collection data-profile-entry-effect-signature="${escapeAttr(signature)}" aria-label="${escapeAttr(entryText('title'))}">
+    <div class="profile-v2-collection-title">${escapeHtml(entryText('title'))}</div>
     <div class="profile-v2-entry-effect-grid">${owned.map(item => profileCard(item, active)).join('')}</div>
   </div>`;
 
@@ -295,13 +302,13 @@ function openPurchase(itemId){
   const price = itemPrice(item);
   const balance = Number(state.user?.balance || 0);
   const missing = Math.max(0, price - balance);
-  openSheet(`<div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(entryText('purchase.title'))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="store-v2-confirm">
       <div class="mgw-entry-effect-sheet-preview">${previewMarkup(itemId, false, 'profile-v2-entry-effect-preview')}</div>
-      <div class="store-v2-confirm-copy"><strong>${escapeHtml(itemName(item))}</strong><small>Эффект входа · ${escapeHtml(itemTier(item))}</small></div>
-      <div class="store-v2-confirm-price"><span>К оплате</span><strong>${formatNumber(price)} коинов</strong></div>
-      <div class="store-v2-confirm-balance"><span>Останется</span><b>${formatNumber(Math.max(0, balance - price))}</b></div>
-      <button class="btn primary full" id="mgwEntryEffectConfirmBuy" type="button"${missing > 0 ? ' disabled' : ''}>${missing > 0 ? `Не хватает ${formatNumber(missing)}` : `Купить за ${formatNumber(price)}`}</button>
+      <div class="store-v2-confirm-copy"><strong>${escapeHtml(itemName(item))}</strong><small>${escapeHtml(entryText('purchase.effect_with_tier', {tier:itemTier(item)}))}</small></div>
+      <div class="store-v2-confirm-price"><span>${escapeHtml(entryText('purchase.to_pay'))}</span><strong>${escapeHtml(entryText('purchase.coins_value', {count:formatLocalizedNumber(price)}))}</strong></div>
+      <div class="store-v2-confirm-balance"><span>${escapeHtml(entryText('purchase.remaining'))}</span><b>${formatLocalizedNumber(Math.max(0, balance - price))}</b></div>
+      <button class="btn primary full" id="mgwEntryEffectConfirmBuy" type="button"${missing > 0 ? ' disabled' : ''}>${escapeHtml(missing > 0 ? entryText('purchase.missing', {count:formatLocalizedNumber(missing)}) : entryText('purchase.buy_for', {count:formatLocalizedNumber(price)}))}</button>
     </div>`);
   document.getElementById('mgwEntryEffectConfirmBuy')?.addEventListener('click', () => void purchase(item));
 }
@@ -322,11 +329,11 @@ async function purchase(item){
       renderBalances(state.user);
     }
     await refreshSnapshot();
-    toast('Эффект входа добавлен в коллекцию.');
+    toast(entryText('toast.purchased'));
   } catch (error) {
     state.profileInventory = previous;
     scheduleDecorate();
-    toast(error?.message || 'Не удалось купить эффект входа.');
+    toast(error?.message || entryText('errors.purchase'));
   } finally {
     purchasePending.delete(itemId);
   }
@@ -347,9 +354,9 @@ function openPreview(itemId){
   const active = itemId === currentEntryEffectId();
   openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(itemName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="mgw-entry-effect-sheet-preview">${previewMarkup(itemId, false, 'profile-v2-entry-effect-preview')}</div>
-    <div class="profile-v2-entry-effect-preview-meta"><strong>Эффект входа</strong><small>${escapeHtml(itemTier(item))}</small></div>
-    <div class="mgw-profile-cosmetic-sheet-status" data-mgw-profile-cosmetic-sheet-status>${active ? 'Выбрано' : 'В коллекции'}</div>
-    <button class="btn ${active ? 'ghost' : 'primary'} full mgw-profile-cosmetic-sheet-action" id="mgwEntryEffectEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>`);
+    <div class="profile-v2-entry-effect-preview-meta"><strong>${escapeHtml(entryText('effect_label'))}</strong><small>${escapeHtml(itemTier(item))}</small></div>
+    <div class="mgw-profile-cosmetic-sheet-status" data-mgw-profile-cosmetic-sheet-status>${escapeHtml(active ? entryText('status.selected') : entryText('status.owned'))}</div>
+    <button class="btn ${active ? 'ghost' : 'primary'} full mgw-profile-cosmetic-sheet-action" id="mgwEntryEffectEquip" type="button">${escapeHtml(active ? entryText('actions.remove') : entryText('actions.select'))}</button>`);
   document.getElementById('mgwEntryEffectEquip')?.addEventListener('click', () => void saveSelection(itemId, active));
 }
 
@@ -371,7 +378,7 @@ async function saveSelection(itemId, remove){
   } catch (error) {
     state.profileInventory = previous;
     scheduleDecorate();
-    toast(error?.message || (remove ? 'Не удалось снять эффект входа.' : 'Не удалось выбрать эффект входа.'));
+    toast(error?.message || entryText(remove ? 'errors.remove' : 'errors.select'));
   } finally {
     equipBusy = false;
   }
@@ -484,7 +491,7 @@ function playLiveEntryEffectsIfNeeded(game = state.activeGame, viewerId = ''){
         itemId,
         spec,
         index,
-        name:String(player?.name || `Игрок ${index + 1}`),
+        name:String(player?.name || entryText('live.player_fallback', {number:formatLocalizedNumber(index + 1)})),
       };
     },
   });
@@ -497,10 +504,10 @@ function playLiveEntryEffectsIfNeeded(game = state.activeGame, viewerId = ''){
   const layer = document.createElement('div');
   layer.className = `mgw-entry-effect-layer${reduced ? ' reduced-motion' : ''}`;
   layer.dataset.entryEffectGameId = gameId;
-  layer.innerHTML = `<button class="mgw-entry-effect-skip" type="button">Пропустить</button><div class="mgw-entry-effect-live-grid">
+  layer.innerHTML = `<button class="mgw-entry-effect-skip" type="button">${escapeHtml(entryText('live.skip'))}</button><div class="mgw-entry-effect-live-grid">
     ${entries.map(entry => `<div class="mgw-entry-effect-live-card" data-entry-effect-variant="${escapeAttr(entry.spec.variant)}" data-player-index="${entry.index}">
       <div class="mgw-entry-effect-live-emblem"><i></i><b>MG</b><i></i></div>
-      <strong>${escapeHtml(entry.name)}</strong><small>вступает в игру</small>
+      <strong>${escapeHtml(entry.name)}</strong><small>${escapeHtml(entryText('live.entering'))}</small>
     </div>`).join('')}
   </div>`;
   screen.append(layer);
@@ -522,6 +529,5 @@ function purchaseToken(){
   return `store:${Date.now().toString(36)}:${Math.random().toString(36).slice(2,14)}`;
 }
 function cloneObject(value){ return value && typeof value === 'object' ? JSON.parse(JSON.stringify(value)) : value; }
-function formatNumber(value){ return Number(value || 0).toLocaleString('ru-RU'); }
 function escapeHtml(value){ return String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
 function escapeAttr(value){ return escapeHtml(value); }
