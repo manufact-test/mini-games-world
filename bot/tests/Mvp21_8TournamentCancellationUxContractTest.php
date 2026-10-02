@@ -48,7 +48,7 @@ $assert(str_contains($files['service'],'annulled_match_count'),'Cancellation mus
 $assert(str_contains($files['service'],'annulled_attempt_count'),'Cancellation must audit match-attempt annulment.');
 $assert(str_contains($files['service'],'annulled_technical_count'),'Cancellation must audit technical-outcome annulment.');
 $assert(str_contains($files['service'],'technical_cancel_required_count'),'21.7 technical escalation must be visible to 21.8.');
-$assert(str_contains($files['service'],"$technicalRequired === 0"),'Technical escalation must disable normal cancellation.');
+$assert(str_contains($files['service'],'$technicalRequired === 0'),'Technical escalation must disable normal cancellation.');
 $assert(str_contains($files['service'],'emergency_stop_available'),'Technical escalation must retain emergency stop.');
 $assert(!str_contains(strtolower($files['service']),'reschedule'),'Reschedule must remain outside MVP-21.8.');
 $assert(!str_contains(strtolower($files['service']),'delay tournament'),'Delay must remain outside MVP-21.8.');
