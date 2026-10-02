@@ -88,9 +88,20 @@ jobs:
             app/assets/js/games/go \
             app/assets/js/games/four-in-a-row \
             app/assets/js/games/domino \
+            ':(exclude)app/assets/js/games/domino/renderer.js' \
+            ':(exclude)app/assets/js/games/domino/renderer-cosmetics-v1.js' \
+            ':(exclude)app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js' \
+            ':(exclude)app/assets/js/games/domino/renderer-live-manual-v30.js' \
             app/assets/js/games/battleship \
             ':(exclude)app/assets/js/games/battleship/renderer.js' \
             ':(exclude)app/assets/js/games/battleship/renderer-cosmetics-v1.js'
+
+          domino_engine_changes="$(git diff --name-only "$base" "$head" -- app/assets/js/games/domino \
+            | grep -Ev '^(app/assets/js/games/domino/renderer\.js|app/assets/js/games/domino/renderer-cosmetics-v1\.js|app/assets/js/games/domino/renderer-cosmetics-corrective-v25\.js|app/assets/js/games/domino/renderer-live-manual-v30\.js)$' || true)"
+          test -z "$domino_engine_changes" || {
+            printf 'Unexpected Domino engine change outside localized presentation owners:\n%s\n' "$domino_engine_changes" >&2
+            exit 1
+          }
 
           battleship_engine_changes="$(git diff --name-only "$base" "$head" -- app/assets/js/games/battleship \
             | grep -Ev '^(app/assets/js/games/battleship/renderer\.js|app/assets/js/games/battleship/renderer-cosmetics-v1\.js)$' || true)"
@@ -102,7 +113,7 @@ jobs:
           manifest_changes="$(git diff --unified=0 "$base" "$head" -- app/runtime/client/version-manifest.php \
             | grep -E '^[+-]' \
             | grep -Ev '^---|^\+\+\+' \
-            | grep -Ev 'game-screen-v102\.js\?v=102|renderer-board-themes\.js\?v=1&mvp19_6=board-themes|store-screen\.js\?v=45&intent_base=1|assets/js/games/battleship/renderer\.js\?v=56|assets/js/profile/mgw-account-link-ui\.js\?v=3' || true)"
+            | grep -Ev 'game-screen-v102\.js\?v=102|renderer-board-themes\.js\?v=1&mvp19_6=board-themes|store-screen\.js\?v=45&intent_base=1|assets/js/games/domino/renderer\.js\?v=74|assets/js/games/battleship/renderer\.js\?v=56|assets/js/profile/mgw-account-link-ui\.js\?v=3' || true)"
           test -z "$manifest_changes" || {
             printf 'Unexpected manifest change outside bounded active-owner cache-busts:\n%s\n' "$manifest_changes" >&2
             exit 1

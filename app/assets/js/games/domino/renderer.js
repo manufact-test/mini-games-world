@@ -1,4 +1,8 @@
 import { toast } from '../../components/toast.js?v=41';
+import { t, plural, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
+
+const dominoText = (key, params = {}) => t(`games.domino.ui.${key}`, params);
+const dominoPlural = (key, count, params = {}) => plural(`games.domino.ui.${key}`, count, params);
 
 const MEDIUM_ROUTE = createMediumRoute();
 const LONG_ROUTE = createLongRoute();
@@ -44,25 +48,25 @@ export function renderDominoSurface({ game, me, container, onAction }){
 }
 
 export function dominoMeta(game){
-  const room = String(game?.room_name || 'Игра');
-  const bet = Number(game?.bet || 0);
-  return `${room} · ${bet} коинов · классическое домино`;
+  const room = String(game?.room_name || dominoText('game_fallback'));
+  const bet = formatLocalizedNumber(Number(game?.bet || 0));
+  return dominoText('meta', { room, bet });
 }
 
 export function dominoPlayerMark(player){
   const count = Number(player?.tile_count || 0);
-  return `${count} ${declension(count, 'костяшка', 'костяшки', 'костяшек')}`;
+  return dominoPlural('tile_count', count, { value:formatLocalizedNumber(count) });
 }
 
 export function dominoStatus(game, me){
   if (game?.status === 'finished') {
     const winnerId = String(game?.winner_id || '');
-    if (!winnerId) return 'Ничья';
-    return winnerId === String(me?.id || '') ? 'Победа' : 'Поражение';
+    if (!winnerId) return dominoText('status.draw');
+    return winnerId === String(me?.id || '') ? dominoText('status.win') : dominoText('status.loss');
   }
   const myTurn = String(game?.turn || '') === String(me?.id || '');
-  if (myTurn && game?.can_draw) return 'Нет хода — доберите';
-  return myTurn ? 'Ваш ход' : 'Ход соперника';
+  if (myTurn && game?.can_draw) return dominoText('status.draw_more');
+  return myTurn ? dominoText('status.your_turn') : dominoText('status.opponent_turn');
 }
 
 function tableMarkup(game, selectedId){
@@ -108,14 +112,14 @@ function tableMarkup(game, selectedId){
     : '';
 
   const caption = selectedId
-    ? 'Выберите один из подсвеченных концов цепочки.'
-    : `Открытые концы: <strong>${leftEnd}</strong> и <strong>${rightEnd}</strong>`;
+    ? dominoText('table.select_end')
+    : dominoText('table.open_ends', { left:formatLocalizedNumber(leftEnd), right:formatLocalizedNumber(rightEnd) });
 
   return `
     <div class="domino-table" data-chain-density="${density}">
       <div class="domino-table-topline">
-        <div class="domino-opponent-back"><i></i><span>${Number(game?.opponent_tile_count || 0)}</span></div>
-        <div class="domino-stock-count"><i></i><span>Запас: ${Number(game?.stock_count || 0)}</span></div>
+        <div class="domino-opponent-back"><i></i><span>${formatLocalizedNumber(Number(game?.opponent_tile_count || 0))}</span></div>
+        <div class="domino-stock-count"><i></i><span>${dominoText('table.stock', { count:formatLocalizedNumber(Number(game?.stock_count || 0)) })}</span></div>
       </div>
       <div class="domino-chain-area">
         ${tiles}
@@ -133,12 +137,14 @@ function handMarkup(game, hand, myTurn){
 
   return `
     <div class="domino-hand-section">
-      <div class="domino-hand-title"><span>Ваши костяшки</span><strong>${hand.length}</strong></div>
+      <div class="domino-hand-title"><span>${dominoText('hand.title')}</span><strong>${formatLocalizedNumber(hand.length)}</strong></div>
       <div class="domino-hand ${density}" role="list" style="--domino-hand-count:${Math.max(1, hand.length)}">
         ${hand.map(tile => {
           const id = String(tile?.id || '');
           const legal = Array.isArray(playable[id]) && playable[id].length > 0;
-          return `<button class="domino-hand-tile ${legal ? 'playable' : ''} ${selectedTileId === id ? 'selected' : ''}" data-domino-tile="${escapeHtml(id)}" type="button" ${disabled ? 'disabled' : ''} aria-pressed="${selectedTileId === id ? 'true' : 'false'}" aria-label="Костяшка ${Number(tile?.a || 0)}–${Number(tile?.b || 0)}">${tileMarkup(Number(tile?.a || 0), Number(tile?.b || 0), {double:Boolean(tile?.double), title:id})}</button>`;
+          const a = Number(tile?.a || 0);
+          const b = Number(tile?.b || 0);
+          return `<button class="domino-hand-tile ${legal ? 'playable' : ''} ${selectedTileId === id ? 'selected' : ''}" data-domino-tile="${escapeHtml(id)}" type="button" ${disabled ? 'disabled' : ''} aria-pressed="${selectedTileId === id ? 'true' : 'false'}" aria-label="${dominoText('hand.aria_tile', { a:formatLocalizedNumber(a), b:formatLocalizedNumber(b) })}">${tileMarkup(a, b, {double:Boolean(tile?.double), title:id})}</button>`;
         }).join('')}
       </div>
     </div>
@@ -147,16 +153,16 @@ function handMarkup(game, hand, myTurn){
 
 function actionsMarkup(game, myTurn, selectedId){
   if (game?.status !== 'active') return '';
-  if (!myTurn) return '<div class="domino-action-note">Ожидаем ход соперника.</div>';
+  if (!myTurn) return `<div class="domino-action-note">${dominoText('actions.wait_opponent')}</div>`;
   if (game?.can_draw) {
     return `
       <button class="btn primary full domino-draw-button" data-domino-draw type="button">
-        Добрать из запаса
+        ${dominoText('actions.draw_stock')}
       </button>
     `;
   }
-  if (selectedId) return '<div class="domino-action-note active">Нажмите на подсвеченный конец цепочки.</div>';
-  return '<div class="domino-action-note">Подходящие костяшки отмечены зелёной рамкой.</div>';
+  if (selectedId) return `<div class="domino-action-note active">${dominoText('actions.selected_end')}</div>`;
+  return `<div class="domino-action-note">${dominoText('actions.playable')}</div>`;
 }
 
 function finalMarkup(game){
@@ -166,37 +172,41 @@ function finalMarkup(game){
   const opponent = Array.isArray(game?.opponent_hand) ? game.opponent_hand : [];
   return `
     <div class="domino-final-card">
-      <strong>Оставшиеся точки: ${mine} : ${theirs}</strong>
-      <span>${game?.end_reason === 'blocked' ? 'Цепочка заблокирована — выигрывает меньшая сумма.' : 'Партия завершена.'}</span>
-      ${opponent.length ? `<div class="domino-reveal"><em>Костяшки соперника</em><div>${opponent.map(tile => tileMarkup(Number(tile.a), Number(tile.b), {double:Boolean(tile.double), compact:true})).join('')}</div></div>` : ''}
+      <strong>${dominoText('final.points', { mine:formatLocalizedNumber(mine), theirs:formatLocalizedNumber(theirs) })}</strong>
+      <span>${game?.end_reason === 'blocked' ? dominoText('final.blocked') : dominoText('final.finished')}</span>
+      ${opponent.length ? `<div class="domino-reveal"><em>${dominoText('final.opponent_tiles')}</em><div>${opponent.map(tile => tileMarkup(Number(tile.a), Number(tile.b), {double:Boolean(tile.double), compact:true})).join('')}</div></div>` : ''}
     </div>
   `;
 }
 
 function eventBanner(game, myId, myTurn){
-  if (game?.status === 'finished') return '<div class="domino-event-banner finished">Партия завершена — подсчитываем оставшиеся точки</div>';
+  if (game?.status === 'finished') return `<div class="domino-event-banner finished">${dominoText('event.finished')}</div>`;
   const action = game?.last_action || {};
   const actorMe = String(action?.player_id || '') === myId;
   const type = String(action?.type || '');
 
   if (type === 'start') {
     const [a,b] = parseTileId(String(action?.tile || game?.start_tile || '0-0'));
-    return `<div class="domino-event-banner start">Стартовая костяшка ${a}–${b} уже на столе</div>`;
+    return `<div class="domino-event-banner start">${dominoText('event.start', { a:formatLocalizedNumber(a), b:formatLocalizedNumber(b) })}</div>`;
   }
   if (type === 'draw') {
     const count = Number(action?.drawn_count || 0);
-    return `<div class="domino-event-banner draw">${actorMe ? 'Вы добрали' : 'Соперник добрал'} ${count} ${declension(count, 'костяшку', 'костяшки', 'костяшек')}</div>`;
+    return `<div class="domino-event-banner draw">${actorMe
+      ? dominoPlural('event.draw_self', count, { value:formatLocalizedNumber(count) })
+      : dominoPlural('event.draw_opponent', count, { value:formatLocalizedNumber(count) })}</div>`;
   }
   if (type === 'pass') {
-    return `<div class="domino-event-banner pass">${actorMe ? 'У вас' : 'У соперника'} нет хода — пропуск</div>`;
+    return `<div class="domino-event-banner pass">${actorMe ? dominoText('event.pass_self') : dominoText('event.pass_opponent')}</div>`;
   }
   if (type === 'play') {
     const [a,b] = parseTileId(String(action?.tile || '0-0'));
-    return `<div class="domino-event-banner play">${actorMe ? 'Вы поставили' : 'Соперник поставил'} ${a}–${b}</div>`;
+    return `<div class="domino-event-banner play">${actorMe
+      ? dominoText('event.play_self', { a:formatLocalizedNumber(a), b:formatLocalizedNumber(b) })
+      : dominoText('event.play_opponent', { a:formatLocalizedNumber(a), b:formatLocalizedNumber(b) })}</div>`;
   }
   return myTurn
-    ? '<div class="domino-event-banner your-turn">Ваш ход — выберите костяшку</div>'
-    : '<div class="domino-event-banner opponent">Ход соперника</div>';
+    ? `<div class="domino-event-banner your-turn">${dominoText('event.your_turn')}</div>`
+    : `<div class="domino-event-banner opponent">${dominoText('event.opponent_turn')}</div>`;
 }
 
 function bindHand(container, game, me, myTurn, onAction){
@@ -209,7 +219,7 @@ function bindHand(container, game, me, myTurn, onAction){
       button.classList.remove('invalid');
       void button.offsetWidth;
       button.classList.add('invalid');
-      toast('Эта костяшка не подходит к открытым концам.');
+      toast(dominoText('errors.invalid_tile'));
       return;
     }
 
@@ -271,7 +281,7 @@ function placementTargetMarkup(tileId, side, openValue, slot){
       data-domino-side="${side}"
       type="button"
       style="--domino-x:${slot.x}%;--domino-y:${slot.y}%;--domino-rotation:${slot.rotation}deg"
-      aria-label="Поставить костяшку ${a}–${b} к ${side === 'left' ? 'первому' : 'второму'} концу цепочки">
+      aria-label="${dominoText('placement.aria', { a:formatLocalizedNumber(a), b:formatLocalizedNumber(b), side:side === 'left' ? dominoText('placement.first') : dominoText('placement.second') })}">
       ${tileMarkup(left, right, {vertical:slot.vertical, double:isDouble, compact:true, title:`${a}-${b}`})}
     </button>
   `;
@@ -382,15 +392,6 @@ function createLongRoute(){
 
 function clamp(value, min, max){
   return Math.max(min, Math.min(max, value));
-}
-
-function declension(value, one, few, many){
-  const number = Math.abs(Number(value || 0)) % 100;
-  const last = number % 10;
-  if (number > 10 && number < 20) return many;
-  if (last === 1) return one;
-  if (last >= 2 && last <= 4) return few;
-  return many;
 }
 
 function escapeHtml(value){
