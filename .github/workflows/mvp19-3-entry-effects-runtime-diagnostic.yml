@@ -104,7 +104,7 @@ jobs:
           assert "'entry-01':'/app/assets/media/cosmetics/entry-effects/entry-effect-01-celestial-gate.webp?asset=premium-art-v7'" in clean_entry
           assert "'entry-02':'/app/assets/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp?asset=premium-art-v7'" in clean_entry
           assert "'entry-03':'/app/assets/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp?asset=premium-art-v7'" in clean_entry
-          assert 'production-v108-profile-entry-preview-live-owner.css?v=1' in manifest
+          assert 'production-v108-profile-entry-preview-live-owner-checkers-fit-granite-v2.css?v=1&mvp19_6=granite-store-exact-v2&profile_mobile=animation-runtime-guard-v2' in manifest
           assert 'mgw-profile-entry-effects.js?v=8&mvp19_3=player-arbitration&mvp25_4=profile-post-paint-v1&mvp27_1=localized-v1' in manifest
           for token in [
               'entry-03-legendary-strike-arena.webp?asset=profile-live-v1',
