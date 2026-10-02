@@ -66,5 +66,6 @@ jobs:
 
           git diff --exit-code "$base" "$head" -- \
             app/assets/js/games \
-            ':(exclude)app/assets/js/games/chess/renderer.js'
+            ':(exclude)app/assets/js/games/chess/renderer.js' \
+            ':(exclude)app/assets/js/games/checkers/renderer.js'
           git diff --check
