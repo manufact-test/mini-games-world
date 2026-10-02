@@ -22,6 +22,9 @@ on:
       - '.github/workflows/mvp26-6-android-product-parity.yml'
       - '.github/workflows/mvp19-9-domino-store-effects-v8.yml'
       - '.github/workflows/mvp19-9-domino-store-profile.yml'
+      - '.github/workflows/mvp19-3-profile-game-cosmetics.yml'
+      - '.github/workflows/mvp19-4-game-cosmetics-pilot.yml'
+      - '.github/workflows/mvp19-6-profile-game-cosmetics-parity.yml'
   workflow_dispatch:
 
 permissions:
@@ -80,7 +83,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(app/assets/js/games/checkers/renderer\.js|app/assets/js/checkers-cosmetics/renderer-board-themes\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_checkers_renderer_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|bot/tests/Mvp19_6CheckersBoardsTest\.php|bot/tests/Mvp19_6CheckersMoveTrailAlignmentContractTest\.mjs|bot/tests/CheckersTelegramFooterScrollTailContractTest\.php|bot/tests/CheckersTelegramViewportHeightFitContractTest\.php|\.github/workflows/mvp27-1-checkers-renderer-localization\.yml|\.github/workflows/mvp19-6-checkers-boards\.yml|\.github/workflows/checkers-telegram-footer-scroll-tail\.yml|\.github/workflows/checkers-board-theme-live-probe\.yml|\.github/workflows/checkers-single-flight-live-probe\.yml|\.github/workflows/mvp26-6-android-product-parity\.yml|\.github/workflows/mvp19-9-domino-store-effects-v8\.yml|\.github/workflows/mvp19-9-domino-store-profile\.yml)$'
+          allowed='^(app/assets/js/games/checkers/renderer\.js|app/assets/js/checkers-cosmetics/renderer-board-themes\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_checkers_renderer_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|bot/tests/Mvp19_6CheckersBoardsTest\.php|bot/tests/Mvp19_6CheckersMoveTrailAlignmentContractTest\.mjs|bot/tests/CheckersTelegramFooterScrollTailContractTest\.php|bot/tests/CheckersTelegramViewportHeightFitContractTest\.php|\.github/workflows/mvp27-1-checkers-renderer-localization\.yml|\.github/workflows/mvp19-6-checkers-boards\.yml|\.github/workflows/checkers-telegram-footer-scroll-tail\.yml|\.github/workflows/checkers-board-theme-live-probe\.yml|\.github/workflows/checkers-single-flight-live-probe\.yml|\.github/workflows/mvp26-6-android-product-parity\.yml|\.github/workflows/mvp19-9-domino-store-effects-v8\.yml|\.github/workflows/mvp19-9-domino-store-profile\.yml|\.github/workflows/mvp19-3-profile-game-cosmetics\.yml|\.github/workflows/mvp19-4-game-cosmetics-pilot\.yml|\.github/workflows/mvp19-6-profile-game-cosmetics-parity\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected Checkers localization paths:\n%s\n' "$bad" >&2; exit 1; }
 
