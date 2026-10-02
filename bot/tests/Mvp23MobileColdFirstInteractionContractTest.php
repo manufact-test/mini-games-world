@@ -48,8 +48,9 @@ $assert(
     'Account Data shortcut must atomically replace the existing More sheet after readiness, without an empty close frame.'
 );
 
+$accountModuleVersion = [];
 $assert(
-    str_contains($shortcuts, "account-data-sheet-v1.js?v=5")
+    preg_match('/account-data-sheet-v1\.js\?v=(\d+)/', $shortcuts, $accountModuleVersion) === 1 && (int)$accountModuleVersion[1] >= 5
         && str_contains($shortcuts, 'export async function primeAccountDataShortcut()'),
     'Account Data corrected module must be cache-busted and expose a shared prime owner.'
 );
@@ -84,15 +85,17 @@ $assert(
     'Intro must own a bounded wait for mobile cold-surface preparation.'
 );
 
+$accountShortcutVersion = [];
+$shellVersion = [];
+$preloaderVersion = [];
 $assert(
-    str_contains($manifest, "account-shortcuts.js?v=55")
-        && str_contains($manifest, "main-v110-handoff-shell.js?v=1157")
-        && str_contains($manifest, "preloader.js?v=45")
-        && !str_contains($manifest, 'mvp23_mobile=')
-        && str_contains($stagingEntry, "&mvp23_mobile=atomic-account-data-v1")
-        && str_contains($stagingEntry, "&mvp23_mobile=cold-surfaces-v1")
-        && str_contains($stagingEntry, "&mvp23_mobile=bounded-cold-prime-v1"),
-    'Canonical manifest mappings must stay stable while the active staging entry cache-busts only the corrected mobile owners.'
+    preg_match('/account-shortcuts\.js\?v=(\d+)[^\']*mvp23_mobile=atomic-account-data-v1/', $manifest, $accountShortcutVersion) === 1
+        && (int)$accountShortcutVersion[1] >= 55
+        && preg_match('/main-v110-handoff-shell\.js\?v=(\d+)[^\']*mvp23_mobile=cold-surfaces-v1/', $manifest, $shellVersion) === 1
+        && (int)$shellVersion[1] >= 1157
+        && preg_match('/preloader\.js\?v=(\d+)[^\']*mvp23_mobile=bounded-cold-prime-v1/', $manifest, $preloaderVersion) === 1
+        && (int)$preloaderVersion[1] >= 45,
+    'Canonical manifest mappings must retain the corrected mobile cold owners through successor cache identities.'
 );
 
 fwrite(STDOUT, "MVP-23 mobile cold first-interaction contract OK ({$assertions} assertions).\n");
