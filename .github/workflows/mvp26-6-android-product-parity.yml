@@ -84,6 +84,7 @@ jobs:
             app/assets/js/games/tictactoe \
             app/assets/js/games/checkers \
             app/assets/js/games/chess \
+            ':(exclude)app/assets/js/games/checkers/renderer.js' \
             app/assets/js/games/reversi \
             app/assets/js/games/go \
             app/assets/js/games/four-in-a-row \
@@ -110,10 +111,17 @@ jobs:
             exit 1
           }
 
+          checkers_engine_changes="$(git diff --name-only "$base" "$head" -- app/assets/js/games/checkers \
+            | grep -Ev '^app/assets/js/games/checkers/renderer\.js$' || true)"
+          test -z "$checkers_engine_changes" || {
+            printf 'Unexpected Checkers engine change outside localized presentation owner:\n%s\n' "$checkers_engine_changes" >&2
+            exit 1
+          }
+
           manifest_changes="$(git diff --unified=0 "$base" "$head" -- app/runtime/client/version-manifest.php \
             | grep -E '^[+-]' \
             | grep -Ev '^---|^\+\+\+' \
-            | grep -Ev 'game-screen-v102\.js\?v=102|renderer-board-themes\.js\?v=1&mvp19_6=board-themes|store-screen\.js\?v=45&intent_base=1|assets/js/games/battleship/renderer\.js\?v=56|assets/js/games/domino/renderer\.js\?v=74|assets/js/profile/mgw-account-link-ui\.js\?v=3' || true)"
+            | grep -Ev 'game-screen-v102\.js\?v=102|renderer-board-themes\.js\?v=1&mvp19_6=board-themes|store-screen\.js\?v=45&intent_base=1|assets/js/games/battleship/renderer\.js\?v=56|assets/js/games/checkers/renderer\.js\?v=57|assets/js/games/domino/renderer\.js\?v=74|assets/js/checkers-cosmetics/renderer-board-themes\.js\?v=1|assets/js/profile/mgw-account-link-ui\.js\?v=3' || true)"
           test -z "$manifest_changes" || {
             printf 'Unexpected manifest change outside bounded active-owner cache-busts:\n%s\n' "$manifest_changes" >&2
             exit 1
