@@ -1,20 +1,25 @@
 import { initProfileScreen as initBaseProfileScreen } from '../screens/profile-screen-v110.js?v=1126&profile_base=accepted-game-cosmetics';
 import { api } from '../api/client.js?v=47';
+import { t } from '@mgw/i18n';
 
 const CHESS_PROFILE_ITEMS = Object.freeze({
-  'game-chess-board-wood':Object.freeze({ layer:'theme', variant:'wood', name:'Деревянная доска' }),
-  'game-chess-board-tournament-dark':Object.freeze({ layer:'theme', variant:'tournament-dark', name:'Тёмная турнирная доска' }),
-  'game-chess-board-marble':Object.freeze({ layer:'theme', variant:'marble', name:'Мраморная доска' }),
-  'game-chess-board-neon':Object.freeze({ layer:'theme', variant:'neon', name:'Неоновая доска' }),
-  'game-chess-pieces-wood':Object.freeze({ layer:'elements', variant:'wood', name:'Деревянные фигуры' }),
-  'game-chess-pieces-marble':Object.freeze({ layer:'elements', variant:'marble', name:'Мраморные фигуры' }),
-  'game-chess-pieces-metal':Object.freeze({ layer:'elements', variant:'metal', name:'Металлические фигуры' }),
-  'game-chess-pieces-neon':Object.freeze({ layer:'elements', variant:'neon', name:'Неоновые фигуры' }),
-  'game-chess-effect-move':Object.freeze({ layer:'effect', variant:'move', name:'Эффект хода' }),
-  'game-chess-effect-capture':Object.freeze({ layer:'effect', variant:'capture', name:'Эффект взятия' }),
+  'game-chess-board-wood':Object.freeze({ layer:'theme', variant:'wood', nameKey:'profile.collection.games.chess.products.game-chess-board-wood' }),
+  'game-chess-board-tournament-dark':Object.freeze({ layer:'theme', variant:'tournament-dark', nameKey:'store.products.game-chess-board-tournament-dark' }),
+  'game-chess-board-marble':Object.freeze({ layer:'theme', variant:'marble', nameKey:'store.products.game-chess-board-marble' }),
+  'game-chess-board-neon':Object.freeze({ layer:'theme', variant:'neon', nameKey:'store.products.game-chess-board-neon' }),
+  'game-chess-pieces-wood':Object.freeze({ layer:'elements', variant:'wood', nameKey:'profile.collection.games.chess.products.game-chess-pieces-wood' }),
+  'game-chess-pieces-marble':Object.freeze({ layer:'elements', variant:'marble', nameKey:'store.products.game-chess-pieces-marble' }),
+  'game-chess-pieces-metal':Object.freeze({ layer:'elements', variant:'metal', nameKey:'store.products.game-chess-pieces-metal' }),
+  'game-chess-pieces-neon':Object.freeze({ layer:'elements', variant:'neon', nameKey:'store.products.game-chess-pieces-neon' }),
+  'game-chess-effect-move':Object.freeze({ layer:'effect', variant:'move', nameKey:'store.products.game-chess-effect-move' }),
+  'game-chess-effect-capture':Object.freeze({ layer:'effect', variant:'capture', nameKey:'store.products.game-chess-effect-capture' }),
   // Backend identity intentionally stays stable; accepted product presentation is Quantum Echo.
-  'game-chess-effect-check':Object.freeze({ layer:'effect', variant:'quantum-echo', scene:'check', name:'Квантовый след' }),
+  'game-chess-effect-check':Object.freeze({ layer:'effect', variant:'quantum-echo', scene:'check', nameKey:'store.products.game-chess-effect-check' }),
 });
+
+function chessDefinitionName(definition){
+  return t(definition?.nameKey || 'profile.collection.unavailable');
+}
 
 const PROFILE_API_REPAIR_HOOK = Symbol.for('mgw.profile.chess-parity.profile-v2.v1');
 let initialized = false;
@@ -117,8 +122,8 @@ function upgradeProfileChessPresentation(){
     }
 
     const name = card.querySelector('.profile-v2-game-card-name');
-    if (name instanceof HTMLElement && name.textContent !== definition.name) name.textContent = definition.name;
-    card.setAttribute('aria-label', definition.name);
+    if (name instanceof HTMLElement && name.textContent !== chessDefinitionName(definition)) name.textContent = chessDefinitionName(definition);
+    card.setAttribute('aria-label', chessDefinitionName(definition));
   });
 }
 
@@ -133,7 +138,7 @@ function upgradeChessSheet(itemId){
   if (previewWrap instanceof HTMLElement) previewWrap.innerHTML = chessPreviewMarkup(itemId, definition);
 
   const title = sheet.querySelector('.sheet-head h2');
-  if (title instanceof HTMLElement && title.textContent !== definition.name) title.textContent = definition.name;
+  if (title instanceof HTMLElement && title.textContent !== chessDefinitionName(definition)) title.textContent = chessDefinitionName(definition);
 }
 
 function isCorrectChessPreview(preview, definition){
@@ -168,5 +173,5 @@ function chessPreviewMarkup(itemId, definition){
     fieldPreview = ' data-field-effect-preview="v2-action-demo"';
   }
 
-  return `<div class="store-v2-game-preview" data-game-type="chess" data-cosmetic-layer="${definition.layer}" data-cosmetic-variant="${definition.variant}"${fieldPreview} role="img" aria-label="${definition.name}">${content}</div>`;
+  return `<div class="store-v2-game-preview" data-game-type="chess" data-cosmetic-layer="${definition.layer}" data-cosmetic-variant="${definition.variant}"${fieldPreview} role="img" aria-label="${chessDefinitionName(definition)}">${content}</div>`;
 }
