@@ -109,7 +109,7 @@ $assertTrue(str_contains($arena, 'data-tournaments-game'), 'Arena must own the p
 $assertTrue(str_contains($arena, "addEventListener('wheel'"), 'Arena game selector must support mouse-wheel overflow.');
 $assertTrue(str_contains($arena, "addEventListener('pointermove'"), 'Arena game selector must support mouse drag overflow.');
 $assertTrue(str_contains($arena, 'data-tournaments-scroll'), 'Arena game selector must expose explicit left/right overflow controls.');
-$assertTrue(str_contains($arena, 'tournaments-v2-table-head') && str_contains($arena, '>Игрок<') && str_contains($arena, '>Очки<'), 'Arena leaderboard must label rank, player and points columns.');
+$assertTrue(str_contains($arena, 'tournaments-v2-table-head') && str_contains($arena, "t('profile.player')") && str_contains($arena, "t('profile.rating_points')") && (($profileKeys['player'] ?? null) === 'Игрок') && (($profileKeys['rating_points'] ?? null) === 'Очки'), 'Arena leaderboard must label rank, player and points columns through locale ownership.');
 $assertTrue(str_contains($arena, 'tournaments-v2-scroll-icon') && str_contains($arena, '<svg'), 'Arena overflow controls must use centered SVG chevrons rather than font glyph baselines.');
 $assertTrue(str_contains($mainCss, '#screen-tournaments .tournaments-v2-tabs-shell{') && str_contains($mainCss, 'display:block;'), 'Arena game strip must start at the board content edge instead of reserving a left arrow column.');
 $assertTrue(str_contains($mainCss, '.tournaments-v2-scroll--left{left:0}') && str_contains($mainCss, '.tournaments-v2-scroll--right{right:0}'), 'Arena overflow arrows must be centered overlays rather than layout columns.');
