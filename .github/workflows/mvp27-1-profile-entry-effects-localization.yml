@@ -10,12 +10,14 @@ on:
       - 'ops/checks/mvp27_1_profile_entry_effects_localization_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - 'bot/tests/Mvp19_3ProfileEntryEffectsTest.php'
+      - 'bot/tests/Mvp19_3ProfileReactionsTest.php'
       - 'tests/mvp19-3-entry-effect-player-arbitration.mjs'
       - '.github/workflows/mvp19-3-entry-effect-player-arbitration.yml'
       - '.github/workflows/mvp19-3-profile-entry-effects.yml'
       - '.github/workflows/mvp19-3-entry-effects-runtime-diagnostic.yml'
       - '.github/workflows/mvp27-1-profile-entry-effects-localization.yml'
       - '.github/workflows/mvp26-6-android-product-parity.yml'
+      - '.github/workflows/mvp27-1-localization-audit.yml'
   workflow_dispatch:
 
 permissions:
