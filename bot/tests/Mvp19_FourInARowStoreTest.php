@@ -145,6 +145,7 @@ $outer = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-
 $renderer = (string)file_get_contents($root . '/app/assets/js/games/four-in-a-row/renderer.js');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
+$locale = json_decode((string)file_get_contents($root . '/app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 
 $assertTrue(str_contains($outer, "store-screen-four-in-a-row-store-v1.js?v=13&four_store=live-previews-v3&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&export=profile-preview-v4&copy=compact-v3&bundles=owner-v1&mvp27_1=localized-v1"), 'Active Store wrapper must install the accepted animated Four preview presentation');
 $activeStore = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
@@ -160,8 +161,20 @@ $assertTrue(str_contains($css, 'aspect-ratio:auto') && str_contains($css, 'grid-
 $assertTrue(str_contains($css, '.store-v2-game-product[data-store-game-product="four_in_a_row"]') && str_contains($css, '.store-v2-game-preview[data-game-type="four_in_a_row"]') && str_contains($css, 'width:92%'), 'All compact Four in a Row cards must retain the accepted disc sizing');
 $assertTrue(str_contains($css, '.mgw-four-disc.pieces-metal.red') && str_contains($css, 'radial-gradient(circle at 31% 23%') && !str_contains($css, 'linear-gradient(145deg,#ffe0e4'), 'Metal discs must keep the accepted rounded material');
 $assertTrue(str_contains($css, '.mgw-four-disc.pieces-neon.red') && str_contains($css, '#ff2d8c') && str_contains($css, '#9dff2e'), 'Neon discs must keep bright filled luminous cores');
-$assertTrue(str_contains($wrapper, "drop:'Прицел, лазер и эффектное падение фишки.") && str_contains($wrapper, "four:'Молнии разлетаются от каждого вашего хода.") && str_contains($wrapper, "'victory-wave':'Победная четвёрка вспыхивает мощным финалом."), 'Effect descriptions must be written for the player and match the accepted live behavior');
-foreach (['Лазерное наведение','Энергетический импульс','Победный овердрайв'] as $name) $assertTrue(str_contains($wrapper, $name), 'Effect previews must expose player-facing name ' . $name);
+$assertTrue(
+    str_contains($wrapper, 'store.wrappers.four_in_a_row.descriptions.')
+    && (($locale['store']['wrappers']['four_in_a_row']['descriptions']['effect']['drop'] ?? null) === 'Прицел, лазер и эффектное падение фишки.')
+    && (($locale['store']['wrappers']['four_in_a_row']['descriptions']['effect']['four'] ?? null) === 'Молнии разлетаются от каждого вашего хода.')
+    && (($locale['store']['wrappers']['four_in_a_row']['descriptions']['effect']['victory_wave'] ?? null) === 'Победная четвёрка вспыхивает мощным финалом.'),
+    'Localized effect descriptions must be written for the player and match the accepted live behavior'
+);
+foreach (['drop'=>'Лазерное наведение','four'=>'Энергетический импульс','victory_wave'=>'Победный овердрайв'] as $variant => $name) {
+    $assertTrue(
+        (($locale['store']['wrappers']['four_in_a_row']['effect_names'][$variant] ?? null) === $name)
+        && str_contains($wrapper, 'store.wrappers.four_in_a_row.effect_names.'),
+        'Effect previews must expose localized player-facing name ' . $name
+    );
+}
 foreach (['mgw-four-preview-drop-reticle','mgw-four-preview-pulse-svg','mgw-four-preview-victory-prism'] as $primitive) $assertTrue(str_contains($wrapper, $primitive), 'Effect preview markup must include accepted visual primitive ' . $primitive);
 foreach (['mgwFourPreviewDropDisc','mgwFourPreviewBoltA','mgwFourPreviewVictoryPrism','mgwFourPreviewShard'] as $keyframe) $assertTrue(str_contains($css, '@keyframes ' . $keyframe), 'Store/Profile preview CSS must animate ' . $keyframe);
 $assertTrue(str_contains($wrapper, 'Array.from({ length:42 }') && str_contains($css, 'grid-template-rows:repeat(6,minmax(0,1fr))') && str_contains($css, 'aspect-ratio:7 / 6'), 'Effect previews must use the real 7x6 Four board geometry');
