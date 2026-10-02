@@ -68,7 +68,6 @@ jobs:
           git diff --exit-code "$base" "$head" -- \
             app/assets/js/games/reversi/entry.js \
             app/assets/js/games/reversi/meta.js \
-            app/assets/js/games/reversi/renderer.js \
             app/assets/js/games/reversi/rules.js \
             app/assets/js/games/chess \
             app/assets/js/games/checkers \
