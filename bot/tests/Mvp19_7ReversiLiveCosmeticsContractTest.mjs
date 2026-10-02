@@ -16,7 +16,7 @@ const storeCss = read('app/assets/css/games/reversi/store-cosmetics-v1.css');
 const manifest = read('app/runtime/client/version-manifest.php');
 const launch = read('bot/helpers/WebAppLaunchUrl.php');
 
-assert.ok(wrapper.includes("from './renderer.js?v=66&base=mvp14r-accepted'"), 'Accepted Reversi renderer must remain the gameplay owner');
+assert.ok(wrapper.includes("from './renderer.js?v=67&base=mvp14r-accepted&mvp27_1=localized-v1'"), 'Accepted Reversi renderer must remain the localized gameplay owner');
 assert.ok(wrapper.includes('renderBaseReversiSurface(args);'), 'Cosmetic wrapper must delegate to the accepted renderer first');
 assert.ok(wrapper.indexOf('renderBaseReversiSurface(args);') < wrapper.indexOf('decorateLiveReversi({ game, me, container });'), 'Cosmetics must decorate only after authoritative render');
 
@@ -38,6 +38,7 @@ for (const forbidden of ['setTimeout(', 'setInterval(', 'requestAnimationFrame('
 }
 
 assert.ok(premiumWrapper.includes('ensurePremiumReversiEffectStyles();'), 'Premium wrapper must load the Line/Mass visual layer');
+assert.ok(premiumWrapper.includes("from './renderer-cosmetics-v1.js?v=4&mvp19_7=live-parity-store-motion-v3&pieces=viewer-complete-set-v1&effects=store-phased-real-cadence-v3&footer=fullwidth-scroll-v2&mvp27_1=localized-base-v1'"), 'Premium wrapper must load the fresh localized base/cosmetic chain');
 assert.ok(premiumWrapper.includes('live-effects-premium-v4.css?v=4&mvp19_7=single-transform-owner-v8'), 'Premium CSS must use the v8 single-transform cache identity');
 assert.ok(!premiumWrapper.includes('ensureTailSettleStyles'), 'Rejected tail-settle layer must no longer be active');
 assert.ok(!premiumWrapper.includes('live-effects-tail-settle-v6.css'), 'Rejected tail-settle CSS must no longer be loaded');
@@ -90,7 +91,7 @@ assert.ok(heightFit.includes('overflow-y:auto!important'), 'Short Telegram viewp
 assert.ok(heightFit.includes('width:100%!important'), 'Reversi board must stay full width');
 assert.ok(heightFit.includes('#leaveGame{'), 'Leave/menu button must remain explicitly owned');
 
-assert.ok(manifest.includes("'./assets/js/games/reversi/renderer.js?v=66' => './assets/js/games/reversi/renderer-cosmetics-premium-v4.js?v=4&mvp19_7=line-mass-premium-v8&motion=single-transform-owner-v1&parent=live-parity-v3&footer=fullwidth-scroll-v2'"), 'Active import map must publish the single-transform Reversi owner');
+assert.ok(manifest.includes("'./assets/js/games/reversi/renderer.js?v=66' => './assets/js/games/reversi/renderer-cosmetics-premium-v4.js?v=5&mvp19_7=line-mass-premium-v8&motion=single-transform-owner-v1&parent=live-parity-v3&footer=fullwidth-scroll-v2&mvp27_1=reversi-renderer-localized-v1'"), 'Active import map must publish the localized single-transform Reversi owner');
 const launchVersion = launch.match(/\/app\/v110\.php\?v=(\d+)/);
 assert.ok(launchVersion && Number(launchVersion[1]) >= 1137, 'Telegram launch must stay at or beyond the accepted v8 Reversi asset chain');
 
