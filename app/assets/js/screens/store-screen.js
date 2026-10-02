@@ -286,7 +286,7 @@ function renderNameColorOffer(offer){
   const equipped = owned && Boolean(offer?.equipped);
   const itemId = String(offer?.item_ids?.[0] || '');
   const slot = String(offer?.equip_slot || 'profile_name_color');
-  const title = String(offer?.display_name || itemId || t('store.profile.name_color_title'));
+  const title = localizedOfferName(offer, offer?.display_name || itemId || t('store.profile.name_color_title'));
   const nickname = String(state.mgwProfile?.nickname || state.user?.display_name || t('profile.player'));
   const tier = t(`store.profile.name_color_tiers.${({ normal:'normal', rare:'rare', gradient:'gradient' })[String(offer?.metadata?.tier || 'normal')] || 'fallback'}`);
   return `
@@ -302,6 +302,29 @@ function renderNameColorOffer(offer){
       </div>
     </article>
   `;
+}
+
+function localizedStoreValue(key, fallback = ''){
+  try {
+    return t(key);
+  } catch (_) {
+    return String(fallback || '');
+  }
+}
+
+function localizedOfferName(offer, fallback = ''){
+  const itemId = String(offer?.item_ids?.[0] || '');
+  if (!itemId) return String(fallback || '');
+  return localizedStoreValue(`store.products.${itemId}`, fallback || itemId);
+}
+
+function localizedCatalogTitle(gameType, fallback = ''){
+  return localizedStoreValue(`store.games.catalog_titles.${String(gameType || '')}`, fallback || gameType);
+}
+
+function localizedBundleTitle(gameType, fallback = ''){
+  const key = BUNDLE_REFERENCE_GAMES.includes(String(gameType || '')) ? String(gameType) : 'generic';
+  return localizedStoreValue(`store.bundles.presentation.${key}.bundle_title`, fallback || t('store.bundles.default_title'));
 }
 
 function orderedGameCatalogs(catalogs = storeState?.games?.catalogs || {}){
@@ -347,11 +370,11 @@ function renderGamesTab(){
       ${catalogs.map(item => {
         const gameType = String(item?.game_type || '');
         const active = gameType === activeGameCatalog;
-        const label = gameType === 'domino' ? t('games.domino.name') : String(item?.title || gameType);
+        const label = localizedCatalogTitle(gameType, item?.title || gameType);
         return `<button type="button" role="tab" class="store-v2-game-select${active ? ' active' : ''}" data-store-v2-game="${escapeAttr(gameType)}" aria-selected="${active ? 'true' : 'false'}">${escapeHtml(label)}</button>`;
       }).join('')}
     </div>` : '';
-  const title = activeGameCatalog === 'domino' ? t('games.domino.name') : String(catalog.title || activeGameCatalog);
+  const title = localizedCatalogTitle(activeGameCatalog, catalog.title || activeGameCatalog);
   const marks = activeGameCatalog === 'domino'
     ? dominoHeaderMarksMarkup()
     : `<b>${escapeHtml(presentation.mark.slice(0,1))}</b><b>${escapeHtml(presentation.mark.slice(1))}</b>`;
@@ -396,7 +419,7 @@ function renderGameOffer(offer, gameType){
       ${gameCosmeticPreview(gameType, layer, variant, offer?.display_name || '')}
       <div class="store-v2-game-product-copy">
         <span>${escapeHtml(kind)}</span>
-        <strong>${escapeHtml(offer?.display_name || itemId)}</strong>
+        <strong>${escapeHtml(localizedOfferName(offer, offer?.display_name || itemId))}</strong>
         <p>${escapeHtml(description)}</p>
       </div>
       <div class="store-v2-game-product-foot">
@@ -548,7 +571,7 @@ function renderBundleMembers(bundle, sheet = false){
         const owned = itemId !== '' && !missing.has(itemId);
         const layer = String(offer?.metadata?.layer || 'theme');
         const variant = String(offer?.metadata?.variant || 'base');
-        const name = String(offer?.display_name || itemId || t('store.games.generic_item'));
+        const name = localizedOfferName(offer, offer?.display_name || itemId || t('store.games.generic_item'));
         return `
           <div
             class="store-v2-bundle-reference-member layer-${escapeAttr(layer)} ${owned ? 'owned' : ''}"
@@ -626,7 +649,7 @@ function renderGameBundle(bundle){
   const regularMissingPrice = regularBundlePrice(bundle);
   const regularFullPrice = Number(bundle?.regular_price_coins || regularMissingPrice || 0);
   const saving = Math.max(0, regularMissingPrice - currentPrice);
-  const title = String(bundle?.display_name || t('store.bundles.default_title'));
+  const title = localizedBundleTitle(gameType, bundle?.display_name || t('store.bundles.default_title'));
   const presentation = bundlePresentation(gameType);
   const progress = allOwned
     ? t('store.bundles.progress_complete',{owned:itemCount || 5,total:itemCount || 5})
@@ -1128,8 +1151,8 @@ function openPurchaseConfirm(offer){
   const missing = Math.max(0, price - balance);
   const bundleGameType = String(offer?.game_type || offer?.subcategory || '');
   const title = isBundle
-    ? String(offer.display_name || (bundleGameType === 'checkers' ? t('store.bundles.checkers_default_title') : t('store.bundles.default_title')))
-    : (isAvatar ? t('store.profile.avatar_name',{number}) : String(offer.display_name || (isNameColor ? t('store.profile.name_color_title') : t('store.games.generic_item'))));
+    ? localizedBundleTitle(bundleGameType, offer.display_name || (bundleGameType === 'checkers' ? t('store.bundles.checkers_default_title') : t('store.bundles.default_title')))
+    : (isAvatar ? t('store.profile.avatar_name',{number}) : (isNameColor ? localizedOfferName(offer, offer.display_name || t('store.profile.name_color_title')) : localizedOfferName(offer, offer.display_name || t('store.games.generic_item'))));
   let visual;
   if (isBundle) {
     visual = renderBundleConfirmVisual(offer);
