@@ -3,6 +3,7 @@ import {
   initGameInvites as initBaseGameInvites,
   openIncomingInviteIfPresent,
 } from './game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent';
+import { t } from '@mgw/i18n';
 
 let policyInitialized = false;
 let resultObserver = null;
@@ -58,7 +59,8 @@ function syncResultActions(){
   const playAgain = document.getElementById('newOpponent');
   if (playAgain && tournamentMatch) playAgain.remove();
   if (playAgain && !tournamentMatch) {
-    if (playAgain.textContent !== 'Сыграть ещё') playAgain.textContent = 'Сыграть ещё';
+    const playAgainText = t('game_invites.rematch.play_again');
+    if (playAgain.textContent !== playAgainText) playAgain.textContent = playAgainText;
 
     // The legacy result enhancer inserts direct rematch 40 ms later and changes
     // this button's hierarchy in the same task. Its child insertion is already
