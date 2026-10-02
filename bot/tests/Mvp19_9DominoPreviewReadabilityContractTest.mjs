@@ -17,6 +17,7 @@ const profileCss = readFileSync(resolve(root, 'app/assets/css/screens/profile-do
 const hardRatio = readFileSync(resolve(root, 'app/assets/js/profile/mgw-profile-domino-hard-ratio-v1.js'), 'utf8');
 const manifest = readFileSync(resolve(root, 'app/runtime/client/version-manifest.php'), 'utf8');
 const launch = readFileSync(resolve(root, 'bot/helpers/WebAppLaunchUrl.php'), 'utf8');
+const locale = JSON.parse(readFileSync(resolve(root, 'app/locales/ru.json'), 'utf8'));
 
 function expect(condition, message) {
   if (!condition) throw new Error(message);
@@ -25,9 +26,9 @@ function expect(condition, message) {
 expect(baseStore.includes("dominoPreviewMarkup, dominoHeaderMarksMarkup"), 'Base Store must still render Domino natively.');
 expect(baseStore.includes("if (gameType === 'domino')"), 'Base Store must keep the Domino presentation branch.');
 expect(baseStore.includes("content = dominoPreviewMarkup(safeLayer, safeVariant);"), 'Every base Store Domino rerender must use the shared primitive.');
-expect(baseStore.includes("'precision-drop':'Яркий акцент в момент точного хода'"), 'Precision copy must stay short and player-facing.');
-expect(baseStore.includes("'stock-pulse':'Эффектный выход костяшки из запаса'"), 'Stock copy must stay short and player-facing.');
-expect(baseStore.includes("'chain-finale':'Финал с каскадом падающих костяшек'"), 'Finale copy must stay short and player-facing.');
+expect(baseStore.includes('store.games.descriptions.') && locale.store?.games?.descriptions?.domino?.effect?.precision_drop === 'Яркий акцент в момент точного хода', 'Precision copy must stay short, player-facing, and localization-owned.');
+expect(locale.store?.games?.descriptions?.domino?.effect?.stock_pulse === 'Эффектный выход костяшки из запаса', 'Stock copy must stay short, player-facing, and localization-owned.');
+expect(locale.store?.games?.descriptions?.domino?.effect?.chain_finale === 'Финал с каскадом падающих костяшек', 'Finale copy must stay short, player-facing, and localization-owned.');
 
 expect(store.includes('native:v14:svg-pips-v48'), 'Domino compatibility signature must publish the isolated v44 preview owner.');
 expect(store.includes('ensureEffectStyles();') && store.includes('ensureLiveParityStyles();'), 'The Domino markup owner must load base geometry and the isolated v44 component stylesheet itself.');
@@ -77,10 +78,10 @@ expect(!effectCss.includes('mgw-domino-v12-'), 'Rejected v12 choreography must s
 expect(!effectCss.includes('repeating-conic-gradient') && !effectCss.includes('mix-blend-mode:screen') && !effectCss.includes('transform-style:preserve-3d'), 'Effects must avoid rejected generic light-show/fragile 3D language.');
 
 expect(selectorOwner.includes('selector.scrollLeft = left;') && !selectorOwner.includes("behavior:'smooth'"), 'Accepted no-jump Store selector behavior must remain intact.');
-expect(wrapper.includes("store-screen-reversi-store-v1.js?v=5&mvp19_7=store-only&review=manual-corrective-v2&paid_default=copy-human-v1&bundles=owner-v1"), 'Accepted Reversi Store identity must remain frozen apart from the human-copy cache revision.');
+expect(wrapper.includes("store-screen-reversi-store-v1.js?v=6&mvp19_7=store-only&review=manual-corrective-v2&paid_default=copy-human-v1&bundles=owner-v1&mvp27_1=localized-v1"), 'Accepted Reversi Store identity must remain frozen apart from the localization cache revision.');
 expect(correctiveLoader.includes('store-card-fill-live-pips-v5.css?v=2&mvp19_9=domino-card-fill-live-pips-v6'), 'Accepted static Domino corrective must remain active.');
 expect(effectLoader.includes('store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions') && effectLoader.includes('store-effects-preview-component-v44.css?v=4&mvp19_9=domino-svg-pips-v48'), 'Effect loader must load old base geometry first and the isolated v44 component last.');
-expect(wrapper.includes("from './store-screen-domino-store-v1.js?v=16&mvp19_9=domino-svg-pips-v48&paid_default=copy-human-v1'"), 'Store wrapper must load the accepted v44 Domino preview source plus human Store copy.');
+expect(wrapper.includes("from './store-screen-domino-store-v1.js?v=17&mvp19_9=domino-svg-pips-v48&paid_default=copy-human-v1&mvp27_1=localized-v1'"), 'Store wrapper must load the accepted v44 Domino preview source plus localized Store copy.');
 expect(wrapper.includes("store-screen-domino-effects-v9.js?v=12&mvp19_9=domino-svg-pips-v48"), 'Store wrapper must load the fresh v44 effect loader.');
 
 expect(profile.includes("dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48'"), 'Profile must reuse the same v44 Store primitive.');
