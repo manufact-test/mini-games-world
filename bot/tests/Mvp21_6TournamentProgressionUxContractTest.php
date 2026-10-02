@@ -12,6 +12,7 @@ $screen = $read('app/assets/js/screens/tournaments-screen-v1.js');
 $manifest = $read('app/runtime/client/version-manifest.php');
 $api = $read('bot/api.php');
 $progression = $read('bot/tournaments/TournamentRoundProgressionService.php');
+$locale = json_decode($read('app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -46,10 +47,12 @@ $assert(str_contains($screen, 'Ваш матч завершён · ждём ос
     'A player who finishes early must be told that the round waits for all matches.');
 $assert(str_contains($screen, 'tournamentRoundSectionsMarkup(')
         && str_contains($screen, 'data-tournament-round-archive=')
-        && str_contains($screen, "'Полуфинал'")
-        && str_contains($screen, "'Финальный раунд'")
-        && str_contains($screen, 'Вы выбыли из турнира · сетка уже перешла в следующий раунд.'),
-    'Every materialized round must remain available as its own collapsible bracket section.');
+        && str_contains($screen, "t('arena.bracket.semifinal')")
+        && str_contains($screen, "t('arena.bracket.final_round')")
+        && str_contains($screen, 'Вы выбыли из турнира · сетка уже перешла в следующий раунд.')
+        && (($locale['arena']['bracket']['semifinal'] ?? null) === 'Полуфинал')
+        && (($locale['arena']['bracket']['final_round'] ?? null) === 'Финальный раунд'),
+    'Every materialized round must remain available as its own collapsible bracket section with localized labels.');
 $assert(str_contains($screen, 'tournamentRoundArchiveOpen')
         && str_contains($screen, 'tournamentRoundArchiveScrollTop')
         && str_contains($screen, 'captureTournamentArchiveViewport(body)')
@@ -58,9 +61,13 @@ $assert(str_contains($screen, 'tournamentRoundArchiveOpen')
 $assert(str_contains($progression, "'rounds'=>\$rounds")
         && str_contains($progression, "'first_round_archive'=>\$firstRoundArchive")
         && str_contains($progression, "'winner'=>\$completed && \$winner !== '' && \$winner === \$participantId")
-        && str_contains($screen, "status = winner ? 'прошёл дальше' : 'выбыл'")
-        && str_contains($screen, "outcome = 'Матч завершён · победитель не назначен.'"),
-    'Durable round history must preserve winners, losers and no-winner technical outcomes for every stage.');
+        && str_contains($screen, "t('arena.bracket.advanced')")
+        && str_contains($screen, "t('arena.bracket.eliminated')")
+        && str_contains($screen, "t('arena.bracket.done_no_winner')")
+        && (($locale['arena']['bracket']['advanced'] ?? null) === 'прошёл дальше')
+        && (($locale['arena']['bracket']['eliminated'] ?? null) === 'выбыл')
+        && (($locale['arena']['bracket']['done_no_winner'] ?? null) === 'Матч завершён · победитель не назначен.'),
+    'Durable round history must preserve winners, losers and no-winner technical outcomes for every stage through localized presentation.');
 $assert(str_contains($screen, 'function tournamentLiveRenderFingerprint()')
         && substr_count($screen, 'const renderBefore = tournamentLiveRenderFingerprint();') >= 2
         && substr_count($screen, 'if (tournamentLiveRenderFingerprint() !== renderBefore)') >= 2,
