@@ -18,6 +18,9 @@ $main = $read('app/assets/js/main-v110-handoff-shell.js');
 $home = $read('app/assets/js/screens/home-screen.js');
 $css = $read('app/assets/css/mvp25-3-ux-consistency-v1.css');
 $manifest = $read('app/runtime/client/version-manifest.php');
+$localeSource = $read('app/locales/ru.json');
+$locale = json_decode($localeSource, true, 512, JSON_THROW_ON_ERROR);
+$homeCopy = json_encode($locale['home'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 
 foreach ([
     'matchWinnerReward',
@@ -43,16 +46,29 @@ foreach ([
     '8. Если что-то пошло не так',
     'Пока идёт поиск, коины не списываются.',
     'Пригласить в игру',
-    'winner_reward',
-    'system_sink',
-    'draw_refund',
     'История баланса',
     'История матчей',
 ] as $needle) {
-    $assert(str_contains($home, $needle), 'Human rules guide missing: ' . $needle);
+    $assert(str_contains($homeCopy, $needle), 'Localized human rules guide missing: ' . $needle);
+}
+foreach ([
+    "t('home.rules_guide.title')",
+    "t('home.rules_guide.start_title')",
+    "t('home.rules_guide.cost_title')",
+    "t('home.rules_guide.result_title')",
+    "t('home.rules_guide.history_title')",
+    'winner_reward',
+    'system_sink',
+    'draw_refund',
+] as $needle) {
+    $assert(str_contains($home, $needle), 'Rules guide owner wiring missing: ' . $needle);
 }
 
-$assert(!str_contains($home, 'награда начисляется по действующим серверным правилам экономики'), 'Old machine-like economy copy must be removed.');
+$assert(
+    !str_contains($home, 'награда начисляется по действующим серверным правилам экономики')
+    && !str_contains($homeCopy, 'награда начисляется по действующим серверным правилам экономики'),
+    'Old machine-like economy copy must be removed.'
+);
 $assert(str_contains($home, 'amount(entry)'), 'Entry amount must come from the bootstrap economy snapshot.');
 $assert(str_contains($home, 'amount(winnerReward)'), 'Winner reward must come from the bootstrap economy snapshot.');
 $assert(str_contains($home, 'amount(commission)'), 'Commission must come from the bootstrap economy snapshot.');
@@ -66,9 +82,24 @@ foreach ([
     $assert(str_contains($css, $needle), 'Rules guide styling missing: ' . $needle);
 }
 
-$assert(str_contains($manifest, 'home-screen.js?v=90&mvp25_3=human-rules-guide-v1'), 'Manifest must publish the fresh Home rules owner.');
-$assert(str_contains($manifest, 'main-v110-handoff-shell.js?v=1159&mvp25_3=match-economy-guide-v1'), 'Manifest must publish the fresh bootstrap economy owner.');
-$assert(str_contains($manifest, 'main.css?v=209&mvp25_3=ux-consistency-v2&rules=human-guide-top-spacing-v1'), 'Manifest must publish the fresh rules CSS identity.');
+$homeVersion = [];
+$assert(
+    preg_match('~home-screen\.js\?v=(\d+)[^\n]*mvp25_3=human-rules-guide-v1~', $manifest, $homeVersion) === 1
+    && (int)$homeVersion[1] >= 90,
+    'Manifest must publish the Home rules owner at or beyond the accepted cache identity.'
+);
+$bootstrapVersion = [];
+$assert(
+    preg_match('~main-v110-handoff-shell\.js\?v=(\d+)[^\n]*mvp25_3=match-economy-guide-v1~', $manifest, $bootstrapVersion) === 1
+    && (int)$bootstrapVersion[1] >= 1159,
+    'Manifest must publish the bootstrap economy owner at or beyond the accepted cache identity.'
+);
+$cssVersion = [];
+$assert(
+    preg_match('~main\.css\?v=(\d+)[^\n]*mvp25_3=ux-consistency-v2[^\n]*rules=human-guide-top-spacing-v1~', $manifest, $cssVersion) === 1
+    && (int)$cssVersion[1] >= 209,
+    'Manifest must publish the rules CSS identity at or beyond the accepted cache identity.'
+);
 $assert(str_contains($css, 'padding-top:8px'), 'Rules guide must use the reduced first-card top inset accepted by the product owner.');
 
 fwrite(STDOUT, "Mvp25_3RulesGuideContractTest: {$assertions} assertions passed\n");

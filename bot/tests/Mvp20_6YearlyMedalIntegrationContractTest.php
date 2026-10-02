@@ -84,9 +84,11 @@ $assertTrue(
     str_contains($apiClient, "return requestUrl(PROFILE_V2_URL, { profile_update:profileUpdate }).then(publishProfileV2);"),
     'Yearly-medal Profile composition must preserve the accepted Profile mutation publisher.'
 );
+$storeWrapperVersion = [];
 $assertTrue(
-    str_contains($avatarWorkflow, 'store-screen-checkers-board-source-wrapper.js?v=36'),
-    'Profile avatar guard must track the already-accepted Checkers wrapper v36.'
+    preg_match('/store-screen-checkers-board-source-wrapper\\.js\\?v=(\\d+)/', $manifest, $storeWrapperVersion) === 1
+    && (int)$storeWrapperVersion[1] >= 36,
+    'Profile avatar compatibility proof must track the active Checkers wrapper at or beyond accepted v36.'
 );
 
 $assertTrue($assertions >= 37, 'MVP-20.6 integration contract must protect annual design, eligibility, lifecycle and Profile presentation.');

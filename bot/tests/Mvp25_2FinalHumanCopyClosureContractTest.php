@@ -27,6 +27,8 @@ $invites = $read('app/assets/js/games/game-invites-v110.js');
 $manifest = $read('app/runtime/client/version-manifest.php');
 $localeSource = $read('app/locales/ru.json');
 $locale = json_decode($localeSource, true, 512, JSON_THROW_ON_ERROR);
+$arenaCopy = json_encode($locale['arena'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+$accountDataCopy = json_encode($locale['account_data'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 $audit = $read('docs/MVP25_2_HUMAN_FACING_COPY_AUDIT.md');
 $closure = $read('docs/MVP25_2_HUMAN_FACING_COPY_CLOSURE.md');
 $manual = $read('docs/MVP25_2_MANUAL_ACCEPTANCE.md');
@@ -48,15 +50,43 @@ $assert(!str_contains($client, 'Ошибка API:'), 'Canonical client must not 
 $assert(str_contains($client, 'Не удалось выполнить запрос. Попробуйте ещё раз.'), 'Canonical client must have a human request fallback.');
 $assert(str_contains($client, 'Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.'), 'Canonical client must humanize transport/network failures.');
 $assert(str_contains($client, "error.code = 'network_unavailable';"), 'Canonical client must classify network failure without exposing browser exception text.');
-$assert(str_contains($invites, 'Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.'), 'Invite direct transport must humanize network failures.');
+$assert(
+    str_contains($invites, "inviteText('network.server_unreachable')")
+    && (($locale['game_invites']['network']['server_unreachable'] ?? null) === 'Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.'),
+    'Invite direct transport must humanize network failures through the localized invite owner.'
+);
 $assert(str_contains($invites, "if (error?.name === 'AbortError') throw error;"), 'Invite cancellation must remain distinguishable from real network failure.');
-$assert(!str_contains($accountData, 'Ограниченная техническая история'), 'Account deletion copy must not expose developer-style technical-history wording.');
-$assert(!str_contains($accountData, 'финансового аудита'), 'Account deletion copy must not expose audit terminology to ordinary players.');
-$assert(str_contains($accountData, 'операций с игровыми монетами'), 'Account deletion copy must explain retained history in product language.');
-$assert(str_contains($accountShortcuts, 'account-data-sheet-v1.js?v=6') && str_contains($accountShortcuts, 'mvp25_2=human-copy-v1'), 'Account Data child copy change must have a fresh import identity.');
-$assert(substr_count($manifest, './assets/js/api/client.js?v=1149&mvp25_2=network-human-error-v2') === 4, 'All canonical API client aliases must publish the final MVP-25.2 network-safe identity.');
-$assert(substr_count($manifest, './assets/js/games/game-invites-v110.js?v=1148&mvp25_2=network-human-error-v1') === 3, 'All canonical invite aliases must publish the final MVP-25.2 network-safe identity.');
-$assert(str_contains($manifest, 'account-shortcuts.js?v=56') && str_contains($manifest, 'mvp25_2=account-data-human-copy-v1'), 'Account shortcut parent must publish a fresh identity for the copy change.');
+$assert(!str_contains($accountDataCopy, 'Ограниченная техническая история'), 'Account deletion copy must not expose developer-style technical-history wording.');
+$assert(!str_contains($accountDataCopy, 'финансового аудита'), 'Account deletion copy must not expose audit terminology to ordinary players.');
+$assert(
+    str_contains($accountData, "accountDataText('confirm.retention_note')")
+    && str_contains($accountDataCopy, 'операций с игровыми монетами'),
+    'Account deletion copy must explain retained history in product language through the localized Account Data owner.'
+);
+$accountChildVersion = [];
+$assert(
+    preg_match('~account-data-sheet-v1\.js\?v=(\d+)[^\'"]*mvp25_2=human-copy-v1~', $accountShortcuts, $accountChildVersion) === 1
+    && (int)$accountChildVersion[1] >= 6,
+    'Account Data child copy change must stay at or beyond the accepted import identity.'
+);
+$clientAliasMatches = [];
+$clientAliasCount = preg_match_all('~\./assets/js/api/client\.js\?v=(\d+)&mvp25_2=network-human-error-v2~', $manifest, $clientAliasMatches);
+$assert(
+    $clientAliasCount === 4 && min(array_map('intval', $clientAliasMatches[1] ?? [])) >= 1149,
+    'All canonical API client aliases must stay at or beyond the final MVP-25.2 network-safe identity.'
+);
+$inviteAliasMatches = [];
+$inviteAliasCount = preg_match_all('~\./assets/js/games/game-invites-v110\.js\?v=(\d+)&mvp25_2=network-human-error-v1~', $manifest, $inviteAliasMatches);
+$assert(
+    $inviteAliasCount === 3 && min(array_map('intval', $inviteAliasMatches[1] ?? [])) >= 1148,
+    'All canonical invite aliases must stay at or beyond the final MVP-25.2 network-safe identity.'
+);
+$accountParentVersion = [];
+$assert(
+    preg_match('~account-shortcuts\.js\?v=(\d+)[^\n]*mvp25_2=account-data-human-copy-v1~', $manifest, $accountParentVersion) === 1
+    && (int)$accountParentVersion[1] >= 56,
+    'Account shortcut parent must stay at or beyond the accepted human-copy identity.'
+);
 $assert(str_contains($response, 'function mgw_public_api_error'), 'Shared public error sanitizer must remain active.');
 foreach ([
     'SQLSTATE[HY000] database failure',
@@ -82,7 +112,10 @@ foreach ([
     'Технический сбой повторился',
     'Нет активного присутствия',
 ] as $badCopy) {
-    $assert(!str_contains($tournaments, $badCopy), 'Tournament player UI must not contain internal copy: ' . $badCopy);
+    $assert(
+        !str_contains($tournaments, $badCopy) && !str_contains($arenaCopy, $badCopy),
+        'Tournament player UI must not contain internal copy: ' . $badCopy
+    );
 }
 foreach ([
     'Ваша награда временно на проверке',
@@ -91,9 +124,13 @@ foreach ([
     'Матч не удалось продолжить · он завершён без победителя.',
     'Награда турнира',
 ] as $humanCopy) {
-    $assert(str_contains($tournaments, $humanCopy), 'Tournament human copy missing: ' . $humanCopy);
+    $assert(str_contains($arenaCopy, $humanCopy), 'Tournament localized human copy missing: ' . $humanCopy);
 }
-$assert(str_contains($tournaments, 'Техническое поражение'), 'Actual game-outcome wording “Техническое поражение” must remain intentionally preserved.');
+$assert(
+    str_contains($tournaments, "t('arena.hall.technical_loss')")
+    && str_contains($arenaCopy, 'Техническое поражение'),
+    'Actual game-outcome wording “Техническое поражение” must remain intentionally preserved through localization.'
+);
 
 $assert(($locale['profile']['language_note'] ?? null) === 'Текущий язык приложения.', 'Profile language note must be human wording.');
 $assert(!str_contains($localeSource, 'Текущая локализация приложения.'), 'Profile must not expose localization terminology.');

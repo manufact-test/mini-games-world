@@ -17,6 +17,7 @@ $economy = $read('bot/ledger/EconomyRuntimeBridge.php');
 $weekly = $read('bot/weekly/WeeklyBonusRuntimeBridge.php');
 $rating = $read('bot/ratings/PerGameRatingRuntimeBridge.php');
 $manifest = $read('app/runtime/client/version-manifest.php');
+$manifestData = require $root . '/app/runtime/client/version-manifest.php';
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -41,11 +42,14 @@ $assert(str_contains($client, 'async function requestTournamentStatus()')
     && str_contains($client, 'window.setTimeout(resolve, 180)')
     && str_contains($client, 'tournamentStatus: () => requestTournamentStatus()'),
     'Read-only tournament status must retry exactly one transient 5xx without retrying mutations.');
+$clientTarget = (string)($manifestData['imports']['./assets/js/api/client.js?v=47'] ?? '');
 $clientVersionMatch = [];
-$assert(preg_match('/client\\.js\\?v=(\\d+)/', $manifest, $clientVersionMatch) === 1
+$assert(
+    preg_match('/client\\.js\\?v=(\\d+)/', $clientTarget, $clientVersionMatch) === 1
     && (int)$clientVersionMatch[1] >= 1145
-    && str_contains($manifest, 'mvp21_7_1=status-read-retry-v1'),
-    'Transient tournament status recovery must stay at or beyond the accepted client cache identity.');
+    && str_contains($clientTarget, 'mvp21_7_1=status-read-retry-v1'),
+    'Transient tournament status recovery must stay at or beyond the accepted client cache identity.'
+);
 $assert(!str_contains($screen, 'EXTERNAL_TOURNAMENT_COMMIT_CONFIRM_MS')
     && !str_contains($screen, 'stageExternalTournamentCommit'),
     'Cross-client visibility must not rely on another arbitrary client timer.');

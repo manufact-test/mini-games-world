@@ -19,7 +19,10 @@ $source = [
     'diagnostic'=>$read('bot/staging-projection-diagnostic.php'),
     'admin'=>$read('app/assets/js/admin-tournaments.js'),
     'admin_page'=>$read('app/admin.php'),
+    'locale'=>$read('app/locales/ru.json'),
 ];
+$locale = json_decode($source['locale'], true, 512, JSON_THROW_ON_ERROR);
+$hallLocale = $locale['arena']['hall'] ?? [];
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -68,12 +71,19 @@ $assert(str_contains($source['client'], "requestUrl(TOURNAMENT_HALL_URL, { actio
 foreach ([
     'data-tournament-hall-enter',
     'tournamentHallHeartbeat',
-    'Турнирный зал',
-    'Сетка ещё скрыта',
-    'Сетка турнира',
+    "t('arena.hall.label')",
+    "t('arena.hall.bracket_hidden')",
+    "t('arena.hall.bracket_title')",
     'tournamentBracketMarkup',
 ] as $needle) {
-    $assert(str_contains($source['screen'], $needle), 'Tournament Hall UI missing: ' . $needle);
+    $assert(str_contains($source['screen'], $needle), 'Tournament Hall UI wiring missing: ' . $needle);
+}
+foreach ([
+    'label'=>'Турнирный зал',
+    'bracket_hidden'=>'Сетка ещё скрыта',
+    'bracket_title'=>'Сетка турнира',
+] as $key=>$copy) {
+    $assert(($hallLocale[$key] ?? null) === $copy, 'Tournament Hall localized copy missing: ' . $copy);
 }
 $assert(!str_contains($source['screen'], 'Tournament Hall')
         && !str_contains($source['endpoint'], 'Tournament Hall')
@@ -82,16 +92,23 @@ $assert(!str_contains($source['screen'], 'Tournament Hall')
 $assert(!str_contains($source['screen'], 'относятся к MVP-21.5')
         && !str_contains($source['screen'], 'Этап «Я готов»'),
     'Hall UI must not expose internal roadmap/MVP copy to players.');
-$assert(str_contains($source['screen'], 'Она сформируется случайно ровно на старте турнира.')
-        && !str_contains($source['screen'], 'статус присутствия участников'),
-    'Pre-start Hall copy must stay player-facing and omit technical presence explanation.');
+$assert(
+    str_contains($source['screen'], "t('arena.hall.bracket_hidden_note')")
+    && (($hallLocale['bracket_hidden_note'] ?? null) === 'Она сформируется случайно ровно на старте турнира.')
+    && !str_contains($source['screen'], 'статус присутствия участников'),
+    'Pre-start Hall copy must stay player-facing through localization and omit technical presence explanation.'
+);
 $assert(str_contains($source['screen'], 'if (tournamentStarted && registered)')
         && str_contains($source['screen'], 'tournaments-v2-hall--started')
         && !str_contains($source['screen'], 'Время старта наступило'),
     'Started participant view must drop obsolete schedule/registration chrome and promote the Hall bracket.');
-$assert(str_contains($source['screen'], "const buttonLabel = tournamentHallBusy ? 'Входим в зал…' : 'Вход';")
-        && str_contains($source['screen'], "hallButton.textContent = 'Вход';"),
-    'Hall CTA must stay concise: timing belongs to the Hall status copy, button label is simply Вход.');
+$assert(
+    str_contains($source['screen'], "const buttonLabel = tournamentHallBusy ? t('arena.hall.entering') : t('arena.hall.enter');")
+    && str_contains($source['screen'], "hallButton.textContent = t('arena.hall.enter');")
+    && (($hallLocale['entering'] ?? null) === 'Входим в зал…')
+    && (($hallLocale['enter'] ?? null) === 'Вход'),
+    'Hall CTA must stay concise through the localized Arena owner.'
+);
 
 foreach ([
     '.tournaments-v2-hall-gate',
@@ -102,21 +119,24 @@ foreach ([
     $assert(str_contains($source['css'], $needle), 'Tournament Hall CSS missing: ' . $needle);
 }
 
-$assert(str_contains($source['manifest'], 'client.js?v=1145')
-        && str_contains($source['manifest'], 'mvp21_4=tournament-hall-v1')
-        && str_contains($source['manifest'], 'hall_transport=direct-endpoint-v2'),
-    'Hall release must preserve the accepted API cache contract and publish the direct-endpoint corrective identity.');
-$assert(str_contains($source['manifest'], 'tournaments-screen-v1.js?v=31')
-        && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v2')
-        && str_contains($source['manifest'], 'hall_cta=entry-v1')
-        && str_contains($source['manifest'], 'copy_polish=final-v1')
-        && str_contains($source['manifest'], 'mvp21_manual=acceptance-corrective-v1')
-        && str_contains($source['manifest'], 'archive=per-round-v1'),
-    'Hall release must preserve the accepted Tournament screen base version and publish the final copy-polish identity.');
-$assert(str_contains($source['manifest'], 'main.css?v=201')
-        && str_contains($source['manifest'], 'mvp21_4=tournament-hall-bracket-v2')
-        && str_contains($source['manifest'], 'mvp21_manual=terminal-payout-v1'),
-    'Hall release must preserve accepted CSS base version and add a fresh Hall identity.');
+$clientVersion = [];
+$assert(
+    preg_match('~client\.js\?v=(\d+)[^\n]*mvp21_4=tournament-hall-v1[^\n]*hall_transport=direct-endpoint-v2~', $source['manifest'], $clientVersion) === 1
+    && (int)$clientVersion[1] >= 1145,
+    'Hall release must preserve the accepted API contract at or beyond its accepted cache identity.'
+);
+$tournamentVersion = [];
+$assert(
+    preg_match('~tournaments-screen-v1\.js\?v=(\d+)[^\n]*mvp21_4=tournament-hall-bracket-v2[^\n]*hall_cta=entry-v1[^\n]*copy_polish=final-v1[^\n]*mvp21_manual=acceptance-corrective-v1[^\n]*archive=per-round-v1~', $source['manifest'], $tournamentVersion) === 1
+    && (int)$tournamentVersion[1] >= 31,
+    'Hall release must preserve the Tournament screen contract at or beyond its accepted cache identity.'
+);
+$mainCssVersion = [];
+$assert(
+    preg_match('~main\.css\?v=(\d+)[^\n]*mvp21_4=tournament-hall-bracket-v2[^\n]*mvp21_manual=terminal-payout-v1~', $source['manifest'], $mainCssVersion) === 1
+    && (int)$mainCssVersion[1] >= 201,
+    'Hall release must preserve the accepted CSS contract at or beyond its accepted cache identity.'
+);
 
 $assert(str_contains($source['manual_fixture'], '$runtimeBatch')
         && str_contains($source['manual_fixture'], 'ensureRuntimeUsers($runtimeBatch)')

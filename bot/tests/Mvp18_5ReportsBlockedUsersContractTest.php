@@ -179,7 +179,11 @@ foreach ([$friendsUi, $friendsEndpoint, $invitesEndpoint, $adminEndpoint, $admin
 
 $assertTrue(str_contains($friendsUi, "section(friendsText('sections.blocked')") && (($locale['friends']['sections']['blocked'] ?? null) === 'Заблокированные'), 'Blocked users settings list must remain visible through localized Friends UI');
 $assertTrue(str_contains($friendsUi, "mutation === 'unblock'"), 'Unblock must have an explicit UI branch');
-$assertTrue(str_contains($friendsUi, 'Разблокировать игрока?'), 'Unblock must require confirmation');
+$assertTrue(
+    str_contains($friendsUi, "friendsText('confirm.unblock_title')")
+    && (($locale['friends']['confirm']['unblock_title'] ?? null) === 'Разблокировать игрока?'),
+    'Unblock must require confirmation through the localized Friends owner'
+);
 $assertTrue(str_contains($friendsUi, "action:'report'"), 'Report UI must submit structured moderation data');
 $assertTrue(!str_contains($friendsUi, '<select') && str_contains($friendsUi, 'data-report-reason-menu'), 'Report reason must use the managed dark dropdown instead of a native browser list');
 $assertTrue(!str_contains($friendsUi, "api.support('player_report'"), 'Legacy support text must not own player reports after MVP-18.5');

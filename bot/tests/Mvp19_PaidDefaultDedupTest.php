@@ -170,7 +170,14 @@ $assertTrue(
     && str_contains($activeStore, 'copy=human-v1'),
     'Active Store graph must preserve dedup v2 while publishing human copy'
 );
-$assertTrue(str_contains((string)($manifest['assets']['main_css'] ?? ''), 'main.css?v=191') && str_contains((string)($manifest['assets']['main_css'] ?? ''), 'paid_default=dedup-v1'), 'Active main CSS graph must publish dedup v1');
+$mainCssTarget = (string)($manifest['assets']['main_css'] ?? '');
+$mainCssVersion = [];
+$assertTrue(
+    preg_match('/main\\.css\\?v=(\\d+)/', $mainCssTarget, $mainCssVersion) === 1
+    && (int)$mainCssVersion[1] >= 191
+    && str_contains($mainCssTarget, 'paid_default=dedup-v1'),
+    'Active main CSS graph must preserve dedup v1 at or beyond the accepted cache identity'
+);
 
 $launchMatch = [];
 $assertTrue(preg_match('~/app/v110\.php\?v=(\d+)~', $launch, $launchMatch) === 1 && (int)$launchMatch[1] >= 1195, 'Telegram launch must publish dedup v2');
