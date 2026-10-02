@@ -1101,22 +1101,23 @@ function tournamentMatchMarkup(){
   `;
 }
 
-const TOURNAMENT_TECHNICAL_RESULT_LABELS = Object.freeze({
-  technical_loss_at_start:'Технический исход · соперник отсутствовал.',
-  both_absent_at_start:'Оба участника отсутствовали · победитель не назначен.',
-  technical_bye_vacant_slot:'Технический проход · свободный слот.',
-  vacant_bracket_slot:'Пара закрыта без участников.',
-  player_left:'Технический исход · соперник покинул матч.',
-  disconnect_timeout:'Технический исход · 60 секунд на возврат истекли.',
-  tournament_disconnect_timeout:'Технический исход · один игрок не вернулся за 3 минуты.',
-  tournament_both_absent_timeout:'Оба игрока не вернулись за 3 минуты · победитель не назначен.',
-  technical_restart_scheduled:'Матч перезапустится через 1 минуту.',
-  technical_restart_exhausted:'Матч не удалось продолжить · он завершён без победителя.',
+const TOURNAMENT_TECHNICAL_RESULT_KEYS = Object.freeze({
+  technical_loss_at_start:'technical_loss_at_start',
+  both_absent_at_start:'both_absent_at_start',
+  technical_bye_vacant_slot:'technical_bye_vacant_slot',
+  vacant_bracket_slot:'vacant_bracket_slot',
+  player_left:'player_left',
+  disconnect_timeout:'disconnect_timeout',
+  tournament_disconnect_timeout:'tournament_disconnect_timeout',
+  tournament_both_absent_timeout:'tournament_both_absent_timeout',
+  technical_restart_scheduled:'technical_restart_scheduled',
+  technical_restart_exhausted:'technical_restart_exhausted',
 });
 
 function tournamentTechnicalOutcomeLabel(match){
   const reason = String(match?.result_reason || '');
-  return TOURNAMENT_TECHNICAL_RESULT_LABELS[reason] || '';
+  const key = TOURNAMENT_TECHNICAL_RESULT_KEYS[reason] || '';
+  return key ? t(`arena.bracket.${key}`) : '';
 }
 
 function tournamentSeedFallbackRound(bracket){
@@ -1155,7 +1156,7 @@ function tournamentSeedFallbackRound(bracket){
           const winner = completed && winnerMgw !== '' && winnerMgw === id;
           return {
             mgw_id:id,
-            nickname:String(player?.nickname || 'Игрок'),
+            nickname:String(player?.nickname || t('arena.hall.player_fallback')),
             self:false,
             winner,
             loser:completed && !winner,
@@ -1187,7 +1188,7 @@ function tournamentRoundLabel(round, rounds){
   const matches = Array.isArray(round?.matches) ? round.matches : [];
   const roundNo = Number(round?.round_no || 0);
   if (matches.some(match => ['final','third_place'].includes(String(match?.match_kind || '')))) {
-    return 'Финальный раунд';
+    return t('arena.bracket.final_round');
   }
 
   const ordered = Array.isArray(rounds) ? rounds : [];
@@ -1195,9 +1196,9 @@ function tournamentRoundLabel(round, rounds){
   const nextRound = currentIndex >= 0 ? ordered[currentIndex + 1] : null;
   const nextMatches = Array.isArray(nextRound?.matches) ? nextRound.matches : [];
   const nextIsFinal = nextMatches.some(match => ['final','third_place'].includes(String(match?.match_kind || '')));
-  if (nextIsFinal && matches.length === 2) return 'Полуфинал';
+  if (nextIsFinal && matches.length === 2) return t('arena.bracket.semifinal');
 
-  return `Раунд ${roundNo}`;
+  return t('arena.bracket.round',{round_no:roundNo});
 }
 
 function tournamentRoundCardMarkup(match){
@@ -1207,47 +1208,47 @@ function tournamentRoundCardMarkup(match){
   const done = match?.completed === true;
   const hasWinner = players.some(player => player?.winner === true);
 
-  let title = `Пара ${pairNo}`;
-  if (matchKind === 'final') title = 'Финал';
-  else if (matchKind === 'third_place') title = 'Матч за 3-е место';
+  let title = t('arena.bracket.pair',{pair_no:pairNo});
+  if (matchKind === 'final') title = t('arena.bracket.final');
+  else if (matchKind === 'third_place') title = t('arena.bracket.third_place');
 
   const playerMarkup = players.length
     ? players.map(player => {
         const winner = player?.winner === true;
-        let status = player?.self === true ? 'вы' : 'участник';
+        let status = player?.self === true ? t('arena.bracket.self') : t('arena.bracket.participant');
         if (done) {
           if (matchKind === 'final') {
-            status = winner ? 'чемпион' : (hasWinner ? '2 место' : 'без результата');
+            status = winner ? t('arena.bracket.champion') : (hasWinner ? t('arena.bracket.second_place') : t('arena.bracket.no_result'));
           } else if (matchKind === 'third_place') {
-            status = winner ? '3 место' : (hasWinner ? '4 место' : 'без результата');
+            status = winner ? t('arena.bracket.third_place_status') : (hasWinner ? t('arena.bracket.fourth_place') : t('arena.bracket.no_result'));
           } else {
-            status = winner ? 'прошёл дальше' : 'выбыл';
+            status = winner ? t('arena.bracket.advanced') : t('arena.bracket.eliminated');
           }
         } else if (String(match?.launch_state || '') === 'launched') {
-          status = player?.self === true ? 'вы · играет' : 'играет';
+          status = player?.self === true ? t('arena.bracket.self_playing') : t('arena.bracket.playing');
         }
 
         return `<div class="tournaments-v2-bracket-player${done && !winner ? ' is-loss' : ''}">
-          <strong>${escapeHtml(String(player?.nickname || 'Игрок'))}${player?.self === true ? ' · вы' : ''}</strong>
+          <strong>${escapeHtml(String(player?.nickname || t('arena.hall.player_fallback')))}${player?.self === true ? escapeHtml(t('arena.ready.self_suffix')) : ''}</strong>
           <span>${escapeHtml(status)}</span>
         </div>`;
       }).join('')
-    : '<div class="tournaments-v2-bracket-player is-loss"><strong>Свободный слот</strong><span>без участника</span></div>';
+    : `<div class="tournaments-v2-bracket-player is-loss"><strong>${escapeHtml(t('arena.bracket.vacant_slot'))}</strong><span>${escapeHtml(t('arena.bracket.no_participant'))}</span></div>`;
 
   const technicalOutcome = tournamentTechnicalOutcomeLabel(match);
-  let outcome = 'Ожидает запуска.';
+  let outcome = t('arena.bracket.waiting');
   if (technicalOutcome) outcome = technicalOutcome;
   else if (done && hasWinner) {
     const winner = players.find(player => player?.winner === true);
     outcome = matchKind === 'final'
-      ? 'Финал завершён.'
+      ? t('arena.bracket.final_done')
       : matchKind === 'third_place'
-        ? 'Матч за 3-е место завершён.'
-        : `${String(winner?.nickname || 'Игрок')} проходит дальше.`;
-  } else if (done) outcome = 'Матч завершён · победитель не назначен.';
-  else if (String(match?.launch_state || '') === 'launched') outcome = 'Матч идёт.';
-  else if (String(match?.wait_kind || '') === 'technical_restart') outcome = 'Матч перезапустится через 1 минуту.';
-  else if (String(match?.wait_kind || '') === 'round_break') outcome = 'Перерыв между раундами.';
+        ? t('arena.bracket.third_done')
+        : t('arena.bracket.winner_advances',{nickname:String(winner?.nickname || t('arena.hall.player_fallback'))});
+  } else if (done) outcome = t('arena.bracket.done_no_winner');
+  else if (String(match?.launch_state || '') === 'launched') outcome = t('arena.bracket.running');
+  else if (String(match?.wait_kind || '') === 'technical_restart') outcome = t('arena.bracket.restart_minute');
+  else if (String(match?.wait_kind || '') === 'round_break') outcome = t('arena.bracket.round_break');
 
   return `<article class="tournaments-v2-bracket-pair">
     <header><span>${escapeHtml(title)}</span></header>
@@ -1297,7 +1298,7 @@ function tournamentRoundSectionsMarkup(bracket, progression){
       class="tournaments-v2-tournament-rules tournaments-v2-round-archive${roundNo === latestRoundNo ? ' is-current' : ''}"
       data-tournament-round-archive="${escapeHtml(String(roundNo))}"
       ${open ? 'open' : ''}>
-      <summary><span>${escapeHtml(heading)} · ${escapeHtml(`${completed}/${total} завершено`)}</span></summary>
+      <summary><span>${escapeHtml(heading)} · ${escapeHtml(t('arena.bracket.round_completed',{completed,total}))}</span></summary>
       <div class="tournaments-v2-tournament-rules-body">
         <div class="tournaments-v2-bracket-grid">${cards}</div>
       </div>
