@@ -1,5 +1,5 @@
 {
-  "_meta": {"locale":"ru","version":25},
+  "_meta": {"locale":"ru","version":26},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
   "topbar": {"balance":"Баланс","notifications":"Уведомления"},
@@ -34,7 +34,8 @@
       "schedule_aria":"Дата и время турнира","start_local":"Начало турнира · по вашему времени","until_start":"До старта","entry":"Вход","capacity_scheduled":"Состав турнира зафиксирован. Дата назначена.","capacity_waiting":"Состав турнира набран. Регистрация закрыта.","capacity_open":"В турнире участвуют {capacity} игроков. Регистрация закроется, когда все места будут заняты.","participants":"Участники",
       "first_place":"1 место","second_place":"2 место","third_place":"3 место","silver_reward":"серебряная награда","bronze_reward":"бронзовая награда","days_short":"{days} дн. {time}",
       "error_insufficient":"Недостаточно доступных коинов для взноса 50 000.","error_runtime":"Регистрация временно недоступна: игровое состояние ещё не переключено на основной сервер.","error_registration_race":"Регистрация изменилась одновременно с вашим запросом. Обновите турнир и попробуйте ещё раз.","error_balance_race":"Баланс изменился одновременно с регистрацией. Попробуйте ещё раз.","error_balance_identity":"Не удалось подтвердить игровой баланс аккаунта.","error_account_identity":"Не удалось подтвердить игровой аккаунт для регистрации."
-    }
+    },
+    "archive":{"load_error":"Не удалось загрузить архив турниров.","hall_title":"Зал славы турниров","championships":"Чемпионств","date_unknown":"Дата не указана","podium_unavailable":"Подиум недоступен.","participants":" · {capacity} участников"}
   },
   "settings": {"title":"Настройки","language":"Язык","language_note":"Выберите язык интерфейса Mini Games World.","language_ru":"Русский","language_saved":"Язык сохранён"},
   "setup": {"subtitle":"Выберите условия матча и подтвердите участие.","variant_label":"Размер / вариант","entry_label":"Стоимость участия","entry_value":"{count} коинов","confirm":"Начать поиск","invite":"Пригласить друга","one_on_one":"1 на 1","search_label":"{game} · участие {count} коинов · {variant}","insufficient_title":"Недостаточно коинов","insufficient_note":"Для начала матча нужно {needed} коинов. Сейчас доступно {balance}.","economy_unavailable":"Стоимость участия временно недоступна."},
