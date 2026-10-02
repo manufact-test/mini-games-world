@@ -35,21 +35,27 @@ $assert(str_contains($screen, 'startTournamentRenderedCountdownTicker(')
         && str_contains($screen, 'window.setInterval(updateCountdown, 1000)')
         && str_contains($screen, 'tournamentCountdownTimer = timerId;'),
     'Started Tournament Hall must keep exactly one owned round/replay countdown ticker.');
-$assert(str_contains($screen, 'Ничья · переигровка начнётся через минуту. Стороны меняются.'),
-    'Draw UX must clearly explain the one-minute replay and side swap.');
-$assert(str_contains($screen, 'Раунд завершён · перерыв перед следующим матчем.'),
-    'Round UX must clearly explain the inter-round break.');
-$assert(str_contains($screen, "if (matchKind === 'final') stage = 'Финал';"),
-    'Final must have an explicit tournament label.');
-$assert(str_contains($screen, "else if (matchKind === 'third_place') stage = 'Матч за 3-е место';"),
-    'Third-place match must have an explicit tournament label.');
-$assert(str_contains($screen, 'Ваш матч завершён · ждём остальные матчи раунда.'),
-    'A player who finishes early must be told that the round waits for all matches.');
+$assert(str_contains($screen, "t('arena.progression.draw_replay_wait')")
+        && (($locale['arena']['progression']['draw_replay_wait'] ?? null) === 'Ничья · переигровка начнётся через минуту. Стороны меняются.'),
+    'Draw UX must clearly explain the one-minute replay and side swap through localization.');
+$assert(str_contains($screen, "t('arena.progression.round_break_wait')")
+        && (($locale['arena']['progression']['round_break_wait'] ?? null) === 'Раунд завершён · перерыв перед следующим матчем.'),
+    'Round UX must clearly explain the inter-round break through localization.');
+$assert(str_contains($screen, "if (matchKind === 'final') stage = t('arena.bracket.final');")
+        && (($locale['arena']['bracket']['final'] ?? null) === 'Финал'),
+    'Final must have an explicit localized tournament label.');
+$assert(str_contains($screen, "else if (matchKind === 'third_place') stage = t('arena.bracket.third_place');")
+        && (($locale['arena']['bracket']['third_place'] ?? null) === 'Матч за 3-е место'),
+    'Third-place match must have an explicit localized tournament label.');
+$assert(str_contains($screen, "t('arena.progression.match_finished_wait_round')")
+        && (($locale['arena']['progression']['match_finished_wait_round'] ?? null) === 'Ваш матч завершён · ждём остальные матчи раунда.'),
+    'A player who finishes early must be told that the round waits for all matches through localization.');
 $assert(str_contains($screen, 'tournamentRoundSectionsMarkup(')
         && str_contains($screen, 'data-tournament-round-archive=')
         && str_contains($screen, "t('arena.bracket.semifinal')")
         && str_contains($screen, "t('arena.bracket.final_round')")
-        && str_contains($screen, 'Вы выбыли из турнира · сетка уже перешла в следующий раунд.')
+        && str_contains($screen, "t('arena.progression.eliminated_next_round')")
+        && (($locale['arena']['progression']['eliminated_next_round'] ?? null) === 'Вы выбыли из турнира · сетка уже перешла в следующий раунд.')
         && (($locale['arena']['bracket']['semifinal'] ?? null) === 'Полуфинал')
         && (($locale['arena']['bracket']['final_round'] ?? null) === 'Финальный раунд'),
     'Every materialized round must remain available as its own collapsible bracket section with localized labels.');
