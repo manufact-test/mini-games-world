@@ -150,12 +150,12 @@ $assertTrue(str_contains($sources['screen'], 'api.tournamentStatus()'), 'Tournam
 $assertTrue(str_contains($sources['screen'], 'await api.tournamentRegister({'), 'Tournament tab must call canonical registration endpoint with consent.');
 $assertTrue(str_contains($sources['screen'], 'await api.tournamentRegistrationPublish()'), 'Tournament tab must publish only after durable registration verification.');
 $assertTrue(str_contains($sources['screen'], 'data-tournament-rules-consent'), 'Tournament tab must require an explicit rules checkbox.');
-$assertTrue(str_contains($sources['screen'], 'Состав набран · ожидаем назначения даты'), 'Tournament tab must expose wait-for-date status.');
+$assertTrue(str_contains($sources['screen'], "t('arena.card.state_waiting_date')"), 'Tournament tab must expose localized wait-for-date status.');
 $assertTrue(str_contains($sources['screen'], 'api.tournamentLeave()'), 'Tournament tab must call canonical leave endpoint.');
 $assertTrue(!str_contains($sources['screen'], 'Регистрация, зарезервированный взнос и текущий состав турнира.'), 'Tournament card must not repeat the removed subtitle.');
 $assertTrue(!str_contains($sources['screen'], 'Доступно коинов:'), 'Tournament card must not repeat the global coin balance.');
 $assertTrue(str_contains($sources['screen'], "available < fee"), 'Tournament card must detect insufficient balance before register.');
-$assertTrue(str_contains($sources['screen'], 'Недостаточно коинов'), 'Tournament card must expose a concise insufficient-balance state.');
+$assertTrue(str_contains($sources['screen'], "t('arena.card.insufficient')"), 'Tournament card must expose a localized concise insufficient-balance state.');
 $assertTrue(str_contains($sources['main_css'], 'MVP-21.1 — first official tournament registration'), 'Tournament registration UI must have bounded Arena styling.');
 
 $assertTrue(str_contains($sources['admin'], 'data-tournament-admin'), 'Web Admin must expose tournament creation surface.');
