@@ -66,7 +66,7 @@ assert.ok(store.includes('[22,23,24,25]') && store.includes('M1.5 3.5 L2.5 3.5 L
 assert.ok(storeCss.includes('left:42.857%') && storeCss.includes('.effect-victory-wave .mgw-four-fx-board-shell') && storeCss.includes('overflow:hidden'), 'Shared Victory preview must keep the exact test center and clip the finale inside the board');
 assert.ok(css.includes('width:86%!important') && css.includes('width:82%!important'), 'Profile card and detail sheet must scale the same proportional effect board without stretching it');
 
-assert.ok(layout.includes("mgw-profile-four-in-a-row-parity.js?v=8&four_profile=live-previews-v3&four_module=export-v11&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&copy=compact-v3"), 'Active Profile wrapper must import the accepted animated Four preview module');
+assert.ok(layout.includes("mgw-profile-four-in-a-row-parity.js?v=9&four_profile=live-previews-v3&four_module=export-v11&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&copy=compact-v3&mvp27_1=localized-v1"), 'Active Profile wrapper must import the localized accepted animated Four preview module');
 assert.ok(layout.includes('initProfileFourInARowParity();'), 'Active Profile wrapper must initialize Four parity');
 assert.ok(layout.indexOf('initProfileDominoHardRatio();') < layout.indexOf('initProfileFourInARowParity();'), 'Four parity must be added after accepted existing game owners without replacing them');
 
