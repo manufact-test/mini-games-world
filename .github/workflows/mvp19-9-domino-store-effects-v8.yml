@@ -75,7 +75,8 @@ jobs:
           manifest='app/runtime/client/version-manifest.php'
 
           grep -F "store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48" "$base"
-          grep -F "'precision-drop':'Яркий акцент в момент точного хода'" "$base"
+          grep -F "store.games.descriptions." "$base"
+          grep -F '"precision_drop": "Яркий акцент в момент точного хода"' app/locales/ru.json
           grep -F 'native:v14:svg-pips-v48' "$store"
           grep -F 'data-mgw-domino-preview-component="v44"' "$store"
           grep -F 'sceneReady' "$store"
