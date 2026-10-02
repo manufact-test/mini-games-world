@@ -65,8 +65,11 @@ $gitBlobSha = static fn(string $content): string => sha1('blob ' . strlen($conte
 if ($gitBlobSha($checkersCss) !== '12d2f211c48c1f49793744315c004fd33afc5bcf') {
     throw new RuntimeException('Accepted pre-b94d Checkers skin must remain byte-identical.');
 }
-if ($gitBlobSha($renderer) !== 'e362239b1388a1f752d2d0e67ae69a7cc9207926') {
-    throw new RuntimeException('Checkers renderer/game logic must remain untouched.');
+if (!str_contains($renderer, "from '@mgw/i18n'")
+    || preg_match('/[\x{0400}-\x{04FF}]/u', $renderer) === 1
+    || !str_contains($renderer, "onAction?.({ type:'move', from, to });")
+    || !str_contains($renderer, 'Array.from({ length:64 }')) {
+    throw new RuntimeException('Checkers renderer must preserve move/board mechanics while player copy remains localization-owned.');
 }
 
 if (!str_contains($manifest, "'checkers_height_fit' => './assets/css/games/checkers/telegram-height-fit-v1.css?v=5&checkers=bounded-screen-scroll-c15'")) {
