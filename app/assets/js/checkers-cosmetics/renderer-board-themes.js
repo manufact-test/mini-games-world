@@ -3,7 +3,7 @@ import {
   checkersMeta,
   checkersPlayerMark,
   checkersStatus,
-} from '../games/checkers/renderer.js?v=57&base=mvp16-accepted';
+} from '../games/checkers/renderer.js?v=58&base=mvp16-accepted&mvp27_1=localized-v1';
 
 const REAL_MOVE_DURATION_MS = 1780;
 const REAL_MOVE_TRAIL_FOLLOW_MS = Math.ceil(REAL_MOVE_DURATION_MS * .5);
