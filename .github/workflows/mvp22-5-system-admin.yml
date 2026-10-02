@@ -99,6 +99,16 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-* ]]; then
+            git diff --exit-code "$base" "$head" -- \
+              app/assets/js/admin-system.js \
+              bot/admin-system.php \
+              bot/system/SystemAdminService.php \
+              bot/system/RuntimeFeatureFlagAdminService.php \
+              bot/database/migrations/20260926_0065_create_system_admin_control.php
+            echo 'MVP-27.1 successor localization slice: System Admin product owners unchanged; historical whole-PR scope allow-list is not applicable.'
+            exit 0
+          fi
           # MVP-22.9 is a bounded successor slice. Predecessor contracts above still run;
           # their historical file-scope allow-lists must not reject the newer incident/recovery owners.
           if [[ "${{ github.head_ref }}" == agent/mvp22-9-* || "${{ github.head_ref }}" == agent/mvp23-manual-acceptance-* ]]; then

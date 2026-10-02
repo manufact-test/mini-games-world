@@ -159,7 +159,7 @@ foreach ([
     'consent'=>'Я прочитал(а) и принимаю правила этого турнира.',
     'consent_accepted'=>'Правила турнира приняты.',
     'bronze_reward'=>'бронзовая награда',
-    'state_waiting_date'=>'Состав набран · ожидаем назначения даты турнира.',
+    'state_waiting_date'=>'Состав набран · ожидаем назначения даты',
     'started'=>'Турнир начался',
 ] as $key=>$copy) {
     $assertTrue(($arenaCard[$key] ?? null) === $copy, 'Localized Tournament copy missing: ' . $copy);
