@@ -1,0 +1,103 @@
+name: MVP-27.1 Store Wrapper Localization
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/screens/store-screen-intent-wrapper.js'
+      - 'app/assets/js/screens/store-screen-checkers-wrapper.js'
+      - 'app/assets/js/screens/store-screen-checkers-board-source-wrapper.js'
+      - 'app/assets/js/screens/store-screen-reversi-store-v1.js'
+      - 'app/assets/js/screens/store-screen-go-store-v1.js'
+      - 'app/assets/js/screens/store-screen-domino-store-v1.js'
+      - 'app/assets/js/screens/store-screen-four-in-a-row-store-v1.js'
+      - 'app/assets/js/screens/store-screen-battleship-store-v1.js'
+      - 'app/locales/ru.json'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp19_3ProfileAvatarsTest.php'
+      - 'bot/tests/Mvp19_6CheckersBoardsTest.php'
+      - 'bot/tests/Mvp19_7ReversiStoreTest.php'
+      - 'bot/tests/Mvp19_8GoStoreTest.php'
+      - 'bot/tests/Mvp19_9DominoStoreProfileTest.php'
+      - 'bot/tests/Mvp19_9DominoPreviewReadabilityContractTest.mjs'
+      - 'bot/tests/Mvp19_FourInARowStoreTest.php'
+      - 'bot/tests/Mvp19_12BattleshipStoreTest.php'
+      - 'bot/tests/Mvp19_12BattleshipLiveResultEffectsTest.mjs'
+      - 'bot/tests/Mvp19_12BattleshipFireReliabilityTest.mjs'
+      - 'bot/tests/Mvp19_12BattleshipViewportScrollTest.php'
+      - 'tests/mvp19-13-ttt-bundle-reference.mjs'
+      - 'ops/checks/mvp27_1_store_wrappers_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp27-1-store-wrappers-localization.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  store-wrapper-localization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Syntax and wrapper localization contract
+        run: |
+          set -euo pipefail
+          node --check app/assets/js/screens/store-screen-intent-wrapper.js
+          node --check app/assets/js/screens/store-screen-checkers-wrapper.js
+          node --check app/assets/js/screens/store-screen-checkers-board-source-wrapper.js
+          node --check app/assets/js/screens/store-screen-reversi-store-v1.js
+          node --check app/assets/js/screens/store-screen-go-store-v1.js
+          node --check app/assets/js/screens/store-screen-domino-store-v1.js
+          node --check app/assets/js/screens/store-screen-four-in-a-row-store-v1.js
+          node --check app/assets/js/screens/store-screen-battleship-store-v1.js
+          node --check ops/checks/mvp27_1_store_wrappers_localization_contract.mjs
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/tests/Mvp19_12BattleshipViewportScrollTest.php
+          node ops/checks/mvp27_1_store_wrappers_localization_contract.mjs
+          node ops/checks/mvp16_2_localization_contract.mjs
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+
+      - name: Preserve Store wrapper product contracts
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp19_3ProfileAvatarsTest.php
+          php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
+          php bot/tests/Mvp19_5ChessCosmeticsTest.php
+          php bot/tests/Mvp19_6CheckersBoardsTest.php
+          php bot/tests/Mvp19_7ReversiStoreTest.php
+          php bot/tests/Mvp19_8GoStoreTest.php
+          php bot/tests/Mvp19_9DominoStoreProfileTest.php
+          node bot/tests/Mvp19_9DominoPreviewReadabilityContractTest.mjs
+          php bot/tests/Mvp19_FourInARowStoreTest.php
+          php bot/tests/Mvp19_12BattleshipStoreTest.php
+          node bot/tests/Mvp19_12BattleshipLiveResultEffectsTest.mjs
+          node bot/tests/Mvp19_12BattleshipFireReliabilityTest.mjs
+          php bot/tests/Mvp19_12BattleshipViewportScrollTest.php
+          node tests/mvp19-13-ttt-bundle-reference.mjs
+          node bot/tests/Mvp25_6StoreClientContractTest.mjs
+          php bot/tests/Mvp26_3StoreWalletOwnershipContractTest.php
+
+      - name: Localization debt ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded migration scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          allowed='^(app/assets/js/screens/store-screen-intent-wrapper\.js|app/assets/js/screens/store-screen-checkers-wrapper\.js|app/assets/js/screens/store-screen-checkers-board-source-wrapper\.js|app/assets/js/screens/store-screen-reversi-store-v1\.js|app/assets/js/screens/store-screen-go-store-v1\.js|app/assets/js/screens/store-screen-domino-store-v1\.js|app/assets/js/screens/store-screen-four-in-a-row-store-v1\.js|app/assets/js/screens/store-screen-battleship-store-v1\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|bot/tests/Mvp19_3ProfileAvatarsTest\.php|bot/tests/Mvp19_6CheckersBoardsTest\.php|bot/tests/Mvp19_7ReversiStoreTest\.php|bot/tests/Mvp19_8GoStoreTest\.php|bot/tests/Mvp19_9DominoStoreProfileTest\.php|bot/tests/Mvp19_9DominoPreviewReadabilityContractTest\.mjs|bot/tests/Mvp19_FourInARowStoreTest\.php|bot/tests/Mvp19_12BattleshipStoreTest\.php|bot/tests/Mvp19_12BattleshipLiveResultEffectsTest\.mjs|bot/tests/Mvp19_12BattleshipFireReliabilityTest\.mjs|bot/tests/Mvp19_12BattleshipViewportScrollTest\.php|tests/mvp19-13-ttt-bundle-reference\.mjs|ops/checks/mvp27_1_store_wrappers_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-store-wrappers-localization\.yml)$'
+          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected Store wrapper localization paths:\n%s\n' "$bad" >&2; exit 1; }
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs

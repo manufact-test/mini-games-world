@@ -100,6 +100,7 @@ $profileModule = (string)file_get_contents($root . '/app/assets/js/profile/mgw-p
 $profileHardRatio = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-domino-hard-ratio-v1.js');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
+$locale = json_decode((string)file_get_contents($root . '/app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 
 $activeStore = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $activeProfile = (string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? '');
@@ -109,7 +110,13 @@ $dominoCachedSource = (string)($manifest['imports']['./assets/js/screens/store-s
 $dominoProfile = (string)($manifest['imports']['./assets/js/profile/mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1'] ?? '');
 
 $assertTrue(str_contains($baseStore, "if (gameType === 'domino')") && str_contains($baseStore, 'dominoPreviewMarkup(safeLayer, safeVariant)'), 'Base Store must keep native Domino rendering');
-$assertTrue(str_contains($baseStore, 'Яркий акцент в момент точного хода') && str_contains($baseStore, 'Эффектный выход костяшки из запаса') && str_contains($baseStore, 'Финал с каскадом падающих костяшек'), 'Base Store must keep short player-facing copy');
+$assertTrue(
+    str_contains($baseStore, 'store.games.descriptions.')
+    && (($locale['store']['games']['descriptions']['domino']['effect']['precision_drop'] ?? null) === 'Яркий акцент в момент точного хода')
+    && (($locale['store']['games']['descriptions']['domino']['effect']['stock_pulse'] ?? null) === 'Эффектный выход костяшки из запаса')
+    && (($locale['store']['games']['descriptions']['domino']['effect']['chain_finale'] ?? null) === 'Финал с каскадом падающих костяшек'),
+    'Base Store must keep short localized player-facing copy'
+);
 $assertTrue(str_contains($storeModule, 'native:v14:svg-pips-v48') && str_contains($storeModule, 'data-mgw-domino-preview-component="v44"') && str_contains($storeModule, 'sceneReady'), 'Store must publish fresh v44 preview identity and reject stale scene markup');
 $assertTrue(str_contains($storeModule, 'ensureEffectStyles();') && str_contains($storeModule, 'ensureLiveParityStyles();') && str_contains($storeModule, 'domino-premium-effects-v15-proportions') && str_contains($storeModule, 'domino-preview-component-v44'), 'Domino scene owner must load base geometry plus the isolated v44 component');
 $assertTrue(!str_contains($storeModule, 'mgw-domino-v13-impact') && !str_contains($storeModule, 'mgw-domino-v13-draw') && !str_contains($storeModule, 'mgw-domino-v13-cascade'), 'Effect preview markup must not reuse legacy v13 scene classes');
@@ -135,13 +142,13 @@ $assertTrue(!str_contains($previewComponentCss, 'transform:rotate(27deg) scaleX(
 $assertTrue(!str_contains($profileCss, 'animation:none!important'), 'Profile CSS must not freeze Domino effect previews');
 $assertTrue(str_contains($baseStore, "store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48"), 'Base Store must directly import SVG-pip v48 instead of relying on wrapper repair');
 $assertTrue(!str_contains($effectCss, 'mgw-domino-v12-') && !str_contains($effectCss, 'repeating-conic-gradient') && !str_contains($effectCss, 'mix-blend-mode:screen'), 'Rejected v12/rainbow/light-show language must remain absent');
-$assertTrue(str_contains($storeOwner, "store-screen-domino-store-v1.js?v=16&mvp19_9=domino-svg-pips-v48&paid_default=copy-human-v1") && str_contains($storeOwner, "store-screen-domino-effects-v9.js?v=12&mvp19_9=domino-svg-pips-v48"), 'Store owner must wire fresh v48 preview motion plus canonical replacement copy over accepted base geometry');
+$assertTrue(str_contains($storeOwner, "store-screen-domino-store-v1.js?v=17&mvp19_9=domino-svg-pips-v48&paid_default=copy-human-v1&mvp27_1=localized-v1") && str_contains($storeOwner, "store-screen-domino-effects-v9.js?v=12&mvp19_9=domino-svg-pips-v48"), 'Store owner must wire fresh v48 preview motion plus canonical replacement copy over accepted base geometry');
 $assertTrue(str_contains($selectorOwner, 'selector.scrollLeft = left;') && !str_contains($selectorOwner, "behavior:'smooth'"), 'Accepted no-jump Store selector must remain intact');
 $assertTrue(str_contains($profileModule, "dominoPreviewMarkup } from '../screens/store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48'") && str_contains($profileModule, 'store-effects-scene-v9.css?v=7&mvp19_9=domino-premium-effects-v15-proportions') && str_contains($profileModule, 'store-effects-preview-component-v44.css?v=4&mvp19_9=domino-svg-pips-v48'), 'Profile must reuse the exact Store v48 preview source and component CSS');
 $assertTrue(!str_contains($profileHardRatio, 'getBoundingClientRect') && !str_contains($profileHardRatio, 'setTimeout'), 'Profile must remain free of imperative geometry retries');
 $assertTrue(str_contains($storeCss, 'aspect-ratio:8 / 5!important') && str_contains($cardCss, 'width:3px!important'), 'Accepted static Domino geometry/pips must remain frozen');
 $assertTrue(str_contains($activeStore, 'domino_effects=svg-pips-v48') && str_contains($activeStore, 'domino_preview=svg-pips-v48') && str_contains($activeStore, 'domino_base=native-render-v2'), 'Active Store graph must publish v48 previews without changing the accepted base owner');
-$assertTrue(str_contains($baseStoreTarget, 'store-screen.js?v=66') && str_contains($baseStoreTarget, 'mvp19_13=all-eight-bundles-v8'), 'Base Store target must preserve the canonical Domino owner while publishing the current all-bundles revision');
+$assertTrue(str_contains($baseStoreTarget, 'store-screen.js?v=72') && str_contains($baseStoreTarget, 'mvp19_13=bundle-selector-click-hint-v11-performance') && str_contains($baseStoreTarget, 'mvp27_1=store-localized-v2'), 'Base Store target must preserve the accepted localized Store owner while publishing the current bundle-selector revision');
 $assertTrue(str_contains($activeProfile, 'domino_effects=svg-pips-v48') && str_contains($activeProfile, 'domino_preview=shared-svg-pips-v48'), 'Active Profile graph must publish v48 parity');
 $assertTrue(str_contains($dominoSource, 'store-screen-domino-store-v1.js?v=16') && str_contains($dominoCachedSource, 'store-screen-domino-store-v1.js?v=16') && str_contains($dominoProfile, 'mgw-profile-domino-parity.js?v=14'), 'Import map must publish the current human-copy Store aliases while preserving accepted Profile v48 parity');
 $launchMatch = [];

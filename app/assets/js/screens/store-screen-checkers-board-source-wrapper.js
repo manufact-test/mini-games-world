@@ -2,29 +2,29 @@ import {
   initStoreScreen as initAcceptedCheckersStore,
   openStoreTab as openAcceptedCheckersStoreTab,
   openStoreSheet as openAcceptedCheckersStoreSheet,
-} from './store-screen-checkers-wrapper.js?v=5&mvp19_6=visual-corrective-v3&base_rev=19&visual_rev=5&effects_live_board=v1&effects_loop=v1&boards_pieces=v1&bundle_selector=preserve-v1&bundle_sheet_static=v1';
+} from './store-screen-checkers-wrapper.js?v=6&mvp19_6=visual-corrective-v3&base_rev=19&visual_rev=5&effects_live_board=v1&effects_loop=v1&boards_pieces=v1&bundle_selector=preserve-v1&bundle_sheet_static=v1&mvp27_1=localized-v1';
 import {
   installReversiStorePresentation,
   upgradeReversiStorePresentation,
-} from './store-screen-reversi-store-v1.js?v=5&mvp19_7=store-only&review=manual-corrective-v2&paid_default=copy-human-v1&bundles=owner-v1';
+} from './store-screen-reversi-store-v1.js?v=6&mvp19_7=store-only&review=manual-corrective-v2&paid_default=copy-human-v1&bundles=owner-v1&mvp27_1=localized-v1';
 import {
   installGoStorePresentation,
   upgradeGoStorePresentation,
-} from './store-screen-go-store-v1.js?v=5&mvp19_8=effects-premium-v2&paid_default=copy-human-v1&bundles=owner-v1';
+} from './store-screen-go-store-v1.js?v=6&mvp19_8=effects-premium-v2&paid_default=copy-human-v1&bundles=owner-v1&mvp27_1=localized-v1';
 import {
   installDominoStorePresentation,
   upgradeDominoStorePresentation,
-} from './store-screen-domino-store-v1.js?v=16&mvp19_9=domino-svg-pips-v48&paid_default=copy-human-v1';
+} from './store-screen-domino-store-v1.js?v=17&mvp19_9=domino-svg-pips-v48&paid_default=copy-human-v1&mvp27_1=localized-v1';
 import { installDominoStoreCardFillV5 } from './store-screen-domino-card-fill-v5.js?v=2&mvp19_9=domino-card-fill-live-pips-v6';
 import { installDominoStoreEffectsV9 } from './store-screen-domino-effects-v9.js?v=12&mvp19_9=domino-svg-pips-v48';
 import {
   installFourInARowStorePresentation,
   upgradeFourInARowStorePresentation,
-} from './store-screen-four-in-a-row-store-v1.js?v=12&four_store=live-previews-v3&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&export=profile-preview-v4&copy=compact-v3&bundles=owner-v1';
+} from './store-screen-four-in-a-row-store-v1.js?v=13&four_store=live-previews-v3&geometry=7x6&fx=victory-test-exact-v3&effect2=random-chain-v4&victory=overdrive-v3&export=profile-preview-v4&copy=compact-v3&bundles=owner-v1&mvp27_1=localized-v1';
 import {
   installBattleshipStorePresentation,
   upgradeBattleshipStorePresentation,
-} from './store-screen-battleship-store-v1.js?v=15&mvp19_12=store-preview-parity-v14&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=live-parity-destroy-v3&bundles=owner-v1';
+} from './store-screen-battleship-store-v1.js?v=16&mvp19_12=store-preview-parity-v14&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=live-parity-destroy-v3&bundles=owner-v1&mvp27_1=localized-v1';
 import {
   installPaidDefaultDedupV1,
   upgradePaidDefaultDedupV1,

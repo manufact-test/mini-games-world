@@ -136,14 +136,14 @@ assert.equal(css.includes('[data-store-bundle-member-layer="theme"] .store-v2-mi
 assert.equal(css.includes('[data-store-bundle-member-layer="effect"] .store-v2-mini-checkers-effect'), false);
 assert.match(checkersWrapper, /\[data-store-v2-bundle-game\]/);
 assert.match(checkersWrapper, /data-store-v2-game="checkers"\]:not\(\[data-store-v2-bundle-game\]\)/);
-assert.match(checkersSourceWrapper, /store-screen-checkers-wrapper\.js\?v=5[^']*bundle_sheet_static=v1/);
+assert.match(checkersSourceWrapper, /store-screen-checkers-wrapper\.js\?v=6[^']*bundle_sheet_static=v1/);
 assert.match(checkersWrapper, /store-v2-confirm-bundle-detail/);
 assert.match(checkersWrapper, /inBundleSheet/);
 assert.match(checkersWrapper, /inactiveBundlePanel/);
 assert.match(checkersWrapper, /checkersEffectObserver\.unobserve\(preview\)/);
 assert.match(checkersWrapper, /data-mgw-checkers-frozen-snapshot/);
 
-assert.match(manifest, /store-screen-checkers-board-source-wrapper\.js\?v=36[^']*bundle_fit=v4[^']*parent=store-screen-checkers-wrapper\.js\?v=5[^']*mvp19_13=all-eight-bundles-v8/);
+assert.match(manifest, /store-screen-checkers-board-source-wrapper\.js\?v=37[^']*bundle_fit=v4[^']*parent=store-screen-checkers-wrapper\.js\?v=6[^']*mvp19_13=all-eight-bundles-v8/);
 assert.match(manifest, /store-screen\.js\?v=72[^']*mvp19_13=bundle-selector-click-hint-v11-performance[^']*mvp27_1=store-localized-v2/);
 assert.match(launch, /bundles=bundle-selector-click-hint-v11-performance/);
 

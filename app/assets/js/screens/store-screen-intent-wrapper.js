@@ -6,6 +6,7 @@ import {
 } from './store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog';
 import { api } from '../api/client.js?v=34';
 import { haptic } from '../telegram/telegram-app.js?v=27';
+import { t } from '@mgw/i18n';
 
 const CHESS_FIELD_EFFECT_VARIANTS = Object.freeze(new Set(['move','capture','check']));
 const CHESS_EFFECT_PREVIEW_SCENES = Object.freeze({
@@ -220,44 +221,35 @@ function upgradeQuantumEchoPresentation(root){
   root.querySelectorAll('.store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="effect"][data-cosmetic-variant="check"], .store-v2-game-preview[data-game-type="chess"][data-cosmetic-layer="effect"][data-cosmetic-variant="quantum-echo"]').forEach(preview => {
     if (!(preview instanceof HTMLElement)) return;
     preview.dataset.cosmeticVariant = 'quantum-echo';
-    preview.setAttribute('aria-label', 'Квантовый след');
+    const quantumName = t('store.products.game-chess-effect-check');
+    preview.setAttribute('aria-label', quantumName);
 
     const product = preview.closest('.store-v2-game-product');
     const name = product?.querySelector('.store-v2-game-product-copy > strong');
     const description = product?.querySelector('.store-v2-game-product-copy > p');
-    if (name instanceof HTMLElement) name.textContent = 'Квантовый след';
-    if (description instanceof HTMLElement) description.textContent = 'Призрачные эхо сопровождают каждый ход и схлопываются в энергетический ореол';
+    if (name instanceof HTMLElement) name.textContent = quantumName;
+    if (description instanceof HTMLElement) description.textContent = t('store.wrappers.intent.quantum_echo_description');
 
     const confirm = preview.closest('.store-v2-confirm');
     const confirmName = confirm?.querySelector('.store-v2-confirm-copy > strong');
-    if (confirmName instanceof HTMLElement) confirmName.textContent = 'Квантовый след';
+    if (confirmName instanceof HTMLElement) confirmName.textContent = quantumName;
   });
 }
 
 function humanizeGameGroupCopy(panel){
   const gameType = String(panel.querySelector('.store-v2-game-head')?.getAttribute('data-store-game-type') || '');
   panel.querySelectorAll('.store-v2-game-title-row').forEach(row => {
-    const title = row.querySelector('h2')?.textContent?.trim() || '';
+    const group = row.closest('.store-v2-game-group');
+    const preview = group?.querySelector('.store-v2-game-preview[data-cosmetic-layer]');
+    const layer = String(preview?.getAttribute('data-cosmetic-layer') || '');
     const subtitle = row.querySelector('p');
-    if (!(subtitle instanceof HTMLElement)) return;
+    if (!(subtitle instanceof HTMLElement) || !['theme','elements','effect'].includes(layer)) return;
+    if (!['chess','tictactoe'].includes(gameType)) return;
 
-    let nextText = '';
-    if (gameType === 'chess') {
-      if (title === 'Доски') nextText = 'Оформление шахматной доски';
-      if (title === 'Фигуры') nextText = 'Внешний вид фигур';
-      if (title === 'Эффекты') nextText = 'Премиальные анимации шахматных ходов';
-    } else if (gameType === 'tictactoe') {
-      if (title === 'Поля') nextText = 'Фон и сетка игрового поля';
-      if (title === 'Знаки') nextText = 'Внешний вид крестиков и ноликов';
-      if (title === 'Эффекты') nextText = 'Анимации при каждом ходе';
-    }
-
-    if (nextText && subtitle.textContent !== nextText) {
-      subtitle.textContent = nextText;
-    }
+    const nextText = t(`store.wrappers.intent.groups.${gameType}.${layer}`);
+    if (subtitle.textContent !== nextText) subtitle.textContent = nextText;
   });
 }
-
 function canConsumePrimedFirstPresentation(){
   if (!firstOpenPrimeReady || firstVisiblePrimeConsumed) return false;
   const preloader = document.getElementById('preloader');

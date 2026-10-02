@@ -120,6 +120,7 @@ $baseCss = (string)file_get_contents($root . '/app/assets/css/games/battleship/g
 $outer = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-checkers-board-source-wrapper.js');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
+$locale = json_decode((string)file_get_contents($root . '/app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 
 $assertTrue(str_contains($baseCss, 'rgba(51,94,162,.52)') && str_contains($baseCss, 'rgba(166,183,209,.96)'), 'Test must audit the actual free Battleship water and ship colors');
 $assertTrue(str_contains($css, '.mgw-battleship-preview.map-sea') && str_contains($css, '#0b8ea8') && !str_contains($css, 'background:linear-gradient(145deg,rgba(51,94,162,.52),rgba(27,56,106,.52))'), 'Paid sea map preview must be materially distinct from the free blue map');
@@ -128,7 +129,12 @@ foreach (['map-sea','map-dark-military','map-storm','map-neon','fleet-classic','
     $assertTrue(str_contains($css, '.' . $variantClass), 'Store CSS must style ' . $variantClass);
 }
 $assertTrue(str_contains($wrapper, 'Array.from({ length:100 }'), 'Battleship previews must preserve real 10x10 geometry');
-$assertTrue(str_contains($wrapper, "theme:['Карты'") && str_contains($wrapper, "elements:['Флот'"), 'Battleship Store must use player-facing map/fleet group names');
+$assertTrue(
+    str_contains($wrapper, 'store.wrappers.battleship.groups.')
+    && (($locale['store']['wrappers']['battleship']['groups']['theme']['title'] ?? null) === 'Карты')
+    && (($locale['store']['wrappers']['battleship']['groups']['elements']['title'] ?? null) === 'Флот'),
+    'Battleship Store must use localized player-facing map/fleet group names'
+);
 $assertTrue(str_contains($wrapper, 'mgw-bs-head-vessel') && str_contains($wrapper, 'mgwBsHullSteel') && str_contains($wrapper, '<svg viewBox="0 0 92 48"'), 'Battleship header must use one compact metallic ship icon instead of neon or abstract tiles');
 $assertTrue(str_contains($css, 'width:62px') && str_contains($css, 'fill:url(#mgwBsHullSteel)') && !str_contains($css, '.mgw-bs-head-vessel .hull{fill:#173649;stroke:#6af2ff'), 'Header ship must stay smaller and neutral metallic rather than neon');
 $assertTrue(str_contains($css, '.mgw-battleship-preview.map-neon .mgw-bs-preview-sweep{') && str_contains($css, 'inset:2%') && str_contains($css, 'border-radius:8px'), 'Neon map outer frame must stay outside the cell circles with tighter corners');
@@ -138,8 +144,19 @@ $assertTrue(str_contains($wrapper, "neon:{ water:'#081326', waterStroke:'#3feaff
 $assertTrue(str_contains($css, '.mgw-battleship-preview.fleet-neon') && str_contains($css, '#4937a5') && str_contains($css, '#59f6ff') && str_contains($css, 'inset 0 0 0 1px rgba(255,68,222,.76)'), 'Neon Fleet preview must use a filled violet body with cyan outer rim and magenta inner rim');
 $assertTrue(str_contains($wrapper, 'installHydrationRepair()') && str_contains($wrapper, 'new MutationObserver') && str_contains($wrapper, "target?.closest?.('.store-v2-game-preview[data-game-type=\"battleship\"]')") && str_contains($wrapper, 'globalThis.setTimeout(run, 700)'), 'Battleship Store must repair previews that are replaced by later async hydration.');
 $assertTrue(str_contains($wrapper, "classic:{ hull:'#e7c56e', rim:'#ffe6a6'") && str_contains($wrapper, "modern:{ hull:'#4f7f96', rim:'#9ee9ff'") && str_contains($wrapper, "armored:{ hull:'#4b535b', rim:'#aab4bc'") && str_contains($wrapper, "neon:{ hull:'#4937a5', rim:'#59f6ff', core:'#ff44de'") && str_contains($wrapper, 'stroke-linecap="round"'), 'Fleet previews must render explicit connected SVG ship models; Neon must retain violet hull plus cyan/magenta rims.');
-$assertTrue(!str_contains($wrapper, 'не повторяет бесплатное') && !str_contains($wrapper, 'не серые стандартные') && str_contains($wrapper, 'Бирюзовая вода, светлый фарватер') && str_contains($wrapper, 'Тёмный тактический радар с военным характером'), 'Battleship Store copy must stay short, human and product-facing without technical free-vs-paid commentary');
-$assertTrue(str_contains($wrapper, "shot:'Прицел'") && str_contains($wrapper, "hit:'Попадание'") && str_contains($wrapper, "destroy:'Потопление'"), 'Effect labels must clearly distinguish aim, hit and destroy semantics');
+$assertTrue(
+    str_contains($wrapper, 'store.wrappers.battleship.descriptions.')
+    && (($locale['store']['wrappers']['battleship']['descriptions']['theme']['sea'] ?? null) === 'Бирюзовая вода, светлый фарватер и свежий морской стиль.')
+    && (($locale['store']['wrappers']['battleship']['descriptions']['theme']['dark_military'] ?? null) === 'Тёмный тактический радар с военным характером.'),
+    'Battleship Store localized copy must stay short, human and product-facing'
+);
+$assertTrue(
+    str_contains($wrapper, 'store.wrappers.battleship.kinds.')
+    && (($locale['store']['wrappers']['battleship']['kinds']['shot'] ?? null) === 'Прицел')
+    && (($locale['store']['wrappers']['battleship']['kinds']['hit'] ?? null) === 'Попадание')
+    && (($locale['store']['wrappers']['battleship']['kinds']['destroy'] ?? null) === 'Потопление'),
+    'Localized effect labels must clearly distinguish aim, hit and destroy semantics'
+);
 foreach (['@keyframes mgwBsLivePreviewShotReticle','@keyframes mgwBsLivePreviewHitCore','@keyframes mgwBsLivePreviewDestroyFlash'] as $keyframe) {
     $assertTrue(str_contains($css, $keyframe), 'Store effect preview must animate accepted LIVE parity keyframe ' . $keyframe);
 }
@@ -156,9 +173,9 @@ $assertTrue(str_contains($css, 'rgba(255,86,69,.92)') && str_contains($css, 'rgb
 $assertTrue(str_contains($css, '.mgw-bs-preview-destroy-flash,') && str_contains($css, 'top:56%'), 'Destroy preview blast origin must sit on the visible ship row rather than above it');
 $assertTrue(str_contains($css, '.mgw-bs-preview-destroy-shards{left:54%;top:56%'), 'Destroy preview debris must share the corrected blast origin');
 $assertTrue(!str_contains($css, '.mgw-battleship-preview.map-neon .mgw-bs-preview-board>span:nth-child(3n)'), 'Neon map must use one coherent grid glow instead of patchy alternating cells');
-$assertTrue(str_contains($outer, 'store-screen-battleship-store-v1.js?v=15&mvp19_12=store-preview-parity-v14&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=live-parity-destroy-v3&bundles=owner-v1'), 'Active Store wrapper must install Battleship accepted preview parity v12');
+$assertTrue(str_contains($outer, 'store-screen-battleship-store-v1.js?v=16&mvp19_12=store-preview-parity-v14&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=live-parity-destroy-v3&bundles=owner-v1&mvp27_1=localized-v1'), 'Active Store wrapper must install Battleship accepted preview parity v12');
 $activeStore = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
-$assertTrue(str_contains($activeStore, 'store-screen-checkers-board-source-wrapper.js?v=36') && str_contains($activeStore, 'battleship_store=preview-parity-v14') && str_contains($activeStore, 'battleship_geometry=square') && str_contains($activeStore, 'battleship_header=steel-ship-v1') && str_contains($activeStore, 'battleship_neon_frame=outer-safe-v1') && str_contains($activeStore, 'battleship_neon_fleet=tube-v4') && str_contains($activeStore, 'battleship_preview_geometry=svg-circles-v6') && str_contains($activeStore, 'battleship_store_hydration=observer-v1') && str_contains($activeStore, 'battleship_preview_inline_owner=svg-v5') && str_contains($activeStore, 'battleship_fleet_preview=svg-models-v3&battleship_neon_map_ships=white-v1') && str_contains($activeStore, 'battleship_effects=live-parity-destroy-v3'), 'Active Store graph must publish SVG preview parity v11');
+$assertTrue(str_contains($activeStore, 'store-screen-checkers-board-source-wrapper.js?v=37') && str_contains($activeStore, 'battleship_store=preview-parity-v14') && str_contains($activeStore, 'battleship_geometry=square') && str_contains($activeStore, 'battleship_header=steel-ship-v1') && str_contains($activeStore, 'battleship_neon_frame=outer-safe-v1') && str_contains($activeStore, 'battleship_neon_fleet=tube-v4') && str_contains($activeStore, 'battleship_preview_geometry=svg-circles-v6') && str_contains($activeStore, 'battleship_store_hydration=observer-v1') && str_contains($activeStore, 'battleship_preview_inline_owner=svg-v5') && str_contains($activeStore, 'battleship_fleet_preview=svg-models-v3&battleship_neon_map_ships=white-v1') && str_contains($activeStore, 'battleship_effects=live-parity-destroy-v3'), 'Active Store graph must publish SVG preview parity v11');
 $assertTrue(str_contains($launch, 'v=1233') && str_contains($launch, 'battleship_store=preview-parity-v14') && str_contains($launch, 'battleship_header=steel-ship-v1') && str_contains($launch, 'battleship_neon_frame=outer-safe-v1') && str_contains($launch, 'battleship_neon_fleet=tube-v4') && str_contains($launch, 'battleship_preview_geometry=svg-circles-v6') && str_contains($launch, 'battleship_preview_inline_owner=svg-v5') && str_contains($launch, 'battleship_fleet_preview=svg-models-v3&battleship_neon_map_ships=white-v1') && str_contains($launch, 'battleship_effects=live-parity-destroy-v3'), 'Telegram launch must force SVG preview parity v11');
 
 echo "Battleship Store Phase 1 contract passed ({$assertions} assertions).";

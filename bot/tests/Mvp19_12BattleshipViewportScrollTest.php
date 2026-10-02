@@ -67,16 +67,20 @@ foreach ([
     }
 }
 
+$viewportAsset = (string)($manifest['assets']['battleship_exit_fit'] ?? '');
+if ($viewportAsset !== './assets/css/games/battleship/live-exit-fit-v1.css?v=1&mvp19_12=bounded-screen-scroll-v1') {
+    throw new RuntimeException('Canonical manifest must publish the accepted Battleship viewport corrective.');
+}
 foreach ([
-    './assets/css/games/battleship/live-exit-fit-v1.css?v=1&mvp19_12=bounded-screen-scroll-v1',
-    "'battleship_viewport_scroll' => $battleshipExitFitTarget",
+    '$battleshipExitFitTarget = $assets[\'battleship_exit_fit\'];',
+    '\'battleship_viewport_scroll\' => $battleshipExitFitTarget',
 ] as $runtimeToken) {
     if (!str_contains($v110, $runtimeToken)) {
-        throw new RuntimeException('v110 does not publish the Battleship viewport corrective: ' . $runtimeToken);
+        throw new RuntimeException('v110 must consume the canonical Battleship viewport corrective: ' . $runtimeToken);
     }
 }
-if (!str_contains($v110, 'is_file($battleshipExitFitPath)')) {
-    throw new RuntimeException('v110 must fail closed when the Battleship viewport CSS is missing.');
+if (!str_contains($v110, "'battleship_exit_fit',") || !str_contains($v110, 'Mini Games World client version manifest asset is unavailable')) {
+    throw new RuntimeException('v110 must fail closed when the canonical Battleship viewport asset is unavailable.');
 }
 if (!str_contains($launch, 'battleship_viewport=scroll-v1')) {
     throw new RuntimeException('Telegram launch must publish Battleship viewport scroll identity.');

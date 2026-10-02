@@ -68,10 +68,10 @@ assert.ok(apiPhp.includes('function mgw_is_battleship_fire_fast_path'), 'API mus
 assert.ok(apiPhp.includes("return \$actionType === 'fire'") && apiPhp.includes("=== 'battleship'") && apiPhp.includes("=== 'battle'"), 'Fast path must apply only to battle-phase Battleship fire');
 assert.ok(apiPhp.includes("if (\$action !== 'game_state' && !\$battleshipFireFastPath)"), 'Battleship fire must bypass the cross-game cleanup sweep while other actions keep existing cleanup ownership');
 
-assert.ok(entry.includes("\$battleshipGameScreenImportKey = './assets/js/screens/game-screen-v102.js?v=102'"), 'Active v110 must cache-bust the game-screen fire owner');
-assert.ok(entry.includes("&battleship_fire=direct-result-v4"), 'Active v110 must publish queued-fire reconciliation module identity');
-assert.ok(entry.includes("&live_effects=accepted-three-v7&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-core-v4"), 'Active v110 must publish the accepted effect renderer with queued-fire ownership');
-assert.ok(entry.includes("&battleship_fire=direct-result-v4"), 'Active v110 must refresh the main CSS pending-fire owner');
+assert.ok(entry.includes("\$battleshipGameScreenImportKey = './assets/js/screens/game-screen-v102.js?v=102'"), 'Active v110 must consume the canonical game-screen fire owner key');
+assert.ok(entry.includes('\$imports[\$battleshipGameScreenImportKey]'), 'Active v110 must consume the queued-fire reconciliation module directly from the canonical manifest');
+assert.ok(entry.includes("\$battleshipRendererImportKey = './assets/js/games/battleship/renderer.js?v=56'") && entry.includes('\$imports[\$battleshipRendererImportKey]'), 'Active v110 must consume the accepted effect renderer directly from the canonical manifest');
+assert.ok(!entry.includes('\$imports[\$battleshipGameScreenImportKey] .=') && !entry.includes('\$imports[\$battleshipRendererImportKey] .='), 'Active v110 must not own detached Battleship query-string overrides');
 assert.ok(launch.includes('battleship_fire=direct-result-v4'), 'Telegram launch must expose the reliable-fire build identity');
 
 console.log('Battleship fire reliability contract passed.');

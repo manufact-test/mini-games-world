@@ -1,4 +1,5 @@
 import { api } from '../api/client.js?v=34';
+import { t } from '@mgw/i18n';
 
 const API_HOOK = Symbol.for('mgw.store.battleship.preview-parity.v14');
 const INSTALL_KEY = '__mgwBattleshipStorePreviewParityV14Installed';
@@ -117,8 +118,9 @@ function scheduleUpgrade(){
 }
 
 function renameSelector(root){
+  const label = t('store.games.catalog_titles.battleship');
   root.querySelectorAll('[data-store-v2-game="battleship"]').forEach(button => {
-    if (button instanceof HTMLElement) button.textContent = 'Морской бой';
+    if (button instanceof HTMLElement) button.textContent = label;
   });
 }
 
@@ -127,7 +129,7 @@ function upgradeHeader(root){
   if (!(head instanceof HTMLElement)) return;
 
   const title = head.querySelector('h2');
-  if (title instanceof HTMLElement) title.textContent = 'Морской бой';
+  if (title instanceof HTMLElement) title.textContent = t('store.games.catalog_titles.battleship');
 
   const marks = head.querySelector('.store-v2-game-head-marks');
   if (marks instanceof HTMLElement) {
@@ -168,22 +170,18 @@ function upgradeGroups(root){
     if (!(preview instanceof HTMLElement)) return;
 
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
+    const key = ['theme','elements','effect'].includes(layer) ? layer : 'fallback';
     const title = group.querySelector('.store-v2-game-title-row h2');
     const subtitle = group.querySelector('.store-v2-game-title-row p');
-    const copy = {
-      theme:['Карты','Стиль боевой карты'],
-      elements:['Флот','Внешний вид кораблей'],
-      effect:['Эффекты','Прицел, попадание и потопление'],
-    }[layer] || ['Морской бой',''];
 
-    if (title instanceof HTMLElement) title.textContent = copy[0];
+    if (title instanceof HTMLElement) title.textContent = t(`store.wrappers.battleship.groups.${key}.title`);
     if (subtitle instanceof HTMLElement) {
-      if (copy[1]) subtitle.textContent = copy[1];
+      const nextSubtitle = t(`store.wrappers.battleship.groups.${key}.subtitle`);
+      if (nextSubtitle) subtitle.textContent = nextSubtitle;
       else subtitle.remove();
     }
   });
 }
-
 function upgradeProducts(root){
   root.querySelectorAll('.store-v2-game-product[data-store-game-product="battleship"]').forEach(product => {
     if (!(product instanceof HTMLElement)) return;
@@ -198,8 +196,8 @@ function upgradeProducts(root){
 
     if (kind instanceof HTMLElement) {
       kind.textContent = layer === 'theme'
-        ? 'Карта'
-        : (layer === 'elements' ? 'Флот' : effectKind(variant));
+        ? t('store.wrappers.battleship.kinds.theme')
+        : (layer === 'elements' ? t('store.wrappers.battleship.kinds.elements') : effectKind(variant));
     }
     if (description instanceof HTMLElement) description.textContent = descriptionFor(layer, variant);
   });
@@ -220,39 +218,18 @@ function upgradePreviews(root){
 }
 
 function effectKind(variant){
-  return ({
-    shot:'Прицел',
-    hit:'Попадание',
-    destroy:'Потопление',
-  })[variant] || 'Эффект';
+  const key = ['shot','hit','destroy'].includes(String(variant || '')) ? String(variant) : 'effect';
+  return t(`store.wrappers.battleship.kinds.${key}`);
 }
-
 function descriptionFor(layer, variant){
-  if (layer === 'theme') {
-    return ({
-      sea:'Бирюзовая вода, светлый фарватер и свежий морской стиль.',
-      'dark-military':'Тёмный тактический радар с военным характером.',
-      storm:'Глубокое море, дождь и холодные штормовые блики.',
-      neon:'Цельная тёмная карта с ярким циановым неоновым свечением.',
-    })[variant] || 'Новый стиль для боевой карты.';
+  const safeLayer = ['theme','elements','effect'].includes(layer) ? layer : 'effect';
+  const variantKey = String(variant || 'fallback').replaceAll('-', '_');
+  try {
+    return t(`store.wrappers.battleship.descriptions.${safeLayer}.${variantKey}`);
+  } catch (_) {
+    return t(`store.wrappers.battleship.descriptions.${safeLayer}.fallback`);
   }
-
-  if (layer === 'elements') {
-    return ({
-      classic:'Светлые корпуса с тёплой латунной отделкой.',
-      modern:'Графитовые корабли с холодными голубыми панелями.',
-      armored:'Тяжёлые бронекорпуса из тёмного металла.',
-      neon:'Тёмный флот с ярким цианово-розовым контуром.',
-    })[variant] || 'Новый внешний вид вашего флота.';
-  }
-
-  return ({
-    shot:'Прицел наводится на клетку, затем проходит короткий световой выстрел.',
-    hit:'Точное попадание вспыхивает и расходится ударным кольцом.',
-    destroy:'Потопленный корабль накрывает большая вспышка и красная ударная волна.',
-  })[variant] || 'Яркий эффект для боя.';
 }
-
 export function battleshipPreviewMarkup(layer, variant){
   const safeLayer = ['theme','elements','effect'].includes(String(layer)) ? String(layer) : 'theme';
   const safe = safeVariant(variant);
