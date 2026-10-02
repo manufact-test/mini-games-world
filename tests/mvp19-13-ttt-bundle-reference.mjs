@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const store = readFileSync('app/assets/js/screens/store-screen.js', 'utf8');
+const locale = JSON.parse(readFileSync('app/locales/ru.json', 'utf8'));
 const css = readFileSync('app/assets/css/screens/store-bundle-prototype-v1.css', 'utf8');
 const manifest = readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 const launch = readFileSync('bot/helpers/WebAppLaunchUrl.php', 'utf8');
@@ -73,11 +74,13 @@ assert.match(store, /renderBundleConfirmPricing\(offer\)/);
 assert.match(store, /store-v2-confirm-bundle-detail/);
 assert.equal(store.includes("'store-v2-confirm-bundle'"), false);
 assert.match(store, /const itemCount = Array\.isArray\(bundle\?\.item_ids\)/);
-assert.match(store, /Покупка добавляет предметы в коллекцию, но ничего не выбирает автоматически/);
+assert.match(store, /store\.bundles\.no_auto_equip/);
+assert.equal(locale.store?.bundles?.no_auto_equip, 'Покупка добавляет предметы в коллекцию, но ничего не выбирает автоматически.');
 assert.match(store, /\$\{allOwned \? '' : \`/);
 assert.equal(store.includes('store-v2-bundle-reference-owned">Комплект полностью собран'), false);
 assert.equal(store.includes("allOwned ? 'Комплект собран' : 'Посмотреть и купить'"), false);
-assert.match(store, /Оплачиваются только недостающие предметы/);
+assert.match(store, /store\.bundles\.confirm_note/);
+assert.equal(locale.store?.bundles?.confirm_note, 'Оплачиваются только недостающие предметы. После покупки они появятся в коллекции без автоматического выбора.');
 
 const prototypeSection = store.slice(store.indexOf('function bundleGameType'), store.indexOf('function emptyState'));
 for (const itemId of [
@@ -141,7 +144,7 @@ assert.match(checkersWrapper, /checkersEffectObserver\.unobserve\(preview\)/);
 assert.match(checkersWrapper, /data-mgw-checkers-frozen-snapshot/);
 
 assert.match(manifest, /store-screen-checkers-board-source-wrapper\.js\?v=36[^']*bundle_fit=v4[^']*parent=store-screen-checkers-wrapper\.js\?v=5[^']*mvp19_13=all-eight-bundles-v8/);
-assert.match(manifest, /store-screen\.js\?v=70[^']*mvp19_13=bundle-selector-click-hint-v11-performance/);
+assert.match(manifest, /store-screen\.js\?v=72[^']*mvp19_13=bundle-selector-click-hint-v11-performance[^']*mvp27_1=store-localized-v2/);
 assert.match(launch, /bundles=bundle-selector-click-hint-v11-performance/);
 
 for (const itemId of [
@@ -156,9 +159,10 @@ for (const itemId of [
 assert.match(tttMigration, /'price_coins' => 34000/);
 
 
-assert.match(store, /gameTitle:'Шашки'/);
-assert.match(store, /labels:\{ theme:'Доска', elements:'Шашки', effect:'Эффект' \}/);
-assert.match(store, /Неоновая доска, неоновые шашки и все три эффекта в одном комплекте\./);
+assert.match(store, /store\.bundles\.presentation\.\$\{key\}\.game_title/);
+assert.equal(locale.store?.bundles?.presentation?.checkers?.game_title, 'Шашки');
+assert.deepEqual(locale.store?.bundles?.presentation?.checkers?.labels, { theme:'Доска', elements:'Шашки', effect:'Эффект' });
+assert.equal(locale.store?.bundles?.presentation?.checkers?.description, 'Неоновая доска, неоновые шашки и все три эффекта в одном комплекте.');
 
 for (const itemId of [
   'game-checkers-board-neon',

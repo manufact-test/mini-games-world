@@ -182,6 +182,7 @@ $cosmeticsCss = (string)file_get_contents($root . '/app/assets/css/games/tictact
 $mainCss = (string)file_get_contents($root . '/app/assets/css/main.css');
 $apiSource = (string)file_get_contents($root . '/app/assets/js/api/client.js');
 $endpointSource = (string)file_get_contents($root . '/bot/cosmetic-store.php');
+$locale = json_decode((string)file_get_contents($root . '/app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 
 $assertTrue(str_contains($responseSource, "c.item_type = \\'game\\'") && str_contains($responseSource, "\$player['game_cosmetics']"), 'Game response must project canonical equipped cosmetics for both players');
 $assertTrue(str_contains($rendererSource, 'player?.game_cosmetics?.slots') && str_contains($rendererSource, 'slots.game_tictactoe_effect'), 'Renderer must consume the canonical single effect slot');
@@ -190,8 +191,8 @@ $assertTrue(!str_contains($rendererSource, 'findWinningCells') && !str_contains(
 $assertTrue(!str_contains($rendererSource, 'api.gameAction') && !str_contains($rendererSource, 'time_left'), 'Cosmetic renderer must not become an action or timer owner');
 $assertTrue(str_contains($cosmeticsCss, 'tttFxImpact') && str_contains($cosmeticsCss, 'tttFxSparksBurst') && str_contains($cosmeticsCss, 'tttFxWaveRing'), 'All three move effects must have distinct shared animations');
 $assertTrue(!str_contains($cosmeticsCss, 'storeTttWinningLine') && !str_contains($cosmeticsCss, 'text-decoration:line-through'), 'Legacy Store-only winning/strike presentation must be retired');
-$assertTrue(str_contains($storeSource, 'Один выбранный эффект срабатывает при каждом ходе') && str_contains($storeSource, 'data-store-v2-unequip'), 'Store must explain exclusivity and provide a remove action');
-$assertTrue(str_contains($storeSource, 'ttt-mark ttt-effect-mark ttt-fx-${safeVariant}') && str_contains($storeSource, '>Снять</button>'), 'Store preview and selection controls must use runtime effect classes and a real remove button');
+$assertTrue(str_contains($storeSource, "store.games.presentation.") && str_contains($storeSource, 'data-store-v2-unequip') && (($locale['store']['games']['presentation']['tictactoe']['groups']['effects']['subtitle'] ?? null) === 'Один выбранный эффект срабатывает при каждом ходе'), 'Store must explain exclusivity through localization and provide a remove action');
+$assertTrue(str_contains($storeSource, 'ttt-mark ttt-effect-mark ttt-fx-${safeVariant}') && str_contains($storeSource, "t('store.actions.remove')") && (($locale['store']['actions']['remove'] ?? null) === 'Снять'), 'Store preview and selection controls must use runtime effect classes and a localized real remove button');
 $assertTrue(str_contains($apiSource, 'cosmeticStoreUnequip') && str_contains($endpointSource, "if (\$action === 'unequip')"), 'Unequip must be wired from client through the Store endpoint');
 $assertTrue(str_contains($storeCss, 'grid-template-columns:116px minmax(0,1fr)') && str_contains($storeCss, 'min-height:39px'), 'Mobile game offers must retain readable card geometry and usable actions');
 $assertTrue(str_contains($mainCss, 'store-v2.css?v=5') && str_contains($mainCss, 'game-cosmetics-polish-v3'), 'Active CSS graph must preserve the accepted Store visual owner');

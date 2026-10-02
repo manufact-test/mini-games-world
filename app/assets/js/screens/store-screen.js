@@ -4,13 +4,14 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
 import { haptic } from '../telegram/telegram-app.js?v=27';
+import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
 import { dominoPreviewMarkup, dominoHeaderMarksMarkup } from './store-screen-domino-store-v1.js?v=14&mvp19_9=domino-svg-pips-v48';
 
 const STORE_TABS = Object.freeze([
-  { id:'coins', label:'Коины', available:false },
-  { id:'profile', label:'Профиль' },
-  { id:'games', label:'Игры' },
-  { id:'bundles', label:'Наборы' },
+  { id:'coins', labelKey:'store.tabs.coins', available:false },
+  { id:'profile', labelKey:'store.tabs.profile' },
+  { id:'games', labelKey:'store.tabs.games' },
+  { id:'bundles', labelKey:'store.tabs.bundles' },
 ]);
 const GAME_CATALOG_ORDER = Object.freeze(['tictactoe','chess','checkers','domino']);
 const BUNDLE_REFERENCE_GAMES = Object.freeze(['tictactoe','chess','checkers','reversi','go','domino','four_in_a_row','battleship']);
@@ -129,7 +130,7 @@ async function refreshStoreSilently(){
 
 function applyStoreResponse(result, options = {}){
   const incomingStore = result?.store && typeof result.store === 'object' ? result.store : null;
-  if (!incomingStore) throw new Error('Магазин вернул неполный ответ.');
+  if (!incomingStore) throw new Error(t('store.errors.incomplete_response'));
 
   const preserveBalance = options?.preserveBalance === true;
   const currentHasBalance = Boolean(
@@ -194,8 +195,8 @@ function renderBalanceHero(){
   const balance = storeState?.balance ?? state.user?.balance ?? 0;
   return `
     <section class="store-v2-balance">
-      <span>Баланс</span>
-      <strong data-store-v2-balance>${formatNumber(balance)} <small>коинов</small></strong>
+      <span>${escapeHtml(t('store.balance.label'))}</span>
+      <strong data-store-v2-balance>${formatNumber(balance)} <small>${escapeHtml(t('store.units.coins'))}</small></strong>
     </section>
   `;
 }
@@ -204,7 +205,7 @@ function updateVisibleBalance(){
   const root = currentRoot();
   const target = root?.querySelector('[data-store-v2-balance]');
   if (!target) return;
-  target.innerHTML = `${formatNumber(storeState?.balance ?? state.user?.balance ?? 0)} <small>коинов</small>`;
+  target.innerHTML = `${formatNumber(storeState?.balance ?? state.user?.balance ?? 0)} <small>${escapeHtml(t('store.units.coins'))}</small>`;
 }
 
 function storeTabs(){
@@ -217,10 +218,10 @@ function storeTabs(){
 
 function renderTabs(){
   return `
-    <div class="store-v2-tabs" role="tablist" aria-label="Разделы магазина">
+    <div class="store-v2-tabs" role="tablist" aria-label="${escapeHtml(t('store.tabs.aria'))}">
       ${storeTabs().map(tab => `
         <button class="store-v2-tab ${activeTab === String(tab.id) ? 'active' : ''}" data-store-v2-tab="${escapeAttr(tab.id)}" type="button" role="tab" aria-selected="${activeTab === String(tab.id) ? 'true' : 'false'}">
-          ${escapeHtml(tab.label || tab.id)}
+          ${escapeHtml(tab.labelKey ? t(tab.labelKey) : (tab.label || tab.id))}
         </button>
       `).join('')}
     </div>
@@ -238,21 +239,21 @@ function renderActiveTab(){
 }
 
 function renderCoinsTab(){
-  return emptyState('Пополнение коинов недоступно');
+  return emptyState(t('store.coins.unavailable'));
 }
 
 function renderProfileTab(){
   const avatars = Array.isArray(storeState?.profile?.avatars) ? storeState.profile.avatars : [];
   const nameColors = Array.isArray(storeState?.profile?.name_colors) ? storeState.profile.name_colors : [];
   return `
-    <div class="store-v2-title-row"><h2>Аватарки</h2></div>
+    <div class="store-v2-title-row"><h2>${escapeHtml(t('store.profile.avatars_title'))}</h2></div>
     <div class="store-v2-product-grid">
-      ${avatars.map(renderAvatarOffer).join('') || emptyState('Аватарки пока недоступны')}
+      ${avatars.map(renderAvatarOffer).join('') || emptyState(t('store.profile.avatars_empty'))}
     </div>
     <section class="store-v2-name-color-section">
-      <div class="store-v2-title-row"><h2>Цвет имени</h2></div>
+      <div class="store-v2-title-row"><h2>${escapeHtml(t('store.profile.name_color_title'))}</h2></div>
       <div class="store-v2-name-color-grid">
-        ${nameColors.map(renderNameColorOffer).join('') || emptyState('Цвета имени пока недоступны')}
+        ${nameColors.map(renderNameColorOffer).join('') || emptyState(t('store.profile.name_colors_empty'))}
       </div>
     </section>
   `;
@@ -268,13 +269,13 @@ function renderAvatarOffer(offer){
     <article class="store-v2-product ${owned ? 'owned' : ''} ${equipped ? 'equipped' : ''}">
       <div class="store-v2-avatar-preview" data-avatar-item-id="${escapeAttr(itemId)}" data-avatar-preview="${number}">
         <span>${String(number).padStart(2, '0')}</span>
-        ${equipped ? '<i class="store-v2-selected-check" aria-label="Выбрана">✓</i>' : ''}
+        ${equipped ? `<i class="store-v2-selected-check" aria-label="${escapeAttr(t('store.actions.selected_feminine'))}">✓</i>` : ''}
       </div>
-      <strong class="store-v2-product-name">Аватарка ${number || ''}</strong>
+      <strong class="store-v2-product-name">${escapeHtml(t('store.profile.avatar_name',{number:number || ''}))}</strong>
       <div class="store-v2-product-foot">
         ${owned
-          ? `<b>${equipped ? '' : 'Куплено'}</b>`
-          : `<b>${formatNumber(offer?.price_coins || 0)}</b><button class="store-v2-buy" data-store-v2-buy="${escapeAttr(offer?.offer_id || '')}" type="button">Купить</button>`}
+          ? `<b>${equipped ? '' : escapeHtml(t('store.actions.purchased'))}</b>`
+          : `<b>${formatNumber(offer?.price_coins || 0)}</b><button class="store-v2-buy" data-store-v2-buy="${escapeAttr(offer?.offer_id || '')}" type="button">${escapeHtml(t('store.actions.buy'))}</button>`}
       </div>
     </article>
   `;
@@ -285,22 +286,45 @@ function renderNameColorOffer(offer){
   const equipped = owned && Boolean(offer?.equipped);
   const itemId = String(offer?.item_ids?.[0] || '');
   const slot = String(offer?.equip_slot || 'profile_name_color');
-  const title = String(offer?.display_name || itemId || 'Цвет имени');
-  const nickname = String(state.mgwProfile?.nickname || state.user?.display_name || 'Игрок');
-  const tier = ({ normal:'Обычный', rare:'Редкий', gradient:'Градиент' })[String(offer?.metadata?.tier || 'normal')] || 'Цвет имени';
+  const title = localizedOfferName(offer, offer?.display_name || itemId || t('store.profile.name_color_title'));
+  const nickname = String(state.mgwProfile?.nickname || state.user?.display_name || t('profile.player'));
+  const tier = t(`store.profile.name_color_tiers.${({ normal:'normal', rare:'rare', gradient:'gradient' })[String(offer?.metadata?.tier || 'normal')] || 'fallback'}`);
   return `
     <article class="store-v2-name-color-card ${owned ? 'owned' : ''} ${equipped ? 'equipped' : ''}">
-      <div class="store-v2-name-color-preview"><strong data-name-color-item-id="${escapeAttr(itemId)}">${escapeHtml(nickname)}</strong>${equipped ? '<i class="store-v2-selected-check" aria-label="Выбран">✓</i>' : ''}</div>
+      <div class="store-v2-name-color-preview"><strong data-name-color-item-id="${escapeAttr(itemId)}">${escapeHtml(nickname)}</strong>${equipped ? `<i class="store-v2-selected-check" aria-label="${escapeAttr(t('store.actions.selected'))}">✓</i>` : ''}</div>
       <div class="store-v2-name-color-copy"><strong>${escapeHtml(title)}</strong><small>${escapeHtml(tier)}</small></div>
       <div class="store-v2-name-color-foot">
         ${owned
           ? (equipped
-            ? `<button class="store-v2-equip active" data-store-v2-unequip="${escapeAttr(slot)}" type="button">Снять</button>`
-            : `<button class="store-v2-equip" data-store-v2-equip="${escapeAttr(itemId)}" type="button">Выбрать</button>`)
-          : `<b>${formatNumber(offer?.price_coins || 0)}</b><button class="store-v2-buy" data-store-v2-buy="${escapeAttr(offer?.offer_id || '')}" type="button">Купить</button>`}
+            ? `<button class="store-v2-equip active" data-store-v2-unequip="${escapeAttr(slot)}" type="button">${escapeHtml(t('store.actions.remove'))}</button>`
+            : `<button class="store-v2-equip" data-store-v2-equip="${escapeAttr(itemId)}" type="button">${escapeHtml(t('store.actions.select'))}</button>`)
+          : `<b>${formatNumber(offer?.price_coins || 0)}</b><button class="store-v2-buy" data-store-v2-buy="${escapeAttr(offer?.offer_id || '')}" type="button">${escapeHtml(t('store.actions.buy'))}</button>`}
       </div>
     </article>
   `;
+}
+
+function localizedStoreValue(key, fallback = ''){
+  try {
+    return t(key);
+  } catch (_) {
+    return String(fallback || '');
+  }
+}
+
+function localizedOfferName(offer, fallback = ''){
+  const itemId = String(offer?.item_ids?.[0] || '');
+  if (!itemId) return String(fallback || '');
+  return localizedStoreValue(`store.products.${itemId}`, fallback || itemId);
+}
+
+function localizedCatalogTitle(gameType, fallback = ''){
+  return localizedStoreValue(`store.games.catalog_titles.${String(gameType || '')}`, fallback || gameType);
+}
+
+function localizedBundleTitle(gameType, fallback = ''){
+  const key = BUNDLE_REFERENCE_GAMES.includes(String(gameType || '')) ? String(gameType) : 'generic';
+  return localizedStoreValue(`store.bundles.presentation.${key}.bundle_title`, fallback || t('store.bundles.default_title'));
 }
 
 function orderedGameCatalogs(catalogs = storeState?.games?.catalogs || {}){
@@ -312,66 +336,45 @@ function orderedGameCatalogs(catalogs = storeState?.games?.catalogs || {}){
 }
 
 function gamePresentation(gameType){
-  if (gameType === 'chess') {
-    return {
-      mark:'♞♜',
-      groups:[
-        ['Доски','Оформление шахматной доски','themes'],
-        ['Фигуры','Внешний вид фигур обоих игроков','elements'],
-        ['Эффекты','Один выбранный эффект срабатывает в соответствующий момент','effects'],
-      ],
-      kinds:{ theme:'Шахматная доска', elements:'Комплект фигур', effect:'Эффект партии' },
-    };
-  }
-  if (gameType === 'checkers') {
-    return {
-      mark:'●○',
-      groups:[
-        ['Доски','Оформление шашечной доски','themes'],
-        ['Шашки','Внешний вид шашек обоих игроков','elements'],
-        ['Эффекты','Один выбранный эффект срабатывает на нужном событии','effects'],
-      ],
-      kinds:{ theme:'Шашечная доска', elements:'Комплект шашек', effect:'Эффект партии' },
-    };
-  }
-  if (gameType === 'domino') {
-    return {
-      mark:'',
-      groups:[
-        ['Столы','Оформление игрового стола','themes'],
-        ['Костяшки','Комплект костяшек домино','elements'],
-        ['Эффекты','','effects'],
-      ],
-      kinds:{ theme:'Игровой стол', elements:'Комплект костяшек', effect:'Эффект партии' },
-    };
-  }
+  const key = ['chess','checkers','domino'].includes(gameType) ? gameType : 'tictactoe';
+  const marks = { chess:'♞♜', checkers:'●○', domino:'', tictactoe:'✕○' };
+  const groupIds = key === 'domino'
+    ? [['tables','themes'],['tiles','elements'],['effects','effects']]
+    : key === 'checkers'
+      ? [['boards','themes'],['pieces','elements'],['effects','effects']]
+      : key === 'chess'
+        ? [['boards','themes'],['pieces','elements'],['effects','effects']]
+        : [['fields','themes'],['marks','elements'],['effects','effects']];
   return {
-    mark:'✕○',
-    groups:[
-      ['Поля','Фон и сетка игрового поля','themes'],
-      ['Знаки','Внешний вид крестиков и ноликов','elements'],
-      ['Эффекты','Один выбранный эффект срабатывает при каждом ходе','effects'],
-    ],
-    kinds:{ theme:'Игровое поле', elements:'Комплект знаков', effect:'Эффект хода' },
+    mark:marks[key],
+    groups:groupIds.map(([group,sourceKey]) => [
+      t(`store.games.presentation.${key}.groups.${group}.title`),
+      t(`store.games.presentation.${key}.groups.${group}.subtitle`),
+      sourceKey,
+    ]),
+    kinds:{
+      theme:t(`store.games.presentation.${key}.kinds.theme`),
+      elements:t(`store.games.presentation.${key}.kinds.elements`),
+      effect:t(`store.games.presentation.${key}.kinds.effect`),
+    },
   };
 }
-
 function renderGamesTab(){
   const catalogs = orderedGameCatalogs();
-  if (!catalogs.length) return emptyState('Игровая косметика пока недоступна');
+  if (!catalogs.length) return emptyState(t('store.games.empty'));
   let catalog = catalogs.find(item => String(item?.game_type || '') === activeGameCatalog) || catalogs[0];
   activeGameCatalog = String(catalog?.game_type || 'tictactoe');
   const presentation = gamePresentation(activeGameCatalog);
   const selector = catalogs.length > 1 ? `
-    <div class="store-v2-game-selector" role="tablist" aria-label="Игры">
+    <div class="store-v2-game-selector" role="tablist" aria-label="${escapeHtml(t('store.tabs.games'))}">
       ${catalogs.map(item => {
         const gameType = String(item?.game_type || '');
         const active = gameType === activeGameCatalog;
-        const label = gameType === 'domino' ? 'Домино' : String(item?.title || gameType);
+        const label = localizedCatalogTitle(gameType, item?.title || gameType);
         return `<button type="button" role="tab" class="store-v2-game-select${active ? ' active' : ''}" data-store-v2-game="${escapeAttr(gameType)}" aria-selected="${active ? 'true' : 'false'}">${escapeHtml(label)}</button>`;
       }).join('')}
     </div>` : '';
-  const title = activeGameCatalog === 'domino' ? 'Домино' : String(catalog.title || activeGameCatalog);
+  const title = localizedCatalogTitle(activeGameCatalog, catalog.title || activeGameCatalog);
   const marks = activeGameCatalog === 'domino'
     ? dominoHeaderMarksMarkup()
     : `<b>${escapeHtml(presentation.mark.slice(0,1))}</b><b>${escapeHtml(presentation.mark.slice(1))}</b>`;
@@ -379,7 +382,7 @@ function renderGamesTab(){
     ${selector}
     <div class="store-v2-game-head" data-store-game-type="${escapeAttr(activeGameCatalog)}">
       <div>
-        <span>Оформление игры</span>
+        <span>${escapeHtml(t('store.games.cosmetics_title'))}</span>
         <h2>${escapeHtml(title)}</h2>
       </div>
       <div class="store-v2-game-head-marks" aria-hidden="true">${marks}</div>
@@ -409,57 +412,38 @@ function renderGameOffer(offer, gameType){
   const variant = String(offer?.metadata?.variant || 'base');
   const price = formatNumber(offer?.price_coins || 0);
   const presentation = gamePresentation(gameType);
-  const kind = presentation.kinds[layer] || 'Игровой предмет';
+  const kind = presentation.kinds[layer] || t('store.games.generic_item');
   const description = gameCosmeticDescription(gameType, layer, variant);
   return `
     <article class="store-v2-game-product ${owned ? 'owned' : ''} ${equipped ? 'equipped' : ''}" data-store-game-product="${escapeAttr(gameType)}">
-      ${gameCosmeticPreview(gameType, layer, variant, offer?.display_name || '')}
+      ${gameCosmeticPreview(gameType, layer, variant, localizedOfferName(offer, offer?.display_name || itemId))}
       <div class="store-v2-game-product-copy">
         <span>${escapeHtml(kind)}</span>
-        <strong>${escapeHtml(offer?.display_name || itemId)}</strong>
+        <strong>${escapeHtml(localizedOfferName(offer, offer?.display_name || itemId))}</strong>
         <p>${escapeHtml(description)}</p>
       </div>
       <div class="store-v2-game-product-foot">
         ${owned
           ? (equipped
-            ? `<button class="store-v2-equip active" data-store-v2-unequip="${escapeAttr(slot)}" type="button">Снять</button>`
-            : `<button class="store-v2-equip" data-store-v2-equip="${escapeAttr(itemId)}" type="button">Выбрать</button>`)
-          : `<button class="store-v2-buy store-v2-game-buy" data-store-v2-buy="${escapeAttr(offer?.offer_id || '')}" type="button"><span>Купить</span><b>${price} коинов</b></button>`}
+            ? `<button class="store-v2-equip active" data-store-v2-unequip="${escapeAttr(slot)}" type="button">${escapeHtml(t('store.actions.remove'))}</button>`
+            : `<button class="store-v2-equip" data-store-v2-equip="${escapeAttr(itemId)}" type="button">${escapeHtml(t('store.actions.select'))}</button>`)
+          : `<button class="store-v2-buy store-v2-game-buy" data-store-v2-buy="${escapeAttr(offer?.offer_id || '')}" type="button"><span>${escapeHtml(t('store.actions.buy'))}</span><b>${price} ${escapeHtml(t('store.units.coins'))}</b></button>`}
       </div>
     </article>
   `;
 }
 
 function gameCosmeticDescription(gameType, layer, variant){
-  if (gameType === 'chess') {
-    if (layer === 'theme') return ({ wood:'Янтарно-бордовая доска с глубоким контрастом и тёплым клубным характером', 'tournament-dark':'Контрастная турнирная доска', marble:'Холодный мрамор с прожилками', neon:'Тёмная доска с неоновым свечением' })[variant] || 'Меняет оформление шахматной доски';
-    if (layer === 'elements') return ({ wood:'Янтарные и тёмно-вишнёвые фигуры с тёплым блеском и глубоким контрастом', marble:'Светлые мраморные фигуры', metal:'Полированные металлические фигуры', neon:'Фигуры с ярким неоновым контуром' })[variant] || 'Меняет внешний вид шахматных фигур';
-    return ({ move:'Световой импульс отмечает завершённый ход', capture:'Вспышка подчёркивает взятие фигуры', check:'Энергетический ореол появляется при шахе' })[variant] || 'Добавляет визуальный эффект партии';
+  const key = ['chess','checkers','domino'].includes(gameType) ? gameType : 'tictactoe';
+  const normalizedVariant = key === 'tictactoe' && layer === 'effect' ? normalizeEffectVariant(variant) : variant;
+  const variantKey = String(normalizedVariant || 'base').replaceAll('-', '_');
+  const exactKey = `store.games.descriptions.${key}.${layer}.${variantKey}`;
+  try {
+    return t(exactKey);
+  } catch (_) {
+    return t(`store.games.descriptions.${key}.${layer}.fallback`);
   }
-  if (gameType === 'checkers') {
-    if (layer === 'theme') return ({ wood:'Холодная лазурно-мятная доска с тёмными бирюзовыми клетками', dark:'Строгая тёмная доска с высоким контрастом', marble:'Светлый камень с холодными прожилками', neon:'Тёмная доска с цианово-фиолетовым свечением' })[variant] || 'Меняет оформление шашечной доски';
-    if (layer === 'elements') return ({ wood:'Глазурованные бирюзовые и терракотовые шашки с керамическим блеском', marble:'Гладкие каменные шашки с прожилками', metal:'Полированные металлические шашки', neon:'Шашки с ярким неоновым контуром' })[variant] || 'Меняет внешний вид шашек';
-    return ({ move:'Световой след подчёркивает обычный ход', capture:'Короткий ударный всплеск отмечает взятие', promotion:'Коронная вспышка появляется при превращении в дамку' })[variant] || 'Добавляет визуальный эффект партии';
-  }
-  if (gameType === 'domino') {
-    if (layer === 'theme') return ({ felt:'Глубокое бордовое сукно с винной кромкой и мягкой клубной глубиной', midnight:'Тёмно-синий стол с холодной подсветкой и спокойным клубным настроением', walnut:'Тёплый ореховый стол с цельной древесной игровой поверхностью и живой фактурой', neon:'Глубокий тёмный стол с цианово-фиолетовой неоновой кромкой' })[variant] || 'Меняет оформление игрового стола';
-    if (layer === 'elements') return ({ ivory:'Тёплые янтарные костяшки с тёмными точками и мягким объёмным блеском', ebony:'Чёрные матовые костяшки классической формы со светлыми точками', marble:'Мраморные костяшки с натуральной минеральной фактурой и чёткими точками', neon:'Тёмные костяшки с яркими неоновыми точками и тонким контуром' })[variant] || 'Меняет внешний вид костяшек';
-    return ({ 'precision-drop':'Яркий акцент в момент точного хода', 'stock-pulse':'Эффектный выход костяшки из запаса', 'chain-finale':'Финал с каскадом падающих костяшек' })[variant] || 'Добавляет визуальный эффект партии';
-  }
-  if (layer === 'theme') {
-    return ({ classic:'Тёплая классическая доска', dark:'Строгое тёмное оформление', glass:'Объёмное стеклянное поле', neon:'Неоновая сетка и свечение' })[variant] || 'Меняет фон и сетку поля';
-  }
-  if (layer === 'elements') {
-    return ({ classic:'Чистые классические X и O', '3d':'Объёмные светлые знаки', metal:'Золотой X и стальной O', neon:'Светящиеся неоновые знаки' })[variant] || 'Меняет крестики и нолики';
-  }
-  const effect = normalizeEffectVariant(variant);
-  return ({
-    impact:'Знак появляется с коротким ударом и вспышкой',
-    sparks:'Вокруг нового знака разлетается короткая вспышка искр',
-    wave:'От самого нового знака расходятся две световые волны',
-  })[effect] || 'Добавляет визуальный эффект каждому ходу';
 }
-
 function normalizeEffectVariant(variant){
   return ({ sign:'impact', 'winning-line':'sparks', 'move-pulse':'wave', 'strike-through':'wave' })[variant] || variant;
 }
@@ -537,59 +521,21 @@ function bundleMemberOffers(bundle, snapshot = storeState){
 }
 
 function bundlePresentation(gameType){
-  const presentations = {
-    tictactoe:{
-      gameTitle:'Крестики-нолики',
-      description:'Лучшее оформление игры и все три эффекта в одном комплекте.',
-      labels:{ theme:'Поле', elements:'Знаки', effect:'Эффект' },
+  const key = BUNDLE_REFERENCE_GAMES.includes(gameType) ? gameType : 'generic';
+  return {
+    gameTitle:key === 'generic' ? String(gameType || t('store.bundles.generic_game')) : t(`store.bundles.presentation.${key}.game_title`),
+    description:t(`store.bundles.presentation.${key}.description`),
+    labels:{
+      theme:t(`store.bundles.presentation.${key}.labels.theme`),
+      elements:t(`store.bundles.presentation.${key}.labels.elements`),
+      effect:t(`store.bundles.presentation.${key}.labels.effect`),
     },
-    chess:{
-      gameTitle:'Шахматы',
-      description:'Неоновая доска, неоновые фигуры и все три эффекта в одном комплекте.',
-      labels:{ theme:'Доска', elements:'Фигуры', effect:'Эффект' },
-    },
-    checkers:{
-      gameTitle:'Шашки',
-      description:'Неоновая доска, неоновые шашки и все три эффекта в одном комплекте.',
-      labels:{ theme:'Доска', elements:'Шашки', effect:'Эффект' },
-    },
-    reversi:{
-      gameTitle:'Реверси',
-      description:'Неоновое поле, неоновые фишки и все три эффекта в одном комплекте.',
-      labels:{ theme:'Поле', elements:'Фишки', effect:'Эффект' },
-    },
-    go:{
-      gameTitle:'Го',
-      description:'Неоновая доска, неоновые камни и все три эффекта в одном комплекте.',
-      labels:{ theme:'Доска', elements:'Камни', effect:'Эффект' },
-    },
-    domino:{
-      gameTitle:'Домино',
-      description:'Неоновый стол, неоновые костяшки и все три эффекта в одном комплекте.',
-      labels:{ theme:'Стол', elements:'Костяшки', effect:'Эффект' },
-    },
-    four_in_a_row:{
-      gameTitle:'4 в ряд',
-      description:'Неоновое поле, неоновые фишки и все три эффекта в одном комплекте.',
-      labels:{ theme:'Поле', elements:'Фишки', effect:'Эффект' },
-    },
-    battleship:{
-      gameTitle:'Морской бой',
-      description:'Неоновая карта, неоновый флот и все три эффекта в одном комплекте.',
-      labels:{ theme:'Карта', elements:'Флот', effect:'Эффект' },
-    },
-  };
-  return presentations[gameType] || {
-    gameTitle:String(gameType || 'Игра'),
-    description:'Премиальное оформление и все три эффекта в одном комплекте.',
-    labels:{ theme:'Оформление', elements:'Элементы', effect:'Эффект' },
   };
 }
-
 function bundleMemberLabel(gameType, offer){
   const layer = String(offer?.metadata?.layer || '');
   const presentation = bundlePresentation(gameType);
-  return presentation.labels[layer] || 'Эффект';
+  return presentation.labels[layer] || t('store.bundles.effect');
 }
 
 function renderBundleMemberStorePreview(gameType, layer, variant, name, owned, sheet = false){
@@ -625,7 +571,7 @@ function renderBundleMembers(bundle, sheet = false){
         const owned = itemId !== '' && !missing.has(itemId);
         const layer = String(offer?.metadata?.layer || 'theme');
         const variant = String(offer?.metadata?.variant || 'base');
-        const name = String(offer?.display_name || itemId || 'Предмет');
+        const name = localizedOfferName(offer, offer?.display_name || itemId || t('store.games.generic_item'));
         return `
           <div
             class="store-v2-bundle-reference-member layer-${escapeAttr(layer)} ${owned ? 'owned' : ''}"
@@ -634,7 +580,7 @@ function renderBundleMembers(bundle, sheet = false){
           >
             <div class="store-v2-bundle-reference-preview">
               ${renderBundleMemberStorePreview(gameType, layer, variant, name, owned, sheet)}
-              ${owned ? '<i class="store-v2-bundle-owned-check" aria-label="Уже в коллекции">✓</i>' : ''}
+              ${owned ? `<i class="store-v2-bundle-owned-check" aria-label="${escapeAttr(t('store.bundles.already_in_collection'))}">✓</i>` : ''}
             </div>
             <div class="store-v2-bundle-reference-member-copy">
               <span>${escapeHtml(bundleMemberLabel(gameType, offer))}</span>
@@ -649,12 +595,12 @@ function renderBundleMembers(bundle, sheet = false){
 
 function renderBundlesTab(){
   const bundles = gameBundlesFromSnapshot().filter(bundle => BUNDLE_REFERENCE_GAMES.includes(bundleGameType(bundle)));
-  if (!bundles.length) return emptyState('Наборы пока недоступны');
+  if (!bundles.length) return emptyState(t('store.bundles.empty'));
 
   const availableGames = bundles.map(bundle => bundleGameType(bundle)).filter(Boolean);
   if (!availableGames.includes(activeBundleGame)) activeBundleGame = availableGames[0] || 'tictactoe';
   return `
-    <div class="store-v2-bundle-game-picker" aria-label="Выберите игру">
+    <div class="store-v2-bundle-game-picker" aria-label="${escapeHtml(t('store.bundles.choose_game'))}">
       <div class="store-v2-bundle-game-picker-track" role="tablist">
         ${bundles.map(bundle => {
           const gameType = bundleGameType(bundle);
@@ -703,16 +649,18 @@ function renderGameBundle(bundle){
   const regularMissingPrice = regularBundlePrice(bundle);
   const regularFullPrice = Number(bundle?.regular_price_coins || regularMissingPrice || 0);
   const saving = Math.max(0, regularMissingPrice - currentPrice);
-  const title = String(bundle?.display_name || 'Неоновый комплект');
+  const title = localizedBundleTitle(gameType, bundle?.display_name || t('store.bundles.default_title'));
   const presentation = bundlePresentation(gameType);
   const progress = allOwned
-    ? `${itemCount || 5} из ${itemCount || 5} уже в коллекции`
-    : (owned > 0 ? `У вас ${owned} из ${itemCount || 5} · осталось ${missing}` : `${itemCount || 5} предметов · навсегда`);
+    ? t('store.bundles.progress_complete',{owned:itemCount || 5,total:itemCount || 5})
+    : (owned > 0
+      ? t('store.bundles.progress_partial',{owned,total:itemCount || 5,missing})
+      : t('store.bundles.progress_new',{total:itemCount || 5}));
   return `
     <article class="store-v2-bundle-reference ${allOwned ? 'owned' : ''}" data-store-bundle-game="${escapeAttr(gameType)}">
       <div class="store-v2-bundle-reference-topline">
         <span>${escapeHtml(presentation.gameTitle)}</span>
-        <b>Премиум-набор</b>
+        <b>${escapeHtml(t('store.bundles.premium'))}</b>
       </div>
       <div class="store-v2-bundle-reference-hero">
         <div>
@@ -729,19 +677,19 @@ function renderGameBundle(bundle){
       ${allOwned ? '' : `
         <div class="store-v2-bundle-reference-pricing">
           <div>
-            <span>${owned > 0 ? 'За оставшиеся предметы' : 'Цена набора'}</span>
-            <strong>${formatNumber(currentPrice)} <small>коинов</small></strong>
+            <span>${escapeHtml(owned > 0 ? t('store.bundles.remaining_price') : t('store.bundles.bundle_price'))}</span>
+            <strong>${formatNumber(currentPrice)} <small>${escapeHtml(t('store.units.coins'))}</small></strong>
           </div>
           <div class="store-v2-bundle-reference-saving">
-            ${regularMissingPrice > currentPrice ? `<s>${formatNumber(regularMissingPrice)}</s><b>Экономия ${formatNumber(saving)}</b>` : ''}
-            ${owned === 0 && regularFullPrice > 0 ? `<small>По отдельности ${formatNumber(regularFullPrice)}</small>` : ''}
+            ${regularMissingPrice > currentPrice ? `<s>${formatNumber(regularMissingPrice)}</s><b>${escapeHtml(t('store.bundles.saving',{saving:formatNumber(saving)}))}</b>` : ''}
+            ${owned === 0 && regularFullPrice > 0 ? `<small>${escapeHtml(t('store.bundles.separate_total',{total:formatNumber(regularFullPrice)}))}</small>` : ''}
           </div>
         </div>
         <button class="store-v2-bundle-reference-buy" data-store-v2-buy="${escapeAttr(bundle?.offer_id || '')}" type="button">
-          <span>Посмотреть и купить</span>
+          <span>${escapeHtml(t('store.bundles.view_buy'))}</span>
           <b>→</b>
         </button>
-        <small class="store-v2-bundle-reference-note">Покупка добавляет предметы в коллекцию, но ничего не выбирает автоматически.</small>
+        <small class="store-v2-bundle-reference-note">${escapeHtml(t('store.bundles.no_auto_equip'))}</small>
       `}
     </article>
   `;
@@ -762,11 +710,11 @@ function renderBundleConfirmVisual(bundle){
   return `
     <div class="store-v2-bundle-confirm-reference">
       <div class="store-v2-bundle-confirm-reference-head">
-        <span>В составе</span>
-        <b>${owned > 0 ? `${missing} осталось · ${owned} уже есть` : `${itemCount || 5} предметов`}</b>
+        <span>${escapeHtml(t('store.bundles.contents'))}</span>
+        <b>${escapeHtml(owned > 0 ? t('store.bundles.confirm_progress',{missing,owned}) : t('store.bundles.item_count',{count:itemCount || 5}))}</b>
       </div>
       ${members}
-      <p>Оплачиваются только недостающие предметы. После покупки они появятся в коллекции без автоматического выбора.</p>
+      <p>${escapeHtml(t('store.bundles.confirm_note'))}</p>
     </div>
   `;
 }
@@ -777,9 +725,9 @@ function renderBundleConfirmPricing(bundle){
   const saving = Math.max(0, regular - current);
   return `
     <div class="store-v2-bundle-confirm-price">
-      <div><span>По отдельности</span><s>${formatNumber(regular)}</s></div>
-      <div><span>К оплате</span><strong>${formatNumber(current)} коинов</strong></div>
-      ${saving > 0 ? `<p>Вы экономите ${formatNumber(saving)} коинов</p>` : ''}
+      <div><span>${escapeHtml(t('store.bundles.separately'))}</span><s>${formatNumber(regular)}</s></div>
+      <div><span>${escapeHtml(t('store.purchase.to_pay'))}</span><strong>${formatNumber(current)} ${escapeHtml(t('store.units.coins'))}</strong></div>
+      ${saving > 0 ? `<p>${escapeHtml(t('store.bundles.you_save',{saving:formatNumber(saving)}))}</p>` : ''}
     </div>
   `;
 }
@@ -1203,15 +1151,15 @@ function openPurchaseConfirm(offer){
   const missing = Math.max(0, price - balance);
   const bundleGameType = String(offer?.game_type || offer?.subcategory || '');
   const title = isBundle
-    ? String(offer.display_name || (bundleGameType === 'checkers' ? 'Неоновый комплект шашек' : 'Неоновый комплект'))
-    : (isAvatar ? `Аватарка ${number}` : String(offer.display_name || (isNameColor ? 'Цвет имени' : 'Игровой предмет')));
+    ? localizedBundleTitle(bundleGameType, offer.display_name || (bundleGameType === 'checkers' ? t('store.bundles.checkers_default_title') : t('store.bundles.default_title')))
+    : (isAvatar ? t('store.profile.avatar_name',{number}) : (isNameColor ? localizedOfferName(offer, offer.display_name || t('store.profile.name_color_title')) : localizedOfferName(offer, offer.display_name || t('store.games.generic_item'))));
   let visual;
   if (isBundle) {
     visual = renderBundleConfirmVisual(offer);
   } else if (isAvatar) {
-    visual = `<div class="store-v2-confirm-avatar store-v2-avatar-preview" data-avatar-item-id="${escapeAttr(itemId)}" data-avatar-preview="${number}" role="img" aria-label="${escapeAttr(`Аватарка ${number}`)}"><span>${String(number).padStart(2,'0')}</span></div>`;
+    visual = `<div class="store-v2-confirm-avatar store-v2-avatar-preview" data-avatar-item-id="${escapeAttr(itemId)}" data-avatar-preview="${number}" role="img" aria-label="${escapeAttr(t('store.profile.avatar_name',{number}))}"><span>${String(number).padStart(2,'0')}</span></div>`;
   } else if (isNameColor) {
-    const nickname = String(state.mgwProfile?.nickname || state.user?.display_name || 'Игрок');
+    const nickname = String(state.mgwProfile?.nickname || state.user?.display_name || t('profile.player'));
     visual = `<div class="profile-v2-name-color-preview-wrap"><strong data-name-color-item-id="${escapeAttr(itemId)}">${escapeHtml(nickname)}</strong></div>`;
   } else {
     const gameType = String(offer?.metadata?.game_type || offer?.subcategory || 'tictactoe');
@@ -1219,15 +1167,15 @@ function openPurchaseConfirm(offer){
   }
 
   openSheet(`
-    <div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="sheet-head"><div><h2>${escapeHtml(t('store.purchase.confirm_title'))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="store-v2-confirm ${isBundle ? 'store-v2-confirm-bundle-detail' : ''}">
       ${visual}
       <div class="store-v2-confirm-copy"><strong>${escapeHtml(title)}</strong></div>
       ${isBundle
         ? renderBundleConfirmPricing(offer)
-        : `<div class="store-v2-confirm-price"><span>К оплате</span><strong>${formatNumber(price)} коинов</strong></div>`}
-      <div class="store-v2-confirm-balance"><span>Останется</span><b>${formatNumber(Math.max(0, balance - price))}</b></div>
-      <button class="btn primary full" id="storeV2ConfirmBuy" type="button" ${missing > 0 ? 'disabled' : ''}>${missing > 0 ? `Не хватает ${formatNumber(missing)}` : `Купить за ${formatNumber(price)}`}</button>
+        : `<div class="store-v2-confirm-price"><span>${escapeHtml(t('store.purchase.to_pay'))}</span><strong>${formatNumber(price)} ${escapeHtml(t('store.units.coins'))}</strong></div>`}
+      <div class="store-v2-confirm-balance"><span>${escapeHtml(t('store.purchase.remaining'))}</span><b>${formatNumber(Math.max(0, balance - price))}</b></div>
+      <button class="btn primary full" id="storeV2ConfirmBuy" type="button" ${missing > 0 ? 'disabled' : ''}>${escapeHtml(missing > 0 ? t('store.purchase.missing',{count:formatNumber(missing)}) : t('store.purchase.buy_for',{count:formatNumber(price)}))}</button>
     </div>
   `);
 
@@ -1272,8 +1220,8 @@ async function purchaseOffer(offer, token, button){
     const isAvatar = String(offer?.item_family || '') === 'avatar';
     const isNameColor = String(offer?.item_family || '') === 'name_color';
     toast(String(offer.offer_type || '') === 'bundle'
-      ? 'Комплект добавлен в коллекцию.'
-      : (isAvatar ? 'Аватарка добавлена в коллекцию.' : (isNameColor ? 'Цвет имени добавлен в коллекцию.' : 'Предмет добавлен в коллекцию.')));
+      ? t('store.purchase.success_bundle')
+      : (isAvatar ? t('store.purchase.success_avatar') : (isNameColor ? t('store.purchase.success_name_color') : t('store.purchase.success_item'))));
   } catch (error) {
     storeState = previousStoreState;
     state.user = previousUser;
@@ -1281,7 +1229,7 @@ async function purchaseOffer(offer, token, button){
     if (state.user) renderBalances(state.user);
     renderStore();
     haptic('error');
-    toast(error?.message || 'Не удалось выполнить покупку.');
+    toast(error?.message || t('store.errors.purchase'));
   } finally {
     purchaseBusy = false;
   }
@@ -1313,12 +1261,12 @@ async function equipStoreItem(itemId){
     applyStoreResponse(result);
     renderStore();
     haptic('success');
-    toast('Предмет выбран.');
+    toast(t('store.actions.selected_toast'));
   } catch (error) {
     storeState = previousStoreState;
     renderStore();
     haptic('error');
-    toast(error?.message || 'Не удалось выбрать предмет.');
+    toast(error?.message || t('store.errors.select'));
   } finally {
     equipBusy = false;
   }
@@ -1347,12 +1295,12 @@ async function unequipStoreSlot(slot){
     applyStoreResponse(result);
     renderStore();
     haptic('success');
-    toast('Оформление снято.');
+    toast(t('store.actions.removed_toast'));
   } catch (error) {
     storeState = previousStoreState;
     renderStore();
     haptic('error');
-    toast(error?.message || 'Не удалось снять оформление.');
+    toast(error?.message || t('store.errors.remove'));
   } finally {
     equipBusy = false;
   }
@@ -1360,9 +1308,9 @@ async function unequipStoreSlot(slot){
 
 function renderStoreHead(){
   if (storeSurface === 'tab') {
-    return '<div class="page-head app-shell-page-head store-tab-head"><div><h1 class="page-title">Магазин</h1></div></div>';
+    return `<div class="page-head app-shell-page-head store-tab-head"><div><h1 class="page-title">${escapeHtml(t('shell.store_title'))}</h1></div></div>`;
   }
-  return '<div class="sheet-head"><div><h2>Магазин</h2></div><button class="close" data-close-sheet type="button">×</button></div>';
+  return `<div class="sheet-head"><div><h2>${escapeHtml(t('shell.store_title'))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>`;
 }
 
 function renderStoreSurface(markup){
@@ -1377,8 +1325,8 @@ function renderStoreSurface(markup){
 function renderStoreError(error){
   renderStoreSurface(`
     ${renderStoreHead()}
-    <div class="store-v2-empty error"><strong>Магазин временно недоступен</strong><span>${escapeHtml(error?.message || 'Попробуйте ещё раз.')}</span></div>
-    <button class="btn ghost full" id="storeV2Retry" type="button">Повторить</button>
+    <div class="store-v2-empty error"><strong>${escapeHtml(t('store.errors.unavailable'))}</strong><span>${escapeHtml(error?.message || t('store.errors.retry'))}</span></div>
+    <button class="btn ghost full" id="storeV2Retry" type="button">${escapeHtml(t('common.retry'))}</button>
   `);
   currentRoot()?.querySelector('#storeV2Retry')?.addEventListener('click', retryStore);
 }
@@ -1397,8 +1345,8 @@ function purchaseToken(){
 }
 
 function cloneObject(value){ return value && typeof value === 'object' ? JSON.parse(JSON.stringify(value)) : value; }
-function formatNumber(value){ return Number(value || 0).toLocaleString('ru-RU'); }
-function formatEuro(cents){ return new Intl.NumberFormat('ru-RU', { style:'currency', currency:'EUR' }).format(Number(cents || 0) / 100); }
+function formatNumber(value){ return formatLocalizedNumber(Number(value || 0)); }
+function formatEuro(cents){ return formatLocalizedNumber(Number(cents || 0) / 100, { style:'currency', currency:'EUR' }); }
 function escapeHtml(value){
   return String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');
 }

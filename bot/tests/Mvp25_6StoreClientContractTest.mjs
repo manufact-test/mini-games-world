@@ -4,9 +4,11 @@ import path from 'node:path';
 const root = path.resolve(import.meta.dirname, '..', '..');
 const storePath = path.join(root, 'app/assets/js/screens/store-screen.js');
 const manifestPath = path.join(root, 'app/runtime/client/version-manifest.php');
+const localePath = path.join(root, 'app/locales/ru.json');
 
 const source = fs.readFileSync(storePath, 'utf8');
 const manifest = fs.readFileSync(manifestPath, 'utf8');
+const locale = JSON.parse(fs.readFileSync(localePath, 'utf8'));
 
 const assertions = [];
 const assert = (condition, message) => {
@@ -15,8 +17,9 @@ const assert = (condition, message) => {
 };
 
 assert(
-  source.includes("{ id:'coins', label:'Коины', available:false }"),
-  'Cold Store shell must treat external coin top-up as unavailable before API hydration.'
+  source.includes("{ id:'coins', labelKey:'store.tabs.coins', available:false }")
+    && locale.store?.tabs?.coins === 'Коины',
+  'Cold Store shell must keep the coin tab unavailable while resolving its visible label through localization.'
 );
 assert(
   source.includes('.filter(tab => tab.available !== false);'),
@@ -35,13 +38,15 @@ assert(
   'Completed pre-monetization Store must not expose coming-soon copy.'
 );
 assert(
-  source.includes("return emptyState('Пополнение коинов недоступно');"),
-  'Defensive direct coin-tab rendering must show a complete disabled state, not a future promise.'
+  source.includes("return emptyState(t('store.coins.unavailable'));")
+    && locale.store?.coins?.unavailable === 'Пополнение коинов недоступно',
+  'Defensive direct coin-tab rendering must show the localized complete disabled state, not a future promise.'
 );
 assert(
-  manifest.includes("./assets/js/screens/store-screen.js?v=70&intent_base=1")
-    && manifest.includes("mvp19_13=bundle-selector-click-hint-v11-performance"),
-  'Canonical client manifest must cache-bust the current completed Store base module.'
+  manifest.includes("./assets/js/screens/store-screen.js?v=72&intent_base=1")
+    && manifest.includes("mvp19_13=bundle-selector-click-hint-v11-performance")
+    && manifest.includes("mvp27_1=store-localized-v2"),
+  'Canonical client manifest must cache-bust the current completed localized Store base module.'
 );
 assert(
   manifest.includes('mvp25_6=monetization-disabled-complete-v1'),
