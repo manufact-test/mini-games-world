@@ -9,6 +9,7 @@ on:
       - 'app/locales/ru.json'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp21_6TournamentProgressionUxContractTest.php'
+      - 'bot/tests/Mvp21_10TournamentPrizeReviewContractTest.php'
       - 'ops/checks/mvp27_1_arena_terminal_localization_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - '.github/workflows/mvp27-1-arena-terminal-localization.yml'
@@ -57,7 +58,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(app/assets/js/screens/tournaments-screen-v1\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|bot/tests/Mvp21_6TournamentProgressionUxContractTest\.php|ops/checks/mvp27_1_arena_terminal_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-arena-terminal-localization\.yml)$'
+          allowed='^(app/assets/js/screens/tournaments-screen-v1\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|bot/tests/Mvp21_6TournamentProgressionUxContractTest\.php|bot/tests/Mvp21_10TournamentPrizeReviewContractTest\.php|ops/checks/mvp27_1_arena_terminal_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-arena-terminal-localization\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected Arena terminal localization paths:\n%s\n' "$bad" >&2; exit 1; }
 
