@@ -41,7 +41,7 @@ $assert(str_contains($friendsUi, "['avatar','Недопустимый авата
 $assert(str_contains($friendsUi, "['stalling','Затягивание игры']"), 'Player report UI must expose stalling reports.');
 $assert(str_contains($homeUi, "document.getElementById('supportBtn')?.addEventListener('click',()=>openPlayerReportSheet())"), 'Main menu complaint entry must open the player-report flow instead of Support.');
 $assert(!str_contains($homeUi, "supportBtn')?.addEventListener('click',()=>openSupportForm('complaint'))"), 'Main menu complaint entry must never create a generic Support complaint ticket.');
-$assert(str_contains($homeUi, 'PLAYER_REPORT_REASONS'), 'Main menu player-report flow must expose the canonical moderation reasons.');
+$assert(str_contains($homeUi, 'PLAYER_REPORT_REASON_CODES') && str_contains($homeUi, "t(`home.report.reasons.\${value}`)") && (($locale['home']['report']['reasons']['nickname'] ?? null) === 'Недопустимый никнейм') && (($locale['home']['report']['reasons']['stalling'] ?? null) === 'Затягивание игры'), 'Main menu player-report flow must expose canonical localized moderation reasons.');
 $assert(str_contains($homeUi, "action:'report_lookup'"), 'Main menu player-report flow must use the report-specific lookup so self-report attempts are explicit.');
 $assert(str_contains($homeUi, "action:'report'"), 'Main menu player-report flow must submit to PlayerReportService through the Friends API.');
 $assert(str_contains($homeUi, "action:'report_history'"), 'Player report flow must expose the reporter-visible complaint lifecycle.');
