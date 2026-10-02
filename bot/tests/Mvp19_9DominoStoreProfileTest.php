@@ -100,6 +100,7 @@ $profileModule = (string)file_get_contents($root . '/app/assets/js/profile/mgw-p
 $profileHardRatio = (string)file_get_contents($root . '/app/assets/js/profile/mgw-profile-domino-hard-ratio-v1.js');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
+$locale = json_decode((string)file_get_contents($root . '/app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 
 $activeStore = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $activeProfile = (string)($manifest['imports']['./assets/js/screens/profile-screen-v110.js?v=1108'] ?? '');
@@ -109,7 +110,13 @@ $dominoCachedSource = (string)($manifest['imports']['./assets/js/screens/store-s
 $dominoProfile = (string)($manifest['imports']['./assets/js/profile/mgw-profile-domino-parity.js?v=1&mvp19_9=store-profile-parity-8x5-v1'] ?? '');
 
 $assertTrue(str_contains($baseStore, "if (gameType === 'domino')") && str_contains($baseStore, 'dominoPreviewMarkup(safeLayer, safeVariant)'), 'Base Store must keep native Domino rendering');
-$assertTrue(str_contains($baseStore, 'Яркий акцент в момент точного хода') && str_contains($baseStore, 'Эффектный выход костяшки из запаса') && str_contains($baseStore, 'Финал с каскадом падающих костяшек'), 'Base Store must keep short player-facing copy');
+$assertTrue(
+    str_contains($baseStore, 'store.games.descriptions.')
+    && (($locale['store']['games']['descriptions']['domino']['effect']['precision_drop'] ?? null) === 'Яркий акцент в момент точного хода')
+    && (($locale['store']['games']['descriptions']['domino']['effect']['stock_pulse'] ?? null) === 'Эффектный выход костяшки из запаса')
+    && (($locale['store']['games']['descriptions']['domino']['effect']['chain_finale'] ?? null) === 'Финал с каскадом падающих костяшек'),
+    'Base Store must keep short localized player-facing copy'
+);
 $assertTrue(str_contains($storeModule, 'native:v14:svg-pips-v48') && str_contains($storeModule, 'data-mgw-domino-preview-component="v44"') && str_contains($storeModule, 'sceneReady'), 'Store must publish fresh v44 preview identity and reject stale scene markup');
 $assertTrue(str_contains($storeModule, 'ensureEffectStyles();') && str_contains($storeModule, 'ensureLiveParityStyles();') && str_contains($storeModule, 'domino-premium-effects-v15-proportions') && str_contains($storeModule, 'domino-preview-component-v44'), 'Domino scene owner must load base geometry plus the isolated v44 component');
 $assertTrue(!str_contains($storeModule, 'mgw-domino-v13-impact') && !str_contains($storeModule, 'mgw-domino-v13-draw') && !str_contains($storeModule, 'mgw-domino-v13-cascade'), 'Effect preview markup must not reuse legacy v13 scene classes');
