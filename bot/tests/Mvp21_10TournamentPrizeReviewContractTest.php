@@ -10,11 +10,13 @@ $files=[
     'admin_html'=>file_get_contents($root.'/app/admin.php'),
     'admin_js'=>file_get_contents($root.'/app/assets/js/admin-tournaments.js'),
     'terminal_js'=>file_get_contents($root.'/app/assets/js/screens/tournaments-screen-v1.js'),
+    'locale'=>file_get_contents($root.'/app/locales/ru.json'),
     'bootstrap'=>file_get_contents($root.'/bot/core/bootstrap.php'),
 ];
 foreach($files as $name=>$source){
     if(!is_string($source)) throw new RuntimeException('Missing MVP-21.10 source: '.$name);
 }
+$locale=json_decode($files['locale'],true,512,JSON_THROW_ON_ERROR);
 
 $assertions=0;
 $assert=static function(bool $condition,string $message)use(&$assertions):void{
@@ -59,7 +61,9 @@ $assert(str_contains($files['admin_js'],'mgw-admin__tournament-review-item'),'Pr
 $assert(str_contains($files['admin_js'],'сдвинуты каноническим settlement owner'),'Admin copy must preserve single-writer placement semantics.');
 
 $assert(str_contains($files['terminal_js'],"settlement_state || '') === 'review_hold'"),'Participant terminal UI must expose provisional review hold.');
-$assert(str_contains($files['terminal_js'],'Ваша призовая ветка временно удержана'),'Affected player must see the hold state.');
+$assert(str_contains($files['terminal_js'],"t('arena.terminal.self_hold_title')")
+        && (($locale['arena']['terminal']['self_hold_title'] ?? null) === 'Ваша награда временно на проверке'),
+    'Affected player must see the localized hold state.');
 $assert(str_contains($files['terminal_js'],"result_code || '') === 'disqualified'"),'Disqualification must be visible in terminal result.');
 $assert(str_contains($files['bootstrap'],'TournamentPrizeReviewService.php'),'Runtime bootstrap must load prize review before settlement.');
 
