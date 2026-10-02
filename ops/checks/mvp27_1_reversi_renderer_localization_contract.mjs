@@ -22,7 +22,7 @@ assert(wrapper.includes("from './renderer.js?v=67&base=mvp14r-accepted&mvp27_1=l
 assert(wrapper.includes('renderBaseReversiSurface(args);') && wrapper.includes('decorateLiveReversi({ game, me, container });'), 'Cosmetics must still decorate only after the authoritative base render.');
 assert(premium.includes("from './renderer-cosmetics-v1.js?v=4&mvp19_7=live-parity-store-motion-v3&pieces=viewer-complete-set-v1&effects=store-phased-real-cadence-v3&footer=fullwidth-scroll-v2&mvp27_1=localized-base-v1';"), 'Premium owner must publish a fresh child-wrapper identity.');
 assert(manifest.includes("'./assets/js/games/reversi/renderer.js?v=66' => './assets/js/games/reversi/renderer-cosmetics-premium-v4.js?v=5&mvp19_7=line-mass-premium-v8&motion=single-transform-owner-v1&parent=live-parity-v3&footer=fullwidth-scroll-v2&mvp27_1=reversi-renderer-localized-v1'"), 'Manifest must publish the localized active Reversi chain.');
-assert(ru._meta?.version === 40, 'RU locale revision must publish Reversi renderer localization v40.');
+assert(Number(ru._meta?.version || 0) >= 40, 'RU locale revision must retain Reversi renderer localization v40 or a newer successor.');
 assert(ru.games?.reversi?.ui?.status?.your_turn === 'Ваш ход', 'Accepted RU Reversi turn copy must remain unchanged.');
 assert(ru.games?.reversi?.ui?.errors?.illegal_move === 'Здесь нельзя поставить фишку. Выберите подсвеченную клетку.', 'Accepted RU illegal-move copy must remain unchanged.');
 assert(ru.games?.reversi?.ui?.events?.finished === 'Партия завершена · ● {black} : {white} ○', 'Accepted RU terminal score copy must remain unchanged.');
