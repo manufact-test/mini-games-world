@@ -30,6 +30,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          if git diff --quiet "$base" "$head" -- app/assets/js/screens/store-screen.js ops/checks/mvp27_1_store_localization_contract.mjs; then
+            echo "Successor localization slice: Store owner unchanged; bounded original-migration scope does not apply."
+            exit 0
+          fi
           persist-credentials: false
           fetch-depth: 0
 
