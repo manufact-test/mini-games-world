@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
-  "recorded_at": "2026-10-01",
-  "staging_base": "9f18d63d7adca575ceca0052827f0b6fcaade40e",
+  "recorded_at": "2026-10-02",
+  "staging_base": "e32941a9276778d7b1031014b632935a0399f42b",
   "scanned_files": 776,
-  "cyrillic_lines_total": 4344,
+  "cyrillic_lines_total": 4212,
   "by_scope": {
-    "client": 2663,
+    "client": 2531,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 final Arena archive/Hall-of-Fame/leaderboard migration; active tournaments-screen-v1.js reduced from 10 to 0 Cyrillic source lines."
+  "note": "MVP-27.1 Store localization; active app/assets/js/screens/store-screen.js reduced from 132 to 0 hardcoded Cyrillic source lines and direct ru-RU formatting ownership was removed."
 }
