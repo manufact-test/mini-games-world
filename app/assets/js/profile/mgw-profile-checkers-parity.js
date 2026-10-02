@@ -1,8 +1,9 @@
 import { initProfileScreen as initChessParityProfileScreen } from './mgw-profile-chess-parity.js?v=1&mvp19_5=chess-profile-store-parity-v1';
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
+import { t } from '@mgw/i18n';
 
-const CHECKERS_GROUP_TITLES = Object.freeze({ theme:'Доски', elements:'Шашки', effect:'Эффекты' });
+const CHECKERS_GROUP_TITLES = Object.freeze({ theme:'profile.collection.games.checkers.groups.theme', elements:'profile.collection.games.checkers.groups.elements', effect:'profile.collection.games.checkers.groups.effect' });
 const PROFILE_API_REPAIR_HOOK = Symbol.for('mgw.profile.checkers-store-parity.profile-v2.v2');
 let initialized = false;
 let checkersEffectObserver = null;
@@ -134,7 +135,7 @@ function upgradeProfileCheckersPresentation(){
   const checkersTab = screen.querySelector('[data-profile-game-tab="checkers"]');
   if (checkersTab instanceof HTMLElement && checkersTab.textContent?.trim() === 'checkers') {
     const label = checkersTab.querySelector('span:last-child');
-    if (label instanceof HTMLElement) label.textContent = 'Русские шашки';
+    if (label instanceof HTMLElement) label.textContent = t('profile.collection.games.checkers.title');
   }
 
   const activeCheckers = checkersTab instanceof HTMLElement
@@ -159,11 +160,11 @@ function renderCheckersGroups(items){
   const groups = layers
     .map(layer => ({ layer, items:items.filter(item => checkersLayer(item) === layer) }))
     .filter(group => group.items.length > 0);
-  if (!groups.length) return '<div class="profile-v2-game-empty" data-mgw-checkers-profile-empty="1">Купленные предметы для этой игры появятся здесь.</div>';
+  if (!groups.length) return `<div class="profile-v2-game-empty" data-mgw-checkers-profile-empty="1">${t('profile.collection.games.checkers.empty')}</div>`;
 
   return groups.map(group => `
     <div class="profile-v2-game-group" data-mgw-checkers-profile-group="${group.layer}">
-      <div class="profile-v2-game-group-title">${CHECKERS_GROUP_TITLES[group.layer]}</div>
+      <div class="profile-v2-game-group-title">${t(CHECKERS_GROUP_TITLES[group.layer])}</div>
       <div class="profile-v2-game-grid">${group.items.map(checkersCardMarkup).join('')}</div>
     </div>
   `).join('');
@@ -190,7 +191,7 @@ function upgradeCheckersSheet(itemId){
   if (title instanceof HTMLElement) title.textContent = checkersDisplayName(item);
 
   const group = sheet.querySelector('.profile-v2-game-preview-meta small');
-  if (group instanceof HTMLElement) group.textContent = CHECKERS_GROUP_TITLES[checkersLayer(item)] || 'Оформление';
+  if (group instanceof HTMLElement) group.textContent = CHECKERS_GROUP_TITLES[checkersLayer(item)] ? t(CHECKERS_GROUP_TITLES[checkersLayer(item)]) : t('profile.collection.cosmetics_label');
 
   decorateCheckersPreviews(sheet);
 }
@@ -236,11 +237,12 @@ function checkersVariant(item){
 }
 
 function checkersDisplayName(item){
-  const layer = checkersLayer(item);
-  const variant = checkersVariant(item);
-  if (layer === 'elements' && variant === 'marble') return 'Гранитные шашки';
+  const itemId = String(item?.item_id || '').trim();
+  if (itemId) {
+    try { return t(`store.products.${itemId}`); } catch (_) {}
+  }
   const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata : {};
-  return String(metadata.display_name || item?.item_id || 'Оформление шашек').trim();
+  return String(metadata.display_name || itemId || t('profile.collection.games.checkers.fallback')).trim();
 }
 
 function isCheckersItemEquipped(item){
