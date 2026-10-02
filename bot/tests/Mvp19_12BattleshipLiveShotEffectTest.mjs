@@ -54,7 +54,12 @@ assert.ok(
   manifest.includes("renderer-cosmetics-v1.js?v=5&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&base=v60-shot-miss-no-impact&live_effects=accepted-three-v7&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-core-v4"),
   'Shot manual review must preserve the accepted Battleship manifest baseline'
 );
-assert.ok(entry.includes("$battleshipRendererImportKey = './assets/js/games/battleship/renderer.js?v=56'") && entry.includes("$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v7&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-core-v4';"), 'Active v110 runtime must cache-bust the accepted three-effect module with queued-fire ownership');
+assert.ok(
+  entry.includes("$battleshipRendererImportKey = './assets/js/games/battleship/renderer.js?v=56'")
+    && entry.includes('$imports[$requiredGameOwner]')
+    && !entry.includes('$imports[$battleshipRendererImportKey] .='),
+  'Active v110 runtime must consume the accepted Battleship renderer directly from the canonical manifest without a detached query-string override'
+);
 assert.ok(launch.includes('/app/v110.php?v=1233&'), 'Shot must preserve the accepted shared Telegram route version');
 assert.ok(launch.includes('battleship_shot=live-v2') && launch.includes('battleship_impacts=live-v2') && launch.includes('battleship_fire=direct-result-v4'), 'Telegram route must preserve accepted effects and publish reliable-fire identity');
 
