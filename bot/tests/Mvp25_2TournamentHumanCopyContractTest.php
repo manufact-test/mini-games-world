@@ -60,8 +60,8 @@ $assert(
 );
 
 $assert(
-    ($locale['profile']['language_note'] ?? null) === 'Текущий язык приложения.',
-    'Profile language note must use ordinary user language.'
+    ($locale['settings']['language_note'] ?? null) === 'Выберите язык интерфейса Mini Games World.',
+    'Language setting note must use ordinary user language.'
 );
 $assert(
     !str_contains($localeSource, 'Текущая локализация приложения.'),
