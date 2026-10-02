@@ -56,7 +56,7 @@ jobs:
           need(client.includes('accountLinkStatus:'), 'status API owner missing');
           need(client.includes('accountLinkFinalize:'), 'finalize API owner missing');
 
-          need(profile.includes('accountLinkProfileMarkup(state.profileAuth, identities)'), 'Profile projection missing');
+          need(profile.includes('accountLinkProfileMarkup(') && profile.includes("state.profileAuth || { provider:state.user?.mgw_identity_provider || '' }") && profile.includes('identities\n      )'), 'Profile account-link projection missing');
           need(profile.includes('data-open-account-link'), 'Profile click owner missing');
           need(profile.includes('initAccountLinkUi()'), 'resume owner missing');
 
@@ -67,8 +67,9 @@ jobs:
           need(ui.includes("localStorage.setItem(STORAGE_KEY"), 'bounded continuation state missing');
           need(!ui.includes('telegram_url:telegramUrl'), 'raw Telegram URL must not be persisted');
           need(!ui.includes('localStorage.setItem(STORAGE_KEY, telegram'), 'raw Telegram URL must not be persisted');
-          need(manifest.includes('client.js?v=1150'), 'client cache-bust missing');
-          need(manifest.includes('profile-screen-v110.js?v=1134'), 'Profile cache-bust missing');
+          need(manifest.includes('client.js?v=1152'), 'current client cache identity missing');
+          need(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1142"), 'current Profile cache identity missing');
+          need(manifest.includes("'./assets/js/profile/mgw-account-link-ui.js?v=3' => './assets/js/profile/mgw-account-link-ui.js?v=4&mvp27_1=localized-v1'"), 'localized account-link canonical alias missing');
           NODE
 
       - name: Backend regression proof
@@ -95,6 +96,6 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
-          allowed='^(\.github/workflows/mvp26-3-2-account-link-ui\.yml|docs/MVP26_3_2_ACCOUNT_LINK_UI\.md|app/assets/js/api/client\.js|app/assets/js/screens/profile-screen-v110\.js|app/assets/js/profile/mgw-account-link-ui\.js|app/runtime/client/version-manifest\.php)$'
+          allowed='^(\.github/workflows/mvp26-3-2-account-link-ui\.yml|\.github/workflows/mvp26-3-5-account-link-home-onboarding\.yml|\.github/workflows/mvp26-3-6-pending-link-preboot\.yml|\.github/workflows/mvp26-6-android-product-parity\.yml|\.github/workflows/mvp27-1-account-link-localization\.yml|app/assets/js/profile/mgw-account-link-ui\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|bot/tests/Mvp26_3_6PendingLinkPrebootStaticContractTest\.php|ops/checks/mvp27_1_account_link_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-26.3.2 paths:\n%s\n' "$bad" >&2; exit 1; }

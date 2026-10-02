@@ -2,6 +2,7 @@ import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
 import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=41';
+import { t } from '@mgw/i18n';
 
 const STORAGE_KEY = 'mgw_android_account_link_v1';
 const CONFIRMED_STATUSES = new Set(['confirmed','db_linked','linked']);
@@ -10,15 +11,17 @@ let initialized = false;
 let busy = false;
 let volatileTelegramUrl = '';
 
+const accountLinkText = (key, params = {}) => t(`account_link.${key}`, params);
+
 export function accountLinkProfileMarkup(auth, identities){
   if (!isAndroidProvider(auth) || hasTelegramIdentity(identities)) return '';
   return `
     <button class="profile-v2-setting-row profile-v2-setting-button" type="button" data-open-account-link>
       <span>
-        <strong>Привязать Telegram-аккаунт</strong>
-        <small>Использовать в Android ваш существующий MGW-профиль из Telegram</small>
+        <strong>${accountLinkText('profile.title')}</strong>
+        <small>${accountLinkText('profile.note')}</small>
       </span>
-      <b>Подключить</b>
+      <b>${accountLinkText('profile.connect')}</b>
     </button>
     <div class="profile-v2-account-divider"></div>
   `;
@@ -60,7 +63,7 @@ export async function settlePendingAccountLinkBeforeBoot(){
       if (status === 'confirmed' || status === 'db_linked') {
         const finalized = await api.accountLinkFinalize(pending.challenge_id);
         if (String(finalized?.link?.status || '') !== 'linked') {
-          throw new Error('Сервер не подтвердил завершение привязки.');
+          throw new Error(accountLinkText('errors.server_unconfirmed'));
         }
         clearPending();
         return { status:'linked' };
@@ -87,16 +90,16 @@ export async function settlePendingAccountLinkBeforeBoot(){
 
 export async function openAccountLinkSheet(){
   if (!isCurrentAndroidProvider()) {
-    toast('Привязка Telegram доступна только в Android-приложении.');
+    toast(accountLinkText('errors.android_only'));
     return;
   }
   if (hasTelegramIdentity(state.mgwProfile?.identities)) {
     clearPending();
-    toast('Telegram уже привязан к этому MGW-профилю.');
+    toast(accountLinkText('errors.already_linked'));
     return;
   }
 
-  renderLoading('Проверяем состояние привязки…');
+  renderLoading(accountLinkText('loading.checking_state'));
   const pending = loadPending();
   if (!pending) {
     renderIntro();
@@ -109,7 +112,7 @@ export async function openAccountLinkSheet(){
 async function createChallenge(){
   if (busy) return;
   busy = true;
-  renderLoading('Создаём безопасную ссылку…');
+  renderLoading(accountLinkText('loading.creating_safe_link'));
   try {
     const result = await api.accountLinkCreate();
     const link = result?.link || {};
@@ -122,7 +125,7 @@ async function createChallenge(){
     const challengeId = String(link.challenge_id || '').trim();
     const telegramUrl = String(link.telegram_url || '').trim();
     if (!/^lnk_[a-f0-9]{20}$/.test(challengeId) || !safeTelegramUrl(telegramUrl)) {
-      throw new Error('Сервер вернул некорректную ссылку привязки.');
+      throw new Error(accountLinkText('errors.invalid_server_link'));
     }
 
     volatileTelegramUrl = telegramUrl;
@@ -133,7 +136,7 @@ async function createChallenge(){
     renderPendingState({ status:'pending', challenge_id:challengeId }, true);
     openTelegram(telegramUrl);
   } catch (error) {
-    renderError(error?.message || 'Не удалось создать ссылку привязки.');
+    renderError(error?.message || accountLinkText('errors.create_failed'));
   } finally {
     busy = false;
   }
@@ -156,8 +159,8 @@ async function refreshPending(pending, options = {}){
       clearPending();
       if (options.showSheet) {
         renderIntro(status === 'expired'
-          ? 'Ссылка устарела. Создайте новую попытку.'
-          : 'Предыдущая попытка привязки отменена.');
+          ? accountLinkText('restart.expired')
+          : accountLinkText('restart.cancelled'));
       }
       return;
     }
@@ -166,29 +169,29 @@ async function refreshPending(pending, options = {}){
   } catch (error) {
     if (['challenge_not_found','challenge_expired'].includes(String(error?.code || ''))) {
       clearPending();
-      if (options.showSheet) renderIntro('Попытка привязки больше не активна. Создайте новую.');
+      if (options.showSheet) renderIntro(accountLinkText('restart.inactive'));
       return;
     }
-    if (options.showSheet) renderError(error?.message || 'Не удалось проверить привязку.', true);
+    if (options.showSheet) renderError(error?.message || accountLinkText('errors.check_failed'), true);
   } finally {
     busy = false;
   }
 }
 
 async function finalizePending(challengeId, options = {}){
-  if (options.showSheet) renderLoading('Завершаем привязку профиля…');
+  if (options.showSheet) renderLoading(accountLinkText('loading.finalizing_profile'));
   try {
     const result = await api.accountLinkFinalize(challengeId);
     if (String(result?.link?.status || '') !== 'linked') {
-      throw new Error('Сервер не подтвердил завершение привязки.');
+      throw new Error(accountLinkText('errors.server_unconfirmed'));
     }
     clearPending();
     completeUiAndReload();
   } catch (error) {
     if (options.showSheet) {
-      renderError(error?.message || 'Не удалось завершить привязку.', true);
+      renderError(error?.message || accountLinkText('errors.finalize_failed'), true);
     } else {
-      toast(error?.message || 'Не удалось завершить привязку Telegram.');
+      toast(error?.message || accountLinkText('errors.finalize_telegram_failed'));
     }
   }
 }
@@ -206,7 +209,7 @@ async function resumePendingSilently(){
   // Returning from Telegram can race the confirmation callback by a fraction of
   // a second. Keep the existing sheet as the visible owner and perform a bounded
   // confirmation watch instead of one silent check that may miss the transition.
-  renderLoading('Проверяем подтверждение в Telegram…');
+  renderLoading(accountLinkText('loading.checking_telegram'));
   for (const delay of [0, 220, 420, 780, 1200]) {
     if (!loadPending()) return;
     if (delay > 0) await new Promise(resolve => globalThis.setTimeout(resolve, delay));
@@ -222,23 +225,23 @@ function renderIntro(note = ''){
   openSheet(`
     <div class="sheet-head">
       <div>
-        <h2>Привязать Telegram</h2>
-        <p>Android будет использовать ваш существующий профиль MGW из Telegram.</p>
+        <h2>${accountLinkText('intro.title')}</h2>
+        <p>${accountLinkText('intro.note')}</p>
       </div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${note ? `<div class="profile-v2-empty">${escapeHtml(note)}</div>` : ''}
     <div class="profile-v2-account-card">
       <div class="profile-v2-setting-row">
-        <span><strong>Что сохранится</strong><small>Баланс, покупки, статистика, рейтинг, друзья и турнирный прогресс Telegram-профиля.</small></span>
+        <span><strong>${accountLinkText('intro.saved_title')}</strong><small>${accountLinkText('intro.saved_note')}</small></span>
       </div>
       <div class="profile-v2-account-divider"></div>
       <div class="profile-v2-setting-row">
-        <span><strong>Что не переносится</strong><small>Временные 1000 стартовых коинов нового Android-профиля не добавляются к вашему балансу.</small></span>
+        <span><strong>${accountLinkText('intro.not_moved_title')}</strong><small>${accountLinkText('intro.not_moved_note')}</small></span>
       </div>
     </div>
     <div class="btn-row">
-      <button class="btn primary full" type="button" data-account-link-start>Открыть Telegram и подтвердить</button>
+      <button class="btn primary full" type="button" data-account-link-start>${accountLinkText('intro.open_confirm')}</button>
     </div>
   `);
   bindSheetButton('[data-account-link-start]', createChallenge);
@@ -249,26 +252,26 @@ function renderPendingState(link, freshLink){
   const claimed = status === 'claimed';
   const canReopen = safeTelegramUrl(volatileTelegramUrl);
   const lead = claimed
-    ? 'Telegram-профиль найден. Нажмите «Подтвердить привязку» в сообщении бота, затем вернитесь сюда.'
+    ? accountLinkText('pending.lead_claimed')
     : (freshLink
-      ? 'Ссылка готова. Telegram откроется автоматически. Подтвердите привязку у бота и вернитесь в приложение.'
-      : 'Эта попытка ещё не подтверждена. Если Telegram не открылся или приложение перезапускалось, создайте новую ссылку.');
+      ? accountLinkText('pending.lead_fresh')
+      : accountLinkText('pending.lead_waiting'));
 
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Привязка Telegram</h2><p>${escapeHtml(lead)}</p></div>
+      <div><h2>${accountLinkText('title')}</h2><p>${escapeHtml(lead)}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="profile-v2-account-card">
       <div class="profile-v2-setting-row">
-        <span><strong>Статус</strong><small>${claimed ? 'Ожидаем подтверждение в Telegram' : 'Ожидаем открытие Telegram'}</small></span>
-        <b>${claimed ? 'Telegram открыт' : 'Ожидание'}</b>
+        <span><strong>${accountLinkText('pending.status_label')}</strong><small>${claimed ? accountLinkText('pending.status_claimed_note') : accountLinkText('pending.status_pending_note')}</small></span>
+        <b>${claimed ? accountLinkText('pending.status_claimed_badge') : accountLinkText('pending.status_pending_badge')}</b>
       </div>
     </div>
     <div class="btn-row">
-      ${canReopen ? '<button class="btn ghost full" type="button" data-account-link-open>Открыть Telegram</button>' : ''}
-      <button class="btn primary full" type="button" data-account-link-check>Я подтвердил в Telegram</button>
-      ${!canReopen && !claimed ? '<button class="btn ghost full" type="button" data-account-link-restart>Создать новую ссылку</button>' : ''}
+      ${canReopen ? '<button class="btn ghost full" type="button" data-account-link-open>' + accountLinkText('pending.open_telegram') + '</button>' : ''}
+      <button class="btn primary full" type="button" data-account-link-check>${accountLinkText('pending.confirmed')}</button>
+      ${!canReopen && !claimed ? '<button class="btn ghost full" type="button" data-account-link-restart>' + accountLinkText('pending.restart') + '</button>' : ''}
     </div>
   `);
 
@@ -283,10 +286,10 @@ function renderPendingState(link, freshLink){
 function renderLoading(message){
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Привязка Telegram</h2><p>${escapeHtml(message)}</p></div>
+      <div><h2>${accountLinkText('title')}</h2><p>${escapeHtml(message)}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
-    <div class="profile-v2-empty">Подождите несколько секунд…</div>
+    <div class="profile-v2-empty">${accountLinkText('loading.wait')}</div>
   `);
 }
 
@@ -294,11 +297,11 @@ function renderError(message, keepPending = false){
   if (!keepPending) clearPending();
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Не удалось завершить привязку</h2><p>${escapeHtml(message)}</p></div>
+      <div><h2>${accountLinkText('error_title')}</h2><p>${escapeHtml(message)}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="btn-row">
-      <button class="btn primary full" type="button" data-account-link-retry>${keepPending ? 'Проверить ещё раз' : 'Попробовать снова'}</button>
+      <button class="btn primary full" type="button" data-account-link-retry>${keepPending ? accountLinkText('retry.keep') : accountLinkText('retry.again')}</button>
     </div>
   `);
   bindSheetButton('[data-account-link-retry]', async () => {
@@ -310,13 +313,13 @@ function renderError(message, keepPending = false){
 
 function completeUiAndReload(){
   closeSheet();
-  toast('Telegram-аккаунт привязан. Загружаем ваш профиль…');
+  toast(accountLinkText('success'));
   globalThis.setTimeout(() => globalThis.location.reload(), 320);
 }
 
 function openTelegram(candidate){
   if (!safeTelegramUrl(candidate)) {
-    renderError('Ссылка Telegram недействительна.');
+    renderError(accountLinkText('errors.invalid_telegram_link'));
     return;
   }
   globalThis.location.assign(candidate);

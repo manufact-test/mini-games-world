@@ -69,7 +69,7 @@ jobs:
           need(onboarding.includes("PENDING_LINK_KEY"), 'pending link suppression missing');
           need(profile.includes("mgw-account-link-onboarding.js?v=5"), 'Onboarding module cache-bust missing');
           need(shell.includes("profile-screen-v110.js?v=1109"), 'active shell Profile specifier changed unexpectedly');
-          need(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1141"), 'active Profile import must resolve to a fresh canonical URL');
+          need(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1142"), 'active Profile import must resolve to the current canonical URL');
           need(onboarding.includes("mgw-account-link-onboarding-overlay"), 'dedicated Home onboarding overlay owner missing');
           need(onboarding.includes("mgw-account-link-onboarding-sheet"), 'dedicated Home onboarding sheet owner missing');
           need(onboarding.includes("mgw-account-link-onboarding-bridge"), 'Telegram → Android bridge presentation missing');
@@ -77,7 +77,7 @@ jobs:
           need(css.includes(".overlay.mgw-account-link-onboarding-overlay"), 'centered onboarding overlay CSS missing');
           need(css.includes(".sheet.mgw-account-link-onboarding-sheet"), 'dedicated onboarding card CSS missing');
           need(css.includes("align-items:center"), 'Home onboarding must be visually centered');
-          need(manifest.includes('profile-screen-v110.js?v=1139'), 'Profile cache-bust missing');
+          need(manifest.includes("'./assets/js/profile/mgw-account-link-ui.js?v=3' => './assets/js/profile/mgw-account-link-ui.js?v=4&mvp27_1=localized-v1'"), 'localized account-link cache identity missing');
           need(!onboarding.includes("STAGING_PREVIEW_HOST"), 'temporary staging preview host must be removed after manual acceptance');
           need(!onboarding.includes("data-open-account-link-onboarding-preview"), 'temporary onboarding preview entry must be removed');
           need(!onboarding.includes("previewVisible"), 'temporary preview lifecycle owner must be removed');
@@ -106,7 +106,7 @@ jobs:
           while IFS= read -r path; do
             [[ -z "$path" ]] && continue
             case "$path" in
-              .github/workflows/mvp26-3-5-account-link-home-onboarding.yml|app/assets/js/screens/profile-screen-v110.js|app/assets/js/profile/mgw-account-link-ui.js|app/assets/js/profile/mgw-account-link-onboarding.js|app/assets/css/main.css|app/runtime/client/version-manifest.php|docs/MVP26_3_5_ACCOUNT_LINK_HOME_ONBOARDING.md|android-app/README.md)
+              .github/workflows/mvp26-3-2-account-link-ui.yml|.github/workflows/mvp26-3-5-account-link-home-onboarding.yml|.github/workflows/mvp26-3-6-pending-link-preboot.yml|.github/workflows/mvp26-6-android-product-parity.yml|.github/workflows/mvp27-1-account-link-localization.yml|app/assets/js/profile/mgw-account-link-ui.js|app/locales/ru.json|app/runtime/client/version-manifest.php|bot/tests/Mvp26_3_6PendingLinkPrebootStaticContractTest.php|ops/checks/mvp27_1_account_link_localization_contract.mjs|ops/checks/mvp27_1_hardcoded_text_baseline.json)
                 ;;
               *)
                 printf 'Unexpected MVP-26.3.5 path: %s\n' "$path" >&2
