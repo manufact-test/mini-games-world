@@ -21,17 +21,21 @@ $manifest = $read('app/runtime/client/version-manifest.php');
 $localeSource = $read('app/locales/ru.json');
 $locale = json_decode($localeSource, true, 512, JSON_THROW_ON_ERROR);
 
-foreach ([
-    'Ваша награда временно на проверке',
-    'Одна из наград временно на проверке',
-    'Мы проверяем результат. Ничего повторно делать не нужно: после проверки здесь появится окончательный итог и, если результат подтвердится, награда.',
-    'Один из призовых результатов находится на проверке. После проверки итоговые места и награды обновятся автоматически.',
-    'Результат сетки уже зафиксирован. Награды появятся автоматически после завершения обработки.',
-    'Матч перезапустится через 1 минуту.',
-    'Матч не удалось продолжить · он завершён без победителя.',
-    'Сейчас не в зале',
-] as $copy) {
-    $assert(str_contains($tournaments, $copy), 'Expected human tournament copy missing: ' . $copy);
+$localizedCopy = [
+    ["arena.terminal.self_hold_title",'Ваша награда временно на проверке'],
+    ["arena.terminal.other_hold_title",'Одна из наград временно на проверке'],
+    ["arena.terminal.self_hold_note",'Мы проверяем результат. Ничего повторно делать не нужно: после проверки здесь появится окончательный итог и, если результат подтвердится, награда.'],
+    ["arena.terminal.other_hold_note",'Один из призовых результатов находится на проверке. После проверки итоговые места и награды обновятся автоматически.'],
+    ["arena.terminal.settling_note",'Результат сетки уже зафиксирован. Награды появятся автоматически после завершения обработки.'],
+    ["arena.bracket.technical_restart_scheduled",'Матч перезапустится через 1 минуту.'],
+    ["arena.bracket.technical_restart_exhausted",'Матч не удалось продолжить · он завершён без победителя.'],
+    ["arena.hall.left",'Сейчас не в зале'],
+];
+foreach ($localizedCopy as [$key,$copy]) {
+    $value=$locale;
+    foreach(explode('.', $key) as $part) $value=is_array($value)?($value[$part]??null):null;
+    $assert($value === $copy, 'Expected human tournament locale copy missing: ' . $key);
+    $assert(str_contains($tournaments, $key), 'Tournament runtime must consume localized human copy: ' . $key);
 }
 
 foreach ([
@@ -70,15 +74,17 @@ $assert(
 );
 
 $assert(
-    str_contains($tournaments, "return TOURNAMENT_TERMINAL_REWARD_LABELS[code] || 'Награда турнира';"),
-    'Unknown tournament reward codes must use a human fallback instead of exposing an enum.'
+    str_contains($tournaments, "t('arena.terminal.reward_fallback')")
+        && (($locale['arena']['terminal']['reward_fallback'] ?? null) === 'Награда турнира'),
+    'Unknown tournament reward codes must use a localized human fallback instead of exposing an enum.'
 );
 
 // "Техническое поражение" is intentional product language: it tells the player
 // the actual game outcome and must not be erased by a blanket terminology pass.
 $assert(
-    str_contains($tournaments, 'Техническое поражение'),
-    'Player-relevant technical defeat wording must remain intact.'
+    str_contains($tournaments, "t('arena.hall.technical_loss')")
+        && (($locale['arena']['hall']['technical_loss'] ?? null) === 'Техническое поражение'),
+    'Player-relevant technical defeat wording must remain intact through localization.'
 );
 
 fwrite(STDOUT, "Mvp25_2TournamentHumanCopyContractTest: {$assertions} assertions passed\n");
