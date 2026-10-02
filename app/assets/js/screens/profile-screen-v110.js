@@ -24,9 +24,9 @@ const NAME_COLOR_ITEM_IDS = Object.freeze([
   'profile-name-color-aurora',
 ]);
 const GAME_COSMETIC_GROUPS = Object.freeze([
-  { layer:'theme', title:'Поля' },
-  { layer:'elements', title:'Знаки' },
-  { layer:'effect', title:'Эффекты' },
+  { layer:'theme', titleKey:'profile.collection.game_groups.theme' },
+  { layer:'elements', titleKey:'profile.collection.game_groups.elements' },
+  { layer:'effect', titleKey:'profile.collection.game_groups.effect' },
 ]);
 const NICKNAME_MAX_LENGTH = 13;
 let profileLoading = false;
@@ -298,39 +298,35 @@ function bindProfileActions(){
   });
 }
 
+
 function moderationActionLabel(value){
-  return ({
-    warning:'Предупреждение',
-    restriction:'Ограничение',
-    permanent_ban:'Постоянная блокировка',
-  })[String(value || '')] || String(value || 'Решение');
+  const code = String(value || '');
+  const key = ({ warning:'warning', restriction:'restriction', permanent_ban:'permanent_ban' })[code];
+  if (key) return t(\`profile.moderation.action_types.\${key}\`);
+  return code || t('profile.moderation.action_types.fallback');
 }
 
 function moderationStatusLabel(value){
-  return ({
-    active:'Активно',
-    pending_second_review:'На второй проверке',
-    confirmed:'Подтверждено',
-    rejected:'Отклонено',
-    revoked:'Отменено',
-    expired:'Истекло',
-  })[String(value || '')] || String(value || '—');
+  const code = String(value || '');
+  if (['active','pending_second_review','confirmed','rejected','revoked','expired'].includes(code)) {
+    return t(\`profile.moderation.action_statuses.\${code}\`);
+  }
+  return code || '—';
 }
 
 function moderationAppealStatusLabel(value){
-  return ({
-    open:'Отправлена',
-    reviewing:'На рассмотрении',
-    accepted:'Удовлетворена',
-    rejected:'Отклонена',
-  })[String(value || '')] || String(value || '—');
+  const code = String(value || '');
+  if (['open','reviewing','accepted','rejected'].includes(code)) {
+    return t(\`profile.moderation.appeal_statuses.\${code}\`);
+  }
+  return code || '—';
 }
 
 async function openModerationCenter(snapshot = null){
-  openSheet(`
-    <div class="sheet-head"><div><h2>Ограничения и апелляции</h2><p>Здесь видны решения модерации и их статус.</p></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="profile-v2-moderation-loading">Загрузка…</div>
-  `);
+  openSheet(\`
+    <div class="sheet-head"><div><h2>\${escapeHtml(t('profile.moderation.title'))}</h2><p>\${escapeHtml(t('profile.moderation.note'))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="profile-v2-moderation-loading">\${escapeHtml(t('common.loading'))}</div>
+  \`);
 
   try {
     const result = snapshot ? { moderation:snapshot } : await api.moderationSnapshot();
@@ -345,32 +341,36 @@ async function openModerationCenter(snapshot = null){
       const actionId = String(item?.action_id || '');
       const canAppeal = ['active','confirmed','pending_second_review'].includes(String(item?.status || ''))
         && !activeAppeals.has(actionId);
-      const scope = item?.scope_label ? ` · ${escapeHtml(item.scope_label)}` : '';
-      const until = item?.expires_at_utc ? ` · до ${escapeHtml(formatDate(item.expires_at_utc))}` : '';
-      return `
+      const scope = item?.scope_label ? \` · \${escapeHtml(item.scope_label)}\` : '';
+      const until = item?.expires_at_utc ? \` · \${escapeHtml(t('profile.moderation.until',{date:formatDate(item.expires_at_utc)}))}\` : '';
+      return \`
         <div class="profile-v2-moderation-item">
-          <div><strong>${escapeHtml(moderationActionLabel(item?.action_type))}</strong><span>${escapeHtml(moderationStatusLabel(item?.status))}${scope}${until}</span></div>
-          <p>${escapeHtml(String(item?.note || 'Без комментария.'))}</p>
-          ${canAppeal ? `<button class="btn ghost full" type="button" data-moderation-appeal-action="${escapeHtml(actionId)}">Подать апелляцию</button>` : ''}
+          <div><strong>\${escapeHtml(moderationActionLabel(item?.action_type))}</strong><span>\${escapeHtml(moderationStatusLabel(item?.status))}\${scope}\${until}</span></div>
+          <p>\${escapeHtml(String(item?.note || t('profile.moderation.no_comment')))}</p>
+          \${canAppeal ? \`<button class="btn ghost full" type="button" data-moderation-appeal-action="\${escapeHtml(actionId)}">\${escapeHtml(t('profile.moderation.appeal_action'))}</button>\` : ''}
         </div>
-      `;
-    }).join('') : '<div class="profile-v2-moderation-empty">Решений модерации нет.</div>';
+      \`;
+    }).join('') : \`<div class="profile-v2-moderation-empty">\${escapeHtml(t('profile.moderation.actions_empty'))}</div>\`;
 
-    const appealsHtml = appeals.length ? appeals.map(item => `
+    const appealsHtml = appeals.length ? appeals.map(item => \`
       <div class="profile-v2-moderation-item">
-        <div><strong>Апелляция</strong><span>${escapeHtml(moderationAppealStatusLabel(item?.status))}</span></div>
-        <p>${escapeHtml(String(item?.message || ''))}</p>
-        ${item?.review_note ? `<small>Ответ: ${escapeHtml(String(item.review_note))}</small>` : ''}
+        <div><strong>\${escapeHtml(t('profile.moderation.appeal_label'))}</strong><span>\${escapeHtml(moderationAppealStatusLabel(item?.status))}</span></div>
+        <p>\${escapeHtml(String(item?.message || ''))}</p>
+        \${item?.review_note ? \`<small>\${escapeHtml(t('profile.moderation.response_prefix'))} \${escapeHtml(String(item.review_note))}</small>\` : ''}
       </div>
-    `).join('') : '<div class="profile-v2-moderation-empty">Апелляций пока нет.</div>';
+    \`).join('') : \`<div class="profile-v2-moderation-empty">\${escapeHtml(t('profile.moderation.appeals_empty'))}</div>\`;
 
-    openSheet(`
-      <div class="sheet-head"><div><h2>Ограничения и апелляции</h2><p>${accountStatus === 'banned' ? 'Аккаунт заблокирован после ручной проверки.' : (activeActions.length ? 'Для аккаунта есть действующие решения.' : 'Действующих ограничений нет.')}</p></div><button class="close" data-close-sheet type="button">×</button></div>
+    const accountNote = accountStatus === 'banned'
+      ? t('profile.moderation.account_banned')
+      : (activeActions.length ? t('profile.moderation.account_has_actions') : t('profile.moderation.account_clear'));
+
+    openSheet(\`
+      <div class="sheet-head"><div><h2>\${escapeHtml(t('profile.moderation.title'))}</h2><p>\${escapeHtml(accountNote)}</p></div><button class="close" data-close-sheet type="button">×</button></div>
       <div class="profile-v2-moderation">
-        <section><h3>Решения модерации</h3>${actionsHtml}</section>
-        <section><h3>Апелляции</h3>${appealsHtml}</section>
+        <section><h3>\${escapeHtml(t('profile.moderation.actions_title'))}</h3>\${actionsHtml}</section>
+        <section><h3>\${escapeHtml(t('profile.moderation.appeals_title'))}</h3>\${appealsHtml}</section>
       </div>
-    `);
+    \`);
 
     document.querySelectorAll('#sheet [data-moderation-appeal-action]').forEach(button => {
       button.addEventListener('click',() => openModerationAppealComposer(
@@ -379,37 +379,36 @@ async function openModerationCenter(snapshot = null){
       ));
     });
   } catch (error) {
-    openSheet(`
-      <div class="sheet-head"><div><h2>Ограничения и апелляции</h2><p>Не удалось загрузить данные.</p></div><button class="close" data-close-sheet type="button">×</button></div>
-      <div class="profile-v2-moderation-empty">${escapeHtml(error?.message || 'Попробуйте ещё раз позже.')}</div>
-    `);
+    openSheet(\`
+      <div class="sheet-head"><div><h2>\${escapeHtml(t('profile.moderation.title'))}</h2><p>\${escapeHtml(t('profile.moderation.load_error'))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
+      <div class="profile-v2-moderation-empty">\${escapeHtml(error?.message || t('profile.moderation.retry_later'))}</div>
+    \`);
   }
 }
 
 function openModerationAppealComposer(actionId, moderation){
   if (!actionId) return;
-  openSheet(`
-    <div class="sheet-head"><div><h2>Подать апелляцию</h2><p>Кратко объясните, почему решение нужно пересмотреть.</p></div><button class="close" data-close-sheet type="button">×</button></div>
-    <textarea class="form-input" id="mgwModerationAppealText" maxlength="1200" rows="5" placeholder="Опишите причину апелляции"></textarea>
-    <button class="btn primary full" id="mgwModerationAppealSend" type="button">Отправить апелляцию</button>
-  `);
+  openSheet(\`
+    <div class="sheet-head"><div><h2>\${escapeHtml(t('profile.moderation.appeal_form_title'))}</h2><p>\${escapeHtml(t('profile.moderation.appeal_form_note'))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
+    <textarea class="form-input" id="mgwModerationAppealText" maxlength="1200" rows="5" placeholder="\${escapeHtml(t('profile.moderation.appeal_placeholder'))}"></textarea>
+    <button class="btn primary full" id="mgwModerationAppealSend" type="button">\${escapeHtml(t('profile.moderation.appeal_send'))}</button>
+  \`);
 
   document.getElementById('mgwModerationAppealSend')?.addEventListener('click', async event => {
     const message = String(document.getElementById('mgwModerationAppealText')?.value || '').trim();
-    if (!message) return toast('Опишите причину апелляции.');
+    if (!message) return toast(t('profile.moderation.appeal_validation'));
     const button = event.currentTarget;
     if (button instanceof HTMLButtonElement) button.disabled = true;
     try {
       const result = await api.moderationAppeal(actionId,message);
-      toast('Апелляция отправлена.');
+      toast(t('profile.moderation.appeal_sent'));
       await openModerationCenter(result?.moderation || moderation);
     } catch (error) {
-      toast(error?.message || 'Не удалось отправить апелляцию.');
+      toast(error?.message || t('profile.moderation.appeal_error'));
       if (button instanceof HTMLButtonElement && button.isConnected) button.disabled = false;
     }
   });
 }
-
 function openNicknameEditor(){
   const nickname = String(state.mgwProfile?.nickname || state.user?.display_name || '').trim();
   openSheet(`
@@ -469,8 +468,8 @@ function openAvatarEditor(){
   const avatars = ownedAvatarItems();
   const activeAvatar = currentAvatarItemId();
   openSheet(`
-    <div class="sheet-head"><div><h2>Аватарки</h2></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="profile-v2-avatar-sheet-grid profile-v2-avatar-sheet-grid--owned" aria-label="Аватарки">
+    <div class="sheet-head"><div><h2>${escapeHtml(t('store.profile.avatars_title'))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="profile-v2-avatar-sheet-grid profile-v2-avatar-sheet-grid--owned" aria-label="${escapeHtml(t('store.profile.avatars_title'))}">
       ${avatars.map(item => avatarChoiceMarkup(item, activeAvatar)).join('')}
     </div>
   `);
@@ -488,7 +487,7 @@ function openAvatarPreview(itemId){
     <div class="profile-v2-avatar-preview-wrap">
       <div class="profile-v2-avatar-preview" data-avatar-item-id="${escapeHtml(itemId)}" aria-hidden="true">MG</div>
     </div>
-    <button class="btn primary full" id="mgwAvatarEquip" type="button" ${active ? 'disabled' : ''}>${active ? 'Выбрана' : 'Выбрать'}</button>
+    <button class="btn primary full" id="mgwAvatarEquip" type="button" ${active ? 'disabled' : ''}>${escapeHtml(active ? t('store.actions.selected_feminine') : t('store.actions.select'))}</button>
   `);
   document.getElementById('mgwAvatarEquip')?.addEventListener('click', () => {
     void chooseAvatar(itemId);
@@ -566,8 +565,8 @@ function renderProfileV2(){
     <section class="profile-v2-identity${tournamentIdentityClasses}" data-tournament-temporary-style="${escapeHtml(Array.from(activeTournamentRewardCodes).join(' '))}">
       <button class="profile-v2-avatar-edit" type="button" data-edit-mgw-avatar aria-label="${escapeHtml(t('profile.avatar_edit'))}">
         <span class="profile-v2-avatar" id="profileV2Avatar" data-avatar-item-id="${escapeHtml(activeAvatar)}" aria-hidden="true">MG</span>
-        ${activeTournamentRewardCodes.has('champion_crown') ? `<span class="profile-v2-tournament-crown" aria-label="Корона чемпиона">${tournamentPrestigeIconSvg('champion_crown','is-profile-crown')}</span>` : ''}
-        ${activeTournamentRewardCodes.has('bronze_mark') ? '<span class="profile-v2-tournament-bronze-mark" aria-label="Бронзовая отметка">●</span>' : ''}
+        ${activeTournamentRewardCodes.has('champion_crown') ? `<span class="profile-v2-tournament-crown" aria-label="${escapeHtml(t('profile.tournament.rewards.champion_crown'))}">${tournamentPrestigeIconSvg('champion_crown','is-profile-crown')}</span>` : ''}
+        ${activeTournamentRewardCodes.has('bronze_mark') ? '<span class="profile-v2-tournament-bronze-mark" aria-label="${escapeHtml(t('profile.tournament.rewards.bronze_mark'))}">●</span>' : ''}
         <span class="profile-v2-avatar-pencil" aria-hidden="true">✎</span>
       </button>
       <div class="profile-v2-person">
@@ -579,9 +578,9 @@ function renderProfileV2(){
     </section>
     ${renderTournamentPrestigeSummary(tournamentRewards)}
     <section class="profile-v2-section profile-v2-collection-section">
-      <div class="profile-v2-section-head"><div><h2>Моя коллекция</h2></div></div>
-      <div class="profile-v2-collection-title">Аватарки</div>
-      <div class="profile-v2-collection-grid" aria-label="Мои аватарки">
+      <div class="profile-v2-section-head"><div><h2>${escapeHtml(t('profile.collection.title'))}</h2></div></div>
+      <div class="profile-v2-collection-title">${escapeHtml(t('store.profile.avatars_title'))}</div>
+      <div class="profile-v2-collection-grid" aria-label="${escapeHtml(t('profile.collection.my_avatars'))}">
         ${ownedAvatars.map(item => collectionAvatarMarkup(item, activeAvatar)).join('')}
       </div>
       ${renderNameColorCollection(nickname)}
@@ -596,7 +595,7 @@ function renderProfileV2(){
     <section class="profile-v2-section">${sectionHead('profile.account_title','profile.account_note')}<div class="profile-v2-account-card">
       <button class="profile-v2-setting-row profile-v2-setting-button" type="button" data-open-language-settings><span><strong>${escapeHtml(t('profile.language'))}</strong><small>${escapeHtml(t('profile.language_note'))}</small></span><b>${escapeHtml(t('profile.language_value'))}</b></button>
       <div class="profile-v2-account-divider"></div>
-      <button class="profile-v2-setting-row profile-v2-setting-button" type="button" data-open-moderation-center><span><strong>Ограничения и апелляции</strong><small>Предупреждения, ограничения и решения модерации</small></span><b>Открыть</b></button>
+      <button class="profile-v2-setting-row profile-v2-setting-button" type="button" data-open-moderation-center><span><strong>${escapeHtml(t('profile.moderation.title'))}</strong><small>${escapeHtml(t('profile.moderation.settings_note'))}</small></span><b>${escapeHtml(t('profile.moderation.open'))}</b></button>
       <div class="profile-v2-account-divider"></div>
       ${accountLinkProfileMarkup(
         state.profileAuth || { provider:state.user?.mgw_identity_provider || '' },
@@ -640,18 +639,18 @@ function avatarChoiceMarkup(item, activeAvatar){
   return `<button type="button" data-mgw-avatar-choice="${escapeHtml(itemId)}" class="profile-v2-avatar-choice${active ? ' active' : ''}" aria-label="${escapeHtml(avatarName(itemId))}" aria-pressed="${active ? 'true' : 'false'}"><span data-avatar-item-id="${escapeHtml(itemId)}">MG</span>${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}</button>`;
 }
 
+
 function avatarName(itemId){
   const index = LAUNCH_AVATARS.indexOf(String(itemId || ''));
-  return index >= 0 ? `Аватарка ${index + 1}` : 'Аватарка';
+  return index >= 0 ? t('store.profile.avatar_name',{number:index + 1}) : t('profile.collection.avatar_fallback');
 }
-
 function renderNameColorCollection(nickname){
   const items = ownedNameColorItems();
   if (!items.length) return '';
   const active = currentNameColorItemId();
   return `
-    <div class="profile-v2-name-color-collection" aria-label="Цвет имени">
-      <div class="profile-v2-collection-title">Цвет имени</div>
+    <div class="profile-v2-name-color-collection" aria-label="${escapeHtml(t('store.profile.name_color_title'))}">
+      <div class="profile-v2-collection-title">${escapeHtml(t('store.profile.name_color_title'))}</div>
       <div class="profile-v2-name-color-grid">
         ${items.map(item => nameColorCardMarkup(item, active, nickname)).join('')}
       </div>
@@ -692,8 +691,8 @@ function openNameColorPreview(itemId){
   openSheet(`
     <div class="sheet-head"><div><h2>${escapeHtml(nameColorName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="profile-v2-name-color-preview-wrap"><strong data-name-color-item-id="${escapeHtml(itemId)}">${escapeHtml(nickname)}</strong></div>
-    <div class="profile-v2-game-preview-meta"><strong>Цвет имени</strong><small>${escapeHtml(nameColorTierLabel(item))}</small></div>
-    <button class="btn ${active ? 'ghost' : 'primary'} full" id="mgwNameColorEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>
+    <div class="profile-v2-game-preview-meta"><strong>${escapeHtml(t('store.profile.name_color_title'))}</strong><small>${escapeHtml(nameColorTierLabel(item))}</small></div>
+    <button class="btn ${active ? 'ghost' : 'primary'} full" id="mgwNameColorEquip" type="button">${escapeHtml(active ? t('store.actions.remove') : t('store.actions.select'))}</button>
   `);
   document.getElementById('mgwNameColorEquip')?.addEventListener('click', () => {
     void saveNameColor(itemId, active);
@@ -720,22 +719,32 @@ async function saveNameColor(itemId, remove){
   } catch (error) {
     state.profileInventory = previousInventory;
     renderProfileV2();
-    toast(error?.message || (remove ? 'Не удалось снять цвет имени.' : 'Не удалось выбрать цвет имени.'));
+    toast(error?.message || t(remove ? 'profile.collection.name_color_remove_error' : 'profile.collection.name_color_select_error'));
   } finally {
     nameColorSaving = false;
   }
 }
 
-function nameColorName(item){
+
+function localizedProfileProductName(item, fallbackKey){
+  const itemId = String(item?.item_id || '');
+  if (itemId) {
+    try { return t(\`store.products.\${itemId}\`); } catch (error) {}
+  }
   const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata : {};
-  return String(metadata.display_name || item?.item_id || 'Цвет имени');
+  const legacyDisplayName = String(metadata.display_name || '').trim();
+  return legacyDisplayName || itemId || t(fallbackKey);
+}
+
+function nameColorName(item){
+  return localizedProfileProductName(item, 'store.profile.name_color_title');
 }
 
 function nameColorTierLabel(item){
   const tier = String(item?.metadata?.tier || 'normal');
-  return ({ normal:'Обычный', rare:'Редкий', gradient:'Градиент' })[tier] || 'Цвет имени';
+  const key = ['normal','rare','gradient'].includes(tier) ? tier : 'fallback';
+  return t(\`store.profile.name_color_tiers.\${key}\`);
 }
-
 function applyOptimisticProfileSlot(itemId, slot, equipped){
   const inventory = cloneObject(state.profileInventory) || { catalog:[], owned:[], equipped:{} };
   if (!inventory.equipped || typeof inventory.equipped !== 'object') inventory.equipped = {};
@@ -754,9 +763,9 @@ function renderGameCosmeticsCollection(){
   const games = ownedGameCosmeticGames();
   if (!games.length) {
     return `
-      <div class="profile-v2-game-collection" aria-label="Оформление игр">
-        <div class="profile-v2-collection-title">Игры</div>
-        <div class="profile-v2-game-empty">Купленные предметы для игр появятся здесь.</div>
+      <div class="profile-v2-game-collection" aria-label="${escapeHtml(t('profile.collection.game_cosmetics_aria'))}">
+        <div class="profile-v2-collection-title">${escapeHtml(t('profile.collection.games'))}</div>
+        <div class="profile-v2-game-empty">${escapeHtml(t('profile.collection.games_empty'))}</div>
       </div>
     `;
   }
@@ -764,9 +773,9 @@ function renderGameCosmeticsCollection(){
   const activeGame = games.find(game => game.game_type === activeCollectionGame) || games[0];
 
   return `
-    <div class="profile-v2-game-collection" aria-label="Оформление игр">
-      <div class="profile-v2-collection-title">Игры</div>
-      <div class="profile-v2-game-tabs" role="tablist" aria-label="Игры в коллекции">
+    <div class="profile-v2-game-collection" aria-label="${escapeHtml(t('profile.collection.game_cosmetics_aria'))}">
+      <div class="profile-v2-collection-title">${escapeHtml(t('profile.collection.games'))}</div>
+      <div class="profile-v2-game-tabs" role="tablist" aria-label="${escapeHtml(t('profile.collection.games_tabs_aria'))}">
         ${games.map(game => {
           const active = game.game_type === activeGame.game_type;
           return `<button class="profile-v2-game-tab${active ? ' active' : ''}" type="button" role="tab" data-profile-game-tab="${escapeHtml(game.game_type)}" aria-selected="${active ? 'true' : 'false'}"><span class="profile-v2-game-tab-mark" aria-hidden="true">${escapeHtml(gameCollectionMark(game.game_type))}</span><span>${escapeHtml(game.title)}</span></button>`;
@@ -806,8 +815,8 @@ function renderGameCosmeticGroups(activeGame){
   })).filter(group => group.items.length > 0);
 
   return groups.length
-    ? groups.map(group => `<div class="profile-v2-game-group"><div class="profile-v2-game-group-title">${escapeHtml(group.title)}</div><div class="profile-v2-game-grid">${group.items.map(gameCosmeticCardMarkup).join('')}</div></div>`).join('')
-    : '<div class="profile-v2-game-empty">Купленные предметы для этой игры появятся здесь.</div>';
+    ? groups.map(group => `<div class="profile-v2-game-group"><div class="profile-v2-game-group-title">${escapeHtml(t(group.titleKey))}</div><div class="profile-v2-game-grid">${group.items.map(gameCosmeticCardMarkup).join('')}</div></div>`).join('')
+    : `<div class="profile-v2-game-empty">${escapeHtml(t('profile.collection.game_empty'))}</div>`;
 }
 
 function ownedGameCosmeticGames(){
@@ -889,11 +898,11 @@ function openGameCosmeticPreview(itemId){
   const available = String(item.catalog_status || '') === 'active';
   const group = GAME_COSMETIC_GROUPS.find(candidate => candidate.layer === gameCosmeticLayer(item));
   const gameType = gameCosmeticGameType(item);
-  const buttonLabel = available ? (active ? 'Снять' : 'Выбрать') : 'Недоступно';
+  const buttonLabel = available ? (active ? t('store.actions.remove') : t('store.actions.select')) : t('profile.collection.unavailable');
   openSheet(`
     <div class="sheet-head"><div><h2>${escapeHtml(gameCosmeticName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="profile-v2-game-preview-wrap">${gameCosmeticPreviewMarkup(item)}</div>
-    <div class="profile-v2-game-preview-meta"><strong>${escapeHtml(gameName(gameType))}</strong><small>${escapeHtml(group?.title || 'Оформление')}</small></div>
+    <div class="profile-v2-game-preview-meta"><strong>${escapeHtml(gameName(gameType))}</strong><small>${escapeHtml(group?.titleKey ? t(group.titleKey) : t('profile.collection.cosmetics_label'))}</small></div>
     <button class="btn ${active ? 'ghost' : 'primary'} full" id="mgwGameCosmeticEquip" type="button" ${available ? '' : 'disabled'}>${escapeHtml(buttonLabel)}</button>
   `);
   document.getElementById('mgwGameCosmeticEquip')?.addEventListener('click', () => {
@@ -923,7 +932,7 @@ async function saveGameCosmetic(itemId, remove){
   } catch (error) {
     state.profileInventory = previousInventory;
     renderProfileV2();
-    toast(error?.message || (remove ? 'Не удалось снять оформление.' : 'Не удалось выбрать предмет.'));
+    toast(error?.message || t(remove ? 'profile.collection.cosmetic_remove_error' : 'profile.collection.cosmetic_select_error'));
   } finally {
     gameCosmeticSaving = false;
   }
@@ -952,13 +961,10 @@ function isGameCosmeticEquipped(item){
   return slot !== '' && itemId !== '' && String(equipped[slot] || '') === itemId;
 }
 
-function gameCosmeticName(item){
-  const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata : {};
-  const displayName = String(metadata.display_name || '').trim();
-  if (displayName) return displayName;
-  return String(item?.item_id || 'Игровой предмет');
-}
 
+function gameCosmeticName(item){
+  return localizedProfileProductName(item, 'store.games.generic_item');
+}
 function gameCosmeticPreviewMarkup(item){
   const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata : {};
   const layer = gameCosmeticLayer(item) || 'theme';
@@ -1024,20 +1030,10 @@ function ensureProfileRoot(){
 }
 function sectionHead(titleKey, noteKey = null){ return `<div class="profile-v2-section-head"><div><h2>${escapeHtml(t(titleKey))}</h2>${noteKey ? `<p>${escapeHtml(t(noteKey))}</p>` : ''}</div></div>`; }
 function summaryStat(value, labelKey){ const normalized = Number.isFinite(Number(value)) ? formatNumber(Number(value)) : '—'; return `<div class="profile-v2-summary-stat"><strong>${escapeHtml(normalized)}</strong><span>${escapeHtml(t(labelKey))}</span></div>`; }
-const TOURNAMENT_REWARD_LABELS = Object.freeze({
-  golden_ticket:'Golden Ticket',
-  champion_crown:'Корона чемпиона',
-  winner_badge:'Значок победителя',
-  champion_cosmetics:'Чемпионский набор',
-  hall_of_fame:'Зал славы',
-  cup_gold:'Золотой кубок',
-  silver_frame:'Серебряная рамка',
-  finalist_result:'Финалист турнира',
-  cup_silver:'Серебряный кубок',
-  bronze_mark:'Бронзовая отметка',
-  third_place_result:'3-е место',
-  cup_bronze:'Бронзовый кубок',
-});
+const TOURNAMENT_REWARD_CODES = new Set([
+  'golden_ticket','champion_crown','winner_badge','champion_cosmetics','hall_of_fame',
+  'cup_gold','silver_frame','finalist_result','cup_silver','bronze_mark','third_place_result','cup_bronze',
+]);
 const TOURNAMENT_HIDDEN_REWARD_CODES = new Set(['champion_cosmetics']);
 
 function tournamentPrestigeIconSvg(code, extraClass = ''){
@@ -1087,6 +1083,7 @@ function tournamentCrownReward(source){
     .find(item => String(item?.reward_code || '') === 'champion_crown') || null;
 }
 
+
 function tournamentPrestigeStatusCopy(source){
   const summary = source?.summary && typeof source.summary === 'object' ? source.summary : {};
   const championships = Math.max(0, Number(summary.championships || 0));
@@ -1095,24 +1092,31 @@ function tournamentPrestigeStatusCopy(source){
   if (crown) {
     const until = crown?.valid_until_at_utc ? formatDateTime(crown.valid_until_at_utc) : '';
     return {
-      kicker:'Действующий чемпион',
-      title:until ? `Корона активна до ${until}` : 'Корона чемпиона активна',
+      kicker:t('profile.tournament.status.current_champion'),
+      title:until
+        ? t('profile.tournament.status.crown_until',{until})
+        : t('profile.tournament.status.crown_active'),
       tone:'is-champion',
     };
   }
   if (championships > 0) return {
-    kicker:'Чемпион официального турнира',
-    title:`${formatNumber(championships)} побед · ${formatNumber(podiums)} подиумов`,
+    kicker:t('profile.tournament.status.champion'),
+    title:t('profile.tournament.status.champion_metrics',{
+      championships:formatNumber(championships),
+      podiums:formatNumber(podiums),
+    }),
     tone:'is-champion',
   };
   if (podiums > 0) return {
-    kicker:'Призёр официального турнира',
-    title:`${formatNumber(podiums)} подиумов`,
+    kicker:t('profile.tournament.status.podium'),
+    title:t('profile.tournament.status.podium_metrics',{podiums:formatNumber(podiums)}),
     tone:'is-podium',
   };
   return {
-    kicker:'Турнирный участник',
-    title:`${formatNumber(Math.max(0, Number(summary.tournaments || 0)))} турниров`,
+    kicker:t('profile.tournament.status.participant'),
+    title:t('profile.tournament.status.participant_metrics',{
+      tournaments:formatNumber(Math.max(0, Number(summary.tournaments || 0))),
+    }),
     tone:'',
   };
 }
@@ -1135,38 +1139,38 @@ function renderTournamentPrestigeSummary(snapshot){
         ? tournamentPrestigeIconSvg('winner_badge','is-medal')
         : tournamentPrestigeIconSvg('participant','is-participant');
 
-  return `<section class="profile-v2-section profile-v2-tournament-status ${escapeHtml(status.tone)}" data-tournament-prestige="v1">
-    <button type="button" class="profile-v2-tournament-status-button" data-open-tournament-showcase aria-label="Открыть турнирную витрину">
-      <span class="profile-v2-tournament-status-emblem" aria-hidden="true">${leadIcon}</span>
+  return \`<section class="profile-v2-section profile-v2-tournament-status \${escapeHtml(status.tone)}" data-tournament-prestige="v1">
+    <button type="button" class="profile-v2-tournament-status-button" data-open-tournament-showcase aria-label="\${escapeHtml(t('profile.tournament.open_showcase'))}">
+      <span class="profile-v2-tournament-status-emblem" aria-hidden="true">\${leadIcon}</span>
       <span class="profile-v2-tournament-status-copy">
-        <small>Турнирный статус</small>
-        <strong>${escapeHtml(status.kicker)}</strong>
-        <span>${escapeHtml(status.title)}</span>
+        <small>\${escapeHtml(t('profile.tournament.status_label'))}</small>
+        <strong>\${escapeHtml(status.kicker)}</strong>
+        <span>\${escapeHtml(status.title)}</span>
       </span>
       <span class="profile-v2-tournament-status-metrics" aria-hidden="true">
-        <b><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.championships || 0))))}</strong><small>побед</small></b>
-        <b><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.podiums || 0))))}</strong><small>подиумов</small></b>
-        ${ticket ? `<b class="has-ticket">${tournamentPrestigeIconSvg('golden_ticket','is-mini')}<small>ticket</small></b>` : ''}
+        <b><strong>\${escapeHtml(formatNumber(Math.max(0, Number(summary.championships || 0))))}</strong><small>\${escapeHtml(t('profile.tournament.units.wins'))}</small></b>
+        <b><strong>\${escapeHtml(formatNumber(Math.max(0, Number(summary.podiums || 0))))}</strong><small>\${escapeHtml(t('profile.tournament.units.podiums'))}</small></b>
+        \${ticket ? \`<b class="has-ticket">\${tournamentPrestigeIconSvg('golden_ticket','is-mini')}<small>\${escapeHtml(t('profile.tournament.ticket_short'))}</small></b>\` : ''}
       </span>
       <span class="profile-v2-tournament-status-arrow" aria-hidden="true">›</span>
     </button>
-  </section>`;
+  </section>\`;
 }
 
 function tournamentTicketMarkup(ticket){
   if (!(ticket && typeof ticket === 'object' && ticket.valid === true)) return '';
   const count = Math.max(1, Number(ticket.championship_count || 1));
-  return `<article class="profile-v2-tournament-ticket">
+  return \`<article class="profile-v2-tournament-ticket">
     <div class="profile-v2-tournament-ticket-mark" aria-hidden="true">
-      ${tournamentPrestigeIconSvg('golden_ticket','is-ticket')}
-      ${count > 1 ? `<b>×${escapeHtml(formatNumber(count))}</b>` : ''}
+      \${tournamentPrestigeIconSvg('golden_ticket','is-ticket')}
+      \${count > 1 ? \`<b>×\${escapeHtml(formatNumber(count))}</b>\` : ''}
     </div>
     <div>
-      <span>Golden Ticket</span>
-      <strong>Допуск к Большому турниру</strong>
-      <small>Действителен до проведения Большого турнира · не продаётся и не передаётся</small>
+      <span>\${escapeHtml(t('profile.tournament.rewards.golden_ticket'))}</span>
+      <strong>\${escapeHtml(t('profile.tournament.ticket_title'))}</strong>
+      <small>\${escapeHtml(t('profile.tournament.ticket_note'))}</small>
     </div>
-  </article>`;
+  </article>\`;
 }
 
 function tournamentShowcaseMarkup(snapshot){
@@ -1177,55 +1181,55 @@ function tournamentShowcaseMarkup(snapshot){
   const history = Array.isArray(source.history) ? source.history : [];
 
   const temporaryMarkup = temporary.length
-    ? `<div class="profile-v2-tournament-subtitle">Активно сейчас</div>
+    ? \`<div class="profile-v2-tournament-subtitle">\${escapeHtml(t('profile.tournament.active_now'))}</div>
       <div class="profile-v2-tournament-reward-grid">
-        ${temporary.map(item => tournamentRewardCard(item, true)).join('')}
-      </div>`
+        \${temporary.map(item => tournamentRewardCard(item, true)).join('')}
+      </div>\`
     : '';
 
   const trophies = permanent.filter(item => String(item?.reward_code || '').startsWith('cup_'));
   const achievements = permanent.filter(item => !String(item?.reward_code || '').startsWith('cup_'));
 
   const trophyMarkup = trophies.length
-    ? `<div class="profile-v2-tournament-subtitle">Трофейный шкаф</div>
+    ? \`<div class="profile-v2-tournament-subtitle">\${escapeHtml(t('profile.tournament.trophy_cabinet'))}</div>
       <div class="profile-v2-tournament-trophy-shelf">
-        ${trophies.map(item => tournamentRewardCard(item, false, true)).join('')}
-      </div>`
+        \${trophies.map(item => tournamentRewardCard(item, false, true)).join('')}
+      </div>\`
     : '';
 
   const achievementMarkup = achievements.length
-    ? `<div class="profile-v2-tournament-subtitle">Достижения</div>
+    ? \`<div class="profile-v2-tournament-subtitle">\${escapeHtml(t('profile.tournament.achievements'))}</div>
       <div class="profile-v2-tournament-reward-grid">
-        ${achievements.map(item => tournamentRewardCard(item, false)).join('')}
-      </div>`
+        \${achievements.map(item => tournamentRewardCard(item, false)).join('')}
+      </div>\`
     : '';
 
   const historyMarkup = history.length
-    ? `<details class="profile-v2-tournament-history-disclosure">
-        <summary><span>История турниров</span><b>${escapeHtml(formatNumber(history.length))}</b></summary>
+    ? \`<details class="profile-v2-tournament-history-disclosure">
+        <summary><span>\${escapeHtml(t('profile.tournament.history'))}</span><b>\${escapeHtml(formatNumber(history.length))}</b></summary>
         <div class="profile-v2-tournament-history">
-          ${history.slice(0,12).map(tournamentHistoryCard).join('')}
+          \${history.slice(0,12).map(tournamentHistoryCard).join('')}
         </div>
-      </details>`
+      </details>\`
     : '';
 
-  return `<div class="profile-v2-tournament-showcase" data-tournament-prestige-showcase="v1">
+  return \`<div class="profile-v2-tournament-showcase" data-tournament-prestige-showcase="v1">
     <div class="profile-v2-tournament-showcase-summary">
-      <div><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.tournaments || 0))))}</strong><span>турниров</span></div>
-      <div><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.podiums || 0))))}</strong><span>подиумов</span></div>
-      <div><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.championships || 0))))}</strong><span>побед</span></div>
+      <div><strong>\${escapeHtml(formatNumber(Math.max(0, Number(summary.tournaments || 0))))}</strong><span>\${escapeHtml(t('profile.tournament.units.tournaments'))}</span></div>
+      <div><strong>\${escapeHtml(formatNumber(Math.max(0, Number(summary.podiums || 0))))}</strong><span>\${escapeHtml(t('profile.tournament.units.podiums'))}</span></div>
+      <div><strong>\${escapeHtml(formatNumber(Math.max(0, Number(summary.championships || 0))))}</strong><span>\${escapeHtml(t('profile.tournament.units.wins'))}</span></div>
     </div>
-    ${tournamentTicketMarkup(source.golden_ticket)}
-    ${temporaryMarkup}
-    ${trophyMarkup}
-    ${achievementMarkup}
+    \${tournamentTicketMarkup(source.golden_ticket)}
+    \${temporaryMarkup}
+    \${trophyMarkup}
+    \${achievementMarkup}
     <button class="profile-v2-tournament-hof-link" type="button" data-open-tournament-hall-of-fame>
-      ${tournamentPrestigeIconSvg('hall_of_fame','is-hof')}
-      <span><strong>Зал славы турниров</strong><small>Чемпионы официальных турниров и история побед</small></span>
+      \${tournamentPrestigeIconSvg('hall_of_fame','is-hof')}
+      <span><strong>\${escapeHtml(t('profile.tournament.hall_of_fame'))}</strong><small>\${escapeHtml(t('profile.tournament.hall_of_fame_note'))}</small></span>
       <b aria-hidden="true">›</b>
     </button>
-    ${historyMarkup}
-  </div>`;
+    \${historyMarkup}
+  </div>\`;
 }
 
 function openTournamentShowcase(){
@@ -1233,15 +1237,15 @@ function openTournamentShowcase(){
     ? state.profileTournamentRewards
     : {};
   if (snapshot.available !== true) return;
-  openSheet(`
+  openSheet(\`
     <div class="sheet-head profile-v2-tournament-showcase-head">
-      <div><h2>Турнирная витрина</h2><p>Статус, трофеи и награды официальных турниров.</p></div>
+      <div><h2>\${escapeHtml(t('profile.tournament.showcase_title'))}</h2><p>\${escapeHtml(t('profile.tournament.showcase_note'))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="profile-v2-tournament-showcase-scroll" data-tournament-showcase-scroll>
-      ${tournamentShowcaseMarkup(snapshot)}
+      \${tournamentShowcaseMarkup(snapshot)}
     </div>
-  `);
+  \`);
   document.querySelector('#sheet [data-open-tournament-hall-of-fame]')?.addEventListener('click', () => {
     closeSheet();
     showScreen('tournaments');
@@ -1251,22 +1255,30 @@ function openTournamentShowcase(){
   }, { once:true });
 }
 
+function tournamentRewardLabel(code){
+  const normalized = String(code || '');
+  if (TOURNAMENT_REWARD_CODES.has(normalized)) return t(\`profile.tournament.rewards.\${normalized}\`);
+  return normalized || t('profile.tournament.rewards.fallback');
+}
+
 function tournamentRewardCard(item, temporary, trophy = false){
   const code = String(item?.reward_code || '');
-  const label = TOURNAMENT_REWARD_LABELS[code] || code || 'Награда';
+  const label = tournamentRewardLabel(code);
   const until = item?.valid_until_at_utc ? formatDateTime(item.valid_until_at_utc) : '';
   const note = temporary
-    ? (until ? `Активна до ${until}` : 'Активна')
-    : 'Навсегда';
-  return `<article class="profile-v2-tournament-reward${trophy ? ' is-trophy' : ''}" data-tournament-reward-code="${escapeHtml(code)}">
-    <b aria-hidden="true">${tournamentPrestigeIconSvg(code, trophy ? 'is-trophy' : '')}</b>
-    <div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(note)}</span></div>
-  </article>`;
+    ? (until ? t('profile.tournament.reward_active_until',{until}) : t('profile.tournament.reward_active'))
+    : t('profile.tournament.reward_forever');
+  return \`<article class="profile-v2-tournament-reward\${trophy ? ' is-trophy' : ''}" data-tournament-reward-code="\${escapeHtml(code)}">
+    <b aria-hidden="true">\${tournamentPrestigeIconSvg(code, trophy ? 'is-trophy' : '')}</b>
+    <div><strong>\${escapeHtml(label)}</strong><span>\${escapeHtml(note)}</span></div>
+  </article>\`;
 }
 
 function tournamentHistoryCard(item){
   const placement = Number(item?.placement || 0);
-  const result = placement > 0 ? `${placement} место` : 'Участник';
+  const result = placement > 0
+    ? t('profile.tournament.placement',{placement:formatNumber(placement)})
+    : t('profile.tournament.participant');
   const date = item?.scheduled_start_at_utc || item?.settled_at_utc || null;
   const rewards = Array.isArray(item?.rewards) ? item.rewards : [];
   const cup = rewards.find(reward => String(reward?.reward_code || '').startsWith('cup_'));
@@ -1274,14 +1286,12 @@ function tournamentHistoryCard(item){
     gameName(String(item?.game_type || 'tictactoe')),
     date ? formatDate(date) : '',
   ].filter(Boolean).join(' · ');
-  return `<article class="profile-v2-tournament-history-card place-${placement > 0 ? placement : 'other'}">
-    <span class="profile-v2-tournament-history-medal" aria-hidden="true">${cup ? tournamentPrestigeIconSvg(String(cup.reward_code),'is-history') : tournamentPrestigeIconSvg('winner_badge','is-history')}</span>
-    <div><span>${escapeHtml(String(item?.title || 'Официальный турнир'))}</span><small>${escapeHtml(meta)}</small></div>
-    <strong>${escapeHtml(result)}</strong>
-  </article>`;
+  return \`<article class="profile-v2-tournament-history-card place-\${placement > 0 ? placement : 'other'}">
+    <span class="profile-v2-tournament-history-medal" aria-hidden="true">\${cup ? tournamentPrestigeIconSvg(String(cup.reward_code),'is-history') : tournamentPrestigeIconSvg('winner_badge','is-history')}</span>
+    <div><span>\${escapeHtml(String(item?.title || t('profile.tournament.official_tournament')))}</span><small>\${escapeHtml(meta)}</small></div>
+    <strong>\${escapeHtml(result)}</strong>
+  </article>\`;
 }
-
-
 function renderYearlyMedalSection(snapshot){
   const source = snapshot && typeof snapshot === 'object' ? snapshot : null;
   const medal = source?.visible === true
@@ -1395,7 +1405,7 @@ function historyRow(match){
   const tone = ['pos','neg','zero'].includes(String(match?.tone || '')) ? String(match.tone) : 'zero';
   const economy = match?.economy && typeof match.economy === 'object' ? match.economy : null;
   const economyText = economy
-    ? `Вход ${historyCoins(economy.entry)} · Награда ${historyCoins(economy.reward)} · Итог ${historyDelta(economy.ledger_delta)} · Баланс ${historyCoins(economy.new_balance)}`
+    ? t('profile.history_economy',{entry:historyCoins(economy.entry),reward:historyCoins(economy.reward),delta:historyDelta(economy.ledger_delta),balance:historyCoins(economy.new_balance)})
     : '';
   const meta = [economyText, when ? formatDateTime(when) : ''].filter(Boolean).join(' · ');
   return `<article class="profile-v2-history-row ${tone}"><div class="profile-v2-history-main"><strong>${escapeHtml(gameName(gameType))}${variant ? ` · ${escapeHtml(variant)}` : ''}</strong><span>${escapeHtml(String(match?.opponent || t('profile.opponent')))}</span></div><div class="profile-v2-history-result"><b>${escapeHtml(String(match?.result || '—'))}</b><small>${escapeHtml(meta)}</small></div></article>`;
