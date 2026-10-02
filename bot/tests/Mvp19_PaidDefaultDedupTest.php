@@ -114,6 +114,7 @@ $wrapper = (string)file_get_contents($root . '/app/assets/js/screens/store-scree
 $mainCss = (string)file_get_contents($root . '/app/assets/css/main.css');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
+$locale = json_decode((string)file_get_contents($root . '/app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 
 $assertTrue(!str_contains($migrationSource, 'game-ttt-'), 'TTT is already correct and must stay outside the dedup migration');
 $assertTrue(str_contains($css, 'data-chess-theme="wood"') && str_contains($css, 'amber-v2.svg'), 'Chess first paid board must have a non-default amber identity');
@@ -124,11 +125,36 @@ $assertTrue(str_contains($css, 'data-domino-theme="felt"') && str_contains($css,
 $assertTrue(str_contains($css, 'theme-blue') && str_contains($css, '#8750d5'), 'Four in a Row first paid field must no longer mirror the base blue board');
 $assertTrue(str_contains($css, 'pieces-classic.red') && str_contains($css, '#ff78b7') && str_contains($css, '#66e8f3'), 'Four in a Row first paid discs must no longer mirror base red/yellow discs');
 $assertTrue(!str_contains($storeCorrective, 'const COPY') && !str_contains($storeCorrective, '.textContent = copy.') && !str_contains($storeCorrective, 'setTimeout'), 'Paid-default corrective must not rewrite text after render; native Store owners must render the final copy immediately');
-$assertTrue(str_contains($baseStoreSource, 'Янтарно-бордовая доска') && str_contains($baseStoreSource, 'Холодная лазурно-мятная доска'), 'Chess and Checkers replacement descriptions must render from the base Store owner');
-$assertTrue(str_contains($reversiStoreSource, 'Холодное лазурное поле') && str_contains($reversiStoreSource, 'Тёмный индиго и светлый перламутр'), 'Reversi replacement descriptions must render from its native Store owner');
-$assertTrue(str_contains($goStoreSource, 'Розово-вишнёвая древесина') && str_contains($goStoreSource, 'медово-янтарные камни'), 'Go replacement descriptions must render from its native Store owner');
-$assertTrue(str_contains($dominoStoreSource, 'Глубокое бордовое сукно') && str_contains($dominoStoreSource, 'Тёплые янтарные костяшки'), 'Domino replacement descriptions must render from its native Store owner');
-$assertTrue(str_contains($fourStoreSource, 'Насыщенное фиолетово-сливовое поле') && str_contains($fourStoreSource, 'Яркая розово-бирюзовая пара'), 'Four in a Row replacement descriptions must render from its native Store owner');
+$assertTrue(
+    str_contains($baseStoreSource, 'store.games.descriptions.${key}.${layer}.${variantKey}')
+    && (($locale['store']['games']['descriptions']['chess']['theme']['wood'] ?? null) === 'Янтарно-бордовая доска с глубоким контрастом и тёплым клубным характером')
+    && (($locale['store']['games']['descriptions']['checkers']['theme']['wood'] ?? null) === 'Холодная лазурно-мятная доска с тёмными бирюзовыми клетками'),
+    'Chess and Checkers replacement descriptions must render through the localized base Store owner'
+);
+$assertTrue(
+    str_contains($reversiStoreSource, 'store.wrappers.reversi.descriptions.${safeLayer}.${variantKey}')
+    && (($locale['store']['wrappers']['reversi']['descriptions']['theme']['green'] ?? null) === 'Холодное лазурное поле с глубоким бирюзовым тоном и чёткой контрастной сеткой')
+    && (($locale['store']['wrappers']['reversi']['descriptions']['elements']['classic'] ?? null) === 'Тёмный индиго и светлый перламутр с мягким цветным отливом'),
+    'Reversi replacement descriptions must render through its localized native Store owner'
+);
+$assertTrue(
+    str_contains($goStoreSource, 'store.wrappers.go.descriptions.${safeLayer}.${variantKey}')
+    && (($locale['store']['wrappers']['go']['descriptions']['theme']['wood'] ?? null) === 'Розово-вишнёвая древесина с тёмной сеткой и спокойной японской фактурой')
+    && (($locale['store']['wrappers']['go']['descriptions']['elements']['classic'] ?? null) === 'Дымчатые и медово-янтарные камни с мягкими бликами и выразительным объёмом'),
+    'Go replacement descriptions must render through its localized native Store owner'
+);
+$assertTrue(
+    str_contains($dominoStoreSource, 'store.wrappers.domino.descriptions.${safeLayer}.${variantKey}')
+    && (($locale['store']['wrappers']['domino']['descriptions']['theme']['felt'] ?? null) === 'Глубокое бордовое сукно с винной кромкой и мягкой клубной глубиной')
+    && (($locale['store']['wrappers']['domino']['descriptions']['elements']['ivory'] ?? null) === 'Тёплые янтарные костяшки с тёмными точками и мягким объёмным блеском'),
+    'Domino replacement descriptions must render through its localized native Store owner'
+);
+$assertTrue(
+    str_contains($fourStoreSource, 'store.wrappers.four_in_a_row.descriptions.${safeLayer}.${variantKey}')
+    && (($locale['store']['wrappers']['four_in_a_row']['descriptions']['theme']['blue'] ?? null) === 'Насыщенное фиолетово-сливовое поле с глубоким тоном и мягким объёмом')
+    && (($locale['store']['wrappers']['four_in_a_row']['descriptions']['elements']['classic'] ?? null) === 'Яркая розово-бирюзовая пара с мягкими бликами и аркадным характером'),
+    'Four in a Row replacement descriptions must render through its localized native Store owner'
+);
 foreach ([$baseStoreSource, $reversiStoreSource, $goStoreSource, $dominoStoreSource, $fourStoreSource] as $source) {
     $assertTrue(!str_contains($source, 'вместо стандарт') && !str_contains($source, 'базового набора'), 'Replacement cosmetic copy must describe the item itself without technical comparison language');
 }
