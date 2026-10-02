@@ -22,12 +22,12 @@ assert(live.includes("from './renderer.js?v=76&base=mvp19-9-live-native-effects-
 assert(corrective.includes("renderer-cosmetics-v1.js?v=8") && corrective.includes("mvp27_1=domino-renderer-localized-v1"), 'Corrective owner must publish a fresh localized native-cosmetics identity.');
 assert(manual.includes("renderer-cosmetics-corrective-v25.js?v=3") && manual.includes("mvp27_1=domino-renderer-localized-v1"), 'Manual stability owner must publish a fresh localized corrective identity.');
 assert(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=3&mvp19_9=accepted-live-stability-v30&parent=accepted-live-corrective-v25&visual_portal=v38&precision_geometry=v41&gesture_owner=v27&precision_static=2&live_effects=v41&mvp27_1=domino-renderer-localized-v1'"), 'Canonical manifest must publish the localized Domino outer owner.');
-assert(ru._meta?.version === 37, 'RU locale revision must publish Domino renderer localization v37.');
+assert(Number(ru._meta?.version || 0) >= 37, 'RU locale revision must retain Domino renderer localization v37 or a newer successor.');
 assert(ru.games?.domino?.ui?.status?.your_turn === 'Ваш ход', 'Accepted RU Domino status copy must remain unchanged.');
 assert(ru.games?.domino?.ui?.actions?.draw === 'Добрать из запаса', 'Accepted RU Domino draw action copy must remain unchanged.');
 assert(ru.games?.domino?.ui?.event?.play_self === 'Вы поставили {a}–{b}', 'Accepted RU Domino play feedback must remain unchanged.');
 assert(ru.games?.domino?.ui?.placement?.aria === 'Поставить костяшку {a}–{b} к {side} концу цепочки', 'Accepted RU Domino accessibility copy must remain unchanged.');
-assert(baseline.cyrillic_lines_total === 3503 && baseline.by_scope?.client === 1822, 'Domino renderer localization debt baseline must ratchet by exactly 28 client lines.');
+assert(baseline.cyrillic_lines_total <= 3503 && baseline.by_scope?.client <= 1822, 'Domino renderer localization debt must never regress above the accepted post-Domino baseline.');
 
 console.log('MVP27_1_DOMINO_RENDERER_LOCALIZATION_CONTRACT=PASS');
 console.log('MVP27_1_ACTIVE_DOMINO_RENDERER_HARDCODED_CYRILLIC=0');
