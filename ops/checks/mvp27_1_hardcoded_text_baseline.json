@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-02",
-  "staging_base": "b80002c59d82c1a987d40aea246d10dd8209781a",
+  "staging_base": "7aba902e0702488ef291c14cc2524a04be1522c6",
   "scanned_files": 776,
-  "cyrillic_lines_total": 3453,
+  "cyrillic_lines_total": 3431,
   "by_scope": {
-    "client": 1772,
+    "client": 1750,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 active Profile Entry Effects localization; factual Store/Profile/LIVE presentation owner reduced by 25 hardcoded Cyrillic source lines to zero while preserving purchase/equip ownership, player arbitration, launch-overlay handoff and once-per-game timing."
+  "note": "MVP-27.1 active Reversi base renderer localization; factual LIVE renderer reduced by 22 hardcoded Cyrillic source lines to zero while preserving board sizes, legal-move action ownership, flip cadence/timing and accepted premium cosmetics owners."
 }
