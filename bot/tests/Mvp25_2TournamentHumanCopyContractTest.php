@@ -35,7 +35,14 @@ foreach ($localizedCopy as [$key,$copy]) {
     $value=$locale;
     foreach(explode('.', $key) as $part) $value=is_array($value)?($value[$part]??null):null;
     $assert($value === $copy, 'Expected human tournament locale copy missing: ' . $key);
-    $assert(str_contains($tournaments, $key), 'Tournament runtime must consume localized human copy: ' . $key);
+    if (str_starts_with($key, 'arena.bracket.technical_restart_')) {
+        $code=substr($key, strlen('arena.bracket.'));
+        $assert(str_contains($tournaments, $code . ":'" . $code . "'")
+                && str_contains($tournaments, 'arena.bracket.${key}'),
+            'Tournament runtime must resolve localized technical outcome copy dynamically: ' . $key);
+    } else {
+        $assert(str_contains($tournaments, $key), 'Tournament runtime must consume localized human copy: ' . $key);
+    }
 }
 
 foreach ([
