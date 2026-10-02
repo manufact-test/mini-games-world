@@ -72,8 +72,8 @@ if ($viewportAsset !== './assets/css/games/battleship/live-exit-fit-v1.css?v=1&m
     throw new RuntimeException('Canonical manifest must publish the accepted Battleship viewport corrective.');
 }
 foreach ([
-    "$battleshipExitFitTarget = $assets['battleship_exit_fit'];",
-    "'battleship_viewport_scroll' => $battleshipExitFitTarget",
+    '$battleshipExitFitTarget = $assets[\'battleship_exit_fit\'];',
+    '\'battleship_viewport_scroll\' => $battleshipExitFitTarget',
 ] as $runtimeToken) {
     if (!str_contains($v110, $runtimeToken)) {
         throw new RuntimeException('v110 must consume the canonical Battleship viewport corrective: ' . $runtimeToken);
