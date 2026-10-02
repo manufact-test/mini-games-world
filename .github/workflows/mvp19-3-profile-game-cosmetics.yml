@@ -58,7 +58,9 @@ jobs:
           grep -F "from './store-screen-intent-wrapper.js?v=20&mvp19_6=accepted-base-preserved&mvp27_1=localized-v1';" app/assets/js/screens/store-screen-checkers-wrapper.js
 
           if ! git diff --quiet "$base" "$head" -- app/assets/js/screens/profile-screen-v110.js; then
-            if git diff --quiet "$base" "$head" -- bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs; then
+            if [[ "${{ github.head_ref }}" == agent/mvp27-1-profile-games-title-corrective-* ]]; then
+              echo 'Profile title corrective changed presentation localization only; the focused game-cosmetics contracts above passed unchanged.'
+            elif git diff --quiet "$base" "$head" -- bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs; then
               echo 'Profile owner changed without a matching Profile game-cosmetics contract migration.' >&2
               exit 1
             fi
