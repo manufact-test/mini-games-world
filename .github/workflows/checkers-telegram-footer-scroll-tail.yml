@@ -11,6 +11,9 @@ on:
       - 'app/assets/js/games/checkers/renderer.js'
       - 'app/assets/css/production-v108-profile-entry-preview-live-owner-checkers-fit.css'
       - 'app/runtime/client/version-manifest.php'
+      - 'app/locales/ru.json'
+      - 'ops/checks/mvp27_1_checkers_renderer_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - 'bot/tests/CheckersTelegramFooterScrollTailContractTest.php'
       - 'bot/tests/CheckersTelegramViewportHeightFitContractTest.php'
       - '.github/workflows/checkers-telegram-footer-scroll-tail.yml'
@@ -30,3 +33,6 @@ jobs:
       - run: php bot/tests/CheckersTelegramViewportHeightFitContractTest.php
       - run: php -l app/v110.php
       - run: php -l app/runtime/client/version-manifest.php
+      - run: node --check app/assets/js/games/checkers/renderer.js
+      - run: node --check ops/checks/mvp27_1_checkers_renderer_localization_contract.mjs
+      - run: node ops/checks/mvp27_1_checkers_renderer_localization_contract.mjs
