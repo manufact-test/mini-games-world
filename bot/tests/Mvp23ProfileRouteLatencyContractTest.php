@@ -14,6 +14,7 @@ $guard = $read('app/assets/js/profile/mgw-mobile-profile-animation-guard-v2.js')
 $main = $read('app/assets/js/main-v110-handoff-shell.js');
 $css = $read('app/assets/css/production-v99-profile-reaction-polish.css');
 $stagingEntry = $read('app/v110.php');
+$manifest = require $root . '/app/runtime/client/version-manifest.php';
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -70,12 +71,13 @@ $assert(
     'Profile screen/content presentation must remain atomic rather than reintroducing route motion.'
 );
 
+$cleanTarget = (string)($manifest['imports']['@mgw/clean-entry'] ?? '');
+$guardTarget = (string)($manifest['imports']['./assets/js/profile/mgw-mobile-profile-animation-guard-v2.js?v=1'] ?? '');
 $assert(
-    str_contains($stagingEntry, "\$cleanEntryImportKey = '@mgw/clean-entry';")
-        && str_contains($stagingEntry, "\$imports[\$cleanEntryImportKey] .= '&mvp23_profile=instant-route-v1';")
-        && str_contains($stagingEntry, "\$profileAnimationGuardImportKey = './assets/js/profile/mgw-mobile-profile-animation-guard-v2.js?v=1';")
-        && str_contains($stagingEntry, "\$imports[\$profileAnimationGuardImportKey] .= '&mvp23_profile=instant-resume-v1';"),
-    'Staging must cache-bust both canonical Profile route owners so Telegram WebView cannot reuse the old settle guard.'
+    str_contains($stagingEntry, "'clean_entry_v110' => \$imports['@mgw/clean-entry']")
+        && str_contains($cleanTarget, 'mvp23_profile=instant-route-v1')
+        && str_contains($cleanTarget, 'profile_route_guard=animation-runtime-v2')
+        && str_contains($guardTarget, 'mvp23_profile=instant-resume-v1'),
+    'Manifest and staging publication must cache-bust both canonical Profile route owners so Telegram WebView cannot reuse the old settle guard.'
 );
-
 fwrite(STDOUT, "MVP-23 Profile route latency contract OK ({$assertions} assertions).\n");
