@@ -1793,7 +1793,7 @@ function renderTournamentSnapshot(errorMessage = ''){
         <h3>${escapeHtml(String(tournament.title || t('arena.official_title')))}</h3>
         <p>${escapeHtml(gameName(String(tournament.game_type || DEFAULT_GAME)))}</p>
       </div>
-      <div class="tournaments-v2-tournament-entry"><small>${escapeHtml(t('arena.card.entry'))}</small><strong>${escapeHtml(formatNumber(fee))}</strong><span>коинов</span></div>
+      <div class="tournaments-v2-tournament-entry"><small>${escapeHtml(t('arena.card.entry'))}</small><strong>${escapeHtml(formatNumber(fee))}</strong><span>${escapeHtml(t('arena.card.coins'))}</span></div>
     </div>
 
     ${scheduleMarkup}
