@@ -302,14 +302,14 @@ function bindProfileActions(){
 function moderationActionLabel(value){
   const code = String(value || '');
   const key = ({ warning:'warning', restriction:'restriction', permanent_ban:'permanent_ban' })[code];
-  if (key) return t(\`profile.moderation.action_types.\${key}\`);
+  if (key) return t(`profile.moderation.action_types.${key}`);
   return code || t('profile.moderation.action_types.fallback');
 }
 
 function moderationStatusLabel(value){
   const code = String(value || '');
   if (['active','pending_second_review','confirmed','rejected','revoked','expired'].includes(code)) {
-    return t(\`profile.moderation.action_statuses.\${code}\`);
+    return t(`profile.moderation.action_statuses.${code}`);
   }
   return code || '—';
 }
@@ -317,16 +317,16 @@ function moderationStatusLabel(value){
 function moderationAppealStatusLabel(value){
   const code = String(value || '');
   if (['open','reviewing','accepted','rejected'].includes(code)) {
-    return t(\`profile.moderation.appeal_statuses.\${code}\`);
+    return t(`profile.moderation.appeal_statuses.${code}`);
   }
   return code || '—';
 }
 
 async function openModerationCenter(snapshot = null){
-  openSheet(\`
-    <div class="sheet-head"><div><h2>\${escapeHtml(t('profile.moderation.title'))}</h2><p>\${escapeHtml(t('profile.moderation.note'))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
-    <div class="profile-v2-moderation-loading">\${escapeHtml(t('common.loading'))}</div>
-  \`);
+  openSheet(`
+    <div class="sheet-head"><div><h2>${escapeHtml(t('profile.moderation.title'))}</h2><p>${escapeHtml(t('profile.moderation.note'))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="profile-v2-moderation-loading">${escapeHtml(t('common.loading'))}</div>
+  `);
 
   try {
     const result = snapshot ? { moderation:snapshot } : await api.moderationSnapshot();
@@ -341,36 +341,36 @@ async function openModerationCenter(snapshot = null){
       const actionId = String(item?.action_id || '');
       const canAppeal = ['active','confirmed','pending_second_review'].includes(String(item?.status || ''))
         && !activeAppeals.has(actionId);
-      const scope = item?.scope_label ? \` · \${escapeHtml(item.scope_label)}\` : '';
-      const until = item?.expires_at_utc ? \` · \${escapeHtml(t('profile.moderation.until',{date:formatDate(item.expires_at_utc)}))}\` : '';
-      return \`
+      const scope = item?.scope_label ? ` · ${escapeHtml(item.scope_label)}` : '';
+      const until = item?.expires_at_utc ? ` · ${escapeHtml(t('profile.moderation.until',{date:formatDate(item.expires_at_utc)}))}` : '';
+      return `
         <div class="profile-v2-moderation-item">
-          <div><strong>\${escapeHtml(moderationActionLabel(item?.action_type))}</strong><span>\${escapeHtml(moderationStatusLabel(item?.status))}\${scope}\${until}</span></div>
-          <p>\${escapeHtml(String(item?.note || t('profile.moderation.no_comment')))}</p>
-          \${canAppeal ? \`<button class="btn ghost full" type="button" data-moderation-appeal-action="\${escapeHtml(actionId)}">\${escapeHtml(t('profile.moderation.appeal_action'))}</button>\` : ''}
+          <div><strong>${escapeHtml(moderationActionLabel(item?.action_type))}</strong><span>${escapeHtml(moderationStatusLabel(item?.status))}${scope}${until}</span></div>
+          <p>${escapeHtml(String(item?.note || t('profile.moderation.no_comment')))}</p>
+          ${canAppeal ? `<button class="btn ghost full" type="button" data-moderation-appeal-action="${escapeHtml(actionId)}">${escapeHtml(t('profile.moderation.appeal_action'))}</button>` : ''}
         </div>
-      \`;
-    }).join('') : \`<div class="profile-v2-moderation-empty">\${escapeHtml(t('profile.moderation.actions_empty'))}</div>\`;
+      `;
+    }).join('') : `<div class="profile-v2-moderation-empty">${escapeHtml(t('profile.moderation.actions_empty'))}</div>`;
 
-    const appealsHtml = appeals.length ? appeals.map(item => \`
+    const appealsHtml = appeals.length ? appeals.map(item => `
       <div class="profile-v2-moderation-item">
-        <div><strong>\${escapeHtml(t('profile.moderation.appeal_label'))}</strong><span>\${escapeHtml(moderationAppealStatusLabel(item?.status))}</span></div>
-        <p>\${escapeHtml(String(item?.message || ''))}</p>
-        \${item?.review_note ? \`<small>\${escapeHtml(t('profile.moderation.response_prefix'))} \${escapeHtml(String(item.review_note))}</small>\` : ''}
+        <div><strong>${escapeHtml(t('profile.moderation.appeal_label'))}</strong><span>${escapeHtml(moderationAppealStatusLabel(item?.status))}</span></div>
+        <p>${escapeHtml(String(item?.message || ''))}</p>
+        ${item?.review_note ? `<small>${escapeHtml(t('profile.moderation.response_prefix'))} ${escapeHtml(String(item.review_note))}</small>` : ''}
       </div>
-    \`).join('') : \`<div class="profile-v2-moderation-empty">\${escapeHtml(t('profile.moderation.appeals_empty'))}</div>\`;
+    `).join('') : `<div class="profile-v2-moderation-empty">${escapeHtml(t('profile.moderation.appeals_empty'))}</div>`;
 
     const accountNote = accountStatus === 'banned'
       ? t('profile.moderation.account_banned')
       : (activeActions.length ? t('profile.moderation.account_has_actions') : t('profile.moderation.account_clear'));
 
-    openSheet(\`
-      <div class="sheet-head"><div><h2>\${escapeHtml(t('profile.moderation.title'))}</h2><p>\${escapeHtml(accountNote)}</p></div><button class="close" data-close-sheet type="button">×</button></div>
+    openSheet(`
+      <div class="sheet-head"><div><h2>${escapeHtml(t('profile.moderation.title'))}</h2><p>${escapeHtml(accountNote)}</p></div><button class="close" data-close-sheet type="button">×</button></div>
       <div class="profile-v2-moderation">
-        <section><h3>\${escapeHtml(t('profile.moderation.actions_title'))}</h3>\${actionsHtml}</section>
-        <section><h3>\${escapeHtml(t('profile.moderation.appeals_title'))}</h3>\${appealsHtml}</section>
+        <section><h3>${escapeHtml(t('profile.moderation.actions_title'))}</h3>${actionsHtml}</section>
+        <section><h3>${escapeHtml(t('profile.moderation.appeals_title'))}</h3>${appealsHtml}</section>
       </div>
-    \`);
+    `);
 
     document.querySelectorAll('#sheet [data-moderation-appeal-action]').forEach(button => {
       button.addEventListener('click',() => openModerationAppealComposer(
@@ -379,20 +379,20 @@ async function openModerationCenter(snapshot = null){
       ));
     });
   } catch (error) {
-    openSheet(\`
-      <div class="sheet-head"><div><h2>\${escapeHtml(t('profile.moderation.title'))}</h2><p>\${escapeHtml(t('profile.moderation.load_error'))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
-      <div class="profile-v2-moderation-empty">\${escapeHtml(error?.message || t('profile.moderation.retry_later'))}</div>
-    \`);
+    openSheet(`
+      <div class="sheet-head"><div><h2>${escapeHtml(t('profile.moderation.title'))}</h2><p>${escapeHtml(t('profile.moderation.load_error'))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
+      <div class="profile-v2-moderation-empty">${escapeHtml(error?.message || t('profile.moderation.retry_later'))}</div>
+    `);
   }
 }
 
 function openModerationAppealComposer(actionId, moderation){
   if (!actionId) return;
-  openSheet(\`
-    <div class="sheet-head"><div><h2>\${escapeHtml(t('profile.moderation.appeal_form_title'))}</h2><p>\${escapeHtml(t('profile.moderation.appeal_form_note'))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
-    <textarea class="form-input" id="mgwModerationAppealText" maxlength="1200" rows="5" placeholder="\${escapeHtml(t('profile.moderation.appeal_placeholder'))}"></textarea>
-    <button class="btn primary full" id="mgwModerationAppealSend" type="button">\${escapeHtml(t('profile.moderation.appeal_send'))}</button>
-  \`);
+  openSheet(`
+    <div class="sheet-head"><div><h2>${escapeHtml(t('profile.moderation.appeal_form_title'))}</h2><p>${escapeHtml(t('profile.moderation.appeal_form_note'))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
+    <textarea class="form-input" id="mgwModerationAppealText" maxlength="1200" rows="5" placeholder="${escapeHtml(t('profile.moderation.appeal_placeholder'))}"></textarea>
+    <button class="btn primary full" id="mgwModerationAppealSend" type="button">${escapeHtml(t('profile.moderation.appeal_send'))}</button>
+  `);
 
   document.getElementById('mgwModerationAppealSend')?.addEventListener('click', async event => {
     const message = String(document.getElementById('mgwModerationAppealText')?.value || '').trim();
@@ -729,7 +729,7 @@ async function saveNameColor(itemId, remove){
 function localizedProfileProductName(item, fallbackKey){
   const itemId = String(item?.item_id || '');
   if (itemId) {
-    try { return t(\`store.products.\${itemId}\`); } catch (error) {}
+    try { return t(`store.products.${itemId}`); } catch (error) {}
   }
   const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata : {};
   const legacyDisplayName = String(metadata.display_name || '').trim();
@@ -743,7 +743,7 @@ function nameColorName(item){
 function nameColorTierLabel(item){
   const tier = String(item?.metadata?.tier || 'normal');
   const key = ['normal','rare','gradient'].includes(tier) ? tier : 'fallback';
-  return t(\`store.profile.name_color_tiers.\${key}\`);
+  return t(`store.profile.name_color_tiers.${key}`);
 }
 function applyOptimisticProfileSlot(itemId, slot, equipped){
   const inventory = cloneObject(state.profileInventory) || { catalog:[], owned:[], equipped:{} };
@@ -1139,38 +1139,38 @@ function renderTournamentPrestigeSummary(snapshot){
         ? tournamentPrestigeIconSvg('winner_badge','is-medal')
         : tournamentPrestigeIconSvg('participant','is-participant');
 
-  return \`<section class="profile-v2-section profile-v2-tournament-status \${escapeHtml(status.tone)}" data-tournament-prestige="v1">
-    <button type="button" class="profile-v2-tournament-status-button" data-open-tournament-showcase aria-label="\${escapeHtml(t('profile.tournament.open_showcase'))}">
-      <span class="profile-v2-tournament-status-emblem" aria-hidden="true">\${leadIcon}</span>
+  return `<section class="profile-v2-section profile-v2-tournament-status ${escapeHtml(status.tone)}" data-tournament-prestige="v1">
+    <button type="button" class="profile-v2-tournament-status-button" data-open-tournament-showcase aria-label="${escapeHtml(t('profile.tournament.open_showcase'))}">
+      <span class="profile-v2-tournament-status-emblem" aria-hidden="true">${leadIcon}</span>
       <span class="profile-v2-tournament-status-copy">
-        <small>\${escapeHtml(t('profile.tournament.status_label'))}</small>
-        <strong>\${escapeHtml(status.kicker)}</strong>
-        <span>\${escapeHtml(status.title)}</span>
+        <small>${escapeHtml(t('profile.tournament.status_label'))}</small>
+        <strong>${escapeHtml(status.kicker)}</strong>
+        <span>${escapeHtml(status.title)}</span>
       </span>
       <span class="profile-v2-tournament-status-metrics" aria-hidden="true">
-        <b><strong>\${escapeHtml(formatNumber(Math.max(0, Number(summary.championships || 0))))}</strong><small>\${escapeHtml(t('profile.tournament.units.wins'))}</small></b>
-        <b><strong>\${escapeHtml(formatNumber(Math.max(0, Number(summary.podiums || 0))))}</strong><small>\${escapeHtml(t('profile.tournament.units.podiums'))}</small></b>
-        \${ticket ? \`<b class="has-ticket">\${tournamentPrestigeIconSvg('golden_ticket','is-mini')}<small>\${escapeHtml(t('profile.tournament.ticket_short'))}</small></b>\` : ''}
+        <b><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.championships || 0))))}</strong><small>${escapeHtml(t('profile.tournament.units.wins'))}</small></b>
+        <b><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.podiums || 0))))}</strong><small>${escapeHtml(t('profile.tournament.units.podiums'))}</small></b>
+        ${ticket ? `<b class="has-ticket">${tournamentPrestigeIconSvg('golden_ticket','is-mini')}<small>${escapeHtml(t('profile.tournament.ticket_short'))}</small></b>` : ''}
       </span>
       <span class="profile-v2-tournament-status-arrow" aria-hidden="true">›</span>
     </button>
-  </section>\`;
+  </section>`;
 }
 
 function tournamentTicketMarkup(ticket){
   if (!(ticket && typeof ticket === 'object' && ticket.valid === true)) return '';
   const count = Math.max(1, Number(ticket.championship_count || 1));
-  return \`<article class="profile-v2-tournament-ticket">
+  return `<article class="profile-v2-tournament-ticket">
     <div class="profile-v2-tournament-ticket-mark" aria-hidden="true">
-      \${tournamentPrestigeIconSvg('golden_ticket','is-ticket')}
-      \${count > 1 ? \`<b>×\${escapeHtml(formatNumber(count))}</b>\` : ''}
+      ${tournamentPrestigeIconSvg('golden_ticket','is-ticket')}
+      ${count > 1 ? `<b>×${escapeHtml(formatNumber(count))}</b>` : ''}
     </div>
     <div>
-      <span>\${escapeHtml(t('profile.tournament.rewards.golden_ticket'))}</span>
-      <strong>\${escapeHtml(t('profile.tournament.ticket_title'))}</strong>
-      <small>\${escapeHtml(t('profile.tournament.ticket_note'))}</small>
+      <span>${escapeHtml(t('profile.tournament.rewards.golden_ticket'))}</span>
+      <strong>${escapeHtml(t('profile.tournament.ticket_title'))}</strong>
+      <small>${escapeHtml(t('profile.tournament.ticket_note'))}</small>
     </div>
-  </article>\`;
+  </article>`;
 }
 
 function tournamentShowcaseMarkup(snapshot){
@@ -1181,55 +1181,55 @@ function tournamentShowcaseMarkup(snapshot){
   const history = Array.isArray(source.history) ? source.history : [];
 
   const temporaryMarkup = temporary.length
-    ? \`<div class="profile-v2-tournament-subtitle">\${escapeHtml(t('profile.tournament.active_now'))}</div>
+    ? `<div class="profile-v2-tournament-subtitle">${escapeHtml(t('profile.tournament.active_now'))}</div>
       <div class="profile-v2-tournament-reward-grid">
-        \${temporary.map(item => tournamentRewardCard(item, true)).join('')}
-      </div>\`
+        ${temporary.map(item => tournamentRewardCard(item, true)).join('')}
+      </div>`
     : '';
 
   const trophies = permanent.filter(item => String(item?.reward_code || '').startsWith('cup_'));
   const achievements = permanent.filter(item => !String(item?.reward_code || '').startsWith('cup_'));
 
   const trophyMarkup = trophies.length
-    ? \`<div class="profile-v2-tournament-subtitle">\${escapeHtml(t('profile.tournament.trophy_cabinet'))}</div>
+    ? `<div class="profile-v2-tournament-subtitle">${escapeHtml(t('profile.tournament.trophy_cabinet'))}</div>
       <div class="profile-v2-tournament-trophy-shelf">
-        \${trophies.map(item => tournamentRewardCard(item, false, true)).join('')}
-      </div>\`
+        ${trophies.map(item => tournamentRewardCard(item, false, true)).join('')}
+      </div>`
     : '';
 
   const achievementMarkup = achievements.length
-    ? \`<div class="profile-v2-tournament-subtitle">\${escapeHtml(t('profile.tournament.achievements'))}</div>
+    ? `<div class="profile-v2-tournament-subtitle">${escapeHtml(t('profile.tournament.achievements'))}</div>
       <div class="profile-v2-tournament-reward-grid">
-        \${achievements.map(item => tournamentRewardCard(item, false)).join('')}
-      </div>\`
+        ${achievements.map(item => tournamentRewardCard(item, false)).join('')}
+      </div>`
     : '';
 
   const historyMarkup = history.length
-    ? \`<details class="profile-v2-tournament-history-disclosure">
-        <summary><span>\${escapeHtml(t('profile.tournament.history'))}</span><b>\${escapeHtml(formatNumber(history.length))}</b></summary>
+    ? `<details class="profile-v2-tournament-history-disclosure">
+        <summary><span>${escapeHtml(t('profile.tournament.history'))}</span><b>${escapeHtml(formatNumber(history.length))}</b></summary>
         <div class="profile-v2-tournament-history">
-          \${history.slice(0,12).map(tournamentHistoryCard).join('')}
+          ${history.slice(0,12).map(tournamentHistoryCard).join('')}
         </div>
-      </details>\`
+      </details>`
     : '';
 
-  return \`<div class="profile-v2-tournament-showcase" data-tournament-prestige-showcase="v1">
+  return `<div class="profile-v2-tournament-showcase" data-tournament-prestige-showcase="v1">
     <div class="profile-v2-tournament-showcase-summary">
-      <div><strong>\${escapeHtml(formatNumber(Math.max(0, Number(summary.tournaments || 0))))}</strong><span>\${escapeHtml(t('profile.tournament.units.tournaments'))}</span></div>
-      <div><strong>\${escapeHtml(formatNumber(Math.max(0, Number(summary.podiums || 0))))}</strong><span>\${escapeHtml(t('profile.tournament.units.podiums'))}</span></div>
-      <div><strong>\${escapeHtml(formatNumber(Math.max(0, Number(summary.championships || 0))))}</strong><span>\${escapeHtml(t('profile.tournament.units.wins'))}</span></div>
+      <div><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.tournaments || 0))))}</strong><span>${escapeHtml(t('profile.tournament.units.tournaments'))}</span></div>
+      <div><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.podiums || 0))))}</strong><span>${escapeHtml(t('profile.tournament.units.podiums'))}</span></div>
+      <div><strong>${escapeHtml(formatNumber(Math.max(0, Number(summary.championships || 0))))}</strong><span>${escapeHtml(t('profile.tournament.units.wins'))}</span></div>
     </div>
-    \${tournamentTicketMarkup(source.golden_ticket)}
-    \${temporaryMarkup}
-    \${trophyMarkup}
-    \${achievementMarkup}
+    ${tournamentTicketMarkup(source.golden_ticket)}
+    ${temporaryMarkup}
+    ${trophyMarkup}
+    ${achievementMarkup}
     <button class="profile-v2-tournament-hof-link" type="button" data-open-tournament-hall-of-fame>
-      \${tournamentPrestigeIconSvg('hall_of_fame','is-hof')}
-      <span><strong>\${escapeHtml(t('profile.tournament.hall_of_fame'))}</strong><small>\${escapeHtml(t('profile.tournament.hall_of_fame_note'))}</small></span>
+      ${tournamentPrestigeIconSvg('hall_of_fame','is-hof')}
+      <span><strong>${escapeHtml(t('profile.tournament.hall_of_fame'))}</strong><small>${escapeHtml(t('profile.tournament.hall_of_fame_note'))}</small></span>
       <b aria-hidden="true">›</b>
     </button>
-    \${historyMarkup}
-  </div>\`;
+    ${historyMarkup}
+  </div>`;
 }
 
 function openTournamentShowcase(){
@@ -1237,15 +1237,15 @@ function openTournamentShowcase(){
     ? state.profileTournamentRewards
     : {};
   if (snapshot.available !== true) return;
-  openSheet(\`
+  openSheet(`
     <div class="sheet-head profile-v2-tournament-showcase-head">
-      <div><h2>\${escapeHtml(t('profile.tournament.showcase_title'))}</h2><p>\${escapeHtml(t('profile.tournament.showcase_note'))}</p></div>
+      <div><h2>${escapeHtml(t('profile.tournament.showcase_title'))}</h2><p>${escapeHtml(t('profile.tournament.showcase_note'))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="profile-v2-tournament-showcase-scroll" data-tournament-showcase-scroll>
-      \${tournamentShowcaseMarkup(snapshot)}
+      ${tournamentShowcaseMarkup(snapshot)}
     </div>
-  \`);
+  `);
   document.querySelector('#sheet [data-open-tournament-hall-of-fame]')?.addEventListener('click', () => {
     closeSheet();
     showScreen('tournaments');
@@ -1257,7 +1257,7 @@ function openTournamentShowcase(){
 
 function tournamentRewardLabel(code){
   const normalized = String(code || '');
-  if (TOURNAMENT_REWARD_CODES.has(normalized)) return t(\`profile.tournament.rewards.\${normalized}\`);
+  if (TOURNAMENT_REWARD_CODES.has(normalized)) return t(`profile.tournament.rewards.${normalized}`);
   return normalized || t('profile.tournament.rewards.fallback');
 }
 
@@ -1268,10 +1268,10 @@ function tournamentRewardCard(item, temporary, trophy = false){
   const note = temporary
     ? (until ? t('profile.tournament.reward_active_until',{until}) : t('profile.tournament.reward_active'))
     : t('profile.tournament.reward_forever');
-  return \`<article class="profile-v2-tournament-reward\${trophy ? ' is-trophy' : ''}" data-tournament-reward-code="\${escapeHtml(code)}">
-    <b aria-hidden="true">\${tournamentPrestigeIconSvg(code, trophy ? 'is-trophy' : '')}</b>
-    <div><strong>\${escapeHtml(label)}</strong><span>\${escapeHtml(note)}</span></div>
-  </article>\`;
+  return `<article class="profile-v2-tournament-reward${trophy ? ' is-trophy' : ''}" data-tournament-reward-code="${escapeHtml(code)}">
+    <b aria-hidden="true">${tournamentPrestigeIconSvg(code, trophy ? 'is-trophy' : '')}</b>
+    <div><strong>${escapeHtml(label)}</strong><span>${escapeHtml(note)}</span></div>
+  </article>`;
 }
 
 function tournamentHistoryCard(item){
@@ -1286,11 +1286,11 @@ function tournamentHistoryCard(item){
     gameName(String(item?.game_type || 'tictactoe')),
     date ? formatDate(date) : '',
   ].filter(Boolean).join(' · ');
-  return \`<article class="profile-v2-tournament-history-card place-\${placement > 0 ? placement : 'other'}">
-    <span class="profile-v2-tournament-history-medal" aria-hidden="true">\${cup ? tournamentPrestigeIconSvg(String(cup.reward_code),'is-history') : tournamentPrestigeIconSvg('winner_badge','is-history')}</span>
-    <div><span>\${escapeHtml(String(item?.title || t('profile.tournament.official_tournament')))}</span><small>\${escapeHtml(meta)}</small></div>
-    <strong>\${escapeHtml(result)}</strong>
-  </article>\`;
+  return `<article class="profile-v2-tournament-history-card place-${placement > 0 ? placement : 'other'}">
+    <span class="profile-v2-tournament-history-medal" aria-hidden="true">${cup ? tournamentPrestigeIconSvg(String(cup.reward_code),'is-history') : tournamentPrestigeIconSvg('winner_badge','is-history')}</span>
+    <div><span>${escapeHtml(String(item?.title || t('profile.tournament.official_tournament')))}</span><small>${escapeHtml(meta)}</small></div>
+    <strong>${escapeHtml(result)}</strong>
+  </article>`;
 }
 function renderYearlyMedalSection(snapshot){
   const source = snapshot && typeof snapshot === 'object' ? snapshot : null;
