@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-01",
-  "staging_base": "3529fdf6c29b2b45f303d80af5770cdfbdd2ce3d",
+  "staging_base": "9f18d63d7adca575ceca0052827f0b6fcaade40e",
   "scanned_files": 776,
-  "cyrillic_lines_total": 4354,
+  "cyrillic_lines_total": 4344,
   "by_scope": {
-    "client": 2673,
+    "client": 2663,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 Arena cancellation/tournament-card/schedule localization; active tournaments-screen-v1.js reduced from 62 to 10 Cyrillic source lines and removed direct ru-RU datetime formatting."
+  "note": "MVP-27.1 final Arena archive/Hall-of-Fame/leaderboard migration; active tournaments-screen-v1.js reduced from 10 to 0 Cyrillic source lines."
 }
