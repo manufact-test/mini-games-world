@@ -1,4 +1,5 @@
 import { api } from '../api/client.js?v=34';
+import { t } from '@mgw/i18n';
 
 const API_HOOK = Symbol.for('mgw.store.go.mvp19-8.v2');
 const INSTALL_KEY = '__mgwGoStoreV2Installed';
@@ -75,8 +76,9 @@ function scheduleUpgrade(){
 }
 
 function renameSelector(root){
+  const label = t('store.games.catalog_titles.go');
   root.querySelectorAll('[data-store-v2-game="go"]').forEach(button => {
-    if (button instanceof HTMLElement) button.textContent = 'Го';
+    if (button instanceof HTMLElement) button.textContent = label;
   });
 }
 
@@ -84,7 +86,7 @@ function upgradeHeader(root){
   const head = root.querySelector('.store-v2-game-head[data-store-game-type="go"]');
   if (!(head instanceof HTMLElement)) return;
   const title = head.querySelector('h2');
-  if (title instanceof HTMLElement) title.textContent = 'Го';
+  if (title instanceof HTMLElement) title.textContent = t('store.games.catalog_titles.go');
   const marks = head.querySelectorAll('.store-v2-game-head-marks b');
   marks.forEach((mark, index) => {
     if (!(mark instanceof HTMLElement)) return;
@@ -100,21 +102,17 @@ function upgradeGroups(root){
     const preview = group.querySelector('.store-v2-game-preview[data-game-type="go"]');
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
+    const key = ['theme','elements','effect'].includes(layer) ? layer : 'fallback';
     const title = group.querySelector('.store-v2-game-title-row h2');
     const subtitle = group.querySelector('.store-v2-game-title-row p');
-    const copy = {
-      theme:['Доски','Оформление доски Го'],
-      elements:['Камни','Комплект чёрных и белых камней'],
-      effect:['Эффекты',''],
-    }[layer] || ['Го','Игровая косметика'];
-    if (title instanceof HTMLElement) title.textContent = copy[0];
+    if (title instanceof HTMLElement) title.textContent = t(`store.wrappers.go.groups.${key}.title`);
     if (subtitle instanceof HTMLElement) {
-      if (layer === 'effect') subtitle.remove();
-      else subtitle.textContent = copy[1];
+      const nextSubtitle = t(`store.wrappers.go.groups.${key}.subtitle`);
+      if (layer === 'effect' || !nextSubtitle) subtitle.remove();
+      else subtitle.textContent = nextSubtitle;
     }
   });
 }
-
 function upgradeProducts(root){
   root.querySelectorAll('.store-v2-game-product[data-store-game-product="go"]').forEach(product => {
     if (!(product instanceof HTMLElement)) return;
@@ -124,7 +122,7 @@ function upgradeProducts(root){
     const variant = String(preview.dataset.cosmeticVariant || 'wood');
     const kind = product.querySelector('.store-v2-game-product-copy > span');
     const description = product.querySelector('.store-v2-game-product-copy > p');
-    if (kind instanceof HTMLElement) kind.textContent = layer === 'theme' ? 'Доска Го' : (layer === 'elements' ? 'Комплект камней' : 'Эффект партии');
+    if (kind instanceof HTMLElement) kind.textContent = t(`store.wrappers.go.kinds.${layer === 'theme' ? 'theme' : (layer === 'elements' ? 'elements' : 'effect')}`);
     if (description instanceof HTMLElement) description.textContent = descriptionFor(layer, variant);
   });
 }
@@ -142,29 +140,14 @@ function upgradePreviews(root){
 }
 
 function descriptionFor(layer, variant){
-  if (layer === 'theme') {
-    return ({
-      wood:'Розово-вишнёвая древесина с тёмной сеткой и спокойной японской фактурой',
-      dark:'Глубокая тёмная доска с контрастными линиями и спокойным блеском',
-      stone:'Светлый камень с натуральной минеральной фактурой',
-      neon:'Тёмная доска с холодным неоновым свечением линий и хоси',
-    })[variant] || 'Меняет оформление доски Го';
+  const safeLayer = ['theme','elements','effect'].includes(layer) ? layer : 'effect';
+  const variantKey = String(variant || 'fallback').replaceAll('-', '_');
+  try {
+    return t(`store.wrappers.go.descriptions.${safeLayer}.${variantKey}`);
+  } catch (_) {
+    return t(`store.wrappers.go.descriptions.${safeLayer}.fallback`);
   }
-  if (layer === 'elements') {
-    return ({
-      classic:'Дымчатые и медово-янтарные камни с мягкими бликами и выразительным объёмом',
-      marble:'Мраморные камни с живой минеральной фактурой',
-      glass:'Полупрозрачное стекло с внутренними бликами и глубиной',
-      neon:'Тёмные и светлые камни с яркими неоновыми контурами',
-    })[variant] || 'Меняет внешний вид камней Го';
-  }
-  return ({
-    placement:'Камень падает на пересечение и вспыхивает сегментированной энергетической печатью',
-    'group-capture':'Захваченная группа схлопывается в доску с вращающейся короной и россыпью частиц',
-    'territory-finish':'После партии территория проявляется каскадом меток и радиальным свечением поля',
-  })[variant] || 'Добавляет визуальный эффект партии';
 }
-
 function previewMarkup(layer, variant){
   if (layer === 'theme') return boardMarkup(`theme-${safeVariant(variant)}`, baseScenario(), 'theme');
   if (layer === 'elements') return boardMarkup(`stones-${safeVariant(variant)}`, baseScenario(), 'stones');
