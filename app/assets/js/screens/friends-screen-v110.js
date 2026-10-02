@@ -4,21 +4,18 @@ import { currentScreen, showScreen } from '../router.js?v=27';
 import { openSheet, closeSheet } from '../components/sheet.js?v=1109';
 import { toast } from '../components/toast.js?v=1109';
 import { openSocialPlayerInvite } from '../games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1';
+import { t, formatDate as formatLocalizedDate, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
 
 const STYLE_URL = './assets/css/friends-v110.css?v=5&mvp18=instant-route&optimistic-relations';
 const FRIENDS_REFRESH_MS = 5000;
-const GAME_NAMES = Object.freeze({
-  tictactoe:'Крестики-нолики', four_in_a_row:'4 в ряд', battleship:'Морской бой',
-  checkers:'Шашки', reversi:'Реверси', chess:'Шахматы', go:'Го', domino:'Домино',
-});
-const REPORT_REASONS = Object.freeze([
-  ['nickname','Недопустимый никнейм'],
-  ['avatar','Недопустимый аватар'],
-  ['spam','Спам'],
-  ['cheating','Нечестная игра'],
-  ['stalling','Затягивание игры'],
-  ['other','Другое'],
+const GAME_TYPES = Object.freeze([
+  'tictactoe','four_in_a_row','battleship','checkers','reversi','chess','go','domino',
 ]);
+const REPORT_REASON_CODES = Object.freeze([
+  'nickname','avatar','spam','cheating','stalling','other',
+]);
+const friendsText = (key, params = {}) => t(`friends.${key}`, params);
+const reportReasons = () => REPORT_REASON_CODES.map(value => [value, t(`home.report.reasons.${value}`)]);
 
 let initialized = false;
 let loading = false;
@@ -123,7 +120,7 @@ async function refreshSnapshot({ silent = false, force = false } = {}){
       if (changed && silent) renderSilentSnapshotUpdate();
       if (changed) document.dispatchEvent(new CustomEvent('mgw:notifications-refresh'));
     } catch (error) {
-      if (!silent && generation === snapshotGeneration) toast(error?.message || 'Не удалось загрузить друзей.');
+      if (!silent && generation === snapshotGeneration) toast(error?.message || friendsText('errors.load'));
     } finally {
       if (!silent && generation === snapshotGeneration) {
         loading = false;
@@ -171,28 +168,28 @@ function render(){
 
   root.innerHTML = `
     <div class="page-head friends-v110-head">
-      <div><h1 class="page-title">Друзья</h1><p class="page-sub">Ищите игроков, принимайте заявки и приглашайте друзей в матч.</p></div>
-      <button class="close" data-friends-back type="button" aria-label="Назад">×</button>
+      <div><h1 class="page-title">${escapeHtml(friendsText('page.title'))}</h1><p class="page-sub">${escapeHtml(friendsText('page.subtitle'))}</p></div>
+      <button class="close" data-friends-back type="button" aria-label="${escapeHtml(t('common.back'))}">×</button>
     </div>
     <form class="friends-v110-search" data-friends-search>
       <div class="friends-v110-search-row">
-        <input class="form-input" name="query" autocomplete="off" maxlength="40" value="${escapeHtml(searchQuery)}" placeholder="Часть ника или MGW-ID" aria-label="Найти игрока по части ника или MGW-ID" />
-        <button class="btn primary" type="submit" ${searching ? 'disabled' : ''}>${searching ? 'Ищем…' : 'Найти'}</button>
+        <input class="form-input" name="query" autocomplete="off" maxlength="40" value="${escapeHtml(searchQuery)}" placeholder="${escapeHtml(friendsText('search.placeholder'))}" aria-label="${escapeHtml(friendsText('search.aria'))}" />
+        <button class="btn primary" type="submit" ${searching ? 'disabled' : ''}>${searching ? escapeHtml(friendsText('search.searching_short')) : escapeHtml(friendsText('search.action'))}</button>
       </div>
     </form>
     ${searchSurface()}
-    ${loading ? '<div class="friends-v110-loading">Обновляем список…</div>' : `
-      <div class="friends-v110-tabs" role="tablist" aria-label="Разделы друзей">
-        ${tabButton('friends', 'Друзья', friends.length)}
-        ${tabButton('requests', 'Заявки', requestCount)}
-        ${tabButton('recent', 'Недавние', recent.length)}
-        ${tabButton('blocked', 'Блокировки', blocked.length)}
+    ${loading ? '<div class="friends-v110-loading">' + escapeHtml(friendsText('loading.refresh')) + '</div>' : `
+      <div class="friends-v110-tabs" role="tablist" aria-label="${escapeHtml(friendsText('tabs.aria'))}">
+        ${tabButton('friends', friendsText('tabs.friends'), friends.length)}
+        ${tabButton('requests', friendsText('tabs.requests'), requestCount)}
+        ${tabButton('recent', friendsText('tabs.recent'), recent.length)}
+        ${tabButton('blocked', friendsText('tabs.blocked'), blocked.length)}
       </div>
       <div class="friends-v110-panels">
-        ${tabPanel('friends', section('Друзья', friends, 'friends'))}
-        ${tabPanel('requests', `${section('Входящие заявки', incoming, 'incoming')}${section('Исходящие заявки', outgoing, 'outgoing')}`)}
-        ${tabPanel('recent', section('Недавние соперники', recent, 'recent'))}
-        ${tabPanel('blocked', section('Заблокированные', blocked, 'blocked'))}
+        ${tabPanel('friends', section(friendsText('sections.friends'), friends, 'friends'))}
+        ${tabPanel('requests', `${section(friendsText('sections.incoming'), incoming, 'incoming')}${section(friendsText('sections.outgoing'), outgoing, 'outgoing')}`)}
+        ${tabPanel('recent', section(friendsText('sections.recent'), recent, 'recent'))}
+        ${tabPanel('blocked', section(friendsText('sections.blocked'), blocked, 'blocked'))}
       </div>
     `}
   `;
@@ -200,12 +197,12 @@ function render(){
 
 function searchSurface(){
   if (searching) {
-    return '<section class="friends-v110-search-surface"><div class="friends-v110-loading">Ищем игроков…</div></section>';
+    return `<section class="friends-v110-search-surface"><div class="friends-v110-loading">${escapeHtml(friendsText('search.searching'))}</div></section>`;
   }
   if (searchResults.length) {
     return `
       <section class="friends-v110-search-surface" aria-live="polite">
-        <div class="friends-v110-search-head"><strong>Результаты поиска</strong><button data-friends-clear-search type="button">Скрыть</button></div>
+        <div class="friends-v110-search-head"><strong>${escapeHtml(friendsText('search.results'))}</strong><button data-friends-clear-search type="button">${escapeHtml(friendsText('search.hide'))}</button></div>
         <div class="friends-v110-list">${searchResults.map(player => playerCard(player, 'search')).join('')}</div>
       </section>
     `;
@@ -237,12 +234,12 @@ function section(title, items, kind){
 
 function playerCard(player, kind){
   const id = String(player?.mgw_id || '');
-  const name = String(player?.nickname || player?.display_name || 'Игрок');
+  const name = String(player?.nickname || player?.display_name || friendsText('player_fallback'));
   const publicId = String(player?.public_mgw_id || '');
   const avatar = String(player?.avatar?.item_id || 'starter-default-01');
   const relation = relationStatus(id, kind);
   const secondary = kind === 'recent' && player?.last_match_at
-    ? `Последний матч: ${formatDate(player.last_match_at)}`
+    ? friendsText('recent_match', { date:formatDate(player.last_match_at) })
     : publicId;
 
   return `
@@ -251,7 +248,7 @@ function playerCard(player, kind){
       <span class="friends-v110-copy"><strong>${escapeHtml(name)}</strong><small>${escapeHtml(secondary)}</small></span>
       <span class="friends-v110-actions">
         ${inlineActions(id, relation)}
-        ${relation === 'blocked' ? '' : `<button class="friends-v110-more" data-friends-menu="${escapeHtml(id)}" type="button" aria-label="Действия с игроком">⋯</button>`}
+        ${relation === 'blocked' ? '' : `<button class="friends-v110-more" data-friends-menu="${escapeHtml(id)}" type="button" aria-label="${escapeHtml(friendsText('actions.aria'))}">⋯</button>`}
       </span>
     </article>
   `;
@@ -259,16 +256,16 @@ function playerCard(player, kind){
 
 function inlineActions(id, relation){
   if (relation === 'incoming') {
-    return `<button class="btn primary" data-friends-action="accept" data-target-mgw-id="${escapeHtml(id)}" type="button">Принять</button><button class="btn ghost" data-friends-action="decline" data-target-mgw-id="${escapeHtml(id)}" type="button">Отклонить</button>`;
+    return `<button class="btn primary" data-friends-action="accept" data-target-mgw-id="${escapeHtml(id)}" type="button">${escapeHtml(friendsText('actions.accept'))}</button><button class="btn ghost" data-friends-action="decline" data-target-mgw-id="${escapeHtml(id)}" type="button">${escapeHtml(friendsText('actions.decline'))}</button>`;
   }
   if (relation === 'outgoing') {
-    return `<button class="btn ghost" data-friends-action="cancel" data-target-mgw-id="${escapeHtml(id)}" type="button">Отменить</button>`;
+    return `<button class="btn ghost" data-friends-action="cancel" data-target-mgw-id="${escapeHtml(id)}" type="button">${escapeHtml(friendsText('actions.cancel'))}</button>`;
   }
   if (relation === 'blocked') {
-    return `<button class="btn ghost" data-friends-action="unblock" data-target-mgw-id="${escapeHtml(id)}" type="button">Разблокировать</button>`;
+    return `<button class="btn ghost" data-friends-action="unblock" data-target-mgw-id="${escapeHtml(id)}" type="button">${escapeHtml(friendsText('actions.unblock'))}</button>`;
   }
   if (relation === 'none') {
-    return `<button class="btn primary" data-friends-action="request" data-target-mgw-id="${escapeHtml(id)}" type="button">Добавить</button>`;
+    return `<button class="btn primary" data-friends-action="request" data-target-mgw-id="${escapeHtml(id)}" type="button">${escapeHtml(friendsText('actions.add'))}</button>`;
   }
   return '';
 }
@@ -314,9 +311,9 @@ function handleClick(event){
     if (mutation === 'unblock') {
       const player = playerById(targetMgwId);
       openConfirmSheet(
-        'Разблокировать игрока?',
-        `${String(player?.nickname || 'Игрок')} снова сможет взаимодействовать с вами через социальные функции.`,
-        'Разблокировать',
+        friendsText('confirm.unblock_title'),
+        friendsText('confirm.unblock_note', { name:String(player?.nickname || friendsText('player_fallback')) }),
+        friendsText('actions.unblock'),
         () => mutateFromSheet('unblock', targetMgwId)
       );
       return;
@@ -335,14 +332,14 @@ async function lookupPlayer(query){
   searchResults = [];
   searchMessage = '';
   if (!normalized) {
-    searchMessage = 'Введите часть ника или полный MGW-ID.';
+    searchMessage = friendsText('search.enter_query');
     render();
     return;
   }
   const nicknameQuery = normalized.replace(/^@/u, '');
   const looksLikeMgwId = /^MGW-(?:ID-)?/iu.test(normalized);
   if (!looksLikeMgwId && Array.from(nicknameQuery).length < 2) {
-    searchMessage = 'Для поиска по нику введите минимум 2 символа.';
+    searchMessage = friendsText('search.nickname_min');
     render();
     return;
   }
@@ -352,9 +349,9 @@ async function lookupPlayer(query){
     const response = await api.friends({ action:'lookup', query:normalized });
     const players = response?.result?.players;
     searchResults = Array.isArray(players) ? players.filter(player => player && typeof player === 'object') : [];
-    searchMessage = searchResults.length ? '' : 'Игроки не найдены. Попробуйте другую часть ника.';
+    searchMessage = searchResults.length ? '' : friendsText('search.not_found');
   } catch (error) {
-    searchMessage = error?.message || 'Не удалось выполнить поиск.';
+    searchMessage = error?.message || friendsText('errors.search');
   } finally {
     searching = false;
   }
@@ -379,7 +376,7 @@ async function mutateRelation(action, targetMgwId){
     snapshot = previousSnapshot;
     searchResults = previousSearchResults;
     renderSilentSnapshotUpdate();
-    toast(error?.message || 'Не удалось выполнить действие.');
+    toast(error?.message || friendsText('errors.action'));
   } finally {
     mutationPending = false;
   }
@@ -408,13 +405,13 @@ function openPlayerMenu(targetMgwId){
   if (!player) return;
   const relation = relationStatus(targetMgwId);
   openSheet(`
-    <div class="sheet-head"><div><h2>${escapeHtml(player.nickname || 'Игрок')}</h2><p>${escapeHtml(player.public_mgw_id || '')}</p></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="sheet-head"><div><h2>${escapeHtml(player.nickname || friendsText('player_fallback'))}</h2><p>${escapeHtml(player.public_mgw_id || '')}</p></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="friends-v110-context">
-      <button class="btn primary full" data-social-menu-action="invite" type="button">Пригласить в игру</button>
-      <button class="btn ghost full" data-social-menu-action="profile" type="button">Профиль и статистика</button>
-      ${relation === 'friends' ? '<button class="btn ghost full" data-social-menu-action="remove" type="button">Удалить из друзей</button>' : ''}
-      <button class="btn ghost full" data-social-menu-action="report" type="button">Пожаловаться</button>
-      <button class="btn ghost full friends-v110-danger" data-social-menu-action="block" type="button">Заблокировать</button>
+      <button class="btn primary full" data-social-menu-action="invite" type="button">${escapeHtml(friendsText('menu_actions.invite'))}</button>
+      <button class="btn ghost full" data-social-menu-action="profile" type="button">${escapeHtml(friendsText('menu_actions.profile'))}</button>
+      ${relation === 'friends' ? `<button class="btn ghost full" data-social-menu-action="remove" type="button">${escapeHtml(friendsText('menu_actions.remove'))}</button>` : ''}
+      <button class="btn ghost full" data-social-menu-action="report" type="button">${escapeHtml(friendsText('menu_actions.report'))}</button>
+      <button class="btn ghost full friends-v110-danger" data-social-menu-action="block" type="button">${escapeHtml(friendsText('menu_actions.block'))}</button>
     </div>
   `);
   document.querySelectorAll('#sheet [data-social-menu-action]').forEach(button => {
@@ -427,7 +424,7 @@ async function performMenuAction(action, player){
   if (!targetMgwId) return;
   if (action === 'invite') {
     closeSheet();
-    openSocialPlayerInvite(targetMgwId, String(player?.nickname || 'Игрок'));
+    openSocialPlayerInvite(targetMgwId, String(player?.nickname || friendsText('player_fallback')));
     return;
   }
   if (action === 'profile') {
@@ -439,11 +436,11 @@ async function performMenuAction(action, player){
     return;
   }
   if (action === 'remove') {
-    openConfirmSheet('Удалить из друзей?', `Игрок ${String(player?.nickname || '')} исчезнет из списка друзей.`, 'Удалить', () => mutateFromSheet('remove', targetMgwId));
+    openConfirmSheet(friendsText('confirm.remove_title'), friendsText('confirm.remove_note', { name:String(player?.nickname || '') }), friendsText('actions.remove'), () => mutateFromSheet('remove', targetMgwId));
     return;
   }
   if (action === 'block') {
-    openConfirmSheet('Заблокировать игрока?', 'Заявки в друзья и новые приглашения в игру будут недоступны, текущая дружба будет удалена.', 'Заблокировать', () => mutateFromSheet('block', targetMgwId), true);
+    openConfirmSheet(friendsText('confirm.block_title'), friendsText('confirm.block_note'), friendsText('actions.block'), () => mutateFromSheet('block', targetMgwId), true);
   }
 }
 
@@ -451,52 +448,53 @@ async function openPublicProfile(targetMgwId){
   try {
     const response = await api.friends({ action:'player_profile', target_mgw_id:targetMgwId });
     const profile = response?.result;
-    if (!profile) throw new Error('Профиль недоступен.');
+    if (!profile) throw new Error(friendsText('errors.profile_unavailable'));
     openSheet(profileMarkup(profile));
   } catch (error) {
-    toast(error?.message || 'Не удалось открыть профиль игрока.');
+    toast(error?.message || friendsText('errors.profile_open'));
   }
 }
 
 function profileMarkup(profile){
   const stats = profile?.stats || {};
   const byGame = stats?.by_game || {};
-  const name = String(profile?.nickname || 'Игрок');
+  const name = String(profile?.nickname || friendsText('player_fallback'));
   const avatar = String(profile?.avatar?.item_id || 'starter-default-01');
   return `
-    <div class="sheet-head"><div><h2>Профиль игрока</h2><p>Публичная статистика MGW</p></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="sheet-head"><div><h2>${escapeHtml(friendsText('profile.title'))}</h2><p>${escapeHtml(friendsText('profile.subtitle'))}</p></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="friends-v110-profile">
       <div class="friends-v110-profile-main"><span class="friends-v110-avatar" data-avatar-item-id="${escapeHtml(avatar)}">${escapeHtml(initials(name))}</span><div><strong>${escapeHtml(name)}</strong><div class="friends-v110-profile-id">${escapeHtml(profile?.public_mgw_id || '')}</div></div></div>
-      <div class="friends-v110-stats">${stat('Матчи', stats.games_played)}${stat('Победы', stats.wins)}${stat('Поражения', stats.losses)}${stat('Ничьи', stats.draws)}</div>
-      <div class="friends-v110-game-grid">${Object.entries(GAME_NAMES).map(([gameType, title]) => gameStat(title, byGame?.[gameType])).join('')}</div>
+      <div class="friends-v110-stats">${stat(friendsText('profile.matches'), stats.games_played)}${stat(friendsText('profile.wins'), stats.wins)}${stat(friendsText('profile.losses'), stats.losses)}${stat(friendsText('profile.draws'), stats.draws)}</div>
+      <div class="friends-v110-game-grid">${GAME_TYPES.map(gameType => gameStat(t(`friends.profile.game_names.${gameType}`), byGame?.[gameType])).join('')}</div>
     </div>
   `;
 }
 
 function openReportSheet(player){
-  const [initialReason, initialReasonLabel] = REPORT_REASONS[0];
+  const reasons = reportReasons();
+  const [initialReason, initialReasonLabel] = reasons[0];
   openSheet(`
-    <div class="sheet-head"><div><h2>Пожаловаться</h2><p>${escapeHtml(player?.nickname || 'Игрок')} · ${escapeHtml(player?.public_mgw_id || '')}</p></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="sheet-head"><div><h2>${escapeHtml(friendsText('report.title'))}</h2><p>${escapeHtml(player?.nickname || friendsText('player_fallback'))} · ${escapeHtml(player?.public_mgw_id || '')}</p></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="friends-v110-report">
-      <div class="friends-v110-field"><span id="socialReportReasonLabel">Причина</span>
+      <div class="friends-v110-field"><span id="socialReportReasonLabel">${escapeHtml(friendsText('report.reason'))}</span>
         <div class="friends-v110-report-select" data-report-reason-select>
           <button class="friends-v110-report-select-trigger" data-report-reason-trigger type="button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="socialReportReasonLabel socialReportReasonValue"><span id="socialReportReasonValue">${escapeHtml(initialReasonLabel)}</span><i aria-hidden="true"></i></button>
           <div class="friends-v110-report-select-menu" data-report-reason-menu role="listbox" aria-labelledby="socialReportReasonLabel" hidden>
-            ${REPORT_REASONS.map(([value,label], index) => `<button type="button" role="option" data-report-reason="${escapeHtml(value)}" aria-selected="${index === 0 ? 'true' : 'false'}">${escapeHtml(label)}</button>`).join('')}
+            ${reasons.map(([value,label], index) => `<button type="button" role="option" data-report-reason="${escapeHtml(value)}" aria-selected="${index === 0 ? 'true' : 'false'}">${escapeHtml(label)}</button>`).join('')}
           </div>
           <input id="socialReportReason" type="hidden" value="${escapeHtml(initialReason)}" />
         </div>
       </div>
-      <label class="friends-v110-field"><span>Комментарий</span><textarea class="form-input" id="socialReportText" maxlength="800" placeholder="Необязательно. Кратко опишите ситуацию"></textarea></label>
+      <label class="friends-v110-field"><span>${escapeHtml(friendsText('report.comment'))}</span><textarea class="form-input" id="socialReportText" maxlength="800" placeholder="${escapeHtml(friendsText('report.comment_placeholder'))}"></textarea></label>
     </div>
-    <button class="btn primary full" id="socialReportSend" type="button">Отправить жалобу</button>
+    <button class="btn primary full" id="socialReportSend" type="button">${escapeHtml(friendsText('report.send'))}</button>
   `);
   bindReportReasonSelect();
   document.getElementById('socialReportSend')?.addEventListener('click', async event => {
     const reason = String(document.getElementById('socialReportReason')?.value || '').trim();
     const details = String(document.getElementById('socialReportText')?.value || '').trim();
     const button = event.currentTarget;
-    if (!reason) return toast('Выберите причину жалобы.');
+    if (!reason) return toast(friendsText('report.choose_reason'));
     if (button instanceof HTMLButtonElement) button.disabled = true;
     try {
       const response = await api.friends({
@@ -508,9 +506,9 @@ function openReportSheet(player){
       });
       const caseId = String(response?.result?.report_id || '');
       closeSheet();
-      toast(caseId ? `Жалоба отправлена · ${caseId}` : 'Жалоба отправлена.');
+      toast(caseId ? friendsText('report.sent_case', { case_id:caseId }) : friendsText('report.sent'));
     } catch (error) {
-      toast(error?.message || 'Не удалось отправить жалобу.');
+      toast(error?.message || friendsText('report.send_error'));
       if (button instanceof HTMLButtonElement && button.isConnected) button.disabled = false;
     }
   });
@@ -580,7 +578,7 @@ async function mutateFromSheet(action, targetMgwId){
     snapshot = previousSnapshot;
     searchResults = previousSearchResults;
     renderSilentSnapshotUpdate();
-    toast(error?.message || 'Не удалось выполнить действие.');
+    toast(error?.message || friendsText('errors.action'));
   } finally {
     mutationPending = false;
   }
@@ -621,12 +619,12 @@ function cloneObject(value){
 }
 
 function emptySnapshot(){ return { incoming:[], outgoing:[], friends:[], blocked:[], recent_opponents:[] }; }
-function emptyText(kind){ return ({ incoming:'Нет входящих заявок.', outgoing:'Нет исходящих заявок.', friends:'Найдите игрока по части ника или MGW-ID и отправьте заявку.', recent:'Завершённые матчи с людьми появятся здесь.', blocked:'Список заблокированных пуст.' })[kind] || 'Пока пусто.'; }
+function emptyText(kind){ return ({ incoming:friendsText('empty.incoming'), outgoing:friendsText('empty.outgoing'), friends:friendsText('empty.friends'), recent:friendsText('empty.recent'), blocked:friendsText('empty.blocked') })[kind] || friendsText('empty.default'); }
 function activeMatchLocked(){ const game = state.activeGame; const id = String(game?.id || ''); const status = String(game?.status || '').toLowerCase(); return Boolean(id && !['finished','cancelled','canceled','abandoned'].includes(status)); }
 function stat(label, value){ return `<div class="friends-v110-stat"><strong>${escapeHtml(number(value))}</strong><span>${escapeHtml(label)}</span></div>`; }
-function gameStat(title, value){ const s = value || {}; return `<div class="friends-v110-game"><strong>${escapeHtml(title)}</strong><small>${escapeHtml(number(s.games_played))} матч. · ${escapeHtml(number(s.wins))} побед</small></div>`; }
-function number(value){ const n = Number(value); return Number.isFinite(n) ? String(Math.max(0, Math.trunc(n))) : '0'; }
-function formatDate(value){ const date = new Date(value); return Number.isNaN(date.getTime()) ? 'недавно' : date.toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric' }); }
+function gameStat(title, value){ const s = value || {}; return `<div class="friends-v110-game"><strong>${escapeHtml(title)}</strong><small>${escapeHtml(friendsText('profile.game_stats', { matches:number(s.games_played), wins:number(s.wins) }))}</small></div>`; }
+function number(value){ const n = Number(value); return Number.isFinite(n) ? formatLocalizedNumber(Math.max(0, Math.trunc(n)), { maximumFractionDigits:0 }) : '0'; }
+function formatDate(value){ const date = new Date(value); return Number.isNaN(date.getTime()) ? friendsText('recently') : formatLocalizedDate(date, 'short', { day:'2-digit', month:'2-digit', year:'numeric' }); }
 function initials(value){ return String(value || 'MG').trim().split(/\s+/u).slice(0,2).map(part => part.slice(0,1).toUpperCase()).join('') || 'MG'; }
 function escapeHtml(value){ return String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
 

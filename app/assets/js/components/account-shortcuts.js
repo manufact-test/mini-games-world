@@ -1,4 +1,5 @@
 import { closeSheet } from './sheet.js?v=1109';
+import { t } from '@mgw/i18n';
 
 let friendsModulePromise = null;
 let accountDataModulePromise = null;
@@ -25,7 +26,7 @@ async function openFriendsShortcut(){
 
 function loadFriendsModule(){
   if (!friendsModulePromise) {
-    friendsModulePromise = import('../screens/friends-screen-v110.js?v=6&mvp18=instant-route&optimistic-relations&mvp22_3=report-categories-v1')
+    friendsModulePromise = import('../screens/friends-screen-v110.js?v=6&mvp18=instant-route&optimistic-relations&mvp22_3=report-categories-v1&mvp27_1=localized-v1')
       .catch(error => {
         friendsModulePromise = null;
         throw error;
@@ -85,7 +86,7 @@ async function enhanceCurrentMenu(allowSocialNavigation = false){
     friends.dataset.accountFriendsShortcut = '1';
     friends.innerHTML = `
       <span class="account-menu-icon" aria-hidden="true">👥</span>
-      <span class="account-menu-copy"><strong>Друзья</strong></span>
+      <span class="account-menu-copy"><strong>${t('friends.menu.title')}</strong></span>
     `;
     friends.addEventListener('click', () => {
       void openFriendsShortcut();
