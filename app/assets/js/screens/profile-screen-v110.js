@@ -566,7 +566,7 @@ function renderProfileV2(){
       <button class="profile-v2-avatar-edit" type="button" data-edit-mgw-avatar aria-label="${escapeHtml(t('profile.avatar_edit'))}">
         <span class="profile-v2-avatar" id="profileV2Avatar" data-avatar-item-id="${escapeHtml(activeAvatar)}" aria-hidden="true">MG</span>
         ${activeTournamentRewardCodes.has('champion_crown') ? `<span class="profile-v2-tournament-crown" aria-label="${escapeHtml(t('profile.tournament.rewards.champion_crown'))}">${tournamentPrestigeIconSvg('champion_crown','is-profile-crown')}</span>` : ''}
-        ${activeTournamentRewardCodes.has('bronze_mark') ? '<span class="profile-v2-tournament-bronze-mark" aria-label="${escapeHtml(t('profile.tournament.rewards.bronze_mark'))}">●</span>' : ''}
+        ${activeTournamentRewardCodes.has('bronze_mark') ? `<span class="profile-v2-tournament-bronze-mark" aria-label="${escapeHtml(t('profile.tournament.rewards.bronze_mark'))}">●</span>` : ''}
         <span class="profile-v2-avatar-pencil" aria-hidden="true">✎</span>
       </button>
       <div class="profile-v2-person">
