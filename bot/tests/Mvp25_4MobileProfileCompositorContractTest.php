@@ -62,11 +62,14 @@ $assert(
     'The removed synthetic Profile route delay must not return.'
 );
 
+$guardVersion = [];
+$cssVersion = [];
 $assert(
-    str_contains($manifest, "mgw-mobile-profile-animation-guard-v2.js?v=3")
-        && str_contains($manifest, 'mvp25_4=batched-resume-v1')
-        && str_contains($manifest, "main.css?v=210&mvp25_4=profile-mobile-compositor-v1"),
-    'Runtime manifest must cache-bust both corrected mobile compositor owners.'
+    preg_match('/mgw-mobile-profile-animation-guard-v2\.js\?v=(\d+)[^\']*mvp25_4=batched-resume-v1/', $manifest, $guardVersion) === 1
+        && (int)$guardVersion[1] >= 3
+        && preg_match('/main\.css\?v=(\d+)[^\']*mvp25_4=profile-mobile-compositor-v1/', $manifest, $cssVersion) === 1
+        && (int)$cssVersion[1] >= 210,
+    'Runtime manifest must retain both corrected mobile compositor owners at or beyond their accepted cache identities.'
 );
 
 $assert(
