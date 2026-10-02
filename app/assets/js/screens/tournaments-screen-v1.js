@@ -2030,7 +2030,7 @@ async function loadTournamentArchiveOverview(){
     if (currentScreen() !== 'tournaments') return;
     renderTournamentArchiveOverview(overview);
   } catch (error) {
-    body.innerHTML = `<div class="tournaments-v2-empty">${escapeHtml(error?.message || 'Не удалось загрузить архив турниров.')}</div>`;
+    body.innerHTML = `<div class="tournaments-v2-empty">${escapeHtml(error?.message || t('arena.archive.load_error'))}</div>`;
   }
 }
 
@@ -2049,7 +2049,7 @@ function renderTournamentArchiveOverview(overview){
 
   const hallMarkup = hall.length
     ? `<section class="tournaments-v2-tournament-hof">
-        <div class="tournaments-v2-hof-title">Зал славы турниров</div>
+        <div class="tournaments-v2-hof-title">${escapeHtml(t('arena.archive.hall_title'))}</div>
         <div class="tournaments-v2-tournament-hof-grid">
           ${hall.slice(0,12).map(tournamentHallOfFameCard).join('')}
         </div>
@@ -2080,14 +2080,14 @@ function tournamentHallOfFameCard(entry){
   return `<article class="tournaments-v2-tournament-hof-card">
     <span class="tournaments-v2-avatar" data-avatar-item-id="${escapeHtml(avatar)}" aria-hidden="true">MG</span>
     <div><strong>${escapeHtml(nickname)}</strong><span>${escapeHtml(meta)}</span></div>
-    <b class="tournaments-v2-hof-count" title="Чемпионств">${tournamentHallTrophySvg()}<span>${escapeHtml(formatNumber(count))}</span></b>
+    <b class="tournaments-v2-hof-count" title="${escapeHtml(t('arena.archive.championships'))}">${tournamentHallTrophySvg()}<span>${escapeHtml(formatNumber(count))}</span></b>
   </article>`;
 }
 
 function tournamentArchiveCard(entry){
   const top3 = Array.isArray(entry?.top3) ? entry.top3 : [];
   const date = parseTournamentUtc(entry?.scheduled_start_at_utc || entry?.completed_at_utc);
-  const dateLabel = date ? formatTournamentDateTime(date) : 'Дата не указана';
+  const dateLabel = date ? formatTournamentDateTime(date) : t('arena.archive.date_unknown');
   const capacity = Math.max(0, Number(entry?.capacity || 0));
   const podium = top3.length
     ? `<div class="tournaments-v2-tournament-archive-podium">
@@ -2101,14 +2101,14 @@ function tournamentArchiveCard(entry){
           </div>`;
         }).join('')}
       </div>`
-    : '<div class="tournaments-v2-empty">Подиум недоступен.</div>';
+    : `<div class="tournaments-v2-empty">${escapeHtml(t('arena.archive.podium_unavailable'))}</div>`;
 
   return `<article class="tournaments-v2-tournament-archive-card">
     <header>
-      <div><span>Официальный турнир</span><strong>${escapeHtml(String(entry?.title || 'Официальный турнир'))}</strong></div>
+      <div><span>${escapeHtml(t('arena.official_title'))}</span><strong>${escapeHtml(String(entry?.title || t('arena.official_title')))}</strong></div>
       <small>${escapeHtml(dateLabel)}</small>
     </header>
-    <p>${escapeHtml(gameName(String(entry?.game_type || DEFAULT_GAME)))}${capacity > 0 ? ` · ${escapeHtml(formatNumber(capacity))} участников` : ''}</p>
+    <p>${escapeHtml(gameName(String(entry?.game_type || DEFAULT_GAME)))}${capacity > 0 ? escapeHtml(t('arena.archive.participants',{capacity:formatNumber(capacity)})) : ''}</p>
     ${podium}
   </article>`;
 }
@@ -2197,7 +2197,7 @@ function renderArchiveSeason(archive){
       <small>${escapeHtml(t('shell.competition_archive_top100'))}</small>
     </div>
     ${top3.length ? `<div class="tournaments-v2-hof"><div class="tournaments-v2-hof-title">${escapeHtml(t('shell.competition_hall_of_fame'))}</div><div class="tournaments-v2-hof-grid">${top3.map(hallOfFameCard).join('')}</div></div>` : ''}
-    <div class="tournaments-v2-table-head" aria-hidden="true"><span>№</span><span>Игрок</span><span>Очки</span></div>
+    <div class="tournaments-v2-table-head" aria-hidden="true"><span>№</span><span>${escapeHtml(t('profile.player'))}</span><span>${escapeHtml(t('profile.rating_points'))}</span></div>
     <div class="tournaments-v2-list">
       ${entries.length ? entries.map(leaderboardRow).join('') : `<div class="tournaments-v2-empty">${escapeHtml(t('profile.leaderboard_empty'))}</div>`}
     </div>
@@ -2274,8 +2274,8 @@ function renderBoard(board){
     <div class="tournaments-v2-current-game">${escapeHtml(gameName(gameType))}</div>
     <div class="tournaments-v2-table-head" aria-hidden="true">
       <span>№</span>
-      <span>Игрок</span>
-      <span>Очки</span>
+      <span>${escapeHtml(t('profile.player'))}</span>
+      <span>${escapeHtml(t('profile.rating_points'))}</span>
     </div>
     <div class="tournaments-v2-list">
       ${entries.length
