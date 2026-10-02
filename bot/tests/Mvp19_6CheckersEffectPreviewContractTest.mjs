@@ -110,8 +110,9 @@ ok(liveEffectCss.includes('.mgw-checkers-live-fx-crown::after') && liveEffectCss
 ok(liveEffectCss.includes('pointer-events:none'), 'live effect layer leaves board hit targets untouched');
 ok(liveEffectCss.includes('@media (prefers-reduced-motion:reduce)'), 'live effects preserve reduced-motion handling');
 
+const boardThemeMatch = manifest.match(/renderer-board-themes\.js\?v=(\d+)&mvp19_6=equal-grid-rows-v1/);
 const paidCascadeMatch = manifest.match(/renderer-real-flight-cascade-v1\.js\?v=(\d+)&mvp19_6=all-paid-real-flight-v1/);
-ok(manifest.includes('renderer-board-themes.js?v=13&mvp19_6=equal-grid-rows-v1') && manifest.includes('landing=real-piece-flip-final-rect-v2') && manifest.includes('legend=stable-paint-v1') && manifest.includes('mobile=insets=v1') && manifest.includes('trail=real-piece-center-follow-v1') && paidCascadeMatch && Number(paidCascadeMatch[1]) >= 2 && manifest.includes('parent=single-flight-dom-v2'), 'active Checkers import map routes through accepted final-rect real-piece FLIP plus centered Move-trail owner and paid-effect cascade');
+ok(boardThemeMatch && Number(boardThemeMatch[1]) >= 13 && manifest.includes('landing=real-piece-flip-final-rect-v2') && manifest.includes('legend=stable-paint-v1') && manifest.includes('mobile=insets=v1') && manifest.includes('trail=real-piece-center-follow-v1') && paidCascadeMatch && Number(paidCascadeMatch[1]) >= 2 && manifest.includes('parent=single-flight-dom-v2'), 'active Checkers import map routes through accepted final-rect real-piece FLIP plus centered Move-trail owner and paid-effect cascade');
 ok(manifest.includes('all_paid_flight=v1') && manifest.includes('real_flight=cascade-v2'), 'accepted paid Checkers effects remain on the canonical cascade owner');
 ok(manifest.includes('mvp19_6=checkers-real-piece-flip-v12'), 'bootstrap cache-bust activates the accepted final-rect real-piece FLIP graph');
 ok(!manifest.includes('renderer-live-effects-final-handoff.js') && !fs.existsSync(failedFinalHandoffPath), 'failed detached final-handoff wrapper is fully retired');

@@ -11,6 +11,7 @@ $files = [
     'manifest'=>$root . '/app/runtime/client/version-manifest.php',
     'api'=>$root . '/bot/api.php',
     'storage_factory'=>$root . '/bot/storage/StorageFactory.php',
+    'locale'=>$root . '/app/locales/ru.json',
 ];
 $source = [];
 foreach ($files as $key=>$path) {
@@ -18,6 +19,16 @@ foreach ($files as $key=>$path) {
     if (!is_string($value)) throw new RuntimeException('Missing manual acceptance source: ' . $path);
     $source[$key] = $value;
 }
+
+$locale = json_decode($source['locale'], true, 512, JSON_THROW_ON_ERROR);
+$arenaCard = $locale['arena']['card'] ?? [];
+$manifestData = require $root . '/app/runtime/client/version-manifest.php';
+$findImportTarget = static function (array $data, string $marker): string {
+    foreach (($data['imports'] ?? []) as $target) {
+        if (is_string($target) && str_contains($target, $marker)) return $target;
+    }
+    return '';
+};
 
 $assertions = 0;
 $assertTrue = static function (bool $condition, string $message) use (&$assertions): void {
@@ -118,13 +129,12 @@ foreach ([
     'errorMessage = humanizeTournamentError',
     'renderTournamentSnapshot(errorMessage);',
     'const insufficient = !registered && available < fee;',
-    'Недостаточно коинов',
-    'Регистрируем…',
-    'Отменяем…',
-    'Проверяем…',
+    "t('arena.card.insufficient')",
+    "t('arena.card.registering')",
+    "t('arena.card.cancelling')",
+    "t('arena.card.checking')",
     'aria-busy="true"',
-    'В турнире участвуют ',
-    'Регистрация закроется, когда все места будут заняты.',
+    "t('arena.card.capacity_open'",
     'tournaments-v2-tournament-participants',
     'const releaseVisibleBalance = lockVisibleBalance();',
     'releaseVisibleBalance();',
@@ -133,12 +143,26 @@ foreach ([
     'state.user = verifiedUser;',
     'renderBalances(state.user);',
     'data-tournament-rules-consent',
-    'Я прочитал(а) и принимаю правила этого турнира.',
-    'Правила турнира приняты',
-    'бронзовая награда',
-    'Состав набран · ожидаем назначения даты',
+    "t('arena.card.consent')",
+    "t('arena.card.consent_accepted",
+    "t('arena.card.bronze_reward')",
+    "t('arena.card.state_waiting_date')",
 ] as $needle) {
-    $assertTrue(str_contains($source['screen'], $needle), 'Player Tournament corrective missing: ' . $needle);
+    $assertTrue(str_contains($source['screen'], $needle), 'Player Tournament corrective wiring missing: ' . $needle);
+}
+foreach ([
+    'insufficient'=>'Недостаточно коинов',
+    'registering'=>'Регистрируем…',
+    'cancelling'=>'Отменяем…',
+    'checking'=>'Проверяем…',
+    'capacity_open'=>'В турнире участвуют {capacity} игроков. Регистрация закроется, когда все места будут заняты.',
+    'consent'=>'Я прочитал(а) и принимаю правила этого турнира.',
+    'consent_accepted'=>'Правила турнира приняты.',
+    'bronze_reward'=>'бронзовая награда',
+    'state_waiting_date'=>'Состав набран · ожидаем назначения даты турнира.',
+    'started'=>'Турнир начался',
+] as $key=>$copy) {
+    $assertTrue(($arenaCard[$key] ?? null) === $copy, 'Localized Tournament copy missing: ' . $copy);
 }
 $assertTrue(
     !str_contains($source['screen'], "const state = String(tournamentSnapshot?.registration?.state || '');"),
@@ -187,8 +211,8 @@ $assertTrue(
 );
 $assertTrue(
     !str_contains($source['screen'], 'rules_consent?.version || rules.version')
-    && str_contains($source['screen'], 'Правила турнира приняты'),
-    'Accepted-rules notice must use human copy without the internal version token.'
+    && str_contains($source['screen'], "t('arena.card.consent_accepted"),
+    'Accepted-rules notice must use localized human copy without the internal version token.'
 );
 $assertTrue(
     !str_contains($source['screen'], 'Зарезервировано:'),
@@ -248,32 +272,43 @@ foreach ([
     $assertTrue(str_contains($source['css'], $needle), 'Tournament manual UX CSS missing: ' . $needle);
 }
 
+$clientTarget = $findImportTarget($manifestData, 'mvp21_2=tournament-rules-consent-v1');
+$clientVersion = [];
 $assertTrue(
-    str_contains($source['manifest'], 'client.js?v=1145')
-    && str_contains($source['manifest'], 'mvp21_2=tournament-rules-consent-v1'),
-    'Corrective release must force a fresh API client module.'
+    preg_match('~client\.js\?v=(\d+)~', $clientTarget, $clientVersion) === 1
+    && (int)$clientVersion[1] >= 1145,
+    'Corrective release must keep the API client at or beyond the accepted identity.'
 );
+$tournamentTarget = $findImportTarget($manifestData, 'mvp21_2=tournament-rules-copy-v2');
+$tournamentVersion = [];
 $assertTrue(
-    str_contains($source['manifest'], 'tournaments-screen-v1.js?v=31')
-    && str_contains($source['manifest'], 'mvp21_2=tournament-rules-copy-v2')
-    && str_contains($source['manifest'], 'balance=visible-freeze-v2')
-    && str_contains($source['manifest'], 'mvp21_3=schedule-local-time-v2')
-    && str_contains($source['manifest'], 'mvp21_manual=acceptance-corrective-v1')
-    && str_contains($source['manifest'], 'archive=per-round-v1')
-    && str_contains($source['manifest'], 'desktop=endurance-v1'),
-    'Corrective release must preserve the balance-freeze owner while forcing the fresh Tournament schedule module.'
+    preg_match('~tournaments-screen-v1\.js\?v=(\d+)~', $tournamentTarget, $tournamentVersion) === 1
+    && (int)$tournamentVersion[1] >= 31
+    && str_contains($tournamentTarget, 'balance=visible-freeze-v2')
+    && str_contains($tournamentTarget, 'mvp21_3=schedule-local-time-v2')
+    && str_contains($tournamentTarget, 'mvp21_manual=acceptance-corrective-v1')
+    && str_contains($tournamentTarget, 'archive=per-round-v1')
+    && str_contains($tournamentTarget, 'desktop=endurance-v1'),
+    'Corrective release must preserve the accepted Tournament schedule owner and successor identities.'
 );
+$mainCss = (string)($manifestData['assets']['main_css'] ?? '');
+$mainCssVersion = [];
 $assertTrue(
-    str_contains($source['manifest'], 'main.css?v=201')
-    && str_contains($source['manifest'], 'mvp21_2=tournament-rules-copy-v2')
-    && str_contains($source['manifest'], 'mvp21_3=tournament-schedule-v1')
-    && str_contains($source['manifest'], 'mvp21_manual=terminal-payout-v1'),
-    'Corrective release must force fresh Tournament schedule CSS.'
+    preg_match('~main\.css\?v=(\d+)~', $mainCss, $mainCssVersion) === 1
+    && (int)$mainCssVersion[1] >= 201
+    && str_contains($mainCss, 'mvp21_2=tournament-rules-copy-v2')
+    && str_contains($mainCss, 'mvp21_3=tournament-schedule-v1')
+    && str_contains($mainCss, 'mvp21_manual=terminal-payout-v1'),
+    'Corrective release must keep Tournament schedule CSS at or beyond the accepted identity.'
 );
+$adminVersion = [];
 $assertTrue(
-    str_contains($source['admin'], 'admin-tournaments.js?v=15&mvp21_3=local-time-copy-v2&mvp21_4=staging-reset-reseed-v2&mvp21_5=manual-acceptance-fixes-v3')
+    preg_match('~admin-tournaments\.js\?v=(\d+)~', $source['admin'], $adminVersion) === 1
+    && (int)$adminVersion[1] >= 15
+    && str_contains($source['admin'], 'mvp21_4=staging-reset-reseed-v2')
+    && str_contains($source['admin'], 'mvp21_5=manual-acceptance-fixes-v3')
     && str_contains($source['admin'], 'mvp21_8=corrective-v12'),
-    'Tournament Admin must force the fresh MVP-21.3 manual-acceptance client.'
+    'Tournament Admin must keep the manual-acceptance client at or beyond the accepted cache identity.'
 );
 
 foreach ([
@@ -303,7 +338,7 @@ foreach ([
     'tournaments-v2-tournament-schedule',
     'data-tournament-countdown',
     'formatTournamentCountdown',
-    'Турнир начался',
+    "t('arena.card.started')",
 ] as $needle) {
     $assertTrue(str_contains($source['screen'], $needle), 'Player tournament schedule/countdown missing: ' . $needle);
 }

@@ -13,6 +13,16 @@ $screen = $read('app/assets/js/screens/tournaments-screen-v1.js');
 $main = $read('app/assets/js/main-v110-handoff-shell.js');
 $profile = $read('app/assets/js/screens/profile-screen-v110.js');
 $manifest = $read('app/runtime/client/version-manifest.php');
+$manifestData = require $root . '/app/runtime/client/version-manifest.php';
+$locale = json_decode($read('app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
+$arenaCard = $locale['arena']['card'] ?? [];
+$arenaReady = $locale['arena']['ready'] ?? [];
+$findImportTarget = static function (array $data, string $marker): string {
+    foreach (($data['imports'] ?? []) as $target) {
+        if (is_string($target) && str_contains($target, $marker)) return $target;
+    }
+    return '';
+};
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -35,8 +45,11 @@ $assert(str_contains($screen, 'let tournamentTerminalSyncPromise = null;')
     'Tournament return must own an explicit terminal synchronization state.');
 $assert(!str_contains($screen, "tournamentProgressionSnapshot = null;\n    tournamentMatchError = '';\n    tournamentTerminalReturnPending = true;"),
     'Returning from a result must not erase the already-synchronized durable progression snapshot.');
-$assert(str_contains($screen, 'Сохраняем результат турнира…'),
-    'Terminal return must show result persistence rather than falling back to old readiness copy.');
+$assert(
+    str_contains($screen, "t('arena.ready.saving_result')")
+    && (($arenaReady['saving_result'] ?? null) === 'Сохраняем результат турнира…'),
+    'Terminal return must show localized result persistence rather than falling back to old readiness copy.'
+);
 $assert(str_contains($screen, 'if (tournamentTerminalSyncPromise) return tournamentTerminalSyncPromise;'),
     'Terminal progression synchronization must be single-flight.');
 $assert(str_contains($screen, "document.addEventListener('mgw:game-finished'")
@@ -44,8 +57,8 @@ $assert(str_contains($screen, "document.addEventListener('mgw:game-finished'")
     'Finished tournament games must prime the return path before the result sheet is dismissed.');
 
 $registeredOpen = strpos($screen, 'else if (open && registered && !full)');
-$cancel = strpos($screen, 'Отменить регистрацию', $registeredOpen ?: 0);
-$consent = strpos($screen, 'Подтвердить правила', $registeredOpen ?: 0);
+$cancel = strpos($screen, "t('arena.card.cancel_registration')", $registeredOpen ?: 0);
+$consent = strpos($screen, "t('arena.card.confirm_rules')", $registeredOpen ?: 0);
 $assert($registeredOpen !== false && $cancel !== false,
     'Open registered participants must retain a cancellation CTA.');
 $assert($consent !== false && $cancel !== false,
@@ -93,20 +106,28 @@ $assert(str_contains($main, "import('./screens/store-screen.js?v=34')")
         && str_contains($main, 'window.requestIdleCallback(warm, { timeout:1200 });'),
     'The large Store module graph must be lazy and warmed only after first usable paint.');
 
-$assert(str_contains($manifest, 'main-v110-handoff-shell.js?v=1157')
-        && str_contains($manifest, 'startup=parallel-bootstrap-profile-v1')
-        && str_contains($manifest, 'startup=nonblocking-hidden-warm-v1')
-        && str_contains($manifest, 'store_warm=post-first-paint-v1')
-        && str_contains($manifest, 'profile_first=covered-raster-prewarm-v2'),
-    'Startup corrective must publish a fresh main client identity.');
-$assert(str_contains($manifest, 'tournaments-screen-v1.js?v=31')
-        && str_contains($manifest, 'mvp21_8=corrective-v8')
-        && str_contains($manifest, 'mvp21_manual=acceptance-corrective-v1')
-        && str_contains($manifest, 'registration_cancel=restored-v1')
-        && str_contains($manifest, 'mvp21_6=terminal-return-preserve-v5')
-        && str_contains($manifest, 'archive=per-round-v1')
-        && str_contains($manifest, 'desktop=endurance-v1'),
-    'Tournament corrective must publish a fresh v8 client identity.');
+$mainTarget = $findImportTarget($manifestData, 'startup=parallel-bootstrap-profile-v1');
+$mainVersion = [];
+$assert(
+    preg_match('~main-v110-handoff-shell\.js\?v=(\d+)~', $mainTarget, $mainVersion) === 1
+        && (int)$mainVersion[1] >= 1157
+        && str_contains($mainTarget, 'startup=nonblocking-hidden-warm-v1')
+        && str_contains($mainTarget, 'store_warm=post-first-paint-v1')
+        && str_contains($mainTarget, 'profile_first=covered-raster-prewarm-v2'),
+    'Startup corrective must remain at or beyond the accepted main client identity.'
+);
+$tournamentTarget = $findImportTarget($manifestData, 'mvp21_8=corrective-v8');
+$tournamentVersion = [];
+$assert(
+    preg_match('~tournaments-screen-v1\.js\?v=(\d+)~', $tournamentTarget, $tournamentVersion) === 1
+        && (int)$tournamentVersion[1] >= 31
+        && str_contains($tournamentTarget, 'mvp21_manual=acceptance-corrective-v1')
+        && str_contains($tournamentTarget, 'registration_cancel=restored-v1')
+        && str_contains($tournamentTarget, 'mvp21_6=terminal-return-preserve-v5')
+        && str_contains($tournamentTarget, 'archive=per-round-v1')
+        && str_contains($tournamentTarget, 'desktop=endurance-v1'),
+    'Tournament corrective must remain at or beyond the accepted v8 client identity.'
+);
 
 if ($assertions < 22) {
     throw new RuntimeException('Corrective v8 contract is too shallow: ' . $assertions);

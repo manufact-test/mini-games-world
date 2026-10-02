@@ -187,11 +187,15 @@ $assert(str_contains($source['admin'], 'control === title || control === game ||
         && str_contains($source['admin'], 'Подтвердить сброс')
         && !str_contains($source['admin'], 'if (!window.confirm(warning)) return;'),
     'Tournament Admin reset must stay editable and avoid native confirm focus poisoning in Telegram WebView.');
-$assert(str_contains($source['admin_page'], 'admin-tournaments.js?v=15')
+$adminVersion = [];
+$assert(
+    preg_match('~admin-tournaments\.js\?v=(\d+)~', $source['admin_page'], $adminVersion) === 1
+        && (int)$adminVersion[1] >= 15
         && str_contains($source['admin_page'], 'mvp21_5=manual-acceptance-fixes-v3')
         && str_contains($source['admin_page'], 'mvp21_8=corrective-v12')
         && str_contains($source['admin_page'], 'placeholder="Официальный турнир"'),
-    'Tournament Admin must publish the fresh cache identity and use a placeholder instead of a destructive default title value.');
+    'Tournament Admin must stay at or beyond the accepted cache identity and use a placeholder instead of a destructive default title value.'
+);
 
 if ($assertions < 30) throw new RuntimeException('MVP-21.4 UX contract is too shallow.');
 fwrite(STDOUT, "Mvp21_4TournamentHallUxContractTest: {$assertions} assertions passed\n");
