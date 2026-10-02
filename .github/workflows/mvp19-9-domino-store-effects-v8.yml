@@ -137,7 +137,6 @@ jobs:
               app/assets/css/games/domino/store-card-fill-live-pips-v5.css \
               app/assets/js/games/domino/entry.js \
               app/assets/js/games/domino/meta.js \
-              app/assets/js/games/domino/renderer.js \
               app/assets/js/games/domino/rules.js \
               app/assets/js/games/domino/chain-layout.js \
               app/assets/css/games/domino/game.css \
