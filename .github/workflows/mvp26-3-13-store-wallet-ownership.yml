@@ -50,6 +50,10 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
+          if git diff --quiet "$base" "$head" -- app/assets/js/screens/store-screen.js; then
+            echo "Successor slice: Store wallet owner unchanged; original bounded scope does not apply."
+            exit 0
+          fi
           allowed='^(app/assets/js/screens/store-screen\.js|app/runtime/client/version-manifest\.php|bot/tests/Mvp26_3StoreWalletOwnershipContractTest\.php|\.github/workflows/mvp26-3-13-store-wallet-ownership\.yml)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-26.3.13 paths:\n%s\n' "$bad" >&2; exit 1; }
