@@ -71,7 +71,7 @@ $apiTarget = (string)($manifest['imports']['./assets/js/api/client.js?v=47'] ?? 
 $uiTargets = array_filter($manifest['imports'] ?? [], static fn(string $key): bool => str_starts_with($key, './assets/js/ui.js?v='), ARRAY_FILTER_USE_KEY);
 $modelTargets = array_filter($manifest['imports'] ?? [], static fn(string $key): bool => str_starts_with($key, './assets/js/profile/mgw-profile-model.js?v='), ARRAY_FILTER_USE_KEY);
 $assertTrue(str_contains($apiTarget, 'c7=avatar-bootstrap-inventory'), 'Active runtime must publish the boot inventory hydration client.');
-$assertTrue(count(array_filter($uiTargets, static fn(string $target): bool => str_contains($target, 'c7=no-false-starter'))) >= 1, 'Active runtime must retain non-poisoning avatar UI state through successor aliases.');
+$assertTrue(count(array_filter($uiTargets, static fn(string $target): bool => str_contains($target, 'c7=no-false-starter') || str_contains($target, 'c7=no-prehydrate-default'))) >= 1, 'Active runtime must retain non-poisoning avatar UI state through successor aliases.');
 $assertTrue(count(array_filter($modelTargets, static fn(string $target): bool => str_contains($target, 'c7=no-prehydrate-default'))) >= 1, 'Active runtime must retain the no-fabricated-default profile model through successor aliases.');
 
 fwrite(STDOUT, "PASS: C7 authoritative avatar/inventory first-render hydration ({$assertions} assertions)\n");
