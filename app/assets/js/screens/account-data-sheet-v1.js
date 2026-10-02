@@ -1,8 +1,10 @@
 import { api } from '../api/client.js?v=1152&mvp22_8=account-data-v1&mvp26_4=android-reauth-v1&mvp26_4_2=android-download-v1';
 import { openSheet } from '../components/sheet.js?v=1109';
 import { toast } from '../components/toast.js?v=41';
+import { t, formatDateTime as formatLocalizedDateTime, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
 
 const STYLE_URL = './assets/css/account-data-v1.css?v=5&mvp22_8=account-data-v1&ux=final-manual-polish-v2&mvp26_4_2=per-action-pending-v1';
+const accountDataText = (key, params = {}) => t(`account_data.${key}`, params);
 
 let snapshot = null;
 let snapshotFetchedAt = 0;
@@ -40,7 +42,7 @@ export async function openAccountDataSheet(){
 
   // Do not expose the sheet until both the module/style and the first server
   // snapshot are ready. On slower Telegram WebViews the previous implementation
-  // showed a real "Загружаем состояние…" frame before the first response and
+  // showed a real loading-state frame before the first response and
   // then replaced the whole body, which was visible as a blank/empty flash.
   openSheet(shellHtml());
   bind();
@@ -108,7 +110,7 @@ async function refresh(force = false){
   try {
     await loadSnapshot(force);
   } catch (error) {
-    toast(error?.message || 'Не удалось загрузить управление данными аккаунта.');
+    toast(error?.message || accountDataText('errors.load'));
   } finally {
     loading = false;
     render();
@@ -120,7 +122,7 @@ function renderLoadError(error){
   if (!(body instanceof HTMLElement)) return;
   body.innerHTML = `
     <div class="account-data-v1-loading">
-      ${escapeHtml(error?.message || 'Не удалось загрузить управление данными аккаунта.')}
+      ${escapeHtml(error?.message || accountDataText('errors.load'))}
     </div>
   `;
 }
@@ -138,11 +140,11 @@ function shellHtml(){
   return `
     <div class="account-data-v1" data-account-data-root>
       <div class="account-data-v1-head">
-        <h2>Данные и аккаунт</h2>
-        <button class="close account-data-v1-close" data-close-sheet type="button" aria-label="Закрыть">×</button>
+        <h2>${escapeHtml(accountDataText('title'))}</h2>
+        <button class="close account-data-v1-close" data-close-sheet type="button" aria-label="${escapeHtml(t('common.close'))}">×</button>
       </div>
       <div class="account-data-v1-body" data-account-data-body>
-        <div class="account-data-v1-loading">Загружаем состояние…</div>
+        <div class="account-data-v1-loading">${escapeHtml(accountDataText('loading'))}</div>
       </div>
     </div>
   `;
@@ -152,7 +154,7 @@ function render(){
   const body = document.querySelector('[data-account-data-body]');
   if (!(body instanceof HTMLElement)) return;
   if (loading && !snapshot) {
-    body.innerHTML = '<div class="account-data-v1-loading">Загружаем состояние…</div>';
+    body.innerHTML = `<div class="account-data-v1-loading">${escapeHtml(accountDataText('loading'))}</div>`;
     return;
   }
 
@@ -170,61 +172,61 @@ function render(){
     <div class="account-data-v1-intro">
       <span class="account-data-v1-intro-icon" aria-hidden="true">i</span>
       <div>
-        <strong>Управление данными аккаунта</strong>
-        <p>Здесь можно скачать копию своих данных или запросить удаление аккаунта.</p>
+        <strong>${escapeHtml(accountDataText('intro.title'))}</strong>
+        <p>${escapeHtml(accountDataText('intro.text'))}</p>
       </div>
     </div>
 
     <section class="account-data-v1-card account-data-v1-card--export">
       <div class="account-data-v1-card-icon" aria-hidden="true">⇩</div>
       <div class="account-data-v1-card-copy">
-        <h3>Скачать мои данные</h3>
-        <p>Создадим ZIP-архив. Внутри — удобная HTML-сводка, JSON/CSV и изображения профиля.</p>
+        <h3>${escapeHtml(accountDataText('export.title'))}</h3>
+        <p>${escapeHtml(accountDataText('export.text'))}</p>
         ${exportMeta(exportState)}
       </div>
       <div class="account-data-v1-actions">
         ${exportReady ? `
           <button class="btn primary account-data-v1-action" data-account-data-download type="button" ${pendingAttr(ACTION_DOWNLOAD_EXPORT)}>
-            ${pendingButtonContent(ACTION_DOWNLOAD_EXPORT, 'Скачать ZIP', 'Скачиваем…')}
+            ${pendingButtonContent(ACTION_DOWNLOAD_EXPORT, accountDataText('export.download'), accountDataText('export.downloading'))}
           </button>
           ${exportRateLimited ? '' : `
             <button class="btn account-data-v1-secondary" data-account-data-create-export type="button" ${pendingAttr(ACTION_CREATE_EXPORT)}>
-              ${pendingButtonContent(ACTION_CREATE_EXPORT, 'Создать новый', 'Создаём…')}
+              ${pendingButtonContent(ACTION_CREATE_EXPORT, accountDataText('export.create_new'), accountDataText('export.creating'))}
             </button>
           `}
         ` : `
           <button class="btn primary account-data-v1-action" data-account-data-create-export type="button" ${pendingAttr(ACTION_CREATE_EXPORT, exportBusy)}>
-            ${pendingButtonContent(ACTION_CREATE_EXPORT, 'Создать архив', exportBusy ? 'Создаём архив…' : 'Создаём…', exportBusy)}
+            ${pendingButtonContent(ACTION_CREATE_EXPORT, accountDataText('export.create_archive'), exportBusy ? accountDataText('export.creating_archive') : accountDataText('export.creating'), exportBusy)}
           </button>
         `}
       </div>
-      ${exportRateLimited && nextExportAt ? '<p class="account-data-v1-note">Новый архив можно создать после ' + escapeHtml(formatDate(nextExportAt.toISOString())) + '.</p>' : ''}
-      ${exportFailed ? '<p class="account-data-v1-note account-data-v1-note--error">Предыдущий экспорт не удалось подготовить. Можно повторить запрос.</p>' : ''}
-      ${exportExpired ? '<p class="account-data-v1-note">Предыдущий архив уже удалён по сроку хранения.</p>' : ''}
+      ${exportRateLimited && nextExportAt ? `<p class="account-data-v1-note">${escapeHtml(accountDataText('export.rate_limited_until', { date:formatDate(nextExportAt.toISOString()) }))}</p>` : ''}
+      ${exportFailed ? `<p class="account-data-v1-note account-data-v1-note--error">${escapeHtml(accountDataText('export.failed_note'))}</p>` : ''}
+      ${exportExpired ? `<p class="account-data-v1-note">${escapeHtml(accountDataText('export.expired_note'))}</p>` : ''}
     </section>
 
     <section class="account-data-v1-card account-data-v1-card--danger">
       <div class="account-data-v1-card-icon account-data-v1-card-icon--danger" aria-hidden="true">!</div>
       <div class="account-data-v1-card-copy">
-        <h3>Удалить аккаунт</h3>
+        <h3>${escapeHtml(accountDataText('delete.title'))}</h3>
         ${deletionScheduled ? `
-          <p>Удаление уже запланировано. До указанного срока запрос можно отменить — аккаунт продолжит работать.</p>
+          <p>${escapeHtml(accountDataText('delete.scheduled_text'))}</p>
           <div class="account-data-v1-deletion-state">
-            <span>Удаление после</span>
+            <span>${escapeHtml(accountDataText('delete.after'))}</span>
             <strong>${escapeHtml(formatDate(deletion.execute_after_utc))}</strong>
           </div>
         ` : `
-          <p>Удаление не происходит сразу. После подтверждения у вас будет 7 дней, чтобы передумать и отменить запрос.</p>
+          <p>${escapeHtml(accountDataText('delete.grace_text'))}</p>
         `}
       </div>
       <div class="account-data-v1-actions">
         ${deletionScheduled ? `
           <button class="btn account-data-v1-secondary" data-account-data-cancel-delete type="button" ${pendingAttr(ACTION_CANCEL_DELETE)}>
-            ${pendingButtonContent(ACTION_CANCEL_DELETE, 'Отменить удаление', 'Отменяем…')}
+            ${pendingButtonContent(ACTION_CANCEL_DELETE, accountDataText('delete.cancel'), accountDataText('delete.cancelling'))}
           </button>
         ` : `
           <button class="btn account-data-v1-danger" data-account-data-confirm-delete type="button">
-            Удалить аккаунт
+            ${escapeHtml(accountDataText('delete.action'))}
           </button>
         `}
       </div>
@@ -235,20 +237,20 @@ function render(){
 }
 
 function exportMeta(item){
-  if (!item) return '<div class="account-data-v1-meta">Архив ещё не создавался.</div>';
+  if (!item) return `<div class="account-data-v1-meta">${escapeHtml(accountDataText('export.never'))}</div>`;
   if (item.status === 'ready') {
     const bytes = Number(item.artifact_size || 0);
     return `
       <div class="account-data-v1-meta account-data-v1-meta--success">
-        <span>Архив готов${bytes > 0 ? ' · ' + escapeHtml(formatBytes(bytes)) : ''}</span>
-        ${item.artifact_expires_at_utc ? '<small>Хранится до ' + escapeHtml(formatDate(item.artifact_expires_at_utc)) + '</small>' : ''}
+        <span>${escapeHtml(accountDataText('export.ready'))}${bytes > 0 ? ' · ' + escapeHtml(formatBytes(bytes)) : ''}</span>
+        ${item.artifact_expires_at_utc ? `<small>${escapeHtml(accountDataText('export.stored_until', { date:formatDate(item.artifact_expires_at_utc) }))}</small>` : ''}
       </div>
     `;
   }
-  if (item.status === 'processing') return '<div class="account-data-v1-meta">Архив формируется…</div>';
-  if (item.status === 'failed') return '<div class="account-data-v1-meta account-data-v1-meta--error">Последняя попытка завершилась ошибкой.</div>';
-  if (item.status === 'expired') return '<div class="account-data-v1-meta">Срок хранения прошлого архива истёк.</div>';
-  return '<div class="account-data-v1-meta">Последний запрос: ' + escapeHtml(String(item.status || 'неизвестно')) + '</div>';
+  if (item.status === 'processing') return `<div class="account-data-v1-meta">${escapeHtml(accountDataText('export.processing'))}</div>`;
+  if (item.status === 'failed') return `<div class="account-data-v1-meta account-data-v1-meta--error">${escapeHtml(accountDataText('export.last_failed'))}</div>`;
+  if (item.status === 'expired') return `<div class="account-data-v1-meta">${escapeHtml(accountDataText('export.last_expired'))}</div>`;
+  return `<div class="account-data-v1-meta">${escapeHtml(accountDataText('export.last_request', { status:String(item.status || accountDataText('status.unknown')) }))}</div>`;
 }
 
 function isActionPending(action){
@@ -303,30 +305,30 @@ function openDeleteConfirmation(){
   openSheet(`
     <div class="account-data-v1 account-data-v1-confirm">
       <div class="account-data-v1-head">
-        <h2>Удалить аккаунт?</h2>
-        <button class="close account-data-v1-close" data-close-sheet type="button" aria-label="Закрыть">×</button>
+        <h2>${escapeHtml(accountDataText('confirm.title'))}</h2>
+        <button class="close account-data-v1-close" data-close-sheet type="button" aria-label="${escapeHtml(t('common.close'))}">×</button>
       </div>
 
       <div class="account-data-v1-confirm-scroll">
         <div class="account-data-v1-confirm-warning">
-          <strong>Вы действительно хотите удалить аккаунт?</strong>
-          <p>После подтверждения начнётся 7-дневный период ожидания. Всё это время запрос можно отменить.</p>
+          <strong>${escapeHtml(accountDataText('confirm.warning_title'))}</strong>
+          <p>${escapeHtml(accountDataText('confirm.warning_text'))}</p>
         </div>
 
         <div class="account-data-v1-confirm-archive">
           <div>
-            <strong>Сначала сохранить свои данные?</strong>
-            <span>Можно вернуться на предыдущий экран, создать ZIP-архив и скачать его перед удалением.</span>
+            <strong>${escapeHtml(accountDataText('confirm.save_first_title'))}</strong>
+            <span>${escapeHtml(accountDataText('confirm.save_first_text'))}</span>
           </div>
-          <button class="btn account-data-v1-secondary" data-account-data-save-first type="button">Сначала скачать данные</button>
+          <button class="btn account-data-v1-secondary" data-account-data-save-first type="button">${escapeHtml(accountDataText('confirm.save_first_action'))}</button>
         </div>
 
-        <p class="account-data-v1-confirm-note">После завершения удаления профиль и персональные привязки будут удалены или обезличены. Часть истории может сохраняться только там, где это необходимо для подтверждения матчей, операций с игровыми монетами, безопасности или требований закона.</p>
+        <p class="account-data-v1-confirm-note">${escapeHtml(accountDataText('confirm.retention_note'))}</p>
       </div>
 
       <div class="account-data-v1-confirm-actions">
-        <button class="btn" data-account-data-back type="button">Не удалять</button>
-        <button class="btn account-data-v1-danger" data-account-data-schedule-delete type="button">Да, запланировать</button>
+        <button class="btn" data-account-data-back type="button">${escapeHtml(accountDataText('confirm.keep'))}</button>
+        <button class="btn account-data-v1-danger" data-account-data-schedule-delete type="button">${escapeHtml(accountDataText('confirm.schedule'))}</button>
       </div>
     </div>
   `, { returnToPrevious:true });
@@ -369,7 +371,7 @@ function requestAndroidNativeReauth(){
     .then(response => {
       const nativeUrl = String(response?.reauth?.native_url || '').trim();
       if (!/^mgw:\/\/android-reauth\?challenge=ar_[a-f0-9]{24}$/.test(nativeUrl)) {
-        const error = new Error('Android не смог подготовить безопасное подтверждение.');
+        const error = new Error(accountDataText('errors.android_reauth_unavailable'));
         error.code = 'android_reauth_unavailable';
         throw error;
       }
@@ -396,17 +398,17 @@ function waitForNativeReauth(nativeUrl){
     };
     const onSuccess = () => finish(resolve);
     const onCancelled = () => finish(() => {
-      const error = new Error('Подтверждение отменено.');
+      const error = new Error(accountDataText('errors.reauth_cancelled'));
       error.code = 'android_reauth_cancelled';
       reject(error);
     });
     const onFailed = () => finish(() => {
-      const error = new Error('Не удалось подтвердить действие на устройстве.');
+      const error = new Error(accountDataText('errors.reauth_failed'));
       error.code = 'android_reauth_failed';
       reject(error);
     });
     const timer = window.setTimeout(() => finish(() => {
-      const error = new Error('Время подтверждения истекло. Повторите действие.');
+      const error = new Error(accountDataText('errors.reauth_timeout'));
       error.code = 'android_reauth_timeout';
       reject(error);
     }), ANDROID_REAUTH_TIMEOUT_MS);
@@ -424,9 +426,9 @@ async function createExport(){
   try {
     const response = await withSensitiveReauth(() => api.accountDataCreateExport());
     snapshot = normalizeSnapshot(response?.account_data);
-    toast('Архив данных готов.');
+    toast(accountDataText('toasts.archive_ready'));
   } catch (error) {
-    toast(actionError(error, 'Не удалось создать архив данных.'));
+    toast(actionError(error, accountDataText('errors.create_export')));
   } finally {
     finishAction(ACTION_CREATE_EXPORT);
   }
@@ -438,7 +440,7 @@ async function downloadExport(){
   try {
     if (isAndroidShell()) {
       await beginAndroidDownload(requestId);
-      toast('Скачивание ZIP началось.');
+      toast(accountDataText('toasts.download_started'));
       return;
     }
 
@@ -453,7 +455,7 @@ async function downloadExport(){
     anchor.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   } catch (error) {
-    toast(actionError(error, 'Не удалось скачать архив данных.'));
+    toast(actionError(error, accountDataText('errors.download_export')));
   } finally {
     finishAction(ACTION_DOWNLOAD_EXPORT);
   }
@@ -463,7 +465,7 @@ async function beginAndroidDownload(requestId){
   const response = await withSensitiveReauth(() => api.accountDataAuthorizeDownload(requestId));
   const nativeUrl = String(response?.download?.native_url || '').trim();
   if (!/^mgw:\/\/android-account-download\?request=adr_[a-f0-9]{32}$/.test(nativeUrl)) {
-    const error = new Error('Android не смог подготовить скачивание архива.');
+    const error = new Error(accountDataText('errors.android_download_unavailable'));
     error.code = 'android_download_unavailable';
     throw error;
   }
@@ -485,12 +487,12 @@ function waitForAndroidDownloadEnqueue(nativeUrl){
     };
     const onSuccess = () => finish(resolve);
     const onFailed = () => finish(() => {
-      const error = new Error('Android не смог начать скачивание архива.');
+      const error = new Error(accountDataText('errors.android_download_failed'));
       error.code = 'android_download_failed';
       reject(error);
     });
     const timer = window.setTimeout(() => finish(() => {
-      const error = new Error('Скачивание не запустилось. Попробуйте ещё раз.');
+      const error = new Error(accountDataText('errors.android_download_timeout'));
       error.code = 'android_download_timeout';
       reject(error);
     }), 15000);
@@ -510,9 +512,9 @@ async function cancelDeletion(){
   try {
     const response = await withSensitiveReauth(() => api.accountDataCancelDelete());
     snapshot = normalizeSnapshot(response?.account_data);
-    toast('Удаление отменено. Аккаунт сохранён.');
+    toast(accountDataText('toasts.deletion_cancelled'));
   } catch (error) {
-    toast(actionError(error, 'Не удалось отменить удаление.'));
+    toast(actionError(error, accountDataText('errors.cancel_delete')));
   } finally {
     finishAction(ACTION_CANCEL_DELETE);
   }
@@ -524,7 +526,7 @@ async function scheduleDeletion(triggerButton = null){
   if (triggerButton instanceof HTMLButtonElement) {
     triggerButton.disabled = true;
     triggerButton.setAttribute('aria-busy', 'true');
-    triggerButton.innerHTML = pendingButtonContent(ACTION_SCHEDULE_DELETE, 'Да, запланировать', 'Планируем…');
+    triggerButton.innerHTML = pendingButtonContent(ACTION_SCHEDULE_DELETE, accountDataText('confirm.schedule'), accountDataText('confirm.scheduling'));
   }
   try {
     const response = await withSensitiveReauth(() => api.accountDataScheduleDelete());
@@ -534,10 +536,10 @@ async function scheduleDeletion(triggerButton = null){
     render();
     const deleteAt = snapshot?.deletion?.execute_after_utc;
     toast(deleteAt
-      ? `Аккаунт будет удалён через 7 дней. Дата удаления: ${formatDate(deleteAt)}.`
-      : 'Аккаунт будет удалён через 7 дней.');
+      ? accountDataText('toasts.deletion_scheduled_date', { date:formatDate(deleteAt) })
+      : accountDataText('toasts.deletion_scheduled'));
   } catch (error) {
-    toast(actionError(error, 'Не удалось запланировать удаление.'));
+    toast(actionError(error, accountDataText('errors.schedule_delete')));
   } finally {
     pendingActions.delete(ACTION_SCHEDULE_DELETE);
     render();
@@ -546,10 +548,10 @@ async function scheduleDeletion(triggerButton = null){
 
 function actionError(error, fallback){
   if (['reauth_required','android_reauth_required'].includes(String(error?.code || ''))) {
-    return error?.message || 'Для подтверждения заново откройте MINI GAMES WORLD из Telegram.';
+    return error?.message || accountDataText('errors.reauth_required');
   }
   if (String(error?.code || '') === 'rate_limited') {
-    return error?.message || 'Новый экспорт можно запросить позже.';
+    return error?.message || accountDataText('errors.rate_limited');
   }
   return error?.message || fallback;
 }
@@ -575,16 +577,16 @@ function formatDate(value){
   const raw = String(value).trim();
   const date = parseUtcDate(raw);
   if (!(date instanceof Date)) return raw;
-  return new Intl.DateTimeFormat('ru-RU', {
+  return formatLocalizedDateTime(date, 'short', {
     day:'2-digit', month:'2-digit', year:'numeric',
     hour:'2-digit', minute:'2-digit',
-  }).format(date);
+  });
 }
 
 function formatBytes(bytes){
-  if (bytes < 1024) return `${bytes} Б`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+  if (bytes < 1024) return accountDataText('bytes.b', { value:formatLocalizedNumber(bytes, { maximumFractionDigits:0 }) });
+  if (bytes < 1024 * 1024) return accountDataText('bytes.kb', { value:formatLocalizedNumber(bytes / 1024, { minimumFractionDigits:1, maximumFractionDigits:1 }) });
+  return accountDataText('bytes.mb', { value:formatLocalizedNumber(bytes / (1024 * 1024), { minimumFractionDigits:1, maximumFractionDigits:1 }) });
 }
 
 function escapeHtml(value){

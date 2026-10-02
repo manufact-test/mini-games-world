@@ -24,6 +24,10 @@ on:
       - 'app/v110.php'
       - 'bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php'
       - 'app/assets/js/screens/account-data-sheet-v1.js'
+      - 'app/locales/ru.json'
+      - 'ops/checks/mvp27_1_account_data_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp27-1-account-data-localization.yml'
       - 'app/assets/css/account-data-v1.css'
       - 'app/runtime/client/version-manifest.php'
       - '.github/workflows/mvp22-8-account-data.yml'
@@ -115,7 +119,8 @@ jobs:
           grep -Fq "account_deleted_identity_block_sec" bot/accounts/AccountDataLifecycleService.php
           grep -Fq "bot_token" bot/accounts/RuntimeAccountIdentityResolver.php
           grep -Fq "mvp22_8=account-data-v1" app/runtime/client/version-manifest.php
-          grep -Fq "Данные и аккаунт" app/assets/js/components/account-shortcuts.js
+          grep -Fq "t('account_data.menu.title')" app/assets/js/components/account-shortcuts.js
+          node -e "const fs=require('fs'); const ru=JSON.parse(fs.readFileSync('app/locales/ru.json','utf8')); if (ru.account_data?.menu?.title !== 'Данные и аккаунт') process.exit(1)"
           grep -Fq "account_data_retention" ops/deploy/staging-operations-runner.php
           grep -Fq "AccountDataLifecycleService" ops/deploy/staging-operations-runner.php
           test "$(grep -Fc "require_once \$projectRoot . '/bot/accounts/AccountDataLifecycleService.php';" ops/deploy/staging-operations-runner.php)" -eq 1
@@ -142,7 +147,7 @@ jobs:
           if [[ "${{ github.head_ref }}" == agent/mvp22-9-* || "${{ github.head_ref }}" == agent/mvp23-manual-acceptance-* || "${{ github.head_ref }}" == agent/mvp23-mobile-cold-first-interaction-* || "${{ github.head_ref }}" == agent/mvp26-4-* ]]; then
             exit 0
           fi
-          allowed='^(\.github/workflows/(mvp22-8-account-data|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations|mvp22-admin-rework)\.yml|app/assets/css/account-data-v1\.css|app/assets/js/api/client\.js|app/assets/js/components/account-shortcuts\.js|app/assets/js/screens/account-data-sheet-v1\.js|app/runtime/client/version-manifest\.php|bot/account-data\.php|bot/account-data-website-hook\.php|bot/accounts/(AccountDataLifecycleService|AccountDataZipWriter|AccountReauthGuard|AccountIdentityService|RuntimeAccountIdentityResolver)\.php|bot/database/migrations/20260926_0067_create_account_data_lifecycle\.php|bot/config/config\.environment\.example\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/staging-projection-diagnostic\.php|bot/tests/Mvp22_8AccountDataLifecycleTest\.php|ops/deploy/staging-operations-runner\.php|ops/deploy/STAGING_OPERATIONS_RUNNER\.md)'
+          allowed='^(\.github/workflows/(mvp22-8-account-data|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations|mvp22-admin-rework|mvp27-1-account-data-localization)\.yml|app/assets/css/account-data-v1\.css|app/assets/js/api/client\.js|app/assets/js/components/account-shortcuts\.js|app/assets/js/screens/account-data-sheet-v1\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|bot/account-data\.php|bot/account-data-website-hook\.php|bot/accounts/(AccountDataLifecycleService|AccountDataZipWriter|AccountReauthGuard|AccountIdentityService|RuntimeAccountIdentityResolver)\.php|bot/database/migrations/20260926_0067_create_account_data_lifecycle\.php|bot/config/config\.environment\.example\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/staging-projection-diagnostic\.php|bot/tests/(Mvp22_8AccountDataLifecycleTest|Mvp23ManualAcceptanceCorrectiveContractTest)\.php|ops/checks/mvp27_1_(account_data_localization_contract\.mjs|hardcoded_text_baseline\.json)|ops/deploy/staging-operations-runner\.php|ops/deploy/STAGING_OPERATIONS_RUNNER\.md)'
           bad=0
           while IFS= read -r path; do
             if ! grep -Eq "$allowed" <<<"$path"; then
