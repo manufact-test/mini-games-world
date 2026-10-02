@@ -1,4 +1,5 @@
 import { api } from '../api/client.js?v=34';
+import { t } from '@mgw/i18n';
 
 const API_HOOK = Symbol.for('mgw.store.reversi.mvp19-7.v2');
 const INSTALL_KEY = '__mgwReversiStoreV2Installed';
@@ -95,8 +96,9 @@ function upgradeGameSelector(root){
 }
 
 function renameSelector(root){
+  const label = t('store.games.catalog_titles.reversi');
   root.querySelectorAll('[data-store-v2-game="reversi"]').forEach(button => {
-    if (button instanceof HTMLElement) button.textContent = 'Реверси';
+    if (button instanceof HTMLElement) button.textContent = label;
   });
 }
 
@@ -104,7 +106,7 @@ function upgradeHeader(root){
   const head = root.querySelector('.store-v2-game-head[data-store-game-type="reversi"]');
   if (!(head instanceof HTMLElement)) return;
   const title = head.querySelector('h2');
-  if (title instanceof HTMLElement) title.textContent = 'Реверси';
+  if (title instanceof HTMLElement) title.textContent = t('store.games.catalog_titles.reversi');
   const marks = head.querySelectorAll('.store-v2-game-head-marks b');
   marks.forEach((mark, index) => {
     if (!(mark instanceof HTMLElement)) return;
@@ -120,21 +122,17 @@ function upgradeGroups(root){
     const preview = group.querySelector('.store-v2-game-preview[data-game-type="reversi"]');
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
+    const key = ['theme','elements','effect'].includes(layer) ? layer : 'fallback';
     const title = group.querySelector('.store-v2-game-title-row h2');
     const subtitle = group.querySelector('.store-v2-game-title-row p');
-    const copy = {
-      theme:['Поля','Оформление игрового поля Реверси'],
-      elements:['Фишки','Внешний вид чёрных и белых фишек'],
-      effect:['Эффекты',''],
-    }[layer] || ['Реверси','Игровая косметика'];
-    if (title instanceof HTMLElement) title.textContent = copy[0];
+    if (title instanceof HTMLElement) title.textContent = t(`store.wrappers.reversi.groups.${key}.title`);
     if (subtitle instanceof HTMLElement) {
-      if (layer === 'effect') subtitle.remove();
-      else subtitle.textContent = copy[1];
+      const nextSubtitle = t(`store.wrappers.reversi.groups.${key}.subtitle`);
+      if (layer === 'effect' || !nextSubtitle) subtitle.remove();
+      else subtitle.textContent = nextSubtitle;
     }
   });
 }
-
 function upgradeProducts(root){
   root.querySelectorAll('.store-v2-game-product[data-store-game-product="reversi"]').forEach(product => {
     if (!(product instanceof HTMLElement)) return;
@@ -144,7 +142,7 @@ function upgradeProducts(root){
     const variant = String(preview.dataset.cosmeticVariant || 'green');
     const kind = product.querySelector('.store-v2-game-product-copy > span');
     const description = product.querySelector('.store-v2-game-product-copy > p');
-    if (kind instanceof HTMLElement) kind.textContent = layer === 'theme' ? 'Поле Реверси' : (layer === 'elements' ? 'Комплект фишек' : 'Эффект партии');
+    if (kind instanceof HTMLElement) kind.textContent = t(`store.wrappers.reversi.kinds.${layer === 'theme' ? 'theme' : (layer === 'elements' ? 'elements' : 'effect')}`);
     if (description instanceof HTMLElement) description.textContent = descriptionFor(layer, variant);
   });
 }
@@ -162,29 +160,14 @@ function upgradePreviews(root){
 }
 
 function descriptionFor(layer, variant){
-  if (layer === 'theme') {
-    return ({
-      green:'Холодное лазурное поле с глубоким бирюзовым тоном и чёткой контрастной сеткой',
-      dark:'Глубокое тёмное поле для спокойной контрастной партии',
-      marble:'Светлый камень с мягкой облачной фактурой и спокойной сеткой',
-      neon:'Тёмная сетка с ярким неоновым свечением',
-    })[variant] || 'Меняет оформление поля Реверси';
+  const safeLayer = ['theme','elements','effect'].includes(layer) ? layer : 'effect';
+  const variantKey = String(variant || 'fallback').replaceAll('-', '_');
+  try {
+    return t(`store.wrappers.reversi.descriptions.${safeLayer}.${variantKey}`);
+  } catch (_) {
+    return t(`store.wrappers.reversi.descriptions.${safeLayer}.fallback`);
   }
-  if (layer === 'elements') {
-    return ({
-      classic:'Тёмный индиго и светлый перламутр с мягким цветным отливом',
-      marble:'Каменные фишки с мягкой минеральной фактурой',
-      metal:'Холодный полированный металл с выразительными бликами',
-      neon:'Тёмные фишки с яркими неоновыми контурами',
-    })[variant] || 'Меняет внешний вид фишек Реверси';
-  }
-  return ({
-    placement:'Световое кольцо появляется вокруг фишки сразу после хода',
-    line:'Подсветка последовательно проходит по фишкам, которые переворачиваются по одной линии',
-    'mass-flip':'Перевёрнутые фишки по очереди вспыхивают и мягко поднимаются волной',
-  })[variant] || 'Добавляет визуальный эффект хода';
 }
-
 function previewMarkup(layer, variant){
   if (layer === 'theme') return boardMarkup(`theme-${safeVariant(variant)}`, baseDiscScenario(), 'theme');
   if (layer === 'elements') return boardMarkup(`pieces-${safeVariant(variant)}`, baseDiscScenario(), 'pieces');
