@@ -57,6 +57,12 @@
       "empty": "Игровая косметика пока недоступна",
       "cosmetics_title": "Оформление игры",
       "generic_item": "Игровой предмет",
+      "catalog_titles": {
+        "tictactoe": "Крестики-нолики",
+        "chess": "Шахматы",
+        "checkers": "Шашки",
+        "domino": "Домино"
+      },
       "presentation": {
         "chess": {
           "groups": {
@@ -234,6 +240,55 @@
         }
       }
     },
+    "products": {
+      "profile-name-color-sky": "Лазурный",
+      "profile-name-color-gold": "Золотой",
+      "profile-name-color-aurora": "Северное сияние",
+      "game-ttt-field-classic": "Классическое поле",
+      "game-ttt-field-dark": "Тёмное поле",
+      "game-ttt-field-glass": "3D Glass поле",
+      "game-ttt-field-neon": "Неоновое поле",
+      "game-ttt-marks-classic": "Классические знаки",
+      "game-ttt-marks-3d": "3D знаки",
+      "game-ttt-marks-metal": "Металлические знаки",
+      "game-ttt-marks-neon": "Неоновые знаки",
+      "game-ttt-effect-sign": "Импульс знака",
+      "game-ttt-effect-winning-line": "Победный импульс",
+      "game-ttt-effect-strike": "Импульс хода",
+      "game-chess-board-wood": "Янтарная доска",
+      "game-chess-board-tournament-dark": "Тёмная турнирная доска",
+      "game-chess-board-marble": "Мраморная доска",
+      "game-chess-board-neon": "Неоновая доска",
+      "game-chess-pieces-wood": "Янтарные фигуры",
+      "game-chess-pieces-marble": "Мраморные фигуры",
+      "game-chess-pieces-metal": "Металлические фигуры",
+      "game-chess-pieces-neon": "Неоновые фигуры",
+      "game-chess-effect-move": "Эффект хода",
+      "game-chess-effect-capture": "Эффект взятия",
+      "game-chess-effect-check": "Квантовый след",
+      "game-checkers-board-wood": "Лазурная доска",
+      "game-checkers-board-dark": "Тёмная доска",
+      "game-checkers-board-marble": "Мраморная доска",
+      "game-checkers-board-neon": "Неоновая доска",
+      "game-checkers-pieces-wood": "Керамические шашки",
+      "game-checkers-pieces-marble": "Гранитные шашки",
+      "game-checkers-pieces-metal": "Металлические шашки",
+      "game-checkers-pieces-neon": "Неоновые шашки",
+      "game-checkers-effect-move": "Эффект хода",
+      "game-checkers-effect-capture": "Эффект взятия",
+      "game-checkers-effect-promotion": "Эффект дамки",
+      "game-domino-table-felt": "Бордовый стол",
+      "game-domino-table-midnight": "Ночной стол",
+      "game-domino-table-walnut": "Ореховый стол",
+      "game-domino-table-neon": "Неоновый стол",
+      "game-domino-tiles-ivory": "Янтарные костяшки",
+      "game-domino-tiles-ebony": "Чёрные костяшки",
+      "game-domino-tiles-marble": "Мраморные костяшки",
+      "game-domino-tiles-neon": "Неоновые костяшки",
+      "game-domino-effect-precision-drop": "Точный удар",
+      "game-domino-effect-stock-pulse": "Импульс запаса",
+      "game-domino-effect-chain-finale": "Финиш цепи"
+    },
     "bundles": {
       "generic_game": "Игра",
       "effect": "Эффект",
@@ -260,6 +315,7 @@
       "you_save": "Вы экономите {saving} коинов",
       "presentation": {
         "tictactoe": {
+          "bundle_title": "Неоновый комплект",
           "game_title": "Крестики-нолики",
           "description": "Лучшее оформление игры и все три эффекта в одном комплекте.",
           "labels": {
@@ -269,6 +325,7 @@
           }
         },
         "chess": {
+          "bundle_title": "Неоновый комплект шахмат",
           "game_title": "Шахматы",
           "description": "Неоновая доска, неоновые фигуры и все три эффекта в одном комплекте.",
           "labels": {
@@ -278,6 +335,7 @@
           }
         },
         "checkers": {
+          "bundle_title": "Неоновый комплект шашек",
           "game_title": "Шашки",
           "description": "Неоновая доска, неоновые шашки и все три эффекта в одном комплекте.",
           "labels": {
@@ -287,6 +345,7 @@
           }
         },
         "reversi": {
+          "bundle_title": "Неоновый комплект Реверси",
           "game_title": "Реверси",
           "description": "Неоновое поле, неоновые фишки и все три эффекта в одном комплекте.",
           "labels": {
@@ -296,6 +355,7 @@
           }
         },
         "go": {
+          "bundle_title": "Неоновый комплект Го",
           "game_title": "Го",
           "description": "Неоновая доска, неоновые камни и все три эффекта в одном комплекте.",
           "labels": {
@@ -305,6 +365,7 @@
           }
         },
         "domino": {
+          "bundle_title": "Неоновый комплект домино",
           "game_title": "Домино",
           "description": "Неоновый стол, неоновые костяшки и все три эффекта в одном комплекте.",
           "labels": {
@@ -314,6 +375,7 @@
           }
         },
         "four_in_a_row": {
+          "bundle_title": "Неоновый комплект 4 в ряд",
           "game_title": "4 в ряд",
           "description": "Неоновое поле, неоновые фишки и все три эффекта в одном комплекте.",
           "labels": {
@@ -323,6 +385,7 @@
           }
         },
         "battleship": {
+          "bundle_title": "Неоновый комплект Морского боя",
           "game_title": "Морской бой",
           "description": "Неоновая карта, неоновый флот и все три эффекта в одном комплекте.",
           "labels": {
@@ -332,6 +395,7 @@
           }
         },
         "generic": {
+          "bundle_title": "Неоновый комплект",
           "description": "Премиальное оформление и все три эффекта в одном комплекте.",
           "labels": {
             "theme": "Оформление",
