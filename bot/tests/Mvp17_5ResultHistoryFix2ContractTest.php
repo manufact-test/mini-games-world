@@ -17,7 +17,7 @@ $client = file_get_contents($repoRoot . '/app/assets/js/api/client.js');
 $manifest = require $repoRoot . '/app/runtime/client/version-manifest.php';
 $launch = file_get_contents($root . '/helpers/WebAppLaunchUrl.php');
 $matchHistoryStart = is_string($home) ? strpos($home, 'function renderMatchHistorySheet') : false;
-$matchHistoryEnd = is_string($home) ? strpos($home, 'function bindHistoryTabs', is_int($matchHistoryStart) ? $matchHistoryStart : 0) : false;
+$matchHistoryEnd = is_string($home) ? strpos($home, 'function matchDelta', is_int($matchHistoryStart) ? $matchHistoryStart : 0) : false;
 $matchHistory = is_int($matchHistoryStart) && is_int($matchHistoryEnd)
     ? substr($home, $matchHistoryStart, $matchHistoryEnd - $matchHistoryStart)
     : '';
@@ -40,7 +40,7 @@ $assert(is_string($home) && substr_count($home, 'historyCache || await refreshHi
 $assert(is_string($home) && str_contains($home, 'historyCachePromise=api.historyFast()'), 'Menu History cache must use the fast one-shot History endpoint owner.');
 $assert(is_string($client) && str_contains($client, "historyFast: () => request('history')"), 'API client must expose a fast one-shot History read for menu prefetch.');
 
-$assert($matchHistory !== '' && str_contains($matchHistory, "const game=item.game_title||'Матч';"), 'Actual History modal must display the real game title.');
+$assert($matchHistory !== '' && str_contains($matchHistory, "const game=item.game_title||t('home.history.match');"), 'Actual History modal must display the real game title with the localized fallback owner.');
 $assert($matchHistory !== '' && str_contains($matchHistory, "const economy=item.economy&&typeof item.economy==='object'?item.economy:null;"), 'Actual History modal must consume the canonical viewer economy projection.');
 $assert($matchHistory !== '' && str_contains($matchHistory, 'economy.ledger_delta'), 'Actual History modal must display the viewer ledger delta.');
 $assert($matchHistory !== '' && str_contains($matchHistory, 'const delta=economy?matchDelta(economy.ledger_delta):\'\';'), 'Compact Match History must reduce economy presentation to the authoritative viewer delta.');
