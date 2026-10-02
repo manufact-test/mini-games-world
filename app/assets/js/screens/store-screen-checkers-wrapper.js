@@ -4,6 +4,7 @@ import {
   openStoreSheet as openBaseStoreSheet,
 } from './store-screen-intent-wrapper.js?v=19&mvp19_6=accepted-base-preserved';
 import { api } from '../api/client.js?v=34';
+import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
 
 const STORE_API_REPAIR_HOOK = Symbol.for('mgw.store.checkers-full-store-parity.v4');
 let initialized = false;
@@ -168,8 +169,9 @@ function upgradeCheckersStorePresentation(){
 }
 
 function renameCheckersSelector(root){
+  const label = t('store.games.catalog_titles.checkers');
   root.querySelectorAll('[data-store-v2-game="checkers"]:not([data-store-v2-bundle-game])').forEach(button => {
-    if (button instanceof HTMLElement && button.textContent !== 'Шашки') button.textContent = 'Шашки';
+    if (button instanceof HTMLElement && button.textContent !== label) button.textContent = label;
   });
 }
 
@@ -177,7 +179,7 @@ function upgradeCheckersHeader(root){
   const head = root.querySelector('.store-v2-game-head[data-store-game-type="checkers"]');
   if (!(head instanceof HTMLElement)) return;
   const title = head.querySelector('h2');
-  if (title instanceof HTMLElement) title.textContent = 'Шашки';
+  if (title instanceof HTMLElement) title.textContent = t('store.games.catalog_titles.checkers');
   const marks = head.querySelectorAll('.store-v2-game-head-marks b');
   marks.forEach((mark, index) => {
     if (!(mark instanceof HTMLElement)) return;
@@ -199,18 +201,20 @@ function upgradeCheckersCopy(root){
     const layer = String(preview.dataset.cosmeticLayer || '');
     const variant = String(preview.dataset.cosmeticVariant || '');
     if (layer === 'elements' && variant === 'marble') {
-      if (copy instanceof HTMLElement) copy.textContent = 'Полированный гранит с мелкой минеральной крошкой';
-      if (name instanceof HTMLElement) name.textContent = 'Гранитные шашки';
-      preview.setAttribute('aria-label', 'Гранитные шашки');
+      const graniteName = t('store.products.game-checkers-pieces-marble');
+      if (copy instanceof HTMLElement) copy.textContent = t('store.wrappers.checkers.granite_description');
+      if (name instanceof HTMLElement) name.textContent = graniteName;
+      preview.setAttribute('aria-label', graniteName);
     }
   });
 
   root.querySelectorAll('.store-v2-confirm-game .store-v2-game-preview[data-game-type="checkers"][data-cosmetic-layer="elements"][data-cosmetic-variant="marble"]').forEach(preview => {
     if (!(preview instanceof HTMLElement)) return;
-    preview.setAttribute('aria-label', 'Гранитные шашки');
+    const graniteName = t('store.products.game-checkers-pieces-marble');
+    preview.setAttribute('aria-label', graniteName);
     const confirm = preview.closest('.store-v2-confirm');
     const title = confirm?.querySelector('.store-v2-confirm-copy strong');
-    if (title instanceof HTMLElement) title.textContent = 'Гранитные шашки';
+    if (title instanceof HTMLElement) title.textContent = graniteName;
   });
 }
 
@@ -388,22 +392,32 @@ function inlineBundleMarkup(bundle){
   const regular = Number(bundle?.regular_missing_price_coins || bundle?.regular_price_coins || 0);
   const saving = Math.max(0, regular - price);
   const offerId = escapeHtml(String(bundle?.offer_id || 'checkers-premium-bundle'));
-  const title = escapeHtml(String(bundle?.display_name || 'Неоновый комплект шашек'));
+  const title = escapeHtml(t('store.bundles.presentation.checkers.bundle_title'));
+  const sectionTitle = escapeHtml(t('store.wrappers.checkers.bundle.section_title'));
+  const sectionSubtitle = escapeHtml(t('store.wrappers.checkers.bundle.section_subtitle'));
+  const composition = escapeHtml(t('store.wrappers.checkers.bundle.composition'));
+  const progress = allOwned
+    ? `<p>${escapeHtml(t('store.wrappers.checkers.bundle.complete'))}</p>`
+    : (owned ? `<p>${escapeHtml(t('store.wrappers.checkers.bundle.remaining',{missing}))}</p>` : '');
+  const priceLabel = escapeHtml(t('store.units.coins'));
+  const buttonLabel = allOwned
+    ? t('store.wrappers.checkers.bundle.complete_button')
+    : t('store.wrappers.checkers.bundle.buy_button',{price:formatNumber(price)});
   return `
     <div class="store-v2-title-row store-v2-game-title-row mgw-checkers-bundle-title">
-      <div><h2>Набор</h2><p>Неоновая доска, неоновые шашки и все три эффекта одним комплектом</p></div>
+      <div><h2>${sectionTitle}</h2><p>${sectionSubtitle}</p></div>
     </div>
     <div class="store-v2-game-bundles mgw-checkers-inline-bundle-wrap">
       <article class="store-v2-bundle ${allOwned ? 'owned' : ''}" data-store-bundle-game="checkers">
         <div class="store-v2-bundle-visual checkers-bundle-visual mgw-checkers-bundle-complete" aria-hidden="true">${checkersBundleVisualContents()}</div>
         <div class="store-v2-bundle-copy">
           <h2>${title}</h2>
-          <p>Неоновая доска + неоновые шашки + ход + взятие + дамка.</p>
-          ${allOwned ? '<p>Комплект уже собран.</p>' : (owned ? `<p>Осталось ${missing} из 5.</p>` : '')}
-          ${!allOwned ? `<div class="store-v2-bundle-price"><strong>${formatNumber(price)} коинов</strong>${saving > 0 ? `<span>−${formatNumber(saving)}</span>` : ''}</div>` : ''}
+          <p>${composition}</p>
+          ${progress}
+          ${!allOwned ? `<div class="store-v2-bundle-price"><strong>${formatNumber(price)} ${priceLabel}</strong>${saving > 0 ? `<span>−${formatNumber(saving)}</span>` : ''}</div>` : ''}
         </div>
         <button class="btn primary full" data-mgw-checkers-bundle-buy="${offerId}" type="button" ${allOwned ? 'disabled' : ''}>
-          ${allOwned ? 'Комплект собран' : `Купить комплект за ${formatNumber(price)}`}
+          ${escapeHtml(buttonLabel)}
         </button>
       </article>
     </div>
@@ -423,12 +437,12 @@ function upgradeCheckersBundleVisuals(root){
 
 function checkersBundleVisualContents(){
   return `
-    <span class="mgw-checkers-bundle-board"><small class="mgw-checkers-bundle-label">Доска</small>${checkersMiniBoardMarkup(false)}</span>
-    <span class="mgw-checkers-bundle-pieces"><small class="mgw-checkers-bundle-label">Шашки</small><i class="store-v2-mini-checkers-pieces"><span class="black"></span><span class="white"></span><span class="king"><b>♛</b></span></i></span>
+    <span class="mgw-checkers-bundle-board"><small class="mgw-checkers-bundle-label">${escapeHtml(t('store.wrappers.checkers.bundle.board'))}</small>${checkersMiniBoardMarkup(false)}</span>
+    <span class="mgw-checkers-bundle-pieces"><small class="mgw-checkers-bundle-label">${escapeHtml(t('store.wrappers.checkers.bundle.pieces'))}</small><i class="store-v2-mini-checkers-pieces"><span class="black"></span><span class="white"></span><span class="king"><b>♛</b></span></i></span>
     <span class="mgw-checkers-bundle-effects">
-      ${bundleEffectMarkup('move','Ход')}
-      ${bundleEffectMarkup('capture','Взятие')}
-      ${bundleEffectMarkup('promotion','Дамка')}
+      ${bundleEffectMarkup('move',t('store.wrappers.checkers.bundle.move'))}
+      ${bundleEffectMarkup('capture',t('store.wrappers.checkers.bundle.capture'))}
+      ${bundleEffectMarkup('promotion',t('store.wrappers.checkers.bundle.promotion'))}
     </span>
   `;
 }
@@ -469,7 +483,7 @@ function bridgeInlineBundlePurchase(button){
 }
 
 function formatNumber(value){
-  return Number(value || 0).toLocaleString('ru-RU');
+  return formatLocalizedNumber(Number(value || 0));
 }
 
 function escapeHtml(value){
