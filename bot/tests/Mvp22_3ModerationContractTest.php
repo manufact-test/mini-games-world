@@ -18,6 +18,7 @@ $profileUi = file_get_contents(dirname($root) . '/app/assets/js/screens/profile-
 $adminUi = file_get_contents(dirname($root) . '/app/assets/js/admin-reports.js') ?: '';
 $client = file_get_contents(dirname($root) . '/app/assets/js/api/client.js') ?: '';
 $mainCss = file_get_contents(dirname($root) . '/app/assets/css/main.css') ?: '';
+$locale = json_decode(file_get_contents(dirname($root) . '/app/locales/ru.json') ?: '{}', true, 512, JSON_THROW_ON_ERROR);
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -83,7 +84,7 @@ $assert(str_contains($userEndpoint, "'appeal'"), 'Player moderation endpoint mus
 $assert(str_contains($client, 'moderationSnapshot'), 'Client must expose moderation snapshot.');
 $assert(str_contains($client, 'moderationAppeal'), 'Client must expose appeal submission.');
 $assert(str_contains($profileUi, 'data-open-moderation-center'), 'Profile must expose the user-facing moderation center.');
-$assert(str_contains($profileUi, 'Подать апелляцию'), 'Profile moderation center must expose appeal UX.');
+$assert(str_contains($profileUi, "t('profile.moderation.appeal_action')") && (($locale['profile']['moderation']['appeal_action'] ?? null) === 'Подать апелляцию'), 'Profile moderation center must expose localized appeal UX.');
 
 $assert(str_contains($profileEndpoint, "assertAllowed(\$mgwId, 'profile')"), 'Profile updates must enforce profile restrictions.');
 $assert(str_contains($friendsEndpoint, "assertAllowed(\$actorMgwId, 'social')"), 'Friend creation must enforce social restrictions.');
