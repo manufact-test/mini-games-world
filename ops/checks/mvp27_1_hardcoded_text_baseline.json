@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-02",
-  "staging_base": "0894c81331f9fd580a7027552fe6582eef38534d",
+  "staging_base": "120fe303c6f53060fd0f030140fe75e19aabb891",
   "scanned_files": 776,
-  "cyrillic_lines_total": 4068,
+  "cyrillic_lines_total": 3963,
   "by_scope": {
-    "client": 2387,
+    "client": 2282,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 active Store wrapper closure; seven active Store wrapper files reduced by 144 hardcoded Cyrillic source lines in total (10+18+21+21+21+27+26), and the remaining direct ru-RU Store wrapper formatter was removed."
+  "note": "MVP-27.1 active Profile localization; factual app/assets/js/screens/profile-screen-v110.js reduced from 105 to 0 hardcoded Cyrillic source lines. Store active surface remains closed at zero hardcoded Cyrillic/direct ru-RU."
 }
