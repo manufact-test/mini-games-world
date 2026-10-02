@@ -139,7 +139,8 @@ jobs:
           grep -F "from './store-screen.js?v=45&intent_base=1&mvp19_5=chess-catalog';" app/assets/js/screens/store-screen-intent-wrapper.js
           grep -F 'gameCosmeticPreview' app/assets/js/screens/store-screen.js
           grep -F 'data-store-v2-unequip' app/assets/js/screens/store-screen.js
-          grep -F 'Один выбранный эффект срабатывает при каждом ходе' app/assets/js/screens/store-screen.js
+          grep -F 'store.games.presentation.${key}.groups.${group}.subtitle' app/assets/js/screens/store-screen.js
+          grep -F '"subtitle": "Один выбранный эффект срабатывает при каждом ходе"' app/locales/ru.json
           grep -F "@import url('./screens/store-v2.css?v=5&mvp19=store-v2&corrective=2&mvp19_4=game-cosmetics-polish-v3&c1=field-parity');" app/assets/css/main.css
           grep -F "@import url('./games/tictactoe/cosmetics.css?v=2&mvp19_4=pilot&c1=shared-field&c2=effects-v2&c2_1=single-slot-parity&c2_5=visible-mark-layer');" app/assets/css/main.css
           grep -F "@import url('./cosmetics.css?v=1&mvp19_5=chess-cosmetics');" app/assets/css/games/chess/game.css
