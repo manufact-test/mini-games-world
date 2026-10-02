@@ -43,9 +43,9 @@ assert(
   'Defensive direct coin-tab rendering must show the localized complete disabled state, not a future promise.'
 );
 assert(
-  manifest.includes("./assets/js/screens/store-screen.js?v=71&intent_base=1")
+  manifest.includes("./assets/js/screens/store-screen.js?v=72&intent_base=1")
     && manifest.includes("mvp19_13=bundle-selector-click-hint-v11-performance")
-    && manifest.includes("mvp27_1=store-localized-v1"),
+    && manifest.includes("mvp27_1=store-localized-v2"),
   'Canonical client manifest must cache-bust the current completed localized Store base module.'
 );
 assert(
