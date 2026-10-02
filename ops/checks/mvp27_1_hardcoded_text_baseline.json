@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-02",
-  "staging_base": "ceed4feb95b9aaef562bf30a91cba5eb15788307",
+  "staging_base": "b80002c59d82c1a987d40aea246d10dd8209781a",
   "scanned_files": 776,
-  "cyrillic_lines_total": 3478,
+  "cyrillic_lines_total": 3453,
   "by_scope": {
-    "client": 1797,
+    "client": 1772,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 active Checkers base renderer localization; factual LIVE renderer reduced by 25 hardcoded Cyrillic source lines to zero while preserving move action ownership, mandatory-capture behavior, board geometry and accepted real-flight cosmetics owners."
+  "note": "MVP-27.1 active Profile Entry Effects localization; factual Store/Profile/LIVE presentation owner reduced by 25 hardcoded Cyrillic source lines to zero while preserving purchase/equip ownership, player arbitration, launch-overlay handoff and once-per-game timing."
 }

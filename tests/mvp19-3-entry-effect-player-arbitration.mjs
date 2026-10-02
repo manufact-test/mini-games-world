@@ -67,7 +67,7 @@ assert.match(profileSource, /Math\.min\(4000, Math\.max\(2000, duration\)\)/);
 const manifestSource = await readFile(new URL('../app/runtime/client/version-manifest.php', import.meta.url), 'utf8');
 assert.match(
   manifestSource,
-  /'\.\/assets\/js\/profile\/mgw-profile-entry-effects\.js\?v=1&mvp19_3=entry-effects' => '\.\/assets\/js\/profile\/mgw-profile-entry-effects\.js\?v=6&mvp19_3=player-arbitration'/,
+  /'\.\/assets\/js\/profile\/mgw-profile-entry-effects\.js\?v=1&mvp19_3=entry-effects' => '\.\/assets\/js\/profile\/mgw-profile-entry-effects\.js\?v=8&mvp19_3=player-arbitration&mvp25_4=profile-post-paint-v1&mvp27_1=localized-v1'/,
 );
 
 console.log('MVP-19.3 Entry Effect player arbitration: PASS');

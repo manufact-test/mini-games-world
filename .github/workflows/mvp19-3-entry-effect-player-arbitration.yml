@@ -7,6 +7,9 @@ on:
       - 'app/assets/js/profile/mgw-profile-entry-effects.js'
       - 'app/assets/js/profile/mgw-entry-effect-player-arbitration.js'
       - 'app/runtime/client/version-manifest.php'
+      - 'app/locales/ru.json'
+      - 'ops/checks/mvp27_1_profile_entry_effects_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - 'tests/mvp19-3-entry-effect-player-arbitration.mjs'
       - '.github/workflows/mvp19-3-entry-effect-player-arbitration.yml'
   workflow_dispatch:
@@ -31,10 +34,12 @@ jobs:
         with:
           node-version: '20'
       - name: Run four-combination arbitration acceptance
-        run: node tests/mvp19-3-entry-effect-player-arbitration.mjs
+        run: |
+          node tests/mvp19-3-entry-effect-player-arbitration.mjs
+          node ops/checks/mvp27_1_profile_entry_effects_localization_contract.mjs
       - name: Guard accepted runtime identity
         run: |
-          grep -F 'mgw-profile-entry-effects.js?v=6&mvp19_3=player-arbitration' app/runtime/client/version-manifest.php
+          grep -F 'mgw-profile-entry-effects.js?v=8&mvp19_3=player-arbitration&mvp25_4=profile-post-paint-v1&mvp27_1=localized-v1' app/runtime/client/version-manifest.php
           git diff --check
       - name: Guard frozen Entry arbitration owners
         if: ${{ github.event_name == 'pull_request' }}
@@ -44,6 +49,4 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           git diff --exit-code "$base" "$head" -- \
-            app/assets/js/profile/mgw-profile-entry-effects.js \
-            app/assets/js/profile/mgw-entry-effect-player-arbitration.js \
-            tests/mvp19-3-entry-effect-player-arbitration.mjs
+            app/assets/js/profile/mgw-entry-effect-player-arbitration.js
