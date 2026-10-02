@@ -1,8 +1,9 @@
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
 import { battleshipPreviewMarkup } from '../screens/store-screen-battleship-store-v1.js?v=14&mvp19_12=store-preview-parity-v14&header=steel-ship&neon_frame=outer-safe&neon_fleet=tube-v4&fleet_preview=svg-models-v3&neon_map_ships=white-v1&preview_geometry=svg-circles-v6&hydration=observer-v1&inline_owner=svg-v5&effects=live-parity-destroy-v3';
+import { t } from '@mgw/i18n';
 
-const GROUP_TITLES = Object.freeze({ theme:'Карты', elements:'Флот', effect:'Эффекты' });
+const GROUP_TITLES = Object.freeze({ theme:'profile.collection.games.battleship.groups.theme', elements:'profile.collection.games.battleship.groups.elements', effect:'profile.collection.games.battleship.groups.effect' });
 const ITEM_ORDER = Object.freeze([
   'game-battleship-map-sea',
   'game-battleship-map-dark-military',
@@ -152,7 +153,7 @@ function ensureBattleshipTab(screen){
         <rect class="mgw-bs-tab-bridge" x="13" y="3.5" width="4" height="3" rx=".7"></rect>
       </svg>
     </span>
-    <span class="profile-v2-game-tab-label">Морской бой</span>
+    <span class="profile-v2-game-tab-label">${t('profile.collection.games.battleship.title')}</span>
   `;
   return tab;
 }
@@ -204,12 +205,12 @@ function renderBattleshipGroups(items){
     .filter(group => group.items.length > 0);
 
   if (!groups.length) {
-    return '<div class="profile-v2-game-empty" data-mgw-battleship-profile-empty="1">Купленные предметы для Морского боя появятся здесь.</div>';
+    return `<div class="profile-v2-game-empty" data-mgw-battleship-profile-empty="1">${t('profile.collection.games.battleship.empty')}</div>`;
   }
 
   return groups.map(group => `
     <div class="profile-v2-game-group" data-mgw-battleship-profile-group="${group.layer}">
-      <div class="profile-v2-game-group-title">${GROUP_TITLES[group.layer]}</div>
+      <div class="profile-v2-game-group-title">${t(GROUP_TITLES[group.layer])}</div>
       <div class="profile-v2-game-grid">${group.items.map(battleshipCardMarkup).join('')}</div>
     </div>
   `).join('');
@@ -241,10 +242,10 @@ function upgradeBattleshipSheet(itemId){
   }
 
   const strong = sheet.querySelector('.profile-v2-game-preview-meta strong');
-  if (strong instanceof HTMLElement) strong.textContent = 'Морской бой';
+  if (strong instanceof HTMLElement) strong.textContent = t('profile.collection.games.battleship.title');
 
   const group = sheet.querySelector('.profile-v2-game-preview-meta small');
-  if (group instanceof HTMLElement) group.textContent = GROUP_TITLES[battleshipLayer(item)] || 'Оформление';
+  if (group instanceof HTMLElement) group.textContent = GROUP_TITLES[battleshipLayer(item)] ? t(GROUP_TITLES[battleshipLayer(item)]) : t('profile.collection.cosmetics_label');
 }
 
 function ownedBattleshipItems(){
@@ -291,8 +292,12 @@ function battleshipVariant(item){
 }
 
 function battleshipDisplayName(item){
+  const itemId = String(item?.item_id || '').trim();
+  if (itemId) {
+    try { return t(`store.products.${itemId}`); } catch (_) {}
+  }
   const metadata = item?.metadata && typeof item.metadata === 'object' ? item.metadata : {};
-  return String(metadata.display_name || item?.item_id || 'Предмет Морского боя').trim();
+  return String(metadata.display_name || itemId || t('profile.collection.games.battleship.fallback')).trim();
 }
 
 function isBattleshipItemEquipped(item){
