@@ -78,8 +78,9 @@ $assert(str_contains($screen, 'function tournamentLiveRenderFingerprint()')
         && substr_count($screen, 'const renderBefore = tournamentLiveRenderFingerprint();') >= 2
         && substr_count($screen, 'if (tournamentLiveRenderFingerprint() !== renderBefore)') >= 2,
     'Long-running Hall polling must not rebuild the full tournament DOM when authoritative state is unchanged.');
-$assert(str_contains($screen, 'Все матчи турнира завершены.'),
-    'Completed tournament must expose a terminal progression message.');
+$assert(str_contains($screen, "t('arena.terminal.all_done_rewards')")
+        && (($locale['arena']['terminal']['all_done_rewards'] ?? null) === 'Все матчи турнира завершены. Награды начислены'),
+    'Completed tournament must expose a localized terminal progression message.');
 $assert(str_contains($screen, 'formatReadyCountdown(opensAt.getTime() - Date.now())'),
     'Progression waits must reuse the compact mm:ss countdown.');
 $assert(str_contains($screen, 'await refreshTournamentMatchState()'),
