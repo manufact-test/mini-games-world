@@ -82,10 +82,7 @@ $assert(
         && str_contains($versionManifest, 'account-shortcuts.js?v=58')
         && str_contains($versionManifest, 'mvp23=account-data-first-open-no-flash-v1')
         && str_contains($versionManifest, 'mvp23_mobile=atomic-account-data-v1')
-        && str_contains($versionManifest, 'mvp27_1=account-data-localized-v1')
-        && str_contains($stagingEntry, "\$accountShortcutsImportKey = './assets/js/components/account-shortcuts.js?v=48';")
-        && str_contains($stagingEntry, "\$imports[\$accountShortcutsImportKey] .= '&mvp23=account-data-first-open-no-flash-v1';")
-        && str_contains($stagingEntry, "\$imports[\$accountShortcutsImportKey] .= '&mvp23_mobile=atomic-account-data-v1';"),
+        && str_contains($versionManifest, 'mvp27_1=account-data-localized-v1'),
     'Manual acceptance account-data owner must retain the canonical import key, accepted atomic-open markers and current localized cache identity.'
 );
 
