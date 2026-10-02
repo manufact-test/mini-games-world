@@ -27,7 +27,7 @@ ok(sourceWrapper.includes('store-effects-live-board-v1.css?v=3&mvp19_6=promotion
 ok(sourceWrapper.includes('store-effects-final-centering-v1.css?v=2&mvp19_6=king-readable-v2'), 'outer Checkers Store owner keeps the accepted final centering/readability stylesheet');
 ok(wrapper.includes('runBoundedEffectPreview'), 'existing bounded finite replay owner preserved');
 ok(wrapper.includes("preview.classList.add('is-previewing')"), 'existing effect replay trigger preserved');
-ok(wrapper.includes("from './store-screen-intent-wrapper.js?v=19&mvp19_6=accepted-base-preserved';"), 'accepted Store owner chain remains intact');
+ok(wrapper.includes("from './store-screen-intent-wrapper.js?v=20&mvp19_6=accepted-base-preserved&mvp27_1=localized-v1';"), 'accepted localized Store owner chain remains intact');
 
 ok(css.includes('linear-gradient(145deg,#d9c8a8,#bea884)'), 'effect preview uses live light-square material');
 ok(css.includes('linear-gradient(145deg,#5d4b58,#3c3343)'), 'effect preview uses live dark-square material');
