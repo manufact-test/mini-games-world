@@ -15,7 +15,17 @@ const paths = [
 ];
 
 const sources = Object.fromEntries(paths.map(path => [path, fs.readFileSync(path, 'utf8')]));
-const boardOwner = fs.readFileSync('app/assets/js/screens/store-screen-checkers-board-source-wrapper.js', 'utf8');
+const activeStoreChainPaths = [
+  'app/assets/js/screens/store-screen.js',
+  ...paths,
+  'app/assets/js/screens/store-screen-checkers-board-source-wrapper.js',
+  'app/assets/js/screens/store-screen-domino-card-fill-v5.js',
+  'app/assets/js/screens/store-screen-domino-effects-v9.js',
+  'app/assets/js/screens/store-paid-default-dedup-v1.js',
+  'app/assets/js/screens/store-game-selector-swipe-v1.js',
+];
+const activeStoreChain = Object.fromEntries(activeStoreChainPaths.map(path => [path, fs.readFileSync(path, 'utf8')]));
+const boardOwner = activeStoreChain['app/assets/js/screens/store-screen-checkers-board-source-wrapper.js'];
 const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf8');
 const ru = JSON.parse(fs.readFileSync('app/locales/ru.json', 'utf8'));
 
@@ -23,6 +33,11 @@ for (const [path, source] of Object.entries(sources)) {
   assert(!/[\u0400-\u04FF]/.test(source), `Active Store wrapper must contain zero hardcoded Cyrillic: ${path}`);
   assert(!source.includes('ru-RU'), `Active Store wrapper must not own direct ru-RU formatting: ${path}`);
   assert(source.includes('@mgw/i18n'), `Active Store wrapper must use canonical i18n: ${path}`);
+}
+
+for (const [path, source] of Object.entries(activeStoreChain)) {
+  assert(!/[\u0400-\u04FF]/.test(source), `Active Store chain must contain zero hardcoded Cyrillic: ${path}`);
+  assert(!source.includes('ru-RU'), `Active Store chain must contain zero direct ru-RU formatting: ${path}`);
 }
 
 assert(sources['app/assets/js/screens/store-screen-checkers-wrapper.js'].includes('formatNumber as formatLocalizedNumber'),
@@ -81,3 +96,4 @@ for (const itemId of [
 
 console.log('MVP27_1_STORE_WRAPPERS_LOCALIZATION_CONTRACT=PASS');
 console.log('MVP27_1_STORE_WRAPPERS_HARDCODED_CYRILLIC=0');
+console.log('MVP27_1_ACTIVE_STORE_CHAIN_HARDCODED_CYRILLIC=0');
