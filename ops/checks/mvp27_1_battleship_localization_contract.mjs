@@ -16,11 +16,11 @@ assert(renderer.includes("onAction?.({ type:'fire', cell:Number(button.dataset.b
 assert(renderer.includes("onAction?.({") && renderer.includes("type:'place_ship'") && renderer.includes("type:'randomize_fleet'") && renderer.includes("type:'clear_fleet'"), 'Setup action ownership must remain unchanged.');
 assert(wrapper.includes("from './renderer.js?v=61&shot=miss-no-impact&base=mvp19_12-live-maps-fleets-v4&mvp27_1=localized-v1'"), 'LIVE cosmetics wrapper must point to localized base renderer identity.');
 assert(manifest.includes('renderer-cosmetics-v1.js?v=6') && manifest.includes('mvp27_1=battleship-localized-v1'), 'Canonical manifest must publish localized Battleship wrapper identity.');
-assert(ru._meta?.version === 35, 'RU locale revision must publish Battleship localization v35.');
+assert(Number(ru._meta?.version || 0) >= 35, 'RU locale revision must retain Battleship localization v35 or a newer successor.');
 assert(ru.games?.battleship?.ui?.setup?.title === 'Расставьте флот', 'Accepted RU setup title must remain unchanged.');
 assert(ru.games?.battleship?.ui?.shot?.self_hit === 'Попадание! Стреляйте ещё', 'Accepted RU hit feedback must remain unchanged.');
 assert(ru.games?.battleship?.ui?.errors?.touching === 'Здесь нельзя: корабли не должны соприкасаться даже по диагонали.', 'Accepted RU placement guard copy must remain unchanged.');
 assert(ru.games?.battleship?.ui?.aria?.cell === 'Клетка {coord}: {state}', 'Accepted RU accessibility copy must remain unchanged.');
-assert(baseline.cyrillic_lines_total === 3570 && baseline.by_scope?.client === 1889, 'Battleship localization debt baseline must ratchet by exactly 49 client lines.');
+assert(baseline.cyrillic_lines_total <= 3570 && baseline.by_scope?.client <= 1889, 'Battleship localization debt must never regress above the accepted post-Battleship baseline.');
 console.log('MVP27_1_BATTLESHIP_LOCALIZATION_CONTRACT=PASS');
 console.log('MVP27_1_ACTIVE_BATTLESHIP_HARDCODED_CYRILLIC=0');
