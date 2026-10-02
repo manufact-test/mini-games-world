@@ -11,14 +11,15 @@ const manifest = fs.readFileSync('app/runtime/client/version-manifest.php', 'utf
 const inventory = fs.readFileSync('bot/catalog/ProductInventoryService.php', 'utf8');
 const storeService = fs.readFileSync('bot/catalog/CosmeticStoreService.php', 'utf8');
 const endpoint = fs.readFileSync('bot/cosmetic-store.php', 'utf8');
+const locale = JSON.parse(fs.readFileSync('app/locales/ru.json', 'utf8'));
 
 function expect(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-expect(profile.includes("{ layer:'theme', title:'Поля' }"), 'Profile must group owned game fields');
-expect(profile.includes("{ layer:'elements', title:'Знаки' }"), 'Profile must group owned game marks');
-expect(profile.includes("{ layer:'effect', title:'Эффекты' }"), 'Profile must group owned game effects');
+expect(profile.includes("{ layer:'theme', titleKey:'profile.collection.game_groups.theme' }") && locale.profile?.collection?.game_groups?.theme === 'Поля', 'Profile must group owned game fields through localization');
+expect(profile.includes("{ layer:'elements', titleKey:'profile.collection.game_groups.elements' }") && locale.profile?.collection?.game_groups?.elements === 'Знаки', 'Profile must group owned game marks through localization');
+expect(profile.includes("{ layer:'effect', titleKey:'profile.collection.game_groups.effect' }") && locale.profile?.collection?.game_groups?.effect === 'Эффекты', 'Profile must group owned game effects through localization');
 expect(profile.includes("item.owned === true && item.item_type === 'game'"), 'Profile collection must display owned game items only');
 expect(profile.includes('function ownedGameCosmeticGames()'), 'Profile must group owned cosmetics by game before rendering');
 expect(profile.includes("const explicit = String(metadata.game_type || '').trim();"), 'Profile game grouping must prefer canonical metadata game_type');
