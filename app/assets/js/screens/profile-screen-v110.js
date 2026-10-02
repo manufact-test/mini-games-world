@@ -764,7 +764,7 @@ function renderGameCosmeticsCollection(){
   if (!games.length) {
     return `
       <div class="profile-v2-game-collection" aria-label="${escapeHtml(t('profile.collection.game_cosmetics_aria'))}">
-        <div class="profile-v2-collection-title">${escapeHtml(t('profile.collection.games'))}</div>
+        <div class="profile-v2-collection-title">${escapeHtml(t('profile.collection.games_title'))}</div>
         <div class="profile-v2-game-empty">${escapeHtml(t('profile.collection.games_empty'))}</div>
       </div>
     `;
@@ -774,7 +774,7 @@ function renderGameCosmeticsCollection(){
 
   return `
     <div class="profile-v2-game-collection" aria-label="${escapeHtml(t('profile.collection.game_cosmetics_aria'))}">
-      <div class="profile-v2-collection-title">${escapeHtml(t('profile.collection.games'))}</div>
+      <div class="profile-v2-collection-title">${escapeHtml(t('profile.collection.games_title'))}</div>
       <div class="profile-v2-game-tabs" role="tablist" aria-label="${escapeHtml(t('profile.collection.games_tabs_aria'))}">
         ${games.map(game => {
           const active = game.game_type === activeGame.game_type;
