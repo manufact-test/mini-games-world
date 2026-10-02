@@ -4,12 +4,16 @@ on:
   pull_request:
     branches: [agent/mvp-13-2-staging]
     paths:
+      - 'app/assets/js/games/reversi/renderer.js'
       - 'app/assets/js/games/reversi/renderer-cosmetics-v1.js'
       - 'app/assets/js/games/reversi/renderer-cosmetics-premium-v4.js'
       - 'app/assets/css/games/reversi/live-cosmetics-v1.css'
       - 'app/assets/css/games/reversi/live-effects-premium-v4.css'
       - 'app/assets/css/games/reversi/telegram-height-fit-v1.css'
       - 'app/runtime/client/version-manifest.php'
+      - 'app/locales/ru.json'
+      - 'ops/checks/mvp27_1_reversi_renderer_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/Mvp19_7ReversiLiveCosmeticsContractTest.mjs'
       - '.github/workflows/mvp19-7-reversi-live-cosmetics.yml'
@@ -42,14 +46,18 @@ jobs:
 
       - name: Syntax checks
         run: |
+          node --check app/assets/js/games/reversi/renderer.js
           node --check app/assets/js/games/reversi/renderer-cosmetics-v1.js
+          node --check ops/checks/mvp27_1_reversi_renderer_localization_contract.mjs
           node --check app/assets/js/games/reversi/renderer-cosmetics-premium-v4.js
           node --check bot/tests/Mvp19_7ReversiLiveCosmeticsContractTest.mjs
           php -l app/runtime/client/version-manifest.php
           php -l bot/helpers/WebAppLaunchUrl.php
 
       - name: Run Reversi live cosmetics contract
-        run: node bot/tests/Mvp19_7ReversiLiveCosmeticsContractTest.mjs
+        run: |
+          node bot/tests/Mvp19_7ReversiLiveCosmeticsContractTest.mjs
+          node ops/checks/mvp27_1_reversi_renderer_localization_contract.mjs
 
       - name: Re-run accepted Reversi Store and Profile contracts
         run: |
@@ -63,7 +71,6 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
           git diff --exit-code "$base" "$head" -- \
-            app/assets/js/games/reversi/renderer.js \
             app/assets/css/games/reversi/game.css \
             app/assets/js/games/chess \
             app/assets/js/games/checkers \
