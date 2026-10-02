@@ -22,6 +22,9 @@ on:
       - 'app/assets/media/cosmetics/entry-effects/**'
       - 'app/media/cosmetics/entry-effects/**'
       - 'app/runtime/client/version-manifest.php'
+      - 'app/locales/ru.json'
+      - 'ops/checks/mvp27_1_profile_entry_effects_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - 'bot/tests/Mvp19_3ProfileEntryEffectsTest.php'
       - 'tests/mvp19-3-entry-effect-player-arbitration.mjs'
       - '.github/workflows/mvp19-3-profile-entry-effects.yml'
@@ -63,6 +66,7 @@ jobs:
           php -l bot/helpers/response.php
           php -l bot/tests/Mvp19_3ProfileEntryEffectsTest.php
           node --check app/assets/js/profile/mgw-profile-entry-effects.js
+          node --check ops/checks/mvp27_1_profile_entry_effects_localization_contract.mjs
           node --check app/assets/js/profile/mgw-entry-effect-player-arbitration.js
           node --check app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
           node --check app/assets/js/production-v110-readonly-game-sync.js
@@ -73,6 +77,7 @@ jobs:
         run: |
           php bot/tests/Mvp19_3ProfileEntryEffectsTest.php
           node tests/mvp19-3-entry-effect-player-arbitration.mjs
+          node ops/checks/mvp27_1_profile_entry_effects_localization_contract.mjs
 
       - name: Preserve adjacent cosmetic owners
         run: |
@@ -104,7 +109,7 @@ jobs:
           grep -F 'mgw-entry-effect-live-art' app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
           grep -F 'asset=premium-art-v7' app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js
           grep -F 'entry_live_img=premium-art-v7' app/runtime/client/version-manifest.php
-          grep -F 'mgw-profile-entry-effects.js?v=6&mvp19_3=player-arbitration' app/runtime/client/version-manifest.php
+          grep -F 'mgw-profile-entry-effects.js?v=8&mvp19_3=player-arbitration&mvp25_4=profile-post-paint-v1&mvp27_1=localized-v1' app/runtime/client/version-manifest.php
           grep -F 'entry_effect_handoff=1' app/runtime/client/version-manifest.php
           grep -F 'quiet-cosmetic-equip-all' app/runtime/client/version-manifest.php
           grep -F 'entry_effects=1' app/runtime/client/version-manifest.php
