@@ -1,4 +1,4 @@
-import { initProfileScreen as initChessParityProfileScreen } from './mgw-profile-chess-parity.js?v=1&mvp19_5=chess-profile-store-parity-v1';
+import { initProfileScreen as initChessParityProfileScreen } from './mgw-profile-chess-parity.js?v=2&mvp19_5=chess-profile-store-parity-v1&mvp27_1=localized-v1';
 import { api } from '../api/client.js?v=47';
 import { state } from '../state.js?v=27';
 import { t } from '@mgw/i18n';
