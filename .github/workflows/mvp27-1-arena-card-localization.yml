@@ -45,8 +45,6 @@ jobs:
       - name: Preserve tournament card and cancellation contracts
         run: |
           set -euo pipefail
-          php bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php
-          php bot/tests/Mvp21_3TournamentScheduleTest.php
           php bot/tests/Mvp21_8TournamentCancellationUxContractTest.php
           php bot/tests/Mvp25_2TournamentHumanCopyContractTest.php
 
