@@ -60,10 +60,18 @@ $assert(str_contains($entry, 'Не удалось открыть Mini Games Worl
 $assert(!preg_match('/echo\s+[\'\"]Mini Games World .*?(manifest|owner|stylesheet|anchor|bootstrap)/i', $entry), 'v110 must not echo implementation diagnostics to players.');
 
 $manifest = $read('app/runtime/client/version-manifest.php');
-$assert(
-    substr_count($manifest, './assets/js/api/client.js?v=1149&mvp25_2=network-human-error-v2') === 4,
-    'All active API client import aliases must publish the fresh human-error-boundary identity.'
-);
+$manifestArray = require $root . '/app/runtime/client/version-manifest.php';
+$apiAliases = array_filter($manifestArray['imports'] ?? [], static fn(string $key): bool => str_starts_with($key, './assets/js/api/client.js?v='), ARRAY_FILTER_USE_KEY);
+$assert(count($apiAliases) >= 4, 'Active runtime must retain all canonical API client aliases.');
+foreach ($apiAliases as $target) {
+    $versionMatch = [];
+    $assert(
+        preg_match('/client\.js\?v=(\d+)/', (string)$target, $versionMatch) === 1
+            && (int)$versionMatch[1] >= 1149
+            && str_contains((string)$target, 'mvp25_2=network-human-error-v2'),
+        'Every active API client alias must stay at or beyond the accepted human-error-boundary identity.'
+    );
+}
 
 foreach ([
     'bot/friends.php',
