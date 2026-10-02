@@ -37,9 +37,11 @@ $assert(
     'Real tournament achievement/reward presentation must remain intact through canonical localization.'
 );
 
+$profileVersionMatch = [];
 $assert(
-    str_contains($manifest, "profile-screen-v110.js?v=1133&mvp25_1=real-achievements-only-v1"),
-    'Changed Profile source must publish a fresh cache identity so cached placeholder code cannot execute against the new locale catalog.'
+    preg_match('/profile-screen-v110\\.js\\?v=(\\d+)[^\']*mvp25_1=real-achievements-only-v1/', $manifest, $profileVersionMatch) === 1
+        && (int)$profileVersionMatch[1] >= 1133,
+    'Changed Profile source must stay at or beyond the accepted placeholder-cleanup cache identity.'
 );
 
 fwrite(STDOUT, "Mvp25_1ProfilePlaceholderCleanupContractTest: {$assertions} assertions passed\n");
