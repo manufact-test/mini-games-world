@@ -1,6 +1,6 @@
 import { api } from '../api/client.js?v=47';
 import { currentScreen, onScreenEnter } from '../router.js?v=27';
-import { t, formatNumber } from '@mgw/i18n';
+import { t, formatNumber, formatDateTime as formatLocalizedDateTime } from '@mgw/i18n';
 import { state } from '../state.js?v=27';
 import { renderBalances } from '../ui.js?v=90-wallet-15-3';
 import { enterGame } from './game-screen-v102-safe.js?v=102';
@@ -1502,7 +1502,7 @@ function startTournamentRenderedCountdownTicker(body, scheduledStart = null){
     if (countdown instanceof HTMLElement && scheduledStart instanceof Date) {
       const remainingMs = scheduledStart.getTime() - Date.now();
       const startedNow = remainingMs <= 0;
-      countdown.textContent = startedNow ? 'Турнир начался' : formatTournamentCountdown(remainingMs);
+      countdown.textContent = startedNow ? t('arena.card.started') : formatTournamentCountdown(remainingMs);
       if (countdownLabel instanceof HTMLElement) countdownLabel.hidden = startedNow;
       countdown.parentElement?.classList.toggle('is-started', startedNow);
     }
@@ -1524,7 +1524,7 @@ function startTournamentRenderedCountdownTicker(body, scheduledStart = null){
       const opensAt = Number(hallButton.dataset.hallOpensAt || 0);
       const openNow = opensAt > 0 && Date.now() >= opensAt;
       hallButton.disabled = !openNow;
-      hallButton.textContent = 'Вход';
+      hallButton.textContent = t('arena.hall.enter');
     }
   };
 
@@ -1630,23 +1630,23 @@ function renderTournamentSnapshot(errorMessage = ''){
       body.innerHTML = `
         <div class="tournaments-v2-tournament-hero">
           <div>
-            <span class="tournaments-v2-tournament-state">${emergency ? 'Аварийная остановка' : 'Турнир отменён'}</span>
-            <h3>${escapeHtml(String(cancelled.title || 'Официальный турнир'))}</h3>
+            <span class="tournaments-v2-tournament-state">${escapeHtml(emergency ? t('arena.card.emergency_stop') : t('arena.card.cancelled'))}</span>
+            <h3>${escapeHtml(String(cancelled.title || t('arena.official_title')))}</h3>
             <p>${escapeHtml(gameName(String(cancelled.game_type || DEFAULT_GAME)))}</p>
           </div>
-          <div class="tournaments-v2-tournament-entry"><small>Возврат</small><strong>${escapeHtml(formatNumber(Number(cancelled.refund_amount || 50000)))}</strong><span>коинов</span></div>
+          <div class="tournaments-v2-tournament-entry"><small>${escapeHtml(t('arena.card.refund'))}</small><strong>${escapeHtml(formatNumber(Number(cancelled.refund_amount || 50000)))}</strong><span>${escapeHtml(t('arena.card.coins'))}</span></div>
         </div>
         <div class="tournaments-v2-tournament-own is-registered">
-          <strong>Взнос возвращён полностью. Результаты турнира аннулированы.</strong>
+          <strong>${escapeHtml(t('arena.card.refund_full'))}</strong>
         </div>
         <div class="tournaments-v2-tournament-rules-body">
-          <p><strong>Причина:</strong> ${escapeHtml(String(cancelled.reason || 'Турнир отменён администратором.'))}</p>
-          ${cancelledAt ? `<p><strong>Закрыт:</strong> ${escapeHtml(formatTournamentDateTime(cancelledAt))} по вашему времени.</p>` : ''}
+          <p>${escapeHtml(t('arena.card.cancel_reason',{reason:String(cancelled.reason || t('arena.card.cancel_reason_default'))}))}</p>
+          ${cancelledAt ? `<p>${escapeHtml(t('arena.card.cancel_closed',{datetime:formatTournamentDateTime(cancelledAt)}))}</p>` : ''}
         </div>
       `;
       return;
     }
-    body.innerHTML = `<div class="tournaments-v2-empty">Официальный турнир пока не создан или не открыт для участников.</div>`;
+    body.innerHTML = `<div class="tournaments-v2-empty">${escapeHtml(t('arena.card.unavailable'))}</div>`;
     return;
   }
 
@@ -1678,7 +1678,7 @@ function renderTournamentSnapshot(errorMessage = ''){
     && String(registration?.rules_consent?.sha256 || '') === String(rules.sha256 || '');
   const rulesMarkup = rulesReady
     ? `<details class="tournaments-v2-tournament-rules">
-        <summary><span>Правила турнира</span></summary>
+        <summary><span>${escapeHtml(t('arena.card.rules_title'))}</span></summary>
         <div class="tournaments-v2-tournament-rules-body">
           ${rulesSections.map(section => `
             <section>
@@ -1688,16 +1688,16 @@ function renderTournamentSnapshot(errorMessage = ''){
           `).join('')}
         </div>
       </details>`
-    : '<div class="tournaments-v2-tournament-error">Правила турнира временно недоступны.</div>';
+    : `<div class="tournaments-v2-tournament-error">${escapeHtml(t('arena.card.rules_unavailable'))}</div>`;
 
   const needsConsent = open && (!registered || !consentAccepted);
   const consentMarkup = needsConsent && rulesReady
     ? `<label class="tournaments-v2-tournament-consent">
         <input type="checkbox" data-tournament-rules-consent${tournamentRulesAccepted ? ' checked' : ''}${tournamentBusy ? ' disabled' : ''}>
-        <span>Я прочитал(а) и принимаю правила этого турнира.</span>
+        <span>${escapeHtml(t('arena.card.consent'))}</span>
       </label>`
     : consentAccepted
-      ? `<div class="tournaments-v2-tournament-consent-proof">Правила турнира приняты${registration?.rules_consent?.accepted_at_utc ? ` · ${escapeHtml(formatConsentTime(registration.rules_consent.accepted_at_utc))}` : ''}.</div>`
+      ? `<div class="tournaments-v2-tournament-consent-proof">${escapeHtml(registration?.rules_consent?.accepted_at_utc ? t('arena.card.consent_accepted_at',{datetime:formatConsentTime(registration.rules_consent.accepted_at_utc)}) : t('arena.card.consent_accepted'))}</div>`
       : '';
 
   const insufficient = !registered && available < fee;
@@ -1705,22 +1705,22 @@ function renderTournamentSnapshot(errorMessage = ''){
   if (open && !registered && !full) {
     const disabled = tournamentBusy || insufficient || !tournamentRulesAccepted || !rulesReady;
     const label = insufficient
-      ? 'Недостаточно коинов'
+      ? t('arena.card.insufficient')
       : tournamentBusy
-        ? (tournamentPendingAction === 'register' ? 'Регистрируем…' : 'Проверяем…')
-        : `Зарегистрироваться · ${escapeHtml(formatNumber(fee))}`;
+        ? (tournamentPendingAction === 'register' ? t('arena.card.registering') : t('arena.card.checking'))
+        : t('arena.card.register',{fee:formatNumber(fee)});
     action = `<button type="button" class="tournaments-v2-tournament-action${tournamentBusy ? ' is-pending' : ''}" data-tournament-action="register"${disabled ? ' disabled' : ''}${tournamentBusy ? ' aria-busy="true"' : ''}>${label}</button>`;
   } else if (open && registered && !full) {
     const cancelLabel = tournamentBusy
-      ? (tournamentPendingAction === 'leave' ? 'Отменяем…' : 'Проверяем…')
-      : 'Отменить регистрацию';
+      ? (tournamentPendingAction === 'leave' ? t('arena.card.cancelling') : t('arena.card.checking'))
+      : t('arena.card.cancel_registration');
     const cancelButton = `<button type="button" class="tournaments-v2-tournament-action tournaments-v2-tournament-action--secondary${tournamentBusy ? ' is-pending' : ''}" data-tournament-action="leave"${tournamentBusy ? ' disabled aria-busy="true"' : ''}>${cancelLabel}</button>`;
 
     if (!consentAccepted) {
       const confirmDisabled = tournamentBusy || !tournamentRulesAccepted || !rulesReady;
       const confirmLabel = tournamentBusy
-        ? (tournamentPendingAction === 'register' ? 'Сохраняем согласие…' : 'Проверяем…')
-        : 'Подтвердить правила';
+        ? (tournamentPendingAction === 'register' ? t('arena.card.saving_consent') : t('arena.card.checking'))
+        : t('arena.card.confirm_rules');
       const confirmButton = `<button type="button" class="tournaments-v2-tournament-action${tournamentBusy ? ' is-pending' : ''}" data-tournament-action="register"${confirmDisabled ? ' disabled' : ''}${tournamentBusy ? ' aria-busy="true"' : ''}>${confirmLabel}</button>`;
       action = `${confirmButton}${cancelButton}`;
     } else {
@@ -1729,39 +1729,39 @@ function renderTournamentSnapshot(errorMessage = ''){
   }
 
   const statusText = state === 'draft'
-    ? 'Турнир готовится · регистрация ещё не открыта'
+    ? t('arena.card.state_draft')
     : scheduled
-      ? 'Дата назначена · готовимся к старту'
+      ? t('arena.card.state_scheduled')
       : waitingForDate
-        ? 'Состав набран · ожидаем назначения даты'
+        ? t('arena.card.state_waiting_date')
         : full
-          ? 'Состав заполнен'
-          : 'Регистрация открыта';
+          ? t('arena.card.state_full')
+          : t('arena.card.state_open');
 
   const ownStatus = registered
     ? (scheduled
-      ? `Вы в составе. Турнир начнётся ${scheduledStart ? formatTournamentDateTime(scheduledStart) + ' по вашему времени' : 'в назначенное время'}.`
+      ? (scheduledStart ? t('arena.card.own_scheduled',{datetime:formatTournamentDateTime(scheduledStart)}) : t('arena.card.own_scheduled_appointed'))
       : waitingForDate
-        ? 'Вы в составе. Регистрация закрыта — ожидайте назначения даты турнира.'
+        ? t('arena.card.own_waiting_date')
         : full
-          ? 'Вы в составе. Турнир заполнен — место зафиксировано.'
-          : 'Вы зарегистрированы. Место закреплено за вами.')
+          ? t('arena.card.own_full')
+          : t('arena.card.own_registered'))
     : scheduled
-      ? 'Состав турнира зафиксирован. Регистрация завершена.'
+      ? t('arena.card.own_roster_fixed')
       : waitingForDate || full
-        ? 'Регистрация завершена. Свободных мест больше нет.'
+        ? t('arena.card.own_registration_done')
         : insufficient
-          ? 'Недостаточно коинов для регистрации.'
+          ? t('arena.card.own_insufficient')
           : '';
 
   const tournamentStarted = Boolean(scheduledStart && scheduledStart.getTime() <= Date.now());
   const scheduleMarkup = scheduled && scheduledStart
-    ? `<section class="tournaments-v2-tournament-schedule" aria-label="Дата и время турнира">
-        <span>Начало турнира · по вашему времени</span>
+    ? `<section class="tournaments-v2-tournament-schedule" aria-label="${escapeHtml(t('arena.card.schedule_aria'))}">
+        <span>${escapeHtml(t('arena.card.start_local'))}</span>
         <strong>${escapeHtml(formatTournamentDateTime(scheduledStart))}</strong>
         <div class="tournaments-v2-tournament-countdown${tournamentStarted ? ' is-started' : ''}">
-          <small data-tournament-countdown-label ${tournamentStarted ? 'hidden' : ''}>До старта</small>
-          <b data-tournament-countdown>${escapeHtml(tournamentStarted ? 'Турнир начался' : formatTournamentCountdown(scheduledStart.getTime() - Date.now()))}</b>
+          <small data-tournament-countdown-label ${tournamentStarted ? 'hidden' : ''}>${escapeHtml(t('arena.card.until_start'))}</small>
+          <b data-tournament-countdown>${escapeHtml(tournamentStarted ? t('arena.card.started') : formatTournamentCountdown(scheduledStart.getTime() - Date.now()))}</b>
         </div>
       </section>`
     : '';
@@ -1790,25 +1790,25 @@ function renderTournamentSnapshot(errorMessage = ''){
     <div class="tournaments-v2-tournament-hero">
       <div>
         <span class="tournaments-v2-tournament-state${open && !full ? ' is-open' : ''}">${escapeHtml(statusText)}</span>
-        <h3>${escapeHtml(String(tournament.title || 'Официальный турнир'))}</h3>
+        <h3>${escapeHtml(String(tournament.title || t('arena.official_title')))}</h3>
         <p>${escapeHtml(gameName(String(tournament.game_type || DEFAULT_GAME)))}</p>
       </div>
-      <div class="tournaments-v2-tournament-entry"><small>Вход</small><strong>${escapeHtml(formatNumber(fee))}</strong><span>коинов</span></div>
+      <div class="tournaments-v2-tournament-entry"><small>${escapeHtml(t('arena.card.entry'))}</small><strong>${escapeHtml(formatNumber(fee))}</strong><span>${escapeHtml(t('arena.card.coins'))}</span></div>
     </div>
 
     ${scheduleMarkup}
     ${hallMarkup}
 
     <div class="tournaments-v2-tournament-progress">
-      <p class="tournaments-v2-tournament-capacity-copy">${scheduled ? 'Состав турнира зафиксирован. Дата назначена.' : waitingForDate ? 'Состав турнира набран. Регистрация закрыта.' : `В турнире участвуют ${escapeHtml(formatNumber(capacity))} игроков. Регистрация закроется, когда все места будут заняты.`}</p>
-      <div class="tournaments-v2-tournament-participants"><span>Участники</span><strong>${escapeHtml(formatNumber(count))} / ${escapeHtml(formatNumber(capacity))}</strong></div>
+      <p class="tournaments-v2-tournament-capacity-copy">${escapeHtml(scheduled ? t('arena.card.capacity_scheduled') : waitingForDate ? t('arena.card.capacity_waiting') : t('arena.card.capacity_open',{capacity:formatNumber(capacity)}))}</p>
+      <div class="tournaments-v2-tournament-participants"><span>${escapeHtml(t('arena.card.participants'))}</span><strong>${escapeHtml(formatNumber(count))} / ${escapeHtml(formatNumber(capacity))}</strong></div>
       <div class="tournaments-v2-tournament-progress-track"><i style="width:${pct}%"></i></div>
     </div>
 
     <div class="tournaments-v2-tournament-prizes">
-      <div><b>1 место</b><strong>${escapeHtml(formatNumber(Number(first.total || 200000)))}</strong><span>+ Golden Ticket</span></div>
-      <div><b>2 место</b><strong>${escapeHtml(formatNumber(Number(second.total || 80000)))}</strong><span>серебряная награда</span></div>
-      <div><b>3 место</b><strong>${escapeHtml(formatNumber(Number(third.total || 50000)))}</strong><span>бронзовая награда</span></div>
+      <div><b>${escapeHtml(t('arena.card.first_place'))}</b><strong>${escapeHtml(formatNumber(Number(first.total || 200000)))}</strong><span>+ Golden Ticket</span></div>
+      <div><b>${escapeHtml(t('arena.card.second_place'))}</b><strong>${escapeHtml(formatNumber(Number(second.total || 80000)))}</strong><span>${escapeHtml(t('arena.card.silver_reward'))}</span></div>
+      <div><b>${escapeHtml(t('arena.card.third_place'))}</b><strong>${escapeHtml(formatNumber(Number(third.total || 50000)))}</strong><span>${escapeHtml(t('arena.card.bronze_reward'))}</span></div>
     </div>
 
     ${rulesMarkup}
@@ -1843,22 +1843,19 @@ function parseTournamentUtc(value){
 function formatTournamentDateTime(value){
   const date = value instanceof Date ? value : parseTournamentUtc(value);
   if (!date) return String(value || '');
-  return new Intl.DateTimeFormat('ru-RU', {
-    day:'2-digit', month:'2-digit', year:'numeric',
-    hour:'2-digit', minute:'2-digit',
-  }).format(date);
+  return formatLocalizedDateTime(date,'short');
 }
 
 function formatTournamentCountdown(remainingMs){
   const remaining = Math.max(0, Number(remainingMs || 0));
-  if (remaining <= 0) return 'Турнир начался';
+  if (remaining <= 0) return t('arena.card.started');
   const totalSeconds = Math.ceil(remaining / 1000);
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
   const time = `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
-  return days > 0 ? `${days} дн. ${time}` : time;
+  return days > 0 ? t('arena.card.days_short',{days,time}) : time;
 }
 
 function formatReadyCountdown(remainingMs){
@@ -1871,22 +1868,20 @@ function formatReadyCountdown(remainingMs){
 function formatConsentTime(value){
   const date = new Date(String(value || '').replace(' ', 'T') + (String(value || '').includes('Z') ? '' : 'Z'));
   if (Number.isNaN(date.getTime())) return String(value || '');
-  return new Intl.DateTimeFormat('ru-RU', {
-    day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit',
-  }).format(date);
+  return formatLocalizedDateTime(date,'short');
 }
 
 function humanizeTournamentError(message){
   const raw = String(message || '').trim();
   const known = new Map([
-    ['Insufficient available balance.', 'Недостаточно доступных коинов для взноса 50 000.'],
-    ['Tournament registration requires canonical DB-primary runtime state.', 'Регистрация временно недоступна: игровое состояние ещё не переключено на основной сервер.'],
-    ['Tournament registration changed concurrently.', 'Регистрация изменилась одновременно с вашим запросом. Обновите турнир и попробуйте ещё раз.'],
-    ['Concurrent balance update was detected.', 'Баланс изменился одновременно с регистрацией. Попробуйте ещё раз.'],
-    ['Balance identity does not match the account reference.', 'Не удалось подтвердить игровой баланс аккаунта.'],
-    ['Canonical tournament account_ref is required.', 'Не удалось подтвердить игровой аккаунт для регистрации.'],
+    ['Insufficient available balance.', t('arena.card.error_insufficient')],
+    ['Tournament registration requires canonical DB-primary runtime state.', t('arena.card.error_runtime')],
+    ['Tournament registration changed concurrently.', t('arena.card.error_registration_race')],
+    ['Concurrent balance update was detected.', t('arena.card.error_balance_race')],
+    ['Balance identity does not match the account reference.', t('arena.card.error_balance_identity')],
+    ['Canonical tournament account_ref is required.', t('arena.card.error_account_identity')],
   ]);
-  return known.get(raw) || raw || 'Не удалось изменить регистрацию.';
+  return known.get(raw) || raw || t('arena.registration.change_error');
 }
 
 function bindTabs(screen){

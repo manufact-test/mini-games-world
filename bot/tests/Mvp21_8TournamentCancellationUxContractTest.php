@@ -14,11 +14,13 @@ $files=[
  'admin_js'=>file_get_contents($root.'/app/assets/js/admin-tournaments.js'),
  'status'=>file_get_contents($root.'/bot/tournament-status.php'),
  'player_ui'=>file_get_contents($root.'/app/assets/js/screens/tournaments-screen-v1.js'),
+ 'locale'=>file_get_contents($root.'/app/locales/ru.json'),
  'manifest'=>file_get_contents($root.'/app/runtime/client/version-manifest.php'),
 ];
 foreach($files as $name=>$source){
  if(!is_string($source)) throw new RuntimeException('Missing MVP-21.8 source: '.$name);
 }
+$locale=json_decode($files['locale'],true,512,JSON_THROW_ON_ERROR);
 
 $assertions=0;
 $assert=static function(bool $value,string $message)use(&$assertions):void{
@@ -46,7 +48,7 @@ $assert(str_contains($files['service'],'annulled_match_count'),'Cancellation mus
 $assert(str_contains($files['service'],'annulled_attempt_count'),'Cancellation must audit match-attempt annulment.');
 $assert(str_contains($files['service'],'annulled_technical_count'),'Cancellation must audit technical-outcome annulment.');
 $assert(str_contains($files['service'],'technical_cancel_required_count'),'21.7 technical escalation must be visible to 21.8.');
-$assert(str_contains($files['service'],"$technicalRequired === 0"),'Technical escalation must disable normal cancellation.');
+$assert(str_contains($files['service'],'$technicalRequired === 0'),'Technical escalation must disable normal cancellation.');
 $assert(str_contains($files['service'],'emergency_stop_available'),'Technical escalation must retain emergency stop.');
 $assert(!str_contains(strtolower($files['service']),'reschedule'),'Reschedule must remain outside MVP-21.8.');
 $assert(!str_contains(strtolower($files['service']),'delay tournament'),'Delay must remain outside MVP-21.8.');
@@ -78,9 +80,15 @@ $assert(str_contains($files['admin_js'],'Результаты аннулиров
 $assert(str_contains($files['admin_js'],'полный возврат'),'Admin warning must state full refund semantics.');
 
 $assert(str_contains($files['status'],"snapshot['last_cancellation']"),'Participant status endpoint must expose latest cancellation.');
-$assert(str_contains($files['player_ui'],'Взнос возвращён полностью. Результаты турнира аннулированы.'),'Player UI must state full refund and annulment.');
-$assert(str_contains($files['player_ui'],'Аварийная остановка'),'Player UI must distinguish emergency stop.');
-$assert(str_contains($files['player_ui'],'Причина:'),'Player UI must expose cancellation reason.');
+$assert(str_contains($files['player_ui'],"t('arena.card.refund_full')")
+        && (($locale['arena']['card']['refund_full'] ?? null) === 'Взнос возвращён полностью. Результаты турнира аннулированы.'),
+    'Player UI must state localized full refund and annulment.');
+$assert(str_contains($files['player_ui'],"t('arena.card.emergency_stop')")
+        && (($locale['arena']['card']['emergency_stop'] ?? null) === 'Аварийная остановка'),
+    'Player UI must distinguish localized emergency stop.');
+$assert(str_contains($files['player_ui'],"t('arena.card.cancel_reason'")
+        && str_contains((string)($locale['arena']['card']['cancel_reason'] ?? ''),'Причина:'),
+    'Player UI must expose localized cancellation reason.');
 $assert(str_contains($files['player_ui'],'await warmTournamentStatus();')
         && str_contains($files['player_ui'],'if (!tournamentSnapshot?.tournament)')
         && str_contains($files['player_ui'],'tournamentHallSnapshot = null;'),
