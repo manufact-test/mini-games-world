@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-01",
-  "staging_base": "099adc0f7d1db7bc00724c76454a058f59b1c15e",
+  "staging_base": "3529fdf6c29b2b45f303d80af5770cdfbdd2ce3d",
   "scanned_files": 776,
-  "cyrillic_lines_total": 4406,
+  "cyrillic_lines_total": 4354,
   "by_scope": {
-    "client": 2725,
+    "client": 2673,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 Arena terminal/reward/progression localization; active tournaments-screen-v1.js reduced from 109 to 62 Cyrillic source lines."
+  "note": "MVP-27.1 Arena cancellation/tournament-card/schedule localization; active tournaments-screen-v1.js reduced from 62 to 10 Cyrillic source lines and removed direct ru-RU datetime formatting."
 }
