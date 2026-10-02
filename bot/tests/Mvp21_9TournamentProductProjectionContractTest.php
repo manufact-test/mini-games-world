@@ -12,6 +12,7 @@ $files=[
  'api_js'=>file_get_contents($root.'/app/assets/js/api/client.js'),
  'shell_js'=>file_get_contents($root.'/app/assets/js/main-v110-handoff-shell.js'),
  'tournaments_js'=>file_get_contents($root.'/app/assets/js/screens/tournaments-screen-v1.js'),
+ 'locale'=>file_get_contents($root.'/app/locales/ru.json'),
  'ui'=>file_get_contents($root.'/app/assets/js/ui.js'),
  'game_js'=>file_get_contents($root.'/app/assets/js/screens/game-screen-v102.js'),
  'response'=>file_get_contents($root.'/bot/helpers/response.php'),
@@ -24,6 +25,7 @@ $files=[
 foreach($files as $name=>$value){
  if(!is_string($value)) throw new RuntimeException('Missing MVP-21.9 product source: '.$name);
 }
+$locale=json_decode($files['locale'],true,512,JSON_THROW_ON_ERROR);
 
 $assertions=0;
 $assert=static function(bool $condition,string $message)use(&$assertions):void{
@@ -90,7 +92,9 @@ $assert(str_contains($files['index'],'mvp21_prestige=showcase-v1') && str_contai
 
 $assert(str_contains($files['tournaments_js'],'tournament-archive-v1'),'Arena must publish tournament archive surface identity.');
 $assert(str_contains($files['tournaments_js'],'loadTournamentArchiveOverview'),'Tournament archive tab must have a live data owner.');
-$assert(str_contains($files['tournaments_js'],'Зал славы турниров'),'Tournament Hall of Fame must have a public Arena surface.');
+$assert(str_contains($files['tournaments_js'],"t('arena.archive.hall_title')")
+        && (($locale['arena']['archive']['hall_title'] ?? null) === 'Зал славы турниров'),
+    'Tournament Hall of Fame must have a localized public Arena surface.');
 $assert(str_contains($files['tournaments_js'],"document.addEventListener('mgw:tournament-hall-of-fame-open'"),'Arena must accept direct Hall of Fame navigation from Profile prestige.');
 $assert(str_contains($files['tournaments_js'],'tournamentHallTrophySvg'),'Hall of Fame trophy count must use the shared non-emoji visual language.');
 $assert(str_contains($files['tournaments_js'],'tournaments-v2-tournament-archive-podium'),'Archive must persist podium representation.');
