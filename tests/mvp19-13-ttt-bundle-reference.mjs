@@ -144,7 +144,7 @@ assert.match(checkersWrapper, /checkersEffectObserver\.unobserve\(preview\)/);
 assert.match(checkersWrapper, /data-mgw-checkers-frozen-snapshot/);
 
 assert.match(manifest, /store-screen-checkers-board-source-wrapper\.js\?v=36[^']*bundle_fit=v4[^']*parent=store-screen-checkers-wrapper\.js\?v=5[^']*mvp19_13=all-eight-bundles-v8/);
-assert.match(manifest, /store-screen\.js\?v=71[^']*mvp19_13=bundle-selector-click-hint-v11-performance[^']*mvp27_1=store-localized-v2/);
+assert.match(manifest, /store-screen\.js\?v=72[^']*mvp19_13=bundle-selector-click-hint-v11-performance[^']*mvp27_1=store-localized-v2/);
 assert.match(launch, /bundles=bundle-selector-click-hint-v11-performance/);
 
 for (const itemId of [
