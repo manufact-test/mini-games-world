@@ -1,4 +1,5 @@
 import { api } from '../api/client.js?v=34';
+import { t } from '@mgw/i18n';
 
 const API_HOOK = Symbol.for('mgw.store.four-in-a-row.live-previews-v3');
 const INSTALL_KEY = '__mgwFourInARowStoreStaticV1Installed';
@@ -77,8 +78,9 @@ function scheduleUpgrade(){
 }
 
 function renameSelector(root){
+  const label = t('store.games.catalog_titles.four_in_a_row');
   root.querySelectorAll('[data-store-v2-game="four_in_a_row"]').forEach(button => {
-    if (button instanceof HTMLElement) button.textContent = '4 в ряд';
+    if (button instanceof HTMLElement) button.textContent = label;
   });
 }
 
@@ -87,7 +89,7 @@ function upgradeHeader(root){
   if (!(head instanceof HTMLElement)) return;
 
   const title = head.querySelector('h2');
-  if (title instanceof HTMLElement) title.textContent = '4 в ряд';
+  if (title instanceof HTMLElement) title.textContent = t('store.games.catalog_titles.four_in_a_row');
 
   const marks = head.querySelector('.store-v2-game-head-marks');
   if (marks instanceof HTMLElement) {
@@ -102,22 +104,18 @@ function upgradeGroups(root){
     if (!(preview instanceof HTMLElement)) return;
 
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
+    const key = ['theme','elements','effect'].includes(layer) ? layer : 'fallback';
     const title = group.querySelector('.store-v2-game-title-row h2');
     const subtitle = group.querySelector('.store-v2-game-title-row p');
-    const copy = {
-      theme:['Поля','Оформление игрового поля'],
-      elements:['Фишки','Внешний вид красных и жёлтых фишек'],
-      effect:['Эффекты','Анимации для ваших ходов и побед'],
-    }[layer] || ['4 в ряд',''];
 
-    if (title instanceof HTMLElement) title.textContent = copy[0];
+    if (title instanceof HTMLElement) title.textContent = t(`store.wrappers.four_in_a_row.groups.${key}.title`);
     if (subtitle instanceof HTMLElement) {
-      if (copy[1]) subtitle.textContent = copy[1];
+      const nextSubtitle = t(`store.wrappers.four_in_a_row.groups.${key}.subtitle`);
+      if (nextSubtitle) subtitle.textContent = nextSubtitle;
       else subtitle.remove();
     }
   });
 }
-
 function upgradeProducts(root){
   root.querySelectorAll('.store-v2-game-product[data-store-game-product="four_in_a_row"]').forEach(product => {
     if (!(product instanceof HTMLElement)) return;
@@ -131,11 +129,10 @@ function upgradeProducts(root){
     const description = product.querySelector('.store-v2-game-product-copy > p');
 
     if (kind instanceof HTMLElement) {
-      kind.textContent = layer === 'theme'
-        ? 'Игровое поле'
-        : (layer === 'elements'
-          ? 'Комплект фишек'
-          : (variant === 'victory-wave' ? 'Эффект победы' : 'Эффект хода'));
+      const kindKey = layer === 'theme'
+        ? 'theme'
+        : (layer === 'elements' ? 'elements' : (variant === 'victory-wave' ? 'effect_victory' : 'effect_move'));
+      kind.textContent = t(`store.wrappers.four_in_a_row.kinds.${kindKey}`);
     }
     if (title instanceof HTMLElement && layer === 'effect') {
       title.textContent = effectDisplayName(variant);
@@ -158,27 +155,13 @@ function upgradePreviews(root){
 }
 
 function descriptionFor(layer, variant){
-  if (layer === 'theme') {
-    return ({
-      blue:'Насыщенное фиолетово-сливовое поле с глубоким тоном и мягким объёмом',
-      dark:'Глубокое ночное поле с холодной контрастной сеткой',
-      metal:'Стальная рама с холодным матовым металлом и объёмными слотами',
-      neon:'Тёмное поле с яркой цианово-фиолетовой неоновой рамой',
-    })[variant] || 'Меняет оформление игрового поля';
+  const safeLayer = ['theme','elements','effect'].includes(layer) ? layer : 'effect';
+  const variantKey = String(variant || 'fallback').replaceAll('-', '_');
+  try {
+    return t(`store.wrappers.four_in_a_row.descriptions.${safeLayer}.${variantKey}`);
+  } catch (_) {
+    return t(`store.wrappers.four_in_a_row.descriptions.${safeLayer}.fallback`);
   }
-  if (layer === 'elements') {
-    return ({
-      classic:'Яркая розово-бирюзовая пара с мягкими бликами и аркадным характером',
-      '3d':'Глубокие объёмные фишки с мягким светом и выраженной кромкой',
-      metal:'Глубокий бордовый металл и тёплая латунь с объёмным бликом без полос',
-      neon:'Яркие розовые и лаймовые фишки с насыщенным светящимся ядром и внешним свечением',
-    })[variant] || 'Меняет внешний вид игровых фишек';
-  }
-  return ({
-    drop:'Прицел, лазер и эффектное падение фишки.',
-    four:'Молнии разлетаются от каждого вашего хода.',
-    'victory-wave':'Победная четвёрка вспыхивает мощным финалом.',
-  })[variant] || 'Яркий эффект для вашей партии.';
 }
 
 export function fourInARowPreviewMarkup(layer, variant){
@@ -189,13 +172,13 @@ export function fourInARowPreviewMarkup(layer, variant){
 }
 
 function effectDisplayName(variant){
-  return ({
-    drop:'Лазерное наведение',
-    four:'Энергетический импульс',
-    'victory-wave':'Победный овердрайв',
-  })[variant] || 'Эффект партии';
+  const variantKey = String(variant || 'fallback').replaceAll('-', '_');
+  try {
+    return t(`store.wrappers.four_in_a_row.effect_names.${variantKey}`);
+  } catch (_) {
+    return t('store.wrappers.four_in_a_row.effect_names.fallback');
+  }
 }
-
 function upgradePurchaseCopy(root){
   const preview = root.querySelector('.store-v2-confirm-game .store-v2-game-preview[data-game-type="four_in_a_row"][data-cosmetic-layer="effect"]');
   if (!(preview instanceof HTMLElement)) return;
