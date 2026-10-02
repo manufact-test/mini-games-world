@@ -76,7 +76,7 @@ assert.ok(liveCss.includes('padding:4px 7px 7px 4px') && liveCss.includes('box-s
 assert.ok(liveCss.includes('#4d3aaa') && liveCss.includes('#2a205f') && liveCss.includes('#12152e') && liveCss.includes('#55f5ff') && liveCss.includes('inset 0 0 0 2px rgba(255,70,223,.34)'), 'Neon fleet must use a filled violet hull with cyan luminous rim and inner magenta tube glow, without a center dot');
 
 assert.ok(
-  manifest.includes("'./assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer-cosmetics-v1.js?v=4&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&base=v60-shot-miss-no-impact'"),
+  manifest.includes("'./assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer-cosmetics-v1.js?v=5&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&base=v60-shot-miss-no-impact&live_effects=accepted-three-v7&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-core-v4'"),
   'Accepted manifest baseline must remain on the LIVE maps/fleets wrapper during Shot manual review'
 );
 assert.ok(launch.includes('battleship_live=maps-fleets-v4') && launch.includes('battleship_shot=live-v2') && launch.includes('battleship_impacts=live-v2') && launch.includes('battleship_frame=full-v1') && launch.includes('battleship_neon_fleet=tube-v4') && launch.includes('battleship_preview_geometry=svg-circles-v6') && launch.includes('battleship_preview_inline_owner=svg-v5') && launch.includes('battleship_fleet_preview=svg-models-v3&battleship_neon_map_ships=white-v1'), 'Telegram launch must publish Battleship LIVE/SVG-preview parity identity');
