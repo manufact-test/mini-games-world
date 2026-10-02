@@ -1,5 +1,5 @@
 {
-  "_meta": {"locale":"ru","version":28},
+  "_meta": {"locale":"ru","version":29},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
   "topbar": {"balance":"Баланс","notifications":"Уведомления"},
@@ -778,6 +778,23 @@
   },
   "settings": {"title":"Настройки","language":"Язык","language_note":"Выберите язык интерфейса Mini Games World.","language_ru":"Русский","language_saved":"Язык сохранён"},
   "setup": {"subtitle":"Выберите условия матча и подтвердите участие.","variant_label":"Размер / вариант","entry_label":"Стоимость участия","entry_value":"{count} коинов","confirm":"Начать поиск","invite":"Пригласить друга","one_on_one":"1 на 1","search_label":"{game} · участие {count} коинов · {variant}","insufficient_title":"Недостаточно коинов","insufficient_note":"Для начала матча нужно {needed} коинов. Сейчас доступно {balance}.","economy_unavailable":"Стоимость участия временно недоступна."},
+  "game_invites": {
+    "game_titles":{"tictactoe":"Крестики-нолики","four_in_a_row":"4 в ряд","battleship":"Морской бой","checkers":"Шашки","reversi":"Реверси","chess":"Шахматы","go":"Го","domino":"Домино"},
+    "player":"Игрок","player_genitive":"игрока","game_fallback":"Игра","initial":"И",
+    "social":{"title":"Пригласить {name}","choose_game":"Выберите игру.","setup_title":"Пригласить в «{game}»","choose_variant":"Выберите вариант игры.","debit_note":"Коины спишутся только после запуска матча.","variant_title":"Вариант игры","entry_title":"Стоимость участия","entry_value":"{count} коинов","invite_named":"Пригласить {name}","invite_player":"Пригласить игрока","share_link":"Поделиться ссылкой","method_selected":"Приглашение получит выбранный игрок.","method_list":"Игроку из списка приглашение сразу придёт в приложение. Ссылка нужна для нового человека.","picker_title":"Выберите игрока","picker_loading":"Загружаем игроков","picker_checking":"Проверяем доступность","back_conditions":"Назад к условиям","no_recent":"Недавних соперников пока нет","no_recent_note":"Вернитесь назад и отправьте ссылку.","load_players_failed":"Не удалось загрузить игроков","recent_opponent":"недавний соперник","create_failed":"Не удалось создать приглашение.","send_failed":"Не удалось отправить приглашение.","cancel_failed_retry":"Не удалось отменить приглашение. Попробуйте ещё раз.","cancel_failed":"Не удалось отменить приглашение.","link_prepare_failed":"Не удалось подготовить ссылку.","invite_prepare_failed":"Не удалось подготовить приглашение.","send_failed_retry":"Не удалось отправить приглашение. Попробуйте ещё раз.","share_ready_title":"Ссылка подготовлена","share_device_note":"Telegram не может подтвердить отправку на этом устройстве.","wait_link_open":"Приглашение начнёт ожидать ответ, когда получатель откроет ссылку.","open_telegram":"Открыть список Telegram","copy_link":"Скопировать ссылку","cancel":"Отменить","link_unavailable":"Ссылка временно недоступна.","link_copied":"Ссылка скопирована.","copy_prompt":"Скопируйте ссылку:","action_failed":"Не удалось выполнить действие."},
+    "rematch":{"proposed":"Реванш предложен","waiting_opponent":"Ждём ответа соперника.","create_failed":"Не удалось создать реванш.","propose_failed":"Не удалось предложить реванш.","play_again":"Сыграть ещё"},
+    "direct":{"sent_title":"Приглашение отправлено","for_player":"Для {name}","sending":"Отправляем приглашение…","cancel_invite":"Отменить приглашение"},
+    "incoming":{"title":"Вас приглашают сыграть","from_player":"От {name}","accept":"Принять приглашение","decline":"Отклонить","respond":"Ответьте на приглашение"},
+    "summary":{"game":"Игра","variant":"Вариант","entry":"Участие","entry_value":"{count} коинов"},
+    "owner_wait":{"waiting_response":"Ожидаем ответ","rematch_proposed":"Реванш предложен","sent":"Приглашение отправлено","cancel_invite":"Отменить приглашение"},
+    "ready":{"opponent_agreed":"Соперник согласен","player_ready":"{name} готов играть.","start":"Начать игру","cancel":"Отменить","start_match":"Запустите матч"},
+    "accepted":{"title":"Приглашение принято","waiting_from":"Ждём запуска матча от {name}.","cancel_participation":"Отменить участие","wait_start":"Ждём запуск матча","wait_start_sentence":"Ожидаем запуск матча.","wait_until":"Ожидание до {time}."},
+    "terminal":{"note":"Это приглашение больше нельзя использовать.","understood":"Понятно","declined":"Приглашение отклонено","cancelled":"Приглашение отменено","expired":"Срок приглашения истёк","timed_out":"Время ожидания истекло","closed":"Приглашение закрыто"},
+    "loading":{"accept":"Принимаем…","start":"Запускаем…","decline":"Отклоняем…","cancel":"Отменяем…","wait":"Подождите…"},
+    "status":{"start_match":"Запустите матч","wait_start":"Ждём запуск матча","respond":"Ответьте на приглашение","waiting_response":"Ожидаем ответ","waiting":"Ожидание"},
+    "network":{"unavailable":"Приглашение уже недоступно.","retry":"Попробуйте ещё раз.","server_unreachable":"Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.","overloaded":"Связь перегружена. Попробуйте ещё раз через несколько секунд.","service_unavailable":"Сервис приглашений временно недоступен."},
+    "board":{"four_classic_suffix":" · классика","domino_classic":"Классика 0–6","normal_match":"Обычный матч"}
+  },
   "home": {
     "stats":{"online_players":"Игроков онлайн","active_matches":"Активных матчей"},
     "menu":{"title":"Меню","feedback":"Обратная связь","idea":"Предложить идею","report":"Пожаловаться","tickets":"Мои обращения","balance_history":"История баланса","match_history":"История матчей"},

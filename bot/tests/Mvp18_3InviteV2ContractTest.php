@@ -189,7 +189,7 @@ $assertTrue(str_contains($notificationEndpointSource, 'hydratePendingReceivedNot
 $assertTrue(str_contains($validationSource, '$activeGame !== null || $queued'), 'Busy/searching availability must remain an explicit blocker');
 $assertTrue(!str_contains($endpointSource, 'leaveSearch('), 'Invite endpoint must not auto-cancel public matchmaking search');
 $assertTrue(str_contains($clientSource, 'data-invite-countdown'), 'Invite modal must expose the canonical countdown surface');
-$assertTrue(str_contains($clientSource, "mountInviteCountdown(invite, 'Ждём запуск матча')"), 'Accepted invite must re-arm countdown from the server response');
+$assertTrue(str_contains($clientSource, "mountInviteCountdown(invite, inviteText('status.wait_start'))"), 'Accepted invite must re-arm countdown from the localized server-response presentation state');
 $assertTrue(str_contains($clientSource, 'clearInviteCountdown();'), 'Invite modal lifecycle must clean up its presentation timer');
 $assertTrue(str_contains($clientSource, 'scheduleSync(0);'), 'Countdown reaching zero must hand authority back to server sync');
 

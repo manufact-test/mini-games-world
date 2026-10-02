@@ -124,7 +124,7 @@ $assert(
     'Active v110 manifest must preserve the accepted Profile pass A and Result/History economy lineage through bounded Profile composition.'
 );
 $assert(
-    str_contains((string)($manifest['imports']['./assets/js/games/game-invites-v110.js?v=1137&ux=1'] ?? ''), 'game-invites-v110-rematch-policy-v175.js?v=2&fp=2&mvp21_6=tournament-exclusion-v1'),
+    str_contains((string)($manifest['imports']['./assets/js/games/game-invites-v110.js?v=1137&ux=1'] ?? ''), 'game-invites-v110-rematch-policy-v175.js?v=3&fp=2&mvp21_6=tournament-exclusion-v1&mvp27_1=localized-v1'),
     'Accepted MVP-17.5 rematch presentation policy must remain frozen.'
 );
 $assert(is_string($launch) && str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?v=1233&"), 'Result/history test must remain anchored to actual Telegram v110 launch.');
