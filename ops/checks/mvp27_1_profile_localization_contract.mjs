@@ -72,9 +72,10 @@ assert(checkers.includes("mgw-profile-chess-parity.js?v=2") && checkers.includes
 assert(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1108' => './assets/js/profile/mgw-profile-chess-layout-v2.js?v=42")
     && manifest.includes('mvp27_1=profile-chain-localized-v1'),
   'Canonical manifest must publish localized full Profile composition.');
-assert(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1143")
-    && manifest.includes('mvp27_1=profile-localized-v1'),
-  'Canonical manifest must publish localized direct Profile owner.');
+assert(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1142")
+    && manifest.includes('mvp27_1=profile-localized-v1')
+    && manifest.includes('mvp27_1_profile_title=scalar-v1'),
+  'Canonical manifest must publish localized direct Profile owner with the scalar collection-title cache identity.');
 assert(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1126&profile_base=accepted-game-cosmetics' => './assets/js/screens/profile-screen-v110.js?v=1140"),
   'Accepted Profile cosmetics base alias must converge on localized Profile owner.');
 assert(manifest.includes("'./assets/js/profile/mgw-profile-model.js?v=1' => './assets/js/profile/mgw-profile-model.js?v=6")
