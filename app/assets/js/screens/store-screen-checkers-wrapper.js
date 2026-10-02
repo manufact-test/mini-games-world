@@ -2,7 +2,7 @@ import {
   initStoreScreen as initBaseStoreScreen,
   openStoreTab as openBaseStoreTab,
   openStoreSheet as openBaseStoreSheet,
-} from './store-screen-intent-wrapper.js?v=19&mvp19_6=accepted-base-preserved';
+} from './store-screen-intent-wrapper.js?v=20&mvp19_6=accepted-base-preserved&mvp27_1=localized-v1';
 import { api } from '../api/client.js?v=34';
 import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
 
