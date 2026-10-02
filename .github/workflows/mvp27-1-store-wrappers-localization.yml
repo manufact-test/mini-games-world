@@ -15,6 +15,7 @@ on:
       - 'app/assets/js/screens/store-screen-battleship-store-v1.js'
       - 'app/locales/ru.json'
       - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp19_3ProfileAvatarsTest.php'
       - 'bot/tests/Mvp19_6CheckersBoardsTest.php'
       - 'bot/tests/Mvp19_7ReversiStoreTest.php'
       - 'bot/tests/Mvp19_8GoStoreTest.php'
@@ -22,6 +23,7 @@ on:
       - 'bot/tests/Mvp19_FourInARowStoreTest.php'
       - 'bot/tests/Mvp19_12BattleshipStoreTest.php'
       - 'bot/tests/Mvp19_12BattleshipLiveResultEffectsTest.mjs'
+      - 'bot/tests/Mvp19_12BattleshipFireReliabilityTest.mjs'
       - 'tests/mvp19-13-ttt-bundle-reference.mjs'
       - 'ops/checks/mvp27_1_store_wrappers_localization_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
@@ -63,6 +65,7 @@ jobs:
       - name: Preserve Store wrapper product contracts
         run: |
           set -euo pipefail
+          php bot/tests/Mvp19_3ProfileAvatarsTest.php
           php bot/tests/Mvp19_4GameCosmeticsPilotTest.php
           php bot/tests/Mvp19_5ChessCosmeticsTest.php
           php bot/tests/Mvp19_6CheckersBoardsTest.php
@@ -72,6 +75,7 @@ jobs:
           php bot/tests/Mvp19_FourInARowStoreTest.php
           php bot/tests/Mvp19_12BattleshipStoreTest.php
           node bot/tests/Mvp19_12BattleshipLiveResultEffectsTest.mjs
+          node bot/tests/Mvp19_12BattleshipFireReliabilityTest.mjs
           node tests/mvp19-13-ttt-bundle-reference.mjs
           node bot/tests/Mvp25_6StoreClientContractTest.mjs
           php bot/tests/Mvp26_3StoreWalletOwnershipContractTest.php
