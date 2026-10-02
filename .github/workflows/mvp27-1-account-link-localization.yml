@@ -1,4 +1,4 @@
-name: MVP-26.3.6 Pending Link Preboot
+name: MVP-27.1 Account Link Localization
 
 on:
   pull_request:
@@ -6,24 +6,30 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'app/assets/js/profile/mgw-account-link-ui.js'
-      - 'app/assets/js/screens/profile-screen-v110.js'
-      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/locales/ru.json'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/Mvp26_3_6PendingLinkPrebootStaticContractTest.php'
+      - 'ops/checks/mvp27_1_account_link_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp26-3-2-account-link-ui.yml'
+      - '.github/workflows/mvp26-3-5-account-link-home-onboarding.yml'
       - '.github/workflows/mvp26-3-6-pending-link-preboot.yml'
+      - '.github/workflows/mvp26-6-android-product-parity.yml'
+      - '.github/workflows/mvp27-1-account-link-localization.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  pending-link-preboot:
+  account-link-localization:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
-      - name: Checkout exact PR head
+      - name: Checkout exact candidate
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           fetch-depth: 0
 
@@ -31,36 +37,40 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
           coverage: none
 
-      - name: Syntax
+      - name: Syntax and localization contract
         run: |
           set -euo pipefail
           node --check app/assets/js/profile/mgw-account-link-ui.js
-          node --check app/assets/js/screens/profile-screen-v110.js
-          node --check app/assets/js/main-v110-handoff-shell.js
+          node --check ops/checks/mvp27_1_account_link_localization_contract.mjs
           php -l app/runtime/client/version-manifest.php
           php -l bot/tests/Mvp26_3_6PendingLinkPrebootStaticContractTest.php
+          node ops/checks/mvp27_1_account_link_localization_contract.mjs
+          node ops/checks/mvp16_2_localization_contract.mjs
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
 
-      - name: Pending-link preboot contract
-        run: php bot/tests/Mvp26_3_6PendingLinkPrebootStaticContractTest.php
-
-      - name: Existing account-link and Android auth regressions
+      - name: Preserve account-link ownership and backend
         run: |
+          set -euo pipefail
+          php bot/tests/Mvp26_3_6PendingLinkPrebootStaticContractTest.php
           php bot/tests/Mvp26_3AccountLinkServiceTest.php
           php bot/tests/Mvp26_2AndroidDeviceAuthTest.php
 
-      - name: Tracked secret scan
-        run: node scripts/ci/check-secrets.mjs
+      - name: Localization debt ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
 
-      - name: Scope guard
+      - name: Bounded migration scope
+        if: github.event_name == 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          changed="$(git diff --name-only "$base" "$head")"
-          printf '%s\n' "$changed"
           allowed='^(\.github/workflows/mvp26-3-2-account-link-ui\.yml|\.github/workflows/mvp26-3-5-account-link-home-onboarding\.yml|\.github/workflows/mvp26-3-6-pending-link-preboot\.yml|\.github/workflows/mvp26-6-android-product-parity\.yml|\.github/workflows/mvp27-1-account-link-localization\.yml|app/assets/js/profile/mgw-account-link-ui\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|bot/tests/Mvp26_3_6PendingLinkPrebootStaticContractTest\.php|ops/checks/mvp27_1_account_link_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json)$'
-          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
-          test -z "$bad" || { printf 'Unexpected MVP-26.3.6 paths:\n%s\n' "$bad" >&2; exit 1; }
+          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected account-link localization paths:\n%s\n' "$bad" >&2; exit 1; }
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs

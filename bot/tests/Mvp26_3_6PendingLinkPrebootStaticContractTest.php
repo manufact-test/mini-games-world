@@ -6,6 +6,7 @@ $ui = file_get_contents($root . '/app/assets/js/profile/mgw-account-link-ui.js')
 $main = file_get_contents($root . '/app/assets/js/main-v110-handoff-shell.js');
 $profile = file_get_contents($root . '/app/assets/js/screens/profile-screen-v110.js');
 $manifest = file_get_contents($root . '/app/runtime/client/version-manifest.php');
+$locale = json_decode((string)file_get_contents($root . '/app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 
 foreach (['ui'=>$ui,'main'=>$main,'profile'=>$profile,'manifest'=>$manifest] as $name=>$content) {
     if (!is_string($content) || $content === '') {
@@ -32,8 +33,12 @@ $assert(
     'Foreground return must use a bounded confirmation watch.'
 );
 $assert(
-    str_contains($ui, "renderLoading('Проверяем подтверждение в Telegram…')"),
-    'Foreground resume must keep account-link progress visibly owned while confirmation settles.'
+    str_contains($ui, "renderLoading(accountLinkText('loading.checking_telegram'))"),
+    'Foreground resume must keep account-link progress visibly owned through canonical localization while confirmation settles.'
+);
+$assert(
+    ($locale['account_link']['loading']['checking_telegram'] ?? null) === 'Проверяем подтверждение в Telegram…',
+    'Accepted RU foreground confirmation copy must remain unchanged in the canonical locale.'
 );
 $assert(
     !str_contains(
@@ -72,9 +77,9 @@ $assert(
     'Active v110 shell cache identity must include the pending-link corrective.'
 );
 $assert(
-    str_contains($manifest, 'profile-screen-v110.js?v=1136')
-    && str_contains($manifest, 'mvp26_3_6=link-preboot-v1'),
-    'Active Profile graph cache identity must include the v3 account-link owner.'
+    str_contains($manifest, "'./assets/js/profile/mgw-account-link-ui.js?v=3' => './assets/js/profile/mgw-account-link-ui.js?v=4&mvp27_1=localized-v1'")
+    && str_contains($manifest, "'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1142"),
+    'Active Profile graph must preserve one accepted v3 account-link specifier and resolve it to the localized canonical owner.'
 );
 $assert(
     !str_contains($ui, 'LedgerWriteService')
