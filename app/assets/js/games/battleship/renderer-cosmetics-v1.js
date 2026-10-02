@@ -3,7 +3,7 @@ import {
   battleshipMeta,
   battleshipPlayerMark,
   battleshipStatus,
-} from './renderer.js?v=60&shot=miss-no-impact&base=mvp19_12-live-maps-fleets-v4';
+} from './renderer.js?v=61&shot=miss-no-impact&base=mvp19_12-live-maps-fleets-v4&mvp27_1=localized-v1';
 import { state } from '../../state.js?v=27';
 
 const THEME_SLOT = 'game_battleship_theme';

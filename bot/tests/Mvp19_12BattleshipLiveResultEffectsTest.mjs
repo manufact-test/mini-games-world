@@ -9,6 +9,7 @@ const base = fs.readFileSync(path.join(root, 'app/assets/js/games/battleship/ren
 const entry = fs.readFileSync(path.join(root, 'app/v110.php'), 'utf8');
 const manifest = fs.readFileSync(path.join(root, 'app/runtime/client/version-manifest.php'), 'utf8');
 const launch = fs.readFileSync(path.join(root, 'bot/helpers/WebAppLaunchUrl.php'), 'utf8');
+const locale = JSON.parse(fs.readFileSync(path.join(root, 'app/locales/ru.json'), 'utf8'));
 
 assert.ok(live.includes("const HIT_ID = 'game-battleship-effect-hit'"), 'Hit must use the catalog Hit item id');
 assert.ok(live.includes("const DESTROY_ID = 'game-battleship-effect-destroy'"), 'Destroy must use the catalog Destroy item id');
@@ -28,8 +29,10 @@ assert.ok(!live.includes('enemy_board') && !live.includes('my_board'), 'Impact e
 assert.ok(!live.includes('onAction'), 'Impact effects must never replace or invoke gameplay actions');
 
 assert.ok(base.includes("const delay = result === 'miss' ? 900 : 1250"), 'Accepted 900/1250 result presentation timing must remain owned by the base renderer');
-assert.ok(base.includes("if (result === 'hit') return { text:'Попадание! Стреляйте ещё'"), 'Accepted Hit notice semantics must remain unchanged');
-assert.ok(base.includes("if (result === 'sunk') return { text:'Корабль потоплен! Стреляйте ещё'"), 'Accepted Destroy notice semantics must remain unchanged');
+assert.ok(base.includes("if (result === 'hit') return { text:battleshipText('shot.self_hit')"), 'Accepted Hit notice semantics must remain owned by the base renderer through localization');
+assert.ok(base.includes("if (result === 'sunk') return { text:battleshipText('shot.self_sunk')"), 'Accepted Destroy notice semantics must remain owned by the base renderer through localization');
+assert.equal(locale.games?.battleship?.ui?.shot?.self_hit, 'Попадание! Стреляйте ещё', 'Accepted RU Hit notice copy must remain unchanged');
+assert.equal(locale.games?.battleship?.ui?.shot?.self_sunk, 'Корабль потоплен! Стреляйте ещё', 'Accepted RU Destroy notice copy must remain unchanged');
 
 for (const token of [
   'mgw-bs-live-hit-fx',
@@ -72,7 +75,7 @@ assert.ok(liveCss.includes('.mgw-bs-live-destroy-wreck{\n  z-index:2;'), 'Destro
 assert.ok(liveCss.includes('.mgw-bs-live-destroy-shard{\n  z-index:5;'), 'Destroy debris must remain readable without covering the fire core');
 
 assert.ok(
-  manifest.includes("renderer-cosmetics-v1.js?v=5&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&base=v60-shot-miss-no-impact&live_effects=accepted-three-v7&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-core-v4")
+  manifest.includes("renderer-cosmetics-v1.js?v=6&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&base=v61-shot-miss-no-impact&live_effects=accepted-three-v7&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-core-v4&mvp27_1=battleship-localized-v1")
     && entry.includes("$battleshipRendererImportKey = './assets/js/games/battleship/renderer.js?v=56'")
     && !entry.includes('$imports[$battleshipRendererImportKey] .='),
   'Active v110 runtime must consume the accepted three-effect Battleship owner directly from the canonical manifest'

@@ -88,12 +88,21 @@ jobs:
             app/assets/js/games/go \
             app/assets/js/games/four-in-a-row \
             app/assets/js/games/domino \
-            app/assets/js/games/battleship
+            app/assets/js/games/battleship \
+            ':(exclude)app/assets/js/games/battleship/renderer.js' \
+            ':(exclude)app/assets/js/games/battleship/renderer-cosmetics-v1.js'
+
+          battleship_engine_changes="$(git diff --name-only "$base" "$head" -- app/assets/js/games/battleship \
+            | grep -Ev '^(app/assets/js/games/battleship/renderer\.js|app/assets/js/games/battleship/renderer-cosmetics-v1\.js)$' || true)"
+          test -z "$battleship_engine_changes" || {
+            printf 'Unexpected Battleship engine change outside localized presentation owners:\n%s\n' "$battleship_engine_changes" >&2
+            exit 1
+          }
 
           manifest_changes="$(git diff --unified=0 "$base" "$head" -- app/runtime/client/version-manifest.php \
             | grep -E '^[+-]' \
             | grep -Ev '^---|^\+\+\+' \
-            | grep -Ev 'game-screen-v102\.js\?v=102|renderer-board-themes\.js\?v=1&mvp19_6=board-themes|store-screen\.js\?v=45&intent_base=1' || true)"
+            | grep -Ev 'game-screen-v102\.js\?v=102|renderer-board-themes\.js\?v=1&mvp19_6=board-themes|store-screen\.js\?v=45&intent_base=1|assets/js/games/battleship/renderer\.js\?v=56' || true)"
           test -z "$manifest_changes" || {
             printf 'Unexpected manifest change outside bounded active-owner cache-busts:\n%s\n' "$manifest_changes" >&2
             exit 1

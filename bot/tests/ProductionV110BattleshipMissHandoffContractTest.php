@@ -4,7 +4,8 @@ declare(strict_types=1);
 $root = dirname(__DIR__, 2);
 $renderer = file_get_contents($root . '/app/assets/js/games/battleship/renderer.js');
 $v110 = file_get_contents($root . '/app/v110.php');
-if (!is_string($renderer) || !is_string($v110)) {
+$manifest = file_get_contents($root . '/app/runtime/client/version-manifest.php');
+if (!is_string($renderer) || !is_string($v110) || !is_string($manifest)) {
     throw new RuntimeException('Cannot read Battleship miss handoff sources.');
 }
 
@@ -21,9 +22,9 @@ $assert(
 );
 
 $assert(
-    str_contains($v110, 'games/battleship/renderer.js?v=58&miss=900ms')
-        && str_contains($v110, 'X-MGW-Battleship-Miss-Handoff: 900ms')
-        && str_contains($v110, 'v110-mvp14-battleship-miss-handoff-v1150'),
+    str_contains($manifest, "'./assets/js/games/battleship/renderer.js?v=56' => './assets/js/games/battleship/renderer-cosmetics-v1.js?v=6")
+        && str_contains($manifest, 'base=v61-shot-miss-no-impact')
+        && str_contains($v110, 'X-MGW-Battleship-Miss-Handoff: 900ms'),
     'Canonical Telegram v110 must publish the fresh 900ms Battleship miss handoff identity.'
 );
 

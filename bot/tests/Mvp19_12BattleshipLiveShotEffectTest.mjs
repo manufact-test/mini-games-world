@@ -51,7 +51,7 @@ assert.ok(live.includes("translateX(${distance}px) scale(1.12)") && live.include
 assert.ok(live.includes("globalThis.setTimeout(cleanup, 900)"), 'Shot overlay must have a bounded cleanup fallback');
 
 assert.ok(
-  manifest.includes("renderer-cosmetics-v1.js?v=5&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&base=v60-shot-miss-no-impact&live_effects=accepted-three-v7&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-core-v4"),
+  manifest.includes("renderer-cosmetics-v1.js?v=6&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&base=v61-shot-miss-no-impact&live_effects=accepted-three-v7&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-core-v4&mvp27_1=battleship-localized-v1"),
   'Shot manual review must preserve the accepted Battleship manifest baseline'
 );
 assert.ok(

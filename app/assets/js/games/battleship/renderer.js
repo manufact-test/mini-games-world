@@ -1,4 +1,7 @@
 import { toast } from '../../components/toast.js?v=41';
+import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
+
+const battleshipText = (key, params = {}) => t(`games.battleship.ui.${key}`, params);
 
 let activeGameId = '';
 let selectedShipSize = 4;
@@ -27,22 +30,22 @@ export function renderBattleshipSurface({ game, me, container, onAction }){
 }
 
 export function battleshipMeta(game){
-  const room = String(game?.room_name || 'Игра');
-  const bet = Number(game?.bet || 0);
-  return `${room} · ${bet} коинов · 10×10`;
+  const room = String(game?.room_name || battleshipText('game_fallback'));
+  const bet = formatLocalizedNumber(Number(game?.bet || 0));
+  return battleshipText('meta', { room, bet });
 }
 
 export function battleshipPlayerMark(player){
-  return player?.ready ? '⚓ готов' : '⚓ флот';
+  return player?.ready ? battleshipText('player.ready') : battleshipText('player.fleet');
 }
 
 export function battleshipStatus(game, me){
-  if (game?.status === 'finished') return 'Игра завершена';
+  if (game?.status === 'finished') return battleshipText('status.finished');
   if (game?.phase === 'setup') {
-    if (game?.my_ready) return game?.opponent_ready ? 'Начинаем бой…' : 'Ждём соперника';
-    return 'Расставьте корабли';
+    if (game?.my_ready) return game?.opponent_ready ? battleshipText('status.starting') : battleshipText('status.waiting_opponent');
+    return battleshipText('status.place_ships');
   }
-  return String(game?.turn || '') === String(me?.id || '') ? 'Ваш выстрел' : 'Ход соперника';
+  return String(game?.turn || '') === String(me?.id || '') ? battleshipText('status.your_shot') : battleshipText('status.opponent_turn');
 }
 
 function resetUiForNewGame(game){
@@ -79,12 +82,12 @@ function renderSetup({ game, container, onAction }){
   container.innerHTML = `
     <div class="battleship-panel battleship-setup-panel">
       <div class="battleship-setup-head">
-        <div class="battleship-setup-title"><strong>Расставьте флот</strong><span>${placedCount}/10 кораблей</span></div>
+        <div class="battleship-setup-title"><strong>${battleshipText('setup.title')}</strong><span>${battleshipText('setup.ship_count',{count:formatLocalizedNumber(placedCount)})}</span></div>
         <div class="battleship-current-ship ${complete ? 'ready' : ''}" aria-live="polite">
           ${complete ? `
-            <strong>Флот готов</strong>
+            <strong>${battleshipText('setup.fleet_ready')}</strong>
           ` : `
-            <small>Ставите</small>
+            <small>${battleshipText('setup.placing')}</small>
             <span class="battleship-current-ship-dots">${'<i></i>'.repeat(selectedShipSize)}</span>
             <b>×${selectedLeft}</b>
           `}
@@ -95,10 +98,10 @@ function renderSetup({ game, container, onAction }){
       ${complete && !game?.my_ready ? `
         <div class="battleship-ready-callout">
           <div>
-            <strong>Флот готов к бою</strong>
-            <span>Все 10 кораблей размещены. Подтвердите расстановку.</span>
+            <strong>${battleshipText('setup.ready_title')}</strong>
+            <span>${battleshipText('setup.ready_note')}</span>
           </div>
-          <button class="btn primary" data-battleship-ready type="button">Готов к бою</button>
+          <button class="btn primary" data-battleship-ready type="button">${battleshipText('setup.ready_button')}</button>
         </div>
       ` : ''}
 
@@ -114,28 +117,28 @@ function renderSetup({ game, container, onAction }){
           const left = remaining[size] ?? 0;
           return `<button class="battleship-ship-choice ${selectedShipSize === size && left > 0 ? 'active' : ''} ${left <= 0 ? 'done' : ''}" data-battleship-size="${size}" type="button" ${left <= 0 ? 'disabled' : ''}>
             <span class="battleship-ship-dots">${'<i></i>'.repeat(size)}</span>
-            <small>${left > 0 ? `осталось ${left}` : 'готово'}</small>
+            <small>${left > 0 ? battleshipText('setup.remaining',{count:formatLocalizedNumber(left)}) : battleshipText('setup.done')}</small>
           </button>`;
         }).join('')}
       </div>
 
       ${!complete ? `
         <div class="battleship-placement-guide">
-          <strong>${selectedLeft > 0 ? `Корабль на ${selectedShipSize} ${cellWord(selectedShipSize)}` : 'Выберите следующий корабль'}</strong>
+          <strong>${selectedLeft > 0 ? battleshipText('setup.guide_ship',{size:formatLocalizedNumber(selectedShipSize),cells:cellWord(selectedShipSize)}) : battleshipText('setup.guide_next')}</strong>
           <span>${selectedLeft > 0
             ? (selectedProgress > 0
-              ? `Выбрано ${selectedProgress}/${selectedShipSize}. Выбранные клетки подсвечены фиолетовым.`
-              : `Нажмите ${selectedShipSize} ${cellWord(selectedShipSize)} подряд по горизонтали или вертикали.`)
-            : 'Выберите корабль, который ещё остался во флоте.'}</span>
+              ? battleshipText('setup.guide_selected',{selected:formatLocalizedNumber(selectedProgress),size:formatLocalizedNumber(selectedShipSize)})
+              : battleshipText('setup.guide_press',{size:formatLocalizedNumber(selectedShipSize),cells:cellWord(selectedShipSize)}))
+            : battleshipText('setup.guide_choose_remaining')}</span>
         </div>
       ` : ''}
 
       <div class="battleship-setup-actions">
-        <button class="btn primary" data-battleship-randomize type="button">🎲 Перемешать флот</button>
-        <button class="btn ghost" data-battleship-clear type="button">↺ Очистить поле</button>
+        <button class="btn primary" data-battleship-randomize type="button">${battleshipText('setup.randomize')}</button>
+        <button class="btn ghost" data-battleship-clear type="button">${battleshipText('setup.clear')}</button>
       </div>
 
-      <div class="small-note battleship-placement-note">Выберите корабль и отмечайте его клетки прямо на поле. Нажмите на уже поставленный корабль, чтобы убрать его целиком.</div>
+      <div class="small-note battleship-placement-note">${battleshipText('setup.note')}</div>
     </div>
   `;
 
@@ -187,7 +190,7 @@ function selectPlacementCell({ cell, game, container, onAction }){
       pendingPlacementCells.pop();
     } else {
       pendingPlacementCells = [];
-      toast('Выбор клеток сброшен. Начните корабль заново.');
+      toast(battleshipText('errors.selection_reset'));
     }
     invalidPlacementCell = -1;
     renderSetup({ game, container, onAction });
@@ -211,7 +214,7 @@ function selectPlacementCell({ cell, game, container, onAction }){
   const placement = placementFromCells(pendingPlacementCells);
   pendingPlacementCells = [];
   if (!placement) {
-    flashInvalidPlacement({ cell, game, container, onAction, message:'Корабль должен идти по прямой без пропусков.' });
+    flashInvalidPlacement({ cell, game, container, onAction, message:battleshipText('errors.straight_no_gaps') });
     return;
   }
 
@@ -241,8 +244,8 @@ function clearInvalidPlacementTimer(){
 }
 
 function placementSelectionError(cells, size, board){
-  if (cells.length > size) return 'Вы уже выбрали все клетки этого корабля.';
-  if (!cellsFormStraightContinuousLine(cells)) return 'Так нельзя: корабль должен идти по прямой без изгибов и пропусков.';
+  if (cells.length > size) return battleshipText('errors.too_many_cells');
+  if (!cellsFormStraightContinuousLine(cells)) return battleshipText('errors.straight_continuous');
 
   const occupied = new Set();
   Array.from({ length:100 }, (_, cell) => {
@@ -258,7 +261,7 @@ function placementSelectionError(cells, size, board){
         const c = col + dc;
         if (r < 0 || r >= 10 || c < 0 || c >= 10) continue;
         if (occupied.has(r * 10 + c)) {
-          return 'Здесь нельзя: корабли не должны соприкасаться даже по диагонали.';
+          return battleshipText('errors.touching');
         }
       }
     }
@@ -301,14 +304,14 @@ function renderBattle({ game, me, container, onAction }){
   container.innerHTML = `
     <div class="battleship-panel battleship-battle-panel">
       <div class="battleship-fleet-status-line">
-        <span>Ваш флот <strong>${Number(game?.my_ships_remaining ?? 0)}/10</strong></span>
+        <span>${battleshipText('battle.my_fleet')} <strong>${formatLocalizedNumber(Number(game?.my_ships_remaining ?? 0))}/10</strong></span>
         <i>•</i>
-        <span>Соперник <strong>${Number(game?.enemy_ships_remaining ?? 0)}/10</strong></span>
+        <span>${battleshipText('battle.opponent')} <strong>${formatLocalizedNumber(Number(game?.enemy_ships_remaining ?? 0))}/10</strong></span>
       </div>
 
       <div class="battleship-board-tabs">
-        <button class="${showingEnemy ? 'active' : ''}" data-battleship-view="enemy" type="button">Поле соперника</button>
-        <button class="${!showingEnemy ? 'active' : ''}" data-battleship-view="own" type="button">Моё поле</button>
+        <button class="${showingEnemy ? 'active' : ''}" data-battleship-view="enemy" type="button">${battleshipText('battle.enemy_field')}</button>
+        <button class="${!showingEnemy ? 'active' : ''}" data-battleship-view="own" type="button">${battleshipText('battle.own_field')}</button>
       </div>
 
       ${battleEventMarkup({ myTurn, showingEnemy })}
@@ -323,9 +326,9 @@ function renderBattle({ game, me, container, onAction }){
       })}
 
       <div class="battleship-legend">
-        <span><i class="miss"></i>мимо</span>
-        <span><i class="hit"></i>попадание</span>
-        <span><i class="sunk"></i>потоплен</span>
+        <span><i class="miss"></i>${battleshipText('battle.legend_miss')}</span>
+        <span><i class="hit"></i>${battleshipText('battle.legend_hit')}</span>
+        <span><i class="sunk"></i>${battleshipText('battle.legend_sunk')}</span>
       </div>
     </div>
   `;
@@ -390,21 +393,21 @@ function clearBattleTransitionTimer(){
 
 function shotNotice(result, shooterIsMe){
   if (shooterIsMe) {
-    if (result === 'miss') return { text:'Мимо — ход соперника', tone:'neutral' };
-    if (result === 'hit') return { text:'Попадание! Стреляйте ещё', tone:'warning' };
-    if (result === 'sunk') return { text:'Корабль потоплен! Стреляйте ещё', tone:'success' };
+    if (result === 'miss') return { text:battleshipText('shot.self_miss'), tone:'neutral' };
+    if (result === 'hit') return { text:battleshipText('shot.self_hit'), tone:'warning' };
+    if (result === 'sunk') return { text:battleshipText('shot.self_sunk'), tone:'success' };
   } else {
-    if (result === 'miss') return { text:'Соперник промахнулся — ваш ход', tone:'success' };
-    if (result === 'hit') return { text:'По вашему кораблю попали — соперник стреляет ещё', tone:'warning' };
-    if (result === 'sunk') return { text:'Ваш корабль потоплен — соперник стреляет ещё', tone:'danger' };
+    if (result === 'miss') return { text:battleshipText('shot.opponent_miss'), tone:'success' };
+    if (result === 'hit') return { text:battleshipText('shot.opponent_hit'), tone:'warning' };
+    if (result === 'sunk') return { text:battleshipText('shot.opponent_sunk'), tone:'danger' };
   }
   return null;
 }
 
 function battleEventMarkup({ myTurn, showingEnemy }){
   const fallback = myTurn
-    ? (showingEnemy ? 'Ваш ход — выберите клетку' : 'Ваш ход — откройте поле соперника')
-    : (showingEnemy ? 'Ход соперника' : 'Ход соперника — следим за вашим полем');
+    ? (showingEnemy ? battleshipText('turn.your_choose') : battleshipText('turn.your_open_enemy'))
+    : (showingEnemy ? battleshipText('turn.opponent') : battleshipText('turn.opponent_own_field'));
   const text = battleNotice?.text || fallback;
   const tone = battleNotice?.tone || (myTurn ? 'your-turn' : 'opponent-turn');
   return `<div class="battleship-event-slot"><div class="battleship-event-banner ${tone}">${text}</div></div>`;
@@ -448,7 +451,7 @@ function renderCoordinateBoard(board, options = {}){
             data-cell-state="${escapeClass(value)}"
             type="button"
             ${interactive ? '' : 'disabled'}
-            aria-label="Клетка ${'ABCDEFGHIJ'[col]}${row + 1}: ${isPending ? 'выбрано для корабля' : cellStateLabel(value)}"
+            aria-label="${battleshipText('aria.cell',{coord:`${'ABCDEFGHIJ'[col]}${row + 1}`,state:isPending ? battleshipText('aria.selected_for_ship') : cellStateLabel(value)})}"
           ><i></i></button>`;
         }).join('')}
       `).join('')}
@@ -481,16 +484,16 @@ function formatTime(seconds){
 }
 
 function cellStateLabel(value){
-  if (value === 'ship') return 'ваш корабль';
-  if (value === 'miss') return 'мимо';
-  if (value === 'hit') return 'попадание';
-  if (value === 'sunk') return 'потопленный корабль';
-  if (value === 'water') return 'вода';
-  return 'неизвестно';
+  if (value === 'ship') return battleshipText('cell.ship');
+  if (value === 'miss') return battleshipText('cell.miss');
+  if (value === 'hit') return battleshipText('cell.hit');
+  if (value === 'sunk') return battleshipText('cell.sunk');
+  if (value === 'water') return battleshipText('cell.water');
+  return battleshipText('cell.unknown');
 }
 
 function cellWord(size){
-  return size === 1 ? 'клетку' : size < 5 ? 'клетки' : 'клеток';
+  return size === 1 ? battleshipText('cell_word.one') : size < 5 ? battleshipText('cell_word.few') : battleshipText('cell_word.many');
 }
 
 function escapeClass(value){

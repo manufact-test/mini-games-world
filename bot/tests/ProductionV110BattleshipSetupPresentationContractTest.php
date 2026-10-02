@@ -18,6 +18,7 @@ $renderer = $read('app/assets/js/games/battleship/renderer.js');
 $gameCss = $read('app/assets/css/screens/game.css');
 $mainCss = $read('app/assets/css/main.css');
 $v110 = $read('app/v110.php');
+$manifest = $read('app/runtime/client/version-manifest.php');
 
 $assert(
     str_contains($acceptance, 'function headerClockOwnsGame(game)')
@@ -49,8 +50,8 @@ $assert(
 
 $assert(
     str_contains($mainCss, "./screens/game.css?v=62&timer=battleship-setup-single-owner")
-        && str_contains($v110, 'production-v110-acceptance-runtime.js?v=130&clock=battleship-setup-single-owner')
-        && str_contains($v110, 'main.css?v=148&sk=3&icons=c1efd5af&render=24&palette=notification-semantic')
+        && str_contains($manifest, 'production-v110-acceptance-runtime.js?v=132&clock=battleship-setup-single-writer')
+        && str_contains($manifest, "'main_css' => './assets/css/main.css?v=211")
         && str_contains($v110, 'X-MGW-Battleship-Setup-Clock: dedicated-setup-timer-single-owner')
         && str_contains($v110, 'X-MGW-Battleship-Player-Cards: desktop-secondary-labels-visible'),
     'Canonical Telegram v110 must publish the new Battleship setup clock owner and player-card presentation with fresh identities.'
