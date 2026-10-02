@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-02",
-  "staging_base": "120fe303c6f53060fd0f030140fe75e19aabb891",
+  "staging_base": "6e99a6ad55fa4a137bfe49b5ad564e789e22e05b",
   "scanned_files": 776,
-  "cyrillic_lines_total": 3961,
+  "cyrillic_lines_total": 3802,
   "by_scope": {
-    "client": 2280,
+    "client": 2121,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 active invite-flow localization; game-invites-v110.js reduced by 106 hardcoded Cyrillic source lines and game-invites-v110-rematch-policy-v175.js by 1, with direct ru-RU time formatting removed from the active invite owner."
+  "note": "MVP-27.1 active Profile surface localization; base Profile owner plus active Profile model and Chess/Checkers/Reversi/Go/Domino/Four-in-a-Row/Battleship parity chain reduced by 159 hardcoded Cyrillic source lines in total, with zero direct ru-RU remaining in the active Profile chain."
 }
