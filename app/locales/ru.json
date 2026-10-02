@@ -1,5 +1,5 @@
 {
-  "_meta": {"locale":"ru","version":36},
+  "_meta": {"locale":"ru","version":37},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
   "topbar": {"balance":"Баланс","notifications":"Уведомления"},
@@ -842,7 +842,22 @@
         "cell":{"ship":"ваш корабль","miss":"мимо","hit":"попадание","sunk":"потопленный корабль","water":"вода","unknown":"неизвестно"},
         "cell_word":{"one":"клетку","few":"клетки","many":"клеток"}
       }
-    },"checkers":{"name":"Русские шашки"},"reversi":{"name":"Реверси"},"chess":{"name":"Шахматы"},"go":{"name":"Го"},"domino":{"name":"Домино"}
+    },"checkers":{"name":"Русские шашки"},"reversi":{"name":"Реверси"},"chess":{"name":"Шахматы"},"go":{"name":"Го"},"domino":{
+      "name":"Домино",
+      "ui":{
+        "game_fallback":"Игра","meta":"{room} · {bet} коинов · классическое домино",
+        "player":{"tiles":"{count} {tiles}"},
+        "tiles":{"nominative":{"one":"костяшка","few":"костяшки","many":"костяшек"},"accusative":{"one":"костяшку","few":"костяшки","many":"костяшек"}},
+        "status":{"draw":"Ничья","win":"Победа","loss":"Поражение","draw_required":"Нет хода — доберите","your_turn":"Ваш ход","opponent_turn":"Ход соперника"},
+        "table":{"choose_end":"Выберите один из подсвеченных концов цепочки.","open_ends":"Открытые концы: {left} и {right}","stock":"Запас: {count}"},
+        "hand":{"title":"Ваши костяшки","tile_aria":"Костяшка {a}–{b}"},
+        "actions":{"wait_opponent":"Ожидаем ход соперника.","draw":"Добрать из запаса","choose_end":"Нажмите на подсвеченный конец цепочки.","playable_hint":"Подходящие костяшки отмечены зелёной рамкой."},
+        "final":{"remaining_points":"Оставшиеся точки: {mine} : {theirs}","blocked":"Цепочка заблокирована — выигрывает меньшая сумма.","finished":"Партия завершена.","opponent_tiles":"Костяшки соперника"},
+        "event":{"finished":"Партия завершена — подсчитываем оставшиеся точки","start":"Стартовая костяшка {a}–{b} уже на столе","draw_self":"Вы добрали {count} {tiles}","draw_opponent":"Соперник добрал {count} {tiles}","pass_self":"У вас нет хода — пропуск","pass_opponent":"У соперника нет хода — пропуск","play_self":"Вы поставили {a}–{b}","play_opponent":"Соперник поставил {a}–{b}","your_turn":"Ваш ход — выберите костяшку","opponent_turn":"Ход соперника"},
+        "errors":{"tile_not_playable":"Эта костяшка не подходит к открытым концам."},
+        "placement":{"aria":"Поставить костяшку {a}–{b} к {side} концу цепочки","first":"первому","second":"второму"}
+      }
+    }
   },
   "rules": {
     "open":"Правила","version":"Версия правил: {version}","understood":"Понятно",

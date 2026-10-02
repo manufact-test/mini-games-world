@@ -1,0 +1,83 @@
+name: MVP-27.1 Domino Renderer Localization
+
+on:
+  pull_request:
+    branches: [agent/mvp-13-2-staging]
+    paths:
+      - 'app/assets/js/games/domino/renderer.js'
+      - 'app/assets/js/games/domino/renderer-cosmetics-v1.js'
+      - 'app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js'
+      - 'app/assets/js/games/domino/renderer-live-manual-v30.js'
+      - 'app/locales/ru.json'
+      - 'app/runtime/client/version-manifest.php'
+      - 'ops/checks/mvp27_1_domino_renderer_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - 'bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs'
+      - 'bot/tests/Mvp19_9DominoLiveStabilityV30ContractTest.mjs'
+      - 'bot/tests/Mvp19_9DominoPreviewReadabilityContractTest.mjs'
+      - '.github/workflows/mvp27-1-domino-renderer-localization.yml'
+      - '.github/workflows/mvp19-9-domino-live-effects.yml'
+      - '.github/workflows/mvp19-9-domino-store-effects-v8.yml'
+      - '.github/workflows/mvp19-9-domino-store-profile.yml'
+      - '.github/workflows/mvp26-6-android-product-parity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  domino-renderer-localization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax and localization contract
+        run: |
+          set -euo pipefail
+          node --check app/assets/js/games/domino/renderer.js
+          node --check app/assets/js/games/domino/renderer-cosmetics-v1.js
+          node --check app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js
+          node --check app/assets/js/games/domino/renderer-live-manual-v30.js
+          node --check ops/checks/mvp27_1_domino_renderer_localization_contract.mjs
+          php -l app/runtime/client/version-manifest.php
+          node ops/checks/mvp27_1_domino_renderer_localization_contract.mjs
+          node ops/checks/mvp16_2_localization_contract.mjs
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+
+      - name: Preserve accepted Domino LIVE owners and mechanics boundary
+        run: |
+          set -euo pipefail
+          node bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs
+          node bot/tests/Mvp19_9DominoLiveStabilityV30ContractTest.mjs
+          node bot/tests/Mvp19_9DominoPreviewReadabilityContractTest.mjs
+          php bot/tests/Mvp14r2GamesContractTest.php
+          php bot/tests/Mvp14r2GamesBaselineTest.php
+
+      - name: Localization debt ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded migration scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          allowed='^(app/assets/js/games/domino/renderer\.js|app/assets/js/games/domino/renderer-cosmetics-v1\.js|app/assets/js/games/domino/renderer-cosmetics-corrective-v25\.js|app/assets/js/games/domino/renderer-live-manual-v30\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_domino_renderer_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|bot/tests/Mvp19_9DominoLiveEffectsContractTest\.mjs|bot/tests/Mvp19_9DominoLiveStabilityV30ContractTest\.mjs|bot/tests/Mvp19_9DominoPreviewReadabilityContractTest\.mjs|\.github/workflows/mvp27-1-domino-renderer-localization\.yml|\.github/workflows/mvp19-9-domino-live-effects\.yml|\.github/workflows/mvp19-9-domino-store-effects-v8\.yml|\.github/workflows/mvp19-9-domino-store-profile\.yml|\.github/workflows/mvp26-6-android-product-parity\.yml)$'
+          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected Domino localization paths:\n%s\n' "$bad" >&2; exit 1; }
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs

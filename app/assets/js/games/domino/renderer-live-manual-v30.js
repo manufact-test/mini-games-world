@@ -3,7 +3,7 @@ import {
   dominoMeta,
   dominoPlayerMark,
   dominoStatus,
-} from './renderer-cosmetics-corrective-v25.js?v=2&mvp19_9=manual-corrective-v25&hand_drag=v26&pointer_owner=v28&hand_layout=v29';
+} from './renderer-cosmetics-corrective-v25.js?v=3&mvp19_9=manual-corrective-v25&hand_drag=v26&pointer_owner=v28&hand_layout=v29&mvp27_1=domino-renderer-localized-v1';
 
 const PRECISION_ID = 'game-domino-effect-precision-drop';
 const STOCK_ID = 'game-domino-effect-stock-pulse';

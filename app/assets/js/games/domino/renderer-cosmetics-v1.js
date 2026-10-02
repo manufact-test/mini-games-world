@@ -3,7 +3,7 @@ import {
   dominoMeta,
   dominoPlayerMark,
   dominoStatus,
-} from './renderer.js?v=75&base=mvp19-9-live-native-effects-v1';
+} from './renderer.js?v=76&base=mvp19-9-live-native-effects-v1&mvp27_1=localized-v1';
 import { state } from '../../state.js?v=27';
 
 const THEME_SLOT = 'game_domino_theme';

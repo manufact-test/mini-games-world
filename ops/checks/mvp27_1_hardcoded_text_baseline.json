@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-02",
-  "staging_base": "128ccb1c9482c7d7c942f1022de5e9fb864dceac",
+  "staging_base": "04e901dc3660fd7ee824929e74941d36eb1e6af9",
   "scanned_files": 776,
-  "cyrillic_lines_total": 3531,
+  "cyrillic_lines_total": 3503,
   "by_scope": {
-    "client": 1850,
+    "client": 1822,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 active Android account-link UI localization; factual shared Profile/preboot owner reduced by 39 hardcoded Cyrillic source lines to zero while preserving challenge, confirmation, finalize, restart, storage and Telegram navigation ownership."
+  "note": "MVP-27.1 active Domino base renderer localization; factual LIVE presentation owner reduced by 28 hardcoded Cyrillic source lines to zero while preserving play/draw actions, chain geometry, hand behavior and accepted cosmetics wrapper ownership."
 }
