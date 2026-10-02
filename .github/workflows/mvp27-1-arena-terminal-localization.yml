@@ -1,0 +1,66 @@
+name: MVP-27.1 Arena Terminal Localization
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/screens/tournaments-screen-v1.js'
+      - 'app/locales/ru.json'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/Mvp21_6TournamentProgressionUxContractTest.php'
+      - 'bot/tests/Mvp21_10TournamentPrizeReviewContractTest.php'
+      - 'ops/checks/mvp27_1_arena_terminal_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp27-1-arena-terminal-localization.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  arena-terminal-localization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Syntax and Arena terminal localization contract
+        run: |
+          set -euo pipefail
+          node --check app/assets/js/screens/tournaments-screen-v1.js
+          node --check ops/checks/mvp27_1_arena_terminal_localization_contract.mjs
+          php -l bot/tests/Mvp21_6TournamentProgressionUxContractTest.php
+          php -l app/runtime/client/version-manifest.php
+          node ops/checks/mvp27_1_arena_terminal_localization_contract.mjs
+          node ops/checks/mvp16_2_localization_contract.mjs
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+
+      - name: Preserve progression and terminal settlement contracts
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp21_6TournamentProgressionUxContractTest.php
+          php bot/tests/Mvp21_9TournamentProductProjectionContractTest.php
+          php bot/tests/Mvp21_10TournamentPrizeReviewContractTest.php
+
+      - name: Localization debt ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded migration scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          allowed='^(app/assets/js/screens/tournaments-screen-v1\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|bot/tests/Mvp21_6TournamentProgressionUxContractTest\.php|bot/tests/Mvp21_10TournamentPrizeReviewContractTest\.php|ops/checks/mvp27_1_arena_terminal_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-arena-terminal-localization\.yml)$'
+          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected Arena terminal localization paths:\n%s\n' "$bad" >&2; exit 1; }
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs

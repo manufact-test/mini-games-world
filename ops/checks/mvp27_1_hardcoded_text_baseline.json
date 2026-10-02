@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-01",
-  "staging_base": "b9cf483003af974d431e0518b235700247aeb969",
+  "staging_base": "099adc0f7d1db7bc00724c76454a058f59b1c15e",
   "scanned_files": 776,
-  "cyrillic_lines_total": 4453,
+  "cyrillic_lines_total": 4406,
   "by_scope": {
-    "client": 2772,
+    "client": 2725,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 Arena bracket/technical-outcome localization; active tournaments-screen-v1.js reduced from 142 to 109 Cyrillic source lines."
+  "note": "MVP-27.1 Arena terminal/reward/progression localization; active tournaments-screen-v1.js reduced from 109 to 62 Cyrillic source lines."
 }

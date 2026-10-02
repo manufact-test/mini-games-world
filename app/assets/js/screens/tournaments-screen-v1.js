@@ -1307,24 +1307,25 @@ function tournamentRoundSectionsMarkup(bracket, progression){
 }
 
 
-const TOURNAMENT_TERMINAL_REWARD_LABELS = Object.freeze({
-  golden_ticket:'Golden Ticket',
-  champion_crown:'Корона чемпиона · 30 дней',
-  winner_badge:'Значок победителя · навсегда',
-  champion_cosmetics:'Чемпионский набор · навсегда',
-  hall_of_fame:'Зал славы',
-  cup_gold:'Золотой кубок',
-  silver_frame:'Серебряная рамка · 30 дней',
-  finalist_result:'Отметка финалиста · навсегда',
-  cup_silver:'Серебряный кубок',
-  bronze_mark:'Бронзовая отметка · 30 дней',
-  third_place_result:'3-е место · навсегда',
-  cup_bronze:'Бронзовый кубок',
+const TOURNAMENT_TERMINAL_REWARD_KEYS = Object.freeze({
+  golden_ticket:'golden_ticket',
+  champion_crown:'champion_crown',
+  winner_badge:'winner_badge',
+  champion_cosmetics:'champion_cosmetics',
+  hall_of_fame:'hall_of_fame',
+  cup_gold:'cup_gold',
+  silver_frame:'silver_frame',
+  finalist_result:'finalist_result',
+  cup_silver:'cup_silver',
+  bronze_mark:'bronze_mark',
+  third_place_result:'third_place_result',
+  cup_bronze:'cup_bronze',
 });
 
 function tournamentTerminalRewardLabel(entitlement){
   const code = String(entitlement?.reward_code || '');
-  return TOURNAMENT_TERMINAL_REWARD_LABELS[code] || 'Награда турнира';
+  const key = TOURNAMENT_TERMINAL_REWARD_KEYS[code] || '';
+  return key ? t(`arena.terminal.rewards.${key}`) : t('arena.terminal.reward_fallback');
 }
 
 function tournamentTerminalMarkup(progression){
@@ -1336,15 +1337,15 @@ function tournamentTerminalMarkup(progression){
     const selfHeld = terminal?.prize_review?.self_held === true;
     return `
       <section class="tournaments-v2-terminal is-pending${reviewHold ? ' is-review-hold' : ''}">
-        <div class="tournaments-v2-terminal-kicker">${reviewHold ? 'Призовая проверка' : 'Турнир завершён'}</div>
-        <h3>${reviewHold
-          ? (selfHeld ? 'Ваша награда временно на проверке' : 'Одна из наград временно на проверке')
-          : 'Подводим итоги и начисляем награды…'}</h3>
-        <p>${reviewHold
+        <div class="tournaments-v2-terminal-kicker">${escapeHtml(reviewHold ? t('arena.terminal.review_kicker') : t('arena.terminal.completed_kicker'))}</div>
+        <h3>${escapeHtml(reviewHold
+          ? (selfHeld ? t('arena.terminal.self_hold_title') : t('arena.terminal.other_hold_title'))
+          : t('arena.terminal.settling_title'))}</h3>
+        <p>${escapeHtml(reviewHold
           ? (selfHeld
-            ? 'Мы проверяем результат. Ничего повторно делать не нужно: после проверки здесь появится окончательный итог и, если результат подтвердится, награда.'
-            : 'Один из призовых результатов находится на проверке. После проверки итоговые места и награды обновятся автоматически.')
-          : 'Результат сетки уже зафиксирован. Награды появятся автоматически после завершения обработки.'}</p>
+            ? t('arena.terminal.self_hold_note')
+            : t('arena.terminal.other_hold_note'))
+          : t('arena.terminal.settling_note'))}</p>
       </section>
     `;
   }
@@ -1356,24 +1357,28 @@ function tournamentTerminalMarkup(progression){
     : null;
   const podiumMarkup = podium.slice(0,3).map(item => {
     const place = Number(item?.placement || 0);
-    const title = place === 1 ? 'Чемпион' : place === 2 ? '2 место' : '3 место';
+    const title = place === 1
+      ? t('arena.terminal.champion')
+      : place === 2
+        ? t('arena.terminal.second_place')
+        : t('arena.terminal.third_place');
     const payoutLabel = item?.reward_eligible === false
-      ? 'тестовый · без награды'
-      : `${formatNumber(Math.max(0, Number(item?.payout_amount || 0)))} коинов`;
+      ? t('arena.terminal.test_no_reward')
+      : t('arena.terminal.coin_amount',{amount:formatNumber(Math.max(0, Number(item?.payout_amount || 0)))});
     return `<article class="tournaments-v2-terminal-place place-${place}${item?.self === true ? ' is-self' : ''}">
       <b>${escapeHtml(String(place))}</b>
-      <div><span>${escapeHtml(title)}</span><strong>${escapeHtml(String(item?.nickname || 'Игрок'))}${item?.self === true ? ' · вы' : ''}</strong></div>
+      <div><span>${escapeHtml(title)}</span><strong>${escapeHtml(String(item?.nickname || t('arena.hall.player_fallback')))}${item?.self === true ? escapeHtml(t('arena.ready.self_suffix')) : ''}</strong></div>
       <small>${escapeHtml(payoutLabel)}</small>
     </article>`;
   }).join('');
 
-  let selfTitle = 'Участие завершено';
-  if (String(selfResult?.result_code || '') === 'disqualified') selfTitle = 'Дисквалифицирован';
-  else if (Number(selfResult?.placement || 0) > 0) selfTitle = `${Number(selfResult.placement)} место`;
+  let selfTitle = t('arena.terminal.participation_done');
+  if (String(selfResult?.result_code || '') === 'disqualified') selfTitle = t('arena.terminal.disqualified');
+  else if (Number(selfResult?.placement || 0) > 0) selfTitle = t('arena.terminal.placement',{place:Number(selfResult.placement)});
   const payout = Math.max(0, Number(selfResult?.payout_amount || 0));
   const moneyCopy = payout > 0
-    ? `Награда: ${formatNumber(payout)} коинов`
-    : 'Денежной награды нет.';
+    ? t('arena.terminal.reward_amount',{amount:formatNumber(payout)})
+    : t('arena.terminal.no_money_reward');
 
   const entitlements = Array.isArray(selfResult?.entitlements) ? selfResult.entitlements : [];
   const rewardsMarkup = entitlements.length
@@ -1381,23 +1386,23 @@ function tournamentTerminalMarkup(progression){
     : '';
   const available = Number(selfResult?.balance?.available_amount);
   const balanceMarkup = Number.isFinite(available)
-    ? `<small>Баланс после расчёта: <b>${escapeHtml(formatNumber(Math.max(0, available)))}</b></small>`
+    ? `<small>${escapeHtml(t('arena.terminal.balance_after'))} <b>${escapeHtml(formatNumber(Math.max(0, available)))}</b></small>`
     : '';
 
   return `
     <section class="tournaments-v2-terminal">
-      <div class="tournaments-v2-terminal-kicker">Все матчи турнира завершены. Награды начислены</div>
+      <div class="tournaments-v2-terminal-kicker">${escapeHtml(t('arena.terminal.all_done_rewards'))}</div>
       <div class="tournaments-v2-terminal-hero">
-        <div><span>Чемпион</span><h3>${escapeHtml(String(champion?.nickname || 'Не определён'))}</h3></div>
+        <div><span>${escapeHtml(t('arena.terminal.champion'))}</span><h3>${escapeHtml(String(champion?.nickname || t('arena.terminal.not_defined')))}</h3></div>
         <b aria-hidden="true">🏆</b>
       </div>
       <div class="tournaments-v2-terminal-podium">${podiumMarkup}</div>
       ${selfResult ? `<div class="tournaments-v2-terminal-self">
-        <div><span>Ваш результат</span><strong>${escapeHtml(selfTitle)}</strong><p class="tournaments-v2-terminal-payout">${escapeHtml(moneyCopy)}</p></div>
+        <div><span>${escapeHtml(t('arena.terminal.your_result'))}</span><strong>${escapeHtml(selfTitle)}</strong><p class="tournaments-v2-terminal-payout">${escapeHtml(moneyCopy)}</p></div>
         ${balanceMarkup}
         ${rewardsMarkup}
       </div>` : ''}
-      <button class="tournaments-v2-tournament-action tournaments-v2-terminal-action" type="button" data-tournament-terminal-rating>Перейти к рейтингу</button>
+      <button class="tournaments-v2-tournament-action tournaments-v2-terminal-action" type="button" data-tournament-terminal-rating>${escapeHtml(t('arena.terminal.go_rating'))}</button>
     </section>
   `;
 }
@@ -1415,19 +1420,19 @@ function tournamentProgressionMarkup(match, progression){
     const latestRound = Number(latest.round_no || 0);
     const activeRoundNo = Number(progression?.active_round?.round_no || 0);
     const eliminated = progression?.participant_eliminated === true;
-    let message = 'Ваш матч завершён · ждём остальные матчи раунда.';
+    let message = t('arena.progression.match_finished_wait_round');
     if (eliminated && activeRoundNo > latestRound) {
-      message = 'Вы выбыли из турнира · сетка уже перешла в следующий раунд.';
+      message = t('arena.progression.eliminated_next_round');
     } else if (eliminated) {
-      message = 'Вы выбыли из турнира.';
+      message = t('arena.progression.eliminated');
     } else if (activeRoundNo > latestRound) {
-      message = 'Ваш матч завершён · следующий раунд уже сформирован.';
+      message = t('arena.progression.next_round_formed');
     }
     return `
       <section class="tournaments-v2-ready">
         <div class="tournaments-v2-ready-head">
           <div>
-            <span>Раунд ${escapeHtml(String(latest.round_no || ''))}</span>
+            <span>${escapeHtml(t('arena.progression.round',{round_no:String(latest.round_no || '')}))}</span>
             <strong>${escapeHtml(message)}</strong>
           </div>
         </div>
@@ -1442,29 +1447,29 @@ function tournamentProgressionMarkup(match, progression){
   const matchKind = String(match.match_kind || 'elimination');
   const opensAt = parseTournamentUtc(match.opens_at_utc);
   const waiting = opensAt instanceof Date && opensAt.getTime() > Date.now();
-  let stage = `Раунд ${roundNo} · пара ${pairNo}`;
-  if (matchKind === 'final') stage = 'Финал';
-  else if (matchKind === 'third_place') stage = 'Матч за 3-е место';
+  let stage = t('arena.progression.round_pair',{round_no:roundNo,pair_no:pairNo});
+  if (matchKind === 'final') stage = t('arena.bracket.final');
+  else if (matchKind === 'third_place') stage = t('arena.bracket.third_place');
 
-  let message = 'Следующий матч готовится к запуску.';
+  let message = t('arena.progression.next_match_preparing');
   if (waitKind === 'draw_replay') {
     message = waiting
-      ? 'Ничья · переигровка начнётся через минуту. Стороны меняются.'
-      : 'Переигровка готова · запускаем матч.';
+      ? t('arena.progression.draw_replay_wait')
+      : t('arena.progression.draw_replay_ready');
   } else if (waitKind === 'round_break') {
     message = waiting
-      ? 'Раунд завершён · перерыв перед следующим матчем.'
-      : 'Перерыв завершён · запускаем следующий матч.';
+      ? t('arena.progression.round_break_wait')
+      : t('arena.progression.round_break_ready');
   }
   if (attemptNo > 1 && waitKind !== 'draw_replay') {
-    message = waiting ? 'Повторный матч готовится.' : 'Повторный матч готов · запускаем.';
+    message = waiting ? t('arena.progression.rematch_wait') : t('arena.progression.rematch_ready');
   }
 
   return `
     <section class="tournaments-v2-ready">
       <div class="tournaments-v2-ready-head">
         <div>
-          <span>${escapeHtml(stage)}${attemptNo > 1 ? ` · попытка ${attemptNo}` : ''}</span>
+          <span>${escapeHtml(stage)}${attemptNo > 1 ? escapeHtml(t('arena.progression.attempt_suffix',{attempt_no:attemptNo})) : ''}</span>
           <strong>${escapeHtml(message)}</strong>
         </div>
         ${opensAt && waiting ? `<b data-tournament-progression-countdown data-progression-opens-at="${opensAt.getTime()}">${escapeHtml(formatReadyCountdown(opensAt.getTime() - Date.now()))}</b>` : ''}

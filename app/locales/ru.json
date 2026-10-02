@@ -1,5 +1,5 @@
 {
-  "_meta": {"locale":"ru","version":23},
+  "_meta": {"locale":"ru","version":24},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
   "topbar": {"balance":"Баланс","notifications":"Уведомления"},
@@ -16,6 +16,14 @@
       "final_round":"Финальный раунд","semifinal":"Полуфинал","round":"Раунд {round_no}","pair":"Пара {pair_no}","final":"Финал","third_place":"Матч за 3-е место",
       "self":"вы","participant":"участник","champion":"чемпион","second_place":"2 место","no_result":"без результата","third_place_status":"3 место","fourth_place":"4 место","advanced":"прошёл дальше","eliminated":"выбыл","self_playing":"вы · играет","playing":"играет",
       "vacant_slot":"Свободный слот","no_participant":"без участника","waiting":"Ожидает запуска.","final_done":"Финал завершён.","third_done":"Матч за 3-е место завершён.","winner_advances":"{nickname} проходит дальше.","done_no_winner":"Матч завершён · победитель не назначен.","running":"Матч идёт.","restart_minute":"Матч перезапустится через 1 минуту.","round_break":"Перерыв между раундами.","round_completed":"{completed}/{total} завершено"
+    },
+    "terminal":{
+      "rewards":{"golden_ticket":"Golden Ticket","champion_crown":"Корона чемпиона · 30 дней","winner_badge":"Значок победителя · навсегда","champion_cosmetics":"Чемпионский набор · навсегда","hall_of_fame":"Зал славы","cup_gold":"Золотой кубок","silver_frame":"Серебряная рамка · 30 дней","finalist_result":"Отметка финалиста · навсегда","cup_silver":"Серебряный кубок","bronze_mark":"Бронзовая отметка · 30 дней","third_place_result":"3-е место · навсегда","cup_bronze":"Бронзовый кубок"},
+      "reward_fallback":"Награда турнира","review_kicker":"Призовая проверка","completed_kicker":"Турнир завершён","self_hold_title":"Ваша награда временно на проверке","other_hold_title":"Одна из наград временно на проверке","settling_title":"Подводим итоги и начисляем награды…","self_hold_note":"Мы проверяем результат. Ничего повторно делать не нужно: после проверки здесь появится окончательный итог и, если результат подтвердится, награда.","other_hold_note":"Один из призовых результатов находится на проверке. После проверки итоговые места и награды обновятся автоматически.","settling_note":"Результат сетки уже зафиксирован. Награды появятся автоматически после завершения обработки.",
+      "champion":"Чемпион","second_place":"2 место","third_place":"3 место","test_no_reward":"тестовый · без награды","coin_amount":"{amount} коинов","participation_done":"Участие завершено","disqualified":"Дисквалифицирован","placement":"{place} место","reward_amount":"Награда: {amount} коинов","no_money_reward":"Денежной награды нет.","balance_after":"Баланс после расчёта:","all_done_rewards":"Все матчи турнира завершены. Награды начислены","not_defined":"Не определён","your_result":"Ваш результат","go_rating":"Перейти к рейтингу"
+    },
+    "progression":{
+      "match_finished_wait_round":"Ваш матч завершён · ждём остальные матчи раунда.","eliminated_next_round":"Вы выбыли из турнира · сетка уже перешла в следующий раунд.","eliminated":"Вы выбыли из турнира.","next_round_formed":"Ваш матч завершён · следующий раунд уже сформирован.","round":"Раунд {round_no}","round_pair":"Раунд {round_no} · пара {pair_no}","next_match_preparing":"Следующий матч готовится к запуску.","draw_replay_wait":"Ничья · переигровка начнётся через минуту. Стороны меняются.","draw_replay_ready":"Переигровка готова · запускаем матч.","round_break_wait":"Раунд завершён · перерыв перед следующим матчем.","round_break_ready":"Перерыв завершён · запускаем следующий матч.","rematch_wait":"Повторный матч готовится.","rematch_ready":"Повторный матч готов · запускаем.","attempt_suffix":" · попытка {attempt_no}"
     }
   },
   "settings": {"title":"Настройки","language":"Язык","language_note":"Выберите язык интерфейса Mini Games World.","language_ru":"Русский","language_saved":"Язык сохранён"},
