@@ -127,6 +127,7 @@ $css = (string)file_get_contents($root . '/app/assets/css/games/go/store-cosmeti
 $topWrapper = (string)file_get_contents($root . '/app/assets/js/screens/store-screen-checkers-board-source-wrapper.js');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 $launch = (string)file_get_contents($root . '/bot/helpers/WebAppLaunchUrl.php');
+$locale = json_decode((string)file_get_contents($root . '/app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 $assertTrue(str_contains($topWrapper, 'store-screen-go-store-v1.js?v=6&mvp19_8=effects-premium-v2&paid_default=copy-human-v1&bundles=owner-v1&mvp27_1=localized-v1'), 'Active Store entrypoint must install the fresh Go presentation layer');
 $activeStoreTarget = (string)($manifest['imports']['./assets/js/screens/store-screen.js?v=34'] ?? '');
 $wrapperVersionMatch = [];
@@ -136,7 +137,18 @@ $launchMatch = [];
 $assertTrue(preg_match('~/app/v110\.php\?v=(\d+)~', $launch, $launchMatch) === 1 && (int)$launchMatch[1] >= 1139, 'Telegram launch must remain at or beyond the accepted Go corrective graph');
 foreach (['wood','dark','stone','neon'] as $variant) $assertTrue(str_contains($css, 'theme-' . $variant), 'Go Store CSS must style board ' . $variant);
 foreach (['classic','marble','glass','neon'] as $variant) $assertTrue(str_contains($css, 'stones-' . $variant), 'Go Store CSS must style stone set ' . $variant);
-foreach (['placement','group-capture','territory-finish'] as $variant) $assertTrue(str_contains($wrapper, $variant), 'Go Store wrapper must own effect preview ' . $variant);
+$assertTrue(
+    str_contains($wrapper, "if (variant === 'placement')")
+    && str_contains($wrapper, "if (variant === 'group-capture')")
+    && str_contains($wrapper, 'mgw-go-territory')
+    && str_contains($wrapper, 'effectScenario(variant)'),
+    'Go Store wrapper must preserve distinct placement, group-capture and territory-finish preview scenes'
+);
+$assertTrue(
+    (($locale['store']['wrappers']['go']['descriptions']['effect']['territory_finish'] ?? null) === 'После партии территория проявляется каскадом меток и радиальным свечением поля')
+    && str_contains($wrapper, "replaceAll('-', '_')"),
+    'Go territory-finish copy must resolve through the stable localized territory_finish key'
+);
 $assertTrue(str_contains($css, 'mgw-go-v2-stonefall'), 'Go placement preview must use stonefall rather than the old generic pulse');
 $assertTrue(str_contains($css, 'mgw-go-v2-capture-implode'), 'Go capture preview must use implosion rather than the old lift');
 $assertTrue(str_contains($css, 'mgw-go-v2-territory-bloom'), 'Go territory preview must use radial bloom rather than the old sweep');
