@@ -1,3 +1,5 @@
+import { t } from '@mgw/i18n';
+
 const INSTALL_KEY = '__mgwDominoStoreV1Installed';
 const STYLE_MARK = 'mvp19-9-domino-store-v14-svg-pips-v48';
 const EFFECT_STYLE_ATTR = 'data-mgw-domino-store-effects-v9';
@@ -97,8 +99,9 @@ function ensureLiveParityStyles(){
 }
 
 function renameSelector(root){
+  const label = t('store.games.catalog_titles.domino');
   root.querySelectorAll('[data-store-v2-game="domino"]').forEach(button => {
-    if (button instanceof HTMLElement) button.textContent = 'Домино';
+    if (button instanceof HTMLElement) button.textContent = label;
   });
 }
 
@@ -106,7 +109,7 @@ function upgradeHeader(root){
   const head = root.querySelector('.store-v2-game-head[data-store-game-type="domino"]');
   if (!(head instanceof HTMLElement)) return;
   const title = head.querySelector('h2');
-  if (title instanceof HTMLElement) title.textContent = 'Домино';
+  if (title instanceof HTMLElement) title.textContent = t('store.games.catalog_titles.domino');
   const marks = head.querySelector('.store-v2-game-head-marks');
   if (marks instanceof HTMLElement && !marks.querySelector('.mgw-domino-head-tile')) marks.innerHTML = dominoHeaderMarksMarkup();
 }
@@ -117,21 +120,17 @@ function upgradeGroups(root){
     const preview = group.querySelector('.store-v2-game-preview[data-game-type="domino"]');
     if (!(preview instanceof HTMLElement)) return;
     const layer = String(preview.dataset.cosmeticLayer || 'theme');
+    const key = ['theme','elements','effect'].includes(layer) ? layer : 'fallback';
     const title = group.querySelector('.store-v2-game-title-row h2');
     const subtitle = group.querySelector('.store-v2-game-title-row p');
-    const copy = {
-      theme:['Столы','Оформление игрового стола'],
-      elements:['Костяшки','Комплект костяшек домино'],
-      effect:['Эффекты',''],
-    }[layer] || ['Домино','Игровая косметика'];
-    if (title instanceof HTMLElement) title.textContent = copy[0];
+    if (title instanceof HTMLElement) title.textContent = t(`store.wrappers.domino.groups.${key}.title`);
     if (subtitle instanceof HTMLElement) {
-      if (layer === 'effect') subtitle.remove();
-      else subtitle.textContent = copy[1];
+      const nextSubtitle = t(`store.wrappers.domino.groups.${key}.subtitle`);
+      if (layer === 'effect' || !nextSubtitle) subtitle.remove();
+      else subtitle.textContent = nextSubtitle;
     }
   });
 }
-
 function upgradeProducts(root){
   root.querySelectorAll('.store-v2-game-product[data-store-game-product="domino"]').forEach(product => {
     if (!(product instanceof HTMLElement)) return;
@@ -141,7 +140,7 @@ function upgradeProducts(root){
     const variant = String(preview.dataset.cosmeticVariant || 'felt');
     const kind = product.querySelector('.store-v2-game-product-copy > span');
     const description = product.querySelector('.store-v2-game-product-copy > p');
-    if (kind instanceof HTMLElement) kind.textContent = layer === 'theme' ? 'Игровой стол' : (layer === 'elements' ? 'Комплект костяшек' : 'Эффект партии');
+    if (kind instanceof HTMLElement) kind.textContent = t(`store.wrappers.domino.kinds.${layer === 'theme' ? 'theme' : (layer === 'elements' ? 'elements' : 'effect')}`);
     if (description instanceof HTMLElement) description.textContent = descriptionFor(layer, variant);
   });
 }
@@ -164,29 +163,14 @@ function upgradePreviews(root){
 }
 
 function descriptionFor(layer, variant){
-  if (layer === 'theme') {
-    return ({
-      felt:'Глубокое бордовое сукно с винной кромкой и мягкой клубной глубиной',
-      midnight:'Тёмно-синий стол с холодной подсветкой и спокойным клубным настроением',
-      walnut:'Тёплый ореховый стол с цельной древесной игровой поверхностью и живой фактурой',
-      neon:'Глубокий тёмный стол с цианово-фиолетовой неоновой кромкой',
-    })[variant] || 'Меняет оформление игрового стола';
+  const safeLayer = ['theme','elements','effect'].includes(layer) ? layer : 'effect';
+  const variantKey = String(variant || 'fallback').replaceAll('-', '_');
+  try {
+    return t(`store.wrappers.domino.descriptions.${safeLayer}.${variantKey}`);
+  } catch (_) {
+    return t(`store.wrappers.domino.descriptions.${safeLayer}.fallback`);
   }
-  if (layer === 'elements') {
-    return ({
-      ivory:'Тёплые янтарные костяшки с тёмными точками и мягким объёмным блеском',
-      ebony:'Чёрные матовые костяшки классической формы со светлыми точками',
-      marble:'Мраморные костяшки с натуральной минеральной фактурой и чёткими точками',
-      neon:'Тёмные костяшки с яркими неоновыми точками и тонким контуром',
-    })[variant] || 'Меняет внешний вид костяшек';
-  }
-  return ({
-    'precision-drop':'Компактная золотая волна и восемь частиц от поставленной костяшки',
-    'stock-pulse':'Тонкий импульс из запаса к новой костяшке с разлетающимися частицами',
-    'chain-finale':'Финальный проход по цепочке с призмой, аурой и искрами',
-  })[variant] || 'Добавляет визуальный эффект партии';
 }
-
 function tableMarkup(layer, variant){
   if (layer === 'effect') return effectSceneMarkup(variant);
   const chain = [[6,3],[3,5],[5,2]].map(pair => `<span class="mgw-domino-preview-slot">${tileMarkup(pair[0], pair[1])}</span>`).join('');
