@@ -1,3 +1,4 @@
+// checkers-localization-pr-sync-v1
 import fs from 'node:fs';
 
 const read = path => fs.readFileSync(path, 'utf8');
