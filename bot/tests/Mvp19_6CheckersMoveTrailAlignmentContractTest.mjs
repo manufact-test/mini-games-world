@@ -15,7 +15,7 @@ assert.match(owner, /real-board-piece-flip-v3-trail-center/);
 
 assert.match(
   manifest,
-  /renderer-board-themes\.js\?v=13[^'\n]*trail=real-piece-center-follow-v1/
+  /renderer-board-themes\.js\?v=14[^'\n]*trail=real-piece-center-follow-v1[^'\n]*mvp27_1=checkers-renderer-localized-v1/
 );
 
 assert.doesNotMatch(owner, /setInterval\(/);

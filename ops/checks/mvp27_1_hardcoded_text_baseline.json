@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-02",
-  "staging_base": "04e901dc3660fd7ee824929e74941d36eb1e6af9",
+  "staging_base": "ceed4feb95b9aaef562bf30a91cba5eb15788307",
   "scanned_files": 776,
-  "cyrillic_lines_total": 3503,
+  "cyrillic_lines_total": 3478,
   "by_scope": {
-    "client": 1822,
+    "client": 1797,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 active Domino base renderer localization; factual LIVE presentation owner reduced by 28 hardcoded Cyrillic source lines to zero while preserving play/draw actions, chain geometry, hand behavior and accepted cosmetics wrapper ownership."
+  "note": "MVP-27.1 active Checkers base renderer localization; factual LIVE renderer reduced by 25 hardcoded Cyrillic source lines to zero while preserving move action ownership, mandatory-capture behavior, board geometry and accepted real-flight cosmetics owners."
 }

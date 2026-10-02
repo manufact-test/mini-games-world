@@ -1,5 +1,5 @@
 {
-  "_meta": {"locale":"ru","version":37},
+  "_meta": {"locale":"ru","version":38},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
   "topbar": {"balance":"Баланс","notifications":"Уведомления"},
@@ -842,7 +842,19 @@
         "cell":{"ship":"ваш корабль","miss":"мимо","hit":"попадание","sunk":"потопленный корабль","water":"вода","unknown":"неизвестно"},
         "cell_word":{"one":"клетку","few":"клетки","many":"клеток"}
       }
-    },"checkers":{"name":"Русские шашки"},"reversi":{"name":"Реверси"},"chess":{"name":"Шахматы"},"go":{"name":"Го"},"domino":{
+    },"checkers":{
+      "name":"Русские шашки",
+      "ui":{
+        "game_fallback":"Игра","meta":"{room} · {bet} коинов · 8×8",
+        "score":{"you":"Вы","opponent":"Соперник"},
+        "legend":{"selected":"выбрано","move":"ход","capture":"взятие","king":"дамка"},
+        "errors":{"capture_required":"Есть обязательное взятие — выберите подсвеченную шашку."},
+        "player":{"white":"○ белые","black":"● чёрные"},
+        "status":{"finished":"Игра завершена","opponent_turn":"Ход соперника","continue_capture":"Продолжайте взятие","capture_required":"Обязательное взятие","your_turn":"Ваш ход"},
+        "event":{"finished":"Игра завершена","opponent_turn":"Ход соперника — следите за доской","continue_capture":"Продолжайте взятие этой же шашкой","capture_required":"Обязательное взятие — выберите подсвеченную шашку","your_turn":"Ваш ход — выберите шашку"},
+        "cell":{"capture_target":"взять шашку","move_target":"сделать ход","white_piece":"белая шашка","white_king":"белая дамка","black_piece":"чёрная шашка","black_king":"чёрная дамка"}
+      }
+    },"reversi":{"name":"Реверси"},"chess":{"name":"Шахматы"},"go":{"name":"Го"},"domino":{
       "name":"Домино",
       "ui":{
         "game_fallback":"Игра","meta":"{room} · {bet} коинов · классическое домино",

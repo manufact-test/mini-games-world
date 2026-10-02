@@ -1,4 +1,7 @@
 import { toast } from '../../components/toast.js?v=41';
+import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
+
+const checkersText = (key, params = {}) => t(`games.checkers.ui.${key}`, params);
 
 let activeGameId = '';
 let selectedFrom = null;
@@ -45,9 +48,9 @@ export function renderCheckersSurface({ game, me, container, onAction }){
   container.innerHTML = `
     <div class="checkers-panel">
       <div class="checkers-score-line">
-        <span>Вы <strong>${myPieces}</strong>${myKings ? ` · ♛${myKings}` : ''}</span>
+        <span>${checkersText('score.you')} <strong>${formatLocalizedNumber(myPieces)}</strong>${myKings ? ` · ♛${formatLocalizedNumber(myKings)}` : ''}</span>
         <i>•</i>
-        <span>Соперник <strong>${enemyPieces}</strong>${enemyKings ? ` · ♛${enemyKings}` : ''}</span>
+        <span>${checkersText('score.opponent')} <strong>${formatLocalizedNumber(enemyPieces)}</strong>${enemyKings ? ` · ♛${formatLocalizedNumber(enemyKings)}` : ''}</span>
       </div>
 
       ${statusMarkup({ game, myTurn, captureRequired, forcedPiece })}
@@ -69,10 +72,10 @@ export function renderCheckersSurface({ game, me, container, onAction }){
       </div>
 
       <div class="checkers-legend">
-        <span><i class="select"></i>выбрано</span>
-        <span><i class="move"></i>ход</span>
-        <span><i class="capture"></i>взятие</span>
-        <span><b>♛</b>дамка</span>
+        <span><i class="select"></i>${checkersText('legend.selected')}</span>
+        <span><i class="move"></i>${checkersText('legend.move')}</span>
+        <span><i class="capture"></i>${checkersText('legend.capture')}</span>
+        <span><b>♛</b>${checkersText('legend.king')}</span>
       </div>
     </div>
   `;
@@ -97,28 +100,28 @@ export function renderCheckersSurface({ game, me, container, onAction }){
 
   container.querySelectorAll('[data-checkers-dark-empty]').forEach(button => button.addEventListener('click', () => {
     if (!myTurn || selectedFrom !== null) return;
-    if (captureRequired) toast('Есть обязательное взятие — выберите подсвеченную шашку.');
+    if (captureRequired) toast(checkersText('errors.capture_required'));
   }));
 }
 
 export function checkersMeta(game){
-  const room = String(game?.room_name || 'Игра');
-  const bet = Number(game?.bet || 0);
-  return `${room} · ${bet} коинов · 8×8`;
+  const room = String(game?.room_name || checkersText('game_fallback'));
+  const bet = formatLocalizedNumber(Number(game?.bet || 0));
+  return checkersText('meta', { room, bet });
 }
 
 export function checkersPlayerMark(player){
   const side = String(player?.side || '');
-  return side === 'white' ? '○ белые' : '● чёрные';
+  return side === 'white' ? checkersText('player.white') : checkersText('player.black');
 }
 
 export function checkersStatus(game, me){
-  if (game?.status === 'finished') return 'Игра завершена';
+  if (game?.status === 'finished') return checkersText('status.finished');
   const myTurn = String(game?.turn || '') === String(me?.id || '');
-  if (!myTurn) return 'Ход соперника';
-  if (game?.forced_piece !== null && game?.forced_piece !== undefined) return 'Продолжайте взятие';
-  if (game?.capture_required) return 'Обязательное взятие';
-  return 'Ваш ход';
+  if (!myTurn) return checkersText('status.opponent_turn');
+  if (game?.forced_piece !== null && game?.forced_piece !== undefined) return checkersText('status.continue_capture');
+  if (game?.capture_required) return checkersText('status.capture_required');
+  return checkersText('status.your_turn');
 }
 
 function resetForGame(game){
@@ -131,18 +134,18 @@ function resetForGame(game){
 
 function statusMarkup({ game, myTurn, captureRequired, forcedPiece }){
   if (game?.status === 'finished') {
-    return `<div class="checkers-event-banner finished">Игра завершена</div>`;
+    return `<div class="checkers-event-banner finished">${checkersText('event.finished')}</div>`;
   }
   if (!myTurn) {
-    return `<div class="checkers-event-banner opponent">Ход соперника — следите за доской</div>`;
+    return `<div class="checkers-event-banner opponent">${checkersText('event.opponent_turn')}</div>`;
   }
   if (forcedPiece !== null) {
-    return `<div class="checkers-event-banner chain">Продолжайте взятие этой же шашкой</div>`;
+    return `<div class="checkers-event-banner chain">${checkersText('event.continue_capture')}</div>`;
   }
   if (captureRequired) {
-    return `<div class="checkers-event-banner capture">Обязательное взятие — выберите подсвеченную шашку</div>`;
+    return `<div class="checkers-event-banner capture">${checkersText('event.capture_required')}</div>`;
   }
-  return `<div class="checkers-event-banner your-turn">Ваш ход — выберите шашку</div>`;
+  return `<div class="checkers-event-banner your-turn">${checkersText('event.your_turn')}</div>`;
 }
 
 function cellMarkup(options){
@@ -207,11 +210,11 @@ function cellMarkup(options){
 function cellLabel(cell, piece, isTarget, isCaptureTarget){
   const file = 'abcdefgh'[cell % 8];
   const rank = 8 - Math.floor(cell / 8);
-  if (isTarget) return `${file}${rank}: ${isCaptureTarget ? 'взять шашку' : 'сделать ход'}`;
-  if (piece === 'w') return `${file}${rank}: белая шашка`;
-  if (piece === 'W') return `${file}${rank}: белая дамка`;
-  if (piece === 'b') return `${file}${rank}: чёрная шашка`;
-  if (piece === 'B') return `${file}${rank}: чёрная дамка`;
+  if (isTarget) return `${file}${rank}: ${checkersText(isCaptureTarget ? 'cell.capture_target' : 'cell.move_target')}`;
+  if (piece === 'w') return `${file}${rank}: ${checkersText('cell.white_piece')}`;
+  if (piece === 'W') return `${file}${rank}: ${checkersText('cell.white_king')}`;
+  if (piece === 'b') return `${file}${rank}: ${checkersText('cell.black_piece')}`;
+  if (piece === 'B') return `${file}${rank}: ${checkersText('cell.black_king')}`;
   return `${file}${rank}`;
 }
 
