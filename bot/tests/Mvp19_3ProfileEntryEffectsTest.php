@@ -104,6 +104,7 @@ $manifest = (string)file_get_contents($root . '/app/runtime/client/version-manif
 $assertTrue(str_contains($storeEndpoint, 'function mgw_store_profile_entry_effect') && str_contains($storeEndpoint, "'profile_entry_effect'"), 'Canonical Store endpoint must whitelist only the Entry Effect profile slot');
 $assertTrue(str_contains($responseProjection, 'entry_effect_item_id') && str_contains($responseProjection, "e.equip_slot = \\'profile_entry_effect\\'"), 'Public game identity projection must carry equipped Entry Effects for player presentation');
 $assertTrue(str_contains($entryUi, "const ENTRY_EFFECT_SLOT = 'profile_entry_effect'") && str_contains($entryUi, 'api.cosmeticStorePurchase') && str_contains($entryUi, 'api.cosmeticStoreEquip'), 'Entry Effect UI must reuse canonical Store purchase/equip owners');
+$assertTrue(str_contains($entryUi, "from '@mgw/i18n'") && preg_match('/[\\x{0400}-\\x{04FF}]/u', $entryUi) !== 1, 'Entry Effect player copy must remain localization-owned with zero hardcoded Cyrillic in the active presentation owner');
 $assertTrue(str_contains($entryUi, 'playedGames') && str_contains($entryUi, 'mgw-entry-effect-skip') && str_contains($entryUi, 'Math.min(4000, Math.max(2000, duration))'), 'Live Entry Effects must be once-per-game, skippable and bounded to 2-4 seconds');
 $assertTrue(str_contains($gameEntry, "new CustomEvent('mgw:game-entered'") && str_contains($gameEntry, 'detail:{ game:state.activeGame, me }'), 'Canonical game entry must publish exact adopted game and viewer identity after enterBaseGame');
 $assertTrue(str_contains($entryUi, "document.addEventListener('mgw:game-entered'") && str_contains($entryUi, "event?.detail?.me?.id"), 'Entry Effect presentation must consume the exact game-entry viewer handoff instead of guessing the local player');
@@ -125,7 +126,7 @@ $assertTrue(str_contains($cinematicCss, 'entry-effect-03-knight-strike.webp') &&
 $assertTrue(str_contains($cinematicCss, '@media(prefers-reduced-motion:reduce)') && is_file($root . '/app/media/cosmetics/entry-effects/entry-effect-02-portal-knight.webp') && is_file($root . '/app/media/cosmetics/entry-effects/entry-effect-03-knight-strike.webp'), 'Cinematic Entry Effects must preserve reduced-motion support and ship both dedicated media assets');
 $assertTrue(str_contains($watcher, "document.addEventListener('mgw:app-ready', initMgwProfileEntryEffects") && str_contains($watcher, "mgw-profile-entry-effects.js?v=1&mvp19_3=entry-effects"), 'Shared runtime must initialize Entry Effects after app-ready');
 $assertTrue(
-    str_contains($manifest, 'mgw-profile-entry-effects.js?v=6&mvp19_3=player-arbitration')
+    str_contains($manifest, 'mgw-profile-entry-effects.js?v=8&mvp19_3=player-arbitration&mvp25_4=profile-post-paint-v1&mvp27_1=localized-v1')
     && str_contains($manifest, 'entry_effect_handoff=1')
     && str_contains($manifest, 'quiet-cosmetic-equip-all')
     && str_contains($manifest, 'entry_effects=1')
