@@ -51,7 +51,7 @@ assert.ok(live.includes("translateX(${distance}px) scale(1.12)") && live.include
 assert.ok(live.includes("globalThis.setTimeout(cleanup, 900)"), 'Shot overlay must have a bounded cleanup fallback');
 
 assert.ok(
-  manifest.includes("renderer-cosmetics-v1.js?v=4&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&base=v60-shot-miss-no-impact"),
+  manifest.includes("renderer-cosmetics-v1.js?v=5&mvp19_12=live-maps-fleets-v4&frame=full-v1&neon_fleet=tube-v4&base=v60-shot-miss-no-impact&live_effects=accepted-three-v7&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-core-v4"),
   'Shot manual review must preserve the accepted Battleship manifest baseline'
 );
 assert.ok(entry.includes("$battleshipRendererImportKey = './assets/js/games/battleship/renderer.js?v=56'") && entry.includes("$imports[$battleshipRendererImportKey] .= '&live_effects=accepted-three-v7&fire=direct-result-v4&shot_motion=readable-v2&hit=preview-parity-v2&destroy=fire-core-v4';"), 'Active v110 runtime must cache-bust the accepted three-effect module with queued-fire ownership');
