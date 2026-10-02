@@ -22,6 +22,7 @@ $home = $read('app/assets/js/screens/home-screen.js');
 $shell = $read('app/assets/js/main-v110-handoff-shell.js');
 $invites = $read('app/assets/js/games/game-invites-v110.js');
 $inviteLink = $read('app/assets/js/games/invite-link-entry-v110r12.js');
+$ru = json_decode($read('app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 $serverApi = $read('bot/api.php');
 $serverInvites = $read('bot/invites.php');
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
@@ -62,9 +63,13 @@ $assert(!str_contains($invites, "room:'match'")
         && !str_contains($invites, 'data-invite-bet')
         && !str_contains($invites, 'data-invite-bets')
         && !str_contains($invites, '<span>Ставка</span>')
-        && str_contains($invites, '<span>Участие</span>')
-        && str_contains($invites, 'Стоимость участия'),
-    'Invite UI must expose one fixed participation cost without legacy room/stake selection.');
+        && str_contains($invites, "inviteText('social.entry_title')")
+        && str_contains($invites, "inviteText('social.entry_value',{count:bet})")
+        && str_contains($invites, "inviteText('summary.entry')")
+        && str_contains($invites, "inviteText('summary.entry_value',{count:Number(")
+        && (($ru['game_invites']['social']['entry_title'] ?? null) === 'Стоимость участия')
+        && (($ru['game_invites']['summary']['entry'] ?? null) === 'Участие'),
+    'Invite UI must expose one fixed localized participation cost without legacy room/stake selection.');
 $assert(!str_contains($inviteLink, 'Gold-комната')
         && !str_contains($inviteLink, 'Матч-комната')
         && !str_contains($inviteLink, '<span>Комната</span>')
