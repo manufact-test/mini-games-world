@@ -24,6 +24,7 @@ on:
       - 'bot/tests/Mvp19_12BattleshipStoreTest.php'
       - 'bot/tests/Mvp19_12BattleshipLiveResultEffectsTest.mjs'
       - 'bot/tests/Mvp19_12BattleshipFireReliabilityTest.mjs'
+      - 'bot/tests/Mvp19_12BattleshipViewportScrollTest.php'
       - 'tests/mvp19-13-ttt-bundle-reference.mjs'
       - 'ops/checks/mvp27_1_store_wrappers_localization_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
@@ -76,6 +77,7 @@ jobs:
           php bot/tests/Mvp19_12BattleshipStoreTest.php
           node bot/tests/Mvp19_12BattleshipLiveResultEffectsTest.mjs
           node bot/tests/Mvp19_12BattleshipFireReliabilityTest.mjs
+          php bot/tests/Mvp19_12BattleshipViewportScrollTest.php
           node tests/mvp19-13-ttt-bundle-reference.mjs
           node bot/tests/Mvp25_6StoreClientContractTest.mjs
           php bot/tests/Mvp26_3StoreWalletOwnershipContractTest.php
