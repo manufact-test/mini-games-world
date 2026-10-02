@@ -96,6 +96,10 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
+          if git diff --quiet "$base" "$head" -- app/assets/js/profile/mgw-account-link-ui.js; then
+            echo "Successor slice: Account Link UI owner unchanged; original bounded scope does not apply."
+            exit 0
+          fi
           allowed='^(\.github/workflows/mvp26-3-2-account-link-ui\.yml|\.github/workflows/mvp26-3-5-account-link-home-onboarding\.yml|\.github/workflows/mvp26-3-6-pending-link-preboot\.yml|\.github/workflows/mvp26-6-android-product-parity\.yml|\.github/workflows/mvp27-1-account-link-localization\.yml|app/assets/js/profile/mgw-account-link-ui\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|bot/tests/Mvp26_3_6PendingLinkPrebootStaticContractTest\.php|ops/checks/mvp27_1_account_link_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-26.3.2 paths:\n%s\n' "$bad" >&2; exit 1; }
