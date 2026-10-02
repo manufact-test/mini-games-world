@@ -60,6 +60,7 @@ jobs:
           node --check app/assets/js/screens/store-screen-battleship-store-v1.js
           node --check ops/checks/mvp27_1_store_wrappers_localization_contract.mjs
           php -l app/runtime/client/version-manifest.php
+          php -l bot/tests/Mvp19_12BattleshipViewportScrollTest.php
           node ops/checks/mvp27_1_store_wrappers_localization_contract.mjs
           node ops/checks/mvp16_2_localization_contract.mjs
           php bot/tests/Mvp162LocalizationInfrastructureTest.php
