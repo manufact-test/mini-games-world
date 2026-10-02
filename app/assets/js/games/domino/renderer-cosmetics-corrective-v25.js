@@ -3,7 +3,7 @@ import {
   dominoMeta,
   dominoPlayerMark,
   dominoStatus,
-} from './renderer-cosmetics-v1.js?v=7&mvp19_9=live-native-effects-v1';
+} from './renderer-cosmetics-v1.js?v=8&mvp19_9=live-native-effects-v1&mvp27_1=domino-renderer-localized-v1';
 import { state } from '../../state.js?v=27';
 
 const EFFECT_SLOT = 'game_domino_effect';
