@@ -500,7 +500,7 @@ function bundleMemberOffers(bundle, snapshot = storeState){
 function bundlePresentation(gameType){
   const key = BUNDLE_REFERENCE_GAMES.includes(gameType) ? gameType : 'generic';
   return {
-    gameTitle:key === 'generic' ? String(gameType || t('store.bundles.generic_game')) : t(`games.${key}.name`),
+    gameTitle:key === 'generic' ? String(gameType || t('store.bundles.generic_game')) : t(`store.bundles.presentation.${key}.game_title`),
     description:t(`store.bundles.presentation.${key}.description`),
     labels:{
       theme:t(`store.bundles.presentation.${key}.labels.theme`),
