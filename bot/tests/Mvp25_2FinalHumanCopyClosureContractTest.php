@@ -25,6 +25,7 @@ $accountData = $read('app/assets/js/screens/account-data-sheet-v1.js');
 $accountShortcuts = $read('app/assets/js/components/account-shortcuts.js');
 $invites = $read('app/assets/js/games/game-invites-v110.js');
 $manifest = $read('app/runtime/client/version-manifest.php');
+$manifestData = require $root . '/app/runtime/client/version-manifest.php';
 $localeSource = $read('app/locales/ru.json');
 $locale = json_decode($localeSource, true, 512, JSON_THROW_ON_ERROR);
 $arenaCopy = json_encode($locale['arena'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
@@ -65,7 +66,7 @@ $assert(
 );
 $accountChildVersion = [];
 $assert(
-    preg_match('~account-data-sheet-v1\.js\?v=(\d+)[^\'"]*mvp25_2=human-copy-v1~', $accountShortcuts, $accountChildVersion) === 1
+    preg_match('~account-data-sheet-v1\.js\?v=(\d+)[^\n]*mvp25_2=human-copy-v1~', $accountShortcuts, $accountChildVersion) === 1
     && (int)$accountChildVersion[1] >= 6,
     'Account Data child copy change must stay at or beyond the accepted import identity.'
 );
@@ -81,9 +82,10 @@ $assert(
     $inviteAliasCount === 3 && min(array_map('intval', $inviteAliasMatches[1] ?? [])) >= 1148,
     'All canonical invite aliases must stay at or beyond the final MVP-25.2 network-safe identity.'
 );
+$accountParentTarget = (string)($manifestData['imports']['./assets/js/components/account-shortcuts.js?v=48'] ?? '');
 $accountParentVersion = [];
 $assert(
-    preg_match('~account-shortcuts\.js\?v=(\d+)[^\n]*mvp25_2=account-data-human-copy-v1~', $manifest, $accountParentVersion) === 1
+    preg_match('~account-shortcuts\.js\?v=(\d+)[^\n]*mvp25_2=account-data-human-copy-v1~', $accountParentTarget, $accountParentVersion) === 1
     && (int)$accountParentVersion[1] >= 56,
     'Account shortcut parent must stay at or beyond the accepted human-copy identity.'
 );

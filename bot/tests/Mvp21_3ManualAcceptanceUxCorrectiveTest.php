@@ -18,6 +18,7 @@ $tournaments = $read('app/assets/js/screens/tournaments-screen-v1.js');
 $admin = $read('app/assets/js/admin-tournaments.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r13.js');
 $manifest = $read('app/runtime/client/version-manifest.php');
+$manifestData = require $root . '/app/runtime/client/version-manifest.php';
 $bridge = $read('bot/tournaments/TournamentParticipantNotificationBridge.php');
 $locale = json_decode($read('app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 
@@ -46,9 +47,10 @@ $assert(str_contains($notifications, 'for (const [key, entry] of localAuthority.
         && str_contains($notifications, 'item:{ ...entry.item, read:true }'),
     'Local notification authority must advance to read state instead of re-inserting stale unread items.');
 
+$notificationTarget = (string)($manifestData['imports']['./assets/js/screens/notifications-screen-v110r13.js?v=1162&mvp18=friend-request-lifecycle'] ?? '');
 $notificationVersion = [];
 $assert(
-    preg_match('~notifications-screen-v110r13\.js\?v=(\d+)&mvp21_3=read-authority-local-time~', $manifest, $notificationVersion) === 1
+    preg_match('~notifications-screen-v110r13\.js\?v=(\d+)&mvp21_3=read-authority-local-time~', $notificationTarget, $notificationVersion) === 1
     && (int)$notificationVersion[1] >= 1163,
     'Active import map must publish the notification corrective at or beyond the accepted cache identity.'
 );

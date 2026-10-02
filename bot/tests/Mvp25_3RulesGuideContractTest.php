@@ -18,6 +18,13 @@ $main = $read('app/assets/js/main-v110-handoff-shell.js');
 $home = $read('app/assets/js/screens/home-screen.js');
 $css = $read('app/assets/css/mvp25-3-ux-consistency-v1.css');
 $manifest = $read('app/runtime/client/version-manifest.php');
+$manifestData = require $root . '/app/runtime/client/version-manifest.php';
+$findImportTarget = static function (array $data, string $marker): string {
+    foreach (($data['imports'] ?? []) as $target) {
+        if (is_string($target) && str_contains($target, $marker)) return $target;
+    }
+    return '';
+};
 $localeSource = $read('app/locales/ru.json');
 $locale = json_decode($localeSource, true, 512, JSON_THROW_ON_ERROR);
 $homeCopy = json_encode($locale['home'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
@@ -82,15 +89,17 @@ foreach ([
     $assert(str_contains($css, $needle), 'Rules guide styling missing: ' . $needle);
 }
 
+$homeTarget = $findImportTarget($manifestData, 'mvp25_3=human-rules-guide-v1');
 $homeVersion = [];
 $assert(
-    preg_match('~home-screen\.js\?v=(\d+)[^\n]*mvp25_3=human-rules-guide-v1~', $manifest, $homeVersion) === 1
+    preg_match('~home-screen\.js\?v=(\d+)~', $homeTarget, $homeVersion) === 1
     && (int)$homeVersion[1] >= 90,
     'Manifest must publish the Home rules owner at or beyond the accepted cache identity.'
 );
+$bootstrapTarget = $findImportTarget($manifestData, 'mvp25_3=match-economy-guide-v1');
 $bootstrapVersion = [];
 $assert(
-    preg_match('~main-v110-handoff-shell\.js\?v=(\d+)[^\n]*mvp25_3=match-economy-guide-v1~', $manifest, $bootstrapVersion) === 1
+    preg_match('~main-v110-handoff-shell\.js\?v=(\d+)~', $bootstrapTarget, $bootstrapVersion) === 1
     && (int)$bootstrapVersion[1] >= 1159,
     'Manifest must publish the bootstrap economy owner at or beyond the accepted cache identity.'
 );

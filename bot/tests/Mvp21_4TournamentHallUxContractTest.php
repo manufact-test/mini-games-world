@@ -21,6 +21,13 @@ $source = [
     'admin_page'=>$read('app/admin.php'),
     'locale'=>$read('app/locales/ru.json'),
 ];
+$manifestData = require $root . '/app/runtime/client/version-manifest.php';
+$findImportTarget = static function (array $data, string $marker): string {
+    foreach (($data['imports'] ?? []) as $target) {
+        if (is_string($target) && str_contains($target, $marker)) return $target;
+    }
+    return '';
+};
 $locale = json_decode($source['locale'], true, 512, JSON_THROW_ON_ERROR);
 $hallLocale = $locale['arena']['hall'] ?? [];
 
@@ -119,16 +126,23 @@ foreach ([
     $assert(str_contains($source['css'], $needle), 'Tournament Hall CSS missing: ' . $needle);
 }
 
+$clientTarget = $findImportTarget($manifestData, 'mvp21_4=tournament-hall-v1');
 $clientVersion = [];
 $assert(
-    preg_match('~client\.js\?v=(\d+)[^\n]*mvp21_4=tournament-hall-v1[^\n]*hall_transport=direct-endpoint-v2~', $source['manifest'], $clientVersion) === 1
-    && (int)$clientVersion[1] >= 1145,
+    preg_match('~client\.js\?v=(\d+)~', $clientTarget, $clientVersion) === 1
+    && (int)$clientVersion[1] >= 1145
+    && str_contains($clientTarget, 'hall_transport=direct-endpoint-v2'),
     'Hall release must preserve the accepted API contract at or beyond its accepted cache identity.'
 );
+$tournamentTarget = $findImportTarget($manifestData, 'mvp21_4=tournament-hall-bracket-v2');
 $tournamentVersion = [];
 $assert(
-    preg_match('~tournaments-screen-v1\.js\?v=(\d+)[^\n]*mvp21_4=tournament-hall-bracket-v2[^\n]*hall_cta=entry-v1[^\n]*copy_polish=final-v1[^\n]*mvp21_manual=acceptance-corrective-v1[^\n]*archive=per-round-v1~', $source['manifest'], $tournamentVersion) === 1
-    && (int)$tournamentVersion[1] >= 31,
+    preg_match('~tournaments-screen-v1\.js\?v=(\d+)~', $tournamentTarget, $tournamentVersion) === 1
+    && (int)$tournamentVersion[1] >= 31
+    && str_contains($tournamentTarget, 'hall_cta=entry-v1')
+    && str_contains($tournamentTarget, 'copy_polish=final-v1')
+    && str_contains($tournamentTarget, 'mvp21_manual=acceptance-corrective-v1')
+    && str_contains($tournamentTarget, 'archive=per-round-v1'),
     'Hall release must preserve the Tournament screen contract at or beyond its accepted cache identity.'
 );
 $mainCssVersion = [];
