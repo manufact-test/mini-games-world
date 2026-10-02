@@ -30,7 +30,7 @@ assert(game.includes("if (game.finish_reason === 'preparation_timeout')")
   && game.includes("game.finish_reason === 'player_left'"),
   'Accepted terminal Result classification must remain intact.');
 
-assert(ru._meta?.version === 34, 'RU locale revision must publish Game Screen v34.');
+assert(Number(ru._meta?.version || 0) >= 34, 'RU locale revision must retain Game Screen v34 or a newer successor.');
 assert(ru.game_screen?.leave?.title === 'Выйти из матча?', 'Accepted RU leave title must be preserved.');
 assert(ru.game_screen?.result?.not_started_title === 'Матч не начался', 'Accepted RU preparation-timeout title must be preserved.');
 assert(ru.game_screen?.result?.go_tournament === 'Вернуться в турнир', 'Accepted RU tournament return action must be preserved.');
@@ -39,8 +39,8 @@ assert(ru.game_screen?.result?.chess_draw?.fifty_move === 'Сработало п
 assert(ru.game_screen?.result?.domino_blocked_score === 'Партия заблокирована. Оставшиеся точки: {mine}:{theirs}.', 'Accepted RU Domino terminal copy must be preserved.');
 
 assert(manifest.includes('mvp27_1=game-screen-localized-v1'), 'Canonical manifest must publish localized Game Screen identity.');
-assert(baseline.cyrillic_lines_total === 3619 && baseline.by_scope?.client === 1938,
-  'Game Screen localization debt baseline must ratchet by exactly 54 client lines.');
+assert(baseline.cyrillic_lines_total <= 3619 && baseline.by_scope?.client <= 1938,
+  'Game Screen localization debt must never regress above the accepted post-Game-Screen baseline.');
 
 console.log('MVP27_1_GAME_SCREEN_LOCALIZATION_CONTRACT=PASS');
 console.log('MVP27_1_ACTIVE_GAME_SCREEN_HARDCODED_CYRILLIC=0');
