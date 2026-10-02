@@ -70,14 +70,16 @@ $assert(
     'Victory Effects wrapper must publish the fresh post-paint base owner.'
 );
 
+$entryVersion = [];
+$shellVersion = [];
 $assert(
-    str_contains($manifest, "mgw-profile-entry-effects.js?v=7&mvp19_3=player-arbitration&mvp25_4=profile-post-paint-v1")
+    preg_match('/mgw-profile-entry-effects\.js\?v=(\d+)[^\']*mvp19_3=player-arbitration[^\']*mvp25_4=profile-post-paint-v1/', $manifest, $entryVersion) === 1
+        && (int)$entryVersion[1] >= 7
         && str_contains($manifest, "mgw-profile-victory-effects-card-parity.js?v=12")
         && str_contains($manifest, "mvp25_4=profile-post-paint-v1")
-        && str_contains($manifest, "main-v110-handoff-shell.js?v=1161")
-        && str_contains($manifest, "profile_topbar=direct-shell-v3")
-        && str_contains($manifest, "profile_tap=post-paint-v1"),
-    'Manifest must cache-bust all final Profile tap owners.'
+        && preg_match('/main-v110-handoff-shell\.js\?v=(\d+)[^\']*profile_topbar=direct-shell-v3[^\']*profile_tap=post-paint-v1/', $manifest, $shellVersion) === 1
+        && (int)$shellVersion[1] >= 1161,
+    'Manifest must retain all final Profile tap owners at or beyond their accepted cache identities.'
 );
 
 $assert(
