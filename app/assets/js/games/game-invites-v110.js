@@ -138,7 +138,7 @@ export function openSocialPlayerInvite(inviteeId, opponentName = inviteText('pla
   haptic('light');
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Пригласить ${escapeHtml(name)}</h2><p>Выберите игру.</p></div>
+      <div><h2>${escapeHtml(inviteText('social.title',{name}))}</h2><p>${escapeHtml(inviteText('social.choose_game'))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="choice-grid" data-social-invite-games>
@@ -224,15 +224,15 @@ function openInviteSetup(gameType, preserved = null){
     <span data-invite-setup hidden></span>
     <div class="sheet-head">
       <div>
-        <h2>Пригласить в «${escapeHtml(gameTitle(gameType))}»</h2>
-        <p>Выберите вариант игры.</p>
+        <h2>${escapeHtml(inviteText('social.setup_title',{game:gameTitle(gameType)}))}</h2>
+        <p>${escapeHtml(inviteText('social.choose_variant'))}</p>
       </div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
 
     <div class="setup-scroll">
-      <div class="small-note">Коины спишутся только после запуска матча.</div>
-      <div class="section-title"><h2>Вариант игры</h2></div>
+      <div class="small-note">${escapeHtml(inviteText('social.debit_note'))}</div>
+      <div class="section-title"><h2>${escapeHtml(inviteText('social.variant_title'))}</h2></div>
       <div class="choice-grid field-size-grid" data-invite-sizes>
         ${option.sizes.map(size => `
 <button class="choice ${size === boardSize ? 'active' : ''}" data-invite-size="${size}" type="button">
@@ -240,19 +240,19 @@ function openInviteSetup(gameType, preserved = null){
 </button>
         `).join('')}
       </div>
-      <div class="section-title"><h2>Стоимость участия</h2></div>
+      <div class="section-title"><h2>${escapeHtml(inviteText('social.entry_title'))}</h2></div>
       <div class="choice-grid single-choice">
-        <div class="choice active" role="status">${bet} коинов</div>
+        <div class="choice active" role="status">${escapeHtml(inviteText('social.entry_value',{count:bet}))}</div>
       </div>
     </div>
 
     <div class="stack invite-actions">
       ${socialInviteTarget
-        ? `<button class="btn primary full" data-send-social-invite type="button">Пригласить ${escapeHtml(socialInviteTarget.name)}</button>`
-        : `<button class="btn primary full" data-open-player-picker type="button">Пригласить игрока</button>
-           <button class="btn ghost full" data-create-link-invite type="button">Поделиться ссылкой</button>`}
+        ? `<button class="btn primary full" data-send-social-invite type="button">${escapeHtml(inviteText('social.invite_named',{name:socialInviteTarget.name}))}</button>`
+        : `<button class="btn primary full" data-open-player-picker type="button">${escapeHtml(inviteText('social.invite_player'))}</button>
+           <button class="btn ghost full" data-create-link-invite type="button">${escapeHtml(inviteText('social.share_link'))}</button>`}
     </div>
-    <div class="invite-method-note">${socialInviteTarget ? 'Приглашение получит выбранный игрок.' : 'Игроку из списка приглашение сразу придёт в приложение. Ссылка нужна для нового человека.'}</div>
+    <div class="invite-method-note">${escapeHtml(socialInviteTarget ? inviteText('social.method_selected') : inviteText('social.method_list'))}</div>
   `);
 
   const currentContext = () => normalizeInviteContext({ gameType, boardSize });
@@ -309,17 +309,17 @@ function showPlayerPickerLoading(context, requestGeneration){
   openSheet(`
     <span data-player-picker-generation="${Number(requestGeneration || 0)}" hidden></span>
     <div class="sheet-head">
-      <div><h2>Выберите игрока</h2><p>${escapeHtml(gameTitle(context.gameType))}</p></div>
+      <div><h2>${escapeHtml(inviteText('social.picker_title'))}</h2><p>${escapeHtml(gameTitle(context.gameType))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="invite-player-list" data-player-picker-results aria-busy="true">
       <button class="invite-player-card loading" type="button" disabled aria-hidden="true" tabindex="-1">
         <span class="invite-player-avatar" aria-hidden="true">…</span>
-        <span class="invite-player-copy"><strong>Загружаем игроков</strong><span>Проверяем доступность</span></span>
+        <span class="invite-player-copy"><strong>${escapeHtml(inviteText('social.picker_loading'))}</strong><span>${escapeHtml(inviteText('social.picker_checking'))}</span></span>
         <span class="invite-player-arrow" aria-hidden="true">›</span>
       </button>
     </div>
-    <button class="btn ghost full" data-back-to-invite-setup type="button">Назад к условиям</button>
+    <button class="btn ghost full" data-back-to-invite-setup type="button">${escapeHtml(inviteText('social.back_conditions'))}</button>
   `);
   bindPlayerPickerBack(context);
 }
@@ -337,7 +337,7 @@ function activePlayerPickerSurface(requestGeneration){
 function renderPlayerPicker(items, context, requestGeneration){
   const list = items.length
     ? items.map(playerCard).join('')
-    : `<div class="notifications-empty invite-empty-state"><div>👥</div><strong>Недавних соперников пока нет</strong><span>Вернитесь назад и отправьте ссылку.</span></div>`;
+    : `<div class="notifications-empty invite-empty-state"><div>👥</div><strong>${escapeHtml(inviteText('social.no_recent'))}</strong><span>${escapeHtml(inviteText('social.no_recent_note'))}</span></div>`;
   const surface = activePlayerPickerSurface(requestGeneration);
   if (!surface) return;
   surface.results.innerHTML = list;
@@ -352,7 +352,7 @@ function renderPlayerPickerError(requestGeneration, error){
   if (!surface) return;
   surface.results.innerHTML = `
     <div class="notifications-empty invite-empty-state">
-      <div>⚠️</div><strong>Не удалось загрузить игроков</strong>
+      <div>⚠️</div><strong>${escapeHtml(inviteText('social.load_players_failed'))}</strong>
       <span>${escapeHtml(error?.message || inviteText('network.retry'))}</span>
     </div>`;
   surface.results.setAttribute('aria-busy', 'false');
@@ -374,7 +374,7 @@ function playerCard(item){
       <span class="invite-player-avatar" style="--invite-avatar-hue:${avatarHue(id)}" aria-hidden="true">${escapeHtml(initials(name))}</span>
       <span class="invite-player-copy">
         <strong>${escapeHtml(name)}</strong>
-        <span><i class="invite-player-dot ${statusClass}"></i>${escapeHtml(item?.activity || 'недавний соперник')}</span>
+        <span><i class="invite-player-dot ${statusClass}"></i>${escapeHtml(item?.activity || inviteText('social.recent_opponent'))}</span>
       </span>
       <span class="invite-player-arrow" aria-hidden="true">›</span>
     </button>
@@ -737,15 +737,15 @@ function showPreparedLink(invite, context){
   openSheet(`
     ${inviteMarker(invite)}
     <div class="sheet-head">
-      <div><h2>Ссылка подготовлена</h2><p>Telegram не может подтвердить отправку на этом устройстве.</p></div>
+      <div><h2>${escapeHtml(inviteText('social.share_ready_title'))}</h2><p>${escapeHtml(inviteText('social.share_device_note'))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${inviteSummary(invite)}
-    <div class="small-note">Приглашение начнёт ожидать ответ, когда получатель откроет ссылку.</div>
+    <div class="small-note">${escapeHtml(inviteText('social.wait_link_open'))}</div>
     <div class="stack invite-actions">
-      <button class="btn primary full" data-fallback-share type="button">Открыть список Telegram</button>
-      <button class="btn ghost full" data-copy-invite-link type="button">Скопировать ссылку</button>
-      <button class="btn ghost full" data-discard-draft type="button">Отменить</button>
+      <button class="btn primary full" data-fallback-share type="button">${escapeHtml(inviteText('social.open_telegram'))}</button>
+      <button class="btn ghost full" data-copy-invite-link type="button">${escapeHtml(inviteText('social.copy_link'))}</button>
+      <button class="btn ghost full" data-discard-draft type="button">${escapeHtml(inviteText('social.cancel'))}</button>
     </div>
   `);
 
@@ -982,11 +982,11 @@ async function createRematch(gameId, button){
   openSheet(`
     <span data-rematch-pending="${escapeHtml(gameId)}" hidden></span>
     <div class="sheet-head">
-      <div><h2>Реванш предложен</h2><p>${escapeHtml(gameTitle(gameType))}</p></div>
+      <div><h2>${escapeHtml(inviteText('rematch.proposed'))}</h2><p>${escapeHtml(gameTitle(gameType))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${contextSummary({ gameType, boardSize })}
-    <div class="small-note invite-status-note">Ждём ответа соперника.</div>
+    <div class="small-note invite-status-note">${escapeHtml(inviteText('rematch.waiting_opponent'))}</div>
   `);
 
   try {
@@ -1142,12 +1142,12 @@ function showDirectInvitePending(context, opponentName, requestGeneration){
   openSheet(`
     <span data-invite-sheet data-direct-invite-pending="${Number(requestGeneration || 0)}" hidden></span>
     <div class="sheet-head">
-      <div><h2>Приглашение отправлено</h2><p>Для ${escapeHtml(opponentName || inviteText('player_genitive'))}</p></div>
+      <div><h2>${escapeHtml(inviteText('direct.sent_title'))}</h2><p>${escapeHtml(inviteText('direct.for_player',{name:opponentName || inviteText('player_genitive')}))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${contextSummary(context)}
-    <div class="small-note invite-status-note" data-invite-countdown>Отправляем приглашение…</div>
-    <button class="btn primary full" data-direct-invite-cancel-reserved="${Number(requestGeneration || 0)}" type="button">Отменить приглашение</button>
+    <div class="small-note invite-status-note" data-invite-countdown>${escapeHtml(inviteText('direct.sending'))}</div>
+    <button class="btn primary full" data-direct-invite-cancel-reserved="${Number(requestGeneration || 0)}" type="button">${escapeHtml(inviteText('direct.cancel_invite'))}</button>
   `);
   document.querySelector(`[data-direct-invite-cancel-reserved="${Number(requestGeneration || 0)}"]`)?.addEventListener('click', () => {
     requestPendingDirectInviteCancel(requestGeneration);
@@ -1194,14 +1194,14 @@ function showIncomingInvite(invite){
   openSheet(`
     ${inviteMarker(invite)}
     <div class="sheet-head">
-      <div><h2>Вас приглашают сыграть</h2><p>От ${escapeHtml(invite.inviter_name || inviteText('player_genitive'))}</p></div>
+      <div><h2>${escapeHtml(inviteText('incoming.title'))}</h2><p>${escapeHtml(inviteText('incoming.from_player',{name:invite.inviter_name || inviteText('player_genitive')}))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${inviteSummary(invite)}
     <div class="small-note invite-status-note" data-invite-countdown></div>
     <div class="stack invite-actions">
-      <button class="btn primary full" data-invite-action="accept" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Принять приглашение</button>
-      <button class="btn ghost full" data-invite-action="decline" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отклонить</button>
+      <button class="btn primary full" data-invite-action="accept" data-invite-token="${escapeHtml(invite.token || '')}" type="button">${escapeHtml(inviteText('incoming.accept'))}</button>
+      <button class="btn ghost full" data-invite-action="decline" data-invite-token="${escapeHtml(invite.token || '')}" type="button">${escapeHtml(inviteText('incoming.decline'))}</button>
     </div>
   `);
   mountInviteCountdown(invite, inviteText('incoming.respond'));
@@ -1210,9 +1210,9 @@ function showIncomingInvite(invite){
 function contextSummary(context){
   return `
     <div class="topup-success">
-      <div><span>Игра</span><strong>${escapeHtml(gameTitle(context?.gameType))}</strong></div>
-      <div><span>Вариант</span><strong>${escapeHtml(boardLabel(String(context?.gameType || ''), Number(context?.boardSize || 0)))}</strong></div>
-      <div><span>Участие</span><strong>${Number(APP_CONFIG.matchBet || 0)} коинов</strong></div>
+      <div><span>${escapeHtml(inviteText('summary.game'))}</span><strong>${escapeHtml(gameTitle(context?.gameType))}</strong></div>
+      <div><span>${escapeHtml(inviteText('summary.variant'))}</span><strong>${escapeHtml(boardLabel(String(context?.gameType || ''), Number(context?.boardSize || 0)))}</strong></div>
+      <div><span>${escapeHtml(inviteText('summary.entry'))}</span><strong>${escapeHtml(inviteText('summary.entry_value',{count:Number(APP_CONFIG.matchBet || 0)}))}</strong></div>
     </div>
   `;
 }
@@ -1221,12 +1221,12 @@ function showOwnerWaiting(invite, message = ''){
   openSheet(`
     ${inviteMarker(invite)}
     <div class="sheet-head">
-      <div><h2>${invite.source === 'rematch' ? 'Реванш предложен' : 'Приглашение отправлено'}</h2></div>
+      <div><h2>${escapeHtml(invite.source === 'rematch' ? inviteText('owner_wait.rematch_proposed') : inviteText('owner_wait.sent'))}</h2></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${inviteSummary(invite)}
     <div class="small-note invite-status-note" data-invite-countdown>${message ? escapeHtml(message) : ''}</div>
-    <button class="btn primary full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить приглашение</button>
+    <button class="btn primary full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">${escapeHtml(inviteText('owner_wait.cancel_invite'))}</button>
   `);
   mountInviteCountdown(invite, inviteText('owner_wait.waiting_response'));
 }
@@ -1235,14 +1235,14 @@ function showOwnerReady(invite){
   openSheet(`
     ${inviteMarker(invite)}
     <div class="sheet-head">
-      <div><h2>Соперник согласен</h2><p>${escapeHtml(invite.invitee_name || inviteText('player'))} готов играть.</p></div>
+      <div><h2>${escapeHtml(inviteText('ready.opponent_agreed'))}</h2><p>${escapeHtml(inviteText('ready.player_ready',{name:invite.invitee_name || inviteText('player')}))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${inviteSummary(invite)}
     <div class="small-note invite-status-note" data-invite-countdown></div>
     <div class="stack invite-actions">
-      <button class="btn primary full" data-invite-action="start" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Начать игру</button>
-      <button class="btn ghost full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить</button>
+      <button class="btn primary full" data-invite-action="start" data-invite-token="${escapeHtml(invite.token || '')}" type="button">${escapeHtml(inviteText('ready.start'))}</button>
+      <button class="btn ghost full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">${escapeHtml(inviteText('ready.cancel'))}</button>
     </div>
   `);
   mountInviteCountdown(invite, inviteText('status.start_match'));
@@ -1252,12 +1252,12 @@ function showInviteeWaiting(invite){
   openSheet(`
     ${inviteMarker(invite)}
     <div class="sheet-head">
-      <div><h2>Приглашение принято</h2><p>Ждём запуска матча от ${escapeHtml(invite.inviter_name || inviteText('player_genitive'))}.</p></div>
+      <div><h2>${escapeHtml(inviteText('accepted.title'))}</h2><p>${escapeHtml(inviteText('accepted.waiting_from',{name:invite.inviter_name || inviteText('player_genitive')}))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${inviteSummary(invite)}
     <div class="small-note invite-status-note" data-invite-countdown>${escapeHtml(inviteeWaitingNote(invite))}</div>
-    <button class="btn ghost full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отменить участие</button>
+    <button class="btn ghost full" data-invite-action="cancel" data-invite-token="${escapeHtml(invite.token || '')}" type="button">${escapeHtml(inviteText('accepted.cancel_participation'))}</button>
   `);
   mountInviteCountdown(invite, inviteText('status.wait_start'));
 }
@@ -1275,7 +1275,7 @@ function reconcileInviteeWaiting(invite){
 
 function inviteeWaitingNote(invite){
   const formatted = formatTime(invite?.ready_deadline_at);
-  return formatted === '—' ? inviteText('accepted.wait_start_sentence') : `Ожидание до ${formatted}.`;
+  return formatted === '—' ? inviteText('accepted.wait_start_sentence') : inviteText('accepted.wait_until',{time:formatted});
 }
 
 function showTerminalInvite(invite){
@@ -1287,8 +1287,8 @@ function showTerminalInvite(invite){
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${inviteSummary(invite)}
-    <div class="small-note">Это приглашение больше нельзя использовать.</div>
-    <button class="btn primary full" data-close-sheet type="button">Понятно</button>
+    <div class="small-note">${escapeHtml(inviteText('terminal.note'))}</div>
+    <button class="btn primary full" data-close-sheet type="button">${escapeHtml(inviteText('terminal.understood'))}</button>
   `);
 }
 
@@ -1549,9 +1549,9 @@ function mountInviteCountdown(invite, label){
 function inviteSummary(invite){
   return `
     <div class="topup-success">
-      <div><span>Игра</span><strong>${escapeHtml(invite?.game_title || inviteText('game_fallback'))}</strong></div>
-      <div><span>Вариант</span><strong>${escapeHtml(inviteBoardLabel(invite))}</strong></div>
-      <div><span>Участие</span><strong>${Number(invite?.bet || APP_CONFIG.matchBet || 0)} коинов</strong></div>
+      <div><span>${escapeHtml(inviteText('summary.game'))}</span><strong>${escapeHtml(invite?.game_title || inviteText('game_fallback'))}</strong></div>
+      <div><span>${escapeHtml(inviteText('summary.variant'))}</span><strong>${escapeHtml(inviteBoardLabel(invite))}</strong></div>
+      <div><span>${escapeHtml(inviteText('summary.entry'))}</span><strong>${escapeHtml(inviteText('summary.entry_value',{count:Number(invite?.bet || APP_CONFIG.matchBet || 0)}))}</strong></div>
     </div>
   `;
 }
