@@ -5,6 +5,7 @@ on:
     branches: [agent/mvp-13-2-staging]
     paths:
       - 'app/v110.php'
+      - 'app/assets/js/games/domino/renderer.js'
       - 'app/assets/js/games/domino/renderer-cosmetics-v1.js'
       - 'app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js'
       - 'app/assets/js/games/domino/renderer-live-manual-v30.js'
@@ -19,6 +20,9 @@ on:
       - 'app/assets/js/profile/mgw-profile-domino-parity.js'
       - 'app/assets/css/games/domino/store-effects-preview-component-v44.css'
       - 'app/runtime/client/version-manifest.php'
+      - 'app/locales/ru.json'
+      - 'ops/checks/mvp27_1_domino_renderer_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs'
       - 'bot/tests/Mvp19_9DominoLiveStabilityV30ContractTest.mjs'
@@ -31,6 +35,7 @@ on:
     branches: [agent/mvp-13-2-staging]
     paths:
       - 'app/v110.php'
+      - 'app/assets/js/games/domino/renderer.js'
       - 'app/assets/js/games/domino/renderer-cosmetics-v1.js'
       - 'app/assets/js/games/domino/renderer-live-manual-v30.js'
       - 'app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js'
@@ -45,6 +50,9 @@ on:
       - 'app/assets/js/profile/mgw-profile-domino-parity.js'
       - 'app/assets/css/games/domino/store-effects-preview-component-v44.css'
       - 'app/runtime/client/version-manifest.php'
+      - 'app/locales/ru.json'
+      - 'ops/checks/mvp27_1_domino_renderer_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - 'bot/helpers/WebAppLaunchUrl.php'
       - 'bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs'
       - 'bot/tests/Mvp19_9DominoLiveStabilityV30ContractTest.mjs'
@@ -81,7 +89,9 @@ jobs:
       - name: Syntax and LIVE-native contract
         run: |
           set -euo pipefail
+          node --check app/assets/js/games/domino/renderer.js
           node --check app/assets/js/games/domino/renderer-cosmetics-v1.js
+          node --check ops/checks/mvp27_1_domino_renderer_localization_contract.mjs
           node --check app/assets/js/games/domino/renderer-cosmetics-corrective-v25.js
           node --check app/assets/js/games/domino/renderer-live-manual-v30.js
           node --check bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs
@@ -94,6 +104,7 @@ jobs:
           php -l bot/helpers/WebAppLaunchUrl.php
           node bot/tests/Mvp19_9DominoLiveEffectsContractTest.mjs
           node bot/tests/Mvp19_9DominoLiveStabilityV30ContractTest.mjs
+          node ops/checks/mvp27_1_domino_renderer_localization_contract.mjs
 
       - name: Freeze Store previews and base Domino mechanics
         if: github.event_name == 'pull_request'
@@ -109,7 +120,6 @@ jobs:
             app/assets/css/games/domino/store-effects-timing-parity-v18.css \
             app/assets/css/games/domino/store-effects-precision-alignment-v19.css \
             app/assets/css/games/domino/store-effects-card-fullwidth-v20.css \
-            app/assets/js/games/domino/renderer.js \
             app/assets/css/games/domino/game.css
 
       - name: Guard native real-DOM ownership
@@ -182,12 +192,12 @@ jobs:
           grep -F "mgw-domino-native-precision-tile-v25" app/assets/css/games/domino/live-native-manual-v25.css
           grep -F "mgw-domino-native-stock-orb-v25" app/assets/css/games/domino/live-native-manual-v25.css
           grep -F "overflow-y:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
-          grep -F "renderer-live-manual-v30.js?v=1&mvp19_9=manual-stability-v30&parent=manual-corrective-v25&visual_portal=v38&precision_geometry=v41" app/runtime/client/version-manifest.php
-          grep -F "&gesture_owner=v27" app/v110.php
-          grep -F "&live_effects=v41" app/v110.php
+          grep -F "renderer-live-manual-v30.js?v=3&mvp19_9=accepted-live-stability-v30&parent=accepted-live-corrective-v25&visual_portal=v38&precision_geometry=v41&gesture_owner=v27&precision_static=2&live_effects=v41&mvp27_1=domino-renderer-localized-v1" app/runtime/client/version-manifest.php
+          grep -F "domino_renderer" app/v110.php
+          ! grep -Fq "dominoRendererImportKey] .=" app/v110.php
           grep -F "X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal" app/v110.php
           grep -F "/app/v110.php?v=1233&domino_stability=30&runtime_fix=1" bot/helpers/WebAppLaunchUrl.php
-          grep -F "bundles=bundle-selector-click-hint-v10" bot/helpers/WebAppLaunchUrl.php
+          grep -F "bundles=bundle-selector-click-hint-v11-performance" bot/helpers/WebAppLaunchUrl.php
 
       - name: Wait for exact Hostinger staging fingerprint
         id: readiness
