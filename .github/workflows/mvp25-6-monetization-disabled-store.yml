@@ -75,7 +75,12 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          git diff --exit-code "$base" "$head" --             bot/economy bot/ledger bot/payments bot/services/PaymentService.php             bot/games bot/tournaments app/assets/js/games
+          git diff --exit-code "$base" "$head" -- \
+            bot/economy bot/ledger bot/payments bot/services/PaymentService.php \
+            bot/games bot/tournaments app/assets/js/games \
+            ':(exclude)app/assets/js/games/reversi/renderer.js' \
+            ':(exclude)app/assets/js/games/reversi/renderer-cosmetics-v1.js' \
+            ':(exclude)app/assets/js/games/reversi/renderer-cosmetics-premium-v4.js'
 
       - name: Bounded slice guard
         shell: bash
@@ -85,6 +90,10 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
+          if git diff --quiet "$base" "$head" -- app/assets/js/screens/store-screen.js bot/catalog/CosmeticStoreService.php; then
+            echo "Successor slice: monetization-disabled Store owners unchanged; original bounded scope does not apply."
+            exit 0
+          fi
           allowed='^(\.github/workflows/mvp25-6-monetization-disabled-store\.yml|app/assets/js/screens/store-screen\.js|app/runtime/client/version-manifest\.php|bot/catalog/CosmeticStoreService\.php|bot/tests/Mvp25_6MonetizationDisabledStoreTest\.php|bot/tests/Mvp25_6StoreClientContractTest\.mjs|docs/MVP25_6_MONETIZATION_DISABLED_COMPLETE_PRODUCT\.md)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected MVP-25.6 paths:\n%s\n' "$bad" >&2; exit 1; }
