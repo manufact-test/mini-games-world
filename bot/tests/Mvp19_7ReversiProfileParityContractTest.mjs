@@ -24,6 +24,7 @@ const storeCss = fs.readFileSync(storeCssPath, 'utf8');
 const manifest = fs.readFileSync(manifestPath, 'utf8');
 const liveRenderer = fs.readFileSync(liveRendererPath, 'utf8');
 const launch = fs.readFileSync(launchPath, 'utf8');
+const locale = JSON.parse(fs.readFileSync(path.join(root, 'app/locales/ru.json'), 'utf8'));
 
 const itemIds = [
   'game-reversi-field-green',
@@ -40,7 +41,8 @@ const itemIds = [
 ];
 
 for (const id of itemIds) assert.ok(profile.includes(`'${id}'`), `Profile parity must know ${id}`);
-for (const group of ['Поля','Фишки','Эффекты']) assert.ok(profile.includes(group), `Profile must expose ${group}`);
+assert.deepEqual(locale.profile?.collection?.games?.reversi?.groups, { theme:'Поля', elements:'Фишки', effect:'Эффекты' });
+for (const layer of ['theme','elements','effect']) assert.ok(profile.includes(`profile.collection.games.reversi.groups.${layer}`), `Profile must expose localized Reversi ${layer}`);
 for (const layer of ['theme','elements','effect']) assert.ok(profile.includes(layer), `Profile must support ${layer}`);
 for (const variant of ['green','dark','marble','neon','classic','metal','placement','line','mass-flip']) {
   assert.ok(profile.includes(variant), `Profile preview must support ${variant}`);
@@ -55,7 +57,7 @@ assert.ok(profile.includes("api.profileV2"), 'Profile parity must converge after
 assert.ok(profile.includes("data-game-type=\"reversi\""), 'Profile previews must identify themselves as Reversi previews');
 assert.ok(profile.includes("store-cosmetics-v1.css"), 'Profile must reuse accepted Reversi Store cosmetic artwork CSS');
 
-assert.ok(layout.includes("mgw-profile-reversi-parity.js?v=2&mvp19_7=reversi-profile-parity-v1&card_geometry=full-square-v2"), 'Accepted Profile wrapper must cache-bust the Reversi parity child module');
+assert.ok(layout.includes("mgw-profile-reversi-parity.js?v=3&mvp19_7=reversi-profile-parity-v1&card_geometry=full-square-v2&mvp27_1=localized-v1"), 'Accepted Profile wrapper must cache-bust the Reversi parity child module');
 assert.ok(layout.includes("mgw-profile-reversi-hard-square-v1.js?v=1&mvp19_7=profile-hard-square-v1"), 'Accepted Profile wrapper must import the Reversi hard-square runtime');
 assert.ok(layout.includes('initProfileReversiParity();'), 'Accepted Profile wrapper must initialize Reversi parity');
 assert.ok(layout.includes('initProfileReversiHardSquare();'), 'Accepted Profile wrapper must initialize the Reversi hard-square runtime');
