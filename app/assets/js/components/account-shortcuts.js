@@ -53,7 +53,7 @@ export async function primeAccountDataShortcut(){
 
 function loadAccountDataModule(){
   if (!accountDataModulePromise) {
-    accountDataModulePromise = import('../screens/account-data-sheet-v1.js?v=8&mvp22_8=account-data-v1&mvp23=mobile-cold-first-open-v1&mvp25_2=human-copy-v1&mvp26_4=android-reauth-v1&mvp26_4_2=android-download-pending-v1')
+    accountDataModulePromise = import('../screens/account-data-sheet-v1.js?v=8&mvp22_8=account-data-v1&mvp23=mobile-cold-first-open-v1&mvp25_2=human-copy-v1&mvp26_4=android-reauth-v1&mvp26_4_2=android-download-pending-v1&mvp27_1=localized-v1')
       .catch(error => {
         accountDataModulePromise = null;
         throw error;
@@ -108,7 +108,7 @@ async function enhanceCurrentMenu(allowSocialNavigation = false){
         decoding="async"
         data-sk-asset="ui/navigation/profile.webp"
       >
-      <span class="account-menu-copy"><strong>Данные и аккаунт</strong></span>
+      <span class="account-menu-copy"><strong>${t('account_data.menu.title')}</strong></span>
     `;
     accountData.addEventListener('click', () => {
       void openAccountDataShortcut();

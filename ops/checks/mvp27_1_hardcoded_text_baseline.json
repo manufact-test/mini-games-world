@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-02",
-  "staging_base": "d631bc79cb59180fce567b762908f5d4bb8b5660",
+  "staging_base": "06fca2363b5179ea384e53c08b8dbfea5402407d",
   "scanned_files": 776,
-  "cyrillic_lines_total": 3736,
+  "cyrillic_lines_total": 3673,
   "by_scope": {
-    "client": 2055,
+    "client": 1992,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 active Friends surface localization; factual lazy-loaded Friends owner reduced by 65 hardcoded Cyrillic source lines, More-menu Friends entry by 1, with zero direct ru-RU remaining in the active Friends screen. Account Data copy remains a separate later slice."
+  "note": "MVP-27.1 active Account Data surface localization; factual lazy-loaded Account Data owner reduced by 62 hardcoded Cyrillic source lines and the remaining More-menu Account Data entry by 1, with zero direct ru-RU remaining in the active Account Data client surface. Sensitive reauth/download/deletion semantics remain unchanged."
 }
