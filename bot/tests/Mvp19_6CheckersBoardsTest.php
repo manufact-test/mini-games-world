@@ -186,7 +186,8 @@ $storeWrapper = (string)file_get_contents($root . '/app/assets/js/screens/store-
 $manifest = require $root . '/app/runtime/client/version-manifest.php';
 
 $gitBlobSha = static fn(string $content): string => sha1('blob ' . strlen($content) . "\0" . $content);
-$assertSame('e362239b1388a1f752d2d0e67ae69a7cc9207926', $gitBlobSha($baseRenderer), 'Accepted Checkers renderer must remain byte-identical');
+$assertTrue(str_contains($baseRenderer, "from '@mgw/i18n'") && preg_match('/[\x{0400}-\x{04FF}]/u', $baseRenderer) !== 1, 'Accepted Checkers renderer presentation copy must be localization-owned');
+$assertTrue(str_contains($baseRenderer, "onAction?.({ type:'move', from, to });") && str_contains($baseRenderer, 'Array.from({ length:64 }'), 'Localized Checkers renderer must preserve move ownership and 8x8 board mechanics');
 $assertSame('12d2f211c48c1f49793744315c004fd33afc5bcf', $gitBlobSha($baseCss), 'Accepted Checkers layout CSS must remain byte-identical');
 $assertTrue(str_contains($liveWrapper, 'game_checkers_theme') && !str_contains($liveWrapper, 'game_checkers_elements'), 'Live Checkers board wrapper must remain bounded to board projection plus presentation-only paid-effect geometry state');
 $assertTrue(!str_contains($liveWrapper, 'gameAction(') && !str_contains($liveWrapper, 'time_left') && !str_contains($liveWrapper, 'turn_started_at'), 'Checkers cosmetics wrapper must never own mechanics or timers');
@@ -221,9 +222,10 @@ $checkersTarget = (string)($manifest['imports']['./assets/js/games/checkers/rend
 $assertTrue(str_contains($storeTarget, 'store-screen-checkers-board-source-wrapper.js?v=37') && str_contains($storeTarget, 'store-screen-checkers-wrapper.js?v=6') && str_contains($storeTarget, 'bundle_selector=preserve-v1') && str_contains($storeTarget, 'mvp19_6=visual-corrective-v3'), 'Active Store graph must select the accepted Checkers corrective with bundle-selector preservation');
 $assertTrue(str_contains($storeBaseTarget, 'mvp19_6=full-checkers-store'), 'Active import graph must preserve the native Store owner under the corrective wrapper');
 $assertTrue(
-    str_contains($checkersTarget, 'renderer-real-flight-cascade-v1.js?v=2')
+    str_contains($checkersTarget, 'renderer-real-flight-cascade-v1.js?v=3')
     && str_contains($checkersTarget, 'mvp19_6=all-paid-real-flight-v1')
-    && str_contains($checkersTarget, 'parent=single-flight-dom-v2'),
+    && str_contains($checkersTarget, 'parent=single-flight-dom-v2')
+    && str_contains($checkersTarget, 'mvp27_1=checkers-renderer-localized-v1'),
     'Active live Checkers graph must preserve the accepted real-flight cascade wrapper'
 );
 
