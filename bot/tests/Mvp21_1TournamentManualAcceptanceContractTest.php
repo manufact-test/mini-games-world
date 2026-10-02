@@ -312,7 +312,7 @@ $assertTrue(
 );
 
 foreach ([
-    'MVP-21.3 · дата, отсчёт и уведомления',
+    'Дата начала',
     'data-tournament-start',
     'data-tournament-assign-date',
     'перенос и задержка не входят в MVP-21.3',
