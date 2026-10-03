@@ -441,7 +441,11 @@ try {
     }
     unset($result['signal_recipient_id']);
 
+    // A private link draft is not yet shared product state. Keep DB projection
+    // off the native prepared-share critical path; confirm_shared/open_link/discard
+    // will project the same token when it becomes externally relevant.
     if ($action !== 'sync'
+        && $action !== 'create_link_draft'
         && $runtimeInviteProjector instanceof RuntimeInviteDeltaProjector
         && $runtimeInviteProjector->enabled()
         && $bridgeInviteTokens !== []) {
