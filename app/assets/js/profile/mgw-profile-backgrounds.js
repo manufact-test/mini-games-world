@@ -3,6 +3,9 @@ import { state } from '../state.js?v=27';
 import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
+import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
+
+const backgroundText = (key, params = {}) => t(`profile.backgrounds.${key}`, params);
 
 const BACKGROUND_SLOT = 'profile_background';
 const BACKGROUND_PREVIEW_AVATAR = 'starter-default-01';
@@ -108,12 +111,13 @@ function currentBackgroundItemId(){
 }
 
 function backgroundMeta(item){ return item?.metadata && typeof item.metadata === 'object' ? item.metadata : {}; }
-function backgroundName(item){ return String(backgroundMeta(item).display_name || item?.item_id || 'Фон'); }
+function backgroundName(item){ return String(backgroundMeta(item).display_name || item?.item_id || backgroundText('fallback_name')); }
 function backgroundPrice(item){ return Math.max(0, Number(backgroundMeta(item).price_coins || 0)); }
 function backgroundOfferId(item){ return String(backgroundMeta(item).offer_id || String(item?.item_id || '').replace(/^profile-/, '')); }
 function backgroundTierLabel(item){
   const tier = String(backgroundMeta(item).tier || 'normal');
-  return ({ normal:'Обычный', rare:'Редкий', epic:'Эпический', legendary:'Легендарный' })[tier] || 'Фон';
+  const key = ({ normal:'tiers.normal', rare:'tiers.rare', epic:'tiers.epic', legendary:'tiers.legendary' })[tier] || 'tiers.fallback';
+  return backgroundText(key);
 }
 
 function decorateProfileSurface(){
@@ -135,9 +139,9 @@ function decorateProfileSurface(){
 }
 
 function backgroundPreviewMarkup(itemId, surfaceClass, selected = false){
-  return `<span class="${surfaceClass}" data-profile-background-item-id="${escapeAttr(itemId)}" role="img" aria-label="Пример фона профиля">
+  return `<span class="${surfaceClass}" data-profile-background-item-id="${escapeAttr(itemId)}" role="img" aria-label="${escapeAttr(backgroundText('preview.aria'))}">
     <span class="mgw-profile-background-mini-avatar" data-avatar-item-id="${BACKGROUND_PREVIEW_AVATAR}" aria-hidden="true">MG</span>
-    <span class="mgw-profile-background-mini-copy"><b>Mini Games</b><small>Профиль</small></span>
+    <span class="mgw-profile-background-mini-copy"><b>Mini Games</b><small>${escapeHtml(backgroundText('preview.label'))}</small></span>
     ${selected ? '<i class="store-v2-selected-check" aria-hidden="true">✓</i>' : ''}
   </span>`;
 }
@@ -158,7 +162,7 @@ function renderStoreBackgroundSection(catalog){
 
   const markup = `
     <section class="store-v2-profile-background-section" data-profile-background-store-section data-profile-background-signature="${escapeAttr(signature)}">
-      <div class="store-v2-title-row"><h2>Фоны профиля</h2></div>
+      <div class="store-v2-title-row"><h2>${escapeHtml(backgroundText('title'))}</h2></div>
       <div class="store-v2-profile-background-grid" data-profile-background-grid>
         ${catalog.map(item => storeBackgroundCard(item, active)).join('')}
       </div>
@@ -186,9 +190,9 @@ function storeBackgroundCard(item, activeItemId){
       <div class="store-v2-product-foot store-v2-profile-background-foot mgw-profile-cosmetic-foot">
         ${owned
           ? (active
-            ? `<b class="store-v2-profile-background-owned" data-mgw-profile-cosmetic-status>Выбрано</b><button class="store-v2-equip active mgw-profile-cosmetic-action" data-profile-background-unequip type="button">Снять</button>`
-            : `<b class="store-v2-profile-background-owned" data-mgw-profile-cosmetic-status>В коллекции</b><button class="store-v2-equip mgw-profile-cosmetic-action" data-profile-background-equip="${escapeAttr(itemId)}" type="button">Выбрать</button>`)
-          : `<b>${formatNumber(backgroundPrice(item))}</b><button class="store-v2-buy mgw-profile-cosmetic-action" data-profile-background-buy="${escapeAttr(itemId)}" type="button">Купить</button>`}
+            ? `<b class="store-v2-profile-background-owned" data-mgw-profile-cosmetic-status>${escapeHtml(backgroundText('status.selected'))}</b><button class="store-v2-equip active mgw-profile-cosmetic-action" data-profile-background-unequip type="button">${escapeHtml(backgroundText('actions.remove'))}</button>`
+            : `<b class="store-v2-profile-background-owned" data-mgw-profile-cosmetic-status>${escapeHtml(backgroundText('status.owned'))}</b><button class="store-v2-equip mgw-profile-cosmetic-action" data-profile-background-equip="${escapeAttr(itemId)}" type="button">${escapeHtml(backgroundText('actions.select'))}</button>`)
+          : `<b>${formatNumber(backgroundPrice(item))}</b><button class="store-v2-buy mgw-profile-cosmetic-action" data-profile-background-buy="${escapeAttr(itemId)}" type="button">${escapeHtml(backgroundText('actions.buy'))}</button>`}
       </div>
     </article>
   `;
@@ -227,8 +231,8 @@ function renderProfileBackgroundCollection(catalog){
   const signature = owned.map(item => item.item_id).join('|') + `|${active}`;
   if (section instanceof HTMLElement && section.dataset.profileBackgroundSignature === signature) return;
   const markup = `
-    <div class="profile-v2-background-collection" data-profile-background-collection data-profile-background-signature="${escapeAttr(signature)}" aria-label="Фоны профиля">
-      <div class="profile-v2-collection-title">Фоны профиля</div>
+    <div class="profile-v2-background-collection" data-profile-background-collection data-profile-background-signature="${escapeAttr(signature)}" aria-label="${escapeAttr(backgroundText('title'))}">
+      <div class="profile-v2-collection-title">${escapeHtml(backgroundText('title'))}</div>
       <div class="profile-v2-background-grid" data-profile-background-grid>
         ${owned.map(item => profileBackgroundCard(item, active)).join('')}
       </div>
@@ -253,7 +257,7 @@ function profileBackgroundCard(item, activeItemId){
   return `<button class="profile-v2-background-card${active ? ' active' : ''}" type="button" data-profile-background-preview="${escapeAttr(itemId)}" data-mgw-profile-cosmetic-state="${active ? 'selected' : 'owned'}" aria-label="${escapeAttr(backgroundName(item))}" aria-pressed="${active ? 'true' : 'false'}">
     ${backgroundPreviewMarkup(itemId, 'profile-v2-background-card-preview')}
     <span class="profile-v2-background-card-copy"><b>${escapeHtml(backgroundName(item))}</b><small>${escapeHtml(backgroundTierLabel(item))}</small></span>
-    <span class="profile-v2-background-card-status">${active ? 'Выбрано' : 'В коллекции'}</span>
+    <span class="profile-v2-background-card-status">${escapeHtml(backgroundText(active ? 'status.selected' : 'status.owned'))}</span>
     ${active ? '<i class="profile-v2-selected-check" aria-hidden="true">✓</i>' : ''}
   </button>`;
 }
@@ -265,14 +269,16 @@ function openBackgroundPurchase(itemId){
   const balance = Number(state.user?.balance || 0);
   const missing = Math.max(0, price - balance);
   const disabled = missing > 0 ? ' disabled' : '';
-  const label = missing > 0 ? 'Не хватает ' + formatNumber(missing) : 'Купить за ' + formatNumber(price);
+  const label = missing > 0
+    ? backgroundText('purchase.missing', { count:formatNumber(missing) })
+    : backgroundText('purchase.buy_for', { count:formatNumber(price) });
   openSheet(
-    '<div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>' +
+    '<div class="sheet-head"><div><h2>' + escapeHtml(backgroundText('purchase.title')) + '</h2></div><button class="close" data-close-sheet type="button">×</button></div>' +
     '<div class="store-v2-confirm">' +
       '<div class="profile-v2-background-preview-wrap">' + backgroundPreviewMarkup(itemId, 'profile-v2-background-preview') + '</div>' +
-      '<div class="store-v2-confirm-copy"><strong>' + escapeHtml(backgroundName(item)) + '</strong><small>Фон профиля · ' + escapeHtml(backgroundTierLabel(item)) + '</small></div>' +
-      '<div class="store-v2-confirm-price"><span>К оплате</span><strong>' + formatNumber(price) + ' коинов</strong></div>' +
-      '<div class="store-v2-confirm-balance"><span>Останется</span><b>' + formatNumber(Math.max(0, balance - price)) + '</b></div>' +
+      '<div class="store-v2-confirm-copy"><strong>' + escapeHtml(backgroundName(item)) + '</strong><small>' + escapeHtml(backgroundText('purchase.type_with_tier', { tier:backgroundTierLabel(item) })) + '</small></div>' +
+      '<div class="store-v2-confirm-price"><span>' + escapeHtml(backgroundText('purchase.to_pay')) + '</span><strong>' + escapeHtml(backgroundText('purchase.coins_value', { count:formatNumber(price) })) + '</strong></div>' +
+      '<div class="store-v2-confirm-balance"><span>' + escapeHtml(backgroundText('purchase.remaining')) + '</span><b>' + formatNumber(Math.max(0, balance - price)) + '</b></div>' +
       '<button class="btn primary full" id="mgwProfileBackgroundConfirmBuy" type="button"' + disabled + '>' + escapeHtml(label) + '</button>' +
     '</div>'
   );
@@ -297,11 +303,11 @@ async function purchaseBackground(item){
       renderBalances(state.user);
     }
     await refreshBackgroundSnapshot();
-    toast('Фон добавлен в коллекцию.');
+    toast(backgroundText('toast.purchased'));
   } catch (error) {
     state.profileInventory = previousInventory;
     scheduleDecorate();
-    toast(error?.message || 'Не удалось купить фон.');
+    toast(error?.message || backgroundText('errors.purchase'));
   } finally {
     purchasePending.delete(itemId);
   }
@@ -323,9 +329,9 @@ function openBackgroundPreview(itemId){
   openSheet(`
     <div class="sheet-head"><div><h2>${escapeHtml(backgroundName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="profile-v2-background-preview-wrap">${backgroundPreviewMarkup(itemId, 'profile-v2-background-preview')}</div>
-    <div class="profile-v2-background-preview-meta"><strong>Фон профиля</strong><small>${escapeHtml(backgroundTierLabel(item))}</small></div>
-    <div class="mgw-profile-cosmetic-sheet-status" data-mgw-profile-cosmetic-sheet-status>${active ? 'Выбрано' : 'В коллекции'}</div>
-    <button class="btn ${active ? 'ghost' : 'primary'} full mgw-profile-cosmetic-sheet-action" id="mgwProfileBackgroundEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>
+    <div class="profile-v2-background-preview-meta"><strong>${escapeHtml(backgroundText('type'))}</strong><small>${escapeHtml(backgroundTierLabel(item))}</small></div>
+    <div class="mgw-profile-cosmetic-sheet-status" data-mgw-profile-cosmetic-sheet-status>${escapeHtml(backgroundText(active ? 'status.selected' : 'status.owned'))}</div>
+    <button class="btn ${active ? 'ghost' : 'primary'} full mgw-profile-cosmetic-sheet-action" id="mgwProfileBackgroundEquip" type="button">${escapeHtml(backgroundText(active ? 'actions.remove' : 'actions.select'))}</button>
   `);
   document.getElementById('mgwProfileBackgroundEquip')?.addEventListener('click', () => void saveBackground(itemId, active));
 }
@@ -345,11 +351,11 @@ async function saveBackground(itemId, remove){
     if (remove) await api.cosmeticStoreUnequip(BACKGROUND_SLOT);
     else await api.cosmeticStoreEquip(itemId);
     await refreshBackgroundSnapshot();
-    toast(remove ? 'Фон снят.' : 'Фон выбран.');
+    toast(backgroundText(remove ? 'toast.removed' : 'toast.selected'));
   } catch (error) {
     state.profileInventory = previousInventory;
     scheduleDecorate();
-    toast(error?.message || (remove ? 'Не удалось снять фон.' : 'Не удалось выбрать фон.'));
+    toast(error?.message || backgroundText(remove ? 'errors.remove' : 'errors.select'));
   } finally {
     equipBusy = false;
   }
@@ -376,6 +382,6 @@ function purchaseToken(){
 }
 
 function cloneObject(value){ return value && typeof value === 'object' ? JSON.parse(JSON.stringify(value)) : value; }
-function formatNumber(value){ return Number(value || 0).toLocaleString('ru-RU'); }
+function formatNumber(value){ return formatLocalizedNumber(Number(value || 0)); }
 function escapeHtml(value){ return String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
 function escapeAttr(value){ return escapeHtml(value); }

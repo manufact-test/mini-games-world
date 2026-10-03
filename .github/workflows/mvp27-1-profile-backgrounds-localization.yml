@@ -1,0 +1,75 @@
+name: MVP-27.1 Profile Backgrounds Localization
+
+on:
+  pull_request:
+    branches: [agent/mvp-13-2-staging]
+    paths:
+      - 'app/assets/js/profile/mgw-profile-backgrounds.js'
+      - 'app/locales/ru.json'
+      - 'app/runtime/client/version-manifest.php'
+      - 'ops/checks/mvp27_1_profile_backgrounds_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - 'ops/checks/mvp27_1_reversi_renderer_localization_contract.mjs'
+      - 'bot/tests/Mvp19_3ProfileBackgroundsTest.php'
+      - '.github/workflows/mvp19-3-profile-backgrounds.yml'
+      - '.github/workflows/mvp27-1-profile-backgrounds-localization.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  profile-backgrounds-localization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Syntax and localization contract
+        run: |
+          set -euo pipefail
+          node --check app/assets/js/profile/mgw-profile-backgrounds.js
+          node --check ops/checks/mvp27_1_profile_backgrounds_localization_contract.mjs
+          php -l bot/tests/Mvp19_3ProfileBackgroundsTest.php
+          php -l app/runtime/client/version-manifest.php
+          node ops/checks/mvp27_1_profile_backgrounds_localization_contract.mjs
+          node ops/checks/mvp16_2_localization_contract.mjs
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+
+      - name: Preserve accepted Profile backgrounds semantics
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp19_3ProfileBackgroundsTest.php
+
+      - name: Localization debt ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded migration scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          if git diff --quiet "$base" "$head" -- app/assets/js/profile/mgw-profile-backgrounds.js; then
+            echo "Successor localization slice: Profile backgrounds owner unchanged; original bounded migration scope does not apply."
+            exit 0
+          fi
+          allowed='^(app/assets/js/profile/mgw-profile-backgrounds\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_profile_backgrounds_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|ops/checks/mvp27_1_reversi_renderer_localization_contract\.mjs|bot/tests/Mvp19_3ProfileBackgroundsTest\.php|\.github/workflows/mvp19-3-profile-backgrounds\.yml|\.github/workflows/mvp27-1-profile-backgrounds-localization\.yml)$'
+          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected Profile backgrounds localization paths:\n%s\n' "$bad" >&2; exit 1; }
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
