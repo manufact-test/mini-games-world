@@ -15,7 +15,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 
 $entry = $read('app/assets/js/production-clean-entry-v110.js');
 $invites = $read('app/assets/js/games/game-invites-v110.js');
-$notifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
+$notifications = $read('app/assets/js/screens/notifications-screen-v110r13.js');
 $storage = $read('bot/services/invites/GameInviteStorageTrait.php');
 $php = $read('app/v110.php');
 $main = $read('app/assets/js/main-v110.js');
@@ -44,22 +44,22 @@ $assert($expireBody !== ''
     && str_contains($expireBody, "'timed_out'"),
     'Passive expiry must change only invitation state.');
 
-$build = 'v110-mvp14r12-terminal-dedup-v1133';
-$assert(str_contains($entry, $build)
-    && str_contains($main, $build)
-    && str_contains($shell, $build)
-    && str_contains($php, $build),
-    'The integrated task must publish one outer production build identity.');
-$assert(str_contains($shell, 'notifications-screen-v110r12.js?v=1133')
+$assert(str_contains($entry, 'window.__MGW_REGRESSION_BUILD__')
+    && str_contains($main, 'window.__MGW_BUILD__')
+    && str_contains($shell, 'window.__MGW_BUILD__')
+    && str_contains($php, 'runtime/client/version-manifest.php')
+    && str_contains($php, "'@mgw/clean-entry'")
+    && str_contains($php, "'@mgw/main'"),
+    'The integrated task must stay on the manifest-driven v110 production graph without pinning a historical build number.');
+$assert(str_contains($shell, 'notifications-screen-v110r13.js?v=1162&mvp18=friend-request-lifecycle')
     && !str_contains($shell, 'notifications-screen-v110r5.js')
     && substr_count($shell, 'initNotificationsScreen();') === 1
-    && str_contains($notifications, 'data-notifications-owner="r12"'),
+    && str_contains($notifications, 'export function initNotificationsScreen()'),
     'Exactly one current notification owner must be active beside the invitation owner.');
-$assert(str_contains($php, 'production-clean-entry-v110.js?v=1121')
-    && str_contains($php, 'main-v110.js?v=1133')
-    && str_contains($main, 'main-v110-handoff-shell.js?v=1133')
-    && str_contains($shell, 'game-invites-v110.js?v=1133')
-    && str_contains($launch, '/app/v110.php?v=1123'),
-    'Telegram keeps the canonical v1123 URL while browser entrypoints publish the final v1130 shell and canonical picker owner.');
+$assert(str_contains($main, 'main-v110-handoff-shell.js?v=1137&ux=1')
+    && str_contains($shell, 'game-invites-v110.js?v=1137&ux=1')
+    && str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?")
+    && str_contains($php, "($versionManifest['version'] ?? null) !== 'v2-route-scoped-polling'"),
+    'Telegram and browser entrypoints must converge through the canonical manifest-driven v110 shell and invitation owner.');
 
 fwrite(STDOUT, 'ProductionV110InviteActionsRootContractTest: ' . $assertions . " assertions passed\n");
