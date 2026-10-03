@@ -59,7 +59,13 @@ function syncResultActions(){
   const playAgain = document.getElementById('newOpponent');
   if (playAgain && tournamentMatch) playAgain.remove();
   if (playAgain && !tournamentMatch) {
-    const playAgainText = t('game_invites.rematch.play_again');
+    // When a true direct rematch exists, that inserted primary action owns
+    // "Сыграть ещё"; the ordinary search action must keep its distinct
+    // "Найти нового соперника" meaning. Without direct rematch, preserve the
+    // long-accepted single "Сыграть ещё" result action.
+    const playAgainText = directRematchAvailable
+      ? t('game_screen.result.new_opponent')
+      : t('game_invites.rematch.play_again');
     if (playAgain.textContent !== playAgainText) playAgain.textContent = playAgainText;
 
     // The legacy result enhancer inserts direct rematch 40 ms later and changes
