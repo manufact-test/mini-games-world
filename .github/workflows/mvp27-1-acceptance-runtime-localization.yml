@@ -1,0 +1,85 @@
+name: MVP-27.1 Acceptance Runtime Localization
+
+on:
+  pull_request:
+    branches: [agent/mvp-13-2-staging]
+    paths:
+      - 'app/assets/js/production-v110-acceptance-runtime.js'
+      - 'app/locales/ru.json'
+      - 'app/runtime/client/version-manifest.php'
+      - 'ops/checks/mvp27_1_acceptance_runtime_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - 'bot/tests/PhaseBClientLaunchUxContractTest.php'
+      - 'bot/tests/Mvp21_5TournamentReadyUxContractTest.php'
+      - 'bot/tests/Mvp17_5TicTacToeFirstTapSingleOwnerContractTest.php'
+      - 'bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php'
+      - '.github/workflows/mvp27-1-acceptance-runtime-localization.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance-runtime-localization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: \${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Syntax and localization contract
+        run: |
+          set -euo pipefail
+          node --check app/assets/js/production-v110-acceptance-runtime.js
+          node --check ops/checks/mvp27_1_acceptance_runtime_localization_contract.mjs
+          php -l app/runtime/client/version-manifest.php
+          php -l bot/tests/PhaseBClientLaunchUxContractTest.php
+          php -l bot/tests/Mvp21_5TournamentReadyUxContractTest.php
+          php -l bot/tests/Mvp17_5TicTacToeFirstTapSingleOwnerContractTest.php
+          php -l bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php
+          python3 -m json.tool app/locales/ru.json >/dev/null
+          node ops/checks/mvp27_1_acceptance_runtime_localization_contract.mjs
+          node ops/checks/mvp16_2_localization_contract.mjs
+          php bot/tests/Mvp162LocalizationInfrastructureTest.php
+
+      - name: Preserve Phase-B, first-tap and game lifecycle semantics
+        run: |
+          set -euo pipefail
+          php bot/tests/PhaseBClientLaunchUxContractTest.php
+          php bot/tests/Mvp21_5TournamentReadyUxContractTest.php
+          php bot/tests/Mvp17_5TicTacToeFirstTapSingleOwnerContractTest.php
+          php bot/tests/Mvp21_5_6CorrectiveV4ContractTest.php
+          php bot/tests/PhaseBMatchPreparationClockServiceTest.php
+          php bot/tests/PhaseBMatchPreparationRuntimeServiceTest.php
+          php bot/tests/GameLaunchFinalizationOwnerContractTest.php
+          php bot/tests/Mvp14r2GamesContractTest.php
+          php bot/tests/Mvp14r2GamesBaselineTest.php
+
+      - name: Localization debt ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded migration scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='\${{ github.event.pull_request.base.sha }}'
+          head='\${{ github.event.pull_request.head.sha }}'
+          allowed='^(app/assets/js/production-v110-acceptance-runtime\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_acceptance_runtime_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|bot/tests/PhaseBClientLaunchUxContractTest\.php|bot/tests/Mvp21_5TournamentReadyUxContractTest\.php|bot/tests/Mvp17_5TicTacToeFirstTapSingleOwnerContractTest\.php|bot/tests/Mvp21_5_6CorrectiveV4ContractTest\.php|\.github/workflows/mvp27-1-acceptance-runtime-localization\.yml)$'
+          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected Acceptance Runtime localization paths:\n%s\n' "$bad" >&2; exit 1; }
+          git diff --check
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
