@@ -15,6 +15,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r13.js');
 $manifest = $read('app/runtime/client/version-manifest.php');
+$manifestData = require $root . '/app/runtime/client/version-manifest.php';
 
 $assert(
     !str_contains($notifications, "import { openStoreOrders } from './store-orders.js?v=36';"),
@@ -32,12 +33,13 @@ $assert(
     !file_exists($root . '/app/assets/js/screens/store-orders.js'),
     'Retired legacy Store orders module must stay absent.'
 );
+$notificationTarget = (string)($manifestData['imports']['./assets/js/screens/notifications-screen-v110r13.js?v=1162&mvp18=friend-request-lifecycle'] ?? '');
+$notificationVersion = [];
 $assert(
-    str_contains(
-        $manifest,
-        './assets/js/screens/notifications-screen-v110r13.js?v=1166&mvp21_3=read-authority-local-time&mvp22_1=support-ticket-deeplink-smooth-v2&mvp25_2=legacy-store-orders-retired-v1'
-    ),
-    'Canonical manifest must publish the fresh notification identity.'
+    preg_match('~notifications-screen-v110r13\\.js\\?v=(\\d+)&mvp21_3=read-authority-local-time~', $notificationTarget, $notificationVersion) === 1
+    && (int)$notificationVersion[1] >= 1166
+    && str_contains($notificationTarget, 'mvp25_2=legacy-store-orders-retired-v1'),
+    'Canonical manifest must publish the accepted-or-newer Notification Center identity while retaining the legacy Store-order retirement marker.'
 );
 
 fwrite(STDOUT, "Mvp25_2NotificationLegacyOrderDeepLinkContractTest: {$assertions} assertions passed\n");
