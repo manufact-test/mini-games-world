@@ -1,0 +1,82 @@
+name: Invite Acceptance Regression Corrective
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/invite-opponents.php'
+      - 'bot/services/InviteOpponentService.php'
+      - 'bot/tests/InviteOpponentServiceTest.php'
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'app/assets/css/components/game-invites.css'
+      - 'app/assets/css/main.css'
+      - 'app/runtime/client/version-manifest.php'
+      - 'bot/tests/ProductionV110CanonicalShareNotificationRootContractTest.php'
+      - 'ops/checks/invite_acceptance_regression_corrective_contract.mjs'
+      - '.github/workflows/invite-acceptance-regression-corrective.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  corrective:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          php -l bot/invite-opponents.php
+          php -l bot/services/InviteOpponentService.php
+          php -l bot/tests/InviteOpponentServiceTest.php
+          php -l bot/tests/ProductionV110CanonicalShareNotificationRootContractTest.php
+          php -l app/runtime/client/version-manifest.php
+          node --check app/assets/js/games/game-invites-v110.js
+          node --check ops/checks/invite_acceptance_regression_corrective_contract.mjs
+
+      - name: Focused corrective proof
+        run: |
+          set -euo pipefail
+          php bot/tests/InviteOpponentServiceTest.php
+          node ops/checks/invite_acceptance_regression_corrective_contract.mjs
+          php bot/tests/ProductionV110InviteActionsRootContractTest.php
+          php bot/tests/ProductionV110InviteStartSyncOwnershipContractTest.php
+          php bot/tests/ProductionV110CanonicalShareNotificationRootContractTest.php
+          php bot/tests/Mvp18_3InviteV2ContractTest.php
+          php bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php
+          node bot/tests/Mvp18FriendsUiContractTest.mjs
+          node ops/checks/mvp27_1_telegram_share_failure_fallback_contract.mjs
+          node ops/checks/mvp27_1_game_invites_localization_contract.mjs
+
+      - name: Localization debt ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded product scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          allowed='^(bot/invite-opponents\.php|bot/services/InviteOpponentService\.php|bot/tests/InviteOpponentServiceTest\.php|app/assets/js/games/game-invites-v110\.js|app/assets/css/components/game-invites\.css|app/assets/css/main\.css|app/runtime/client/version-manifest\.php|bot/tests/ProductionV110CanonicalShareNotificationRootContractTest\.php|ops/checks/invite_acceptance_regression_corrective_contract\.mjs|\.github/workflows/invite-acceptance-regression-corrective\.yml)$'
+          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected corrective paths:\n%s\n' "$bad" >&2; exit 1; }
+          git diff --exit-code "$base" "$head" -- bot/games bot/services/invites/GameInviteActionTrait.php bot/services/invites/GameInviteCreationTrait.php
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
