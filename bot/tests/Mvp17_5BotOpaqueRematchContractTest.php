@@ -96,9 +96,12 @@ $assert(
 $assert(
     is_string($clientPolicy)
         && str_contains($clientPolicy, "const playAgainText = t('game_invites.rematch.play_again');")
-        && str_contains($clientPolicy, 'playAgain.textContent = playAgainText')
-        && (($locale['game_invites']['rematch']['play_again'] ?? null) === 'Сыграть ещё'),
-    'The ordinary replay path must use canonical localized neutral Play again copy.'
+        && str_contains($clientPolicy, "const nextOpponentText = t('game_screen.result.new_opponent');")
+        && str_contains($clientPolicy, 'const visibleActionText = directRematchAvailable ? nextOpponentText : playAgainText;')
+        && str_contains($clientPolicy, 'playAgain.textContent = visibleActionText')
+        && (($locale['game_invites']['rematch']['play_again'] ?? null) === 'Сыграть ещё')
+        && (($locale['game_screen']['result']['new_opponent'] ?? null) === 'Найти нового соперника'),
+    'Direct rematch and ordinary new-opponent actions must keep distinct canonical localized copy.'
 );
 $assert(
     is_string($clientPolicy)
