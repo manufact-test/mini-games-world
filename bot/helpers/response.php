@@ -8,7 +8,7 @@ if (PHP_SAPI !== 'cli') {
     ini_set('html_errors', '0');
 }
 
-function json_response(array $data, int $status = 200): void {
+function json_response(array $data, int $status = 200, bool $runAfterResponseHooks = false): void {
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
 
@@ -26,7 +26,55 @@ function json_response(array $data, int $status = 200): void {
     }
 
     echo $json;
+
+    if ($runAfterResponseHooks) {
+        mgw_finish_response_and_run_after_response_hooks();
+    } else {
+        unset($GLOBALS['mgw_api_after_response_hooks']);
+    }
     exit;
+}
+
+function mgw_register_api_after_response_hook(callable $hook): void {
+    $hooks = $GLOBALS['mgw_api_after_response_hooks'] ?? [];
+    if (!is_array($hooks)) $hooks = [];
+    $hooks[] = $hook;
+    $GLOBALS['mgw_api_after_response_hooks'] = $hooks;
+}
+
+function mgw_finish_response_and_run_after_response_hooks(): void {
+    $configured = $GLOBALS['mgw_api_after_response_hooks'] ?? [];
+    unset($GLOBALS['mgw_api_after_response_hooks']);
+    if (!is_array($configured)) return;
+
+    $hooks = [];
+    foreach ($configured as $hook) {
+        if (is_callable($hook)) $hooks[] = $hook;
+    }
+    if ($hooks === []) return;
+
+    // Deferred hooks exist specifically to keep already-committed product state
+    // off the user's HTTP critical path. Never fall back to running them before
+    // the response if the active SAPI cannot finish the request first.
+    $finished = false;
+    if (function_exists('fastcgi_finish_request')) {
+        $finished = (bool)fastcgi_finish_request();
+    } elseif (function_exists('litespeed_finish_request')) {
+        $finished = (bool)litespeed_finish_request();
+    }
+    if (!$finished) {
+        error_log('[MiniGamesWorld deferred response] finish-request API unavailable; background hook skipped');
+        return;
+    }
+
+    ignore_user_abort(true);
+    foreach ($hooks as $hook) {
+        try {
+            $hook();
+        } catch (Throwable $error) {
+            error_log('[MiniGamesWorld deferred response] hook failed: ' . get_class($error));
+        }
+    }
 }
 
 function mgw_payment_activity_at(array $payment): int {
@@ -486,7 +534,7 @@ function mgw_public_api_error(string $message): string {
 
 function api_ok(array $data = []): void {
     mgw_run_api_success_hooks();
-    json_response(['ok' => true] + mgw_normalize_api_data($data));
+    json_response(['ok' => true] + mgw_normalize_api_data($data), 200, true);
 }
 
 function api_error(string $message, int $status = 400): void {
