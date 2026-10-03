@@ -60,7 +60,9 @@ function syncResultActions(){
   if (playAgain && tournamentMatch) playAgain.remove();
   if (playAgain && !tournamentMatch) {
     const playAgainText = t('game_invites.rematch.play_again');
-    if (playAgain.textContent !== playAgainText) playAgain.textContent = playAgainText;
+    const nextOpponentText = t('game_screen.result.new_opponent');
+    const visibleActionText = directRematchAvailable ? nextOpponentText : playAgainText;
+    if (playAgain.textContent !== visibleActionText) playAgain.textContent = visibleActionText;
 
     // The legacy result enhancer inserts direct rematch 40 ms later and changes
     // this button's hierarchy in the same task. Its child insertion is already
