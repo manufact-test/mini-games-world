@@ -20,7 +20,7 @@ $assert(
     'Response helper must expose one explicit post-response hook owner.'
 );
 $assert(
-    str_contains($response, "function json_response(array $data, int $status = 200, bool $runAfterResponseHooks = false): void")
+    str_contains($response, 'function json_response(array $data, int $status = 200, bool $runAfterResponseHooks = false): void')
         && str_contains($response, 'if ($runAfterResponseHooks) {')
         && str_contains($response, 'mgw_finish_response_and_run_after_response_hooks();'),
     'JSON response must opt into post-response work explicitly.'
@@ -54,8 +54,8 @@ $assert(
     'Committed peer signal must publish before projection is deferred and before the success response exits.'
 );
 $assert(
-    str_contains($invites, "$action !== 'sync'")
-        && str_contains($invites, "$action !== 'create_link_draft'")
+    str_contains($invites, "\$action !== 'sync'")
+        && str_contains($invites, "\$action !== 'create_link_draft'")
         && str_contains($invites, '$projectionTokens = $bridgeInviteTokens;')
         && str_contains($invites, 'static function () use ($db, $runtimeInviteProjector, $projectionTokens): void'),
     'Invite mutations must defer only exact changed-token projection while keeping sync/share-draft exclusions.'
