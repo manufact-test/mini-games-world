@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-03",
-  "staging_base": "4c55dccda26d48e058911402a67246b1d8a0dfd7",
+  "staging_base": "0957ff6e95a3c6505b153b3aa18a0e9333a130ce",
   "scanned_files": 776,
-  "cyrillic_lines_total": 3408,
+  "cyrillic_lines_total": 3384,
   "by_scope": {
-    "client": 1727,
+    "client": 1703,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 active Profile backgrounds localization; factual Store/Profile background owner reduced by 23 hardcoded Cyrillic source lines to zero while preserving catalog, pricing, purchase/equip/unequip transports, route gating and accepted background visuals."
+  "note": "MVP-27.1 active Profile reactions localization; factual Store/Profile/LIVE reaction owner reduced by 24 hardcoded Cyrillic source lines to zero while preserving cumulative ownership, purchase transport, game reaction delivery, cooldown/TTL and stable live-bubble presentation."
 }

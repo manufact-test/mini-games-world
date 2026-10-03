@@ -4,18 +4,22 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
 import { haptic } from '../telegram/telegram-app.js?v=27';
+import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
+
+const reactionText = (key, params = {}) => t(`profile.reactions.${key}`, params);
 
 const REACTION_SLOT = 'profile_reaction_set';
 const REACTION_CODES = Object.freeze({
-  wave:{ glyph:'👋', label:'Привет' },
-  clap:{ glyph:'👏', label:'Браво' },
-  heart:{ glyph:'💜', label:'Сердце' },
-  fire:{ glyph:'🔥', label:'Огонь' },
-  target:{ glyph:'🎯', label:'Точно' },
-  spark:{ glyph:'✨', label:'Вау' },
-  crown:{ glyph:'👑', label:'Корона' },
-  handshake:{ glyph:'🤝', label:'Хорошая игра' },
+  wave:{ glyph:'👋' },
+  clap:{ glyph:'👏' },
+  heart:{ glyph:'💜' },
+  fire:{ glyph:'🔥' },
+  target:{ glyph:'🎯' },
+  spark:{ glyph:'✨' },
+  crown:{ glyph:'👑' },
+  handshake:{ glyph:'🤝' },
 });
+const reactionLabel = code => reactionText(`codes.${code}`);
 
 let initialized = false;
 let observer = null;
@@ -117,8 +121,8 @@ function reactionSort(item){
 }
 
 function meta(item){ return item?.metadata && typeof item.metadata === 'object' ? item.metadata : {}; }
-function itemName(item){ return String(meta(item).display_name || 'Реакции'); }
-function itemSubtitle(item){ return String(meta(item).subtitle || 'Набор реакций'); }
+function itemName(item){ return String(meta(item).display_name || reactionText('fallback_name')); }
+function itemSubtitle(item){ return String(meta(item).subtitle || reactionText('fallback_subtitle')); }
 function itemPrice(item){ return Math.max(0, Number(meta(item).price_coins || 0)); }
 function itemOfferId(item){ return String(meta(item).offer_id || String(item?.item_id || '').replace(/^profile-/, '')); }
 function itemCodes(item){
@@ -142,7 +146,7 @@ function ownedReactionCodes(){
 
 function previewMarkup(item, compact = false){
   const codes = itemCodes(item);
-  return `<span class="mgw-reaction-preview${compact ? ' compact' : ''}" data-reaction-count="${codes.length}">${codes.map(code => `<i title="${escapeAttr(REACTION_CODES[code].label)}">${REACTION_CODES[code].glyph}</i>`).join('')}</span>`;
+  return `<span class="mgw-reaction-preview${compact ? ' compact' : ''}" data-reaction-count="${codes.length}">${codes.map(code => `<i title="${escapeAttr(reactionLabel(code))}">${REACTION_CODES[code].glyph}</i>`).join('')}</span>`;
 }
 
 function renderStoreSection(catalog){
@@ -154,7 +158,7 @@ function renderStoreSection(catalog){
 
   const markup = `
     <section class="store-v2-reaction-section" data-profile-reaction-store-section data-profile-reaction-signature="${escapeAttr(signature)}">
-      <div class="store-v2-title-row"><h2>Реакции</h2></div>
+      <div class="store-v2-title-row"><h2>${escapeHtml(reactionText('title'))}</h2></div>
       <div class="store-v2-reaction-grid">
         ${catalog.map(storeCard).join('')}
       </div>
@@ -176,8 +180,8 @@ function storeCard(item){
       <div class="store-v2-reaction-copy"><strong>${escapeHtml(itemName(item))}</strong>${count > 1 ? `<small>${escapeHtml(itemSubtitle(item))}</small>` : ''}</div>
       <div class="store-v2-reaction-foot mgw-profile-cosmetic-foot">
         ${owned
-          ? '<span class="store-v2-reaction-owned" aria-label="В коллекции">В коллекции</span>'
-          : `<b>${formatNumber(itemPrice(item))}</b><button class="store-v2-buy mgw-profile-cosmetic-action" data-reaction-buy="${escapeAttr(itemId)}" type="button">Купить</button>`}
+          ? `<span class="store-v2-reaction-owned" aria-label="${escapeAttr(reactionText('status.owned'))}">${escapeHtml(reactionText('status.owned'))}</span>`
+          : `<b>${formatNumber(itemPrice(item))}</b><button class="store-v2-buy mgw-profile-cosmetic-action" data-reaction-buy="${escapeAttr(itemId)}" type="button">${escapeHtml(reactionText('actions.buy'))}</button>`}
       </div>
     </article>`;
 }
@@ -197,8 +201,8 @@ function renderProfileCollection(catalog){
   const signature = owned.map(item => item.item_id).join('|');
   if (section instanceof HTMLElement && section.dataset.profileReactionSignature === signature) return;
   const markup = `
-    <div class="profile-v2-reaction-collection" data-profile-reaction-collection data-profile-reaction-signature="${escapeAttr(signature)}" aria-label="Реакции">
-      <div class="profile-v2-collection-title">Реакции</div>
+    <div class="profile-v2-reaction-collection" data-profile-reaction-collection data-profile-reaction-signature="${escapeAttr(signature)}" aria-label="${escapeAttr(reactionText('title'))}">
+      <div class="profile-v2-collection-title">${escapeHtml(reactionText('title'))}</div>
       <div class="profile-v2-reaction-grid">
         ${owned.map(profileCard).join('')}
       </div>
@@ -226,13 +230,13 @@ function openPurchase(itemId){
   const balance = Number(state.user?.balance || 0);
   const missing = Math.max(0, price - balance);
   openSheet(`
-    <div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>
+    <div class="sheet-head"><div><h2>${escapeHtml(reactionText('purchase.title'))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="store-v2-confirm">
       <div class="mgw-reaction-sheet-preview">${previewMarkup(item)}</div>
       <div class="store-v2-confirm-copy"><strong>${escapeHtml(itemName(item))}</strong>${itemCodes(item).length > 1 ? `<small>${escapeHtml(itemSubtitle(item))}</small>` : ''}</div>
-      <div class="store-v2-confirm-price"><span>К оплате</span><strong>${formatNumber(price)} коинов</strong></div>
-      <div class="store-v2-confirm-balance"><span>Останется</span><b>${formatNumber(Math.max(0, balance - price))}</b></div>
-      <button class="btn primary full" id="mgwReactionConfirmBuy" type="button"${missing > 0 ? ' disabled' : ''}>${missing > 0 ? `Не хватает ${formatNumber(missing)}` : `Купить за ${formatNumber(price)}`}</button>
+      <div class="store-v2-confirm-price"><span>${escapeHtml(reactionText('purchase.to_pay'))}</span><strong>${escapeHtml(reactionText('purchase.coins_value', { count:formatNumber(price) }))}</strong></div>
+      <div class="store-v2-confirm-balance"><span>${escapeHtml(reactionText('purchase.remaining'))}</span><b>${formatNumber(Math.max(0, balance - price))}</b></div>
+      <button class="btn primary full" id="mgwReactionConfirmBuy" type="button"${missing > 0 ? ' disabled' : ''}>${missing > 0 ? escapeHtml(reactionText('purchase.missing', { count:formatNumber(missing) })) : escapeHtml(reactionText('purchase.buy_for', { count:formatNumber(price) }))}</button>
     </div>`);
   document.getElementById('mgwReactionConfirmBuy')?.addEventListener('click', event => void purchase(item, event.currentTarget));
 }
@@ -251,9 +255,9 @@ async function purchase(item, button){
     closeSheet();
     await refreshSnapshot();
     document.dispatchEvent(new CustomEvent('mgw:cosmetic-inventory-changed', { detail:{ family:'reaction' } }));
-    toast('Реакции добавлены в коллекцию.');
+    toast(reactionText('toast.purchased'));
   } catch (error) {
-    toast(error?.message || 'Не удалось купить реакции.');
+    toast(error?.message || reactionText('errors.purchase'));
   } finally {
     busy = false;
   }
@@ -274,8 +278,8 @@ function renderGameComposer(){
   const signature = `${String(game.id || '')}|${codes.join(',')}|${paletteOpen ? 1 : 0}`;
   if (toolbar instanceof HTMLElement && toolbar.dataset.signature === signature) return;
   const markup = `<div class="mgw-reaction-toolbar" id="mgwReactionToolbar" data-signature="${escapeAttr(signature)}">
-    <button class="mgw-reaction-trigger" id="mgwReactionTrigger" type="button" aria-label="Реакции" title="Реакции" aria-expanded="${paletteOpen ? 'true' : 'false'}"><span aria-hidden="true">🙂</span></button>
-    ${paletteOpen ? `<div class="mgw-reaction-palette" role="menu" aria-label="Выбрать реакцию">${codes.map(code => `<button type="button" role="menuitem" data-send-reaction="${escapeAttr(code)}" title="${escapeAttr(REACTION_CODES[code].label)}" aria-label="${escapeAttr(REACTION_CODES[code].label)}"><span aria-hidden="true">${REACTION_CODES[code].glyph}</span></button>`).join('')}</div>` : ''}
+    <button class="mgw-reaction-trigger" id="mgwReactionTrigger" type="button" aria-label="${escapeAttr(reactionText('game.trigger'))}" title="${escapeAttr(reactionText('game.trigger'))}" aria-expanded="${paletteOpen ? 'true' : 'false'}"><span aria-hidden="true">🙂</span></button>
+    ${paletteOpen ? `<div class="mgw-reaction-palette" role="menu" aria-label="${escapeAttr(reactionText('game.palette_aria'))}">${codes.map(code => `<button type="button" role="menuitem" data-send-reaction="${escapeAttr(code)}" title="${escapeAttr(reactionLabel(code))}" aria-label="${escapeAttr(reactionLabel(code))}"><span aria-hidden="true">${REACTION_CODES[code].glyph}</span></button>`).join('')}</div>` : ''}
   </div>`;
   if (toolbar instanceof HTMLElement) toolbar.outerHTML = markup;
   else row.insertAdjacentHTML('afterend', markup);
@@ -302,7 +306,7 @@ async function sendReaction(code){
     const result = await api.gameReaction(gameId, code);
     showReaction(result?.reaction || null);
   } catch (error) {
-    toast(error?.message || 'Не удалось отправить реакцию.');
+    toast(error?.message || reactionText('errors.send'));
   } finally {
     window.setTimeout(() => { busy = false; }, 850);
   }
@@ -368,7 +372,7 @@ function handleOutsideClick(event){
 function purchaseToken(){
   return `reaction-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
-function formatNumber(value){ return Math.max(0, Number(value || 0)).toLocaleString('ru-RU'); }
+function formatNumber(value){ return formatLocalizedNumber(Math.max(0, Number(value || 0))); }
 function escapeHtml(value){
   return String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');
 }
