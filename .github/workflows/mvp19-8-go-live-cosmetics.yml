@@ -4,7 +4,11 @@ on:
   pull_request:
     branches: [agent/mvp-13-2-staging]
     paths:
+      - 'app/assets/js/games/go/renderer.js'
       - 'app/assets/js/games/go/renderer-cosmetics-v1.js'
+      - 'app/locales/ru.json'
+      - 'ops/checks/mvp27_1_go_renderer_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - 'app/assets/css/games/go/live-cosmetics-v1.css'
       - 'app/assets/css/games/go/live-effects-corrective-v2.css'
       - 'app/assets/css/games/go/live-effects-corrective-v3.css'
@@ -50,14 +54,18 @@ jobs:
 
       - name: Syntax checks
         run: |
+          node --check app/assets/js/games/go/renderer.js
           node --check app/assets/js/games/go/renderer-cosmetics-v1.js
+          node --check ops/checks/mvp27_1_go_renderer_localization_contract.mjs
           node --check bot/tests/Mvp19_8GoLiveCosmeticsContractTest.mjs
           php -l app/runtime/client/version-manifest.php
           php -l app/v110.php
           php -l bot/helpers/WebAppLaunchUrl.php
 
       - name: Run Go Live cosmetics contract
-        run: node bot/tests/Mvp19_8GoLiveCosmeticsContractTest.mjs
+        run: |
+          node bot/tests/Mvp19_8GoLiveCosmeticsContractTest.mjs
+          node ops/checks/mvp27_1_go_renderer_localization_contract.mjs
 
       - name: Re-run current Go Store and Profile contracts
         run: |
@@ -72,7 +80,6 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
           git diff --exit-code "$base" "$head" -- \
-            app/assets/js/games/go/renderer.js \
             app/assets/js/games/go/entry.js \
             app/assets/js/games/go/rules.js \
             bot/games/go \
