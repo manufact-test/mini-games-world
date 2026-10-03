@@ -42,7 +42,9 @@ $assert(str_contains($manual, 'Result: **PASS**'), 'MVP-25.2 manual acceptance r
 $assert(str_contains($manual, 'MVP-25.3 — Final UX consistency'), 'MVP-25.2 closure must point to MVP-25.3 as the next roadmap step.');
 
 $assert(str_contains($entry, 'function mgw_v110_public_failure'), 'v110 must own one public fatal boundary.');
-$assert(str_contains($entry, 'Не удалось открыть Mini Games World. Попробуйте ещё раз через минуту.'), 'v110 must present a human fatal message.');
+$assert(str_contains($entry, "mgw_v110_public_copy('entry.open_failed'"), 'v110 must present the human fatal boundary through canonical locale ownership.');
+$assert(($locale['entry']['open_failed'] ?? null) === 'Не удалось открыть Mini Games World. Попробуйте ещё раз через минуту.', 'v110 localized human fatal message missing.');
+$assert(!preg_match('/[\\x{0400}-\\x{04FF}]/u', $entry), 'v110 active entry must not keep direct Cyrillic player copy.');
 foreach (['client version manifest is unavailable', 'accepted game owner is unavailable', 'accepted stylesheet is unavailable', 'source anchor is unavailable', 'transformed target is unavailable', 'must expose exactly one top-level module bootstrap'] as $technical) {
     $assert(!preg_match('/echo[^;]*' . preg_quote($technical, '/') . '/i', $entry), 'v110 must not echo implementation detail: ' . $technical);
 }
