@@ -53,19 +53,24 @@ $assertContains(
     'MVP-18.7 must retain the accepted reconnect wrapper'
 );
 $assertContains(
-    "'./assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent' => './assets/js/games/game-invites-v110.js?v=1150&mvp25_2=network-human-error-v1&mvp24=room-copy-removed-v1&mvp26_3_12=invite-sync-wallet-nonowner-v1&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native&waiting=draft-safe&mvp21_6=tournament-rematch-exclusion-v1&mvp27_1=localized-v1'",
+    "'./assets/js/games/game-invites-v110.js?v=1142&zone=unified&rematch=optimistic&terminal=self-silent' => './assets/js/games/game-invites-v110.js?v=1150",
     $manifest,
-    'MVP-18.7 must route the frozen wrapper specifier to the draft-safe Telegram-native invite owner'
+    'MVP-18.7 must route the frozen wrapper specifier to the canonical invite owner'
 );
 $assertContains(
-    "'./assets/js/games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1' => './assets/js/games/game-invites-v110.js?v=1150&mvp25_2=network-human-error-v1&mvp24=room-copy-removed-v1&mvp26_3_12=invite-sync-wallet-nonowner-v1&mvp21_6=tournament-rematch-exclusion-v1&mvp27_1=localized-v1'",
+    "share=telegram-native&waiting=draft-safe&mvp21_6=tournament-rematch-exclusion-v1&mvp27_1=localized-v1",
     $manifest,
-    'Friends and the wrapper must converge on one draft-safe invite owner identity'
+    'The canonical invite owner must preserve Telegram-native and draft-safe semantics while allowing successor cache suffixes'
 );
 $assertContains(
-    "'./assets/js/games/game-invites-v110.js?v=1144&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native' => './assets/js/games/game-invites-v110.js?v=1150&mvp25_2=network-human-error-v1&mvp24=room-copy-removed-v1&mvp26_3_12=invite-sync-wallet-nonowner-v1&mvp21_6=tournament-rematch-exclusion-v1&mvp27_1=localized-v1'",
+    "'./assets/js/games/game-invites-v110.js?v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1' => './assets/js/games/game-invites-v110.js?v=1150",
     $manifest,
-    'Previously resolved Telegram-native invite owner must cache-bust to the waiting corrective'
+    'Friends and the wrapper must converge on the canonical invite owner while allowing successor cache suffixes'
+);
+$assertContains(
+    "'./assets/js/games/game-invites-v110.js?v=1144&zone=unified&rematch=optimistic&terminal=self-silent&social=1&share=telegram-native' => './assets/js/games/game-invites-v110.js?v=1150",
+    $manifest,
+    'Previously resolved Telegram-native invite owner must stay on the canonical owner while allowing successor cache suffixes'
 );
 $assertContains(
     "initV101InviteSyncDedupe();",
@@ -94,9 +99,14 @@ $assertContains(
     'Prepared Telegram share must retain callback-backed settlement'
 );
 $assertContains(
-    "settleNativeShare(Boolean(result), result === false ? 'USER_DECLINED' : '', attempt);",
+    "if (result === true) settleNativeShare(true, '', attempt);",
     $invites,
-    'Native callback result must be normalized by the canonical settlement owner'
+    'Native callback may settle successful Telegram Share only'
+);
+$assertNotContains(
+    "result === false ? 'USER_DECLINED'",
+    $invites,
+    'Boolean false must not invent USER_DECLINED because the detailed failure event owns the reason'
 );
 $assertContains(
     "if (sent === true) {\n    void confirmSharedInvite(attempt);",
@@ -114,9 +124,9 @@ $assertContains(
     'User-declined native share must remain recoverable without activating the draft'
 );
 $assertContains(
-    "void discardDraft(attempt.invite);",
+    "showPreparedLink(attempt.invite, attempt.context);",
     $invites,
-    'Terminal native share failure must retire the prepared draft through the existing owner'
+    'Technical native Share failure must preserve the usable draft and expose the canonical link fallback'
 );
 $assertContains(
     "const SHARE_CALLBACK_TIMEOUT_MS = 12000;",
@@ -129,9 +139,9 @@ $assertContains(
     'Owner waiting sheet must be painted before Telegram takes over with the native share dialog'
 );
 $assertContains(
-    "currentInvite = attempt.invite;\n    scheduleSync(0);",
+    "currentInvite = attempt.invite;\n    showPreparedLink(attempt.invite, attempt.context);",
     $invites,
-    'Missing Telegram callback must keep the exact draft tracked instead of returning to invite setup'
+    'Missing Telegram callback/event must expose the canonical link fallback instead of a false sent state'
 );
 $assertContains(
     "restoreWarmShareDraft(attempt);\n    currentInvite = null;\n    openInviteSetup(attempt.context.gameType, attempt.context);",
