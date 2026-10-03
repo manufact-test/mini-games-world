@@ -471,11 +471,17 @@ async function createLinkDraft(context, button){
       return;
     }
 
-    // The draft already owns a complete Telegram deep link. Open the ordinary
-    // Telegram share surface immediately instead of waiting for a prepared
-    // message round-trip or adding another in-app confirmation sheet.
-    currentInvite = null;
-    openFallbackShare(draftInvite);
+    // A real Telegram Mini App already has a complete bot deep link, so open
+    // the ordinary Telegram share surface immediately. Provider-neutral/browser
+    // shells keep the existing explicit link fallback instead of pretending to
+    // own Telegram navigation.
+    if (getInitData()) {
+      currentInvite = null;
+      openFallbackShare(draftInvite);
+      return;
+    }
+    currentInvite = draftInvite;
+    showPreparedLink(draftInvite, context);
   } catch (error) {
     if (String(error?.name || '') !== 'AbortError') {
       toast(error.message || inviteText('social.invite_prepare_failed'));
