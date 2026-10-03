@@ -631,12 +631,16 @@ function openNativeShare(tg, invite, context){
     attempt.nativePending = false;
     if (shareAttempt?.id === attempt.id) shareAttempt = null;
     currentInvite = attempt.invite;
-    scheduleSync(0);
+    showPreparedLink(attempt.invite, attempt.context);
   }, SHARE_CALLBACK_TIMEOUT_MS);
 
   try {
     tg.shareMessage(preparedId, result => {
-      settleNativeShare(Boolean(result), result === false ? 'USER_DECLINED' : '', attempt);
+      // The callback exposes success only as a boolean. A false value does not
+      // identify why sharing failed; Telegram reports the authoritative reason
+      // through shareMessageFailed. Do not silently reinterpret every failure
+      // as USER_DECLINED.
+      if (result === true) settleNativeShare(true, '', attempt);
     });
   } catch (error) {
     window.clearTimeout(attempt.timeout);
@@ -662,23 +666,21 @@ function settleNativeShare(sent, errorCode = '', targetAttempt = null){
     return;
   }
 
-  if (String(errorCode || '') === 'USER_DECLINED' || String(errorCode || '') === '') {
+  if (String(errorCode || '') === 'USER_DECLINED') {
     restoreWarmShareDraft(attempt);
     currentInvite = null;
     openInviteSetup(attempt.context.gameType, attempt.context);
     return;
   }
 
-  if (String(errorCode || '') === 'UNSUPPORTED' || String(errorCode || '') === 'MESSAGE_EXPIRED') {
-    currentInvite = attempt.invite;
-    showPreparedLink(attempt.invite, attempt.context);
-    return;
+  // Unsupported, expired or failed prepared-message delivery must still leave
+  // the user with the canonical link fallback. The draft token/share URL remain
+  // usable even when Telegram cannot complete the native prepared-message flow.
+  currentInvite = attempt.invite;
+  showPreparedLink(attempt.invite, attempt.context);
+  if (!['UNSUPPORTED','MESSAGE_EXPIRED'].includes(String(errorCode || ''))) {
+    toast(inviteText('social.send_failed_retry'));
   }
-
-  currentInvite = null;
-  void discardDraft(attempt.invite);
-  openInviteSetup(attempt.context.gameType, attempt.context);
-  toast(inviteText('social.send_failed_retry'));
 }
 
 async function confirmSharedInvite(attempt){
