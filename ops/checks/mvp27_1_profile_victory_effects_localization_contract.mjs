@@ -1,0 +1,31 @@
+import fs from 'node:fs';
+
+const read = path => fs.readFileSync(path, 'utf8');
+const assert = (condition, message) => { if (!condition) throw new Error(message); };
+const owner = read('app/assets/js/profile/mgw-profile-victory-effects-v4.js');
+const wrapper = read('app/assets/js/profile/mgw-profile-victory-effects-card-parity.js');
+const selector = read('app/assets/js/profile/mgw-victory-effect-selector.js');
+const manifest = read('app/runtime/client/version-manifest.php');
+const ru = JSON.parse(read('app/locales/ru.json'));
+const baseline = JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.json'));
+
+assert(!/[\u0400-\u04FF]/.test(owner), 'Active Profile Victory Effects owner must contain zero hardcoded Cyrillic.');
+assert(owner.includes("from '@mgw/i18n'") && owner.includes('const victoryText ='), 'Victory Effects owner must use canonical @mgw/i18n.');
+assert(wrapper.includes("mgw-profile-victory-effects-v4.js?v=3") && wrapper.includes('mvp27_1=localized-v1'), 'Active wrapper must cache-bust the localized v4 owner.');
+assert(manifest.includes("mgw-profile-victory-effects-card-parity.js?v=13") && manifest.includes('mvp27_1=localized-v1'), 'Manifest must publish the localized active Victory Effects chain.');
+assert(owner.includes('api.cosmeticStorePurchase') && owner.includes('api.cosmeticStoreEquip') && owner.includes('api.cosmeticStoreUnequip'), 'Canonical purchase/equip ownership must remain unchanged.');
+assert(owner.includes('selectWinnerVictoryEffect(game)') && owner.includes("#resultSummary[data-result-game-id]"), 'Winner selection and authoritative result trigger must remain unchanged.');
+assert(owner.includes('playedGames.add(gameId);') && owner.includes('Math.min(4000, Math.max(2000'), 'Victory Effects must remain once-per-game and bounded to 2-4 seconds.');
+assert(owner.includes("prefers-reduced-motion: reduce"), 'Reduced-motion gate must remain unchanged.');
+assert(owner.includes('playCatalogPreview(preview)') && owner.includes('stopCatalogPreview();'), 'On-demand catalog preview ownership must remain unchanged.');
+assert(selector.includes("String(game.status || '') !== 'finished'") && selector.includes('winner?.victory_effect_item_id'), 'Pure winner-owned selector contract must remain unchanged.');
+assert(Number(ru._meta?.version || 0) >= 46, 'RU locale revision must retain Victory Effects localization v46 or newer.');
+assert(ru.profile?.victory_effects?.title === 'Эффекты победы', 'Accepted RU Victory Effects title must remain unchanged.');
+assert(ru.profile?.victory_effects?.names?.spark_burst === 'Искровой залп', 'Accepted Spark Burst RU name must remain unchanged.');
+assert(ru.profile?.victory_effects?.names?.firework_salvo === 'Салют победителя', 'Accepted Firework Salvo RU name must remain unchanged.');
+assert(ru.profile?.victory_effects?.names?.victory_nova === 'Победная сверхновая', 'Accepted Victory Nova RU name must remain unchanged.');
+assert(ru.profile?.victory_effects?.errors?.purchase === 'Не удалось купить эффект победы.', 'Accepted RU purchase error must remain unchanged.');
+assert(ru.profile?.victory_effects?.live?.skip === 'Пропустить', 'Accepted RU live skip copy must remain unchanged.');
+assert(baseline.cyrillic_lines_total <= 3337 && baseline.by_scope?.client <= 1656, 'Victory Effects localization debt must never regress above the accepted post-slice baseline.');
+console.log('MVP27_1_PROFILE_VICTORY_EFFECTS_LOCALIZATION_CONTRACT=PASS');
+console.log('MVP27_1_ACTIVE_PROFILE_VICTORY_EFFECTS_HARDCODED_CYRILLIC=0');

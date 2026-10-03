@@ -1,5 +1,5 @@
 {
-  "_meta": {"locale":"ru","version":45},
+  "_meta": {"locale":"ru","version":46},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
   "topbar": {"balance":"Баланс","notifications":"Уведомления"},
@@ -983,6 +983,19 @@
       "toast":{"purchased":"Эффект входа добавлен в коллекцию."},
       "errors":{"purchase":"Не удалось купить эффект входа.","remove":"Не удалось снять эффект входа.","select":"Не удалось выбрать эффект входа."},
       "live":{"player_fallback":"Игрок {number}","skip":"Пропустить","entering":"вступает в игру"}
+    },
+    "victory_effects":{
+      "title":"Эффекты победы",
+      "effect_label":"Эффект победы",
+      "preview_aria":"Показать анимацию",
+      "names":{"spark_burst":"Искровой залп","firework_salvo":"Салют победителя","victory_nova":"Победная сверхновая","fallback":"Эффект победы"},
+      "tiers":{"tier_1":"Уровень I","tier_2":"Уровень II","tier_3":"Уровень III","fallback":"Эффект победы"},
+      "status":{"selected":"Выбрано","owned":"В коллекции"},
+      "actions":{"remove":"Снять","select":"Выбрать","buy":"Купить"},
+      "purchase":{"title":"Подтвердить покупку","to_pay":"К оплате","coins_value":"{count} коинов","remaining":"Останется","missing":"Не хватает {count}","buy_for":"Купить за {count}"},
+      "toast":{"purchased":"Эффект победы добавлен в коллекцию."},
+      "errors":{"purchase":"Не удалось купить эффект победы.","remove":"Не удалось снять эффект победы.","select":"Не удалось выбрать эффект победы."},
+      "live":{"skip":"Пропустить","skip_aria":"Пропустить эффект победы"}
     },
     "backgrounds":{"fallback_name":"Фон","tiers":{"normal":"Обычный","rare":"Редкий","epic":"Эпический","legendary":"Легендарный","fallback":"Фон"},"preview":{"aria":"Пример фона профиля","label":"Профиль"},"title":"Фоны профиля","type":"Фон профиля","status":{"selected":"Выбрано","owned":"В коллекции"},"actions":{"remove":"Снять","select":"Выбрать","buy":"Купить"},"purchase":{"title":"Подтвердить покупку","missing":"Не хватает {count}","buy_for":"Купить за {count}","type_with_tier":"Фон профиля · {tier}","to_pay":"К оплате","coins_value":"{count} коинов","remaining":"Останется"},"toast":{"purchased":"Фон добавлен в коллекцию.","removed":"Фон снят.","selected":"Фон выбран."},"errors":{"purchase":"Не удалось купить фон.","remove":"Не удалось снять фон.","select":"Не удалось выбрать фон."}},
     "reactions":{"fallback_name":"Реакции","fallback_subtitle":"Набор реакций","codes":{"wave":"Привет","clap":"Браво","heart":"Сердце","fire":"Огонь","target":"Точно","spark":"Вау","crown":"Корона","handshake":"Хорошая игра"},"title":"Реакции","status":{"owned":"В коллекции"},"actions":{"buy":"Купить"},"purchase":{"title":"Подтвердить покупку","to_pay":"К оплате","coins_value":"{count} коинов","remaining":"Останется","missing":"Не хватает {count}","buy_for":"Купить за {count}"},"toast":{"purchased":"Реакции добавлены в коллекцию."},"errors":{"purchase":"Не удалось купить реакции.","send":"Не удалось отправить реакцию."},"game":{"trigger":"Реакции","palette_aria":"Выбрать реакцию"}},

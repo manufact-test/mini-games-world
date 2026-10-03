@@ -4,6 +4,9 @@ import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
 import { selectWinnerVictoryEffect } from './mgw-victory-effect-selector.js?v=1';
+import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
+
+const victoryText = (key, params = {}) => t(`profile.victory_effects.${key}`, params);
 
 const VICTORY_EFFECT_SLOT = 'profile_victory_effect';
 const SPARK_BURST_ID = 'profile-victory-effect-01';
@@ -14,20 +17,20 @@ const VICTORY_PRESENTATION = Object.freeze({
   [SPARK_BURST_ID]:Object.freeze({
     variant:'spark-burst',
     duration:2200,
-    fallbackName:'Искровой залп',
-    tier:'Уровень II',
+    fallbackKey:'names.spark_burst',
+    tierKey:'tiers.tier_2',
   }),
   [FIREWORK_SALVO_ID]:Object.freeze({
     variant:'firework-salvo',
     duration:2900,
-    fallbackName:'Салют победителя',
-    tier:'Уровень I',
+    fallbackKey:'names.firework_salvo',
+    tierKey:'tiers.tier_1',
   }),
   [VICTORY_NOVA_ID]:Object.freeze({
     variant:'victory-nova',
     duration:3500,
-    fallbackName:'Победная сверхновая',
-    tier:'Уровень III',
+    fallbackKey:'names.victory_nova',
+    tierKey:'tiers.tier_3',
   }),
 });
 
@@ -279,10 +282,10 @@ function currentVictoryEffectId(){
 }
 
 function meta(item){ return item?.metadata && typeof item.metadata === 'object' ? item.metadata : {}; }
-function itemName(item){ return String(meta(item).display_name || VICTORY_PRESENTATION[item?.item_id]?.fallbackName || 'Эффект победы'); }
+function itemName(item){ const key = VICTORY_PRESENTATION[item?.item_id]?.fallbackKey || 'names.fallback'; return String(meta(item).display_name || victoryText(key)); }
 function itemPrice(item){ return Math.max(0, Number(meta(item).price_coins || 0)); }
 function itemOfferId(item){ return String(meta(item).offer_id || String(item?.item_id || '').replace(/^profile-/, '')); }
-function itemTier(item){ return String(VICTORY_PRESENTATION[item?.item_id]?.tier || 'Эффект победы'); }
+function itemTier(item){ const key = VICTORY_PRESENTATION[item?.item_id]?.tierKey || 'tiers.fallback'; return victoryText(key); }
 function presentationFor(itemId){ return VICTORY_PRESENTATION[String(itemId || '')] || null; }
 
 function burstMarkup(kind, count, previewDistance, liveDistance, baseDelay){
@@ -440,7 +443,7 @@ function victoryStageMarkup(variant){
 function previewMarkup(itemId, selected = false, extraClass = ''){
   const spec = presentationFor(itemId);
   if (!spec) return '';
-  return `<span class="mgw-entry-effect-preview mgw-victory-effect-preview ${escapeAttr(extraClass)}" data-victory-effect-item-id="${escapeAttr(itemId)}" data-victory-effect-variant="${escapeAttr(spec.variant)}" data-victory-effect-play aria-label="Показать анимацию"><span class="mgw-victory-preview-poster" aria-hidden="true"><i></i><b class="mgw-victory-preview-play">▶</b></span>${selected ? '<em class="store-v2-selected-check">✓</em>' : ''}</span>`;
+  return `<span class="mgw-entry-effect-preview mgw-victory-effect-preview ${escapeAttr(extraClass)}" data-victory-effect-item-id="${escapeAttr(itemId)}" data-victory-effect-variant="${escapeAttr(spec.variant)}" data-victory-effect-play aria-label="${escapeAttr(victoryText('preview_aria'))}"><span class="mgw-victory-preview-poster" aria-hidden="true"><i></i><b class="mgw-victory-preview-play">▶</b></span>${selected ? '<em class="store-v2-selected-check">✓</em>' : ''}</span>`;
 }
 
 function bindPreviewPlayback(root){
@@ -505,7 +508,7 @@ function renderStoreSection(catalog){
   }
 
   if (section instanceof HTMLElement && activeCatalogPreview && section.contains(activeCatalogPreview)) stopCatalogPreview();
-  const markup = `<section class="store-v2-entry-effect-section store-v2-victory-effect-section" data-profile-victory-effect-store-section data-profile-victory-effect-signature="${escapeAttr(signature)}"><div class="store-v2-title-row"><h2>Эффекты победы</h2></div><div class="store-v2-entry-effect-grid store-v2-victory-effect-grid">${catalog.map(item => storeCard(item, active)).join('')}</div></section>`;
+  const markup = `<section class="store-v2-entry-effect-section store-v2-victory-effect-section" data-profile-victory-effect-store-section data-profile-victory-effect-signature="${escapeAttr(signature)}"><div class="store-v2-title-row"><h2>${escapeHtml(victoryText('title'))}</h2></div><div class="store-v2-entry-effect-grid store-v2-victory-effect-grid">${catalog.map(item => storeCard(item, active)).join('')}</div></section>`;
 
   if (section instanceof HTMLElement) section.outerHTML = markup;
   else if (anchor instanceof HTMLElement) anchor.insertAdjacentHTML('afterend', markup);
@@ -519,7 +522,7 @@ function storeCard(item, activeId){
   const owned = item.owned === true;
   const active = owned && itemId === activeId;
   const stateName = active ? 'selected' : (owned ? 'owned' : 'available');
-  return `<article class="store-v2-product store-v2-entry-effect-card store-v2-victory-effect-card mgw-profile-cosmetic-card${owned ? ' owned' : ''}${active ? ' equipped' : ''}" data-mgw-profile-cosmetic-state="${stateName}">${previewMarkup(itemId, active, 'store-v2-victory-effect-preview')}<div class="store-v2-victory-effect-copy"><strong>${escapeHtml(itemName(item))}</strong><small>${escapeHtml(itemTier(item))}</small></div><div class="store-v2-product-foot store-v2-entry-effect-foot store-v2-victory-effect-foot mgw-profile-cosmetic-foot">${owned ? (active ? '<b data-mgw-profile-cosmetic-status>Выбрано</b><button class="store-v2-equip active mgw-profile-cosmetic-action" data-victory-effect-unequip type="button">Снять</button>' : `<b data-mgw-profile-cosmetic-status>В коллекции</b><button class="store-v2-equip mgw-profile-cosmetic-action" data-victory-effect-equip="${escapeAttr(itemId)}" type="button">Выбрать</button>`) : `<b>${formatNumber(itemPrice(item))}</b><button class="store-v2-buy mgw-profile-cosmetic-action" data-victory-effect-buy="${escapeAttr(itemId)}" type="button">Купить</button>`}</div></article>`;
+  return `<article class="store-v2-product store-v2-entry-effect-card store-v2-victory-effect-card mgw-profile-cosmetic-card${owned ? ' owned' : ''}${active ? ' equipped' : ''}" data-mgw-profile-cosmetic-state="${stateName}">${previewMarkup(itemId, active, 'store-v2-victory-effect-preview')}<div class="store-v2-victory-effect-copy"><strong>${escapeHtml(itemName(item))}</strong><small>${escapeHtml(itemTier(item))}</small></div><div class="store-v2-product-foot store-v2-entry-effect-foot store-v2-victory-effect-foot mgw-profile-cosmetic-foot">${owned ? (active ? `<b data-mgw-profile-cosmetic-status>${escapeHtml(victoryText('status.selected'))}</b><button class="store-v2-equip active mgw-profile-cosmetic-action" data-victory-effect-unequip type="button">${escapeHtml(victoryText('actions.remove'))}</button>` : `<b data-mgw-profile-cosmetic-status>${escapeHtml(victoryText('status.owned'))}</b><button class="store-v2-equip mgw-profile-cosmetic-action" data-victory-effect-equip="${escapeAttr(itemId)}" type="button">${escapeHtml(victoryText('actions.select'))}</button>`) : `<b>${formatLocalizedNumber(itemPrice(item))}</b><button class="store-v2-buy mgw-profile-cosmetic-action" data-victory-effect-buy="${escapeAttr(itemId)}" type="button">${escapeHtml(victoryText('actions.buy'))}</button>`}</div></article>`;
 }
 
 function bindStoreActions(section){
@@ -561,7 +564,7 @@ function renderProfileCollection(catalog){
     return;
   }
   if (section instanceof HTMLElement && activeCatalogPreview && section.contains(activeCatalogPreview)) stopCatalogPreview();
-  const markup = `<div class="profile-v2-entry-effect-collection profile-v2-victory-effect-collection" data-profile-victory-effect-collection data-profile-victory-effect-signature="${escapeAttr(signature)}" aria-label="Эффекты победы"><div class="profile-v2-collection-title">Эффекты победы</div><div class="profile-v2-entry-effect-grid profile-v2-victory-effect-grid">${owned.map(item => profileCard(item, active)).join('')}</div></div>`;
+  const markup = `<div class="profile-v2-entry-effect-collection profile-v2-victory-effect-collection" data-profile-victory-effect-collection data-profile-victory-effect-signature="${escapeAttr(signature)}" aria-label="${escapeAttr(victoryText('title'))}"><div class="profile-v2-collection-title">${escapeHtml(victoryText('title'))}</div><div class="profile-v2-entry-effect-grid profile-v2-victory-effect-grid">${owned.map(item => profileCard(item, active)).join('')}</div></div>`;
 
   if (section instanceof HTMLElement) section.outerHTML = markup;
   else if (anchor instanceof HTMLElement) anchor.insertAdjacentHTML('afterend', markup);
@@ -593,7 +596,7 @@ function openPurchase(itemId){
   const price = itemPrice(item);
   const balance = Number(state.user?.balance || 0);
   const missing = Math.max(0, price - balance);
-  openSheet(`<div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="store-v2-confirm"><div class="mgw-entry-effect-sheet-preview mgw-victory-effect-sheet-preview">${previewMarkup(itemId, false, 'mgw-victory-effect-sheet-card')}</div><div class="store-v2-confirm-copy"><strong>${escapeHtml(itemName(item))}</strong><small>Эффект победы</small></div><div class="store-v2-confirm-price"><span>К оплате</span><strong>${formatNumber(price)} коинов</strong></div><div class="store-v2-confirm-balance"><span>Останется</span><b>${formatNumber(Math.max(0, balance - price))}</b></div><button class="btn primary full" id="mgwVictoryEffectConfirmBuy" type="button"${missing > 0 ? ' disabled' : ''}>${missing > 0 ? `Не хватает ${formatNumber(missing)}` : `Купить за ${formatNumber(price)}`}</button></div>`);
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(victoryText('purchase.title'))}</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="store-v2-confirm"><div class="mgw-entry-effect-sheet-preview mgw-victory-effect-sheet-preview">${previewMarkup(itemId, false, 'mgw-victory-effect-sheet-card')}</div><div class="store-v2-confirm-copy"><strong>${escapeHtml(itemName(item))}</strong><small>${escapeHtml(victoryText('effect_label'))}</small></div><div class="store-v2-confirm-price"><span>${escapeHtml(victoryText('purchase.to_pay'))}</span><strong>${escapeHtml(victoryText('purchase.coins_value', {count:formatLocalizedNumber(price)}))}</strong></div><div class="store-v2-confirm-balance"><span>${escapeHtml(victoryText('purchase.remaining'))}</span><b>${formatLocalizedNumber(Math.max(0, balance - price))}</b></div><button class="btn primary full" id="mgwVictoryEffectConfirmBuy" type="button"${missing > 0 ? ' disabled' : ''}>${escapeHtml(missing > 0 ? victoryText('purchase.missing', {count:formatLocalizedNumber(missing)}) : victoryText('purchase.buy_for', {count:formatLocalizedNumber(price)}))}</button></div>`);
   bindPreviewPlayback(document.getElementById('sheet'));
   document.getElementById('mgwVictoryEffectConfirmBuy')?.addEventListener('click', () => void purchase(item));
 }
@@ -615,11 +618,11 @@ async function purchase(item){
       renderBalances(state.user);
     }
     await refreshSnapshot();
-    toast('Эффект победы добавлен в коллекцию.');
+    toast(victoryText('toast.purchased'));
   } catch (error) {
     state.profileInventory = previous;
     scheduleDecorate();
-    toast(error?.message || 'Не удалось купить эффект победы.');
+    toast(error?.message || victoryText('errors.purchase'));
   } finally {
     purchasePending.delete(itemId);
   }
@@ -637,7 +640,7 @@ function openPreview(itemId){
   if (!item) return;
   stopCatalogPreview();
   const active = itemId === currentVictoryEffectId();
-  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(itemName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="mgw-entry-effect-sheet-preview mgw-victory-effect-sheet-preview">${previewMarkup(itemId, false, 'mgw-victory-effect-sheet-card')}</div><div class="profile-v2-entry-effect-preview-meta"><strong>Эффект победы</strong></div><div class="mgw-profile-cosmetic-sheet-status" data-mgw-profile-cosmetic-sheet-status>${active ? 'Выбрано' : 'В коллекции'}</div><button class="btn ${active ? 'ghost' : 'primary'} full mgw-profile-cosmetic-sheet-action" id="mgwVictoryEffectEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>`);
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHtml(itemName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div><div class="mgw-entry-effect-sheet-preview mgw-victory-effect-sheet-preview">${previewMarkup(itemId, false, 'mgw-victory-effect-sheet-card')}</div><div class="profile-v2-entry-effect-preview-meta"><strong>${escapeHtml(victoryText('effect_label'))}</strong></div><div class="mgw-profile-cosmetic-sheet-status" data-mgw-profile-cosmetic-sheet-status>${escapeHtml(active ? victoryText('status.selected') : victoryText('status.owned'))}</div><button class="btn ${active ? 'ghost' : 'primary'} full mgw-profile-cosmetic-sheet-action" id="mgwVictoryEffectEquip" type="button">${escapeHtml(active ? victoryText('actions.remove') : victoryText('actions.select'))}</button>`);
   bindPreviewPlayback(document.getElementById('sheet'));
   document.getElementById('mgwVictoryEffectEquip')?.addEventListener('click', () => void saveSelection(itemId, active));
 }
@@ -661,7 +664,7 @@ async function saveSelection(itemId, remove){
   } catch (error) {
     state.profileInventory = previous;
     scheduleDecorate();
-    toast(error?.message || (remove ? 'Не удалось снять эффект победы.' : 'Не удалось выбрать эффект победы.'));
+    toast(error?.message || victoryText(remove ? 'errors.remove' : 'errors.select'));
   } finally {
     equipBusy = false;
   }
@@ -712,7 +715,7 @@ function playVictoryEffectIfReady(){
   layer.dataset.victoryEffectGameId = gameId;
   layer.dataset.victoryEffectItemId = selection.itemId;
   layer.dataset.victoryEffectVariant = spec.variant;
-  layer.innerHTML = `<button class="mgw-victory-effect-skip" type="button" aria-label="Пропустить эффект победы">Пропустить</button><div class="mgw-victory-effect-live-stage" data-victory-effect-variant="${escapeAttr(spec.variant)}" aria-hidden="true">${victoryStageMarkup(spec.variant)}</div>`;
+  layer.innerHTML = `<button class="mgw-victory-effect-skip" type="button" aria-label="${escapeAttr(victoryText('live.skip_aria'))}">${escapeHtml(victoryText('live.skip'))}</button><div class="mgw-victory-effect-live-stage" data-victory-effect-variant="${escapeAttr(spec.variant)}" aria-hidden="true">${victoryStageMarkup(spec.variant)}</div>`;
   document.body.append(layer);
 
   layer.querySelector('.mgw-victory-effect-skip')?.addEventListener('click', removeLiveVictoryEffect, { once:true });
@@ -731,6 +734,5 @@ function purchaseToken(){
   return `store:${Date.now().toString(36)}:${Math.random().toString(36).slice(2,14)}`;
 }
 function cloneObject(value){ return value && typeof value === 'object' ? JSON.parse(JSON.stringify(value)) : value; }
-function formatNumber(value){ return Number(value || 0).toLocaleString('ru-RU'); }
 function escapeHtml(value){ return String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
 function escapeAttr(value){ return escapeHtml(value); }

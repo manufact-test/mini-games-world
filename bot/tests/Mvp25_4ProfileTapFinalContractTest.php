@@ -64,19 +64,21 @@ foreach ([
     );
 }
 
+$victoryChildVersion = [];
 $assert(
-    str_contains($victoryWrapper, "mgw-profile-victory-effects-v4.js?v=2")
-        && str_contains($victoryWrapper, "mvp25_4=profile-post-paint-v1"),
-    'Victory Effects wrapper must publish the fresh post-paint base owner.'
+    preg_match('/mgw-profile-victory-effects-v4\\.js\\?v=(\\d+)[^\']*mvp25_4=profile-post-paint-v1/', $victoryWrapper, $victoryChildVersion) === 1
+        && (int)$victoryChildVersion[1] >= 2,
+    'Victory Effects wrapper must publish the accepted or newer post-paint base owner.'
 );
 
 $entryVersion = [];
+$victoryManifestVersion = [];
 $shellVersion = [];
 $assert(
     preg_match('/mgw-profile-entry-effects\.js\?v=(\d+)[^\']*mvp19_3=player-arbitration[^\']*mvp25_4=profile-post-paint-v1/', $manifest, $entryVersion) === 1
         && (int)$entryVersion[1] >= 7
-        && str_contains($manifest, "mgw-profile-victory-effects-card-parity.js?v=12")
-        && str_contains($manifest, "mvp25_4=profile-post-paint-v1")
+        && preg_match('/mgw-profile-victory-effects-card-parity\\.js\\?v=(\\d+)[^\']*mvp25_4=profile-post-paint-v1/', $manifest, $victoryManifestVersion) === 1
+        && (int)$victoryManifestVersion[1] >= 12
         && preg_match('/main-v110-handoff-shell\.js\?v=(\d+)[^\']*profile_topbar=direct-shell-v3[^\']*profile_tap=post-paint-v1/', $manifest, $shellVersion) === 1
         && (int)$shellVersion[1] >= 1161,
     'Manifest must retain all final Profile tap owners at or beyond their accepted cache identities.'
