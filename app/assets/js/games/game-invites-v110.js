@@ -1044,12 +1044,19 @@ async function syncNow({ announce = true } = {}){
     const result = await inviteRequest('sync', { token:requestedInviteToken });
     syncState(result, { preserveBalance:true });
     if (syncUiTransitionGeneration !== inviteUiTransitionGeneration) return result;
-    processInviteEvents(result.invite_events, Number(result.unread_count || 0), announce);
 
+    // An authoritative active game supersedes invite presentation. Consume the
+    // exact invitation before any unread invite event can repaint a toast/sheet
+    // over the game that has already started.
     if (result?.active_game?.id && String(result.active_game.status || '') === 'active') {
-      enterGame(result.active_game);
+      const activeInviteToken = String(
+        result?.tracked_invite?.token || result?.invite?.token || requestedInviteToken || currentInvite?.token || ''
+      );
+      enterGame(result.active_game, activeInviteToken);
       return result;
     }
+
+    processInviteEvents(result.invite_events, Number(result.unread_count || 0), announce);
 
     const nextInvite = chooseSyncInvite(result);
     if (nextInvite?.token) {
@@ -1317,9 +1324,11 @@ function openCurrentInvite(){
   }
 }
 
-function enterGame(game){
+function enterGame(game, inviteTokenOverride = ''){
   if (!game?.id || String(game.status || '') !== 'active') return;
   cancelWarmShareDraft();
+  const inviteToken = String(inviteTokenOverride || currentInvite?.token || '');
+  if (inviteToken) consumeInviteNotification(inviteToken);
   currentInvite = null;
   state.activeGame = game;
   closeSheet();
