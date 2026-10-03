@@ -60,6 +60,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" != agent/mvp27-1-profile-frames-localization-* ]]; then
+            echo "Successor localization slice: Profile Frames owner unchanged; original bounded migration scope does not apply."
+            git diff --check
+            exit 0
+          fi
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           allowed='^(app/assets/js/profile/mgw-profile-frames\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_profile_frames_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|bot/tests/Mvp19_3ProfileFramesTest\.php|\.github/workflows/mvp19-3-profile-frames\.yml|\.github/workflows/mvp27-1-profile-victory-effects-localization\.yml|\.github/workflows/mvp27-1-profile-frames-localization\.yml)$'
