@@ -67,14 +67,17 @@ jobs:
           git diff --exit-code "$base" "$head" -- \
             app/assets/js/games/go/entry.js \
             app/assets/js/games/go/meta.js \
-            app/assets/js/games/go/renderer.js \
             app/assets/js/games/go/rules.js \
             app/assets/js/games/reversi \
             ':(exclude)app/assets/js/games/reversi/renderer.js' \
             ':(exclude)app/assets/js/games/reversi/renderer-cosmetics-v1.js' \
             ':(exclude)app/assets/js/games/reversi/renderer-cosmetics-premium-v4.js' \
             app/assets/js/games/chess \
+            ':(exclude)app/assets/js/games/chess/renderer.js' \
+            ':(exclude)app/assets/js/games/chess/renderer-move-effect-v3.js' \
+            ':(exclude)app/assets/js/games/chess/rules.js' \
             app/assets/js/games/checkers \
+            ':(exclude)app/assets/js/games/checkers/rules.js' \
             app/assets/js/checkers-cosmetics \
             bot/catalog/ProductInventoryService.php
           git diff --check
