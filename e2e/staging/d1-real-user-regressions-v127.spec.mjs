@@ -90,9 +90,12 @@ test('canonical manual player picker performs no boot fetch and one fresh reques
     deviceScaleFactor:1,
   });
   let opponentCalls = 0;
+  let releaseOpponentResponse;
+  const opponentResponseGate = new Promise(resolve => { releaseOpponentResponse = resolve; });
 
   await context.route(OPPONENTS_ROUTE, async route => {
     opponentCalls += 1;
+    await opponentResponseGate;
     await route.fulfill({
       status:200,
       contentType:'application/json; charset=utf-8',
@@ -127,10 +130,17 @@ test('canonical manual player picker performs no boot fetch and one fresh reques
     await expect(page.locator('[data-open-player-picker]')).toBeVisible();
     await page.locator('[data-open-player-picker]').click();
 
+    // Accepted UX: the setup sheet remains complete while the one fresh request
+    // is in flight. Never replace it with an empty/loading player-picker frame.
+    await expect(page.locator('#sheet [data-invite-setup]')).toHaveCount(1);
+    await expect(page.locator('#sheet [data-player-picker-results]')).toHaveCount(0);
+    releaseOpponentResponse();
+
     await expect(page.locator('[data-direct-opponent="stg_test_player_b"]')).toBeVisible({ timeout:5_000 });
     await expect(page.locator('#sheet')).toContainText('@mgw_test_player_b');
     expect(opponentCalls).toBe(1);
   } finally {
+    releaseOpponentResponse?.();
     await context.unroute(OPPONENTS_ROUTE);
     await revokeAndClose(context);
   }
