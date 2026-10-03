@@ -36,7 +36,7 @@ $assert(str_contains($invites, "String(errorCode || '') === 'USER_DECLINED'")
     'Native cancellation must silently reuse the prepared draft.');
 
 $watchStart = strpos($invites, 'async function watchIncomingInvite()');
-$watchEnd = strpos($invites, 'function canWatchIncomingInvite()', $watchStart ?: 0);
+$watchEnd = strpos($invites, 'function canWatchInviteSignal()', $watchStart ?: 0);
 $watchBlock = $watchStart !== false && $watchEnd !== false ? substr($invites, $watchStart, $watchEnd - $watchStart) : '';
 $assert(str_contains($watchBlock, 'scheduleSync(0);')
     && str_contains($watchBlock, 'return invite;')
