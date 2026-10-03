@@ -20,6 +20,11 @@ const SKIP_PREFIXES = [
   'bot/incident/',
 ];
 
+const SKIP_FILES = new Set([
+  'app/assets/js/games/invite-controller-v120.js', // rejected v120 invite owner; factual v110 graph forbids it
+  'app/assets/js/games/game-invites.js', // superseded by factual game-invites-v110.js owner
+]);
+
 const ADMIN_CONTROL_PLANE_PATTERNS = [
   /^app\/admin\.php$/,
   /^app\/assets\/js\/admin(?:-|\/)/,
@@ -34,6 +39,7 @@ function normalized(file) {
 
 function shouldSkip(file) {
   const n = normalized(file);
+  if (SKIP_FILES.has(n)) return true;
   if (SKIP_PREFIXES.some(prefix => n.startsWith(prefix))) return true;
   if (ADMIN_CONTROL_PLANE_PATTERNS.some(pattern => pattern.test(n))) return true;
   return n.split('/').some(part => SKIP_PARTS.has(part));
