@@ -24,8 +24,8 @@ if (!str_contains($response, '$data = mgw_project_canonical_game_identity($data)
     throw new RuntimeException('Shared API normalization must retain canonical game identity projection.');
 }
 
-if (!str_contains($response, "json_response(['ok' => true] + mgw_normalize_api_data(\$data));")) {
-    throw new RuntimeException('api_ok must retain the canonical normalization owner.');
+if (!str_contains($response, "json_response(['ok' => true] + mgw_normalize_api_data(\$data), 200, true);")) {
+    throw new RuntimeException('api_ok must retain the canonical normalization owner before successful post-response work.');
 }
 
 fwrite(STDOUT, "Game watch canonical identity projection contract: OK\n");
