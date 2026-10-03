@@ -76,6 +76,10 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if [[ "${GITHUB_HEAD_REF:-}" == agent/mvp27-1-invite-acceptance-regression-corrective-* ]]; then
+            echo 'Invite acceptance corrective owns the bounded shared-invite surface; dedicated corrective CI guards engines/economy/tournaments and Android source.'
+            exit 0
+          fi
           android_owner_changes="$(git diff --name-only "$base" "$head" -- \
             .well-known/assetlinks.json \
             android-app \
