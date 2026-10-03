@@ -113,6 +113,8 @@ $frameCss = (string)file_get_contents($root . '/app/assets/css/components/mgw-pr
 $cleanEntry = (string)file_get_contents($root . '/app/assets/js/production-clean-entry-v110.js');
 $mainCss = (string)file_get_contents($root . '/app/assets/css/main.css');
 $manifest = (string)file_get_contents($root . '/app/runtime/client/version-manifest.php');
+$locale = json_decode((string)file_get_contents($root . '/app/locales/ru.json'), true, 64, JSON_THROW_ON_ERROR);
+$frameLocale = (array)($locale['profile']['frames'] ?? []);
 
 $assertTrue(str_contains($endpoint, 'function mgw_store_profile_frame') && str_contains($endpoint, "'profile_frame'"), 'Store mutation endpoint must whitelist canonical profile frame family and slot');
 $assertTrue(str_contains($response, 'pf.item_id AS frame_item_id') && str_contains($response, "\$player['frame_item_id']"), 'Shared game identity projection must expose equipped frames for human players');
@@ -120,7 +122,17 @@ $assertTrue(str_contains($frameSource, "const FRAME_SLOT = 'profile_frame'") && 
 $assertTrue(str_contains($frameSource, 'data-profile-frame-store-section') && str_contains($frameSource, 'data-profile-frame-collection'), 'Frame UX must render Store discovery and Profile owned collection surfaces');
 $assertTrue(str_contains($frameSource, "String(players[index]?.frame_item_id") && str_contains($frameSource, 'dataset.profileFrameAvatarItemId'), 'Live game presentation must consume canonical frame projection on avatar surfaces');
 $assertTrue(str_contains($frameSource, "getElementById('topAvatar')") && str_contains($frameSource, "getElementById('profileV2Avatar')") && str_contains($frameSource, "getElementById('searchMeAvatar')") && str_contains($frameSource, "querySelector(':scope > .game-player-avatar')"), 'Live frame presentation must cover chrome, Profile, search and game avatars');
-$assertTrue(str_contains($frameSource, 'FRAME_DISPLAY_NAMES') && str_contains($frameSource, "'profile-frame-01':'Голубое небо'") && str_contains($frameSource, "'profile-frame-02':'Золотой ореол'") && str_contains($frameSource, "'profile-frame-03':'Аврора'") && str_contains($frameSource, "'profile-frame-animated':'Живой спектр'"), 'Frame presentation must preserve the accepted user-facing product names');
+$assertTrue(str_contains($frameSource, 'FRAME_NAME_KEYS') && str_contains($frameSource, "'profile-frame-01':'names.sky'") && str_contains($frameSource, "'profile-frame-02':'names.gold'") && str_contains($frameSource, "'profile-frame-03':'names.aurora'") && str_contains($frameSource, "'profile-frame-animated':'names.spectrum'"), 'Frame presentation must keep deterministic locale keys for the accepted products');
+$assertSame(
+    ['Голубое небо','Золотой ореол','Аврора','Живой спектр'],
+    [
+        (string)($frameLocale['names']['sky'] ?? ''),
+        (string)($frameLocale['names']['gold'] ?? ''),
+        (string)($frameLocale['names']['aurora'] ?? ''),
+        (string)($frameLocale['names']['spectrum'] ?? ''),
+    ],
+    'Canonical RU locale must preserve the accepted user-facing frame names'
+);
 $assertTrue(str_contains($frameCss, '[data-profile-frame-avatar-item-id]::before') && str_contains($frameCss, 'profile-frame-animated'), 'One CSS owner must define zero-width avatar frames and animated top tier');
 $assertTrue(str_contains($frameSource, "const FRAME_PREVIEW_AVATAR_ITEM_ID = 'starter-default-01'") && str_contains($frameSource, 'data-avatar-item-id') && str_contains($frameSource, 'data-profile-frame-avatar-item-id'), 'Frame previews must use the canonical starter avatar with the real frame overlay instead of a separate circular demo token');
 $assertTrue(str_contains($frameSource, "framePreviewMarkup(itemId, 'store-v2-avatar-preview'") && str_contains($frameSource, 'store-v2-product-grid') && str_contains($frameSource, 'store-v2-product-name'), 'Store frames must reuse the canonical four-column avatar product presentation');
@@ -134,5 +146,6 @@ $assertTrue(
     'Profile mutations must bypass the read-only hydration coalescer while publishing authoritative inventory state'
 );
 $assertTrue(str_contains($mainCss, 'mgw-profile-frames.css?v=2&mvp19_3=profile-frame-preview-polish') && str_contains($manifest, 'mvp19_3_12=profile-frame-avatar-card-parity') && str_contains($manifest, 'mvp19_3_11=profile-badge-avatar-shape') && str_contains($manifest, 'mvp19_3_7=profile-v2-read-coalesce'), 'Active delivery graph must publish canonical frame preview parity while preserving the accepted badge and Profile hydration identities');
+$assertTrue(str_contains($manifest, "mgw-profile-frames.js?v=5&mvp19_3=profile-frame-avatar-card-parity&mvp27_1=localized-v1"), 'Manifest must publish the localized Profile Frames successor owner.');
 
 fwrite(STDOUT, "MVP-19.3 profile frames passed ({$assertions} assertions).\n");

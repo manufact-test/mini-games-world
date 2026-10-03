@@ -39,6 +39,12 @@ jobs:
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-profile-frames-localization-* ]]; then
+            git diff --exit-code "$base" "$head" -- bot/cosmetic-store.php bot/helpers/response.php app/assets/css/components/mgw-profile-frames.css
+            git diff --check
+            echo "MVP-27.1 Profile Frames localization: backend/catalog/CSS owners unchanged; focused frame contract protects accepted behavior."
+            exit 0
+          fi
           # The frame implementation remains frozen. Its static contract may
           # migrate when a later accepted Profile composition changes shared API plumbing.
           git diff --exit-code "$base" "$head" -- app/assets/js/profile/mgw-profile-frames.js

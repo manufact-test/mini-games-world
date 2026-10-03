@@ -3,6 +3,9 @@ import { state } from '../state.js?v=27';
 import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
+import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
+
+const frameText = (key, params = {}) => t(`profile.frames.${key}`, params);
 
 const FRAME_SLOT = 'profile_frame';
 const FRAME_PREVIEW_AVATAR_ITEM_ID = 'starter-default-01';
@@ -12,11 +15,11 @@ const FRAME_ITEM_IDS = Object.freeze([
   'profile-frame-03',
   'profile-frame-animated',
 ]);
-const FRAME_DISPLAY_NAMES = Object.freeze({
-  'profile-frame-01':'Голубое небо',
-  'profile-frame-02':'Золотой ореол',
-  'profile-frame-03':'Аврора',
-  'profile-frame-animated':'Живой спектр',
+const FRAME_NAME_KEYS = Object.freeze({
+  'profile-frame-01':'names.sky',
+  'profile-frame-02':'names.gold',
+  'profile-frame-03':'names.aurora',
+  'profile-frame-animated':'names.spectrum',
 });
 
 let initialized = false;
@@ -110,13 +113,15 @@ function currentFrameItemId(){
 function frameMeta(item){ return item?.metadata && typeof item.metadata === 'object' ? item.metadata : {}; }
 function frameName(item){
   const itemId = String(item?.item_id || '');
-  return FRAME_DISPLAY_NAMES[itemId] || String(frameMeta(item).display_name || itemId || 'Рамка');
+  const localeKey = FRAME_NAME_KEYS[itemId];
+  return String(frameMeta(item).display_name || (localeKey ? frameText(localeKey) : '') || itemId || frameText('fallback_name'));
 }
 function framePrice(item){ return Math.max(0, Number(frameMeta(item).price_coins || 0)); }
 function frameOfferId(item){ return String(frameMeta(item).offer_id || String(item?.item_id || '').replace(/^profile-/, '')); }
 function frameTierLabel(item){
   const tier = String(frameMeta(item).tier || 'normal');
-  return ({ normal:'Обычная', rare:'Редкая', epic:'Эпическая', animated:'Анимированная' })[tier] || 'Рамка';
+  const key = ({ normal:'tiers.normal', rare:'tiers.rare', epic:'tiers.epic', animated:'tiers.animated' })[tier] || 'tiers.fallback';
+  return frameText(key);
 }
 
 function decorateChrome(){
@@ -170,7 +175,7 @@ function renderStoreFrameSection(catalog){
 
   const markup = `
     <section class="store-v2-profile-frame-section" data-profile-frame-store-section data-profile-frame-signature="${escapeAttr(signature)}">
-      <div class="store-v2-title-row"><h2>Рамки</h2></div>
+      <div class="store-v2-title-row"><h2>${escapeHtml(frameText('title'))}</h2></div>
       <div class="store-v2-product-grid" data-profile-frame-grid>
         ${catalog.map(item => storeFrameCard(item, active)).join('')}
       </div>
@@ -194,9 +199,9 @@ function storeFrameCard(item, activeItemId){
       <div class="store-v2-product-foot store-v2-profile-frame-foot">
         ${owned
           ? (active
-            ? `<button class="store-v2-equip active" data-profile-frame-unequip type="button">Снять</button>`
-            : `<button class="store-v2-equip" data-profile-frame-equip="${escapeAttr(itemId)}" type="button">Выбрать</button>`)
-          : `<b>${formatNumber(framePrice(item))}</b><button class="store-v2-buy" data-profile-frame-buy="${escapeAttr(itemId)}" type="button">Купить</button>`}
+            ? `<button class="store-v2-equip active" data-profile-frame-unequip type="button">${escapeHtml(frameText('actions.remove'))}</button>`
+            : `<button class="store-v2-equip" data-profile-frame-equip="${escapeAttr(itemId)}" type="button">${escapeHtml(frameText('actions.select'))}</button>`)
+          : `<b>${formatNumber(framePrice(item))}</b><button class="store-v2-buy" data-profile-frame-buy="${escapeAttr(itemId)}" type="button">${escapeHtml(frameText('actions.buy'))}</button>`}
       </div>
     </article>
   `;
@@ -233,8 +238,8 @@ function renderProfileFrameCollection(catalog){
   const signature = owned.map(item => item.item_id).join('|') + `|${active}`;
   if (section instanceof HTMLElement && section.dataset.profileFrameSignature === signature) return;
   const markup = `
-    <div class="profile-v2-frame-collection" data-profile-frame-collection data-profile-frame-signature="${escapeAttr(signature)}" aria-label="Рамки">
-      <div class="profile-v2-collection-title">Рамки</div>
+    <div class="profile-v2-frame-collection" data-profile-frame-collection data-profile-frame-signature="${escapeAttr(signature)}" aria-label="${escapeAttr(frameText('title'))}">
+      <div class="profile-v2-collection-title">${escapeHtml(frameText('title'))}</div>
       <div class="profile-v2-collection-grid" data-profile-frame-grid>
         ${owned.map(item => profileFrameCard(item, active)).join('')}
       </div>
@@ -268,14 +273,16 @@ function openFramePurchase(itemId){
   const balance = Number(state.user?.balance || 0);
   const missing = Math.max(0, price - balance);
   const disabled = missing > 0 ? ' disabled' : '';
-  const label = missing > 0 ? 'Не хватает ' + formatNumber(missing) : 'Купить за ' + formatNumber(price);
+  const label = missing > 0
+    ? frameText('purchase.missing', { count:formatNumber(missing) })
+    : frameText('purchase.buy_for', { count:formatNumber(price) });
   openSheet(
-    '<div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>' +
+    '<div class="sheet-head"><div><h2>' + escapeHtml(frameText('purchase.title')) + '</h2></div><button class="close" data-close-sheet type="button">×</button></div>' +
     '<div class="store-v2-confirm">' +
       '<div class="profile-v2-frame-preview-wrap">' + framePreviewMarkup(itemId, 'profile-v2-avatar-preview') + '</div>' +
       '<div class="store-v2-confirm-copy"><strong>' + escapeHtml(frameName(item)) + '</strong></div>' +
-      '<div class="store-v2-confirm-price"><span>К оплате</span><strong>' + formatNumber(price) + ' коинов</strong></div>' +
-      '<div class="store-v2-confirm-balance"><span>Останется</span><b>' + formatNumber(Math.max(0, balance - price)) + '</b></div>' +
+      '<div class="store-v2-confirm-price"><span>' + escapeHtml(frameText('purchase.to_pay')) + '</span><strong>' + escapeHtml(frameText('purchase.coins_value', { count:formatNumber(price) })) + '</strong></div>' +
+      '<div class="store-v2-confirm-balance"><span>' + escapeHtml(frameText('purchase.remaining')) + '</span><b>' + formatNumber(Math.max(0, balance - price)) + '</b></div>' +
       '<button class="btn primary full" id="mgwProfileFrameConfirmBuy" type="button"' + disabled + '>' + escapeHtml(label) + '</button>' +
     '</div>'
   );
@@ -297,9 +304,9 @@ async function purchaseFrame(item, button){
     }
     closeSheet();
     await refreshFrameSnapshot();
-    toast('Рамка добавлена в коллекцию.');
+    toast(frameText('toast.purchased'));
   } catch (error) {
-    toast(error?.message || 'Не удалось купить рамку.');
+    toast(error?.message || frameText('errors.purchase'));
   } finally {
     frameBusy = false;
   }
@@ -312,8 +319,8 @@ function openFramePreview(itemId){
   openSheet(`
     <div class="sheet-head"><div><h2>${escapeHtml(frameName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="profile-v2-frame-preview-wrap">${framePreviewMarkup(itemId, 'profile-v2-avatar-preview')}</div>
-    <div class="profile-v2-frame-preview-meta"><strong>Рамка</strong><small>${escapeHtml(frameTierLabel(item))}</small></div>
-    <button class="btn ${active ? 'ghost' : 'primary'} full" id="mgwProfileFrameEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>
+    <div class="profile-v2-frame-preview-meta"><strong>${escapeHtml(frameText('type'))}</strong><small>${escapeHtml(frameTierLabel(item))}</small></div>
+    <button class="btn ${active ? 'ghost' : 'primary'} full" id="mgwProfileFrameEquip" type="button">${escapeHtml(frameText(active ? 'actions.remove' : 'actions.select'))}</button>
   `);
   document.getElementById('mgwProfileFrameEquip')?.addEventListener('click', () => void saveFrame(itemId, active));
 }
@@ -333,11 +340,11 @@ async function saveFrame(itemId, remove){
     if (remove) await api.cosmeticStoreUnequip(FRAME_SLOT);
     else await api.cosmeticStoreEquip(itemId);
     await refreshFrameSnapshot();
-    toast(remove ? 'Рамка снята.' : 'Рамка выбрана.');
+    toast(frameText(remove ? 'toast.removed' : 'toast.selected'));
   } catch (error) {
     state.profileInventory = previousInventory;
     scheduleDecorate();
-    toast(error?.message || (remove ? 'Не удалось снять рамку.' : 'Не удалось выбрать рамку.'));
+    toast(error?.message || frameText(remove ? 'errors.remove' : 'errors.select'));
   } finally {
     frameBusy = false;
   }
@@ -364,6 +371,6 @@ function purchaseToken(){
 }
 
 function cloneObject(value){ return value && typeof value === 'object' ? JSON.parse(JSON.stringify(value)) : value; }
-function formatNumber(value){ return Number(value || 0).toLocaleString('ru-RU'); }
+function formatNumber(value){ return formatLocalizedNumber(Number(value || 0)); }
 function escapeHtml(value){ return String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
 function escapeAttr(value){ return escapeHtml(value); }
