@@ -188,6 +188,55 @@ function mgw_changed_invite_tokens(array $before, array $afterInvites): array
     return $changed;
 }
 
+/**
+ * Invite mutations commit to canonical JSON before compatibility DB projection.
+ * For a successful mutation, release the HTTP response first so projection
+ * latency can never repaint or stall the already-committed product action.
+ */
+function mgw_invite_api_ok_with_deferred_work(array $data, callable $afterResponse): void
+{
+    mgw_run_api_success_hooks();
+    $payload = ['ok' => true] + mgw_normalize_api_data($data);
+
+    http_response_code(200);
+    header('Content-Type: application/json; charset=utf-8');
+    $json = json_encode(
+        $payload,
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
+    );
+    if ($json === false) {
+        http_response_code(500);
+        error_log('[MiniGamesWorld invite response] JSON encoding failed: ' . json_last_error_msg());
+        echo '{"ok":false,"error":"Не удалось выполнить действие. Попробуйте ещё раз."}';
+        exit;
+    }
+
+    echo $json;
+
+    // Never substitute post-response projection with a blocking fallback.
+    // Hostinger may expose either FastCGI/FPM or LiteSpeed request finalization.
+    $finished = false;
+    if (function_exists('fastcgi_finish_request')) {
+        $finished = fastcgi_finish_request() !== false;
+    } elseif (function_exists('litespeed_finish_request')) {
+        $finished = litespeed_finish_request() !== false;
+    }
+    if (!$finished) {
+        error_log('[MiniGamesWorld invite deferred projection] finish-request API unavailable; projection skipped');
+        exit;
+    }
+
+    ignore_user_abort(true);
+    try {
+        $afterResponse();
+    } catch (Throwable $error) {
+        // The product mutation and response are already authoritative. Projection
+        // recovery/audit remains operational work and must not leak details.
+        error_log('[MiniGamesWorld invite deferred projection] hook failed: ' . get_class($error));
+    }
+    exit;
+}
+
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) api_error('Некорректный запрос.');
@@ -441,27 +490,37 @@ try {
     }
     unset($result['signal_recipient_id']);
 
-    // A private link draft is not yet shared product state. Keep DB projection
-    // off the native prepared-share critical path; confirm_shared/open_link/discard
-    // will project the same token when it becomes externally relevant.
+    // A private link draft is not yet shared product state. For every other
+    // mutation, preserve exact changed-token DB projection but move it behind
+    // the successful HTTP response. JSON + InviteSignal already own product state.
+    $deferredInviteProjection = null;
     if ($action !== 'sync'
         && $action !== 'create_link_draft'
         && $runtimeInviteProjector instanceof RuntimeInviteDeltaProjector
         && $runtimeInviteProjector->enabled()
         && $bridgeInviteTokens !== []) {
-        if ($db instanceof ProjectionSnapshotStorageInterface) {
-            $db->projectionReadOnlySections(
-                ['invites'],
-                static fn(array $data): array => $runtimeInviteProjector->synchronizeTokens($data, $bridgeInviteTokens)
-            );
-        } elseif ($db instanceof ExclusiveSnapshotStorageInterface) {
-            $db->exclusiveReadOnlySections(
-                ['invites'],
-                static fn(array $data): array => $runtimeInviteProjector->synchronizeTokens($data, $bridgeInviteTokens)
-            );
-        } else {
+        $projectionTokens = $bridgeInviteTokens;
+        $deferredInviteProjection = static function () use (
+            $db,
+            $runtimeInviteProjector,
+            $projectionTokens
+        ): void {
+            if ($db instanceof ProjectionSnapshotStorageInterface) {
+                $db->projectionReadOnlySections(
+                    ['invites'],
+                    static fn(array $data): array => $runtimeInviteProjector->synchronizeTokens($data, $projectionTokens)
+                );
+                return;
+            }
+            if ($db instanceof ExclusiveSnapshotStorageInterface) {
+                $db->exclusiveReadOnlySections(
+                    ['invites'],
+                    static fn(array $data): array => $runtimeInviteProjector->synchronizeTokens($data, $projectionTokens)
+                );
+                return;
+            }
             throw new RuntimeException('Invite DB bridge requires a stable JSON snapshot capability.');
-        }
+        };
     }
 
     if ($action === 'create_link_draft' && is_array($result['invite'] ?? null)) {
@@ -496,6 +555,9 @@ try {
             && mgw_send_invite_message($config, $result['invite'], $recipientId);
     }
 
+    if (is_callable($deferredInviteProjection)) {
+        mgw_invite_api_ok_with_deferred_work($result, $deferredInviteProjection);
+    }
     api_ok($result);
 } catch (ModerationException $e) {
     json_response(['ok'=>false,'code'=>$e->reason,'error'=>$e->getMessage()], 403);
