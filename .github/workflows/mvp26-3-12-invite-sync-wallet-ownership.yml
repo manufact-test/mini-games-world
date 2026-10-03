@@ -63,7 +63,7 @@ jobs:
         run: node scripts/ci/check-secrets.mjs
 
       - name: Scope guard
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp26-3-12')
         shell: bash
         run: |
           set -euo pipefail
