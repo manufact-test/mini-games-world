@@ -164,3 +164,19 @@
   }
   .invite-player-copy strong{font-size:15px}
 }
+
+
+/* Invite Start keeps the accepted primary appearance while the authoritative
+ * start request owns input. Duplicate taps are blocked by the disabled element,
+ * but the CTA must not visually collapse into the generic grey disabled state. */
+.sheet [data-invite-action="start"].btn.primary:disabled,
+.notification-card [data-invite-action="start"].btn.primary:disabled{
+  opacity:1;
+  background:var(--sk-gradient-primary);
+  border-color:rgba(255,255,255,.08);
+  color:#fff;
+  -webkit-text-fill-color:#fff;
+  box-shadow:0 10px 24px rgba(106,76,255,.22);
+  filter:none;
+  cursor:wait;
+}

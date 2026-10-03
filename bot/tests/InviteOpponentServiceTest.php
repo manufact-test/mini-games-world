@@ -41,6 +41,21 @@ $data = [
             'status' => 'idle',
             'last_seen_at' => $now,
         ],
+        'stg_tour_v2_deadbeefcafe' => [
+            'id' => 'stg_tour_v2_deadbeefcafe',
+            'first_name' => 'Tournament Fixture',
+            'status' => 'idle',
+            'last_seen_at' => $now,
+            'is_dev_user' => true,
+            'is_staging_test_user' => true,
+        ],
+        'dev_123456' => [
+            'id' => 'dev_123456',
+            'first_name' => 'Browser Dev',
+            'status' => 'idle',
+            'last_seen_at' => $now,
+            'is_dev_user' => true,
+        ],
         'bot_training' => [
             'id' => 'bot_training',
             'first_name' => 'Bot',
@@ -68,7 +83,9 @@ $data = [
 $mainItems = $service->list($data, 'main_complex_account', ['main_complex_account', 'carl_account']);
 $mainIds = array_column($mainItems, 'id');
 $assertTrue(in_array('carl_account', $mainIds, true), 'Main account must see Carl from the same active state');
-$assertTrue(in_array('stg_test_player_a', $mainIds, true), 'Recent active test player must remain visible');
+$assertTrue(!in_array('stg_test_player_a', $mainIds, true), 'Real player picker must hide staging test identities');
+$assertTrue(!in_array('stg_tour_v2_deadbeefcafe', $mainIds, true), 'Real player picker must hide tournament fixtures');
+$assertTrue(!in_array('dev_123456', $mainIds, true), 'Real player picker must hide browser dev identities');
 $assertTrue(!in_array('bot_training', $mainIds, true), 'Bots must remain excluded');
 $assertTrue(!in_array('stale_account', $mainIds, true), 'Stale unrelated accounts must remain excluded');
 
@@ -82,6 +99,11 @@ $assertSame('@carl_player', $carl['name'] ?? null, 'Telegram username must remai
 $assertSame(true, $carl['online'] ?? null, 'Presence must mark Carl online');
 $assertSame(false, $carl['busy'] ?? null, 'Idle online player must not be marked busy');
 $assertSame('онлайн', $carl['activity'] ?? null, 'Online activity label must remain stable');
-$assertSame(2, count($mainItems), 'Only eligible human opponents other than the current account must be returned');
+$assertSame(1, count($mainItems), 'Only eligible real human opponents other than the current account must be returned');
+
+$testItems = $service->list($data, 'stg_test_player_a', ['main_complex_account', 'carl_account'], true);
+$testIds = array_column($testItems, 'id');
+$assertTrue(in_array('main_complex_account', $testIds, true), 'Staging test actor must still see real runtime opponents');
+$assertTrue(in_array('carl_account', $testIds, true), 'Staging test actor must retain normal opponent coverage');
 
 fwrite(STDOUT, "InviteOpponentServiceTest: {$assertions} assertions passed\n");
