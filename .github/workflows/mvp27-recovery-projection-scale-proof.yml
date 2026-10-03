@@ -1,0 +1,47 @@
+name: MVP27 Recovery — projection scale proof
+
+on:
+  push:
+    branches:
+      - agent/mvp27-1-recovery-projection-scale-proof-2026-10-04
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+      - name: Lint bounded recovery slice
+        run: |
+          set -euo pipefail
+          php -l bot/notifications/RuntimeNotificationRepository.php
+          php -l bot/weekly/WeeklyBonusRuntimeBridge.php
+          php -l bot/tests/RuntimeNotificationRepositoryTest.php
+      - name: Notification repository regression
+        run: php bot/tests/RuntimeNotificationRepositoryTest.php
+      - name: Weekly projection regression
+        run: php bot/tests/WeeklyBonusRuntimeBridgeTest.php
+      - name: Projection dirty coalescing regression
+        run: php bot/tests/PhaseBProjectionDirtyCoalescingContractTest.php
+      - name: Request projection memo regression
+        run: |
+          set -euo pipefail
+          php bot/tests/RuntimeBridgeRequestProjectionMemoContractTest.php
+          php bot/tests/RuntimeBridgeRequestProjectionMemoTest.php
+      - name: Preserve bounded semantic owner
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'synchronizationCandidateLegacyUserIds' bot/weekly/WeeklyBonusRuntimeBridge.php
+          grep -F 'SELECT DISTINCT legacy_user_id' bot/notifications/RuntimeNotificationRepository.php
+          ! grep -F "foreach (is_array(\$snapshot['users']" bot/weekly/WeeklyBonusRuntimeBridge.php
