@@ -65,8 +65,8 @@ assert(
 
 assert(
   mainCss.includes("game-invites.css?v=86&invite_acceptance=safe-v2")
-    && manifest.includes('game-invites-v110-rematch-policy-v175.js?v=4')
-    && manifest.includes('game-invites-v110.js?v=1151')
+    && manifest.includes('game-invites-v110-rematch-policy-v175.js?v=3')
+    && manifest.includes('game-invites-v110.js?v=1150')
     && (manifest.match(/invite_acceptance=safe-v2/g) || []).length >= 3,
   'Safe corrective assets must publish fresh cache identities.',
 );
