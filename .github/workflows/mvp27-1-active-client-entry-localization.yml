@@ -51,17 +51,13 @@ jobs:
         run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
 
       - name: Bounded migration scope
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-active-client-entry-localization')
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${{ github.head_ref }}" == agent/mvp27-1-*-debt-classification-* ]]; then
-            echo 'MVP-27.1 audit-only successor: original product-slice bounded scope is not applicable.'
-            exit 0
-          fi
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(app/v110\.php|app/locales/ru\.json|bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest\.php|bot/tests/Mvp25_2FinalHumanCopyClosureContractTest\.php|ops/checks/mvp27_1_active_client_entry_localization_contract\.mjs|ops/checks/mvp27_1_active_shell_copy_bundle_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-active-client-entry-localization\.yml)$'
+          allowed='^(app/v110\\.php|app/locales/ru\\.json|bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest\\.php|bot/tests/Mvp25_2FinalHumanCopyClosureContractTest\\.php|ops/checks/mvp27_1_active_client_entry_localization_contract\\.mjs|ops/checks/mvp27_1_active_shell_copy_bundle_contract\\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\\.json|\\.github/workflows/mvp27-1-active-client-entry-localization\\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected active client-entry localization paths:\n%s\n' "$bad" >&2; exit 1; }
 
