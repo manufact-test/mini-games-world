@@ -59,7 +59,7 @@ $assert(str_contains($shell, 'notifications-screen-v110r13.js?v=1162&mvp18=frien
 $assert(str_contains($main, 'main-v110-handoff-shell.js?v=1137&ux=1')
     && str_contains($shell, 'game-invites-v110.js?v=1137&ux=1')
     && str_contains($launch, "private const ENTRY_PATH = '/app/v110.php?")
-    && str_contains($php, "($versionManifest['version'] ?? null) !== 'v2-route-scoped-polling'"),
+    && str_contains($php, "(\$versionManifest['version'] ?? null) !== 'v2-route-scoped-polling'"),
     'Telegram and browser entrypoints must converge through the canonical manifest-driven v110 shell and invitation owner.');
 
 fwrite(STDOUT, 'ProductionV110InviteActionsRootContractTest: ' . $assertions . " assertions passed\n");
