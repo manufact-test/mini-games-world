@@ -42,8 +42,9 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          if git diff --quiet "$base" "$head" -- android-app; then
-            echo "Non-Android successor slice: Android product owners unchanged; frozen boundary does not apply."
+          android_product_changes="$(git diff --name-only "$base" "$head" -- android-app ':(exclude)android-app/tools/verify-native-shell-settings.py')"
+          if [[ -z "$android_product_changes" ]]; then
+            echo "Non-Android successor slice: only Android verification tooling changed; Android product owners remain unchanged and the frozen boundary does not apply."
             exit 0
           fi
           git diff --exit-code "$base" "$head" --             bot/games bot/ratings bot/tournaments bot/economy bot/ledger             app/assets/js/games             app/assets/js/screens             app/runtime/client/version-manifest.php             app/v110.php
