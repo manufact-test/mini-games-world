@@ -141,4 +141,15 @@ jobs:
             ':(exclude)app/assets/js/games/chess/renderer.js' \
             ':(exclude)app/assets/js/games/reversi/renderer.js' \
             ':(exclude)app/assets/js/games/reversi/renderer-cosmetics-v1.js' \
-            ':(exclude)app/assets/js/games/reversi/renderer-cosmetics-premium-v4.js'
+            ':(exclude)app/assets/js/games/reversi/renderer-cosmetics-premium-v4.js' \
+            ':(exclude)app/assets/js/games/battleship/rules.js' \
+            ':(exclude)app/assets/js/games/checkers/rules.js' \
+            ':(exclude)app/assets/js/games/chess/rules.js' \
+            ':(exclude)app/assets/js/games/domino/rules.js' \
+            ':(exclude)app/assets/js/games/tictactoe/renderer.js' \
+            ':(exclude)app/assets/js/games/four-in-a-row/renderer.js' \
+            ':(exclude)app/assets/js/games/four-in-a-row/renderer-cosmetics-v1.js' \
+            ':(exclude)app/assets/js/games/game-rules.js' \
+            ':(exclude)app/assets/js/games/chess/renderer-move-effect-v3.js' \
+            ':(exclude)app/assets/js/games/go/renderer.js' \
+            ':(exclude)app/assets/js/games/go/renderer-cosmetics-v1.js'

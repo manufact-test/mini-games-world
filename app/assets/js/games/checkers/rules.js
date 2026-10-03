@@ -1,45 +1,47 @@
+import { t } from '@mgw/i18n';
+
 export function checkersRules(){
   return `
     <div class="sheet-head game-rules-head">
-      <div><h2>Шашки</h2><p>Заберите все шашки соперника или лишите его возможности сделать ход.</p></div>
+      <div><h2>${t('rules.checkers.title')}</h2><p>${t('rules.checkers.subtitle')}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
 
     <div class="game-rules-content">
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Поле и фигуры</strong><span>Игра идёт на поле 8×8. У каждого игрока по 12 шашек. Ходить можно только по тёмным клеткам.</span></div>
+        <div class="game-rule-copy"><strong>${t('rules.checkers.board_title')}</strong><span>${t('rules.checkers.board_text')}</span></div>
         ${ruleBoard('start')}
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Обычный ход</strong><span>Обычная шашка ходит на одну свободную клетку по диагонали вперёд.</span></div>
+        <div class="game-rule-copy"><strong>${t('rules.checkers.move_title')}</strong><span>${t('rules.checkers.move_text')}</span></div>
         ${ruleBoard('move')}
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Взятие обязательно</strong><span>Если можно побить шашку соперника, обычный ход делать нельзя. Обычная шашка может бить и вперёд, и назад.</span></div>
+        <div class="game-rule-copy"><strong>${t('rules.checkers.capture_title')}</strong><span>${t('rules.checkers.capture_text')}</span></div>
         ${ruleBoard('capture')}
       </section>
 
       <section class="game-rule-card compact">
-        <div class="game-rule-copy"><strong>Серия взятий</strong><span>Если после первого взятия той же шашкой можно побить ещё одну фигуру, нужно продолжать ход этой же шашкой. Если есть несколько допустимых путей взятия, можно выбрать любой.</span></div>
+        <div class="game-rule-copy"><strong>${t('rules.checkers.chain_title')}</strong><span>${t('rules.checkers.chain_text')}</span></div>
       </section>
 
       <section class="game-rule-card">
-        <div class="game-rule-copy"><strong>Дамка</strong><span>Дойдя до последнего ряда, шашка становится дамкой. Дамка ходит по диагонали на любое свободное расстояние. При взятии она перепрыгивает фигуру соперника и может приземлиться на любую допустимую свободную клетку дальше по диагонали.</span></div>
+        <div class="game-rule-copy"><strong>${t('rules.checkers.king_title')}</strong><span>${t('rules.checkers.king_text')}</span></div>
         ${ruleBoard('king')}
       </section>
 
       <section class="game-rule-card compact">
-        <div class="game-rule-copy"><strong>Превращение во время взятия</strong><span>Если шашка дошла до последнего ряда во время серии взятий, она сразу становится дамкой и продолжает эту же серию уже как дамка.</span></div>
+        <div class="game-rule-copy"><strong>${t('rules.checkers.promotion_title')}</strong><span>${t('rules.checkers.promotion_text')}</span></div>
       </section>
 
       <section class="game-rule-card compact">
-        <div class="game-rule-copy"><strong>Как победить</strong><span>Заберите все шашки соперника или оставьте его без единого допустимого хода. При многократном повторении одной позиции партия может завершиться ничьей.</span></div>
+        <div class="game-rule-copy"><strong>${t('rules.checkers.win_title')}</strong><span>${t('rules.checkers.win_text')}</span></div>
       </section>
     </div>
 
-    <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">Понятно</button>
+    <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">${t('rules.understood')}</button>
   `;
 }
 

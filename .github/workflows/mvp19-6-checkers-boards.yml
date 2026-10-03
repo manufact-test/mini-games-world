@@ -156,7 +156,6 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
           git diff --exit-code "$base" "$head" -- \
             app/assets/css/games/checkers/game.css \
-            app/assets/js/games/checkers/rules.js \
             app/assets/js/games/checkers/entry.js \
             bot/games \
             bot/services/GameService.php \

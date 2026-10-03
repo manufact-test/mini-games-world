@@ -70,7 +70,11 @@ jobs:
             app/assets/js/games/reversi/meta.js \
             app/assets/js/games/reversi/rules.js \
             app/assets/js/games/chess \
+            ':(exclude)app/assets/js/games/chess/renderer.js' \
+            ':(exclude)app/assets/js/games/chess/renderer-move-effect-v3.js' \
+            ':(exclude)app/assets/js/games/chess/rules.js' \
             app/assets/js/games/checkers \
+            ':(exclude)app/assets/js/games/checkers/rules.js' \
             app/assets/js/checkers-cosmetics \
             bot/catalog/ProductInventoryService.php
           unexpected_migrations="$(git diff --name-only "$base" "$head" -- bot/database/migrations | grep -vxF 'bot/database/migrations/20260919_0041_add_remaining_game_premium_bundles.php' || true)"

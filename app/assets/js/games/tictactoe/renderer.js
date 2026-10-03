@@ -1,3 +1,5 @@
+import { t, formatNumber } from '@mgw/i18n';
+
 const previousBoards = new Map();
 const previousVisualSignatures = new Map();
 
@@ -170,7 +172,7 @@ function changedCellIndex(previous, current){
 }
 
 export function ticTacToeMeta(game){
-  return `${game.room_name} · ${game.bet} коинов · ${game.board_size}×${game.board_size}`;
+  return t('games.tictactoe.ui.meta', { room:game.room_name, bet:formatNumber(Number(game.bet || 0)), size:Number(game.board_size || 3) });
 }
 
 export function ticTacToePlayerMark(player){

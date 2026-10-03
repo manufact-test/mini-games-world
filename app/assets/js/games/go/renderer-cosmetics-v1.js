@@ -3,7 +3,7 @@ import {
   goMeta,
   goPlayerMark,
   goStatus,
-} from './renderer.js?v=70&base=mvp11-accepted';
+} from './renderer.js?v=71&mvp27_1=localized-v1&base=mvp11-accepted';
 
 const BOARD_PREFIX = 'game-go-board-';
 const STONES_PREFIX = 'game-go-stones-';

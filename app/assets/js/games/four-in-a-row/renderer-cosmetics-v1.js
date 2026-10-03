@@ -2,7 +2,7 @@ import {
   renderFourInARowSurface as renderBaseFourInARowSurface,
   fourInARowMeta,
   fourInARowPlayerMark,
-} from './renderer.js?v=53&base=mvp19-10-live-v12';
+} from './renderer.js?v=54&mvp27_1=localized-v1&base=mvp19-10-live-v12';
 import { state } from '../../state.js?v=27';
 
 const THEME_SLOT = 'game_four_in_a_row_theme';

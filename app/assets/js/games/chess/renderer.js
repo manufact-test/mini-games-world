@@ -1,3 +1,5 @@
+import { t, formatNumber } from '@mgw/i18n';
+
 import { openSheet, closeSheet } from '../../components/sheet.js?v=27';
 import { toast } from '../../components/toast.js?v=41';
 
@@ -172,7 +174,7 @@ export function renderChessSurface({ game, me, container, onAction }){
       const hasMoves = moves.some(move => Number(move.from) === cell);
       if (!hasMoves) {
         selectedByGame.delete(gameId);
-        toast('У этой фигуры сейчас нет допустимых ходов.');
+        toast(t('games.chess.ui.errors.no_moves'));
       } else {
         selectedByGame.set(gameId, cell);
       }
@@ -180,34 +182,34 @@ export function renderChessSurface({ game, me, container, onAction }){
       return;
     }
 
-    if (selected >= 0) toast('Выберите подсвеченную клетку.');
+    if (selected >= 0) toast(t('games.chess.ui.errors.choose_highlighted'));
   }));
 }
 
 export function chessMeta(game){
-  const room = String(game?.room_name || 'Шахматы');
-  return `${room} · ${Number(game?.bet || 0)} коинов · 8×8`;
+  const room = String(game?.room_name || t('games.chess.name'));
+  return t('games.chess.ui.meta', { room, bet:formatNumber(Number(game?.bet || 0)) });
 }
 
 export function chessPlayerMark(player){
-  return String(player?.side || '') === 'black' ? 'Чёрные' : 'Белые';
+  return String(player?.side || '') === 'black' ? t('games.chess.ui.side.black') : t('games.chess.ui.side.white');
 }
 
 export function chessStatus(game, me){
   if (game?.status === 'finished') {
     return ({
-      checkmate:'Мат',
-      stalemate:'Пат — ничья',
-      insufficient_material:'Ничья: недостаточно фигур',
-      threefold_repetition:'Ничья: повторение позиции',
-      fifty_move:'Ничья: правило 50 ходов',
-      timeout:'Время вышло',
-      player_left:'Партия завершена',
-    })[String(game?.chess_end_reason || '')] || 'Игра завершена';
+      checkmate:t('games.chess.ui.end.checkmate'),
+      stalemate:t('games.chess.ui.end.stalemate'),
+      insufficient_material:t('games.chess.ui.end.insufficient_material'),
+      threefold_repetition:t('games.chess.ui.end.threefold_repetition'),
+      fifty_move:t('games.chess.ui.end.fifty_move'),
+      timeout:t('games.chess.ui.end.timeout'),
+      player_left:t('games.chess.ui.end.player_left'),
+    })[String(game?.chess_end_reason || '')] || t('games.chess.ui.end.finished');
   }
   const isMine = String(game?.turn || '') === String(me?.id || '');
-  if (game?.in_check) return isMine ? 'Шах вашему королю' : 'Шах сопернику';
-  return isMine ? 'Ваш ход' : 'Ход соперника';
+  if (game?.in_check) return isMine ? t('games.chess.ui.status.check_mine') : t('games.chess.ui.status.check_opponent');
+  return isMine ? t('games.chess.ui.status.your_turn') : t('games.chess.ui.status.opponent_turn');
 }
 
 function beginMoveEffectHold(gameId, effectKey){
@@ -298,12 +300,12 @@ function variantFor(player, slot, family){
 
 function openPromotionChoice(game, from, to, side, promotions, onAction){
   const available = new Set(promotions.map(move => String(move.promotion || '')));
-  const choices = [['q','Ферзь'],['r','Ладья'],['b','Слон'],['n','Конь']].filter(([code]) => available.has(code));
+  const choices = [['q',t('games.chess.ui.promotion.queen')],['r',t('games.chess.ui.promotion.rook')],['b',t('games.chess.ui.promotion.bishop')],['n',t('games.chess.ui.promotion.knight')]].filter(([code]) => available.has(code));
   const prefix = side === 'white' ? 'w' : 'b';
 
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Превращение пешки</h2><p>Выберите новую фигуру.</p></div>
+      <div><h2>${t('games.chess.ui.promotion.title')}</h2><p>${t('games.chess.ui.promotion.note')}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="chess-promotion-grid">
@@ -441,6 +443,6 @@ function pieceSide(piece){
 }
 
 function pieceName(piece){
-  const type = ({K:'король',Q:'ферзь',R:'ладья',B:'слон',N:'конь',P:'пешка'})[piece?.[1]] || 'фигура';
-  return `${pieceSide(piece) === 'white' ? 'Белая' : 'Чёрная'} ${type}`;
+  const type = ({K:'king',Q:'queen',R:'rook',B:'bishop',N:'knight',P:'pawn'})[piece?.[1]] || 'piece';
+  return t(`games.chess.ui.piece.${pieceSide(piece) === 'white' ? 'white' : 'black'}.${type}`);
 }

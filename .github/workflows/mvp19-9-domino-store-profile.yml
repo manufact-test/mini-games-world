@@ -127,17 +127,22 @@ jobs:
             git diff --exit-code "$base" "$head" -- \
               app/assets/js/games/domino/entry.js \
               app/assets/js/games/domino/meta.js \
-              app/assets/js/games/domino/rules.js \
               app/assets/js/games/domino/chain-layout.js \
               app/assets/css/games/domino/game.css \
               app/assets/css/games/domino/rules.css \
               app/assets/js/games/go \
+              ':(exclude)app/assets/js/games/go/renderer.js' \
+              ':(exclude)app/assets/js/games/go/renderer-cosmetics-v1.js' \
               app/assets/js/games/reversi \
               ':(exclude)app/assets/js/games/reversi/renderer.js' \
               ':(exclude)app/assets/js/games/reversi/renderer-cosmetics-v1.js' \
               ':(exclude)app/assets/js/games/reversi/renderer-cosmetics-premium-v4.js' \
               app/assets/js/games/chess \
+              ':(exclude)app/assets/js/games/chess/renderer.js' \
+              ':(exclude)app/assets/js/games/chess/renderer-move-effect-v3.js' \
+              ':(exclude)app/assets/js/games/chess/rules.js' \
               app/assets/js/games/checkers \
+              ':(exclude)app/assets/js/games/checkers/rules.js' \
               app/assets/js/checkers-cosmetics \
               ':(exclude)app/assets/js/games/checkers/renderer.js' \
               ':(exclude)app/assets/js/checkers-cosmetics/renderer-board-themes.js' \

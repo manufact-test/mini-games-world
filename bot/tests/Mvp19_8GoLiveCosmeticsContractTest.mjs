@@ -16,7 +16,7 @@ const launch = fs.readFileSync('bot/helpers/WebAppLaunchUrl.php', 'utf8');
 const base = fs.readFileSync('app/assets/js/games/go/renderer.js', 'utf8');
 const checkersFit = fs.readFileSync('app/assets/css/games/checkers/telegram-height-fit-v1.css', 'utf8');
 
-assert.ok(live.includes("from './renderer.js?v=70&base=mvp11-accepted'"), 'Live Go cosmetics must decorate the accepted renderer instead of replacing gameplay');
+assert.ok(live.includes("from './renderer.js?v=71&mvp27_1=localized-v1&base=mvp11-accepted'"), 'Live Go cosmetics must decorate the localized accepted renderer instead of replacing gameplay');
 assert.ok(live.includes('renderBaseGoSurface(args);'), 'Base Go renderer must remain the rendering/gameplay owner');
 assert.ok(live.includes('game_go_theme'), 'Live Go must read the canonical board equip slot');
 assert.ok(live.includes('game_go_elements'), 'Live Go must read the canonical stones equip slot');
@@ -125,7 +125,7 @@ assert.ok(v110.includes("$goCaptureOverlayV9Target = $assets['go_capture_overlay
 assert.ok(manifest.includes("'go_capture_overlay_v9' => './assets/css/games/go/live-capture-overlay-v9.css?v=1&mvp19_8=stable-capture-overlay-v9'"), 'Manifest must keep the accepted v9 compatibility correction');
 assert.ok(v110.includes("'go_rules_marker_alignment' => $goRulesAlignmentTarget"), 'v110 must preserve the pending rules alignment corrective');
 assert.ok(
-  manifest.includes("'./assets/js/games/go/renderer.js?v=70' => './assets/js/games/go/renderer-cosmetics-v1.js?v=2&mvp19_8=live-effects-corrective-v2&fx=placement-burst-capture-guard-territory-qa-v2"),
+  manifest.includes("'./assets/js/games/go/renderer.js?v=70' => './assets/js/games/go/renderer-cosmetics-v1.js?v=3&mvp27_1=localized-v1&mvp19_8=live-effects-corrective-v2&fx=placement-burst-capture-guard-territory-qa-v2"),
   'Version manifest must keep the accepted Go renderer owner',
 );
 const launchMatch = launch.match(/\/app\/v110\.php\?v=(\d+)/);
