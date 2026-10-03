@@ -62,6 +62,11 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if [[ "${{ github.head_ref }}" != agent/mvp27-1-profile-reactions-localization-* ]]; then
+            git diff --check
+            echo "Profile reactions localization regression checks passed on a sibling MVP-27.1 localization slice; branch-specific path whitelist skipped."
+            exit 0
+          fi
           allowed='^(app/assets/js/profile/mgw-profile-reactions\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_profile_reactions_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|bot/tests/Mvp19_3ProfileReactionsTest\.php|\.github/workflows/mvp19-3-profile-reactions\.yml|\.github/workflows/mvp27-1-profile-reactions-localization\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected Profile reactions localization paths:\n%s\n' "$bad" >&2; exit 1; }

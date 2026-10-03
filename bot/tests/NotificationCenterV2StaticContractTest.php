@@ -47,7 +47,7 @@ $contains("safeDeepLink", $sources['client'], 'Client deep links must be allow-l
 $contains("if (link === 'store:orders') return 'store';", $sources['client'], 'Historical Store-order links must converge to the current Store');
 $contains("['home','profile','store','friends:requests']", $sources['client'], 'Client must reject arbitrary external notification links');
 $contains("item.type === 'friend_request'", $sources['client'], 'Friend request events must own a dedicated review action');
-$contains('Посмотреть', $sources['client'], 'Friend request notification must describe navigation instead of implying immediate acceptance');
+$contains("t('notifications.view_request')", $sources['client'], 'Friend request notification must use localized navigation copy instead of implying immediate acceptance');
 $notContains('>Добавить в друзья</button>', $sources['client'], 'Friend request notification must not claim that navigation accepts the request');
 $contains("item?.type !== 'friend_request'", $sources['client'], 'Resolved request cards must not survive a server reconciliation through local cache authority');
 $contains("detail:{ tab:'requests' }", $sources['client'], 'Friend request action must open the canonical requests tab');
@@ -58,10 +58,23 @@ $contains('.notification-card.unread', $sources['css'], 'Unread state must be vi
 $contains('notification-card-actions', $sources['css'], 'V2 card actions must have owned styling');
 
 $locale = json_decode($sources['locale'], true, 512, JSON_THROW_ON_ERROR);
-foreach (['title','mark_all','open','delete','empty','loading','item_fallback','load_error','try_again','open_center','unread_count'] as $key) {
+foreach (['title','mark_all','open','delete','empty','loading','item_fallback','load_error','try_again','open_center','unread_count','view_request','request_error','friend_request_open_marker','friend_request_open_hint','tournament_local_time'] as $key) {
     $assertions++;
     if (!is_string($locale['notifications'][$key] ?? null) || trim($locale['notifications'][$key]) === '') {
         throw new RuntimeException('Missing Notification Center localization key: notifications.' . $key);
+    }
+}
+
+foreach (['accept','decline','start','cancel'] as $key) {
+    $assertions++;
+    if (!is_string($locale['notifications']['invite_actions'][$key] ?? null) || trim($locale['notifications']['invite_actions'][$key]) === '') {
+        throw new RuntimeException('Missing Notification Center localization key: notifications.invite_actions.' . $key);
+    }
+}
+foreach (['invite_cancelled_owner','invite_cancelled_participant','invite_declined'] as $key) {
+    $assertions++;
+    if (!is_string($locale['notifications']['terminal'][$key] ?? null) || trim($locale['notifications']['terminal'][$key]) === '') {
+        throw new RuntimeException('Missing Notification Center localization key: notifications.terminal.' . $key);
     }
 }
 

@@ -34,12 +34,13 @@ $assert(str_contains($admin, 'по времени этого устройств�
     'Admin schedule copy must show local device time without GMT suffix.');
 
 $assert(str_contains($bridge, 'ваше местное время')
-        && !str_contains($bridge, "$start->format('d.m.Y H:i') . ' UTC'"),
+        && !str_contains($bridge, '$start->format(\'d.m.Y H:i\') . \' UTC\''),
     'New schedule-assigned bell copy must not expose canonical UTC as the participant clock.');
 
 $assert(str_contains($notifications, 'localizeLegacyTournamentAssignedMessage')
-        && str_contains($notifications, 'по вашему времени'),
-    'Existing already-delivered UTC assignment notice must be localized client-side.');
+        && str_contains($notifications, "t('notifications.tournament_local_time'")
+        && (($locale['notifications']['tournament_local_time'] ?? null) === 'начнётся {date} по вашему времени'),
+    'Existing already-delivered UTC assignment notice must be localized client-side through the canonical Notification Center locale key.');
 $assert(str_contains($notifications, 'invalidateNotificationReads();')
         && substr_count($notifications, 'invalidateNotificationReads();') >= 3,
     'Notification mutations must invalidate older in-flight notification reads.');
