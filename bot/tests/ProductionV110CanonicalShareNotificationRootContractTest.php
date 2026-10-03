@@ -66,6 +66,22 @@ $assert(str_contains($notifications, 'CLOSE_GUARD_MS = 1100')
     && str_contains($notifications, 'announcementGuardUntil'),
     'Closing notifications must suppress duplicate reopening and re-announcement.');
 
+$syncStart = strpos($invites, 'async function syncNow(');
+$syncEnd = strpos($invites, 'function chooseSyncInvite(', $syncStart ?: 0);
+$syncBlock = $syncStart !== false && $syncEnd !== false ? substr($invites, $syncStart, $syncEnd - $syncStart) : '';
+$activeGamePosition = strpos($syncBlock, "if (result?.active_game?.id && String(result.active_game.status || '') === 'active')");
+$eventPosition = strpos($syncBlock, 'processInviteEvents(result.invite_events');
+$assert($activeGamePosition !== false
+    && $eventPosition !== false
+    && $activeGamePosition < $eventPosition
+    && str_contains($syncBlock, 'enterGame(result.active_game, activeInviteToken);'),
+    'An authoritative active game must win before unread invite-event presentation.');
+
+$assert(str_contains($invites, "function enterGame(game, inviteTokenOverride = '')")
+    && str_contains($invites, "const inviteToken = String(inviteTokenOverride || currentInvite?.token || '');")
+    && str_contains($invites, 'if (inviteToken) consumeInviteNotification(inviteToken);'),
+    'Game entry must consume the exact invite notification before clearing invite state.');
+
 $assert(!str_contains($clean, 'initV109ShareSpeed')
     && !str_contains($clean, 'initV109ShareFallbackGuard')
     && str_contains($shell, "from './games/game-invites-v110.js?v=1137&ux=1'")
