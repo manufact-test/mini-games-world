@@ -144,6 +144,22 @@ $data = [
     ]],
 ];
 
+$candidateData = $data;
+$candidateData['users'] = [
+    $legacyUserId => ['id' => $legacyUserId],
+];
+for ($index = 0; $index < 150; $index++) {
+    $emptyId = 'empty-user-' . $index;
+    $candidateData['users'][$emptyId] = ['id' => $emptyId];
+}
+$candidateData['users']['dev-empty'] = ['id' => 'dev-empty', 'is_dev_user' => true];
+
+$assertSame(
+    [$legacyUserId],
+    $repository->synchronizationCandidateLegacyUserIds($candidateData),
+    'Notification projection candidates must ignore runtime users with exact zero-to-zero notification parity'
+);
+
 $first = $repository->synchronizeAndList($data, $legacyUserId, $mgwId);
 $assertSame(1, $first['summary']['source_count'], 'One JSON notification must be synchronized');
 $assertSame(1, $first['summary']['database_count'], 'One DB notification must exist');
@@ -160,6 +176,14 @@ $assertSame(
     $first['summary']['source_fingerprint'],
     $first['summary']['database_fingerprint'],
     'Non-zero source microseconds must not create a false notification parity failure'
+);
+
+$dbOnlyCandidateData = $candidateData;
+$dbOnlyCandidateData['notifications'] = [];
+$assertSame(
+    [$legacyUserId],
+    $repository->synchronizationCandidateLegacyUserIds($dbOnlyCandidateData),
+    'Notification projection candidates must retain DB-only recipients so durable drift still fails closed'
 );
 
 $repeat = $repository->synchronizeAndList($data, $legacyUserId, $mgwId);
