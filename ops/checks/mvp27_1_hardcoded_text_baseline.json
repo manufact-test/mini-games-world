@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-03",
-  "staging_base": "0957ff6e95a3c6505b153b3aa18a0e9333a130ce",
+  "staging_base": "14cca30b6994fa44b92ed3c0ec816c80c68ff2c1",
   "scanned_files": 776,
-  "cyrillic_lines_total": 3384,
+  "cyrillic_lines_total": 3373,
   "by_scope": {
-    "client": 1703,
+    "client": 1692,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 active Profile reactions localization; factual Store/Profile/LIVE reaction owner reduced by 24 hardcoded Cyrillic source lines to zero while preserving cumulative ownership, purchase transport, game reaction delivery, cooldown/TTL and stable live-bubble presentation."
+  "note": "MVP-27.1 active Notification Center user-copy localization; 11 player-visible Cyrillic source lines moved to canonical locale and locale-aware datetime formatting adopted. Eleven RU lines remain intentionally as bounded legacy-message compatibility matchers for already-stored historical notifications."
 }
