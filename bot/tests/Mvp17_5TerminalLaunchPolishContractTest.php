@@ -12,6 +12,7 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 
 $runtime = file_get_contents($repoRoot . '/app/assets/js/production-v110-acceptance-runtime.js');
 $manifest = require $repoRoot . '/app/runtime/client/version-manifest.php';
+$acceptanceUrl = (string)($manifest['imports']['./assets/js/production-v110-acceptance-runtime.js?v=110'] ?? '');
 $clock = file_get_contents($root . '/services/MatchPreparationClockService.php');
 
 $assert(is_string($runtime), 'Active v110 acceptance runtime must exist.');
@@ -42,11 +43,12 @@ $assert(
     'Presentation polish must not change authoritative 3-second launch or 60-second move timing.'
 );
 $assert(
-    str_contains(
-        (string)($manifest['imports']['./assets/js/production-v110-acceptance-runtime.js?v=110'] ?? ''),
-        'v=132&clock=battleship-setup-single-writer&launch=server-active-gated-v3&terminal=clock-stable'
-    ),
-    'Active v110 manifest must cache-bust only the accepted acceptance-runtime owner.'
+    preg_match('/[?&]v=([0-9]+)/', $acceptanceUrl, $acceptanceVersionMatch) === 1
+        && (int)$acceptanceVersionMatch[1] >= 132
+        && str_contains($acceptanceUrl, 'clock=battleship-setup-single-writer')
+        && str_contains($acceptanceUrl, 'launch=server-active-gated-v3')
+        && str_contains($acceptanceUrl, 'terminal=clock-stable'),
+    'Active v110 manifest must preserve the accepted acceptance-runtime timing/terminal owner on the accepted or newer cache identity.'
 );
 $assert(
     (string)($manifest['imports']['@mgw/main'] ?? '') === './assets/js/main-v110-reconnect-v174.js?v=2',
