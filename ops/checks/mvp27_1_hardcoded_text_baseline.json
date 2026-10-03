@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-03",
-  "staging_base": "5140b38ea903d237c56e9535907702f322666f32",
-  "scanned_files": 759,
-  "cyrillic_lines_total": 2857,
+  "staging_base": "f215b930f189acb0f90be42538ee8465db5391fa",
+  "scanned_files": 758,
+  "cyrillic_lines_total": 2827,
   "by_scope": {
-    "client": 1204,
+    "client": 1174,
     "backend": 1653,
     "client-entry": 0
   },
@@ -16,7 +16,8 @@
     "database migrations",
     "admin/control-plane sources",
     "staging-only rejected clean-runtime server (app/runtime/server)",
-    "shadowed invite owners (invite-controller-v120.js, game-invites.js)"
+    "shadowed invite owners (invite-controller-v120.js, game-invites.js)",
+    "shadowed legacy game screen (screens/game-screen.js)"
   ],
-  "note": "MVP-27.1 active-owner classification: rejected invite-controller-v120.js and superseded game-invites.js are outside the factual v110 bootstrap/import graph. Active v110 uses game-invites-v110.js; v120 is a redirect tombstone. Their 192 Cyrillic lines (101 + 91) are excluded from active player localization debt."
+  "note": "MVP-27.1 canonical polling ownership: active game-invites-v110 now imports startGamePolling from the same game-screen-v102-safe owner used by the v110 shell. The former screens/game-screen.js dependency is no longer runtime-reachable; its 30 Cyrillic lines are classified out of active player localization debt."
 }

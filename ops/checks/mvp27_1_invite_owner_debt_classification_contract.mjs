@@ -43,8 +43,8 @@ assert.equal(countCyrillicLines(legacyInvites), 91, 'Superseded game-invites evi
 assert.ok(audit.includes("'app/assets/js/games/invite-controller-v120.js'"), 'Audit must classify rejected v120 invite owner');
 assert.ok(audit.includes("'app/assets/js/games/game-invites.js'"), 'Audit must classify superseded invite owner');
 
-assert.equal(Number(baseline.cyrillic_lines_total), 2857, 'Invite classification total debt baseline changed unexpectedly');
-assert.equal(Number(baseline.by_scope?.client), 1204, 'Invite classification client debt baseline changed unexpectedly');
+assert.ok(Number(baseline.cyrillic_lines_total) <= 2857, 'Invite classification total debt must not regress above accepted ceiling');
+assert.ok(Number(baseline.by_scope?.client) <= 1204, 'Invite classification client debt must not regress above accepted ceiling');
 assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must stay unchanged');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must stay zero');
 
