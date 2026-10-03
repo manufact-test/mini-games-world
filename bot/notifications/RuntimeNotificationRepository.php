@@ -69,6 +69,55 @@ final class RuntimeNotificationRepository
         ];
     }
 
+    /**
+     * Return only notification owners whose parity can be non-trivial.
+     *
+     * A runtime user with zero JSON notifications and zero DB notifications is
+     * already in exact 0=0 parity and must not force a pair of ownership/DB
+     * queries on every global projection pass. Keep DB-only recipients in the
+     * candidate set so stale/mismatched durable rows still fail closed exactly
+     * as before.
+     *
+     * @return list<string>
+     */
+    public function synchronizationCandidateLegacyUserIds(array $jsonData): array
+    {
+        $eligible = [];
+        foreach (is_array($jsonData['users'] ?? null) ? $jsonData['users'] : [] as $key => $user) {
+            if (!is_array($user) || !empty($user['is_dev_user'])) continue;
+            $legacyUserId = trim((string)($user['id'] ?? $key));
+            if ($legacyUserId !== '') $eligible[$legacyUserId] = true;
+        }
+        if ($eligible === []) return [];
+
+        $candidates = [];
+        foreach (is_array($jsonData['notifications'] ?? null) ? $jsonData['notifications'] : [] as $notification) {
+            if (!is_array($notification)) continue;
+            $legacyUserId = trim((string)($notification['user_id'] ?? ''));
+            if ($legacyUserId !== '' && isset($eligible[$legacyUserId])) {
+                $candidates[$legacyUserId] = true;
+            }
+        }
+
+        $rows = $this->database()->fetchAll(
+            'SELECT DISTINCT legacy_user_id
+             FROM mgw_notifications
+             WHERE legacy_user_id IS NOT NULL AND legacy_user_id <> \'\'',
+            []
+        );
+        foreach ($rows as $row) {
+            if (!is_array($row)) continue;
+            $legacyUserId = trim((string)($row['legacy_user_id'] ?? ''));
+            if ($legacyUserId !== '' && isset($eligible[$legacyUserId])) {
+                $candidates[$legacyUserId] = true;
+            }
+        }
+
+        $ids = array_keys($candidates);
+        sort($ids, SORT_STRING);
+        return $ids;
+    }
+
     public function auditParity(
         array $jsonData,
         string|int $legacyUserId,
