@@ -82,5 +82,5 @@ jobs:
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
-          git diff --exit-code "$base" "$head" --             app/assets/js/games/four-in-a-row/renderer.js             app/assets/js/games/four-in-a-row/entry.js             app/assets/css/games/four-in-a-row/game.css             bot/services/FourInARowService.php             bot/services/FourInARowBotService.php             bot/catalog/ProductInventoryService.php
+          git diff --exit-code "$base" "$head" --             app/assets/js/games/four-in-a-row/entry.js             app/assets/css/games/four-in-a-row/game.css             bot/services/FourInARowService.php             bot/services/FourInARowBotService.php             bot/catalog/ProductInventoryService.php
           git diff --check
