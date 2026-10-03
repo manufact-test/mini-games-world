@@ -270,7 +270,6 @@ function openInviteSetup(gameType, preserved = null){
     });
   } else {
     document.querySelector('[data-open-player-picker]')?.addEventListener('click', event => {
-      cancelWarmShareDraft();
       openPlayerPicker(currentContext(), event.currentTarget);
     });
     document.querySelector('[data-create-link-invite]')?.addEventListener('click', event => createLinkDraft(currentContext(), event.currentTarget));
@@ -384,7 +383,6 @@ function playerCard(item){
 
 async function createDirectInvite(context, inviteeId, button, opponentNameOverride = ''){
   if (!inviteeId || button.disabled) return;
-  cancelWarmShareDraft();
   haptic('light');
   const opponentName = String(opponentNameOverride || button.querySelector('strong')?.textContent || inviteText('player')).trim() || inviteText('player');
   const requestGeneration = ++directInviteRequestGeneration;
@@ -471,15 +469,8 @@ async function createLinkDraft(context, button){
       return;
     }
 
-    // A real Telegram Mini App already has a complete bot deep link, so open
-    // the ordinary Telegram share surface immediately. Provider-neutral/browser
-    // shells keep the existing explicit link fallback instead of pretending to
-    // own Telegram navigation.
-    if (getInitData()) {
-      currentInvite = null;
-      openFallbackShare(draftInvite);
-      return;
-    }
+    // Keep the accepted in-app fallback owner. A missing/unsupported native
+    // prepared-share surface must never auto-jump the user into t.me/share/url.
     currentInvite = draftInvite;
     showPreparedLink(draftInvite, context);
   } catch (error) {
@@ -528,10 +519,7 @@ function warmShareDraft(context){
       entry.status = 'loading';
       // PreparedInlineMessage is warmed before the user taps Share so the
       // accepted Telegram shareMessage surface remains the visible owner.
-      // Keep the proactive draft local and fast. Telegram PreparedInlineMessage
-      // is an external network enhancement and must not sit on the default
-      // invite/share critical path.
-      const result = await inviteRequest('create_link_draft', { ...normalized, prepareMessage:false }, { prefetch:true });
+      const result = await inviteRequest('create_link_draft', { ...normalized, prepareMessage:true }, { prefetch:true });
       if (!result?.invite?.token) throw new Error(inviteText('social.link_prepare_failed'));
       if (shareWarm?.id !== entry.id) {
         void discardDraft(result.invite);
@@ -816,12 +804,8 @@ async function performInviteAction(action, token, button){
     && String(rollbackInvite?.token || '') === token
     && (Boolean(rollbackInvite?.is_owner) || Boolean(rollbackInvite?.is_invitee));
   setInviteButtonsDisabled(true);
-  if (action === 'start') {
-    button.setAttribute('aria-busy', 'true');
-    beginInviteStartTransition();
-  } else {
-    button.textContent = actionText(action);
-  }
+  button.textContent = actionText(action);
+  if (action === 'start') beginInviteStartTransition();
 
   if (action === 'accept') {
     showInviteeWaiting({
@@ -897,10 +881,7 @@ async function performInviteAction(action, token, button){
     setInviteButtonsDisabled(false);
     button.textContent = originalText;
   } catch (error) {
-    if (action === 'start') {
-      endInviteStartTransition(true);
-      button.removeAttribute('aria-busy');
-    }
+    if (action === 'start') endInviteStartTransition(true);
     currentInvite = rollbackInvite;
     if (terminalContext.notificationSurface) dispatchNotificationsRefresh();
     else if (rollbackHtml) openSheet(rollbackHtml);
@@ -1053,19 +1034,12 @@ async function syncNow({ announce = true } = {}){
     const result = await inviteRequest('sync', { token:requestedInviteToken });
     syncState(result, { preserveBalance:true });
     if (syncUiTransitionGeneration !== inviteUiTransitionGeneration) return result;
-    // An authoritative active game supersedes every invite presentation for
-    // that launch. Enter it before processing stale invite events so an old
-    // "you were invited" toast cannot race onto the already-started match.
+    processInviteEvents(result.invite_events, Number(result.unread_count || 0), announce);
+
     if (result?.active_game?.id && String(result.active_game.status || '') === 'active') {
-      const activeInviteToken = String(
-        result?.tracked_invite?.token || result?.invite?.token || currentInvite?.token || ''
-      );
-      if (activeInviteToken) consumeInviteNotification(activeInviteToken);
       enterGame(result.active_game);
       return result;
     }
-
-    processInviteEvents(result.invite_events, Number(result.unread_count || 0), announce);
 
     const nextInvite = chooseSyncInvite(result);
     if (nextInvite?.token) {
@@ -1336,8 +1310,6 @@ function openCurrentInvite(){
 function enterGame(game){
   if (!game?.id || String(game.status || '') !== 'active') return;
   cancelWarmShareDraft();
-  const inviteToken = String(currentInvite?.token || '');
-  if (inviteToken) consumeInviteNotification(inviteToken);
   currentInvite = null;
   state.activeGame = game;
   closeSheet();
