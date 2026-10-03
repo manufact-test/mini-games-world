@@ -1,0 +1,41 @@
+name: Invite Backend Latency Safe v1
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/invite-opponents.php'
+      - 'bot/invites.php'
+      - 'ops/checks/invite_backend_latency_safe_v1_contract.mjs'
+      - '.github/workflows/invite-backend-latency-safe-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          php -l bot/invite-opponents.php
+          php -l bot/invites.php
+          node --check ops/checks/invite_backend_latency_safe_v1_contract.mjs
+      - name: Focused latency ownership
+        run: node ops/checks/invite_backend_latency_safe_v1_contract.mjs
+      - name: Invite regressions
+        run: |
+          set -euo pipefail
+          php bot/tests/InviteOpponentServiceTest.php
+          php bot/tests/Mvp18_3InviteV2ContractTest.php
+          php bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
