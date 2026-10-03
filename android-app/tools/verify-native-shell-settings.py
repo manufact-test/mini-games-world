@@ -86,8 +86,8 @@ require("applicationId 'com.minigamesworld.app.acceptance'" in build,
         "accepted package identity must remain unchanged")
 require("mgw-acceptance-stable.keystore" in build,
         "accepted signing owner must remain unchanged")
-require("main-v110-handoff-shell.js?v=1169&mvp26_3=native-shell-settings-v1" in version_manifest,
-        "active shell cache owner must publish the Android Back corrective")
+require("main-v110-handoff-shell.js?v=1170&mvp27_1=active-shell-copy-v1&mvp26_3=native-shell-settings-v1" in version_manifest,
+        "active localized shell cache owner must preserve the Android Back corrective")
 require("mvp26_3=landscape-ime-sheet-v2" in version_manifest,
         "active CSS cache owner must publish the visual-viewport landscape IME corrective")
 require("sheet.js?v=1111&mvp26_3=visual-viewport-ime-v2" in version_manifest,
