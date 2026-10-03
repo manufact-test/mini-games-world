@@ -1,0 +1,302 @@
+name: MVP27 Recovery — exact MVP26 baseline proof
+
+on:
+  push:
+    branches:
+      - agent/mvp27-1-recovery-mvp26-ci-2026-10-04
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp27-recovery-mvp26-baseline-proof
+  cancel-in-progress: true
+
+jobs:
+  integrity:
+    name: Exact MVP26 product-tree integrity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Prove only CI proof file differs from accepted MVP26
+        shell: bash
+        run: |
+          set -euo pipefail
+          baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
+          proof='.github/workflows/mvp27-recovery-mvp26-baseline-proof.yml'
+          test "$(git rev-parse HEAD^)" = "$baseline"
+          changed="$(git diff --name-only "$baseline" HEAD)"
+          printf '%s\n' "$changed"
+          test "$changed" = "$proof"
+          git diff --exit-code "$baseline" HEAD -- . ":(exclude)$proof"
+
+  repository-ci:
+    name: Full repository CI
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: mgw_ci
+          MYSQL_USER: mgw_ci_user
+          MYSQL_PASSWORD: ci_database_password_not_secret
+          MYSQL_ROOT_PASSWORD: ci_root_password_not_secret
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_DATABASE: mgw_ci_mariadb
+          MARIADB_USER: mgw_ci_mariadb_user
+          MARIADB_PASSWORD: ci_mariadb_password_not_secret
+          MARIADB_ROOT_PASSWORD: ci_mariadb_root_password_not_secret
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      MGW_TEST_MYSQL_DSN: mysql:host=127.0.0.1;port=3306;dbname=mgw_ci;charset=utf8mb4
+      MGW_TEST_MYSQL_USER: mgw_ci_user
+      MGW_TEST_MYSQL_PASSWORD: ci_database_password_not_secret
+      MGW_TEST_MARIADB_DSN: mysql:host=127.0.0.1;port=3307;dbname=mgw_ci_mariadb;charset=utf8mb4
+      MGW_TEST_MARIADB_USER: mgw_ci_mariadb_user
+      MGW_TEST_MARIADB_PASSWORD: ci_mariadb_password_not_secret
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, pdo_sqlite, mbstring
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run repository checks
+        shell: bash
+        run: |
+          set -o pipefail
+          bash scripts/ci/run.sh 2>&1 | tee ci-report.txt
+      - name: Upload CI report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recovery-mvp26-ci-report
+          path: ci-report.txt
+          if-no-files-found: warn
+          retention-days: 7
+
+  product-regression:
+    name: Full Telegram product regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: MVP25 RC contract and cleanup closure
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp25_7TelegramProductRcContractTest.php
+          php bot/tests/Mvp25_1RouteAndDeadResidueContractTest.php
+          php bot/tests/Mvp25_1ProfilePlaceholderCleanupContractTest.php
+          php bot/tests/Mvp25_1V110ManifestNormalizationContractTest.php
+          php bot/tests/Mvp25_2FinalHumanCopyClosureContractTest.php
+          php bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php
+          php bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest.php
+          php bot/tests/Mvp25_2TournamentHumanCopyContractTest.php
+          php bot/tests/Mvp25_4PerformanceReliabilityClosureContractTest.php
+          php bot/tests/Mvp25_4ReliabilityContractTest.php
+      - name: Security monetization and secret boundary
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp25_5WebhookIngressSecurityContractTest.php
+          php bot/tests/Mvp25_5RateLimitContractTest.php
+          php bot/tests/Mvp25_5WriteReplaySafetyTest.php
+          php bot/tests/Mvp25_5WriteReplaySafetyContractTest.php
+          php bot/tests/Mvp25_5PublicErrorLogSanitizationContractTest.php
+          php bot/tests/Mvp25_5SecurityResilienceClosureContractTest.php
+          php bot/tests/Mvp25_6MonetizationDisabledStoreTest.php
+          node bot/tests/Mvp25_6StoreClientContractTest.mjs
+          php bot/tests/Mvp25_6ClosureContractTest.php
+          node scripts/ci/check-secrets-contract.mjs
+          node scripts/ci/check-secrets.mjs
+      - name: Games cosmetics economy Store and Profile
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp167AllGamesRegressionContractTest.php
+          php bot/tests/Mvp14r2GamesContractTest.php
+          php bot/tests/Mvp14r2GamesBaselineTest.php
+          php bot/tests/RematchOptimisticUxContractTest.php
+          php bot/tests/UnifiedEconomyRuntimeSyncTest.php
+          php bot/tests/UnifiedEconomyUninitializedRuntimeHydrationTest.php
+          php bot/tests/Mvp19_1ProductInventoryTest.php
+          php bot/tests/Mvp19_2CosmeticStoreTest.php
+          php bot/tests/Mvp19_3ProfileAvatarsTest.php
+          php bot/tests/Mvp19_3ProfileBackgroundsTest.php
+      - name: Friends invites matchmaking notifications and result flow
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp17_1MatchmakingQueueTest.php
+          php bot/tests/Mvp17_2HumanPriorityFallbackTest.php
+          php bot/tests/Mvp17_4ReconnectLifecycleTest.php
+          php bot/tests/Mvp17_4ReconnectResumeRegressionTest.php
+          php bot/tests/Mvp18_3InviteV2ContractTest.php
+          php bot/tests/Mvp18_4UniversalInviteLandingContractTest.php
+          php bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
+          php bot/tests/FriendGraphServiceTest.php
+          php bot/tests/Mvp18_6NotificationPipelineContractTest.php
+          php bot/tests/StagingCurrentE2EOwnerContractTest.php
+      - name: Arena tournaments Support Admin account and incident
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php
+          php bot/tests/Mvp20_7RatingArchiveTest.php
+          php bot/tests/Mvp21_11TournamentReleaseProofTest.php
+          php bot/tests/Mvp21_9TournamentProductProjectionContractTest.php
+          php bot/tests/GamePublicIdentityResponseProjectionTest.php
+          php bot/tests/SupportTicketServiceTest.php
+          php bot/tests/Mvp22_2CompensationWorkflowTest.php
+          php bot/tests/Mvp22_3ModerationWorkflowTest.php
+          php bot/tests/Mvp22_4AntiFraudWorkflowTest.php
+          php bot/tests/Mvp22_5SystemAdminTest.php
+          php bot/tests/Mvp22_7AdminOperationsTest.php
+          php bot/tests/Mvp22_8AccountDataLifecycleTest.php
+          php bot/tests/Mvp22_9IncidentRecoveryTest.php
+          php bot/tests/Mvp23AdminClosureContractTest.php
+      - name: Legacy Gold retirement boundary
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp24FinalGoldRemovalClosureContractTest.php
+          php bot/tests/Mvp24MiniAppGoldStateCleanupContractTest.php
+          php bot/tests/Mvp24LegacyAdminCommerceReadOnlyContractTest.php
+          php bot/tests/Mvp24LegacyApiCommerceCleanupContractTest.php
+          php bot/tests/ShopPaymentApiActionGateRegressionTest.php
+          php bot/tests/Mvp24PublicGoldSanitationContractTest.php
+
+  mysql-persistence:
+    name: Critical MySQL persistence regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mgw_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring
+          coverage: none
+      - name: Create isolated databases
+        run: |
+          php -r '
+            $pdo=new PDO("mysql:host=127.0.0.1;port=3306;charset=utf8mb4","root","root",[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
+            foreach (["mgw_archive","mgw_compensation","mgw_support","mgw_moderation","mgw_antifraud","mgw_incident","mgw_tournament"] as $db) {
+              $pdo->exec("CREATE DATABASE IF NOT EXISTS ".$db." CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+            }
+          '
+      - name: Critical persistence owners
+        shell: bash
+        run: |
+          set -euo pipefail
+          MGW_TEST_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_archive' MGW_TEST_MYSQL_USER=root MGW_TEST_MYSQL_PASSWORD=root php bot/tests/Mvp24LegacyArchiveCurrentMySqlContractTest.php
+          MGW_COMPENSATION_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_compensation' MGW_COMPENSATION_MYSQL_USER=root MGW_COMPENSATION_MYSQL_PASS=root php bot/tests/Mvp22_2CompensationMySqlIntegrationTest.php
+          MGW_SUPPORT_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_support' MGW_SUPPORT_MYSQL_USER=root MGW_SUPPORT_MYSQL_PASS=root php bot/tests/SupportTicketMySqlIntegrationTest.php
+          MGW_MODERATION_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_moderation' MGW_MODERATION_MYSQL_USER=root MGW_MODERATION_MYSQL_PASS=root php bot/tests/Mvp22_3ModerationMySqlIntegrationTest.php
+          MGW_ANTIFRAUD_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_antifraud' MGW_ANTIFRAUD_MYSQL_USER=root MGW_ANTIFRAUD_MYSQL_PASS=root php bot/tests/Mvp22_4AntiFraudMySqlIntegrationTest.php
+          MGW_INCIDENT_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_incident' MGW_INCIDENT_MYSQL_USER=root MGW_INCIDENT_MYSQL_PASS=root php bot/tests/Mvp22_9IncidentRecoveryMySqlIntegrationTest.php
+          MGW_TEST_MYSQL_HOST=127.0.0.1 MGW_TEST_MYSQL_PORT=3306 MGW_TEST_MYSQL_DATABASE=mgw_tournament MGW_TEST_MYSQL_USER=root MGW_TEST_MYSQL_PASSWORD=root php bot/tests/Mvp21_11TournamentReleaseProofTest.php
+
+  android-contract:
+    name: Android accepted-owner regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Android architecture and lifecycle verifiers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 android-app/tools/verify-foundation.py
+          python3 android-app/tools/verify-native-shell-settings.py
+          python3 android-app/tools/verify-orientation-lifecycle.py
+          python3 android-app/tools/verify-platform-adapters.py
+          python3 android-app/tools/verify-product-parity.py
+          python3 android-app/tools/verify-device-lifecycle-qa.py
+          python3 android-app/tools/verify-product-rc.py
+          bash -n android-app/tools/device-lifecycle-smoke.sh
+      - name: Android backend and Store regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp26_2AndroidDeviceAuthTest.php
+          php bot/tests/Mvp26_3AccountLinkServiceTest.php
+          php bot/tests/Mvp26_4AndroidAccountReauthTest.php
+          php bot/tests/Mvp26_4_2AndroidAccountDataDownloadContractTest.php
+          php bot/tests/Mvp26_6AndroidParityCorrectiveTest.php
+          php bot/tests/SupportTicketServiceTest.php
+          node tests/mvp19-13-ttt-bundle-reference.mjs
+          node bot/tests/Mvp25_6StoreClientContractTest.mjs
+          node scripts/ci/check-secrets.mjs
+
+  proof-gate:
+    name: MVP26 recovery baseline automated proof
+    runs-on: ubuntu-24.04
+    needs: [integrity, repository-ci, product-regression, mysql-persistence, android-contract]
+    if: always()
+    steps:
+      - name: Require every lane
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ needs.integrity.result }}" = success
+          test "${{ needs.repository-ci.result }}" = success
+          test "${{ needs.product-regression.result }}" = success
+          test "${{ needs.mysql-persistence.result }}" = success
+          test "${{ needs.android-contract.result }}" = success
+          echo "Exact MVP26 baseline automated proof PASS"
