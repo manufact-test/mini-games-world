@@ -270,6 +270,7 @@ function openInviteSetup(gameType, preserved = null){
     });
   } else {
     document.querySelector('[data-open-player-picker]')?.addEventListener('click', event => {
+      cancelWarmShareDraft();
       openPlayerPicker(currentContext(), event.currentTarget);
     });
     document.querySelector('[data-create-link-invite]')?.addEventListener('click', event => createLinkDraft(currentContext(), event.currentTarget));
@@ -286,7 +287,6 @@ async function openPlayerPicker(context, sourceButton = null){
   }
 
   haptic('light');
-  showPlayerPickerLoading(context, requestGeneration);
 
   try {
     const result = await postJson(OPPONENTS_URL, {});
@@ -296,7 +296,7 @@ async function openPlayerPicker(context, sourceButton = null){
     renderPlayerPicker(items, context, requestGeneration);
   } catch (error) {
     if (requestGeneration !== playerPickerRequestGeneration) return;
-    renderPlayerPickerError(requestGeneration, error);
+    renderPlayerPickerError(context, requestGeneration, error);
   } finally {
     if (trigger?.isConnected && requestGeneration === playerPickerRequestGeneration) {
       trigger.disabled = false;
@@ -305,57 +305,45 @@ async function openPlayerPicker(context, sourceButton = null){
   }
 }
 
-function showPlayerPickerLoading(context, requestGeneration){
+function renderPlayerPicker(items, context, requestGeneration){
+  if (requestGeneration !== playerPickerRequestGeneration) return;
+  const list = items.length
+    ? items.map(playerCard).join('')
+    : `<div class="notifications-empty invite-empty-state"><div>👥</div><strong>${escapeHtml(inviteText('social.no_recent'))}</strong><span>${escapeHtml(inviteText('social.no_recent_note'))}</span></div>`;
+
+  // Preserve the accepted ready-first picker: keep the setup sheet intact while
+  // the one fresh request is in flight, then replace it with a complete list.
+  // Never paint the old "loading players" intermediate frame.
   openSheet(`
     <span data-player-picker-generation="${Number(requestGeneration || 0)}" hidden></span>
     <div class="sheet-head">
       <div><h2>${escapeHtml(inviteText('social.picker_title'))}</h2><p>${escapeHtml(gameTitle(context.gameType))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
-    <div class="invite-player-list" data-player-picker-results aria-busy="true">
-      <button class="invite-player-card loading" type="button" disabled aria-hidden="true" tabindex="-1">
-        <span class="invite-player-avatar" aria-hidden="true">…</span>
-        <span class="invite-player-copy"><strong>${escapeHtml(inviteText('social.picker_loading'))}</strong><span>${escapeHtml(inviteText('social.picker_checking'))}</span></span>
-        <span class="invite-player-arrow" aria-hidden="true">›</span>
-      </button>
-    </div>
+    <div class="invite-player-list" data-player-picker-results>${list}</div>
     <button class="btn ghost full" data-back-to-invite-setup type="button">${escapeHtml(inviteText('social.back_conditions'))}</button>
   `);
   bindPlayerPickerBack(context);
-}
-
-function activePlayerPickerSurface(requestGeneration){
-  if (!document.getElementById('sheetOverlay')?.classList.contains('active')) return null;
-  const root = document.getElementById('sheet');
-  const marker = root?.querySelector('[data-player-picker-generation]');
-  const results = root?.querySelector('[data-player-picker-results]');
-  if (!root || !marker || !results) return null;
-  if (String(marker.dataset.playerPickerGeneration || '') !== String(Number(requestGeneration || 0))) return null;
-  return { results };
-}
-
-function renderPlayerPicker(items, context, requestGeneration){
-  const list = items.length
-    ? items.map(playerCard).join('')
-    : `<div class="notifications-empty invite-empty-state"><div>👥</div><strong>${escapeHtml(inviteText('social.no_recent'))}</strong><span>${escapeHtml(inviteText('social.no_recent_note'))}</span></div>`;
-  const surface = activePlayerPickerSurface(requestGeneration);
-  if (!surface) return;
-  surface.results.innerHTML = list;
-  surface.results.setAttribute('aria-busy', 'false');
   document.querySelectorAll('[data-direct-opponent]').forEach(button => button.addEventListener('click', () => {
     createDirectInvite(context, String(button.dataset.directOpponent || ''), button);
   }));
 }
 
-function renderPlayerPickerError(requestGeneration, error){
-  const surface = activePlayerPickerSurface(requestGeneration);
-  if (!surface) return;
-  surface.results.innerHTML = `
+function renderPlayerPickerError(context, requestGeneration, error){
+  if (requestGeneration !== playerPickerRequestGeneration) return;
+  openSheet(`
+    <span data-player-picker-generation="${Number(requestGeneration || 0)}" hidden></span>
+    <div class="sheet-head">
+      <div><h2>${escapeHtml(inviteText('social.load_players_failed'))}</h2><p>${escapeHtml(gameTitle(context.gameType))}</p></div>
+      <button class="close" data-close-sheet type="button">×</button>
+    </div>
     <div class="notifications-empty invite-empty-state">
       <div>⚠️</div><strong>${escapeHtml(inviteText('social.load_players_failed'))}</strong>
       <span>${escapeHtml(error?.message || inviteText('network.retry'))}</span>
-    </div>`;
-  surface.results.setAttribute('aria-busy', 'false');
+    </div>
+    <button class="btn ghost full" data-back-to-invite-setup type="button">${escapeHtml(inviteText('social.back_conditions'))}</button>
+  `);
+  bindPlayerPickerBack(context);
 }
 
 function bindPlayerPickerBack(context){
@@ -383,6 +371,7 @@ function playerCard(item){
 
 async function createDirectInvite(context, inviteeId, button, opponentNameOverride = ''){
   if (!inviteeId || button.disabled) return;
+  cancelWarmShareDraft();
   haptic('light');
   const opponentName = String(opponentNameOverride || button.querySelector('strong')?.textContent || inviteText('player')).trim() || inviteText('player');
   const requestGeneration = ++directInviteRequestGeneration;
@@ -804,8 +793,12 @@ async function performInviteAction(action, token, button){
     && String(rollbackInvite?.token || '') === token
     && (Boolean(rollbackInvite?.is_owner) || Boolean(rollbackInvite?.is_invitee));
   setInviteButtonsDisabled(true);
-  button.textContent = actionText(action);
-  if (action === 'start') beginInviteStartTransition();
+  if (action === 'start') {
+    button.setAttribute('aria-busy', 'true');
+    beginInviteStartTransition();
+  } else {
+    button.textContent = actionText(action);
+  }
 
   if (action === 'accept') {
     showInviteeWaiting({
@@ -881,7 +874,10 @@ async function performInviteAction(action, token, button){
     setInviteButtonsDisabled(false);
     button.textContent = originalText;
   } catch (error) {
-    if (action === 'start') endInviteStartTransition(true);
+    if (action === 'start') {
+      endInviteStartTransition(true);
+      button.removeAttribute('aria-busy');
+    }
     currentInvite = rollbackInvite;
     if (terminalContext.notificationSurface) dispatchNotificationsRefresh();
     else if (rollbackHtml) openSheet(rollbackHtml);
@@ -1034,12 +1030,17 @@ async function syncNow({ announce = true } = {}){
     const result = await inviteRequest('sync', { token:requestedInviteToken });
     syncState(result, { preserveBalance:true });
     if (syncUiTransitionGeneration !== inviteUiTransitionGeneration) return result;
-    processInviteEvents(result.invite_events, Number(result.unread_count || 0), announce);
 
     if (result?.active_game?.id && String(result.active_game.status || '') === 'active') {
+      const activeInviteToken = String(
+        result?.tracked_invite?.token || result?.invite?.token || currentInvite?.token || ''
+      );
+      if (activeInviteToken) consumeInviteNotification(activeInviteToken);
       enterGame(result.active_game);
       return result;
     }
+
+    processInviteEvents(result.invite_events, Number(result.unread_count || 0), announce);
 
     const nextInvite = chooseSyncInvite(result);
     if (nextInvite?.token) {
@@ -1310,6 +1311,8 @@ function openCurrentInvite(){
 function enterGame(game){
   if (!game?.id || String(game.status || '') !== 'active') return;
   cancelWarmShareDraft();
+  const inviteToken = String(currentInvite?.token || '');
+  if (inviteToken) consumeInviteNotification(inviteToken);
   currentInvite = null;
   state.activeGame = game;
   closeSheet();
