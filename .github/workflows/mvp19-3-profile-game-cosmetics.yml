@@ -72,5 +72,7 @@ jobs:
             ':(exclude)app/assets/js/games/checkers/renderer.js' \
             ':(exclude)app/assets/js/games/reversi/renderer.js' \
             ':(exclude)app/assets/js/games/reversi/renderer-cosmetics-v1.js' \
-            ':(exclude)app/assets/js/games/reversi/renderer-cosmetics-premium-v4.js'
+            ':(exclude)app/assets/js/games/reversi/renderer-cosmetics-premium-v4.js' \
+            ':(exclude)app/assets/js/games/go/renderer.js' \
+            ':(exclude)app/assets/js/games/go/renderer-cosmetics-v1.js'
           git diff --check
