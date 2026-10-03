@@ -9,6 +9,7 @@ on:
       - 'app/runtime/client/version-manifest.php'
       - 'ops/checks/mvp27_1_profile_backgrounds_localization_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - 'ops/checks/mvp27_1_reversi_renderer_localization_contract.mjs'
       - 'bot/tests/Mvp19_3ProfileBackgroundsTest.php'
       - '.github/workflows/mvp19-3-profile-backgrounds.yml'
       - '.github/workflows/mvp27-1-profile-backgrounds-localization.yml'
@@ -66,7 +67,7 @@ jobs:
             echo "Successor localization slice: Profile backgrounds owner unchanged; original bounded migration scope does not apply."
             exit 0
           fi
-          allowed='^(app/assets/js/profile/mgw-profile-backgrounds\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_profile_backgrounds_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|bot/tests/Mvp19_3ProfileBackgroundsTest\.php|\.github/workflows/mvp19-3-profile-backgrounds\.yml|\.github/workflows/mvp27-1-profile-backgrounds-localization\.yml)$'
+          allowed='^(app/assets/js/profile/mgw-profile-backgrounds\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_profile_backgrounds_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|ops/checks/mvp27_1_reversi_renderer_localization_contract\.mjs|bot/tests/Mvp19_3ProfileBackgroundsTest\.php|\.github/workflows/mvp19-3-profile-backgrounds\.yml|\.github/workflows/mvp27-1-profile-backgrounds-localization\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected Profile backgrounds localization paths:\n%s\n' "$bad" >&2; exit 1; }
 

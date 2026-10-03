@@ -27,7 +27,7 @@ assert(ru.games?.reversi?.ui?.status?.your_turn === 'Ваш ход', 'Accepted R
 assert(ru.games?.reversi?.ui?.errors?.illegal_move === 'Здесь нельзя поставить фишку. Выберите подсвеченную клетку.', 'Accepted RU illegal-move copy must remain unchanged.');
 assert(ru.games?.reversi?.ui?.events?.finished === 'Партия завершена · ● {black} : {white} ○', 'Accepted RU terminal score copy must remain unchanged.');
 assert(ru.games?.reversi?.ui?.cell?.black === '{cell}: чёрная фишка', 'Accepted RU accessibility copy must remain unchanged.');
-assert(baseline.cyrillic_lines_total === 3431 && baseline.by_scope?.client === 1750, 'Reversi localization debt baseline must ratchet by exactly 22 client lines.');
+assert(Number(baseline.cyrillic_lines_total) <= 3431 && Number(baseline.by_scope?.client) <= 1750, 'Reversi localization debt must preserve or improve the accepted post-Reversi baseline.');
 
 console.log('MVP27_1_REVERSI_RENDERER_LOCALIZATION_CONTRACT=PASS');
 console.log('MVP27_1_ACTIVE_REVERSI_RENDERER_HARDCODED_CYRILLIC=0');
