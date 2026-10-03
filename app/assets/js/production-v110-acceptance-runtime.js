@@ -1,5 +1,6 @@
 import { state } from './state.js?v=27';
 import { haptic } from './telegram/telegram-app.js?v=27';
+import { t } from '@mgw/i18n';
 
 const LAUNCH_COUNTDOWN_STEP_MS = 1000;
 const LAUNCH_READY_HOLD_MS = 260;
@@ -57,10 +58,12 @@ function stabilizeSearchSummary(event){
   const bet = room === 'match' ? 10 : Number(state.selectedBet || 10);
   const size = boardSize(type);
   const title = gameTitle(type);
-  const roomTitle = room === 'gold' ? 'Gold-комната' : 'Матч-комната';
+  const roomTitle = t(room === 'gold' ? 'acceptance_runtime.search.room_gold' : 'acceptance_runtime.search.room_match');
   const context = {
-    primary:`${title} · ${roomTitle} · участие ${bet} коинов`,
-    secondary:type === 'domino' ? 'Классика 0–6' : `Поле ${size}×${size}`,
+    primary:t('acceptance_runtime.search.primary', { game:title, room:roomTitle, bet }),
+    secondary:type === 'domino'
+      ? t('acceptance_runtime.search.domino_classic')
+      : t('acceptance_runtime.search.board', { size }),
   };
   info.classList.add('mgw-v110-search-summary');
   info.innerHTML = `<span>${escapeHtml(context.primary)}</span><span>${escapeHtml(context.secondary)}</span>`;
@@ -76,7 +79,13 @@ function boardSize(type){
   })[type] || 3;
 }
 function gameTitle(type){
-  return ({ tictactoe:'Крестики-нолики', four_in_a_row:'4 в ряд', battleship:'Морской бой', checkers:'Шашки', reversi:'Реверси', chess:'Шахматы', go:'Го', domino:'Домино' })[type] || 'Игра';
+  const key = ({
+    tictactoe:'games.tictactoe.name', four_in_a_row:'games.four_in_a_row.name',
+    battleship:'games.battleship.name', checkers:'games.checkers.name',
+    reversi:'games.reversi.name', chess:'games.chess.name',
+    go:'games.go.name', domino:'games.domino.name',
+  })[type];
+  return key ? t(key) : t('acceptance_runtime.search.game_fallback');
 }
 function gameTitleFromGame(game){
   const type = String(game?.game_type || game?.type || state.selectedGame || 'tictactoe');
@@ -366,7 +375,7 @@ function paintClock(){
   const seconds = pendingWithoutServerClock || beforeTurnStart
     ? clock.timeoutSec
     : Math.max(0, Math.ceil((clock.deadline - now) / 1000));
-  const label = `${seconds} сек`;
+  const label = t('game_screen.timer_seconds', { count:seconds });
   runtime.lastClockLabel = label;
   if (timer.textContent !== label) timer.textContent = label;
 }
@@ -572,8 +581,8 @@ function renderLaunchOverlay(overlay, game, phase, presentation){
   if (gameLabel) gameLabel.textContent = gameTitleFromGame(game);
 
   if (stage.type === 'timeout') {
-    if (title) title.textContent = 'Матч не состоялся';
-    if (note) note.textContent = 'Соперник не подключился вовремя';
+    if (title) title.textContent = t('acceptance_runtime.launch.timeout_title');
+    if (note) note.textContent = t('acceptance_runtime.launch.timeout_note');
     if (countdown) {
       countdown.hidden = true;
       countdown.dataset.stage = 'timeout';
@@ -593,8 +602,8 @@ function renderLaunchOverlay(overlay, game, phase, presentation){
   }
 
   if (stage.type === 'prepare') {
-    if (title) title.textContent = 'Матч скоро начнётся';
-    if (note) note.textContent = 'Готовьтесь к игре';
+    if (title) title.textContent = t('acceptance_runtime.launch.upcoming_title');
+    if (note) note.textContent = t('acceptance_runtime.launch.prepare_note');
     if (progress) {
       progress.hidden = false;
       progress.dataset.visible = '1';
@@ -603,8 +612,8 @@ function renderLaunchOverlay(overlay, game, phase, presentation){
   }
 
   if (stage.type === 'number') {
-    if (title) title.textContent = 'Матч скоро начнётся';
-    if (note) note.textContent = 'Приготовьтесь к первому ходу';
+    if (title) title.textContent = t('acceptance_runtime.launch.upcoming_title');
+    if (note) note.textContent = t('acceptance_runtime.launch.first_move_note');
     if (progress) {
       progress.hidden = false;
       progress.dataset.visible = '0';
@@ -613,8 +622,8 @@ function renderLaunchOverlay(overlay, game, phase, presentation){
   }
 
   if (stage.type === 'sync') {
-    if (title) title.textContent = 'Почти готово';
-    if (note) note.textContent = 'Ещё мгновение';
+    if (title) title.textContent = t('acceptance_runtime.launch.syncing_title');
+    if (note) note.textContent = t('acceptance_runtime.launch.syncing_note');
     if (progress) {
       progress.hidden = false;
       progress.dataset.visible = '1';
@@ -622,8 +631,8 @@ function renderLaunchOverlay(overlay, game, phase, presentation){
     return;
   }
 
-  if (title) title.textContent = 'Всё готово';
-  if (note) note.textContent = 'Вперёд!';
+  if (title) title.textContent = t('acceptance_runtime.launch.ready_title');
+  if (note) note.textContent = t('acceptance_runtime.launch.ready_note');
   if (progress) {
     progress.hidden = false;
     progress.dataset.visible = '0';
@@ -641,13 +650,13 @@ function ensureLaunchOverlay(){
   overlay.hidden = true;
   overlay.innerHTML = `
     <div class="mgw-phase-b-launch-card" role="status" aria-live="polite">
-      <div class="mgw-phase-b-launch-game" data-phase-b-game>Игра</div>
+      <div class="mgw-phase-b-launch-game" data-phase-b-game>${escapeHtml(t("acceptance_runtime.search.game_fallback"))}</div>
       <div class="mgw-phase-b-launch-visual" aria-hidden="true">
         <span class="mgw-phase-b-launch-ring"></span>
         <div class="mgw-phase-b-countdown" data-phase-b-countdown data-stage="prepare"></div>
       </div>
-      <strong class="mgw-phase-b-launch-title" data-phase-b-title>Матч скоро начнётся</strong>
-      <span class="mgw-phase-b-launch-note" data-phase-b-note>Готовьтесь к игре</span>
+      <strong class="mgw-phase-b-launch-title" data-phase-b-title>${escapeHtml(t("acceptance_runtime.launch.upcoming_title"))}</strong>
+      <span class="mgw-phase-b-launch-note" data-phase-b-note>${escapeHtml(t("acceptance_runtime.launch.prepare_note"))}</span>
       <div class="mgw-phase-b-launch-progress" data-phase-b-progress data-visible="1" aria-hidden="true"><i></i><i></i><i></i></div>
     </div>
   `;
