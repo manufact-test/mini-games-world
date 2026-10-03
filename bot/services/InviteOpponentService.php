@@ -18,6 +18,8 @@ final class InviteOpponentService
 
         $onlineIds = array_fill_keys(array_map('strval', $onlineAccountIds), true);
         $lastGameAt = $this->lastFinishedGames($data, $userId);
+        $viewer = is_array($data['users'][$userId] ?? null) ? $data['users'][$userId] : [];
+        $viewerCanSeeTestUsers = $this->isStagingTestIdentity($userId, $viewer);
         $result = [];
 
         foreach ($data['users'] ?? [] as $candidateId => $candidate) {
@@ -25,7 +27,8 @@ final class InviteOpponentService
             if ($candidateId === ''
                 || $candidateId === $userId
                 || str_starts_with($candidateId, 'bot_')
-                || !is_array($candidate)) {
+                || !is_array($candidate)
+                || (!$viewerCanSeeTestUsers && $this->isStagingTestIdentity($candidateId, $candidate))) {
                 continue;
             }
 
@@ -68,6 +71,20 @@ final class InviteOpponentService
         foreach ($result as &$item) unset($item['_score']);
         unset($item);
         return $result;
+    }
+
+    private function isStagingTestIdentity(string $userId, array $user): bool
+    {
+        if (!empty($user['is_staging_test_user']) || !empty($user['is_dev_user'])) {
+            return true;
+        }
+        if ((string)($user['mgw_identity_provider'] ?? '') === 'staging_fixture') {
+            return true;
+        }
+        foreach (['stg_test_player_', 'stg_tour_', 'dev_'] as $prefix) {
+            if (str_starts_with($userId, $prefix)) return true;
+        }
+        return false;
     }
 
     /** @return array<string,string> */
