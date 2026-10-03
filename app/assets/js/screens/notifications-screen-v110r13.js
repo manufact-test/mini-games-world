@@ -3,7 +3,7 @@ import { haptic, getInitData } from '../telegram/telegram-app.js?v=27';
 import { getSessionId } from '../session.js?v=27';
 import { state } from '../state.js?v=27';
 import { currentScreen, showScreen } from '../router.js?v=27';
-import { t } from '@mgw/i18n';
+import { t, formatDateTime as formatLocalizedDateTime } from '@mgw/i18n';
 
 const NOTIFICATIONS_URL = `${window.location.origin}/bot/notifications.php`;
 const ANNOUNCED_STORAGE_KEY = 'mgw_announced_notifications_v7';
@@ -722,7 +722,7 @@ function renderNotification(item){
 
 function renderV2Actions(item){
   if (item.type === 'friend_request' && item.deep_link === 'friends:requests') {
-    return `<div class="notification-card-actions"><button class="btn primary full" data-notification-open="${escapeHtml(item.id)}" type="button">Посмотреть</button></div>`;
+    return `<div class="notification-card-actions"><button class="btn primary full" data-notification-open="${escapeHtml(item.id)}" type="button">${escapeHtml(t('notifications.view_request'))}</button></div>`;
   }
   const buttons = [];
   if (item.deep_link) {
@@ -755,12 +755,13 @@ function inviteActionSnapshot(item){
 }
 
 function actionLabel(action){
-  return {
-    accept:'Принять приглашение',
-    decline:'Отклонить',
-    start:'Начать игру',
-    cancel:'Отменить',
-  }[String(action || '')] || t('notifications.open');
+  const key = {
+    accept:'accept',
+    decline:'decline',
+    start:'start',
+    cancel:'cancel',
+  }[String(action || '')];
+  return key ? t(`notifications.invite_actions.${key}`) : t('notifications.open');
 }
 
 function renderError(){
@@ -933,7 +934,7 @@ async function rawNotifications(markRead, options = {}){
   });
   const data = await response.json().catch(() => null);
   if (!response.ok || !data || data.ok === false) {
-    throw new Error(data?.error || `Ошибка уведомлений: ${response.status}`);
+    throw new Error(data?.error || t('notifications.request_error', { status:response.status }));
   }
   return data;
 }
@@ -1169,8 +1170,10 @@ function notificationMessage(item){
   let message = String(item?.message || '').trim();
   message = localizeLegacyTournamentAssignedMessage(item, message);
   if (!message) return terminalNotificationFallback(item);
-  if (item?.type === 'friend_request' && !message.includes('Откройте заявку')) {
-    message += ' Откройте заявку, чтобы посмотреть профиль и принять или отклонить её.';
+  if (item?.type === 'friend_request'
+      && !message.includes('Откройте заявку')
+      && !message.includes(t('notifications.friend_request_open_marker'))) {
+    message += ` ${t('notifications.friend_request_open_hint')}`;
   }
   const technical = [
     /\s*Баланс уже обновлён\.?/giu,
@@ -1193,33 +1196,25 @@ function localizeLegacyTournamentAssignedMessage(item, message){
   const [, day, month, year, hour, minute] = match;
   const date = new Date(`${year}-${month}-${day}T${hour}:${minute}:00Z`);
   if (Number.isNaN(date.getTime())) return message;
-  const local = new Intl.DateTimeFormat('ru-RU', {
-    day:'2-digit',
-    month:'2-digit',
-    year:'numeric',
-    hour:'2-digit',
-    minute:'2-digit',
-  }).format(date);
-  return message.replace(match[0], `начнётся ${local} по вашему времени`);
+  const local = formatLocalizedDateTime(date, 'short');
+  return message.replace(match[0], t('notifications.tournament_local_time', { date:local }));
 }
 
 function terminalNotificationFallback(item){
   const status = String(item?.invite_status || '');
   if (status === 'cancelled' || status === 'canceled') {
     return item?.invite_is_owner
-      ? 'Вы отменили своё приглашение.'
-      : 'Вы отменили участие в матче.';
+      ? t('notifications.terminal.invite_cancelled_owner')
+      : t('notifications.terminal.invite_cancelled_participant');
   }
-  if (status === 'declined') return 'Вы отклонили приглашение.';
+  if (status === 'declined') return t('notifications.terminal.invite_declined');
   return '';
 }
 
 function formatDate(value){
   const date = new Date(value || '');
   if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat('ru-RU', {
-    day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit',
-  }).format(date);
+  return formatLocalizedDateTime(date, 'short', { year:undefined });
 }
 
 function escapeHtml(value){
