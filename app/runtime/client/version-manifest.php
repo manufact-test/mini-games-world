@@ -37,6 +37,7 @@ return [
         './assets/js/profile/mgw-profile-model.js?v=1' => './assets/js/profile/mgw-profile-model.js?v=6&mvp16=public-id-canonical-identity&mvp19_3_1=avatar-pass-through&c7=no-prehydrate-default&mvp27_1=localized-v1',
         './assets/js/profile/mgw-account-link-ui.js?v=3' => './assets/js/profile/mgw-account-link-ui.js?v=4&mvp27_1=localized-v1',
         './assets/js/profile/mgw-profile-backgrounds.js?v=2&mvp19_3=profile-backgrounds-ux-corrective' => './assets/js/profile/mgw-profile-backgrounds.js?v=4&mvp19_3=full-profile-surface&mvp27_1=localized-v1',
+        './assets/js/profile/mgw-profile-badges.js?v=5&mvp19_3=profile-badge-avatar-shape' => './assets/js/profile/mgw-profile-badges.js?v=6&mvp19_3=profile-badge-avatar-shape&mvp27_1=localized-v1',
         './assets/js/profile/mgw-profile-frames.js?v=4&mvp19_3=profile-frame-avatar-card-parity' => './assets/js/profile/mgw-profile-frames.js?v=5&mvp19_3=profile-frame-avatar-card-parity&mvp27_1=localized-v1',
         './assets/js/profile/mgw-profile-entry-effects.js?v=1&mvp19_3=entry-effects' => './assets/js/profile/mgw-profile-entry-effects.js?v=8&mvp19_3=player-arbitration&mvp25_4=profile-post-paint-v1&mvp27_1=localized-v1',
         './assets/js/profile/mgw-profile-victory-effects.js?v=1&mvp19_3=victory-effects' => './assets/js/profile/mgw-profile-victory-effects-card-parity.js?v=13&mvp19_3=victory-nova&visual_repair=11&profile_card_sheet_final=8&preview=on-demand-v2&mvp25_4=profile-post-paint-v1&mvp27_1=localized-v1',
