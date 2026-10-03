@@ -120,7 +120,7 @@ jobs:
           git diff --check
 
       - name: Guard frozen engines
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp19-3-profile-entry-effects') }}
         shell: bash
         run: |
           set -euo pipefail

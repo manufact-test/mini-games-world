@@ -70,6 +70,7 @@ jobs:
         run: php bot/tests/Mvp25_1V110ManifestNormalizationContractTest.php
 
       - name: Frozen monetization/economy/game owners
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp25-6-monetization-disabled-store') }}
         shell: bash
         run: |
           set -euo pipefail

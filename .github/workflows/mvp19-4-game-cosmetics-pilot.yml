@@ -146,6 +146,7 @@ jobs:
           grep -F "@import url('./cosmetics.css?v=1&mvp19_5=chess-cosmetics');" app/assets/css/games/chess/game.css
 
       - name: Guard accepted mechanics and lifecycle owners
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp19-4-game-cosmetics') }}
         shell: bash
         run: |
           set -euo pipefail

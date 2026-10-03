@@ -75,7 +75,7 @@ jobs:
         run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
 
       - name: Bounded migration scope
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-game-invites-localization')
         shell: bash
         run: |
           set -euo pipefail

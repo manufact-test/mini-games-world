@@ -22,7 +22,7 @@ $clean = $read('app/assets/js/production-clean-entry-v110.js');
 
 $assert(str_contains($invites, "document.addEventListener('pointerdown', handleInvitePointerDown, true)")
     && str_contains($invites, 'function warmShareDraft(context)')
-    && str_contains($invites, "inviteRequest('create_link_draft', normalized, { prefetch:true })"),
+    && str_contains($invites, "inviteRequest('create_link_draft', { ...normalized, prepareMessage:true }, { prefetch:true })"),
     'The canonical invitation owner must keep serialized share prewarm.');
 $assert(str_contains($invites, 'tg.shareMessage(preparedId')
     && str_contains($invites, "tg.onEvent('shareMessageSent'")
@@ -36,16 +36,16 @@ $assert(str_contains($invites, "String(errorCode || '') === 'USER_DECLINED'")
     'Native cancellation must silently reuse the prepared draft.');
 
 $watchStart = strpos($invites, 'async function watchIncomingInvite()');
-$watchEnd = strpos($invites, 'function canWatchIncomingInvite()', $watchStart ?: 0);
+$watchEnd = strpos($invites, 'function canWatchInviteSignal()', $watchStart ?: 0);
 $watchBlock = $watchStart !== false && $watchEnd !== false ? substr($invites, $watchStart, $watchEnd - $watchStart) : '';
-$assert(str_contains($invites, 'announceLinkedInviteNotification(result, token);')
-    && !str_contains($invites, 'if (currentInvite?.token) openCurrentInvite();')
-    && str_contains($watchBlock, 'currentInvite = invite;')
-    && !str_contains($watchBlock, 'showIncomingInvite(invite);'),
-    'Incoming invitations must enter through the notification owner.');
+$assert(str_contains($watchBlock, 'scheduleSync(0);')
+    && str_contains($watchBlock, 'return invite;')
+    && !str_contains($watchBlock, 'showIncomingInvite(invite);')
+    && !str_contains($watchBlock, 'currentInvite = invite;'),
+    'Low-latency invite watch must wake the canonical invite sync owner instead of becoming a second UI/state owner.');
 
 $openLinkStart = strpos($endpoint, "case 'open_link':");
-$openLinkEnd = strpos($endpoint, "case 'sync':", $openLinkStart ?: 0);
+$openLinkEnd = strpos($endpoint, "case 'accept':", $openLinkStart ?: 0);
 $openLinkBlock = $openLinkStart !== false && $openLinkEnd !== false ? substr($endpoint, $openLinkStart, $openLinkEnd - $openLinkStart) : '';
 $assert(str_contains($openLinkBlock, '$invites->bindFromLink($data, $user, $token, true, false)')
     && str_contains($openLinkBlock, '$core = $invites->sync($data, $user, $token);')
@@ -68,10 +68,11 @@ $assert(str_contains($notifications, 'CLOSE_GUARD_MS = 1100')
 
 $assert(!str_contains($clean, 'initV109ShareSpeed')
     && !str_contains($clean, 'initV109ShareFallbackGuard')
-    && str_contains($shell, 'game-invites-v110.js?v=1133')
-    && str_contains($shell, 'notifications-screen-v110r12.js?v=1133')
+    && str_contains($shell, "from './games/game-invites-v110.js?v=1137&ux=1'")
+    && str_contains($shell, "from './screens/notifications-screen-v110r13.js?v=1162&mvp18=friend-request-lifecycle'")
     && !str_contains($shell, 'notifications-screen-v110r5.js')
-    && str_contains($entry, 'main-v110.js?v=1133'),
-    'Only the freshly published canonical share owner and accepted notification owner may be active through the final v1130 shell.');
+    && str_contains($entry, 'runtime/client/version-manifest.php')
+    && str_contains($entry, 'X-MGW-Client-Bootstrap: v2-single-owner'),
+    'The v110 shell must retain one canonical invite owner, one accepted notification owner and the manifest-driven single bootstrap.');
 
 fwrite(STDOUT, "ProductionV110CanonicalShareNotificationRootContractTest: {$assertions} assertions passed\n");
