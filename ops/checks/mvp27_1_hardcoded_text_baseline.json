@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-03",
-  "staging_base": "89df79ee3de616476f1fa21fa4902d87e509c449",
+  "staging_base": "403bc185646a63309535d92e9190d04667785c7e",
   "scanned_files": 776,
-  "cyrillic_lines_total": 3355,
+  "cyrillic_lines_total": 3333,
   "by_scope": {
-    "client": 1674,
+    "client": 1652,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 active Acceptance Runtime localization; all 18 player-facing Cyrillic source lines moved to canonical locale while launch, first-tap, clock, game-engine, economy, backend and tournament mechanics remain frozen."
+  "note": "MVP-27.1 active Go base renderer localization; factual LIVE base renderer reduced by 22 hardcoded Cyrillic source lines to zero while preserving 9x9/13x13 geometry, cell/pass action ownership, capture cadence, final-score semantics and accepted cosmetics owners."
 }
