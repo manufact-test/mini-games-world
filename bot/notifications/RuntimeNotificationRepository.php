@@ -113,7 +113,7 @@ final class RuntimeNotificationRepository
             }
         }
 
-        $ids = array_keys($candidates);
+        $ids = array_map('strval', array_keys($candidates));
         sort($ids, SORT_STRING);
         return $ids;
     }
