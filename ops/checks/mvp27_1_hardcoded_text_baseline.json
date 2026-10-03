@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-03",
-  "staging_base": "89df79ee3de616476f1fa21fa4902d87e509c449",
+  "staging_base": "403bc185646a63309535d92e9190d04667785c7e",
   "scanned_files": 776,
-  "cyrillic_lines_total": 3355,
+  "cyrillic_lines_total": 3337,
   "by_scope": {
-    "client": 1674,
+    "client": 1656,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 active Acceptance Runtime localization; all 18 player-facing Cyrillic source lines moved to canonical locale while launch, first-tap, clock, game-engine, economy, backend and tournament mechanics remain frozen."
+  "note": "MVP-27.1 active Profile Victory Effects localization; all 18 player-facing Cyrillic source lines moved to canonical locale while winner selection, Store/Profile purchase/equip, on-demand previews, result trigger, reduced-motion and 2–4 second live presentation remain frozen."
 }
