@@ -73,8 +73,9 @@ assert(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1108' =>
     && manifest.includes('mvp27_1=profile-chain-localized-v1'),
   'Canonical manifest must publish localized full Profile composition.');
 assert(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1142")
-    && manifest.includes('mvp27_1=profile-localized-v1'),
-  'Canonical manifest must publish localized direct Profile owner.');
+    && manifest.includes('mvp27_1=profile-localized-v1')
+    && manifest.includes('mvp27_1_profile_title=scalar-v1'),
+  'Canonical manifest must publish localized direct Profile owner with the scalar collection-title cache identity.');
 assert(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1126&profile_base=accepted-game-cosmetics' => './assets/js/screens/profile-screen-v110.js?v=1140"),
   'Accepted Profile cosmetics base alias must converge on localized Profile owner.');
 assert(manifest.includes("'./assets/js/profile/mgw-profile-model.js?v=1' => './assets/js/profile/mgw-profile-model.js?v=6")
@@ -85,6 +86,11 @@ assert(Number(ru._meta?.version || 0) >= 31, 'RU locale revision must retain Pro
 for (const key of ['moderation','collection','tournament','history_economy']) {
   assert(ru.profile?.[key], `Profile locale namespace missing: ${key}`);
 }
+assert(ru.profile?.collection?.games_title === 'Игры',
+  'Profile collection title must use a scalar key separate from the nested games catalog.');
+assert(profile.includes("t('profile.collection.games_title')")
+    && !profile.includes("t('profile.collection.games')"),
+  'Profile collection title must not collide with the nested games catalog key.');
 for (const game of ['chess','checkers','reversi','go','domino','four_in_a_row','battleship']) {
   assert(ru.profile?.collection?.games?.[game], `Profile collection localization missing: ${game}`);
 }

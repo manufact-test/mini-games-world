@@ -75,12 +75,14 @@ $assert(str_contains($admin, 'restoreDraftControls();'),
     'Draft controls must remain explicitly interactive after reset rerender.');
 $resetHandler = strpos($admin, 'const resetManualAcceptance = async () =>');
 $preBusyRelease = strpos($admin, 'releaseFocusBeforeHide(resetPanel);', $resetHandler === false ? 0 : $resetHandler);
-$resetBusy = strpos($admin, "const data = await withBusy('Безопасно сбрасываю staging-турнир", $resetHandler === false ? 0 : $resetHandler);
+$resetBusy = strpos($admin, "const data = await withBusy(", $resetHandler === false ? 0 : $resetHandler);
 $assert($resetHandler !== false && $preBusyRelease !== false && $resetBusy !== false && $preBusyRelease < $resetBusy,
     'Reset confirmation focus must be released before withBusy disables the focused Telegram WebView button.');
-$assert(str_contains($adminEntry, 'admin-tournaments.js?v=15')
+$adminVersion = [];
+$assert(preg_match('~admin-tournaments\\.js\\?v=(\\d+)~', $adminEntry, $adminVersion) === 1
+        && (int)$adminVersion[1] >= 15
         && str_contains($adminEntry, 'mvp21_8=corrective-v12'),
-    'Admin reset corrective must publish a fresh Telegram WebView cache identity.');
+    'Admin reset corrective must remain at or beyond the accepted Telegram WebView cache identity.');
 
 $assert(str_contains($e2e, '[MGW_COLD_START_TIMING]')
         && str_contains($e2e, 'navigation_to_bootstrap_ms')

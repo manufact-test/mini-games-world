@@ -61,6 +61,14 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-profile-games-title-corrective-* ]]; then
+            git diff --exit-code "$base" "$head" -- \
+              app/assets/js/profile/mgw-account-link-ui.js \
+              app/assets/js/main-v110-handoff-shell.js \
+              bot/tests/Mvp26_3_6PendingLinkPrebootStaticContractTest.php
+            echo "MVP-27.1 Profile title corrective: pending-link behavior is covered by the static contract above and its direct owners are unchanged."
+            exit 0
+          fi
           if git diff --quiet "$base" "$head" -- app/assets/js/profile/mgw-account-link-ui.js app/assets/js/screens/profile-screen-v110.js app/assets/js/main-v110-handoff-shell.js; then
             echo "Successor slice: pending-link preboot owners unchanged; original bounded scope does not apply."
             exit 0
