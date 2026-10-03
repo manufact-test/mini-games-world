@@ -1,5 +1,5 @@
 {
-  "_meta": {"locale":"ru","version":47},
+  "_meta": {"locale":"ru","version":48},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
   "topbar": {"balance":"Баланс","notifications":"Уведомления"},
@@ -996,6 +996,17 @@
       "toast":{"purchased":"Эффект победы добавлен в коллекцию."},
       "errors":{"purchase":"Не удалось купить эффект победы.","remove":"Не удалось снять эффект победы.","select":"Не удалось выбрать эффект победы."},
       "live":{"skip":"Пропустить","skip_aria":"Пропустить эффект победы"}
+    },
+    "badges":{
+      "title":"Бейджи",
+      "type":"Бейдж",
+      "fallback_name":"Бейдж",
+      "selected_aria":"Выбран",
+      "tiers":{"normal":"Обычный","rare":"Редкий","animated":"Анимированный","fallback":"Бейдж"},
+      "actions":{"remove":"Снять","select":"Выбрать","buy":"Купить"},
+      "purchase":{"title":"Подтвердить покупку","to_pay":"К оплате","coins_value":"{count} коинов","remaining":"Останется","missing":"Не хватает {count}","buy_for":"Купить за {count}"},
+      "toast":{"purchased":"Бейдж добавлен в коллекцию.","removed":"Бейдж снят.","selected":"Бейдж выбран."},
+      "errors":{"purchase":"Не удалось купить бейдж.","remove":"Не удалось снять бейдж.","select":"Не удалось выбрать бейдж."}
     },
     "frames":{
       "title":"Рамки",
