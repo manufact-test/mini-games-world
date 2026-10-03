@@ -804,8 +804,12 @@ async function performInviteAction(action, token, button){
     && String(rollbackInvite?.token || '') === token
     && (Boolean(rollbackInvite?.is_owner) || Boolean(rollbackInvite?.is_invitee));
   setInviteButtonsDisabled(true);
-  button.textContent = actionText(action);
-  if (action === 'start') beginInviteStartTransition();
+  if (action === 'start') {
+    button.setAttribute('aria-busy', 'true');
+    beginInviteStartTransition();
+  } else {
+    button.textContent = actionText(action);
+  }
 
   if (action === 'accept') {
     showInviteeWaiting({
@@ -875,13 +879,19 @@ async function performInviteAction(action, token, button){
     }
     if (action === 'start') {
       endInviteStartTransition(true);
+      button.removeAttribute('aria-busy');
+      setInviteButtonsDisabled(false);
+      button.textContent = originalText;
       return;
     }
 
     setInviteButtonsDisabled(false);
     button.textContent = originalText;
   } catch (error) {
-    if (action === 'start') endInviteStartTransition(true);
+    if (action === 'start') {
+      endInviteStartTransition(true);
+      button.removeAttribute('aria-busy');
+    }
     currentInvite = rollbackInvite;
     if (terminalContext.notificationSurface) dispatchNotificationsRefresh();
     else if (rollbackHtml) openSheet(rollbackHtml);
