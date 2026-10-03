@@ -16,6 +16,9 @@ try {
     $userId = (string)($tgUser['id'] ?? '');
     if ($userId === '') api_error('Пользователь не найден.');
 
+    $identityProvider = strtolower(trim((string)($tgUser['mgw_identity_provider'] ?? '')));
+    $isAndroidActor = $identityProvider === 'android_device';
+
     // The picker and create_direct must read the same active runtime state.
     // A staging-only DB snapshot can lag behind JSON and omit newly active users,
     // producing asymmetric lists and an empty frame before a later refresh.
@@ -42,13 +45,11 @@ try {
         true
     );
 
-    // Android uses the same canonical MGW social graph as Telegram. The old
-    // picker only exposed recent/online JSON users, so an accepted friend could
-    // disappear from the selector solely because they had not played recently.
-    // FriendGraph remains the relationship owner; direct invite creation remains
-    // owned by invites.php/GameInviteService.
+    // Android-only parity may need canonical friends that are not recent JSON
+    // opponents. Telegram must stay on the accepted low-latency users/games
+    // snapshot and must not pay for the canonical DB friend-graph merge.
     $actorMgwId = strtoupper(trim((string)($tgUser['mgw_id'] ?? '')));
-    if (MgwIdGenerator::isValid($actorMgwId)) {
+    if ($isAndroidActor && MgwIdGenerator::isValid($actorMgwId)) {
         $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
         $router = new RuntimeStorageRouter($config);
         if ($databaseConfig->enabled()
