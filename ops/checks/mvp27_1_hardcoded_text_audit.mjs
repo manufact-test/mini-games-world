@@ -15,6 +15,7 @@ const SKIP_PREFIXES = [
   'app/assets/js/localization/',
   'app/locales/',
   'app/runtime/localization/',
+  'app/runtime/server/', // staging-only rejected clean-runtime server; not reachable from factual Telegram v110 graph
   'bot/tests/',
   'bot/incident/',
 ];
