@@ -2,13 +2,13 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-03",
-  "staging_base": "9d0d3700480f8fdb9f96519383847d8869053da3",
+  "staging_base": "efacacf9f24c34aa41ec8d3d3b0c391d7597fdd3",
   "scanned_files": 776,
-  "cyrillic_lines_total": 3077,
+  "cyrillic_lines_total": 3074,
   "by_scope": {
     "client": 1396,
     "backend": 1653,
-    "client-entry": 28
+    "client-entry": 25
   },
   "excluded": [
     "canonical localization sources",
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 active shell-copy bundle: localized 122 hardcoded Cyrillic source lines across the factual main-v110 root import graph, including runtime/API errors, boot/UI copy, notifications cleanup tokens, weekly bonus, search/session lock copy, invite deep-link copy and RU-specific typography patterns; runtime semantics remain frozen."
+  "note": "MVP-27.1 active client-entry slice: localized the 3 direct Cyrillic source lines in the factual Telegram app/v110.php entry through canonical server LocalizationCatalog ownership; client-entry debt 28 -> 25, while the remaining app/runtime/server clean-runtime sources are not reclassified in this slice."
 }
