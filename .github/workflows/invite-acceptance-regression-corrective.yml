@@ -13,7 +13,9 @@ on:
       - 'app/assets/css/main.css'
       - 'app/runtime/client/version-manifest.php'
       - 'bot/tests/ProductionV110CanonicalShareNotificationRootContractTest.php'
+      - 'bot/tests/ProductionV110InviteStartSyncOwnershipContractTest.php'
       - 'ops/checks/invite_acceptance_regression_corrective_contract.mjs'
+      - '.github/workflows/mvp26-6-android-product-parity.yml'
       - '.github/workflows/invite-acceptance-regression-corrective.yml'
   workflow_dispatch:
 
@@ -73,7 +75,17 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(bot/invite-opponents\.php|bot/services/InviteOpponentService\.php|bot/tests/InviteOpponentServiceTest\.php|app/assets/js/games/game-invites-v110\.js|app/assets/css/components/game-invites\.css|app/assets/css/main\.css|app/runtime/client/version-manifest\.php|bot/tests/ProductionV110CanonicalShareNotificationRootContractTest\.php|ops/checks/invite_acceptance_regression_corrective_contract\.mjs|\.github/workflows/invite-acceptance-regression-corrective\.yml)$'
+          allowed='^(bot/invite-opponents\.php|bot/services/InviteOpponentService\.php|bot/tests/InviteOpponentServiceTest\.php|app/assets/js/games/game-invites-v110\.js|app/assets/css/components/game-invites\.css|app/assets/css/main\.css|app/runtime/client/version-manifest\.php|bot/tests/ProductionV110CanonicalShareNotificationRootContractTest\.php|bot/tests/ProductionV110InviteStartSyncOwnershipContractTest\.php|ops/checks/invite_acceptance_regression_corrective_contract\.mjs|\.github/workflows/mvp26-6-android-product-parity\.yml|\.github/workflows/invite-acceptance-regression-corrective\.yml)
+          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected corrective paths:\n%s\n' "$bad" >&2; exit 1; }
+          git diff --exit-code "$base" "$head" -- \
+            bot/games bot/ratings bot/tournaments bot/economy bot/ledger android-app \
+            bot/services/invites/GameInviteActionTrait.php \
+            bot/services/invites/GameInviteCreationTrait.php
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected corrective paths:\n%s\n' "$bad" >&2; exit 1; }
           git diff --exit-code "$base" "$head" -- bot/games bot/services/invites/GameInviteActionTrait.php bot/services/invites/GameInviteCreationTrait.php
