@@ -61,7 +61,9 @@ $assert(
 
 $entry = $read('app/v110.php');
 $assert(str_contains($entry, 'function mgw_v110_public_failure'), 'v110 must own one human fatal boundary.');
-$assert(str_contains($entry, 'Не удалось открыть Mini Games World. Попробуйте ещё раз через минуту.'), 'v110 human fatal message missing.');
+$assert(str_contains($entry, "mgw_v110_public_copy('entry.open_failed'"), 'v110 human fatal boundary must use canonical locale ownership.');
+$assert(($locale['entry']['open_failed'] ?? null) === 'Не удалось открыть Mini Games World. Попробуйте ещё раз через минуту.', 'v110 human fatal locale copy missing.');
+$assert(!preg_match('/[\\x{0400}-\\x{04FF}]/u', $entry), 'v110 active entry must not keep direct Cyrillic player copy.');
 $assert(!preg_match('/echo\s+[\'\"]Mini Games World .*?(manifest|owner|stylesheet|anchor|bootstrap)/i', $entry), 'v110 must not echo implementation diagnostics to players.');
 
 $manifest = $read('app/runtime/client/version-manifest.php');
