@@ -74,7 +74,7 @@ if (preg_match('/main\.css\?v=(\d+)/', $versionManifest, $mainCssVersionMatch) !
 }
 $assertions++;
 if (preg_match(
-    "/shield-king-visuals\.js\?v=127&sk=4&icons=c1efd5af&shell=nav' => '\.\/assets\/js\/components\/shield-king-visuals\.js\?v=(\d+)&sk=4&icons=c1efd5af&shell=nav&settings=metallic&friends=1(?:&[^']*)?'/",
+    "/shield-king-visuals\.js\?v=127&sk=4&icons=c1efd5af&shell=nav' => '\.\/assets\/js\/components\/shield-king-visuals\.js\?v=(\d+)&[^']*sk=4&icons=c1efd5af&shell=nav&settings=metallic&friends=1(?:&[^']*)?'/",
     $versionManifest,
     $visualVersionMatch
 ) !== 1 || (int)$visualVersionMatch[1] < 129) {
