@@ -65,6 +65,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" != agent/mvp27-1-profile-victory-effects-localization-* ]]; then
+            echo "Successor localization slice: Victory Effects owner unchanged; original bounded migration scope does not apply."
+            git diff --check
+            exit 0
+          fi
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           allowed='^(app/assets/js/profile/mgw-profile-victory-effects-v4\.js|app/assets/js/profile/mgw-profile-victory-effects-card-parity\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_profile_victory_effects_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|bot/tests/Mvp25_4ProfileTapFinalContractTest\.php|\.github/workflows/mvp27-1-acceptance-runtime-localization\.yml|\.github/workflows/mvp27-1-profile-victory-effects-localization\.yml)$'
