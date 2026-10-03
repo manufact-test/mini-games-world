@@ -22,7 +22,7 @@ $clean = $read('app/assets/js/production-clean-entry-v110.js');
 
 $assert(str_contains($invites, "document.addEventListener('pointerdown', handleInvitePointerDown, true)")
     && str_contains($invites, 'function warmShareDraft(context)')
-    && str_contains($invites, "inviteRequest('create_link_draft', normalized, { prefetch:true })"),
+    && str_contains($invites, "inviteRequest('create_link_draft', { ...normalized, prepareMessage:true }, { prefetch:true })"),
     'The canonical invitation owner must keep serialized share prewarm.');
 $assert(str_contains($invites, 'tg.shareMessage(preparedId')
     && str_contains($invites, "tg.onEvent('shareMessageSent'")
