@@ -11,6 +11,7 @@ on:
       - 'ops/checks/mvp27_1_active_client_entry_localization_contract.mjs'
       - 'ops/checks/mvp27_1_active_shell_copy_bundle_contract.mjs'
       - 'bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php'
+      - 'bot/tests/Mvp25_2FinalHumanCopyClosureContractTest.php'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - '.github/workflows/mvp27-1-active-client-entry-localization.yml'
   workflow_dispatch:
@@ -38,9 +39,11 @@ jobs:
           node --check ops/checks/mvp27_1_active_client_entry_localization_contract.mjs
           node --check ops/checks/mvp27_1_active_shell_copy_bundle_contract.mjs
           php -l bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php
+          php -l bot/tests/Mvp25_2FinalHumanCopyClosureContractTest.php
           node ops/checks/mvp27_1_active_client_entry_localization_contract.mjs
           node ops/checks/mvp27_1_active_shell_copy_bundle_contract.mjs
           php bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php
+          php bot/tests/Mvp25_2FinalHumanCopyClosureContractTest.php
           node ops/checks/mvp27_1_localization_architecture_contract.mjs
           php bot/tests/Mvp27_1LocalizationArchitectureAuditTest.php
 
