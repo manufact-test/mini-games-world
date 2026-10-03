@@ -16,7 +16,7 @@ const launch = fs.readFileSync('bot/helpers/WebAppLaunchUrl.php', 'utf8');
 const base = fs.readFileSync('app/assets/js/games/go/renderer.js', 'utf8');
 const checkersFit = fs.readFileSync('app/assets/css/games/checkers/telegram-height-fit-v1.css', 'utf8');
 
-assert.ok(live.includes("from './renderer.js?v=70&base=mvp11-accepted'"), 'Live Go cosmetics must decorate the accepted renderer instead of replacing gameplay');
+assert.ok(live.includes("from './renderer.js?v=71&mvp27_1=localized-v1&base=mvp11-accepted'"), 'Live Go cosmetics must decorate the localized accepted renderer instead of replacing gameplay');
 assert.ok(live.includes('renderBaseGoSurface(args);'), 'Base Go renderer must remain the rendering/gameplay owner');
 assert.ok(live.includes('game_go_theme'), 'Live Go must read the canonical board equip slot');
 assert.ok(live.includes('game_go_elements'), 'Live Go must read the canonical stones equip slot');

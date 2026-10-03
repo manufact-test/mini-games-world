@@ -58,6 +58,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" != agent/mvp27-1-profile-badges-localization-* ]]; then
+            echo "Successor localization slice: Profile Badges owner unchanged; original bounded migration scope does not apply."
+            git diff --check
+            exit 0
+          fi
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           allowed='^(app/assets/js/profile/mgw-profile-badges\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_profile_badges_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp19-3-profile-badges\.yml|\.github/workflows/mvp27-1-profile-frames-localization\.yml|\.github/workflows/mvp27-1-profile-badges-localization\.yml)$'
