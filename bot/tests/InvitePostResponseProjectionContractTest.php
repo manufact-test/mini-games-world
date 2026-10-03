@@ -26,8 +26,8 @@ $assert(
     'JSON response must opt into post-response work explicitly.'
 );
 $assert(
-    str_contains($response, "json_response(['ok' => true] + mgw_normalize_api_data($data), 200, true);")
-        && str_contains($response, "json_response(['ok' => false, 'error' => mgw_public_api_error($message)], $status);"),
+    str_contains($response, 'json_response([\'ok\' => true] + mgw_normalize_api_data($data), 200, true);')
+        && str_contains($response, 'json_response([\'ok\' => false, \'error\' => mgw_public_api_error($message)], $status);'),
     'Only successful API responses may run deferred hooks.'
 );
 $fastcgi = strpos($response, "function_exists('fastcgi_finish_request')");
@@ -41,7 +41,7 @@ $assert(
     'Deferred work must never run before a supported SAPI has finished the HTTP response.'
 );
 $assert(
-    str_contains($response, "error_log('[MiniGamesWorld deferred response] hook failed: ' . get_class($error));"),
+    str_contains($response, 'error_log(\'[MiniGamesWorld deferred response] hook failed: \' . get_class($error));'),
     'Deferred projection failures must be server-only and must not replace an already-delivered success response.'
 );
 
@@ -61,11 +61,11 @@ $assert(
     'Invite mutations must defer only exact changed-token projection while keeping sync/share-draft exclusions.'
 );
 $assert(
-    str_contains($invites, "static fn(array $data): array => $runtimeInviteProjector->synchronizeTokens($data, $projectionTokens)"),
+    str_contains($invites, 'static fn(array $data): array => $runtimeInviteProjector->synchronizeTokens($data, $projectionTokens)'),
     'Deferred projection must preserve exact changed-token delta ownership.'
 );
 $assert(
-    !str_contains($invites, "static fn(array $data): array => $runtimeInviteProjector->synchronizeTokens($data, $bridgeInviteTokens)"),
+    !str_contains($invites, 'static fn(array $data): array => $runtimeInviteProjector->synchronizeTokens($data, $bridgeInviteTokens)'),
     'No synchronous bridge-token projection callback may remain on the invite response critical path.'
 );
 
