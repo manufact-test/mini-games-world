@@ -1,13 +1,25 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/runtime/localization/LocalizationCatalog.php';
+
+function mgw_v110_public_copy(string $key, string $fallback): string
+{
+    try {
+        $catalog = new LocalizationCatalog(__DIR__ . '/locales');
+        return $catalog->translate($key);
+    } catch (Throwable $error) {
+        return $fallback;
+    }
+}
+
 function mgw_v110_public_failure(string $technicalMessage): never
 {
     error_log('[MiniGamesWorld v110 entry] ' . $technicalMessage);
     http_response_code(500);
     header('Content-Type: text/plain; charset=utf-8');
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-    echo 'Не удалось открыть Mini Games World. Попробуйте ещё раз через минуту.';
+    echo mgw_v110_public_copy('entry.open_failed', 'Mini Games World is temporarily unavailable. Please try again in a minute.');
     exit;
 }
 
@@ -26,7 +38,6 @@ if (!is_array($versionManifest)
     mgw_v110_public_failure((string)('Mini Games World client version manifest is unavailable.'));
 }
 
-require_once __DIR__ . '/runtime/localization/LocalizationCatalog.php';
 try {
     $localizationCatalog = new LocalizationCatalog(__DIR__ . '/locales');
     $localizationPayload = $localizationCatalog->clientPayload();
@@ -174,11 +185,17 @@ $goRulesAlignmentTag = '  <link rel="stylesheet" data-mgw-go-rules-alignment="mv
 $html = str_replace($cssAnchor, $cssTarget, $html);
 $html = str_replace('./assets/css/production-v95-consistency.css?v=95', $consistencyCssTarget, $html);
 $html = str_replace($headClose, $checkersTelegramHeightFitTag . "\n" . $battleshipExitFitTag . "\n" . $chessCaptureParityTag . "\n" . $goExitFitTag . "\n" . $goEffectsV7Tag . "\n" . $goCaptureOverlayV8Tag . "\n" . $goCaptureOverlayV9Tag . "\n" . $goRulesAlignmentTag . "\n" . $headClose, $html);
-$html = str_replace(
-    '<p>Готовим игровую комнату</p>',
-    '<p>Те самые игры. То самое чувство.</p>',
-    $html
-);
+$loadingSourceTag = '<p>' . htmlspecialchars(
+    $localizationCatalog->translate('entry.preloader_loading'),
+    ENT_QUOTES | ENT_SUBSTITUTE,
+    'UTF-8'
+) . '</p>';
+$launchTaglineTag = '<p>' . htmlspecialchars(
+    $localizationCatalog->translate('entry.tagline'),
+    ENT_QUOTES | ENT_SUBSTITUTE,
+    'UTF-8'
+) . '</p>';
+$html = str_replace($loadingSourceTag, $launchTaglineTag, $html);
 $html = str_replace($entryScriptsAnchor, $bootstrapTag, $html);
 $html = str_replace(
     $hotfixAnchor,
