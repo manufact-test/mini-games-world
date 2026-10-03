@@ -31,8 +31,8 @@ assert(wrapper.includes("t('game_invites.rematch.play_again')"),
 
 assert(shell.includes("import { initGameInvites } from './games/game-invites-v110.js?v=1137&ux=1';"),
   'Active shell must retain the canonical invite import key.');
-assert(manifest.includes("'./assets/js/games/game-invites-v110.js?v=1137&ux=1' => './assets/js/games/game-invites-v110-rematch-policy-v175.js?v=3&fp=2&mvp21_6=tournament-exclusion-v1&mvp27_1=localized-v1'"),
-  'Canonical manifest must publish the localized rematch wrapper.');
+assert(manifest.includes("'./assets/js/games/game-invites-v110.js?v=1137&ux=1' => './assets/js/games/game-invites-v110-rematch-policy-v175.js?v=3&fp=2&mvp21_6=tournament-exclusion-v1&mvp27_1=localized-v1"),
+  'Canonical manifest must publish the localized rematch wrapper, including successor cache identities.');
 for (const key of [
   'v=1142&zone=unified&rematch=optimistic&terminal=self-silent',
   'v=1143&zone=unified&rematch=optimistic&terminal=self-silent&social=1',
