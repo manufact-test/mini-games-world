@@ -811,6 +811,15 @@ test('A invites B through notifications and they finish a Tic Tac Toe match', as
       }),
     ]);
 
+    for (const participant of [winner, loser]) {
+      await expect(participant.page.locator('#sheet [data-create-rematch]')).toHaveText('Сыграть ещё', {
+        timeout: 10_000,
+      });
+      await expect(participant.page.locator('#sheet #newOpponent')).toHaveText('Найти нового соперника');
+      await expect(participant.page.locator('#sheet #goHome')).toHaveText('В меню');
+      await expect(participant.page.locator('#sheet .btn', { hasText:'Сыграть ещё' })).toHaveCount(1);
+    }
+
     const [afterA, afterB] = await Promise.all([
       expectPlayerRequest(
         playerA.page,
