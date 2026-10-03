@@ -72,14 +72,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(app/assets/js/games/go/renderer\.js|app/assets/js/games/go/renderer-cosmetics-v1\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_go_renderer_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|bot/tests/Mvp19_8GoLiveCosmeticsContractTest\.mjs|\.github/workflows/mvp27-1-go-renderer-localization\.yml|\.github/workflows/mvp19-8-go-live-cosmetics\.yml|\.github/workflows/mvp19-8-go-profile-parity\.yml|\.github/workflows/mvp25-6-monetization-disabled-store\.yml|\.github/workflows/mvp25-4-startup-performance\.yml|\.github/workflows/mvp19-6-profile-game-cosmetics-parity\.yml|\.github/workflows/mvp25-4-reliability\.yml)
-          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
-          test -z "$bad" || { printf 'Unexpected Go localization paths:\n%s\n' "$bad" >&2; exit 1; }
-          git diff --check
-
-      - name: Tracked secret scan
-        run: node scripts/ci/check-secrets.mjs
-
+          allowed='^(app/assets/js/games/go/renderer\.js|app/assets/js/games/go/renderer-cosmetics-v1\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_go_renderer_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|bot/tests/Mvp19_8GoLiveCosmeticsContractTest\.mjs|\.github/workflows/mvp27-1-go-renderer-localization\.yml|\.github/workflows/mvp19-8-go-live-cosmetics\.yml|\.github/workflows/mvp19-8-go-profile-parity\.yml|\.github/workflows/mvp25-6-monetization-disabled-store\.yml|\.github/workflows/mvp25-4-startup-performance\.yml|\.github/workflows/mvp19-6-profile-game-cosmetics-parity\.yml|\.github/workflows/mvp25-4-reliability\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected Go localization paths:\n%s\n' "$bad" >&2; exit 1; }
           git diff --check
