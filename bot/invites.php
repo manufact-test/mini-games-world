@@ -441,27 +441,36 @@ try {
     }
     unset($result['signal_recipient_id']);
 
-    // A private link draft is not yet shared product state. Keep DB projection
-    // off the native prepared-share critical path; confirm_shared/open_link/discard
-    // will project the same token when it becomes externally relevant.
+    // The JSON transaction above is the authoritative product commit and the
+    // fast signal has already woken the peer. DB invite mirroring is compatibility
+    // projection only, so it must never hold create/accept/start/rematch HTTP
+    // responses behind an external DB round-trip or the global projection lock.
+    // Finish the successful response first, then mirror the exact changed tokens.
     if ($action !== 'sync'
         && $action !== 'create_link_draft'
         && $runtimeInviteProjector instanceof RuntimeInviteDeltaProjector
         && $runtimeInviteProjector->enabled()
         && $bridgeInviteTokens !== []) {
-        if ($db instanceof ProjectionSnapshotStorageInterface) {
-            $db->projectionReadOnlySections(
-                ['invites'],
-                static fn(array $data): array => $runtimeInviteProjector->synchronizeTokens($data, $bridgeInviteTokens)
-            );
-        } elseif ($db instanceof ExclusiveSnapshotStorageInterface) {
-            $db->exclusiveReadOnlySections(
-                ['invites'],
-                static fn(array $data): array => $runtimeInviteProjector->synchronizeTokens($data, $bridgeInviteTokens)
-            );
-        } else {
-            throw new RuntimeException('Invite DB bridge requires a stable JSON snapshot capability.');
-        }
+        $projectionTokens = $bridgeInviteTokens;
+        mgw_register_api_after_response_hook(
+            static function () use ($db, $runtimeInviteProjector, $projectionTokens): void {
+                if ($db instanceof ProjectionSnapshotStorageInterface) {
+                    $db->projectionReadOnlySections(
+                        ['invites'],
+                        static fn(array $data): array => $runtimeInviteProjector->synchronizeTokens($data, $projectionTokens)
+                    );
+                    return;
+                }
+                if ($db instanceof ExclusiveSnapshotStorageInterface) {
+                    $db->exclusiveReadOnlySections(
+                        ['invites'],
+                        static fn(array $data): array => $runtimeInviteProjector->synchronizeTokens($data, $projectionTokens)
+                    );
+                    return;
+                }
+                throw new RuntimeException('Invite DB bridge requires a stable JSON snapshot capability.');
+            }
+        );
     }
 
     if ($action === 'create_link_draft' && is_array($result['invite'] ?? null)) {
