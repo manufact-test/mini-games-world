@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-03",
-  "staging_base": "ef8aa33d90d1dc5816459529b17f4dc8623e4d17",
+  "staging_base": "f3de894f34dc3b8698e8529eec616c3bcbe582c5",
   "scanned_files": 776,
-  "cyrillic_lines_total": 3296,
+  "cyrillic_lines_total": 3199,
   "by_scope": {
-    "client": 1615,
+    "client": 1518,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 active Profile Badges localization; all 19 player-facing Cyrillic source lines moved to canonical locale while badge catalog/prices, purchase/equip/unequip ownership, avatar overlays, animated tier and reduced-motion behavior remain frozen."
+  "note": "MVP-27.1 active game-copy bundle: localized 97 player-facing Cyrillic source lines across the factual active rules/render chains for Battleship, Checkers, Chess, Domino, Go, Tic-Tac-Toe and Four in a Row; accepted game mechanics, cosmetics, timings and action ownership remain frozen."
 }

@@ -3,12 +3,12 @@ import { state } from '../state.js?v=27';
 import { gameTypeOf } from './game-router.js?v=74';
 import { ticTacToeRules } from './tictactoe/rules.js?v=54';
 import { fourInARowRules } from './four-in-a-row/rules.js?v=54';
-import { battleshipRules } from './battleship/rules.js?v=54';
-import { checkersRules } from './checkers/rules.js?v=58';
+import { battleshipRules } from './battleship/rules.js?v=55&mvp27_1=localized-v1';
+import { checkersRules } from './checkers/rules.js?v=59&mvp27_1=localized-v1';
 import { reversiRules } from './reversi/rules.js?v=67';
-import { chessRules } from './chess/rules.js?v=69';
+import { chessRules } from './chess/rules.js?v=70&mvp27_1=localized-v1';
 import { goRules } from './go/rules.js?v=72';
-import { dominoRules } from './domino/rules.js?v=75';
+import { dominoRules } from './domino/rules.js?v=76&mvp27_1=localized-v1';
 
 const RULE_RENDERERS = {
   tictactoe: ticTacToeRules,

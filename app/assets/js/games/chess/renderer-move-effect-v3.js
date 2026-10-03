@@ -3,7 +3,7 @@ import {
   chessMeta,
   chessPlayerMark,
   chessStatus,
-} from './renderer.js?v=70&mvp19_5=cosmetics&fx_runtime=landing-sync-v2&move_parity=store-trail-v1';
+} from './renderer.js?v=71&mvp27_1=localized-v1&mvp19_5=cosmetics&fx_runtime=landing-sync-v2&move_parity=store-trail-v1';
 
 const MOVE_EFFECT_ITEM = 'game-chess-effect-move';
 const QUANTUM_EFFECT_ITEM = 'game-chess-effect-check';
