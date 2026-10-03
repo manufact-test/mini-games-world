@@ -45,7 +45,7 @@ $assert(str_contains($watchBlock, 'scheduleSync(0);')
     'Low-latency invite watch must wake the canonical invite sync owner instead of becoming a second UI/state owner.');
 
 $openLinkStart = strpos($endpoint, "case 'open_link':");
-$openLinkEnd = strpos($endpoint, "case 'sync':", $openLinkStart ?: 0);
+$openLinkEnd = strpos($endpoint, "case 'accept':", $openLinkStart ?: 0);
 $openLinkBlock = $openLinkStart !== false && $openLinkEnd !== false ? substr($endpoint, $openLinkStart, $openLinkEnd - $openLinkStart) : '';
 $assert(str_contains($openLinkBlock, '$invites->bindFromLink($data, $user, $token, true, false)')
     && str_contains($openLinkBlock, '$core = $invites->sync($data, $user, $token);')
