@@ -1,3 +1,5 @@
+import { t } from '@mgw/i18n';
+
 const PASSIVE_API_ACTIONS = new Set([
   'bootstrap',
   'game_state',
@@ -30,7 +32,7 @@ export function rememberV99PassiveLock(session){
   clearInviteExpectation();
   const lock = {
     locked:true,
-    message:String(session?.message || 'У вас уже идёт активная игра на другом устройстве.'),
+    message:String(session?.message || t('search.lock_default')),
     updatedAt:Date.now(),
   };
   window.__MGW_V99_PASSIVE_LOCK__ = lock;
@@ -132,7 +134,7 @@ function passiveSession(session){
     ...session,
     locked:false,
     passive_locked:true,
-    passive_lock_message:String(session?.message || 'У вас уже идёт активная игра на другом устройстве.'),
+    passive_lock_message:String(session?.message || t('search.lock_default')),
   };
 }
 

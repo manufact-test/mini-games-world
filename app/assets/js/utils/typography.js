@@ -1,3 +1,5 @@
+import { t } from '@mgw/i18n';
+
 const SKIP_SELECTOR = [
   'script',
   'style',
@@ -11,15 +13,16 @@ const SKIP_SELECTOR = [
   '[data-no-typography]',
 ].join(',');
 
-const SHORT_WORDS = /(^|[\s([{"«„“])((?:а|и|но|да|не|ни|в|во|на|за|к|ко|с|со|у|о|об|от|до|по|из|для|под|над|при|без|про|через|или|ли|же|бы)) +(?=\S)/giu;
-const THOUSANDS_GROUPS = /(\d) +(?=\d{3}(?:\D|$))/gu;
-const NUMBER_UNITS = /(\d(?:[\d \u00A0]*\d)?) +(Gold|Match|коин(?:а|ы|ов)?|₽|руб(?:\.|ля|лей)?|%|час(?:а|ов)?|минут(?:а|ы)?|секунд(?:а|ы)?)/giu;
-const WORD_TOKEN = /([А-ЯЁа-яёA-Za-z][А-ЯЁа-яёA-Za-z-]{2,}) +(Gold|Match)\b/gu;
-const NUMBER_SIGN = /№ +([A-ZА-ЯЁ0-9])/gu;
+const SHORT_WORDS = new RegExp(`(^|[\\s([{"«„“])(${t('typography.short_words_pattern')}) +(?=\\S)`, 'giu');
+const THOUSANDS_GROUPS = /(\\d) +(?=\\d{3}(?:\\D|$))/gu;
+const NUMBER_UNITS = new RegExp(`(\\d(?:[\\d \\u00A0]*\\d)?) +(${t('typography.number_units_pattern')})`, 'giu');
+const WORD_TOKEN = new RegExp(`([${t('typography.word_chars')}][${t('typography.word_chars')}-]{2,}) +(Gold|Match)\\b`, 'gu');
+const NUMBER_SIGN = new RegExp(`№ +([${t('typography.number_sign_chars')}])`, 'gu');
+const CONTENT_PROBE = new RegExp(`[${t('typography.content_probe_chars')}]`, 'u');
 
 export function typographText(value){
   if (typeof value !== 'string' || value.length < 2) return value;
-  if (!/[А-ЯЁа-яё0-9]/u.test(value)) return value;
+  if (!CONTENT_PROBE.test(value)) return value;
   if (/https?:\/\/|www\.|[\w.+-]+@[\w.-]+\.\w+/i.test(value)) return value;
 
   return value

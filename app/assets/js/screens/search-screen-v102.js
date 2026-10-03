@@ -6,6 +6,7 @@ import { registerScreenCleanup, showScreen } from '../router.js?v=27';
 import { clearTimer, renderBalances } from '../ui.js?v=89';
 import { APP_CONFIG } from '../config.js?v=38';
 import { haptic } from '../telegram/telegram-app.js?v=27';
+import { t, formatNumber } from '@mgw/i18n';
 import { enterGame, clearGameView } from './game-screen-v102-safe.js?v=102';
 import {
   currentV99PassiveLock,
@@ -23,7 +24,11 @@ const START_IDS = new Set([
   'startGoSearchBtn',
   'startDominoSearchBtn',
 ]);
-const LOCK_PATTERN = /(активная игра на другом устройстве|ищете матч на другом устройстве|игра уже открыта на другом устройстве)/iu;
+const LOCK_PATTERN = new RegExp([
+  'search.lock_markers.active_game_other_device',
+  'search.lock_markers.searching_other_device',
+  'search.lock_markers.game_open_other_device',
+].map(key => escapeRegExp(t(key))).join('|'), 'iu');
 
 const searchRuntime = window.__MGW_V100_SEARCH_RUNTIME__ ||= {
   initialized:false,
@@ -229,7 +234,7 @@ export async function beginSearch(rawContext){
       showExplicitLock();
       return null;
     }
-    toast(error?.message || 'Не удалось начать поиск.');
+    toast(error?.message || t('search.start_failed'));
     return null;
   } finally {
     if (searchRuntime.startPromise === startPromise) searchRuntime.startPromise = null;
@@ -350,7 +355,7 @@ function showExplicitLock(){
   const now = Date.now();
   if (now - searchRuntime.lastLockToastAt < 1800) return;
   searchRuntime.lastLockToastAt = now;
-  toast(String(lock?.message || 'У вас уже идёт активная игра на другом устройстве.'));
+  toast(String(lock?.message || t('search.lock_default')));
 }
 
 function currentMatchReleaseBarrier(){
@@ -360,14 +365,14 @@ function currentMatchReleaseBarrier(){
 
 function searchContext(buttonId){
   const options = {
-    startSearchBtn:{ gameType:'tictactoe', size:Number(state.selectedBoardSize || 3), title:'Крестики-нолики' },
-    startFourSearchBtn:{ gameType:'four_in_a_row', size:Number(state.selectedFourBoardSize || 7), title:'4 в ряд' },
-    startBattleshipSearchBtn:{ gameType:'battleship', size:10, title:'Морской бой' },
-    startCheckersSearchBtn:{ gameType:'checkers', size:8, title:'Шашки' },
-    startReversiSearchBtn:{ gameType:'reversi', size:Number(state.selectedReversiBoardSize || 8), title:'Реверси' },
-    startChessSearchBtn:{ gameType:'chess', size:8, title:'Шахматы' },
-    startGoSearchBtn:{ gameType:'go', size:Number(state.selectedGoBoardSize || 9), title:'Го' },
-    startDominoSearchBtn:{ gameType:'domino', size:7, title:'Домино' },
+    startSearchBtn:{ gameType:'tictactoe', size:Number(state.selectedBoardSize || 3) },
+    startFourSearchBtn:{ gameType:'four_in_a_row', size:Number(state.selectedFourBoardSize || 7) },
+    startBattleshipSearchBtn:{ gameType:'battleship', size:10 },
+    startCheckersSearchBtn:{ gameType:'checkers', size:8 },
+    startReversiSearchBtn:{ gameType:'reversi', size:Number(state.selectedReversiBoardSize || 8) },
+    startChessSearchBtn:{ gameType:'chess', size:8 },
+    startGoSearchBtn:{ gameType:'go', size:Number(state.selectedGoBoardSize || 9) },
+    startDominoSearchBtn:{ gameType:'domino', size:7 },
   };
   return normalizeContext(options[buttonId] || options.startSearchBtn);
 }
@@ -381,7 +386,7 @@ function normalizeContext(value){
     gameType,
     size,
     title,
-    label:`${title} · участие ${bet} коинов${gameType === 'domino' ? '' : ` · поле ${size}×${size}`}`,
+    label:t('search.match_label', { game:title, bet:formatNumber(bet) }) + (gameType === 'domino' ? '' : t('search.board_suffix', { size })),
   };
 }
 
@@ -399,16 +404,17 @@ function defaultSize(type){
 }
 
 function titleFor(type){
-  return {
-    tictactoe:'Крестики-нолики',
-    four_in_a_row:'4 в ряд',
-    battleship:'Морской бой',
-    checkers:'Шашки',
-    reversi:'Реверси',
-    chess:'Шахматы',
-    go:'Го',
-    domino:'Домино',
-  }[type] || 'Игра';
+  const key = {
+    tictactoe:'tictactoe',
+    four_in_a_row:'four_in_a_row',
+    battleship:'battleship',
+    checkers:'checkers',
+    reversi:'reversi',
+    chess:'chess',
+    go:'go',
+    domino:'domino',
+  }[type];
+  return key ? t(`game_invites.game_titles.${key}`) : t('game_invites.game_fallback');
 }
 
 function rememberBoardSelection(type, size){
@@ -424,4 +430,8 @@ function rememberUserAndSession(result){
     renderBalances(state.user);
   }
   if (result?.session) state.session = result.session;
+}
+
+function escapeRegExp(value){
+  return String(value ?? '').replace(/[.*+?^$\{\}()|[\]\\]/g, '\\$&');
 }

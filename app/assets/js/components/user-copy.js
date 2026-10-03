@@ -1,3 +1,5 @@
+import { t } from '@mgw/i18n';
+
 let sheetCopyObserver = null;
 
 export function initUserCopy(){
@@ -15,25 +17,25 @@ export function initUserCopy(){
 function cleanCurrentSheet(sheet){
   const heading = String(sheet.querySelector('.sheet-head h2')?.textContent || '').trim();
 
-  if (sheet.querySelector('.topup-success') && heading.startsWith('Заявка')) {
+  if (sheet.querySelector('.topup-success') && heading.startsWith(t('user_copy.application_prefix'))) {
     sheet.querySelector('.sheet-head p')?.remove();
 
     const note = sheet.querySelector('.small-note');
-    const message = 'Баланс изменится после подтверждения администратором.';
+    const message = t('user_copy.balance_after_admin');
     if (note && note.textContent.trim() !== message) {
       note.textContent = message;
     }
   }
 
-  if (sheet.querySelector('.store-order-success') && heading.startsWith('Заявка')) {
+  if (sheet.querySelector('.store-order-success') && heading.startsWith(t('user_copy.application_prefix'))) {
     sheet.querySelector('.sheet-head p')?.remove();
 
     const note = sheet.querySelector('.store-order-warning');
     if (note) {
-      const repeated = heading.includes('уже');
+      const repeated = heading.includes(t('user_copy.already_marker'));
       const message = repeated
-        ? 'Эта заявка уже была создана.'
-        : 'Следите за статусом в разделе «Мои заявки».';
+        ? t('user_copy.order_already_created')
+        : t('user_copy.orders_status_hint');
 
       if (note.textContent.trim() !== message) {
         note.textContent = message;

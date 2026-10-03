@@ -1,4 +1,5 @@
 import { openSheet } from '../components/sheet.js?v=1109';
+import { t, formatNumber } from '@mgw/i18n';
 import { toast } from '../components/toast.js?v=1109';
 import { getTelegram, getInitData, haptic } from '../telegram/telegram-app.js?v=27';
 import { getSessionId } from '../session.js?v=27';
@@ -24,7 +25,7 @@ export async function openIncomingInviteFromTelegram(){
     return true;
   } catch (error) {
     console.warn('Mini Games World Telegram invite entry failed.', error);
-    toast('Не удалось открыть приглашение. Попробуйте открыть ссылку ещё раз.');
+    toast(t('game_invites.network.open_link_failed'));
     return false;
   }
 }
@@ -70,13 +71,13 @@ function showIncomingInvite(invite){
   openSheet(`
     <span data-invite-sheet data-invite-token="${escapeHtml(invite.token || '')}" data-invite-state="pending:invitee" hidden></span>
     <div class="sheet-head">
-      <div><h2>Вас приглашают сыграть</h2><p>От ${escapeHtml(invite.inviter_name || 'игрока')}</p></div>
+      <div><h2>${t('game_invites.incoming.title')}</h2><p>${escapeHtml(t('game_invites.incoming.from_player', { name:invite.inviter_name || t('game_invites.player_genitive') }))}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     ${inviteSummary(invite)}
     <div class="stack invite-actions">
-      <button class="btn primary full" data-invite-action="accept" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Принять приглашение</button>
-      <button class="btn ghost full" data-invite-action="decline" data-invite-token="${escapeHtml(invite.token || '')}" type="button">Отклонить</button>
+      <button class="btn primary full" data-invite-action="accept" data-invite-token="${escapeHtml(invite.token || '')}" type="button">${t('game_invites.incoming.accept')}</button>
+      <button class="btn ghost full" data-invite-action="decline" data-invite-token="${escapeHtml(invite.token || '')}" type="button">${t('game_invites.incoming.decline')}</button>
     </div>
   `);
 }
@@ -84,9 +85,9 @@ function showIncomingInvite(invite){
 function inviteSummary(invite){
   return `
     <div class="topup-success">
-      <div><span>Игра</span><strong>${escapeHtml(invite?.game_title || 'Игра')}</strong></div>
-      <div><span>Вариант</span><strong>${escapeHtml(inviteBoardLabel(invite))}</strong></div>
-      <div><span>Участие</span><strong>${Number(invite?.bet || 0)} коинов</strong></div>
+      <div><span>${t('game_invites.summary.game')}</span><strong>${escapeHtml(invite?.game_title || t('game_invites.game_fallback'))}</strong></div>
+      <div><span>${t('game_invites.summary.variant')}</span><strong>${escapeHtml(inviteBoardLabel(invite))}</strong></div>
+      <div><span>${t('game_invites.summary.entry')}</span><strong>${t('game_invites.summary.entry_value', { count:formatNumber(Number(invite?.bet || 0)) })}</strong></div>
     </div>
   `;
 }
@@ -96,7 +97,7 @@ function inviteBoardLabel(invite){
   if (gameType === 'four_in_a_row') {
     return `${Number(invite?.board_columns || invite?.board_size || 0)}×${Number(invite?.board_rows || 0)}`;
   }
-  if (gameType === 'domino') return 'Классика 0–6';
+  if (gameType === 'domino') return t('game_invites.board.domino_classic');
   const size = Number(invite?.board_size || 0);
   return `${size}×${size}`;
 }

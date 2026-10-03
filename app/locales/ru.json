@@ -1,11 +1,115 @@
 {
-  "_meta": {"locale":"ru","version":49},
-  "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
-  "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
-  "topbar": {"balance":"Баланс","notifications":"Уведомления"},
-  "notifications": {"title":"Уведомления","mark_all":"Прочитать все","open":"Открыть","delete":"Удалить","empty":"Пока уведомлений нет","loading":"Загружаем…","item_fallback":"Уведомление","load_error":"Не удалось открыть уведомления","try_again":"Попробуйте ещё раз.","open_center":"Открыть уведомления","unread_count":"Уведомления: {count} новых","view_request":"Посмотреть","invite_actions":{"accept":"Принять приглашение","decline":"Отклонить","start":"Начать игру","cancel":"Отменить"},"request_error":"Ошибка уведомлений: {status}","friend_request_open_marker":"Откройте заявку","friend_request_open_hint":"Откройте заявку, чтобы посмотреть профиль и принять или отклонить её.","tournament_local_time":"начнётся {date} по вашему времени","terminal":{"invite_cancelled_owner":"Вы отменили своё приглашение.","invite_cancelled_participant":"Вы отменили участие в матче.","invite_declined":"Вы отклонили приглашение."}},
-  "acceptance_runtime": {"search":{"room_gold":"Gold-комната","room_match":"Матч-комната","primary":"{game} · {room} · участие {bet} коинов","domino_classic":"Классика 0–6","board":"Поле {size}×{size}","game_fallback":"Игра"},"launch":{"timeout_title":"Матч не состоялся","timeout_note":"Соперник не подключился вовремя","upcoming_title":"Матч скоро начнётся","prepare_note":"Готовьтесь к игре","first_move_note":"Приготовьтесь к первому ходу","syncing_title":"Почти готово","syncing_note":"Ещё мгновение","ready_title":"Всё готово","ready_note":"Вперёд!"}},
-  "shell": {"navigation_label":"Основная навигация","tournaments_title":"Соревнования","tournaments_note":"Рейтинг игроков и турниры Mini Games World.","competition_rating":"Рейтинг","competition_tournaments":"Турниры","competition_archive_title":"Архив рейтинга","competition_archive_note":"Итоги завершённых официальных сезонов.","competition_archive_seasons":"Сезоны","competition_archive_tournaments":"Турниры","competition_hall_of_fame":"Зал славы","competition_archive_empty":"Архив появится после завершения первого официального сезона.","competition_archive_tournaments_empty":"Турнирный архив появится после запуска официальных турниров.","competition_archive_top100":"Топ-100","competition_tournaments_note":"Здесь будут отдельные турнирные события, расписание и их собственные результаты.","store_title":"Магазин","store_note":"Откройте текущую витрину Mini Games World.","store_open":"Открыть магазин"},
+  "_meta": {
+    "locale": "ru",
+    "version": 50
+  },
+  "common": {
+    "back": "Назад",
+    "close": "Закрыть",
+    "retry": "Повторить",
+    "loading": "Загрузка…"
+  },
+  "nav": {
+    "home": "Главная",
+    "tournaments": "Арена",
+    "store": "Магазин",
+    "profile": "Профиль"
+  },
+  "topbar": {
+    "balance": "Баланс",
+    "notifications": "Уведомления"
+  },
+  "notifications": {
+    "title": "Уведомления",
+    "mark_all": "Прочитать все",
+    "open": "Открыть",
+    "delete": "Удалить",
+    "empty": "Пока уведомлений нет",
+    "loading": "Загружаем…",
+    "item_fallback": "Уведомление",
+    "load_error": "Не удалось открыть уведомления",
+    "try_again": "Попробуйте ещё раз.",
+    "open_center": "Открыть уведомления",
+    "unread_count": "Уведомления: {count} новых",
+    "view_request": "Посмотреть",
+    "invite_actions": {
+      "accept": "Принять приглашение",
+      "decline": "Отклонить",
+      "start": "Начать игру",
+      "cancel": "Отменить"
+    },
+    "request_error": "Ошибка уведомлений: {status}",
+    "friend_request_open_marker": "Откройте заявку",
+    "friend_request_open_hint": "Откройте заявку, чтобы посмотреть профиль и принять или отклонить её.",
+    "tournament_local_time": "начнётся {date} по вашему времени",
+    "terminal": {
+      "invite_cancelled_owner": "Вы отменили своё приглашение.",
+      "invite_cancelled_participant": "Вы отменили участие в матче.",
+      "invite_declined": "Вы отклонили приглашение."
+    },
+    "legacy_cleanup": {
+      "balance_already_updated": "Баланс уже обновлён",
+      "balance_not_changed": "Баланс не изменён",
+      "balance_label": "Баланс",
+      "status_label": "Статус",
+      "status_already": "уже",
+      "status_updated": "обновлён",
+      "return_status": "Проверьте статус возврата",
+      "status_refund": "Статус и возврат можно проверить",
+      "returned": "Возвращено",
+      "open_mini_app": "Откройте Mini App",
+      "tournament_assigned_title": "Дата турнира назначена",
+      "tournament_starts": "начнётся"
+    }
+  },
+  "acceptance_runtime": {
+    "search": {
+      "room_gold": "Gold-комната",
+      "room_match": "Матч-комната",
+      "primary": "{game} · {room} · участие {bet} коинов",
+      "domino_classic": "Классика 0–6",
+      "board": "Поле {size}×{size}",
+      "game_fallback": "Игра"
+    },
+    "launch": {
+      "timeout_title": "Матч не состоялся",
+      "timeout_note": "Соперник не подключился вовремя",
+      "upcoming_title": "Матч скоро начнётся",
+      "prepare_note": "Готовьтесь к игре",
+      "first_move_note": "Приготовьтесь к первому ходу",
+      "syncing_title": "Почти готово",
+      "syncing_note": "Ещё мгновение",
+      "ready_title": "Всё готово",
+      "ready_note": "Вперёд!"
+    }
+  },
+  "shell": {
+    "navigation_label": "Основная навигация",
+    "tournaments_title": "Соревнования",
+    "tournaments_note": "Рейтинг игроков и турниры Mini Games World.",
+    "competition_rating": "Рейтинг",
+    "competition_tournaments": "Турниры",
+    "competition_archive_title": "Архив рейтинга",
+    "competition_archive_note": "Итоги завершённых официальных сезонов.",
+    "competition_archive_seasons": "Сезоны",
+    "competition_archive_tournaments": "Турниры",
+    "competition_hall_of_fame": "Зал славы",
+    "competition_archive_empty": "Архив появится после завершения первого официального сезона.",
+    "competition_archive_tournaments_empty": "Турнирный архив появится после запуска официальных турниров.",
+    "competition_archive_top100": "Топ-100",
+    "competition_tournaments_note": "Здесь будут отдельные турнирные события, расписание и их собственные результаты.",
+    "store_title": "Магазин",
+    "store_note": "Откройте текущую витрину Mini Games World.",
+    "store_open": "Открыть магазин",
+    "profile_date_pending": "Дата регистрации появится после входа",
+    "match_terms_unavailable": "Серверные условия обычного матча недоступны.",
+    "store_load_failed": "Не удалось загрузить магазин.",
+    "boot": {
+      "profile_unloaded": "Профиль не загружен",
+      "load_failed": "Не удалось загрузить профиль",
+      "reopen_telegram": "Закройте Mini Games World и откройте его снова из Telegram."
+    }
+  },
   "store": {
     "tabs": {
       "coins": "Коины",
@@ -745,86 +849,566 @@
       "success_item": "Предмет добавлен в коллекцию."
     }
   },
-  "arena":{
-    "scroll_left":"Прокрутить игры влево","scroll_right":"Прокрутить игры вправо","official_title":"Официальный турнир",
-    "errors":{"sync_start":"Не удалось синхронизировать старт турнира.","sync_launch":"Не удалось синхронизировать запуск матча.","update_hall":"Не удалось обновить Турнирный зал.","update_tournament":"Не удалось обновить турнир.","sync_result":"Не удалось синхронизировать результат турнира.","ready":"Не удалось подтвердить готовность.","enter_hall":"Не удалось войти в Турнирный зал.","update_pair_ready":"Не удалось обновить готовность пары.","update_presence":"Не удалось обновить присутствие в Турнирный зал.","load":"Не удалось загрузить турнир."},
-    "registration":{"read_rules":"Перед регистрацией прочитайте правила и подтвердите согласие.","confirm_updated_rules":"Подтвердить обновлённые правила турнира?","confirm_register":"Подтвердить правила и зарезервировать {fee} коинов для участия в официальном турнире?","confirm_leave":"Отменить регистрацию? Зарезервированные 50 000 коинов вернутся в доступный баланс.","register_not_saved":"Регистрация не сохранилась. Попробуйте ещё раз.","leave_not_saved":"Отмена регистрации не сохранилась. Попробуйте ещё раз.","publish_not_saved":"Регистрация сохранилась, но ещё не опубликована. Повторите попытку.","change_error":"Не удалось изменить регистрацию."},
-    "hall":{"entering":"Входим в зал…","enter":"Вход","label":"Турнирный зал","started":"Турнир стартовал","open":"Зал открыт","opens_15":"Откроется за 15 минут до старта","gate_note":"В зал допускаются только участники этого турнира. Сетка появится в момент старта.","present_at_start":"В зале на старте","technical_loss":"Техническое поражение","present":"В зале","left":"Сейчас не в зале","not_entered":"Не вошёл","player_fallback":"Игрок","bracket_hidden":"Сетка ещё скрыта","bracket_hidden_note":"Она сформируется случайно ровно на старте турнира.","bracket_title":"Сетка турнира","start":"СТАРТ","inside_title":"Вы в турнирном зале","participants":"Участники"},
-    "ready":{"saving_result":"Сохраняем результат турнира…","loading_pair":"Загружаем готовность вашей пары…","match_label":"Турнирный матч","self_suffix":" · вы","ready":"Готов","waiting":"Ожидаем","prompt":"Подтвердите готовность в течение двух минут.","expired":"Двухминутное окно готовности завершено.","launched":"Матч запущен.","both_ready":"Оба готовы · запускаем матч.","self_ready":"Вы готовы · ждём соперника.","confirming":"Подтверждаем…","action":"Я готов","first_match_pair":"Первый матч · пара {pair_no}"},
-    "bracket":{
-      "technical_loss_at_start":"Технический исход · соперник отсутствовал.","both_absent_at_start":"Оба участника отсутствовали · победитель не назначен.","technical_bye_vacant_slot":"Технический проход · свободный слот.","vacant_bracket_slot":"Пара закрыта без участников.","player_left":"Технический исход · соперник покинул матч.","disconnect_timeout":"Технический исход · 60 секунд на возврат истекли.","tournament_disconnect_timeout":"Технический исход · один игрок не вернулся за 3 минуты.","tournament_both_absent_timeout":"Оба игрока не вернулись за 3 минуты · победитель не назначен.","technical_restart_scheduled":"Матч перезапустится через 1 минуту.","technical_restart_exhausted":"Матч не удалось продолжить · он завершён без победителя.",
-      "final_round":"Финальный раунд","semifinal":"Полуфинал","round":"Раунд {round_no}","pair":"Пара {pair_no}","final":"Финал","third_place":"Матч за 3-е место",
-      "self":"вы","participant":"участник","champion":"чемпион","second_place":"2 место","no_result":"без результата","third_place_status":"3 место","fourth_place":"4 место","advanced":"прошёл дальше","eliminated":"выбыл","self_playing":"вы · играет","playing":"играет",
-      "vacant_slot":"Свободный слот","no_participant":"без участника","waiting":"Ожидает запуска.","final_done":"Финал завершён.","third_done":"Матч за 3-е место завершён.","winner_advances":"{nickname} проходит дальше.","done_no_winner":"Матч завершён · победитель не назначен.","running":"Матч идёт.","restart_minute":"Матч перезапустится через 1 минуту.","round_break":"Перерыв между раундами.","round_completed":"{completed}/{total} завершено"
+  "arena": {
+    "scroll_left": "Прокрутить игры влево",
+    "scroll_right": "Прокрутить игры вправо",
+    "official_title": "Официальный турнир",
+    "errors": {
+      "sync_start": "Не удалось синхронизировать старт турнира.",
+      "sync_launch": "Не удалось синхронизировать запуск матча.",
+      "update_hall": "Не удалось обновить Турнирный зал.",
+      "update_tournament": "Не удалось обновить турнир.",
+      "sync_result": "Не удалось синхронизировать результат турнира.",
+      "ready": "Не удалось подтвердить готовность.",
+      "enter_hall": "Не удалось войти в Турнирный зал.",
+      "update_pair_ready": "Не удалось обновить готовность пары.",
+      "update_presence": "Не удалось обновить присутствие в Турнирный зал.",
+      "load": "Не удалось загрузить турнир."
     },
-    "terminal":{
-      "rewards":{"golden_ticket":"Golden Ticket","champion_crown":"Корона чемпиона · 30 дней","winner_badge":"Значок победителя · навсегда","champion_cosmetics":"Чемпионский набор · навсегда","hall_of_fame":"Зал славы","cup_gold":"Золотой кубок","silver_frame":"Серебряная рамка · 30 дней","finalist_result":"Отметка финалиста · навсегда","cup_silver":"Серебряный кубок","bronze_mark":"Бронзовая отметка · 30 дней","third_place_result":"3-е место · навсегда","cup_bronze":"Бронзовый кубок"},
-      "reward_fallback":"Награда турнира","review_kicker":"Призовая проверка","completed_kicker":"Турнир завершён","self_hold_title":"Ваша награда временно на проверке","other_hold_title":"Одна из наград временно на проверке","settling_title":"Подводим итоги и начисляем награды…","self_hold_note":"Мы проверяем результат. Ничего повторно делать не нужно: после проверки здесь появится окончательный итог и, если результат подтвердится, награда.","other_hold_note":"Один из призовых результатов находится на проверке. После проверки итоговые места и награды обновятся автоматически.","settling_note":"Результат сетки уже зафиксирован. Награды появятся автоматически после завершения обработки.",
-      "champion":"Чемпион","second_place":"2 место","third_place":"3 место","test_no_reward":"тестовый · без награды","coin_amount":"{amount} коинов","participation_done":"Участие завершено","disqualified":"Дисквалифицирован","placement":"{place} место","reward_amount":"Награда: {amount} коинов","no_money_reward":"Денежной награды нет.","balance_after":"Баланс после расчёта:","all_done_rewards":"Все матчи турнира завершены. Награды начислены","not_defined":"Не определён","your_result":"Ваш результат","go_rating":"Перейти к рейтингу"
+    "registration": {
+      "read_rules": "Перед регистрацией прочитайте правила и подтвердите согласие.",
+      "confirm_updated_rules": "Подтвердить обновлённые правила турнира?",
+      "confirm_register": "Подтвердить правила и зарезервировать {fee} коинов для участия в официальном турнире?",
+      "confirm_leave": "Отменить регистрацию? Зарезервированные 50 000 коинов вернутся в доступный баланс.",
+      "register_not_saved": "Регистрация не сохранилась. Попробуйте ещё раз.",
+      "leave_not_saved": "Отмена регистрации не сохранилась. Попробуйте ещё раз.",
+      "publish_not_saved": "Регистрация сохранилась, но ещё не опубликована. Повторите попытку.",
+      "change_error": "Не удалось изменить регистрацию."
     },
-    "progression":{
-      "match_finished_wait_round":"Ваш матч завершён · ждём остальные матчи раунда.","eliminated_next_round":"Вы выбыли из турнира · сетка уже перешла в следующий раунд.","eliminated":"Вы выбыли из турнира.","next_round_formed":"Ваш матч завершён · следующий раунд уже сформирован.","round":"Раунд {round_no}","round_pair":"Раунд {round_no} · пара {pair_no}","next_match_preparing":"Следующий матч готовится к запуску.","draw_replay_wait":"Ничья · переигровка начнётся через минуту. Стороны меняются.","draw_replay_ready":"Переигровка готова · запускаем матч.","round_break_wait":"Раунд завершён · перерыв перед следующим матчем.","round_break_ready":"Перерыв завершён · запускаем следующий матч.","rematch_wait":"Повторный матч готовится.","rematch_ready":"Повторный матч готов · запускаем.","attempt_suffix":" · попытка {attempt_no}"
+    "hall": {
+      "entering": "Входим в зал…",
+      "enter": "Вход",
+      "label": "Турнирный зал",
+      "started": "Турнир стартовал",
+      "open": "Зал открыт",
+      "opens_15": "Откроется за 15 минут до старта",
+      "gate_note": "В зал допускаются только участники этого турнира. Сетка появится в момент старта.",
+      "present_at_start": "В зале на старте",
+      "technical_loss": "Техническое поражение",
+      "present": "В зале",
+      "left": "Сейчас не в зале",
+      "not_entered": "Не вошёл",
+      "player_fallback": "Игрок",
+      "bracket_hidden": "Сетка ещё скрыта",
+      "bracket_hidden_note": "Она сформируется случайно ровно на старте турнира.",
+      "bracket_title": "Сетка турнира",
+      "start": "СТАРТ",
+      "inside_title": "Вы в турнирном зале",
+      "participants": "Участники"
     },
-    "card":{
-      "started":"Турнир начался","emergency_stop":"Аварийная остановка","cancelled":"Турнир отменён","refund":"Возврат","coins":"коинов","refund_full":"Взнос возвращён полностью. Результаты турнира аннулированы.","cancel_reason":"Причина: {reason}","cancel_reason_default":"Турнир отменён администратором.","cancel_closed":"Закрыт: {datetime} по вашему времени.","unavailable":"Официальный турнир пока не создан или не открыт для участников.",
-      "rules_title":"Правила турнира","rules_unavailable":"Правила турнира временно недоступны.","consent":"Я прочитал(а) и принимаю правила этого турнира.","consent_accepted":"Правила турнира приняты.","consent_accepted_at":"Правила турнира приняты · {datetime}.",
-      "insufficient":"Недостаточно коинов","registering":"Регистрируем…","checking":"Проверяем…","register":"Зарегистрироваться · {fee}","cancelling":"Отменяем…","cancel_registration":"Отменить регистрацию","saving_consent":"Сохраняем согласие…","confirm_rules":"Подтвердить правила",
-      "state_draft":"Турнир готовится · регистрация ещё не открыта","state_scheduled":"Дата назначена · готовимся к старту","state_waiting_date":"Состав набран · ожидаем назначения даты","state_full":"Состав заполнен","state_open":"Регистрация открыта",
-      "own_scheduled":"Вы в составе. Турнир начнётся {datetime} по вашему времени.","own_scheduled_appointed":"Вы в составе. Турнир начнётся в назначенное время.","own_waiting_date":"Вы в составе. Регистрация закрыта — ожидайте назначения даты турнира.","own_full":"Вы в составе. Турнир заполнен — место зафиксировано.","own_registered":"Вы зарегистрированы. Место закреплено за вами.","own_roster_fixed":"Состав турнира зафиксирован. Регистрация завершена.","own_registration_done":"Регистрация завершена. Свободных мест больше нет.","own_insufficient":"Недостаточно коинов для регистрации.",
-      "schedule_aria":"Дата и время турнира","start_local":"Начало турнира · по вашему времени","until_start":"До старта","entry":"Вход","capacity_scheduled":"Состав турнира зафиксирован. Дата назначена.","capacity_waiting":"Состав турнира набран. Регистрация закрыта.","capacity_open":"В турнире участвуют {capacity} игроков. Регистрация закроется, когда все места будут заняты.","participants":"Участники",
-      "first_place":"1 место","second_place":"2 место","third_place":"3 место","silver_reward":"серебряная награда","bronze_reward":"бронзовая награда","days_short":"{days} дн. {time}",
-      "error_insufficient":"Недостаточно доступных коинов для взноса 50 000.","error_runtime":"Регистрация временно недоступна: игровое состояние ещё не переключено на основной сервер.","error_registration_race":"Регистрация изменилась одновременно с вашим запросом. Обновите турнир и попробуйте ещё раз.","error_balance_race":"Баланс изменился одновременно с регистрацией. Попробуйте ещё раз.","error_balance_identity":"Не удалось подтвердить игровой баланс аккаунта.","error_account_identity":"Не удалось подтвердить игровой аккаунт для регистрации."
+    "ready": {
+      "saving_result": "Сохраняем результат турнира…",
+      "loading_pair": "Загружаем готовность вашей пары…",
+      "match_label": "Турнирный матч",
+      "self_suffix": " · вы",
+      "ready": "Готов",
+      "waiting": "Ожидаем",
+      "prompt": "Подтвердите готовность в течение двух минут.",
+      "expired": "Двухминутное окно готовности завершено.",
+      "launched": "Матч запущен.",
+      "both_ready": "Оба готовы · запускаем матч.",
+      "self_ready": "Вы готовы · ждём соперника.",
+      "confirming": "Подтверждаем…",
+      "action": "Я готов",
+      "first_match_pair": "Первый матч · пара {pair_no}"
     },
-    "archive":{"load_error":"Не удалось загрузить архив турниров.","hall_title":"Зал славы турниров","championships":"Чемпионств","date_unknown":"Дата не указана","podium_unavailable":"Подиум недоступен.","participants":" · {capacity} участников"}
+    "bracket": {
+      "technical_loss_at_start": "Технический исход · соперник отсутствовал.",
+      "both_absent_at_start": "Оба участника отсутствовали · победитель не назначен.",
+      "technical_bye_vacant_slot": "Технический проход · свободный слот.",
+      "vacant_bracket_slot": "Пара закрыта без участников.",
+      "player_left": "Технический исход · соперник покинул матч.",
+      "disconnect_timeout": "Технический исход · 60 секунд на возврат истекли.",
+      "tournament_disconnect_timeout": "Технический исход · один игрок не вернулся за 3 минуты.",
+      "tournament_both_absent_timeout": "Оба игрока не вернулись за 3 минуты · победитель не назначен.",
+      "technical_restart_scheduled": "Матч перезапустится через 1 минуту.",
+      "technical_restart_exhausted": "Матч не удалось продолжить · он завершён без победителя.",
+      "final_round": "Финальный раунд",
+      "semifinal": "Полуфинал",
+      "round": "Раунд {round_no}",
+      "pair": "Пара {pair_no}",
+      "final": "Финал",
+      "third_place": "Матч за 3-е место",
+      "self": "вы",
+      "participant": "участник",
+      "champion": "чемпион",
+      "second_place": "2 место",
+      "no_result": "без результата",
+      "third_place_status": "3 место",
+      "fourth_place": "4 место",
+      "advanced": "прошёл дальше",
+      "eliminated": "выбыл",
+      "self_playing": "вы · играет",
+      "playing": "играет",
+      "vacant_slot": "Свободный слот",
+      "no_participant": "без участника",
+      "waiting": "Ожидает запуска.",
+      "final_done": "Финал завершён.",
+      "third_done": "Матч за 3-е место завершён.",
+      "winner_advances": "{nickname} проходит дальше.",
+      "done_no_winner": "Матч завершён · победитель не назначен.",
+      "running": "Матч идёт.",
+      "restart_minute": "Матч перезапустится через 1 минуту.",
+      "round_break": "Перерыв между раундами.",
+      "round_completed": "{completed}/{total} завершено"
+    },
+    "terminal": {
+      "rewards": {
+        "golden_ticket": "Golden Ticket",
+        "champion_crown": "Корона чемпиона · 30 дней",
+        "winner_badge": "Значок победителя · навсегда",
+        "champion_cosmetics": "Чемпионский набор · навсегда",
+        "hall_of_fame": "Зал славы",
+        "cup_gold": "Золотой кубок",
+        "silver_frame": "Серебряная рамка · 30 дней",
+        "finalist_result": "Отметка финалиста · навсегда",
+        "cup_silver": "Серебряный кубок",
+        "bronze_mark": "Бронзовая отметка · 30 дней",
+        "third_place_result": "3-е место · навсегда",
+        "cup_bronze": "Бронзовый кубок"
+      },
+      "reward_fallback": "Награда турнира",
+      "review_kicker": "Призовая проверка",
+      "completed_kicker": "Турнир завершён",
+      "self_hold_title": "Ваша награда временно на проверке",
+      "other_hold_title": "Одна из наград временно на проверке",
+      "settling_title": "Подводим итоги и начисляем награды…",
+      "self_hold_note": "Мы проверяем результат. Ничего повторно делать не нужно: после проверки здесь появится окончательный итог и, если результат подтвердится, награда.",
+      "other_hold_note": "Один из призовых результатов находится на проверке. После проверки итоговые места и награды обновятся автоматически.",
+      "settling_note": "Результат сетки уже зафиксирован. Награды появятся автоматически после завершения обработки.",
+      "champion": "Чемпион",
+      "second_place": "2 место",
+      "third_place": "3 место",
+      "test_no_reward": "тестовый · без награды",
+      "coin_amount": "{amount} коинов",
+      "participation_done": "Участие завершено",
+      "disqualified": "Дисквалифицирован",
+      "placement": "{place} место",
+      "reward_amount": "Награда: {amount} коинов",
+      "no_money_reward": "Денежной награды нет.",
+      "balance_after": "Баланс после расчёта:",
+      "all_done_rewards": "Все матчи турнира завершены. Награды начислены",
+      "not_defined": "Не определён",
+      "your_result": "Ваш результат",
+      "go_rating": "Перейти к рейтингу"
+    },
+    "progression": {
+      "match_finished_wait_round": "Ваш матч завершён · ждём остальные матчи раунда.",
+      "eliminated_next_round": "Вы выбыли из турнира · сетка уже перешла в следующий раунд.",
+      "eliminated": "Вы выбыли из турнира.",
+      "next_round_formed": "Ваш матч завершён · следующий раунд уже сформирован.",
+      "round": "Раунд {round_no}",
+      "round_pair": "Раунд {round_no} · пара {pair_no}",
+      "next_match_preparing": "Следующий матч готовится к запуску.",
+      "draw_replay_wait": "Ничья · переигровка начнётся через минуту. Стороны меняются.",
+      "draw_replay_ready": "Переигровка готова · запускаем матч.",
+      "round_break_wait": "Раунд завершён · перерыв перед следующим матчем.",
+      "round_break_ready": "Перерыв завершён · запускаем следующий матч.",
+      "rematch_wait": "Повторный матч готовится.",
+      "rematch_ready": "Повторный матч готов · запускаем.",
+      "attempt_suffix": " · попытка {attempt_no}"
+    },
+    "card": {
+      "started": "Турнир начался",
+      "emergency_stop": "Аварийная остановка",
+      "cancelled": "Турнир отменён",
+      "refund": "Возврат",
+      "coins": "коинов",
+      "refund_full": "Взнос возвращён полностью. Результаты турнира аннулированы.",
+      "cancel_reason": "Причина: {reason}",
+      "cancel_reason_default": "Турнир отменён администратором.",
+      "cancel_closed": "Закрыт: {datetime} по вашему времени.",
+      "unavailable": "Официальный турнир пока не создан или не открыт для участников.",
+      "rules_title": "Правила турнира",
+      "rules_unavailable": "Правила турнира временно недоступны.",
+      "consent": "Я прочитал(а) и принимаю правила этого турнира.",
+      "consent_accepted": "Правила турнира приняты.",
+      "consent_accepted_at": "Правила турнира приняты · {datetime}.",
+      "insufficient": "Недостаточно коинов",
+      "registering": "Регистрируем…",
+      "checking": "Проверяем…",
+      "register": "Зарегистрироваться · {fee}",
+      "cancelling": "Отменяем…",
+      "cancel_registration": "Отменить регистрацию",
+      "saving_consent": "Сохраняем согласие…",
+      "confirm_rules": "Подтвердить правила",
+      "state_draft": "Турнир готовится · регистрация ещё не открыта",
+      "state_scheduled": "Дата назначена · готовимся к старту",
+      "state_waiting_date": "Состав набран · ожидаем назначения даты",
+      "state_full": "Состав заполнен",
+      "state_open": "Регистрация открыта",
+      "own_scheduled": "Вы в составе. Турнир начнётся {datetime} по вашему времени.",
+      "own_scheduled_appointed": "Вы в составе. Турнир начнётся в назначенное время.",
+      "own_waiting_date": "Вы в составе. Регистрация закрыта — ожидайте назначения даты турнира.",
+      "own_full": "Вы в составе. Турнир заполнен — место зафиксировано.",
+      "own_registered": "Вы зарегистрированы. Место закреплено за вами.",
+      "own_roster_fixed": "Состав турнира зафиксирован. Регистрация завершена.",
+      "own_registration_done": "Регистрация завершена. Свободных мест больше нет.",
+      "own_insufficient": "Недостаточно коинов для регистрации.",
+      "schedule_aria": "Дата и время турнира",
+      "start_local": "Начало турнира · по вашему времени",
+      "until_start": "До старта",
+      "entry": "Вход",
+      "capacity_scheduled": "Состав турнира зафиксирован. Дата назначена.",
+      "capacity_waiting": "Состав турнира набран. Регистрация закрыта.",
+      "capacity_open": "В турнире участвуют {capacity} игроков. Регистрация закроется, когда все места будут заняты.",
+      "participants": "Участники",
+      "first_place": "1 место",
+      "second_place": "2 место",
+      "third_place": "3 место",
+      "silver_reward": "серебряная награда",
+      "bronze_reward": "бронзовая награда",
+      "days_short": "{days} дн. {time}",
+      "error_insufficient": "Недостаточно доступных коинов для взноса 50 000.",
+      "error_runtime": "Регистрация временно недоступна: игровое состояние ещё не переключено на основной сервер.",
+      "error_registration_race": "Регистрация изменилась одновременно с вашим запросом. Обновите турнир и попробуйте ещё раз.",
+      "error_balance_race": "Баланс изменился одновременно с регистрацией. Попробуйте ещё раз.",
+      "error_balance_identity": "Не удалось подтвердить игровой баланс аккаунта.",
+      "error_account_identity": "Не удалось подтвердить игровой аккаунт для регистрации."
+    },
+    "archive": {
+      "load_error": "Не удалось загрузить архив турниров.",
+      "hall_title": "Зал славы турниров",
+      "championships": "Чемпионств",
+      "date_unknown": "Дата не указана",
+      "podium_unavailable": "Подиум недоступен.",
+      "participants": " · {capacity} участников"
+    }
   },
-  "settings": {"title":"Настройки","language":"Язык","language_note":"Выберите язык интерфейса Mini Games World.","language_ru":"Русский","language_saved":"Язык сохранён"},
-  "setup": {"subtitle":"Выберите условия матча и подтвердите участие.","variant_label":"Размер / вариант","entry_label":"Стоимость участия","entry_value":"{count} коинов","confirm":"Начать поиск","invite":"Пригласить друга","one_on_one":"1 на 1","search_label":"{game} · участие {count} коинов · {variant}","insufficient_title":"Недостаточно коинов","insufficient_note":"Для начала матча нужно {needed} коинов. Сейчас доступно {balance}.","economy_unavailable":"Стоимость участия временно недоступна."},
+  "settings": {
+    "title": "Настройки",
+    "language": "Язык",
+    "language_note": "Выберите язык интерфейса Mini Games World.",
+    "language_ru": "Русский",
+    "language_saved": "Язык сохранён"
+  },
+  "setup": {
+    "subtitle": "Выберите условия матча и подтвердите участие.",
+    "variant_label": "Размер / вариант",
+    "entry_label": "Стоимость участия",
+    "entry_value": "{count} коинов",
+    "confirm": "Начать поиск",
+    "invite": "Пригласить друга",
+    "one_on_one": "1 на 1",
+    "search_label": "{game} · участие {count} коинов · {variant}",
+    "insufficient_title": "Недостаточно коинов",
+    "insufficient_note": "Для начала матча нужно {needed} коинов. Сейчас доступно {balance}.",
+    "economy_unavailable": "Стоимость участия временно недоступна."
+  },
   "game_invites": {
-    "game_titles":{"tictactoe":"Крестики-нолики","four_in_a_row":"4 в ряд","battleship":"Морской бой","checkers":"Шашки","reversi":"Реверси","chess":"Шахматы","go":"Го","domino":"Домино"},
-    "player":"Игрок","player_genitive":"игрока","game_fallback":"Игра","initial":"И",
-    "social":{"title":"Пригласить {name}","choose_game":"Выберите игру.","setup_title":"Пригласить в «{game}»","choose_variant":"Выберите вариант игры.","debit_note":"Коины спишутся только после запуска матча.","variant_title":"Вариант игры","entry_title":"Стоимость участия","entry_value":"{count} коинов","invite_named":"Пригласить {name}","invite_player":"Пригласить игрока","share_link":"Поделиться ссылкой","method_selected":"Приглашение получит выбранный игрок.","method_list":"Игроку из списка приглашение сразу придёт в приложение. Ссылка нужна для нового человека.","picker_title":"Выберите игрока","picker_loading":"Загружаем игроков","picker_checking":"Проверяем доступность","back_conditions":"Назад к условиям","no_recent":"Недавних соперников пока нет","no_recent_note":"Вернитесь назад и отправьте ссылку.","load_players_failed":"Не удалось загрузить игроков","recent_opponent":"недавний соперник","create_failed":"Не удалось создать приглашение.","send_failed":"Не удалось отправить приглашение.","cancel_failed_retry":"Не удалось отменить приглашение. Попробуйте ещё раз.","cancel_failed":"Не удалось отменить приглашение.","link_prepare_failed":"Не удалось подготовить ссылку.","invite_prepare_failed":"Не удалось подготовить приглашение.","send_failed_retry":"Не удалось отправить приглашение. Попробуйте ещё раз.","share_ready_title":"Ссылка подготовлена","share_device_note":"Telegram не может подтвердить отправку на этом устройстве.","wait_link_open":"Приглашение начнёт ожидать ответ, когда получатель откроет ссылку.","open_telegram":"Открыть список Telegram","copy_link":"Скопировать ссылку","cancel":"Отменить","link_unavailable":"Ссылка временно недоступна.","link_copied":"Ссылка скопирована.","copy_prompt":"Скопируйте ссылку:","action_failed":"Не удалось выполнить действие."},
-    "rematch":{"proposed":"Реванш предложен","waiting_opponent":"Ждём ответа соперника.","create_failed":"Не удалось создать реванш.","propose_failed":"Не удалось предложить реванш.","play_again":"Сыграть ещё"},
-    "direct":{"sent_title":"Приглашение отправлено","for_player":"Для {name}","sending":"Отправляем приглашение…","cancel_invite":"Отменить приглашение"},
-    "incoming":{"title":"Вас приглашают сыграть","from_player":"От {name}","accept":"Принять приглашение","decline":"Отклонить","respond":"Ответьте на приглашение"},
-    "summary":{"game":"Игра","variant":"Вариант","entry":"Участие","entry_value":"{count} коинов"},
-    "owner_wait":{"waiting_response":"Ожидаем ответ","rematch_proposed":"Реванш предложен","sent":"Приглашение отправлено","cancel_invite":"Отменить приглашение"},
-    "ready":{"opponent_agreed":"Соперник согласен","player_ready":"{name} готов играть.","start":"Начать игру","cancel":"Отменить","start_match":"Запустите матч"},
-    "accepted":{"title":"Приглашение принято","waiting_from":"Ждём запуска матча от {name}.","cancel_participation":"Отменить участие","wait_start":"Ждём запуск матча","wait_start_sentence":"Ожидаем запуск матча.","wait_until":"Ожидание до {time}."},
-    "terminal":{"note":"Это приглашение больше нельзя использовать.","understood":"Понятно","declined":"Приглашение отклонено","cancelled":"Приглашение отменено","expired":"Срок приглашения истёк","timed_out":"Время ожидания истекло","closed":"Приглашение закрыто"},
-    "loading":{"accept":"Принимаем…","start":"Запускаем…","decline":"Отклоняем…","cancel":"Отменяем…","wait":"Подождите…"},
-    "status":{"start_match":"Запустите матч","wait_start":"Ждём запуск матча","respond":"Ответьте на приглашение","waiting_response":"Ожидаем ответ","waiting":"Ожидание"},
-    "network":{"unavailable":"Приглашение уже недоступно.","retry":"Попробуйте ещё раз.","server_unreachable":"Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.","overloaded":"Связь перегружена. Попробуйте ещё раз через несколько секунд.","service_unavailable":"Сервис приглашений временно недоступен."},
-    "board":{"four_classic_suffix":" · классика","domino_classic":"Классика 0–6","normal_match":"Обычный матч"}
+    "game_titles": {
+      "tictactoe": "Крестики-нолики",
+      "four_in_a_row": "4 в ряд",
+      "battleship": "Морской бой",
+      "checkers": "Шашки",
+      "reversi": "Реверси",
+      "chess": "Шахматы",
+      "go": "Го",
+      "domino": "Домино"
+    },
+    "player": "Игрок",
+    "player_genitive": "игрока",
+    "game_fallback": "Игра",
+    "initial": "И",
+    "social": {
+      "title": "Пригласить {name}",
+      "choose_game": "Выберите игру.",
+      "setup_title": "Пригласить в «{game}»",
+      "choose_variant": "Выберите вариант игры.",
+      "debit_note": "Коины спишутся только после запуска матча.",
+      "variant_title": "Вариант игры",
+      "entry_title": "Стоимость участия",
+      "entry_value": "{count} коинов",
+      "invite_named": "Пригласить {name}",
+      "invite_player": "Пригласить игрока",
+      "share_link": "Поделиться ссылкой",
+      "method_selected": "Приглашение получит выбранный игрок.",
+      "method_list": "Игроку из списка приглашение сразу придёт в приложение. Ссылка нужна для нового человека.",
+      "picker_title": "Выберите игрока",
+      "picker_loading": "Загружаем игроков",
+      "picker_checking": "Проверяем доступность",
+      "back_conditions": "Назад к условиям",
+      "no_recent": "Недавних соперников пока нет",
+      "no_recent_note": "Вернитесь назад и отправьте ссылку.",
+      "load_players_failed": "Не удалось загрузить игроков",
+      "recent_opponent": "недавний соперник",
+      "create_failed": "Не удалось создать приглашение.",
+      "send_failed": "Не удалось отправить приглашение.",
+      "cancel_failed_retry": "Не удалось отменить приглашение. Попробуйте ещё раз.",
+      "cancel_failed": "Не удалось отменить приглашение.",
+      "link_prepare_failed": "Не удалось подготовить ссылку.",
+      "invite_prepare_failed": "Не удалось подготовить приглашение.",
+      "send_failed_retry": "Не удалось отправить приглашение. Попробуйте ещё раз.",
+      "share_ready_title": "Ссылка подготовлена",
+      "share_device_note": "Telegram не может подтвердить отправку на этом устройстве.",
+      "wait_link_open": "Приглашение начнёт ожидать ответ, когда получатель откроет ссылку.",
+      "open_telegram": "Открыть список Telegram",
+      "copy_link": "Скопировать ссылку",
+      "cancel": "Отменить",
+      "link_unavailable": "Ссылка временно недоступна.",
+      "link_copied": "Ссылка скопирована.",
+      "copy_prompt": "Скопируйте ссылку:",
+      "action_failed": "Не удалось выполнить действие."
+    },
+    "rematch": {
+      "proposed": "Реванш предложен",
+      "waiting_opponent": "Ждём ответа соперника.",
+      "create_failed": "Не удалось создать реванш.",
+      "propose_failed": "Не удалось предложить реванш.",
+      "play_again": "Сыграть ещё"
+    },
+    "direct": {
+      "sent_title": "Приглашение отправлено",
+      "for_player": "Для {name}",
+      "sending": "Отправляем приглашение…",
+      "cancel_invite": "Отменить приглашение"
+    },
+    "incoming": {
+      "title": "Вас приглашают сыграть",
+      "from_player": "От {name}",
+      "accept": "Принять приглашение",
+      "decline": "Отклонить",
+      "respond": "Ответьте на приглашение"
+    },
+    "summary": {
+      "game": "Игра",
+      "variant": "Вариант",
+      "entry": "Участие",
+      "entry_value": "{count} коинов"
+    },
+    "owner_wait": {
+      "waiting_response": "Ожидаем ответ",
+      "rematch_proposed": "Реванш предложен",
+      "sent": "Приглашение отправлено",
+      "cancel_invite": "Отменить приглашение"
+    },
+    "ready": {
+      "opponent_agreed": "Соперник согласен",
+      "player_ready": "{name} готов играть.",
+      "start": "Начать игру",
+      "cancel": "Отменить",
+      "start_match": "Запустите матч"
+    },
+    "accepted": {
+      "title": "Приглашение принято",
+      "waiting_from": "Ждём запуска матча от {name}.",
+      "cancel_participation": "Отменить участие",
+      "wait_start": "Ждём запуск матча",
+      "wait_start_sentence": "Ожидаем запуск матча.",
+      "wait_until": "Ожидание до {time}."
+    },
+    "terminal": {
+      "note": "Это приглашение больше нельзя использовать.",
+      "understood": "Понятно",
+      "declined": "Приглашение отклонено",
+      "cancelled": "Приглашение отменено",
+      "expired": "Срок приглашения истёк",
+      "timed_out": "Время ожидания истекло",
+      "closed": "Приглашение закрыто"
+    },
+    "loading": {
+      "accept": "Принимаем…",
+      "start": "Запускаем…",
+      "decline": "Отклоняем…",
+      "cancel": "Отменяем…",
+      "wait": "Подождите…"
+    },
+    "status": {
+      "start_match": "Запустите матч",
+      "wait_start": "Ждём запуск матча",
+      "respond": "Ответьте на приглашение",
+      "waiting_response": "Ожидаем ответ",
+      "waiting": "Ожидание"
+    },
+    "network": {
+      "unavailable": "Приглашение уже недоступно.",
+      "retry": "Попробуйте ещё раз.",
+      "server_unreachable": "Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.",
+      "overloaded": "Связь перегружена. Попробуйте ещё раз через несколько секунд.",
+      "service_unavailable": "Сервис приглашений временно недоступен.",
+      "open_link_failed": "Не удалось открыть приглашение. Попробуйте открыть ссылку ещё раз."
+    },
+    "board": {
+      "four_classic_suffix": " · классика",
+      "domino_classic": "Классика 0–6",
+      "normal_match": "Обычный матч"
+    }
   },
   "home": {
-    "stats":{"online_players":"Игроков онлайн","active_matches":"Активных матчей"},
-    "menu":{"title":"Меню","feedback":"Обратная связь","idea":"Предложить идею","report":"Пожаловаться","tickets":"Мои обращения","balance_history":"История баланса","match_history":"История матчей"},
-    "report":{
-      "reasons":{"nickname":"Недопустимый никнейм","avatar":"Недопустимый аватар","spam":"Спам","cheating":"Нечестная игра","stalling":"Затягивание игры","other":"Другое"},
-      "title":"Пожаловаться на игрока","subtitle":"Найдите игрока и выберите причину жалобы.","target_question":"На кого вы хотите пожаловаться?","search_note":"Поиск по нику или MGW-ID","search_placeholder":"Ник или MGW-ID","search_action":"Найти","search_hint":"Введите минимум 2 символа ника или полный MGW-ID.","reason_title":"Причина жалобы","choose_one":"Выберите один вариант","comment":"Комментарий","optional":"необязательно","comment_placeholder":"Кратко опишите ситуацию","send":"Отправить жалобу","history_title":"Мои жалобы","history_loading":"Загружаю историю…","player_fallback":"Игрок","change":"Изменить","selected":"Игрок выбран.","not_found":"Игроки не найдены. Попробуйте другой ник или MGW-ID.","found":"Найдено: {count}. Выберите игрока.","choose":"Выбрать","enter_query":"Введите ник или MGW-ID.","nickname_min":"Для поиска по нику введите минимум 2 символа.","searching":"Ищу игрока…","search_error":"Не удалось выполнить поиск.","status_open":"Новая","status_reviewing":"На рассмотрении","status_closed":"Рассмотрена","history_empty":"Вы ещё не отправляли жалобы на игроков.","complaint_fallback":"Жалоба","review_complete":" · рассмотрение завершено","history_error":"Не удалось загрузить историю жалоб.","sent_case":"Жалоба отправлена · {case_id}","sent":"Жалоба отправлена.","send_error":"Не удалось отправить жалобу."
+    "stats": {
+      "online_players": "Игроков онлайн",
+      "active_matches": "Активных матчей"
     },
-    "support":{
-      "title_default":"Обращение","message_feedback":"Напишите сообщение","message_idea":"Опишите идею","message_default":"Опишите ситуацию",
-      "category_label":"Категория","category_feedback":"Обратная связь","category_idea":"Предложение","category_technical":"Техническая проблема","category_payment":"Платёж / коины","category_game":"Игра / матч","category_tournament":"Турнир","category_account":"Аккаунт","category_other":"Другое",
-      "subject_label":"Тема","subject_placeholder":"Короткая тема","priority_label":"Приоритет","priority_normal":"Обычный","priority_high":"Высокий","priority_critical":"Критический","priority_low":"Низкий","message_label":"Сообщение",
-      "attachments":"Вложения","attachments_note":"Необязательно · до 3 файлов, до 2 МБ каждый","add_file":"＋ Добавить","create":"Создать обращение","message_required":"Напишите сообщение.","created_case":"Обращение {number} создано.","created":"Обращение создано.","create_error":"Не удалось создать обращение.",
-      "tickets_load_error":"Не удалось загрузить обращения.","ticket_fallback":"Обращение","tickets_count":"Обращений: {count}","tickets_empty":"Обращений пока нет.","open_error":"Не удалось открыть обращение.",
-      "closed":"Обращение закрыто","reply":"Ответить","reply_placeholder":"Напишите сообщение","reply_add":"Добавить к ответу","reply_file":"＋ Файл","send":"Отправить","sent":"Сообщение отправлено.","send_error":"Не удалось отправить сообщение.",
-      "status_open":"Открыто","status_in_progress":"В работе","status_waiting":"Ждёт ответа","status_resolved":"Решено","status_closed":"Закрыто",
-      "attachment_fallback":"Вложение","open":"Открыть","hide":"Скрыть","your_message":"Ваше сообщение","support":"Поддержка",
-      "file_not_selected":"Файл не выбран.","file_too_large":"Файл больше 2 МБ.","file_type_error":"Поддерживаются изображения, PDF и TXT.","file_size_kb":"{count} КБ","remove_file":"Удалить файл","file_limit_button":"Лимит 3 файла","file_limit_error":"Можно приложить не более 3 файлов.","read_error":"{file}: не удалось прочитать файл.","loading":"Загрузка…","attachment_open_error":"Не удалось открыть вложение."
+    "menu": {
+      "title": "Меню",
+      "feedback": "Обратная связь",
+      "idea": "Предложить идею",
+      "report": "Пожаловаться",
+      "tickets": "Мои обращения",
+      "balance_history": "История баланса",
+      "match_history": "История матчей"
     },
-    "history":{"balance_title":"История баланса","match_title":"История матчей","operation":"Операция","coin_amount":"{count} коинов","operations_empty":"Операций пока нет.","operations_title":"Операции баланса","match":"Матч","opponent":"Соперник","opponent_line":"Соперник: {opponent}","matches_empty":"Истории матчей пока нет.","latest_games":"Последние игры"},
-    "rules_guide":{
-      "coin_amount":"{count} коинов","current_amount":"текущая сумма","title":"Как работают обычные матчи","subtitle":"Коротко о поиске соперника, коинах, победе, ничьей и истории игры.",
-      "start_title":"1. Как начать игру","start_text_1":"Выберите игру на главном экране, настройте доступные для неё параметры и запустите поиск соперника. Пока идёт поиск, коины не списываются. Ставка снимается только тогда, когда матч действительно создан.","start_text_2":"Сначала система старается подобрать другого игрока с подходящими условиями. Если подходящего игрока долго нет, в обычном поиске соперником может стать бот.","start_text_3":"Хотите сыграть с конкретным человеком — откройте {friends}, найдите его по нику или MGW-ID, откройте меню {more} и выберите {invite}.","friends":"Друзья","more":"…","invite":"Пригласить в игру",
-      "cost_title":"2. Сколько стоит матч","cost_text":"Участие стоит {entry} с каждого игрока. Поэтому общий банк обычного матча сейчас составляет {pot}.","calculation_label":"Расчёт обычного матча","entry_label":"Ставка игрока","pot_label":"Банк матча","winner_label":"Получает победитель","commission_label":"Комиссия системы","cost_example":"Например, при текущих условиях победитель получает обратно свою ставку вместе с выигрышем: на баланс начисляется {winner_reward}. Чистый результат победителя относительно баланса до матча — {winner_net}.",
-      "result_title":"3. Победа, поражение и ничья","win_label":"Победа:","win_text":"{label} победитель получает {winner_reward} из общего банка, а {commission} составляет комиссия системы.","loss_label":"Поражение:","loss_text":"{label} ставка за этот матч не возвращается.","draw_label":"Ничья:","draw_text":"{label} каждому игроку возвращается его ставка — сейчас {draw_refund}. При ничьей комиссии нет.",
-      "leave_title":"4. Не выходите из незавершённого матча","leave_text":"Если матч уже начался и вы вручную выходите из него до завершения, приложение предупредит о последствиях. Такой выход может быть засчитан как техническое поражение, поэтому лучше закончить партию или вернуться в неё после временного обрыва связи.",
-      "game_rules_title":"5. Правила конкретной игры","game_rules_text":"У каждой игры свои правила, размеры поля и доступные варианты. Перед матчем или внутри игрового интерфейса откройте кнопку {rules} — там описана именно выбранная игра. Этот раздел объясняет общие правила обычных матчей и коинов.",
-      "history_title":"6. Где проверить результат","history_text":"В меню {more} доступны {balance_history} и {match_history}. Там можно посмотреть списание за участие, возврат при ничьей, начисление за победу и последние сыгранные партии.",
-      "bonus_title":"7. Бонусы и турниры","bonus_text":"Условия еженедельного бесплатного бонуса показываются отдельно в карточке баланса — используйте кнопку {weekly_bonus}, чтобы увидеть актуальные условия.","weekly_bonus":"Еженедельный бонус","tournaments_text":"Турниры — отдельный режим со своими условиями регистрации, матчей и наград. Правила обычного матча из этого окна не заменяют правила конкретного турнира.",
-      "problems_title":"8. Если что-то пошло не так","problems_text":"Если баланс, результат матча или другое действие выглядит неправильно, откройте {more_feedback}. Для жалобы на другого игрока используйте отдельный пункт {report}."
+    "report": {
+      "reasons": {
+        "nickname": "Недопустимый никнейм",
+        "avatar": "Недопустимый аватар",
+        "spam": "Спам",
+        "cheating": "Нечестная игра",
+        "stalling": "Затягивание игры",
+        "other": "Другое"
+      },
+      "title": "Пожаловаться на игрока",
+      "subtitle": "Найдите игрока и выберите причину жалобы.",
+      "target_question": "На кого вы хотите пожаловаться?",
+      "search_note": "Поиск по нику или MGW-ID",
+      "search_placeholder": "Ник или MGW-ID",
+      "search_action": "Найти",
+      "search_hint": "Введите минимум 2 символа ника или полный MGW-ID.",
+      "reason_title": "Причина жалобы",
+      "choose_one": "Выберите один вариант",
+      "comment": "Комментарий",
+      "optional": "необязательно",
+      "comment_placeholder": "Кратко опишите ситуацию",
+      "send": "Отправить жалобу",
+      "history_title": "Мои жалобы",
+      "history_loading": "Загружаю историю…",
+      "player_fallback": "Игрок",
+      "change": "Изменить",
+      "selected": "Игрок выбран.",
+      "not_found": "Игроки не найдены. Попробуйте другой ник или MGW-ID.",
+      "found": "Найдено: {count}. Выберите игрока.",
+      "choose": "Выбрать",
+      "enter_query": "Введите ник или MGW-ID.",
+      "nickname_min": "Для поиска по нику введите минимум 2 символа.",
+      "searching": "Ищу игрока…",
+      "search_error": "Не удалось выполнить поиск.",
+      "status_open": "Новая",
+      "status_reviewing": "На рассмотрении",
+      "status_closed": "Рассмотрена",
+      "history_empty": "Вы ещё не отправляли жалобы на игроков.",
+      "complaint_fallback": "Жалоба",
+      "review_complete": " · рассмотрение завершено",
+      "history_error": "Не удалось загрузить историю жалоб.",
+      "sent_case": "Жалоба отправлена · {case_id}",
+      "sent": "Жалоба отправлена.",
+      "send_error": "Не удалось отправить жалобу."
+    },
+    "support": {
+      "title_default": "Обращение",
+      "message_feedback": "Напишите сообщение",
+      "message_idea": "Опишите идею",
+      "message_default": "Опишите ситуацию",
+      "category_label": "Категория",
+      "category_feedback": "Обратная связь",
+      "category_idea": "Предложение",
+      "category_technical": "Техническая проблема",
+      "category_payment": "Платёж / коины",
+      "category_game": "Игра / матч",
+      "category_tournament": "Турнир",
+      "category_account": "Аккаунт",
+      "category_other": "Другое",
+      "subject_label": "Тема",
+      "subject_placeholder": "Короткая тема",
+      "priority_label": "Приоритет",
+      "priority_normal": "Обычный",
+      "priority_high": "Высокий",
+      "priority_critical": "Критический",
+      "priority_low": "Низкий",
+      "message_label": "Сообщение",
+      "attachments": "Вложения",
+      "attachments_note": "Необязательно · до 3 файлов, до 2 МБ каждый",
+      "add_file": "＋ Добавить",
+      "create": "Создать обращение",
+      "message_required": "Напишите сообщение.",
+      "created_case": "Обращение {number} создано.",
+      "created": "Обращение создано.",
+      "create_error": "Не удалось создать обращение.",
+      "tickets_load_error": "Не удалось загрузить обращения.",
+      "ticket_fallback": "Обращение",
+      "tickets_count": "Обращений: {count}",
+      "tickets_empty": "Обращений пока нет.",
+      "open_error": "Не удалось открыть обращение.",
+      "closed": "Обращение закрыто",
+      "reply": "Ответить",
+      "reply_placeholder": "Напишите сообщение",
+      "reply_add": "Добавить к ответу",
+      "reply_file": "＋ Файл",
+      "send": "Отправить",
+      "sent": "Сообщение отправлено.",
+      "send_error": "Не удалось отправить сообщение.",
+      "status_open": "Открыто",
+      "status_in_progress": "В работе",
+      "status_waiting": "Ждёт ответа",
+      "status_resolved": "Решено",
+      "status_closed": "Закрыто",
+      "attachment_fallback": "Вложение",
+      "open": "Открыть",
+      "hide": "Скрыть",
+      "your_message": "Ваше сообщение",
+      "support": "Поддержка",
+      "file_not_selected": "Файл не выбран.",
+      "file_too_large": "Файл больше 2 МБ.",
+      "file_type_error": "Поддерживаются изображения, PDF и TXT.",
+      "file_size_kb": "{count} КБ",
+      "remove_file": "Удалить файл",
+      "file_limit_button": "Лимит 3 файла",
+      "file_limit_error": "Можно приложить не более 3 файлов.",
+      "read_error": "{file}: не удалось прочитать файл.",
+      "loading": "Загрузка…",
+      "attachment_open_error": "Не удалось открыть вложение."
+    },
+    "history": {
+      "balance_title": "История баланса",
+      "match_title": "История матчей",
+      "operation": "Операция",
+      "coin_amount": "{count} коинов",
+      "operations_empty": "Операций пока нет.",
+      "operations_title": "Операции баланса",
+      "match": "Матч",
+      "opponent": "Соперник",
+      "opponent_line": "Соперник: {opponent}",
+      "matches_empty": "Истории матчей пока нет.",
+      "latest_games": "Последние игры"
+    },
+    "rules_guide": {
+      "coin_amount": "{count} коинов",
+      "current_amount": "текущая сумма",
+      "title": "Как работают обычные матчи",
+      "subtitle": "Коротко о поиске соперника, коинах, победе, ничьей и истории игры.",
+      "start_title": "1. Как начать игру",
+      "start_text_1": "Выберите игру на главном экране, настройте доступные для неё параметры и запустите поиск соперника. Пока идёт поиск, коины не списываются. Ставка снимается только тогда, когда матч действительно создан.",
+      "start_text_2": "Сначала система старается подобрать другого игрока с подходящими условиями. Если подходящего игрока долго нет, в обычном поиске соперником может стать бот.",
+      "start_text_3": "Хотите сыграть с конкретным человеком — откройте {friends}, найдите его по нику или MGW-ID, откройте меню {more} и выберите {invite}.",
+      "friends": "Друзья",
+      "more": "…",
+      "invite": "Пригласить в игру",
+      "cost_title": "2. Сколько стоит матч",
+      "cost_text": "Участие стоит {entry} с каждого игрока. Поэтому общий банк обычного матча сейчас составляет {pot}.",
+      "calculation_label": "Расчёт обычного матча",
+      "entry_label": "Ставка игрока",
+      "pot_label": "Банк матча",
+      "winner_label": "Получает победитель",
+      "commission_label": "Комиссия системы",
+      "cost_example": "Например, при текущих условиях победитель получает обратно свою ставку вместе с выигрышем: на баланс начисляется {winner_reward}. Чистый результат победителя относительно баланса до матча — {winner_net}.",
+      "result_title": "3. Победа, поражение и ничья",
+      "win_label": "Победа:",
+      "win_text": "{label} победитель получает {winner_reward} из общего банка, а {commission} составляет комиссия системы.",
+      "loss_label": "Поражение:",
+      "loss_text": "{label} ставка за этот матч не возвращается.",
+      "draw_label": "Ничья:",
+      "draw_text": "{label} каждому игроку возвращается его ставка — сейчас {draw_refund}. При ничьей комиссии нет.",
+      "leave_title": "4. Не выходите из незавершённого матча",
+      "leave_text": "Если матч уже начался и вы вручную выходите из него до завершения, приложение предупредит о последствиях. Такой выход может быть засчитан как техническое поражение, поэтому лучше закончить партию или вернуться в неё после временного обрыва связи.",
+      "game_rules_title": "5. Правила конкретной игры",
+      "game_rules_text": "У каждой игры свои правила, размеры поля и доступные варианты. Перед матчем или внутри игрового интерфейса откройте кнопку {rules} — там описана именно выбранная игра. Этот раздел объясняет общие правила обычных матчей и коинов.",
+      "history_title": "6. Где проверить результат",
+      "history_text": "В меню {more} доступны {balance_history} и {match_history}. Там можно посмотреть списание за участие, возврат при ничьей, начисление за победу и последние сыгранные партии.",
+      "bonus_title": "7. Бонусы и турниры",
+      "bonus_text": "Условия еженедельного бесплатного бонуса показываются отдельно в карточке баланса — используйте кнопку {weekly_bonus}, чтобы увидеть актуальные условия.",
+      "weekly_bonus": "Еженедельный бонус",
+      "tournaments_text": "Турниры — отдельный режим со своими условиями регистрации, матчей и наград. Правила обычного матча из этого окна не заменяют правила конкретного турнира.",
+      "problems_title": "8. Если что-то пошло не так",
+      "problems_text": "Если баланс, результат матча или другое действие выглядит неправильно, откройте {more_feedback}. Для жалобы на другого игрока используйте отдельный пункт {report}."
     }
   },
   "games": {
@@ -1382,139 +1966,791 @@
     }
   },
   "friends": {
-    "menu":{"title":"Друзья"},
-    "page":{"title":"Друзья","subtitle":"Ищите игроков, принимайте заявки и приглашайте друзей в матч."},
-    "loading":{"refresh":"Обновляем список…"},
-    "search":{"placeholder":"Часть ника или MGW-ID","aria":"Найти игрока по части ника или MGW-ID","searching_short":"Ищем…","action":"Найти","searching":"Ищем игроков…","results":"Результаты поиска","hide":"Скрыть","enter_query":"Введите часть ника или полный MGW-ID.","nickname_min":"Для поиска по нику введите минимум 2 символа.","not_found":"Игроки не найдены. Попробуйте другую часть ника."},
-    "tabs":{"aria":"Разделы друзей","friends":"Друзья","requests":"Заявки","recent":"Недавние","blocked":"Блокировки"},
-    "sections":{"friends":"Друзья","incoming":"Входящие заявки","outgoing":"Исходящие заявки","recent":"Недавние соперники","blocked":"Заблокированные"},
-    "player_fallback":"Игрок",
-    "recent_match":"Последний матч: {date}",
-    "recently":"недавно",
-    "actions":{"aria":"Действия с игроком","accept":"Принять","decline":"Отклонить","cancel":"Отменить","unblock":"Разблокировать","add":"Добавить","remove":"Удалить","block":"Заблокировать"},
-    "menu_actions":{"invite":"Пригласить в игру","profile":"Профиль и статистика","remove":"Удалить из друзей","report":"Пожаловаться","block":"Заблокировать"},
-    "confirm":{"unblock_title":"Разблокировать игрока?","unblock_note":"{name} снова сможет взаимодействовать с вами через социальные функции.","remove_title":"Удалить из друзей?","remove_note":"Игрок {name} исчезнет из списка друзей.","block_title":"Заблокировать игрока?","block_note":"Заявки в друзья и новые приглашения в игру будут недоступны, текущая дружба будет удалена."},
-    "profile":{"title":"Профиль игрока","subtitle":"Публичная статистика MGW","matches":"Матчи","wins":"Победы","losses":"Поражения","draws":"Ничьи","game_stats":"{matches} матч. · {wins} побед","game_names":{"tictactoe":"Крестики-нолики","four_in_a_row":"4 в ряд","battleship":"Морской бой","checkers":"Шашки","reversi":"Реверси","chess":"Шахматы","go":"Го","domino":"Домино"}},
-    "report":{"title":"Пожаловаться","reason":"Причина","comment":"Комментарий","comment_placeholder":"Необязательно. Кратко опишите ситуацию","send":"Отправить жалобу","choose_reason":"Выберите причину жалобы.","sent_case":"Жалоба отправлена · {case_id}","sent":"Жалоба отправлена.","send_error":"Не удалось отправить жалобу."},
-    "empty":{"incoming":"Нет входящих заявок.","outgoing":"Нет исходящих заявок.","friends":"Найдите игрока по части ника или MGW-ID и отправьте заявку.","recent":"Завершённые матчи с людьми появятся здесь.","blocked":"Список заблокированных пуст.","default":"Пока пусто."},
-    "errors":{"load":"Не удалось загрузить друзей.","search":"Не удалось выполнить поиск.","action":"Не удалось выполнить действие.","profile_unavailable":"Профиль недоступен.","profile_open":"Не удалось открыть профиль игрока."}
+    "menu": {
+      "title": "Друзья"
+    },
+    "page": {
+      "title": "Друзья",
+      "subtitle": "Ищите игроков, принимайте заявки и приглашайте друзей в матч."
+    },
+    "loading": {
+      "refresh": "Обновляем список…"
+    },
+    "search": {
+      "placeholder": "Часть ника или MGW-ID",
+      "aria": "Найти игрока по части ника или MGW-ID",
+      "searching_short": "Ищем…",
+      "action": "Найти",
+      "searching": "Ищем игроков…",
+      "results": "Результаты поиска",
+      "hide": "Скрыть",
+      "enter_query": "Введите часть ника или полный MGW-ID.",
+      "nickname_min": "Для поиска по нику введите минимум 2 символа.",
+      "not_found": "Игроки не найдены. Попробуйте другую часть ника."
+    },
+    "tabs": {
+      "aria": "Разделы друзей",
+      "friends": "Друзья",
+      "requests": "Заявки",
+      "recent": "Недавние",
+      "blocked": "Блокировки"
+    },
+    "sections": {
+      "friends": "Друзья",
+      "incoming": "Входящие заявки",
+      "outgoing": "Исходящие заявки",
+      "recent": "Недавние соперники",
+      "blocked": "Заблокированные"
+    },
+    "player_fallback": "Игрок",
+    "recent_match": "Последний матч: {date}",
+    "recently": "недавно",
+    "actions": {
+      "aria": "Действия с игроком",
+      "accept": "Принять",
+      "decline": "Отклонить",
+      "cancel": "Отменить",
+      "unblock": "Разблокировать",
+      "add": "Добавить",
+      "remove": "Удалить",
+      "block": "Заблокировать"
+    },
+    "menu_actions": {
+      "invite": "Пригласить в игру",
+      "profile": "Профиль и статистика",
+      "remove": "Удалить из друзей",
+      "report": "Пожаловаться",
+      "block": "Заблокировать"
+    },
+    "confirm": {
+      "unblock_title": "Разблокировать игрока?",
+      "unblock_note": "{name} снова сможет взаимодействовать с вами через социальные функции.",
+      "remove_title": "Удалить из друзей?",
+      "remove_note": "Игрок {name} исчезнет из списка друзей.",
+      "block_title": "Заблокировать игрока?",
+      "block_note": "Заявки в друзья и новые приглашения в игру будут недоступны, текущая дружба будет удалена."
+    },
+    "profile": {
+      "title": "Профиль игрока",
+      "subtitle": "Публичная статистика MGW",
+      "matches": "Матчи",
+      "wins": "Победы",
+      "losses": "Поражения",
+      "draws": "Ничьи",
+      "game_stats": "{matches} матч. · {wins} побед",
+      "game_names": {
+        "tictactoe": "Крестики-нолики",
+        "four_in_a_row": "4 в ряд",
+        "battleship": "Морской бой",
+        "checkers": "Шашки",
+        "reversi": "Реверси",
+        "chess": "Шахматы",
+        "go": "Го",
+        "domino": "Домино"
+      }
+    },
+    "report": {
+      "title": "Пожаловаться",
+      "reason": "Причина",
+      "comment": "Комментарий",
+      "comment_placeholder": "Необязательно. Кратко опишите ситуацию",
+      "send": "Отправить жалобу",
+      "choose_reason": "Выберите причину жалобы.",
+      "sent_case": "Жалоба отправлена · {case_id}",
+      "sent": "Жалоба отправлена.",
+      "send_error": "Не удалось отправить жалобу."
+    },
+    "empty": {
+      "incoming": "Нет входящих заявок.",
+      "outgoing": "Нет исходящих заявок.",
+      "friends": "Найдите игрока по части ника или MGW-ID и отправьте заявку.",
+      "recent": "Завершённые матчи с людьми появятся здесь.",
+      "blocked": "Список заблокированных пуст.",
+      "default": "Пока пусто."
+    },
+    "errors": {
+      "load": "Не удалось загрузить друзей.",
+      "search": "Не удалось выполнить поиск.",
+      "action": "Не удалось выполнить действие.",
+      "profile_unavailable": "Профиль недоступен.",
+      "profile_open": "Не удалось открыть профиль игрока."
+    }
   },
   "account_data": {
-    "menu":{"title":"Данные и аккаунт"},
-    "title":"Данные и аккаунт",
-    "loading":"Загружаем состояние…",
-    "intro":{"title":"Управление данными аккаунта","text":"Здесь можно скачать копию своих данных или запросить удаление аккаунта."},
-    "export":{"title":"Скачать мои данные","text":"Создадим ZIP-архив. Внутри — удобная HTML-сводка, JSON/CSV и изображения профиля.","download":"Скачать ZIP","downloading":"Скачиваем…","create_new":"Создать новый","creating":"Создаём…","create_archive":"Создать архив","creating_archive":"Создаём архив…","rate_limited_until":"Новый архив можно создать после {date}.","failed_note":"Предыдущий экспорт не удалось подготовить. Можно повторить запрос.","expired_note":"Предыдущий архив уже удалён по сроку хранения.","never":"Архив ещё не создавался.","ready":"Архив готов","stored_until":"Хранится до {date}","processing":"Архив формируется…","last_failed":"Последняя попытка завершилась ошибкой.","last_expired":"Срок хранения прошлого архива истёк.","last_request":"Последний запрос: {status}"},
-    "delete":{"title":"Удалить аккаунт","scheduled_text":"Удаление уже запланировано. До указанного срока запрос можно отменить — аккаунт продолжит работать.","after":"Удаление после","grace_text":"Удаление не происходит сразу. После подтверждения у вас будет 7 дней, чтобы передумать и отменить запрос.","cancel":"Отменить удаление","cancelling":"Отменяем…","action":"Удалить аккаунт"},
-    "confirm":{"title":"Удалить аккаунт?","warning_title":"Вы действительно хотите удалить аккаунт?","warning_text":"После подтверждения начнётся 7-дневный период ожидания. Всё это время запрос можно отменить.","save_first_title":"Сначала сохранить свои данные?","save_first_text":"Можно вернуться на предыдущий экран, создать ZIP-архив и скачать его перед удалением.","save_first_action":"Сначала скачать данные","retention_note":"После завершения удаления профиль и персональные привязки будут удалены или обезличены. Часть истории может сохраняться только там, где это необходимо для подтверждения матчей, операций с игровыми монетами, безопасности или требований закона.","keep":"Не удалять","schedule":"Да, запланировать","scheduling":"Планируем…"},
-    "toasts":{"archive_ready":"Архив данных готов.","download_started":"Скачивание ZIP началось.","deletion_cancelled":"Удаление отменено. Аккаунт сохранён.","deletion_scheduled_date":"Аккаунт будет удалён через 7 дней. Дата удаления: {date}.","deletion_scheduled":"Аккаунт будет удалён через 7 дней."},
-    "errors":{"load":"Не удалось загрузить управление данными аккаунта.","android_reauth_unavailable":"Android не смог подготовить безопасное подтверждение.","reauth_cancelled":"Подтверждение отменено.","reauth_failed":"Не удалось подтвердить действие на устройстве.","reauth_timeout":"Время подтверждения истекло. Повторите действие.","create_export":"Не удалось создать архив данных.","download_export":"Не удалось скачать архив данных.","android_download_unavailable":"Android не смог подготовить скачивание архива.","android_download_failed":"Android не смог начать скачивание архива.","android_download_timeout":"Скачивание не запустилось. Попробуйте ещё раз.","cancel_delete":"Не удалось отменить удаление.","schedule_delete":"Не удалось запланировать удаление.","reauth_required":"Для подтверждения заново откройте MINI GAMES WORLD из Telegram.","rate_limited":"Новый экспорт можно запросить позже."},
-    "status":{"unknown":"неизвестно"},
-    "bytes":{"b":"{value} Б","kb":"{value} КБ","mb":"{value} МБ"}
+    "menu": {
+      "title": "Данные и аккаунт"
+    },
+    "title": "Данные и аккаунт",
+    "loading": "Загружаем состояние…",
+    "intro": {
+      "title": "Управление данными аккаунта",
+      "text": "Здесь можно скачать копию своих данных или запросить удаление аккаунта."
+    },
+    "export": {
+      "title": "Скачать мои данные",
+      "text": "Создадим ZIP-архив. Внутри — удобная HTML-сводка, JSON/CSV и изображения профиля.",
+      "download": "Скачать ZIP",
+      "downloading": "Скачиваем…",
+      "create_new": "Создать новый",
+      "creating": "Создаём…",
+      "create_archive": "Создать архив",
+      "creating_archive": "Создаём архив…",
+      "rate_limited_until": "Новый архив можно создать после {date}.",
+      "failed_note": "Предыдущий экспорт не удалось подготовить. Можно повторить запрос.",
+      "expired_note": "Предыдущий архив уже удалён по сроку хранения.",
+      "never": "Архив ещё не создавался.",
+      "ready": "Архив готов",
+      "stored_until": "Хранится до {date}",
+      "processing": "Архив формируется…",
+      "last_failed": "Последняя попытка завершилась ошибкой.",
+      "last_expired": "Срок хранения прошлого архива истёк.",
+      "last_request": "Последний запрос: {status}"
+    },
+    "delete": {
+      "title": "Удалить аккаунт",
+      "scheduled_text": "Удаление уже запланировано. До указанного срока запрос можно отменить — аккаунт продолжит работать.",
+      "after": "Удаление после",
+      "grace_text": "Удаление не происходит сразу. После подтверждения у вас будет 7 дней, чтобы передумать и отменить запрос.",
+      "cancel": "Отменить удаление",
+      "cancelling": "Отменяем…",
+      "action": "Удалить аккаунт"
+    },
+    "confirm": {
+      "title": "Удалить аккаунт?",
+      "warning_title": "Вы действительно хотите удалить аккаунт?",
+      "warning_text": "После подтверждения начнётся 7-дневный период ожидания. Всё это время запрос можно отменить.",
+      "save_first_title": "Сначала сохранить свои данные?",
+      "save_first_text": "Можно вернуться на предыдущий экран, создать ZIP-архив и скачать его перед удалением.",
+      "save_first_action": "Сначала скачать данные",
+      "retention_note": "После завершения удаления профиль и персональные привязки будут удалены или обезличены. Часть истории может сохраняться только там, где это необходимо для подтверждения матчей, операций с игровыми монетами, безопасности или требований закона.",
+      "keep": "Не удалять",
+      "schedule": "Да, запланировать",
+      "scheduling": "Планируем…"
+    },
+    "toasts": {
+      "archive_ready": "Архив данных готов.",
+      "download_started": "Скачивание ZIP началось.",
+      "deletion_cancelled": "Удаление отменено. Аккаунт сохранён.",
+      "deletion_scheduled_date": "Аккаунт будет удалён через 7 дней. Дата удаления: {date}.",
+      "deletion_scheduled": "Аккаунт будет удалён через 7 дней."
+    },
+    "errors": {
+      "load": "Не удалось загрузить управление данными аккаунта.",
+      "android_reauth_unavailable": "Android не смог подготовить безопасное подтверждение.",
+      "reauth_cancelled": "Подтверждение отменено.",
+      "reauth_failed": "Не удалось подтвердить действие на устройстве.",
+      "reauth_timeout": "Время подтверждения истекло. Повторите действие.",
+      "create_export": "Не удалось создать архив данных.",
+      "download_export": "Не удалось скачать архив данных.",
+      "android_download_unavailable": "Android не смог подготовить скачивание архива.",
+      "android_download_failed": "Android не смог начать скачивание архива.",
+      "android_download_timeout": "Скачивание не запустилось. Попробуйте ещё раз.",
+      "cancel_delete": "Не удалось отменить удаление.",
+      "schedule_delete": "Не удалось запланировать удаление.",
+      "reauth_required": "Для подтверждения заново откройте MINI GAMES WORLD из Telegram.",
+      "rate_limited": "Новый экспорт можно запросить позже."
+    },
+    "status": {
+      "unknown": "неизвестно"
+    },
+    "bytes": {
+      "b": "{value} Б",
+      "kb": "{value} КБ",
+      "mb": "{value} МБ"
+    }
   },
   "game_screen": {
-    "waiting_start":"Ожидаем начало матча",
-    "timer_seconds":"{count} сек",
-    "roles":{"you":"вы","opponent":"соперник"},
-    "leave":{"title":"Выйти из матча?","note":"Матч ещё не завершён. Если выйти сейчас, вам будет засчитано техническое поражение.","continue":"Продолжить игру","confirm":"Выйти и завершить матч"},
-    "errors":{"action_restore":"Не удалось выполнить действие. Поле восстановлено.","viewer":"Не удалось определить игрока для завершения матча.","leave":"Не удалось выйти из матча."},
-    "result":{
-      "draw_title":"Ничья",
-      "draw_text":"Матч завершён вничью.",
-      "not_started_title":"Матч не начался",
-      "not_started_text":"Соперник не подключился вовремя. Ставка возвращена на баланс.",
-      "win_title":"Победа!",
-      "loss_title":"Поражение",
-      "timeout_win":"Соперник не сделал ход вовремя.",
-      "timeout_loss":"Время хода вышло. Засчитано техническое поражение.",
-      "left_win":"Соперник вышел из матча.",
-      "left_loss":"Вы вышли из матча. Засчитано техническое поражение.",
-      "checkmate_win":"Мат.",
-      "checkmate_loss":"Вашему королю поставлен мат.",
-      "domino_empty_win":"Вы первыми избавились от всех костяшек.",
-      "domino_empty_loss":"Соперник первым избавился от всех костяшек.",
-      "normal_win":"Матч завершён в вашу пользу.",
-      "normal_loss":"Соперник оказался сильнее.",
-      "pending_confirming":"подтверждаем…",
-      "pending_counting":"считаем…",
-      "tournament_saved":"Турнирный результат сохранён в сетке.",
-      "go_tournament":"Вернуться в турнир",
-      "new_opponent":"Найти нового соперника",
-      "home":"В меню",
-      "unavailable":"итог пока недоступен",
-      "tournament_pair":"{first} против {second}",
-      "tournament_participants":"Участники турнирной пары",
-      "tournament_duel":"Турнирный поединок · {title}",
-      "summary_unavailable":"За игру: итог пока недоступен · Баланс: —",
-      "summary":"За игру: {delta} · Баланс: {balance}",
-      "summary_status":"За игру: {status} · Баланс: —",
-      "opponent_fallback":"Соперник",
-      "versus":"против {opponent}",
-      "coins":"{value} коинов",
-      "match_fallback":"Матч",
-      "chess_draw":{"stalemate":"Пат.","insufficient_material":"Недостаточно фигур для мата.","threefold_repetition":"Позиция повторилась три раза.","fifty_move":"Сработало правило 50 ходов.","fallback":"Партия завершилась вничью."},
-      "final_score":"Итоговый счёт: {mine}:{theirs}.",
-      "domino_blocked_score":"Партия заблокирована. Оставшиеся точки: {mine}:{theirs}.",
-      "domino_score":"Оставшиеся точки: {mine}:{theirs}."
+    "waiting_start": "Ожидаем начало матча",
+    "timer_seconds": "{count} сек",
+    "roles": {
+      "you": "вы",
+      "opponent": "соперник"
+    },
+    "leave": {
+      "title": "Выйти из матча?",
+      "note": "Матч ещё не завершён. Если выйти сейчас, вам будет засчитано техническое поражение.",
+      "continue": "Продолжить игру",
+      "confirm": "Выйти и завершить матч"
+    },
+    "errors": {
+      "action_restore": "Не удалось выполнить действие. Поле восстановлено.",
+      "viewer": "Не удалось определить игрока для завершения матча.",
+      "leave": "Не удалось выйти из матча."
+    },
+    "result": {
+      "draw_title": "Ничья",
+      "draw_text": "Матч завершён вничью.",
+      "not_started_title": "Матч не начался",
+      "not_started_text": "Соперник не подключился вовремя. Ставка возвращена на баланс.",
+      "win_title": "Победа!",
+      "loss_title": "Поражение",
+      "timeout_win": "Соперник не сделал ход вовремя.",
+      "timeout_loss": "Время хода вышло. Засчитано техническое поражение.",
+      "left_win": "Соперник вышел из матча.",
+      "left_loss": "Вы вышли из матча. Засчитано техническое поражение.",
+      "checkmate_win": "Мат.",
+      "checkmate_loss": "Вашему королю поставлен мат.",
+      "domino_empty_win": "Вы первыми избавились от всех костяшек.",
+      "domino_empty_loss": "Соперник первым избавился от всех костяшек.",
+      "normal_win": "Матч завершён в вашу пользу.",
+      "normal_loss": "Соперник оказался сильнее.",
+      "pending_confirming": "подтверждаем…",
+      "pending_counting": "считаем…",
+      "tournament_saved": "Турнирный результат сохранён в сетке.",
+      "go_tournament": "Вернуться в турнир",
+      "new_opponent": "Найти нового соперника",
+      "home": "В меню",
+      "unavailable": "итог пока недоступен",
+      "tournament_pair": "{first} против {second}",
+      "tournament_participants": "Участники турнирной пары",
+      "tournament_duel": "Турнирный поединок · {title}",
+      "summary_unavailable": "За игру: итог пока недоступен · Баланс: —",
+      "summary": "За игру: {delta} · Баланс: {balance}",
+      "summary_status": "За игру: {status} · Баланс: —",
+      "opponent_fallback": "Соперник",
+      "versus": "против {opponent}",
+      "coins": "{value} коинов",
+      "match_fallback": "Матч",
+      "chess_draw": {
+        "stalemate": "Пат.",
+        "insufficient_material": "Недостаточно фигур для мата.",
+        "threefold_repetition": "Позиция повторилась три раза.",
+        "fifty_move": "Сработало правило 50 ходов.",
+        "fallback": "Партия завершилась вничью."
+      },
+      "final_score": "Итоговый счёт: {mine}:{theirs}.",
+      "domino_blocked_score": "Партия заблокирована. Оставшиеся точки: {mine}:{theirs}.",
+      "domino_score": "Оставшиеся точки: {mine}:{theirs}."
     }
   },
   "profile": {
-    "title":"Профиль","subtitle":"Аккаунт, баланс и игровая статистика Mini Games World.","player":"Игрок","nick_missing":"Ник не задан","member_since":"В игре с {date}","member_since_unknown":"Дата регистрации пока недоступна","mgw_id":"MGW-ID","copy_id":"Копировать","id_copied":"MGW-ID скопирован","balance":"Баланс","balance_note":"Ваш баланс коинов.","stats_title":"Общая статистика","stats_note":"Завершённые матчи аккаунта.","games_played":"Игр","wins":"Побед","losses":"Поражений","draws":"Ничьих","rating_title":"Рейтинг","rating_note_preseason":"Очки рейтинга отдельно для каждой игры.","rating_note_active":"Очки текущего официального сезона отдельно для каждой игры.","rating_note_off":"Рейтинговые сезоны пока не запущены.","rating_points":"Очки","rating_current":"Текущий сезон","rating_all_time_wins":"Победы за всё время","rating_previous_seasons":"Предыдущие сезоны","rating_season_closed":"Завершён","rating_season_label":"Q{quarter} · {year}","rating_matches_short":"Матчи","rating_wins_short":"Победы","yearly_medal_title":"Годовая медаль","yearly_medal_note":"Сыграйте минимум 5 рейтинговых матчей с людьми и одержите хотя бы 1 победу в официальном сезоне, чтобы открыть его часть медали.","yearly_medal_label":"Годовая медаль {year}","yearly_medal_progress":"{count}/4 фрагмента","yearly_medal_complete":"Медаль собрана","leaderboard_title":"Таблица лидеров","leaderboard_open_note":"Общий рейтинг игроков отдельно по каждой игре.","leaderboard_preseason":"Рейтинг","leaderboard_progress":"Условия попадания в таблицу применяются автоматически.","leaderboard_empty":"Пока таблица рейтинга пуста.","leaderboard_error":"Не удалось загрузить таблицу лидеров.","by_game_title":"По играм","by_game_note":"Статистика отдельно для каждой мини-игры.","metric_wins":"побед","metric_losses":"пораж.","metric_draws":"ничьих","history_title":"Последние матчи","history_note":"Недавние игры этого аккаунта.","history_empty":"История матчей пока пуста.","opponent":"Соперник","account_title":"Аккаунт и настройки","account_note":"Связанные способы входа и текущие параметры интерфейса.","language":"Язык интерфейса","language_note":"Текущий язык приложения.","language_value":"Русский","linked_accounts":"Связанные аккаунты","linked_accounts_note":"Подтверждённые способы входа в один MGW-аккаунт.","linked_empty":"Связанные аккаунты пока не найдены.","linked_since":"Связан с {date}","linked":"Связан с аккаунтом","connected":"Подключён","provider_unknown":"Аккаунт","load_error":"Не удалось обновить профиль.","save_error":"Не удалось сохранить профиль MGW.",
-    "nickname_edit":"Изменить ник","nickname_edit_title":"Игровой ник MGW","nickname_edit_note":"Можно использовать буквы, цифры, пробелы, дефис и подчёркивание. От 3 до 13 символов. Ник должен быть уникальным.","nickname_save":"Сохранить ник","nickname_saved":"Ник сохранён","nickname_too_short":"Ник должен содержать минимум 3 символа.","nickname_too_long":"Ник может содержать максимум 13 символов.","avatar_select":"Выбор аватара MGW","avatar_edit":"Изменить аватар","avatar_edit_title":"Выберите аватар","avatar_edit_note":"Выберите один из доступных аватаров MGW.","avatar_option":"Вариант {number}","avatar_saved":"Аватар сохранён","avatar_save_error":"Не удалось сохранить аватар.",
-    "entry_effects":{
-      "title":"Эффекты входа",
-      "effect_label":"Эффект входа",
-      "names":{"entry_01":"Эффект входа I","entry_02":"Эффект входа II","entry_03":"Эффект входа III","fallback":"Эффект входа"},
-      "tiers":{"tier_1":"Уровень I","tier_2":"Уровень II","tier_3":"Уровень III","fallback":"Эффект входа"},
-      "status":{"selected":"Выбрано","owned":"В коллекции"},
-      "actions":{"remove":"Снять","select":"Выбрать","buy":"Купить"},
-      "purchase":{"title":"Подтвердить покупку","effect_with_tier":"Эффект входа · {tier}","to_pay":"К оплате","remaining":"Останется","coins_value":"{count} коинов","missing":"Не хватает {count}","buy_for":"Купить за {count}"},
-      "toast":{"purchased":"Эффект входа добавлен в коллекцию."},
-      "errors":{"purchase":"Не удалось купить эффект входа.","remove":"Не удалось снять эффект входа.","select":"Не удалось выбрать эффект входа."},
-      "live":{"player_fallback":"Игрок {number}","skip":"Пропустить","entering":"вступает в игру"}
+    "title": "Профиль",
+    "subtitle": "Аккаунт, баланс и игровая статистика Mini Games World.",
+    "player": "Игрок",
+    "nick_missing": "Ник не задан",
+    "member_since": "В игре с {date}",
+    "member_since_unknown": "Дата регистрации пока недоступна",
+    "mgw_id": "MGW-ID",
+    "copy_id": "Копировать",
+    "id_copied": "MGW-ID скопирован",
+    "balance": "Баланс",
+    "balance_note": "Ваш баланс коинов.",
+    "stats_title": "Общая статистика",
+    "stats_note": "Завершённые матчи аккаунта.",
+    "games_played": "Игр",
+    "wins": "Побед",
+    "losses": "Поражений",
+    "draws": "Ничьих",
+    "rating_title": "Рейтинг",
+    "rating_note_preseason": "Очки рейтинга отдельно для каждой игры.",
+    "rating_note_active": "Очки текущего официального сезона отдельно для каждой игры.",
+    "rating_note_off": "Рейтинговые сезоны пока не запущены.",
+    "rating_points": "Очки",
+    "rating_current": "Текущий сезон",
+    "rating_all_time_wins": "Победы за всё время",
+    "rating_previous_seasons": "Предыдущие сезоны",
+    "rating_season_closed": "Завершён",
+    "rating_season_label": "Q{quarter} · {year}",
+    "rating_matches_short": "Матчи",
+    "rating_wins_short": "Победы",
+    "yearly_medal_title": "Годовая медаль",
+    "yearly_medal_note": "Сыграйте минимум 5 рейтинговых матчей с людьми и одержите хотя бы 1 победу в официальном сезоне, чтобы открыть его часть медали.",
+    "yearly_medal_label": "Годовая медаль {year}",
+    "yearly_medal_progress": "{count}/4 фрагмента",
+    "yearly_medal_complete": "Медаль собрана",
+    "leaderboard_title": "Таблица лидеров",
+    "leaderboard_open_note": "Общий рейтинг игроков отдельно по каждой игре.",
+    "leaderboard_preseason": "Рейтинг",
+    "leaderboard_progress": "Условия попадания в таблицу применяются автоматически.",
+    "leaderboard_empty": "Пока таблица рейтинга пуста.",
+    "leaderboard_error": "Не удалось загрузить таблицу лидеров.",
+    "by_game_title": "По играм",
+    "by_game_note": "Статистика отдельно для каждой мини-игры.",
+    "metric_wins": "побед",
+    "metric_losses": "пораж.",
+    "metric_draws": "ничьих",
+    "history_title": "Последние матчи",
+    "history_note": "Недавние игры этого аккаунта.",
+    "history_empty": "История матчей пока пуста.",
+    "opponent": "Соперник",
+    "account_title": "Аккаунт и настройки",
+    "account_note": "Связанные способы входа и текущие параметры интерфейса.",
+    "language": "Язык интерфейса",
+    "language_note": "Текущий язык приложения.",
+    "language_value": "Русский",
+    "linked_accounts": "Связанные аккаунты",
+    "linked_accounts_note": "Подтверждённые способы входа в один MGW-аккаунт.",
+    "linked_empty": "Связанные аккаунты пока не найдены.",
+    "linked_since": "Связан с {date}",
+    "linked": "Связан с аккаунтом",
+    "connected": "Подключён",
+    "provider_unknown": "Аккаунт",
+    "load_error": "Не удалось обновить профиль.",
+    "save_error": "Не удалось сохранить профиль MGW.",
+    "nickname_edit": "Изменить ник",
+    "nickname_edit_title": "Игровой ник MGW",
+    "nickname_edit_note": "Можно использовать буквы, цифры, пробелы, дефис и подчёркивание. От 3 до 13 символов. Ник должен быть уникальным.",
+    "nickname_save": "Сохранить ник",
+    "nickname_saved": "Ник сохранён",
+    "nickname_too_short": "Ник должен содержать минимум 3 символа.",
+    "nickname_too_long": "Ник может содержать максимум 13 символов.",
+    "avatar_select": "Выбор аватара MGW",
+    "avatar_edit": "Изменить аватар",
+    "avatar_edit_title": "Выберите аватар",
+    "avatar_edit_note": "Выберите один из доступных аватаров MGW.",
+    "avatar_option": "Вариант {number}",
+    "avatar_saved": "Аватар сохранён",
+    "avatar_save_error": "Не удалось сохранить аватар.",
+    "entry_effects": {
+      "title": "Эффекты входа",
+      "effect_label": "Эффект входа",
+      "names": {
+        "entry_01": "Эффект входа I",
+        "entry_02": "Эффект входа II",
+        "entry_03": "Эффект входа III",
+        "fallback": "Эффект входа"
+      },
+      "tiers": {
+        "tier_1": "Уровень I",
+        "tier_2": "Уровень II",
+        "tier_3": "Уровень III",
+        "fallback": "Эффект входа"
+      },
+      "status": {
+        "selected": "Выбрано",
+        "owned": "В коллекции"
+      },
+      "actions": {
+        "remove": "Снять",
+        "select": "Выбрать",
+        "buy": "Купить"
+      },
+      "purchase": {
+        "title": "Подтвердить покупку",
+        "effect_with_tier": "Эффект входа · {tier}",
+        "to_pay": "К оплате",
+        "remaining": "Останется",
+        "coins_value": "{count} коинов",
+        "missing": "Не хватает {count}",
+        "buy_for": "Купить за {count}"
+      },
+      "toast": {
+        "purchased": "Эффект входа добавлен в коллекцию.",
+        "selected": "Эффект входа выбран.",
+        "removed": "Эффект входа снят."
+      },
+      "errors": {
+        "purchase": "Не удалось купить эффект входа.",
+        "remove": "Не удалось снять эффект входа.",
+        "select": "Не удалось выбрать эффект входа."
+      },
+      "live": {
+        "player_fallback": "Игрок {number}",
+        "skip": "Пропустить",
+        "entering": "вступает в игру"
+      }
     },
-    "victory_effects":{
-      "title":"Эффекты победы",
-      "effect_label":"Эффект победы",
-      "preview_aria":"Показать анимацию",
-      "names":{"spark_burst":"Искровой залп","firework_salvo":"Салют победителя","victory_nova":"Победная сверхновая","fallback":"Эффект победы"},
-      "tiers":{"tier_1":"Уровень I","tier_2":"Уровень II","tier_3":"Уровень III","fallback":"Эффект победы"},
-      "status":{"selected":"Выбрано","owned":"В коллекции"},
-      "actions":{"remove":"Снять","select":"Выбрать","buy":"Купить"},
-      "purchase":{"title":"Подтвердить покупку","to_pay":"К оплате","coins_value":"{count} коинов","remaining":"Останется","missing":"Не хватает {count}","buy_for":"Купить за {count}"},
-      "toast":{"purchased":"Эффект победы добавлен в коллекцию."},
-      "errors":{"purchase":"Не удалось купить эффект победы.","remove":"Не удалось снять эффект победы.","select":"Не удалось выбрать эффект победы."},
-      "live":{"skip":"Пропустить","skip_aria":"Пропустить эффект победы"}
+    "victory_effects": {
+      "title": "Эффекты победы",
+      "effect_label": "Эффект победы",
+      "preview_aria": "Показать анимацию",
+      "names": {
+        "spark_burst": "Искровой залп",
+        "firework_salvo": "Салют победителя",
+        "victory_nova": "Победная сверхновая",
+        "fallback": "Эффект победы"
+      },
+      "tiers": {
+        "tier_1": "Уровень I",
+        "tier_2": "Уровень II",
+        "tier_3": "Уровень III",
+        "fallback": "Эффект победы"
+      },
+      "status": {
+        "selected": "Выбрано",
+        "owned": "В коллекции"
+      },
+      "actions": {
+        "remove": "Снять",
+        "select": "Выбрать",
+        "buy": "Купить"
+      },
+      "purchase": {
+        "title": "Подтвердить покупку",
+        "to_pay": "К оплате",
+        "coins_value": "{count} коинов",
+        "remaining": "Останется",
+        "missing": "Не хватает {count}",
+        "buy_for": "Купить за {count}"
+      },
+      "toast": {
+        "purchased": "Эффект победы добавлен в коллекцию."
+      },
+      "errors": {
+        "purchase": "Не удалось купить эффект победы.",
+        "remove": "Не удалось снять эффект победы.",
+        "select": "Не удалось выбрать эффект победы."
+      },
+      "live": {
+        "skip": "Пропустить",
+        "skip_aria": "Пропустить эффект победы"
+      }
     },
-    "badges":{
-      "title":"Бейджи",
-      "type":"Бейдж",
-      "fallback_name":"Бейдж",
-      "selected_aria":"Выбран",
-      "tiers":{"normal":"Обычный","rare":"Редкий","animated":"Анимированный","fallback":"Бейдж"},
-      "actions":{"remove":"Снять","select":"Выбрать","buy":"Купить"},
-      "purchase":{"title":"Подтвердить покупку","to_pay":"К оплате","coins_value":"{count} коинов","remaining":"Останется","missing":"Не хватает {count}","buy_for":"Купить за {count}"},
-      "toast":{"purchased":"Бейдж добавлен в коллекцию.","removed":"Бейдж снят.","selected":"Бейдж выбран."},
-      "errors":{"purchase":"Не удалось купить бейдж.","remove":"Не удалось снять бейдж.","select":"Не удалось выбрать бейдж."}
+    "badges": {
+      "title": "Бейджи",
+      "type": "Бейдж",
+      "fallback_name": "Бейдж",
+      "selected_aria": "Выбран",
+      "tiers": {
+        "normal": "Обычный",
+        "rare": "Редкий",
+        "animated": "Анимированный",
+        "fallback": "Бейдж"
+      },
+      "actions": {
+        "remove": "Снять",
+        "select": "Выбрать",
+        "buy": "Купить"
+      },
+      "purchase": {
+        "title": "Подтвердить покупку",
+        "to_pay": "К оплате",
+        "coins_value": "{count} коинов",
+        "remaining": "Останется",
+        "missing": "Не хватает {count}",
+        "buy_for": "Купить за {count}"
+      },
+      "toast": {
+        "purchased": "Бейдж добавлен в коллекцию.",
+        "removed": "Бейдж снят.",
+        "selected": "Бейдж выбран."
+      },
+      "errors": {
+        "purchase": "Не удалось купить бейдж.",
+        "remove": "Не удалось снять бейдж.",
+        "select": "Не удалось выбрать бейдж."
+      }
     },
-    "frames":{
-      "title":"Рамки",
-      "type":"Рамка",
-      "fallback_name":"Рамка",
-      "names":{"sky":"Голубое небо","gold":"Золотой ореол","aurora":"Аврора","spectrum":"Живой спектр"},
-      "tiers":{"normal":"Обычная","rare":"Редкая","epic":"Эпическая","animated":"Анимированная","fallback":"Рамка"},
-      "actions":{"remove":"Снять","select":"Выбрать","buy":"Купить"},
-      "purchase":{"title":"Подтвердить покупку","to_pay":"К оплате","coins_value":"{count} коинов","remaining":"Останется","missing":"Не хватает {count}","buy_for":"Купить за {count}"},
-      "toast":{"purchased":"Рамка добавлена в коллекцию.","removed":"Рамка снята.","selected":"Рамка выбрана."},
-      "errors":{"purchase":"Не удалось купить рамку.","remove":"Не удалось снять рамку.","select":"Не удалось выбрать рамку."}
+    "frames": {
+      "title": "Рамки",
+      "type": "Рамка",
+      "fallback_name": "Рамка",
+      "names": {
+        "sky": "Голубое небо",
+        "gold": "Золотой ореол",
+        "aurora": "Аврора",
+        "spectrum": "Живой спектр"
+      },
+      "tiers": {
+        "normal": "Обычная",
+        "rare": "Редкая",
+        "epic": "Эпическая",
+        "animated": "Анимированная",
+        "fallback": "Рамка"
+      },
+      "actions": {
+        "remove": "Снять",
+        "select": "Выбрать",
+        "buy": "Купить"
+      },
+      "purchase": {
+        "title": "Подтвердить покупку",
+        "to_pay": "К оплате",
+        "coins_value": "{count} коинов",
+        "remaining": "Останется",
+        "missing": "Не хватает {count}",
+        "buy_for": "Купить за {count}"
+      },
+      "toast": {
+        "purchased": "Рамка добавлена в коллекцию.",
+        "removed": "Рамка снята.",
+        "selected": "Рамка выбрана."
+      },
+      "errors": {
+        "purchase": "Не удалось купить рамку.",
+        "remove": "Не удалось снять рамку.",
+        "select": "Не удалось выбрать рамку."
+      }
     },
-    "backgrounds":{"fallback_name":"Фон","tiers":{"normal":"Обычный","rare":"Редкий","epic":"Эпический","legendary":"Легендарный","fallback":"Фон"},"preview":{"aria":"Пример фона профиля","label":"Профиль"},"title":"Фоны профиля","type":"Фон профиля","status":{"selected":"Выбрано","owned":"В коллекции"},"actions":{"remove":"Снять","select":"Выбрать","buy":"Купить"},"purchase":{"title":"Подтвердить покупку","missing":"Не хватает {count}","buy_for":"Купить за {count}","type_with_tier":"Фон профиля · {tier}","to_pay":"К оплате","coins_value":"{count} коинов","remaining":"Останется"},"toast":{"purchased":"Фон добавлен в коллекцию.","removed":"Фон снят.","selected":"Фон выбран."},"errors":{"purchase":"Не удалось купить фон.","remove":"Не удалось снять фон.","select":"Не удалось выбрать фон."}},
-    "reactions":{"fallback_name":"Реакции","fallback_subtitle":"Набор реакций","codes":{"wave":"Привет","clap":"Браво","heart":"Сердце","fire":"Огонь","target":"Точно","spark":"Вау","crown":"Корона","handshake":"Хорошая игра"},"title":"Реакции","status":{"owned":"В коллекции"},"actions":{"buy":"Купить"},"purchase":{"title":"Подтвердить покупку","to_pay":"К оплате","coins_value":"{count} коинов","remaining":"Останется","missing":"Не хватает {count}","buy_for":"Купить за {count}"},"toast":{"purchased":"Реакции добавлены в коллекцию."},"errors":{"purchase":"Не удалось купить реакции.","send":"Не удалось отправить реакцию."},"game":{"trigger":"Реакции","palette_aria":"Выбрать реакцию"}},
-    "moderation":{"title":"Ограничения и апелляции","note":"Здесь видны решения модерации и их статус.","action_types":{"warning":"Предупреждение","restriction":"Ограничение","permanent_ban":"Постоянная блокировка","fallback":"Решение"},"action_statuses":{"active":"Активно","pending_second_review":"На второй проверке","confirmed":"Подтверждено","rejected":"Отклонено","revoked":"Отменено","expired":"Истекло"},"appeal_statuses":{"open":"Отправлена","reviewing":"На рассмотрении","accepted":"Удовлетворена","rejected":"Отклонена"},"until":"до {date}","no_comment":"Без комментария.","appeal_action":"Подать апелляцию","actions_empty":"Решений модерации нет.","appeal_label":"Апелляция","response_prefix":"Ответ:","appeals_empty":"Апелляций пока нет.","account_banned":"Аккаунт заблокирован после ручной проверки.","account_has_actions":"Для аккаунта есть действующие решения.","account_clear":"Действующих ограничений нет.","actions_title":"Решения модерации","appeals_title":"Апелляции","load_error":"Не удалось загрузить данные.","retry_later":"Попробуйте ещё раз позже.","appeal_form_title":"Подать апелляцию","appeal_form_note":"Кратко объясните, почему решение нужно пересмотреть.","appeal_placeholder":"Опишите причину апелляции","appeal_send":"Отправить апелляцию","appeal_validation":"Опишите причину апелляции.","appeal_sent":"Апелляция отправлена.","appeal_error":"Не удалось отправить апелляцию.","settings_note":"Предупреждения, ограничения и решения модерации","open":"Открыть"},
-    "collection":{"title":"Моя коллекция","my_avatars":"Мои аватарки","avatar_fallback":"Аватарка","name_color_remove_error":"Не удалось снять цвет имени.","name_color_select_error":"Не удалось выбрать цвет имени.","game_cosmetics_aria":"Оформление игр","games_title":"Игры","games":{"chess":{"products":{"game-chess-board-wood":"Деревянная доска","game-chess-pieces-wood":"Деревянные фигуры"}},"checkers":{"title":"Русские шашки","empty":"Купленные предметы для этой игры появятся здесь.","fallback":"Оформление шашек","groups":{"theme":"Доски","elements":"Шашки","effect":"Эффекты"}},"reversi":{"title":"Реверси","empty":"Купленные предметы для Реверси появятся здесь.","fallback":"Оформление Реверси","groups":{"theme":"Поля","elements":"Фишки","effect":"Эффекты"}},"go":{"title":"Го","empty":"Купленные предметы для Го появятся здесь.","fallback":"Оформление Го","groups":{"theme":"Доски","elements":"Камни","effect":"Эффекты"}},"domino":{"title":"Домино","empty":"Купленные предметы для Домино появятся здесь.","fallback":"Оформление Домино","groups":{"theme":"Столы","elements":"Костяшки","effect":"Эффекты"}},"four_in_a_row":{"title":"4 в ряд","empty":"Купленные предметы для 4 в ряд появятся здесь.","fallback":"Предмет 4 в ряд","effect_fallback":"Эффект партии","groups":{"theme":"Поля","elements":"Фишки","effect":"Эффекты"}},"battleship":{"title":"Морской бой","empty":"Купленные предметы для Морского боя появятся здесь.","fallback":"Предмет Морского боя","groups":{"theme":"Карты","elements":"Флот","effect":"Эффекты"}}},"games_empty":"Купленные предметы для игр появятся здесь.","games_tabs_aria":"Игры в коллекции","game_empty":"Купленные предметы для этой игры появятся здесь.","unavailable":"Недоступно","cosmetics_label":"Оформление","cosmetic_remove_error":"Не удалось снять оформление.","cosmetic_select_error":"Не удалось выбрать предмет.","game_groups":{"theme":"Поля","elements":"Знаки","effect":"Эффекты"}},
-    "tournament":{"rewards":{"golden_ticket":"Golden Ticket","champion_crown":"Корона чемпиона","winner_badge":"Значок победителя","champion_cosmetics":"Чемпионский набор","hall_of_fame":"Зал славы","cup_gold":"Золотой кубок","silver_frame":"Серебряная рамка","finalist_result":"Финалист турнира","cup_silver":"Серебряный кубок","bronze_mark":"Бронзовая отметка","third_place_result":"3-е место","cup_bronze":"Бронзовый кубок","fallback":"Награда"},"status":{"current_champion":"Действующий чемпион","crown_until":"Корона активна до {until}","crown_active":"Корона чемпиона активна","champion":"Чемпион официального турнира","champion_metrics":"{championships} побед · {podiums} подиумов","podium":"Призёр официального турнира","podium_metrics":"{podiums} подиумов","participant":"Турнирный участник","participant_metrics":"{tournaments} турниров"},"open_showcase":"Открыть турнирную витрину","status_label":"Турнирный статус","units":{"wins":"побед","podiums":"подиумов","tournaments":"турниров"},"ticket_short":"ticket","ticket_title":"Допуск к Большому турниру","ticket_note":"Действителен до проведения Большого турнира · не продаётся и не передаётся","active_now":"Активно сейчас","trophy_cabinet":"Трофейный шкаф","achievements":"Достижения","history":"История турниров","hall_of_fame":"Зал славы турниров","hall_of_fame_note":"Чемпионы официальных турниров и история побед","showcase_title":"Турнирная витрина","showcase_note":"Статус, трофеи и награды официальных турниров.","reward_active_until":"Активна до {until}","reward_active":"Активна","reward_forever":"Навсегда","placement":"{placement} место","participant":"Участник","official_tournament":"Официальный турнир"},
-    "history_economy":"Вход {entry} · Награда {reward} · Итог {delta} · Баланс {balance}",
-    "providers":{"telegram":"Telegram","google":"Google","apple":"Apple"}
+    "backgrounds": {
+      "fallback_name": "Фон",
+      "tiers": {
+        "normal": "Обычный",
+        "rare": "Редкий",
+        "epic": "Эпический",
+        "legendary": "Легендарный",
+        "fallback": "Фон"
+      },
+      "preview": {
+        "aria": "Пример фона профиля",
+        "label": "Профиль"
+      },
+      "title": "Фоны профиля",
+      "type": "Фон профиля",
+      "status": {
+        "selected": "Выбрано",
+        "owned": "В коллекции"
+      },
+      "actions": {
+        "remove": "Снять",
+        "select": "Выбрать",
+        "buy": "Купить"
+      },
+      "purchase": {
+        "title": "Подтвердить покупку",
+        "missing": "Не хватает {count}",
+        "buy_for": "Купить за {count}",
+        "type_with_tier": "Фон профиля · {tier}",
+        "to_pay": "К оплате",
+        "coins_value": "{count} коинов",
+        "remaining": "Останется"
+      },
+      "toast": {
+        "purchased": "Фон добавлен в коллекцию.",
+        "removed": "Фон снят.",
+        "selected": "Фон выбран."
+      },
+      "errors": {
+        "purchase": "Не удалось купить фон.",
+        "remove": "Не удалось снять фон.",
+        "select": "Не удалось выбрать фон."
+      }
+    },
+    "reactions": {
+      "fallback_name": "Реакции",
+      "fallback_subtitle": "Набор реакций",
+      "codes": {
+        "wave": "Привет",
+        "clap": "Браво",
+        "heart": "Сердце",
+        "fire": "Огонь",
+        "target": "Точно",
+        "spark": "Вау",
+        "crown": "Корона",
+        "handshake": "Хорошая игра"
+      },
+      "title": "Реакции",
+      "status": {
+        "owned": "В коллекции"
+      },
+      "actions": {
+        "buy": "Купить"
+      },
+      "purchase": {
+        "title": "Подтвердить покупку",
+        "to_pay": "К оплате",
+        "coins_value": "{count} коинов",
+        "remaining": "Останется",
+        "missing": "Не хватает {count}",
+        "buy_for": "Купить за {count}"
+      },
+      "toast": {
+        "purchased": "Реакции добавлены в коллекцию."
+      },
+      "errors": {
+        "purchase": "Не удалось купить реакции.",
+        "send": "Не удалось отправить реакцию."
+      },
+      "game": {
+        "trigger": "Реакции",
+        "palette_aria": "Выбрать реакцию"
+      }
+    },
+    "moderation": {
+      "title": "Ограничения и апелляции",
+      "note": "Здесь видны решения модерации и их статус.",
+      "action_types": {
+        "warning": "Предупреждение",
+        "restriction": "Ограничение",
+        "permanent_ban": "Постоянная блокировка",
+        "fallback": "Решение"
+      },
+      "action_statuses": {
+        "active": "Активно",
+        "pending_second_review": "На второй проверке",
+        "confirmed": "Подтверждено",
+        "rejected": "Отклонено",
+        "revoked": "Отменено",
+        "expired": "Истекло"
+      },
+      "appeal_statuses": {
+        "open": "Отправлена",
+        "reviewing": "На рассмотрении",
+        "accepted": "Удовлетворена",
+        "rejected": "Отклонена"
+      },
+      "until": "до {date}",
+      "no_comment": "Без комментария.",
+      "appeal_action": "Подать апелляцию",
+      "actions_empty": "Решений модерации нет.",
+      "appeal_label": "Апелляция",
+      "response_prefix": "Ответ:",
+      "appeals_empty": "Апелляций пока нет.",
+      "account_banned": "Аккаунт заблокирован после ручной проверки.",
+      "account_has_actions": "Для аккаунта есть действующие решения.",
+      "account_clear": "Действующих ограничений нет.",
+      "actions_title": "Решения модерации",
+      "appeals_title": "Апелляции",
+      "load_error": "Не удалось загрузить данные.",
+      "retry_later": "Попробуйте ещё раз позже.",
+      "appeal_form_title": "Подать апелляцию",
+      "appeal_form_note": "Кратко объясните, почему решение нужно пересмотреть.",
+      "appeal_placeholder": "Опишите причину апелляции",
+      "appeal_send": "Отправить апелляцию",
+      "appeal_validation": "Опишите причину апелляции.",
+      "appeal_sent": "Апелляция отправлена.",
+      "appeal_error": "Не удалось отправить апелляцию.",
+      "settings_note": "Предупреждения, ограничения и решения модерации",
+      "open": "Открыть"
+    },
+    "collection": {
+      "title": "Моя коллекция",
+      "my_avatars": "Мои аватарки",
+      "avatar_fallback": "Аватарка",
+      "name_color_remove_error": "Не удалось снять цвет имени.",
+      "name_color_select_error": "Не удалось выбрать цвет имени.",
+      "game_cosmetics_aria": "Оформление игр",
+      "games_title": "Игры",
+      "games": {
+        "chess": {
+          "products": {
+            "game-chess-board-wood": "Деревянная доска",
+            "game-chess-pieces-wood": "Деревянные фигуры"
+          }
+        },
+        "checkers": {
+          "title": "Русские шашки",
+          "empty": "Купленные предметы для этой игры появятся здесь.",
+          "fallback": "Оформление шашек",
+          "groups": {
+            "theme": "Доски",
+            "elements": "Шашки",
+            "effect": "Эффекты"
+          }
+        },
+        "reversi": {
+          "title": "Реверси",
+          "empty": "Купленные предметы для Реверси появятся здесь.",
+          "fallback": "Оформление Реверси",
+          "groups": {
+            "theme": "Поля",
+            "elements": "Фишки",
+            "effect": "Эффекты"
+          }
+        },
+        "go": {
+          "title": "Го",
+          "empty": "Купленные предметы для Го появятся здесь.",
+          "fallback": "Оформление Го",
+          "groups": {
+            "theme": "Доски",
+            "elements": "Камни",
+            "effect": "Эффекты"
+          }
+        },
+        "domino": {
+          "title": "Домино",
+          "empty": "Купленные предметы для Домино появятся здесь.",
+          "fallback": "Оформление Домино",
+          "groups": {
+            "theme": "Столы",
+            "elements": "Костяшки",
+            "effect": "Эффекты"
+          }
+        },
+        "four_in_a_row": {
+          "title": "4 в ряд",
+          "empty": "Купленные предметы для 4 в ряд появятся здесь.",
+          "fallback": "Предмет 4 в ряд",
+          "effect_fallback": "Эффект партии",
+          "groups": {
+            "theme": "Поля",
+            "elements": "Фишки",
+            "effect": "Эффекты"
+          }
+        },
+        "battleship": {
+          "title": "Морской бой",
+          "empty": "Купленные предметы для Морского боя появятся здесь.",
+          "fallback": "Предмет Морского боя",
+          "groups": {
+            "theme": "Карты",
+            "elements": "Флот",
+            "effect": "Эффекты"
+          }
+        }
+      },
+      "games_empty": "Купленные предметы для игр появятся здесь.",
+      "games_tabs_aria": "Игры в коллекции",
+      "game_empty": "Купленные предметы для этой игры появятся здесь.",
+      "unavailable": "Недоступно",
+      "cosmetics_label": "Оформление",
+      "cosmetic_remove_error": "Не удалось снять оформление.",
+      "cosmetic_select_error": "Не удалось выбрать предмет.",
+      "game_groups": {
+        "theme": "Поля",
+        "elements": "Знаки",
+        "effect": "Эффекты"
+      }
+    },
+    "tournament": {
+      "rewards": {
+        "golden_ticket": "Golden Ticket",
+        "champion_crown": "Корона чемпиона",
+        "winner_badge": "Значок победителя",
+        "champion_cosmetics": "Чемпионский набор",
+        "hall_of_fame": "Зал славы",
+        "cup_gold": "Золотой кубок",
+        "silver_frame": "Серебряная рамка",
+        "finalist_result": "Финалист турнира",
+        "cup_silver": "Серебряный кубок",
+        "bronze_mark": "Бронзовая отметка",
+        "third_place_result": "3-е место",
+        "cup_bronze": "Бронзовый кубок",
+        "fallback": "Награда"
+      },
+      "status": {
+        "current_champion": "Действующий чемпион",
+        "crown_until": "Корона активна до {until}",
+        "crown_active": "Корона чемпиона активна",
+        "champion": "Чемпион официального турнира",
+        "champion_metrics": "{championships} побед · {podiums} подиумов",
+        "podium": "Призёр официального турнира",
+        "podium_metrics": "{podiums} подиумов",
+        "participant": "Турнирный участник",
+        "participant_metrics": "{tournaments} турниров"
+      },
+      "open_showcase": "Открыть турнирную витрину",
+      "status_label": "Турнирный статус",
+      "units": {
+        "wins": "побед",
+        "podiums": "подиумов",
+        "tournaments": "турниров"
+      },
+      "ticket_short": "ticket",
+      "ticket_title": "Допуск к Большому турниру",
+      "ticket_note": "Действителен до проведения Большого турнира · не продаётся и не передаётся",
+      "active_now": "Активно сейчас",
+      "trophy_cabinet": "Трофейный шкаф",
+      "achievements": "Достижения",
+      "history": "История турниров",
+      "hall_of_fame": "Зал славы турниров",
+      "hall_of_fame_note": "Чемпионы официальных турниров и история побед",
+      "showcase_title": "Турнирная витрина",
+      "showcase_note": "Статус, трофеи и награды официальных турниров.",
+      "reward_active_until": "Активна до {until}",
+      "reward_active": "Активна",
+      "reward_forever": "Навсегда",
+      "placement": "{placement} место",
+      "participant": "Участник",
+      "official_tournament": "Официальный турнир"
+    },
+    "history_economy": "Вход {entry} · Награда {reward} · Итог {delta} · Баланс {balance}",
+    "providers": {
+      "telegram": "Telegram",
+      "google": "Google",
+      "apple": "Apple"
+    }
   },
   "account_link": {
     "title": "Привязка Telegram",
@@ -1575,5 +2811,89 @@
     },
     "success": "Telegram-аккаунт привязан. Загружаем ваш профиль…"
   },
-  "units": {"coin":{"one":"{count} коин","few":"{count} коина","many":"{count} коинов","other":"{count} коина"},"game":{"one":"{count} игра","few":"{count} игры","many":"{count} игр","other":"{count} игры"}}
+  "units": {
+    "coin": {
+      "one": "{count} коин",
+      "few": "{count} коина",
+      "many": "{count} коинов",
+      "other": "{count} коина"
+    },
+    "game": {
+      "one": "{count} игра",
+      "few": "{count} игры",
+      "many": "{count} игр",
+      "other": "{count} игры"
+    }
+  },
+  "runtime_status": {
+    "maintenance_default": "Идут технические работы.",
+    "matchmaking_disabled": "Подбор соперников временно отключён.",
+    "new_matches_read_only": "Новые матчи временно недоступны. Активные партии можно завершить.",
+    "game_unavailable": "Эта игра временно недоступна. Выберите другую игру.",
+    "invitations_disabled": "Приглашения временно отключены.",
+    "finance_read_only": "Финансовые операции временно доступны только для просмотра.",
+    "payments_disabled": "Пополнение временно отключено.",
+    "shop_disabled": "Оформление заказов временно отключено.",
+    "banner": {
+      "maintenance_title": "Технические работы",
+      "maintenance_message": "Новые действия временно недоступны.",
+      "restriction_title": "Временное ограничение",
+      "restriction_message": "Новые матчи и финансовые операции приостановлены. Активные партии можно завершить.",
+      "partial_title": "Часть функций временно недоступна",
+      "partial_message": "Доступные игры продолжают работать в обычном режиме."
+    }
+  },
+  "network": {
+    "server_unreachable": "Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.",
+    "request_failed": "Не удалось выполнить запрос. Попробуйте ещё раз.",
+    "archive_download_failed": "Не удалось скачать архив. Проверьте интернет и попробуйте ещё раз."
+  },
+  "user_copy": {
+    "application_prefix": "Заявка",
+    "already_marker": "уже",
+    "balance_after_admin": "Баланс изменится после подтверждения администратором.",
+    "order_already_created": "Эта заявка уже была создана.",
+    "orders_status_hint": "Следите за статусом в разделе «Мои заявки»."
+  },
+  "weekly_match": {
+    "button": "Бонусы",
+    "button_aria": "Открыть бонусы Mini Games World",
+    "subtitle": "Бесплатные коины за игровую активность.",
+    "loading_title": "Загружаем бонусы",
+    "loading_note": "Считаем завершённые игры.",
+    "weekly_title": "Еженедельный бонус",
+    "next_credit": "Следующее начисление",
+    "bonus_amount": "Размер бонуса",
+    "games_week": "Игры за неделю",
+    "progress": "{completed} из {required}",
+    "new_games_title": "Бонусы за новые игры",
+    "new_games_note": "+{amount} коинов за первую завершённую партию в каждой новой игре.",
+    "games_mastered": "Освоено игр",
+    "load_error": "Не удалось загрузить прогресс.",
+    "retry_note": "Попробуйте открыть раздел ещё раз.",
+    "retry": "Попробовать снова",
+    "schedule_fallback": "Ближайший понедельник, 12:00",
+    "bonus_value": "+{amount} коинов"
+  },
+  "search": {
+    "start_failed": "Не удалось начать поиск.",
+    "lock_default": "У вас уже идёт активная игра на другом устройстве.",
+    "lock_markers": {
+      "active_game_other_device": "активная игра на другом устройстве",
+      "searching_other_device": "ищете матч на другом устройстве",
+      "game_open_other_device": "игра уже открыта на другом устройстве"
+    },
+    "match_label": "{game} · участие {bet} коинов",
+    "board_suffix": " · поле {size}×{size}"
+  },
+  "game_cards": {
+    "rules_aria": "Правила игры {game}"
+  },
+  "typography": {
+    "short_words_pattern": "(?:а|и|но|да|не|ни|в|во|на|за|к|ко|с|со|у|о|об|от|до|по|из|для|под|над|при|без|про|через|или|ли|же|бы)",
+    "number_units_pattern": "Gold|Match|коин(?:а|ы|ов)?|₽|руб(?:\\.|ля|лей)?|%|час(?:а|ов)?|минут(?:а|ы)?|секунд(?:а|ы)?",
+    "word_chars": "А-ЯЁа-яёA-Za-z",
+    "number_sign_chars": "A-ZА-ЯЁ0-9",
+    "content_probe_chars": "А-ЯЁа-яё0-9"
+  }
 }

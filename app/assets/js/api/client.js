@@ -1,4 +1,5 @@
 import { APP_CONFIG } from '../config.js?v=38';
+import { t } from '@mgw/i18n';
 import { state } from '../state.js?v=27';
 import { getInitData } from '../telegram/telegram-app.js?v=21';
 import { getSessionId, getDeviceId } from '../session.js?v=1131';
@@ -30,14 +31,14 @@ async function requestUrl(url, payload = {}){
       body:JSON.stringify({ initData:getInitData(), sessionId:getSessionId(), deviceId:getDeviceId(), ...payload })
     });
   } catch (_) {
-    const error = new Error('Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.');
+    const error = new Error(t('network.server_unreachable'));
     error.code = 'network_unavailable';
     error.status = 0;
     throw error;
   }
   const data = await response.json().catch(() => null);
   if (!response.ok || !data || data.ok === false) {
-    const error = new Error(data?.error || 'Не удалось выполнить запрос. Попробуйте ещё раз.');
+    const error = new Error(data?.error || t('network.request_failed'));
     error.code = data?.code || '';
     error.status = response.status;
     throw error;
@@ -61,14 +62,14 @@ async function downloadAccountExport(requestId){
       })
     });
   } catch (_) {
-    const error = new Error('Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.');
+    const error = new Error(t('network.server_unreachable'));
     error.code = 'network_unavailable';
     error.status = 0;
     throw error;
   }
   if (!response.ok) {
     const data = await response.json().catch(() => null);
-    const error = new Error(data?.error || 'Не удалось выполнить запрос. Попробуйте ещё раз.');
+    const error = new Error(data?.error || t('network.request_failed'));
     error.code = data?.code || '';
     error.status = response.status;
     throw error;
@@ -77,7 +78,7 @@ async function downloadAccountExport(requestId){
   try {
     blob = await response.blob();
   } catch (_) {
-    const error = new Error('Не удалось скачать архив. Проверьте интернет и попробуйте ещё раз.');
+    const error = new Error(t('network.archive_download_failed'));
     error.code = 'download_failed';
     error.status = response.status;
     throw error;

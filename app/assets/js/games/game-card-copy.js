@@ -1,3 +1,5 @@
+import { t } from '@mgw/i18n';
+
 import { TIC_TAC_TOE_META } from './tictactoe/meta.js?v=53';
 import { FOUR_IN_A_ROW_META } from './four-in-a-row/meta.js?v=53';
 import { BATTLESHIP_META } from './battleship/meta.js?v=53';
@@ -46,7 +48,7 @@ export function initGameCardCopy(){
     if (title) title.textContent = meta.title;
     if (icon) renderGameIcon(icon, meta);
     if (description) description.textContent = meta.description;
-    if (rulesButton) rulesButton.setAttribute('aria-label', `Правила игры ${meta.title}`);
+    if (rulesButton) rulesButton.setAttribute('aria-label', t('game_cards.rules_aria', { game:meta.title }));
   });
 }
 

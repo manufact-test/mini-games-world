@@ -9,6 +9,7 @@ on:
       - 'ops/checks/mvp27_1_localization_architecture_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
       - 'ops/checks/mvp27_1_active_game_copy_bundle_contract.mjs'
+      - 'ops/checks/mvp27_1_active_shell_copy_bundle_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - 'bot/tests/Mvp27_1LocalizationArchitectureAuditTest.php'
       - 'docs/MVP27_1_LOCALIZATION_ARCHITECTURE_AUDIT.md'
@@ -37,6 +38,7 @@ jobs:
           node --check ops/checks/mvp27_1_localization_architecture_contract.mjs
           node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
           node --check ops/checks/mvp27_1_active_game_copy_bundle_contract.mjs
+          node --check ops/checks/mvp27_1_active_shell_copy_bundle_contract.mjs
           node --check app/assets/js/localization/i18n.js
 
       - name: Existing localization foundation
@@ -53,6 +55,9 @@ jobs:
 
       - name: Active game-copy bundle proof
         run: node ops/checks/mvp27_1_active_game_copy_bundle_contract.mjs
+
+      - name: Active shell-copy bundle proof
+        run: node ops/checks/mvp27_1_active_shell_copy_bundle_contract.mjs
 
       - name: Hardcoded player text audit
         run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs --sample
