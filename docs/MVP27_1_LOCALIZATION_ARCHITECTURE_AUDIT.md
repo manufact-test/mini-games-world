@@ -98,3 +98,21 @@ Current player-facing debt after this classification:
 - active client-entry PHP: **0**.
 
 This is an audit-scope correction only. No runtime, game, economy, tournament, DB, Cron or production behavior changes.
+
+
+## Shadowed invite-owner classification — 2026-10-03
+
+The factual v110 bootstrap/import graph uses `game-invites-v110.js`. It does not import:
+- `app/assets/js/games/invite-controller-v120.js` — rejected with the failed v120 runtime and forbidden by the rollback route contract;
+- `app/assets/js/games/game-invites.js` — superseded by the v110 invite owner.
+
+These two files contain **192** Cyrillic source lines in total (**101 + 91**) and are classified out of active player localization debt.
+
+Current player-facing debt after this classification:
+- scanned runtime source files: **759**;
+- total: **2,857**;
+- client JS: **1,204**;
+- backend PHP: **1,653**;
+- active client-entry PHP: **0**.
+
+This remains an audit-scope correction only; no product/runtime behavior changes.
