@@ -11,7 +11,7 @@ final class InviteOpponentService
      * @param list<string> $onlineAccountIds
      * @return list<array<string,mixed>>
      */
-    public function list(array $data, string $userId, array $onlineAccountIds): array
+    public function list(array $data, string $userId, array $onlineAccountIds, bool $includeTestUsers = false): array
     {
         $userId = trim($userId);
         if ($userId === '') return [];
@@ -25,7 +25,8 @@ final class InviteOpponentService
             if ($candidateId === ''
                 || $candidateId === $userId
                 || str_starts_with($candidateId, 'bot_')
-                || !is_array($candidate)) {
+                || !is_array($candidate)
+                || (!$includeTestUsers && $this->isStagingTestUser($candidateId, $candidate))) {
                 continue;
             }
 
@@ -68,6 +69,18 @@ final class InviteOpponentService
         foreach ($result as &$item) unset($item['_score']);
         unset($item);
         return $result;
+    }
+
+    private function isStagingTestUser(string $candidateId, array $candidate): bool
+    {
+        if (!empty($candidate['is_staging_test_user']) || !empty($candidate['is_dev_user'])) {
+            return true;
+        }
+
+        foreach (['stg_test_player_', 'stg_tour_', 'stg_tour_v2_', 'dev_'] as $prefix) {
+            if (str_starts_with($candidateId, $prefix)) return true;
+        }
+        return false;
     }
 
     /** @return array<string,string> */
