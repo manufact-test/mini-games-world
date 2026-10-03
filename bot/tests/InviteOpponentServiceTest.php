@@ -41,6 +41,21 @@ $data = [
             'status' => 'idle',
             'last_seen_at' => $now,
         ],
+        'stg_tour_v2_deadbeefcafe' => [
+            'id' => 'stg_tour_v2_deadbeefcafe',
+            'first_name' => 'Tournament Fixture',
+            'status' => 'idle',
+            'last_seen_at' => $now,
+            'is_dev_user' => true,
+            'is_staging_test_user' => true,
+        ],
+        'dev_123456' => [
+            'id' => 'dev_123456',
+            'first_name' => 'Browser Dev',
+            'status' => 'idle',
+            'last_seen_at' => $now,
+            'is_dev_user' => true,
+        ],
         'bot_training' => [
             'id' => 'bot_training',
             'first_name' => 'Bot',
@@ -69,6 +84,8 @@ $mainItems = $service->list($data, 'main_complex_account', ['main_complex_accoun
 $mainIds = array_column($mainItems, 'id');
 $assertTrue(in_array('carl_account', $mainIds, true), 'Main account must see Carl from the same active state');
 $assertTrue(!in_array('stg_test_player_a', $mainIds, true), 'Real player picker must hide staging test identities');
+$assertTrue(!in_array('stg_tour_v2_deadbeefcafe', $mainIds, true), 'Real player picker must hide tournament fixtures');
+$assertTrue(!in_array('dev_123456', $mainIds, true), 'Real player picker must hide browser dev identities');
 $assertTrue(!in_array('bot_training', $mainIds, true), 'Bots must remain excluded');
 $assertTrue(!in_array('stale_account', $mainIds, true), 'Stale unrelated accounts must remain excluded');
 
