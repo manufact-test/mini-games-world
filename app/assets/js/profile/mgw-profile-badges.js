@@ -203,7 +203,7 @@ function storeBadgeCard(item, activeItemId){
   const active = owned && itemId === activeItemId;
   return `
     <article class="store-v2-profile-badge-card ${owned ? 'owned' : ''} ${active ? 'equipped' : ''}">
-      <div class="store-v2-profile-badge-preview">${badgePreviewMarkup(itemId)}${active ? '<i class="store-v2-selected-check" aria-label="${escapeAttr(badgeText('selected_aria'))}">✓</i>' : ''}</div>
+      <div class="store-v2-profile-badge-preview">${badgePreviewMarkup(itemId)}${active ? `<i class="store-v2-selected-check" aria-label="${escapeAttr(badgeText('selected_aria'))}">✓</i>` : ''}</div>
       <div class="store-v2-profile-badge-copy"><strong>${escapeHtml(badgeName(item))}</strong><small>${escapeHtml(badgeTierLabel(item))}</small></div>
       <div class="store-v2-profile-badge-foot">
         ${owned
