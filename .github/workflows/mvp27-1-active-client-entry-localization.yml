@@ -55,7 +55,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${{ github.head_ref }}" == agent/mvp27-1-client-entry-debt-classification-* ]]; then
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-*-debt-classification-* ]]; then
             echo 'MVP-27.1 audit-only successor: original product-slice bounded scope is not applicable.'
             exit 0
           fi
