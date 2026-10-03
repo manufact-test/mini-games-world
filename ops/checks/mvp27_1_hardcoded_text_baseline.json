@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-03",
-  "staging_base": "d8c37e99c678555a9015fce257c27de2498c4f60",
+  "staging_base": "ef8aa33d90d1dc5816459529b17f4dc8623e4d17",
   "scanned_files": 776,
-  "cyrillic_lines_total": 3315,
+  "cyrillic_lines_total": 3296,
   "by_scope": {
-    "client": 1634,
+    "client": 1615,
     "backend": 1653,
     "client-entry": 28
   },
@@ -16,5 +16,5 @@
     "database migrations",
     "admin/control-plane sources"
   ],
-  "note": "MVP-27.1 active Profile Frames localization; all 22 player-facing Cyrillic source lines moved to canonical locale while frame catalog/prices, purchase/equip/unequip ownership, avatar overlays, animation and reduced-motion behavior remain frozen."
+  "note": "MVP-27.1 active Profile Badges localization; all 19 player-facing Cyrillic source lines moved to canonical locale while badge catalog/prices, purchase/equip/unequip ownership, avatar overlays, animated tier and reduced-motion behavior remain frozen."
 }

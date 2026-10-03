@@ -3,6 +3,9 @@ import { state } from '../state.js?v=27';
 import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { toast } from '../components/toast.js?v=27';
 import { renderBalances } from '../ui.js?v=89';
+import { t, formatNumber as formatLocalizedNumber } from '@mgw/i18n';
+
+const badgeText = (key, params = {}) => t(`profile.badges.${key}`, params);
 
 const BADGE_SLOT = 'profile_badge';
 const BADGE_PREVIEW_AVATAR = 'starter-default-01';
@@ -107,12 +110,13 @@ function badgeMeta(item){
 }
 
 function badgeName(item){
-  return String(badgeMeta(item).display_name || item?.item_id || 'Бейдж');
+  return String(badgeMeta(item).display_name || item?.item_id || badgeText('fallback_name'));
 }
 
 function badgeTierLabel(item){
   const tier = String(badgeMeta(item).tier || 'normal');
-  return ({ normal:'Обычный', rare:'Редкий', animated:'Анимированный' })[tier] || 'Бейдж';
+  const key = ({ normal:'tiers.normal', rare:'tiers.rare', animated:'tiers.animated' })[tier] || 'tiers.fallback';
+  return badgeText(key);
 }
 
 function badgePrice(item){
@@ -180,7 +184,7 @@ function renderStoreBadgeSection(catalog){
 
   const markup = `
     <section class="store-v2-profile-badge-section" data-profile-badge-store-section data-profile-badge-signature="${escapeAttr(signature)}">
-      <div class="store-v2-title-row"><h2>Бейджи</h2></div>
+      <div class="store-v2-title-row"><h2>${escapeHtml(badgeText('title'))}</h2></div>
       <div class="store-v2-profile-badge-grid">
         ${catalog.map(item => storeBadgeCard(item, active)).join('')}
       </div>
@@ -199,14 +203,14 @@ function storeBadgeCard(item, activeItemId){
   const active = owned && itemId === activeItemId;
   return `
     <article class="store-v2-profile-badge-card ${owned ? 'owned' : ''} ${active ? 'equipped' : ''}">
-      <div class="store-v2-profile-badge-preview">${badgePreviewMarkup(itemId)}${active ? '<i class="store-v2-selected-check" aria-label="Выбран">✓</i>' : ''}</div>
+      <div class="store-v2-profile-badge-preview">${badgePreviewMarkup(itemId)}${active ? `<i class="store-v2-selected-check" aria-label="${escapeAttr(badgeText('selected_aria'))}">✓</i>` : ''}</div>
       <div class="store-v2-profile-badge-copy"><strong>${escapeHtml(badgeName(item))}</strong><small>${escapeHtml(badgeTierLabel(item))}</small></div>
       <div class="store-v2-profile-badge-foot">
         ${owned
           ? (active
-            ? `<button class="store-v2-equip active" data-profile-badge-unequip type="button">Снять</button>`
-            : `<button class="store-v2-equip" data-profile-badge-equip="${escapeAttr(itemId)}" type="button">Выбрать</button>`)
-          : `<b>${formatNumber(badgePrice(item))}</b><button class="store-v2-buy" data-profile-badge-buy="${escapeAttr(itemId)}" type="button">Купить</button>`}
+            ? `<button class="store-v2-equip active" data-profile-badge-unequip type="button">${escapeHtml(badgeText('actions.remove'))}</button>`
+            : `<button class="store-v2-equip" data-profile-badge-equip="${escapeAttr(itemId)}" type="button">${escapeHtml(badgeText('actions.select'))}</button>`)
+          : `<b>${formatNumber(badgePrice(item))}</b><button class="store-v2-buy" data-profile-badge-buy="${escapeAttr(itemId)}" type="button">${escapeHtml(badgeText('actions.buy'))}</button>`}
       </div>
     </article>
   `;
@@ -239,8 +243,8 @@ function renderProfileBadgeCollection(catalog){
   const signature = owned.map(item => item.item_id).join('|') + `|${active}`;
   if (section instanceof HTMLElement && section.dataset.profileBadgeSignature === signature) return;
   const markup = `
-    <div class="profile-v2-badge-collection" data-profile-badge-collection data-profile-badge-signature="${escapeAttr(signature)}" aria-label="Бейджи">
-      <div class="profile-v2-collection-title">Бейджи</div>
+    <div class="profile-v2-badge-collection" data-profile-badge-collection data-profile-badge-signature="${escapeAttr(signature)}" aria-label="${escapeAttr(badgeText('title'))}">
+      <div class="profile-v2-collection-title">${escapeHtml(badgeText('title'))}</div>
       <div class="profile-v2-badge-grid">
         ${owned.map(item => profileBadgeCard(item, active)).join('')}
       </div>
@@ -274,14 +278,16 @@ function openBadgePurchase(itemId){
   const balance = Number(state.user?.balance || 0);
   const missing = Math.max(0, price - balance);
   const disabled = missing > 0 ? ' disabled' : '';
-  const label = missing > 0 ? 'Не хватает ' + formatNumber(missing) : 'Купить за ' + formatNumber(price);
+  const label = missing > 0
+    ? badgeText('purchase.missing', { count:formatNumber(missing) })
+    : badgeText('purchase.buy_for', { count:formatNumber(price) });
   openSheet(
-    '<div class="sheet-head"><div><h2>Подтвердить покупку</h2></div><button class="close" data-close-sheet type="button">×</button></div>' +
+    '<div class="sheet-head"><div><h2>' + escapeHtml(badgeText('purchase.title')) + '</h2></div><button class="close" data-close-sheet type="button">×</button></div>' +
     '<div class="store-v2-confirm">' +
       '<div class="profile-v2-badge-preview-wrap">' + badgePreviewMarkup(itemId) + '</div>' +
       '<div class="store-v2-confirm-copy"><strong>' + escapeHtml(badgeName(item)) + '</strong></div>' +
-      '<div class="store-v2-confirm-price"><span>К оплате</span><strong>' + formatNumber(price) + ' коинов</strong></div>' +
-      '<div class="store-v2-confirm-balance"><span>Останется</span><b>' + formatNumber(Math.max(0, balance - price)) + '</b></div>' +
+      '<div class="store-v2-confirm-price"><span>' + escapeHtml(badgeText('purchase.to_pay')) + '</span><strong>' + escapeHtml(badgeText('purchase.coins_value', { count:formatNumber(price) })) + '</strong></div>' +
+      '<div class="store-v2-confirm-balance"><span>' + escapeHtml(badgeText('purchase.remaining')) + '</span><b>' + formatNumber(Math.max(0, balance - price)) + '</b></div>' +
       '<button class="btn primary full" id="mgwProfileBadgeConfirmBuy" type="button"' + disabled + '>' + escapeHtml(label) + '</button>' +
     '</div>'
   );
@@ -303,9 +309,9 @@ async function purchaseBadge(item, button){
     }
     closeSheet();
     await refreshBadgeSnapshot();
-    toast('Бейдж добавлен в коллекцию.');
+    toast(badgeText('toast.purchased'));
   } catch (error) {
-    toast(error?.message || 'Не удалось купить бейдж.');
+    toast(error?.message || badgeText('errors.purchase'));
   } finally {
     badgeBusy = false;
   }
@@ -318,8 +324,8 @@ function openBadgePreview(itemId){
   openSheet(`
     <div class="sheet-head"><div><h2>${escapeHtml(badgeName(item))}</h2></div><button class="close" data-close-sheet type="button">×</button></div>
     <div class="profile-v2-badge-preview-wrap">${badgePreviewMarkup(itemId)}</div>
-    <div class="profile-v2-badge-preview-meta"><strong>Бейдж</strong><small>${escapeHtml(badgeTierLabel(item))}</small></div>
-    <button class="btn ${active ? 'ghost' : 'primary'} full" id="mgwProfileBadgeEquip" type="button">${active ? 'Снять' : 'Выбрать'}</button>
+    <div class="profile-v2-badge-preview-meta"><strong>${escapeHtml(badgeText('type'))}</strong><small>${escapeHtml(badgeTierLabel(item))}</small></div>
+    <button class="btn ${active ? 'ghost' : 'primary'} full" id="mgwProfileBadgeEquip" type="button">${escapeHtml(badgeText(active ? 'actions.remove' : 'actions.select'))}</button>
   `);
   document.getElementById('mgwProfileBadgeEquip')?.addEventListener('click', () => void saveBadge(itemId, active));
 }
@@ -339,11 +345,11 @@ async function saveBadge(itemId, remove){
     if (remove) await api.cosmeticStoreUnequip(BADGE_SLOT);
     else await api.cosmeticStoreEquip(itemId);
     await refreshBadgeSnapshot();
-    toast(remove ? 'Бейдж снят.' : 'Бейдж выбран.');
+    toast(badgeText(remove ? 'toast.removed' : 'toast.selected'));
   } catch (error) {
     state.profileInventory = previousInventory;
     scheduleDecorate();
-    toast(error?.message || (remove ? 'Не удалось снять бейдж.' : 'Не удалось выбрать бейдж.'));
+    toast(error?.message || badgeText(remove ? 'errors.remove' : 'errors.select'));
   } finally {
     badgeBusy = false;
   }
@@ -370,6 +376,6 @@ function purchaseToken(){
 }
 
 function cloneObject(value){ return value && typeof value === 'object' ? JSON.parse(JSON.stringify(value)) : value; }
-function formatNumber(value){ return Number(value || 0).toLocaleString('ru-RU'); }
+function formatNumber(value){ return formatLocalizedNumber(Number(value || 0)); }
 function escapeHtml(value){ return String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
 function escapeAttr(value){ return escapeHtml(value); }
