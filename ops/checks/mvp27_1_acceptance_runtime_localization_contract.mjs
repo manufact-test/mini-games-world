@@ -28,7 +28,7 @@ for (const key of [
   'timeout_title','timeout_note','upcoming_title','prepare_note','first_move_note',
   'syncing_title','syncing_note','ready_title','ready_note',
 ]) {
-  assert(owner.includes(\`acceptance_runtime.launch.\${key}\`),
+  assert(owner.includes(`acceptance_runtime.launch.${key}`),
     'Launch presentation must resolve localized key: ' + key);
 }
 
