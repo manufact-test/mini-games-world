@@ -74,7 +74,8 @@ $assert(!str_contains($inviteLink, 'Gold-комната')
         && !str_contains($inviteLink, 'Матч-комната')
         && !str_contains($inviteLink, '<span>Комната</span>')
         && !str_contains($inviteLink, '<span>Ставка</span>')
-        && str_contains($inviteLink, '<span>Участие</span>'),
+        && str_contains($inviteLink, "t('game_invites.summary.entry')")
+        && (($ru['game_invites']['summary']['entry'] ?? null) === 'Участие'),
     'Deep-link invite UI must not expose Match/Gold room terminology.');
 $assert(str_contains($serverApi, '$room = UnifiedGameZonePolicy::storageRoom();')
         && str_contains($serverApi, '$bet = UnifiedGameZonePolicy::entryCost($config);'),
