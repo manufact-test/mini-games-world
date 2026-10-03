@@ -29,8 +29,8 @@ jobs:
           php -l bot/tests/RuntimeNotificationRepositoryTest.php
       - name: Notification repository regression
         run: php bot/tests/RuntimeNotificationRepositoryTest.php
-      - name: Weekly projection regression
-        run: php bot/tests/WeeklyBonusRuntimeBridgeTest.php
+      - name: Projection scale owner contract
+        run: php bot/tests/Mvp27_1ProjectionScaleRecoveryContractTest.php
       - name: Projection dirty coalescing regression
         run: php bot/tests/PhaseBProjectionDirtyCoalescingContractTest.php
       - name: Request projection memo regression
