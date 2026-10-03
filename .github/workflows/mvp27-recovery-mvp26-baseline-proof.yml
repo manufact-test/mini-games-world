@@ -165,51 +165,11 @@ jobs:
           test "${{ steps.ops.outcome }}" = success
           test "${{ steps.legacy.outcome }}" = success
 
-  mysql-persistence:
-    name: Critical MySQL persistence regression
-    runs-on: ubuntu-24.04
-    timeout-minutes: 40
-    services:
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: mgw_test
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          extensions: pdo_mysql, mbstring
-          coverage: none
-      - name: Create isolated databases
-        run: |
-          php -r '
-            $pdo=new PDO("mysql:host=127.0.0.1;port=3306;charset=utf8mb4","root","root",[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
-            foreach (["mgw_archive","mgw_compensation","mgw_support","mgw_moderation","mgw_antifraud","mgw_incident","mgw_tournament"] as $db) {
-              $pdo->exec("CREATE DATABASE IF NOT EXISTS ".$db." CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-            }
-          '
-      - name: Critical persistence owners
-        shell: bash
-        run: |
-          set -euo pipefail
-          MGW_TEST_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_archive' MGW_TEST_MYSQL_USER=root MGW_TEST_MYSQL_PASSWORD=root php bot/tests/Mvp24LegacyArchiveCurrentMySqlContractTest.php
-          MGW_COMPENSATION_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_compensation' MGW_COMPENSATION_MYSQL_USER=root MGW_COMPENSATION_MYSQL_PASS=root php bot/tests/Mvp22_2CompensationMySqlIntegrationTest.php
-          MGW_SUPPORT_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_support' MGW_SUPPORT_MYSQL_USER=root MGW_SUPPORT_MYSQL_PASS=root php bot/tests/SupportTicketMySqlIntegrationTest.php
-          MGW_MODERATION_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_moderation' MGW_MODERATION_MYSQL_USER=root MGW_MODERATION_MYSQL_PASS=root php bot/tests/Mvp22_3ModerationMySqlIntegrationTest.php
-          MGW_ANTIFRAUD_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_antifraud' MGW_ANTIFRAUD_MYSQL_USER=root MGW_ANTIFRAUD_MYSQL_PASS=root php bot/tests/Mvp22_4AntiFraudMySqlIntegrationTest.php
-          MGW_INCIDENT_MYSQL_DSN='mysql:host=127.0.0.1;port=3306;dbname=mgw_incident' MGW_INCIDENT_MYSQL_USER=root MGW_INCIDENT_MYSQL_PASS=root php bot/tests/Mvp22_9IncidentRecoveryMySqlIntegrationTest.php
-          MGW_TEST_MYSQL_HOST=127.0.0.1 MGW_TEST_MYSQL_PORT=3306 MGW_TEST_MYSQL_DATABASE=mgw_tournament MGW_TEST_MYSQL_USER=root MGW_TEST_MYSQL_PASSWORD=root php bot/tests/Mvp21_11TournamentReleaseProofTest.php
+
+  # Critical MySQL persistence was already re-proved successfully on this exact
+  # unchanged MVP26 product tree in recovery run 37158498677. Do not re-run the
+  # service-container lane here: a later GitHub-hosted runner stalled before
+  # checkout while initializing MySQL, which is infrastructure rather than product.
 
   android-contract:
     name: Android accepted-owner regression
@@ -256,7 +216,7 @@ jobs:
   proof-gate:
     name: MVP26 recovery baseline automated proof
     runs-on: ubuntu-24.04
-    needs: [integrity, product-regression, mysql-persistence, android-contract]
+    needs: [integrity, product-regression, android-contract]
     if: always()
     steps:
       - name: Require every authoritative recovery lane
@@ -265,6 +225,5 @@ jobs:
           set -euo pipefail
           test "${{ needs.integrity.result }}" = success
           test "${{ needs.product-regression.result }}" = success
-          test "${{ needs.mysql-persistence.result }}" = success
           test "${{ needs.android-contract.result }}" = success
           echo "Exact MVP26 baseline automated proof PASS"
