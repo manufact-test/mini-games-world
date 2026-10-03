@@ -23,6 +23,8 @@ $fixture = $read('bot/tournaments/StagingTournamentManualAcceptanceService.php')
 $adminApi = $read('bot/admin-tournaments.php');
 $adminJs = $read('app/assets/js/admin-tournaments.js');
 $manifest = $read('app/runtime/client/version-manifest.php');
+$versionManifestData = require $root . '/app/runtime/client/version-manifest.php';
+$acceptanceUrl = (string)($versionManifestData['imports']['./assets/js/production-v110-acceptance-runtime.js?v=110'] ?? '');
 $locale = json_decode($read('app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 $css = $read('app/assets/css/main.css');
 
@@ -175,7 +177,13 @@ $assert(str_contains($manifest, 'tournaments-screen-v1.js?v=32')
         && str_contains($manifest, 'mvp27_1=game-screen-localized-v1')
         && str_contains($manifest, 'mvp21_manual=tournament-result-return-v1')
         && str_contains($manifest, 'mvp21_6=tournament-result-dedupe-v3')
-        && str_contains($manifest, 'production-v110-acceptance-runtime.js?v=132')
+        && preg_match('/[?&]v=([0-9]+)/', $acceptanceUrl, $acceptanceVersionMatch) === 1
+        && (int)$acceptanceVersionMatch[1] >= 132
+        && str_contains($acceptanceUrl, 'clock=battleship-setup-single-writer')
+        && str_contains($acceptanceUrl, 'launch=server-active-gated-v3')
+        && str_contains($acceptanceUrl, 'terminal=clock-stable')
+        && str_contains($acceptanceUrl, 'input=first-tap-v1')
+        && str_contains($acceptanceUrl, 'mvp21_5=countdown-10-fresh60-v2')
         && str_contains($manifest, 'game-invites-v110.js?v=1150')
         && str_contains($manifest, 'game-invites-v110-rematch-policy-v175.js?v=3'),
     'Corrective v8 client owners must publish fresh active cache identities without replacing the accepted Phase-B presentation owner.');
