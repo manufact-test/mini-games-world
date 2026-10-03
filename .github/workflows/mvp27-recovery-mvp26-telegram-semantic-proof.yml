@@ -1,0 +1,223 @@
+name: MVP27 Recovery — MVP26 Telegram semantic regression scan
+
+on:
+  push:
+    branches:
+      - agent/mvp27-1-recovery-mvp26-telegram-proof-v3-2026-10-04
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mgw-mvp27-recovery-mvp26-telegram-semantic-proof
+  cancel-in-progress: true
+
+jobs:
+  telegram-regression:
+    name: Telegram product regression — successor-safe scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Prove CI-only branch does not mutate accepted product
+        shell: bash
+        run: |
+          set -euo pipefail
+          baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
+          proof='.github/workflows/mvp27-recovery-mvp26-telegram-semantic-proof.yml'
+          changed="$(git diff --name-only "$baseline" HEAD)"
+          printf '%s\n' "$changed"
+          test "$changed" = "$proof"
+          git diff --exit-code "$baseline" HEAD -- . ":(exclude)$proof"
+
+      - name: Run complete Telegram regression scan
+        shell: bash
+        run: |
+          set -uo pipefail
+          failures=()
+
+          run_php() {
+            local test_file="$1"
+            echo "::group::$test_file"
+            if php "$test_file"; then
+              echo "PASS $test_file"
+            else
+              echo "FAIL $test_file"
+              failures+=("$test_file")
+            fi
+            echo "::endgroup::"
+          }
+
+          run_node() {
+            local test_file="$1"
+            echo "::group::$test_file"
+            if node "$test_file"; then
+              echo "PASS $test_file"
+            else
+              echo "FAIL $test_file"
+              failures+=("$test_file")
+            fi
+            echo "::endgroup::"
+          }
+
+          echo "::group::successor-safe MVP25.1 Profile placeholder contract"
+          if python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+          profile = Path('app/assets/js/screens/profile-screen-v110.js').read_text(encoding='utf-8')
+          ru = Path('app/locales/ru.json').read_text(encoding='utf-8')
+          manifest = Path('app/runtime/client/version-manifest.php').read_text(encoding='utf-8')
+          assert 'profile-v2-achievements' not in profile
+          assert 'profile.achievements_title' not in profile
+          assert 'profile.achievement_soon' not in profile
+          assert '"achievements_note":"Места под будущие достижения и награды."' not in ru
+          assert '"achievement_soon":"Скоро"' not in ru
+          assert 'tournamentVisiblePermanentRewards' in profile
+          assert 'const achievements = permanent.filter' in profile
+          assert 'Достижения' in profile
+          m = re.search(r"profile-screen-v110\.js\?v=(\d+)[^']*mvp25_1=real-achievements-only-v1", manifest)
+          assert m and int(m.group(1)) >= 1133, m.group(0) if m else 'missing accepted profile cache owner'
+          print('Successor-safe Profile placeholder cleanup contract: PASS; profile version', m.group(1))
+          PY
+          then
+            echo "PASS successor-safe Profile placeholder contract"
+          else
+            echo "FAIL successor-safe Profile placeholder contract"
+            failures+=("successor-safe-profile-placeholder")
+          fi
+          echo "::endgroup::"
+
+          echo "::group::successor-safe accepted-identity semantics"
+          if python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          manifest = Path('app/runtime/client/version-manifest.php').read_text(encoding='utf-8')
+          account_shortcuts = Path('app/assets/js/components/account-shortcuts.js').read_text(encoding='utf-8')
+          account_data = Path('app/assets/js/screens/account-data-sheet-v1.js').read_text(encoding='utf-8')
+          client = Path('app/assets/js/api/client.js').read_text(encoding='utf-8')
+          invites = Path('app/assets/js/games/game-invites-v110.js').read_text(encoding='utf-8')
+          store = Path('app/assets/js/screens/store-screen.js').read_text(encoding='utf-8')
+          service = Path('bot/catalog/CosmeticStoreService.php').read_text(encoding='utf-8')
+          doc = Path('docs/MVP25_6_MONETIZATION_DISABLED_COMPLETE_PRODUCT.md').read_text(encoding='utf-8')
+
+          # MVP25.2 Account Data accepted identity may advance, but may not regress.
+          m = re.search(r'account-data-sheet-v1\\.js\\?v=(\\d+)[^\\n]*mvp25_2=human-copy-v1', account_shortcuts)
+          assert m and int(m.group(1)) >= 6
+          assert 'Ограниченная техническая история' not in account_data
+          assert 'финансового аудита' not in account_data
+          assert 'операций с игровыми монетами' in account_data
+
+          # MVP25.2 API/invite human-error identities may advance, markers and semantics must stay.
+          api = re.findall(r"\\./assets/js/api/client\\.js\\?v=(\\d+)&[^'\\n]*mvp25_2=network-human-error-v2", manifest)
+          assert len(api) == 4 and min(map(int, api)) >= 1149, api
+          inv = re.findall(r"\\./assets/js/games/game-invites-v110\\.js\\?v=(\\d+)&[^'\\n]*mvp25_2=network-human-error-v1", manifest)
+          assert len(inv) == 3 and min(map(int, inv)) >= 1148, inv
+          parent = re.search(r"account-shortcuts\\.js\\?v=(\\d+)[^'\\n]*mvp25_2=account-data-human-copy-v1", manifest)
+          assert parent and int(parent.group(1)) >= 56
+          assert 'Ошибка API:' not in client
+          assert 'Не удалось выполнить запрос. Попробуйте ещё раз.' in client
+          assert 'Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.' in client
+          assert 'Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.' in invites
+
+          # MVP25.6 Store accepted identity may advance, monetization-disabled semantics must stay.
+          sm = re.search(r"store-screen\\.js\\?v=(\\d+)&intent_base=1[^'\\n]*mvp25_6=monetization-disabled-complete-v1", manifest)
+          assert sm and int(sm.group(1)) >= 69, sm.group(0) if sm else 'missing Store identity'
+          assert 'private const EXTERNAL_BILLING_AVAILABLE = false;' in service
+          assert "{ id:'coins', label:'Коины', available:false }" in store
+          assert '.filter(tab => tab.available !== false);' in store
+          assert 'Скоро' not in store
+          assert "return emptyState('Пополнение коинов недоступно');" in store
+          assert '**Status:** CLOSED / AUTOMATED + STAGING ACCEPTED / FROZEN' in doc
+          print('Successor-safe MVP25 accepted-identity semantics: PASS')
+          PY
+          then
+            echo "PASS successor-safe accepted-identity semantics"
+          else
+            echo "FAIL successor-safe accepted-identity semantics"
+            failures+=("successor-safe-accepted-identities")
+          fi
+          echo "::endgroup::"
+
+          tests_php=(
+            bot/tests/Mvp25_7TelegramProductRcContractTest.php
+            bot/tests/Mvp25_1RouteAndDeadResidueContractTest.php
+            bot/tests/Mvp25_1V110ManifestNormalizationContractTest.php
+            bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest.php
+            bot/tests/Mvp25_2TournamentHumanCopyContractTest.php
+            bot/tests/Mvp25_4PerformanceReliabilityClosureContractTest.php
+            bot/tests/Mvp25_4ReliabilityContractTest.php
+            bot/tests/Mvp25_5WebhookIngressSecurityContractTest.php
+            bot/tests/Mvp25_5RateLimitContractTest.php
+            bot/tests/Mvp25_5WriteReplaySafetyTest.php
+            bot/tests/Mvp25_5WriteReplaySafetyContractTest.php
+            bot/tests/Mvp25_5PublicErrorLogSanitizationContractTest.php
+            bot/tests/Mvp25_5SecurityResilienceClosureContractTest.php
+            bot/tests/Mvp25_6MonetizationDisabledStoreTest.php
+            bot/tests/Mvp167AllGamesRegressionContractTest.php
+            bot/tests/Mvp14r2GamesContractTest.php
+            bot/tests/Mvp14r2GamesBaselineTest.php
+            bot/tests/RematchOptimisticUxContractTest.php
+            bot/tests/UnifiedEconomyRuntimeSyncTest.php
+            bot/tests/UnifiedEconomyUninitializedRuntimeHydrationTest.php
+            bot/tests/Mvp19_1ProductInventoryTest.php
+            bot/tests/Mvp19_2CosmeticStoreTest.php
+            bot/tests/Mvp19_3ProfileAvatarsTest.php
+            bot/tests/Mvp19_3ProfileBackgroundsTest.php
+            bot/tests/Mvp17_1MatchmakingQueueTest.php
+            bot/tests/Mvp17_2HumanPriorityFallbackTest.php
+            bot/tests/Mvp17_4ReconnectLifecycleTest.php
+            bot/tests/Mvp17_4ReconnectResumeRegressionTest.php
+            bot/tests/Mvp18_3InviteV2ContractTest.php
+            bot/tests/Mvp18_4UniversalInviteLandingContractTest.php
+            bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
+            bot/tests/FriendGraphServiceTest.php
+            bot/tests/Mvp18_6NotificationPipelineContractTest.php
+            bot/tests/StagingCurrentE2EOwnerContractTest.php
+            bot/tests/Mvp20_3LeaderboardsAntiFarmingTest.php
+            bot/tests/Mvp20_7RatingArchiveTest.php
+            bot/tests/Mvp21_11TournamentReleaseProofTest.php
+            bot/tests/Mvp21_9TournamentProductProjectionContractTest.php
+            bot/tests/GamePublicIdentityResponseProjectionTest.php
+            bot/tests/SupportTicketServiceTest.php
+            bot/tests/Mvp22_2CompensationWorkflowTest.php
+            bot/tests/Mvp22_3ModerationWorkflowTest.php
+            bot/tests/Mvp22_4AntiFraudWorkflowTest.php
+            bot/tests/Mvp22_5SystemAdminTest.php
+            bot/tests/Mvp22_7AdminOperationsTest.php
+            bot/tests/Mvp22_8AccountDataLifecycleTest.php
+            bot/tests/Mvp22_9IncidentRecoveryTest.php
+            bot/tests/Mvp23AdminClosureContractTest.php
+            bot/tests/Mvp24FinalGoldRemovalClosureContractTest.php
+            bot/tests/Mvp24MiniAppGoldStateCleanupContractTest.php
+            bot/tests/Mvp24LegacyAdminCommerceReadOnlyContractTest.php
+            bot/tests/Mvp24LegacyApiCommerceCleanupContractTest.php
+            bot/tests/ShopPaymentApiActionGateRegressionTest.php
+            bot/tests/Mvp24PublicGoldSanitationContractTest.php
+          )
+
+          for t in "${tests_php[@]}"; do run_php "$t"; done
+
+          run_node bot/tests/Mvp25_6StoreClientContractTest.mjs
+          run_node scripts/ci/check-secrets-contract.mjs
+          run_node scripts/ci/check-secrets.mjs
+
+          if (( ${#failures[@]} )); then
+            printf 'FAILED TESTS (%d):\n' "${#failures[@]}"
+            printf ' - %s\n' "${failures[@]}"
+            exit 1
+          fi
+
+          echo "Complete successor-safe Telegram regression scan PASS"
