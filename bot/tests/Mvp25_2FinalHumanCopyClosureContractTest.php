@@ -79,7 +79,7 @@ $assert(
     'Account Data child copy change must stay at or beyond the accepted import identity.'
 );
 $clientAliasMatches = [];
-$clientAliasCount = preg_match_all('~\./assets/js/api/client\.js\?v=(\d+)&mvp25_2=network-human-error-v2~', $manifest, $clientAliasMatches);
+$clientAliasCount = preg_match_all('~\./assets/js/api/client\.js\?v=(\d+)&[^\n\']*mvp25_2=network-human-error-v2~', $manifest, $clientAliasMatches);
 $assert(
     $clientAliasCount === 4 && min(array_map('intval', $clientAliasMatches[1] ?? [])) >= 1149,
     'All canonical API client aliases must stay at or beyond the final MVP-25.2 network-safe identity.'
