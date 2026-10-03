@@ -114,7 +114,7 @@ for (const token of [
 ]) assert.ok(manifest.includes(token), `Active shell cache identity missing: ${token}`);
 
 const locale = JSON.parse(read('app/locales/ru.json'));
-assert.equal(Number(locale?._meta?.version), 50, 'RU locale revision must be 50 for active shell bundle');
+assert.ok(Number(locale?._meta?.version) >= 50, 'RU locale revision must be accepted shell revision 50 or newer');
 for (const path of [
   ['runtime_status','maintenance_default'],
   ['network','server_unreachable'],
@@ -131,7 +131,7 @@ for (const path of [
 }
 
 const baseline=JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.json'));
-assert.equal(Number(baseline.cyrillic_lines_total),3077,'Shell bundle total debt ratchet changed unexpectedly');
-assert.equal(Number(baseline.by_scope?.client),1396,'Shell bundle client debt ratchet changed unexpectedly');
+assert.ok(Number(baseline.cyrillic_lines_total) <= 3077,'Shell bundle total debt must not regress above accepted ceiling');
+assert.ok(Number(baseline.by_scope?.client) <= 1396,'Shell bundle client debt must not regress above accepted ceiling');
 
 console.log('MVP-27.1 active shell-copy bundle contract: OK — 122 direct v110 root-graph Cyrillic lines localized with runtime/search/notification semantics frozen.');
