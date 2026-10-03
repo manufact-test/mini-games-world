@@ -1,5 +1,5 @@
 {
-  "_meta": {"locale":"ru","version":45},
+  "_meta": {"locale":"ru","version":46},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
   "topbar": {"balance":"Баланс","notifications":"Уведомления"},
@@ -868,7 +868,7 @@
         "result":{"draw":"Ничья","victory":"Победа","defeat":"Поражение"},
         "cell":{"legal":"{cell}: поставить фишку","black":"{cell}: чёрная фишка","white":"{cell}: белая фишка","empty":"{cell}: пустая клетка"}
       }
-    },"chess":{"name":"Шахматы"},"go":{"name":"Го"},"domino":{
+    },"chess":{"name":"Шахматы"},"go":{"name":"Го","ui":{"meta":{"fallback_room":"Игра","summary":"{room} · {bet} коинов · {size}×{size}"},"player_mark":{"black":"● чёрные","white":"○ белые"},"status":{"opponent_passed":"Соперник сделал пас — ваш ход","your_turn":"Ваш ход","opponent_turn":"Ход соперника"},"pass":{"finish":"Пас и завершить партию","single":"Пас"},"confirm":{"title":"Завершить партию?","body":"Это второй пас подряд. После него территория будет подсчитана автоматически.","live_stones_note":"Все камни, которые остались на поле, считаются живыми и входят в результат.","finish":"Завершить партию","continue":"Продолжить игру"},"events":{"capture_self":"Ваш ход — снимаем окружённую группу","capture_opponent":"Ход соперника — снимаем окружённую группу","placed_self":"Ваш камень поставлен","placed_opponent":"Соперник поставил камень","finished":"Партия завершена — считаем территорию","pass_self":"Вы сделали пас · следующий пас завершит партию","pass_opponent":"Соперник сделал пас · следующий пас завершит партию","your_turn_hint":"Ваш ход — выберите свободное пересечение","opponent_turn_hint":"Ход соперника — следите за полем"},"score":{"title":"Итог {mine}:{theirs}","detail":"Ваша территория: {mineTerritory} · соперника: {theirTerritory} · komi белых: {komi}"},"result":{"draw":"Ничья","victory":"Победа","defeat":"Поражение"},"cell":{"black":"чёрный камень","white":"белый камень","empty":"свободно","label":"Ряд {row}, столбец {col}: {state}"}}},"domino":{
       "name":"Домино",
       "ui":{
         "game_fallback":"Игра","meta":"{room} · {bet} коинов · классическое домино",
