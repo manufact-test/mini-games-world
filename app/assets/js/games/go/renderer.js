@@ -185,7 +185,7 @@ function statusMarkup({ game, me, myTurn, animating }){
     if (captured > 0) return `<div class="go-event-banner capture">${movedByMe ? t('games.go.ui.event.your_move') : t('games.go.ui.event.opponent_move')} — ${t('games.go.ui.event.capture_group')}</div>`;
     return `<div class="go-event-banner move">${movedByMe ? t('games.go.ui.event.self_placed') : t('games.go.ui.event.opponent_placed')}</div>`;
   }
-  if (game?.status === 'finished') return '<div class="go-event-banner finished">${t('games.go.ui.event.finished')}</div>';
+  if (game?.status === 'finished') return `<div class="go-event-banner finished">${t('games.go.ui.event.finished')}</div>`;
 
   const passedId = String(game?.last_passed_player_id || '');
   if (passedId !== '') {
