@@ -48,7 +48,13 @@ $resultUrl = (string)($manifest['imports']['./assets/js/screens/game-screen-v102
 $reconnectUrl = (string)($manifest['imports']['@mgw/main'] ?? '');
 
 $assert(str_contains($targetedUrl, 'v=1105&zone=unified&ttt=single-owner'), 'Active targeted-interaction URL must preserve its accepted prefix and publish the single-owner fix.');
-$assert(str_contains($acceptanceUrl, 'v=132&clock=battleship-setup-single-writer&launch=server-active-gated-v3&terminal=clock-stable&input=first-tap-v1'), 'Active acceptance runtime must preserve accepted timing/terminal prefixes and publish the first-tap fix.');
+$assert(preg_match('/[?&]v=([0-9]+)/', $acceptanceUrl, $acceptanceVersionMatch) === 1
+    && (int)$acceptanceVersionMatch[1] >= 132
+    && str_contains($acceptanceUrl, 'clock=battleship-setup-single-writer')
+    && str_contains($acceptanceUrl, 'launch=server-active-gated-v3')
+    && str_contains($acceptanceUrl, 'terminal=clock-stable')
+    && str_contains($acceptanceUrl, 'input=first-tap-v1'),
+    'Active acceptance runtime must preserve accepted timing/terminal/first-tap semantics on the accepted or newer cache identity.');
 $assert(str_contains($resultUrl, 'clock=phase-b-single-writer&battleship=leave-guard&mvp17=result-history-economy&live=owner-v3&result=compact-fast-v1'), 'Accepted Result owner/cache identity must remain unchanged.');
 $assert($reconnectUrl === './assets/js/main-v110-reconnect-v174.js?v=2', 'Accepted reconnect wrapper must remain frozen.');
 

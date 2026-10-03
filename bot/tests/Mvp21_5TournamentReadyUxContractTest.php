@@ -8,6 +8,9 @@ $read = static function (string $path) use ($root): string {
     return $content;
 };
 
+$versionManifestData = require $root . '/app/runtime/client/version-manifest.php';
+$acceptanceUrl = (string)($versionManifestData['imports']['./assets/js/production-v110-acceptance-runtime.js?v=110'] ?? '');
+
 $source = [
     'migration'=>$read('bot/database/migrations/20260921_0054_create_tournament_match_readiness.php'),
     'readiness'=>$read('bot/tournaments/TournamentMatchReadinessService.php'),
@@ -189,9 +192,11 @@ $assert(preg_match('/tournaments-screen-v1\\.js\\?v=\\d+/', $source['manifest'])
         && str_contains($source['manifest'], 'desktop=endurance-v1')
         && str_contains($source['manifest'], 'mvp27_1_hall=ready-i18n-v1'),
     'Tournament screen must publish the fresh corrective-v8 registration/T0/peer-adoption cache identity.');
-$assert(str_contains($source['manifest'], 'production-v110-acceptance-runtime.js?v=132')
-        && str_contains($source['manifest'], 'mvp21_5=countdown-10-fresh60-v2'),
-    'Shared Phase-B presentation must publish the fresh server-active/fresh-60 cache identity.');
+$assert(preg_match('/[?&]v=([0-9]+)/', $acceptanceUrl, $acceptanceVersionMatch) === 1
+        && (int)$acceptanceVersionMatch[1] >= 132
+        && str_contains($acceptanceUrl, 'launch=server-active-gated-v3')
+        && str_contains($acceptanceUrl, 'mvp21_5=countdown-10-fresh60-v2'),
+    'Shared Phase-B presentation must retain accepted server-active/fresh-60 semantics on the accepted or newer cache identity.');
 $assert(preg_match('/main\\.css\\?v=\\d+/', $source['manifest']) === 1,
     'Readiness presentation CSS must publish a numeric cache identity.');
 

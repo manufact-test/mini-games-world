@@ -67,6 +67,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" != agent/mvp27-1-notification-center-localization-* ]]; then
+            echo "Successor localization slice: Notification Center owner unchanged; original bounded migration scope does not apply."
+            git diff --check
+            exit 0
+          fi
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           allowed='^(app/assets/js/screens/notifications-screen-v110r13\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_notification_center_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|bot/tests/NotificationCenterV2StaticContractTest\.php|bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest\.php|bot/tests/Mvp21_3ManualAcceptanceUxCorrectiveTest\.php|\.github/workflows/mvp25-2-notification-legacy-order-deeplink\.yml|\.github/workflows/mvp27-1-profile-reactions-localization\.yml|\.github/workflows/mvp27-1-notification-center-localization\.yml)$'

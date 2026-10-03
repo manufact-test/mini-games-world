@@ -24,6 +24,9 @@ $main = $read($mainPath);
 $v110 = $read('app/v110.php');
 $manifest = $read('bot/helpers/staging-e2e-runtime-files.txt');
 $versionManifest = $read('app/runtime/client/version-manifest.php');
+$versionManifestData = require $root . '/app/runtime/client/version-manifest.php';
+$acceptanceUrl = (string)($versionManifestData['imports']['./assets/js/production-v110-acceptance-runtime.js?v=110'] ?? '');
+$ru = json_decode($read('app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -53,8 +56,13 @@ $assert(
     'Safe game-screen import key must resolve through the canonical version manifest.'
 );
 $assert(
-    str_contains($versionManifest, "'./assets/js/production-v110-acceptance-runtime.js?v=110' => './assets/js/production-v110-acceptance-runtime.js?v=132")
-        && str_contains($versionManifest, 'mvp21_5=countdown-10-fresh60-v2'),
+    preg_match('/[?&]v=([0-9]+)/', $acceptanceUrl, $acceptanceVersionMatch) === 1
+        && (int)$acceptanceVersionMatch[1] >= 132
+        && str_contains($acceptanceUrl, 'clock=battleship-setup-single-writer')
+        && str_contains($acceptanceUrl, 'launch=server-active-gated-v3')
+        && str_contains($acceptanceUrl, 'terminal=clock-stable')
+        && str_contains($acceptanceUrl, 'input=first-tap-v1')
+        && str_contains($acceptanceUrl, 'mvp21_5=countdown-10-fresh60-v2'),
     'The active v110 graph must resolve the reviewed MVP-21.5 acceptance runtime through the canonical version manifest.'
 );
 $assert(
@@ -91,8 +99,10 @@ $assert(str_contains($acceptance, "document.addEventListener('mgw:phase-b-game-e
 $assert(str_contains($acceptance, "owner = document.getElementById('app')"), 'Launch overlay must be owned by the application root, not the board.');
 $assert(!str_contains($acceptance, "querySelector('#screen-game .board-wrap')"), 'Launch overlay must never be mounted inside the game board wrapper.');
 $assert(str_contains($acceptance, 'z-index:10000') && str_contains($acceptance, 'inset:0'), 'Launch overlay must cover the complete application above game UI.');
-$assert(str_contains($acceptance, "title.textContent = 'Матч скоро начнётся'"), 'Preparing/countdown state must use user-facing launch copy.');
-$assert(str_contains($acceptance, "title.textContent = 'Всё готово'"), 'Final launch handoff must use user-facing ready copy.');
+$assert(str_contains($acceptance, "t('acceptance_runtime.launch.upcoming_title')"), 'Preparing/countdown state must use canonical localized launch copy.');
+$assert(str_contains($acceptance, "t('acceptance_runtime.launch.ready_title')"), 'Final launch handoff must use canonical localized ready copy.');
+$assert(($ru['acceptance_runtime']['launch']['upcoming_title'] ?? '') === 'Матч скоро начнётся', 'RU launch copy must remain canonical and unchanged.');
+$assert(($ru['acceptance_runtime']['launch']['ready_title'] ?? '') === 'Всё готово', 'RU ready copy must remain canonical and unchanged.');
 $assert(str_contains($acceptance, 'launchCountdownSeconds(game)')
     && str_contains($acceptance, 'game?.launch_countdown_sec ?? 3')
     && str_contains($acceptance, 'String(total - index)'),
