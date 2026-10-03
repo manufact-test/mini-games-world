@@ -57,7 +57,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(app/v110\\.php|app/locales/ru\\.json|bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest\\.php|bot/tests/Mvp25_2FinalHumanCopyClosureContractTest\\.php|ops/checks/mvp27_1_active_client_entry_localization_contract\\.mjs|ops/checks/mvp27_1_active_shell_copy_bundle_contract\\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\\.json|\\.github/workflows/mvp27-1-active-client-entry-localization\\.yml)$'
+          allowed='^(app/v110\.php|app/locales/ru\.json|bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest\.php|bot/tests/Mvp25_2FinalHumanCopyClosureContractTest\.php|ops/checks/mvp27_1_active_client_entry_localization_contract\.mjs|ops/checks/mvp27_1_active_shell_copy_bundle_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-active-client-entry-localization\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected active client-entry localization paths:\n%s\n' "$bad" >&2; exit 1; }
 
