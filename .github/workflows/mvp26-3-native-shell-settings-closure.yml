@@ -59,7 +59,7 @@ jobs:
           grep -Fq "ACCESSIBILITY_LIVE_REGION_ASSERTIVE" android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java
           ! grep -Fq "addJavascriptInterface" android-app/app/src/main/java/com/minigamesworld/app/MainActivity.java
           grep -Fq "['profile','store','tournaments'].includes(screen)" app/assets/js/main-v110-handoff-shell.js
-          grep -Fq "main-v110-handoff-shell.js?v=1169&mvp26_3=native-shell-settings-v1" app/runtime/client/version-manifest.php
+          grep -Fq "main-v110-handoff-shell.js?v=1170&mvp27_1=active-shell-copy-v1&mvp26_3=native-shell-settings-v1" app/runtime/client/version-manifest.php
           grep -Fq "sheet.js?v=1111&mvp26_3=visual-viewport-ime-v2" app/runtime/client/version-manifest.php
           grep -Fq "applicationId 'com.minigamesworld.app.acceptance'" android-app/app/build.gradle
           grep -Fq "mgw-acceptance-stable.keystore" android-app/app/build.gradle

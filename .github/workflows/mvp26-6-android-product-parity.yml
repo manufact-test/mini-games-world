@@ -79,6 +79,7 @@ jobs:
           android_owner_changes="$(git diff --name-only "$base" "$head" -- \
             .well-known/assetlinks.json \
             android-app \
+            ':(exclude)android-app/tools/verify-native-shell-settings.py' \
             bot/android-auth.php \
             bot/support-attachment-download.php \
             bot/helpers/validators.php \
