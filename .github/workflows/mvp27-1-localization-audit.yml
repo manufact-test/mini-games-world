@@ -8,12 +8,15 @@ on:
       - 'ops/checks/mvp16_2_localization_contract.mjs'
       - 'ops/checks/mvp27_1_localization_architecture_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
+      - 'ops/checks/mvp27_1_client_entry_debt_classification_contract.mjs'
+      - 'ops/checks/mvp27_1_active_client_entry_localization_contract.mjs'
       - 'ops/checks/mvp27_1_active_game_copy_bundle_contract.mjs'
       - 'ops/checks/mvp27_1_active_shell_copy_bundle_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - 'bot/tests/Mvp27_1LocalizationArchitectureAuditTest.php'
       - 'docs/MVP27_1_LOCALIZATION_ARCHITECTURE_AUDIT.md'
       - '.github/workflows/mvp27-1-localization-audit.yml'
+      - '.github/workflows/mvp27-1-active-client-entry-localization.yml'
   workflow_dispatch:
 
 permissions:
@@ -37,6 +40,8 @@ jobs:
           node --check ops/checks/mvp16_2_localization_contract.mjs
           node --check ops/checks/mvp27_1_localization_architecture_contract.mjs
           node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
+          node --check ops/checks/mvp27_1_client_entry_debt_classification_contract.mjs
+          node --check ops/checks/mvp27_1_active_client_entry_localization_contract.mjs
           node --check ops/checks/mvp27_1_active_game_copy_bundle_contract.mjs
           node --check ops/checks/mvp27_1_active_shell_copy_bundle_contract.mjs
           node --check app/assets/js/localization/i18n.js
@@ -59,6 +64,12 @@ jobs:
       - name: Active shell-copy bundle proof
         run: node ops/checks/mvp27_1_active_shell_copy_bundle_contract.mjs
 
+      - name: Active client-entry localization proof
+        run: node ops/checks/mvp27_1_active_client_entry_localization_contract.mjs
+
+      - name: Client-entry active-owner classification proof
+        run: node ops/checks/mvp27_1_client_entry_debt_classification_contract.mjs
+
       - name: Hardcoded player text audit
         run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs --sample
 
@@ -70,9 +81,9 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
-          audit_owner='^(ops/checks/mvp16_2_localization_contract\.mjs|ops/checks/mvp27_1_localization_architecture_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|bot/tests/Mvp27_1LocalizationArchitectureAuditTest\.php|docs/MVP27_1_LOCALIZATION_ARCHITECTURE_AUDIT\.md)$'
+          audit_owner='^(ops/checks/mvp16_2_localization_contract\.mjs|ops/checks/mvp27_1_localization_architecture_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_client_entry_debt_classification_contract\.mjs|bot/tests/Mvp27_1LocalizationArchitectureAuditTest\.php|docs/MVP27_1_LOCALIZATION_ARCHITECTURE_AUDIT\.md)$'
           if printf '%s\n' "$changed" | grep -Eq "$audit_owner"; then
-            allowed='^(ops/checks/mvp16_2_localization_contract\.mjs|ops/checks/mvp27_1_localization_architecture_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|bot/tests/Mvp27_1LocalizationArchitectureAuditTest\.php|docs/MVP27_1_LOCALIZATION_ARCHITECTURE_AUDIT\.md|\.github/workflows/mvp27-1-localization-audit\.yml)$'
+            allowed='^(ops/checks/mvp16_2_localization_contract\.mjs|ops/checks/mvp27_1_localization_architecture_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_client_entry_debt_classification_contract\.mjs|ops/checks/mvp27_1_active_client_entry_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|bot/tests/Mvp27_1LocalizationArchitectureAuditTest\.php|docs/MVP27_1_LOCALIZATION_ARCHITECTURE_AUDIT\.md|\.github/workflows/mvp27-1-localization-audit\.yml|\.github/workflows/mvp27-1-active-client-entry-localization\.yml)$'
             bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
             test -z "$bad" || { printf 'Unexpected MVP-27.1 audit paths:\n%s\n' "$bad" >&2; exit 1; }
           else

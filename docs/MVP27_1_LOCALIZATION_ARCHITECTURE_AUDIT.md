@@ -78,3 +78,23 @@ The baseline is stored in `ops/checks/mvp27_1_hardcoded_text_baseline.json`. The
 ## Frozen boundaries
 
 This slice changes no player-facing copy, no game mechanics, no economy, no rating/tournament behavior, no Android product behavior and does not enable English in production.
+
+
+## Client-entry active-owner classification — 2026-10-03
+
+Factual launch proof after merged PR #1918:
+- Telegram launch owner points to `/app/v110.php`;
+- rejected `app/v120.php` is a permanent redirect tombstone back to v110;
+- `app/runtime/server/` is a separate clean-runtime server that requires explicit staging configuration and an explicit host allowlist;
+- it is not part of the factual Telegram v110 player graph.
+
+The 25 Cyrillic source lines under `app/runtime/server/` are therefore classified as staging-only/internal runtime evidence, not active player localization debt.
+
+Current player-facing debt after this classification:
+- scanned runtime source files: **761**;
+- total: **3,049**;
+- client JS: **1,396**;
+- backend PHP: **1,653**;
+- active client-entry PHP: **0**.
+
+This is an audit-scope correction only. No runtime, game, economy, tournament, DB, Cron or production behavior changes.
