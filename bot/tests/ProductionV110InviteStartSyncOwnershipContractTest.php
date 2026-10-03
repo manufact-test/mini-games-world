@@ -19,8 +19,11 @@ $assert(
     'Invite start must expose one local transition owner.'
 );
 $assert(
-    str_contains($source, "if (action === 'start') beginInviteStartTransition();"),
-    'Explicit Start must acquire the invite-sync transition before its request.'
+    str_contains(
+        $source,
+        "if (action === 'start') {\n    button.setAttribute('aria-busy', 'true');\n    beginInviteStartTransition();"
+    ),
+    'Explicit Start must acquire the invite-sync transition before its request while preserving the accepted CTA copy.'
 );
 $assert(
     str_contains($source, "function beginInviteStartTransition(){\n  inviteStartPending = true;\n  window.clearTimeout(syncTimer);\n  syncTimer = null;\n}"),
