@@ -16,40 +16,23 @@ try {
     $userId = (string)($tgUser['id'] ?? '');
     if ($userId === '') api_error('Пользователь не найден.');
 
-    $includeTestUsers = !empty($tgUser['is_staging_test_user']) || !empty($tgUser['is_dev_user']);
-    $identityProvider = strtolower(trim((string)($tgUser['mgw_identity_provider'] ?? '')));
-    $isAndroidActor = $identityProvider === 'android_device';
-
-    // Telegram keeps the accepted low-latency recent/online runtime picker.
-    // Staging automation may still see its explicit A/B fixture accounts, while
-    // real users never receive dev/tournament fixture identities in this list.
+    // The picker and create_direct must read the same active runtime state.
+    // A staging-only DB snapshot can lag behind JSON and omit newly active users,
+    // producing asymmetric lists and an empty frame before a later refresh.
     $storage = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $onlineIds = (new PresenceService())->onlineAccountIds();
     $opponents = new InviteOpponentService();
-    $reader = static function (array $data) use ($opponents, $userId, $onlineIds, $includeTestUsers): array {
-        $testRuntimeUserIds = [];
-        foreach ($data['users'] ?? [] as $candidateId=>$candidate) {
-            $candidateId = (string)$candidateId;
-            if (!is_array($candidate)) continue;
-            if (!empty($candidate['is_staging_test_user'])
-                || !empty($candidate['is_dev_user'])
-                || str_starts_with($candidateId, 'stg_test_player_')
-                || str_starts_with($candidateId, 'stg_tour_')
-                || str_starts_with($candidateId, 'dev_')) {
-                $testRuntimeUserIds[] = $candidateId;
-            }
-        }
-
+    $reader = static function (array $data) use ($opponents, $userId, $onlineIds): array {
         return [
-            'items'=>$opponents->list($data, $userId, $onlineIds, $includeTestUsers),
+            'items'=>$opponents->list($data, $userId, $onlineIds),
             'runtime_user_ids'=>array_values(array_map('strval', array_keys($data['users'] ?? []))),
-            'test_runtime_user_ids'=>$testRuntimeUserIds,
         ];
     };
 
     // The picker needs only users and finished-game history. JSON storage can
     // preserve the same shared-lock snapshot while skipping unrelated ledgers,
-    // payments, notifications, invites and support archives.
+    // payments, notifications, invites and support archives. Future storage
+    // drivers remain correct through the ordinary full-snapshot fallback.
     $runtimeSnapshot = $storage instanceof SelectiveReadStorageInterface
         ? $storage->readOnlySections(['users', 'games'], $reader)
         : $storage->readOnly($reader);
@@ -58,16 +41,14 @@ try {
         array_map('strval', is_array($runtimeSnapshot['runtime_user_ids'] ?? null) ? $runtimeSnapshot['runtime_user_ids'] : []),
         true
     );
-    $testRuntimeUserIds = array_fill_keys(
-        array_map('strval', is_array($runtimeSnapshot['test_runtime_user_ids'] ?? null) ? $runtimeSnapshot['test_runtime_user_ids'] : []),
-        true
-    );
 
-    // Android-only parity may need canonical friends that are not recent JSON
-    // opponents. Do that extra DB graph work only for the Android container;
-    // making every Telegram picker pay for it regressed the accepted fast path.
+    // Android uses the same canonical MGW social graph as Telegram. The old
+    // picker only exposed recent/online JSON users, so an accepted friend could
+    // disappear from the selector solely because they had not played recently.
+    // FriendGraph remains the relationship owner; direct invite creation remains
+    // owned by invites.php/GameInviteService.
     $actorMgwId = strtoupper(trim((string)($tgUser['mgw_id'] ?? '')));
-    if ($isAndroidActor && MgwIdGenerator::isValid($actorMgwId)) {
+    if (MgwIdGenerator::isValid($actorMgwId)) {
         $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
         $router = new RuntimeStorageRouter($config);
         if ($databaseConfig->enabled()
@@ -95,11 +76,7 @@ try {
                 } catch (Throwable) {
                     continue;
                 }
-                if ($runtimeId === ''
-                    || !isset($runtimeUserIds[$runtimeId])
-                    || (!$includeTestUsers && isset($testRuntimeUserIds[$runtimeId]))) {
-                    continue;
-                }
+                if ($runtimeId === '' || !isset($runtimeUserIds[$runtimeId])) continue;
 
                 $runtimeItem = $runtimeById[$runtimeId] ?? null;
                 $merged[] = is_array($runtimeItem)
