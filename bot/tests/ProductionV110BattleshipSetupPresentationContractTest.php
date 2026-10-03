@@ -19,6 +19,8 @@ $gameCss = $read('app/assets/css/screens/game.css');
 $mainCss = $read('app/assets/css/main.css');
 $v110 = $read('app/v110.php');
 $manifest = $read('app/runtime/client/version-manifest.php');
+$versionManifestData = require $root . '/app/runtime/client/version-manifest.php';
+$acceptanceUrl = (string)($versionManifestData['imports']['./assets/js/production-v110-acceptance-runtime.js?v=110'] ?? '');
 
 $assert(
     str_contains($acceptance, 'function headerClockOwnsGame(game)')
@@ -50,7 +52,9 @@ $assert(
 
 $assert(
     str_contains($mainCss, "./screens/game.css?v=62&timer=battleship-setup-single-owner")
-        && str_contains($manifest, 'production-v110-acceptance-runtime.js?v=132&clock=battleship-setup-single-writer')
+        && preg_match('/[?&]v=([0-9]+)/', $acceptanceUrl, $acceptanceVersionMatch) === 1
+        && (int)$acceptanceVersionMatch[1] >= 132
+        && str_contains($acceptanceUrl, 'clock=battleship-setup-single-writer')
         && str_contains($manifest, "'main_css' => './assets/css/main.css?v=211")
         && str_contains($v110, 'X-MGW-Battleship-Setup-Clock: dedicated-setup-timer-single-owner')
         && str_contains($v110, 'X-MGW-Battleship-Player-Cards: desktop-secondary-labels-visible'),
