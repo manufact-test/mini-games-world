@@ -22,16 +22,14 @@ $clean = $read('app/assets/js/production-clean-entry-v110.js');
 
 $assert(str_contains($invites, "document.addEventListener('pointerdown', handleInvitePointerDown, true)")
     && str_contains($invites, 'function warmShareDraft(context)')
-    && str_contains($invites, "inviteRequest('create_link_draft', { ...normalized, prepareMessage:false }, { prefetch:true })"),
-    'The canonical invitation owner must keep serialized local link prewarm without external PreparedInlineMessage latency.');
+    && str_contains($invites, "inviteRequest('create_link_draft', { ...normalized, prepareMessage:true }, { prefetch:true })"),
+    'The canonical invitation owner must keep serialized share prewarm.');
 $assert(str_contains($invites, 'tg.shareMessage(preparedId')
     && str_contains($invites, "tg.onEvent('shareMessageSent'")
     && str_contains($invites, "tg.onEvent('shareMessageFailed'")
-    && str_contains($invites, 'if (getInitData())')
-    && str_contains($invites, 'openFallbackShare(draftInvite);')
     && !str_contains($invites, 'showSharingSheet(')
     && !str_contains($invites, 'Ждём результата отправки'),
-    'Real Telegram sharing must use the immediate ordinary share surface while retaining native prepared-message recovery support.');
+    'Sharing must keep the native editable Telegram dialog.');
 $assert(str_contains($invites, "String(errorCode || '') === 'USER_DECLINED'")
     && str_contains($invites, 'restoreWarmShareDraft(attempt);')
     && !str_contains($invites, 'void discardDraft(attempt.invite).finally'),
