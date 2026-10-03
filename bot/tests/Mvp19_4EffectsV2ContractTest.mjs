@@ -84,9 +84,9 @@ expect(store.includes("return itemType === 'profile' && itemFamily === 'name_col
 expect(!store.includes("slot !== 'game_tictactoe_effect'"), 'Store client must not hardcode unequip to effects only');
 expect(store.includes('if (!purchaseBusy && !equipBusy) applyStoreResponse(result, { preserveBalance:true });'), 'background Store refresh must not overwrite an active cosmetic mutation while preserving the authoritative wallet');
 expect(store.includes('if (!purchaseBusy && !equipBusy) {\n      renderStore();'), 'fresh background Store snapshot must repaint product cards, not only the balance');
-expect(toast.includes("'Предмет выбран.'"), 'redundant Store equip acknowledgement must be explicitly silent');
-expect(toast.includes("'Оформление снято.'"), 'redundant Store unequip acknowledgement must be explicitly silent');
-expect(toast.includes('SILENT_ACKNOWLEDGEMENTS.has(normalized)'), 'toast owner must suppress only the redundant acknowledgements before rendering');
+expect(toast.includes("t('store.actions.selected_toast')") && locale.store?.actions?.selected_toast === 'Предмет выбран.', 'redundant Store equip acknowledgement must remain explicitly silent through localization');
+expect(toast.includes("t('store.actions.removed_toast')") && locale.store?.actions?.removed_toast === 'Оформление снято.', 'redundant Store unequip acknowledgement must remain explicitly silent through localization');
+expect(toast.includes('silentAcknowledgementSet().has(normalized)'), 'toast owner must suppress only the localized redundant acknowledgements before rendering');
 expect(api.includes('cosmeticStoreUnequip'), 'API client must expose cosmetic unequip');
 expect(endpoint.includes("if ($action === 'unequip')"), 'Store endpoint must accept unequip action');
 expect(endpoint.includes("$isGameSlot = (string)($catalogItem['item_type'] ?? '') === 'game'"), 'Store endpoint must retain explicit game-slot classification');
@@ -122,7 +122,7 @@ expect(manifest.includes('c2_5=visible-mark-layer'), 'active runtime manifest mu
 expect(manifest.includes('c2_6=cell-native-dom-fx'), 'active runtime manifest must publish C2.6 cell-native DOM FX');
 expect(manifest.includes("renderer.js?v=59&mvp27_1=localized-v1") && manifest.includes('c2_6=cell-native-dom-fx'), 'active localized renderer identity must preserve C2.6');
 expect(/main\.css\?v=\d+/.test(manifest), 'active main CSS identity must remain versioned after later bounded UI work');
-expect(manifest.includes("'./assets/js/components/toast.js?v=27' => './assets/js/components/toast.js?v=29&store=quiet-cosmetic-equip-all'"), 'active runtime manifest must cache-bust all redundant cosmetic equip/unequip acknowledgements');
+expect(manifest.includes("'./assets/js/components/toast.js?v=27' => './assets/js/components/toast.js?v=30&mvp27_1=active-shell-copy-v1&store=quiet-cosmetic-equip-all'"), 'active runtime manifest must cache-bust all redundant cosmetic equip/unequip acknowledgements through the localized owner');
 expect(manifest.includes('store=compact-tail'), 'active runtime manifest must cache-bust compact Store bottom spacing');
 
 console.log('MVP-19.4 effects C2.6 cell-native DOM FX contract: OK');

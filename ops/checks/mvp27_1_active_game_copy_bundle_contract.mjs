@@ -92,7 +92,7 @@ for (const path of [
 }
 
 const baseline = JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.json'));
-assert.equal(Number(baseline.cyrillic_lines_total), 3199, 'Bundle total debt ratchet changed unexpectedly');
-assert.equal(Number(baseline.by_scope?.client), 1518, 'Bundle client debt ratchet changed unexpectedly');
+assert.ok(Number(baseline.cyrillic_lines_total) <= 3199, 'Successor localization must not increase the accepted game-bundle debt ceiling');
+assert.ok(Number(baseline.by_scope?.client) <= 1518, 'Successor localization must not increase the accepted game-bundle client debt ceiling');
 
 console.log('MVP-27.1 active game-copy bundle contract: OK — 97 active player-facing lines localized with gameplay/cosmetics invariants frozen.');
