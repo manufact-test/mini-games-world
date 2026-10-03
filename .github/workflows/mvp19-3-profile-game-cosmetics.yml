@@ -42,7 +42,7 @@ jobs:
           node bot/tests/Mvp19_4EffectsV2ContractTest.mjs
           php bot/tests/ProfileV2CorrectiveStaticContractTest.php
       - name: Guard accepted game-cosmetics owners
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp19-3-profile-game-cosmetics') }}
         shell: bash
         run: |
           set -euo pipefail
