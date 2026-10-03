@@ -141,10 +141,15 @@ final class WeeklyBonusRuntimeBridge
             $auditedUsers = 0;
             $sourceCount = 0;
             $databaseCount = 0;
-            foreach (is_array($snapshot['users'] ?? null) ? $snapshot['users'] : [] as $key => $user) {
-                if (!is_array($user) || !empty($user['is_dev_user'])) continue;
-                $legacyUserId = trim((string)($user['id'] ?? $key));
-                if ($legacyUserId === '') continue;
+
+            // Notification parity is non-trivial only for owners that have a
+            // source notification or an existing durable DB notification.
+            // Scanning every runtime user made projection cost grow O(total
+            // users) even when almost all users had exact 0=0 notification
+            // parity. Candidate discovery keeps DB-only rows in scope, so
+            // drift still fails closed while empty users no longer issue
+            // redundant ownership/snapshot queries.
+            foreach ($notificationRepository->synchronizationCandidateLegacyUserIds($snapshot) as $legacyUserId) {
                 $sync = $notificationRepository->synchronizeAndList($snapshot, $legacyUserId);
                 $auditedUsers++;
                 $sourceCount += (int)($sync['summary']['source_count'] ?? 0);
