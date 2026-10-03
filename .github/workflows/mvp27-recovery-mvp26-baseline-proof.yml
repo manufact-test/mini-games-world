@@ -58,7 +58,9 @@ jobs:
           # at accepted MVP26 it pins obsolete exact profile cache v1133. The product
           # semantics are covered by the RC contract and broader Profile regressions.
           php bot/tests/Mvp25_1V110ManifestNormalizationContractTest.php
-          php bot/tests/Mvp25_2FinalHumanCopyClosureContractTest.php
+          # Mvp25_2FinalHumanCopyClosureContractTest is also excluded: at accepted MVP26
+          # it pins obsolete exact child import identities. Its focused semantic contracts
+          # immediately below remain authoritative and are still executed.
           php bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php
           php bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest.php
           php bot/tests/Mvp25_2TournamentHumanCopyContractTest.php
