@@ -1,4 +1,5 @@
 import { state } from './state.js?v=27';
+import { t, formatDate as formatLocalizedDate } from '@mgw/i18n';
 
 const PROFILE_NAME_COLOR_IDS = new Set([
   'profile-name-color-sky',
@@ -23,8 +24,8 @@ function activeTournamentChampionCrown(){
 }
 
 export function formatDate(value){
-  if (!value) return 'Дата регистрации появится после входа';
-  return new Intl.DateTimeFormat('ru-RU', { day:'2-digit', month:'long', year:'numeric' }).format(new Date(value));
+  if (!value) return t('shell.profile_date_pending');
+  return formatLocalizedDate(value, 'long');
 }
 export function initials(name){
   const clean = (name || 'MG').replace('@','').trim();
@@ -33,11 +34,11 @@ export function initials(name){
 export function username(user){
   const profileNickname = String(state.mgwProfile?.nickname || state.mgwProfile?.display_name || '').trim();
   if (profileNickname) return profileNickname;
-  if (user?.mgw_profile_loaded === true) return user?.display_name || user?.first_name || 'Игрок';
+  if (user?.mgw_profile_loaded === true) return user?.display_name || user?.first_name || t('profile.player');
   if (user?.username) return '@' + user.username;
-  return user?.display_name || user?.first_name || 'Игрок';
+  return user?.display_name || user?.first_name || t('profile.player');
 }
-export function roomName(){ return 'Обычный матч'; }
+export function roomName(){ return t('game_invites.board.normal_match'); }
 export function renderUser(user){
   const name = username(user);
   const nameColorItemId = activeProfileNameColorItemId(user);
@@ -68,7 +69,7 @@ export function renderUser(user){
     el.classList.toggle('has-tournament-prestige-crown', championCrown);
   });
   const date = document.getElementById('profileDate');
-  if (date) date.textContent = user?.registered_at ? `В игре с ${formatDate(user.registered_at)}` : 'Дата регистрации появится после входа';
+  if (date) date.textContent = user?.registered_at ? t('profile.member_since', { date:formatDate(user.registered_at) }) : t('shell.profile_date_pending');
 }
 export function renderBalances(user){
   const unified = document.getElementById('balanceUnified');

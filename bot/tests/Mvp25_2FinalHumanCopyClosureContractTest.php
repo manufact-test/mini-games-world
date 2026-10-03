@@ -48,8 +48,16 @@ foreach (['client version manifest is unavailable', 'accepted game owner is unav
 }
 
 $assert(!str_contains($client, 'Ошибка API:'), 'Canonical client must not show API/HTTP fallback wording.');
-$assert(str_contains($client, 'Не удалось выполнить запрос. Попробуйте ещё раз.'), 'Canonical client must have a human request fallback.');
-$assert(str_contains($client, 'Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.'), 'Canonical client must humanize transport/network failures.');
+$assert(
+    str_contains($client, "t('network.request_failed')")
+        && (($locale['network']['request_failed'] ?? null) === 'Не удалось выполнить запрос. Попробуйте ещё раз.'),
+    'Canonical client must keep the human request fallback through the locale owner.'
+);
+$assert(
+    str_contains($client, "t('network.server_unreachable')")
+        && (($locale['network']['server_unreachable'] ?? null) === 'Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.'),
+    'Canonical client must humanize transport/network failures through the locale owner.'
+);
 $assert(str_contains($client, "error.code = 'network_unavailable';"), 'Canonical client must classify network failure without exposing browser exception text.');
 $assert(
     str_contains($invites, "inviteText('network.server_unreachable')")
@@ -71,7 +79,7 @@ $assert(
     'Account Data child copy change must stay at or beyond the accepted import identity.'
 );
 $clientAliasMatches = [];
-$clientAliasCount = preg_match_all('~\./assets/js/api/client\.js\?v=(\d+)&mvp25_2=network-human-error-v2~', $manifest, $clientAliasMatches);
+$clientAliasCount = preg_match_all('~\./assets/js/api/client\.js\?v=(\d+)&[^\n\']*mvp25_2=network-human-error-v2~', $manifest, $clientAliasMatches);
 $assert(
     $clientAliasCount === 4 && min(array_map('intval', $clientAliasMatches[1] ?? [])) >= 1149,
     'All canonical API client aliases must stay at or beyond the final MVP-25.2 network-safe identity.'

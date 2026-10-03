@@ -1,3 +1,4 @@
+import { t } from '@mgw/i18n';
 import { state } from './state.js?v=27';
 import { toast } from './components/toast.js?v=41';
 
@@ -75,34 +76,34 @@ function stop(event, reason){
 function newMatchBlockReason(gameType){
   const runtime = state.runtime;
   if (!runtime) return '';
-  if (runtime.maintenance?.enabled) return runtime.maintenance.message || 'Идут технические работы.';
-  if (runtime.features?.matchmaking === false) return 'Подбор соперников временно отключён.';
-  if (runtime.financial_read_only) return 'Новые матчи временно недоступны. Активные партии можно завершить.';
-  if (gameType && runtime.games?.[gameType] === false) return 'Эта игра временно недоступна. Выберите другую игру.';
+  if (runtime.maintenance?.enabled) return runtime.maintenance.message || t('runtime_status.maintenance_default');
+  if (runtime.features?.matchmaking === false) return t('runtime_status.matchmaking_disabled');
+  if (runtime.financial_read_only) return t('runtime_status.new_matches_read_only');
+  if (gameType && runtime.games?.[gameType] === false) return t('runtime_status.game_unavailable');
   return '';
 }
 
 function invitationBlockReason(gameType){
   const runtime = state.runtime;
-  if (runtime?.features?.invitations === false) return 'Приглашения временно отключены.';
+  if (runtime?.features?.invitations === false) return t('runtime_status.invitations_disabled');
   return newMatchBlockReason(gameType);
 }
 
 function paymentBlockReason(){
   const runtime = state.runtime;
   if (!runtime) return '';
-  if (runtime.maintenance?.enabled) return runtime.maintenance.message || 'Идут технические работы.';
-  if (runtime.financial_read_only) return 'Финансовые операции временно доступны только для просмотра.';
-  if (runtime.features?.payments === false) return 'Пополнение временно отключено.';
+  if (runtime.maintenance?.enabled) return runtime.maintenance.message || t('runtime_status.maintenance_default');
+  if (runtime.financial_read_only) return t('runtime_status.finance_read_only');
+  if (runtime.features?.payments === false) return t('runtime_status.payments_disabled');
   return '';
 }
 
 function shopBlockReason(){
   const runtime = state.runtime;
   if (!runtime) return '';
-  if (runtime.maintenance?.enabled) return runtime.maintenance.message || 'Идут технические работы.';
-  if (runtime.financial_read_only) return 'Финансовые операции временно доступны только для просмотра.';
-  if (runtime.features?.shop === false) return 'Оформление заказов временно отключено.';
+  if (runtime.maintenance?.enabled) return runtime.maintenance.message || t('runtime_status.maintenance_default');
+  if (runtime.financial_read_only) return t('runtime_status.finance_read_only');
+  if (runtime.features?.shop === false) return t('runtime_status.shop_disabled');
   return '';
 }
 
@@ -125,14 +126,14 @@ function renderBanner(){
   let message = '';
   let title = '';
   if (runtime?.maintenance?.enabled) {
-    title = 'Технические работы';
-    message = runtime.maintenance.message || 'Новые действия временно недоступны.';
+    title = t('runtime_status.banner.maintenance_title');
+    message = runtime.maintenance.message || t('runtime_status.banner.maintenance_message');
   } else if (runtime?.financial_read_only) {
-    title = 'Временное ограничение';
-    message = 'Новые матчи и финансовые операции приостановлены. Активные партии можно завершить.';
+    title = t('runtime_status.banner.restriction_title');
+    message = t('runtime_status.banner.restriction_message');
   } else if (hasPartialRestriction(runtime)) {
-    title = 'Часть функций временно недоступна';
-    message = 'Доступные игры продолжают работать в обычном режиме.';
+    title = t('runtime_status.banner.partial_title');
+    message = t('runtime_status.banner.partial_message');
   }
 
   banner.hidden = message === '';

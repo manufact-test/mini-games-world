@@ -106,7 +106,7 @@ async function boot(){
       || matchWinnerReward + matchSystemSink !== matchEntryCost * 2
       || matchDrawRefund !== matchEntryCost
     ) {
-      throw new Error('Серверные условия обычного матча недоступны.');
+      throw new Error(t('shell.match_terms_unavailable'));
     }
     APP_CONFIG.matchBet = matchEntryCost;
     APP_CONFIG.matchEconomy = Object.freeze({
@@ -177,7 +177,7 @@ async function boot(){
     if (!primeMobileProfile) warmStoreScreenAfterFirstPaint();
   } catch (error) {
     showBootFailure();
-    toast(error?.message || 'Не удалось загрузить профиль. Закройте Mini Games World и откройте снова из Telegram.');
+    toast(error?.message || t('shell.boot.reopen_telegram'));
   } finally {
     hidePreloader();
   }
@@ -478,7 +478,7 @@ function handleShellNavigation(event){
       })
       .catch(error => {
         if (navigationGeneration === shellNavigationGeneration) {
-          toast(error?.message || 'Не удалось загрузить магазин.');
+          toast(error?.message || t('shell.store_load_failed'));
         }
       })
       .finally(() => {
@@ -491,7 +491,7 @@ function handleShellNavigation(event){
     showScreen('store');
     void openStoreTabLazy().catch(error => {
       if (currentScreen() === 'store') {
-        toast(error?.message || 'Не удалось загрузить магазин.');
+        toast(error?.message || t('shell.store_load_failed'));
       }
     });
     return;

@@ -1,3 +1,5 @@
+import { t } from '@mgw/i18n';
+
 const ICON_ENDPOINT = './assets/shield-king-icon.php?v=c1efd5af&asset=';
 
 const MENU_ICONS = {
@@ -34,8 +36,8 @@ export function initShieldKingVisuals(){
   });
 
   const balances = document.querySelectorAll('.balance-card .balance-label');
-  setLabelIcon(balances[0], 'ui/economy/coins.webp', 'Матч-комната');
-  setLabelIcon(balances[1], 'ui/economy/premium-currency.webp', 'Gold-комната');
+  setLabelIcon(balances[0], 'ui/economy/coins.webp', t('acceptance_runtime.search.room_match'));
+  setLabelIcon(balances[1], 'ui/economy/premium-currency.webp', t('acceptance_runtime.search.room_gold'));
 
   applyDynamicIcons(document);
 

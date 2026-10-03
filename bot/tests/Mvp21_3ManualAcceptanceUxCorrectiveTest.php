@@ -51,7 +51,7 @@ $assert(str_contains($notifications, 'for (const [key, entry] of localAuthority.
 $notificationTarget = (string)($manifestData['imports']['./assets/js/screens/notifications-screen-v110r13.js?v=1162&mvp18=friend-request-lifecycle'] ?? '');
 $notificationVersion = [];
 $assert(
-    preg_match('~notifications-screen-v110r13\.js\?v=(\d+)&mvp21_3=read-authority-local-time~', $notificationTarget, $notificationVersion) === 1
+    preg_match('~notifications-screen-v110r13\.js\?v=(\d+)&[^\']*mvp21_3=read-authority-local-time~', $notificationTarget, $notificationVersion) === 1
     && (int)$notificationVersion[1] >= 1163,
     'Active import map must publish the notification corrective at or beyond the accepted cache identity.'
 );

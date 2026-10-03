@@ -1,6 +1,7 @@
 import { api } from '../api/client.js?v=46';
 import { openSheet } from '../components/sheet.js?v=27';
 import { haptic } from '../telegram/telegram-app.js?v=27';
+import { t, formatNumber, formatDateTime } from '@mgw/i18n';
 
 let cachedStatus = null;
 let refreshPromise = null;
@@ -32,8 +33,8 @@ export function syncWeeklyMatchButton(status = null){
   if (status && typeof status === 'object') cachedStatus = status;
   const button = document.getElementById('weeklyMatchInfo');
   if (!button) return;
-  button.textContent = 'Бонусы';
-  button.setAttribute('aria-label', 'Открыть бонусы Mini Games World');
+  button.textContent = t('weekly_match.button');
+  button.setAttribute('aria-label', t('weekly_match.button_aria'));
 }
 
 export async function refreshWeeklyMatchProgress(){
@@ -56,13 +57,13 @@ async function openWeeklyMatchInfo(){
   haptic('light');
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Бонусы</h2><p>Бесплатные коины за игровую активность.</p></div>
+      <div><h2>${t('weekly_match.button')}</h2><p>${t('weekly_match.subtitle')}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
     <div class="notifications-loading">
       <div>🎲</div>
-      <strong>Загружаем бонусы</strong>
-      <span>Считаем завершённые игры.</span>
+      <strong>${t('weekly_match.loading_title')}</strong>
+      <span>${t('weekly_match.loading_note')}</span>
     </div>
   `);
 
@@ -98,39 +99,39 @@ function renderWeeklyMatchInfo(status){
 
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Бонусы</h2><p>Бесплатные коины за игровую активность.</p></div>
+      <div><h2>${t('weekly_match.button')}</h2><p>${t('weekly_match.subtitle')}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
 
     <div data-bonus-scroll style="min-height:0;flex:1 1 auto;overflow:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;display:flex;flex-direction:column;gap:14px;padding-right:1px;">
-      <div><h2 style="margin:0">Еженедельный бонус</h2></div>
+      <div><h2 style="margin:0">${t('weekly_match.weekly_title')}</h2></div>
       <div class="topup-success">
         <div>
-          <span>Следующее начисление</span>
+          <span>${t('weekly_match.next_credit')}</span>
           <strong>${escapeHtml(nextDate)}</strong>
         </div>
         <div>
-          <span>Размер бонуса</span>
-          <strong>+${amount.toLocaleString('ru-RU')} коинов</strong>
+          <span>${t('weekly_match.bonus_amount')}</span>
+          <strong>${t('weekly_match.bonus_value', { amount:formatNumber(amount) })}</strong>
         </div>
         <div>
-          <span>Игры за неделю</span>
-          <strong${weeklyProgressStyle}>${completed} из ${minGames}</strong>
+          <span>${t('weekly_match.games_week')}</span>
+          <strong${weeklyProgressStyle}>${t('weekly_match.progress', { completed:formatNumber(completed), required:formatNumber(minGames) })}</strong>
         </div>
       </div>
 
       <div>
-        <h2 style="margin:0 0 5px">Бонусы за новые игры</h2>
-        <p>+${firstGameAmount.toLocaleString('ru-RU')} коинов за первую завершённую партию в каждой новой игре.</p>
+        <h2 style="margin:0 0 5px">${t('weekly_match.new_games_title')}</h2>
+        <p>${t('weekly_match.new_games_note', { amount:formatNumber(firstGameAmount) })}</p>
       </div>
       <div class="topup-success">
         <div>
-          <span>Освоено игр</span>
-          <strong${firstGameProgressStyle}>${firstGameCount} из ${firstGameMax}</strong>
+          <span>${t('weekly_match.games_mastered')}</span>
+          <strong${firstGameProgressStyle}>${t('weekly_match.progress', { completed:formatNumber(firstGameCount), required:formatNumber(firstGameMax) })}</strong>
         </div>
       </div>
 
-      <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">Понятно</button>
+      <button class="btn primary full sheet-bottom-btn" data-close-sheet type="button">${t('rules.understood')}</button>
     </div>
   `);
 }
@@ -138,11 +139,11 @@ function renderWeeklyMatchInfo(status){
 function renderWeeklyMatchError(error){
   openSheet(`
     <div class="sheet-head">
-      <div><h2>Бонусы</h2><p>Не удалось загрузить прогресс.</p></div>
+      <div><h2>${t('weekly_match.button')}</h2><p>${t('weekly_match.load_error')}</p></div>
       <button class="close" data-close-sheet type="button">×</button>
     </div>
-    <div class="small-note">${escapeHtml(error?.message || 'Попробуйте открыть раздел ещё раз.')}</div>
-    <button class="btn ghost full sheet-bottom-btn" id="weeklyMatchRetry" type="button">Попробовать снова</button>
+    <div class="small-note">${escapeHtml(error?.message || t('weekly_match.retry_note'))}</div>
+    <button class="btn ghost full sheet-bottom-btn" id="weeklyMatchRetry" type="button">${t('weekly_match.retry')}</button>
   `);
 
   document.getElementById('weeklyMatchRetry')?.addEventListener('click', openWeeklyMatchInfo);
@@ -150,16 +151,13 @@ function renderWeeklyMatchError(error){
 
 function formatScheduleDate(value, timezone){
   const date = new Date(value || '');
-  if (Number.isNaN(date.getTime())) return 'Ближайший понедельник, 12:00';
+  if (Number.isNaN(date.getTime())) return t('weekly_match.schedule_fallback');
 
-  return new Intl.DateTimeFormat('ru-RU', {
+  return formatDateTime(date, 'long', {
     timeZone: timezone || 'Europe/Moscow',
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
+    weekday:'long',
+    year:undefined,
+  });
 }
 
 function escapeHtml(value){

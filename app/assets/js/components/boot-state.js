@@ -1,3 +1,5 @@
+import { t } from '@mgw/i18n';
+
 let readyDispatched = false;
 
 export function showHomeActivity(){
@@ -9,7 +11,7 @@ export function showHomeActivity(){
 export function showBootFailure(){
   const name = document.getElementById('topName');
   const avatar = document.getElementById('topAvatar');
-  if (name) name.textContent = 'Профиль не загружен';
+  if (name) name.textContent = t('shell.boot.profile_unloaded');
   if (avatar) {
     avatar.textContent = '!';
     avatar.style.backgroundImage = '';
@@ -26,9 +28,9 @@ export function showBootFailure(){
   banner.className = 'runtime-status-banner';
   banner.setAttribute('role', 'alert');
   banner.innerHTML = `
-    <strong>Не удалось загрузить профиль</strong>
-    <span>Закройте Mini Games World и откройте его снова из Telegram.</span>
-    <button class="btn ghost" type="button" data-retry-bootstrap>Повторить</button>
+    <strong>${t('shell.boot.load_failed')}</strong>
+    <span>${t('shell.boot.reopen_telegram')}</span>
+    <button class="btn ghost" type="button" data-retry-bootstrap>${t('common.retry')}</button>
   `;
   const topbar = content.querySelector('.topbar');
   if (topbar?.nextSibling) content.insertBefore(banner, topbar.nextSibling);

@@ -51,8 +51,13 @@ foreach ($human as $message) {
 }
 
 $client = $read('app/assets/js/api/client.js');
+$locale = json_decode($read('app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 $assert(!str_contains($client, 'Ошибка API:'), 'Player API client must not expose API/HTTP fallback wording.');
-$assert(str_contains($client, 'Не удалось выполнить запрос. Попробуйте ещё раз.'), 'Human generic request fallback must exist.');
+$assert(
+    str_contains($client, "t('network.request_failed')")
+        && (($locale['network']['request_failed'] ?? null) === 'Не удалось выполнить запрос. Попробуйте ещё раз.'),
+    'Human generic request fallback must remain locale-owned and user-facing.'
+);
 
 $entry = $read('app/v110.php');
 $assert(str_contains($entry, 'function mgw_v110_public_failure'), 'v110 must own one human fatal boundary.');

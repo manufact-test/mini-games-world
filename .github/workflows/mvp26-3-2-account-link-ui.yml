@@ -67,7 +67,7 @@ jobs:
           need(ui.includes("localStorage.setItem(STORAGE_KEY"), 'bounded continuation state missing');
           need(!ui.includes('telegram_url:telegramUrl'), 'raw Telegram URL must not be persisted');
           need(!ui.includes('localStorage.setItem(STORAGE_KEY, telegram'), 'raw Telegram URL must not be persisted');
-          need(manifest.includes('client.js?v=1152'), 'current client cache identity missing');
+          need(/client\.js\?v=(?:115[3-9]|11[6-9]\d|1[2-9]\d{2,})/.test(manifest) && manifest.includes('mvp25_2=network-human-error-v2'), 'current localized client cache identity missing');
           need(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1142"), 'current Profile cache identity missing');
           need(manifest.includes("'./assets/js/profile/mgw-account-link-ui.js?v=3' => './assets/js/profile/mgw-account-link-ui.js?v=4&mvp27_1=localized-v1'"), 'localized account-link canonical alias missing');
           NODE

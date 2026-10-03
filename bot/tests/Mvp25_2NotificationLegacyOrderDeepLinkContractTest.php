@@ -36,7 +36,7 @@ $assert(
 $notificationTarget = (string)($manifestData['imports']['./assets/js/screens/notifications-screen-v110r13.js?v=1162&mvp18=friend-request-lifecycle'] ?? '');
 $notificationVersion = [];
 $assert(
-    preg_match('~notifications-screen-v110r13\\.js\\?v=(\\d+)&mvp21_3=read-authority-local-time~', $notificationTarget, $notificationVersion) === 1
+    preg_match("~notifications-screen-v110r13\\.js\\?v=(\\d+)&[^']*mvp21_3=read-authority-local-time~", $notificationTarget, $notificationVersion) === 1
     && (int)$notificationVersion[1] >= 1166
     && str_contains($notificationTarget, 'mvp25_2=legacy-store-orders-retired-v1'),
     'Canonical manifest must publish the accepted-or-newer Notification Center identity while retaining the legacy Store-order retirement marker.'

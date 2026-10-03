@@ -120,7 +120,7 @@ assert.ok(gameScreen.includes("String(state.activeGame?.id || '') !== id") && ga
 assert.ok(gameScreen.includes("if (gameTypeOf(game) !== 'four_in_a_row') return 0;"), 'Other games must keep their accepted result timing');
 
 assert.ok(
-  manifest.includes("'./assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=12&mvp19_10=live-game-v12&drop=target-lock-no-base-flash-v2&effect2=random-chain-v4&victory=full-finale-v2'"),
+  manifest.includes("'./assets/js/games/four-in-a-row/renderer.js?v=53' => './assets/js/games/four-in-a-row/renderer-cosmetics-v1.js?v=13&mvp27_1=localized-v1&mvp19_10=live-game-v12&drop=target-lock-no-base-flash-v2&effect2=random-chain-v4&victory=full-finale-v2'"),
   'Active import map must route Four through the live cosmetics wrapper',
 );
 assert.ok(

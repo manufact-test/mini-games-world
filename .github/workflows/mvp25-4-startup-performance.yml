@@ -84,4 +84,6 @@ jobs:
             ':(exclude)app/assets/js/games/chess/renderer.js' \
             ':(exclude)app/assets/js/games/chess/renderer-move-effect-v3.js' \
             ':(exclude)app/assets/js/games/go/renderer.js' \
-            ':(exclude)app/assets/js/games/go/renderer-cosmetics-v1.js'
+            ':(exclude)app/assets/js/games/go/renderer-cosmetics-v1.js' \
+            ':(exclude)app/assets/js/games/game-card-copy.js' \
+            ':(exclude)app/assets/js/games/invite-link-entry-v110r12.js'

@@ -1171,27 +1171,36 @@ function notificationMessage(item){
   message = localizeLegacyTournamentAssignedMessage(item, message);
   if (!message) return terminalNotificationFallback(item);
   if (item?.type === 'friend_request'
-      && !message.includes('Откройте заявку')
       && !message.includes(t('notifications.friend_request_open_marker'))) {
     message += ` ${t('notifications.friend_request_open_hint')}`;
   }
-  const technical = [
-    /\s*Баланс уже обновлён\.?/giu,
-    /\s*Баланс не изменён\.?/giu,
-    /\s*Баланс:\s*-?[\d\s]+\s*→\s*-?[\d\s]+\.?/giu,
-    /\s*Статус (?:уже )?обновлён[^.]*\.?/giu,
-    /\s*Проверьте статус возврата[^.]*\.?/giu,
-    /\s*Статус и возврат можно проверить[^.]*\.?/giu,
-    /\s*Возвращено\s*\+\s*[\d\s]+\s*Gold\.?/giu,
-    /\s*Откройте Mini App[^.]*\.?/giu,
-  ];
+  const technical = localizedTechnicalNotificationPatterns();
   for (const pattern of technical) message = message.replace(pattern, ' ');
   return message.replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').replace(/\.{2,}/g, '.').trim();
 }
 
+function localizedTechnicalNotificationPatterns(){
+  const key = name => escapeLocalePattern(t(`notifications.legacy_cleanup.${name}`));
+  return [
+    new RegExp(`\\s*${key('balance_already_updated')}\\.?`, 'giu'),
+    new RegExp(`\\s*${key('balance_not_changed')}\\.?`, 'giu'),
+    new RegExp(`\\s*${key('balance_label')}:\\s*-?[\\d\\s]+\\s*→\\s*-?[\\d\\s]+\\.?`, 'giu'),
+    new RegExp(`\\s*${key('status_label')} (?:${key('status_already')} )?${key('status_updated')}[^.]*\\.?`, 'giu'),
+    new RegExp(`\\s*${key('return_status')}[^.]*\\.?`, 'giu'),
+    new RegExp(`\\s*${key('status_refund')}[^.]*\\.?`, 'giu'),
+    new RegExp(`\\s*${key('returned')}\\s*\\+\\s*[\\d\\s]+\\s*Gold\\.?`, 'giu'),
+    new RegExp(`\\s*${key('open_mini_app')}[^.]*\\.?`, 'giu'),
+  ];
+}
+
+function escapeLocalePattern(value){
+  return String(value ?? '').replace(/[.*+?^$\{\}()|[\]\\]/g, '\\$&');
+}
+
 function localizeLegacyTournamentAssignedMessage(item, message){
-  if (String(item?.title || '') !== 'Дата турнира назначена' || !message) return message;
-  const match = message.match(/начнётся\s+(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})\s+UTC/iu);
+  if (String(item?.title || '') !== t('notifications.legacy_cleanup.tournament_assigned_title') || !message) return message;
+  const starts = escapeLocalePattern(t('notifications.legacy_cleanup.tournament_starts'));
+  const match = message.match(new RegExp(`${starts}\\s+(\\d{2})\\.(\\d{2})\\.(\\d{4})\\s+(\\d{2}):(\\d{2})\\s+UTC`, 'iu'));
   if (!match) return message;
   const [, day, month, year, hour, minute] = match;
   const date = new Date(`${year}-${month}-${day}T${hour}:${minute}:00Z`);
