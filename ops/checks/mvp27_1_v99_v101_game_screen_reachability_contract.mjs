@@ -37,6 +37,8 @@ const v101Page = read('app/v101.php');
 const main99 = read('app/assets/js/main-v99.js');
 const main100 = read('app/assets/js/main-v100.js');
 const main101 = read('app/assets/js/main-v101.js');
+const search99 = read('app/assets/js/screens/search-screen-v99.js');
+const search100 = read('app/assets/js/screens/search-screen-v100.js');
 const screen99 = read('app/assets/js/screens/game-screen-v99.js');
 const screen100Safe = read('app/assets/js/screens/game-screen-v100-safe.js');
 const screen100 = read('app/assets/js/screens/game-screen-v100.js');
@@ -59,6 +61,8 @@ const legacyNames = [
   'main-v99.js',
   'main-v100.js',
   'main-v101.js',
+  'search-screen-v99.js',
+  'search-screen-v100.js',
   'game-screen-v99.js',
   'game-screen-v100-safe.js',
   'game-screen-v100.js',
@@ -82,19 +86,26 @@ assert.ok(v99Page.includes('./assets/js/main-v99.js?v=99'), 'Historical v99 page
 assert.ok(v100Page.includes('./assets/js/main-v100.js?v=100'), 'Historical v100 page must retain main-v100 ownership evidence');
 assert.ok(v101Page.includes('./assets/js/main-v101.js?v=101'), 'Historical v101 page must retain main-v101 ownership evidence');
 
+assert.ok(main99.includes("./screens/search-screen-v99.js?v=99"), 'Historical main-v99 must retain search-screen-v99 linkage');
 assert.ok(main99.includes("./screens/game-screen-v99.js?v=99"), 'Historical main-v99 must retain game-screen-v99 linkage');
+assert.ok(main100.includes("./screens/search-screen-v100.js?v=100"), 'Historical main-v100 must retain search-screen-v100 linkage');
 assert.ok(main100.includes("./screens/game-screen-v100-safe.js?v=100"), 'Historical main-v100 must retain v100-safe linkage');
+assert.ok(main101.includes("./screens/search-screen-v100.js?v=100"), 'Historical main-v101 must retain search-screen-v100 linkage');
 assert.ok(main101.includes("./screens/game-screen-v100-safe.js?v=100"), 'Historical main-v101 must retain v100-safe linkage');
+assert.ok(search99.includes("./game-screen-v99.js?v=99"), 'Historical search-screen-v99 must retain v99 game-screen linkage');
+assert.ok(search100.includes("./game-screen-v100-safe.js?v=100"), 'Historical search-screen-v100 must retain v100-safe game-screen linkage');
 assert.ok(screen100Safe.includes("./game-screen-v100.js?v=100"), 'Historical v100-safe wrapper must retain game-screen-v100 linkage');
 
 assert.deepEqual(refsTo('main-v99.js'), ['app/v99.php'], 'main-v99 must be owned only by historical v99 page');
 assert.deepEqual(refsTo('main-v100.js'), ['app/v100.php'], 'main-v100 must be owned only by historical v100 page');
 assert.deepEqual(refsTo('main-v101.js'), ['app/v101.php'], 'main-v101 must be owned only by historical v101 page');
-assert.deepEqual(refsTo('game-screen-v99.js'), ['app/assets/js/main-v99.js'], 'game-screen-v99 must be owned only by historical main-v99');
+assert.deepEqual(refsTo('search-screen-v99.js'), ['app/assets/js/main-v99.js'], 'search-screen-v99 must be owned only by historical main-v99');
+assert.deepEqual(refsTo('search-screen-v100.js'), ['app/assets/js/main-v100.js', 'app/assets/js/main-v101.js'], 'search-screen-v100 must be owned only by historical v100/v101 mains');
+assert.deepEqual(refsTo('game-screen-v99.js'), ['app/assets/js/main-v99.js', 'app/assets/js/screens/search-screen-v99.js'], 'game-screen-v99 must stay inside the historical v99 main/search lineage');
 assert.deepEqual(
   refsTo('game-screen-v100-safe.js'),
-  ['app/assets/js/main-v100.js', 'app/assets/js/main-v101.js'],
-  'v100-safe wrapper must be owned only by historical v100/v101 mains'
+  ['app/assets/js/main-v100.js', 'app/assets/js/main-v101.js', 'app/assets/js/screens/search-screen-v100.js'],
+  'v100-safe wrapper must stay inside the historical v100/v101 main/search lineage'
 );
 assert.deepEqual(
   refsTo('game-screen-v100.js'),
@@ -105,6 +116,8 @@ assert.deepEqual(
 assert.equal(countCyrillicLines(main99), 1, 'main-v99 Cyrillic count changed');
 assert.equal(countCyrillicLines(main100), 1, 'main-v100 Cyrillic count changed');
 assert.equal(countCyrillicLines(main101), 1, 'main-v101 Cyrillic count changed');
+assert.equal(countCyrillicLines(search99), 21, 'search-screen-v99 Cyrillic count changed');
+assert.equal(countCyrillicLines(search100), 21, 'search-screen-v100 Cyrillic count changed');
 assert.equal(countCyrillicLines(screen99), 32, 'game-screen-v99 Cyrillic count changed');
 assert.equal(countCyrillicLines(screen100Safe), 0, 'game-screen-v100-safe Cyrillic count changed');
 assert.equal(countCyrillicLines(screen100), 32, 'game-screen-v100 Cyrillic count changed');
@@ -113,6 +126,8 @@ for (const file of [
   'app/assets/js/main-v99.js',
   'app/assets/js/main-v100.js',
   'app/assets/js/main-v101.js',
+  'app/assets/js/screens/search-screen-v99.js',
+  'app/assets/js/screens/search-screen-v100.js',
   'app/assets/js/screens/game-screen-v99.js',
   'app/assets/js/screens/game-screen-v100-safe.js',
   'app/assets/js/screens/game-screen-v100.js',
@@ -120,10 +135,10 @@ for (const file of [
   assert.ok(audit.includes(`'${file}'`), `Hardcoded-text audit must classify ${file}`);
 }
 
-assert.ok(Number(baseline.scanned_files) <= 743, 'V99-V101 classification successor must not restore historical files');
-assert.ok(Number(baseline.cyrillic_lines_total) <= 2456, 'V99-V101 classification successor total debt must not exceed accepted ceiling');
-assert.ok(Number(baseline.by_scope?.client) <= 803, 'V99-V101 classification successor client debt must not exceed accepted ceiling');
+assert.ok(Number(baseline.scanned_files) <= 741, 'V99-V101 classification successor must not restore historical files');
+assert.ok(Number(baseline.cyrillic_lines_total) <= 2414, 'V99-V101 classification successor total debt must not exceed accepted ceiling');
+assert.ok(Number(baseline.by_scope?.client) <= 761, 'V99-V101 classification successor client debt must not exceed accepted ceiling');
 assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
-console.log('MVP-27.1 v99-v101 game-screen reachability: OK — historical pages own a closed legacy main/game-screen lineage absent from factual v110 ownership.');
+console.log('MVP-27.1 v99-v101 search/game-screen reachability: OK — historical pages own a closed legacy main/search/game-screen lineage absent from factual v110 ownership.');
