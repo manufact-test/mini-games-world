@@ -1,0 +1,71 @@
+name: MVP-27.1 Cross Game Coordinator Reachability
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'app/v110.php'
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/assets/js/app-bootstrap-v2-core.js'
+      - 'app/assets/js/production-clean-entry-v110.js'
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'app/assets/js/screens/game-screen-v102-safe.js'
+      - 'app/assets/js/production-cross-game-coordinator.js'
+      - 'app/assets/js/production-cross-game-optimistic.js'
+      - 'ops/checks/mvp27_1_legacy_result_share_performance_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_cross_game_coordinator_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp27-1-legacy-result-share-performance-reachability.yml'
+      - '.github/workflows/mvp27-1-cross-game-coordinator-reachability.yml'
+      - '.github/workflows/mvp27-1-localization-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cross-game-coordinator-reachability:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Syntax and exhaustive reachability proof
+        run: |
+          set -euo pipefail
+          node --check app/assets/js/production-cross-game-coordinator.js
+          node --check ops/checks/mvp27_1_cross_game_coordinator_reachability_contract.mjs
+          node ops/checks/mvp27_1_legacy_result_share_performance_reachability_contract.mjs
+          node ops/checks/mvp27_1_cross_game_coordinator_reachability_contract.mjs
+
+      - name: Preserve active game ownership
+        run: |
+          set -euo pipefail
+          node ops/checks/mvp16_2_localization_contract.mjs
+          node ops/checks/mvp27_1_localization_architecture_contract.mjs
+          node ops/checks/mvp27_1_game_invites_localization_contract.mjs
+          node ops/checks/mvp27_1_invite_canonical_game_polling_contract.mjs
+          node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded classification scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          allowed='^(ops/checks/mvp27_1_cross_game_coordinator_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-legacy-result-share-performance-reachability\.yml|\.github/workflows/mvp27-1-cross-game-coordinator-reachability\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
+          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected cross-game coordinator reachability paths:\n%s\n' "$bad" >&2; exit 1; }
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs

@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "ce784019aa68a2c2f76dfa5417bf201b55e3fcf0",
-  "scanned_files": 726,
-  "cyrillic_lines_total": 2044,
+  "staging_base": "ed08d4038b0d09f09dcb7bf9f95d34e7d853ae9e",
+  "scanned_files": 725,
+  "cyrillic_lines_total": 2025,
   "by_scope": {
-    "client": 391,
+    "client": 372,
     "backend": 1653,
     "client-entry": 0
   },
@@ -31,7 +31,8 @@
     "shadowed historical first-interaction readiness child of stripped legacy main.js (first-interaction-readiness.js)",
     "shadowed historical v104/v105/v105-fast/v107-v109 invite-game-controls owner (production-v104-invite-game-controls.js)",
     "shadowed historical notification lineage (production-v109-notifications.js; notifications-screen.js; notifications-screen-v99.js; notifications-screen-v110-root.js; notifications-screen-v110.js; notifications-screen-v110r4.js; notifications-screen-v110r5.js; notifications-screen-v110r12.js)",
-    "shadowed historical result/share performance owners (production-v104-result-instant.js; production-v109-share-speed.js)"
+    "shadowed historical result/share performance owners (production-v104-result-instant.js; production-v109-share-speed.js)",
+    "orphaned legacy cross-game coordinator (production-cross-game-coordinator.js)"
   ],
-  "note": "MVP-27.1 legacy result/share performance reachability classification: production-v104-result-instant.js is imported and initialized only by historical clean-entry v104, v105, v105-fast-notifications, v107, v108 and v109; production-v109-share-speed.js is imported and initialized only by historical clean-entry v109. Factual v110 accepted clean-entry/main ownership does not load either overlay and retains canonical game-invites-v110 plus game-screen-v102-safe ownership. Historical implementations remain untouched; 44 Cyrillic lines are outside active player localization debt."
+  "note": "MVP-27.1 cross-game coordinator reachability classification: production-cross-game-coordinator.js has no external app-JS owner or consumer of initCrossGameCoordinator/scheduleCrossGameCoordinatorAfterMain. Factual v110 manifest/bootstrap/clean-entry/main ownership does not import, map or initialize it and retains canonical game-invites-v110 plus game-screen-v102-safe ownership. The historical implementation remains untouched; its 19 Cyrillic lines are outside active player localization debt."
 }
