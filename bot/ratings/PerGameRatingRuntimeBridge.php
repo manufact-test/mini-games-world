@@ -87,6 +87,7 @@ final class PerGameRatingRuntimeBridge
         // waiting for an unrelated API call. If the app is later DB-primary,
         // the legacy bridge guard prevents a second JSON owner.
         if (RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) {
+            $GLOBALS['mgw_profile_rating_substage'] = 'realtime_sync';
             $repository = new RuntimeRealtimeRepository(
                 $this->config,
                 $this->router,
@@ -100,11 +101,17 @@ final class PerGameRatingRuntimeBridge
             ))->synchronizeCurrentJson();
         }
 
+        $GLOBALS['mgw_profile_rating_substage'] = 'season_pre';
         $this->reconcileSeasonLifecycle(false);
         $service = $this->service();
+        $GLOBALS['mgw_profile_rating_substage'] = 'pending_matches';
         $service->processPendingFinishedMatches(200);
+        $GLOBALS['mgw_profile_rating_substage'] = 'season_post';
         $this->reconcileSeasonLifecycle(true);
-        return $service->snapshot($mgwId);
+        $GLOBALS['mgw_profile_rating_substage'] = 'snapshot';
+        $snapshot = $service->snapshot($mgwId);
+        unset($GLOBALS['mgw_profile_rating_substage']);
+        return $snapshot;
     }
 
     private function reconcileSeasonLifecycle(bool $allowCompletion): void
