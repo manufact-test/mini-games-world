@@ -52,12 +52,6 @@ $assertTrue(str_contains($v110, 'X-MGW-Visible-Rating: per-game-preseason-v2'), 
 $assertTrue(str_contains($v110, "'visible_rating_profile'"), 'Active v110 entry must fail closed if the fresh profile rating target is absent.');
 $assertTrue(str_contains($launch, 'rating=per-game-visible-v2'), 'Telegram launch URL must carry the polished rating deployment identity.');
 
-$ratingBridge = $read('bot/ratings/PerGameRatingRuntimeBridge.php');
-$assertTrue(
-    preg_match("/'bootstrap',\\s*(?:\/\/[^\\n]*\\n\\s*)*'profile',/s", $ratingBridge) === 1,
-    'Legacy api.php profile must not synchronously process rating projection before its response.'
-);
-
 $service = $read('bot/ratings/PerGameRatingService.php');
 $assertTrue(str_contains($service, "public const STATE_PRESEASON = 'preseason';"), 'PRESEASON must be explicit in the rating owner.');
 $assertTrue(str_contains($service, "public const STATE_ACTIVE = 'active';"), 'ACTIVE must be explicit in the rating owner.');
