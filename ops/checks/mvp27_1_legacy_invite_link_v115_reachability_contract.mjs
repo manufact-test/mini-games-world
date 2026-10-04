@@ -46,6 +46,8 @@ assert.deepEqual(
   ['@mgw/clean-entry', '@mgw/main'],
   'Bootstrap core must sequence only canonical clean-entry and main owners'
 );
+assert.ok(!bootstrapCore.includes('./main.js'),
+  'Canonical bootstrap core must not import stripped physical main.js directly');
 assert.match(manifest, /'@mgw\/main'\s*=>\s*'\.\/assets\/js\/main-v110-reconnect-v174\.js[^']*'/,
   'Manifest must retain accepted v110 main owner');
 assert.ok(reconnect.includes("import './main-v110.js"), 'Reconnect owner must delegate to main-v110');
