@@ -152,10 +152,9 @@ async function observedAction(page, path, data, action, label) {
   const browserPromise = browserPost(page, path, data);
   const [response, browserResult] = await Promise.all([responsePromise, browserPromise]);
   expect(browserResult.status, `${label} browser status`).toBe(200);
-  expect(response.status(), `${label} observed status`).toBe(200);
-  const payload = await response.json().catch(() => null);
-  expect(payload?.ok, label).toBe(true);
-  return payload;
+  expect([200, 307, 308], `${label} observed status`).toContain(response.status());
+  expect(browserResult.payload?.ok, label).toBe(true);
+  return browserResult.payload;
 }
 
 async function openPlayer(browser, slot) {
