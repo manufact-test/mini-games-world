@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-05",
-  "staging_base": "cce7a1a530c1e42abb01f58127cedc8ac7fae964",
-  "scanned_files": 707,
-  "cyrillic_lines_total": 1776,
+  "staging_base": "caf69b7f8071377a5432e7e4b3b28855278c5a70",
+  "scanned_files": 706,
+  "cyrillic_lines_total": 1768,
   "by_scope": {
-    "client": 123,
+    "client": 115,
     "backend": 1653,
     "client-entry": 0
   },
@@ -50,7 +50,8 @@
     "shadowed historical Profile screen (screens/profile-screen.js; direct owners are stripped main.js and historical main-v99..v105; factual v110 uses localized screens/profile-screen-v110.js)",
     "orphaned historical desktop notification open owner (screens/notification-desktop-open-owner-v117.js; former v114 injection removed; factual v110 uses localized notifications-screen-v110r13.js)",
     "orphaned historical mobile notification open owner (screens/notification-mobile-open-owner-v117.js; former v114 injection removed; factual v110 uses localized notifications-screen-v110r13.js)",
-    "orphaned historical notification window owner v118 (screens/notification-window-owner-v118.js; no current app source owner; factual v110 uses localized notifications-screen-v110r13.js)"
+    "orphaned historical notification window owner v118 (screens/notification-window-owner-v118.js; no current app source owner; factual v110 uses localized notifications-screen-v110r13.js)",
+    "shadowed historical Battleship setup entry (games/battleship/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineage; factual v110 uses unified launcher)"
   ],
-  "note": "MVP-27.1 notification-window-owner-v118 reachability classification: legacy v118 source remains untouched with no current app owner; factual Telegram v110 uses localized notifications-screen-v110r13.js."
+  "note": "MVP-27.1 legacy Battleship entry reachability classification: battleship/entry.js remains untouched historical setup source; factual Telegram v110 uses localized unified-game-launcher setup and localized game-card copy while active battleship/meta.js remains in debt."
 }
