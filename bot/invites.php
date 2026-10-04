@@ -207,7 +207,7 @@ function mgw_invite_api_ok_with_deferred_work(array $data, callable $afterRespon
     if ($json === false) {
         http_response_code(500);
         error_log('[MiniGamesWorld invite response] JSON encoding failed: ' . json_last_error_msg());
-        echo '{"ok":false,"error":"Не удалось выполнить действие. Попробуйте ещё раз."}';
+        echo '{"ok":false,"error_code":"INVITE_RESPONSE_ENCODING_FAILED"}';
         exit;
     }
 
