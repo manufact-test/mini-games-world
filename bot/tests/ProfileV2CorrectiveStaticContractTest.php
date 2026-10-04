@@ -111,7 +111,7 @@ $assertContains('$storage->readOnlySections($runtimeSections, $captureReadSnapsh
 $assertContains("if (\$profileUpdateRequested) {", $endpoint, 'Profile V2 must keep read and mutation storage ownership explicit');
 $assertContains('$user = $users->ensureUser($data, $authenticatedUser);', $endpoint, 'Profile mutations must retain canonical runtime user synchronization');
 $assertContains("'history' => \$historyService->userHistory(\$runtimeData, \$runtimeUserId, 6)", $endpoint, 'Profile history work must run from the captured snapshot after the storage lock is released');
-$assertNotContains("$storage->transaction(function (array &\$data) use (\$authenticatedUser, \$users, \$historyService)", $endpoint, 'Profile V2 must not hold the JSON writer lock across stats/history work');
+$assertNotContains('$storage->transaction(function (array &$data) use ($authenticatedUser, $users, $historyService)', $endpoint, 'Profile V2 must not hold the JSON writer lock across stats/history work');
 
 $assertContains("target.id === 'moreMenuOpen'", $home, 'Top more menu must remain the primary settings entry');
 $assertContains("menuItemMarkup('settingsBtn', '⚙️', t('settings.title'))", $home, 'More menu must expose Settings through the shared row owner');
