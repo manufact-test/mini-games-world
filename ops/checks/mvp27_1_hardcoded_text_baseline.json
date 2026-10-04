@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "d36e2e0e88e3ef5c38413d38fed098fab14d3dd3",
-  "scanned_files": 715,
-  "cyrillic_lines_total": 1887,
+  "staging_base": "95186e033b0c9fca6aaf62de326ee36c5564da49",
+  "scanned_files": 714,
+  "cyrillic_lines_total": 1874,
   "by_scope": {
-    "client": 234,
+    "client": 221,
     "backend": 1653,
     "client-entry": 0
   },
@@ -42,7 +42,8 @@
     "shadowed historical Go setup entry (games/go/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)",
     "shadowed historical Chess setup entry (games/chess/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)",
     "shadowed historical v101 share controller (production-v101-share-controller.js; sole owner is historical production-clean-entry-v101.js on historical v101 page; factual v110 uses localized games/game-invites-v110.js)",
-    "shadowed historical v102 share controller (production-v102-share-controller.js; direct owners resolve only through historical v102-v108 clean-entry lineages; factual v110 uses localized games/game-invites-v110.js)"
+    "shadowed historical v102 share controller (production-v102-share-controller.js; direct owners resolve only through historical v102-v108 clean-entry lineages; factual v110 uses localized games/game-invites-v110.js)",
+    "shadowed historical v100 share controller (production-v100-share-controller.js; sole owner is historical production-clean-entry-v100.js on historical v100 page; factual v110 uses localized games/game-invites-v110.js)"
   ],
-  "note": "MVP-27.1 legacy v102 share-controller reachability classification: production-v102-share-controller.js remains untouched. Every direct owner is confined to historical v102-v108 clean-entry lineages (including ownerless clean-entry-v108); factual v110 uses localized games/game-invites-v110.js."
+  "note": "MVP-27.1 legacy v100 share-controller reachability classification: production-v100-share-controller.js remains untouched and is reachable only from historical production-clean-entry-v100.js on the historical v100 page. Factual v110 uses localized games/game-invites-v110.js."
 }
