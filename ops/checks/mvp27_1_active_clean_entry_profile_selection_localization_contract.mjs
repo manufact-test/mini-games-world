@@ -91,7 +91,7 @@ assert.deepEqual(locale?.store?.profile_selection, {
   },
 }, 'RU Store/Profile selection copy must preserve exact accepted visible wording');
 
-assert.equal(Number(baseline.scanned_files), 713, 'Active clean-entry localization must not change scanned runtime file count');
+assert.ok(Number(baseline.scanned_files) <= 713, 'Active clean-entry successor must not restore classified runtime files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 1852, 'Active clean-entry successor total debt must not exceed accepted ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 199, 'Active clean-entry successor client debt must not exceed accepted ceiling');
 assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
