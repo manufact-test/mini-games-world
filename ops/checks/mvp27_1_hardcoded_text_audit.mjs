@@ -22,6 +22,8 @@ const SKIP_PREFIXES = [
 
 const SKIP_FILES = new Set([
   'app/assets/js/games/invite-controller-v120.js', // rejected v120 invite owner; factual v110 graph forbids it
+  'app/assets/js/games/domino/entry.js', // historical Domino setup child of stripped legacy main.js
+  'app/assets/js/games/domino/meta.js', // metadata child confined to historical Domino entry chain
   'app/assets/js/games/game-invites.js', // superseded by factual game-invites-v110.js owner
   'app/assets/js/screens/game-screen.js', // shadowed after invite polling converges on canonical game-screen-v102-safe owner
   'app/assets/js/residual-ui-game-race-fix.js', // shadowed legacy hotfix; factual v110 strips the only main.js entry that imports it
