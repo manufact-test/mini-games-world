@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "6e63df16b99c6611bab7539b6290672c5c9a8749",
-  "scanned_files": 754,
-  "cyrillic_lines_total": 2639,
+  "staging_base": "d175cd32fb59a99c1c80262ff584d112f14a5912",
+  "scanned_files": 753,
+  "cyrillic_lines_total": 2605,
   "by_scope": {
-    "client": 986,
+    "client": 952,
     "backend": 1653,
     "client-entry": 0
   },
@@ -21,7 +21,8 @@
     "shadowed legacy residual UI/game-race hotfix (residual-ui-game-race-fix.js)",
     "shadowed historical v105 invite-latency owner (production-v105-invite-latency.js)",
     "shadowed historical v106 invite-actions owner (production-v106-invite-actions.js)",
-    "shadowed historical v109 invite-speed owner (production-v109-invite-speed.js)"
+    "shadowed historical v109 invite-speed owner (production-v109-invite-speed.js)",
+    "shadowed historical v97/v98 runtime coordinator (production-v97-runtime-owner.js)"
   ],
-  "note": "MVP-27.1 v109 invite-speed reachability classification: production-v109-invite-speed.js is imported and initialized by historical production-clean-entry-v109 only. Factual Telegram v110 no longer imports or initializes it and retains canonical game-invites-v110 ownership. The historical source remains untouched; its 34 Cyrillic lines are outside active player localization debt."
+  "note": "MVP-27.1 v97 runtime-owner reachability classification: production-v97-runtime-owner.js is imported and initialized by historical production-regression-fix-entry-v97/v98 only. Factual Telegram v110 replaces the legacy regression/main top-level pair with one canonical bootstrap, whose accepted clean-entry/main chains do not import or initialize the v97 coordinator. The historical source remains untouched; its 34 Cyrillic lines are outside active player localization debt."
 }
