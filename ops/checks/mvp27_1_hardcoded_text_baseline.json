@@ -38,7 +38,7 @@
     "shadowed historical Domino setup entry (games/domino/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)",
     "shadowed historical Four-in-a-row setup entry (games/four-in-a-row/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)",
     "shadowed historical Reversi setup entry (games/reversi/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)",
-    "orphan legacy invite-link v115 (games/invite-link-entry-v115.js; zero external app references; factual v110 uses localized invite-link-entry-v110r12.js)"
+    "stripped legacy invite-link v115 (games/invite-link-entry-v115.js; sole external owner is stripped app/assets/js/main.js; factual v110 uses localized invite-link-entry-v110r12.js)"
   ],
-  "note": "MVP-27.1 legacy invite-link v115 reachability classification: physical v115 remains untouched and has zero external app references. Factual v110 handoff uses localized invite-link-entry-v110r12.js, published through the version manifest."
+  "note": "MVP-27.1 legacy invite-link v115 reachability classification: physical v115 remains untouched and is referenced only by stripped legacy app/assets/js/main.js. Factual v110 handoff uses localized invite-link-entry-v110r12.js, published through the version manifest."
 }
