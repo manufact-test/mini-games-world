@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "ed08d4038b0d09f09dcb7bf9f95d34e7d853ae9e",
-  "scanned_files": 725,
-  "cyrillic_lines_total": 2025,
+  "staging_base": "c25bcf275af25fa6f74af9501c24868afe4142be",
+  "scanned_files": 724,
+  "cyrillic_lines_total": 2007,
   "by_scope": {
-    "client": 372,
+    "client": 354,
     "backend": 1653,
     "client-entry": 0
   },
@@ -32,7 +32,8 @@
     "shadowed historical v104/v105/v105-fast/v107-v109 invite-game-controls owner (production-v104-invite-game-controls.js)",
     "shadowed historical notification lineage (production-v109-notifications.js; notifications-screen.js; notifications-screen-v99.js; notifications-screen-v110-root.js; notifications-screen-v110.js; notifications-screen-v110r4.js; notifications-screen-v110r5.js; notifications-screen-v110r12.js)",
     "shadowed historical result/share performance owners (production-v104-result-instant.js; production-v109-share-speed.js)",
-    "shadowed legacy cross-game coordinator child of stripped production-regression-fix-entry.js (production-cross-game-coordinator.js)"
+    "shadowed legacy cross-game coordinator child of stripped production-regression-fix-entry.js (production-cross-game-coordinator.js)",
+    "shadowed legacy notification window owner (screens/notification-window-owner-v119.js)"
   ],
-  "note": "MVP-27.1 cross-game coordinator reachability classification: production-cross-game-coordinator.js is imported and both exports are invoked only by legacy production-regression-fix-entry.js. Factual /app/v110.php retains that regression entry solely inside the legacy entryScriptsAnchor and replaces the whole anchor with the canonical bootstrap before serving the player HTML. Canonical bootstrap/manifest/clean-entry/main ownership does not load the coordinator and retains game-invites-v110 plus game-screen-v102-safe. The historical implementation remains untouched; its 19 Cyrillic lines are outside active player localization debt."
+  "note": "MVP-27.1 notification-window-owner-v119 reachability classification: screens/notification-window-owner-v119.js is not imported, mapped or loaded by factual /app/v110.php, version manifest, canonical bootstrap, accepted v110 clean-entry/main or localized notifications-screen-v110r13 ownership. Exhaustive app-JS reference proof requires zero external references to the legacy v119 file. The implementation remains untouched; its 18 Cyrillic lines are outside active player localization debt."
 }
