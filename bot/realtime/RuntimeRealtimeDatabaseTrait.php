@@ -5,6 +5,49 @@ trait RuntimeRealtimeDatabaseTrait
 {
     private function databaseState(DatabaseConnectionInterface $database): array
     {
+        // Keep full parity scope, but bulk-load relational children once.
+        // Historical retained matches must not create two DB round-trips each.
+        $playersByMatch = [];
+        foreach ($database->fetchAll(
+            'SELECT match_id, seat, player_ref, mgw_id, legacy_user_id, player_type, symbol, display_name, result,
+                    joined_at_utc, updated_at_utc
+             FROM mgw_match_players
+             ORDER BY match_id, seat'
+        ) as $player) {
+            $matchId = trim((string)($player['match_id'] ?? ''));
+            if ($matchId === '') {
+                throw new RuntimeException('Realtime DB contains a player with an invalid match ID.');
+            }
+            $playersByMatch[$matchId][] = [
+                'seat' => (int)($player['seat'] ?? 0),
+                'player_ref' => trim((string)($player['player_ref'] ?? '')),
+                'mgw_id' => $this->nullableText($player['mgw_id'] ?? null, 24),
+                'legacy_user_id' => $this->nullableText($player['legacy_user_id'] ?? null, 191),
+                'player_type' => trim((string)($player['player_type'] ?? 'human')),
+                'symbol' => $this->nullableText($player['symbol'] ?? null, 32),
+                'display_name' => $this->nullableText($player['display_name'] ?? null, 80),
+                'result' => $this->nullableText($player['result'] ?? null, 32),
+                'joined_at_utc' => $this->timestamp($player['joined_at_utc'] ?? null),
+                'updated_at_utc' => $this->timestamp($player['updated_at_utc'] ?? null),
+            ];
+        }
+
+        $currentSnapshotsByMatch = [];
+        foreach ($database->fetchAll(
+            'SELECT s.match_id, s.state_version, s.server_state_json
+             FROM mgw_match_snapshots s
+             INNER JOIN mgw_matches m
+                ON m.match_id = s.match_id
+               AND m.state_version = s.state_version
+             ORDER BY s.match_id, s.state_version'
+        ) as $snapshot) {
+            $matchId = trim((string)($snapshot['match_id'] ?? ''));
+            if ($matchId === '') {
+                throw new RuntimeException('Realtime DB contains a snapshot with an invalid match ID.');
+            }
+            $currentSnapshotsByMatch[$matchId][] = $snapshot['server_state_json'] ?? null;
+        }
+
         $games = [];
         foreach ($database->fetchAll('SELECT * FROM mgw_matches ORDER BY match_id') as $row) {
             $matchId = trim((string)($row['match_id'] ?? ''));
@@ -12,27 +55,7 @@ trait RuntimeRealtimeDatabaseTrait
                 throw new RuntimeException('Realtime DB contains invalid or duplicate match IDs.');
             }
 
-            $players = [];
-            foreach ($database->fetchAll(
-                'SELECT seat, player_ref, mgw_id, legacy_user_id, player_type, symbol, display_name, result,
-                        joined_at_utc, updated_at_utc
-                 FROM mgw_match_players WHERE match_id = :match_id ORDER BY seat',
-                ['match_id' => $matchId]
-            ) as $player) {
-                $players[] = [
-                    'seat' => (int)($player['seat'] ?? 0),
-                    'player_ref' => trim((string)($player['player_ref'] ?? '')),
-                    'mgw_id' => $this->nullableText($player['mgw_id'] ?? null, 24),
-                    'legacy_user_id' => $this->nullableText($player['legacy_user_id'] ?? null, 191),
-                    'player_type' => trim((string)($player['player_type'] ?? 'human')),
-                    'symbol' => $this->nullableText($player['symbol'] ?? null, 32),
-                    'display_name' => $this->nullableText($player['display_name'] ?? null, 80),
-                    'result' => $this->nullableText($player['result'] ?? null, 32),
-                    'joined_at_utc' => $this->timestamp($player['joined_at_utc'] ?? null),
-                    'updated_at_utc' => $this->timestamp($player['updated_at_utc'] ?? null),
-                ];
-            }
-
+            $players = $playersByMatch[$matchId] ?? [];
             $serverState = $this->decodeJson($row['server_state_json'] ?? null, 'match server state');
             $projection = [
                 'match_id' => $matchId,
@@ -56,17 +79,10 @@ trait RuntimeRealtimeDatabaseTrait
             ];
 
             $stateVersion = max(0, (int)($row['state_version'] ?? 0));
-            $snapshotRows = $database->fetchAll(
-                'SELECT server_state_json FROM mgw_match_snapshots
-                 WHERE match_id = :match_id AND state_version = :state_version',
-                ['match_id' => $matchId, 'state_version' => $stateVersion]
-            );
+            $snapshotRows = $currentSnapshotsByMatch[$matchId] ?? [];
             $snapshotOk = false;
             if ($stateVersion > 0 && count($snapshotRows) === 1) {
-                $snapshotState = $this->decodeJson(
-                    $snapshotRows[0]['server_state_json'] ?? null,
-                    'match snapshot state'
-                );
+                $snapshotState = $this->decodeJson($snapshotRows[0], 'match snapshot state');
                 $snapshotOk = hash_equals(
                     $projection['server_state_sha256'],
                     hash('sha256', $this->canonicalJson($snapshotState))
