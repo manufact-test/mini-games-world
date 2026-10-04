@@ -71,7 +71,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(ops/checks/mvp27_1_residual_ui_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-residual-ui-reachability\.yml|\.github/workflows/mvp27-1-localization-audit\.yml|\.github/workflows/mvp27-1-invite-canonical-game-polling\.yml)$'
+          allowed='^(ops/checks/mvp27_1_residual_ui_reachability_contract\.mjs|ops/checks/mvp27_1_invite_canonical_game_polling_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-residual-ui-reachability\.yml|\.github/workflows/mvp27-1-localization-audit\.yml|\.github/workflows/mvp27-1-invite-canonical-game-polling\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected residual reachability paths:\n%s\n' "$bad" >&2; exit 1; }
 
