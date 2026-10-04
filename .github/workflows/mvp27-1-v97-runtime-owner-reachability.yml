@@ -1,0 +1,74 @@
+name: MVP-27.1 V97 Runtime Owner Reachability
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'app/v110.php'
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/assets/js/app-bootstrap-v2-core.js'
+      - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish-mobile-nav-v2.js'
+      - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js'
+      - 'app/assets/js/production-clean-entry-v110.js'
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/assets/js/production-regression-fix-entry-v97.js'
+      - 'app/assets/js/production-regression-fix-entry-v98.js'
+      - 'app/assets/js/production-v97-runtime-owner.js'
+      - 'ops/checks/mvp27_1_v109_invite_speed_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp27-1-v97-runtime-owner-reachability.yml'
+      - '.github/workflows/mvp27-1-v109-invite-speed-reachability.yml'
+      - '.github/workflows/mvp27-1-localization-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v97-runtime-owner-reachability:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Syntax and factual reachability proof
+        run: |
+          set -euo pipefail
+          php -l bot/helpers/WebAppLaunchUrl.php
+          php -l app/v110.php
+          node --check app/assets/js/production-v97-runtime-owner.js
+          node --check ops/checks/mvp27_1_v109_invite_speed_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs
+          node ops/checks/mvp27_1_v109_invite_speed_reachability_contract.mjs
+          node ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs
+
+      - name: Preserve localization architecture
+        run: |
+          set -euo pipefail
+          node ops/checks/mvp16_2_localization_contract.mjs
+          node ops/checks/mvp27_1_localization_architecture_contract.mjs
+          node ops/checks/mvp27_1_active_shell_copy_bundle_contract.mjs
+          node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded classification scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          allowed='^(ops/checks/mvp27_1_v97_runtime_owner_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-v97-runtime-owner-reachability\.yml|\.github/workflows/mvp27-1-v109-invite-speed-reachability\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
+          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected v97 runtime-owner reachability paths:\n%s\n' "$bad" >&2; exit 1; }
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
