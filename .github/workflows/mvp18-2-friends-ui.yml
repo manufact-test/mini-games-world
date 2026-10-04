@@ -46,6 +46,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           clean: true
+          fetch-depth: 0
 
       - name: Set up PHP 8.3
         uses: shivammathur/setup-php@v2
@@ -81,6 +82,16 @@ jobs:
           node --check app/assets/js/games/game-invites-v110-rematch-policy-v175.js
           node --check bot/tests/Mvp18FriendsUiContractTest.mjs
 
+      - name: MVP-27.1 recovery — accepted MVP26 social backend identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
+          git cat-file -e "${baseline}^{commit}"
+          git diff --exit-code "${baseline}" HEAD -- \
+            bot/friends.php \
+            bot/social
+
       - name: Run canonical social data regression
         run: php bot/tests/FriendGraphServiceTest.php
 
@@ -95,6 +106,12 @@ jobs:
 
       - name: Run preserved reconnect active-route contract
         run: php bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
+
+      - name: MVP-27.1 recovery — reports blocked and invite ownership regressions
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
+          php bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php
 
       - name: Guard frozen game engines
         shell: bash
