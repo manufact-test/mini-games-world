@@ -1,4 +1,4 @@
-name: MVP-27.1 V99-V101 Game Screen Reachability
+name: MVP-27.1 V99-V103 Legacy Search/Game Reachability
 
 on:
   pull_request:
@@ -10,6 +10,8 @@ on:
       - 'app/v99.php'
       - 'app/v100.php'
       - 'app/v101.php'
+      - 'app/v102.php'
+      - 'app/v103.php'
       - 'app/v110.php'
       - 'app/runtime/client/version-manifest.php'
       - 'app/assets/js/app-bootstrap-v2-core.js'
@@ -21,6 +23,8 @@ on:
       - 'app/assets/js/main-v100.js'
       - 'app/assets/js/main-v101.js'
       - 'app/assets/js/production-clean-entry-v101.js'
+      - 'app/assets/js/production-clean-entry-v102.js'
+      - 'app/assets/js/production-clean-entry-v103.js'
       - 'app/assets/js/production-v101-result-speed.js'
       - 'app/assets/js/screens/search-screen-v99.js'
       - 'app/assets/js/screens/search-screen-v100.js'
@@ -58,11 +62,15 @@ jobs:
           php -l app/v99.php
           php -l app/v100.php
           php -l app/v101.php
+          php -l app/v102.php
+          php -l app/v103.php
           php -l app/v110.php
           node --check app/assets/js/main-v99.js
           node --check app/assets/js/main-v100.js
           node --check app/assets/js/main-v101.js
           node --check app/assets/js/production-clean-entry-v101.js
+          node --check app/assets/js/production-clean-entry-v102.js
+          node --check app/assets/js/production-clean-entry-v103.js
           node --check app/assets/js/production-v101-result-speed.js
           node --check app/assets/js/screens/search-screen-v99.js
           node --check app/assets/js/screens/search-screen-v100.js

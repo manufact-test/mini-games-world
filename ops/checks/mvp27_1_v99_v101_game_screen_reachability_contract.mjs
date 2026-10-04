@@ -34,10 +34,14 @@ const handoff = read('app/assets/js/main-v110-handoff-shell.js');
 const v99Page = read('app/v99.php');
 const v100Page = read('app/v100.php');
 const v101Page = read('app/v101.php');
+const v102Page = read('app/v102.php');
+const v103Page = read('app/v103.php');
 const main99 = read('app/assets/js/main-v99.js');
 const main100 = read('app/assets/js/main-v100.js');
 const main101 = read('app/assets/js/main-v101.js');
 const clean101 = read('app/assets/js/production-clean-entry-v101.js');
+const clean102 = read('app/assets/js/production-clean-entry-v102.js');
+const clean103 = read('app/assets/js/production-clean-entry-v103.js');
 const resultSpeed101 = read('app/assets/js/production-v101-result-speed.js');
 const search99 = read('app/assets/js/screens/search-screen-v99.js');
 const search100 = read('app/assets/js/screens/search-screen-v100.js');
@@ -89,7 +93,11 @@ assert.ok(v99Page.includes('./assets/js/main-v99.js?v=99'), 'Historical v99 page
 assert.ok(v100Page.includes('./assets/js/main-v100.js?v=100'), 'Historical v100 page must retain main-v100 ownership evidence');
 assert.ok(v101Page.includes('./assets/js/main-v101.js?v=101'), 'Historical v101 page must retain main-v101 ownership evidence');
 assert.ok(v101Page.includes('./assets/js/production-clean-entry-v101.js?v=101'), 'Historical v101 page must retain clean-entry-v101 ownership evidence');
+assert.ok(v102Page.includes('./assets/js/production-clean-entry-v102.js?v=102'), 'Historical v102 page must retain clean-entry-v102 ownership evidence');
+assert.ok(v103Page.includes('./assets/js/production-clean-entry-v103.js?v=103'), 'Historical v103 page must retain clean-entry-v103 ownership evidence');
 assert.ok(clean101.includes("./production-v101-result-speed.js?v=101"), 'Historical clean-entry-v101 must retain result-speed linkage');
+assert.ok(clean102.includes("./production-v101-result-speed.js?v=101"), 'Historical clean-entry-v102 must retain result-speed linkage');
+assert.ok(clean103.includes("./production-v101-result-speed.js?v=101"), 'Historical clean-entry-v103 must retain result-speed linkage');
 assert.ok(resultSpeed101.includes("./screens/game-screen-v100-safe.js?v=100"), 'Historical v101 result-speed owner must retain v100-safe linkage');
 
 assert.ok(main99.includes("./screens/search-screen-v99.js?v=99"), 'Historical main-v99 must retain search-screen-v99 linkage');
@@ -105,7 +113,11 @@ assert.ok(screen100Safe.includes("./game-screen-v100.js?v=100"), 'Historical v10
 assert.deepEqual(refsTo('main-v99.js'), ['app/v99.php'], 'main-v99 must be owned only by historical v99 page');
 assert.deepEqual(refsTo('main-v100.js'), ['app/v100.php'], 'main-v100 must be owned only by historical v100 page');
 assert.deepEqual(refsTo('main-v101.js'), ['app/v101.php'], 'main-v101 must be owned only by historical v101 page');
-assert.deepEqual(refsTo('production-v101-result-speed.js'), ['app/assets/js/production-clean-entry-v101.js'], 'production-v101-result-speed must be owned only by historical clean-entry-v101');
+assert.deepEqual(
+  refsTo('production-v101-result-speed.js'),
+  ['app/assets/js/production-clean-entry-v101.js', 'app/assets/js/production-clean-entry-v102.js', 'app/assets/js/production-clean-entry-v103.js'],
+  'production-v101-result-speed must stay inside historical clean-entry v101-v103 ownership'
+);
 assert.deepEqual(refsTo('search-screen-v99.js'), ['app/assets/js/main-v99.js'], 'search-screen-v99 must be owned only by historical main-v99');
 assert.deepEqual(refsTo('search-screen-v100.js'), ['app/assets/js/main-v100.js', 'app/assets/js/main-v101.js'], 'search-screen-v100 must be owned only by historical v100/v101 mains');
 assert.deepEqual(refsTo('game-screen-v99.js'), ['app/assets/js/main-v99.js', 'app/assets/js/screens/search-screen-v99.js'], 'game-screen-v99 must stay inside the historical v99 main/search lineage');
@@ -150,4 +162,4 @@ assert.ok(Number(baseline.by_scope?.client) <= 739, 'V99-V101 classification suc
 assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
-console.log('MVP-27.1 v99-v101 search/game-screen reachability: OK — historical pages own a closed legacy main/search/game-screen lineage absent from factual v110 ownership.');
+console.log('MVP-27.1 v99-v103 legacy reachability: OK — historical v99-v101 search/game-screen plus v101-v103 result-speed ownership is absent from factual v110 ownership.');
