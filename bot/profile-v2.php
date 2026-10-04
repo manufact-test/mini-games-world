@@ -104,12 +104,8 @@ try {
     $profileStage = 'inventory';
     $inventory = (new ProductInventoryService($database))->snapshot($mgwId);
     $profileStage = 'rating';
-    $rating = (new PerGameRatingRuntimeBridge($configRef, $router, $database))->snapshotForProfile(
-        $mgwId,
-        static function (string $ratingStage) use (&$profileStage): void {
-            $profileStage = 'rating_' . $ratingStage;
-        }
-    );
+    unset($GLOBALS['mgw_profile_rating_substage']);
+    $rating = (new PerGameRatingRuntimeBridge($configRef, $router, $database))->snapshotForProfile($mgwId);
     $profileStage = 'yearly_medals';
     $yearlyMedals = (new YearlyMedalService($database))->userSnapshot($mgwId);
     $profileStage = 'rating_archive';
@@ -200,7 +196,14 @@ try {
     $response = ['ok'=>false,'error'=>'Не удалось загрузить профиль MGW.'];
     $environment = strtolower(trim((string)($config['environment'] ?? 'production')));
     if ($environment === 'staging') {
-        $response['diagnostic_stage'] = $profileStage;
+        $diagnosticStage = $profileStage;
+        if ($profileStage === 'rating') {
+            $ratingSubstage = (string)($GLOBALS['mgw_profile_rating_substage'] ?? '');
+            if (in_array($ratingSubstage, ['realtime_sync','season_pre','pending_matches','season_post','snapshot'], true)) {
+                $diagnosticStage .= '_' . $ratingSubstage;
+            }
+        }
+        $response['diagnostic_stage'] = $diagnosticStage;
         $response['diagnostic_elapsed_ms'] = $elapsedMs;
     }
     json_response($response, 500);
