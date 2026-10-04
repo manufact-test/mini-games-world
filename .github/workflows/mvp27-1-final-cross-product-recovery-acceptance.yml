@@ -1,0 +1,226 @@
+name: MVP-27.1 Final cross-product recovery acceptance
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - '.github/workflows/mvp27-1-final-cross-product-recovery-acceptance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  proof-only-scope:
+    name: Proof-only scope from exact recovered staging
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Require exact recovered staging ancestry
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          recovered='1ce3392229eced3a8f3c3bb23099d7527616d2f4'
+          git cat-file -e "${recovered}^{commit}"
+          git merge-base --is-ancestor "${recovered}" HEAD
+
+      - name: Require proof-only PR diff
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+          changed="$(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}")"
+          printf '%s\n' "${changed}"
+          test "${changed}" = '.github/workflows/mvp27-1-final-cross-product-recovery-acceptance.yml'
+
+  games-store-profile-friends-notifications:
+    name: Games Store Profile Friends Notifications
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: All-game runtime and rematch
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/Mvp167AllGamesRegressionContractTest.php
+          php bot/tests/Mvp14r2GamesContractTest.php
+          php bot/tests/Mvp14r2GamesBaselineTest.php
+          php bot/tests/RematchOptimisticUxContractTest.php
+
+      - name: Store and inventory
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/Mvp19_2CosmeticStoreTest.php
+          php bot/tests/Mvp19_1ProductInventoryTest.php
+          php bot/tests/Mvp19_9DominoStoreProfileTest.php
+          php bot/tests/Mvp25_6MonetizationDisabledStoreTest.php
+          node bot/tests/Mvp25_6StoreClientContractTest.mjs
+          php bot/tests/Mvp26_3StoreWalletOwnershipContractTest.php
+
+      - name: Profile surface and cosmetics
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/Mvp25_4MobileProfileCompositorContractTest.php
+          php bot/tests/ProfileV2CorrectiveStaticContractTest.php
+          php bot/tests/ProfileV2PassAStaticContractTest.php
+          php bot/tests/Mvp23ProfileRouteLatencyContractTest.php
+          php bot/tests/Mvp25_4ProfileTapFinalContractTest.php
+          php bot/tests/Mvp19_3ProfileEntryEffectsTest.php
+          php bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php
+          node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
+          php bot/tests/Mvp26_3_11ProfileV2BalanceOwnershipContractTest.php
+
+      - name: Friends and invite ownership
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/FriendGraphServiceTest.php
+          php bot/tests/SocialPlayerProfileReaderTest.php
+          php bot/tests/SocialFriendNotificationServiceTest.php
+          node bot/tests/Mvp18FriendsUiContractTest.mjs
+          php bot/tests/Mvp17_4ActiveV110ReconnectContractTest.php
+          php bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php
+
+      - name: Notifications and deep links
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/NotificationCenterV2PolicyTest.php
+          php bot/tests/NotificationCenterV2StaticContractTest.php
+          php bot/tests/NotificationActorSilentTerminalContractTest.php
+          php bot/tests/Mvp18_6NotificationPipelineContractTest.php
+          php bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest.php
+          php bot/tests/RuntimeNotificationBridgeCoordinatorTest.php
+          php bot/tests/RuntimeNotificationRepositoryTest.php
+
+  arena-account-admin:
+    name: Arena Account Admin
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Arena release proof
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/Mvp21_11TournamentReleaseProofTest.php
+          php bot/tests/Mvp21_6TournamentRuntimeContractTest.php
+          php bot/tests/Mvp21_9TournamentSettlementTest.php
+          php bot/tests/Mvp21_10TournamentPrizeReviewTest.php
+
+      - name: Account and Settings ownership
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/Mvp22_8AccountDataLifecycleTest.php
+          php bot/tests/AccountIdentityServiceTest.php
+          php bot/tests/MgwProfileIdentityCorrectiveTest.php
+          php bot/tests/Mvp14R3CleanAuthSessionPresenceTest.php
+          php bot/tests/Mvp26_3AccountLinkServiceTest.php
+          php bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php
+
+      - name: Admin and staging test controls
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/Mvp22_7AdminOperationsTest.php
+          php bot/tests/Mvp22_7AdminOperationsContractTest.php
+          php bot/tests/Mvp22_5SystemAdminTest.php
+          php bot/tests/RuntimeAdminGuardTest.php
+          php bot/tests/StagingAdminTestCoinGrantServiceTest.php
+          php bot/tests/ProductionMvp14R13StagingTestAuthTest.php
+          php bot/tests/ProductionMvp14R13StagingTestContextIsolationContractTest.php
+          php bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php
+          php bot/tests/StagingTestPlayerScopedInviteIsolationContractTest.php
+
+  android-shared-product-boundary:
+    name: Android shared-product boundary
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Android shared product contracts
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/Mvp18_4UniversalInviteLandingContractTest.php
+          php bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php
+          php bot/tests/ProductionV110PendingInviteSearchNonBlockingRuntimeTest.php
+          php bot/tests/InviteOpponentServiceTest.php
+          php bot/tests/Mvp26_2AndroidDeviceAuthTest.php
+          php bot/tests/Mvp26_4AndroidAccountReauthTest.php
+          php bot/tests/SupportTicketServiceTest.php
+          php bot/tests/Mvp26_6AndroidParityCorrectiveTest.php
+
+  final-gate:
+    name: MVP-27.1 recovery final cross-product gate
+    if: always()
+    needs:
+      - proof-only-scope
+      - games-store-profile-friends-notifications
+      - arena-account-admin
+      - android-shared-product-boundary
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Require every cross-product group
+        shell: bash
+        env:
+          SCOPE: ${{ needs.proof-only-scope.result }}
+          PRODUCT: ${{ needs.games-store-profile-friends-notifications.result }}
+          CONTROL: ${{ needs.arena-account-admin.result }}
+          ANDROID: ${{ needs.android-shared-product-boundary.result }}
+        run: |
+          set -Eeuo pipefail
+          printf 'scope=%s product=%s control=%s android=%s\n' "${SCOPE}" "${PRODUCT}" "${CONTROL}" "${ANDROID}"
+          test "${SCOPE}" = success
+          test "${PRODUCT}" = success
+          test "${CONTROL}" = success
+          test "${ANDROID}" = success
