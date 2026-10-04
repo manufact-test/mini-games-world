@@ -123,7 +123,7 @@ jobs:
           php bot/tests/ProductionMvp14R13StagingTestContextIsolationContractTest.php
           php bot/tests/StagingTestAuthIsolationFromRealInviteResidualsContractTest.php
           php bot/tests/StagingTestAuthNonBlockingRevokeTest.php
-          php bot/tests/StagingTestPlayerResetStageDiagnosticContractTest.php
+          php bot/tests/StagingTestOnlyInviteOrphanRecoveryContractTest.php
           php bot/tests/StagingTestPlayerScopedInviteIsolationContractTest.php
 
       - name: Guard MVP-22.7 scope and frozen owners
