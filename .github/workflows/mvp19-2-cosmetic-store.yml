@@ -58,8 +58,38 @@ jobs:
           php -l bot/cosmetic-store.php
           php -l bot/tests/Mvp19_2CosmeticStoreTest.php
 
+      - name: MVP-27.1 recovery — accepted MVP26 Store backend identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
+          git cat-file -e "${baseline}^{commit}"
+          git diff --exit-code "${baseline}" HEAD -- \
+            bot/catalog \
+            bot/cosmetic-store.php \
+            bot/shop \
+            bot/shop-history.php \
+            bot/economy \
+            bot/ledger
+
       - name: Run Store pricing purchase and idempotency contract
         run: php bot/tests/Mvp19_2CosmeticStoreTest.php
+
+      - name: MVP-27.1 recovery — all Store and inventory regressions
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/Mvp19_1ProductInventoryTest.php
+          php bot/tests/C1StoreTicTacToeFieldParityTest.php
+          php bot/tests/Mvp19_5ChessCosmeticsTest.php
+          php bot/tests/Mvp19_6CheckersBoardsTest.php
+          php bot/tests/Mvp19_7ReversiStoreTest.php
+          php bot/tests/Mvp19_8GoStoreTest.php
+          php bot/tests/Mvp19_9DominoStoreProfileTest.php
+          php bot/tests/Mvp19_FourInARowStoreTest.php
+          php bot/tests/Mvp19_12BattleshipStoreTest.php
+          php bot/tests/Mvp25_6MonetizationDisabledStoreTest.php
+          node bot/tests/Mvp25_6StoreClientContractTest.mjs
+          php bot/tests/Mvp26_3StoreWalletOwnershipContractTest.php
 
       - name: Run frozen account and profile regressions
         run: |
