@@ -70,9 +70,9 @@ assert.equal(countCyrillicLines(legacyV105), 38,
 assert.ok(audit.includes("'app/assets/js/production-v105-invite-latency.js'"),
   'Hardcoded-text audit must classify the proven shadowed v105 invite owner');
 
-assert.equal(Number(baseline.scanned_files), 756, 'v105 classification must remove exactly one scanned file');
-assert.equal(Number(baseline.cyrillic_lines_total), 2707, 'v105 classification total debt must ratchet by exactly 38');
-assert.equal(Number(baseline.by_scope?.client), 1054, 'v105 classification client debt must ratchet by exactly 38');
+assert.ok(Number(baseline.scanned_files) <= 756, 'v105 classification successor must not restore excluded runtime files');
+assert.ok(Number(baseline.cyrillic_lines_total) <= 2707, 'v105 classification successor total debt must not regress above the accepted #1965 ceiling');
+assert.ok(Number(baseline.by_scope?.client) <= 1054, 'v105 classification successor client debt must not regress above the accepted #1965 ceiling');
 assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
