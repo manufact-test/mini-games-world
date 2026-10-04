@@ -33,6 +33,12 @@ const SKIP_FILES = new Set([
   'app/assets/js/phase-b-current-entry.js', // historical Phase-B entry; absent from factual v110 top-level ownership
   'app/assets/js/phase-b-current-runtime.js', // reachable only from historical Phase-B entry
   'app/assets/js/screens/game-screen-phase-b-current.js', // reachable only from historical Phase-B runtime
+  'app/assets/js/main-v99.js', // historical v99 entry main; factual Telegram launch is v110
+  'app/assets/js/main-v100.js', // historical v100 entry main; factual Telegram launch is v110
+  'app/assets/js/main-v101.js', // historical v101 entry main; factual Telegram launch is v110
+  'app/assets/js/screens/game-screen-v99.js', // reachable only from historical v99 main
+  'app/assets/js/screens/game-screen-v100-safe.js', // historical wrapper reachable only from v100/v101 mains
+  'app/assets/js/screens/game-screen-v100.js', // reachable only through historical v100-safe wrapper
 ]);
 
 const ADMIN_CONTROL_PLANE_PATTERNS = [
