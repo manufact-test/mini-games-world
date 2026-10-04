@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "bb3edd0dd74fa8582640eb78b7b8e943c1344ea7",
-  "scanned_files": 719,
-  "cyrillic_lines_total": 1934,
+  "staging_base": "c10cb9dd3dc880b064d959dd50958d0a95800a7f",
+  "scanned_files": 718,
+  "cyrillic_lines_total": 1924,
   "by_scope": {
-    "client": 281,
+    "client": 271,
     "backend": 1653,
     "client-entry": 0
   },
@@ -38,7 +38,8 @@
     "shadowed historical Domino setup entry (games/domino/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)",
     "shadowed historical Four-in-a-row setup entry (games/four-in-a-row/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)",
     "shadowed historical Reversi setup entry (games/reversi/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)",
-    "stripped legacy invite-link v115 (games/invite-link-entry-v115.js; sole external owner is stripped app/assets/js/main.js; factual v110 uses localized invite-link-entry-v110r12.js)"
+    "stripped legacy invite-link v115 (games/invite-link-entry-v115.js; sole external owner is stripped app/assets/js/main.js; factual v110 uses localized invite-link-entry-v110r12.js)",
+    "shadowed historical Go setup entry (games/go/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)"
   ],
-  "note": "MVP-27.1 legacy invite-link v115 reachability classification: physical v115 remains untouched and is referenced only by stripped legacy app/assets/js/main.js. Factual v110 handoff uses localized invite-link-entry-v110r12.js, published through the version manifest."
+  "note": "MVP-27.1 legacy Go setup-entry reachability classification: games/go/entry.js remains untouched and is outside factual v110 ownership. games/go/meta.js is intentionally NOT excluded because active localized game-card-copy.js consumes GO_META and factual localized unified-game-launcher.js consumes GO_BOARD_SIZES/GO_DEFAULT_BOARD_SIZE; its 2 Cyrillic lines remain active localization debt."
 }
