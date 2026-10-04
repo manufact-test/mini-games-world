@@ -1,5 +1,5 @@
 {
-  "_meta": {"locale":"ru","version":53},
+  "_meta": {"locale":"ru","version":54},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "entry": {"open_failed":"Не удалось открыть Mini Games World. Попробуйте ещё раз через минуту.","preloader_loading":"Готовим игровую комнату","tagline":"Те самые игры. То самое чувство."},
   "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
@@ -1571,6 +1571,19 @@
       "title": "Привязать Telegram-аккаунт",
       "note": "Использовать в Android ваш существующий MGW-профиль из Telegram",
       "connect": "Подключить"
+    },
+    "onboarding": {
+      "close_aria": "Закрыть",
+      "eyebrow": "ANDROID · ЕДИНЫЙ ПРОФИЛЬ",
+      "title": "Уже играете в MINI GAMES WORLD в Telegram?",
+      "note": "Подключите Telegram и продолжайте в Android с тем же игровым профилем.",
+      "bridge_aria": "Один профиль в Telegram и Android",
+      "balance_purchases": "Баланс и покупки",
+      "stats_rating": "Статистика и рейтинг",
+      "friends_progress": "Друзья и прогресс",
+      "starter_coin_note": "После привязки Android использует ваш существующий Telegram-профиль. Временные стартовые коины Android к нему не добавляются.",
+      "connect": "Привязать Telegram",
+      "later": "Позже"
     },
     "errors": {
       "server_unconfirmed": "Сервер не подтвердил завершение привязки.",
