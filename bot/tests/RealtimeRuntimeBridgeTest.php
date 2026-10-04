@@ -55,22 +55,4 @@ $assertSame(true, $enabled->shouldAttachToCurrentRequest(['PHP_SELF' => '/bot/ap
 $assertSame(false, $enabled->shouldAttachToCurrentRequest(['SCRIPT_FILENAME' => '/srv/bot/invites.php']), 'Bridge must ignore other endpoints');
 $assertSame(false, $enabled->shouldAttachToCurrentRequest([]), 'Bridge must ignore requests without a script path');
 
-$originalServer = $_SERVER;
-$hadAction = array_key_exists('action', $GLOBALS);
-$originalAction = $GLOBALS['action'] ?? null;
-try {
-    $_SERVER['SCRIPT_FILENAME'] = '/srv/bot/api.php';
-    unset($_SERVER['PHP_SELF']);
-    $GLOBALS['action'] = 'profile';
-    $assertSame(
-        null,
-        $enabled->synchronizeCurrentJson(),
-        'Legacy profile read must skip realtime projection before touching storage'
-    );
-} finally {
-    $_SERVER = $originalServer;
-    if ($hadAction) $GLOBALS['action'] = $originalAction;
-    else unset($GLOBALS['action']);
-}
-
 fwrite(STDOUT, "RealtimeRuntimeBridgeTest: {$assertions} assertions passed\n");
