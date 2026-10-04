@@ -140,6 +140,10 @@ const topFiles = [...byFile.entries()]
   .sort((a,b) => b[1] - a[1] || a[0].localeCompare(b[0]))
   .slice(0,40);
 
+const clientTopFiles = [...byFile.entries()]
+  .filter(([file]) => file.startsWith('app/assets/js/'))
+  .sort((a,b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
 console.log('MVP27_1_HARDCODED_TEXT_AUDIT=PASS');
 console.log(`MVP27_1_SCANNED_FILES=${scanned.size}`);
 console.log(`MVP27_1_CYRILLIC_LINES_TOTAL=${findings.length}`);
@@ -149,6 +153,9 @@ for (const [scope,count] of [...byScope.entries()].sort()) {
 console.log('MVP27_1_TOP_FILES_BEGIN');
 for (const [file,count] of topFiles) console.log(`${String(count).padStart(4,' ')}  ${file}`);
 console.log('MVP27_1_TOP_FILES_END');
+console.log('MVP27_1_CLIENT_TOP_FILES_BEGIN');
+for (const [file,count] of clientTopFiles) console.log(`${String(count).padStart(4,' ')}  ${file}`);
+console.log('MVP27_1_CLIENT_TOP_FILES_END');
 
 if (process.argv.includes('--sample')) {
   console.log('MVP27_1_SAMPLE_BEGIN');
