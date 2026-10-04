@@ -47,7 +47,7 @@ const baseline = JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.jso
 assert.ok(launch.includes("private const ENTRY_PATH = '/app/v110.php"), 'Telegram launch must remain on v110');
 assert.ok(v110.includes('$html = str_replace($entryScriptsAnchor, $bootstrapTag, $html);'),
   'v110 must replace the legacy top-level pair with one canonical bootstrap');
-assert.ok(v110.includes("substr_count($html, '<script type=\\\"module\\\" src=\\\"') !== 1"),
+assert.ok(v110.includes("substr_count($html, '<script type=\"module\" src=\"') !== 1"),
   'v110 must continue enforcing one rendered top-level module bootstrap');
 assert.deepEqual(
   [...bootstrapCore.matchAll(/(?:await\s+)?import\((['"])([^'"]+)\1\)/g)].map(match => match[2]),
