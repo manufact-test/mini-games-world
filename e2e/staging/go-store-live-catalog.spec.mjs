@@ -125,15 +125,14 @@ test('GO STORE LIVE CATALOG: automatic staging update publishes the full Go cata
     expect(bootstrapResponse.status(), 'fresh Telegram bootstrap').toBe(200);
     const bootstrap = await bootstrapResponse.json();
     expect(bootstrap?.ok).toBe(true);
-    expect(bootstrap?.user?.id).toBe('stg_test_player_a');
-
-    await page.waitForFunction(() => window.__MGW_APP_BOOTSTRAP_V2__?.ready === true, null, { timeout: 20_000 });
-    await expect(page.locator('#screen-home')).toHaveClass(/active/, { timeout: 25_000 });
     // Successful bootstrap is the canonical identity/session proof for this Store
     // test. Do not inject a legacy api.php profile read through raw localStorage:
     // the app client owns session/device self-healing, and a one-tick transport
     // rotation must not turn an unrelated Go catalog test into a Profile failure.
     expect(bootstrap?.user?.id).toBe('stg_test_player_a');
+
+    await page.waitForFunction(() => window.__MGW_APP_BOOTSTRAP_V2__?.ready === true, null, { timeout: 20_000 });
+    await expect(page.locator('#screen-home')).toHaveClass(/active/, { timeout: 25_000 });
 
     const storeNav = page.locator('[data-shell-nav="store"]');
     await expect(storeNav).toBeVisible({ timeout: 8_000 });
