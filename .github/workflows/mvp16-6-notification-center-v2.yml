@@ -34,7 +34,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+          fetch-depth: 0
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -57,6 +59,19 @@ jobs:
           node --check app/assets/js/games/game-invites-v110-rematch-policy-v175.js
           node --check app/assets/js/main-v110-handoff-shell.js
           python3 -m json.tool app/locales/ru.json >/dev/null
+      - name: MVP-27.1 recovery — accepted MVP26 notification backend identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
+          git cat-file -e "${baseline}^{commit}"
+          git diff --exit-code "${baseline}" HEAD -- \
+            bot/notifications.php \
+            bot/notifications \
+            bot/services/NotificationService.php \
+            bot/services/ShopOrderNotificationService.php \
+            bot/social/SocialFriendNotificationService.php
+
       - name: Notification Center v2 policy regression
         run: php bot/tests/NotificationCenterV2PolicyTest.php
       - name: Notification Center v2 static contract
@@ -65,6 +80,17 @@ jobs:
         run: php bot/tests/NotificationCenterV2VisualContractTest.php
       - name: Notification actor silent terminal contract
         run: php bot/tests/NotificationActorSilentTerminalContractTest.php
+
+      - name: MVP-27.1 recovery — notification pipeline runtime and deep-link regressions
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/Mvp18_6NotificationPipelineContractTest.php
+          php bot/tests/Mvp25_2NotificationLegacyOrderDeepLinkContractTest.php
+          php bot/tests/NotificationRuntimeAuditSourceTest.php
+          php bot/tests/RuntimeNotificationBridgeCoordinatorTest.php
+          php bot/tests/RuntimeNotificationNumericIdContractTest.php
+          php bot/tests/RuntimeNotificationRepositoryTest.php
+          php bot/tests/SocialFriendNotificationServiceTest.php
       - name: Notification Center v2 cache-bust contract
         run: |
           set -Eeuo pipefail
