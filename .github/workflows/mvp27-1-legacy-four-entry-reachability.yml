@@ -1,4 +1,4 @@
-name: MVP-27.1 Legacy Domino Entry Reachability
+name: MVP-27.1 Legacy Four-in-a-row Entry Reachability
 
 on:
   pull_request:
@@ -39,16 +39,18 @@ on:
       - 'app/assets/js/main-v110-reconnect-v174.js'
       - 'app/assets/js/main-v110.js'
       - 'app/assets/js/main-v110-handoff-shell.js'
-      - 'app/assets/js/games/domino/entry.js'
-      - 'app/assets/js/games/domino/meta.js'
+      - 'app/assets/js/games/four-in-a-row/entry.js'
+      - 'app/assets/js/games/four-in-a-row/meta.js'
+      - 'app/assets/js/games/game-card-copy.js'
+      - 'app/assets/js/games/unified-game-launcher.js'
       - 'ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs'
-      - 'ops/checks/mvp27_1_domino_renderer_localization_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_domino_entry_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_legacy_four_entry_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
-      - '.github/workflows/mvp27-1-legacy-profile-victory-effects-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-domino-entry-reachability.yml'
+      - '.github/workflows/mvp27-1-legacy-four-entry-reachability.yml'
       - '.github/workflows/mvp27-1-localization-audit.yml'
   workflow_dispatch:
 
@@ -56,7 +58,7 @@ permissions:
   contents: read
 
 jobs:
-  legacy-domino-entry-reachability:
+  legacy-four-entry-reachability:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -70,32 +72,32 @@ jobs:
       - name: Syntax and exhaustive reachability proof
         run: |
           set -euo pipefail
-          node --check app/assets/js/games/domino/entry.js
-          node --check app/assets/js/games/domino/meta.js
-          node --check ops/checks/mvp27_1_legacy_domino_entry_reachability_contract.mjs
+          node --check app/assets/js/games/four-in-a-row/entry.js
+          node --check app/assets/js/games/four-in-a-row/meta.js
+          node --check ops/checks/mvp27_1_legacy_four_entry_reachability_contract.mjs
           node ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs
           node ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs
           node ops/checks/mvp27_1_legacy_domino_entry_reachability_contract.mjs
+          node ops/checks/mvp27_1_legacy_four_entry_reachability_contract.mjs
 
-      - name: Preserve active Domino and localization ownership
+      - name: Preserve active game-copy and unified setup ownership
         run: |
           set -euo pipefail
           node ops/checks/mvp16_2_localization_contract.mjs
           node ops/checks/mvp27_1_localization_architecture_contract.mjs
-          node ops/checks/mvp27_1_domino_renderer_localization_contract.mjs
           node ops/checks/mvp27_1_active_game_copy_bundle_contract.mjs
           node ops/checks/mvp27_1_hardcoded_text_audit.mjs
 
       - name: Bounded classification scope
-        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-legacy-domino-entry-reachability')
+        if: github.event_name == 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(ops/checks/mvp27_1_legacy_domino_entry_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-legacy-profile-victory-effects-reachability\.yml|\.github/workflows/mvp27-1-legacy-domino-entry-reachability\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
+          allowed='^(ops/checks/mvp27_1_legacy_four_entry_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-legacy-domino-entry-reachability\.yml|\.github/workflows/mvp27-1-legacy-four-entry-reachability\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
-          test -z "$bad" || { printf 'Unexpected legacy Domino entry reachability paths:\n%s\n' "$bad" >&2; exit 1; }
+          test -z "$bad" || { printf 'Unexpected legacy Four-in-a-row entry reachability paths:\n%s\n' "$bad" >&2; exit 1; }
           git diff --check
 
       - name: Tracked secret scan
