@@ -25,6 +25,7 @@ const SKIP_FILES = new Set([
   'app/assets/js/games/game-invites.js', // superseded by factual game-invites-v110.js owner
   'app/assets/js/screens/game-screen.js', // shadowed after invite polling converges on canonical game-screen-v102-safe owner
   'app/assets/js/residual-ui-game-race-fix.js', // shadowed legacy hotfix; factual v110 strips the only main.js entry that imports it
+  'app/assets/js/production-v105-invite-latency.js', // historical v105-v109 invite owner; factual v110 uses canonical game-invites-v110 instead
 ]);
 
 const ADMIN_CONTROL_PLANE_PATTERNS = [
