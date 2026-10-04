@@ -8,9 +8,80 @@ if (PHP_SAPI !== 'cli') {
     ini_set('html_errors', '0');
 }
 
+function mgw_staging_api_diagnostic_begin(string $stage): ?float {
+    if (empty($GLOBALS['mgw_api_success_diag_enabled'])) return null;
+    $allowed = ['realtime_sync','economy_sync','weekly_sync','rating','hidden_skill'];
+    if (!in_array($stage, $allowed, true)) return null;
+    $GLOBALS['mgw_api_success_stage'] = $stage;
+    return microtime(true);
+}
+
+function mgw_staging_api_diagnostic_end(string $stage, ?float $startedAt): void {
+    if ($startedAt === null || empty($GLOBALS['mgw_api_success_diag_enabled'])) return;
+    $elapsedMs = max(0, (int)round((microtime(true) - $startedAt) * 1000));
+    $timings = $GLOBALS['mgw_api_success_timings_ms'] ?? [];
+    if (!is_array($timings)) $timings = [];
+    $timings[$stage] = $elapsedMs;
+    $GLOBALS['mgw_api_success_timings_ms'] = $timings;
+}
+
+function mgw_staging_rating_diagnostic_begin(string $stage): ?float {
+    if (empty($GLOBALS['mgw_api_success_diag_enabled'])) return null;
+    $allowed = ['season_pre','pending_matches','season_post'];
+    if (!in_array($stage, $allowed, true)) return null;
+    $GLOBALS['mgw_api_rating_substage'] = $stage;
+    return microtime(true);
+}
+
+function mgw_staging_rating_diagnostic_end(string $stage, ?float $startedAt): void {
+    if ($startedAt === null || empty($GLOBALS['mgw_api_success_diag_enabled'])) return;
+    $elapsedMs = max(0, (int)round((microtime(true) - $startedAt) * 1000));
+    $timings = $GLOBALS['mgw_api_rating_timings_ms'] ?? [];
+    if (!is_array($timings)) $timings = [];
+    $timings[$stage] = $elapsedMs;
+    $GLOBALS['mgw_api_rating_timings_ms'] = $timings;
+}
+
+function mgw_emit_staging_api_diagnostic_headers(): void {
+    if (empty($GLOBALS['mgw_api_success_diag_enabled']) || headers_sent()) return;
+
+    $stage = (string)($GLOBALS['mgw_api_success_stage'] ?? '');
+    if (in_array($stage, ['realtime_sync','economy_sync','weekly_sync','rating','hidden_skill'], true)) {
+        header('X-MGW-Diagnostic-Api-Stage: ' . $stage);
+    }
+
+    $ratingSubstage = (string)($GLOBALS['mgw_api_rating_substage'] ?? '');
+    if (in_array($ratingSubstage, ['season_pre','pending_matches','season_post'], true)) {
+        header('X-MGW-Diagnostic-Rating-Substage: ' . $ratingSubstage);
+    }
+
+    $encodeTimings = static function (mixed $value, array $allowed): string {
+        if (!is_array($value)) return '';
+        $parts = [];
+        foreach ($allowed as $key) {
+            if (!array_key_exists($key, $value)) continue;
+            $parts[] = $key . ':' . max(0, (int)$value[$key]);
+        }
+        return implode(',', $parts);
+    };
+
+    $apiTimings = $encodeTimings(
+        $GLOBALS['mgw_api_success_timings_ms'] ?? [],
+        ['realtime_sync','economy_sync','weekly_sync','rating','hidden_skill']
+    );
+    if ($apiTimings !== '') header('X-MGW-Diagnostic-Api-Timings: ' . $apiTimings);
+
+    $ratingTimings = $encodeTimings(
+        $GLOBALS['mgw_api_rating_timings_ms'] ?? [],
+        ['season_pre','pending_matches','season_post']
+    );
+    if ($ratingTimings !== '') header('X-MGW-Diagnostic-Rating-Timings: ' . $ratingTimings);
+}
+
 function json_response(array $data, int $status = 200): void {
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
+    mgw_emit_staging_api_diagnostic_headers();
 
     // A single malformed legacy/database string must not turn a successful API
     // response into an empty HTTP 200 body. Substitute invalid UTF-8 at the API

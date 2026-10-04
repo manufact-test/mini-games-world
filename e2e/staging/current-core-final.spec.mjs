@@ -142,6 +142,45 @@ async function transportAction(player, path, data, label) {
   return result.payload;
 }
 
+async function diagnosticTransportAction(player, path, data, label) {
+  const transport = player.transport || await player.page.evaluate(() => ({
+    sessionId: localStorage.getItem('mgw_device_session_id'),
+    deviceId: localStorage.getItem('mgw_device_id'),
+  }));
+  const startedAt = Date.now();
+  const response = await player.context.request.post(`${ORIGIN}${path}`, {
+    headers: { Accept: 'application/json' },
+    data: { ...data, initData: '', ...transport },
+    timeout: 30_000,
+  });
+  const elapsedMs = Date.now() - startedAt;
+  const raw = await response.text();
+  let payload = null;
+  try { payload = raw !== '' ? JSON.parse(raw) : null; } catch {}
+  const headers = response.headers();
+  const diagnostic = {
+    label,
+    elapsed_ms: elapsedMs,
+    status: response.status(),
+    api_stage: headers['x-mgw-diagnostic-api-stage'] || '',
+    api_timings: headers['x-mgw-diagnostic-api-timings'] || '',
+    rating_substage: headers['x-mgw-diagnostic-rating-substage'] || '',
+    rating_timings: headers['x-mgw-diagnostic-rating-timings'] || '',
+  };
+  console.log('[MGW_API_PROFILE_HOOK_DIAGNOSTIC] ' + JSON.stringify(diagnostic));
+  const detail = payload?.error
+    || raw?.replace(/\s+/g, ' ').slice(0, 500)
+    || 'empty response';
+  expect(response.status(), `${label}: ${detail}; diagnostic=${JSON.stringify(diagnostic)}`).toBe(200);
+  expect(payload?.ok, `${label}; diagnostic=${JSON.stringify(diagnostic)}`).toBe(true);
+  expect(
+    elapsedMs,
+    `${label} exceeded canonical 15s transport SLA; diagnostic=${JSON.stringify(diagnostic)}`
+  ).toBeLessThanOrEqual(15_000);
+  return payload;
+}
+
+
 async function observedAction(page, path, data, action, label) {
   const expectedUrl = `${ORIGIN}${path}`;
   const responsePromise = page.waitForResponse(response => (
@@ -485,8 +524,8 @@ test('CURRENT FINAL CORE: canonical Telegram v110 two-player TTT lifecycle', asy
     // captured at canonical bootstrap. Reading session/device from localStorage in
     // a raw browser fetch can land inside the app's one-tick transport rotation
     // and turn a valid finished match into an unrelated legacy Profile 400.
-    const afterA = await transportAction(A, '/bot/api.php', { action: 'profile' }, 'A final profile');
-    const afterB = await transportAction(B, '/bot/api.php', { action: 'profile' }, 'B final profile');
+    const afterA = await diagnosticTransportAction(A, '/bot/api.php', { action: 'profile' }, 'A final profile');
+    const afterB = await diagnosticTransportAction(B, '/bot/api.php', { action: 'profile' }, 'B final profile');
     const after = {
       stg_test_player_a: Number(afterA.user?.balance),
       stg_test_player_b: Number(afterB.user?.balance),

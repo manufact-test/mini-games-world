@@ -182,17 +182,38 @@ $runtimeRatingBridge = new PerGameRatingRuntimeBridge($config, $runtimeStorageRo
 $runtimeHiddenSkillBridge = new HiddenSkillRuntimeBridge($config, $runtimeStorageRouter);
 $runtimeScript = basename(trim((string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['PHP_SELF'] ?? '')));
 $runtimeApiSuccessHooks = [];
+$runtimeApiSuccessDiagnostics = $runtimeScript === 'api.php'
+    && strtolower(trim((string)($config['environment'] ?? 'production'))) === 'staging';
+if ($runtimeApiSuccessDiagnostics) {
+    $GLOBALS['mgw_api_success_diag_enabled'] = true;
+    unset(
+        $GLOBALS['mgw_api_success_stage'],
+        $GLOBALS['mgw_api_success_timings_ms'],
+        $GLOBALS['mgw_api_rating_substage'],
+        $GLOBALS['mgw_api_rating_timings_ms']
+    );
+}
 
 if ($runtimeRealtimeBridge->shouldAttachToCurrentRequest($_SERVER)) {
     $runtimeApiSuccessHooks[] = static function () use ($runtimeRealtimeBridge): void {
-        if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return;
-        $runtimeRealtimeBridge->synchronizeCurrentJson();
+        $diagnosticStartedAt = mgw_staging_api_diagnostic_begin('realtime_sync');
+        try {
+            if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return;
+            $runtimeRealtimeBridge->synchronizeCurrentJson();
+        } finally {
+            mgw_staging_api_diagnostic_end('realtime_sync', $diagnosticStartedAt);
+        }
     };
 }
 if ($runtimeScript === 'api.php' && $runtimeEconomyBridge->shouldAttachToCurrentRequest($_SERVER)) {
     $runtimeApiSuccessHooks[] = static function () use ($runtimeEconomyBridge): void {
-        if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return;
-        $runtimeEconomyBridge->synchronizeCurrentJson();
+        $diagnosticStartedAt = mgw_staging_api_diagnostic_begin('economy_sync');
+        try {
+            if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return;
+            $runtimeEconomyBridge->synchronizeCurrentJson();
+        } finally {
+            mgw_staging_api_diagnostic_end('economy_sync', $diagnosticStartedAt);
+        }
     };
 }
 if ($runtimeScript === 'api.php' && $runtimePaymentBridge->shouldAttachToCurrentRequest($_SERVER)) {
@@ -211,10 +232,15 @@ if ($runtimeScript === 'api.php' && $runtimePaymentBridge->shouldAttachToCurrent
 }
 if ($runtimeScript === 'api.php' && $runtimeWeeklyBonusBridge->shouldAttachToCurrentRequest($_SERVER)) {
     $runtimeApiSuccessHooks[] = static function () use ($runtimeWeeklyBonusBridge): void {
-        if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return;
-        $action = (string)($GLOBALS['mgw_api_action'] ?? '');
-        if ($runtimeWeeklyBonusBridge->shouldSynchronizeApiAction($action)) {
-            $runtimeWeeklyBonusBridge->synchronizeCurrentJsonIfDirty();
+        $diagnosticStartedAt = mgw_staging_api_diagnostic_begin('weekly_sync');
+        try {
+            if (!RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) return;
+            $action = (string)($GLOBALS['mgw_api_action'] ?? '');
+            if ($runtimeWeeklyBonusBridge->shouldSynchronizeApiAction($action)) {
+                $runtimeWeeklyBonusBridge->synchronizeCurrentJsonIfDirty();
+            }
+        } finally {
+            mgw_staging_api_diagnostic_end('weekly_sync', $diagnosticStartedAt);
         }
     };
     $runtimeApiDataFilters = $GLOBALS['mgw_api_data_filters'] ?? [];
@@ -230,22 +256,32 @@ if ($runtimeScript === 'api.php' && $runtimeWeeklyBonusBridge->shouldAttachToCur
 }
 if ($runtimeScript === 'api.php' && $runtimeRatingBridge->shouldAttachToCurrentRequest($_SERVER)) {
     $runtimeApiSuccessHooks[] = static function () use ($runtimeRatingBridge): void {
-        $action = (string)($GLOBALS['mgw_api_action'] ?? '');
-        if ($runtimeRatingBridge->shouldProcessApiAction($action)) {
-            // This hook is intentionally after realtime/weekly projection hooks.
-            // It consumes their normalized terminal match rows and never writes
-            // accepted game mechanics or the JSON rollback source.
-            $runtimeRatingBridge->processProjectedMatches();
+        $diagnosticStartedAt = mgw_staging_api_diagnostic_begin('rating');
+        try {
+            $action = (string)($GLOBALS['mgw_api_action'] ?? '');
+            if ($runtimeRatingBridge->shouldProcessApiAction($action)) {
+                // This hook is intentionally after realtime/weekly projection hooks.
+                // It consumes their normalized terminal match rows and never writes
+                // accepted game mechanics or the JSON rollback source.
+                $runtimeRatingBridge->processProjectedMatches();
+            }
+        } finally {
+            mgw_staging_api_diagnostic_end('rating', $diagnosticStartedAt);
         }
     };
 }
 if ($runtimeScript === 'api.php' && $runtimeHiddenSkillBridge->shouldAttachToCurrentRequest($_SERVER)) {
     $runtimeApiSuccessHooks[] = static function () use ($runtimeHiddenSkillBridge): void {
-        $action = (string)($GLOBALS['mgw_api_action'] ?? '');
-        if ($runtimeHiddenSkillBridge->shouldProcessApiAction($action)) {
-            // Hidden skill consumes the same normalized DB match result after
-            // realtime projection. It never writes visible rating or client data.
-            $runtimeHiddenSkillBridge->processProjectedMatches();
+        $diagnosticStartedAt = mgw_staging_api_diagnostic_begin('hidden_skill');
+        try {
+            $action = (string)($GLOBALS['mgw_api_action'] ?? '');
+            if ($runtimeHiddenSkillBridge->shouldProcessApiAction($action)) {
+                // Hidden skill consumes the same normalized DB match result after
+                // realtime projection. It never writes visible rating or client data.
+                $runtimeHiddenSkillBridge->processProjectedMatches();
+            }
+        } finally {
+            mgw_staging_api_diagnostic_end('hidden_skill', $diagnosticStartedAt);
         }
     };
 }

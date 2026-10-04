@@ -70,9 +70,26 @@ final class PerGameRatingRuntimeBridge
 
         // Advance the calendar first, but do not close/award the previous
         // season until every finished match has been projected by finish time.
-        $this->reconcileSeasonLifecycle(false);
-        $summary = $this->service()->processPendingFinishedMatches($limit);
-        $this->reconcileSeasonLifecycle(true);
+        $diagnosticStartedAt = mgw_staging_rating_diagnostic_begin('season_pre');
+        try {
+            $this->reconcileSeasonLifecycle(false);
+        } finally {
+            mgw_staging_rating_diagnostic_end('season_pre', $diagnosticStartedAt);
+        }
+
+        $diagnosticStartedAt = mgw_staging_rating_diagnostic_begin('pending_matches');
+        try {
+            $summary = $this->service()->processPendingFinishedMatches($limit);
+        } finally {
+            mgw_staging_rating_diagnostic_end('pending_matches', $diagnosticStartedAt);
+        }
+
+        $diagnosticStartedAt = mgw_staging_rating_diagnostic_begin('season_post');
+        try {
+            $this->reconcileSeasonLifecycle(true);
+        } finally {
+            mgw_staging_rating_diagnostic_end('season_post', $diagnosticStartedAt);
+        }
         return $summary;
     }
 
