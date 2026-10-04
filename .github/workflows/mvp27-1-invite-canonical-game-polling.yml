@@ -8,6 +8,7 @@ on:
       - 'app/runtime/client/version-manifest.php'
       - 'ops/checks/mvp27_1_invite_canonical_game_polling_contract.mjs'
       - 'ops/checks/mvp27_1_invite_owner_debt_classification_contract.mjs'
+      - 'ops/checks/mvp27_1_active_shell_copy_bundle_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - '.github/workflows/mvp27-1-invite-canonical-game-polling.yml'
@@ -50,6 +51,7 @@ jobs:
           node ops/checks/mvp27_1_game_invites_localization_contract.mjs
           node ops/checks/mvp27_1_game_screen_localization_contract.mjs
           node ops/checks/mvp27_1_invite_owner_debt_classification_contract.mjs
+          node ops/checks/mvp27_1_active_shell_copy_bundle_contract.mjs
 
       - name: Preserve invite and game lifecycle contracts
         run: |
