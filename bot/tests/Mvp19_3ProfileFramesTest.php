@@ -140,7 +140,14 @@ $assertTrue(str_contains($frameSource, "framePreviewMarkup(itemId, 'profile-v2-c
 $assertTrue(!str_contains($frameSource, 'mgw-profile-frame-preview') && !str_contains($frameSource, 'data-profile-frame-item-id'), 'Active frame markup must not render the obsolete circular demo preview path');
 $assertTrue(str_contains($frameCss, '@media (prefers-reduced-motion:reduce)') && str_contains($frameCss, 'animation:none!important'), 'Animated frame must be reduced-motion safe');
 $assertTrue(str_contains($cleanEntry, 'initMgwProfileFrames') && str_contains($cleanEntry, 'mgw-profile-frames.js?v=4&mvp19_3=profile-frame-avatar-card-parity'), 'Active clean entry must initialize the canonical avatar-card frame build');
-$assertTrue(str_contains($apiClient, 'let profileV2ReadPromise = null;') && str_contains($apiClient, 'if (profileV2ReadPromise) return profileV2ReadPromise;') && str_contains($apiClient, '.finally(() => { profileV2ReadPromise = null; });'), 'Concurrent read-only Profile v2 hydration must coalesce to one in-flight request');
+$assertTrue(
+    str_contains($apiClient, "const PROFILE_V2_READ_PROMISE_KEY = '__MGW_PROFILE_V2_READ_PROMISE_V1__';")
+        && str_contains($apiClient, 'const shared = globalThis[PROFILE_V2_READ_PROMISE_KEY];')
+        && str_contains($apiClient, "if (shared && typeof shared.then === 'function') return shared.then(publishProfileV2);")
+        && str_contains($apiClient, 'globalThis[PROFILE_V2_READ_PROMISE_KEY] = requestPromise;')
+        && !str_contains($apiClient, 'let profileV2ReadPromise = null;'),
+    'Concurrent read-only Profile v2 hydration must coalesce to one page-wide in-flight request across historical API client aliases'
+);
 $assertTrue(
     str_contains($apiClient, "return requestUrl(PROFILE_V2_URL, { profile_update:profileUpdate }).then(publishProfileV2);"),
     'Profile mutations must bypass the read-only hydration coalescer while publishing authoritative inventory state'
