@@ -23,6 +23,7 @@ const SKIP_PREFIXES = [
 const SKIP_FILES = new Set([
   'app/assets/js/games/invite-controller-v120.js', // rejected v120 invite owner; factual v110 graph forbids it
   'app/assets/js/games/game-invites.js', // superseded by factual game-invites-v110.js owner
+  'app/assets/js/screens/game-screen.js', // shadowed after invite polling converges on canonical game-screen-v102-safe owner
 ]);
 
 const ADMIN_CONTROL_PLANE_PATTERNS = [
