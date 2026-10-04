@@ -33,6 +33,7 @@ on:
       - 'ops/checks/mvp27_1_legacy_go_entry_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_chess_entry_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_v101_share_controller_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_legacy_v102_share_controller_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs'
@@ -52,6 +53,7 @@ on:
       - '.github/workflows/mvp27-1-legacy-go-entry-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-chess-entry-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-v101-share-controller-reachability.yml'
+      - '.github/workflows/mvp27-1-legacy-v102-share-controller-reachability.yml'
       - '.github/workflows/mvp27-1-active-client-entry-localization.yml'
   workflow_dispatch:
 
@@ -101,6 +103,7 @@ jobs:
           node --check ops/checks/mvp27_1_legacy_go_entry_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_chess_entry_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_v101_share_controller_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_legacy_v102_share_controller_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs
           node --check ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs
@@ -204,6 +207,9 @@ jobs:
 
       - name: Legacy v101 share-controller factual reachability proof
         run: node ops/checks/mvp27_1_legacy_v101_share_controller_reachability_contract.mjs
+
+      - name: Legacy v102 share-controller factual reachability proof
+        run: node ops/checks/mvp27_1_legacy_v102_share_controller_reachability_contract.mjs
 
       - name: V102 history-controller factual reachability proof
         run: node ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs
