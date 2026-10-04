@@ -50,11 +50,15 @@ $assert(
     'Hidden Profile animations must stay paused off-route and resume after real Profile paint.'
 );
 
+$finalPolishVersion = 0;
+if (preg_match('/final-polish\\.js\\?v=(\\d+)/', $wrapper, $finalPolishMatch) === 1) {
+    $finalPolishVersion = (int)$finalPolishMatch[1];
+}
 $assert(
-    str_contains($wrapper, 'final-polish.js?v=1139')
+    $finalPolishVersion >= 1139
         && str_contains($wrapper, 'profile_route_guard=instant-no-settle-v1')
         && str_contains($wrapper, "import './profile/mgw-mobile-profile-animation-guard-v2.js?v=1';"),
-    'Clean-entry wrapper must publish the fresh final-polish owner while retaining the canonical animation-guard specifier.'
+    'Clean-entry wrapper must publish a successor-safe final-polish identity while retaining the canonical animation-guard specifier.'
 );
 
 $assert(
