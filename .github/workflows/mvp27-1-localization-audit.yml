@@ -17,6 +17,7 @@ on:
       - 'ops/checks/mvp27_1_v107_invite_actions_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v109_invite_speed_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_prepared_share_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs'
@@ -60,6 +61,7 @@ jobs:
           node --check ops/checks/mvp27_1_v107_invite_actions_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v109_invite_speed_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_prepared_share_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs
           node --check ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs
@@ -115,6 +117,9 @@ jobs:
 
       - name: V97 runtime-owner factual reachability proof
         run: node ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs
+
+      - name: Prepared-share factual reachability proof
+        run: node ops/checks/mvp27_1_prepared_share_reachability_contract.mjs
 
       - name: V102 history-controller factual reachability proof
         run: node ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs

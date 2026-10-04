@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "b2df6d86c34ac5a2ed54df5912a6e1e4cc3bf806",
-  "scanned_files": 739,
-  "cyrillic_lines_total": 2366,
+  "staging_base": "349fef39761af26196aa8940ab80c85d83876a5a",
+  "scanned_files": 738,
+  "cyrillic_lines_total": 2335,
   "by_scope": {
-    "client": 713,
+    "client": 682,
     "backend": 1653,
     "client-entry": 0
   },
@@ -26,7 +26,8 @@
     "shadowed historical v102-v109 history controller (production-v102-history-controller.js)",
     "shadowed historical Phase-B current lineage (entry/runtime/game-screen)",
     "shadowed historical v99-v101 search/game-screen lineage (main-v99/main-v100/main-v101/production-v101-result-speed/search-screen-v99/search-screen-v100/game-screen-v99/game-screen-v100-safe/game-screen-v100)",
-    "shadowed historical v107/v108 invite-actions owner (production-v107-invite-actions.js)"
+    "shadowed historical v107/v108 invite-actions owner (production-v107-invite-actions.js)",
+    "shadowed historical v97/v98 prepared-share owner (production-prepared-share-fix.js)"
   ],
-  "note": "MVP-27.1 v107 invite-actions reachability classification: production-v107-invite-actions.js is imported and initialized by historical production-clean-entry-v107.js and production-clean-entry-v108.js only. Historical v109 and factual v110 no longer load it; factual v110 retains canonical game-invites-v110 ownership. The historical implementation remains untouched; its 26 Cyrillic lines are outside active player localization debt."
+  "note": "MVP-27.1 prepared-share reachability classification: production-prepared-share-fix.js is imported and initialized only by historical production-regression-fix-entry-v97.js and production-regression-fix-entry-v98.js. Factual Telegram launch remains v110; its legacy regression/main pair is replaced by the canonical bootstrap, and accepted v110 clean-entry/main ownership does not load or initialize the prepared-share owner. The historical implementation remains untouched; its 31 Cyrillic lines are outside active player localization debt."
 }
