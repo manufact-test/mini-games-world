@@ -18,6 +18,7 @@ on:
       - 'ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_active_client_entry_localization_contract.mjs'
       - 'ops/checks/mvp27_1_active_game_copy_bundle_contract.mjs'
       - 'ops/checks/mvp27_1_active_shell_copy_bundle_contract.mjs'
@@ -59,6 +60,7 @@ jobs:
           node --check ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs
           node --check ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs
           node --check ops/checks/mvp27_1_active_client_entry_localization_contract.mjs
           node --check ops/checks/mvp27_1_active_game_copy_bundle_contract.mjs
           node --check ops/checks/mvp27_1_active_shell_copy_bundle_contract.mjs
@@ -114,6 +116,9 @@ jobs:
 
       - name: Phase-B current factual reachability proof
         run: node ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs
+
+      - name: V99-V101 game-screen factual reachability proof
+        run: node ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs
 
       - name: Hardcoded player text audit
         run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs --sample
