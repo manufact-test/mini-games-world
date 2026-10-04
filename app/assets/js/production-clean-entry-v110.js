@@ -17,6 +17,7 @@ import { initMgwAvatarPresentation } from './profile/mgw-avatar-presentation.js?
 import { initMgwProfileBadges } from './profile/mgw-profile-badges.js?v=5&mvp19_3=profile-badge-avatar-shape';
 import { initMgwProfileFrames } from './profile/mgw-profile-frames.js?v=4&mvp19_3=profile-frame-avatar-card-parity';
 import { initMgwProfileBackgrounds } from './profile/mgw-profile-backgrounds.js?v=2&mvp19_3=profile-backgrounds-ux-corrective';
+import { t } from '@mgw/i18n';
 
 window.__MGW_REGRESSION_BUILD__ = 'v110-mvp14-interface-invite-speed-v1135';
 
@@ -143,7 +144,7 @@ function decorateStoreAvatarCards(){
       const boughtLabel = foot.querySelector(':scope > b');
       if (boughtLabel instanceof HTMLElement) {
         boughtLabel.hidden = false;
-        const nextStatus = active ? 'Выбрано' : 'В коллекции';
+        const nextStatus = active ? t('store.profile_selection.status.selected') : t('store.profile_selection.status.owned');
         if (boughtLabel.textContent !== nextStatus) boughtLabel.textContent = nextStatus;
       }
 
@@ -156,7 +157,7 @@ function decorateStoreAvatarCards(){
       action.dataset.mgwStoreAvatarSelect = itemId;
       const nextClassName = `store-v2-equip store-v2-avatar-select${active ? ' active' : ''}`;
       if (action.className !== nextClassName) action.className = nextClassName;
-      const nextLabel = active ? (removable ? 'Снять' : 'Выбрана') : 'Выбрать';
+      const nextLabel = active ? (removable ? t('store.profile_selection.actions.remove') : t('store.profile_selection.actions.selected')) : t('store.profile_selection.actions.select');
       if (action.textContent !== nextLabel) action.textContent = nextLabel;
       action.disabled = active && !removable;
       action.setAttribute('aria-pressed', active ? 'true' : 'false');
@@ -165,7 +166,7 @@ function decorateStoreAvatarCards(){
       if (active && !(existingCheck instanceof HTMLElement)) {
         const check = document.createElement('i');
         check.className = 'store-v2-selected-check';
-        check.setAttribute('aria-label', 'Выбрана');
+        check.setAttribute('aria-label', t('store.profile_selection.actions.selected'));
         check.textContent = '✓';
         preview.append(check);
       } else if (!active && existingCheck instanceof HTMLElement) {
@@ -195,7 +196,7 @@ function decorateStoreFrameCards(){
       status.dataset.mgwFrameCardStatus = '1';
       foot.prepend(status);
     }
-    const nextStatus = card.classList.contains('equipped') ? 'Выбрано' : 'В коллекции';
+    const nextStatus = card.classList.contains('equipped') ? t('store.profile_selection.status.selected') : t('store.profile_selection.status.owned');
     if (status.textContent !== nextStatus) status.textContent = nextStatus;
   });
 }
@@ -255,7 +256,7 @@ function decorateStoreProfileCosmeticCardParity(){
       }
       status.dataset.mgwProfileCosmeticStatus = '1';
       status.hidden = false;
-      const nextStatus = selected ? 'Выбрано' : 'В коллекции';
+      const nextStatus = selected ? t('store.profile_selection.status.selected') : t('store.profile_selection.status.owned');
       if (status.textContent !== nextStatus) status.textContent = nextStatus;
     });
   });
@@ -272,7 +273,7 @@ function decorateProfileCosmeticSheetState(){
   }
 
   const actionLabel = String(action.textContent || '').replace(/\s+/gu, ' ').trim();
-  const selected = actionLabel === 'Снять' || actionLabel === 'Выбрана' || actionLabel === 'Выбрано';
+  const selected = actionLabel === t('store.profile_selection.actions.remove') || actionLabel === t('store.profile_selection.actions.selected') || actionLabel === t('store.profile_selection.status.selected');
   let status = existing;
   if (!(status instanceof HTMLElement)) {
     status = document.createElement('div');
@@ -280,7 +281,7 @@ function decorateProfileCosmeticSheetState(){
     status.className = 'mgw-profile-cosmetic-sheet-status';
     action.insertAdjacentElement('beforebegin', status);
   }
-  const nextStatus = selected ? 'Выбрано' : 'В коллекции';
+  const nextStatus = selected ? t('store.profile_selection.status.selected') : t('store.profile_selection.status.owned');
   if (status.textContent !== nextStatus) status.textContent = nextStatus;
   action.classList.add('mgw-profile-cosmetic-sheet-action');
 }
@@ -298,7 +299,7 @@ function decorateProfileAvatarSheetAction(){
   if (removable) {
     action.dataset.mgwStoreAvatarSelect = itemId;
     action.disabled = false;
-    if (action.textContent !== 'Снять') action.textContent = 'Снять';
+    if (action.textContent !== t('store.profile_selection.actions.remove')) action.textContent = t('store.profile_selection.actions.remove');
     action.classList.remove('primary');
     action.classList.add('ghost');
   } else {
@@ -340,7 +341,7 @@ async function selectOwnedStoreAvatar(itemId, { removed = false, closePreview = 
   try {
     const result = await api.profileV2({ avatar_item_id:itemId });
     const confirmedItemId = String(result?.profile?.avatar?.item_id || result?.user?.avatar_item_id || '').trim();
-    if (confirmedItemId !== itemId) throw new Error('Профиль не подтвердил выбранную аватарку.');
+    if (confirmedItemId !== itemId) throw new Error(t('store.profile_selection.avatar.errors.unconfirmed'));
     state.mgwProfile = result?.profile || state.mgwProfile;
     state.profileInventory = result?.inventory || state.profileInventory;
     state.user = mergeCanonicalMgwUser(state.user, result?.user || {}, state.mgwProfile);
@@ -348,13 +349,13 @@ async function selectOwnedStoreAvatar(itemId, { removed = false, closePreview = 
     decorateStoreAvatarCards();
     if (state.user) renderUser(state.user);
     haptic('success');
-    toast(removed ? 'Аватарка снята.' : 'Аватарка выбрана.');
+    toast(removed ? t('store.profile_selection.avatar.toast.removed') : t('store.profile_selection.avatar.toast.selected'));
   } catch (error) {
     state.selectedAvatarId = previousSelectedAvatarId;
     decorateStoreAvatarCards();
     if (state.user) renderUser(state.user);
     haptic('error');
-    toast(error?.message || (removed ? 'Не удалось снять аватарку.' : 'Не удалось выбрать аватарку.'));
+    toast(error?.message || (removed ? t('store.profile_selection.avatar.errors.remove') : t('store.profile_selection.avatar.errors.select')));
   } finally {
     storeAvatarSaving = false;
   }
