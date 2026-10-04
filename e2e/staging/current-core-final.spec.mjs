@@ -488,8 +488,12 @@ test('CURRENT FINAL CORE: canonical Telegram v110 two-player TTT lifecycle', asy
       await expect(player.page.locator('#resultSummary')).not.toContainText('Награда:');
     }
 
-    const afterA = await readAction(A.page, '/bot/api.php', { action: 'profile' }, 'A final profile');
-    const afterB = await readAction(B.page, '/bot/api.php', { action: 'profile' }, 'B final profile');
+    // Final economy verification must use the same stable per-player transport
+    // captured at canonical bootstrap. Reading session/device from localStorage in
+    // a raw browser fetch can land inside the app's one-tick transport rotation
+    // and turn a valid finished match into an unrelated legacy Profile 400.
+    const afterA = await transportAction(A, '/bot/api.php', { action: 'profile' }, 'A final profile');
+    const afterB = await transportAction(B, '/bot/api.php', { action: 'profile' }, 'B final profile');
     const after = {
       stg_test_player_a: Number(afterA.user?.balance),
       stg_test_player_b: Number(afterB.user?.balance),
