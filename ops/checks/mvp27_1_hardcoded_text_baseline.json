@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "80bafae359162fc65fd302846a0bf240214c13f9",
-  "scanned_files": 740,
-  "cyrillic_lines_total": 2392,
+  "staging_base": "b2df6d86c34ac5a2ed54df5912a6e1e4cc3bf806",
+  "scanned_files": 739,
+  "cyrillic_lines_total": 2366,
   "by_scope": {
-    "client": 739,
+    "client": 713,
     "backend": 1653,
     "client-entry": 0
   },
@@ -25,7 +25,8 @@
     "shadowed historical v97/v98 runtime coordinator (production-v97-runtime-owner.js)",
     "shadowed historical v102-v109 history controller (production-v102-history-controller.js)",
     "shadowed historical Phase-B current lineage (entry/runtime/game-screen)",
-    "shadowed historical v99-v101 search/game-screen lineage (main-v99/main-v100/main-v101/production-v101-result-speed/search-screen-v99/search-screen-v100/game-screen-v99/game-screen-v100-safe/game-screen-v100)"
+    "shadowed historical v99-v101 search/game-screen lineage (main-v99/main-v100/main-v101/production-v101-result-speed/search-screen-v99/search-screen-v100/game-screen-v99/game-screen-v100-safe/game-screen-v100)",
+    "shadowed historical v107/v108 invite-actions owner (production-v107-invite-actions.js)"
   ],
-  "note": "MVP-27.1 v99-v101 search/game-screen reachability classification: historical v99/v100/v101 PHP entries own their main files; v101.php also owns production-clean-entry-v101, whose result-speed owner imports game-screen-v100-safe. main-v99 owns search-screen-v99 and game-screen-v99; search-screen-v99 also imports game-screen-v99. main-v100/main-v101 own search-screen-v100 and game-screen-v100-safe; search-screen-v100 and historical production-v101-result-speed also import game-screen-v100-safe, whose downstream owner is game-screen-v100. From v102 onward historical mains move to search-screen-v102/game-screen-v102-safe. Factual Telegram launch remains v110 and does not load/map this v99-v101 lineage. Historical implementation sources remain untouched; 131 Cyrillic lines are outside active player localization debt."
+  "note": "MVP-27.1 v107 invite-actions reachability classification: production-v107-invite-actions.js is imported and initialized by historical production-clean-entry-v107.js and production-clean-entry-v108.js only. Historical v109 and factual v110 no longer load it; factual v110 retains canonical game-invites-v110 ownership. The historical implementation remains untouched; its 26 Cyrillic lines are outside active player localization debt."
 }
