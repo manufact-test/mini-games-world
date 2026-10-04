@@ -44,6 +44,7 @@ import {
   dominoPlayerMark,
   dominoStatus,
 } from './domino/renderer.js?v=74';
+import { t } from '@mgw/i18n';
 
 const routes = {
   tictactoe: {
@@ -99,6 +100,15 @@ export function gameTypeOf(game){
   const renderer = String(game?.renderer || '');
   const actionType = String(game?.action_type || '');
   const title = String(game?.game_title || '').toLowerCase();
+  const aliases = {
+    domino: t('games.router.aliases.domino').toLowerCase(),
+    go: t('games.router.aliases.go').toLowerCase(),
+    chess: t('games.router.aliases.chess').toLowerCase(),
+    reversi: t('games.router.aliases.reversi').toLowerCase(),
+    checkers: t('games.router.aliases.checkers').toLowerCase(),
+    battleship: t('games.router.aliases.battleship').toLowerCase(),
+    fourInARow: t('games.router.aliases.four_in_a_row').toLowerCase(),
+  };
   const columns = Number(game?.board_columns || 0);
   const rows = Number(game?.board_rows || 0);
   const connectLength = Number(game?.connect_length || 0);
@@ -109,7 +119,7 @@ export function gameTypeOf(game){
     explicit === 'domino'
     || renderer === 'domino'
     || actionType === 'domino_action'
-    || title.includes('домино')
+    || title.includes(aliases.domino)
     || title.includes('domino')
     || Boolean(game?.domino_initialized)
     || Array.isArray(game?.viewer_hand)
@@ -122,7 +132,7 @@ export function gameTypeOf(game){
     explicit === 'go'
     || renderer === 'go'
     || actionType === 'go_action'
-    || title === 'го'
+    || title === aliases.go
     || title.includes('go')
     || Boolean(game?.go_initialized)
     || Boolean(game?.go_sides)
@@ -135,7 +145,7 @@ export function gameTypeOf(game){
     explicit === 'chess'
     || renderer === 'chess'
     || actionType === 'chess_move'
-    || title.includes('шахмат')
+    || title.includes(aliases.chess)
     || title.includes('chess')
     || Boolean(game?.chess_initialized)
     || Boolean(game?.chess_sides)
@@ -147,7 +157,7 @@ export function gameTypeOf(game){
   if (
     explicit === 'reversi'
     || renderer === 'reversi'
-    || title.includes('реверси')
+    || title.includes(aliases.reversi)
     || title.includes('reversi')
     || Boolean(game?.reversi_initialized)
     || Boolean(game?.reversi_sides)
@@ -160,7 +170,7 @@ export function gameTypeOf(game){
     explicit === 'checkers'
     || renderer === 'checkers'
     || actionType === 'checkers_move'
-    || title.includes('шашк')
+    || title.includes(aliases.checkers)
     || title.includes('checkers')
     || Boolean(game?.checkers_initialized)
     || Boolean(game?.checkers_sides)
@@ -173,7 +183,7 @@ export function gameTypeOf(game){
     explicit === 'battleship'
     || renderer === 'battleship'
     || actionType === 'battleship_action'
-    || title.includes('морской бой')
+    || title.includes(aliases.battleship)
     || title.includes('battleship')
     || Boolean(game?.battleship_initialized)
     || Array.isArray(game?.my_board)
@@ -192,7 +202,7 @@ export function gameTypeOf(game){
     explicit === 'four_in_a_row'
     || renderer === 'four_in_a_row'
     || actionType === 'column'
-    || title.includes('4 в ряд')
+    || title.includes(aliases.fourInARow)
     || title.includes('four in a row')
     || Boolean(game?.four_in_a_row_initialized)
     || (rows >= 5 && connectLength === 4)
@@ -216,9 +226,9 @@ export function renderGameSurface({ game, me, container, onAction }){
 export function gameMetaText(game){
   const route = routeFor(game);
   if (route?.meta) return route.meta(game);
-  const room = String(game?.room_name || 'Игра');
+  const room = String(game?.room_name || t('games.router.game_fallback'));
   const bet = Number(game?.bet || 0);
-  return bet > 0 ? `${room} · ${bet} коинов` : room;
+  return bet > 0 ? t('games.router.meta_with_bet', { room, bet }) : room;
 }
 
 export function playerMarkText(game, player){
@@ -229,8 +239,10 @@ export function playerMarkText(game, player){
 export function gameStatusText(game, me){
   const route = routeFor(game);
   if (route?.status) return route.status(game, me);
-  if (game?.status === 'finished') return 'Игра завершена';
-  return String(game?.turn || '') === String(me?.id || '') ? 'Ваш ход' : 'Ход соперника';
+  if (game?.status === 'finished') return t('games.router.status.finished');
+  return String(game?.turn || '') === String(me?.id || '')
+    ? t('games.router.status.your_turn')
+    : t('games.router.status.opponent_turn');
 }
 
 function routeFor(game){
@@ -239,9 +251,10 @@ function routeFor(game){
 
 function renderUnsupportedGame(container, game){
   container.className = 'board game-surface-unsupported';
+  const gameLabel = escapeHtml(game?.game_title || gameTypeOf(game));
   container.innerHTML = `
     <div class="small-note">
-      Экран игры «${escapeHtml(game?.game_title || gameTypeOf(game))}» пока не подключён.
+      ${t('games.router.unsupported', { game:gameLabel })}
     </div>
   `;
 }
