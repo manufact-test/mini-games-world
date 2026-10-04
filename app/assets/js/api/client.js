@@ -19,7 +19,7 @@ const ACCOUNT_DATA_URL = `${window.location.origin}/bot/account-data.php`;
 const ACCOUNT_LINK_URL = `${window.location.origin}/bot/account-link.php`;
 const ANDROID_REAUTH_URL = `${window.location.origin}/bot/android-reauth.php`;
 
-let profileV2ReadPromise = null;
+const PROFILE_V2_READ_PROMISE_KEY = '__MGW_PROFILE_V2_READ_PROMISE_V1__';
 let tournamentPrestigeReadPromise = null;
 
 async function requestUrl(url, payload = {}){
@@ -190,11 +190,23 @@ function requestProfileV2(profileUpdate = null){
   if (profileUpdate) {
     return requestUrl(PROFILE_V2_URL, { profile_update:profileUpdate }).then(publishProfileV2);
   }
-  if (profileV2ReadPromise) return profileV2ReadPromise;
-  profileV2ReadPromise = requestUrl(PROFILE_V2_URL)
+
+  // Several accepted Profile decorators still import this client through
+  // different historical cache aliases. ES modules treat those URLs as
+  // separate module instances, so a module-local promise cannot coalesce the
+  // same full Profile V2 read. Keep one read owner for the whole page instead.
+  const shared = globalThis[PROFILE_V2_READ_PROMISE_KEY];
+  if (shared && typeof shared.then === 'function') return shared.then(publishProfileV2);
+
+  const requestPromise = requestUrl(PROFILE_V2_URL);
+  globalThis[PROFILE_V2_READ_PROMISE_KEY] = requestPromise;
+  return requestPromise
     .then(publishProfileV2)
-    .finally(() => { profileV2ReadPromise = null; });
-  return profileV2ReadPromise;
+    .finally(() => {
+      if (globalThis[PROFILE_V2_READ_PROMISE_KEY] === requestPromise) {
+        globalThis[PROFILE_V2_READ_PROMISE_KEY] = null;
+      }
+    });
 }
 
 function requestTournamentPrestige(){

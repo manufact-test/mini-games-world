@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__, 2);
 $profile = file_get_contents($root . '/app/assets/js/screens/profile-screen-v110.js');
+$apiClient = file_get_contents($root . '/app/assets/js/api/client.js');
 $home = file_get_contents($root . '/app/assets/js/screens/home-screen.js');
 $model = file_get_contents($root . '/app/assets/js/profile/mgw-profile-model.js');
 $ui = file_get_contents($root . '/app/assets/js/ui.js');
@@ -17,7 +18,7 @@ $mainCss = file_get_contents($root . '/app/assets/css/main.css');
 $versionManifest = file_get_contents($root . '/app/runtime/client/version-manifest.php');
 $catalog = json_decode((string)file_get_contents($root . '/app/locales/ru.json'), true, flags: JSON_THROW_ON_ERROR);
 
-foreach (['profile'=>$profile,'home'=>$home,'model'=>$model,'ui'=>$ui,'clean_entry'=>$cleanEntry,'i18n'=>$i18n,'endpoint'=>$endpoint,'identity_policy'=>$identityPolicy,'id_generator'=>$idGenerator,'corrective_css'=>$correctiveCss,'avatar_css'=>$avatarCss,'main_css'=>$mainCss,'version_manifest'=>$versionManifest] as $name => $source) {
+foreach (['profile'=>$profile,'api_client'=>$apiClient,'home'=>$home,'model'=>$model,'ui'=>$ui,'clean_entry'=>$cleanEntry,'i18n'=>$i18n,'endpoint'=>$endpoint,'identity_policy'=>$identityPolicy,'id_generator'=>$idGenerator,'corrective_css'=>$correctiveCss,'avatar_css'=>$avatarCss,'main_css'=>$mainCss,'version_manifest'=>$versionManifest] as $name => $source) {
     if (!is_string($source)) throw new RuntimeException("Unable to read {$name} corrective source.");
 }
 
@@ -97,6 +98,13 @@ $assertContains('mergeCanonicalMgwUser(state.user, {}, state.mgwProfile)', $prof
 $assertContains('state.mgwProfile?.nickname', $ui, 'Shared visible identity must prefer the canonical MGW profile');
 $assertContains('state.mgwProfile?.avatar?.item_id', $ui, 'Shared avatar surface must prefer the canonical MGW profile');
 $assertNotContains('initStandardAvatarPolicy', $cleanEntry, 'No second canonical avatar writer may remain initialized');
+
+$assertContains("const PROFILE_V2_READ_PROMISE_KEY = '__MGW_PROFILE_V2_READ_PROMISE_V1__';", $apiClient, 'Profile V2 read coalescing must use one page-wide promise key');
+$assertContains('const shared = globalThis[PROFILE_V2_READ_PROMISE_KEY];', $apiClient, 'All historical api/client module aliases must share the same Profile V2 read owner');
+$assertContains("if (shared && typeof shared.then === 'function') return shared.then(publishProfileV2);", $apiClient, 'A second client module instance must join the existing Profile V2 read');
+$assertContains('globalThis[PROFILE_V2_READ_PROMISE_KEY] = requestPromise;', $apiClient, 'The first Profile V2 reader must publish its promise page-wide');
+$assertNotContains('let profileV2ReadPromise = null;', $apiClient, 'Module-local Profile V2 single-flight must not return');
+$assertContains('profile_read=page-single-flight-v1', $versionManifest, 'Runtime cache identity must publish the page-wide Profile V2 read owner');
 
 $assertContains("target.id === 'moreMenuOpen'", $home, 'Top more menu must remain the primary settings entry');
 $assertContains("menuItemMarkup('settingsBtn', '⚙️', t('settings.title'))", $home, 'More menu must expose Settings through the shared row owner');

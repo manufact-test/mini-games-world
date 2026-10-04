@@ -51,9 +51,12 @@ $assert(
     'Profile owner must continue warming profileV2 asynchronously after initialization.'
 );
 $assert(
-    str_contains($api, 'if (profileV2ReadPromise) return profileV2ReadPromise;')
-        && str_contains($api, 'profileV2ReadPromise = requestUrl(PROFILE_V2_URL)'),
-    'API client must preserve single-flight profileV2 reads.'
+    str_contains($api, "const PROFILE_V2_READ_PROMISE_KEY = '__MGW_PROFILE_V2_READ_PROMISE_V1__';")
+        && str_contains($api, 'const shared = globalThis[PROFILE_V2_READ_PROMISE_KEY];')
+        && str_contains($api, "if (shared && typeof shared.then === 'function') return shared.then(publishProfileV2);")
+        && str_contains($api, 'globalThis[PROFILE_V2_READ_PROMISE_KEY] = requestPromise;')
+        && !str_contains($api, 'let profileV2ReadPromise = null;'),
+    'API client must preserve one page-wide single-flight Profile V2 read across historical module aliases.'
 );
 $assert(str_contains($baseline, '[MGW25_4_BASELINE]'), 'MVP-25.4 before/after staging measurement must remain wired.');
 

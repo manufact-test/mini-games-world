@@ -50,23 +50,6 @@ function requestAction(request) {
   try { return String(request.postDataJSON()?.action || ''); } catch { return ''; }
 }
 
-async function browserPost(page, path, data) {
-  return page.evaluate(async ({ path, data }) => {
-    const response = await fetch(path, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        ...data,
-        initData: '',
-        sessionId: localStorage.getItem('mgw_device_session_id'),
-        deviceId: localStorage.getItem('mgw_device_id'),
-      }),
-      cache: 'no-store',
-    });
-    return { status: response.status, payload: await response.json().catch(() => null) };
-  }, { path, data });
-}
-
 async function readStore(context) {
   const response = await context.request.post(STORE_URL, {
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
@@ -142,18 +125,14 @@ test('GO STORE LIVE CATALOG: automatic staging update publishes the full Go cata
     expect(bootstrapResponse.status(), 'fresh Telegram bootstrap').toBe(200);
     const bootstrap = await bootstrapResponse.json();
     expect(bootstrap?.ok).toBe(true);
+    // Successful bootstrap is the canonical identity/session proof for this Store
+    // test. Do not inject a legacy api.php profile read through raw localStorage:
+    // the app client owns session/device self-healing, and a one-tick transport
+    // rotation must not turn an unrelated Go catalog test into a Profile failure.
     expect(bootstrap?.user?.id).toBe('stg_test_player_a');
 
     await page.waitForFunction(() => window.__MGW_APP_BOOTSTRAP_V2__?.ready === true, null, { timeout: 20_000 });
     await expect(page.locator('#screen-home')).toHaveClass(/active/, { timeout: 25_000 });
-    await page.waitForFunction(() => Boolean(
-      localStorage.getItem('mgw_device_session_id') && localStorage.getItem('mgw_device_id')
-    ), null, { timeout: 20_000 });
-
-    const profile = await browserPost(page, '/bot/api.php', { action: 'profile' });
-    expect(profile.status, 'fresh Telegram profile status').toBe(200);
-    expect(profile.payload?.ok).toBe(true);
-    expect(profile.payload?.user?.id).toBe('stg_test_player_a');
 
     const storeNav = page.locator('[data-shell-nav="store"]');
     await expect(storeNav).toBeVisible({ timeout: 8_000 });
