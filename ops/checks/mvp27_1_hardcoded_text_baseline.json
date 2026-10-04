@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-05",
-  "staging_base": "11d6f68d71ef8ea9ac850820ef6316ae1c9071bc",
-  "scanned_files": 710,
-  "cyrillic_lines_total": 1806,
+  "staging_base": "6442f83d622fb87ea625db8678ffa1ff48deb537",
+  "scanned_files": 709,
+  "cyrillic_lines_total": 1796,
   "by_scope": {
-    "client": 153,
+    "client": 143,
     "backend": 1653,
     "client-entry": 0
   },
@@ -47,7 +47,8 @@
     "shadowed historical v105 fast-notifications owner (production-v105-fast-notifications.js; sole owner is production-clean-entry-v105-fast-notifications.js on historical v108; factual v110 uses localized notifications-screen-v110r13.js)",
     "shadowed historical v108 share owner (production-v108-share.js; sole owner is ownerless production-clean-entry-v108.js; factual v108 page uses the v105-fast rollback and factual v110 uses localized games/game-invites-v110.js)",
     "shadowed historical v108 notifications owner (production-v108-notifications.js; sole owner is ownerless production-clean-entry-v108.js; factual v108 page remains on the v105-fast rollback and factual v110 uses localized notifications-screen-v110r13.js)",
-    "shadowed historical Profile screen (screens/profile-screen.js; direct owners are stripped main.js and historical main-v99..v105; factual v110 uses localized screens/profile-screen-v110.js)"
+    "shadowed historical Profile screen (screens/profile-screen.js; direct owners are stripped main.js and historical main-v99..v105; factual v110 uses localized screens/profile-screen-v110.js)",
+    "orphaned historical desktop notification open owner (screens/notification-desktop-open-owner-v117.js; former v114 injection removed; factual v110 uses localized notifications-screen-v110r13.js)"
   ],
-  "note": "MVP-27.1 legacy Profile screen reachability classification: screens/profile-screen.js remains untouched historical Gold-era source owned only by stripped/historical main.js and main-v99..v105; factual Telegram v110 uses localized profile-screen-v110.js."
+  "note": "MVP-27.1 legacy desktop notification open-owner reachability classification: notification-desktop-open-owner-v117.js remains untouched historical source with no current app owner; factual Telegram v110 uses localized notifications-screen-v110r13.js."
 }
