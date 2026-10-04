@@ -30,7 +30,10 @@ $ratingHook = strpos($bootstrap, "if (\$runtimeScript === 'api.php' && \$runtime
 $assertTrue(is_int($weeklyHook) && is_int($ratingHook) && $ratingHook > $weeklyHook, 'Rating must consume normalized results after realtime/weekly projection.');
 $assertTrue(str_contains($bootstrap, '$runtimeRatingBridge->processProjectedMatches();'), 'API success path must process projected terminal matches.');
 
-$assertTrue(str_contains($profileApi, 'snapshotForProfile($mgwId)'), 'Profile API must refresh and read canonical rating snapshot.');
+$assertTrue(
+    preg_match('/snapshotForProfile\s*\(\s*\$mgwId\b/s', $profileApi) === 1,
+    'Profile API must refresh and read canonical rating snapshot.'
+);
 $assertTrue(str_contains($profileApi, "'rating'=>\$rating"), 'Profile API must expose rating as a first-class payload.');
 
 $assertTrue(str_contains($profileClient, 'state.profileRating = result.rating'), 'Profile client must consume rating payload.');
