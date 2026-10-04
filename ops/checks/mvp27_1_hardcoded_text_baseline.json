@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "0aa91af9f592f84361cb4d4487fa0a6d3f6c7ed4",
+  "staging_base": "0ec35ba37fbf69a8c5dce553660fbbbc089831a4",
   "scanned_files": 713,
-  "cyrillic_lines_total": 1863,
+  "cyrillic_lines_total": 1852,
   "by_scope": {
-    "client": 210,
+    "client": 199,
     "backend": 1653,
     "client-entry": 0
   },
@@ -46,5 +46,5 @@
     "shadowed historical v100 share controller (production-v100-share-controller.js; sole owner is historical production-clean-entry-v100.js on historical v100 page; factual v110 uses localized games/game-invites-v110.js)",
     "shadowed historical v105 fast-notifications owner (production-v105-fast-notifications.js; sole owner is production-clean-entry-v105-fast-notifications.js on historical v108; factual v110 uses localized notifications-screen-v110r13.js)"
   ],
-  "note": "MVP-27.1 legacy v105 fast-notifications reachability classification: production-v105-fast-notifications.js remains untouched and is reachable only from production-clean-entry-v105-fast-notifications.js on historical v108. Factual v110 uses localized notifications-screen-v110r13.js."
+  "note": "MVP-27.1 active clean-entry Store/Profile selection localization: 11 hardcoded Cyrillic lines moved from factual production-clean-entry-v110.js into canonical store.profile_selection locale ownership. Canonical clean-entry cache identity was bumped end-to-end; Store/Profile selection, equip/remove, observer and profileV2 ownership remain unchanged."
 }
