@@ -1,0 +1,86 @@
+name: MVP-27.1 Legacy v102 Share Controller Reachability
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'app/v102.php'
+      - 'app/v103.php'
+      - 'app/v104.php'
+      - 'app/v105.php'
+      - 'app/v106.php'
+      - 'app/v107.php'
+      - 'app/v108.php'
+      - 'app/v110.php'
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/assets/js/app-bootstrap-v2-core.js'
+      - 'app/assets/js/production-clean-entry-v102.js'
+      - 'app/assets/js/production-clean-entry-v103.js'
+      - 'app/assets/js/production-clean-entry-v104.js'
+      - 'app/assets/js/production-clean-entry-v105.js'
+      - 'app/assets/js/production-clean-entry-v105-fast-notifications.js'
+      - 'app/assets/js/production-clean-entry-v106.js'
+      - 'app/assets/js/production-clean-entry-v107.js'
+      - 'app/assets/js/production-clean-entry-v108.js'
+      - 'app/assets/js/production-v102-share-controller.js'
+      - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish-mobile-nav-v2.js'
+      - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js'
+      - 'app/assets/js/production-clean-entry-v110.js'
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/assets/js/games/game-invites-v110.js'
+      - 'ops/checks/mvp27_1_legacy_v101_share_controller_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_legacy_v102_share_controller_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp27-1-legacy-v102-share-controller-reachability.yml'
+      - '.github/workflows/mvp27-1-localization-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  legacy-v102-share-controller-reachability:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Syntax and exhaustive reachability proof
+        run: |
+          set -euo pipefail
+          node --check app/assets/js/production-v102-share-controller.js
+          node --check ops/checks/mvp27_1_legacy_v101_share_controller_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_legacy_v102_share_controller_reachability_contract.mjs
+          node ops/checks/mvp27_1_legacy_v101_share_controller_reachability_contract.mjs
+          node ops/checks/mvp27_1_legacy_v102_share_controller_reachability_contract.mjs
+
+      - name: Preserve factual v110 localized share ownership
+        run: |
+          set -euo pipefail
+          node ops/checks/mvp16_2_localization_contract.mjs
+          node ops/checks/mvp27_1_localization_architecture_contract.mjs
+          node ops/checks/mvp27_1_game_invites_localization_contract.mjs
+          node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded classification scope
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-legacy-v102-share-controller-reachability')
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          allowed='^(ops/checks/mvp27_1_legacy_v101_share_controller_reachability_contract\.mjs|ops/checks/mvp27_1_legacy_v102_share_controller_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-legacy-v102-share-controller-reachability\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
+          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected legacy v102 share-controller reachability paths:\n%s\n' "$bad" >&2; exit 1; }
+          git diff --check
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
