@@ -41,6 +41,8 @@ assert.ok(v110.includes('<script type="module" src="./assets/js/main.js?v=98.4-w
   'v110 must retain stripped legacy main.js anchor as forensic evidence');
 assert.ok(v110.includes('$html = str_replace($entryScriptsAnchor, $bootstrapTag, $html);'),
   'v110 must retain canonical bootstrap replacement');
+assert.ok(v110.includes("header('X-MGW-Client-Bootstrap: v2-single-owner');"),
+  'v110 must retain the accepted single-owner bootstrap marker');
 assert.deepEqual(
   [...bootstrapCore.matchAll(/(?:await\s+)?import\((['"])([^'"]+)\1\)/g)].map(match => match[2]),
   ['@mgw/clean-entry', '@mgw/main'],
