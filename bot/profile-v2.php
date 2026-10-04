@@ -40,16 +40,22 @@ function mgw_profile_v2_validation_error(InvalidArgumentException $error): array
     };
 }
 
+$profileStage = 'request';
+$profileStartedAt = microtime(true);
+
 try {
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
         json_response(['ok'=>false,'error'=>'Method not allowed.'], 405);
     }
+    $profileStage = 'decode_request';
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) json_response(['ok'=>false,'error'=>'Некорректный запрос.'], 400);
     $configRef = $config;
+    $profileStage = 'authenticate';
     $authenticatedUser = (new AuthService($configRef))->getUserFromRequest($payload);
     $mgwId = trim((string)($authenticatedUser['mgw_id'] ?? ''));
     if (!MgwIdGenerator::isValid($mgwId)) json_response(['ok'=>false,'error'=>'Профиль MGW недоступен для этой сессии.'], 401);
+    $profileStage = 'storage_route';
     $databaseConfig = DatabaseConfig::fromApplicationConfig($configRef);
     $router = new RuntimeStorageRouter($configRef);
     if (!$databaseConfig->enabled() || ($router->enabled() && $router->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE)) {
@@ -58,9 +64,11 @@ try {
 
     // One DB connection, one canonical ownership/equip owner. Profile consumes
     // ProductInventoryService snapshots; it never recreates inventory state.
+    $profileStage = 'database_connect';
     $database = PdoConnectionFactory::create($databaseConfig);
 
     if (($payload['tournament_prestige_only'] ?? false) === true) {
+        $profileStage = 'tournament_prestige';
         $tournamentRewards = (new TournamentRewardProjectionService($database))->prestigeSnapshot($mgwId);
         json_response([
             'ok'=>true,
@@ -73,6 +81,7 @@ try {
     $moderation = new ModerationService($database);
     $profileUpdateRequested = isset($payload['profile_update']) && is_array($payload['profile_update']);
     try {
+        $profileStage = $profileUpdateRequested ? 'canonical_profile_update' : 'canonical_profile_read';
         if ($profileUpdateRequested) {
             $moderation->assertAllowed($mgwId, 'profile');
             $canonicalProfile = $profileService->updateProfile($mgwId, $payload['profile_update']);
@@ -92,10 +101,15 @@ try {
         }
         throw $error;
     }
+    $profileStage = 'inventory';
     $inventory = (new ProductInventoryService($database))->snapshot($mgwId);
+    $profileStage = 'rating';
     $rating = (new PerGameRatingRuntimeBridge($configRef, $router, $database))->snapshotForProfile($mgwId);
+    $profileStage = 'yearly_medals';
     $yearlyMedals = (new YearlyMedalService($database))->userSnapshot($mgwId);
+    $profileStage = 'rating_archive';
     $ratingArchive = (new RatingArchiveService($database))->profileSnapshot($mgwId);
+    $profileStage = 'tournament_rewards';
     $tournamentRewards = (new TournamentRewardProjectionService($database))->profileSnapshot($mgwId);
 
     $users = new UserService($configRef);
@@ -112,6 +126,7 @@ try {
     // Profile mutations still keep the canonical ensureUser write owner, but
     // the transaction ends immediately after capturing the minimal runtime
     // snapshot. All expensive presentation work happens after the lock is free.
+    $profileStage = 'runtime_snapshot';
     if ($profileUpdateRequested) {
         $runtimeSnapshot = $storage->transaction(
             static function (array &$data) use ($authenticatedUser, $users, $runtimeSections): array {
@@ -143,14 +158,18 @@ try {
         throw new RuntimeException('Runtime profile snapshot is unavailable.');
     }
     $runtimeUserId = (string)($runtimeUser['id'] ?? '');
+    $profileStage = 'runtime_stats';
     $runtimeStats = $users->profileStats($runtimeUser, $runtimeData);
     $runtimeStats['by_game'] = mgw_profile_v2_stats_by_game($runtimeData, $runtimeUserId);
+    $profileStage = 'history';
+    $runtimeHistory = $historyService->userHistory($runtimeData, $runtimeUserId, 6);
     $runtime = [
         'user' => $users->publicUser($runtimeUser),
         'stats' => $runtimeStats,
-        'history' => $historyService->userHistory($runtimeData, $runtimeUserId, 6),
+        'history' => $runtimeHistory,
     ];
     $provider = strtolower(trim((string)($authenticatedUser['mgw_identity_provider'] ?? '')));
+    $profileStage = 'response';
     json_response([
         'ok'=>true,
         'profile'=>$canonicalProfile,
@@ -165,6 +184,19 @@ try {
         'auth'=>['provider'=>$provider !== '' ? $provider : null,'provider_neutral'=>true],
     ]);
 } catch (Throwable $error) {
-    error_log('[MiniGamesWorld Profile v2] ' . $error->getMessage());
-    json_response(['ok'=>false,'error'=>'Не удалось загрузить профиль MGW.'], 500);
+    $elapsedMs = max(0, (int)round((microtime(true) - $profileStartedAt) * 1000));
+    error_log(sprintf(
+        '[MiniGamesWorld Profile v2] stage=%s elapsed_ms=%d error=%s: %s',
+        $profileStage,
+        $elapsedMs,
+        get_class($error),
+        $error->getMessage()
+    ));
+    $response = ['ok'=>false,'error'=>'Не удалось загрузить профиль MGW.'];
+    $environment = strtolower(trim((string)($config['environment'] ?? 'production')));
+    if ($environment === 'staging') {
+        $response['diagnostic_stage'] = $profileStage;
+        $response['diagnostic_elapsed_ms'] = $elapsedMs;
+    }
+    json_response($response, 500);
 }
