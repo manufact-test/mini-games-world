@@ -41,7 +41,7 @@ $assertSame = static function (mixed $expected, mixed $actual, string $message) 
 
 $assertSame('Последние матчи', $catalog['profile']['history_title'] ?? null, 'Recent matches title must be exact');
 $assertContains('history.matches.slice(0, 6)', $profile, 'Profile preview must render at most six matches');
-$assertContains("userHistory(\$data, \$userId, 6)", $endpoint, 'Backend profile history must request at most six matches');
+$assertContains("userHistory(\$runtimeData, \$runtimeUserId, 6)", $endpoint, 'Backend profile history must request at most six matches from the captured runtime snapshot');
 $assertContains("sectionHead('profile.history_title')", $profile, 'Recent matches heading must render without redundant subtitle');
 $assertNotContains("sectionHead('profile.history_title','profile.history_note')", $profile, 'Recent matches subtitle must stay removed');
 $assertContains("['starter-default-01','starter-default-02','starter-default-03']", $profile, 'Profile must retain the three canonical starter avatar IDs');
@@ -105,6 +105,13 @@ $assertContains("if (shared && typeof shared.then === 'function') return shared.
 $assertContains('globalThis[PROFILE_V2_READ_PROMISE_KEY] = requestPromise;', $apiClient, 'The first Profile V2 reader must publish its promise page-wide');
 $assertNotContains('let profileV2ReadPromise = null;', $apiClient, 'Module-local Profile V2 single-flight must not return');
 $assertContains('profile_read=page-single-flight-v1', $versionManifest, 'Runtime cache identity must publish the page-wide Profile V2 read owner');
+
+$assertContains("\$runtimeSections = ['users', 'games', 'transactions'];", $endpoint, 'Profile V2 read path must capture only the runtime sections it consumes');
+$assertContains('$storage->readOnlySections($runtimeSections, $captureReadSnapshot)', $endpoint, 'Ordinary Profile V2 reads must use shared read ownership instead of the JSON writer transaction');
+$assertContains("if (\$profileUpdateRequested) {", $endpoint, 'Profile V2 must keep read and mutation storage ownership explicit');
+$assertContains('$user = $users->ensureUser($data, $authenticatedUser);', $endpoint, 'Profile mutations must retain canonical runtime user synchronization');
+$assertContains("'history' => \$historyService->userHistory(\$runtimeData, \$runtimeUserId, 6)", $endpoint, 'Profile history work must run from the captured snapshot after the storage lock is released');
+$assertNotContains('$storage->transaction(function (array &$data) use ($authenticatedUser, $users, $historyService)', $endpoint, 'Profile V2 must not hold the JSON writer lock across stats/history work');
 
 $assertContains("target.id === 'moreMenuOpen'", $home, 'Top more menu must remain the primary settings entry');
 $assertContains("menuItemMarkup('settingsBtn', '⚙️', t('settings.title'))", $home, 'More menu must expose Settings through the shared row owner');
