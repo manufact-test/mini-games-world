@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "c10cb9dd3dc880b064d959dd50958d0a95800a7f",
-  "scanned_files": 718,
-  "cyrillic_lines_total": 1924,
+  "staging_base": "acf33a7dd9cb71fa88010908a743fba03b6037a5",
+  "scanned_files": 717,
+  "cyrillic_lines_total": 1915,
   "by_scope": {
-    "client": 271,
+    "client": 262,
     "backend": 1653,
     "client-entry": 0
   },
@@ -39,7 +39,8 @@
     "shadowed historical Four-in-a-row setup entry (games/four-in-a-row/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)",
     "shadowed historical Reversi setup entry (games/reversi/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)",
     "stripped legacy invite-link v115 (games/invite-link-entry-v115.js; sole external owner is stripped app/assets/js/main.js; factual v110 uses localized invite-link-entry-v110r12.js)",
-    "shadowed historical Go setup entry (games/go/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)"
+    "shadowed historical Go setup entry (games/go/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)",
+    "shadowed historical Chess setup entry (games/chess/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)"
   ],
-  "note": "MVP-27.1 legacy Go setup-entry reachability classification: games/go/entry.js remains untouched and is outside factual v110 ownership. games/go/meta.js is intentionally NOT excluded because active localized game-card-copy.js consumes GO_META and factual localized unified-game-launcher.js consumes GO_BOARD_SIZES/GO_DEFAULT_BOARD_SIZE; its 2 Cyrillic lines remain active localization debt."
+  "note": "MVP-27.1 legacy Chess setup-entry reachability classification: games/chess/entry.js remains untouched and is outside factual v110 ownership. games/chess/meta.js is intentionally NOT excluded because active localized game-card-copy.js consumes CHESS_META; factual localized unified-game-launcher.js owns the active 8×8 Chess setup."
 }
