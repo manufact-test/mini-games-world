@@ -1,4 +1,4 @@
-name: MVP-27.1 Legacy Go Entry Reachability
+name: MVP-27.1 Legacy Chess Entry Reachability
 
 on:
   pull_request:
@@ -39,18 +39,16 @@ on:
       - 'app/assets/js/main-v110-reconnect-v174.js'
       - 'app/assets/js/main-v110.js'
       - 'app/assets/js/main-v110-handoff-shell.js'
-      - 'app/assets/js/games/go/entry.js'
-      - 'app/assets/js/games/go/meta.js'
+      - 'app/assets/js/games/chess/entry.js'
+      - 'app/assets/js/games/chess/meta.js'
       - 'app/assets/js/games/game-card-copy.js'
       - 'app/assets/js/games/unified-game-launcher.js'
-      - 'ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs'
-      - 'ops/checks/mvp27_1_legacy_reversi_entry_reachability_contract.mjs'
-      - 'ops/checks/mvp27_1_legacy_invite_link_v115_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_go_entry_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_legacy_chess_entry_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
-      - '.github/workflows/mvp27-1-legacy-invite-link-v115-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-go-entry-reachability.yml'
+      - '.github/workflows/mvp27-1-legacy-chess-entry-reachability.yml'
       - '.github/workflows/mvp27-1-localization-audit.yml'
   workflow_dispatch:
 
@@ -58,7 +56,7 @@ permissions:
   contents: read
 
 jobs:
-  legacy-go-entry-reachability:
+  legacy-chess-entry-reachability:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -72,15 +70,13 @@ jobs:
       - name: Syntax and exhaustive reachability proof
         run: |
           set -euo pipefail
-          node --check app/assets/js/games/go/entry.js
-          node --check app/assets/js/games/go/meta.js
-          node --check ops/checks/mvp27_1_legacy_go_entry_reachability_contract.mjs
-          node ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs
-          node ops/checks/mvp27_1_legacy_reversi_entry_reachability_contract.mjs
-          node ops/checks/mvp27_1_legacy_invite_link_v115_reachability_contract.mjs
+          node --check app/assets/js/games/chess/entry.js
+          node --check app/assets/js/games/chess/meta.js
+          node --check ops/checks/mvp27_1_legacy_chess_entry_reachability_contract.mjs
           node ops/checks/mvp27_1_legacy_go_entry_reachability_contract.mjs
+          node ops/checks/mvp27_1_legacy_chess_entry_reachability_contract.mjs
 
-      - name: Preserve active Go setup ownership
+      - name: Preserve active Chess setup ownership
         run: |
           set -euo pipefail
           node ops/checks/mvp16_2_localization_contract.mjs
@@ -89,15 +85,15 @@ jobs:
           node ops/checks/mvp27_1_hardcoded_text_audit.mjs
 
       - name: Bounded classification scope
-        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-legacy-go-entry-reachability')
+        if: github.event_name == 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(ops/checks/mvp27_1_legacy_go_entry_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-legacy-invite-link-v115-reachability\.yml|\.github/workflows/mvp27-1-legacy-go-entry-reachability\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
+          allowed='^(ops/checks/mvp27_1_legacy_chess_entry_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-legacy-go-entry-reachability\.yml|\.github/workflows/mvp27-1-legacy-chess-entry-reachability\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
-          test -z "$bad" || { printf 'Unexpected legacy Go entry reachability paths:\n%s\n' "$bad" >&2; exit 1; }
+          test -z "$bad" || { printf 'Unexpected legacy Chess entry reachability paths:\n%s\n' "$bad" >&2; exit 1; }
           git diff --check
 
       - name: Tracked secret scan

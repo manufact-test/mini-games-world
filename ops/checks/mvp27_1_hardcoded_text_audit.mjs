@@ -27,6 +27,7 @@ const SKIP_FILES = new Set([
   'app/assets/js/games/four-in-a-row/entry.js', // historical Four-in-a-row setup entry; factual v110 uses unified launcher
   'app/assets/js/games/reversi/entry.js', // historical Reversi setup entry; factual v110 no longer initializes it
   'app/assets/js/games/go/entry.js', // historical Go setup entry; factual v110 uses unified launcher
+  'app/assets/js/games/chess/entry.js', // historical Chess setup entry; factual v110 uses unified launcher
   'app/assets/js/games/game-invites.js', // superseded by factual game-invites-v110.js owner
   'app/assets/js/screens/game-screen.js', // shadowed after invite polling converges on canonical game-screen-v102-safe owner
   'app/assets/js/residual-ui-game-race-fix.js', // shadowed legacy hotfix; factual v110 strips the only main.js entry that imports it
