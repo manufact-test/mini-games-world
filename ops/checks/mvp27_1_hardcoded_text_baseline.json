@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "4bf96cda5e585fae429518e1f1b21d1e322ccb22",
+  "staging_base": "54fef1e5e213e3163bac5bf8abea4125ee60e57a",
   "scanned_files": 720,
-  "cyrillic_lines_total": 1956,
+  "cyrillic_lines_total": 1944,
   "by_scope": {
-    "client": 303,
+    "client": 291,
     "backend": 1653,
     "client-entry": 0
   },
@@ -39,5 +39,5 @@
     "shadowed historical Four-in-a-row setup entry (games/four-in-a-row/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)",
     "shadowed historical Reversi setup entry (games/reversi/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)"
   ],
-  "note": "MVP-27.1 legacy Reversi setup-entry reachability classification: games/reversi/entry.js remains untouched and is outside factual v110 ownership. games/reversi/meta.js is intentionally NOT excluded because active localized game-card-copy.js consumes REVERSI_META; its 2 Cyrillic lines remain active localization debt."
+  "note": "MVP-27.1 active game-router localization: 12 hardcoded Cyrillic lines moved from factual game-router.js into canonical RU locale ownership. Exact pre-localization title aliases and fallback/status/unsupported copy are frozen by focused contract; routing/render/action ownership remains unchanged."
 }

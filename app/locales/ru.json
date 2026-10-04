@@ -1,5 +1,5 @@
 {
-  "_meta": {"locale":"ru","version":51},
+  "_meta": {"locale":"ru","version":52},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "entry": {"open_failed":"Не удалось открыть Mini Games World. Попробуйте ещё раз через минуту.","preloader_loading":"Готовим игровую комнату","tagline":"Те самые игры. То самое чувство."},
   "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
@@ -836,6 +836,25 @@
     }
   },
   "games": {
+    "router": {
+      "aliases": {
+        "domino": "домино",
+        "go": "го",
+        "chess": "шахмат",
+        "reversi": "реверси",
+        "checkers": "шашк",
+        "battleship": "морской бой",
+        "four_in_a_row": "4 в ряд"
+      },
+      "game_fallback": "Игра",
+      "meta_with_bet": "{room} · {bet} коинов",
+      "status": {
+        "finished": "Игра завершена",
+        "your_turn": "Ваш ход",
+        "opponent_turn": "Ход соперника"
+      },
+      "unsupported": "Экран игры «{game}» пока не подключён."
+    },
     "tictactoe": {
       "name": "Крестики-нолики",
       "ui": {

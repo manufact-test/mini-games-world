@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 
 const OWNERS = [
+  'app/assets/js/games/game-router.js',
   'app/assets/js/games/battleship/rules.js',
   'app/assets/js/games/checkers/rules.js',
   'app/assets/js/games/chess/rules.js',
@@ -67,6 +68,7 @@ for (const token of [
 const manifest = read('app/runtime/client/version-manifest.php');
 for (const token of [
   "game-rules.js?v=79&mvp27_1=active-game-copy-bundle-v1",
+  "game-router.js?v=75&mvp27_1=localized-v1",
   "tictactoe/renderer.js?v=59&mvp27_1=localized-v1",
   "chess/renderer-move-effect-v3.js?v=3&mvp27_1=localized-v1",
   "go/renderer-cosmetics-v1.js?v=3&mvp27_1=localized-v1",
@@ -77,6 +79,8 @@ for (const token of [
 const locale = JSON.parse(read('app/locales/ru.json'));
 assert.ok(Number(locale?._meta?.version) >= 49, 'RU locale revision must include active-game bundle');
 for (const path of [
+  ['games','router','status','finished'],
+  ['games','router','aliases','domino'],
   ['rules','battleship','title'],
   ['rules','checkers','title'],
   ['rules','chess','title'],
@@ -92,7 +96,7 @@ for (const path of [
 }
 
 const baseline = JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.json'));
-assert.ok(Number(baseline.cyrillic_lines_total) <= 3199, 'Successor localization must not increase the accepted game-bundle debt ceiling');
-assert.ok(Number(baseline.by_scope?.client) <= 1518, 'Successor localization must not increase the accepted game-bundle client debt ceiling');
+assert.ok(Number(baseline.cyrillic_lines_total) <= 1944, 'Successor localization must not increase the accepted game-bundle debt ceiling');
+assert.ok(Number(baseline.by_scope?.client) <= 291, 'Successor localization must not increase the accepted game-bundle client debt ceiling');
 
-console.log('MVP-27.1 active game-copy bundle contract: OK — 97 active player-facing lines localized with gameplay/cosmetics invariants frozen.');
+console.log('MVP-27.1 active game-copy bundle contract: OK — active game copy remains localized with routing/gameplay/cosmetics invariants frozen.');
