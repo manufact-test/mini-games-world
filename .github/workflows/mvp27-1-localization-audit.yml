@@ -32,6 +32,7 @@ on:
       - 'ops/checks/mvp27_1_legacy_invite_link_v115_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_go_entry_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_chess_entry_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_legacy_v100_share_controller_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_v101_share_controller_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_v102_share_controller_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs'
@@ -52,6 +53,7 @@ on:
       - '.github/workflows/mvp27-1-legacy-invite-link-v115-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-go-entry-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-chess-entry-reachability.yml'
+      - '.github/workflows/mvp27-1-legacy-v100-share-controller-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-v101-share-controller-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-v102-share-controller-reachability.yml'
       - '.github/workflows/mvp27-1-active-client-entry-localization.yml'
@@ -102,6 +104,7 @@ jobs:
           node --check ops/checks/mvp27_1_legacy_invite_link_v115_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_go_entry_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_chess_entry_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_legacy_v100_share_controller_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_v101_share_controller_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_v102_share_controller_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs
@@ -204,6 +207,9 @@ jobs:
 
       - name: Legacy Chess entry factual reachability proof
         run: node ops/checks/mvp27_1_legacy_chess_entry_reachability_contract.mjs
+
+      - name: Legacy v100 share-controller factual reachability proof
+        run: node ops/checks/mvp27_1_legacy_v100_share_controller_reachability_contract.mjs
 
       - name: Legacy v101 share-controller factual reachability proof
         run: node ops/checks/mvp27_1_legacy_v101_share_controller_reachability_contract.mjs
