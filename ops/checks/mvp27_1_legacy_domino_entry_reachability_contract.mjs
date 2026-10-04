@@ -80,7 +80,7 @@ assert.deepEqual(refsTo('games/domino/entry.js', [ENTRY]), HISTORICAL_OWNERS,
 assert.deepEqual(refsTo('initDominoEntry', [ENTRY]), HISTORICAL_OWNERS,
   'Domino init owner set changed; every owner must be historically classified before debt exclusion');
 
-for (const version of [99,100,101,102,103,104,105]) {
+for (const version of [99,100,101,102,103,104]) {
   const owner = 'app/assets/js/main-v' + version + '.js';
   const page = 'app/v' + version + '.php';
   assert.ok(read(owner).includes("from './games/domino/entry.js?v=74'"),
@@ -90,6 +90,38 @@ for (const version of [99,100,101,102,103,104,105]) {
   assert.deepEqual(refsTo('main-v' + version + '.js', [owner]), [page],
     owner + ' must stay confined to its historical versioned page');
 }
+
+const main105 = read('app/assets/js/main-v105.js');
+assert.ok(main105.includes("from './games/domino/entry.js?v=74'") && main105.includes('initDominoEntry();'),
+  'main-v105 must retain historical Domino ownership evidence');
+assert.deepEqual(
+  refsTo('main-v105.js', ['app/assets/js/main-v105.js']),
+  [
+    'app/assets/js/main-v106.js',
+    'app/assets/js/main-v107.js',
+    'app/assets/js/main-v108.js',
+    'app/assets/js/main-v109.js',
+    'app/v105.php',
+    'app/v108.php',
+  ],
+  'main-v105 historical successor set changed'
+);
+
+for (const version of [106,107,108,109]) {
+  const wrapper = 'app/assets/js/main-v' + version + '.js';
+  assert.ok(read(wrapper).includes("import './main-v105.js?v=105';"),
+    wrapper + ' must remain a zero-copy wrapper over historical main-v105');
+}
+assert.deepEqual(refsTo('main-v106.js', ['app/assets/js/main-v106.js']), ['app/v106.php'],
+  'main-v106 must stay confined to historical v106 page');
+assert.deepEqual(refsTo('main-v107.js', ['app/assets/js/main-v107.js']), ['app/v107.php'],
+  'main-v107 must stay confined to historical v107 page');
+assert.deepEqual(refsTo('main-v108.js', ['app/assets/js/main-v108.js']), [],
+  'main-v108 must remain ownerless historical wrapper');
+assert.deepEqual(refsTo('main-v109.js', ['app/assets/js/main-v109.js']), ['app/v109.php'],
+  'main-v109 must stay confined to historical v109 page');
+assert.ok(read('app/v108.php').includes("./assets/js/main-v105.js?v=105"),
+  'Historical v108 page must retain its direct main-v105 ownership evidence');
 
 assert.ok(read('app/assets/js/main.js').includes("from './games/domino/entry.js?v=74'"),
   'Legacy main.js must retain Domino import evidence');
