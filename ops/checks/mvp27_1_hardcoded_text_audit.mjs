@@ -27,6 +27,7 @@ const SKIP_FILES = new Set([
   'app/assets/js/residual-ui-game-race-fix.js', // shadowed legacy hotfix; factual v110 strips the only main.js entry that imports it
   'app/assets/js/production-v105-invite-latency.js', // historical v105-v109 invite owner; factual v110 uses canonical game-invites-v110 instead
   'app/assets/js/production-v106-invite-actions.js', // historical v106-only action owner; replaced before v107 and absent from factual v110
+  'app/assets/js/production-v109-invite-speed.js', // historical v109 capture owner; factual v110 uses canonical game-invites-v110 instead
 ]);
 
 const ADMIN_CONTROL_PLANE_PATTERNS = [
