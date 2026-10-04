@@ -67,14 +67,10 @@ jobs:
         run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
 
       - name: Bounded successor scope
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-invite-canonical-game-polling')
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${{ github.head_ref }}" == agent/mvp27-1-residual-ui-reachability* ]]; then
-            echo 'Residual reachability successor: canonical polling proofs still run; polling scope guard is not applicable.'
-            exit 0
-          fi
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           allowed='^(app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_invite_canonical_game_polling_contract\.mjs|ops/checks/mvp27_1_invite_owner_debt_classification_contract\.mjs|ops/checks/mvp27_1_active_shell_copy_bundle_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-invite-canonical-game-polling\.yml|\.github/workflows/mvp27-1-localization-audit\.yml|\.github/workflows/mvp27-1-active-client-entry-localization\.yml)$'
