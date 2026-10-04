@@ -1,0 +1,77 @@
+name: MVP-27.1 Phase-B Current Reachability
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'app/index.html'
+      - 'app/v110.php'
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/assets/js/app-bootstrap-v2-core.js'
+      - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish-mobile-nav-v2.js'
+      - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js'
+      - 'app/assets/js/production-clean-entry-v110.js'
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/assets/js/phase-b-current-entry.js'
+      - 'app/assets/js/phase-b-current-runtime.js'
+      - 'app/assets/js/screens/game-screen-phase-b-current.js'
+      - 'ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp27-1-phase-b-current-reachability.yml'
+      - '.github/workflows/mvp27-1-v102-history-controller-reachability.yml'
+      - '.github/workflows/mvp27-1-localization-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  phase-b-current-reachability:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Syntax and factual reachability proof
+        run: |
+          set -euo pipefail
+          php -l bot/helpers/WebAppLaunchUrl.php
+          php -l app/v110.php
+          node --check app/assets/js/phase-b-current-entry.js
+          node --check app/assets/js/phase-b-current-runtime.js
+          node --check app/assets/js/screens/game-screen-phase-b-current.js
+          node --check ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs
+          node ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs
+          node ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs
+
+      - name: Preserve localization architecture
+        run: |
+          set -euo pipefail
+          node ops/checks/mvp16_2_localization_contract.mjs
+          node ops/checks/mvp27_1_localization_architecture_contract.mjs
+          node ops/checks/mvp27_1_active_shell_copy_bundle_contract.mjs
+          node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded classification scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          allowed='^(ops/checks/mvp27_1_phase_b_current_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-phase-b-current-reachability\.yml|\.github/workflows/mvp27-1-v102-history-controller-reachability\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
+          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected Phase-B reachability paths:\n%s\n' "$bad" >&2; exit 1; }
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
