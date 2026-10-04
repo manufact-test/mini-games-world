@@ -488,8 +488,11 @@ test('CURRENT FINAL CORE: canonical Telegram v110 two-player TTT lifecycle', asy
       await expect(player.page.locator('#resultSummary')).not.toContainText('Награда:');
     }
 
-    const afterA = await readAction(A.page, '/bot/api.php', { action: 'profile' }, 'A final profile');
-    const afterB = await readAction(B.page, '/bot/api.php', { action: 'profile' }, 'B final profile');
+    // Final economy verification must use the transport captured from the
+    // successful canonical bootstrap. Raw localStorage can rotate for one tick
+    // during client self-healing and is not the owner of this server-side probe.
+    const afterA = await transportAction(A, '/bot/api.php', { action: 'profile' }, 'A final profile');
+    const afterB = await transportAction(B, '/bot/api.php', { action: 'profile' }, 'B final profile');
     const after = {
       stg_test_player_a: Number(afterA.user?.balance),
       stg_test_player_b: Number(afterB.user?.balance),
