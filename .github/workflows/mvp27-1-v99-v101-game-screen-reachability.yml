@@ -20,6 +20,8 @@ on:
       - 'app/assets/js/main-v99.js'
       - 'app/assets/js/main-v100.js'
       - 'app/assets/js/main-v101.js'
+      - 'app/assets/js/production-clean-entry-v101.js'
+      - 'app/assets/js/production-v101-result-speed.js'
       - 'app/assets/js/screens/search-screen-v99.js'
       - 'app/assets/js/screens/search-screen-v100.js'
       - 'app/assets/js/screens/game-screen-v99.js'
@@ -60,6 +62,8 @@ jobs:
           node --check app/assets/js/main-v99.js
           node --check app/assets/js/main-v100.js
           node --check app/assets/js/main-v101.js
+          node --check app/assets/js/production-clean-entry-v101.js
+          node --check app/assets/js/production-v101-result-speed.js
           node --check app/assets/js/screens/search-screen-v99.js
           node --check app/assets/js/screens/search-screen-v100.js
           node --check app/assets/js/screens/game-screen-v99.js
