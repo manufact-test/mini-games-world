@@ -28,6 +28,7 @@ on:
       - 'ops/checks/mvp27_1_cross_game_coordinator_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_notification_desktop_open_v117_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_notification_mobile_open_v117_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_notification_window_owner_v118_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_notification_window_owner_v119_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_profile_victory_effects_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_domino_entry_reachability_contract.mjs'
@@ -53,6 +54,7 @@ on:
       - 'docs/MVP27_1_LOCALIZATION_ARCHITECTURE_AUDIT.md'
       - '.github/workflows/mvp27-1-notification-desktop-open-v117-reachability.yml'
       - '.github/workflows/mvp27-1-notification-mobile-open-v117-reachability.yml'
+      - '.github/workflows/mvp27-1-notification-window-owner-v118-reachability.yml'
       - '.github/workflows/mvp27-1-localization-audit.yml'
       - '.github/workflows/mvp27-1-legacy-profile-victory-effects-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-domino-entry-reachability.yml'
@@ -114,6 +116,7 @@ jobs:
           node --check ops/checks/mvp27_1_cross_game_coordinator_reachability_contract.mjs
           node --check ops/checks/mvp27_1_notification_desktop_open_v117_reachability_contract.mjs
           node --check ops/checks/mvp27_1_notification_mobile_open_v117_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_notification_window_owner_v118_reachability_contract.mjs
           node --check ops/checks/mvp27_1_notification_window_owner_v119_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_profile_victory_effects_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_domino_entry_reachability_contract.mjs
@@ -219,6 +222,9 @@ jobs:
 
       - name: Notification mobile open owner v117 factual reachability proof
         run: node ops/checks/mvp27_1_notification_mobile_open_v117_reachability_contract.mjs
+
+      - name: Notification window owner v118 factual reachability proof
+        run: node ops/checks/mvp27_1_notification_window_owner_v118_reachability_contract.mjs
 
       - name: Notification window owner v119 factual reachability proof
         run: node ops/checks/mvp27_1_notification_window_owner_v119_reachability_contract.mjs
