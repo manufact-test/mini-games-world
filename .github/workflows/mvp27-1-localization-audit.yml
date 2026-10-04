@@ -34,6 +34,7 @@ on:
       - 'ops/checks/mvp27_1_legacy_domino_entry_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_battleship_entry_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_checkers_entry_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_legacy_tictactoe_entry_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_four_entry_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_reversi_entry_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_game_router_localization_contract.mjs'
@@ -62,6 +63,7 @@ on:
       - '.github/workflows/mvp27-1-legacy-domino-entry-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-battleship-entry-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-checkers-entry-reachability.yml'
+      - '.github/workflows/mvp27-1-legacy-tictactoe-entry-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-four-entry-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-reversi-entry-reachability.yml'
       - '.github/workflows/mvp27-1-game-router-localization.yml'
@@ -126,6 +128,7 @@ jobs:
           node --check ops/checks/mvp27_1_legacy_domino_entry_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_battleship_entry_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_checkers_entry_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_legacy_tictactoe_entry_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_four_entry_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_reversi_entry_reachability_contract.mjs
           node --check ops/checks/mvp27_1_game_router_localization_contract.mjs
@@ -246,6 +249,9 @@ jobs:
 
       - name: Legacy Checkers entry factual reachability proof
         run: node ops/checks/mvp27_1_legacy_checkers_entry_reachability_contract.mjs
+
+      - name: Legacy Tic-Tac-Toe entry factual reachability proof
+        run: node ops/checks/mvp27_1_legacy_tictactoe_entry_reachability_contract.mjs
 
       - name: Legacy Four-in-a-row entry factual reachability proof
         run: node ops/checks/mvp27_1_legacy_four_entry_reachability_contract.mjs
