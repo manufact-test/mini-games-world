@@ -43,6 +43,7 @@ const SKIP_FILES = new Set([
   'app/assets/js/production-prepared-share-fix.js', // historical v97/v98 prepared-share owner; factual v110 uses canonical invite/share ownership
   'app/assets/js/first-interaction-readiness.js', // historical child of stripped legacy main.js; absent from factual v110 ownership
   'app/assets/js/production-v109-notifications.js', // historical v109 notification owner; factual v110 uses localized r13 notification screen
+  'app/assets/js/production-v105-fast-notifications.js', // historical v108-only fast notification owner; factual v110 uses localized r13 notification screen
   'app/assets/js/screens/notifications-screen.js', // historical notification screen used only by legacy main-v99..v105
   'app/assets/js/screens/notifications-screen-v99.js', // historical notification screen owned by stripped legacy main.js
   'app/assets/js/screens/notifications-screen-v110-root.js', // superseded historical notification screen revision
