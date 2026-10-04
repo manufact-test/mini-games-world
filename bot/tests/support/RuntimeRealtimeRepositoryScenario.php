@@ -28,10 +28,14 @@ $assertSame(
     'One snapshot'
 );
 
-$repeat = $repo->synchronize($data);
+// A second HTTP request gets a fresh DB connection object; the repository's
+// static synchronize cache is intentionally request-scoped.
+$repeatDb = new RealtimeCountingDatabaseConnection($rawDb);
+$repeatRepo = new RuntimeRealtimeRepository($config, new RuntimeStorageRouter($config), $repeatDb);
+$repeat = $repeatRepo->synchronize($data);
 $assertSame(1, $repeat['games']['unchanged_count'], 'Repeat match unchanged');
 $assertSame(1, $repeat['queue']['unchanged_count'], 'Repeat queue unchanged');
-$assertSame(true, $repo->auditParity($data)['ok'], 'Read-only audit');
+$assertSame(true, $repeatRepo->auditParity($data)['ok'], 'Read-only audit');
 
 // Reproduce a large retained-terminal history while preserving the exact
 // fail-closed parity semantics. Query round-trips must not grow per match.
