@@ -72,6 +72,34 @@ jobs:
           node --input-type=module --check < app/assets/js/admin-operations.js
           node --input-type=module --check < app/assets/js/admin-shell.js
 
+      - name: MVP-27.1 recovery — accepted MVP26 admin and test-control identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
+          git cat-file -e "${baseline}^{commit}"
+          git diff --exit-code "${baseline}" HEAD -- \
+            app/admin.php \
+            app/assets/js/admin-analytics.js \
+            app/assets/js/admin-antifraud.js \
+            app/assets/js/admin-compensation.js \
+            app/assets/js/admin-incident.js \
+            app/assets/js/admin-notifications.js \
+            app/assets/js/admin-operations.js \
+            app/assets/js/admin-rating.js \
+            app/assets/js/admin-reports.js \
+            app/assets/js/admin-shell.js \
+            app/assets/js/admin-support.js \
+            app/assets/js/admin-system.js \
+            app/assets/js/admin-tournaments.js \
+            app/assets/css/admin-incident.css \
+            app/assets/css/admin-shell.css \
+            ':(glob)bot/admin*.php' \
+            bot/operations \
+            bot/system \
+            bot/services/AdminService.php \
+            ':(glob)bot/services/Staging*.php'
+
       - name: Run Admin operations model
         run: php bot/tests/Mvp22_7AdminOperationsTest.php
 
@@ -83,6 +111,20 @@ jobs:
 
       - name: Preserve quarterly season lifecycle
         run: php bot/tests/Mvp20_4QuarterlySeasonLifecycleTest.php
+
+      - name: MVP-27.1 recovery — staging test controls and admin safety regressions
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/Mvp22_5SystemAdminTest.php
+          php bot/tests/Mvp22_5SystemAdminContractTest.php
+          php bot/tests/RuntimeAdminGuardTest.php
+          php bot/tests/StagingAdminTestCoinGrantServiceTest.php
+          php bot/tests/ProductionMvp14R13StagingTestAuthTest.php
+          php bot/tests/ProductionMvp14R13StagingTestContextIsolationContractTest.php
+          php bot/tests/StagingTestAuthIsolationFromRealInviteResidualsContractTest.php
+          php bot/tests/StagingTestAuthNonBlockingRevokeTest.php
+          php bot/tests/StagingTestPlayerResetStageDiagnosticContractTest.php
+          php bot/tests/StagingTestPlayerScopedInviteIsolationContractTest.php
 
       - name: Guard MVP-22.7 scope and frozen owners
         if: github.event_name == 'pull_request'
