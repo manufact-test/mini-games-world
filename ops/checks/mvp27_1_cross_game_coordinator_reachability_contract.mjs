@@ -3,6 +3,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 
 const CANDIDATE = 'app/assets/js/production-cross-game-coordinator.js';
+const LEGACY_ENTRY = 'app/assets/js/production-regression-fix-entry.js';
 const read = p => fs.readFileSync(p, 'utf8');
 const normalized = p => p.split(path.sep).join('/');
 const countCyrillicLines = source => source.split(/\r?\n/).filter(line => /[\u0400-\u04FF]/.test(line)).length;
@@ -32,12 +33,15 @@ const handoff = read('app/assets/js/main-v110-handoff-shell.js');
 const activeInvites = read('app/assets/js/games/game-invites-v110.js');
 const activeGameScreen = read('app/assets/js/screens/game-screen-v102-safe.js');
 const candidate = read(CANDIDATE);
+const legacyEntry = read(LEGACY_ENTRY);
 const audit = read('ops/checks/mvp27_1_hardcoded_text_audit.mjs');
 const baseline = JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.json'));
 
 assert.ok(launch.includes("private const ENTRY_PATH = '/app/v110.php"), 'Telegram launch must remain on v110');
+assert.ok(v110.includes('<script type="module" src="./assets/js/production-regression-fix-entry.js?v=102"></script>'),
+  'v110 legacy entry anchor must retain regression-entry evidence');
 assert.ok(v110.includes('$html = str_replace($entryScriptsAnchor, $bootstrapTag, $html);'),
-  'v110 must retain canonical bootstrap replacement');
+  'v110 must strip the legacy regression/main entry anchor in favor of canonical bootstrap');
 assert.deepEqual(
   [...bootstrapCore.matchAll(/(?:await\s+)?import\((['"])([^'"]+)\1\)/g)].map(match => match[2]),
   ['@mgw/clean-entry', '@mgw/main'],
@@ -73,12 +77,19 @@ assert.ok(candidate.includes("export function scheduleCrossGameCoordinatorAfterM
 assert.ok(candidate.includes("from './production-cross-game-optimistic.js?v=96'"),
   'Historical coordinator must retain its optimistic child edge as evidence');
 
-assert.deepEqual(externalRefs('production-cross-game-coordinator.js'), [],
-  'Cross-game coordinator acquired an external app-JS owner');
-assert.deepEqual(externalRefs('initCrossGameCoordinator'), [],
-  'initCrossGameCoordinator acquired an external app-JS consumer');
-assert.deepEqual(externalRefs('scheduleCrossGameCoordinatorAfterMain'), [],
-  'scheduleCrossGameCoordinatorAfterMain acquired an external app-JS consumer');
+assert.ok(legacyEntry.includes("from './production-cross-game-coordinator.js?v=96'"),
+  'Legacy regression entry must retain coordinator import evidence');
+assert.ok(legacyEntry.includes('initCrossGameCoordinator();'),
+  'Legacy regression entry must retain coordinator init evidence');
+assert.ok(legacyEntry.includes('scheduleCrossGameCoordinatorAfterMain();'),
+  'Legacy regression entry must retain coordinator scheduling evidence');
+
+assert.deepEqual(externalRefs('production-cross-game-coordinator.js'), [LEGACY_ENTRY],
+  'Cross-game coordinator must remain confined to stripped legacy regression entry');
+assert.deepEqual(externalRefs('initCrossGameCoordinator'), [LEGACY_ENTRY],
+  'initCrossGameCoordinator must remain confined to stripped legacy regression entry');
+assert.deepEqual(externalRefs('scheduleCrossGameCoordinatorAfterMain'), [LEGACY_ENTRY],
+  'scheduleCrossGameCoordinatorAfterMain must remain confined to stripped legacy regression entry');
 
 assert.ok(audit.includes("'app/assets/js/production-cross-game-coordinator.js'"),
   'Hardcoded-text audit must classify cross-game coordinator');
@@ -94,4 +105,4 @@ assert.ok(Number(baseline.by_scope?.client) <= 372, 'cross-game successor client
 assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
-console.log('MVP-27.1 cross-game coordinator reachability: OK — coordinator and both exports have no external app-JS owner and are absent from factual v110 ownership.');
+console.log('MVP-27.1 cross-game coordinator reachability: OK — coordinator is confined to stripped legacy production-regression-fix-entry.js and absent from factual canonical v110 ownership.');

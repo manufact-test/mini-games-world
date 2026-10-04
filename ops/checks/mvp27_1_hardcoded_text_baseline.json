@@ -32,7 +32,7 @@
     "shadowed historical v104/v105/v105-fast/v107-v109 invite-game-controls owner (production-v104-invite-game-controls.js)",
     "shadowed historical notification lineage (production-v109-notifications.js; notifications-screen.js; notifications-screen-v99.js; notifications-screen-v110-root.js; notifications-screen-v110.js; notifications-screen-v110r4.js; notifications-screen-v110r5.js; notifications-screen-v110r12.js)",
     "shadowed historical result/share performance owners (production-v104-result-instant.js; production-v109-share-speed.js)",
-    "orphaned legacy cross-game coordinator (production-cross-game-coordinator.js)"
+    "shadowed legacy cross-game coordinator child of stripped production-regression-fix-entry.js (production-cross-game-coordinator.js)"
   ],
-  "note": "MVP-27.1 cross-game coordinator reachability classification: production-cross-game-coordinator.js has no external app-JS owner or consumer of initCrossGameCoordinator/scheduleCrossGameCoordinatorAfterMain. Factual v110 manifest/bootstrap/clean-entry/main ownership does not import, map or initialize it and retains canonical game-invites-v110 plus game-screen-v102-safe ownership. The historical implementation remains untouched; its 19 Cyrillic lines are outside active player localization debt."
+  "note": "MVP-27.1 cross-game coordinator reachability classification: production-cross-game-coordinator.js is imported and both exports are invoked only by legacy production-regression-fix-entry.js. Factual /app/v110.php retains that regression entry solely inside the legacy entryScriptsAnchor and replaces the whole anchor with the canonical bootstrap before serving the player HTML. Canonical bootstrap/manifest/clean-entry/main ownership does not load the coordinator and retains game-invites-v110 plus game-screen-v102-safe. The historical implementation remains untouched; its 19 Cyrillic lines are outside active player localization debt."
 }
