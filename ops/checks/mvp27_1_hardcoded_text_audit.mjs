@@ -31,6 +31,7 @@ const SKIP_FILES = new Set([
   'app/assets/js/production-v109-invite-speed.js', // historical v109 capture owner; factual v110 uses canonical game-invites-v110 instead
   'app/assets/js/production-v97-runtime-owner.js', // historical v97/v98 coordinator; factual v110 bootstrap/clean-entry graph does not load it
   'app/assets/js/production-prepared-share-fix.js', // historical v97/v98 prepared-share owner; factual v110 uses canonical invite/share ownership
+  'app/assets/js/first-interaction-readiness.js', // historical child of stripped legacy main.js; absent from factual v110 ownership
   'app/assets/js/production-v102-history-controller.js', // historical v102-v109 history owner; factual v110 graph no longer loads it
   'app/assets/js/phase-b-current-entry.js', // historical Phase-B entry; absent from factual v110 top-level ownership
   'app/assets/js/phase-b-current-runtime.js', // reachable only from historical Phase-B entry

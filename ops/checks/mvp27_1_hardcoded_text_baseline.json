@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "349fef39761af26196aa8940ab80c85d83876a5a",
-  "scanned_files": 738,
-  "cyrillic_lines_total": 2335,
+  "staging_base": "f322e3e7cf4c525df934b25fecf30635f96645fa",
+  "scanned_files": 737,
+  "cyrillic_lines_total": 2305,
   "by_scope": {
-    "client": 682,
+    "client": 652,
     "backend": 1653,
     "client-entry": 0
   },
@@ -27,7 +27,8 @@
     "shadowed historical Phase-B current lineage (entry/runtime/game-screen)",
     "shadowed historical v99-v101 search/game-screen lineage (main-v99/main-v100/main-v101/production-v101-result-speed/search-screen-v99/search-screen-v100/game-screen-v99/game-screen-v100-safe/game-screen-v100)",
     "shadowed historical v107/v108 invite-actions owner (production-v107-invite-actions.js)",
-    "shadowed historical v97/v98 prepared-share owner (production-prepared-share-fix.js)"
+    "shadowed historical v97/v98 prepared-share owner (production-prepared-share-fix.js)",
+    "shadowed historical first-interaction readiness child of stripped legacy main.js (first-interaction-readiness.js)"
   ],
-  "note": "MVP-27.1 prepared-share reachability classification: production-prepared-share-fix.js is imported and initialized only by historical production-regression-fix-entry-v97.js and production-regression-fix-entry-v98.js. Factual Telegram launch remains v110; its legacy regression/main pair is replaced by the canonical bootstrap, and accepted v110 clean-entry/main ownership does not load or initialize the prepared-share owner. The historical implementation remains untouched; its 31 Cyrillic lines are outside active player localization debt."
+  "note": "MVP-27.1 first-interaction-readiness reachability classification: legacy app/assets/js/main.js imports and initializes first-interaction-readiness.js, but factual v110 explicitly strips the legacy regression/main top-level pair and replaces it with the canonical bootstrap. The canonical bootstrap loads only @mgw/clean-entry and @mgw/main, whose accepted v110 ownership does not load the readiness module. Exhaustive app-source reference proof confines the file and its init export to stripped legacy main.js; warmFirstInteractionData has no external consumer. The historical implementation remains untouched; its 30 Cyrillic lines are outside active player localization debt."
 }

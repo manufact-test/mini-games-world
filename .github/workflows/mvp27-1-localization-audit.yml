@@ -18,6 +18,7 @@ on:
       - 'ops/checks/mvp27_1_v109_invite_speed_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_prepared_share_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs'
@@ -62,6 +63,7 @@ jobs:
           node --check ops/checks/mvp27_1_v109_invite_speed_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs
           node --check ops/checks/mvp27_1_prepared_share_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs
           node --check ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs
@@ -120,6 +122,9 @@ jobs:
 
       - name: Prepared-share factual reachability proof
         run: node ops/checks/mvp27_1_prepared_share_reachability_contract.mjs
+
+      - name: First-interaction readiness factual reachability proof
+        run: node ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs
 
       - name: V102 history-controller factual reachability proof
         run: node ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs

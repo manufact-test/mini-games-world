@@ -1,4 +1,4 @@
-name: MVP-27.1 Prepared Share Reachability
+name: MVP-27.1 First Interaction Readiness Reachability
 
 on:
   pull_request:
@@ -6,6 +6,7 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'app/index.html'
       - 'app/v110.php'
       - 'app/runtime/client/version-manifest.php'
       - 'app/assets/js/app-bootstrap-v2-core.js'
@@ -13,15 +14,14 @@ on:
       - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js'
       - 'app/assets/js/production-clean-entry-v110.js'
       - 'app/assets/js/main-v110-handoff-shell.js'
-      - 'app/assets/js/production-regression-fix-entry-v97.js'
-      - 'app/assets/js/production-regression-fix-entry-v98.js'
-      - 'app/assets/js/production-prepared-share-fix.js'
-      - 'ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs'
+      - 'app/assets/js/first-interaction-readiness.js'
       - 'ops/checks/mvp27_1_prepared_share_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_residual_ui_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp27-1-first-interaction-readiness-reachability.yml'
       - '.github/workflows/mvp27-1-prepared-share-reachability.yml'
-      - '.github/workflows/mvp27-1-v107-invite-actions-reachability.yml'
       - '.github/workflows/mvp27-1-localization-audit.yml'
   workflow_dispatch:
 
@@ -29,7 +29,7 @@ permissions:
   contents: read
 
 jobs:
-  prepared-share-reachability:
+  first-interaction-readiness-reachability:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -45,11 +45,13 @@ jobs:
           set -euo pipefail
           php -l bot/helpers/WebAppLaunchUrl.php
           php -l app/v110.php
-          node --check app/assets/js/production-prepared-share-fix.js
-          node --check ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs
+          node --check app/assets/js/first-interaction-readiness.js
           node --check ops/checks/mvp27_1_prepared_share_reachability_contract.mjs
-          node ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_residual_ui_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs
           node ops/checks/mvp27_1_prepared_share_reachability_contract.mjs
+          node ops/checks/mvp27_1_residual_ui_reachability_contract.mjs
+          node ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs
 
       - name: Preserve localization architecture
         run: |
@@ -60,15 +62,15 @@ jobs:
           node ops/checks/mvp27_1_hardcoded_text_audit.mjs
 
       - name: Bounded classification scope
-        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-prepared-share-reachability')
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-first-interaction-readiness-reachability')
         shell: bash
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(ops/checks/mvp27_1_prepared_share_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-prepared-share-reachability\.yml|\.github/workflows/mvp27-1-v107-invite-actions-reachability\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
+          allowed='^(ops/checks/mvp27_1_first_interaction_readiness_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-first-interaction-readiness-reachability\.yml|\.github/workflows/mvp27-1-prepared-share-reachability\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
-          test -z "$bad" || { printf 'Unexpected prepared-share reachability paths:\n%s\n' "$bad" >&2; exit 1; }
+          test -z "$bad" || { printf 'Unexpected first-interaction readiness reachability paths:\n%s\n' "$bad" >&2; exit 1; }
 
       - name: Tracked secret scan
         run: node scripts/ci/check-secrets.mjs
