@@ -95,8 +95,30 @@ jobs:
           php -l app/runtime/client/version-manifest.php
           php -l app/v110.php
 
+      - name: MVP-27.1 recovery — accepted MVP26 account backend identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
+          git cat-file -e "${baseline}^{commit}"
+          git diff --exit-code "${baseline}" HEAD -- \
+            bot/accounts \
+            bot/account-data.php \
+            bot/account-data-website-hook.php \
+            bot/account-link.php
+
       - name: Run SQLite lifecycle proof
         run: php bot/tests/Mvp22_8AccountDataLifecycleTest.php
+
+      - name: MVP-27.1 recovery — identity session and account-link regressions
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/AccountIdentityServiceTest.php
+          php bot/tests/MgwProfileIdentityCorrectiveTest.php
+          php bot/tests/RuntimeAccountIdentityResolverTest.php
+          php bot/tests/SessionServiceRegressionTest.php
+          php bot/tests/Mvp14R3CleanAuthSessionPresenceTest.php
+          php bot/tests/Mvp26_3AccountLinkServiceTest.php
 
       - name: Guard first-open account-data UX
         run: php bot/tests/Mvp23ManualAcceptanceCorrectiveContractTest.php
