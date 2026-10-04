@@ -44,6 +44,11 @@ final class WeeklyBonusRuntimeBridge
             // inside its transaction. DB projection may catch up on the next
             // ordinary non-critical request instead of blocking first paint.
             'bootstrap',
+            // Legacy api.php?action=profile is a pure JSON read boundary. Its
+            // payload does not expose this bridge's projection, so external DB
+            // catch-up must never delay the profile response. Canonical Profile
+            // V2 owns rating/profile projections independently.
+            'profile',
             'start_search',
             'leave_search',
             'game_state',

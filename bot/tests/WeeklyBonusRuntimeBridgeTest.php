@@ -209,6 +209,7 @@ $assertSame(1000, $normalized['weekly_match']['starter_amount'], 'Weekly bridge 
 $assertSame(50, $normalized['weekly_match']['first_game_amount'], 'Weekly bridge must read first-game amount from versioned DB economy config');
 $assertSame(1, $normalized['weekly_match']['first_game_grant_count'], 'Weekly bridge must expose projected first-game grant state');
 $assertSame('Europe/Moscow', $normalized['weekly_match']['timezone'], 'Weekly bridge must expose canonical Moscow cycle');
+$assertSame(false, $bridge->shouldSynchronizeApiAction('profile'), 'Legacy profile read must not wait for weekly/realtime/notification projection');
 $assertSame(true, $bridge->shouldSynchronizeApiAction('anything'), 'Weekly bridge synchronization must not depend on a hidden action global');
 
 fwrite(STDOUT, "WeeklyBonusRuntimeBridgeTest passed: {$assertions} assertions.\n");
