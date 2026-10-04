@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "084b208e16807f11602264edd1925572f51dcde3",
-  "scanned_files": 749,
-  "cyrillic_lines_total": 2523,
+  "staging_base": "80bafae359162fc65fd302846a0bf240214c13f9",
+  "scanned_files": 743,
+  "cyrillic_lines_total": 2456,
   "by_scope": {
-    "client": 870,
+    "client": 803,
     "backend": 1653,
     "client-entry": 0
   },
@@ -24,7 +24,8 @@
     "shadowed historical v109 invite-speed owner (production-v109-invite-speed.js)",
     "shadowed historical v97/v98 runtime coordinator (production-v97-runtime-owner.js)",
     "shadowed historical v102-v109 history controller (production-v102-history-controller.js)",
-    "shadowed historical Phase-B current lineage (entry/runtime/game-screen)"
+    "shadowed historical Phase-B current lineage (entry/runtime/game-screen)",
+    "shadowed historical v99-v101 game-screen lineage (main-v99/main-v100/main-v101/game-screen-v99/game-screen-v100-safe/game-screen-v100)"
   ],
-  "note": "MVP-27.1 Phase-B current reachability classification: phase-b-current-entry.js is not loaded by factual Telegram v110; it is the sole app-JS reference to phase-b-current-runtime.js, which is the sole app-JS reference to screens/game-screen-phase-b-current.js. The three historical sources remain untouched. Their 49 Cyrillic lines are outside active player localization debt."
+  "note": "MVP-27.1 v99-v101 game-screen reachability classification: historical v99/v100/v101 PHP entries own main-v99/main-v100/main-v101; those mains own game-screen-v99 or the game-screen-v100-safe -> game-screen-v100 chain. Factual Telegram launch remains v110, whose manifest/bootstrap/clean-entry/main graph does not load this lineage. Historical sources remain untouched; 67 Cyrillic lines are outside active player localization debt."
 }
