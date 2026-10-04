@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "efe516c400391c3c4628fb3deaae83ac0332e426",
-  "scanned_files": 757,
-  "cyrillic_lines_total": 2745,
+  "staging_base": "2c4cab32308b1a3d4a8cb037d93b0d3e062d093a",
+  "scanned_files": 756,
+  "cyrillic_lines_total": 2707,
   "by_scope": {
-    "client": 1092,
+    "client": 1054,
     "backend": 1653,
     "client-entry": 0
   },
@@ -18,7 +18,8 @@
     "staging-only rejected clean-runtime server (app/runtime/server)",
     "shadowed invite owners (invite-controller-v120.js, game-invites.js)",
     "shadowed legacy game screen (screens/game-screen.js)",
-    "shadowed legacy residual UI/game-race hotfix (residual-ui-game-race-fix.js)"
+    "shadowed legacy residual UI/game-race hotfix (residual-ui-game-race-fix.js)",
+    "shadowed historical v105 invite-latency owner (production-v105-invite-latency.js)"
   ],
-  "note": "MVP-27.1 residual UI reachability classification: factual Telegram launch remains v110. v110 strips the legacy index main.js entry and replaces it with the canonical app-bootstrap-v2 graph; bootstrap core loads only @mgw/clean-entry and @mgw/main, and neither accepted owner chain imports residual-ui-game-race-fix.js. The historical main.js remains untouched as forensic evidence. Its 82 Cyrillic lines are outside active player localization debt."
+  "note": "MVP-27.1 v105 invite-latency reachability classification: production-v105-invite-latency.js was a real historical invite owner in clean-entry v105-v109. Factual Telegram v110 now resolves through the canonical v110 clean-entry and game-invites-v110 owner chain, none of which imports or initializes v105 invite-latency. The historical implementation remains untouched as forensic evidence; its 38 Cyrillic lines are outside active player localization debt."
 }
