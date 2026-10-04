@@ -30,6 +30,7 @@ on:
       - 'ops/checks/mvp27_1_legacy_reversi_entry_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_game_router_localization_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_invite_link_v115_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_legacy_go_entry_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs'
@@ -46,6 +47,7 @@ on:
       - '.github/workflows/mvp27-1-legacy-reversi-entry-reachability.yml'
       - '.github/workflows/mvp27-1-game-router-localization.yml'
       - '.github/workflows/mvp27-1-legacy-invite-link-v115-reachability.yml'
+      - '.github/workflows/mvp27-1-legacy-go-entry-reachability.yml'
       - '.github/workflows/mvp27-1-active-client-entry-localization.yml'
   workflow_dispatch:
 
@@ -92,6 +94,7 @@ jobs:
           node --check ops/checks/mvp27_1_legacy_reversi_entry_reachability_contract.mjs
           node --check ops/checks/mvp27_1_game_router_localization_contract.mjs
           node --check ops/checks/mvp27_1_legacy_invite_link_v115_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_legacy_go_entry_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs
           node --check ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs
@@ -186,6 +189,9 @@ jobs:
 
       - name: Legacy invite-link v115 factual reachability proof
         run: node ops/checks/mvp27_1_legacy_invite_link_v115_reachability_contract.mjs
+
+      - name: Legacy Go entry factual reachability proof
+        run: node ops/checks/mvp27_1_legacy_go_entry_reachability_contract.mjs
 
       - name: V102 history-controller factual reachability proof
         run: node ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs
