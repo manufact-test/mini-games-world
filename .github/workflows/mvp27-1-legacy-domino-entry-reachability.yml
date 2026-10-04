@@ -6,16 +6,35 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'app/v99.php'
+      - 'app/v100.php'
+      - 'app/v101.php'
+      - 'app/v102.php'
+      - 'app/v103.php'
+      - 'app/v104.php'
+      - 'app/v105.php'
       - 'app/v110.php'
+      - 'app/v120.php'
       - 'app/runtime/client/version-manifest.php'
       - 'app/assets/js/app-bootstrap-v2-core.js'
       - 'app/assets/js/production-clean-entry-v110.js'
       - 'app/assets/js/main.js'
+      - 'app/assets/js/main-v99.js'
+      - 'app/assets/js/main-v100.js'
+      - 'app/assets/js/main-v101.js'
+      - 'app/assets/js/main-v102.js'
+      - 'app/assets/js/main-v103.js'
+      - 'app/assets/js/main-v104.js'
+      - 'app/assets/js/main-v105.js'
+      - 'app/assets/js/main-v120.js'
+      - 'app/assets/js/main-v120-invite-controller-shell.js'
+      - 'app/assets/js/main-v110-reconnect-v174.js'
       - 'app/assets/js/main-v110.js'
       - 'app/assets/js/main-v110-handoff-shell.js'
       - 'app/assets/js/games/domino/entry.js'
       - 'app/assets/js/games/domino/meta.js'
       - 'ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_domino_renderer_localization_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_domino_entry_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
@@ -47,6 +66,7 @@ jobs:
           node --check app/assets/js/games/domino/meta.js
           node --check ops/checks/mvp27_1_legacy_domino_entry_reachability_contract.mjs
           node ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs
+          node ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs
           node ops/checks/mvp27_1_legacy_domino_entry_reachability_contract.mjs
 
       - name: Preserve active Domino and localization ownership
