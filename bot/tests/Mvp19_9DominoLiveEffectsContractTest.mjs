@@ -122,7 +122,7 @@ assert.ok(liveCosmeticsCss.includes('overflow-x:auto!important'), 'ordinary hand
 assert.ok(liveCosmeticsCss.includes('overflow-y:auto!important'), 'mobile Domino vertical scroll must remain preserved');
 assert.ok(liveCosmeticsCss.includes('height:100dvh!important'), 'bounded Telegram viewport owner must remain preserved');
 
-assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=3&mvp19_9=accepted-live-stability-v30&parent=accepted-live-corrective-v25&visual_portal=v38&precision_geometry=v41&gesture_owner=v27&precision_static=2&live_effects=v41&mvp27_1=domino-renderer-localized-v1'"), 'manifest must publish the localized accepted Domino renderer URL');
+assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=4&mvp19_9=accepted-live-stability-v30&parent=accepted-live-corrective-v25&visual_portal=v38&precision_geometry=v41&gesture_owner=v27&precision_static=2&live_effects=v41&mvp27_1=domino-renderer-localized-v1&mvp27_1_qa=localized-v1'"), 'manifest must publish the localized accepted Domino renderer URL');
 assert.ok(entry.includes("'domino_renderer' => $imports[$dominoRendererImportKey]"), 'active entry must render the canonical manifest-owned Domino target');
 assert.ok(!entry.includes("$imports[$dominoRendererImportKey] .="), 'v110 must not mutate the manifest-owned Domino cache identity at runtime');
 assert.ok(entry.includes("header('X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal');"), 'active entry must retain the existing Domino gesture diagnostic header');

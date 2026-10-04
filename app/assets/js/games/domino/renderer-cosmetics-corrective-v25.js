@@ -5,6 +5,7 @@ import {
   dominoStatus,
 } from './renderer-cosmetics-v1.js?v=8&mvp19_9=live-native-effects-v1&mvp27_1=domino-renderer-localized-v1';
 import { state } from '../../state.js?v=27';
+import { t } from '@mgw/i18n';
 
 const EFFECT_SLOT = 'game_domino_effect';
 const FINALE_ID = 'game-domino-effect-chain-finale';
@@ -273,8 +274,8 @@ function mountFinaleQaControl(game, me, container){
   button.type = 'button';
   button.className = 'btn secondary full domino-finale-qa-button';
   button.dataset.dominoFinaleQa = 'preview';
-  button.textContent = 'Тест «Финиш цепи»';
-  button.setAttribute('aria-label', 'Запустить локальный тест эффекта Финиш цепи без завершения партии');
+  button.textContent = t('games.domino.ui.qa.test');
+  button.setAttribute('aria-label', t('games.domino.ui.qa.aria'));
   button.addEventListener('click', event => {
     event.preventDefault();
     event.stopPropagation();
@@ -304,7 +305,7 @@ function runFinaleQa(game, container, button){
   if (tiles.length === 0) return;
 
   button.disabled = true;
-  button.textContent = 'Финиш идёт…';
+  button.textContent = t('games.domino.ui.qa.running');
 
   const step = tiles.length > 24 ? 34 : (tiles.length > 14 ? 48 : 62);
   tiles.forEach((tile, index) => {
@@ -343,7 +344,7 @@ function runFinaleQa(game, container, button){
     table.classList.remove('mgw-domino-native-finale-table');
     if (button.isConnected) {
       button.disabled = false;
-      button.textContent = 'Повторить «Финиш цепи»';
+      button.textContent = t('games.domino.ui.qa.repeat');
     }
   };
 
@@ -355,7 +356,7 @@ function runFinaleQa(game, container, button){
     tiles.forEach(tile => tile.classList.remove('mgw-domino-native-finale-tile'));
     table.classList.remove('mgw-domino-native-finale-table');
     button.disabled = false;
-    button.textContent = 'Повторить «Финиш цепи»';
+    button.textContent = t('games.domino.ui.qa.repeat');
   }
 }
 
