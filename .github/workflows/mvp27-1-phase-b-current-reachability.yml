@@ -1,4 +1,4 @@
-name: MVP-27.1 V102 History Controller Reachability
+name: MVP-27.1 Phase-B Current Reachability
 
 on:
   pull_request:
@@ -6,6 +6,7 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'app/index.html'
       - 'app/v110.php'
       - 'app/runtime/client/version-manifest.php'
       - 'app/assets/js/app-bootstrap-v2-core.js'
@@ -13,21 +14,15 @@ on:
       - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js'
       - 'app/assets/js/production-clean-entry-v110.js'
       - 'app/assets/js/main-v110-handoff-shell.js'
-      - 'app/assets/js/production-clean-entry-v102.js'
-      - 'app/assets/js/production-clean-entry-v103.js'
-      - 'app/assets/js/production-clean-entry-v104.js'
-      - 'app/assets/js/production-clean-entry-v105.js'
-      - 'app/assets/js/production-clean-entry-v105-fast-notifications.js'
-      - 'app/assets/js/production-clean-entry-v107.js'
-      - 'app/assets/js/production-clean-entry-v108.js'
-      - 'app/assets/js/production-clean-entry-v109.js'
-      - 'app/assets/js/production-v102-history-controller.js'
-      - 'ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs'
+      - 'app/assets/js/phase-b-current-entry.js'
+      - 'app/assets/js/phase-b-current-runtime.js'
+      - 'app/assets/js/screens/game-screen-phase-b-current.js'
       - 'ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp27-1-phase-b-current-reachability.yml'
       - '.github/workflows/mvp27-1-v102-history-controller-reachability.yml'
-      - '.github/workflows/mvp27-1-v97-runtime-owner-reachability.yml'
       - '.github/workflows/mvp27-1-localization-audit.yml'
   workflow_dispatch:
 
@@ -35,7 +30,7 @@ permissions:
   contents: read
 
 jobs:
-  v102-history-controller-reachability:
+  phase-b-current-reachability:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -51,11 +46,13 @@ jobs:
           set -euo pipefail
           php -l bot/helpers/WebAppLaunchUrl.php
           php -l app/v110.php
-          node --check app/assets/js/production-v102-history-controller.js
-          node --check ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs
+          node --check app/assets/js/phase-b-current-entry.js
+          node --check app/assets/js/phase-b-current-runtime.js
+          node --check app/assets/js/screens/game-screen-phase-b-current.js
           node --check ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs
-          node ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs
           node ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs
+          node ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs
 
       - name: Preserve localization architecture
         run: |
@@ -66,15 +63,15 @@ jobs:
           node ops/checks/mvp27_1_hardcoded_text_audit.mjs
 
       - name: Bounded classification scope
-        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-v102-history-controller-reachability')
+        if: github.event_name == 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(ops/checks/mvp27_1_v102_history_controller_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-v102-history-controller-reachability\.yml|\.github/workflows/mvp27-1-v97-runtime-owner-reachability\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
+          allowed='^(ops/checks/mvp27_1_phase_b_current_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-phase-b-current-reachability\.yml|\.github/workflows/mvp27-1-v102-history-controller-reachability\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
-          test -z "$bad" || { printf 'Unexpected v102 history reachability paths:\n%s\n' "$bad" >&2; exit 1; }
+          test -z "$bad" || { printf 'Unexpected Phase-B reachability paths:\n%s\n' "$bad" >&2; exit 1; }
 
       - name: Tracked secret scan
         run: node scripts/ci/check-secrets.mjs

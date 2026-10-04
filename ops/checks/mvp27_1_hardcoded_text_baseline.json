@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "501e938d6fca8211ab8f74af3539f8a8b7f63f8a",
-  "scanned_files": 752,
-  "cyrillic_lines_total": 2572,
+  "staging_base": "084b208e16807f11602264edd1925572f51dcde3",
+  "scanned_files": 749,
+  "cyrillic_lines_total": 2523,
   "by_scope": {
-    "client": 919,
+    "client": 870,
     "backend": 1653,
     "client-entry": 0
   },
@@ -23,7 +23,8 @@
     "shadowed historical v106 invite-actions owner (production-v106-invite-actions.js)",
     "shadowed historical v109 invite-speed owner (production-v109-invite-speed.js)",
     "shadowed historical v97/v98 runtime coordinator (production-v97-runtime-owner.js)",
-    "shadowed historical v102-v109 history controller (production-v102-history-controller.js)"
+    "shadowed historical v102-v109 history controller (production-v102-history-controller.js)",
+    "shadowed historical Phase-B current lineage (entry/runtime/game-screen)"
   ],
-  "note": "MVP-27.1 v102 history-controller reachability classification: production-v102-history-controller.js is retained by historical clean-entry v102-v109 lineages but absent from the factual Telegram v110 manifest/bootstrap/clean-entry/main ownership graph. The historical source remains untouched; its 33 Cyrillic lines are outside active player localization debt."
+  "note": "MVP-27.1 Phase-B current reachability classification: phase-b-current-entry.js is not loaded by factual Telegram v110; it is the sole app-JS reference to phase-b-current-runtime.js, which is the sole app-JS reference to screens/game-screen-phase-b-current.js. The three historical sources remain untouched. Their 49 Cyrillic lines are outside active player localization debt."
 }
