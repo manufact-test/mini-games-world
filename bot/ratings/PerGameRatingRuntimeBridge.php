@@ -44,11 +44,6 @@ final class PerGameRatingRuntimeBridge
             // Cold bootstrap must not wait for rating catch-up. Profile/leaderboard
             // owners and the next non-critical API request reconcile projected matches.
             'bootstrap',
-            // Legacy api.php?action=profile is a pure JSON read boundary. Its
-            // payload does not expose this bridge's projection, so external DB
-            // catch-up must never delay the profile response. Canonical Profile
-            // V2 owns rating/profile projections independently.
-            'profile',
             'start_search',
             'leave_search',
             'game_state',
