@@ -23,6 +23,10 @@ $assertSame = static function (mixed $expected, mixed $actual, string $message) 
     $assertions++;
     if ($expected !== $actual) throw new RuntimeException($message . ': expected ' . var_export($expected, true) . ', got ' . var_export($actual, true));
 };
+$assertLessThanOrEqual = static function (int $maximum, int $actual, string $message) use (&$assertions): void {
+    $assertions++;
+    if ($actual > $maximum) throw new RuntimeException($message . ': expected <= ' . $maximum . ', got ' . $actual);
+};
 $assertThrows = static function (callable $callback, string $needle, string $message) use (&$assertions): void {
     $assertions++;
     try { $callback(); } catch (Throwable $error) {

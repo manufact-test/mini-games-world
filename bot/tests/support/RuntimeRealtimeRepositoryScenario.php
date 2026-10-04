@@ -28,10 +28,81 @@ $assertSame(
     'One snapshot'
 );
 
-$repeat = $repo->synchronize($data);
+// A second HTTP request gets a fresh DB connection object; the repository's
+// static synchronize cache is intentionally request-scoped.
+$repeatDb = new RealtimeCountingDatabaseConnection($rawDb);
+$repeatRepo = new RuntimeRealtimeRepository($config, new RuntimeStorageRouter($config), $repeatDb);
+$repeat = $repeatRepo->synchronize($data);
 $assertSame(1, $repeat['games']['unchanged_count'], 'Repeat match unchanged');
 $assertSame(1, $repeat['queue']['unchanged_count'], 'Repeat queue unchanged');
-$assertSame(true, $repo->auditParity($data)['ok'], 'Read-only audit');
+$assertSame(true, $repeatRepo->auditParity($data)['ok'], 'Read-only audit');
+
+// Reproduce a large retained-terminal history while preserving the exact
+// fail-closed parity semantics. Query round-trips must not grow per match.
+for ($index = 1; $index <= 40; $index++) {
+    $retainedId = sprintf('retained-%03d', $index);
+    $db->execute(
+        'INSERT INTO mgw_matches (
+            match_id,game_type,room,status,board_size,bet,match_source,invite_id,source_match_id,
+            turn_player_ref,winner_player_ref,finish_reason,state_version,public_state_json,server_state_json,
+            created_at_utc,started_at_utc,updated_at_utc,finished_at_utc
+         )
+         SELECT :match_id,game_type,room,:status,board_size,bet,match_source,invite_id,:source_match_id,
+                turn_player_ref,winner_player_ref,:finish_reason,state_version,public_state_json,server_state_json,
+                created_at_utc,started_at_utc,updated_at_utc,updated_at_utc
+         FROM mgw_matches WHERE match_id = :source_id',
+        [
+            'match_id' => $retainedId,
+            'status' => 'finished',
+            'source_match_id' => $retainedId,
+            'finish_reason' => 'normal_win',
+            'source_id' => 'game-1',
+        ]
+    );
+    $db->execute(
+        'INSERT INTO mgw_match_players (
+            match_id,seat,player_ref,mgw_id,legacy_user_id,player_type,symbol,display_name,result,
+            joined_at_utc,updated_at_utc
+         )
+         SELECT :match_id,seat,player_ref,mgw_id,legacy_user_id,player_type,symbol,display_name,result,
+                joined_at_utc,updated_at_utc
+         FROM mgw_match_players WHERE match_id = :source_id',
+        ['match_id' => $retainedId, 'source_id' => 'game-1']
+    );
+    $db->execute(
+        'INSERT INTO mgw_match_snapshots (
+            match_id,state_version,public_state_json,server_state_json,created_at_utc
+         )
+         SELECT :match_id,state_version,public_state_json,server_state_json,created_at_utc
+         FROM mgw_match_snapshots
+         WHERE match_id = :source_id AND state_version = 1',
+        ['match_id' => $retainedId, 'source_id' => 'game-1']
+    );
+}
+
+$scaledDb = new RealtimeCountingDatabaseConnection($rawDb);
+$scaledRepo = new RuntimeRealtimeRepository($config, new RuntimeStorageRouter($config), $scaledDb);
+
+$scaledDb->resetFetchAllCount();
+$scaleAudit = $scaledRepo->auditParity($data);
+$assertSame(true, $scaleAudit['ok'], 'Scaled retained terminal audit parity');
+$assertSame(41, $scaleAudit['database_total_game_count'], 'Scaled audit keeps all DB matches in scope');
+$assertSame(40, $scaleAudit['retained_terminal_game_count'], 'Scaled audit validates every retained terminal match');
+$assertLessThanOrEqual(
+    6,
+    $scaledDb->fetchAllCount(),
+    'Realtime audit DB reads must stay constant as retained terminal history grows'
+);
+
+$scaledDb->resetFetchAllCount();
+$scaleSync = $scaledRepo->synchronize($data);
+$assertSame(true, $scaleSync['parity'], 'Scaled synchronize parity');
+$assertSame(40, $scaleSync['games']['retained_terminal_count'], 'Scaled synchronize retains terminal history');
+$assertLessThanOrEqual(
+    10,
+    $scaledDb->fetchAllCount(),
+    'Realtime synchronize DB reads must stay constant as retained terminal history grows'
+);
 
 $data['games']['game-1']['board'] = 'X--------';
 $data['games']['game-1']['turn'] = 'bot_runtime_1';
@@ -44,9 +115,9 @@ $assertSame(
     'Version advanced'
 );
 $assertSame(
-    2,
+    42,
     (int)$db->fetchAll('SELECT COUNT(*) c FROM mgw_match_snapshots')[0]['c'],
-    'Snapshot appended'
+    'Snapshot appended without altering retained terminal snapshots'
 );
 
 $data['queue'] = [];
@@ -58,8 +129,10 @@ $db->execute(
     'UPDATE mgw_match_players SET player_ref=:ref WHERE match_id=:id AND seat=0',
     ['ref' => 'altered-player', 'id' => 'game-1']
 );
+$alteredDb = new RealtimeCountingDatabaseConnection($rawDb);
+$alteredRepo = new RuntimeRealtimeRepository($config, new RuntimeStorageRouter($config), $alteredDb);
 $assertThrows(
-    static fn() => $repo->synchronize($data),
+    static fn() => $alteredRepo->synchronize($data),
     'immutable player identity',
     'Altered player must fail closed'
 );
