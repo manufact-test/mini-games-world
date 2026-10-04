@@ -192,7 +192,7 @@ jobs:
           grep -F "mgw-domino-native-precision-tile-v25" app/assets/css/games/domino/live-native-manual-v25.css
           grep -F "mgw-domino-native-stock-orb-v25" app/assets/css/games/domino/live-native-manual-v25.css
           grep -F "overflow-y:auto!important" app/assets/css/games/domino/live-cosmetics-v2.css
-          grep -F "renderer-live-manual-v30.js?v=3&mvp19_9=accepted-live-stability-v30&parent=accepted-live-corrective-v25&visual_portal=v38&precision_geometry=v41&gesture_owner=v27&precision_static=2&live_effects=v41&mvp27_1=domino-renderer-localized-v1" app/runtime/client/version-manifest.php
+          grep -F "renderer-live-manual-v30.js?v=4&mvp19_9=accepted-live-stability-v30&parent=accepted-live-corrective-v25&visual_portal=v38&precision_geometry=v41&gesture_owner=v27&precision_static=2&live_effects=v41&mvp27_1=domino-renderer-localized-v1&mvp27_1_qa=localized-v1" app/runtime/client/version-manifest.php
           grep -F "domino_renderer" app/v110.php
           ! grep -Fq "dominoRendererImportKey] .=" app/v110.php
           grep -F "X-MGW-Domino-Hand-Gesture: v27-pan-y-js-horizontal" app/v110.php
