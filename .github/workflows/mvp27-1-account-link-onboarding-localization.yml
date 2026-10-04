@@ -6,6 +6,8 @@ on:
       - agent/mvp-13-2-staging
     paths:
       - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'app/assets/js/main-v110-reconnect-v174.js'
+      - 'app/assets/js/main-v110.js'
       - 'app/assets/js/main-v110-handoff-shell.js'
       - 'app/assets/js/screens/profile-screen-v110.js'
       - 'app/assets/js/profile/mgw-account-link-onboarding.js'
