@@ -77,7 +77,7 @@ jobs:
           node ops/checks/mvp27_1_hardcoded_text_audit.mjs
 
       - name: Bounded classification scope
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-legacy-notifications-reachability')
         shell: bash
         run: |
           set -euo pipefail

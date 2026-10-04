@@ -26,6 +26,8 @@ const SKIP_FILES = new Set([
   'app/assets/js/screens/game-screen.js', // shadowed after invite polling converges on canonical game-screen-v102-safe owner
   'app/assets/js/residual-ui-game-race-fix.js', // shadowed legacy hotfix; factual v110 strips the only main.js entry that imports it
   'app/assets/js/production-v104-invite-game-controls.js', // historical v104/v105/v105-fast/v107-v109 invite controls; factual v110 uses canonical game-invites-v110
+  'app/assets/js/production-v104-result-instant.js', // historical result-speed overlay owned only by legacy clean-entry revisions; absent from factual v110
+  'app/assets/js/production-v109-share-speed.js', // historical v109 share-speed overlay; factual v110 uses canonical game-invites-v110 share flow
   'app/assets/js/production-v105-invite-latency.js', // historical v105-v109 invite owner; factual v110 uses canonical game-invites-v110 instead
   'app/assets/js/production-v106-invite-actions.js', // historical v106-only action owner; replaced before v107 and absent from factual v110
   'app/assets/js/production-v107-invite-actions.js', // historical v107/v108 invite-action owner; factual v110 uses canonical game-invites-v110
