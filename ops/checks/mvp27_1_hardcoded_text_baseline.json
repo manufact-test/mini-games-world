@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
-  "recorded_at": "2026-10-04",
-  "staging_base": "c34932c4e022a0feeda718ff1716580e9462f88b",
-  "scanned_files": 711,
-  "cyrillic_lines_total": 1817,
+  "recorded_at": "2026-10-05",
+  "staging_base": "11d6f68d71ef8ea9ac850820ef6316ae1c9071bc",
+  "scanned_files": 710,
+  "cyrillic_lines_total": 1806,
   "by_scope": {
-    "client": 164,
+    "client": 153,
     "backend": 1653,
     "client-entry": 0
   },
@@ -46,7 +46,8 @@
     "shadowed historical v100 share controller (production-v100-share-controller.js; sole owner is historical production-clean-entry-v100.js on historical v100 page; factual v110 uses localized games/game-invites-v110.js)",
     "shadowed historical v105 fast-notifications owner (production-v105-fast-notifications.js; sole owner is production-clean-entry-v105-fast-notifications.js on historical v108; factual v110 uses localized notifications-screen-v110r13.js)",
     "shadowed historical v108 share owner (production-v108-share.js; sole owner is ownerless production-clean-entry-v108.js; factual v108 page uses the v105-fast rollback and factual v110 uses localized games/game-invites-v110.js)",
-    "shadowed historical v108 notifications owner (production-v108-notifications.js; sole owner is ownerless production-clean-entry-v108.js; factual v108 page remains on the v105-fast rollback and factual v110 uses localized notifications-screen-v110r13.js)"
+    "shadowed historical v108 notifications owner (production-v108-notifications.js; sole owner is ownerless production-clean-entry-v108.js; factual v108 page remains on the v105-fast rollback and factual v110 uses localized notifications-screen-v110r13.js)",
+    "shadowed historical Profile screen (screens/profile-screen.js; direct owners are stripped main.js and historical main-v99..v105; factual v110 uses localized screens/profile-screen-v110.js)"
   ],
-  "note": "MVP-27.1 active Account Link Home onboarding localization: 11 factual v110 Cyrillic lines moved from mgw-account-link-onboarding.js into canonical account_link.onboarding locale ownership; onboarding behavior and v110 owner-chain remain unchanged."
+  "note": "MVP-27.1 legacy Profile screen reachability classification: screens/profile-screen.js remains untouched historical Gold-era source owned only by stripped/historical main.js and main-v99..v105; factual Telegram v110 uses localized profile-screen-v110.js."
 }

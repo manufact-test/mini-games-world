@@ -48,6 +48,7 @@ const SKIP_FILES = new Set([
   'app/assets/js/production-v105-fast-notifications.js', // historical v108-only fast notification owner; factual v110 uses localized r13 notification screen
   'app/assets/js/screens/notifications-screen.js', // historical notification screen used only by legacy main-v99..v105
   'app/assets/js/screens/notifications-screen-v99.js', // historical notification screen owned by stripped legacy main.js
+  'app/assets/js/screens/profile-screen.js', // historical Profile screen owned only by stripped/historical main.js and main-v99..v105; factual v110 uses localized profile-screen-v110.js
   'app/assets/js/screens/notifications-screen-v110-root.js', // superseded historical notification screen revision
   'app/assets/js/screens/notifications-screen-v110.js', // superseded historical notification screen revision
   'app/assets/js/screens/notifications-screen-v110r4.js', // superseded historical notification screen revision
