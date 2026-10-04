@@ -18,6 +18,7 @@ on:
       - 'app/assets/js/main.js'
       - 'app/assets/js/residual-ui-game-race-fix.js'
       - 'ops/checks/mvp27_1_residual_ui_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_invite_canonical_game_polling_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - '.github/workflows/mvp27-1-residual-ui-reachability.yml'
