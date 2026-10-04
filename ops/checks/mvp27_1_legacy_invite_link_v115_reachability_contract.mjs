@@ -37,6 +37,8 @@ const audit = read('ops/checks/mvp27_1_hardcoded_text_audit.mjs');
 const baseline = JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.json'));
 
 assert.ok(launch.includes("private const ENTRY_PATH = '/app/v110.php"), 'Telegram launch must remain on accepted v110');
+assert.ok(v110.includes('<script type="module" src="./assets/js/main.js?v=98.4-wallet-15-3"></script>'),
+  'v110 must retain stripped legacy main.js anchor as forensic evidence');
 assert.ok(v110.includes('$html = str_replace($entryScriptsAnchor, $bootstrapTag, $html);'),
   'v110 must retain canonical bootstrap replacement');
 assert.deepEqual(
