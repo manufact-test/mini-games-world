@@ -36,6 +36,7 @@ const SKIP_FILES = new Set([
   'app/assets/js/main-v99.js', // historical v99 entry main; factual Telegram launch is v110
   'app/assets/js/main-v100.js', // historical v100 entry main; factual Telegram launch is v110
   'app/assets/js/main-v101.js', // historical v101 entry main; factual Telegram launch is v110
+  'app/assets/js/production-v101-result-speed.js', // historical v101 result owner loaded only by historical clean-entry-v101; imports v100-safe game screen
   'app/assets/js/screens/search-screen-v99.js', // historical v99 search owner reachable only from main-v99; imports v99 game screen
   'app/assets/js/screens/game-screen-v99.js', // reachable only from historical v99 main
   'app/assets/js/screens/search-screen-v100.js', // historical v100/v101 search owner; imports v100-safe game screen
