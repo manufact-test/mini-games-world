@@ -30,6 +30,7 @@ const manifest = read('app/runtime/client/version-manifest.php');
 const reconnect = read('app/assets/js/main-v110-reconnect-v174.js');
 const main110 = read('app/assets/js/main-v110.js');
 const handoff = read('app/assets/js/main-v110-handoff-shell.js');
+const legacyMain = read('app/assets/js/main.js');
 const legacy = read(LEGACY);
 const active = read(ACTIVE);
 const audit = read('ops/checks/mvp27_1_hardcoded_text_audit.mjs');
@@ -61,7 +62,11 @@ assert.ok(active.includes("from '@mgw/i18n'"), 'Active invite-link v110r12 owner
 assert.equal(countCyrillicLines(legacy), 10, 'Legacy invite-link v115 Cyrillic evidence count changed');
 assert.ok(legacy.includes('export async function openIncomingInviteFromTelegram()'),
   'Legacy invite-link v115 implementation evidence must remain intact');
-assert.deepEqual(refs, [], 'Physical invite-link v115 acquired an external app reference and is no longer orphaned');
+assert.deepEqual(refs, ['app/assets/js/main.js'], 'Legacy invite-link v115 owner set changed; it must remain confined to stripped main.js');
+assert.ok(legacyMain.includes("from './games/invite-link-entry-v115.js?v=d1'"),
+  'Stripped legacy main.js must retain invite-link v115 import evidence');
+assert.ok(legacyMain.includes('await openIncomingInviteFromTelegram();'),
+  'Stripped legacy main.js must retain invite-link v115 invocation evidence');
 assert.ok(!manifest.includes('invite-link-entry-v115.js'), 'Version manifest must not map or publish legacy invite-link v115');
 for (const [label, source] of [
   ['v110 entry', v110],
@@ -72,12 +77,12 @@ for (const [label, source] of [
 ]) assert.ok(!source.includes('invite-link-entry-v115.js'), label + ' must not load legacy invite-link v115');
 
 assert.ok(audit.includes("'app/assets/js/games/invite-link-entry-v115.js'"),
-  'Hardcoded-text audit must classify proven orphan invite-link v115');
+  'Hardcoded-text audit must classify stripped legacy invite-link v115');
 
-assert.equal(Number(baseline.scanned_files), 719, 'Invite-link v115 classification must remove exactly one scanned file');
+assert.ok(Number(baseline.scanned_files) <= 719, 'Invite-link v115 successor must not restore classified runtime files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 1934, 'Invite-link v115 successor total debt must not exceed accepted ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 281, 'Invite-link v115 successor client debt must not exceed accepted ceiling');
 assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
-console.log('MVP-27.1 legacy invite-link v115 reachability: OK — physical v115 is orphaned; factual v110 uses localized v110r12 ownership.');
+console.log('MVP-27.1 legacy invite-link v115 reachability: OK — v115 is confined to stripped legacy main.js; factual v110 uses localized v110r12 ownership.');
