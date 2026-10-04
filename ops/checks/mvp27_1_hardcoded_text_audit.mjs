@@ -45,6 +45,7 @@ const SKIP_FILES = new Set([
   'app/assets/js/screens/notifications-screen-v110r5.js', // superseded historical notification screen revision
   'app/assets/js/screens/notifications-screen-v110r12.js', // superseded by factual localized notifications-screen-v110r13
   'app/assets/js/screens/notification-window-owner-v119.js', // legacy notification-window owner; absent from factual localized v110 notification ownership
+  'app/assets/js/profile/mgw-profile-victory-effects.js', // physical legacy Victory Effects source; canonical manifest key resolves to localized card-parity -> v4 owner
   'app/assets/js/production-v102-history-controller.js', // historical v102-v109 history owner; factual v110 graph no longer loads it
   'app/assets/js/phase-b-current-entry.js', // historical Phase-B entry; absent from factual v110 top-level ownership
   'app/assets/js/phase-b-current-runtime.js', // reachable only from historical Phase-B entry
