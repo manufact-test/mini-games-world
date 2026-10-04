@@ -30,6 +30,7 @@ const SKIP_FILES = new Set([
   'app/assets/js/games/chess/entry.js', // historical Chess setup entry; factual v110 uses unified launcher
   'app/assets/js/games/game-invites.js', // superseded by factual game-invites-v110.js owner
   'app/assets/js/screens/game-screen.js', // shadowed after invite polling converges on canonical game-screen-v102-safe owner
+  'app/assets/js/screens/profile-screen.js', // historical Profile owner reachable only from legacy main.js/main-v99..v105; factual v110 uses profile-screen-v110.js
   'app/assets/js/residual-ui-game-race-fix.js', // shadowed legacy hotfix; factual v110 strips the only main.js entry that imports it
   'app/assets/js/production-v104-invite-game-controls.js', // historical v104/v105/v105-fast/v107-v109 invite controls; factual v110 uses canonical game-invites-v110
   'app/assets/js/production-v104-result-instant.js', // historical result-speed overlay owned only by legacy clean-entry revisions; absent from factual v110
