@@ -22,6 +22,7 @@ on:
       - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - '.github/workflows/mvp27-1-v106-invite-actions-reachability.yml'
+      - '.github/workflows/mvp27-1-v105-invite-latency-reachability.yml'
       - '.github/workflows/mvp27-1-localization-audit.yml'
   workflow_dispatch:
 
@@ -65,7 +66,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(ops/checks/mvp27_1_v105_invite_latency_reachability_contract\.mjs|ops/checks/mvp27_1_v106_invite_actions_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-v106-invite-actions-reachability\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
+          allowed='^(ops/checks/mvp27_1_v105_invite_latency_reachability_contract\.mjs|ops/checks/mvp27_1_v106_invite_actions_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-v106-invite-actions-reachability\.yml|\.github/workflows/mvp27-1-v105-invite-latency-reachability\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected v106 reachability paths:\n%s\n' "$bad" >&2; exit 1; }
 
