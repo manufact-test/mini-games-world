@@ -35,6 +35,7 @@ const SKIP_FILES = new Set([
   'app/assets/js/production-v104-result-instant.js', // historical result-speed overlay owned only by legacy clean-entry revisions; absent from factual v110
   'app/assets/js/production-v109-share-speed.js', // historical v109 share-speed overlay; factual v110 uses canonical game-invites-v110 share flow
   'app/assets/js/production-v108-share.js', // abandoned v108 share owner under ownerless clean-entry-v108; factual v110 uses localized game-invites-v110
+  'app/assets/js/production-v108-notifications.js', // abandoned v108 notification owner under ownerless clean-entry-v108; factual v110 uses localized r13 notification screen
   'app/assets/js/production-cross-game-coordinator.js', // historical child of stripped production-regression-fix-entry.js; absent from factual canonical v110 graph
   'app/assets/js/production-v105-invite-latency.js', // historical v105-v109 invite owner; factual v110 uses canonical game-invites-v110 instead
   'app/assets/js/production-v106-invite-actions.js', // historical v106-only action owner; replaced before v107 and absent from factual v110

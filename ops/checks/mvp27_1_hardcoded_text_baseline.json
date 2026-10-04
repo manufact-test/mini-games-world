@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "6be5b9df101734a3901941ff9073b4386a002552",
-  "scanned_files": 712,
-  "cyrillic_lines_total": 1839,
+  "staging_base": "ecd9aca58dd6bd29e50a112af5c99d5cf3fb4dbd",
+  "scanned_files": 711,
+  "cyrillic_lines_total": 1828,
   "by_scope": {
-    "client": 186,
+    "client": 175,
     "backend": 1653,
     "client-entry": 0
   },
@@ -45,7 +45,8 @@
     "shadowed historical v102 share controller (production-v102-share-controller.js; direct owners resolve only through historical v102-v108 clean-entry lineages; factual v110 uses localized games/game-invites-v110.js)",
     "shadowed historical v100 share controller (production-v100-share-controller.js; sole owner is historical production-clean-entry-v100.js on historical v100 page; factual v110 uses localized games/game-invites-v110.js)",
     "shadowed historical v105 fast-notifications owner (production-v105-fast-notifications.js; sole owner is production-clean-entry-v105-fast-notifications.js on historical v108; factual v110 uses localized notifications-screen-v110r13.js)",
-    "shadowed historical v108 share owner (production-v108-share.js; sole owner is ownerless production-clean-entry-v108.js; factual v108 page uses the v105-fast rollback and factual v110 uses localized games/game-invites-v110.js)"
+    "shadowed historical v108 share owner (production-v108-share.js; sole owner is ownerless production-clean-entry-v108.js; factual v108 page uses the v105-fast rollback and factual v110 uses localized games/game-invites-v110.js)",
+    "shadowed historical v108 notifications owner (production-v108-notifications.js; sole owner is ownerless production-clean-entry-v108.js; factual v108 page remains on the v105-fast rollback and factual v110 uses localized notifications-screen-v110r13.js)"
   ],
-  "note": "MVP-27.1 legacy v108 share reachability classification: production-v108-share.js remains untouched and is reachable only from ownerless historical production-clean-entry-v108.js. Historical v108 page remains on the accepted v105-fast rollback; factual v110 uses localized games/game-invites-v110.js."
+  "note": "MVP-27.1 legacy v108 notifications reachability classification: production-v108-notifications.js remains untouched and is reachable only from ownerless historical production-clean-entry-v108.js. Historical v108 page remains on the accepted v105-fast rollback; factual v110 uses localized notifications-screen-v110r13.js."
 }
