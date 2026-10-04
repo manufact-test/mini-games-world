@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "a97db131aab82879c6f457a573c1d3609772b067",
-  "scanned_files": 755,
-  "cyrillic_lines_total": 2673,
+  "staging_base": "6e63df16b99c6611bab7539b6290672c5c9a8749",
+  "scanned_files": 754,
+  "cyrillic_lines_total": 2639,
   "by_scope": {
-    "client": 1020,
+    "client": 986,
     "backend": 1653,
     "client-entry": 0
   },
@@ -20,7 +20,8 @@
     "shadowed legacy game screen (screens/game-screen.js)",
     "shadowed legacy residual UI/game-race hotfix (residual-ui-game-race-fix.js)",
     "shadowed historical v105 invite-latency owner (production-v105-invite-latency.js)",
-    "shadowed historical v106 invite-actions owner (production-v106-invite-actions.js)"
+    "shadowed historical v106 invite-actions owner (production-v106-invite-actions.js)",
+    "shadowed historical v109 invite-speed owner (production-v109-invite-speed.js)"
   ],
-  "note": "MVP-27.1 v106 invite-actions reachability classification: production-v106-invite-actions.js is imported and initialized by historical production-clean-entry-v106 only. Historical v107/v108/v109 and factual v110 no longer import or initialize it; current Telegram v110 retains canonical game-invites-v110 ownership. The source remains untouched; its 34 Cyrillic lines are outside active player localization debt."
+  "note": "MVP-27.1 v109 invite-speed reachability classification: production-v109-invite-speed.js is imported and initialized by historical production-clean-entry-v109 only. Factual Telegram v110 no longer imports or initializes it and retains canonical game-invites-v110 ownership. The historical source remains untouched; its 34 Cyrillic lines are outside active player localization debt."
 }
