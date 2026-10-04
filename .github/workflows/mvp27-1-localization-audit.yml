@@ -14,6 +14,7 @@ on:
       - 'ops/checks/mvp27_1_residual_ui_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v105_invite_latency_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v106_invite_actions_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_v107_invite_actions_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v109_invite_speed_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs'
@@ -56,6 +57,7 @@ jobs:
           node --check ops/checks/mvp27_1_residual_ui_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v105_invite_latency_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v106_invite_actions_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_v107_invite_actions_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v109_invite_speed_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs
@@ -104,6 +106,9 @@ jobs:
 
       - name: V106 invite-actions factual reachability proof
         run: node ops/checks/mvp27_1_v106_invite_actions_reachability_contract.mjs
+
+      - name: V107 invite-actions factual reachability proof
+        run: node ops/checks/mvp27_1_v107_invite_actions_reachability_contract.mjs
 
       - name: V109 invite-speed factual reachability proof
         run: node ops/checks/mvp27_1_v109_invite_speed_reachability_contract.mjs
