@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
-  "recorded_at": "2026-10-03",
-  "staging_base": "b483c0c18b1b836565a2b923bedd784f5148ac67",
-  "scanned_files": 758,
-  "cyrillic_lines_total": 2827,
+  "recorded_at": "2026-10-04",
+  "staging_base": "efe516c400391c3c4628fb3deaae83ac0332e426",
+  "scanned_files": 757,
+  "cyrillic_lines_total": 2745,
   "by_scope": {
-    "client": 1174,
+    "client": 1092,
     "backend": 1653,
     "client-entry": 0
   },
@@ -17,7 +17,8 @@
     "admin/control-plane sources",
     "staging-only rejected clean-runtime server (app/runtime/server)",
     "shadowed invite owners (invite-controller-v120.js, game-invites.js)",
-    "shadowed legacy game screen (screens/game-screen.js)"
+    "shadowed legacy game screen (screens/game-screen.js)",
+    "shadowed legacy residual UI/game-race hotfix (residual-ui-game-race-fix.js)"
   ],
-  "note": "MVP-27.1 canonical polling ownership: active game-invites-v110 keeps its frozen historical game-screen.js?v=74 source specifier, while the runtime import map resolves that exact edge to canonical game-screen-v102-safe. The former screens/game-screen.js owner is therefore no longer runtime-reachable; its 30 Cyrillic lines are outside active player localization debt."
+  "note": "MVP-27.1 residual UI reachability classification: factual Telegram launch remains v110. v110 strips the legacy index main.js entry and replaces it with the canonical app-bootstrap-v2 graph; bootstrap core loads only @mgw/clean-entry and @mgw/main, and neither accepted owner chain imports residual-ui-game-race-fix.js. The historical main.js remains untouched as forensic evidence. Its 82 Cyrillic lines are outside active player localization debt."
 }

@@ -11,6 +11,7 @@ on:
       - 'ops/checks/mvp27_1_client_entry_debt_classification_contract.mjs'
       - 'ops/checks/mvp27_1_invite_owner_debt_classification_contract.mjs'
       - 'ops/checks/mvp27_1_invite_canonical_game_polling_contract.mjs'
+      - 'ops/checks/mvp27_1_residual_ui_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_active_client_entry_localization_contract.mjs'
       - 'ops/checks/mvp27_1_active_game_copy_bundle_contract.mjs'
       - 'ops/checks/mvp27_1_active_shell_copy_bundle_contract.mjs'
@@ -45,6 +46,7 @@ jobs:
           node --check ops/checks/mvp27_1_client_entry_debt_classification_contract.mjs
           node --check ops/checks/mvp27_1_invite_owner_debt_classification_contract.mjs
           node --check ops/checks/mvp27_1_invite_canonical_game_polling_contract.mjs
+          node --check ops/checks/mvp27_1_residual_ui_reachability_contract.mjs
           node --check ops/checks/mvp27_1_active_client_entry_localization_contract.mjs
           node --check ops/checks/mvp27_1_active_game_copy_bundle_contract.mjs
           node --check ops/checks/mvp27_1_active_shell_copy_bundle_contract.mjs
@@ -80,6 +82,9 @@ jobs:
       - name: Invite canonical game polling proof
         run: node ops/checks/mvp27_1_invite_canonical_game_polling_contract.mjs
 
+      - name: Residual UI factual reachability proof
+        run: node ops/checks/mvp27_1_residual_ui_reachability_contract.mjs
+
       - name: Hardcoded player text audit
         run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs --sample
 
@@ -90,6 +95,10 @@ jobs:
           set -euo pipefail
           if [[ "${{ github.head_ref }}" == agent/mvp27-1-invite-canonical-game-polling* ]]; then
             echo 'Canonical polling successor: focused runtime+debt workflow owns scope; architecture audit remains proof-only.'
+            exit 0
+          fi
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-residual-ui-reachability* ]]; then
+            echo 'Residual reachability successor: focused classification workflow owns scope; architecture audit remains proof-only.'
             exit 0
           fi
           base='${{ github.event.pull_request.base.sha }}'
