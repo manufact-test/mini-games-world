@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "f322e3e7cf4c525df934b25fecf30635f96645fa",
-  "scanned_files": 737,
-  "cyrillic_lines_total": 2305,
+  "staging_base": "9d735393a51a56633018832645d47bb68e437ff4",
+  "scanned_files": 736,
+  "cyrillic_lines_total": 2280,
   "by_scope": {
-    "client": 652,
+    "client": 627,
     "backend": 1653,
     "client-entry": 0
   },
@@ -28,7 +28,8 @@
     "shadowed historical v99-v101 search/game-screen lineage (main-v99/main-v100/main-v101/production-v101-result-speed/search-screen-v99/search-screen-v100/game-screen-v99/game-screen-v100-safe/game-screen-v100)",
     "shadowed historical v107/v108 invite-actions owner (production-v107-invite-actions.js)",
     "shadowed historical v97/v98 prepared-share owner (production-prepared-share-fix.js)",
-    "shadowed historical first-interaction readiness child of stripped legacy main.js (first-interaction-readiness.js)"
+    "shadowed historical first-interaction readiness child of stripped legacy main.js (first-interaction-readiness.js)",
+    "shadowed historical v104/v105/v105-fast/v107-v109 invite-game-controls owner (production-v104-invite-game-controls.js)"
   ],
-  "note": "MVP-27.1 first-interaction-readiness reachability classification: legacy app/assets/js/main.js imports and initializes first-interaction-readiness.js, but factual v110 explicitly strips the legacy regression/main top-level pair and replaces it with the canonical bootstrap. The canonical bootstrap loads only @mgw/clean-entry and @mgw/main, whose accepted v110 ownership does not load the readiness module. Exhaustive app-source reference proof confines the file and its init export to stripped legacy main.js; warmFirstInteractionData has no external consumer. The historical implementation remains untouched; its 30 Cyrillic lines are outside active player localization debt."
+  "note": "MVP-27.1 v104 invite-game-controls reachability classification: production-v104-invite-game-controls.js is owned by historical clean-entry v104, v105, v105-fast-notifications, v107, v108 and v109. Historical v106 does not load it, and factual v110 accepted clean-entry/main ownership uses canonical game-invites-v110 instead. Exhaustive app-JS reference proof constrains the legacy owner to the listed historical clean entries. The historical implementation remains untouched; its 25 Cyrillic lines are outside active player localization debt."
 }
