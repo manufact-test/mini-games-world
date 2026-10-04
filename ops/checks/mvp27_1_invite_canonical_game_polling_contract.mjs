@@ -48,10 +48,10 @@ assert.equal(countCyrillicLines(legacyGame), 30,
 assert.ok(audit.includes("'app/assets/js/screens/game-screen.js'"),
   'Audit must classify the import-map-shadowed legacy game screen');
 
-assert.equal(Number(baseline.cyrillic_lines_total), 2827,
-  'Canonical polling total debt baseline changed unexpectedly');
-assert.equal(Number(baseline.by_scope?.client), 1174,
-  'Canonical polling client debt baseline changed unexpectedly');
+assert.ok(Number(baseline.cyrillic_lines_total) <= 2827,
+  'Canonical polling successor debt must not regress above the accepted #1963 total ceiling');
+assert.ok(Number(baseline.by_scope?.client) <= 1174,
+  'Canonical polling successor client debt must not regress above the accepted #1963 ceiling');
 assert.equal(Number(baseline.by_scope?.backend), 1653,
   'Backend debt must remain unchanged');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0,
