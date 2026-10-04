@@ -630,8 +630,12 @@ function openNativeShare(tg, invite, context){
     attempt.settled = true;
     attempt.nativePending = false;
     if (shareAttempt?.id === attempt.id) shareAttempt = null;
+    // Telegram Desktop/Web can complete a real send without delivering the
+    // optional callback/event back to the Mini App. Keep the accepted MVP26
+    // waiting owner instead of switching the same successful user flow onto a
+    // second fallback surface. The exact draft stays bindable by the recipient.
     currentInvite = attempt.invite;
-    showPreparedLink(attempt.invite, attempt.context);
+    scheduleSync(0);
   }, SHARE_CALLBACK_TIMEOUT_MS);
 
   try {
