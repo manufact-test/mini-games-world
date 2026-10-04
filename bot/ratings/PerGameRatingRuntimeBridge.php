@@ -76,7 +76,7 @@ final class PerGameRatingRuntimeBridge
         return $summary;
     }
 
-    public function snapshotForProfile(string $mgwId, ?callable $stageObserver = null): array
+    public function snapshotForProfile(string $mgwId): array
     {
         if (!$this->enabled()) {
             throw new RuntimeException('MVP-20.1 rating runtime is unavailable.');
@@ -87,7 +87,7 @@ final class PerGameRatingRuntimeBridge
         // waiting for an unrelated API call. If the app is later DB-primary,
         // the legacy bridge guard prevents a second JSON owner.
         if (RuntimePrimaryEntrypointBridgeGuard::legacyJsonBridgeAllowed()) {
-            if ($stageObserver !== null) $stageObserver('realtime_sync');
+            $GLOBALS['mgw_profile_rating_substage'] = 'realtime_sync';
             $repository = new RuntimeRealtimeRepository(
                 $this->config,
                 $this->router,
@@ -101,15 +101,17 @@ final class PerGameRatingRuntimeBridge
             ))->synchronizeCurrentJson();
         }
 
-        if ($stageObserver !== null) $stageObserver('season_pre');
+        $GLOBALS['mgw_profile_rating_substage'] = 'season_pre';
         $this->reconcileSeasonLifecycle(false);
         $service = $this->service();
-        if ($stageObserver !== null) $stageObserver('pending_matches');
+        $GLOBALS['mgw_profile_rating_substage'] = 'pending_matches';
         $service->processPendingFinishedMatches(200);
-        if ($stageObserver !== null) $stageObserver('season_post');
+        $GLOBALS['mgw_profile_rating_substage'] = 'season_post';
         $this->reconcileSeasonLifecycle(true);
-        if ($stageObserver !== null) $stageObserver('snapshot');
-        return $service->snapshot($mgwId);
+        $GLOBALS['mgw_profile_rating_substage'] = 'snapshot';
+        $snapshot = $service->snapshot($mgwId);
+        unset($GLOBALS['mgw_profile_rating_substage']);
+        return $snapshot;
     }
 
     private function reconcileSeasonLifecycle(bool $allowCompletion): void
