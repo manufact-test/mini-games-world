@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "44b88b9160fd28c5b32411b73bcaf6e1624105f1",
-  "scanned_files": 723,
-  "cyrillic_lines_total": 1992,
+  "staging_base": "059420b9d078e497ed459a46bd30c441a4bea328",
+  "scanned_files": 722,
+  "cyrillic_lines_total": 1980,
   "by_scope": {
-    "client": 339,
+    "client": 327,
     "backend": 1653,
     "client-entry": 0
   },
@@ -34,7 +34,8 @@
     "shadowed historical result/share performance owners (production-v104-result-instant.js; production-v109-share-speed.js)",
     "shadowed legacy cross-game coordinator child of stripped production-regression-fix-entry.js (production-cross-game-coordinator.js)",
     "shadowed legacy notification window owner (screens/notification-window-owner-v119.js)",
-    "shadowed physical legacy Profile Victory Effects source (profile/mgw-profile-victory-effects.js; canonical manifest key resolves to localized card-parity -> v4 owner)"
+    "shadowed physical legacy Profile Victory Effects source (profile/mgw-profile-victory-effects.js; canonical manifest key resolves to localized card-parity -> v4 owner)",
+    "shadowed historical Domino setup entry (games/domino/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)"
   ],
-  "note": "MVP-27.1 legacy Profile Victory Effects reachability classification: the physical mgw-profile-victory-effects.js source remains untouched and is outside factual player debt because the canonical manifest specifier resolves to localized mgw-profile-victory-effects-card-parity.js -> mgw-profile-victory-effects-v4.js ownership; exhaustive app JS/PHP reference proof forbids bypass references."
+  "note": "MVP-27.1 legacy Domino setup-entry reachability classification: games/domino/entry.js remains untouched and is outside factual v110 ownership. games/domino/meta.js is intentionally NOT excluded because active localized game-card-copy.js and unified-game-launcher.js consume DOMINO_META; its 2 Cyrillic lines remain active localization debt."
 }
