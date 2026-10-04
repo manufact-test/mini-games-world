@@ -16,6 +16,7 @@ on:
       - 'app/assets/js/main-v110-handoff-shell.js'
       - 'app/assets/js/first-interaction-readiness.js'
       - 'ops/checks/mvp27_1_prepared_share_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_residual_ui_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
@@ -46,8 +47,10 @@ jobs:
           php -l app/v110.php
           node --check app/assets/js/first-interaction-readiness.js
           node --check ops/checks/mvp27_1_prepared_share_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_residual_ui_reachability_contract.mjs
           node --check ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs
           node ops/checks/mvp27_1_prepared_share_reachability_contract.mjs
+          node ops/checks/mvp27_1_residual_ui_reachability_contract.mjs
           node ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs
 
       - name: Preserve localization architecture

@@ -28,7 +28,7 @@
     "shadowed historical v99-v101 search/game-screen lineage (main-v99/main-v100/main-v101/production-v101-result-speed/search-screen-v99/search-screen-v100/game-screen-v99/game-screen-v100-safe/game-screen-v100)",
     "shadowed historical v107/v108 invite-actions owner (production-v107-invite-actions.js)",
     "shadowed historical v97/v98 prepared-share owner (production-prepared-share-fix.js)",
-    "unowned historical first-interaction readiness source (first-interaction-readiness.js)"
+    "shadowed historical first-interaction readiness child of stripped legacy main.js (first-interaction-readiness.js)"
   ],
-  "note": "MVP-27.1 first-interaction-readiness reachability classification: first-interaction-readiness.js has no app-JS importer and is absent from index/PHP entries, manifest, canonical bootstrap, accepted v110 clean-entry and main ownership. Its exported init/warm functions have no external app-JS consumers. The orphan implementation remains untouched; its 30 Cyrillic lines are outside active player localization debt."
+  "note": "MVP-27.1 first-interaction-readiness reachability classification: legacy app/assets/js/main.js imports and initializes first-interaction-readiness.js, but factual v110 explicitly strips the legacy regression/main top-level pair and replaces it with the canonical bootstrap. The canonical bootstrap loads only @mgw/clean-entry and @mgw/main, whose accepted v110 ownership does not load the readiness module. Exhaustive app-source reference proof confines the file and its init export to stripped legacy main.js; warmFirstInteractionData has no external consumer. The historical implementation remains untouched; its 30 Cyrillic lines are outside active player localization debt."
 }
