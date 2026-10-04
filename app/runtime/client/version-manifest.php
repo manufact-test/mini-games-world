@@ -55,6 +55,7 @@ return [
         './assets/js/session.js?v=21' => './assets/js/session.js?v=1131',
         './assets/js/session.js?v=27' => './assets/js/session.js?v=1131',
         './assets/js/screens/search-screen-v102.js?v=103' => './assets/js/screens/search-screen-v102.js?v=109&mvp27_1=active-shell-copy-v1&search=route-scoped-lifecycle&mvp24=room-neutral-client-v2',
+        './assets/js/screens/game-screen.js?v=74' => './assets/js/screens/game-screen-v102-safe.js?v=105&polling=route-cleanup&entry_effect_handoff=1&mvp27_1=invite-canonical-polling-v1',
         './assets/js/screens/game-screen-v102-safe.js?v=102' => './assets/js/screens/game-screen-v102-safe.js?v=105&polling=route-cleanup&entry_effect_handoff=1',
         './assets/js/screens/game-screen-v102.js?v=102' => './assets/js/screens/game-screen-v102.js?v=114&clock=phase-b-single-writer&battleship=leave-guard&mvp17=result-history-economy&live=owner-v3&result=compact-fast-v1&mvp19_10=four-victory-full-finale-v2&mvp21_5=corrective-v6&mvp21_6=tournament-result-dedupe-v3&mvp21_manual=tournament-result-return-v1&mvp21_prestige=champion-crown-v1&mvp21_prestige_final=mark-axis-v3&battleship_fire=direct-result-v4&mvp26_6=android-poll-network-silent-v1&mvp27_1=game-screen-localized-v1',
         './assets/js/production-v100-optimistic-models.js?v=102' => './assets/js/production-v100-optimistic-models.js?v=104&clock=ttt-fresh60&battleship=registered-owner&chess=authoritative-animation-v1',

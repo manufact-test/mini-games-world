@@ -103,7 +103,7 @@ for (const token of [
 const manifest = read('app/runtime/client/version-manifest.php');
 for (const token of [
   'main-v110-handoff-shell.js?v=1170&mvp27_1=active-shell-copy-v1',
-  'api/client.js?v=1153&mvp27_1=active-shell-copy-v1',
+  'api/client.js?v=1154&profile_read=page-single-flight-v1&mvp27_1=active-shell-copy-v1',
   'ui.js?v=98&mvp27_1=active-shell-copy-v1',
   'toast.js?v=30&mvp27_1=active-shell-copy-v1',
   'runtime-status.js?v=87&mvp27_1=active-shell-copy-v1',
