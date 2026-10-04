@@ -43,6 +43,8 @@ const cleanV110 = read('app/assets/js/production-clean-entry-v110.js');
 const mainReconnect = read('app/assets/js/main-v110-reconnect-v174.js');
 const main110 = read('app/assets/js/main-v110.js');
 const handoff = read('app/assets/js/main-v110-handoff-shell.js');
+const gameCardCopy = read('app/assets/js/games/game-card-copy.js');
+const unifiedLauncher = read('app/assets/js/games/unified-game-launcher.js');
 const main120 = read('app/assets/js/main-v120.js');
 const entry = read(ENTRY);
 const meta = read(META);
@@ -142,18 +144,30 @@ assert.ok(v120.includes("$target = '/app/v110.php?v=1123';") && v120.includes("h
 
 assert.ok(entry.includes("import { DOMINO_META } from './meta.js?v=72';"),
   'Legacy Domino entry must retain its meta child dependency');
-assert.deepEqual(refsTo('DOMINO_META', [META]), [ENTRY],
-  'DOMINO_META must stay confined to the historical Domino entry child chain');
+assert.deepEqual(
+  refsTo('DOMINO_META', [META]),
+  [ENTRY, 'app/assets/js/games/game-card-copy.js', 'app/assets/js/games/unified-game-launcher.js'],
+  'DOMINO_META ownership changed; active consumers must remain explicit'
+);
+assert.ok(gameCardCopy.includes("import { DOMINO_META } from './domino/meta.js?v=72';")
+  && gameCardCopy.includes("from '@mgw/i18n'"),
+  'Active game-card-copy must retain localized ownership while consuming Domino meta');
+assert.ok(unifiedLauncher.includes("import { DOMINO_META } from './domino/meta.js?v=72';")
+  && unifiedLauncher.includes("from '@mgw/i18n'"),
+  'Active unified launcher must retain localized ownership while consuming Domino meta');
+assert.ok(handoff.includes("import { initGameCardCopy } from './games/game-card-copy.js")
+  && handoff.includes("import { initUnifiedGameLauncher } from './games/unified-game-launcher.js"),
+  'Factual v110 handoff must retain both active Domino-meta consumers');
 
 assert.equal(countCyrillicLines(entry), 12, 'Legacy Domino entry Cyrillic evidence count changed');
-assert.equal(countCyrillicLines(meta), 2, 'Legacy Domino meta Cyrillic evidence count changed');
+assert.equal(countCyrillicLines(meta), 2, 'Active Domino meta Cyrillic evidence count changed');
 assert.ok(audit.includes("'app/assets/js/games/domino/entry.js'"), 'Audit must classify legacy Domino entry');
-assert.ok(audit.includes("'app/assets/js/games/domino/meta.js'"), 'Audit must classify legacy Domino meta');
+assert.ok(!audit.includes("'app/assets/js/games/domino/meta.js'"), 'Active Domino meta must remain inside localization debt');
 
-assert.ok(Number(baseline.scanned_files) <= 721, 'Domino-entry successor must not restore classified files');
-assert.ok(Number(baseline.cyrillic_lines_total) <= 1978, 'Domino-entry successor total debt must not exceed accepted ceiling');
-assert.ok(Number(baseline.by_scope?.client) <= 325, 'Domino-entry successor client debt must not exceed accepted ceiling');
+assert.ok(Number(baseline.scanned_files) <= 722, 'Domino-entry successor must not restore classified files');
+assert.ok(Number(baseline.cyrillic_lines_total) <= 1980, 'Domino-entry successor total debt must not exceed accepted ceiling');
+assert.ok(Number(baseline.by_scope?.client) <= 327, 'Domino-entry successor client debt must not exceed accepted ceiling');
 assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
-console.log('MVP-27.1 legacy Domino setup reachability: OK — entry owners are historical v99-v105/stripped main plus rejected ownerless v120 shell; factual v110 ownership loads none of them.');
+console.log('MVP-27.1 legacy Domino entry reachability: OK — entry owners are historical/rejected, while active DOMINO_META consumers remain in localization debt.');
