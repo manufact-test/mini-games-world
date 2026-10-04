@@ -158,13 +158,6 @@ async function observedAction(page, path, data, action, label) {
   return payload;
 }
 
-async function readAction(page, path, data, label) {
-  const result = await browserPost(page, path, data);
-  expect(result.status, `${label}: ${result.payload?.error || 'no error'}`).toBe(200);
-  expect(result.payload?.ok, label).toBe(true);
-  return result.payload;
-}
-
 async function openPlayer(browser, slot) {
   const coldStartStartedAt = Date.now();
   const context = await browser.newContext({
