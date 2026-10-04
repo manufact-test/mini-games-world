@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-05",
-  "staging_base": "bc2d7b588d90359d573eddfeb3c3ec5673bab9e6",
-  "scanned_files": 705,
-  "cyrillic_lines_total": 1760,
+  "staging_base": "b3ffa769242e1104017703cfc168ab924e65206d",
+  "scanned_files": 704,
+  "cyrillic_lines_total": 1752,
   "by_scope": {
-    "client": 107,
+    "client": 99,
     "backend": 1653,
     "client-entry": 0
   },
@@ -52,7 +52,8 @@
     "orphaned historical mobile notification open owner (screens/notification-mobile-open-owner-v117.js; former v114 injection removed; factual v110 uses localized notifications-screen-v110r13.js)",
     "orphaned historical notification window owner v118 (screens/notification-window-owner-v118.js; no current app source owner; factual v110 uses localized notifications-screen-v110r13.js)",
     "shadowed historical Battleship setup entry (games/battleship/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineage; factual v110 uses unified launcher)",
-    "shadowed historical Checkers setup entry (games/checkers/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineage; factual v110 uses unified launcher)"
+    "shadowed historical Checkers setup entry (games/checkers/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineage; factual v110 uses unified launcher)",
+    "shadowed historical Tic-Tac-Toe setup entry (games/tictactoe/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineage; factual v110 uses unified launcher)"
   ],
-  "note": "MVP-27.1 legacy Checkers entry reachability classification: checkers/entry.js remains untouched historical setup source; factual Telegram v110 uses localized unified-game-launcher setup while active checkers/meta.js remains in localization debt."
+  "note": "MVP-27.1 legacy Tic-Tac-Toe entry reachability classification: tictactoe/entry.js remains untouched historical setup source; factual Telegram v110 uses localized unified-game-launcher setup while active tictactoe/meta.js remains in localization debt."
 }

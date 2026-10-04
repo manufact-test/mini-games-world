@@ -25,6 +25,7 @@ const SKIP_FILES = new Set([
   'app/assets/js/games/invite-link-entry-v115.js', // stripped legacy main.js child; factual v110 uses localized v110r12
   'app/assets/js/games/battleship/entry.js', // historical Battleship setup entry; factual v110 uses unified launcher
   'app/assets/js/games/checkers/entry.js', // historical Checkers setup entry; factual v110 uses unified launcher
+  'app/assets/js/games/tictactoe/entry.js', // historical Tic-Tac-Toe setup entry; factual v110 uses unified launcher
   'app/assets/js/games/domino/entry.js', // historical Domino setup child of stripped legacy main.js
   'app/assets/js/games/four-in-a-row/entry.js', // historical Four-in-a-row setup entry; factual v110 uses unified launcher
   'app/assets/js/games/reversi/entry.js', // historical Reversi setup entry; factual v110 no longer initializes it
