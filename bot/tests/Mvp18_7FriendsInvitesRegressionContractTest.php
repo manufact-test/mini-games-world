@@ -139,9 +139,9 @@ $assertContains(
     'Owner waiting sheet must be painted before Telegram takes over with the native share dialog'
 );
 $assertContains(
-    "currentInvite = attempt.invite;\n    showPreparedLink(attempt.invite, attempt.context);",
+    "currentInvite = attempt.invite;\n    scheduleSync(0);",
     $invites,
-    'Missing Telegram callback/event must expose the canonical link fallback instead of a false sent state'
+    'Missing Telegram callback/event must keep the accepted waiting owner while canonical sync reconciles the exact draft'
 );
 $assertContains(
     "restoreWarmShareDraft(attempt);\n    currentInvite = null;\n    openInviteSetup(attempt.context.gameType, attempt.context);",
