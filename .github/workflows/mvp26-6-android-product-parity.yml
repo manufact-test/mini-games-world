@@ -39,6 +39,22 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
+      - name: MVP-27.1 recovery — accepted MVP26 Android product identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
+          git cat-file -e "${baseline}^{commit}"
+          git diff --exit-code "${baseline}" HEAD -- \
+            .well-known/assetlinks.json \
+            android-app \
+            ':(exclude)android-app/tools/verify-native-shell-settings.py' \
+            bot/android-auth.php \
+            bot/support-attachment-download.php \
+            bot/helpers/validators.php \
+            bot/storage/JsonDatabase.php \
+            bot/social/SocialInviteGuard.php
+
       - name: Verify MVP-26.6 ownership
         run: python3 android-app/tools/verify-product-parity.py
 
