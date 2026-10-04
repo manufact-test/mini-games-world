@@ -98,7 +98,7 @@ assert.equal(locale?.games?.router?.status?.your_turn, 'Ваш ход');
 assert.equal(locale?.games?.router?.status?.opponent_turn, 'Ход соперника');
 assert.equal(locale?.games?.router?.unsupported, 'Экран игры «{game}» пока не подключён.');
 
-assert.equal(Number(baseline.scanned_files), 720, 'Game-router localization must not change scanned runtime file count');
+assert.ok(Number(baseline.scanned_files) <= 720, 'Game-router successor must not restore classified runtime files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 1944, 'Game-router localization total debt must not exceed accepted ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 291, 'Game-router localization client debt must not exceed accepted ceiling');
 assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
