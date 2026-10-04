@@ -1,0 +1,70 @@
+name: MVP-27.1 Account Link Home Onboarding Localization
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'app/assets/js/main-v110-handoff-shell.js'
+      - 'app/assets/js/screens/profile-screen-v110.js'
+      - 'app/assets/js/profile/mgw-account-link-onboarding.js'
+      - 'app/assets/js/localization/i18n.js'
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/locales/ru.json'
+      - 'ops/checks/mvp27_1_account_link_onboarding_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp27-1-account-link-onboarding-localization.yml'
+      - '.github/workflows/mvp27-1-localization-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  account-link-home-onboarding-localization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Syntax and focused localization proof
+        run: |
+          set -euo pipefail
+          php -l app/runtime/client/version-manifest.php
+          node --check app/assets/js/profile/mgw-account-link-onboarding.js
+          node --check ops/checks/mvp27_1_account_link_onboarding_localization_contract.mjs
+          node ops/checks/mvp27_1_account_link_onboarding_localization_contract.mjs
+
+      - name: Preserve localization architecture and debt ratchet
+        run: |
+          set -euo pipefail
+          node ops/checks/mvp16_2_localization_contract.mjs
+          node ops/checks/mvp27_1_localization_architecture_contract.mjs
+          node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Preserve Account Link backend
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp26_3AccountLinkServiceTest.php
+          php bot/tests/Mvp26_2AndroidDeviceAuthTest.php
+
+      - name: Bounded active-owner localization scope
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-account-link-onboarding-localization')
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          allowed='^(app/assets/js/profile/mgw-account-link-onboarding\.js|app/runtime/client/version-manifest\.php|app/locales/ru\.json|ops/checks/mvp27_1_account_link_onboarding_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-account-link-onboarding-localization\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
+          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected Account Link Home onboarding localization paths:\n%s\n' "$bad" >&2; exit 1; }
+          git diff --check
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
