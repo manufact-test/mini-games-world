@@ -21,7 +21,9 @@ on:
       - 'bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php'
       - 'bot/tests/Mvp17ReliabilityRegressionTest.php'
       - 'bot/tests/RealtimeDatabaseStoreTest.php'
+      - 'bot/tests/RuntimeRealtimeRepositoryTest.php'
       - 'bot/tests/support/RuntimeRealtimeRepositoryFixture.php'
+      - 'bot/tests/support/RuntimeRealtimeRepositoryScenario.php'
       - '.github/workflows/mvp20-2-hidden-skill.yml'
   workflow_dispatch:
 
@@ -75,6 +77,9 @@ jobs:
             bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php
             bot/tests/Mvp17ReliabilityRegressionTest.php
             bot/tests/RealtimeDatabaseStoreTest.php
+            bot/tests/RuntimeRealtimeRepositoryTest.php
+            bot/tests/support/RuntimeRealtimeRepositoryFixture.php
+            bot/tests/support/RuntimeRealtimeRepositoryScenario.php
           )
           for file in "${files[@]}"; do php -l "$file"; done
 
@@ -94,6 +99,9 @@ jobs:
 
       - name: Preserve realtime queue persistence
         run: php bot/tests/RealtimeDatabaseStoreTest.php
+
+      - name: Preserve realtime repository parity at retained-history scale
+        run: php bot/tests/RuntimeRealtimeRepositoryTest.php
 
       - name: Preserve visible rating separation
         run: |
@@ -161,7 +169,9 @@ jobs:
               bot/tests/Mvp17_1MatchmakingIntegrationContractTest.php|\
               bot/tests/Mvp17ReliabilityRegressionTest.php|\
               bot/tests/RealtimeDatabaseStoreTest.php|\
-              bot/tests/support/RuntimeRealtimeRepositoryFixture.php)
+              bot/tests/RuntimeRealtimeRepositoryTest.php|\
+              bot/tests/support/RuntimeRealtimeRepositoryFixture.php|\
+              bot/tests/support/RuntimeRealtimeRepositoryScenario.php)
                 ;;
               *)
                 if [[ "$successor" -eq 0 ]]; then
