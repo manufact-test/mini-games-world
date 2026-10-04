@@ -1,5 +1,5 @@
 {
-  "_meta": {"locale":"ru","version":52},
+  "_meta": {"locale":"ru","version":53},
   "common": {"back":"Назад","close":"Закрыть","retry":"Повторить","loading":"Загрузка…"},
   "entry": {"open_failed":"Не удалось открыть Mini Games World. Попробуйте ещё раз через минуту.","preloader_loading":"Готовим игровую комнату","tagline":"Те самые игры. То самое чувство."},
   "nav": {"home":"Главная","tournaments":"Арена","store":"Магазин","profile":"Профиль"},
@@ -48,6 +48,28 @@
       "remove": "Не удалось снять оформление.",
       "unavailable": "Магазин временно недоступен",
       "retry": "Попробуйте ещё раз."
+    },
+    "profile_selection": {
+      "status": {
+        "selected": "Выбрано",
+        "owned": "В коллекции"
+      },
+      "actions": {
+        "remove": "Снять",
+        "selected": "Выбрана",
+        "select": "Выбрать"
+      },
+      "avatar": {
+        "toast": {
+          "removed": "Аватарка снята.",
+          "selected": "Аватарка выбрана."
+        },
+        "errors": {
+          "unconfirmed": "Профиль не подтвердил выбранную аватарку.",
+          "remove": "Не удалось снять аватарку.",
+          "select": "Не удалось выбрать аватарку."
+        }
+      }
     },
     "profile": {
       "avatars_title": "Аватарки",
