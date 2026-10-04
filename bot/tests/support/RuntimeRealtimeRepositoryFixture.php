@@ -1,12 +1,58 @@
 <?php
 declare(strict_types=1);
 
+final class RealtimeCountingDatabaseConnection implements DatabaseConnectionInterface
+{
+    private int $fetchAllCount = 0;
+
+    public function __construct(private DatabaseConnectionInterface $inner)
+    {
+    }
+
+    public function driver(): string
+    {
+        return $this->inner->driver();
+    }
+
+    public function execute(string $sql, array $parameters = []): int
+    {
+        return $this->inner->execute($sql, $parameters);
+    }
+
+    public function fetchAll(string $sql, array $parameters = []): array
+    {
+        $this->fetchAllCount++;
+        return $this->inner->fetchAll($sql, $parameters);
+    }
+
+    public function fetchValue(string $sql, array $parameters = []): mixed
+    {
+        return $this->inner->fetchValue($sql, $parameters);
+    }
+
+    public function transaction(callable $callback): mixed
+    {
+        return $this->inner->transaction(fn(DatabaseConnectionInterface $unused): mixed => $callback($this));
+    }
+
+    public function resetFetchAllCount(): void
+    {
+        $this->fetchAllCount = 0;
+    }
+
+    public function fetchAllCount(): int
+    {
+        return $this->fetchAllCount;
+    }
+}
+
 $pdo = new PDO('sqlite::memory:');
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->exec('PRAGMA foreign_keys = ON');
-$db = new PdoDatabaseConnection($pdo);
+$rawDb = new PdoDatabaseConnection($pdo);
 $migrationFiles = glob($root . '/database/migrations/*.php');
-$assertSame(count($migrationFiles), (new MigrationRunner($db, $root . '/database/migrations'))->migrate(false)['executed_count'], 'All migrations');
+$assertSame(count($migrationFiles), (new MigrationRunner($rawDb, $root . '/database/migrations'))->migrate(false)['executed_count'], 'All migrations');
+$db = new RealtimeCountingDatabaseConnection($rawDb);
 
 $now = '2026-07-18 19:20:00.000000';
 $db->execute(
