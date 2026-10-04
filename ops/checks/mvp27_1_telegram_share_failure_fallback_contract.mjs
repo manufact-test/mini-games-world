@@ -29,9 +29,20 @@ assert(
   !nativeBlock.includes('settleNativeShare(Boolean(result)'),
   'A boolean false callback must never be reinterpreted as USER_DECLINED.',
 );
+const timeoutStart = nativeBlock.indexOf('attempt.timeout = window.setTimeout(() => {');
+const nativeTryStart = nativeBlock.indexOf('\n  try {', timeoutStart);
+assert(timeoutStart >= 0 && nativeTryStart > timeoutStart, 'Native Share timeout block is missing.');
+const timeoutBlock = nativeBlock.slice(timeoutStart, nativeTryStart);
+
 assert(
-  nativeBlock.includes('showPreparedLink(attempt.invite, attempt.context);'),
-  'A missing native callback/event must fall back to the prepared link surface.',
+  timeoutBlock.includes('currentInvite = attempt.invite;') &&
+  timeoutBlock.includes('scheduleSync(0);') &&
+  !timeoutBlock.includes('showPreparedLink('),
+  'A missing native callback/event must keep the accepted owner waiting surface instead of creating a second Share outcome.',
+);
+assert(
+  nativeBlock.includes('currentInvite = attempt.invite;\n  showOwnerWaiting(currentInvite);'),
+  'Native Share must paint the owner waiting surface before Telegram takes over.',
 );
 
 const confirmStart = invites.indexOf('async function confirmSharedInvite(', settleStart);
@@ -60,6 +71,10 @@ assert(mappings.length === 3, `Expected 3 canonical invite aliases, got ${mappin
 assert(
   mappings.every(line => line.includes('&share_failure=technical-fallback-v1')),
   'Every factual canonical invite alias must publish the Share corrective cache identity.',
+);
+assert(
+  mappings.every(line => line.includes('&share_outcome=waiting-owner-v1')),
+  'Every factual canonical invite alias must publish the deterministic waiting-owner cache identity.',
 );
 
 console.log('MVP27_1_TELEGRAM_SHARE_FAILURE_FALLBACK_CONTRACT=PASS');
