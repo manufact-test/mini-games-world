@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "c25bcf275af25fa6f74af9501c24868afe4142be",
-  "scanned_files": 724,
-  "cyrillic_lines_total": 2007,
+  "staging_base": "44b88b9160fd28c5b32411b73bcaf6e1624105f1",
+  "scanned_files": 723,
+  "cyrillic_lines_total": 1992,
   "by_scope": {
-    "client": 354,
+    "client": 339,
     "backend": 1653,
     "client-entry": 0
   },
@@ -33,7 +33,8 @@
     "shadowed historical notification lineage (production-v109-notifications.js; notifications-screen.js; notifications-screen-v99.js; notifications-screen-v110-root.js; notifications-screen-v110.js; notifications-screen-v110r4.js; notifications-screen-v110r5.js; notifications-screen-v110r12.js)",
     "shadowed historical result/share performance owners (production-v104-result-instant.js; production-v109-share-speed.js)",
     "shadowed legacy cross-game coordinator child of stripped production-regression-fix-entry.js (production-cross-game-coordinator.js)",
-    "shadowed legacy notification window owner (screens/notification-window-owner-v119.js)"
+    "shadowed legacy notification window owner (screens/notification-window-owner-v119.js)",
+    "shadowed physical legacy Profile Victory Effects source (profile/mgw-profile-victory-effects.js; canonical manifest key resolves to localized card-parity -> v4 owner)"
   ],
-  "note": "MVP-27.1 notification-window-owner-v119 reachability classification: screens/notification-window-owner-v119.js is not imported, mapped or loaded by factual /app/v110.php, version manifest, canonical bootstrap, accepted v110 clean-entry/main or localized notifications-screen-v110r13 ownership. Exhaustive app-JS reference proof requires zero external references to the legacy v119 file. The implementation remains untouched; its 18 Cyrillic lines are outside active player localization debt."
+  "note": "MVP-27.1 legacy Profile Victory Effects reachability classification: the physical mgw-profile-victory-effects.js source remains untouched and is outside factual player debt because the canonical manifest specifier resolves to localized mgw-profile-victory-effects-card-parity.js -> mgw-profile-victory-effects-v4.js ownership; exhaustive app JS/PHP reference proof forbids bypass references."
 }
