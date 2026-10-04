@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-05",
-  "staging_base": "b3ffa769242e1104017703cfc168ab924e65206d",
-  "scanned_files": 704,
-  "cyrillic_lines_total": 1752,
+  "staging_base": "79ae87653805a7a5f7fdb381fab4e324680a1226",
+  "scanned_files": 703,
+  "cyrillic_lines_total": 1745,
   "by_scope": {
-    "client": 99,
+    "client": 92,
     "backend": 1653,
     "client-entry": 0
   },
@@ -53,7 +53,8 @@
     "orphaned historical notification window owner v118 (screens/notification-window-owner-v118.js; no current app source owner; factual v110 uses localized notifications-screen-v110r13.js)",
     "shadowed historical Battleship setup entry (games/battleship/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineage; factual v110 uses unified launcher)",
     "shadowed historical Checkers setup entry (games/checkers/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineage; factual v110 uses unified launcher)",
-    "shadowed historical Tic-Tac-Toe setup entry (games/tictactoe/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineage; factual v110 uses unified launcher)"
+    "shadowed historical Tic-Tac-Toe setup entry (games/tictactoe/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineage; factual v110 uses unified launcher)",
+    "shadowed historical v98 UI owner (production-v98-ui-owner.js; sole owner is production-regression-fix-entry-v98.js on historical v98 page; factual v110 uses later canonical session/search/invite/game owners)"
   ],
-  "note": "MVP-27.1 legacy Tic-Tac-Toe entry reachability classification: tictactoe/entry.js remains untouched historical setup source; factual Telegram v110 uses localized unified-game-launcher setup while active tictactoe/meta.js remains in localization debt."
+  "note": "MVP-27.1 v98 UI-owner reachability classification: production-v98-ui-owner.js remains untouched historical source confined to the v98 regression entry; factual Telegram v110 does not load or initialize it."
 }

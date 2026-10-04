@@ -18,6 +18,7 @@ on:
       - 'ops/checks/mvp27_1_v107_invite_actions_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v109_invite_speed_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_v98_ui_owner_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_prepared_share_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_notifications_reachability_contract.mjs'
@@ -58,6 +59,7 @@ on:
       - '.github/workflows/mvp27-1-notification-desktop-open-v117-reachability.yml'
       - '.github/workflows/mvp27-1-notification-mobile-open-v117-reachability.yml'
       - '.github/workflows/mvp27-1-notification-window-owner-v118-reachability.yml'
+      - '.github/workflows/mvp27-1-v98-ui-owner-reachability.yml'
       - '.github/workflows/mvp27-1-localization-audit.yml'
       - '.github/workflows/mvp27-1-legacy-profile-victory-effects-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-domino-entry-reachability.yml'
@@ -112,6 +114,7 @@ jobs:
           node --check ops/checks/mvp27_1_v107_invite_actions_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v109_invite_speed_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_v98_ui_owner_reachability_contract.mjs
           node --check ops/checks/mvp27_1_prepared_share_reachability_contract.mjs
           node --check ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_notifications_reachability_contract.mjs
@@ -201,6 +204,9 @@ jobs:
 
       - name: V97 runtime-owner factual reachability proof
         run: node ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs
+
+      - name: V98 UI-owner factual reachability proof
+        run: node ops/checks/mvp27_1_v98_ui_owner_reachability_contract.mjs
 
       - name: Prepared-share factual reachability proof
         run: node ops/checks/mvp27_1_prepared_share_reachability_contract.mjs
