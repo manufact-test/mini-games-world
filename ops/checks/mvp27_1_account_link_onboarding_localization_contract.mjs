@@ -5,6 +5,8 @@ const read = p => fs.readFileSync(p, 'utf8');
 const countCyrillicLines = source => source.split(/\r?\n/).filter(line => /[\u0400-\u04FF]/.test(line)).length;
 
 const launch = read('bot/helpers/WebAppLaunchUrl.php');
+const reconnect = read('app/assets/js/main-v110-reconnect-v174.js');
+const main = read('app/assets/js/main-v110.js');
 const shell = read('app/assets/js/main-v110-handoff-shell.js');
 const profile = read('app/assets/js/screens/profile-screen-v110.js');
 const target = read('app/assets/js/profile/mgw-account-link-onboarding.js');
@@ -13,6 +15,12 @@ const locale = JSON.parse(read('app/locales/ru.json'));
 const baseline = JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.json'));
 
 assert.ok(launch.includes("private const ENTRY_PATH = '/app/v110.php"), 'Telegram launch must remain on factual v110');
+assert.ok(manifest.includes("'@mgw/main' => './assets/js/main-v110-reconnect-v174.js?v=2'"),
+  'Canonical @mgw/main must remain on the accepted v110 reconnect owner');
+assert.ok(reconnect.includes("import './main-v110.js?v=1139&ux=1&sk=3&icons=c1efd5af&render=5&mvp15=unified-balance';"),
+  'Reconnect owner must still delegate to factual main-v110');
+assert.ok(main.includes("import './main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5';"),
+  'Factual main-v110 must still delegate to the accepted handoff shell');
 assert.ok(shell.includes("import { initProfileScreen } from './screens/profile-screen-v110.js?v=1109';"),
   'Factual v110 shell must keep the accepted Profile owner specifier');
 assert.ok(manifest.includes("'./assets/js/screens/profile-screen-v110.js?v=1109' => './assets/js/screens/profile-screen-v110.js?v=1142"),
