@@ -41,7 +41,7 @@ $assertSame = static function (mixed $expected, mixed $actual, string $message) 
 
 $assertSame('Последние матчи', $catalog['profile']['history_title'] ?? null, 'Recent matches title must be exact');
 $assertContains('history.matches.slice(0, 6)', $profile, 'Profile preview must render at most six matches');
-$assertContains("userHistory(\$data, \$userId, 6)", $endpoint, 'Backend profile history must request at most six matches');
+$assertContains("userHistory(\$runtimeData, \$runtimeUserId, 6)", $endpoint, 'Backend profile history must request at most six matches from the captured runtime snapshot');
 $assertContains("sectionHead('profile.history_title')", $profile, 'Recent matches heading must render without redundant subtitle');
 $assertNotContains("sectionHead('profile.history_title','profile.history_note')", $profile, 'Recent matches subtitle must stay removed');
 $assertContains("['starter-default-01','starter-default-02','starter-default-03']", $profile, 'Profile must retain the three canonical starter avatar IDs');
