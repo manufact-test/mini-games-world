@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "95186e033b0c9fca6aaf62de326ee36c5564da49",
-  "scanned_files": 714,
-  "cyrillic_lines_total": 1874,
+  "staging_base": "0aa91af9f592f84361cb4d4487fa0a6d3f6c7ed4",
+  "scanned_files": 713,
+  "cyrillic_lines_total": 1863,
   "by_scope": {
-    "client": 221,
+    "client": 210,
     "backend": 1653,
     "client-entry": 0
   },
@@ -43,7 +43,8 @@
     "shadowed historical Chess setup entry (games/chess/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineages)",
     "shadowed historical v101 share controller (production-v101-share-controller.js; sole owner is historical production-clean-entry-v101.js on historical v101 page; factual v110 uses localized games/game-invites-v110.js)",
     "shadowed historical v102 share controller (production-v102-share-controller.js; direct owners resolve only through historical v102-v108 clean-entry lineages; factual v110 uses localized games/game-invites-v110.js)",
-    "shadowed historical v100 share controller (production-v100-share-controller.js; sole owner is historical production-clean-entry-v100.js on historical v100 page; factual v110 uses localized games/game-invites-v110.js)"
+    "shadowed historical v100 share controller (production-v100-share-controller.js; sole owner is historical production-clean-entry-v100.js on historical v100 page; factual v110 uses localized games/game-invites-v110.js)",
+    "shadowed historical v105 fast-notifications owner (production-v105-fast-notifications.js; sole owner is production-clean-entry-v105-fast-notifications.js on historical v108; factual v110 uses localized notifications-screen-v110r13.js)"
   ],
-  "note": "MVP-27.1 legacy v100 share-controller reachability classification: production-v100-share-controller.js remains untouched and is reachable only from historical production-clean-entry-v100.js on the historical v100 page. Factual v110 uses localized games/game-invites-v110.js."
+  "note": "MVP-27.1 legacy v105 fast-notifications reachability classification: production-v105-fast-notifications.js remains untouched and is reachable only from production-clean-entry-v105-fast-notifications.js on historical v108. Factual v110 uses localized notifications-screen-v110r13.js."
 }

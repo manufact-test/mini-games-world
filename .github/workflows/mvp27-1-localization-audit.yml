@@ -21,6 +21,7 @@ on:
       - 'ops/checks/mvp27_1_prepared_share_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_notifications_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_legacy_v105_fast_notifications_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_result_share_performance_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_cross_game_coordinator_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_notification_window_owner_v119_reachability_contract.mjs'
@@ -54,6 +55,7 @@ on:
       - '.github/workflows/mvp27-1-legacy-go-entry-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-chess-entry-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-v100-share-controller-reachability.yml'
+      - '.github/workflows/mvp27-1-legacy-v105-fast-notifications-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-v101-share-controller-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-v102-share-controller-reachability.yml'
       - '.github/workflows/mvp27-1-active-client-entry-localization.yml'
@@ -93,6 +95,7 @@ jobs:
           node --check ops/checks/mvp27_1_prepared_share_reachability_contract.mjs
           node --check ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_notifications_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_legacy_v105_fast_notifications_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_result_share_performance_reachability_contract.mjs
           node --check ops/checks/mvp27_1_cross_game_coordinator_reachability_contract.mjs
           node --check ops/checks/mvp27_1_notification_window_owner_v119_reachability_contract.mjs
@@ -174,6 +177,9 @@ jobs:
 
       - name: Legacy notifications factual reachability proof
         run: node ops/checks/mvp27_1_legacy_notifications_reachability_contract.mjs
+
+      - name: Legacy v105 fast-notifications factual reachability proof
+        run: node ops/checks/mvp27_1_legacy_v105_fast_notifications_reachability_contract.mjs
 
       - name: Legacy result/share performance factual reachability proof
         run: node ops/checks/mvp27_1_legacy_result_share_performance_reachability_contract.mjs
