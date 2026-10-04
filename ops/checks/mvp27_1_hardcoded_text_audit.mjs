@@ -22,7 +22,7 @@ const SKIP_PREFIXES = [
 
 const SKIP_FILES = new Set([
   'app/assets/js/games/invite-controller-v120.js', // rejected v120 invite owner; factual v110 graph forbids it
-  'app/assets/js/games/invite-link-entry-v115.js', // orphan legacy invite-link owner; factual v110 uses localized v110r12
+  'app/assets/js/games/invite-link-entry-v115.js', // stripped legacy main.js child; factual v110 uses localized v110r12
   'app/assets/js/games/domino/entry.js', // historical Domino setup child of stripped legacy main.js
   'app/assets/js/games/four-in-a-row/entry.js', // historical Four-in-a-row setup entry; factual v110 uses unified launcher
   'app/assets/js/games/reversi/entry.js', // historical Reversi setup entry; factual v110 no longer initializes it
