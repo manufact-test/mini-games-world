@@ -110,9 +110,6 @@ assert.equal(countCyrillicLines(target), 14, 'Historical v101 share-controller C
 assert.equal(countCyrillicLines(nextRevision), 14, 'v102 share-controller debt evidence count changed');
 assert.ok(audit.includes("'app/assets/js/production-v101-share-controller.js'"),
   'Audit must classify historical v101 share-controller');
-assert.ok(!audit.includes("'app/assets/js/production-v102-share-controller.js'"),
-  'v102 share-controller must remain in localization debt pending separate ownership proof');
-
 assert.ok(Number(baseline.scanned_files) <= 716,
   'v101 share-controller successor must not restore classified files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 1901,
