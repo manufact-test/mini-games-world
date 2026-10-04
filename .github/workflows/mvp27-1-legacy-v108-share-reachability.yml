@@ -61,7 +61,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(ops/checks/mvp27_1_legacy_v108_share_reachability_contract\.mjs|ops/checks/mvp27_1_active_clean_entry_profile_selection_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-legacy-v108-share-reachability\.yml|\.github/workflows/mvp27-1-active-clean-entry-profile-selection-localization\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)
+          allowed='^(ops/checks/mvp27_1_legacy_v108_share_reachability_contract\.mjs|ops/checks/mvp27_1_active_clean_entry_profile_selection_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-legacy-v108-share-reachability\.yml|\.github/workflows/mvp27-1-active-clean-entry-profile-selection-localization\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected legacy v108 share reachability paths:\n%s\n' "$bad" >&2; exit 1; }
           git diff --check
