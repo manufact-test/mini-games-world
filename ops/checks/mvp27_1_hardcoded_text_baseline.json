@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-04",
-  "staging_base": "ecd9aca58dd6bd29e50a112af5c99d5cf3fb4dbd",
+  "staging_base": "c34932c4e022a0feeda718ff1716580e9462f88b",
   "scanned_files": 711,
-  "cyrillic_lines_total": 1828,
+  "cyrillic_lines_total": 1817,
   "by_scope": {
-    "client": 175,
+    "client": 164,
     "backend": 1653,
     "client-entry": 0
   },
@@ -48,5 +48,5 @@
     "shadowed historical v108 share owner (production-v108-share.js; sole owner is ownerless production-clean-entry-v108.js; factual v108 page uses the v105-fast rollback and factual v110 uses localized games/game-invites-v110.js)",
     "shadowed historical v108 notifications owner (production-v108-notifications.js; sole owner is ownerless production-clean-entry-v108.js; factual v108 page remains on the v105-fast rollback and factual v110 uses localized notifications-screen-v110r13.js)"
   ],
-  "note": "MVP-27.1 legacy v108 notifications reachability classification: production-v108-notifications.js remains untouched and is reachable only from ownerless historical production-clean-entry-v108.js. Historical v108 page remains on the accepted v105-fast rollback; factual v110 uses localized notifications-screen-v110r13.js."
+  "note": "MVP-27.1 active Account Link Home onboarding localization: 11 factual v110 Cyrillic lines moved from mgw-account-link-onboarding.js into canonical account_link.onboarding locale ownership; onboarding behavior and v110 owner-chain remain unchanged."
 }

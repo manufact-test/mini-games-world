@@ -2,11 +2,13 @@ import { state } from '../state.js?v=27';
 import { currentScreen } from '../router.js?v=27';
 import { openSheet, closeSheet } from '../components/sheet.js?v=68';
 import { openAccountLinkSheet } from './mgw-account-link-ui.js?v=2';
+import { t } from '@mgw/i18n';
 
 const DISMISS_KEY = 'mgw_android_account_link_onboarding_v1';
 const PENDING_LINK_KEY = 'mgw_android_account_link_v1';
 const ONBOARDING_OVERLAY_CLASS = 'mgw-account-link-onboarding-overlay';
 const ONBOARDING_SHEET_CLASS = 'mgw-account-link-onboarding-sheet';
+const accountLinkOnboardingText = (key, params = {}) => t(`account_link.onboarding.${key}`, params);
 
 let initialized = false;
 let appReady = false;
@@ -82,39 +84,39 @@ function tryShowOnboarding(){
 function renderOnboardingCard(){
   openSheet(`
     <div class="mgw-account-link-onboarding" role="dialog" aria-labelledby="mgwAccountLinkOnboardingTitle">
-      <button class="close mgw-account-link-onboarding-close" data-close-sheet type="button" aria-label="Закрыть">×</button>
+      <button class="close mgw-account-link-onboarding-close" data-close-sheet type="button" aria-label="${accountLinkOnboardingText('close_aria')}">×</button>
 
       <div class="mgw-account-link-onboarding-brand">
-        <span class="mgw-account-link-onboarding-eyebrow">ANDROID · ЕДИНЫЙ ПРОФИЛЬ</span>
+        <span class="mgw-account-link-onboarding-eyebrow">${accountLinkOnboardingText('eyebrow')}</span>
         <span class="mgw-account-link-onboarding-mark" aria-hidden="true">
           <img src="./assets/icons/shield-king/mgw-mark.svg" alt="">
         </span>
       </div>
 
       <div class="mgw-account-link-onboarding-copy">
-        <h2 id="mgwAccountLinkOnboardingTitle">Уже играете в MINI GAMES WORLD в Telegram?</h2>
-        <p>Подключите Telegram и продолжайте в Android с тем же игровым профилем.</p>
+        <h2 id="mgwAccountLinkOnboardingTitle">${accountLinkOnboardingText('title')}</h2>
+        <p>${accountLinkOnboardingText('note')}</p>
       </div>
 
-      <div class="mgw-account-link-onboarding-bridge" aria-label="Один профиль в Telegram и Android">
+      <div class="mgw-account-link-onboarding-bridge" aria-label="${accountLinkOnboardingText('bridge_aria')}">
         <span>Telegram</span>
         <i aria-hidden="true">→</i>
         <span>Android</span>
       </div>
 
       <div class="mgw-account-link-onboarding-benefits">
-        <div><b>✓</b><span>Баланс и покупки</span></div>
-        <div><b>✓</b><span>Статистика и рейтинг</span></div>
-        <div><b>✓</b><span>Друзья и прогресс</span></div>
+        <div><b>✓</b><span>${accountLinkOnboardingText('balance_purchases')}</span></div>
+        <div><b>✓</b><span>${accountLinkOnboardingText('stats_rating')}</span></div>
+        <div><b>✓</b><span>${accountLinkOnboardingText('friends_progress')}</span></div>
       </div>
 
       <p class="mgw-account-link-onboarding-note">
-        После привязки Android использует ваш существующий Telegram-профиль. Временные стартовые коины Android к нему не добавляются.
+        ${accountLinkOnboardingText('starter_coin_note')}
       </p>
 
       <div class="mgw-account-link-onboarding-actions">
-        <button class="btn primary full" type="button" data-account-link-onboarding-connect>Привязать Telegram</button>
-        <button class="btn ghost full" type="button" data-account-link-onboarding-later>Позже</button>
+        <button class="btn primary full" type="button" data-account-link-onboarding-connect>${accountLinkOnboardingText('connect')}</button>
+        <button class="btn ghost full" type="button" data-account-link-onboarding-later>${accountLinkOnboardingText('later')}</button>
       </div>
     </div>
   `);
