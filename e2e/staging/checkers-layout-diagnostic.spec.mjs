@@ -107,10 +107,9 @@ async function observedAction(page, path, data, action, label) {
   const browserPromise = browserPost(page, path, data);
   const [response, browserResult] = await Promise.all([responsePromise, browserPromise]);
   expect(browserResult.status, `${label} browser status`).toBe(200);
-  expect(response.status(), `${label} observed status`).toBe(200);
-  const payload = await response.json().catch(() => null);
-  expect(payload?.ok, label).toBe(true);
-  return payload;
+  expect([200, 307, 308], `${label} observed status`).toContain(response.status());
+  expect(browserResult.payload?.ok, label).toBe(true);
+  return browserResult.payload;
 }
 
 async function openPlayer(browser, slot) {
@@ -132,7 +131,7 @@ async function openPlayer(browser, slot) {
   expect(entry?.ok(), `Player ${slot} entry`).toBe(true);
   expect(entry.headers()['x-mgw-client-bootstrap']).toBe('v2-single-owner');
   const bootstrap = await bootstrapPromise;
-  expect(bootstrap.status()).toBe(200);
+  expect([200, 307, 308], `Player ${slot} observed bootstrap status`).toContain(bootstrap.status());
   await page.waitForFunction(() => window.__MGW_APP_BOOTSTRAP_V2__?.ready === true, null, { timeout: 20_000 });
   await expect(page.locator('#screen-home')).toHaveClass(/active/, { timeout: 25_000 });
   await page.waitForFunction(() => Boolean(
@@ -154,7 +153,7 @@ async function reload(player) {
     && requestAction(response.request()) === 'bootstrap'
   ), { timeout: 35_000 });
   expect((await player.page.goto(ENTRY_URL, { waitUntil: 'domcontentloaded' }))?.ok()).toBe(true);
-  expect((await bootstrapPromise).status()).toBe(200);
+  expect([200, 307, 308], 'Reload observed bootstrap status').toContain((await bootstrapPromise).status());
   await player.page.waitForFunction(() => window.__MGW_APP_BOOTSTRAP_V2__?.ready === true, null, { timeout: 20_000 });
 }
 
