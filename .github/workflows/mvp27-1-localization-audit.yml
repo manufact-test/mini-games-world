@@ -23,6 +23,7 @@ on:
       - 'ops/checks/mvp27_1_legacy_notifications_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_result_share_performance_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_cross_game_coordinator_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_notification_window_owner_v119_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs'
@@ -72,6 +73,7 @@ jobs:
           node --check ops/checks/mvp27_1_legacy_notifications_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_result_share_performance_reachability_contract.mjs
           node --check ops/checks/mvp27_1_cross_game_coordinator_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_notification_window_owner_v119_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs
           node --check ops/checks/mvp27_1_phase_b_current_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs
@@ -145,6 +147,9 @@ jobs:
 
       - name: Cross-game coordinator factual reachability proof
         run: node ops/checks/mvp27_1_cross_game_coordinator_reachability_contract.mjs
+
+      - name: Notification window owner v119 factual reachability proof
+        run: node ops/checks/mvp27_1_notification_window_owner_v119_reachability_contract.mjs
 
       - name: V102 history-controller factual reachability proof
         run: node ops/checks/mvp27_1_v102_history_controller_reachability_contract.mjs
