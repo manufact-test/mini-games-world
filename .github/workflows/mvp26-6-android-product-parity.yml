@@ -53,8 +53,6 @@ jobs:
             bot/support-attachment-download.php \
             bot/helpers/validators.php \
             bot/storage/JsonDatabase.php \
-            bot/invites.php \
-            bot/invite-opponents.php \
             bot/social/SocialInviteGuard.php
 
       - name: Verify MVP-26.6 ownership
