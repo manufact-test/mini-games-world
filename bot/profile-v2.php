@@ -104,7 +104,12 @@ try {
     $profileStage = 'inventory';
     $inventory = (new ProductInventoryService($database))->snapshot($mgwId);
     $profileStage = 'rating';
-    $rating = (new PerGameRatingRuntimeBridge($configRef, $router, $database))->snapshotForProfile($mgwId);
+    $rating = (new PerGameRatingRuntimeBridge($configRef, $router, $database))->snapshotForProfile(
+        $mgwId,
+        static function (string $ratingStage) use (&$profileStage): void {
+            $profileStage = 'rating_' . $ratingStage;
+        }
+    );
     $profileStage = 'yearly_medals';
     $yearlyMedals = (new YearlyMedalService($database))->userSnapshot($mgwId);
     $profileStage = 'rating_archive';
