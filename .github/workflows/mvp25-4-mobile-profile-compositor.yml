@@ -51,6 +51,31 @@ jobs:
       - name: Current compositor ownership contract
         run: php bot/tests/Mvp25_4MobileProfileCompositorContractTest.php
 
+      - name: MVP-27.1 recovery — full Profile UI and cosmetics regression
+        run: |
+          set -Eeuo pipefail
+          php bot/tests/ProfileV2CorrectiveStaticContractTest.php
+          php bot/tests/ProfileV2PassAStaticContractTest.php
+          php bot/tests/Mvp23ProfileRouteLatencyContractTest.php
+          php bot/tests/Mvp25_1ProfilePlaceholderCleanupContractTest.php
+          php bot/tests/Mvp25_4ProfileTapFinalContractTest.php
+          php bot/tests/Mvp19_3ProfileAvatarsTest.php
+          php bot/tests/Mvp19_3ProfileBackgroundsTest.php
+          php bot/tests/Mvp19_3ProfileBadgesTest.php
+          php bot/tests/Mvp19_3ProfileFramesTest.php
+          php bot/tests/Mvp19_3ProfileNameColorsTest.php
+          php bot/tests/Mvp19_3ProfileReactionsTest.php
+          php bot/tests/Mvp19_3ProfileEntryEffectsTest.php
+          php bot/tests/Mvp19_3ProfileVictorySparkBurstTest.php
+          node bot/tests/Mvp19_3ProfileGameCosmeticsContractTest.mjs
+          node bot/tests/Mvp19_6ProfileGameCosmeticsParityContractTest.mjs
+          node bot/tests/Mvp19_7ReversiProfileParityContractTest.mjs
+          node bot/tests/Mvp19_8GoProfileParityContractTest.mjs
+          node bot/tests/Mvp19_FourInARowProfileParityContractTest.mjs
+          node bot/tests/Mvp19_12BattleshipProfileParityContractTest.mjs
+          php bot/tests/Mvp19_9DominoStoreProfileTest.php
+          php bot/tests/Mvp26_3_11ProfileV2BalanceOwnershipContractTest.php
+
       # The historical MVP-23 contract pins a staging-entry cache hook that was
       # intentionally removed by later manifest normalization. The current
       # successor-safe contract above proves the preserved no-settle/direct-route
