@@ -138,6 +138,7 @@ jobs:
               bot/ratings/PerGameRatingRuntimeBridge.php|\
               bot/core/bootstrap.php|\
               bot/profile-v2.php|\
+              bot/tests/ProfileV2CorrectiveStaticContractTest.php|\
               bot/leaderboard.php|\
               bot/ratings/LeaderboardService.php|\
               bot/helpers/WebAppLaunchUrl.php|\
