@@ -66,9 +66,9 @@ assert.equal(countCyrillicLines(residual), 82,
 assert.ok(audit.includes("'app/assets/js/residual-ui-game-race-fix.js'"),
   'Hardcoded-text audit must classify the proven shadowed residual owner');
 
-assert.equal(Number(baseline.scanned_files), 757, 'Residual classification must remove exactly one scanned file');
-assert.equal(Number(baseline.cyrillic_lines_total), 2745, 'Residual classification total debt must ratchet by exactly 82');
-assert.equal(Number(baseline.by_scope?.client), 1092, 'Residual classification client debt must ratchet by exactly 82');
+assert.ok(Number(baseline.scanned_files) <= 757, 'Residual classification successor must not restore excluded runtime files');
+assert.ok(Number(baseline.cyrillic_lines_total) <= 2745, 'Residual classification successor debt must not regress above the accepted #1964 total ceiling');
+assert.ok(Number(baseline.by_scope?.client) <= 1092, 'Residual classification successor client debt must not regress above the accepted #1964 ceiling');
 assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
