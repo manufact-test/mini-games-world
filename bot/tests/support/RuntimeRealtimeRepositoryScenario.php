@@ -129,8 +129,10 @@ $db->execute(
     'UPDATE mgw_match_players SET player_ref=:ref WHERE match_id=:id AND seat=0',
     ['ref' => 'altered-player', 'id' => 'game-1']
 );
+$alteredDb = new RealtimeCountingDatabaseConnection($rawDb);
+$alteredRepo = new RuntimeRealtimeRepository($config, new RuntimeStorageRouter($config), $alteredDb);
 $assertThrows(
-    static fn() => $repo->synchronize($data),
+    static fn() => $alteredRepo->synchronize($data),
     'immutable player identity',
     'Altered player must fail closed'
 );
