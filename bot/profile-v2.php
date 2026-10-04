@@ -71,8 +71,9 @@ try {
 
     $profileService = new MgwProfileService($database);
     $moderation = new ModerationService($database);
+    $profileUpdateRequested = isset($payload['profile_update']) && is_array($payload['profile_update']);
     try {
-        if (isset($payload['profile_update']) && is_array($payload['profile_update'])) {
+        if ($profileUpdateRequested) {
             $moderation->assertAllowed($mgwId, 'profile');
             $canonicalProfile = $profileService->updateProfile($mgwId, $payload['profile_update']);
         } else {
@@ -100,17 +101,55 @@ try {
     $users = new UserService($configRef);
     $historyService = new HistoryService($configRef, $users);
     $storage = StorageFactory::createJson((string)($configRef['data_dir'] ?? (__DIR__ . '/data')));
-    $runtime = $storage->transaction(function (array &$data) use ($authenticatedUser, $users, $historyService) {
-        $user = $users->ensureUser($data, $authenticatedUser);
-        $userId = (string)($user['id'] ?? '');
-        $stats = $users->profileStats($user, $data);
-        $stats['by_game'] = mgw_profile_v2_stats_by_game($data, $userId);
-        return [
-            'user' => $users->publicUser($user),
-            'stats' => $stats,
-            'history' => $historyService->userHistory($data, $userId, 6),
-        ];
-    });
+    $runtimeSections = ['users', 'games', 'transactions'];
+
+    // Full Profile V2 is a read path after profile.php/bootstrap have already
+    // ensured the runtime user. Do not hold the global JSON writer lock while
+    // calculating statistics/history or while HistoryService reads its DB
+    // projection: under two real clients that serialized unrelated gameplay
+    // traffic for ~20 seconds and could make one profile request fail.
+    //
+    // Profile mutations still keep the canonical ensureUser write owner, but
+    // the transaction ends immediately after capturing the minimal runtime
+    // snapshot. All expensive presentation work happens after the lock is free.
+    if ($profileUpdateRequested) {
+        $runtimeSnapshot = $storage->transaction(
+            static function (array &$data) use ($authenticatedUser, $users, $runtimeSections): array {
+                $user = $users->ensureUser($data, $authenticatedUser);
+                $snapshot = [];
+                foreach ($runtimeSections as $section) {
+                    $snapshot[$section] = is_array($data[$section] ?? null) ? $data[$section] : [];
+                }
+                return ['user'=>$user, 'data'=>$snapshot];
+            }
+        );
+    } else {
+        $runtimeUserId = trim((string)($authenticatedUser['id'] ?? ''));
+        $captureReadSnapshot = static function (array $data) use ($runtimeUserId): array {
+            $user = $runtimeUserId !== '' ? ($data['users'][$runtimeUserId] ?? null) : null;
+            if (!is_array($user)) {
+                throw new RuntimeException('Authenticated runtime profile is unavailable.');
+            }
+            return ['user'=>$user, 'data'=>$data];
+        };
+        $runtimeSnapshot = $storage instanceof SelectiveReadStorageInterface
+            ? $storage->readOnlySections($runtimeSections, $captureReadSnapshot)
+            : $storage->readOnly($captureReadSnapshot);
+    }
+
+    $runtimeData = is_array($runtimeSnapshot['data'] ?? null) ? $runtimeSnapshot['data'] : [];
+    $runtimeUser = is_array($runtimeSnapshot['user'] ?? null) ? $runtimeSnapshot['user'] : null;
+    if (!is_array($runtimeUser)) {
+        throw new RuntimeException('Runtime profile snapshot is unavailable.');
+    }
+    $runtimeUserId = (string)($runtimeUser['id'] ?? '');
+    $runtimeStats = $users->profileStats($runtimeUser, $runtimeData);
+    $runtimeStats['by_game'] = mgw_profile_v2_stats_by_game($runtimeData, $runtimeUserId);
+    $runtime = [
+        'user' => $users->publicUser($runtimeUser),
+        'stats' => $runtimeStats,
+        'history' => $historyService->userHistory($runtimeData, $runtimeUserId, 6),
+    ];
     $provider = strtolower(trim((string)($authenticatedUser['mgw_identity_provider'] ?? '')));
     json_response([
         'ok'=>true,
