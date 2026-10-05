@@ -130,7 +130,7 @@ function assert(condition,message){ if(!condition) throw new Error(message); }
 
 const ru=JSON.parse(fs.readFileSync('app/locales/ru.json','utf8'));
 assert(ru?._meta?.locale === 'ru','RU locale metadata changed.');
-assert(Number(ru?._meta?.version) === 66,'RU locale version must be exactly 66 for this bundle.');
+assert(Number(ru?._meta?.version) >= 66,'Successor localization may advance RU locale version but must retain Account-chain revision 66 or newer.');
 
 for(const [key,value] of Object.entries(expected)){
   assert(readPath(ru,key) === value,`Unexpected RU copy for ${key}`);

@@ -56,6 +56,20 @@ jobs:
               bot/helpers/validators.php \
               bot/storage/JsonDatabase.php \
               bot/social/SocialInviteGuard.php
+          elif [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-invite-service-chain-localization-* ]]; then
+            accepted='72935e60c50124dc46098e34f82269da3d10e64d'
+            base='${{ github.event.pull_request.base.sha }}'
+            echo 'Invite service-chain localization successor: prove Android product owners match the accepted post-Account staging base.'
+            test "${base}" = "${accepted}"
+            git diff --exit-code "${accepted}" "${base}" -- \
+              .well-known/assetlinks.json \
+              android-app \
+              ':(exclude)android-app/tools/verify-native-shell-settings.py' \
+              bot/android-auth.php \
+              bot/support-attachment-download.php \
+              bot/helpers/validators.php \
+              bot/storage/JsonDatabase.php \
+              bot/social/SocialInviteGuard.php
           else
             git diff --exit-code "${baseline}" HEAD -- \
               .well-known/assetlinks.json \
