@@ -15,6 +15,7 @@ on:
       - 'ops/checks/mvp27_1_v104_invite_game_controls_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v105_invite_latency_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v106_invite_actions_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_v106_self_toast_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v107_invite_actions_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v109_invite_speed_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs'
@@ -61,6 +62,7 @@ on:
       - '.github/workflows/mvp27-1-notification-mobile-open-v117-reachability.yml'
       - '.github/workflows/mvp27-1-notification-window-owner-v118-reachability.yml'
       - '.github/workflows/mvp27-1-v98-ui-owner-reachability.yml'
+      - '.github/workflows/mvp27-1-v106-self-toast-reachability.yml'
       - '.github/workflows/mvp27-1-ui-stability-reachability.yml'
       - '.github/workflows/mvp27-1-localization-audit.yml'
       - '.github/workflows/mvp27-1-legacy-profile-victory-effects-reachability.yml'
@@ -113,6 +115,7 @@ jobs:
           node --check ops/checks/mvp27_1_v104_invite_game_controls_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v105_invite_latency_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v106_invite_actions_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_v106_self_toast_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v107_invite_actions_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v109_invite_speed_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v97_runtime_owner_reachability_contract.mjs
@@ -198,6 +201,9 @@ jobs:
 
       - name: V106 invite-actions factual reachability proof
         run: node ops/checks/mvp27_1_v106_invite_actions_reachability_contract.mjs
+
+      - name: V106 self-toast factual reachability proof
+        run: node ops/checks/mvp27_1_v106_self_toast_reachability_contract.mjs
 
       - name: V107 invite-actions factual reachability proof
         run: node ops/checks/mvp27_1_v107_invite_actions_reachability_contract.mjs

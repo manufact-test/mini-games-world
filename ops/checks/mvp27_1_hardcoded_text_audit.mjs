@@ -42,6 +42,7 @@ const SKIP_FILES = new Set([
   'app/assets/js/production-cross-game-coordinator.js', // historical child of stripped production-regression-fix-entry.js; absent from factual canonical v110 graph
   'app/assets/js/production-v105-invite-latency.js', // historical v105-v109 invite owner; factual v110 uses canonical game-invites-v110 instead
   'app/assets/js/production-v106-invite-actions.js', // historical v106-only action owner; replaced before v107 and absent from factual v110
+  'app/assets/js/production-v106-self-toast-policy.js', // historical v106-v108 self-toast policy; absent from v109 and factual v110 clean-entry ownership
   'app/assets/js/production-v107-invite-actions.js', // historical v107/v108 invite-action owner; factual v110 uses canonical game-invites-v110
   'app/assets/js/production-v109-invite-speed.js', // historical v109 capture owner; factual v110 uses canonical game-invites-v110 instead
   'app/assets/js/production-v97-runtime-owner.js', // historical v97/v98 coordinator; factual v110 bootstrap/clean-entry graph does not load it
