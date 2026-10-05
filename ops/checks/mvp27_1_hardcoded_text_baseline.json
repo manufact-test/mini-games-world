@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-05",
-  "staging_base": "ad087e5cfe3a1b31e01e2e0b6ea061900ea627f0",
+  "staging_base": "e681d4f46f426e85991ba39d6019487d00bf8c91",
   "scanned_files": 678,
-  "cyrillic_lines_total": 1659,
+  "cyrillic_lines_total": 1653,
   "by_scope": {
-    "client": 6,
+    "client": 0,
     "backend": 1653,
     "client-entry": 0
   },
@@ -69,5 +69,5 @@
     "classified residual historical/orphan client owners (stripped main.js; invite-terminal-actions-v115 only through stripped main; orphan invite-terminal-actions-v110r12; historical production-v106-timer-mobile; historical production-v98-passive-session-transport; orphan notification-bell-first-click-v116)",
     "final historical/orphan client owners (api/request-guard.js; main-v102.js; main-v103.js; main-v104.js; main-v105.js; main-v120-invite-controller-shell.js; production-v99-invite-picker-hold.js; screens/notification-bell-first-click-v115.js; screens/search-screen.js)"
   ],
-  "note": "MVP-27.1 final historical client reachability classification: nine remaining one-line sources are proven outside factual Telegram v110 runtime; six factual active client lines remain."
+  "note": "MVP-27.1 final active client localization: all six factual active one-line client owners resolve player-visible Russian copy through the canonical RU catalog; client debt is zero."
 }
