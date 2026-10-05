@@ -58,6 +58,7 @@ const SKIP_FILES = new Set([
   'app/assets/js/production-tictactoe-turn-fix.js', // stripped legacy Tic-Tac-Toe turn fix; sole owner is production-regression-fix-entry.js removed from factual v110 bootstrap
   'app/assets/js/production-v107-timer-pvp.js', // historical v107 timer PVP owner loaded only by historical v107 clean-entry/page lineage; absent from factual v110
   'app/assets/js/production-v108-live-game.js', // abandoned v108 live-game owner loaded only by ownerless production-clean-entry-v108.js; historical v108 stays on v105-fast rollback
+  'app/assets/js/screens/game-screen-v98.js', // historical v98 game screen owned only by production-v98-ui-owner.js -> historical v98 regression/page lineage; absent from factual v110
   'app/assets/js/production-v109-notifications.js', // historical v109 notification owner; factual v110 uses localized r13 notification screen
   'app/assets/js/production-v105-fast-notifications.js', // historical v108-only fast notification owner; factual v110 uses localized r13 notification screen
   'app/assets/js/screens/notifications-screen.js', // historical notification screen used only by legacy main-v99..v105
