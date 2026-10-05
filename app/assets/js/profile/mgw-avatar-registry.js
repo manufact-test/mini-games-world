@@ -1,3 +1,5 @@
+import { t } from '@mgw/i18n';
+
 const AVATAR_SPRITE_ASSET = './assets/media/avatars/mgw-avatar-characters-v2.webp?v=1';
 
 export const AVATAR_VISUAL_REGISTRY = Object.freeze({
@@ -20,7 +22,7 @@ export function getAvatarVisualMeta(itemId){
   return AVATAR_VISUAL_REGISTRY[normalized] || null;
 }
 
-export function avatarDisplayName(itemId, fallback = 'Аватарка'){
+export function avatarDisplayName(itemId, fallback = t('profile.collection.avatar_fallback')){
   return getAvatarVisualMeta(itemId)?.name || fallback;
 }
 
