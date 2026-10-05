@@ -25,6 +25,7 @@ on:
       - 'ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_interaction_latency_v101_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_interaction_latency_base_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_session_ownership_localization_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_notifications_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_v105_fast_notifications_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_v108_share_reachability_contract.mjs'
@@ -68,6 +69,7 @@ on:
       - '.github/workflows/mvp27-1-ui-stability-reachability.yml'
       - '.github/workflows/mvp27-1-interaction-latency-v101-reachability.yml'
       - '.github/workflows/mvp27-1-interaction-latency-base-reachability.yml'
+      - '.github/workflows/mvp27-1-session-ownership-localization.yml'
       - '.github/workflows/mvp27-1-localization-audit.yml'
       - '.github/workflows/mvp27-1-legacy-profile-victory-effects-reachability.yml'
       - '.github/workflows/mvp27-1-legacy-domino-entry-reachability.yml'
@@ -129,6 +131,7 @@ jobs:
           node --check ops/checks/mvp27_1_first_interaction_readiness_reachability_contract.mjs
           node --check ops/checks/mvp27_1_interaction_latency_v101_reachability_contract.mjs
           node --check ops/checks/mvp27_1_interaction_latency_base_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_session_ownership_localization_contract.mjs
           node --check ops/checks/mvp27_1_legacy_notifications_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_v105_fast_notifications_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_v108_share_reachability_contract.mjs
@@ -238,6 +241,9 @@ jobs:
       - name: Base interaction latency orphan reachability proof
         run: node ops/checks/mvp27_1_interaction_latency_base_reachability_contract.mjs
 
+      - name: Active session ownership localization proof
+        run: node ops/checks/mvp27_1_session_ownership_localization_contract.mjs
+
       - name: Legacy notifications factual reachability proof
         run: node ops/checks/mvp27_1_legacy_notifications_reachability_contract.mjs
 
@@ -336,6 +342,10 @@ jobs:
           fi
           if [[ "${{ github.head_ref }}" == agent/mvp27-1-*-reachability* ]]; then
             echo 'Reachability successor: focused classification workflow owns scope; architecture audit remains proof-only.'
+            exit 0
+          fi
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-session-ownership-localization* ]]; then
+            echo 'Session-ownership localization successor: focused workflow owns runtime scope; architecture audit remains proof-only.'
             exit 0
           fi
           base='${{ github.event.pull_request.base.sha }}'
