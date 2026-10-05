@@ -2,6 +2,25 @@
 declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
+require_once dirname(__DIR__) . '/app/runtime/localization/LocalizationCatalog.php';
+
+function mgw_notification_copy(string $key, array $params = [], string $emergencyFallback = ''): string
+{
+    try {
+        static $catalog = null;
+        if (!$catalog instanceof LocalizationCatalog) {
+            $catalog = new LocalizationCatalog(dirname(__DIR__) . '/app/locales');
+        }
+        return $catalog->translate($key, $params);
+    } catch (Throwable $error) {
+        error_log('[MiniGamesWorld notification localization] ' . $error->getMessage());
+        $fallback = $emergencyFallback;
+        foreach ($params as $name => $value) {
+            $fallback = str_replace('{' . $name . '}', (string)$value, $fallback);
+        }
+        return $fallback;
+    }
+}
 require_once __DIR__ . '/services/NotificationService.php';
 require_once __DIR__ . '/services/GameInviteService.php';
 require_once __DIR__ . '/notifications/RuntimeNotificationBridgeCoordinator.php';
@@ -85,17 +104,21 @@ function mgw_notification_decorate(array $item, ?array $invite, string $userId):
         $inviterId = (string)($invite['inviter_id'] ?? '');
         $inviteeId = (string)($invite['invitee_id'] ?? '');
         $cancelledBy = (string)($invite['cancelled_by'] ?? '');
-        $inviterName = trim((string)($invite['inviter_name'] ?? 'Игрок')) ?: 'Игрок';
-        $inviteeName = trim((string)($invite['invitee_name'] ?? 'Игрок')) ?: 'Игрок';
-        $gameTitle = trim((string)($invite['game_title'] ?? 'Игра')) ?: 'Игра';
+        $playerFallback = mgw_notification_copy('server.notifications.player_fallback', [], 'Player');
+        $inviterName = trim((string)($invite['inviter_name'] ?? $playerFallback)) ?: $playerFallback;
+        $inviteeName = trim((string)($invite['invitee_name'] ?? $playerFallback)) ?: $playerFallback;
+        $gameFallback = mgw_notification_copy('server.notifications.game_fallback', [], 'Game');
+        $gameTitle = trim((string)($invite['game_title'] ?? $gameFallback)) ?: $gameFallback;
         $inviterCancelled = $cancelledBy !== ''
             ? $cancelledBy === $inviterId
             : $userId === $inviteeId;
 
-        $item['title'] = $inviterCancelled ? 'Приглашение отменено' : 'Соперник отменил участие';
+        $item['title'] = $inviterCancelled
+            ? mgw_notification_copy('server.notifications.invite_cancelled_title', [], 'Invitation cancelled')
+            : mgw_notification_copy('server.notifications.opponent_cancelled_title', [], 'Opponent cancelled participation');
         $item['message'] = $inviterCancelled
-            ? $inviterName . ' отменил приглашение сыграть в «' . $gameTitle . '».'
-            : $inviteeName . ' отменил участие в матче «' . $gameTitle . '».';
+            ? mgw_notification_copy('server.notifications.inviter_cancelled_message', ['name' => $inviterName, 'game' => $gameTitle], '{name} cancelled the invitation to play “{game}”.')
+            : mgw_notification_copy('server.notifications.invitee_cancelled_message', ['name' => $inviteeName, 'game' => $gameTitle], '{name} cancelled participation in the “{game}” match.');
         $item['tone'] = 'info';
         $item['created_at'] = (string)($invite['cancelled_at'] ?? $invite['updated_at'] ?? $item['created_at'] ?? '');
         return $item;
@@ -104,8 +127,8 @@ function mgw_notification_decorate(array $item, ?array $invite, string $userId):
     if (!mgw_notification_is_received_type($type)) return $item;
 
     if ($status === 'accepted') {
-        $item['title'] = 'Приглашение принято';
-        $item['message'] = 'Ждём запуска матча от пригласившего игрока.';
+        $item['title'] = mgw_notification_copy('server.notifications.invite_accepted_title', [], 'Invitation accepted');
+        $item['message'] = mgw_notification_copy('server.notifications.invite_accepted_message', [], 'Waiting for the inviting player to start the match.');
         $item['tone'] = 'success';
         $item['read'] = true;
         return $item;
@@ -113,11 +136,16 @@ function mgw_notification_decorate(array $item, ?array $invite, string $userId):
 
     $isInvitee = (string)($invite['invitee_id'] ?? '') === $userId;
     if ($status === 'declined' && $isInvitee) {
-        $inviterName = trim((string)($invite['inviter_name'] ?? 'Игрок')) ?: 'Игрок';
-        $gameTitle = trim((string)($invite['game_title'] ?? 'игру')) ?: 'игру';
-        $item['title'] = 'Приглашение отклонено';
-        $item['message'] = 'Вы отклонили приглашение от ' . $inviterName
-            . ' сыграть в «' . $gameTitle . '».';
+        $playerFallback = mgw_notification_copy('server.notifications.player_fallback', [], 'Player');
+        $inviterName = trim((string)($invite['inviter_name'] ?? $playerFallback)) ?: $playerFallback;
+        $gameFallback = mgw_notification_copy('server.notifications.game_lower_fallback', [], 'game');
+        $gameTitle = trim((string)($invite['game_title'] ?? $gameFallback)) ?: $gameFallback;
+        $item['title'] = mgw_notification_copy('server.notifications.invite_declined_title', [], 'Invitation declined');
+        $item['message'] = mgw_notification_copy(
+            'server.notifications.invite_declined_message',
+            ['name' => $inviterName, 'game' => $gameTitle],
+            'You declined the invitation from {name} to play “{game}”.'
+        );
         $item['tone'] = 'danger';
         $item['read'] = true;
         $item['created_at'] = (string)($invite['declined_at'] ?? $invite['updated_at'] ?? $item['created_at'] ?? '');
@@ -257,12 +285,12 @@ function mgw_mutate_notification_center_v2(
 
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
-    if (!is_array($payload)) api_error('Некорректный запрос.');
+    if (!is_array($payload)) api_error(mgw_notification_copy('server.notifications.invalid_request', [], 'Invalid request.'));
 
     $auth = new AuthService($config);
     $tgUser = $auth->getUserFromRequest($payload);
     $userId = (string)($tgUser['id'] ?? '');
-    if ($userId === '') api_error('Пользователь не найден.');
+    if ($userId === '') api_error(mgw_notification_copy('server.notifications.user_not_found', [], 'User not found.'));
 
     $markRead = !empty($payload['markRead']);
     $readNotificationId = trim((string)($payload['readNotificationId'] ?? ''));
@@ -272,7 +300,7 @@ try {
         + ($readNotificationId !== '' ? 1 : 0)
         + ($deleteNotificationId !== '' ? 1 : 0)
         + ($consumeInviteToken !== '' ? 1 : 0);
-    if ($commands > 1) api_error('Одновременно можно изменить только одно состояние уведомлений.');
+    if ($commands > 1) api_error(mgw_notification_copy('server.notifications.single_mutation_only', [], 'Only one notification state can be changed at a time.'));
 
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));
     $notifications = new NotificationService();
