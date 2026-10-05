@@ -32,6 +32,7 @@ on:
       - 'ops/checks/mvp27_1_v108_live_game_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_game_screen_v98_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_top_residual_historical_client_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_final_historical_client_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_active_game_meta_localization_contract.mjs'
       - 'ops/checks/mvp27_1_active_targeted_interactions_localization_contract.mjs'
       - 'ops/checks/mvp27_1_session_ownership_localization_contract.mjs'
@@ -85,6 +86,7 @@ on:
       - '.github/workflows/mvp27-1-v108-live-game-reachability.yml'
       - '.github/workflows/mvp27-1-game-screen-v98-reachability.yml'
       - '.github/workflows/mvp27-1-top-residual-historical-client-reachability.yml'
+      - '.github/workflows/mvp27-1-final-historical-client-reachability.yml'
       - '.github/workflows/mvp27-1-active-game-meta-localization.yml'
       - '.github/workflows/mvp27-1-active-targeted-interactions-localization.yml'
       - '.github/workflows/mvp27-1-session-ownership-localization.yml'
@@ -156,6 +158,7 @@ jobs:
           node --check ops/checks/mvp27_1_v108_live_game_reachability_contract.mjs
           node --check ops/checks/mvp27_1_game_screen_v98_reachability_contract.mjs
           node --check ops/checks/mvp27_1_top_residual_historical_client_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_final_historical_client_reachability_contract.mjs
           node --check ops/checks/mvp27_1_active_game_meta_localization_contract.mjs
           node --check ops/checks/mvp27_1_active_targeted_interactions_localization_contract.mjs
           node --check ops/checks/mvp27_1_session_ownership_localization_contract.mjs
@@ -288,6 +291,9 @@ jobs:
 
       - name: Top residual historical client reachability proof
         run: node ops/checks/mvp27_1_top_residual_historical_client_reachability_contract.mjs
+
+      - name: Final historical client reachability proof
+        run: node ops/checks/mvp27_1_final_historical_client_reachability_contract.mjs
 
       - name: Active game meta localization proof
         run: node ops/checks/mvp27_1_active_game_meta_localization_contract.mjs
