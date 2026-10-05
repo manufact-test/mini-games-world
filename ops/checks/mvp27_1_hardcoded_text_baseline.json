@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-05",
-  "staging_base": "25c7952ba5ec7997dbd039d1bf3d03a87edf706d",
-  "scanned_files": 679,
-  "cyrillic_lines_total": 1670,
+  "staging_base": "9ea906c56dd88ea4132928b68678b0beb74f6d75",
+  "scanned_files": 678,
+  "cyrillic_lines_total": 1668,
   "by_scope": {
-    "client": 17,
+    "client": 15,
     "backend": 1653,
     "client-entry": 0
   },
@@ -68,5 +68,5 @@
     "shadowed historical game-screen-v98 (screens/game-screen-v98.js; sole direct owner is production-v98-ui-owner.js, itself confined to production-regression-fix-entry-v98.js on historical app/v98.php; factual v110 does not load it)",
     "classified residual historical/orphan client owners (stripped main.js; invite-terminal-actions-v115 only through stripped main; orphan invite-terminal-actions-v110r12; historical production-v106-timer-mobile; historical production-v98-passive-session-transport; orphan notification-bell-first-click-v116)"
   ],
-  "note": "MVP-27.1 residual historical client reachability classification: six 2-line sources are proven outside factual Telegram v110 runtime; active production-v110-targeted-interactions remains inside debt."
+  "note": "MVP-27.1 active targeted-interactions localization: factual v110 session-lock fallback and weekly details button now resolve through canonical RU catalog; visible Russian copy is unchanged."
 }
