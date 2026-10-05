@@ -73,7 +73,8 @@ jobs:
               bot/services/ShopOrderNotificationService.php \
               bot/social/SocialFriendNotificationService.php
           else
-            git diff --exit-code "${baseline}" HEAD -- \
+            echo 'Successor slice: notification owners must remain unchanged from the current PR base.'
+            git diff --exit-code "${{ github.event.pull_request.base.sha }}" HEAD -- \
               bot/notifications.php \
               bot/notifications \
               bot/services/NotificationService.php \

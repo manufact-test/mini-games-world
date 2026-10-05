@@ -41,6 +41,7 @@ $manifest = $read('app/runtime/client/version-manifest.php');
 $cleanEntry = $read('app/assets/js/production-clean-entry-v110.js');
 $invites = $read('app/assets/js/games/game-invites-v110.js');
 $inviteEndpoint = $read('bot/invites.php');
+$ruLocale = json_decode($read('app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 
 $assertContains(
     "private const ENTRY_PATH = '/app/v110.php?",
@@ -179,9 +180,19 @@ $assertContains(
     'Telegram-native invite must use the existing /start invite_TOKEN ingress'
 );
 $assertContains(
-    '[\'text\' => \'🎮 Открыть приглашение\', \'url\' => $telegramOpenUrl]',
+    "'text' => mgw_invite_copy('server.invites.open_button'",
     $inviteEndpoint,
-    'Prepared Telegram message must open the Telegram-native ingress'
+    'Prepared Telegram message must resolve its button through the canonical server localization owner'
+);
+$assertSame(
+    '🎮 Открыть приглашение',
+    $ruLocale['server']['invites']['open_button'] ?? null,
+    'Prepared Telegram message must preserve the accepted Russian open-invitation copy'
+);
+$assertContains(
+    "'url' => $telegramOpenUrl",
+    $inviteEndpoint,
+    'Prepared Telegram message must still open the Telegram-native ingress'
 );
 $assertContains(
     '$result[\'invite\'][\'share_url\'] = $shareUrl;',
