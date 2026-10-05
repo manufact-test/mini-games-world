@@ -1,6 +1,6 @@
 export const REVERSI_META = {
   id: 'reversi',
-  title: 'Реверси',
+  titleKey: 'game_cards.meta.reversi.title',
   icon: '◐',
-  description: 'Переворачивайте фишки соперника и соберите большинство.',
+  descriptionKey: 'game_cards.meta.reversi.description',
 };
