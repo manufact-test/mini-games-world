@@ -190,3 +190,45 @@ if (baseline) {
   }
   console.log('MVP27_1_BASELINE_RATCHET=PASS');
 }
+
+
+if (process.argv.includes('--top7-owner-diag')) {
+  const targets = [
+    'app/assets/js/games/invite-terminal-actions-v110r12.js',
+    'app/assets/js/games/invite-terminal-actions-v115.js',
+    'app/assets/js/main.js',
+    'app/assets/js/production-v106-timer-mobile.js',
+    'app/assets/js/production-v110-targeted-interactions.js',
+    'app/assets/js/production-v98-passive-session-transport.js',
+    'app/assets/js/screens/notification-bell-first-click-v116.js',
+  ];
+  const allowedExt = new Set(['.js','.php','.html','.mjs']);
+  const allSources = [];
+  const walkAll = dir => {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir,{withFileTypes:true})) {
+      const full = path.join(dir,entry.name);
+      if (entry.isDirectory()) walkAll(full);
+      else if (allowedExt.has(path.extname(entry.name))) allSources.push(normalized(full));
+    }
+  };
+  walkAll('app');
+  console.log('MVP27_1_TOP7_OWNER_DIAG_BEGIN');
+  for (const target of targets) {
+    const basename = path.basename(target);
+    const targetSource = fs.readFileSync(target,'utf8');
+    const cyr = targetSource.split(/\r?\n/).map((line,i)=>({line:i+1,text:line.trim()})).filter(x=>CYRILLIC.test(x.text));
+    const refs = [];
+    for (const source of allSources) {
+      if (source === target) continue;
+      const text = fs.readFileSync(source,'utf8');
+      if (text.includes(basename)) refs.push(source);
+    }
+    console.log('TARGET '+target);
+    console.log('CYR '+cyr.length);
+    for (const item of cyr) console.log('RU '+item.line+' '+item.text.slice(0,220));
+    console.log('REFS '+refs.length);
+    for (const ref of refs.sort()) console.log('REF '+ref);
+  }
+  console.log('MVP27_1_TOP7_OWNER_DIAG_END');
+}
