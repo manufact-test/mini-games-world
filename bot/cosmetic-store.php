@@ -7,6 +7,21 @@ header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
 
 require __DIR__ . '/core/bootstrap.php';
+require_once dirname(__DIR__) . '/app/runtime/localization/LocalizationCatalog.php';
+
+function mgw_cosmetic_store_copy(string $key, string $emergencyFallback): string
+{
+    try {
+        static $catalog = null;
+        if (!$catalog instanceof LocalizationCatalog) {
+            $catalog = new LocalizationCatalog(dirname(__DIR__) . '/app/locales');
+        }
+        return $catalog->translate($key);
+    } catch (Throwable $error) {
+        error_log('[MiniGamesWorld cosmetic store localization] ' . $error->getMessage());
+        return $emergencyFallback;
+    }
+}
 require_once __DIR__ . '/catalog/CosmeticStoreService.php';
 require_once __DIR__ . '/catalog/CosmeticStoreRuntimePurchaseService.php';
 
@@ -25,19 +40,19 @@ function mgw_cosmetic_store_error_status(string $reason): int
 function mgw_cosmetic_store_error_message(string $reason, string $fallback): string
 {
     return match ($reason) {
-        'already_owned' => 'Этот предмет уже у вас.',
-        'request_conflict' => 'Запрос покупки уже использован для другого предложения.',
-        'purchase_in_progress' => 'Предыдущая покупка этих предметов ещё завершается. Обновите магазин.',
-        'ownership_conflict' => 'Состав покупки изменился. Баланс восстановлен, обновите магазин.',
-        'price_changed' => 'Цена предложения изменилась. Баланс восстановлен, обновите магазин.',
-        'offer_unavailable' => 'Предложение магазина больше недоступно.',
-        'item_unavailable' => 'Предмет больше недоступен.',
-        'item_not_owned' => 'Сначала купите этот предмет.',
-        'equip_failed' => 'Не удалось выбрать предмет.',
-        'request_invalid', 'intent_invalid', 'offer_invalid' => 'Не удалось подготовить покупку. Обновите магазин.',
-        'insufficient_balance' => 'Недостаточно коинов для покупки.',
-        'account_unavailable' => 'Профиль MGW недоступен для этой сессии.',
-        default => $fallback !== '' ? $fallback : 'Не удалось выполнить покупку.',
+        'already_owned' => mgw_cosmetic_store_copy('server.cosmetic_store.already_owned', 'You already own this item.'),
+        'request_conflict' => mgw_cosmetic_store_copy('server.cosmetic_store.request_conflict', 'This purchase request was already used for another offer.'),
+        'purchase_in_progress' => mgw_cosmetic_store_copy('server.cosmetic_store.purchase_in_progress', 'The previous purchase is still finishing. Refresh the Store.'),
+        'ownership_conflict' => mgw_cosmetic_store_copy('server.cosmetic_store.ownership_conflict', 'The purchase contents changed. Your balance was restored; refresh the Store.'),
+        'price_changed' => mgw_cosmetic_store_copy('server.cosmetic_store.price_changed', 'The offer price changed. Your balance was restored; refresh the Store.'),
+        'offer_unavailable' => mgw_cosmetic_store_copy('server.cosmetic_store.offer_unavailable', 'This Store offer is no longer available.'),
+        'item_unavailable' => mgw_cosmetic_store_copy('server.cosmetic_store.item_unavailable', 'This item is no longer available.'),
+        'item_not_owned' => mgw_cosmetic_store_copy('server.cosmetic_store.item_not_owned', 'Buy this item first.'),
+        'equip_failed' => mgw_cosmetic_store_copy('server.cosmetic_store.equip_failed', 'The item could not be selected.'),
+        'request_invalid', 'intent_invalid', 'offer_invalid' => mgw_cosmetic_store_copy('server.cosmetic_store.prepare_failed', 'The purchase could not be prepared. Refresh the Store.'),
+        'insufficient_balance' => mgw_cosmetic_store_copy('server.cosmetic_store.insufficient_balance', 'You do not have enough coins for this purchase.'),
+        'account_unavailable' => mgw_cosmetic_store_copy('server.cosmetic_store.account_unavailable', 'The MGW profile is unavailable for this session.'),
+        default => $fallback !== '' ? $fallback : mgw_cosmetic_store_copy('server.cosmetic_store.purchase_failed', 'The purchase could not be completed.'),
     };
 }
 
@@ -103,12 +118,12 @@ try {
         json_response(['ok' => false, 'error' => 'Method not allowed.'], 405);
     }
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
-    if (!is_array($payload)) json_response(['ok' => false, 'error' => 'Некорректный запрос.'], 400);
+    if (!is_array($payload)) json_response(['ok' => false, 'error' => mgw_cosmetic_store_copy('server.cosmetic_store.invalid_request', 'Invalid request.')], 400);
 
     $authenticatedUser = (new AuthService($config))->getUserFromRequest($payload);
     $mgwId = trim((string)($authenticatedUser['mgw_id'] ?? ''));
     if (!MgwIdGenerator::isValid($mgwId)) {
-        json_response(['ok' => false, 'error' => 'Профиль MGW недоступен для этой сессии.'], 401);
+        json_response(['ok' => false, 'error' => mgw_cosmetic_store_copy('server.cosmetic_store.account_unavailable', 'The MGW profile is unavailable for this session.')], 401);
     }
 
     $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
@@ -116,7 +131,7 @@ try {
     if (!$databaseConfig->enabled()
         || $router->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE
         || $router->routeFor('economy') !== RuntimeStorageRouter::DRIVER_DATABASE) {
-        json_response(['ok' => false, 'error' => 'Магазин MGW временно недоступен.'], 503);
+        json_response(['ok' => false, 'error' => mgw_cosmetic_store_copy('server.cosmetic_store.unavailable', 'The MGW Store is temporarily unavailable.')], 503);
     }
 
     $database = PdoConnectionFactory::create($databaseConfig);
@@ -180,7 +195,7 @@ try {
         $inventorySnapshot = $inventory->snapshot($mgwId);
         $catalogItem = mgw_store_catalog_item($inventorySnapshot, $itemId);
         if (!is_array($catalogItem) || empty($catalogItem['owned'])) {
-            throw new CosmeticStoreException(is_array($catalogItem) ? 'item_not_owned' : 'item_unavailable', 'Предмет нельзя выбрать.');
+            throw new CosmeticStoreException(is_array($catalogItem) ? 'item_not_owned' : 'item_unavailable', mgw_cosmetic_store_copy('server.cosmetic_store.item_cannot_equip', 'This item cannot be selected.'));
         }
 
         $isGameItem = (string)($catalogItem['item_type'] ?? '') === 'game'
@@ -197,10 +212,10 @@ try {
             try {
                 $equipment = $inventory->equip($mgwId, $itemId);
             } catch (Throwable $error) {
-                throw new CosmeticStoreException('equip_failed', 'Не удалось выбрать оформление профиля.');
+                throw new CosmeticStoreException('equip_failed', mgw_cosmetic_store_copy('server.cosmetic_store.profile_equip_failed', 'The profile appearance could not be selected.'));
             }
         } else {
-            throw new CosmeticStoreException('item_unavailable', 'Этот предмет нельзя выбрать через магазин.');
+            throw new CosmeticStoreException('item_unavailable', mgw_cosmetic_store_copy('server.cosmetic_store.item_not_selectable', 'This item cannot be selected through the Store.'));
         }
 
         json_response([
@@ -234,7 +249,7 @@ try {
             }
         }
         if (!$knownSlot) {
-            throw new CosmeticStoreException('item_unavailable', 'Этот слот нельзя снять через магазин.');
+            throw new CosmeticStoreException('item_unavailable', mgw_cosmetic_store_copy('server.cosmetic_store.slot_not_unequip', 'This slot cannot be unequipped through the Store.'));
         }
         $equipment = $inventory->unequip($mgwId, $equipSlot);
         json_response([
@@ -270,7 +285,7 @@ try {
     }
 
     if ($action !== 'purchase') {
-        json_response(['ok' => false, 'error' => 'Неизвестное действие магазина.'], 422);
+        json_response(['ok' => false, 'error' => mgw_cosmetic_store_copy('server.cosmetic_store.invalid_action', 'Unknown Store action.')], 422);
     }
 
     $offerId = strtolower(trim((string)($payload['offer_id'] ?? '')));
@@ -333,5 +348,5 @@ try {
     ], mgw_cosmetic_store_error_status($error->reason));
 } catch (Throwable $error) {
     error_log('[MiniGamesWorld Cosmetic Store] ' . $error->getMessage());
-    json_response(['ok' => false, 'error' => 'Не удалось загрузить магазин MGW.'], 500);
+    json_response(['ok' => false, 'error' => mgw_cosmetic_store_copy('server.cosmetic_store.load_failed', 'The MGW Store could not be loaded.')], 500);
 }
