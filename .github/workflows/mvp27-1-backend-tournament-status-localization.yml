@@ -54,7 +54,7 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
-          allowed='^(bot/tournament-status\.php|app/locales/ru\.json|ops/checks/mvp27_1_backend_tournament-status-localization_contract\.mjs|ops/checks/mvp27_1_final_active_client_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-backend-tournament-status-localization\.yml)$'
+          allowed='^(bot/tournament-status\.php|app/locales/ru\.json|ops/checks/mvp27_1_backend_tournament_status_localization_contract\.mjs|ops/checks/mvp27_1_final_active_client_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-backend-tournament-status-localization\.yml)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected backend tournament-status localization paths:\n%s\n' "$bad" >&2; exit 1; }
 
