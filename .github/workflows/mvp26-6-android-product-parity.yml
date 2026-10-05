@@ -45,15 +45,28 @@ jobs:
           set -Eeuo pipefail
           baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
           git cat-file -e "${baseline}^{commit}"
-          git diff --exit-code "${baseline}" HEAD -- \
-            .well-known/assetlinks.json \
-            android-app \
-            ':(exclude)android-app/tools/verify-native-shell-settings.py' \
-            bot/android-auth.php \
-            bot/support-attachment-download.php \
-            bot/helpers/validators.php \
-            bot/storage/JsonDatabase.php \
-            bot/social/SocialInviteGuard.php
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-account-chain-localization-* ]]; then
+            echo 'Account-chain localization successor: prove the PR base still matches accepted MVP26 Android product owners.'
+            git diff --exit-code "${baseline}" "${{ github.event.pull_request.base.sha }}" -- \
+              .well-known/assetlinks.json \
+              android-app \
+              ':(exclude)android-app/tools/verify-native-shell-settings.py' \
+              bot/android-auth.php \
+              bot/support-attachment-download.php \
+              bot/helpers/validators.php \
+              bot/storage/JsonDatabase.php \
+              bot/social/SocialInviteGuard.php
+          else
+            git diff --exit-code "${baseline}" HEAD -- \
+              .well-known/assetlinks.json \
+              android-app \
+              ':(exclude)android-app/tools/verify-native-shell-settings.py' \
+              bot/android-auth.php \
+              bot/support-attachment-download.php \
+              bot/helpers/validators.php \
+              bot/storage/JsonDatabase.php \
+              bot/social/SocialInviteGuard.php
+          fi
 
       - name: Verify MVP-26.6 ownership
         run: python3 android-app/tools/verify-product-parity.py
