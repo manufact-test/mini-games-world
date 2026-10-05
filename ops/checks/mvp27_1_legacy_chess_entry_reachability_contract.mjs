@@ -137,7 +137,7 @@ assert.deepEqual(
   ['app/assets/js/games/game-card-copy.js'],
   'CHESS_META ownership changed; active consumer must remain explicit'
 );
-assert.ok(gameCardCopy.includes("import { CHESS_META } from './chess/meta.js?v=67';")
+assert.ok(gameCardCopy.includes("import { CHESS_META } from './chess/meta.js?v=67&mvp27_1=localized-meta-v1';")
   && gameCardCopy.includes("from '@mgw/i18n'"),
   'Active game-card-copy must retain localized Chess meta ownership');
 assert.ok(unifiedLauncher.includes("chess:Object.freeze({ defaultSize:8, options:() => [{ value:8, label:'8×8' }] })")
@@ -148,9 +148,9 @@ assert.ok(handoff.includes("import { initGameCardCopy } from './games/game-card-
   'Factual v110 handoff must retain active Chess consumers');
 
 assert.equal(countCyrillicLines(entry), 9, 'Legacy Chess entry Cyrillic evidence count changed');
-assert.equal(countCyrillicLines(meta), 2, 'Active Chess meta Cyrillic evidence count changed');
+assert.equal(countCyrillicLines(meta), 0, 'Localized Chess meta must remain Cyrillic-free');
 assert.ok(audit.includes("'app/assets/js/games/chess/entry.js'"), 'Audit must classify legacy Chess entry');
-assert.ok(!audit.includes("'app/assets/js/games/chess/meta.js'"), 'Active Chess meta must remain inside localization debt');
+assert.ok(!audit.includes("'app/assets/js/games/chess/meta.js'"), 'Localized active Chess meta must not be classified as historical debt');
 
 assert.ok(Number(baseline.scanned_files) <= 717, 'Chess-entry successor must not restore classified files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 1915, 'Chess-entry successor total debt must not exceed accepted ceiling');
