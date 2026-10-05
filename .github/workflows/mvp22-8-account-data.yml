@@ -102,12 +102,19 @@ jobs:
           baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
           git cat-file -e "${baseline}^{commit}"
           # Endpoint copy ownership moved to canonical localization in MVP-27.1.
-          # Keep byte-identity recovery focused on the account core and website hook;
-          # account-data.php / account-link.php remain covered by the lifecycle,
-          # identity and dedicated localization contracts below.
-          git diff --exit-code "${baseline}" HEAD -- \
-            bot/accounts \
-            bot/account-data-website-hook.php
+          # For the cohesive account-chain localization successor, prove the exact
+          # PR base still matches accepted MVP26 before allowing copy ownership to move.
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-account-chain-localization-* ]]; then
+            git diff --exit-code "${baseline}" "${{ github.event.pull_request.base.sha }}" -- \
+              bot/accounts \
+              bot/android-auth.php \
+              bot/android-reauth.php \
+              bot/account-data-website-hook.php
+          else
+            git diff --exit-code "${baseline}" HEAD -- \
+              bot/accounts \
+              bot/account-data-website-hook.php
+          fi
 
       - name: Run SQLite lifecycle proof
         run: php bot/tests/Mvp22_8AccountDataLifecycleTest.php
@@ -170,7 +177,7 @@ jobs:
           fi
           # MVP-22.9 is a bounded successor slice. Predecessor contracts above still run;
           # their historical file-scope allow-lists must not reject the newer incident/recovery owners.
-          if [[ "${{ github.head_ref }}" == agent/mvp22-9-* || "${{ github.head_ref }}" == agent/mvp23-manual-acceptance-* || "${{ github.head_ref }}" == agent/mvp23-mobile-cold-first-interaction-* || "${{ github.head_ref }}" == agent/mvp26-4-* || "${{ github.head_ref }}" == agent/mvp27-1-backend-account-data-endpoint-localization-* ]]; then
+          if [[ "${{ github.head_ref }}" == agent/mvp22-9-* || "${{ github.head_ref }}" == agent/mvp23-manual-acceptance-* || "${{ github.head_ref }}" == agent/mvp23-mobile-cold-first-interaction-* || "${{ github.head_ref }}" == agent/mvp26-4-* || "${{ github.head_ref }}" == agent/mvp27-1-backend-account-data-endpoint-localization-* || "${{ github.head_ref }}" == agent/mvp27-1-backend-account-chain-localization-* ]]; then
             exit 0
           fi
           allowed='^(\.github/workflows/(mvp22-8-account-data|mvp22-3-moderation|mvp22-4-antifraud-replay|mvp22-5-system-admin|mvp22-6-product-economy-analytics|mvp22-7-admin-operations|mvp22-admin-rework|mvp27-1-account-data-localization)\.yml|app/assets/css/account-data-v1\.css|app/assets/js/api/client\.js|app/assets/js/components/account-shortcuts\.js|app/assets/js/screens/account-data-sheet-v1\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|bot/account-data\.php|bot/account-data-website-hook\.php|bot/accounts/(AccountDataLifecycleService|AccountDataZipWriter|AccountReauthGuard|AccountIdentityService|RuntimeAccountIdentityResolver)\.php|bot/database/migrations/20260926_0067_create_account_data_lifecycle\.php|bot/config/config\.environment\.example\.php|bot/helpers/staging-e2e-runtime-files\.txt|bot/staging-projection-diagnostic\.php|bot/tests/(Mvp22_8AccountDataLifecycleTest|Mvp23ManualAcceptanceCorrectiveContractTest)\.php|ops/checks/mvp27_1_(account_data_localization_contract\.mjs|hardcoded_text_baseline\.json)|ops/deploy/staging-operations-runner\.php|ops/deploy/STAGING_OPERATIONS_RUNNER\.md)'
