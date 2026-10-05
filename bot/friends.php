@@ -7,6 +7,21 @@ header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
 
 require __DIR__ . '/core/bootstrap.php';
+require_once dirname(__DIR__) . '/app/runtime/localization/LocalizationCatalog.php';
+
+function mgw_friends_copy(string $key, string $emergencyFallback): string
+{
+    try {
+        static $catalog = null;
+        if (!$catalog instanceof LocalizationCatalog) {
+            $catalog = new LocalizationCatalog(dirname(__DIR__) . '/app/locales');
+        }
+        return $catalog->translate($key);
+    } catch (Throwable $error) {
+        error_log('[MiniGamesWorld friends localization] ' . $error->getMessage());
+        return $emergencyFallback;
+    }
+}
 require_once __DIR__ . '/social/FriendGraphService.php';
 require_once __DIR__ . '/social/SocialFriendNotificationService.php';
 require_once __DIR__ . '/social/SocialPlayerProfileReader.php';
@@ -27,15 +42,15 @@ function mgw_friend_error_status(string $reason): int
 function mgw_friend_error_message(string $reason): string
 {
     return match ($reason) {
-        'self_relation' => 'Нельзя выполнить это действие со своим профилем.',
-        'self_report' => 'Нельзя отправить жалобу на свой профиль.',
-        'invalid_reason' => 'Выберите причину жалобы.',
-        'invalid_match' => 'Связанный матч недоступен для этой жалобы.',
-        'user_unavailable' => 'Игрок MGW не найден.',
-        'incoming_request_exists' => 'У вас уже есть входящая заявка от этого игрока.',
-        'request_not_incoming' => 'Входящая заявка уже недоступна.',
-        'request_not_outgoing' => 'Исходящая заявка уже недоступна.',
-        default => 'Это действие сейчас недоступно.',
+        'self_relation' => mgw_friends_copy('server.friends.self_relation', 'You cannot perform this action with your own profile.'),
+        'self_report' => mgw_friends_copy('server.friends.self_report', 'You cannot report your own profile.'),
+        'invalid_reason' => mgw_friends_copy('server.friends.invalid_reason', 'Choose a report reason.'),
+        'invalid_match' => mgw_friends_copy('server.friends.invalid_match', 'The related match is unavailable for this report.'),
+        'user_unavailable' => mgw_friends_copy('server.friends.user_unavailable', 'MGW player was not found.'),
+        'incoming_request_exists' => mgw_friends_copy('server.friends.incoming_request_exists', 'You already have an incoming request from this player.'),
+        'request_not_incoming' => mgw_friends_copy('server.friends.request_not_incoming', 'The incoming request is no longer available.'),
+        'request_not_outgoing' => mgw_friends_copy('server.friends.request_not_outgoing', 'The outgoing request is no longer available.'),
+        default => mgw_friends_copy('server.friends.action_unavailable', 'This action is currently unavailable.'),
     };
 }
 
@@ -45,20 +60,20 @@ try {
     }
 
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
-    if (!is_array($payload)) json_response(['ok' => false, 'error' => 'Некорректный запрос.'], 400);
+    if (!is_array($payload)) json_response(['ok' => false, 'error' => mgw_friends_copy('server.friends.invalid_request', 'Invalid request.')], 400);
 
     $configRef = $config;
     $authenticatedUser = (new AuthService($configRef))->getUserFromRequest($payload);
     $actorMgwId = trim((string)($authenticatedUser['mgw_id'] ?? ''));
     if (!MgwIdGenerator::isValid($actorMgwId)) {
-        json_response(['ok' => false, 'error' => 'Профиль MGW недоступен для этой сессии.'], 401);
+        json_response(['ok' => false, 'error' => mgw_friends_copy('server.friends.profile_unavailable', 'The MGW profile is unavailable for this session.')], 401);
     }
 
     $databaseConfig = DatabaseConfig::fromApplicationConfig($configRef);
     $router = new RuntimeStorageRouter($configRef);
     if (!$databaseConfig->enabled()
         || ($router->enabled() && $router->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE)) {
-        json_response(['ok' => false, 'error' => 'Друзья MGW временно недоступны.'], 503);
+        json_response(['ok' => false, 'error' => mgw_friends_copy('server.friends.unavailable', 'MGW Friends are temporarily unavailable.')], 503);
     }
 
     $database = PdoConnectionFactory::create($databaseConfig);
@@ -89,7 +104,7 @@ try {
                 $query = trim((string)($payload['query'] ?? ''));
                 $exact = $service->lookupExact($actorMgwId, $query);
                 if (is_array($exact) && (string)($exact['mgw_id'] ?? '') === $actorMgwId) {
-                    throw new PlayerReportException('self_report', 'Нельзя отправить жалобу на свой профиль.');
+                    throw new PlayerReportException('self_report', mgw_friends_copy('server.friends.self_report', 'You cannot report your own profile.'));
                 }
                 return [
                     'players' => $exact !== null ? [$exact] : $service->searchPlayers($actorMgwId, $query),
@@ -126,7 +141,7 @@ try {
         json_response([
             'ok'=>false,
             'code'=>'rate_limited',
-            'error'=>'Слишком много действий. Попробуйте немного позже.',
+            'error'=>mgw_friends_copy('server.friends.rate_limited', 'Too many actions. Try again a little later.'),
         ], 429);
     } catch (ModerationException $error) {
         json_response([
@@ -141,7 +156,7 @@ try {
             'error' => mgw_friend_error_message($error->reason),
         ], mgw_friend_error_status($error->reason));
     } catch (InvalidArgumentException $error) {
-        json_response(['ok' => false, 'code' => 'invalid_request', 'error' => 'Некорректный запрос.'], 422);
+        json_response(['ok' => false, 'code' => 'invalid_request', 'error' => mgw_friends_copy('server.friends.invalid_request', 'Invalid request.')], 422);
     }
 
     if (in_array($action, ['request', 'accept', 'decline', 'cancel', 'block'], true) && is_array($result) && !empty($result['changed'])) {
@@ -157,5 +172,5 @@ try {
     json_response(['ok' => true, 'action' => $action, 'result' => $result]);
 } catch (Throwable $error) {
     error_log('[MiniGamesWorld Friends] ' . $error->getMessage());
-    json_response(['ok' => false, 'error' => 'Не удалось выполнить действие с друзьями MGW.'], 500);
+    json_response(['ok' => false, 'error' => mgw_friends_copy('server.friends.failed', 'The MGW Friends action could not be completed.')], 500);
 }
