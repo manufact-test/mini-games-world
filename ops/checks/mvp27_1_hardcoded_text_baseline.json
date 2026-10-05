@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-05",
-  "staging_base": "fb9ea03674e1ac3738ed5172366391d77dbc7f66",
-  "scanned_files": 694,
-  "cyrillic_lines_total": 1701,
+  "staging_base": "e08b04b4bb15ef0c1fdbaf745bf0ad8683d1f0db",
+  "scanned_files": 693,
+  "cyrillic_lines_total": 1698,
   "by_scope": {
-    "client": 48,
+    "client": 45,
     "backend": 1653,
     "client-entry": 0
   },
@@ -64,7 +64,8 @@
     "orphaned notification empty-frame guard v115 (screens/notification-empty-frame-guard-v115.js; exhaustive app-source scan finds no external owner)",
     "shadowed legacy Tic-Tac-Toe turn fix (production-tictactoe-turn-fix.js; sole owner is stripped production-regression-fix-entry.js; factual v110 replaces the legacy regression/main entry pair with canonical bootstrap)",
     "shadowed historical v107 timer PVP (production-v107-timer-pvp.js; sole owner is production-clean-entry-v107.js on historical app/v107.php; factual v110 does not load it)",
-    "shadowed abandoned v108 live-game owner (production-v108-live-game.js; sole owner is ownerless production-clean-entry-v108.js; historical app/v108.php remains on production-clean-entry-v105-fast-notifications.js rollback and factual v110 does not load it)"
+    "shadowed abandoned v108 live-game owner (production-v108-live-game.js; sole owner is ownerless production-clean-entry-v108.js; historical app/v108.php remains on production-clean-entry-v105-fast-notifications.js rollback and factual v110 does not load it)",
+    "shadowed historical game-screen-v98 (screens/game-screen-v98.js; sole direct owner is production-v98-ui-owner.js, itself confined to production-regression-fix-entry-v98.js on historical app/v98.php; factual v110 does not load it)"
   ],
-  "note": "MVP-27.1 v108 live-game reachability classification: source remains untouched abandoned runtime owned only by ownerless production-clean-entry-v108.js; historical v108 stays on v105-fast rollback and factual Telegram v110 does not load it."
+  "note": "MVP-27.1 game-screen-v98 reachability classification: source remains untouched historical runtime behind the v98 UI-owner/regression/page lineage; factual Telegram v110 does not load it."
 }
