@@ -7,12 +7,13 @@ header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
 
 require __DIR__ . '/core/bootstrap.php';
+require_once __DIR__ . '/localization/ServerLocalization.php';
 require_once __DIR__ . '/accounts/AndroidDeviceAuthService.php';
 require_once __DIR__ . '/accounts/AndroidAccountReauthService.php';
 
 try {
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
-        json_response(['ok'=>false,'error'=>'Метод запроса не поддерживается.'], 405);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.account_chain.reauth.method_not_allowed', 'Request method is not supported.')], 405);
     }
 
     $payload = [];
@@ -31,12 +32,12 @@ try {
 
     $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
     if (!$databaseConfig->enabled()) {
-        json_response(['ok'=>false,'error'=>'Подтверждение Android сейчас недоступно.'], 503);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.account_chain.reauth.unavailable', 'Android verification is temporarily unavailable.')], 503);
     }
     $database = PdoConnectionFactory::create($databaseConfig);
     $service = new AndroidAccountReauthService($config, $database);
     if (!$service->enabled()) {
-        json_response(['ok'=>false,'error'=>'Подтверждение Android сейчас недоступно.'], 503);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.account_chain.reauth.unavailable', 'Android verification is temporarily unavailable.')], 503);
     }
 
     $action = strtolower(trim((string)($payload['action'] ?? 'create')));
@@ -47,7 +48,7 @@ try {
             json_response([
                 'ok'=>false,
                 'code'=>'android_auth_required',
-                'error'=>'Подтверждение доступно только в Android-приложении.',
+                'error'=>ServerLocalization::copy('server.account_chain.reauth.android_only', 'Verification is available only in the Android app.'),
             ], 403);
         }
 
@@ -69,13 +70,13 @@ try {
         ]);
     }
 
-    json_response(['ok'=>false,'error'=>'Некорректное действие подтверждения Android.'], 400);
+    json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.account_chain.reauth.invalid_action', 'Invalid Android verification action.')], 400);
 } catch (AndroidAuthRateLimitException $error) {
     header('Retry-After: ' . $error->retryAfterSec);
     json_response([
         'ok'=>false,
         'code'=>'rate_limited',
-        'error'=>'Слишком много попыток подтверждения. Попробуйте позже.',
+        'error'=>ServerLocalization::copy('server.account_chain.reauth.rate_limited', 'Too many verification attempts. Try again later.'),
     ], 429);
 } catch (AndroidAccountReauthException $error) {
     if ($error->reason === 'rate_limited') {
@@ -90,12 +91,12 @@ try {
     json_response([
         'ok'=>false,
         'code'=>'credential_invalid',
-        'error'=>'Не удалось подтвердить это устройство.',
+        'error'=>ServerLocalization::copy('server.account_chain.reauth.device_confirm_failed', 'This device could not be verified.'),
     ], 400);
 } catch (Throwable $error) {
     error_log('[Mini Games World Android reauth] ' . $error::class . ': ' . $error->getMessage());
     json_response([
         'ok'=>false,
-        'error'=>'Не удалось подтвердить действие. Попробуйте ещё раз.',
+        'error'=>ServerLocalization::copy('server.account_chain.reauth.failed', 'The action could not be verified. Try again.'),
     ], 500);
 }

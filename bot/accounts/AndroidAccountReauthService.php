@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../localization/ServerLocalization.php';
+
 final class AndroidAccountReauthException extends RuntimeException
 {
     public function __construct(
@@ -54,7 +56,7 @@ final class AndroidAccountReauthService
         if ($recent >= self::HOURLY_CHALLENGE_LIMIT) {
             throw new AndroidAccountReauthException(
                 'rate_limited',
-                'Слишком много попыток подтверждения. Попробуйте позже.',
+                ServerLocalization::copy('server.account_chain.reauth.rate_limited', 'Too many verification attempts. Try again later.'),
                 429
             );
         }
@@ -123,7 +125,7 @@ final class AndroidAccountReauthService
         } catch (Throwable) {
             throw new AndroidAccountReauthException(
                 'credential_mismatch',
-                'Не удалось подтвердить это устройство.',
+                ServerLocalization::copy('server.account_chain.reauth.device_confirm_failed', 'This device could not be verified.'),
                 403
             );
         }
@@ -140,7 +142,7 @@ final class AndroidAccountReauthService
                     || !hash_equals((string)$row['android_subject'], (string)$identity['provider_subject'])) {
                     throw new AndroidAccountReauthException(
                         'credential_mismatch',
-                        'Не удалось подтвердить это устройство.',
+                        ServerLocalization::copy('server.account_chain.reauth.device_confirm_failed', 'This device could not be verified.'),
                         403
                     );
                 }
@@ -153,7 +155,7 @@ final class AndroidAccountReauthService
             if ($status !== 'pending') {
                 throw new AndroidAccountReauthException(
                     'challenge_unavailable',
-                    'Эта попытка подтверждения больше недоступна.',
+                    ServerLocalization::copy('server.account_chain.reauth.challenge_unavailable', 'This verification attempt is no longer available.'),
                     409
                 );
             }
@@ -172,7 +174,7 @@ final class AndroidAccountReauthService
                 || !hash_equals((string)$row['android_subject'], (string)$identity['provider_subject'])) {
                 throw new AndroidAccountReauthException(
                     'credential_mismatch',
-                    'Не удалось подтвердить это устройство.',
+                    ServerLocalization::copy('server.account_chain.reauth.device_confirm_failed', 'This device could not be verified.'),
                     403
                 );
             }
@@ -211,7 +213,7 @@ final class AndroidAccountReauthService
         if (($result['status'] ?? '') === 'expired') {
             throw new AndroidAccountReauthException(
                 'challenge_expired',
-                'Подтверждение устарело. Повторите действие.',
+                ServerLocalization::copy('server.account_chain.reauth.expired', 'Verification expired. Repeat the action.'),
                 410
             );
         }
@@ -252,7 +254,7 @@ final class AndroidAccountReauthService
         if (strtolower(trim((string)($androidUser['mgw_identity_provider'] ?? ''))) !== self::PROVIDER) {
             throw new AndroidAccountReauthException(
                 'android_auth_required',
-                'Подтверждение доступно только в Android-приложении.',
+                ServerLocalization::copy('server.account_chain.reauth.android_only', 'Verification is available only in the Android app.'),
                 403
             );
         }
@@ -261,7 +263,7 @@ final class AndroidAccountReauthService
         if (!MgwIdGenerator::isValid($mgwId)) {
             throw new AndroidAccountReauthException(
                 'identity_unavailable',
-                'Не удалось подтвердить профиль MGW.',
+                ServerLocalization::copy('server.account_chain.reauth.profile_unavailable', 'The MGW profile could not be verified.'),
                 401
             );
         }
@@ -270,7 +272,7 @@ final class AndroidAccountReauthService
         if (preg_match(self::SESSION_PATTERN, $sessionToken) !== 1) {
             throw new AndroidAccountReauthException(
                 'android_session_missing',
-                'Android-сессия недоступна. Перезапустите приложение.',
+                ServerLocalization::copy('server.account_chain.reauth.session_unavailable', 'The Android session is unavailable. Restart the app.'),
                 401
             );
         }
@@ -313,7 +315,7 @@ final class AndroidAccountReauthService
         if ($rows === []) {
             throw new AndroidAccountReauthException(
                 'android_session_missing',
-                'Android-сессия недоступна. Перезапустите приложение.',
+                ServerLocalization::copy('server.account_chain.reauth.session_unavailable', 'The Android session is unavailable. Restart the app.'),
                 401
             );
         }
@@ -323,7 +325,7 @@ final class AndroidAccountReauthService
             && !hash_equals($expectedSubject, (string)($row['provider_subject'] ?? ''))) {
             throw new AndroidAccountReauthException(
                 'credential_mismatch',
-                'Не удалось подтвердить это устройство.',
+                ServerLocalization::copy('server.account_chain.reauth.device_confirm_failed', 'This device could not be verified.'),
                 403
             );
         }
@@ -343,7 +345,7 @@ final class AndroidAccountReauthService
         if ($rows === []) {
             throw new AndroidAccountReauthException(
                 'challenge_not_found',
-                'Попытка подтверждения не найдена.',
+                ServerLocalization::copy('server.account_chain.reauth.challenge_not_found', 'Verification attempt was not found.'),
                 404
             );
         }
@@ -356,7 +358,7 @@ final class AndroidAccountReauthService
         if (preg_match(self::CHALLENGE_PATTERN, $challengeId) !== 1) {
             throw new AndroidAccountReauthException(
                 'challenge_invalid',
-                'Некорректная попытка подтверждения.',
+                ServerLocalization::copy('server.account_chain.reauth.challenge_invalid', 'Invalid verification attempt.'),
                 400
             );
         }
@@ -374,7 +376,7 @@ final class AndroidAccountReauthService
         if (!$this->enabled()) {
             throw new AndroidAccountReauthException(
                 'android_reauth_unavailable',
-                'Подтверждение Android сейчас недоступно.',
+                ServerLocalization::copy('server.account_chain.reauth.unavailable', 'Android verification is temporarily unavailable.'),
                 503
             );
         }

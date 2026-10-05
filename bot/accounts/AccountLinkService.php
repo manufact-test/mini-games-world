@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../localization/ServerLocalization.php';
+
 final class AccountLinkException extends RuntimeException
 {
     public function __construct(
@@ -48,7 +50,7 @@ final class AccountLinkService
 
         $botUsername = trim((string)($this->config['staging_bot_username'] ?? $this->config['bot_username'] ?? ''));
         if (preg_match('/^[A-Za-z0-9_]{5,64}$/', $botUsername) !== 1) {
-            throw new AccountLinkException('telegram_bot_unavailable', 'Telegram-бот для привязки аккаунта сейчас недоступен.', 503);
+            throw new AccountLinkException('telegram_bot_unavailable', ServerLocalization::copy('server.account_chain.link.telegram_bot_unavailable', 'The Telegram bot for account linking is temporarily unavailable.'), 503);
         }
 
         $now = $this->now();
@@ -59,7 +61,7 @@ final class AccountLinkService
             ['source_mgw_id'=>$context['mgw_id'], 'recent_cutoff'=>$recentCutoff]
         );
         if ($recent >= 10) {
-            throw new AccountLinkException('rate_limited', 'Слишком много попыток привязки. Попробуйте позже.', 429);
+            throw new AccountLinkException('rate_limited', ServerLocalization::copy('server.account_chain.link.rate_limited', 'Too many account-link attempts. Try again later.'), 429);
         }
 
         $challengeId = 'lnk_' . bin2hex(random_bytes(10));
@@ -129,7 +131,7 @@ final class AccountLinkService
         $token = trim($token);
         $telegramSubject = $this->normalizeSubject($telegramSubject);
         if (preg_match(self::TOKEN_PATTERN, $token) !== 1) {
-            throw new AccountLinkException('invalid_token', 'Ссылка привязки недействительна.', 400);
+            throw new AccountLinkException('invalid_token', ServerLocalization::copy('server.account_chain.link.invalid_token', 'The account-link URL is invalid.'), 400);
         }
 
         return $this->database->transaction(function (DatabaseConnectionInterface $database) use ($token, $telegramSubject): array {
@@ -145,19 +147,19 @@ final class AccountLinkService
             if ($targetIdentity === null || (string)($targetIdentity['status'] ?? '') !== 'active') {
                 throw new AccountLinkException(
                     'telegram_account_missing',
-                    'Сначала откройте MINI GAMES WORLD в Telegram хотя бы один раз, затем повторите привязку.',
+                    ServerLocalization::copy('server.account_chain.link.telegram_first_open_required', 'Open MINI GAMES WORLD in Telegram at least once, then try linking again.'),
                     409
                 );
             }
 
             $targetMgwId = (string)$targetIdentity['mgw_id'];
             if ($targetMgwId === (string)$row['source_mgw_id']) {
-                throw new AccountLinkException('already_linked', 'Этот Telegram уже привязан к текущему MGW-профилю.');
+                throw new AccountLinkException('already_linked', ServerLocalization::copy('server.account_chain.link.already_linked', 'This Telegram account is already linked to the current MGW profile.'));
             }
 
             $ownership = $this->ownershipForMgwDb($database, $targetMgwId, true);
             if ($ownership === null) {
-                throw new AccountLinkException('target_ownership_missing', 'Не удалось подтвердить владельца Telegram-профиля.');
+                throw new AccountLinkException('target_ownership_missing', ServerLocalization::copy('server.account_chain.link.target_ownership_missing', 'The Telegram profile owner could not be verified.'));
             }
 
             $targetAndroid = $this->identityForMgwDb($database, $targetMgwId, self::PROVIDER_ANDROID, true);
@@ -165,14 +167,14 @@ final class AccountLinkService
                 && !hash_equals((string)$row['source_android_subject'], (string)$targetAndroid['provider_subject'])) {
                 throw new AccountLinkException(
                     'target_android_conflict',
-                    'Этот MGW-профиль уже привязан к другому Android-устройству.'
+                    ServerLocalization::copy('server.account_chain.link.target_android_conflict', 'This MGW profile is already linked to another Android device.')
                 );
             }
 
             $status = (string)$row['link_status'];
             $existingTelegram = trim((string)($row['target_telegram_subject'] ?? ''));
             if ($status === 'claimed' && $existingTelegram !== '' && !hash_equals($existingTelegram, $telegramSubject)) {
-                throw new AccountLinkException('challenge_claimed', 'Эта попытка привязки уже подтверждается другим Telegram-профилем.');
+                throw new AccountLinkException('challenge_claimed', ServerLocalization::copy('server.account_chain.link.challenge_claimed', 'This account-link attempt is already being confirmed by another Telegram profile.'));
             }
 
             $claimedAt = $this->timestamp();
@@ -198,7 +200,7 @@ final class AccountLinkService
                 'status'=>'claimed',
                 'challenge_id'=>(string)$row['challenge_id'],
                 'target_mgw_id'=>$targetMgwId,
-                'target_nickname'=>(string)($targetIdentity['nickname'] ?? 'Игрок'),
+                'target_nickname'=>(string)($targetIdentity['nickname'] ?? ServerLocalization::copy('server.account_chain.common.player_fallback', 'Player')),
             ];
         });
     }
@@ -217,7 +219,7 @@ final class AccountLinkService
             $this->assertChallengeUsable($database, $row, ['claimed','confirmed']);
 
             if (!hash_equals((string)($row['target_telegram_subject'] ?? ''), $telegramSubject)) {
-                throw new AccountLinkException('confirmation_owner_mismatch', 'Эту привязку должен подтвердить тот же Telegram-профиль.');
+                throw new AccountLinkException('confirmation_owner_mismatch', ServerLocalization::copy('server.account_chain.link.confirmation_owner_mismatch', 'The same Telegram profile must confirm this account link.'));
             }
 
             if ((string)$row['link_status'] !== 'confirmed') {
@@ -252,7 +254,7 @@ final class AccountLinkService
                 return ['status'=>(string)$row['link_status'], 'challenge_id'=>$challengeId];
             }
             if (!hash_equals((string)($row['target_telegram_subject'] ?? ''), $telegramSubject)) {
-                throw new AccountLinkException('confirmation_owner_mismatch', 'Эту привязку должен отменить тот же Telegram-профиль.');
+                throw new AccountLinkException('confirmation_owner_mismatch', ServerLocalization::copy('server.account_chain.link.cancel_owner_mismatch', 'The same Telegram profile must cancel this account link.'));
             }
             $database->execute(
                 "UPDATE mgw_account_link_challenges
@@ -307,7 +309,7 @@ final class AccountLinkService
         if ((string)$row['link_status'] !== 'db_linked') {
             throw new AccountLinkException(
                 'confirmation_required',
-                'Сначала подтвердите привязку в Telegram.'
+                ServerLocalization::copy('server.account_chain.link.telegram_confirmation_required', 'Confirm the account link in Telegram first.')
             );
         }
 
@@ -334,7 +336,7 @@ final class AccountLinkService
             $targetMgw = (string)$row['target_mgw_id'];
             $subject = (string)$row['source_android_subject'];
             if ($targetMgw === '' || $sourceMgw === $targetMgw) {
-                throw new AccountLinkException('target_invalid', 'Целевой MGW-профиль недействителен.');
+                throw new AccountLinkException('target_invalid', ServerLocalization::copy('server.account_chain.link.target_invalid', 'The target MGW profile is invalid.'));
             }
 
             $sourceIdentity = $this->identityForProviderSubjectDb(
@@ -344,7 +346,7 @@ final class AccountLinkService
                 true
             );
             if ($sourceIdentity === null) {
-                throw new AccountLinkException('android_identity_missing', 'Android identity не найдена.');
+                throw new AccountLinkException('android_identity_missing', ServerLocalization::copy('server.account_chain.link.android_identity_missing', 'Android identity was not found.'));
             }
             if ((string)$sourceIdentity['mgw_id'] === $targetMgw) {
                 $database->execute(
@@ -356,7 +358,7 @@ final class AccountLinkService
                 return;
             }
             if ((string)$sourceIdentity['mgw_id'] !== $sourceMgw) {
-                throw new AccountLinkException('android_identity_conflict', 'Android identity принадлежит другому MGW-профилю.');
+                throw new AccountLinkException('android_identity_conflict', ServerLocalization::copy('server.account_chain.link.android_identity_conflict', 'Android identity belongs to another MGW profile.'));
             }
 
             $targetTelegram = $this->identityForProviderSubjectDb(
@@ -366,12 +368,12 @@ final class AccountLinkService
                 true
             );
             if ($targetTelegram === null || (string)$targetTelegram['mgw_id'] !== $targetMgw) {
-                throw new AccountLinkException('telegram_identity_changed', 'Telegram identity изменилась до завершения привязки.');
+                throw new AccountLinkException('telegram_identity_changed', ServerLocalization::copy('server.account_chain.link.telegram_identity_changed', 'Telegram identity changed before linking completed.'));
             }
             $targetAndroid = $this->identityForMgwDb($database, $targetMgw, self::PROVIDER_ANDROID, true);
             if ($targetAndroid !== null
                 && !hash_equals($subject, (string)$targetAndroid['provider_subject'])) {
-                throw new AccountLinkException('target_android_conflict', 'Целевой MGW-профиль уже связан с другим Android.');
+                throw new AccountLinkException('target_android_conflict', ServerLocalization::copy('server.account_chain.link.target_android_linked', 'The target MGW profile is already linked to another Android device.'));
             }
 
             $foreignSessions = (int)$database->fetchValue(
@@ -385,7 +387,7 @@ final class AccountLinkService
                 ['mgw_id'=>$sourceMgw]
             );
             if ($foreignSessions > 0 || $foreignDevices > 0) {
-                throw new AccountLinkException('source_not_pristine', 'Временный Android-профиль уже содержит другое устройство или сессию.');
+                throw new AccountLinkException('source_not_pristine', ServerLocalization::copy('server.account_chain.link.source_other_device_or_session', 'The temporary Android profile already contains another device or session.'));
             }
 
             $sourceDevices = $database->fetchAll(
@@ -402,7 +404,7 @@ final class AccountLinkService
                     ]
                 );
                 if ($collision > 0) {
-                    throw new AccountLinkException('target_device_conflict', 'Android-устройство уже зарегистрировано в целевом профиле.');
+                    throw new AccountLinkException('target_device_conflict', ServerLocalization::copy('server.account_chain.link.target_device_conflict', 'The Android device is already registered in the target profile.'));
                 }
             }
 
@@ -455,7 +457,7 @@ final class AccountLinkService
             ['mgw_id'=>$sourceMgw]
         );
         if (count($userRows) !== 1 || (string)$userRows[0]['status'] !== 'active') {
-            throw new AccountLinkException('source_not_pristine', 'Временный Android-профиль уже не находится в исходном состоянии.');
+            throw new AccountLinkException('source_not_pristine', ServerLocalization::copy('server.account_chain.link.source_not_pristine', 'The temporary Android profile is no longer in its original state.'));
         }
 
         $identities = $this->database->fetchAll(
@@ -465,7 +467,7 @@ final class AccountLinkService
         if (count($identities) !== 1
             || (string)$identities[0]['provider'] !== self::PROVIDER_ANDROID
             || !hash_equals($sourceSubject, (string)$identities[0]['provider_subject'])) {
-            throw new AccountLinkException('source_not_pristine', 'Временный Android-профиль уже содержит дополнительную identity.');
+            throw new AccountLinkException('source_not_pristine', ServerLocalization::copy('server.account_chain.link.source_extra_identity', 'The temporary Android profile already contains an additional identity.'));
         }
 
         $nonStarterInventory = (int)$this->database->fetchValue(
@@ -491,7 +493,7 @@ final class AccountLinkService
         if ($nonStarterInventory > 0 || $ratingRows > 0 || $accountRequests > 0 || $activeReservations > 0) {
             throw new AccountLinkException(
                 'source_not_pristine',
-                'На временном Android-профиле уже есть активность или приобретения. Автоматическая привязка остановлена.'
+                ServerLocalization::copy('server.account_chain.link.source_activity_or_purchases', 'The temporary Android profile already has activity or purchases. Automatic linking was stopped.')
             );
         }
 
@@ -527,7 +529,7 @@ final class AccountLinkService
             if ($count > 0) {
                 throw new AccountLinkException(
                     'source_not_pristine',
-                    'Временный Android-профиль уже содержит пользовательскую активность. Автоматическая привязка остановлена.'
+                    ServerLocalization::copy('server.account_chain.link.source_user_activity', 'The temporary Android profile already contains user activity. Automatic linking was stopped.')
                 );
             }
         }
@@ -535,7 +537,7 @@ final class AccountLinkService
         $starterAmount = $this->starterAmount();
         $ownership = $this->ownershipForMgwDb($this->database, $sourceMgw, false);
         if ($ownership === null || (string)$ownership['legacy_user_id'] !== $legacyUserId) {
-            throw new AccountLinkException('source_not_pristine', 'Владелец временного Android-профиля изменился.');
+            throw new AccountLinkException('source_not_pristine', ServerLocalization::copy('server.account_chain.link.source_owner_changed', 'The owner of the temporary Android profile changed.'));
         }
         $balanceRows = $this->database->fetchAll(
             "SELECT available_amount, reserved_amount
@@ -544,7 +546,7 @@ final class AccountLinkService
             ['account_ref'=>(string)$ownership['account_ref']]
         );
         if (count($balanceRows) > 1) {
-            throw new AccountLinkException('source_not_pristine', 'Баланс временного Android-профиля неоднозначен.');
+            throw new AccountLinkException('source_not_pristine', ServerLocalization::copy('server.account_chain.link.source_balance_ambiguous', 'The temporary Android profile balance is ambiguous.'));
         }
         if ($balanceRows !== []) {
             $available = (int)$balanceRows[0]['available_amount'];
@@ -552,7 +554,7 @@ final class AccountLinkService
             if ($reserved !== 0 || !in_array($available, [0, $starterAmount], true)) {
                 throw new AccountLinkException(
                     'source_not_pristine',
-                    'Баланс временного Android-профиля уже изменился. Автоматическая привязка остановлена.'
+                    ServerLocalization::copy('server.account_chain.link.source_balance_changed', 'The temporary Android profile balance already changed. Automatic linking was stopped.')
                 );
             }
         }
@@ -579,14 +581,14 @@ final class AccountLinkService
         if (!is_array($user)
             || (string)($user['mgw_id'] ?? '') !== $sourceMgw
             || (string)($user['id'] ?? '') !== $legacyUserId) {
-            throw new AccountLinkException('source_not_pristine', 'Временный Android runtime-профиль не найден.');
+            throw new AccountLinkException('source_not_pristine', ServerLocalization::copy('server.account_chain.link.source_runtime_missing', 'The temporary Android runtime profile was not found.'));
         }
         if ((string)($user['status'] ?? 'idle') !== 'idle'
             || !empty($user['current_game_id'])
             || (int)($user['balance'] ?? -1) !== $starterAmount) {
             throw new AccountLinkException(
                 'source_not_pristine',
-                'Временный Android-профиль уже использовался. Автоматическая привязка остановлена.'
+                ServerLocalization::copy('server.account_chain.link.source_already_used', 'The temporary Android profile was already used. Automatic linking was stopped.')
             );
         }
 
@@ -596,14 +598,14 @@ final class AccountLinkService
             'bot_games_played','bot_wins','bot_losses','bot_draws','bot_win_streak'
         ] as $key) {
             if ((int)($user['stats'][$key] ?? 0) !== 0) {
-                throw new AccountLinkException('source_not_pristine', 'Временный Android-профиль уже содержит игровую статистику.');
+                throw new AccountLinkException('source_not_pristine', ServerLocalization::copy('server.account_chain.link.source_game_stats', 'The temporary Android profile already contains game statistics.'));
             }
         }
         if (!empty($user['weekly_match_first_game_grants'])
             || (int)($user['gold_deposited_total'] ?? 0) !== 0
             || (int)($user['gold_wagered_total'] ?? 0) !== 0
             || (int)($user['gold_shop_spent_total'] ?? 0) !== 0) {
-            throw new AccountLinkException('source_not_pristine', 'Временный Android-профиль уже содержит экономическую активность.');
+            throw new AccountLinkException('source_not_pristine', ServerLocalization::copy('server.account_chain.link.source_economy_activity', 'The temporary Android profile already contains economy activity.'));
         }
 
         $welcomeTotal = 0;
@@ -614,13 +616,13 @@ final class AccountLinkService
                 continue;
             }
             if ((string)($transaction['category'] ?? '') !== 'welcome_bonus') {
-                throw new AccountLinkException('source_not_pristine', 'Временный Android-профиль уже содержит не-стартовую транзакцию.');
+                throw new AccountLinkException('source_not_pristine', ServerLocalization::copy('server.account_chain.link.source_non_start_transaction', 'The temporary Android profile already contains a non-start transaction.'));
             }
             $welcomeCount++;
             $welcomeTotal += max(0, (int)($transaction['amount'] ?? 0));
         }
         if ($welcomeCount !== 1 || $welcomeTotal !== $starterAmount) {
-            throw new AccountLinkException('source_not_pristine', 'Стартовый баланс временного Android-профиля неоднозначен.');
+            throw new AccountLinkException('source_not_pristine', ServerLocalization::copy('server.account_chain.link.source_start_balance_ambiguous', 'The temporary Android profile starting balance is ambiguous.'));
         }
 
         foreach ((array)($data['users'] ?? []) as $otherUserId => $otherUser) {
@@ -628,7 +630,7 @@ final class AccountLinkService
             if ($this->recordReferences($otherUser, [$legacyUserId, $sourceMgw, $accountRef])) {
                 throw new AccountLinkException(
                     'source_not_pristine',
-                    'Временный Android-профиль уже связан с другим пользовательским состоянием.'
+                    ServerLocalization::copy('server.account_chain.link.source_other_user_state', 'The temporary Android profile is already linked to other user state.')
                 );
             }
         }
@@ -638,7 +640,7 @@ final class AccountLinkService
             if ($this->recordReferences($value, [$legacyUserId, $sourceMgw, $accountRef])) {
                 throw new AccountLinkException(
                     'source_not_pristine',
-                    'Временный Android-профиль уже связан с игровыми или социальными данными.'
+                    ServerLocalization::copy('server.account_chain.link.source_game_or_social_data', 'The temporary Android profile is already linked to game or social data.')
                 );
             }
         }
@@ -696,7 +698,7 @@ final class AccountLinkService
         $available = (int)($balance['available_amount'] ?? 0);
         $reserved = (int)($balance['reserved_amount'] ?? 0);
         if ($reserved !== 0 || $available < 0 || $available > $this->starterAmount()) {
-            throw new AccountLinkException('source_not_pristine', 'Ledger временного Android-профиля уже содержит активность.');
+            throw new AccountLinkException('source_not_pristine', ServerLocalization::copy('server.account_chain.link.source_ledger_activity', 'The temporary Android profile ledger already contains activity.'));
         }
         if ($available === 0) return 0;
 
@@ -728,13 +730,13 @@ final class AccountLinkService
             $current = $this->challengeById($database, (string)$row['challenge_id'], true);
             if ((string)$current['link_status'] === 'linked') return;
             if ((string)$current['link_status'] !== 'db_linked') {
-                throw new AccountLinkException('link_state_invalid', 'Состояние привязки изменилось.');
+                throw new AccountLinkException('link_state_invalid', ServerLocalization::copy('server.account_chain.link.state_changed', 'The account-link state changed.'));
             }
 
             $targetOwnership = $this->ownershipForMgwDb($database, (string)$current['target_mgw_id'], true);
             if ($targetOwnership === null
                 || (string)$targetOwnership['legacy_user_id'] !== (string)$current['target_legacy_user_id']) {
-                throw new AccountLinkException('target_ownership_changed', 'Владелец целевого MGW-профиля изменился.');
+                throw new AccountLinkException('target_ownership_changed', ServerLocalization::copy('server.account_chain.link.target_owner_changed', 'The owner of the target MGW profile changed.'));
             }
 
             $database->execute(
@@ -781,11 +783,11 @@ final class AccountLinkService
             ['mgw_id'=>$mgwId]
         );
         if ($rows === [] || (string)($rows[0]['status'] ?? '') !== 'active') {
-            throw new AccountLinkException('target_unavailable', 'Целевой MGW-профиль недоступен.');
+            throw new AccountLinkException('target_unavailable', ServerLocalization::copy('server.account_chain.link.target_unavailable', 'The target MGW profile is unavailable.'));
         }
         return [
             'mgw_id'=>$mgwId,
-            'nickname'=>(string)($rows[0]['nickname'] ?? $rows[0]['display_name'] ?? 'Игрок'),
+            'nickname'=>(string)($rows[0]['nickname'] ?? $rows[0]['display_name'] ?? ServerLocalization::copy('server.account_chain.common.player_fallback', 'Player')),
             'avatar_item_id'=>trim((string)($rows[0]['equipped_avatar_item_id'] ?? '')),
         ];
     }
@@ -793,19 +795,19 @@ final class AccountLinkService
     private function androidContext(array $androidUser): array
     {
         if ((string)($androidUser['mgw_identity_provider'] ?? '') !== self::PROVIDER_ANDROID) {
-            throw new AccountLinkException('android_auth_required', 'Привязку нужно начать из Android-приложения.', 403);
+            throw new AccountLinkException('android_auth_required', ServerLocalization::copy('server.account_chain.link.android_auth_required', 'Account linking must be started from the Android app.'), 403);
         }
         $mgwId = trim((string)($androidUser['mgw_id'] ?? ''));
         if (!MgwIdGenerator::isValid($mgwId)) {
-            throw new AccountLinkException('android_identity_missing', 'Android MGW-профиль не найден.', 403);
+            throw new AccountLinkException('android_identity_missing', ServerLocalization::copy('server.account_chain.link.android_profile_missing', 'The Android MGW profile was not found.'), 403);
         }
         $identity = $this->identityForMgw($mgwId, self::PROVIDER_ANDROID);
         if ($identity === null) {
-            throw new AccountLinkException('android_identity_missing', 'Android identity не найдена.', 403);
+            throw new AccountLinkException('android_identity_missing', ServerLocalization::copy('server.account_chain.link.android_identity_missing', 'Android identity was not found.'), 403);
         }
         $ownership = $this->ownershipForMgwDb($this->database, $mgwId, false);
         if ($ownership === null) {
-            throw new AccountLinkException('ownership_missing', 'Владелец MGW-профиля не найден.', 409);
+            throw new AccountLinkException('ownership_missing', ServerLocalization::copy('server.account_chain.link.ownership_missing', 'The MGW profile owner was not found.'), 409);
         }
         return [
             'mgw_id'=>$mgwId,
@@ -819,7 +821,7 @@ final class AccountLinkService
     {
         $subject = (string)($row['source_android_subject'] ?? '');
         if ($subject === '' || !hash_equals($subject, (string)$context['android_subject'])) {
-            throw new AccountLinkException('challenge_owner_mismatch', 'Эта привязка принадлежит другому Android-устройству.', 403);
+            throw new AccountLinkException('challenge_owner_mismatch', ServerLocalization::copy('server.account_chain.link.challenge_device_mismatch', 'This account link belongs to another Android device.'), 403);
         }
 
         $status = (string)($row['link_status'] ?? '');
@@ -827,7 +829,7 @@ final class AccountLinkService
             ? (string)($row['target_mgw_id'] ?? '')
             : (string)($row['source_mgw_id'] ?? '');
         if ($allowedMgw === '' || (string)$context['mgw_id'] !== $allowedMgw) {
-            throw new AccountLinkException('challenge_owner_mismatch', 'MGW-профиль этой привязки изменился.', 403);
+            throw new AccountLinkException('challenge_owner_mismatch', ServerLocalization::copy('server.account_chain.link.challenge_profile_changed', 'The MGW profile for this account link changed.'), 403);
         }
     }
 
@@ -858,10 +860,10 @@ final class AccountLinkService
                  WHERE challenge_id=:challenge_id AND link_status IN ('pending','claimed','confirmed')",
                 ['challenge_id'=>(string)$row['challenge_id']]
             );
-            throw new AccountLinkException('challenge_expired', 'Ссылка привязки истекла. Создайте новую.', 410);
+            throw new AccountLinkException('challenge_expired', ServerLocalization::copy('server.account_chain.link.challenge_expired', 'The account-link URL expired. Create a new one.'), 410);
         }
         if (!in_array((string)$row['link_status'], $allowedStatuses, true)) {
-            throw new AccountLinkException('challenge_state_invalid', 'Эта попытка привязки уже недоступна.');
+            throw new AccountLinkException('challenge_state_invalid', ServerLocalization::copy('server.account_chain.link.challenge_state_invalid', 'This account-link attempt is no longer available.'));
         }
     }
 
@@ -876,7 +878,7 @@ final class AccountLinkService
             ['challenge_id'=>$challengeId]
         );
         if (count($rows) !== 1) {
-            throw new AccountLinkException('challenge_not_found', 'Попытка привязки не найдена.', 404);
+            throw new AccountLinkException('challenge_not_found', ServerLocalization::copy('server.account_chain.link.challenge_not_found', 'The account-link attempt was not found.'), 404);
         }
         return $rows[0];
     }
@@ -892,7 +894,7 @@ final class AccountLinkService
             ['token_sha256'=>$tokenHash]
         );
         if (count($rows) !== 1) {
-            throw new AccountLinkException('challenge_not_found', 'Ссылка привязки не найдена.', 404);
+            throw new AccountLinkException('challenge_not_found', ServerLocalization::copy('server.account_chain.link.link_not_found', 'The account-link URL was not found.'), 404);
         }
         return $rows[0];
     }
@@ -918,7 +920,7 @@ final class AccountLinkService
             ['mgw_id'=>$mgwId, 'provider'=>$provider]
         );
         if (count($rows) > 1) {
-            throw new AccountLinkException('identity_ambiguous', 'MGW identity неоднозначна.');
+            throw new AccountLinkException('identity_ambiguous', ServerLocalization::copy('server.account_chain.link.identity_ambiguous', 'MGW identity is ambiguous.'));
         }
         return $rows[0] ?? null;
     }
@@ -939,7 +941,7 @@ final class AccountLinkService
             ['provider'=>$provider, 'provider_subject'=>$subject]
         );
         if (count($rows) > 1) {
-            throw new AccountLinkException('identity_ambiguous', 'MGW identity неоднозначна.');
+            throw new AccountLinkException('identity_ambiguous', ServerLocalization::copy('server.account_chain.link.identity_ambiguous', 'MGW identity is ambiguous.'));
         }
         return $rows[0] ?? null;
     }
@@ -956,7 +958,7 @@ final class AccountLinkService
             ['mgw_id'=>$mgwId]
         );
         if (count($rows) > 1) {
-            throw new AccountLinkException('ownership_ambiguous', 'Владелец MGW-профиля неоднозначен.');
+            throw new AccountLinkException('ownership_ambiguous', ServerLocalization::copy('server.account_chain.link.ownership_ambiguous', 'The MGW profile owner is ambiguous.'));
         }
         if ($rows === []) return null;
         if ((string)$rows[0]['ownership_status'] !== 'active') return null;
@@ -1014,7 +1016,7 @@ final class AccountLinkService
     {
         $challengeId = strtolower(trim($challengeId));
         if (preg_match(self::CHALLENGE_PATTERN, $challengeId) !== 1) {
-            throw new AccountLinkException('challenge_invalid', 'Идентификатор привязки недействителен.', 400);
+            throw new AccountLinkException('challenge_invalid', ServerLocalization::copy('server.account_chain.link.challenge_invalid', 'The account-link identifier is invalid.'), 400);
         }
         return $challengeId;
     }
@@ -1023,7 +1025,7 @@ final class AccountLinkService
     {
         $subject = trim($subject);
         if ($subject === '' || strlen($subject) > 191) {
-            throw new AccountLinkException('identity_invalid', 'Telegram identity недействительна.', 400);
+            throw new AccountLinkException('identity_invalid', ServerLocalization::copy('server.account_chain.link.telegram_identity_invalid', 'Telegram identity is invalid.'), 400);
         }
         return $subject;
     }
@@ -1031,7 +1033,7 @@ final class AccountLinkService
     private function assertEnabled(): void
     {
         if (!$this->enabled()) {
-            throw new AccountLinkException('linking_unavailable', 'Привязка аккаунта сейчас недоступна.', 404);
+            throw new AccountLinkException('linking_unavailable', ServerLocalization::copy('server.account_chain.link.unavailable', 'Account linking is temporarily unavailable.'), 404);
         }
     }
 

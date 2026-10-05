@@ -32,7 +32,7 @@ assert.ok(manifest.includes("./assets/js/production-v110-targeted-interactions.j
   'Manifest must cache-bust localized targeted-interactions owner');
 
 assert.ok(!audit.includes("'"+TARGET+"'"),'Active targeted interactions must remain inside player localization scan');
-assert.ok(Number(baseline.scanned_files)<=678);
+assert.ok(Number(baseline.scanned_files)>=678,'Successor localization may expand scanned runtime coverage but must not drop predecessor coverage.');
 assert.ok(Number(baseline.cyrillic_lines_total)<=1668);
 assert.ok(Number(baseline.by_scope?.client)<=15);
 assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');

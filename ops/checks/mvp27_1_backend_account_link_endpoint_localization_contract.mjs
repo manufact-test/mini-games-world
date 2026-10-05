@@ -47,7 +47,7 @@ assert.equal(manifest.default_locale,'ru');
 assert.equal(manifest.fallback_locale,'ru');
 assert.deepEqual(manifest.supported_locales,['ru'],'Production manifest must remain truthful RU-only during MVP-27.1.');
 
-assert.equal(Number(baseline.scanned_files),678);
+assert.ok(Number(baseline.scanned_files)>=678,'Successor localization may expand scanned runtime coverage but must not drop predecessor coverage.');
 assert.ok(Number(baseline.cyrillic_lines_total)<=1643,'Later backend localization slices may only reduce total debt from the accepted account-link endpoint ceiling.');
 assert.equal(Number(baseline.by_scope?.client),0);
 assert.ok(Number(baseline.by_scope?.backend)<=1643,'Later backend localization slices may only reduce backend debt from the accepted account-link endpoint ceiling.');

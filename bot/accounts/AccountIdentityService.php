@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../localization/ServerLocalization.php';
+
 require_once __DIR__ . '/MgwIdentityPolicy.php';
 require_once dirname(__DIR__) . '/catalog/ProductInventoryService.php';
 
@@ -53,14 +55,14 @@ final class AccountIdentityService
                     $created = false;
                     if ($identity === null) {
                         if ($this->deletedIdentityReplayBlocked($database, $provider, $subject)) {
-                            throw new RuntimeException('Предыдущий аккаунт был удалён. Для нового входа заново откройте MINI GAMES WORLD через Telegram позже.');
+                            throw new RuntimeException(ServerLocalization::copy('server.account_chain.identity.deleted_reopen_later', 'The previous account was deleted. Reopen MINI GAMES WORLD from Telegram later to sign in again.'));
                         }
                         $mgwId = $this->createAccount($database, $provider, $subject, $providerUsername);
                         $created = true;
                     } else {
                         $status = strtolower(trim((string)($identity['status'] ?? 'active')));
                         if (in_array($status, ['deletion_finalizing', 'anonymized'], true)) {
-                            throw new RuntimeException('Аккаунт MGW недоступен: удаление данных выполняется или уже завершено.');
+                            throw new RuntimeException(ServerLocalization::copy('server.account_chain.identity.deletion_in_progress', 'The MGW account is unavailable because data deletion is in progress or completed.'));
                         }
                         $mgwId = (string)$identity['mgw_id'];
                         $this->touchAccount($database, $mgwId, $provider, $subject, $providerUsername);

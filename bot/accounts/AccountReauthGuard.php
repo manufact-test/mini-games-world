@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../localization/ServerLocalization.php';
+
 require_once __DIR__ . '/AndroidAccountReauthService.php';
 
 final class AccountReauthException extends RuntimeException
@@ -58,13 +60,13 @@ final class AccountReauthGuard
 
             throw new AccountReauthException(
                 'android_reauth_required',
-                'Подтвердите действие разблокировкой устройства и повторите попытку.'
+                ServerLocalization::copy('server.account_chain.reauth.unlock_required', 'Unlock the device to confirm this action, then try again.')
             );
         }
 
         throw new AccountReauthException(
             'reauth_required',
-            'Для этого действия заново откройте MINI GAMES WORLD из Telegram и повторите попытку.'
+            ServerLocalization::copy('server.account_chain.reauth.telegram_refresh_required', 'Reopen MINI GAMES WORLD from Telegram and repeat the action.')
         );
     }
 
@@ -84,7 +86,7 @@ final class AccountReauthGuard
     {
         $mgwId = trim((string)($authenticated['mgw_id'] ?? ''));
         if (!MgwIdGenerator::isValid($mgwId)) {
-            throw new AccountReauthException('identity_unavailable', 'Не удалось подтвердить профиль MGW.');
+            throw new AccountReauthException('identity_unavailable', ServerLocalization::copy('server.account_chain.reauth.profile_unavailable', 'The MGW profile could not be verified.'));
         }
         return $authenticated;
     }

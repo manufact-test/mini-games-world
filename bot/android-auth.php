@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
+require_once __DIR__ . '/localization/ServerLocalization.php';
 require_once __DIR__ . '/helpers/WebAppLaunchUrl.php';
 require_once __DIR__ . '/accounts/AndroidDeviceAuthService.php';
 
@@ -12,7 +13,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     header('Allow: POST');
     http_response_code(405);
     header('Content-Type: text/plain; charset=utf-8');
-    echo 'Откройте MINI GAMES WORLD через приложение Android.';
+    echo ServerLocalization::copy('server.account_chain.auth.open_from_android', 'Open MINI GAMES WORLD from the Android app.');
     exit;
 }
 
@@ -20,7 +21,7 @@ $service = new AndroidDeviceAuthService($config);
 if (!$service->enabled()) {
     http_response_code(404);
     header('Content-Type: text/plain; charset=utf-8');
-    echo 'Android-вход сейчас недоступен.';
+    echo ServerLocalization::copy('server.account_chain.auth.unavailable', 'Android sign-in is temporarily unavailable.');
     exit;
 }
 
@@ -37,7 +38,7 @@ $inviteToken = strtolower(trim((string)($form['invite'] ?? '')));
 if ($inviteToken !== '' && preg_match('/^[a-f0-9]{24}$/', $inviteToken) !== 1) {
     http_response_code(400);
     header('Content-Type: text/plain; charset=utf-8');
-    echo 'Некорректная ссылка приглашения.';
+    echo ServerLocalization::copy('server.account_chain.auth.invalid_invite_link', 'Invalid invitation link.');
     exit;
 }
 $existingToken = trim((string)($_COOKIE[AndroidDeviceAuthService::COOKIE_NAME] ?? ''));
@@ -67,17 +68,17 @@ try {
     header('Retry-After: ' . $error->retryAfterSec);
     http_response_code(429);
     header('Content-Type: text/plain; charset=utf-8');
-    echo 'Слишком много попыток входа. Попробуйте немного позже.';
+    echo ServerLocalization::copy('server.account_chain.auth.rate_limited', 'Too many sign-in attempts. Try again later.');
     exit;
 } catch (InvalidArgumentException) {
     http_response_code(400);
     header('Content-Type: text/plain; charset=utf-8');
-    echo 'Не удалось подтвердить это устройство.';
+    echo ServerLocalization::copy('server.account_chain.reauth.device_confirm_failed', 'This device could not be verified.');
     exit;
 } catch (Throwable $error) {
     error_log('[Mini Games World Android auth] ' . $error::class . ': ' . $error->getMessage());
     http_response_code(503);
     header('Content-Type: text/plain; charset=utf-8');
-    echo 'Не удалось открыть MINI GAMES WORLD. Попробуйте ещё раз.';
+    echo ServerLocalization::copy('server.account_chain.auth.open_failed', 'MINI GAMES WORLD could not be opened. Try again.');
     exit;
 }
