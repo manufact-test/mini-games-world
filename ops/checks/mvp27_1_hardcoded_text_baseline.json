@@ -59,7 +59,7 @@
     "shadowed historical v106 self-toast policy (production-v106-self-toast-policy.js; owned by historical clean-entry-v106/v107 plus ownerless clean-entry-v108; absent from v109 and factual v110)",
     "shadowed historical interaction-latency coordinator v101 (interaction-latency-coordinator-v101.js; direct references are stripped main.js and historical v114 rewrite; factual v110 uses canonical bootstrap/main graph)",
     "orphaned predecessor interaction-latency coordinator (interaction-latency-coordinator.js; exhaustive app-source scan finds no external owner; factual v110 uses canonical main graph)",
-    "historical shared session-ownership owner (production-session-ownership-fix.js; factual v110 migrated to localized production-session-ownership-fix-v110.js while legacy regression entries retain the original)"
+    "historical shared session-ownership owner (production-session-ownership-fix.js; factual v110 migrated to localized production-session-ownership-fix-v110.js while historical pre-v110 clean/regression lineages retain the original)"
   ],
-  "note": "MVP-27.1 active session-ownership localization: factual v110 now uses a localized v110-specific successor; legacy regression entries retain the untouched historical source. Session rotation, safe retry and response semantics remain unchanged."
+  "note": "MVP-27.1 active session-ownership localization: factual v110 now uses a localized v110-specific successor; historical pre-v110 clean/regression lineages retain the untouched shared source. Session rotation, safe retry and response semantics remain unchanged."
 }
