@@ -66,7 +66,7 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
-          allowed='^(bot/friends\.php|app/locales/ru\.json|ops/checks/mvp27_1_backend_friends_endpoint_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp18-2-friends-ui\.yml|\.github/workflows/mvp25-5-abuse-rate-limits\.yml|\.github/workflows/mvp27-1-backend-friends-endpoint-localization\.yml)
+          allowed='^(bot/friends\.php|app/locales/ru\.json|ops/checks/mvp27_1_backend_friends_endpoint_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp18-2-friends-ui\.yml|\.github/workflows/mvp25-5-abuse-rate-limits\.yml|\.github/workflows/mvp27-1-backend-friends-endpoint-localization\.yml)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected backend Friends localization paths:\n%s\n' "$bad" >&2; exit 1; }
 
