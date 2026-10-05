@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-05",
-  "staging_base": "a4a53e66b673345f15088c0eecc35cc53c8714ee",
-  "scanned_files": 700,
-  "cyrillic_lines_total": 1726,
+  "staging_base": "ba70b16e18234654a23a6ef3027326591dcc7b7b",
+  "scanned_files": 699,
+  "cyrillic_lines_total": 1722,
   "by_scope": {
-    "client": 73,
+    "client": 69,
     "backend": 1653,
     "client-entry": 0
   },
@@ -57,7 +57,8 @@
     "shadowed historical v98 UI owner (production-v98-ui-owner.js; sole owner is production-regression-fix-entry-v98.js on historical v98 page; factual v110 uses later canonical session/search/invite/game owners)",
     "shadowed historical UI stability owner (production-ui-stability-fix.js; imported only by stripped base regression entry plus historical v97/v98 regression entries; factual v110 replaces the legacy entry pair with canonical bootstrap)",
     "shadowed historical v106 self-toast policy (production-v106-self-toast-policy.js; owned by historical clean-entry-v106/v107 plus ownerless clean-entry-v108; absent from v109 and factual v110)",
-    "shadowed historical interaction-latency coordinator v101 (interaction-latency-coordinator-v101.js; direct references are stripped main.js and historical v114 rewrite; factual v110 uses canonical bootstrap/main graph)"
+    "shadowed historical interaction-latency coordinator v101 (interaction-latency-coordinator-v101.js; direct references are stripped main.js and historical v114 rewrite; factual v110 uses canonical bootstrap/main graph)",
+    "orphaned predecessor interaction-latency coordinator (interaction-latency-coordinator.js; exhaustive app-source scan finds no external owner; factual v110 uses canonical main graph)"
   ],
-  "note": "MVP-27.1 interaction-latency-v101 reachability classification: v101 coordinator remains untouched historical source referenced only by stripped main.js and historical v114; factual Telegram v110 does not load it."
+  "note": "MVP-27.1 base interaction-latency reachability classification: predecessor interaction-latency-coordinator.js remains untouched orphaned source with no app owner; factual Telegram v110 does not load it."
 }
