@@ -18,6 +18,7 @@ on:
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - 'tests/mvp19-3-victory-effect-selector.mjs'
       - '.github/workflows/mvp16-7-all-games-regression.yml'
+      - '.github/workflows/mvp19-3-victory-effects-foundation.yml'
       - '.github/workflows/mvp27-1-final-active-client-localization.yml'
       - '.github/workflows/mvp27-1-localization-audit.yml'
   workflow_dispatch:
@@ -66,7 +67,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(app/assets/js/commerce/mgw-purchase-feedback\.js|app/assets/js/production-v110-match-lifecycle\.js|app/assets/js/production-v99-explicit-lock-guard\.js|app/assets/js/profile/mgw-avatar-registry\.js|app/assets/js/profile/mgw-victory-effect-selector\.js|app/assets/js/session\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_final_active_client_localization_contract\.mjs|ops/checks/mvp27_1_final_historical_client_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|tests/mvp19-3-victory-effect-selector\.mjs|\.github/workflows/mvp16-7-all-games-regression\.yml|\.github/workflows/mvp27-1-final-active-client-localization\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)
+          allowed='^(app/assets/js/commerce/mgw-purchase-feedback\.js|app/assets/js/production-v110-match-lifecycle\.js|app/assets/js/production-v99-explicit-lock-guard\.js|app/assets/js/profile/mgw-avatar-registry\.js|app/assets/js/profile/mgw-victory-effect-selector\.js|app/assets/js/session\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_final_active_client_localization_contract\.mjs|ops/checks/mvp27_1_final_historical_client_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|tests/mvp19-3-victory-effect-selector\.mjs|\.github/workflows/mvp16-7-all-games-regression\.yml|\.github/workflows/mvp19-3-victory-effects-foundation\.yml|\.github/workflows/mvp27-1-final-active-client-localization\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected final active client localization paths:\n%s\n' "$bad" >&2; exit 1; }
           git diff --check
