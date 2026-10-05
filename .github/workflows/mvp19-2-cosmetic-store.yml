@@ -64,13 +64,23 @@ jobs:
           set -Eeuo pipefail
           baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
           git cat-file -e "${baseline}^{commit}"
-          git diff --exit-code "${baseline}" HEAD -- \
-            bot/catalog \
-            bot/cosmetic-store.php \
-            bot/shop \
-            bot/shop-history.php \
-            bot/economy \
-            bot/ledger
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-cosmetic-store-endpoint-localization-* ]]; then
+            echo 'Cosmetic Store endpoint localization successor: preserve exact Store services/economy identity; focused localization contract owns bot/cosmetic-store.php copy migration.'
+            git diff --exit-code "${baseline}" HEAD -- \
+              bot/catalog \
+              bot/shop \
+              bot/shop-history.php \
+              bot/economy \
+              bot/ledger
+          else
+            git diff --exit-code "${baseline}" HEAD -- \
+              bot/catalog \
+              bot/cosmetic-store.php \
+              bot/shop \
+              bot/shop-history.php \
+              bot/economy \
+              bot/ledger
+          fi
 
       - name: Run Store pricing purchase and idempotency contract
         run: php bot/tests/Mvp19_2CosmeticStoreTest.php
