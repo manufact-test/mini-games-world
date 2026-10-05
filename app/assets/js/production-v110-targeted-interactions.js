@@ -1,3 +1,4 @@
+import { t } from '@mgw/i18n';
 import { toast } from './components/toast.js?v=41';
 import { currentV99PassiveLock } from './production-v99-session-transport.js?v=99';
 
@@ -60,7 +61,7 @@ function showLockMessage(){
   if (now - runtime.lastLockToastAt < 1600) return;
   runtime.lastLockToastAt = now;
   const lock = currentLock();
-  toast(String(lock?.message || 'У вас уже идёт активная игра на другом устройстве.'));
+  toast(String(lock?.message || t('search.lock_default')));
 }
 
 function updatePlayButtons(){
@@ -77,6 +78,12 @@ function ensureWeeklyDetailsButton(){
   const actions = document.querySelector('#roomCard .room-actions');
   if (!actions) return;
   if (!document.getElementById('weeklyMatchInfo')) {
-    actions.insertAdjacentHTML('beforeend', '<button class="btn ghost" id="weeklyMatchInfo" type="button" aria-label="Подробнее о еженедельных бесплатных коинах">Подробнее</button>');
+    const button = document.createElement('button');
+    button.className = 'btn ghost';
+    button.id = 'weeklyMatchInfo';
+    button.type = 'button';
+    button.setAttribute('aria-label', t('weekly_match.details_aria'));
+    button.textContent = t('weekly_match.details');
+    actions.append(button);
   }
 }

@@ -47,7 +47,11 @@ $acceptanceUrl = (string)($manifest['imports']['./assets/js/production-v110-acce
 $resultUrl = (string)($manifest['imports']['./assets/js/screens/game-screen-v102.js?v=102'] ?? '');
 $reconnectUrl = (string)($manifest['imports']['@mgw/main'] ?? '');
 
-$assert(str_contains($targetedUrl, 'v=1105&zone=unified&ttt=single-owner'), 'Active targeted-interaction URL must preserve its accepted prefix and publish the single-owner fix.');
+$assert(preg_match('/[?&]v=([0-9]+)/', $targetedUrl, $targetedVersionMatch) === 1
+    && (int)$targetedVersionMatch[1] >= 1105
+    && str_contains($targetedUrl, 'zone=unified')
+    && str_contains($targetedUrl, 'ttt=single-owner'),
+    'Active targeted-interaction URL must preserve unified single-owner semantics on the accepted or newer cache identity.');
 $assert(preg_match('/[?&]v=([0-9]+)/', $acceptanceUrl, $acceptanceVersionMatch) === 1
     && (int)$acceptanceVersionMatch[1] >= 132
     && str_contains($acceptanceUrl, 'clock=battleship-setup-single-writer')

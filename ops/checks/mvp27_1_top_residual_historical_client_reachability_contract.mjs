@@ -89,7 +89,7 @@ for(const file of Object.values(TARGETS)){
   assert.equal(countCyrillicLines(read(file)),2,file+' Cyrillic evidence count changed');
   assert.ok(audit.includes("'"+file+"'"),file+' must be explicitly classified out of active player debt');
 }
-assert.equal(countCyrillicLines(read(ACTIVE_TARGET)),2,'Active targeted-interactions evidence count changed');
+assert.ok(countCyrillicLines(read(ACTIVE_TARGET))<=2,'Active targeted-interactions Cyrillic debt must not regress above the accepted 2-line checkpoint');
 assert.ok(!audit.includes("'"+ACTIVE_TARGET+"'"),'Active targeted interactions must remain inside localization debt');
 
 assert.ok(Number(baseline.scanned_files)<=679);
@@ -98,4 +98,4 @@ assert.ok(Number(baseline.by_scope?.client)<=17);
 assert.equal(Number(baseline.by_scope?.backend),1653);
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
-console.log('MVP-27.1 top residual historical client reachability: OK — six 2-line sources are stripped/historical/orphaned outside factual v110; active v110 targeted interactions remains debt.');
+console.log('MVP-27.1 top residual historical client reachability: OK — six 2-line sources remain stripped/historical/orphaned outside factual v110; active v110 targeted interactions remains factual and may localize toward zero debt.');

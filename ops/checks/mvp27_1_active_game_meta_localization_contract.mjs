@@ -36,7 +36,7 @@ const handoff=read('app/assets/js/main-v110-handoff-shell.js');
 const audit=read('ops/checks/mvp27_1_hardcoded_text_audit.mjs');
 const baseline=JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.json'));
 
-assert.equal(Number(locale?._meta?.version),56,'RU catalog version must advance for active game meta localization');
+assert.ok(Number(locale?._meta?.version)>=56,'RU catalog version must remain active game meta revision 56 or newer');
 for(const [id,file] of Object.entries(META)){
   const source=read(file);
   assert.equal(countCyrillicLines(source),0,id+' meta must remain free of hardcoded Cyrillic');
