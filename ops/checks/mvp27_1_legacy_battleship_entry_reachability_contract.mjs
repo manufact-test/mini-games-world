@@ -134,7 +134,7 @@ assert.ok(v120.includes("$target = '/app/v110.php?v=1123';") && v120.includes("h
 
 assert.deepEqual(refsTo('BATTLESHIP_META', [META]), ['app/assets/js/games/game-card-copy.js'],
   'BATTLESHIP_META ownership changed; active consumer must remain explicit');
-assert.ok(gameCardCopy.includes("import { BATTLESHIP_META } from './battleship/meta.js?v=53';")
+assert.ok(gameCardCopy.includes("import { BATTLESHIP_META } from './battleship/meta.js?v=53&mvp27_1=localized-meta-v1';")
   && gameCardCopy.includes("from '@mgw/i18n'"),
   'Active game-card-copy must retain localized shell ownership while consuming Battleship meta');
 assert.ok(unifiedLauncher.includes("battleship:Object.freeze({ defaultSize:10, options:() => [{ value:10, label:'10×10' }] })")
@@ -145,9 +145,9 @@ assert.ok(handoff.includes("import { initGameCardCopy } from './games/game-card-
   'Factual v110 handoff must retain active Battleship consumers');
 
 assert.equal(countCyrillicLines(entry), 8, 'Legacy Battleship entry Cyrillic evidence count changed');
-assert.equal(countCyrillicLines(meta), 2, 'Active Battleship meta Cyrillic evidence count changed');
+assert.equal(countCyrillicLines(meta), 0, 'Localized Battleship meta must remain Cyrillic-free');
 assert.ok(audit.includes("'app/assets/js/games/battleship/entry.js'"), 'Audit must classify legacy Battleship entry');
-assert.ok(!audit.includes("'app/assets/js/games/battleship/meta.js'"), 'Active Battleship meta must remain inside localization debt');
+assert.ok(!audit.includes("'app/assets/js/games/battleship/meta.js'"), 'Localized active Battleship meta must not be classified as historical debt');
 
 assert.ok(Number(baseline.scanned_files) <= 706, 'Battleship-entry successor must not restore classified files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 1768, 'Battleship-entry successor total debt must not exceed accepted ceiling');
