@@ -1,3 +1,4 @@
+import { t } from '@mgw/i18n';
 import { state } from './state.js?v=27';
 import { api } from './api/client.js?v=47';
 import { closeSheet } from './components/sheet.js?v=68';
@@ -85,7 +86,7 @@ function surrenderToHome(game){
       releaseGameActionQuarantine(snapshot.id);
       closeSheet();
       enterGame(snapshot, viewer);
-      toast(error?.message || 'Не удалось завершить матч. Игра восстановлена.');
+      toast(error?.message || t('game_screen.errors.leave_restore'));
       return { released:false, game:snapshot };
     } finally {
       runtime.leavePending = false;
