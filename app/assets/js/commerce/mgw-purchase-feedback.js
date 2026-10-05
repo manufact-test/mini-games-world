@@ -1,3 +1,4 @@
+import { t } from '@mgw/i18n';
 import { closeSheet } from '../components/sheet.js?v=68';
 
 let initialized = false;
@@ -18,7 +19,7 @@ function handlePurchaseConfirm(event){
   button.dataset.mgwPurchasePending = '1';
   button.classList.add('mgw-purchase-pending');
   button.setAttribute('aria-busy', 'true');
-  button.textContent = 'Покупаем…';
+  button.textContent = t('store.purchase.pending');
 
   // The category owner starts the authoritative request in the same click task.
   // Yield sheet dismissal to the microtask so its target listener always runs first.
