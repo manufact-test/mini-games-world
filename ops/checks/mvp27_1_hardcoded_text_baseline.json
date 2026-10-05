@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-05",
-  "staging_base": "b07889f96fb6d7c8767756cc363f943b74401db8",
-  "scanned_files": 701,
-  "cyrillic_lines_total": 1730,
+  "staging_base": "a4a53e66b673345f15088c0eecc35cc53c8714ee",
+  "scanned_files": 700,
+  "cyrillic_lines_total": 1726,
   "by_scope": {
-    "client": 77,
+    "client": 73,
     "backend": 1653,
     "client-entry": 0
   },
@@ -56,7 +56,8 @@
     "shadowed historical Tic-Tac-Toe setup entry (games/tictactoe/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineage; factual v110 uses unified launcher)",
     "shadowed historical v98 UI owner (production-v98-ui-owner.js; sole owner is production-regression-fix-entry-v98.js on historical v98 page; factual v110 uses later canonical session/search/invite/game owners)",
     "shadowed historical UI stability owner (production-ui-stability-fix.js; imported only by stripped base regression entry plus historical v97/v98 regression entries; factual v110 replaces the legacy entry pair with canonical bootstrap)",
-    "shadowed historical v106 self-toast policy (production-v106-self-toast-policy.js; owned by historical clean-entry-v106/v107 plus ownerless clean-entry-v108; absent from v109 and factual v110)"
+    "shadowed historical v106 self-toast policy (production-v106-self-toast-policy.js; owned by historical clean-entry-v106/v107 plus ownerless clean-entry-v108; absent from v109 and factual v110)",
+    "shadowed historical interaction-latency coordinator v101 (interaction-latency-coordinator-v101.js; direct references are stripped main.js and historical v114 rewrite; factual v110 uses canonical bootstrap/main graph)"
   ],
-  "note": "MVP-27.1 v106 self-toast policy reachability classification: source remains untouched historical copy policy from v106-v108; factual Telegram v110 does not load or initialize it."
+  "note": "MVP-27.1 interaction-latency-v101 reachability classification: v101 coordinator remains untouched historical source referenced only by stripped main.js and historical v114; factual Telegram v110 does not load it."
 }
