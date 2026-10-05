@@ -10,6 +10,7 @@ on:
       - 'ops/checks/mvp27_1_backend_invites_endpoint_localization_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - 'bot/tests/Mvp18_7FriendsInvitesRegressionContractTest.php'
+      - '.github/workflows/mvp16-6-notification-center-v2.yml'
       - '.github/workflows/mvp27-1-backend-invites-endpoint-localization.yml'
   workflow_dispatch:
 
@@ -69,7 +70,7 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
-          allowed='^(bot/invites\.php|app/locales/ru\.json|bot/tests/Mvp18_7FriendsInvitesRegressionContractTest\.php|ops/checks/mvp27_1_backend_invites_endpoint_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-backend-invites-endpoint-localization\.yml)$'
+          allowed='^(bot/invites\.php|app/locales/ru\.json|bot/tests/Mvp18_7FriendsInvitesRegressionContractTest\.php|ops/checks/mvp27_1_backend_invites_endpoint_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp16-6-notification-center-v2\.yml|\.github/workflows/mvp27-1-backend-invites-endpoint-localization\.yml)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected backend Invites localization paths:\n%s\n' "$bad" >&2; exit 1; }
 
