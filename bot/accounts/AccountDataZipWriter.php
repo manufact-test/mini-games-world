@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../localization/ServerLocalization.php';
+
 final class AccountDataZipWriter
 {
     /** @param array<string,string> $entries */
@@ -8,7 +10,7 @@ final class AccountDataZipWriter
     {
         $directory = dirname($path);
         if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
-            throw new RuntimeException('Не удалось подготовить каталог экспорта.');
+            throw new RuntimeException(ServerLocalization::copy('server.account_chain.export.prepare_directory_failed', 'The export directory could not be prepared.'));
         }
 
         $local = '';
@@ -80,7 +82,7 @@ final class AccountDataZipWriter
         );
         $payload = $local . $central . $eocd;
         if (file_put_contents($path, $payload, LOCK_EX) === false) {
-            throw new RuntimeException('Не удалось записать ZIP-экспорт.');
+            throw new RuntimeException(ServerLocalization::copy('server.account_chain.export.zip_write_failed', 'The ZIP export could not be written.'));
         }
         @chmod($path, 0600);
 
@@ -97,7 +99,7 @@ final class AccountDataZipWriter
         $name = str_replace('\\', '/', trim($name));
         $name = ltrim($name, '/');
         if ($name === '' || str_contains($name, '../') || str_contains($name, "\0")) {
-            throw new InvalidArgumentException('Некорректное имя файла в ZIP.');
+            throw new InvalidArgumentException(ServerLocalization::copy('server.account_chain.export.invalid_zip_name', 'Invalid ZIP file name.'));
         }
         return $name;
     }
