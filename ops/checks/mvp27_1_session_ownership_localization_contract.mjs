@@ -5,6 +5,17 @@ import assert from 'node:assert/strict';
 const LEGACY='app/assets/js/production-session-ownership-fix.js';
 const ACTIVE='app/assets/js/production-session-ownership-fix-v110.js';
 const LEGACY_OWNERS=[
+  'app/assets/js/production-clean-entry-v100.js',
+  'app/assets/js/production-clean-entry-v101.js',
+  'app/assets/js/production-clean-entry-v102.js',
+  'app/assets/js/production-clean-entry-v103.js',
+  'app/assets/js/production-clean-entry-v104.js',
+  'app/assets/js/production-clean-entry-v105-fast-notifications.js',
+  'app/assets/js/production-clean-entry-v105.js',
+  'app/assets/js/production-clean-entry-v107.js',
+  'app/assets/js/production-clean-entry-v108.js',
+  'app/assets/js/production-clean-entry-v109.js',
+  'app/assets/js/production-clean-entry-v99.js',
   'app/assets/js/production-regression-fix-entry-v97.js',
   'app/assets/js/production-regression-fix-entry-v98.js',
   'app/assets/js/production-regression-fix-entry.js',
@@ -86,4 +97,4 @@ assert.ok(Number(baseline.by_scope?.client)<=65);
 assert.equal(Number(baseline.by_scope?.backend),1653);
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
-console.log('MVP-27.1 session ownership localization: OK — factual v110 uses localized successor; legacy regression entries retain untouched shared owner; behavior markers preserved.');
+console.log('MVP-27.1 session ownership localization: OK — factual v110 uses localized successor; historical pre-v110 clean/regression lineages retain untouched shared owner; behavior markers preserved.');
