@@ -48,9 +48,9 @@ assert.equal(manifest.fallback_locale,'ru');
 assert.deepEqual(manifest.supported_locales,['ru'],'Production manifest must remain truthful RU-only during MVP-27.1.');
 
 assert.equal(Number(baseline.scanned_files),678);
-assert.equal(Number(baseline.cyrillic_lines_total),1643);
+assert.ok(Number(baseline.cyrillic_lines_total)<=1643,'Later backend localization slices may only reduce total debt from the accepted account-link endpoint ceiling.');
 assert.equal(Number(baseline.by_scope?.client),0);
-assert.equal(Number(baseline.by_scope?.backend),1643);
+assert.ok(Number(baseline.by_scope?.backend)<=1643,'Later backend localization slices may only reduce backend debt from the accepted account-link endpoint ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
 console.log('MVP-27.1 backend account-link endpoint localization: OK — active Android endpoint uses canonical server localization with unchanged Russian player copy; backend debt 1649 -> 1643.');
