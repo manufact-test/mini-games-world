@@ -1,8 +1,8 @@
 export const GO_META = {
   id: 'go',
-  title: 'Го',
+  titleKey: 'game_cards.meta.go.title',
   icon: '●',
-  description: 'Окружайте камни соперника и захватывайте территорию.',
+  descriptionKey: 'game_cards.meta.go.description',
 };
 
 export const GO_GAME_TYPE = 'go';
