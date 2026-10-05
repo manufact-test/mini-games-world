@@ -59,6 +59,15 @@ const SKIP_FILES = new Set([
   'app/assets/js/production-v107-timer-pvp.js', // historical v107 timer PVP owner loaded only by historical v107 clean-entry/page lineage; absent from factual v110
   'app/assets/js/production-v108-live-game.js', // abandoned v108 live-game owner loaded only by ownerless production-clean-entry-v108.js; historical v108 stays on v105-fast rollback
   'app/assets/js/screens/game-screen-v98.js', // historical v98 game screen owned only by production-v98-ui-owner.js -> historical v98 regression/page lineage; absent from factual v110
+  'app/assets/js/api/request-guard.js', // stripped legacy main.js child; factual v110 canonical bootstrap/main graph does not load it
+  'app/assets/js/main-v102.js', // historical v102 page main; factual Telegram launch remains v110
+  'app/assets/js/main-v103.js', // historical v103 page main; factual Telegram launch remains v110
+  'app/assets/js/main-v104.js', // historical v104 page main; factual Telegram launch remains v110
+  'app/assets/js/main-v105.js', // historical v105-v109 main lineage; factual v110 resolves @mgw/main to main-v110-reconnect-v174
+  'app/assets/js/main-v120-invite-controller-shell.js', // rejected v120 shell child; v120 remains postmortem-only while factual launch is v110
+  'app/assets/js/production-v99-invite-picker-hold.js', // historical v99-v109 picker hold; factual v110 clean-entry intentionally omits it
+  'app/assets/js/screens/notification-bell-first-click-v115.js', // orphaned notification bell first-click v115; exhaustive app-source scan finds no external owner
+  'app/assets/js/screens/search-screen.js', // historical search owner reachable only through already-classified legacy game/main/UI-stability owners
   'app/assets/js/games/invite-terminal-actions-v110r12.js', // orphaned invite terminal actions revision; exhaustive app-source scan finds no external owner
   'app/assets/js/games/invite-terminal-actions-v115.js', // owned only by stripped legacy main.js; factual v110 replaces legacy entry scripts with canonical bootstrap
   'app/assets/js/main.js', // stripped legacy main entry; factual v110 replaces regression/main pair with app-bootstrap-v2
