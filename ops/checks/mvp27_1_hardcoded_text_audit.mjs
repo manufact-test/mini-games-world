@@ -164,6 +164,38 @@ for (const [scope,count] of [...byScope.entries()].sort()) {
 console.log('MVP27_1_TOP_FILES_BEGIN');
 for (const [file,count] of topFiles) console.log(`${String(count).padStart(4,' ')}  ${file}`);
 console.log('MVP27_1_TOP_FILES_END');
+console.log('MVP27_1_OWNER_DIAGNOSTIC_BEGIN');
+{
+  const targets = [
+    ['BATTLESHIP_META','app/assets/js/games/battleship/meta.js'],
+    ['CHECKERS_META','app/assets/js/games/checkers/meta.js'],
+    ['CHESS_META','app/assets/js/games/chess/meta.js'],
+    ['DOMINO_META','app/assets/js/games/domino/meta.js'],
+    ['FOUR_IN_A_ROW_META','app/assets/js/games/four-in-a-row/meta.js'],
+    ['GO_META','app/assets/js/games/go/meta.js'],
+    ['REVERSI_META','app/assets/js/games/reversi/meta.js'],
+    ['TIC_TAC_TOE_META','app/assets/js/games/tictactoe/meta.js'],
+  ];
+  const all = [];
+  const walk = dir => {
+    for (const entry of fs.readdirSync(dir,{withFileTypes:true})) {
+      const full = path.join(dir,entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.isFile() && ['.js','.php','.html'].includes(path.extname(entry.name))) all.push(normalized(full));
+    }
+  };
+  walk('app');
+  for (const [symbol,targetPath] of targets) {
+    const owners=[];
+    for (const file of all.sort()) {
+      if (file === targetPath) continue;
+      const source = fs.readFileSync(file,'utf8');
+      if (source.includes(symbol)) owners.push(file);
+    }
+    console.log(symbol+'='+JSON.stringify(owners));
+  }
+}
+console.log('MVP27_1_OWNER_DIAGNOSTIC_END');
 
 if (process.argv.includes('--sample')) {
   console.log('MVP27_1_SAMPLE_BEGIN');
