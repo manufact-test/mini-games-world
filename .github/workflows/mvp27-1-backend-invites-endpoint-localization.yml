@@ -1,4 +1,5 @@
 name: MVP-27.1 Backend Invites Endpoint Localization
+# CI retrigger after final successor-scope migration; no runtime/product behavior change.
 
 on:
   pull_request:
