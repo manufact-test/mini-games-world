@@ -1,0 +1,80 @@
+name: MVP-27.1 Backend Friends Endpoint Localization
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/friends.php'
+      - 'app/locales/ru.json'
+      - 'ops/checks/mvp27_1_backend_friends_endpoint_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp18-2-friends-ui.yml'
+      - '.github/workflows/mvp25-5-abuse-rate-limits.yml'
+      - '.github/workflows/mvp27-1-backend-friends-endpoint-localization.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-friends-endpoint-localization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          php -l bot/friends.php
+          php -l app/runtime/localization/LocalizationCatalog.php
+          node --check ops/checks/mvp27_1_backend_friends_endpoint_localization_contract.mjs
+          node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Focused server localization proof
+        run: node ops/checks/mvp27_1_backend_friends_endpoint_localization_contract.mjs
+
+      - name: Preserve Friends product ownership
+        run: |
+          set -euo pipefail
+          node ops/checks/mvp27_1_friends_localization_contract.mjs
+          node bot/tests/Mvp18FriendsUiContractTest.mjs
+          php bot/tests/FriendGraphServiceTest.php
+          php bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
+
+      - name: Preserve prior backend endpoint proofs
+        run: |
+          set -euo pipefail
+          node ops/checks/mvp27_1_backend_account_data_endpoint_localization_contract.mjs
+          node ops/checks/mvp27_1_backend_account_link_endpoint_localization_contract.mjs
+          node ops/checks/mvp27_1_backend_tournament_status_localization_contract.mjs
+
+      - name: Hardcoded player text ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded scope
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-backend-friends-endpoint-localization')
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          allowed='^(bot/friends\.php|app/locales/ru\.json|ops/checks/mvp27_1_backend_friends_endpoint_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp18-2-friends-ui\.yml|\.github/workflows/mvp25-5-abuse-rate-limits\.yml|\.github/workflows/mvp27-1-backend-friends-endpoint-localization\.yml)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected backend Friends localization paths:\n%s\n' "$bad" >&2; exit 1; }
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected backend Friends localization paths:\n%s\n' "$bad" >&2; exit 1; }
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs

@@ -88,9 +88,14 @@ jobs:
           set -Eeuo pipefail
           baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
           git cat-file -e "${baseline}^{commit}"
-          git diff --exit-code "${baseline}" HEAD -- \
-            bot/friends.php \
-            bot/social
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-friends-endpoint-localization-* ]]; then
+            echo 'Friends endpoint localization successor: preserve exact social-service identity; focused localization contract owns bot/friends.php copy migration.'
+            git diff --exit-code "${baseline}" HEAD -- bot/social
+          else
+            git diff --exit-code "${baseline}" HEAD -- \
+              bot/friends.php \
+              bot/social
+          fi
 
       - name: Run canonical social data regression
         run: php bot/tests/FriendGraphServiceTest.php
