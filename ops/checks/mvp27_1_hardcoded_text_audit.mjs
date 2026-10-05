@@ -59,6 +59,12 @@ const SKIP_FILES = new Set([
   'app/assets/js/production-v107-timer-pvp.js', // historical v107 timer PVP owner loaded only by historical v107 clean-entry/page lineage; absent from factual v110
   'app/assets/js/production-v108-live-game.js', // abandoned v108 live-game owner loaded only by ownerless production-clean-entry-v108.js; historical v108 stays on v105-fast rollback
   'app/assets/js/screens/game-screen-v98.js', // historical v98 game screen owned only by production-v98-ui-owner.js -> historical v98 regression/page lineage; absent from factual v110
+  'app/assets/js/games/invite-terminal-actions-v110r12.js', // orphaned invite terminal actions revision; exhaustive app-source scan finds no external owner
+  'app/assets/js/games/invite-terminal-actions-v115.js', // owned only by stripped legacy main.js; factual v110 replaces legacy entry scripts with canonical bootstrap
+  'app/assets/js/main.js', // stripped legacy main entry; factual v110 replaces regression/main pair with app-bootstrap-v2
+  'app/assets/js/production-v106-timer-mobile.js', // historical v106 timer/mobile owner; sole owner is historical clean-entry-v106, absent from factual v110 clean-entry
+  'app/assets/js/production-v98-passive-session-transport.js', // historical v98 passive-session owner; sole owner is stripped v98 regression entry
+  'app/assets/js/screens/notification-bell-first-click-v116.js', // orphaned notification bell first-click revision; exhaustive app-source scan finds no external owner
   'app/assets/js/production-v109-notifications.js', // historical v109 notification owner; factual v110 uses localized r13 notification screen
   'app/assets/js/production-v105-fast-notifications.js', // historical v108-only fast notification owner; factual v110 uses localized r13 notification screen
   'app/assets/js/screens/notifications-screen.js', // historical notification screen used only by legacy main-v99..v105
