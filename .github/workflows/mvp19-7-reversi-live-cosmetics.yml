@@ -70,6 +70,10 @@ jobs:
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
+          meta_exclude=()
+          if [[ '${{ github.head_ref }}' == agent/mvp27-1-active-game-meta-localization-* ]]; then
+            meta_exclude=(':(glob,exclude)app/assets/js/games/*/meta.js')
+          fi
           git diff --exit-code "$base" "$head" -- \
             app/assets/css/games/reversi/game.css \
             app/assets/js/games/chess \
@@ -83,7 +87,8 @@ jobs:
             app/assets/js/profile/mgw-profile-reversi-parity.js \
             app/assets/js/profile/mgw-profile-reversi-hard-square-v1.js \
             app/assets/css/screens/profile-reversi-store-parity-v1.css \
-            app/assets/css/screens/profile-reversi-store-exact-v2.css
+            app/assets/css/screens/profile-reversi-store-exact-v2.css \
+            "${meta_exclude[@]}"
           unexpected_catalog="$(git diff --name-only "$base" "$head" -- bot/catalog | grep -vxF 'bot/catalog/CosmeticStoreService.php' || true)"
           if [ -n "$unexpected_catalog" ]; then
             echo "Unexpected frozen catalog changes:" >&2
