@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../localization/ServerLocalization.php';
+
 final class AccountDataLifecycleException extends RuntimeException
 {
     public function __construct(public readonly string $reason, string $message)
@@ -92,11 +94,11 @@ final class AccountDataLifecycleService
                 ['mgw_id'=>$mgwId]
             );
             if ($user === []) {
-                throw new AccountDataLifecycleException('account_not_found', 'Аккаунт MGW не найден.');
+                throw new AccountDataLifecycleException('account_not_found', ServerLocalization::copy('server.account_chain.data.account_not_found', 'The MGW account was not found.'));
             }
             $status = strtolower(trim((string)($user[0]['status'] ?? 'active')));
             if (in_array($status, ['deletion_finalizing','anonymized'], true)) {
-                throw new AccountDataLifecycleException('deletion_locked', 'Удаление аккаунта уже выполняется или завершено.');
+                throw new AccountDataLifecycleException('deletion_locked', ServerLocalization::copy('server.account_chain.data.deletion_locked', 'Account deletion is already in progress or completed.'));
             }
 
             $requestId = $this->requestId();
@@ -149,7 +151,7 @@ final class AccountDataLifecycleService
                 ['mgw_id'=>$mgwId]
             );
             if ($rows === []) {
-                throw new AccountDataLifecycleException('deletion_not_cancellable', 'Нет запланированного удаления, которое можно отменить.');
+                throw new AccountDataLifecycleException('deletion_not_cancellable', ServerLocalization::copy('server.account_chain.data.deletion_not_cancellable', 'There is no scheduled deletion that can be cancelled.'));
             }
 
             $requestId = (string)$rows[0]['request_id'];
@@ -204,7 +206,7 @@ final class AccountDataLifecycleService
             if ($recent !== []) {
                 throw new AccountDataLifecycleException(
                     'rate_limited',
-                    'Новый экспорт можно запросить позже. Последний архив ещё действует.'
+                    ServerLocalization::copy('server.account_chain.data.export_still_valid', 'A new export can be requested later. The latest archive is still valid.')
                 );
             }
 
@@ -299,19 +301,19 @@ final class AccountDataLifecycleService
             ['request_id'=>$requestId,'mgw_id'=>$mgwId]
         );
         if ($row === [] || (string)($row[0]['request_status'] ?? '') !== 'ready') {
-            throw new AccountDataLifecycleException('export_not_ready', 'Экспорт не найден или ещё не готов.');
+            throw new AccountDataLifecycleException('export_not_ready', ServerLocalization::copy('server.account_chain.data.export_not_ready', 'The export was not found or is not ready yet.'));
         }
 
         $expires = trim((string)($row[0]['artifact_expires_at_utc'] ?? ''));
         $now = $this->utc($now);
         if ($expires === '' || new DateTimeImmutable($expires, new DateTimeZone('UTC')) <= $now) {
-            throw new AccountDataLifecycleException('export_expired', 'Срок хранения этого экспорта истёк.');
+            throw new AccountDataLifecycleException('export_expired', ServerLocalization::copy('server.account_chain.data.export_expired', 'This export has expired.'));
         }
 
         $name = basename((string)($row[0]['artifact_name'] ?? ''));
-        if ($name === '') throw new AccountDataLifecycleException('export_missing', 'Файл экспорта недоступен.');
+        if ($name === '') throw new AccountDataLifecycleException('export_missing', ServerLocalization::copy('server.account_chain.data.export_missing', 'The export file is unavailable.'));
         $path = $this->exportDirectory() . '/' . $name;
-        if (!is_file($path)) throw new AccountDataLifecycleException('export_missing', 'Файл экспорта недоступен.');
+        if (!is_file($path)) throw new AccountDataLifecycleException('export_missing', ServerLocalization::copy('server.account_chain.data.export_missing', 'The export file is unavailable.'));
         return $path;
     }
 
@@ -474,9 +476,10 @@ final class AccountDataLifecycleService
 
         $tombstone = substr(hash('sha256', 'account-delete|' . $claim['request_id'] . '|' . $claim['mgw_id']), 0, 40);
         $legacyTombstone = 'deleted:' . $tombstone;
-        $this->anonymizeRuntime((string)$claim['legacy_user_id'], $legacyTombstone);
+        $deletedPlayer = ServerLocalization::copy('server.account_chain.data.deleted_player', 'Deleted player');
+        $this->anonymizeRuntime((string)$claim['legacy_user_id'], $legacyTombstone, $deletedPlayer);
 
-        $this->database->transaction(function (DatabaseConnectionInterface $database) use ($claim, $tombstone, $legacyTombstone, $now): void {
+        $this->database->transaction(function (DatabaseConnectionInterface $database) use ($claim, $tombstone, $legacyTombstone, $deletedPlayer, $now): void {
             $mgwId = (string)$claim['mgw_id'];
             $requestId = (string)$claim['request_id'];
             $nowText = $this->format($now);
@@ -541,10 +544,10 @@ final class AccountDataLifecycleService
                     "UPDATE mgw_match_players
                      SET player_ref=:player_ref,
                          legacy_user_id=NULL,
-                         display_name='Удалённый игрок',
+                         display_name=:deleted_player,
                          updated_at_utc=:updated_at
                      WHERE mgw_id=:mgw_id",
-                    ['player_ref'=>$playerRef,'updated_at'=>$nowText,'mgw_id'=>$mgwId]
+                    ['player_ref'=>$playerRef,'deleted_player'=>$deletedPlayer,'updated_at'=>$nowText,'mgw_id'=>$mgwId]
                 );
             }
             if ($this->tableExists('mgw_invites')) {
@@ -552,10 +555,10 @@ final class AccountDataLifecycleService
                     "UPDATE mgw_invites
                      SET inviter_ref=CASE WHEN inviter_mgw_id=:inviter_ref_mgw_id THEN :inviter_player_ref ELSE inviter_ref END,
                          inviter_legacy_user_id=CASE WHEN inviter_mgw_id=:inviter_legacy_mgw_id THEN NULL ELSE inviter_legacy_user_id END,
-                         inviter_name=CASE WHEN inviter_mgw_id=:inviter_name_mgw_id THEN 'Удалённый игрок' ELSE inviter_name END,
+                         inviter_name=CASE WHEN inviter_mgw_id=:inviter_name_mgw_id THEN :inviter_deleted_player ELSE inviter_name END,
                          invitee_ref=CASE WHEN invitee_mgw_id=:invitee_ref_mgw_id THEN :invitee_player_ref ELSE invitee_ref END,
                          invitee_legacy_user_id=CASE WHEN invitee_mgw_id=:invitee_legacy_mgw_id THEN NULL ELSE invitee_legacy_user_id END,
-                         invitee_name=CASE WHEN invitee_mgw_id=:invitee_name_mgw_id THEN 'Удалённый игрок' ELSE invitee_name END,
+                         invitee_name=CASE WHEN invitee_mgw_id=:invitee_name_mgw_id THEN :invitee_deleted_player ELSE invitee_name END,
                          updated_at_utc=:updated_at
                      WHERE inviter_mgw_id=:where_inviter_mgw_id OR invitee_mgw_id=:where_invitee_mgw_id",
                     [
@@ -563,10 +566,12 @@ final class AccountDataLifecycleService
                         'inviter_player_ref'=>$playerRef,
                         'inviter_legacy_mgw_id'=>$mgwId,
                         'inviter_name_mgw_id'=>$mgwId,
+                        'inviter_deleted_player'=>$deletedPlayer,
                         'invitee_ref_mgw_id'=>$mgwId,
                         'invitee_player_ref'=>$playerRef,
                         'invitee_legacy_mgw_id'=>$mgwId,
                         'invitee_name_mgw_id'=>$mgwId,
+                        'invitee_deleted_player'=>$deletedPlayer,
                         'updated_at'=>$nowText,
                         'where_inviter_mgw_id'=>$mgwId,
                         'where_invitee_mgw_id'=>$mgwId,
@@ -600,7 +605,7 @@ final class AccountDataLifecycleService
                 "UPDATE mgw_users
                  SET status='anonymized',
                      nickname=:nickname,
-                     display_name='Удалённый игрок',
+                     display_name=:deleted_player,
                      username=NULL,
                      avatar_provider=NULL,
                      avatar_external_ref=NULL,
@@ -612,7 +617,7 @@ final class AccountDataLifecycleService
                      preferred_locale=NULL,
                      updated_at_utc=:updated_at
                  WHERE mgw_id=:mgw_id",
-                ['nickname'=>$anonymousNickname,'updated_at'=>$nowText,'mgw_id'=>$mgwId]
+                ['nickname'=>$anonymousNickname,'deleted_player'=>$deletedPlayer,'updated_at'=>$nowText,'mgw_id'=>$mgwId]
             );
             $database->execute(
                 "UPDATE mgw_account_data_requests
@@ -643,18 +648,18 @@ final class AccountDataLifecycleService
         return true;
     }
 
-    private function anonymizeRuntime(string $legacyUserId, string $tombstone): void
+    private function anonymizeRuntime(string $legacyUserId, string $tombstone, string $deletedPlayer): void
     {
         $legacyUserId = trim($legacyUserId);
         if ($legacyUserId === '') return;
 
-        $this->runtimeStorage->transaction(function (array &$data) use ($legacyUserId, $tombstone): void {
+        $this->runtimeStorage->transaction(function (array &$data) use ($legacyUserId, $tombstone, $deletedPlayer): void {
             if (isset($data['games']) && is_array($data['games'])) {
                 foreach ($data['games'] as &$game) {
                     if (!is_array($game)) continue;
                     if (isset($game['player_names']) && is_array($game['player_names'])
                         && array_key_exists($legacyUserId, $game['player_names'])) {
-                        $game['player_names'][$legacyUserId] = 'Удалённый игрок';
+                        $game['player_names'][$legacyUserId] = $deletedPlayer;
                     }
                 }
                 unset($game);
@@ -665,10 +670,10 @@ final class AccountDataLifecycleService
                     $inviter = (string)($invite['inviter_id'] ?? $invite['inviter_user_id'] ?? '');
                     $invitee = (string)($invite['invitee_id'] ?? $invite['invitee_user_id'] ?? '');
                     if ($inviter === $legacyUserId && array_key_exists('inviter_name', $invite)) {
-                        $invite['inviter_name'] = 'Удалённый игрок';
+                        $invite['inviter_name'] = $deletedPlayer;
                     }
                     if ($invitee === $legacyUserId && array_key_exists('invitee_name', $invite)) {
-                        $invite['invitee_name'] = 'Удалённый игрок';
+                        $invite['invitee_name'] = $deletedPlayer;
                     }
                 }
                 unset($invite);
@@ -868,7 +873,7 @@ final class AccountDataLifecycleService
         }
         $columns = array_keys($columns);
         $stream = fopen('php://temp', 'w+b');
-        if ($stream === false) throw new RuntimeException('Не удалось собрать CSV-экспорт.');
+        if ($stream === false) throw new RuntimeException(ServerLocalization::copy('server.account_chain.data.csv_build_failed', 'The CSV export could not be built.'));
         fputcsv($stream, $columns);
         foreach ($rows as $row) {
             $line = [];
@@ -893,13 +898,21 @@ final class AccountDataLifecycleService
             $rows .= '<tr><td>' . htmlspecialchars((string)$table, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
                 . '</td><td>' . (int)$count . '</td></tr>';
         }
-        return '<!doctype html><html lang="ru"><meta charset="utf-8"><title>MINI GAMES WORLD — экспорт данных</title>'
-            . '<body><h1>Экспорт данных MINI GAMES WORLD</h1>'
+        $title = ServerLocalization::copy('server.account_chain.data.export_title', 'MINI GAMES WORLD — data export');
+        $heading = ServerLocalization::copy('server.account_chain.data.export_heading', 'MINI GAMES WORLD data export');
+        $created = ServerLocalization::copy('server.account_chain.data.export_created_label', 'Created');
+        $description = ServerLocalization::copy(
+            'server.account_chain.data.export_description',
+            'The full machine-readable export is in <code>data.json</code>. Tabular data is duplicated in the <code>csv/</code> directory.'
+        );
+        $section = ServerLocalization::copy('server.account_chain.data.export_section_label', 'Section');
+        $records = ServerLocalization::copy('server.account_chain.data.export_records_label', 'Records');
+        return '<!doctype html><html lang="ru"><meta charset="utf-8"><title>' . $title . '</title>'
+            . '<body><h1>' . $heading . '</h1>'
             . '<p>MGW-ID: <strong>' . htmlspecialchars($mgwId, ENT_QUOTES, 'UTF-8') . '</strong></p>'
-            . '<p>Создано: ' . htmlspecialchars($now->format(DATE_ATOM), ENT_QUOTES, 'UTF-8') . '</p>'
-            . '<p>Полный машинно-читаемый экспорт находится в <code>data.json</code>. '
-            . 'Табличные данные продублированы в каталоге <code>csv/</code>.</p>'
-            . '<table border="1" cellspacing="0" cellpadding="6"><thead><tr><th>Раздел</th><th>Записей</th></tr></thead><tbody>'
+            . '<p>' . $created . ': ' . htmlspecialchars($now->format(DATE_ATOM), ENT_QUOTES, 'UTF-8') . '</p>'
+            . '<p>' . $description . '</p>'
+            . '<table border="1" cellspacing="0" cellpadding="6"><thead><tr><th>' . $section . '</th><th>' . $records . '</th></tr></thead><tbody>'
             . $rows . '</tbody></table></body></html>';
     }
 
@@ -907,31 +920,31 @@ final class AccountDataLifecycleService
     private function imageEntries(?array $user): array
     {
         if (!is_array($user)) {
-            return ['images/README.txt'=>"У аккаунта нет доступного пользовательского изображения.\n"];
+            return ['images/README.txt'=>ServerLocalization::copy('server.account_chain.data.image_none', 'The account has no available user image.') . "\n"];
         }
         $storageKey = trim((string)($user['avatar_storage_key'] ?? ''));
         if ($storageKey === '' || str_contains($storageKey, '..') || str_starts_with($storageKey, '/')) {
-            return ['images/README.txt'=>"У аккаунта нет отдельного загруженного изображения. Каталожный аватар описан в data.json.\n"];
+            return ['images/README.txt'=>ServerLocalization::copy('server.account_chain.data.image_catalog_only', 'The account has no separately uploaded image. The catalog avatar is described in data.json.') . "\n"];
         }
 
         $mediaRoot = trim((string)($this->config['account_data_media_root'] ?? ''));
         if ($mediaRoot === '') {
-            return ['images/README.txt'=>"В профиле есть ссылка на изображение, но приватный media-root не настроен для экспорта. Метаданные сохранены в data.json.\n"];
+            return ['images/README.txt'=>ServerLocalization::copy('server.account_chain.data.image_media_root_not_configured', 'The profile references an image, but the private media root is not configured for export. Metadata is preserved in data.json.') . "\n"];
         }
         $rootReal = realpath($mediaRoot);
         if (!is_string($rootReal) || !is_dir($rootReal)) {
-            return ['images/README.txt'=>"Приватный media-root недоступен; метаданные изображения сохранены в data.json.\n"];
+            return ['images/README.txt'=>ServerLocalization::copy('server.account_chain.data.image_media_root_unavailable', 'The private media root is unavailable; image metadata is preserved in data.json.') . "\n"];
         }
         $candidate = realpath($rootReal . '/' . ltrim($storageKey, '/'));
         $rootPrefix = rtrim($rootReal, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
         if (!is_string($candidate)
             || !str_starts_with($candidate, $rootPrefix)
             || !is_file($candidate)) {
-            return ['images/README.txt'=>"Файл пользовательского изображения не найден или недоступен; его метаданные сохранены в data.json.\n"];
+            return ['images/README.txt'=>ServerLocalization::copy('server.account_chain.data.image_file_unavailable', 'The user image file was not found or is unavailable; its metadata is preserved in data.json.') . "\n"];
         }
         $content = file_get_contents($candidate);
         if (!is_string($content)) {
-            return ['images/README.txt'=>"Не удалось прочитать пользовательское изображение; метаданные сохранены в data.json.\n"];
+            return ['images/README.txt'=>ServerLocalization::copy('server.account_chain.data.image_read_failed', 'The user image could not be read; metadata is preserved in data.json.') . "\n"];
         }
         $extension = pathinfo($candidate, PATHINFO_EXTENSION);
         $extension = preg_match('/^[a-z0-9]{1,8}$/i', $extension) === 1 ? strtolower($extension) : 'bin';
@@ -1091,7 +1104,7 @@ final class AccountDataLifecycleService
     {
         $mgwId = strtoupper(trim($mgwId));
         if (!MgwIdGenerator::isValid($mgwId)) {
-            throw new AccountDataLifecycleException('invalid_mgw_id', 'Некорректный MGW-ID.');
+            throw new AccountDataLifecycleException('invalid_mgw_id', ServerLocalization::copy('server.account_chain.data.invalid_mgw_id', 'Invalid MGW-ID.'));
         }
         return $mgwId;
     }
@@ -1100,7 +1113,7 @@ final class AccountDataLifecycleService
     {
         $sourceType = strtolower(trim($sourceType));
         if (!in_array($sourceType, ['mini_app','website'], true)) {
-            throw new AccountDataLifecycleException('invalid_source', 'Некорректный источник запроса.');
+            throw new AccountDataLifecycleException('invalid_source', ServerLocalization::copy('server.account_chain.data.invalid_source', 'Invalid request source.'));
         }
         return $sourceType;
     }
@@ -1121,7 +1134,7 @@ final class AccountDataLifecycleService
             $directory = $dataDir . '/account-exports';
         }
         if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
-            throw new RuntimeException('Не удалось подготовить приватный каталог экспортов.');
+            throw new RuntimeException(ServerLocalization::copy('server.account_chain.data.private_export_dir_failed', 'The private export directory could not be prepared.'));
         }
         return rtrim($directory, '/');
     }
