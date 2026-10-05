@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-05",
-  "staging_base": "71c1c620071e39851e36676736b94576b3faec26",
-  "scanned_files": 699,
-  "cyrillic_lines_total": 1718,
+  "staging_base": "d586bbc6ff2548632922240dd7d5afbe58fc64e0",
+  "scanned_files": 698,
+  "cyrillic_lines_total": 1714,
   "by_scope": {
-    "client": 65,
+    "client": 61,
     "backend": 1653,
     "client-entry": 0
   },
@@ -59,7 +59,8 @@
     "shadowed historical v106 self-toast policy (production-v106-self-toast-policy.js; owned by historical clean-entry-v106/v107 plus ownerless clean-entry-v108; absent from v109 and factual v110)",
     "shadowed historical interaction-latency coordinator v101 (interaction-latency-coordinator-v101.js; direct references are stripped main.js and historical v114 rewrite; factual v110 uses canonical bootstrap/main graph)",
     "orphaned predecessor interaction-latency coordinator (interaction-latency-coordinator.js; exhaustive app-source scan finds no external owner; factual v110 uses canonical main graph)",
-    "historical shared session-ownership owner (production-session-ownership-fix.js; factual v110 migrated to localized production-session-ownership-fix-v110.js while historical pre-v110 clean/regression lineages retain the original)"
+    "historical shared session-ownership owner (production-session-ownership-fix.js; factual v110 migrated to localized production-session-ownership-fix-v110.js while historical pre-v110 clean/regression lineages retain the original)",
+    "shadowed historical v103 targeted interactions (production-v103-targeted-interactions.js; direct owners are historical v103/v104/v105/v105-fast/v107/v108/v109 clean-entry lineages; factual v110 uses production-v110-targeted-interactions.js)"
   ],
-  "note": "MVP-27.1 active session-ownership localization: factual v110 now uses a localized v110-specific successor; historical pre-v110 clean/regression lineages retain the untouched shared source. Session rotation, safe retry and response semantics remain unchanged."
+  "note": "MVP-27.1 v103 targeted-interactions reachability classification: source remains untouched historical runtime owned only by pre-v110 clean-entry lineages; factual Telegram v110 uses the v110 targeted-interactions owner."
 }
