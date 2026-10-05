@@ -67,10 +67,10 @@ for(const [label,source] of [
 }
 
 assert.equal(countCyrillicLines(target),4,'Historical v101 latency Cyrillic evidence count changed');
-assert.equal(countCyrillicLines(baseCoordinator),4,'Base latency coordinator must remain explicit separate debt until its own proof');
+assert.equal(countCyrillicLines(baseCoordinator),4,'Base latency coordinator historical evidence count changed');
 assert.ok(audit.includes("'app/assets/js/interaction-latency-coordinator-v101.js'"));
-assert.ok(!audit.includes("'app/assets/js/interaction-latency-coordinator.js'"),
-  'Base latency coordinator must remain in debt');
+assert.ok(audit.includes("'app/assets/js/interaction-latency-coordinator.js'"),
+  'Base latency coordinator must be separately classified by its own orphan reachability proof');
 
 assert.ok(Number(baseline.scanned_files)<=700);
 assert.ok(Number(baseline.cyrillic_lines_total)<=1726);
