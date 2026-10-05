@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
+require_once __DIR__ . '/localization/ServerLocalization.php';
 require_once __DIR__ . '/services/PresenceService.php';
 require_once __DIR__ . '/services/InviteOpponentService.php';
 require_once __DIR__ . '/social/FriendGraphService.php';
@@ -9,12 +10,12 @@ require_once __DIR__ . '/social/SocialInviteGuard.php';
 
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
-    if (!is_array($payload)) api_error('Некорректный запрос.');
+    if (!is_array($payload)) api_error(ServerLocalization::copy('server.invites.invalid_request', 'Invalid request.'));
 
     $auth = new AuthService($config);
     $tgUser = $auth->getUserFromRequest($payload);
     $userId = (string)($tgUser['id'] ?? '');
-    if ($userId === '') api_error('Пользователь не найден.');
+    if ($userId === '') api_error(ServerLocalization::copy('server.invites.user_not_found', 'User not found.'));
 
     $identityProvider = strtolower(trim((string)($tgUser['mgw_identity_provider'] ?? '')));
     $isAndroidActor = $identityProvider === 'android_device';
@@ -84,8 +85,8 @@ try {
                     ? $runtimeItem
                     : [
                         'id'=>$runtimeId,
-                        'name'=>(string)($friend['nickname'] ?? $friend['display_name'] ?? 'Игрок'),
-                        'activity'=>'друг',
+                        'name'=>(string)($friend['nickname'] ?? $friend['display_name'] ?? ServerLocalization::copy('server.invites.player_fallback', 'Player')),
+                        'activity'=>ServerLocalization::copy('server.invite_chain.opponents.friend', 'friend'),
                         'online'=>false,
                         'busy'=>false,
                         'last_game_at'=>'',
