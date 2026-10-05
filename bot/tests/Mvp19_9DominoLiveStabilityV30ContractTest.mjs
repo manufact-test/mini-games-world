@@ -11,7 +11,7 @@ const launch = read('bot/helpers/WebAppLaunchUrl.php');
 const entry = read('app/v110.php');
 const store = read('app/assets/js/screens/store-screen-domino-store-v1.js');
 
-assert.ok(wrapper.includes("renderer-cosmetics-corrective-v25.js?v=3") && wrapper.includes("mvp27_1=domino-renderer-localized-v1"), 'v30 wrapper must keep the accepted v25 live owner through the localized cache identity');
+assert.ok(wrapper.includes("renderer-cosmetics-corrective-v25.js?v=4") && wrapper.includes("mvp27_1=domino-renderer-localized-v1") && wrapper.includes("mvp27_1_qa=localized-v1"), 'v30 wrapper must keep the accepted v25 live owner through the localized cache identity');
 assert.ok(wrapper.includes("container.dataset.mgwDominoManualStability = 'v30'"), 'v30 hand/runtime marker must remain present');
 assert.ok(wrapper.includes("container.dataset.mgwDominoLiveEffects = 'v38'"), 'v38 viewport-particle runtime marker must be active');
 assert.ok(wrapper.includes('const handObservers = new WeakMap()'), 'hand layout observer must bind once per live container');
@@ -100,7 +100,7 @@ assert.ok(css.includes('column-gap:2px!important'), 'mobile tile spacing must re
 assert.ok(css.includes('overflow-x:visible!important'), 'hand tail must not be clipped behind horizontal overflow');
 assert.ok(css.includes('touch-action:pan-y!important'), 'vertical page scrolling must remain native around the hand');
 
-assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=3&mvp19_9=accepted-live-stability-v30&parent=accepted-live-corrective-v25&visual_portal=v38&precision_geometry=v41&gesture_owner=v27&precision_static=2&live_effects=v41&mvp27_1=domino-renderer-localized-v1'"), 'manifest must publish the localized accepted Domino cache identity');
+assert.ok(manifest.includes("'./assets/js/games/domino/renderer.js?v=74' => './assets/js/games/domino/renderer-live-manual-v30.js?v=4&mvp19_9=accepted-live-stability-v30&parent=accepted-live-corrective-v25&visual_portal=v38&precision_geometry=v41&gesture_owner=v27&precision_static=2&live_effects=v41&mvp27_1=domino-renderer-localized-v1&mvp27_1_qa=localized-v1'"), 'manifest must publish the localized accepted Domino cache identity');
 assert.ok(entry.includes("'domino_renderer' => $imports[$dominoRendererImportKey]"), 'entry must render the manifest-owned Domino module URL');
 assert.ok(!entry.includes("$imports[$dominoRendererImportKey] .="), 'entry must not mutate the Domino cache identity after the manifest is loaded');
 assert.match(launch, /\/app\/v110\.php\?v=1233&domino_stability=30&runtime_fix=1/);
