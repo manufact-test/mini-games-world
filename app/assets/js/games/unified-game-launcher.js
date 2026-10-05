@@ -5,8 +5,8 @@ import { toast } from '../components/toast.js?v=41';
 import { haptic } from '../telegram/telegram-app.js?v=27';
 import { isSessionLocked, sessionMessage } from '../session.js?v=27';
 import { beginSearch } from '../screens/search-screen-v102.js?v=103';
-import { GO_BOARD_SIZES, GO_DEFAULT_BOARD_SIZE } from './go/meta.js?v=70';
-import { DOMINO_META } from './domino/meta.js?v=72';
+import { GO_BOARD_SIZES, GO_DEFAULT_BOARD_SIZE } from './go/meta.js?v=70&mvp27_1=localized-meta-v1';
+import { DOMINO_META } from './domino/meta.js?v=72&mvp27_1=localized-meta-v1';
 import { t, formatNumber } from '@mgw/i18n';
 
 const GAME_SETUP = Object.freeze({

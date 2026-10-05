@@ -1,13 +1,13 @@
 import { t } from '@mgw/i18n';
 
-import { TIC_TAC_TOE_META } from './tictactoe/meta.js?v=53';
-import { FOUR_IN_A_ROW_META } from './four-in-a-row/meta.js?v=53';
-import { BATTLESHIP_META } from './battleship/meta.js?v=53';
-import { CHECKERS_META } from './checkers/meta.js?v=58';
-import { REVERSI_META } from './reversi/meta.js?v=65';
-import { CHESS_META } from './chess/meta.js?v=67';
-import { GO_META } from './go/meta.js?v=70';
-import { DOMINO_META } from './domino/meta.js?v=72';
+import { TIC_TAC_TOE_META } from './tictactoe/meta.js?v=53&mvp27_1=localized-meta-v1';
+import { FOUR_IN_A_ROW_META } from './four-in-a-row/meta.js?v=53&mvp27_1=localized-meta-v1';
+import { BATTLESHIP_META } from './battleship/meta.js?v=53&mvp27_1=localized-meta-v1';
+import { CHECKERS_META } from './checkers/meta.js?v=58&mvp27_1=localized-meta-v1';
+import { REVERSI_META } from './reversi/meta.js?v=65&mvp27_1=localized-meta-v1';
+import { CHESS_META } from './chess/meta.js?v=67&mvp27_1=localized-meta-v1';
+import { GO_META } from './go/meta.js?v=70&mvp27_1=localized-meta-v1';
+import { DOMINO_META } from './domino/meta.js?v=72&mvp27_1=localized-meta-v1';
 
 const GAME_META = {
   [TIC_TAC_TOE_META.id]: TIC_TAC_TOE_META,
@@ -45,10 +45,13 @@ export function initGameCardCopy(){
     const description = card.querySelector('[data-game-description]');
     const rulesButton = card.querySelector('[data-game-rules]');
 
-    if (title) title.textContent = meta.title;
+    const titleText = t(meta.titleKey);
+    const descriptionText = t(meta.descriptionKey);
+
+    if (title) title.textContent = titleText;
     if (icon) renderGameIcon(icon, meta);
-    if (description) description.textContent = meta.description;
-    if (rulesButton) rulesButton.setAttribute('aria-label', t('game_cards.rules_aria', { game:meta.title }));
+    if (description) description.textContent = descriptionText;
+    if (rulesButton) rulesButton.setAttribute('aria-label', t('game_cards.rules_aria', { game:titleText }));
   });
 }
 

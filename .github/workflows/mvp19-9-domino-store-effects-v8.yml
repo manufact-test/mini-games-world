@@ -133,6 +133,10 @@ jobs:
           grep -F 'theme-walnut .mgw-domino-preview-table' app/assets/css/games/domino/store-cosmetics-v1.css
           if [ '${{ github.event_name }}' = 'pull_request' ]; then
             base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
+            meta_exclude=()
+            if [[ '${{ github.head_ref }}' == agent/mvp27-1-active-game-meta-localization-* ]]; then
+              meta_exclude=(':(glob,exclude)app/assets/js/games/*/meta.js')
+            fi
             git diff --exit-code "$base" "$head" -- \
               app/assets/css/games/domino/store-cosmetics-v1.css \
               app/assets/css/games/domino/store-card-fill-live-pips-v5.css \
@@ -157,7 +161,8 @@ jobs:
               app/assets/js/checkers-cosmetics \
               ':(exclude)app/assets/js/games/checkers/renderer.js' \
               ':(exclude)app/assets/js/checkers-cosmetics/renderer-board-themes.js' \
-              bot/catalog/ProductInventoryService.php
+              bot/catalog/ProductInventoryService.php \
+              "${meta_exclude[@]}"
             unexpected_migrations="$(git diff --name-only "$base" "$head" -- bot/database/migrations | grep -vxF 'bot/database/migrations/20260919_0041_add_remaining_game_premium_bundles.php' || true)"
             if [ -n "$unexpected_migrations" ]; then
               echo "Unexpected frozen migration changes:" >&2

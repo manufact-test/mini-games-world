@@ -52,7 +52,7 @@ return [
         './assets/js/profile/mgw-profile-reactions.js?v=2&mvp19_3=ingame-corrective-base' => './assets/js/profile/mgw-profile-reactions.js?v=7&mvp19_3=cumulative-owned-reactions&store=passive-owned&preview=bounded-packs-v2&route_work=game-only-v1&mvp27_1=localized-v1',
         './assets/js/main-v110-handoff-shell.js?v=1137&ux=1&sk=3&icons=c1efd5af&render=5' => './assets/js/main-v110-handoff-shell.js?v=1170&mvp27_1=active-shell-copy-v1&mvp26_3=native-shell-settings-v1&mvp25_3=match-economy-guide-v1&mvp18=friend-request-lifecycle&store=post-boot-warm&profile=boot-prepared-direct-route-v1&startup=parallel-bootstrap-profile-v1&startup=nonblocking-hidden-warm-v1&store_first=sync-prerender-v2&store_warm=post-first-paint-v1&arena=competition-rating-v3&mvp21_prestige=early-hydration-v2&profile_topbar=direct-shell-v3&profile_first=covered-raster-prewarm-v2&mvp24=gold-client-state-v2&mvp23_mobile=cold-surfaces-v1&mvp25_4=profile-preloader-unblock-v1&profile_tap=post-paint-v1&mvp26_3_6=pending-link-preboot-v1&mvp26_3_8=first-paint-live-balance-v1&mvp26_3_11=profile-v2-wallet-nonowner-v1&mvp26_3_12=invite-sync-wallet-nonowner-v1&mvp26_3_13=store-status-wallet-nonowner-v1',
         './assets/js/games/game-rules.js?v=75' => './assets/js/games/game-rules.js?v=79&mvp27_1=active-game-copy-bundle-v1&mvp16=all-variant-rules',
-        './assets/js/games/unified-game-launcher.js?v=1&mvp16=unified-game-setup' => './assets/js/games/unified-game-launcher.js?v=5&mvp16=setup-subtitle-width&mvp24=room-neutral-client-v2',
+        './assets/js/games/unified-game-launcher.js?v=1&mvp16=unified-game-setup' => './assets/js/games/unified-game-launcher.js?v=5&mvp16=setup-subtitle-width&mvp24=room-neutral-client-v2&mvp27_1=localized-game-meta-v1',
         './assets/js/session.js?v=21' => './assets/js/session.js?v=1131',
         './assets/js/session.js?v=27' => './assets/js/session.js?v=1131',
         './assets/js/screens/search-screen-v102.js?v=103' => './assets/js/screens/search-screen-v102.js?v=109&mvp27_1=active-shell-copy-v1&search=route-scoped-lifecycle&mvp24=room-neutral-client-v2',
@@ -84,7 +84,7 @@ return [
         './assets/js/components/preloader.js?v=42' => './assets/js/components/preloader.js?v=45&intro=v1141&store_first=preloader-ready-v1&mvp23_mobile=bounded-cold-prime-v1',
         './assets/js/telegram/telegram-app.js?v=27' => './assets/js/telegram/telegram-app.js?v=28&haptic=preloader-silent-v1',
         './assets/js/games/game-card-copy.js?v=81&sk=2' => './assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static',
-        './assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static' => './assets/js/games/game-card-copy.js?v=84&sk=5&icons=c1efd5af&delivery=static&mvp27_1=active-shell-copy-v1',
+        './assets/js/games/game-card-copy.js?v=83&sk=5&icons=c1efd5af&delivery=static' => './assets/js/games/game-card-copy.js?v=84&sk=5&icons=c1efd5af&delivery=static&mvp27_1=active-shell-copy-v2&game_meta_i18n=v1',
         './assets/js/games/invite-link-entry-v110r12.js?v=1124&mvp24=room-copy-removed-v1' => './assets/js/games/invite-link-entry-v110r12.js?v=1125&mvp24=room-copy-removed-v1&mvp27_1=active-shell-copy-v1',
         './assets/js/production-v99-session-transport.js?v=99' => './assets/js/production-v99-session-transport.js?v=100&mvp27_1=active-shell-copy-v1',
 

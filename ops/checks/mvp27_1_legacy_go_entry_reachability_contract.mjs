@@ -156,10 +156,10 @@ assert.deepEqual(
   ['app/assets/js/games/unified-game-launcher.js'],
   'GO_DEFAULT_BOARD_SIZE active ownership changed'
 );
-assert.ok(gameCardCopy.includes("import { GO_META } from './go/meta.js?v=70';")
+assert.ok(gameCardCopy.includes("import { GO_META } from './go/meta.js?v=70&mvp27_1=localized-meta-v1';")
   && gameCardCopy.includes("from '@mgw/i18n'"),
   'Active game-card-copy must retain localized ownership while consuming Go meta');
-assert.ok(unifiedLauncher.includes("import { GO_BOARD_SIZES, GO_DEFAULT_BOARD_SIZE } from './go/meta.js?v=70';")
+assert.ok(unifiedLauncher.includes("import { GO_BOARD_SIZES, GO_DEFAULT_BOARD_SIZE } from './go/meta.js?v=70&mvp27_1=localized-meta-v1';")
   && unifiedLauncher.includes("from '@mgw/i18n'"),
   'Factual unified launcher must retain localized Go setup ownership');
 assert.ok(handoff.includes("import { initGameCardCopy } from './games/game-card-copy.js")
@@ -167,9 +167,9 @@ assert.ok(handoff.includes("import { initGameCardCopy } from './games/game-card-
   'Factual v110 handoff must retain active Go meta/setup consumers');
 
 assert.equal(countCyrillicLines(entry), 10, 'Legacy Go entry Cyrillic evidence count changed');
-assert.equal(countCyrillicLines(meta), 2, 'Active Go meta Cyrillic evidence count changed');
+assert.equal(countCyrillicLines(meta), 0, 'Localized Go meta must remain Cyrillic-free');
 assert.ok(audit.includes("'app/assets/js/games/go/entry.js'"), 'Audit must classify legacy Go entry');
-assert.ok(!audit.includes("'app/assets/js/games/go/meta.js'"), 'Active Go meta must remain inside localization debt');
+assert.ok(!audit.includes("'app/assets/js/games/go/meta.js'"), 'Localized active Go meta must not be classified as historical debt');
 
 assert.ok(Number(baseline.scanned_files) <= 718, 'Go-entry successor must not restore classified files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 1924, 'Go-entry successor total debt must not exceed accepted ceiling');

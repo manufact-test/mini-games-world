@@ -1,6 +1,6 @@
 export const BATTLESHIP_META = {
   id: 'battleship',
-  title: 'Морской бой',
+  titleKey: 'game_cards.meta.battleship.title',
   icon: '⚓',
-  description: 'Найдите и потопите все корабли соперника раньше, чем он уничтожит ваши.',
+  descriptionKey: 'game_cards.meta.battleship.description',
 };

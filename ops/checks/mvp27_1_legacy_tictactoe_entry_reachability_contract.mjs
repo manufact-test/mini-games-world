@@ -93,12 +93,12 @@ assert.ok(v120.includes("v120 failed production acceptance and must never execut
 assert.ok(v120.includes("$target = '/app/v110.php?v=1123';"));
 
 assert.deepEqual(refsTo('TIC_TAC_TOE_META',[META]),['app/assets/js/games/game-card-copy.js']);
-assert.ok(gameCardCopy.includes("import { TIC_TAC_TOE_META } from './tictactoe/meta.js?v=53';")&&gameCardCopy.includes("from '@mgw/i18n'"));
+assert.ok(gameCardCopy.includes("import { TIC_TAC_TOE_META } from './tictactoe/meta.js?v=53&mvp27_1=localized-meta-v1';")&&gameCardCopy.includes("from '@mgw/i18n'"));
 assert.ok(unifiedLauncher.includes("tictactoe:Object.freeze({")&&unifiedLauncher.includes("from '@mgw/i18n'"));
 assert.ok(handoff.includes("import { initGameCardCopy } from './games/game-card-copy.js")&&handoff.includes("import { initUnifiedGameLauncher } from './games/unified-game-launcher.js"));
 
 assert.equal(countCyrillicLines(entry),8);
-assert.equal(countCyrillicLines(meta),2);
+assert.equal(countCyrillicLines(meta),0);
 assert.ok(audit.includes("'app/assets/js/games/tictactoe/entry.js'"));
 assert.ok(!audit.includes("'app/assets/js/games/tictactoe/meta.js'"));
 assert.ok(Number(baseline.scanned_files)<=704);

@@ -1,7 +1,7 @@
 export const DOMINO_META = {
   id: 'domino',
-  title: 'Домино',
+  titleKey: 'game_cards.meta.domino.title',
   icon: '🁣',
-  description: 'Соединяйте одинаковые числа и первым избавьтесь от всех костяшек.',
+  descriptionKey: 'game_cards.meta.domino.description',
   boardSize: 7,
 };

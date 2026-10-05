@@ -81,12 +81,12 @@ assert.ok(v120.includes("v120 failed production acceptance and must never execut
 assert.ok(v120.includes("$target = '/app/v110.php?v=1123';"));
 
 assert.deepEqual(refsTo('CHECKERS_META',[META]),['app/assets/js/games/game-card-copy.js']);
-assert.ok(gameCardCopy.includes("import { CHECKERS_META } from './checkers/meta.js?v=58';")&&gameCardCopy.includes("from '@mgw/i18n'"));
+assert.ok(gameCardCopy.includes("import { CHECKERS_META } from './checkers/meta.js?v=58&mvp27_1=localized-meta-v1';")&&gameCardCopy.includes("from '@mgw/i18n'"));
 assert.ok(unifiedLauncher.includes("checkers:Object.freeze({ defaultSize:8, options:() => [{ value:8, label:'8×8' }] })")&&unifiedLauncher.includes("from '@mgw/i18n'"));
 assert.ok(handoff.includes("import { initGameCardCopy } from './games/game-card-copy.js")&&handoff.includes("import { initUnifiedGameLauncher } from './games/unified-game-launcher.js"));
 
 assert.equal(countCyrillicLines(entry),8);
-assert.equal(countCyrillicLines(meta),2);
+assert.equal(countCyrillicLines(meta),0);
 assert.ok(audit.includes("'app/assets/js/games/checkers/entry.js'"));
 assert.ok(!audit.includes("'app/assets/js/games/checkers/meta.js'"));
 assert.ok(Number(baseline.scanned_files)<=705);

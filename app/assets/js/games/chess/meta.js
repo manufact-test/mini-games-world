@@ -1,8 +1,8 @@
 export const CHESS_META = {
   id: 'chess',
-  title: 'Шахматы',
+  titleKey: 'game_cards.meta.chess.title',
   icon: '♞',
-  description: 'Поставьте королю соперника мат.',
+  descriptionKey: 'game_cards.meta.chess.description',
 };
 export const CHESS_GAME_TYPE = 'chess';
 export const CHESS_BOARD_SIZE = 8;

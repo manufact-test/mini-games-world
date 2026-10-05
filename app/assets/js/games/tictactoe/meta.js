@@ -1,6 +1,6 @@
 export const TIC_TAC_TOE_META = {
   id: 'tictactoe',
-  title: 'Крестики-нолики',
+  titleKey: 'game_cards.meta.tictactoe.title',
   icon: '✕○',
-  description: 'Соберите линию из своих знаков раньше соперника.',
+  descriptionKey: 'game_cards.meta.tictactoe.description',
 };

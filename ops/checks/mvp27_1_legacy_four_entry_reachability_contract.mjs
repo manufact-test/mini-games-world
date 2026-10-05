@@ -146,7 +146,7 @@ assert.deepEqual(
   ['app/assets/js/games/game-card-copy.js'],
   'FOUR_IN_A_ROW_META ownership changed; active consumer must remain explicit'
 );
-assert.ok(gameCardCopy.includes("import { FOUR_IN_A_ROW_META } from './four-in-a-row/meta.js?v=53';")
+assert.ok(gameCardCopy.includes("import { FOUR_IN_A_ROW_META } from './four-in-a-row/meta.js?v=53&mvp27_1=localized-meta-v1';")
   && gameCardCopy.includes("from '@mgw/i18n'"),
   'Active game-card-copy must retain localized ownership while consuming Four-in-a-row meta');
 assert.ok(handoff.includes("import { initGameCardCopy } from './games/game-card-copy.js"),
@@ -156,9 +156,9 @@ assert.ok(handoff.includes("import { initUnifiedGameLauncher } from './games/uni
   'Factual v110 must retain localized unified setup owner instead of legacy Four-in-a-row entry');
 
 assert.equal(countCyrillicLines(entry), 12, 'Legacy Four-in-a-row entry Cyrillic evidence count changed');
-assert.equal(countCyrillicLines(meta), 2, 'Active Four-in-a-row meta Cyrillic evidence count changed');
+assert.equal(countCyrillicLines(meta), 0, 'Localized Four-in-a-row meta must remain Cyrillic-free');
 assert.ok(audit.includes("'app/assets/js/games/four-in-a-row/entry.js'"), 'Audit must classify legacy Four-in-a-row entry');
-assert.ok(!audit.includes("'app/assets/js/games/four-in-a-row/meta.js'"), 'Active Four-in-a-row meta must remain inside localization debt');
+assert.ok(!audit.includes("'app/assets/js/games/four-in-a-row/meta.js'"), 'Localized active Four-in-a-row meta must not be classified as historical debt');
 
 assert.ok(Number(baseline.scanned_files) <= 721, 'Four-entry successor must not restore classified files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 1968, 'Four-entry successor total debt must not exceed accepted ceiling');

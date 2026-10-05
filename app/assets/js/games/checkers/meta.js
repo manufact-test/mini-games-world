@@ -1,6 +1,6 @@
 export const CHECKERS_META = {
   id: 'checkers',
-  title: 'Шашки',
+  titleKey: 'game_cards.meta.checkers.title',
   icon: '⚪',
-  description: 'Заберите все шашки соперника или заблокируйте их.',
+  descriptionKey: 'game_cards.meta.checkers.description',
 };

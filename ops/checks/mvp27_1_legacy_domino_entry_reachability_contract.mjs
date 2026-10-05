@@ -149,10 +149,10 @@ assert.deepEqual(
   [ENTRY, 'app/assets/js/games/game-card-copy.js', 'app/assets/js/games/unified-game-launcher.js'],
   'DOMINO_META ownership changed; active consumers must remain explicit'
 );
-assert.ok(gameCardCopy.includes("import { DOMINO_META } from './domino/meta.js?v=72';")
+assert.ok(gameCardCopy.includes("import { DOMINO_META } from './domino/meta.js?v=72&mvp27_1=localized-meta-v1';")
   && gameCardCopy.includes("from '@mgw/i18n'"),
   'Active game-card-copy must retain localized ownership while consuming Domino meta');
-assert.ok(unifiedLauncher.includes("import { DOMINO_META } from './domino/meta.js?v=72';")
+assert.ok(unifiedLauncher.includes("import { DOMINO_META } from './domino/meta.js?v=72&mvp27_1=localized-meta-v1';")
   && unifiedLauncher.includes("from '@mgw/i18n'"),
   'Active unified launcher must retain localized ownership while consuming Domino meta');
 assert.ok(handoff.includes("import { initGameCardCopy } from './games/game-card-copy.js")
@@ -160,9 +160,9 @@ assert.ok(handoff.includes("import { initGameCardCopy } from './games/game-card-
   'Factual v110 handoff must retain both active Domino-meta consumers');
 
 assert.equal(countCyrillicLines(entry), 12, 'Legacy Domino entry Cyrillic evidence count changed');
-assert.equal(countCyrillicLines(meta), 2, 'Active Domino meta Cyrillic evidence count changed');
+assert.equal(countCyrillicLines(meta), 0, 'Localized Domino meta must remain Cyrillic-free');
 assert.ok(audit.includes("'app/assets/js/games/domino/entry.js'"), 'Audit must classify legacy Domino entry');
-assert.ok(!audit.includes("'app/assets/js/games/domino/meta.js'"), 'Active Domino meta must remain inside localization debt');
+assert.ok(!audit.includes("'app/assets/js/games/domino/meta.js'"), 'Localized active Domino meta must not be classified as historical debt');
 
 assert.ok(Number(baseline.scanned_files) <= 722, 'Domino-entry successor must not restore classified files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 1980, 'Domino-entry successor total debt must not exceed accepted ceiling');

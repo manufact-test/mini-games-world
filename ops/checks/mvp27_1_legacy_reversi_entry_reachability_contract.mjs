@@ -145,16 +145,16 @@ assert.deepEqual(
   ['app/assets/js/games/game-card-copy.js'],
   'REVERSI_META ownership changed; active consumer must remain explicit'
 );
-assert.ok(gameCardCopy.includes("import { REVERSI_META } from './reversi/meta.js?v=65';")
+assert.ok(gameCardCopy.includes("import { REVERSI_META } from './reversi/meta.js?v=65&mvp27_1=localized-meta-v1';")
   && gameCardCopy.includes("from '@mgw/i18n'"),
   'Active game-card-copy must retain localized ownership while consuming Reversi meta');
 assert.ok(handoff.includes("import { initGameCardCopy } from './games/game-card-copy.js"),
   'Factual v110 handoff must retain active Reversi meta consumer');
 
 assert.equal(countCyrillicLines(entry), 12, 'Legacy Reversi entry Cyrillic evidence count changed');
-assert.equal(countCyrillicLines(meta), 2, 'Active Reversi meta Cyrillic evidence count changed');
+assert.equal(countCyrillicLines(meta), 0, 'Localized Reversi meta must remain Cyrillic-free');
 assert.ok(audit.includes("'app/assets/js/games/reversi/entry.js'"), 'Audit must classify legacy Reversi entry');
-assert.ok(!audit.includes("'app/assets/js/games/reversi/meta.js'"), 'Active Reversi meta must remain inside localization debt');
+assert.ok(!audit.includes("'app/assets/js/games/reversi/meta.js'"), 'Localized active Reversi meta must not be classified as historical debt');
 
 assert.ok(Number(baseline.scanned_files) <= 720, 'Reversi-entry successor must not restore classified files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 1956, 'Reversi-entry successor total debt must not exceed accepted ceiling');
