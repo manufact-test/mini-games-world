@@ -20,6 +20,7 @@ on:
       - 'ops/checks/mvp27_1_session_ownership_localization_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp23-profile-route-latency.yml'
       - '.github/workflows/mvp27-1-session-ownership-localization.yml'
       - '.github/workflows/mvp27-1-localization-audit.yml'
   workflow_dispatch:
@@ -62,7 +63,7 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          allowed='^(app/assets/js/production-session-ownership-fix-v110\.js|app/assets/js/production-clean-entry-v110\.js|app/assets/js/production-clean-entry-v110-mvp19-3-final-polish\.js|app/assets/js/production-clean-entry-v110-mvp19-3-final-polish-mobile-nav-v2\.js|app/runtime/client/version-manifest\.php|app/locales/ru\.json|ops/checks/mvp27_1_session_ownership_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-session-ownership-localization\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
+          allowed='^(app/assets/js/production-session-ownership-fix-v110\.js|app/assets/js/production-clean-entry-v110\.js|app/assets/js/production-clean-entry-v110-mvp19-3-final-polish\.js|app/assets/js/production-clean-entry-v110-mvp19-3-final-polish-mobile-nav-v2\.js|app/runtime/client/version-manifest\.php|app/locales/ru\.json|ops/checks/mvp27_1_session_ownership_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp23-profile-route-latency\.yml|\.github/workflows/mvp27-1-session-ownership-localization\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
           bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected session-ownership localization paths:\n%s\n' "$bad" >&2; exit 1; }
           git diff --check
