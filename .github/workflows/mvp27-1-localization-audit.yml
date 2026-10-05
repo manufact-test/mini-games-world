@@ -8,6 +8,7 @@ on:
       - 'ops/checks/mvp16_2_localization_contract.mjs'
       - 'ops/checks/mvp27_1_localization_architecture_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
+      - 'ops/checks/mvp27_1_backend_classification_inventory.mjs'
       - 'ops/checks/mvp27_1_client_entry_debt_classification_contract.mjs'
       - 'ops/checks/mvp27_1_invite_owner_debt_classification_contract.mjs'
       - 'ops/checks/mvp27_1_invite_canonical_game_polling_contract.mjs'
@@ -134,6 +135,7 @@ jobs:
           node --check ops/checks/mvp16_2_localization_contract.mjs
           node --check ops/checks/mvp27_1_localization_architecture_contract.mjs
           node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
+          node --check ops/checks/mvp27_1_backend_classification_inventory.mjs
           node --check ops/checks/mvp27_1_client_entry_debt_classification_contract.mjs
           node --check ops/checks/mvp27_1_invite_owner_debt_classification_contract.mjs
           node --check ops/checks/mvp27_1_invite_canonical_game_polling_contract.mjs
@@ -394,11 +396,19 @@ jobs:
       - name: Hardcoded player text audit
         run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs --sample
 
+      - name: Diagnostic backend classification inventory
+        if: startsWith(github.head_ref, 'agent/mvp27-1-backend-classification-')
+        run: node ops/checks/mvp27_1_backend_classification_inventory.mjs
+
       - name: Audit-only scope guard
         if: github.event_name == 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-classification-* ]]; then
+            echo 'Diagnostic backend classification branch: evidence-only; no product merge.'
+            exit 0
+          fi
           if [[ "${{ github.head_ref }}" == agent/mvp27-1-invite-canonical-game-polling* ]]; then
             echo 'Canonical polling successor: focused runtime+debt workflow owns scope; architecture audit remains proof-only.'
             exit 0
