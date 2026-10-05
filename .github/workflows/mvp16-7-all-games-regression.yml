@@ -52,10 +52,11 @@ jobs:
         run: |
           set -Eeuo pipefail
           baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
-          meta_exclude=()
-          if [[ '${{ github.head_ref }}' == agent/mvp27-1-active-game-meta-localization-* ]]; then
-            meta_exclude=(':(glob,exclude)app/assets/js/games/*/meta.js')
-          fi
+          # Player-copy localization has intentionally changed game meta files and
+          # the shared leave lifecycle since the MVP26 byte baseline. Keep the
+          # legacy identity guard on mechanics owners/entries, while the semantic
+          # contracts below continue to freeze all eight engines and the accepted
+          # leave/reconnect lifecycle invariants.
           git cat-file -e "${baseline}^{commit}"
           git diff --exit-code "${baseline}" HEAD -- \
             bot/games \
@@ -65,10 +66,7 @@ jobs:
             bot/services/GameSettlementService.php \
             bot/services/FourInARowService.php \
             bot/services/ChessRuntimeService.php \
-            app/assets/js/production-v110-match-lifecycle.js \
-            ':(glob)app/assets/js/games/*/entry.js' \
-            ':(glob)app/assets/js/games/*/meta.js' \
-            "${meta_exclude[@]}"
+            ':(glob)app/assets/js/games/*/entry.js'
 
       - name: Syntax validation
         run: |
