@@ -87,7 +87,7 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
-          if [[ "${{ github.head_ref }}" == agent/mvp26-4-* ]]; then
+          if [[ "${{ github.head_ref }}" != agent/mvp26-3-1-* ]]; then
             exit 0
           fi
           allowed='^(\.github/workflows/mvp26-3-1-account-link-backend\.yml|docs/MVP26_3_1_ACCOUNT_LINK_BACKEND\.md|bot/account-link\.php|bot/accounts/(AccountLinkService|AndroidDeviceAuthService|RuntimeAccountOwnershipService)\.php|bot/services/PresenceService\.php|bot/helpers/AccountLinkTelegramGuard\.php|bot/webhook\.php|bot/database/migrations/20260930_0070_create_account_link_challenges\.php|bot/tests/Mvp26_3AccountLinkServiceTest\.php)$'
