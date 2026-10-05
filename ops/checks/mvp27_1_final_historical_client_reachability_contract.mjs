@@ -113,13 +113,13 @@ for(const file of Object.values(TARGETS)){
   assert.ok(audit.includes("'"+file+"'"),file+' must be explicitly classified out of active player debt');
 }
 for(const file of ACTIVE_TARGETS){
-  assert.equal(countCyrillicLines(read(file)),1,file+' active Cyrillic evidence count changed');
-  assert.ok(!audit.includes("'"+file+"'"),file+' must remain inside active localization debt');
+  assert.ok(countCyrillicLines(read(file))<=1,file+' active Cyrillic evidence must not increase');
+  assert.ok(!audit.includes("'"+file+"'"),file+' must remain an active factual owner rather than historical classification');
 }
 
-assert.equal(Number(baseline.cyrillic_lines_total),1659);
-assert.equal(Number(baseline.by_scope?.client),6);
+assert.ok(Number(baseline.cyrillic_lines_total)<=1659);
+assert.ok(Number(baseline.by_scope?.client)<=6);
 assert.equal(Number(baseline.by_scope?.backend),1653);
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
-console.log('MVP-27.1 final historical client reachability: OK — nine one-line sources are historical/orphaned outside factual v110; six factual active client lines remain.');
+console.log('MVP-27.1 final historical client reachability: OK — nine one-line sources remain historical/orphaned outside factual v110; six factual active owners remain in the active graph and may be localized by successors.');
