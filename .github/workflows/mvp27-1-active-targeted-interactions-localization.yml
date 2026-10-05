@@ -63,10 +63,3 @@ jobs:
 
       - name: Tracked secret scan
         run: node scripts/ci/check-secrets.mjs
-
-          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
-          test -z "$bad" || { printf 'Unexpected active targeted-interactions localization paths:\n%s\n' "$bad" >&2; exit 1; }
-          git diff --check
-
-      - name: Tracked secret scan
-        run: node scripts/ci/check-secrets.mjs
