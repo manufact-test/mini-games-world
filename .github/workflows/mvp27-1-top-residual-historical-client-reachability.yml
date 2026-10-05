@@ -1,0 +1,72 @@
+name: MVP-27.1 Top Residual Historical Client Reachability
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/helpers/WebAppLaunchUrl.php'
+      - 'app/v110.php'
+      - 'app/runtime/client/version-manifest.php'
+      - 'app/assets/js/app-bootstrap-v2-core.js'
+      - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish-mobile-nav-v2.js'
+      - 'app/assets/js/production-clean-entry-v110-mvp19-3-final-polish.js'
+      - 'app/assets/js/production-clean-entry-v110.js'
+      - 'app/assets/js/main.js'
+      - 'app/assets/js/games/invite-terminal-actions-v110r12.js'
+      - 'app/assets/js/games/invite-terminal-actions-v115.js'
+      - 'app/assets/js/production-clean-entry-v106.js'
+      - 'app/assets/js/production-v106-timer-mobile.js'
+      - 'app/assets/js/production-regression-fix-entry-v98.js'
+      - 'app/assets/js/production-v98-passive-session-transport.js'
+      - 'app/assets/js/screens/notification-bell-first-click-v116.js'
+      - 'app/assets/js/production-v110-targeted-interactions.js'
+      - 'ops/checks/mvp27_1_top_residual_historical_client_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp27-1-top-residual-historical-client-reachability.yml'
+      - '.github/workflows/mvp27-1-localization-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  top-residual-historical-client-reachability:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Syntax and factual ownership proof
+        run: |
+          set -euo pipefail
+          node --check ops/checks/mvp27_1_top_residual_historical_client_reachability_contract.mjs
+          node ops/checks/mvp27_1_top_residual_historical_client_reachability_contract.mjs
+
+      - name: Preserve localization foundations
+        run: |
+          set -euo pipefail
+          node ops/checks/mvp16_2_localization_contract.mjs
+          node ops/checks/mvp27_1_localization_architecture_contract.mjs
+          node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded classification scope
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-top-residual-historical-reachability')
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          allowed='^(ops/checks/mvp27_1_top_residual_historical_client_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_audit\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-top-residual-historical-client-reachability\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
+          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected residual historical client classification paths:\n%s\n' "$bad" >&2; exit 1; }
+          git diff --check
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
