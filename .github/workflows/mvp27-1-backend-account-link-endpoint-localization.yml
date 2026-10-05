@@ -8,6 +8,7 @@ on:
       - 'bot/account-link.php'
       - 'app/locales/ru.json'
       - 'ops/checks/mvp27_1_backend_account_link_endpoint_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_backend_tournament_status_localization_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - '.github/workflows/mvp27-1-backend-account-link-endpoint-localization.yml'
   workflow_dispatch:
@@ -33,10 +34,14 @@ jobs:
           php -l bot/account-link.php
           php -l app/runtime/localization/LocalizationCatalog.php
           node --check ops/checks/mvp27_1_backend_account_link_endpoint_localization_contract.mjs
+          node --check ops/checks/mvp27_1_backend_tournament_status_localization_contract.mjs
           node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
 
       - name: Focused server localization proof
         run: node ops/checks/mvp27_1_backend_account_link_endpoint_localization_contract.mjs
+
+      - name: Preserve tournament-status predecessor proof
+        run: node ops/checks/mvp27_1_backend_tournament_status_localization_contract.mjs
 
       - name: Hardcoded player text ratchet
         run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
@@ -49,7 +54,7 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
-          allowed='^(bot/account-link\.php|app/locales/ru\.json|ops/checks/mvp27_1_backend_account_link_endpoint_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-backend-account-link-endpoint-localization\.yml)$'
+          allowed='^(bot/account-link\.php|app/locales/ru\.json|ops/checks/mvp27_1_backend_account_link_endpoint_localization_contract\.mjs|ops/checks/mvp27_1_backend_tournament_status_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-backend-account-link-endpoint-localization\.yml)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected backend account-link localization paths:\n%s\n' "$bad" >&2; exit 1; }
 
