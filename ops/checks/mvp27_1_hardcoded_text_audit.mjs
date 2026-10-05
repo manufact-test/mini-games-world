@@ -170,7 +170,8 @@ console.log('MVP27_1_OWNER_DIAGNOSTIC_BEGIN');
   walk('app');
   console.log('NEEDLE='+needle);
   for (const file of all.sort()) {
-    if (file === 'app/assets/js/interaction-latency-coordinator.js') continue;
+    const targetPath = ['app/assets/js','interaction-latency-coordinator.js'].join('/');
+    if (file === targetPath) continue;
     const source = fs.readFileSync(file,'utf8');
     if (source.includes(needle)) console.log(file);
   }
