@@ -65,12 +65,21 @@ jobs:
           set -Eeuo pipefail
           baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
           git cat-file -e "${baseline}^{commit}"
-          git diff --exit-code "${baseline}" HEAD -- \
-            bot/notifications.php \
-            bot/notifications \
-            bot/services/NotificationService.php \
-            bot/services/ShopOrderNotificationService.php \
-            bot/social/SocialFriendNotificationService.php
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-notifications-endpoint-localization-* ]]; then
+            echo 'Notifications endpoint localization successor: preserve exact notification services/repositories identity; focused localization contract owns bot/notifications.php copy migration.'
+            git diff --exit-code "${baseline}" HEAD -- \
+              bot/notifications \
+              bot/services/NotificationService.php \
+              bot/services/ShopOrderNotificationService.php \
+              bot/social/SocialFriendNotificationService.php
+          else
+            git diff --exit-code "${baseline}" HEAD -- \
+              bot/notifications.php \
+              bot/notifications \
+              bot/services/NotificationService.php \
+              bot/services/ShopOrderNotificationService.php \
+              bot/social/SocialFriendNotificationService.php
+          fi
 
       - name: Notification Center v2 policy regression
         run: php bot/tests/NotificationCenterV2PolicyTest.php
