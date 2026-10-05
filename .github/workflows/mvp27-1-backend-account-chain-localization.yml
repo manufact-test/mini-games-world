@@ -25,6 +25,7 @@ on:
       - 'ops/checks/mvp27_1_backend_notifications_endpoint_localization_contract.mjs'
       - 'ops/checks/mvp27_1_backend_invites_endpoint_localization_contract.mjs'
       - 'ops/checks/mvp27_1_active_targeted_interactions_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_final_active_client_localization_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - '.github/workflows/mvp22-8-account-data.yml'
       - '.github/workflows/mvp26-3-3-account-link-mysql-proof.yml'
@@ -161,7 +162,7 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
-          allowed='^(app/locales/ru\.json|bot/localization/ServerLocalization\.php|bot/accounts/(AccountDataLifecycleService|AccountLinkService|AndroidAccountReauthService|AccountDataZipWriter|AccountReauthGuard|AccountIdentityService|AndroidDeviceAuthService)\.php|bot/android-(auth|reauth)\.php|ops/checks/mvp27_1_backend_(account_chain|tournament_status|account_link_endpoint|account_data_endpoint|friends_endpoint|cosmetic_store_endpoint|notifications_endpoint|invites_endpoint)_localization_contract\.mjs|ops/checks/mvp27_1_active_targeted_interactions_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/(mvp22-8-account-data|mvp26-3-3-account-link-mysql-proof|mvp26-6-android-product-parity|mvp27-1-backend-account-chain-localization)\.yml)$'
+          allowed='^(app/locales/ru\.json|bot/localization/ServerLocalization\.php|bot/accounts/(AccountDataLifecycleService|AccountLinkService|AndroidAccountReauthService|AccountDataZipWriter|AccountReauthGuard|AccountIdentityService|AndroidDeviceAuthService)\.php|bot/android-(auth|reauth)\.php|ops/checks/mvp27_1_backend_(account_chain|tournament_status|account_link_endpoint|account_data_endpoint|friends_endpoint|cosmetic_store_endpoint|notifications_endpoint|invites_endpoint)_localization_contract\.mjs|ops/checks/mvp27_1_active_targeted_interactions_localization_contract\.mjs|ops/checks/mvp27_1_final_active_client_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/(mvp22-8-account-data|mvp26-3-3-account-link-mysql-proof|mvp26-6-android-product-parity|mvp27-1-backend-account-chain-localization)\.yml)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected account-chain localization paths:\n%s\n' "$bad" >&2; exit 1; }
           git diff --exit-code "$base" "$head" -- \
