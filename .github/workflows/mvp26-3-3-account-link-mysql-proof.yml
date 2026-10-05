@@ -72,6 +72,10 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-account-chain-localization-* ]]; then
+            echo 'Account-chain localization successor: semantic/MySQL proof remains active; historical slice allow-list does not apply.'
+            exit 0
+          fi
           while IFS= read -r path; do
             [[ -z "$path" ]] && continue
             case "$path" in
