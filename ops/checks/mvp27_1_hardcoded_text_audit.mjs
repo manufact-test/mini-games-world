@@ -192,7 +192,7 @@ if (baseline) {
 }
 
 
-if (process.argv.includes('--top7-owner-diag')) {
+if (true) {
   const targets = [
     'app/assets/js/games/invite-terminal-actions-v110r12.js',
     'app/assets/js/games/invite-terminal-actions-v115.js',
