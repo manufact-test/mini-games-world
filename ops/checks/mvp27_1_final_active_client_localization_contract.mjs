@@ -65,9 +65,9 @@ for(const identity of [
 }
 
 assert.equal(Number(baseline.scanned_files),678);
-assert.equal(Number(baseline.cyrillic_lines_total),1653);
+assert.ok(Number(baseline.cyrillic_lines_total)<=1653,'Later localization slices may only reduce total debt from the accepted client-zero ceiling.');
 assert.equal(Number(baseline.by_scope?.client),0);
-assert.equal(Number(baseline.by_scope?.backend),1653);
+assert.ok(Number(baseline.by_scope?.backend)<=1653,'Later backend localization slices may only reduce backend debt from the accepted client-zero ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
 console.log('MVP-27.1 final active client localization: OK — all six factual active client owners resolve unchanged Russian copy through canonical localization; client debt is zero.');

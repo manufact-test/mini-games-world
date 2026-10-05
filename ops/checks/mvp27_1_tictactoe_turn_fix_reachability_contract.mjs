@@ -72,7 +72,7 @@ assert.ok(audit.includes("'app/assets/js/production-tictactoe-turn-fix.js'"),
 assert.ok(Number(baseline.scanned_files)<=696);
 assert.ok(Number(baseline.cyrillic_lines_total)<=1707);
 assert.ok(Number(baseline.by_scope?.client)<=54);
-assert.equal(Number(baseline.by_scope?.backend),1653);
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
 console.log('MVP-27.1 Tic-Tac-Toe turn-fix reachability: OK — sole owner is stripped production-regression-fix-entry.js; factual v110 stays on canonical owners.');

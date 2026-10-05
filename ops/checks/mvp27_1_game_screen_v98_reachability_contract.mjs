@@ -88,7 +88,7 @@ assert.ok(audit.includes("'app/assets/js/screens/game-screen-v98.js'"),
 assert.ok(Number(baseline.scanned_files)<=693);
 assert.ok(Number(baseline.cyrillic_lines_total)<=1698);
 assert.ok(Number(baseline.by_scope?.client)<=45);
-assert.equal(Number(baseline.by_scope?.backend),1653);
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
 console.log('MVP-27.1 game-screen-v98 reachability: OK — sole direct owner is historical v98 UI owner, itself confined to historical v98 regression/page lineage; factual Telegram v110 does not load it.');

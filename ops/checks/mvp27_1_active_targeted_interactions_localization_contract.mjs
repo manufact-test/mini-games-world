@@ -35,7 +35,7 @@ assert.ok(!audit.includes("'"+TARGET+"'"),'Active targeted interactions must rem
 assert.ok(Number(baseline.scanned_files)<=678);
 assert.ok(Number(baseline.cyrillic_lines_total)<=1668);
 assert.ok(Number(baseline.by_scope?.client)<=15);
-assert.equal(Number(baseline.by_scope?.backend),1653);
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
 console.log('MVP-27.1 active targeted interactions localization: OK — factual v110 lock/weekly details copy resolves through canonical RU catalog with unchanged visible copy.');

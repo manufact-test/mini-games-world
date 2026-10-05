@@ -163,7 +163,7 @@ assert.ok(!audit.includes("'app/assets/js/games/four-in-a-row/meta.js'"), 'Local
 assert.ok(Number(baseline.scanned_files) <= 721, 'Four-entry successor must not restore classified files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 1968, 'Four-entry successor total debt must not exceed accepted ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 315, 'Four-entry successor client debt must not exceed accepted ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
 console.log('MVP-27.1 legacy Four-in-a-row entry reachability: OK — entry owners are historical/rejected, while active FOUR_IN_A_ROW_META remains in localization debt.');

@@ -101,7 +101,7 @@ assert.equal(locale?.games?.router?.unsupported, 'Экран игры «{game}»
 assert.ok(Number(baseline.scanned_files) <= 720, 'Game-router successor must not restore classified runtime files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 1944, 'Game-router localization total debt must not exceed accepted ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 291, 'Game-router localization client debt must not exceed accepted ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
 console.log('MVP-27.1 game-router localization: OK — 12 active Cyrillic lines moved to canonical locale ownership with routing/render invariants frozen.');

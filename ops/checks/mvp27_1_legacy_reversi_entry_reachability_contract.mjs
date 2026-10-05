@@ -159,7 +159,7 @@ assert.ok(!audit.includes("'app/assets/js/games/reversi/meta.js'"), 'Localized a
 assert.ok(Number(baseline.scanned_files) <= 720, 'Reversi-entry successor must not restore classified files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 1956, 'Reversi-entry successor total debt must not exceed accepted ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 303, 'Reversi-entry successor client debt must not exceed accepted ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
 console.log('MVP-27.1 legacy Reversi entry reachability: OK — entry owners are historical/rejected, while active REVERSI_META remains in localization debt.');

@@ -45,7 +45,7 @@ assert.ok(audit.includes("'app/assets/js/games/game-invites.js'"), 'Audit must c
 
 assert.ok(Number(baseline.cyrillic_lines_total) <= 2857, 'Invite classification total debt must not regress above accepted ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 1204, 'Invite classification client debt must not regress above accepted ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must stay unchanged');
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must stay zero');
 
 console.log('MVP-27.1 invite-owner debt classification: OK — 192 Cyrillic lines belong to two proven shadowed/rejected invite owners, not the factual v110 player graph.');

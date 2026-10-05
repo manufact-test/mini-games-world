@@ -93,7 +93,7 @@ assert.ok(audit.includes("'app/assets/js/production-v106-self-toast-policy.js'")
 assert.ok(Number(baseline.scanned_files)<=701);
 assert.ok(Number(baseline.cyrillic_lines_total)<=1730);
 assert.ok(Number(baseline.by_scope?.client)<=77);
-assert.equal(Number(baseline.by_scope?.backend),1653);
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
 console.log('MVP-27.1 v106 self-toast reachability: OK — policy is confined to historical v106-v108 clean-entry lineages and absent from factual v110.');

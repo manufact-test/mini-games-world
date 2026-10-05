@@ -126,7 +126,7 @@ assert.ok(audit.includes("'app/assets/js/production-v102-share-controller.js'"),
 assert.ok(Number(baseline.scanned_files) <= 715, 'v102 share-controller successor must not restore classified files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 1887, 'v102 share-controller successor total debt must not exceed accepted ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 234, 'v102 share-controller successor client debt must not exceed accepted ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
 console.log('MVP-27.1 legacy v102 share-controller reachability: OK — all direct owners resolve only through historical v102-v108 clean-entry lineages, while factual v110 retains localized game-invites ownership.');

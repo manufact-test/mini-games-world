@@ -159,7 +159,7 @@ for (const file of [
 assert.ok(Number(baseline.scanned_files) <= 740, 'V99-V101 classification successor must not restore historical files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 2392, 'V99-V101 classification successor total debt must not exceed accepted ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 739, 'V99-V101 classification successor client debt must not exceed accepted ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
 console.log('MVP-27.1 v99-v103 legacy reachability: OK — historical v99-v101 search/game-screen plus v101-v103 result-speed ownership is absent from factual v110 ownership.');

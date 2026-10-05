@@ -93,7 +93,7 @@ assert.ok(audit.includes("'app/assets/js/production-prepared-share-fix.js'"),
 assert.ok(Number(baseline.scanned_files) <= 738, 'prepared-share successor must not restore excluded runtime files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 2335, 'prepared-share successor total debt must not exceed accepted ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 682, 'prepared-share successor client debt must not exceed accepted ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
 console.log('MVP-27.1 prepared-share reachability: OK — legacy prepared-share owner is confined to historical v97/v98 regression entries and absent from factual v110 ownership.');

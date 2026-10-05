@@ -75,7 +75,7 @@ assert.ok(audit.includes("'app/assets/js/interaction-latency-coordinator.js'"),
 assert.ok(Number(baseline.scanned_files)<=700);
 assert.ok(Number(baseline.cyrillic_lines_total)<=1726);
 assert.ok(Number(baseline.by_scope?.client)<=73);
-assert.equal(Number(baseline.by_scope?.backend),1653);
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
 console.log('MVP-27.1 interaction-latency-v101 reachability: OK — direct references are stripped main.js and historical v114; factual v110 remains on canonical main ownership.');

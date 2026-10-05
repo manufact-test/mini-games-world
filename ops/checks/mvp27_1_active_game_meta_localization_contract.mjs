@@ -77,7 +77,7 @@ assert.ok(manifest.includes("./assets/js/games/unified-game-launcher.js?v=5&mvp1
 assert.ok(Number(baseline.scanned_files)<=685);
 assert.ok(Number(baseline.cyrillic_lines_total)<=1682);
 assert.ok(Number(baseline.by_scope?.client)<=29);
-assert.equal(Number(baseline.by_scope?.backend),1653);
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
 console.log('MVP-27.1 active game meta localization: OK — eight factual game-card title/description owners resolve through canonical RU catalog with zero hardcoded Cyrillic in meta sources.');

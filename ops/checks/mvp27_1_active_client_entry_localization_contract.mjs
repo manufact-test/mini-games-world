@@ -43,7 +43,7 @@ assert.equal(locale?.entry?.tagline, 'Те самые игры. То самое 
 const baseline = JSON.parse(read('ops/checks/mvp27_1_hardcoded_text_baseline.json'));
 assert.ok(Number(baseline.cyrillic_lines_total) <= 3074, 'Active entry total debt must not regress above accepted ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 1396, 'Active entry client debt must not regress above accepted ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653, 'Active entry backend debt changed unexpectedly');
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.ok(Number(baseline.by_scope?.['client-entry']) <= 25, 'Active entry client-entry debt must not regress above accepted ceiling');
 
 console.log('MVP-27.1 active client-entry localization contract: OK — factual Telegram v110 entry has zero direct Cyrillic and remains canonically localized.');
