@@ -9,6 +9,21 @@ if (PHP_SAPI !== 'cli') {
 }
 
 require __DIR__ . '/core/bootstrap.php';
+require_once dirname(__DIR__) . '/app/runtime/localization/LocalizationCatalog.php';
+
+function mgw_account_data_copy(string $key, string $emergencyFallback): string
+{
+    try {
+        static $catalog = null;
+        if (!$catalog instanceof LocalizationCatalog) {
+            $catalog = new LocalizationCatalog(dirname(__DIR__) . '/app/locales');
+        }
+        return $catalog->translate($key);
+    } catch (Throwable $error) {
+        error_log('[MiniGamesWorld account data localization] ' . $error->getMessage());
+        return $emergencyFallback;
+    }
+}
 require_once __DIR__ . '/accounts/AccountReauthGuard.php';
 require_once __DIR__ . '/accounts/AccountDataZipWriter.php';
 require_once __DIR__ . '/accounts/AccountDataLifecycleService.php';
@@ -33,7 +48,7 @@ try {
             fwrite(STDERR, "Account data lifecycle is unavailable: canonical accounts DB is disabled.\n");
             exit(2);
         }
-        json_response(['ok'=>false,'error'=>'Управление данными аккаунта временно недоступно.'], 503);
+        json_response(['ok'=>false,'error'=>mgw_account_data_copy('server.account_data.unavailable', 'Account data management is temporarily unavailable.')], 503);
     }
 
     $database = PdoConnectionFactory::create($databaseConfig);
@@ -58,12 +73,12 @@ try {
     }
 
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
-        json_response(['ok'=>false,'error'=>'Метод запроса не поддерживается.'], 405);
+        json_response(['ok'=>false,'error'=>mgw_account_data_copy('server.account_data.method_not_allowed', 'Request method is not supported.')], 405);
     }
 
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) {
-        json_response(['ok'=>false,'error'=>'Некорректный запрос.'], 400);
+        json_response(['ok'=>false,'error'=>mgw_account_data_copy('server.account_data.invalid_request', 'Invalid request.')], 400);
     }
     $action = strtolower(trim((string)($payload['action'] ?? 'snapshot')));
 
@@ -78,7 +93,7 @@ try {
 
     $mgwId = strtoupper(trim((string)($authenticated['mgw_id'] ?? '')));
     if (!MgwIdGenerator::isValid($mgwId)) {
-        json_response(['ok'=>false,'error'=>'Профиль MGW недоступен для этой сессии.'], 401);
+        json_response(['ok'=>false,'error'=>mgw_account_data_copy('server.account_data.profile_unavailable', 'The MGW profile is unavailable for this session.')], 401);
     }
     $sourceRef = 'self:' . strtolower(trim((string)($authenticated['mgw_identity_provider'] ?? 'telegram')));
 
@@ -127,7 +142,7 @@ try {
         exit;
     }
     if ($action !== 'snapshot') {
-        json_response(['ok'=>false,'error'=>'Некорректное действие управления данными аккаунта.'], 400);
+        json_response(['ok'=>false,'error'=>mgw_account_data_copy('server.account_data.invalid_action', 'Invalid account-data action.')], 400);
     }
 
     json_response([
@@ -152,5 +167,5 @@ try {
         fwrite(STDERR, "Account data retention failed.\n");
         exit(1);
     }
-    json_response(['ok'=>false,'error'=>'Не удалось обработать данные аккаунта.'], 500);
+    json_response(['ok'=>false,'error'=>mgw_account_data_copy('server.account_data.failed', 'Account data could not be processed.')], 500);
 }

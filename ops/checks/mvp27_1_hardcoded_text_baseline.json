@@ -2,12 +2,12 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-05",
-  "staging_base": "5a6137a9cd003a4f006f5303d8bef0fa6a06075f",
+  "staging_base": "489f75e9fcb073425caf6d499b19efadd1f1ba4e",
   "scanned_files": 678,
-  "cyrillic_lines_total": 1643,
+  "cyrillic_lines_total": 1637,
   "by_scope": {
     "client": 0,
-    "backend": 1643,
+    "backend": 1637,
     "client-entry": 0
   },
   "excluded": [
@@ -69,5 +69,5 @@
     "classified residual historical/orphan client owners (stripped main.js; invite-terminal-actions-v115 only through stripped main; orphan invite-terminal-actions-v110r12; historical production-v106-timer-mobile; historical production-v98-passive-session-transport; orphan notification-bell-first-click-v116)",
     "final historical/orphan client owners (api/request-guard.js; main-v102.js; main-v103.js; main-v104.js; main-v105.js; main-v120-invite-controller-shell.js; production-v99-invite-picker-hold.js; screens/notification-bell-first-click-v115.js; screens/search-screen.js)"
   ],
-  "note": "MVP-27.1 backend localization continues with the active Android account-link endpoint: six player-facing Russian response literals now resolve through the canonical server LocalizationCatalog; client debt remains zero."
+  "note": "MVP-27.1 backend localization continues with the active account-data endpoint: six player-facing Russian HTTP response literals now resolve through the canonical server LocalizationCatalog; client debt remains zero."
 }
