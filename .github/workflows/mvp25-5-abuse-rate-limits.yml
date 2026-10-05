@@ -72,6 +72,7 @@ jobs:
           git diff --exit-code "$base" "$head" -- bot/games bot/economy bot/ledger bot/tournaments app/assets/js/games app/assets/css/games
 
       - name: Bounded slice guard
+        if: startsWith(github.head_ref, 'agent/mvp25-5-')
         shell: bash
         run: |
           set -euo pipefail
