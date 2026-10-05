@@ -52,6 +52,7 @@ const SKIP_FILES = new Set([
   'app/assets/js/first-interaction-readiness.js', // historical child of stripped legacy main.js; absent from factual v110 ownership
   'app/assets/js/interaction-latency-coordinator-v101.js', // historical latency coordinator owned by stripped main.js plus historical v114 rewrite; factual v110 uses canonical owners
   'app/assets/js/interaction-latency-coordinator.js', // orphaned predecessor latency coordinator; exhaustive app-source scan has no external owner
+  'app/assets/js/production-session-ownership-fix.js', // historical regression-entry session owner after factual v110 migrates to localized v110 successor
   'app/assets/js/production-v109-notifications.js', // historical v109 notification owner; factual v110 uses localized r13 notification screen
   'app/assets/js/production-v105-fast-notifications.js', // historical v108-only fast notification owner; factual v110 uses localized r13 notification screen
   'app/assets/js/screens/notifications-screen.js', // historical notification screen used only by legacy main-v99..v105
