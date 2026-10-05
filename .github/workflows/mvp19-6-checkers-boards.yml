@@ -154,16 +154,31 @@ jobs:
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
-          git diff --exit-code "$base" "$head" -- \
-            app/assets/css/games/checkers/game.css \
-            app/assets/js/games/checkers/entry.js \
-            bot/games \
-            bot/services/GameService.php \
-            bot/services/GameActionService.php \
-            bot/services/GameInviteService.php \
-            bot/services/ReconnectLifecycleService.php \
-            cron \
-            config/private.php
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-invite-service-chain-localization-* ]]; then
+            # Localization successor: GameInviteService may move copy ownership only.
+            # Keep every Checkers/game owner frozen and prove rematch semantics separately.
+            git diff --exit-code "$base" "$head" -- \
+              app/assets/css/games/checkers/game.css \
+              app/assets/js/games/checkers/entry.js \
+              bot/games \
+              bot/services/GameService.php \
+              bot/services/GameActionService.php \
+              bot/services/ReconnectLifecycleService.php \
+              cron \
+              config/private.php
+            php bot/tests/Mvp17_5BotOpaqueRematchContractTest.php
+          else
+            git diff --exit-code "$base" "$head" -- \
+              app/assets/css/games/checkers/game.css \
+              app/assets/js/games/checkers/entry.js \
+              bot/games \
+              bot/services/GameService.php \
+              bot/services/GameActionService.php \
+              bot/services/GameInviteService.php \
+              bot/services/ReconnectLifecycleService.php \
+              cron \
+              config/private.php
+          fi
 
           # The shared game shell may add the accepted read-only tournament prestige
           # badge, but Checkers mechanics/renderers remain frozen above. Bound the

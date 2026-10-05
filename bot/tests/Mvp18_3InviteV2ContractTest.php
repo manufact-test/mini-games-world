@@ -180,7 +180,7 @@ foreach ([$creationSource, $validationSource, $storageSource, $endpointSource, $
 }
 
 $assertTrue(str_contains($creationSource, 'if ($sameContext) return $this->publicInvite($existing, $userId);'), 'Exact repeated direct invite must return the existing pending invite');
-$assertTrue(str_contains($creationSource, "Этому игроку уже отправлено другое приглашение."), 'Conflicting second direct invite must be rejected instead of duplicated');
+$assertTrue(str_contains($creationSource, "server.invite_chain.errors.direct_invite_exists"), 'Conflicting second direct invite must remain rejected through canonical localized copy ownership');
 $assertTrue(str_contains($creationSource, "['expires_at'] = gmdate('c', time() + self::INVITE_TTL_SEC)"), 'Draft-to-pending transitions must restart the 120-second window');
 $assertTrue(!str_contains($storageSource, '$inviteExpiry > $deadline'), 'Accepted ready window must not be extended by legacy pending expiry');
 $assertTrue(str_contains($storageSource, 'public function hydratePendingReceivedNotifications'), 'Invite owner must expose bounded normal-launch notification hydration');

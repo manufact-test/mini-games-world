@@ -139,7 +139,7 @@ $assert(
 );
 $assert(
     is_string($inviteServiceSource)
-        && str_contains($inviteServiceSource, 'Реванш сейчас недоступен. Выберите «Сыграть ещё».')
+        && str_contains($inviteServiceSource, "server.invite_chain.errors.rematch_bot_unavailable")
         && !str_contains($inviteServiceSource, 'живым соперником'),
     'The public rematch service boundary must contain only opponent-neutral fallback copy.'
 );

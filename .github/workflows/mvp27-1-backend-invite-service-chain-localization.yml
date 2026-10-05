@@ -122,7 +122,16 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "${base}" "${head}")"
-          allowed='^(app/locales/ru\.json|bot/services/invites/(GameInviteActionTrait|GameInviteValidationTrait|GameInviteCreationTrait|GameInviteStorageTrait)\.php|bot/services/(GameInviteService|InviteOpponentService)\.php|bot/(invite-opponents|invite-watch)\.php|ops/checks/mvp27_1_backend_invite_service_chain_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-backend-invite-service-chain-localization\.yml)$'
+          allowed='^(app/locales/ru\.json|bot/services/invites/(GameInviteActionTrait|GameInviteValidationTrait|GameInviteCreationTrait|GameInviteStorageTrait)\.php|bot/services/(GameInviteService|InviteOpponentService)\.php|bot/(invite-opponents|invite-watch)\.php|bot/tests/(Mvp17_5BotOpaqueRematchContractTest|Mvp18_3InviteV2ContractTest|Mvp14r2GamesContractTest|Mvp18_4UniversalInviteLandingContractTest)\.php|ops/checks/mvp27_1_backend_invite_service_chain_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/(mvp19-6-checkers-boards|mvp22-8-account-data|mvp27-1-backend-account-chain-localization|mvp27-1-backend-invite-service-chain-localization)\.yml)
+          bad="$(printf '%s\n' "${changed}" | grep -Ev "${allowed}" || true)"
+          test -z "${bad}" || { printf 'Unexpected Invite service-chain localization paths:\n%s\n' "${bad}" >&2; exit 1; }
+          git diff --exit-code "${base}" "${head}" -- \
+            bot/games bot/economy bot/ledger bot/tournaments bot/moderation bot/support \
+            bot/catalog bot/social bot/notifications bot/accounts android-app app/assets
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
+
           bad="$(printf '%s\n' "${changed}" | grep -Ev "${allowed}" || true)"
           test -z "${bad}" || { printf 'Unexpected Invite service-chain localization paths:\n%s\n' "${bad}" >&2; exit 1; }
           git diff --exit-code "${base}" "${head}" -- \

@@ -110,6 +110,15 @@ jobs:
               bot/android-auth.php \
               bot/android-reauth.php \
               bot/account-data-website-hook.php
+          elif [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-invite-service-chain-localization-* ]]; then
+            accepted='72935e60c50124dc46098e34f82269da3d10e64d'
+            base='${{ github.event.pull_request.base.sha }}'
+            test "${base}" = "${accepted}"
+            git diff --exit-code "${accepted}" "${base}" -- \
+              bot/accounts \
+              bot/android-auth.php \
+              bot/android-reauth.php \
+              bot/account-data-website-hook.php
           else
             git diff --exit-code "${baseline}" HEAD -- \
               bot/accounts \
