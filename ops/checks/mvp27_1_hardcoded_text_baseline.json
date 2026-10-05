@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-05",
-  "staging_base": "b301024bfb74a56cd052257466990d820beb9a07",
-  "scanned_files": 685,
-  "cyrillic_lines_total": 1682,
+  "staging_base": "25c7952ba5ec7997dbd039d1bf3d03a87edf706d",
+  "scanned_files": 679,
+  "cyrillic_lines_total": 1670,
   "by_scope": {
-    "client": 29,
+    "client": 17,
     "backend": 1653,
     "client-entry": 0
   },
@@ -65,7 +65,8 @@
     "shadowed legacy Tic-Tac-Toe turn fix (production-tictactoe-turn-fix.js; sole owner is stripped production-regression-fix-entry.js; factual v110 replaces the legacy regression/main entry pair with canonical bootstrap)",
     "shadowed historical v107 timer PVP (production-v107-timer-pvp.js; sole owner is production-clean-entry-v107.js on historical app/v107.php; factual v110 does not load it)",
     "shadowed abandoned v108 live-game owner (production-v108-live-game.js; sole owner is ownerless production-clean-entry-v108.js; historical app/v108.php remains on production-clean-entry-v105-fast-notifications.js rollback and factual v110 does not load it)",
-    "shadowed historical game-screen-v98 (screens/game-screen-v98.js; sole direct owner is production-v98-ui-owner.js, itself confined to production-regression-fix-entry-v98.js on historical app/v98.php; factual v110 does not load it)"
+    "shadowed historical game-screen-v98 (screens/game-screen-v98.js; sole direct owner is production-v98-ui-owner.js, itself confined to production-regression-fix-entry-v98.js on historical app/v98.php; factual v110 does not load it)",
+    "classified residual historical/orphan client owners (stripped main.js; invite-terminal-actions-v115 only through stripped main; orphan invite-terminal-actions-v110r12; historical production-v106-timer-mobile; historical production-v98-passive-session-transport; orphan notification-bell-first-click-v116)"
   ],
-  "note": "MVP-27.1 active game meta localization: eight factual game-card title/description sources now resolve through canonical RU catalog; client hardcoded Cyrillic debt drops by 16 lines without historical classification."
+  "note": "MVP-27.1 residual historical client reachability classification: six 2-line sources are proven outside factual Telegram v110 runtime; active production-v110-targeted-interactions remains inside debt."
 }
