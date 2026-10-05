@@ -1,6 +1,6 @@
 export const FOUR_IN_A_ROW_META = {
   id: 'four_in_a_row',
-  title: '4 в ряд',
+  titleKey: 'game_cards.meta.four_in_a_row.title',
   icon: '🔴🟡',
-  description: 'Соберите четыре свои фишки подряд раньше соперника.',
+  descriptionKey: 'game_cards.meta.four_in_a_row.description',
 };
