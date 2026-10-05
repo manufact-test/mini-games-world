@@ -1,3 +1,5 @@
+import { t } from '@mgw/i18n';
+
 const SESSION_KEY = 'mgw_device_session_id';
 const DEVICE_KEY = 'mgw_device_id';
 
@@ -31,5 +33,5 @@ export function isSessionLocked(session){
 }
 
 export function sessionMessage(session){
-  return session?.message || 'Игра уже открыта на другом устройстве.';
+  return session?.message || t('session.lock_default');
 }
