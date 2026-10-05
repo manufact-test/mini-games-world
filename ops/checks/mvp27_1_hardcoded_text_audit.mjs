@@ -159,6 +159,27 @@ for (const [scope,count] of [...byScope.entries()].sort()) {
 console.log('MVP27_1_TOP_FILES_BEGIN');
 for (const [file,count] of topFiles) console.log(`${String(count).padStart(4,' ')}  ${file}`);
 console.log('MVP27_1_TOP_FILES_END');
+console.log('MVP27_1_OWNER_DIAGNOSTIC_BEGIN');
+{
+  const needle = 'notification-empty-frame-guard-v115.js';
+  const all = [];
+  const walk = dir => {
+    for (const entry of fs.readdirSync(dir,{withFileTypes:true})) {
+      const full = path.join(dir,entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.isFile() && ['.js','.php','.html'].includes(path.extname(entry.name))) all.push(normalized(full));
+    }
+  };
+  walk('app');
+  console.log('NEEDLE='+needle);
+  for (const file of all.sort()) {
+    const targetPath = ['app/assets/js/screens','notification-empty-frame-guard-v115.js'].join('/');
+    if (file === targetPath) continue;
+    const source = fs.readFileSync(file,'utf8');
+    if (source.includes(needle)) console.log(file);
+  }
+}
+console.log('MVP27_1_OWNER_DIAGNOSTIC_END');
 
 if (process.argv.includes('--sample')) {
   console.log('MVP27_1_SAMPLE_BEGIN');
