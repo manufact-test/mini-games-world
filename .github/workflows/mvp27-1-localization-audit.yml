@@ -29,6 +29,7 @@ on:
       - 'ops/checks/mvp27_1_notification_empty_frame_v115_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_tictactoe_turn_fix_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_v107_timer_pvp_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_v108_live_game_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_session_ownership_localization_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_notifications_reachability_contract.mjs'
       - 'ops/checks/mvp27_1_legacy_v105_fast_notifications_reachability_contract.mjs'
@@ -77,6 +78,7 @@ on:
       - '.github/workflows/mvp27-1-notification-empty-frame-v115-reachability.yml'
       - '.github/workflows/mvp27-1-tictactoe-turn-fix-reachability.yml'
       - '.github/workflows/mvp27-1-v107-timer-pvp-reachability.yml'
+      - '.github/workflows/mvp27-1-v108-live-game-reachability.yml'
       - '.github/workflows/mvp27-1-session-ownership-localization.yml'
       - '.github/workflows/mvp27-1-localization-audit.yml'
       - '.github/workflows/mvp27-1-legacy-profile-victory-effects-reachability.yml'
@@ -143,6 +145,7 @@ jobs:
           node --check ops/checks/mvp27_1_notification_empty_frame_v115_reachability_contract.mjs
           node --check ops/checks/mvp27_1_tictactoe_turn_fix_reachability_contract.mjs
           node --check ops/checks/mvp27_1_v107_timer_pvp_reachability_contract.mjs
+          node --check ops/checks/mvp27_1_v108_live_game_reachability_contract.mjs
           node --check ops/checks/mvp27_1_session_ownership_localization_contract.mjs
           node --check ops/checks/mvp27_1_legacy_notifications_reachability_contract.mjs
           node --check ops/checks/mvp27_1_legacy_v105_fast_notifications_reachability_contract.mjs
@@ -264,6 +267,9 @@ jobs:
 
       - name: V107 timer PVP factual reachability proof
         run: node ops/checks/mvp27_1_v107_timer_pvp_reachability_contract.mjs
+
+      - name: V108 live-game factual reachability proof
+        run: node ops/checks/mvp27_1_v108_live_game_reachability_contract.mjs
 
       - name: Active session ownership localization proof
         run: node ops/checks/mvp27_1_session_ownership_localization_contract.mjs
