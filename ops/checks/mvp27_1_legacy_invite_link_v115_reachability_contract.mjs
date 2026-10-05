@@ -88,7 +88,7 @@ assert.ok(audit.includes("'app/assets/js/games/invite-link-entry-v115.js'"),
 assert.ok(Number(baseline.scanned_files) <= 719, 'Invite-link v115 successor must not restore classified runtime files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 1934, 'Invite-link v115 successor total debt must not exceed accepted ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 281, 'Invite-link v115 successor client debt must not exceed accepted ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
 console.log('MVP-27.1 legacy invite-link v115 reachability: OK — v115 is confined to stripped legacy main.js; factual v110 uses localized v110r12 ownership.');

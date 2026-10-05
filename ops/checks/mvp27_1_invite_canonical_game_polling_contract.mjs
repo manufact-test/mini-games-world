@@ -52,7 +52,7 @@ assert.ok(Number(baseline.cyrillic_lines_total) <= 2827,
   'Canonical polling successor debt must not regress above the accepted #1963 total ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 1174,
   'Canonical polling successor client debt must not regress above the accepted #1963 ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653,
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
   'Backend debt must remain unchanged');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0,
   'Client-entry debt must remain zero');

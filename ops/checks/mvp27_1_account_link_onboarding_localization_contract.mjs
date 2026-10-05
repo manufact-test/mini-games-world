@@ -90,7 +90,7 @@ assert.deepEqual(locale?.account_link?.onboarding, {
 assert.ok(Number(baseline.scanned_files) <= 711, 'Successor must not restore classified runtime files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 1817, 'Total localization debt must not exceed the accepted post-onboarding ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 164, 'Client localization debt must not exceed the accepted post-onboarding ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
 console.log('MVP-27.1 Account Link Home onboarding localization: OK — 11 factual v110 Cyrillic lines moved to canonical locale ownership with onboarding behavior preserved.');

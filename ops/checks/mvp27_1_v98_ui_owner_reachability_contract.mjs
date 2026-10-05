@@ -96,7 +96,7 @@ assert.ok(audit.includes("'app/assets/js/production-v98-ui-owner.js'"),
 assert.ok(Number(baseline.scanned_files)<=703);
 assert.ok(Number(baseline.cyrillic_lines_total)<=1745);
 assert.ok(Number(baseline.by_scope?.client)<=92);
-assert.equal(Number(baseline.by_scope?.backend),1653);
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
 console.log('MVP-27.1 v98 UI-owner reachability: OK — owner is confined to historical v98 regression entry; factual v110 retains later canonical session/search/invite/game ownership.');

@@ -96,7 +96,7 @@ assert.ok(audit.includes("'app/assets/js/first-interaction-readiness.js'"),
 assert.ok(Number(baseline.scanned_files) <= 737, 'readiness classification successor must not restore orphan runtime files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 2305, 'readiness classification successor total debt must not exceed accepted ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 652, 'readiness classification successor client debt must not exceed accepted ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
 console.log('MVP-27.1 first-interaction readiness reachability: OK — source is confined to stripped legacy main.js and absent from factual v110 ownership.');

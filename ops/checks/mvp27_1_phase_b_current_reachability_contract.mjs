@@ -91,7 +91,7 @@ for (const file of [
 assert.ok(Number(baseline.scanned_files) <= 749, 'Phase-B classification successor must not restore excluded runtime files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 2523, 'Phase-B classification successor total debt must not exceed the accepted ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 870, 'Phase-B classification successor client debt must not exceed the accepted ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
 console.log('MVP-27.1 Phase-B current reachability: OK — entry/runtime/game-screen form a closed historical lineage absent from factual v110 ownership.');

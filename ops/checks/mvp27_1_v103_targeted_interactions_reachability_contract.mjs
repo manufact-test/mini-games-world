@@ -95,7 +95,7 @@ assert.ok(audit.includes("'app/assets/js/production-v103-targeted-interactions.j
 assert.ok(Number(baseline.scanned_files)<=698);
 assert.ok(Number(baseline.cyrillic_lines_total)<=1714);
 assert.ok(Number(baseline.by_scope?.client)<=61);
-assert.equal(Number(baseline.by_scope?.backend),1653);
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
 console.log('MVP-27.1 v103 targeted interactions reachability: OK — direct owners are historical v103-v109 clean-entry lineages; factual v110 uses the v110 targeted-interactions owner.');

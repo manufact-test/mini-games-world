@@ -94,7 +94,7 @@ assert.deepEqual(locale?.store?.profile_selection, {
 assert.ok(Number(baseline.scanned_files) <= 713, 'Active clean-entry successor must not restore classified runtime files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 1852, 'Active clean-entry successor total debt must not exceed accepted ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 199, 'Active clean-entry successor client debt must not exceed accepted ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
 console.log('MVP-27.1 active clean-entry profile selection localization: OK — 11 factual v110 Cyrillic lines moved to canonical locale ownership with Store/Profile behavior preserved.');

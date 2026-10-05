@@ -112,7 +112,7 @@ assert.ok(audit.includes("'app/assets/js/production-ui-stability-fix.js'"),
 assert.ok(Number(baseline.scanned_files)<=702);
 assert.ok(Number(baseline.cyrillic_lines_total)<=1735);
 assert.ok(Number(baseline.by_scope?.client)<=82);
-assert.equal(Number(baseline.by_scope?.backend),1653);
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
 console.log('MVP-27.1 UI stability reachability: OK — module is confined to stripped/historical regression entries and absent from factual v110 ownership.');

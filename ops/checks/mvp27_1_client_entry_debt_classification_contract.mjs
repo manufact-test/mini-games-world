@@ -39,7 +39,7 @@ assert.equal(cleanRuntimeCyrillic, 25, 'Expected classified clean-runtime Cyrill
 assert.ok(audit.includes("'app/runtime/server/'"), 'Player-facing debt audit must exclude the proven staging-only clean runtime server');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 3049, 'Classified total debt must not regress above accepted ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 1396, 'Client debt must not regress above accepted ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Active client-entry debt must be zero after classification');
 
 console.log('MVP-27.1 client-entry debt classification: OK — 25 staging-only clean-runtime Cyrillic lines are proven outside the factual Telegram player graph.');

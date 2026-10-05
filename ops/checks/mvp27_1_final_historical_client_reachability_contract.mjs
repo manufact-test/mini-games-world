@@ -119,7 +119,7 @@ for(const file of ACTIVE_TARGETS){
 
 assert.ok(Number(baseline.cyrillic_lines_total)<=1659);
 assert.ok(Number(baseline.by_scope?.client)<=6);
-assert.equal(Number(baseline.by_scope?.backend),1653);
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
 console.log('MVP-27.1 final historical client reachability: OK — nine one-line sources remain historical/orphaned outside factual v110; six factual active owners remain in the active graph and may be localized by successors.');

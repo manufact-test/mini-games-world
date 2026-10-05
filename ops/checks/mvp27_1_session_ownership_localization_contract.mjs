@@ -94,7 +94,7 @@ for(const marker of [
 assert.ok(Number(baseline.scanned_files)<=699);
 assert.ok(Number(baseline.cyrillic_lines_total)<=1718);
 assert.ok(Number(baseline.by_scope?.client)<=65);
-assert.equal(Number(baseline.by_scope?.backend),1653);
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
 console.log('MVP-27.1 session ownership localization: OK — factual v110 uses localized successor; historical pre-v110 clean/regression lineages retain untouched shared owner; behavior markers preserved.');

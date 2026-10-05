@@ -69,7 +69,7 @@ assert.ok(audit.includes("'app/assets/js/residual-ui-game-race-fix.js'"),
 assert.ok(Number(baseline.scanned_files) <= 757, 'Residual classification successor must not restore excluded runtime files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 2745, 'Residual classification successor debt must not regress above the accepted #1964 total ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 1092, 'Residual classification successor client debt must not regress above the accepted #1964 ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
 console.log('MVP-27.1 residual UI reachability: OK — legacy main.js is stripped by v110; residual-ui-game-race-fix.js is not reachable from the factual bootstrap/import graph.');

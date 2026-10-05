@@ -138,7 +138,7 @@ assert.deepEqual(
 assert.ok(Number(baseline.scanned_files) <= 728, 'legacy notifications successor must not restore excluded runtime files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 2088, 'legacy notifications successor total debt must not exceed accepted ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 435, 'legacy notifications successor client debt must not exceed accepted ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
 console.log('MVP-27.1 legacy notifications reachability: OK — active localized r13 owner is isolated from the historical notification lineage.');

@@ -73,7 +73,7 @@ assert.ok(audit.includes("'app/assets/js/production-v105-invite-latency.js'"),
 assert.ok(Number(baseline.scanned_files) <= 756, 'v105 classification successor must not restore excluded runtime files');
 assert.ok(Number(baseline.cyrillic_lines_total) <= 2707, 'v105 classification successor total debt must not regress above the accepted #1965 ceiling');
 assert.ok(Number(baseline.by_scope?.client) <= 1054, 'v105 classification successor client debt must not regress above the accepted #1965 ceiling');
-assert.equal(Number(baseline.by_scope?.backend), 1653, 'Backend debt must remain unchanged');
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']), 0, 'Client-entry debt must remain zero');
 
 console.log('MVP-27.1 v105 invite-latency reachability: OK — the owner belongs to historical v105-v109 clean-entry lineages and is absent from factual v110 ownership.');

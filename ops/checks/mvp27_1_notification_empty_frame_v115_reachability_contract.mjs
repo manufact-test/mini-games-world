@@ -50,7 +50,7 @@ assert.ok(audit.includes("'app/assets/js/screens/notification-empty-frame-guard-
 assert.ok(Number(baseline.scanned_files)<=697);
 assert.ok(Number(baseline.cyrillic_lines_total)<=1710);
 assert.ok(Number(baseline.by_scope?.client)<=57);
-assert.equal(Number(baseline.by_scope?.backend),1653);
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
 console.log('MVP-27.1 notification empty-frame v115 reachability: OK — exhaustive app scan finds no external owner; factual Telegram v110 remains independent.');

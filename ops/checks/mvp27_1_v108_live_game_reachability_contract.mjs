@@ -81,7 +81,7 @@ assert.ok(audit.includes("'app/assets/js/production-v108-live-game.js'"),
 assert.ok(Number(baseline.scanned_files)<=694);
 assert.ok(Number(baseline.cyrillic_lines_total)<=1701);
 assert.ok(Number(baseline.by_scope?.client)<=48);
-assert.equal(Number(baseline.by_scope?.backend),1653);
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
 console.log('MVP-27.1 v108 live-game reachability: OK — sole direct owner is ownerless clean-entry-v108; historical v108 remains on v105-fast rollback and factual v110 does not load it.');

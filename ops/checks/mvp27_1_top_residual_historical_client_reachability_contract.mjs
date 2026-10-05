@@ -95,7 +95,7 @@ assert.ok(!audit.includes("'"+ACTIVE_TARGET+"'"),'Active targeted interactions m
 assert.ok(Number(baseline.scanned_files)<=679);
 assert.ok(Number(baseline.cyrillic_lines_total)<=1670);
 assert.ok(Number(baseline.by_scope?.client)<=17);
-assert.equal(Number(baseline.by_scope?.backend),1653);
+assert.ok(Number(baseline.by_scope?.backend) <= 1653, 'Backend localization debt may only decrease from the accepted 1653 ceiling.');
 assert.equal(Number(baseline.by_scope?.['client-entry']),0);
 
 console.log('MVP-27.1 top residual historical client reachability: OK — six 2-line sources remain stripped/historical/orphaned outside factual v110; active v110 targeted interactions remains factual and may localize toward zero debt.');
