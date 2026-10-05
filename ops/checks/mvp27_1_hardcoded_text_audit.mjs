@@ -196,3 +196,53 @@ if (baseline) {
   }
   console.log('MVP27_1_BASELINE_RATCHET=PASS');
 }
+
+
+if (true) {
+  const targets = [
+    'app/assets/js/api/request-guard.js',
+    'app/assets/js/commerce/mgw-purchase-feedback.js',
+    'app/assets/js/main-v102.js',
+    'app/assets/js/main-v103.js',
+    'app/assets/js/main-v104.js',
+    'app/assets/js/main-v105.js',
+    'app/assets/js/main-v120-invite-controller-shell.js',
+    'app/assets/js/production-v110-match-lifecycle.js',
+    'app/assets/js/production-v99-explicit-lock-guard.js',
+    'app/assets/js/production-v99-invite-picker-hold.js',
+    'app/assets/js/profile/mgw-avatar-registry.js',
+    'app/assets/js/profile/mgw-victory-effect-selector.js',
+    'app/assets/js/screens/notification-bell-first-click-v115.js',
+    'app/assets/js/screens/search-screen.js',
+    'app/assets/js/session.js',
+  ];
+  const allowedExt = new Set(['.js','.php','.html','.mjs']);
+  const allSources = [];
+  const walkAll = dir => {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir,{withFileTypes:true})) {
+      const full = path.join(dir,entry.name);
+      if (entry.isDirectory()) walkAll(full);
+      else if (allowedExt.has(path.extname(entry.name))) allSources.push(normalized(full));
+    }
+  };
+  walkAll('app');
+  console.log('MVP27_1_FINAL15_OWNER_DIAG_BEGIN');
+  for (const target of targets) {
+    const basename = path.basename(target);
+    const targetSource = fs.readFileSync(target,'utf8');
+    const cyr = targetSource.split(/\r?\n/).map((line,i)=>({line:i+1,text:line.trim()})).filter(x=>CYRILLIC.test(x.text));
+    const refs = [];
+    for (const source of allSources) {
+      if (source === target) continue;
+      const text = fs.readFileSync(source,'utf8');
+      if (text.includes(basename)) refs.push(source);
+    }
+    console.log('TARGET '+target);
+    console.log('CYR '+cyr.length);
+    for (const item of cyr) console.log('RU '+item.line+' '+item.text.slice(0,220));
+    console.log('REFS '+refs.length);
+    for (const ref of refs.sort()) console.log('REF '+ref);
+  }
+  console.log('MVP27_1_FINAL15_OWNER_DIAG_END');
+}
