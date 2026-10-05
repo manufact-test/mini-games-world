@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../localization/ServerLocalization.php';
+
 require_once __DIR__ . '/AndroidAuthAttemptLimiter.php';
 
 final class AndroidDeviceAuthService
@@ -204,7 +206,7 @@ final class AndroidDeviceAuthService
         }
 
         $nickname = trim((string)($record['nickname'] ?? $record['display_name'] ?? ''));
-        if ($nickname === '') $nickname = 'Игрок';
+        if ($nickname === '') $nickname = ServerLocalization::copy('server.account_chain.common.player_fallback', 'Player');
 
         return [
             'id'=>$legacyUserId,
