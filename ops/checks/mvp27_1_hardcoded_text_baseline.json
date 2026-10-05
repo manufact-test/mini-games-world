@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-05",
-  "staging_base": "9ea906c56dd88ea4132928b68678b0beb74f6d75",
+  "staging_base": "ad087e5cfe3a1b31e01e2e0b6ea061900ea627f0",
   "scanned_files": 678,
-  "cyrillic_lines_total": 1668,
+  "cyrillic_lines_total": 1659,
   "by_scope": {
-    "client": 15,
+    "client": 6,
     "backend": 1653,
     "client-entry": 0
   },
@@ -66,7 +66,8 @@
     "shadowed historical v107 timer PVP (production-v107-timer-pvp.js; sole owner is production-clean-entry-v107.js on historical app/v107.php; factual v110 does not load it)",
     "shadowed abandoned v108 live-game owner (production-v108-live-game.js; sole owner is ownerless production-clean-entry-v108.js; historical app/v108.php remains on production-clean-entry-v105-fast-notifications.js rollback and factual v110 does not load it)",
     "shadowed historical game-screen-v98 (screens/game-screen-v98.js; sole direct owner is production-v98-ui-owner.js, itself confined to production-regression-fix-entry-v98.js on historical app/v98.php; factual v110 does not load it)",
-    "classified residual historical/orphan client owners (stripped main.js; invite-terminal-actions-v115 only through stripped main; orphan invite-terminal-actions-v110r12; historical production-v106-timer-mobile; historical production-v98-passive-session-transport; orphan notification-bell-first-click-v116)"
+    "classified residual historical/orphan client owners (stripped main.js; invite-terminal-actions-v115 only through stripped main; orphan invite-terminal-actions-v110r12; historical production-v106-timer-mobile; historical production-v98-passive-session-transport; orphan notification-bell-first-click-v116)",
+    "final historical/orphan client owners (api/request-guard.js; main-v102.js; main-v103.js; main-v104.js; main-v105.js; main-v120-invite-controller-shell.js; production-v99-invite-picker-hold.js; screens/notification-bell-first-click-v115.js; screens/search-screen.js)"
   ],
-  "note": "MVP-27.1 active targeted-interactions localization: factual v110 session-lock fallback and weekly details button now resolve through canonical RU catalog; visible Russian copy is unchanged."
+  "note": "MVP-27.1 final historical client reachability classification: nine remaining one-line sources are proven outside factual Telegram v110 runtime; six factual active client lines remain."
 }
