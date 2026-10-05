@@ -77,11 +77,11 @@ $assert(
     'The factual shell/import-manifest graph must retain one canonical invite-link owner.'
 );
 $assert(
-    str_contains($v110, "$manifestPath = __DIR__ . '/runtime/client/version-manifest.php';")
-        && str_contains($v110, "$versionManifest = require $manifestPath;")
+    str_contains($v110, '$manifestPath = __DIR__ . \'/runtime/client/version-manifest.php\';')
+        && str_contains($v110, '$versionManifest = require $manifestPath;')
         && str_contains($v110, "'@mgw/clean-entry'")
         && str_contains($v110, "'@mgw/main'")
-        && str_contains($v110, "$bootstrapTarget = $assets['bootstrap'];")
+        && str_contains($v110, '$bootstrapTarget = $assets[\'bootstrap\'];')
         && str_contains($v110, 'data-hotfix-build="v110-mvp16-route-scoped-polling-v1167"')
         && str_contains($v110, 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0'),
     'Canonical invitation launches must reach the manifest-owned no-store v110 entry graph.'
