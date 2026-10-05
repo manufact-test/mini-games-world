@@ -1,0 +1,76 @@
+name: MVP-27.1 Final Active Client Localization
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/assets/js/commerce/mgw-purchase-feedback.js'
+      - 'app/assets/js/production-v110-match-lifecycle.js'
+      - 'app/assets/js/production-v99-explicit-lock-guard.js'
+      - 'app/assets/js/profile/mgw-avatar-registry.js'
+      - 'app/assets/js/profile/mgw-victory-effect-selector.js'
+      - 'app/assets/js/session.js'
+      - 'app/locales/ru.json'
+      - 'app/runtime/client/version-manifest.php'
+      - 'ops/checks/mvp27_1_final_active_client_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_final_historical_client_reachability_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - 'tests/mvp19-3-victory-effect-selector.mjs'
+      - '.github/workflows/mvp16-7-all-games-regression.yml'
+      - '.github/workflows/mvp19-3-victory-effects-foundation.yml'
+      - '.github/workflows/mvp27-1-final-active-client-localization.yml'
+      - '.github/workflows/mvp27-1-localization-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  final-active-client-localization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Syntax and final active localization proof
+        run: |
+          set -euo pipefail
+          node --check app/assets/js/commerce/mgw-purchase-feedback.js
+          node --check app/assets/js/production-v110-match-lifecycle.js
+          node --check app/assets/js/production-v99-explicit-lock-guard.js
+          node --check app/assets/js/profile/mgw-avatar-registry.js
+          node --check app/assets/js/profile/mgw-victory-effect-selector.js
+          node --check app/assets/js/session.js
+          node --check ops/checks/mvp27_1_final_active_client_localization_contract.mjs
+          node ops/checks/mvp27_1_final_active_client_localization_contract.mjs
+
+      - name: Preserve predecessor localization proofs
+        run: |
+          set -euo pipefail
+          node ops/checks/mvp16_2_localization_contract.mjs
+          node ops/checks/mvp27_1_localization_architecture_contract.mjs
+          node ops/checks/mvp27_1_active_game_meta_localization_contract.mjs
+          node ops/checks/mvp27_1_active_targeted_interactions_localization_contract.mjs
+          node ops/checks/mvp27_1_final_historical_client_reachability_contract.mjs
+          node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded final active client localization scope
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-final-active-client-localization')
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          allowed='^(app/assets/js/commerce/mgw-purchase-feedback\.js|app/assets/js/production-v110-match-lifecycle\.js|app/assets/js/production-v99-explicit-lock-guard\.js|app/assets/js/profile/mgw-avatar-registry\.js|app/assets/js/profile/mgw-victory-effect-selector\.js|app/assets/js/session\.js|app/locales/ru\.json|app/runtime/client/version-manifest\.php|ops/checks/mvp27_1_final_active_client_localization_contract\.mjs|ops/checks/mvp27_1_final_historical_client_reachability_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|tests/mvp19-3-victory-effect-selector\.mjs|\.github/workflows/mvp16-7-all-games-regression\.yml|\.github/workflows/mvp19-3-victory-effects-foundation\.yml|\.github/workflows/mvp27-1-final-active-client-localization\.yml|\.github/workflows/mvp27-1-localization-audit\.yml)$'
+          bad="$(git diff --name-only "$base" "$head" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected final active client localization paths:\n%s\n' "$bad" >&2; exit 1; }
+          git diff --check
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs

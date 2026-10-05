@@ -1,3 +1,5 @@
+import { t } from '@mgw/i18n';
+
 const VICTORY_EFFECT_IDS = new Set([
   'profile-victory-effect-01',
   'profile-victory-effect-02',
@@ -21,7 +23,7 @@ export function selectWinnerVictoryEffect(game){
     winnerId,
     itemId,
     playerIndex,
-    name:String(winner?.name || `Игрок ${playerIndex + 1}`),
+    name:String(winner?.name || t('profile.victory_effects.live.player_fallback', { number:playerIndex + 1 })),
   });
 }
 

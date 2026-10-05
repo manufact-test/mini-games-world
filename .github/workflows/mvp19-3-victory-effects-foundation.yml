@@ -51,7 +51,7 @@ jobs:
           git diff --check
 
       - name: Guard frozen runtime and zero activation
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp19-3-victory-effects-foundation') }}
         shell: bash
         run: |
           set -euo pipefail

@@ -388,6 +388,9 @@ jobs:
       - name: V99-V101 game-screen factual reachability proof
         run: node ops/checks/mvp27_1_v99_v101_game_screen_reachability_contract.mjs
 
+      - name: Final active client localization proof
+        run: node ops/checks/mvp27_1_final_active_client_localization_contract.mjs
+
       - name: Hardcoded player text audit
         run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs --sample
 
