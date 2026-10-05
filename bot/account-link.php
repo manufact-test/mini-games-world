@@ -7,17 +7,32 @@ header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
 
 require __DIR__ . '/core/bootstrap.php';
+require_once dirname(__DIR__) . '/app/runtime/localization/LocalizationCatalog.php';
+
+function mgw_account_link_copy(string $key, string $emergencyFallback): string
+{
+    try {
+        static $catalog = null;
+        if (!$catalog instanceof LocalizationCatalog) {
+            $catalog = new LocalizationCatalog(dirname(__DIR__) . '/app/locales');
+        }
+        return $catalog->translate($key);
+    } catch (Throwable $error) {
+        error_log('[MiniGamesWorld account link localization] ' . $error->getMessage());
+        return $emergencyFallback;
+    }
+}
 require_once __DIR__ . '/accounts/AccountLinkService.php';
 require_once __DIR__ . '/services/PresenceService.php';
 
 try {
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
-        json_response(['ok'=>false,'error'=>'Метод запроса не поддерживается.'], 405);
+        json_response(['ok'=>false,'error'=>mgw_account_link_copy('server.account_link.method_not_allowed', 'Request method is not supported.')], 405);
     }
 
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) {
-        json_response(['ok'=>false,'error'=>'Некорректный запрос.'], 400);
+        json_response(['ok'=>false,'error'=>mgw_account_link_copy('server.account_link.invalid_request', 'Invalid request.')], 400);
     }
 
     $authenticated = (new AuthService($config))->getUserFromRequest($payload);
@@ -25,7 +40,7 @@ try {
         json_response([
             'ok'=>false,
             'code'=>'android_auth_required',
-            'error'=>'Привязку аккаунта нужно начать из Android-приложения.',
+            'error'=>mgw_account_link_copy('server.account_link.android_required', 'Account linking must be started from the Android app.'),
         ], 403);
     }
 
@@ -35,7 +50,7 @@ try {
         || !$router->enabled()
         || $router->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE
         || $router->routeFor('economy') !== RuntimeStorageRouter::DRIVER_DATABASE) {
-        json_response(['ok'=>false,'error'=>'Привязка аккаунта временно недоступна.'], 503);
+        json_response(['ok'=>false,'error'=>mgw_account_link_copy('server.account_link.unavailable', 'Account linking is temporarily unavailable.')], 503);
     }
 
     $database = PdoConnectionFactory::create($databaseConfig);
@@ -65,7 +80,7 @@ try {
         ]);
     }
 
-    json_response(['ok'=>false,'error'=>'Некорректное действие привязки аккаунта.'], 400);
+    json_response(['ok'=>false,'error'=>mgw_account_link_copy('server.account_link.invalid_action', 'Invalid account-link action.')], 400);
 } catch (AccountLinkException $error) {
     if ($error->reason === 'rate_limited') {
         header('Retry-After: 3600');
@@ -79,6 +94,6 @@ try {
     error_log('[MiniGamesWorld account link] ' . $error::class . ': ' . $error->getMessage());
     json_response([
         'ok'=>false,
-        'error'=>'Не удалось обработать привязку аккаунта. Попробуйте ещё раз.',
+        'error'=>mgw_account_link_copy('server.account_link.failed', 'Account linking could not be processed. Please try again.'),
     ], 500);
 }
