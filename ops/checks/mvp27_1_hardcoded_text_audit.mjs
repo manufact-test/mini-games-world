@@ -46,6 +46,7 @@ const SKIP_FILES = new Set([
   'app/assets/js/production-v109-invite-speed.js', // historical v109 capture owner; factual v110 uses canonical game-invites-v110 instead
   'app/assets/js/production-v97-runtime-owner.js', // historical v97/v98 coordinator; factual v110 bootstrap/clean-entry graph does not load it
   'app/assets/js/production-v98-ui-owner.js', // historical v98-only UI owner; sole owner is v98 regression entry and factual v110 uses later canonical owners
+  'app/assets/js/production-ui-stability-fix.js', // historical v96-v98 UI stability owner; factual v110 strips the regression entry lineage
   'app/assets/js/production-prepared-share-fix.js', // historical v97/v98 prepared-share owner; factual v110 uses canonical invite/share ownership
   'app/assets/js/first-interaction-readiness.js', // historical child of stripped legacy main.js; absent from factual v110 ownership
   'app/assets/js/production-v109-notifications.js', // historical v109 notification owner; factual v110 uses localized r13 notification screen

@@ -2,11 +2,11 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-05",
-  "staging_base": "b794f8a9075bcb64b9bd74f279732e64f7e2c870",
-  "scanned_files": 703,
-  "cyrillic_lines_total": 1740,
+  "staging_base": "7d46d8eb0d2fd33edfcf2def640b88e1e447680d",
+  "scanned_files": 702,
+  "cyrillic_lines_total": 1735,
   "by_scope": {
-    "client": 87,
+    "client": 82,
     "backend": 1653,
     "client-entry": 0
   },
@@ -54,7 +54,8 @@
     "shadowed historical Battleship setup entry (games/battleship/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineage; factual v110 uses unified launcher)",
     "shadowed historical Checkers setup entry (games/checkers/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineage; factual v110 uses unified launcher)",
     "shadowed historical Tic-Tac-Toe setup entry (games/tictactoe/entry.js; direct owners resolve only through historical v99-v109/stripped main and rejected ownerless v120 lineage; factual v110 uses unified launcher)",
-    "shadowed historical v98 UI owner (production-v98-ui-owner.js; sole owner is production-regression-fix-entry-v98.js on historical v98 page; factual v110 uses later canonical session/search/invite/game owners)"
+    "shadowed historical v98 UI owner (production-v98-ui-owner.js; sole owner is production-regression-fix-entry-v98.js on historical v98 page; factual v110 uses later canonical session/search/invite/game owners)",
+    "shadowed historical UI stability owner (production-ui-stability-fix.js; imported only by stripped base regression entry plus historical v97/v98 regression entries; factual v110 replaces the legacy entry pair with canonical bootstrap)"
   ],
-  "note": "MVP-27.1 active Domino corrective QA localization: 5 factual v110 Cyrillic lines moved from renderer-cosmetics-corrective-v25.js into canonical games.domino.ui.qa locale ownership; Domino mechanics, gestures, effects and QA lifecycle remain unchanged."
+  "note": "MVP-27.1 UI stability reachability classification: production-ui-stability-fix.js remains untouched historical source from the pre-clean-entry regression lineage; factual Telegram v110 strips that entry pair before bootstrap."
 }
