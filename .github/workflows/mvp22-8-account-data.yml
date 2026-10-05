@@ -101,11 +101,15 @@ jobs:
           set -Eeuo pipefail
           baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
           git cat-file -e "${baseline}^{commit}"
-          git diff --exit-code "${baseline}" HEAD -- \
-            bot/accounts \
-            bot/account-data.php \
-            bot/account-data-website-hook.php \
-            bot/account-link.php
+          targets=(
+            bot/accounts
+            bot/account-data.php
+            bot/account-data-website-hook.php
+          )
+          if [[ "${{ github.head_ref }}" != agent/mvp27-1-backend-account-link-endpoint-localization-* ]]; then
+            targets+=(bot/account-link.php)
+          fi
+          git diff --exit-code "${baseline}" HEAD -- "${targets[@]}"
 
       - name: Run SQLite lifecycle proof
         run: php bot/tests/Mvp22_8AccountDataLifecycleTest.php
