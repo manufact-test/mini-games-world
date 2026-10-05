@@ -2,6 +2,25 @@
 declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
+require_once dirname(__DIR__) . '/app/runtime/localization/LocalizationCatalog.php';
+
+function mgw_invite_copy(string $key, array $params = [], string $emergencyFallback = ''): string
+{
+    try {
+        static $catalog = null;
+        if (!$catalog instanceof LocalizationCatalog) {
+            $catalog = new LocalizationCatalog(dirname(__DIR__) . '/app/locales');
+        }
+        return $catalog->translate($key, $params);
+    } catch (Throwable $error) {
+        error_log('[MiniGamesWorld invite localization] ' . $error->getMessage());
+        $fallback = $emergencyFallback;
+        foreach ($params as $name => $value) {
+            $fallback = str_replace('{' . $name . '}', (string)$value, $fallback);
+        }
+        return $fallback;
+    }
+}
 require_once __DIR__ . '/moderation/ModerationService.php';
 require_once __DIR__ . '/helpers/WebAppLaunchUrl.php';
 require_once __DIR__ . '/services/GameInviteService.php';
@@ -51,7 +70,7 @@ function mgw_invite_board_label(array $invite): string
 {
     $gameType = (string)($invite['game_type'] ?? '');
     $size = (int)($invite['board_size'] ?? 0);
-    if ($gameType === 'domino') return 'Классика 0–6';
+    if ($gameType === 'domino') return mgw_invite_copy('server.invites.domino_variant', [], 'Classic 0–6');
     if ($gameType === 'four_in_a_row') {
         return $size . '×' . max(5, (int)($invite['board_rows'] ?? ($size - 1)));
     }
@@ -60,12 +79,18 @@ function mgw_invite_board_label(array $invite): string
 
 function mgw_invite_share_text(array $invite): string
 {
-    return "🎮 Приглашение в Mini Games World\n\n"
-        . (string)($invite['inviter_name'] ?? 'Игрок') . " приглашает вас сыграть!\n\n"
-        . '🎲 Игра: ' . (string)($invite['game_title'] ?? 'Игра') . "\n"
-        . '📐 Вариант: ' . mgw_invite_board_label($invite) . "\n"
-        . '🪙 Ставка: ' . (int)($invite['bet'] ?? 0) . " коинов\n\n"
-        . 'Откройте приглашение и примите вызов 👇';
+    $playerFallback = mgw_invite_copy('server.invites.player_fallback', [], 'Player');
+    $gameFallback = mgw_invite_copy('server.invites.game_fallback', [], 'Game');
+    return mgw_invite_copy(
+        'server.invites.share_text',
+        [
+            'name' => (string)($invite['inviter_name'] ?? $playerFallback),
+            'game' => (string)($invite['game_title'] ?? $gameFallback),
+            'board' => mgw_invite_board_label($invite),
+            'bet' => (int)($invite['bet'] ?? 0),
+        ],
+        "🎮 Mini Games World invitation\n\n{name} invites you to play!\n\n🎲 Game: {game}\n📐 Variant: {board}\n🪙 Bet: {bet} coins\n\nOpen the invitation and accept the challenge 👇"
+    );
 }
 
 function mgw_prepare_invite_message(
@@ -83,8 +108,8 @@ function mgw_prepare_invite_message(
             'result' => [
                 'type' => 'article',
                 'id' => 'invite_' . (string)($invite['token'] ?? ''),
-                'title' => 'Приглашение в Mini Games World',
-                'description' => (string)($invite['game_title'] ?? 'Игра')
+                'title' => mgw_invite_copy('server.invites.prepared_title', [], 'Mini Games World invitation'),
+                'description' => (string)($invite['game_title'] ?? mgw_invite_copy('server.invites.game_fallback', [], 'Game'))
                     . ' · ' . mgw_invite_board_label($invite),
                 'input_message_content' => [
                     'message_text' => $shareText,
@@ -92,7 +117,7 @@ function mgw_prepare_invite_message(
                 ],
                 'reply_markup' => [
                     'inline_keyboard' => [[
-                        ['text' => '🎮 Открыть приглашение', 'url' => $telegramOpenUrl],
+                        ['text' => mgw_invite_copy('server.invites.open_button', [], '🎮 Open invitation'), 'url' => $telegramOpenUrl],
                     ]],
                 ],
             ],
@@ -118,17 +143,25 @@ function mgw_send_invite_message(array $config, array $invite, string $recipient
     $webAppUrl = mgw_invite_webapp_url($config, (string)$invite['token']);
     if ($webAppUrl === '') return false;
 
+    $playerFallback = mgw_invite_copy('server.invites.player_fallback', [], 'Player');
+    $gameFallback = mgw_invite_copy('server.invites.game_lower_fallback', [], 'game');
+    $messageParams = [
+        'name' => (string)($invite['inviter_name'] ?? $playerFallback),
+        'game' => (string)($invite['game_title'] ?? $gameFallback),
+        'board' => mgw_invite_board_label($invite),
+        'bet' => (int)($invite['bet'] ?? 0),
+    ];
     $text = (string)($invite['source'] ?? '') === 'rematch'
-        ? "🎮 Вам предлагают реванш\n\n"
-            . (string)($invite['inviter_name'] ?? 'Игрок') . ' ждёт повторную партию в «'
-            . (string)($invite['game_title'] ?? 'игру') . '».'
-        : "🎮 Вас пригласили сыграть\n\n"
-            . (string)($invite['inviter_name'] ?? 'Игрок') . ' приглашает вас в «'
-            . (string)($invite['game_title'] ?? 'игру') . '».';
-
-    $text .= "\n\n"
-        . mgw_invite_board_label($invite) . ' · '
-        . (int)($invite['bet'] ?? 0) . ' коинов';
+        ? mgw_invite_copy(
+            'server.invites.rematch_message',
+            $messageParams,
+            "🎮 Rematch offered\n\n{name} is waiting for another game of “{game}”.\n\n{board} · {bet} coins"
+        )
+        : mgw_invite_copy(
+            'server.invites.direct_message',
+            $messageParams,
+            "🎮 You were invited to play\n\n{name} invites you to “{game}”.\n\n{board} · {bet} coins"
+        );
 
     try {
         $response = (new TelegramService($config))->api('sendMessage', [
@@ -137,7 +170,7 @@ function mgw_send_invite_message(array $config, array $invite, string $recipient
             'reply_markup' => [
                 'inline_keyboard' => [[
                     [
-                        'text' => '🎮 Открыть приглашение',
+                        'text' => mgw_invite_copy('server.invites.open_button', [], '🎮 Open invitation'),
                         'web_app' => ['url' => $webAppUrl],
                     ],
                 ]],
@@ -239,7 +272,7 @@ function mgw_invite_api_ok_with_deferred_work(array $data, callable $afterRespon
 
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
-    if (!is_array($payload)) api_error('Некорректный запрос.');
+    if (!is_array($payload)) api_error(mgw_invite_copy('server.invites.invalid_request', [], 'Invalid request.'));
 
     $action = clean_string($payload['action'] ?? '', 40);
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
@@ -293,7 +326,7 @@ try {
             ): array {
                 $userId = trim((string)($tgUser['id'] ?? ''));
                 if ($userId === '' || !isset($data['users'][$userId]) || !is_array($data['users'][$userId])) {
-                    throw new RuntimeException('Пользователь не найден.');
+                    throw new RuntimeException(mgw_invite_copy('server.invites.user_not_found', [], 'User not found.'));
                 }
                 $user = $data['users'][$userId];
                 $sessions->ensureSessionShape($user);
@@ -324,7 +357,7 @@ try {
 
             $user = $users->ensureUser($data, $tgUser);
             $userId = (string)($user['id'] ?? '');
-            if ($userId === '') throw new RuntimeException('Пользователь не найден.');
+            if ($userId === '') throw new RuntimeException(mgw_invite_copy('server.invites.user_not_found', [], 'User not found.'));
             $data['users'][$userId] = $user;
             $user =& $data['users'][$userId];
             $sessions->ensureSessionShape($user);
@@ -368,7 +401,7 @@ try {
                     $targetMgwId = MgwIdGenerator::fromPublic($inviteeInput);
                     if ($targetMgwId !== null) {
                         if (!$socialInviteGuard instanceof SocialInviteGuard || !MgwIdGenerator::isValid($actorMgwId)) {
-                            throw new RuntimeException('Социальные приглашения временно недоступны.');
+                            throw new RuntimeException(mgw_invite_copy('server.invites.social_unavailable', [], 'Social invitations are temporarily unavailable.'));
                         }
                         $inviteeId = $socialInviteGuard->runtimeSubjectForMgwId($actorMgwId, $targetMgwId, $identityProvider);
                     } else {
@@ -378,12 +411,12 @@ try {
                         }
                     }
                     if ($inviteeId === '' || !isset($data['users'][$inviteeId]) || !is_array($data['users'][$inviteeId])) {
-                        throw new RuntimeException('Игрок больше недоступен.');
+                        throw new RuntimeException(mgw_invite_copy('server.invites.player_unavailable', [], 'The player is no longer available.'));
                     }
                     $invitee =& $data['users'][$inviteeId];
                     $core['invite'] = $invites->createDirect($data, $user, $invitee, $gameType, $room, $bet, $boardSize);
                     $core['recipient_id'] = $inviteeId;
-                    $core['recipient_name'] = (string)($core['invite']['invitee_name'] ?? 'Игрок');
+                    $core['recipient_name'] = (string)($core['invite']['invitee_name'] ?? mgw_invite_copy('server.invites.player_fallback', [], 'Player'));
                     $lastSeen = strtotime((string)($invitee['last_seen_at'] ?? '')) ?: 0;
                     $core['recipient_recently_active'] = $lastSeen > 0 && time() - $lastSeen <= 60;
                     break;
@@ -449,7 +482,7 @@ try {
                     break;
 
                 default:
-                    throw new RuntimeException('Неизвестное действие приглашения.');
+                    throw new RuntimeException(mgw_invite_copy('server.invites.unknown_action', [], 'Unknown invitation action.'));
             }
 
             $core['_bridge_invite_tokens'] = mgw_changed_invite_tokens(
@@ -528,7 +561,7 @@ try {
         $shareUrl = mgw_invite_share_url($config, $token);
         $telegramOpenUrl = mgw_invite_telegram_open_url($config, $token);
         if ($shareUrl === '' || $telegramOpenUrl === '') {
-            throw new RuntimeException('Не удалось подготовить Telegram-приглашение.');
+            throw new RuntimeException(mgw_invite_copy('server.invites.telegram_prepare_failed', [], 'The Telegram invitation could not be prepared.'));
         }
         $shareText = mgw_invite_share_text($result['invite']);
         $result['invite']['share_url'] = $shareUrl;
