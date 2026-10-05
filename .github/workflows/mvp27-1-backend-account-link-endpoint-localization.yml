@@ -1,0 +1,57 @@
+name: MVP-27.1 Backend Account Link Endpoint Localization
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/account-link.php'
+      - 'app/locales/ru.json'
+      - 'ops/checks/mvp27_1_backend_account_link_endpoint_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp27-1-backend-account-link-endpoint-localization.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-account-link-endpoint-localization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          php -l bot/account-link.php
+          php -l app/runtime/localization/LocalizationCatalog.php
+          node --check ops/checks/mvp27_1_backend_account_link_endpoint_localization_contract.mjs
+          node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Focused server localization proof
+        run: node ops/checks/mvp27_1_backend_account_link_endpoint_localization_contract.mjs
+
+      - name: Hardcoded player text ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head")"
+          allowed='^(bot/account-link\.php|app/locales/ru\.json|ops/checks/mvp27_1_backend_account_link_endpoint_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/mvp27-1-backend-account-link-endpoint-localization\.yml)$'
+          bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          test -z "$bad" || { printf 'Unexpected backend account-link localization paths:\n%s\n' "$bad" >&2; exit 1; }
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
