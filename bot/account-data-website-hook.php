@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/localization/ServerLocalization.php';
+
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('X-Content-Type-Options: nosniff');
@@ -42,16 +44,16 @@ try {
     mgw_account_data_hook_authorize($config, $body);
     $payload = json_decode($body, true);
     if (!is_array($payload)) {
-        json_response(['ok'=>false,'error'=>'Некорректный запрос.'], 400);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.account_data.website_hook.invalid_request', 'Invalid request.')], 400);
     }
 
     $mgwId = strtoupper(trim((string)($payload['mgw_id'] ?? '')));
     if (!MgwIdGenerator::isValid($mgwId)) {
-        json_response(['ok'=>false,'error'=>'Некорректный MGW-ID.'], 422);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.account_data.website_hook.invalid_mgw_id', 'Invalid MGW ID.')], 422);
     }
     $verificationRef = trim((string)($payload['verification_ref'] ?? ''));
     if ($verificationRef === '') {
-        json_response(['ok'=>false,'error'=>'Не передана подтверждённая website verification reference.'], 422);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.account_data.website_hook.verification_reference_required', 'A confirmed website verification reference was not provided.')], 422);
     }
     $hookSecret = trim((string)($config['account_data_website_hook_secret'] ?? ''));
     $verificationSourceRef = 'verified:' . hash_hmac(

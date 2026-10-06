@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class ShopCatalogService
 {
     private ?array $catalog = null;
@@ -51,7 +53,7 @@ final class ShopCatalogService
         $denominationId = trim($denominationId);
 
         if (!$this->isValidId($itemId) || !$this->isValidId($denominationId)) {
-            throw new RuntimeException('Некорректный выбор приза. Обновите магазин и попробуйте снова.');
+            throw new RuntimeException(ServerLocalization::copy('server.shop_catalog.invalid_prize', 'Invalid prize selection. Refresh the Store and try again.'));
         }
 
         $catalog = $this->catalog();
@@ -65,7 +67,7 @@ final class ShopCatalogService
         }
 
         if (!$selectedItem) {
-            throw new RuntimeException('Выбранный приз больше недоступен. Обновите магазин.');
+            throw new RuntimeException(ServerLocalization::copy('server.shop_catalog.prize_unavailable', 'The selected prize is no longer available. Refresh the Store.'));
         }
 
         $selectedDenomination = null;
@@ -77,7 +79,7 @@ final class ShopCatalogService
         }
 
         if (!$selectedDenomination) {
-            throw new RuntimeException('Выбранный номинал больше недоступен. Обновите магазин.');
+            throw new RuntimeException(ServerLocalization::copy('server.shop_catalog.denomination_unavailable', 'The selected denomination is no longer available. Refresh the Store.'));
         }
 
         return [

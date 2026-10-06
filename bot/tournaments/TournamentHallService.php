@@ -90,7 +90,7 @@ final class TournamentHallService
             }
             if (count($existing) !== 1
                 || (string)($existing[0]['registration_id'] ?? '') !== (string)$participant['registration_id']) {
-                throw new RuntimeException('Турнирный зал entry conflicts with the canonical registration.');
+                throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.hall.registration_conflict', 'Tournament Hall entry conflicts with the canonical registration.'));
             }
         });
 
@@ -160,7 +160,7 @@ final class TournamentHallService
             $tournament = $rows[0];
             if ((string)($tournament['active_slot'] ?? '') !== TournamentRegistrationService::ACTIVE_SLOT
                 || (string)($tournament['tournament_state'] ?? '') !== TournamentRegistrationService::STATE_SCHEDULED) {
-                throw new RuntimeException('Турнирный зал is available only for the active scheduled tournament.');
+                throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.hall.scheduled_only', 'Tournament Hall is available only for the active scheduled tournament.'));
             }
 
             $start = $this->scheduledStart($tournament);
@@ -481,7 +481,7 @@ final class TournamentHallService
         $accountRef = trim($accountRef);
         $legacyUserId = trim($legacyUserId);
         if ($mgwId === '' || $accountRef === '' || $legacyUserId === '') {
-            throw new RuntimeException('Турнирный зал requires canonical participant identity.');
+            throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.hall.participant_identity_required', 'Tournament Hall requires canonical participant identity.'));
         }
 
         $rows = $this->database->fetchAll(
@@ -529,7 +529,7 @@ final class TournamentHallService
         );
         if ($rows === []) return null;
         if (count($rows) !== 1 || !is_array($rows[0])) {
-            throw new RuntimeException('Турнирный зал participant state is ambiguous.');
+            throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.hall.participant_state_ambiguous', 'Tournament Hall participant state is ambiguous.'));
         }
         return $rows[0];
     }

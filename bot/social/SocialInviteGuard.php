@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 require_once __DIR__ . '/FriendGraphService.php';
 require_once dirname(__DIR__) . '/accounts/MgwIdGenerator.php';
 require_once dirname(__DIR__) . '/accounts/RuntimeAccountOwnershipService.php';
@@ -25,7 +27,7 @@ final class SocialInviteGuard
         $actorMgwId = strtoupper(trim($actorMgwId));
         $targetMgwId = strtoupper(trim($targetMgwId));
         if (!MgwIdGenerator::isValid($actorMgwId) || !MgwIdGenerator::isValid($targetMgwId)) {
-            throw new SocialInviteGuardException('Игрок MGW недоступен.');
+            throw new SocialInviteGuardException(ServerLocalization::copy('server.social_invite.mgw_player_unavailable', 'The MGW player is unavailable.'));
         }
         $this->assertNotBlocked($actorMgwId, $targetMgwId);
 
@@ -56,7 +58,7 @@ final class SocialInviteGuard
             ['mgw_id' => $targetMgwId, 'provider' => $this->normalizeProvider($provider)]
         );
         $subject = trim((string)($rows[0]['provider_subject'] ?? ''));
-        if ($subject === '') throw new SocialInviteGuardException('Игрок сейчас недоступен для приглашения.');
+        if ($subject === '') throw new SocialInviteGuardException(ServerLocalization::copy('server.social_invite.player_unavailable', 'The player is currently unavailable for invitations.'));
         return $subject;
     }
 
@@ -89,7 +91,7 @@ final class SocialInviteGuard
         // FriendGraphService::lookupExact is the canonical read boundary and
         // intentionally hides either block direction. Do not duplicate its SQL.
         if ($this->friends->lookupExact($actorMgwId, $targetMgwId) === null) {
-            throw new SocialInviteGuardException('Приглашение недоступно: игрок заблокирован или недоступен.');
+            throw new SocialInviteGuardException(ServerLocalization::copy('server.social_invite.blocked_or_unavailable', 'The invitation is unavailable because the player is blocked or unavailable.'));
         }
     }
 
@@ -102,7 +104,7 @@ final class SocialInviteGuard
     {
         $provider = strtolower(trim($provider));
         if (!in_array($provider, ['telegram', 'development'], true)) {
-            throw new SocialInviteGuardException('Платформа приглашения недоступна.');
+            throw new SocialInviteGuardException(ServerLocalization::copy('server.social_invite.platform_unavailable', 'The invitation platform is unavailable.'));
         }
         return $provider;
     }
