@@ -27,14 +27,18 @@ $assert = static function (bool $condition, string $message) use (&$assertions):
 };
 
 foreach ([
-    "'nickname' => 'Недопустимый никнейм'",
-    "'avatar' => 'Недопустимый аватар'",
-    "'spam' => 'Спам'",
-    "'cheating' => 'Нечестная игра'",
-    "'stalling' => 'Затягивание игры'",
-    "'other' => 'Другое'",
-] as $category) {
-    $assert(str_contains($reports, $category), 'Player reports must expose MVP-22.3 category: ' . $category);
+    'nickname' => 'Недопустимый никнейм',
+    'avatar' => 'Недопустимый аватар',
+    'spam' => 'Спам',
+    'cheating' => 'Нечестная игра',
+    'stalling' => 'Затягивание игры',
+    'other' => 'Другое',
+] as $reason => $copy) {
+    $assert(
+        str_contains($reports, "'{$reason}' => 'server.moderation.report_reasons.{$reason}'")
+            && (($locale['server']['moderation']['report_reasons'][$reason] ?? null) === $copy),
+        'Player reports must expose localized MVP-22.3 category: ' . $reason
+    );
 }
 $assert(
     str_contains($friendsUi, 'REPORT_REASON_CODES')
