@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/database/DatabaseConfig.php';
 require_once dirname(__DIR__) . '/storage/RuntimeStorageRouter.php';
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
 
 final class FeatureFlagService
 {
@@ -40,7 +41,7 @@ final class FeatureFlagService
         $message = trim((string)($this->flags()['maintenance_message'] ?? ''));
         return $message !== ''
             ? $message
-            : 'Идут технические работы. Mini Games World скоро вернётся.';
+            : ServerLocalization::copy('runtime_status.maintenance_default_full', 'Maintenance is in progress. Mini Games World will be back soon.');
     }
 
     public function financialReadOnly(): bool
@@ -67,35 +68,35 @@ final class FeatureFlagService
     public function newMatchBlockReason(?string $gameType = null): ?string
     {
         if ($this->maintenanceEnabled()) return $this->maintenanceMessage();
-        if (!$this->featureEnabled('matchmaking')) return 'Подбор соперников временно отключён.';
+        if (!$this->featureEnabled('matchmaking')) return ServerLocalization::copy('runtime_status.matchmaking_disabled', 'Matchmaking is temporarily disabled.');
         if ($this->financialReadOnly()) {
-            return 'Новые матчи временно недоступны. Уже начатые партии можно завершить.';
+            return ServerLocalization::copy('runtime_status.new_matches_read_only_full', 'New matches are temporarily unavailable. Active matches can be completed.');
         }
         if ($gameType !== null && $gameType !== '' && !$this->gameEnabled($gameType)) {
-            return 'Эта игра временно недоступна. Выберите другую игру.';
+            return ServerLocalization::copy('runtime_status.game_unavailable', 'This game is temporarily unavailable. Choose another game.');
         }
         return null;
     }
 
     public function invitationBlockReason(?string $gameType = null): ?string
     {
-        if (!$this->featureEnabled('invitations')) return 'Приглашения временно отключены.';
+        if (!$this->featureEnabled('invitations')) return ServerLocalization::copy('runtime_status.invitations_disabled', 'Invitations are temporarily disabled.');
         return $this->newMatchBlockReason($gameType);
     }
 
     public function paymentBlockReason(): ?string
     {
         if ($this->maintenanceEnabled()) return $this->maintenanceMessage();
-        if ($this->financialReadOnly()) return 'Финансовые операции временно переведены в режим только для чтения.';
-        if (!$this->featureEnabled('payments')) return 'Пополнение временно отключено.';
+        if ($this->financialReadOnly()) return ServerLocalization::copy('runtime_status.finance_read_only_full', 'Financial operations are temporarily read-only.');
+        if (!$this->featureEnabled('payments')) return ServerLocalization::copy('runtime_status.payments_disabled', 'Top-ups are temporarily disabled.');
         return null;
     }
 
     public function shopBlockReason(): ?string
     {
         if ($this->maintenanceEnabled()) return $this->maintenanceMessage();
-        if ($this->financialReadOnly()) return 'Финансовые операции временно переведены в режим только для чтения.';
-        if (!$this->featureEnabled('shop')) return 'Оформление заказов временно отключено.';
+        if ($this->financialReadOnly()) return ServerLocalization::copy('runtime_status.finance_read_only_full', 'Financial operations are temporarily read-only.');
+        if (!$this->featureEnabled('shop')) return ServerLocalization::copy('runtime_status.shop_disabled', 'Order placement is temporarily disabled.');
         return null;
     }
 
@@ -139,21 +140,21 @@ final class FeatureFlagService
     public function adminAlerts(): array
     {
         $alerts = [];
-        if ($this->maintenanceEnabled()) $alerts[] = 'Включён режим технических работ.';
-        if ($this->financialReadOnly()) $alerts[] = 'Финансовые операции работают только на чтение.';
+        if ($this->maintenanceEnabled()) $alerts[] = ServerLocalization::copy('server.feature_flags.admin.maintenance', 'Maintenance mode is enabled.');
+        if ($this->financialReadOnly()) $alerts[] = ServerLocalization::copy('server.feature_flags.admin.finance_read_only', 'Financial operations are read-only.');
 
         foreach (self::FEATURE_DEFAULTS as $feature => $default) {
             if ($default && !$this->featureEnabled($feature)) {
-                $alerts[] = 'Отключена функция: ' . $feature . '.';
+                $alerts[] = ServerLocalization::copy('server.feature_flags.admin.feature_disabled', 'Feature disabled: {feature}.', ['feature'=>$feature]);
             }
         }
         foreach (self::GAME_IDS as $gameType) {
-            if (!$this->gameEnabled($gameType)) $alerts[] = 'Отключена игра: ' . $gameType . '.';
+            if (!$this->gameEnabled($gameType)) $alerts[] = ServerLocalization::copy('server.feature_flags.admin.game_disabled', 'Game disabled: {game}.', ['game'=>$gameType]);
         }
 
         $databaseRuntime = new RuntimeStorageRouter($this->config);
         foreach ($databaseRuntime->enabledModules() as $module) {
-            $alerts[] = 'Тестовый DB runtime включён для модуля: ' . $module . '.';
+            $alerts[] = ServerLocalization::copy('server.feature_flags.admin.db_runtime_enabled', 'Test DB runtime is enabled for module: {module}.', ['module'=>$module]);
         }
 
         return $alerts;
