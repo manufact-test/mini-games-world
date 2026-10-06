@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 2) . '/localization/ServerLocalization.php';
+
 final class DominoService
 {
     private const HAND_SIZE = 7;
@@ -17,7 +19,7 @@ final class DominoService
     {
         $playerIds = array_values(array_map('strval', $game['player_ids'] ?? []));
         if (count($playerIds) < 2) {
-            throw new RuntimeException('Для домино нужны два игрока.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.domino.two_players', 'Domino requires two players.'));
         }
 
         if (!empty($game['domino_initialized'])
@@ -123,14 +125,14 @@ final class DominoService
     public function applyAction(array &$db, array &$user, string $gameId, array $action): array
     {
         if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
-            throw new RuntimeException('Игра не найдена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
         }
 
         $game =& $db['games'][$gameId];
         $this->initializeGame($game);
         $userId = (string)($user['id'] ?? '');
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
-            throw new RuntimeException('Вы не участник этой игры.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participant', 'You are not a participant in this game.'));
         }
         if (($game['status'] ?? '') !== 'active') return $game;
 
@@ -145,12 +147,12 @@ final class DominoService
         $this->resolveAutomaticPasses($db, $game);
         if (($game['status'] ?? '') !== 'active') return $game;
         if ((string)($game['turn'] ?? '') !== $userId) {
-            throw new RuntimeException('Сейчас ход соперника.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.opponent_turn', 'It is the opponent’s turn.'));
         }
 
         $type = trim((string)($action['type'] ?? 'play'));
         if ($type === 'draw') return $this->performDraw($db, $game, $userId);
-        if ($type !== 'play') throw new RuntimeException('Некорректное действие для домино.');
+        if ($type !== 'play') throw new RuntimeException(ServerLocalization::copy('server.game_runtime.domino.invalid_action', 'Invalid Domino action.'));
 
         $tile = trim((string)($action['tile'] ?? ''));
         $side = trim((string)($action['side'] ?? ''));
@@ -160,14 +162,14 @@ final class DominoService
     public function surrender(array &$db, array &$user, string $gameId): array
     {
         if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
-            throw new RuntimeException('Игра не найдена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
         }
 
         $game =& $db['games'][$gameId];
         $this->initializeGame($game);
         $userId = (string)($user['id'] ?? '');
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
-            throw new RuntimeException('Вы не участник этой игры.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participant', 'You are not a participant in this game.'));
         }
         if (($game['status'] ?? '') === 'finished') return $game;
 
@@ -193,7 +195,7 @@ final class DominoService
         foreach (array_values(array_map('strval', $game['player_ids'] ?? [])) as $playerId) {
             $players[] = [
                 'id' => $playerId,
-                'name' => (string)($game['player_names'][$playerId] ?? 'Игрок'),
+                'name' => (string)($game['player_names'][$playerId] ?? ServerLocalization::copy('server.invites.player_fallback', 'Player')),
                 'tile_count' => count($hands[$playerId] ?? []),
             ];
         }
@@ -215,7 +217,7 @@ final class DominoService
         return [
             'id' => (string)($game['id'] ?? ''),
             'room' => (string)($game['room'] ?? 'match'),
-            'room_name' => ($game['room'] ?? 'match') === 'gold' ? 'Gold-комната' : 'Матч-комната',
+            'room_name' => ($game['room'] ?? 'match') === 'gold' ? ServerLocalization::copy('acceptance_runtime.search.room_gold', 'Gold room') : ServerLocalization::copy('acceptance_runtime.search.room_match', 'Match room'),
             'bet' => (int)($game['bet'] ?? 0),
             'board_size' => 7,
             'board_columns' => 7,
@@ -261,17 +263,17 @@ final class DominoService
     ): array {
         $hand = array_values(array_map('strval', $game['domino_hands'][$playerId] ?? []));
         if (!in_array($tile, $hand, true)) {
-            throw new RuntimeException('Этой костяшки нет в вашей руке.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.domino.tile_not_in_hand', 'This tile is not in your hand.'));
         }
 
         $legalSides = $this->legalSides($tile, $game['domino_chain'] ?? []);
         if ($legalSides === []) {
-            throw new RuntimeException('Эта костяшка не подходит к открытым концам.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.domino.tile_not_playable', 'This tile does not match either open end.'));
         }
         if (count($legalSides) === 1) {
             $side = $legalSides[0];
         } elseif (!in_array($side, $legalSides, true)) {
-            throw new RuntimeException('Выберите левый или правый конец цепочки.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.domino.select_end', 'Select the left or right end of the chain.'));
         }
 
         $oriented = $this->orientedTile($tile, $side, $game['domino_chain'] ?? []);
@@ -332,7 +334,7 @@ final class DominoService
     {
         $hand = array_values(array_map('strval', $game['domino_hands'][$playerId] ?? []));
         if ($this->hasLegalPlay($hand, $game['domino_chain'] ?? [])) {
-            throw new RuntimeException('У вас уже есть подходящая костяшка.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.domino.playable_tile_exists', 'You already have a playable tile.'));
         }
 
         $stock =& $game['domino_stock'];
@@ -341,8 +343,8 @@ final class DominoService
             return $game;
         }
 
-        // Одна кнопка — одна костяшка. Игрок видит каждый добор отдельно
-        // и нажимает «Добрать» снова, пока не появится допустимый ход.
+        // One button press draws one tile. Each draw is shown separately
+        // and the player draws again until a legal move becomes available.
         $tile = (string)array_pop($stock);
         $hand[] = $tile;
         $game['domino_hands'][$playerId] = array_values($hand);
@@ -489,7 +491,7 @@ final class DominoService
                 }
             }
         }
-        if ($best === null) throw new RuntimeException('Не удалось определить первый ход.');
+        if ($best === null) throw new RuntimeException(ServerLocalization::copy('server.game_runtime.domino.first_move_failed', 'The first move could not be determined.'));
         return [$best['player_id'], $best['tile']];
     }
 
@@ -547,7 +549,7 @@ final class DominoService
             if ($b === $openRight) return [$b, $a];
         }
 
-        throw new RuntimeException('Эта костяшка не подходит к выбранному концу.');
+        throw new RuntimeException(ServerLocalization::copy('server.game_runtime.domino.tile_not_for_end', 'This tile does not match the selected end.'));
     }
 
     private function openEnds(array $chain): array
@@ -600,7 +602,7 @@ final class DominoService
     private function parseTile(string $tile): array
     {
         if (!preg_match('/^([0-6])-([0-6])$/', $tile, $matches)) {
-            throw new RuntimeException('Некорректная костяшка.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.domino.invalid_tile', 'Invalid tile.'));
         }
         return [(int)$matches[1], (int)$matches[2]];
     }
