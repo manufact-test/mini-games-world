@@ -64,18 +64,18 @@ final class PlayerReportService
         $reporterMgwId = $this->requireActiveUser($reporterMgwId);
         $targetMgwId = $this->requireActiveUser($targetMgwId);
         if ($reporterMgwId === $targetMgwId) {
-            throw new PlayerReportException('self_report', 'Нельзя отправить жалобу на свой профиль.');
+            throw new PlayerReportException('self_report', ServerLocalization::copy('server.moderation.errors.self_report', 'You cannot report your own profile.'));
         }
 
         $reason = strtolower(trim($reason));
         if (!isset(self::REASONS[$reason])) {
-            throw new PlayerReportException('invalid_reason', 'Выберите причину жалобы.');
+            throw new PlayerReportException('invalid_reason', ServerLocalization::copy('server.moderation.errors.invalid_reason', 'Choose a report reason.'));
         }
         $details = $this->boundedText($details, 800);
         $relatedMatchId = trim($relatedMatchId);
         if ($relatedMatchId !== '') {
             if (strlen($relatedMatchId) > 96 || !$this->matchContainsBothPlayers($relatedMatchId, $reporterMgwId, $targetMgwId)) {
-                throw new PlayerReportException('invalid_match', 'Связанный матч недоступен для этой жалобы.');
+                throw new PlayerReportException('invalid_match', ServerLocalization::copy('server.moderation.errors.invalid_match', 'The related match is unavailable for this report.'));
             }
         }
 
@@ -296,14 +296,14 @@ final class PlayerReportService
         $status = strtolower(trim($status));
         $adminRef = $this->boundedText($adminRef, 191);
         if ($reportId === '' || strlen($reportId) > 40 || !in_array($status, self::STATUSES, true)) {
-            throw new PlayerReportException('invalid_status', 'Некорректный статус жалобы.');
+            throw new PlayerReportException('invalid_status', ServerLocalization::copy('server.moderation.errors.invalid_status', 'Invalid report status.'));
         }
 
         $rows = $this->database->fetchAll(
             'SELECT status FROM mgw_player_reports WHERE report_id = :report_id',
             ['report_id' => $reportId]
         );
-        if ($rows === []) throw new PlayerReportException('report_not_found', 'Жалоба не найдена.');
+        if ($rows === []) throw new PlayerReportException('report_not_found', ServerLocalization::copy('server.moderation.errors.report_not_found', 'Report not found.'));
 
         $now = $this->timestamp();
         $parameters = [
@@ -350,7 +350,7 @@ final class PlayerReportService
         foreach ($this->queue(200, ['mode' => 'all']) as $report) {
             if ((string)$report['report_id'] === $reportId) return $report;
         }
-        throw new PlayerReportException('report_not_found', 'Жалоба не найдена.');
+        throw new PlayerReportException('report_not_found', ServerLocalization::copy('server.moderation.errors.report_not_found', 'Report not found.'));
     }
 
     private function lockReporterWriteScope(DatabaseConnectionInterface $database, string $reporterMgwId): void
@@ -360,7 +360,7 @@ final class PlayerReportService
             'SELECT mgw_id FROM mgw_users WHERE mgw_id = :mgw_id AND status = :status' . $lockClause,
             ['mgw_id' => $reporterMgwId, 'status' => 'active']
         );
-        if ($rows === []) throw new PlayerReportException('user_unavailable', 'Игрок MGW не найден.');
+        if ($rows === []) throw new PlayerReportException('user_unavailable', ServerLocalization::copy('server.moderation.errors.user_unavailable', 'MGW player was not found.'));
     }
 
     private function findRecentExactReplay(
@@ -415,13 +415,13 @@ final class PlayerReportService
     {
         $mgwId = strtoupper(trim($mgwId));
         if (!MgwIdGenerator::isValid($mgwId)) {
-            throw new PlayerReportException('user_unavailable', 'Игрок MGW не найден.');
+            throw new PlayerReportException('user_unavailable', ServerLocalization::copy('server.moderation.errors.user_unavailable', 'MGW player was not found.'));
         }
         $rows = $this->database->fetchAll(
             'SELECT mgw_id FROM mgw_users WHERE mgw_id = :mgw_id AND status = :status',
             ['mgw_id' => $mgwId, 'status' => 'active']
         );
-        if ($rows === []) throw new PlayerReportException('user_unavailable', 'Игрок MGW не найден.');
+        if ($rows === []) throw new PlayerReportException('user_unavailable', ServerLocalization::copy('server.moderation.errors.user_unavailable', 'MGW player was not found.'));
         return $mgwId;
     }
 
