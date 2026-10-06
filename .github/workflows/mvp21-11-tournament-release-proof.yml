@@ -74,7 +74,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-tournament-player-runtime-localization-* ]]; then
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-tournament-player-runtime-localization-* || "${{ github.head_ref }}" == agent/mvp27-1-backend-baseline-player-localization-bundle-* ]]; then
             node ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs
             node ops/checks/mvp27_1_hardcoded_text_audit.mjs
           else

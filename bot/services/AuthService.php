@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/StagingTestAuthService.php';
 require_once dirname(__DIR__) . '/accounts/AndroidDeviceAuthService.php';
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
 
 final class AuthService
 {
@@ -12,7 +13,7 @@ final class AuthService
     {
         $user = $this->validateTelegramInitData($initData);
         if (!is_array($user)) {
-            throw new RuntimeException('Откройте панель через Telegram.');
+            throw new RuntimeException(ServerLocalization::copy('server.auth.telegram_panel_required', 'Open the panel through Telegram.'));
         }
 
         return $this->finishAuthenticatedUser($user, '', $attachIdentity);
@@ -58,14 +59,14 @@ final class AuthService
             }
             return $this->finishAuthenticatedUser([
                 'id' => $devId,
-                'first_name' => 'Тестовый игрок',
+                'first_name' => ServerLocalization::copy('server.auth.test_player', 'Test player'),
                 'username' => 'test_' . preg_replace('/\D+/', '', $devId),
                 'language_code' => 'ru',
                 'is_dev_user' => true,
             ], $sessionId, $attachIdentity);
         }
 
-        throw new RuntimeException('Откройте приложение через Telegram.');
+        throw new RuntimeException(ServerLocalization::copy('server.auth.telegram_app_required', 'Open the app through Telegram.'));
     }
 
     private function finishAuthenticatedUser(array $user, string $sessionId, bool $attachIdentity): array
@@ -89,9 +90,9 @@ final class AuthService
             return false;
         }
 
-        // На публичном домене тестовых пользователей создавать нельзя:
-        // один и тот же человек с телефона и браузера будет считаться разными игроками.
-        // Dev-режим оставляем только для localhost или при явном force_browser_dev_user=true.
+        // Test users must never be created on the public domain:
+        // otherwise the same person on a phone and in a browser would become two different players.
+        // Keep dev mode only for localhost or when force_browser_dev_user=true is explicitly set.
         if (!empty($this->config['force_browser_dev_user'])) {
             return true;
         }
