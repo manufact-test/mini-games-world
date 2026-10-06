@@ -2,12 +2,12 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-06",
-  "staging_base": "1da726623102d54b078bf3fe6ce76cd47ce181a4",
-  "scanned_files": 655,
-  "cyrillic_lines_total": 589,
+  "staging_base": "34baadda9695b12961b53ee33f31ef7a528beba3",
+  "scanned_files": 636,
+  "cyrillic_lines_total": 385,
   "by_scope": {
     "client": 0,
-    "backend": 589,
+    "backend": 385,
     "client-entry": 0
   },
   "excluded": [
@@ -68,7 +68,8 @@
     "shadowed historical game-screen-v98 (screens/game-screen-v98.js; sole direct owner is production-v98-ui-owner.js, itself confined to production-regression-fix-entry-v98.js on historical app/v98.php; factual v110 does not load it)",
     "classified residual historical/orphan client owners (stripped main.js; invite-terminal-actions-v115 only through stripped main; orphan invite-terminal-actions-v110r12; historical production-v106-timer-mobile; historical production-v98-passive-session-transport; orphan notification-bell-first-click-v116)",
     "final historical/orphan client owners (api/request-guard.js; main-v102.js; main-v103.js; main-v104.js; main-v105.js; main-v120-invite-controller-shell.js; production-v99-invite-picker-hold.js; screens/notification-bell-first-click-v115.js; screens/search-screen.js)",
-    "post-#2085 backend non-player classification bundle: direct Web Admin endpoints; Compensation; AntiFraud; System Admin/feature-flag administration; operational analytics; staging-only test-coin and tournament manual-acceptance owners; Admin notification bridges; Support admin Telegram notifier (259 lines total)"
+    "post-#2085 backend non-player classification bundle: direct Web Admin endpoints; Compensation; AntiFraud; System Admin/feature-flag administration; operational analytics; staging-only test-coin and tournament manual-acceptance owners; Admin notification bridges; Support admin Telegram notifier (259 lines total)",
+    "MVP-27.1 deterministic bot/baseline behavior+latency harness: 19 PHP fixture/scenario files are test/proof-only and not referenced by production app/bot runtime; 146 Cyrillic lines classified out"
   ],
-  "note": "MVP-27.1 post-#2085 ownership classification removed 259 proven Admin/control-plane/staging/operator-only backend Cyrillic lines from the player-facing localization ratchet. No runtime/product/localized visible copy changed; active player-facing backend debt continues from 589."
+  "note": "MVP-27.1 baseline/player backend bundle classified 146 deterministic behavior-baseline fixture lines out of player runtime and moved 58 active backend Cyrillic lines across FeatureFlag, Session, Auth, PlayerReport, TournamentRegistration, SupportTicket and ShopOrderHistory into canonical ru.json ownership. Visible RU copy and runtime semantics are preserved."
 }
