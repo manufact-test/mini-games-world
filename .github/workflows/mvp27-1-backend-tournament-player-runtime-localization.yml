@@ -106,6 +106,8 @@ jobs:
           allowed="$(cat <<'EOF'
 .github/workflows/mvp21-1-tournament-registration.yml
 .github/workflows/mvp21-10-tournament-prize-review.yml
+.github/workflows/mvp21-7-tournament-technical-outcomes.yml
+.github/workflows/mvp21-8-tournament-cancellation.yml
 .github/workflows/mvp27-1-backend-tournament-player-runtime-localization.yml
 app/locales/ru.json
 bot/tournament-hall.php

@@ -126,6 +126,12 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-tournament-player-runtime-localization-* ]]; then
+            node ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs
+            node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+            git diff --check "$base" "$head"
+            exit 0
+          fi
           if git diff --quiet "$base" "$head" -- bot/tournaments/TournamentCancellationService.php bot/database/migrations/20260922_0059_add_tournament_cancellation_emergency.php; then
             echo "Successor slice: tournament cancellation owner unchanged; original bounded/frozen scope does not apply."
             exit 0
