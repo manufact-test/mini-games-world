@@ -381,7 +381,7 @@ final class SupportTicketService
 
         $mode = strtolower(trim((string)($filters['mode'] ?? 'active')));
         if (!in_array($mode, ['active', 'processed', 'all'], true)) {
-            throw new SupportTicketException('invalid_filter', 'Некорректный режим очереди.');
+            throw new SupportTicketException('invalid_filter', ServerLocalization::copy('server.support.errors.invalid_queue_mode', 'Invalid queue mode.'));
         }
         if ($mode === 'active') {
             $where[] = "status_code NOT IN ('resolved','closed')";
@@ -393,7 +393,7 @@ final class SupportTicketService
             $value = strtolower(trim((string)($filters[$key] ?? '')));
             if ($value === '') continue;
             if (!isset($allowed[$value])) {
-                throw new SupportTicketException('invalid_filter', 'Некорректный фильтр очереди.');
+                throw new SupportTicketException('invalid_filter', ServerLocalization::copy('server.support.errors.invalid_queue_filter', 'Invalid queue filter.'));
             }
             $column = match ($key) {
                 'status' => 'status_code',
@@ -429,13 +429,13 @@ final class SupportTicketService
 
     public function setStatus(string $ticketRef, string $status, string $actorRef): array
     {
-        $status = $this->enum($status, self::STATUS_LABELS, 'invalid_status', 'Некорректный статус обращения.');
+        $status = $this->enum($status, self::STATUS_LABELS, 'invalid_status', ServerLocalization::copy('server.support.errors.invalid_status_admin', 'Invalid ticket status.'));
         return $this->changeScalar($ticketRef, 'status_code', $status, 'status_changed', $actorRef);
     }
 
     public function setPriority(string $ticketRef, string $priority, string $actorRef): array
     {
-        $priority = $this->enum($priority, self::PRIORITY_LABELS, 'invalid_priority', 'Некорректный приоритет обращения.');
+        $priority = $this->enum($priority, self::PRIORITY_LABELS, 'invalid_priority', ServerLocalization::copy('server.support.errors.invalid_priority_admin', 'Invalid ticket priority.'));
         return $this->changeScalar($ticketRef, 'priority_code', $priority, 'priority_changed', $actorRef);
     }
 
@@ -490,7 +490,7 @@ final class SupportTicketService
     ): array {
         $ticket = $this->findTicket($ticketRef);
         if ((string)$ticket['status_code'] === 'closed') {
-            throw new SupportTicketException('ticket_closed', 'Сначала откройте обращение заново.');
+            throw new SupportTicketException('ticket_closed', ServerLocalization::copy('server.support.errors.reopen_required', 'Reopen the ticket first.'));
         }
         $message = $this->requiredMessage($message);
         $preparedAttachments = $this->prepareAttachments($attachments);
