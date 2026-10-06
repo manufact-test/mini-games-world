@@ -80,7 +80,8 @@ try {
     $statsOwner = file_get_contents(dirname(__DIR__, 2) . '/app/assets/js/stats-owner-v110.js');
     $assert(is_string($client)
         && str_contains($client, 'const presenceLeaseId = createPresenceLeaseId();')
-        && str_contains($client, '// Presence transport starts before the profile bootstrap.')
+        && str_contains($client, 'startPresence();')
+        && str_contains($client, 'export function waitForV110InitialPresence()')
         && str_contains($client, "window.addEventListener('pagehide'")
         && str_contains($client, 'if (!event.persisted) sendLeaveBeacon();'),
         'The client must create a document lease before bootstrap and leave only on a real document exit.');
