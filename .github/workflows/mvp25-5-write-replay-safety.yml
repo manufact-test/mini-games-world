@@ -100,7 +100,7 @@ jobs:
             bad=()
             while IFS= read -r file; do
               case "$file" in
-                .github/workflows/mvp25-5-write-replay-safety.yml|.github/workflows/mvp27-1-backend-support-player-runtime-localization.yml|app/locales/ru.json|bot/support.php|bot/support-attachment-download.php|bot/support/SupportNotificationBridge.php|bot/support/SupportTicketService.php|ops/checks/mvp27_1_backend_moderation_player_runtime_localization_contract.mjs|ops/checks/mvp27_1_backend_support_player_runtime_localization_contract.mjs|ops/checks/mvp27_1_hardcoded_text_baseline.json)
+                .github/workflows/mvp25-5-write-replay-safety.yml|.github/workflows/mvp26-6-android-product-parity.yml|.github/workflows/mvp27-1-backend-support-player-runtime-localization.yml|app/locales/ru.json|bot/support.php|bot/support-attachment-download.php|bot/support/SupportNotificationBridge.php|bot/support/SupportTicketService.php|ops/checks/mvp27_1_backend_moderation_player_runtime_localization_contract.mjs|ops/checks/mvp27_1_backend_support_player_runtime_localization_contract.mjs|ops/checks/mvp27_1_hardcoded_text_baseline.json)
                   ;;
                 *)
                   bad+=("$file")
