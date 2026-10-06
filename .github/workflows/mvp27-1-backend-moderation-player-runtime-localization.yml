@@ -13,6 +13,7 @@ on:
       - '.github/workflows/mvp18-2-friends-ui.yml'
       - '.github/workflows/mvp25-5-write-replay-safety.yml'
       - 'ops/checks/mvp27_1_backend_moderation_player_runtime_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - '.github/workflows/mvp27-1-backend-moderation-player-runtime-localization.yml'
 
@@ -79,6 +80,7 @@ jobs:
           bot/social/PlayerReportService.php
           bot/tests/Mvp22_3ModerationContractTest.php
           ops/checks/mvp27_1_backend_moderation_player_runtime_localization_contract.mjs
+          ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs
           ops/checks/mvp27_1_hardcoded_text_baseline.json
           EOF
           )"
