@@ -53,6 +53,8 @@ initStoreAvatarSelection();
 // main, and main owns api.bootstrap(). Dependencies are therefore resolved only
 // after the authoritative app-ready signal has already been dispatched.
 let storeAvatarSaving = false;
+let storeAvatarQueuedIntent = null;
+let storeAvatarConfirmedItemId = '';
 let storeAvatarObserver = null;
 let storeAvatarDecorateScheduled = false;
 let storeAvatarRuntime = null;
@@ -319,45 +321,114 @@ function handleStoreAvatarSelection(event){
   const selectedItemId = String(runtime.state.selectedAvatarId || '').trim();
   const remove = itemId !== '' && itemId === selectedItemId && itemId !== DEFAULT_AVATAR_ITEM_ID;
   const nextItemId = remove ? DEFAULT_AVATAR_ITEM_ID : itemId;
-  if (!nextItemId || action.disabled || storeAvatarSaving || (!remove && itemId === selectedItemId)) return;
+  if (!nextItemId || action.disabled || (!remove && itemId === selectedItemId)) return;
 
   const fromProfileSheet = action.id === 'mgwAvatarEquip' && action.closest('#sheet');
   if (!fromProfileSheet && !(action.closest('.store-v2-product.owned') instanceof HTMLElement)) return;
   void selectOwnedStoreAvatar(nextItemId, { removed:remove, closePreview:Boolean(fromProfileSheet) });
 }
 
-async function selectOwnedStoreAvatar(itemId, { removed = false, closePreview = false } = {}){
+function selectOwnedStoreAvatar(itemId, { removed = false, closePreview = false } = {}){
   const runtime = storeAvatarRuntime;
-  if (!runtime || storeAvatarSaving) return;
-  const { api, state, toast, renderUser, haptic, mergeCanonicalMgwUser, closeSheet } = runtime;
-  const previousSelectedAvatarId = state.selectedAvatarId;
-  storeAvatarSaving = true;
-  state.selectedAvatarId = itemId;
-  decorateStoreAvatarCards();
+  if (!runtime || !itemId) return;
+  const { state, renderUser, haptic, closeSheet } = runtime;
+
+  if (!storeAvatarSaving) {
+    storeAvatarConfirmedItemId = String(state.selectedAvatarId || DEFAULT_AVATAR_ITEM_ID).trim() || DEFAULT_AVATAR_ITEM_ID;
+  }
+
+  storeAvatarQueuedIntent = { itemId, removed:Boolean(removed) };
+  applyStoreAvatarOptimistic(itemId);
   if (state.user) renderUser(state.user);
   haptic('light');
   if (closePreview) closeSheet();
 
+  if (!storeAvatarSaving) void drainStoreAvatarSelectionQueue();
+}
+
+function applyStoreAvatarOptimistic(itemId){
+  const runtime = storeAvatarRuntime;
+  if (!runtime) return;
+  const { state, mergeCanonicalMgwUser } = runtime;
+  state.selectedAvatarId = itemId;
+
+  if (state.mgwProfile && typeof state.mgwProfile === 'object') {
+    state.mgwProfile = {
+      ...state.mgwProfile,
+      avatar:{
+        ...(state.mgwProfile.avatar && typeof state.mgwProfile.avatar === 'object' ? state.mgwProfile.avatar : {}),
+        item_id:itemId,
+      },
+    };
+    state.user = mergeCanonicalMgwUser(state.user, {}, state.mgwProfile);
+  }
+  decorateStoreAvatarCards();
+}
+
+function restoreStoreAvatarConfirmed(){
+  const runtime = storeAvatarRuntime;
+  if (!runtime) return;
+  const { state, mergeCanonicalMgwUser, renderUser } = runtime;
+  const itemId = String(storeAvatarConfirmedItemId || DEFAULT_AVATAR_ITEM_ID).trim() || DEFAULT_AVATAR_ITEM_ID;
+  state.selectedAvatarId = itemId;
+  if (state.mgwProfile && typeof state.mgwProfile === 'object') {
+    state.mgwProfile = {
+      ...state.mgwProfile,
+      avatar:{
+        ...(state.mgwProfile.avatar && typeof state.mgwProfile.avatar === 'object' ? state.mgwProfile.avatar : {}),
+        item_id:itemId,
+      },
+    };
+    state.user = mergeCanonicalMgwUser(state.user, {}, state.mgwProfile);
+  }
+  decorateStoreAvatarCards();
+  if (state.user) renderUser(state.user);
+}
+
+async function drainStoreAvatarSelectionQueue(){
+  const runtime = storeAvatarRuntime;
+  if (!runtime || storeAvatarSaving) return;
+  const { api, state, toast, renderUser, haptic, mergeCanonicalMgwUser } = runtime;
+  storeAvatarSaving = true;
+
   try {
-    const result = await api.profileV2({ avatar_item_id:itemId });
-    const confirmedItemId = String(result?.profile?.avatar?.item_id || result?.user?.avatar_item_id || '').trim();
-    if (confirmedItemId !== itemId) throw new Error(t('store.profile_selection.avatar.errors.unconfirmed'));
-    state.mgwProfile = result?.profile || state.mgwProfile;
-    state.profileInventory = result?.inventory || state.profileInventory;
-    state.user = mergeCanonicalMgwUser(state.user, result?.user || {}, state.mgwProfile);
-    state.selectedAvatarId = confirmedItemId;
-    decorateStoreAvatarCards();
-    if (state.user) renderUser(state.user);
-    haptic('success');
-    toast(removed ? t('store.profile_selection.avatar.toast.removed') : t('store.profile_selection.avatar.toast.selected'));
-  } catch (error) {
-    state.selectedAvatarId = previousSelectedAvatarId;
-    decorateStoreAvatarCards();
-    if (state.user) renderUser(state.user);
-    haptic('error');
-    toast(error?.message || (removed ? t('store.profile_selection.avatar.errors.remove') : t('store.profile_selection.avatar.errors.select')));
+    while (storeAvatarQueuedIntent) {
+      const intent = storeAvatarQueuedIntent;
+      storeAvatarQueuedIntent = null;
+
+      try {
+        const result = await api.profileV2({ avatar_item_id:intent.itemId });
+        const confirmedItemId = String(result?.profile?.avatar?.item_id || result?.user?.avatar_item_id || '').trim();
+        if (confirmedItemId !== intent.itemId) throw new Error(t('store.profile_selection.avatar.errors.unconfirmed'));
+
+        storeAvatarConfirmedItemId = confirmedItemId;
+        state.mgwProfile = result?.profile || state.mgwProfile;
+        state.profileInventory = result?.inventory || state.profileInventory;
+        state.user = mergeCanonicalMgwUser(state.user, result?.user || {}, state.mgwProfile);
+        state.selectedAvatarId = confirmedItemId;
+
+        const pending = storeAvatarQueuedIntent;
+        if (pending?.itemId) applyStoreAvatarOptimistic(pending.itemId);
+        else decorateStoreAvatarCards();
+
+        if (state.user) renderUser(state.user);
+        if (!pending) {
+          haptic('success');
+          toast(intent.removed ? t('store.profile_selection.avatar.toast.removed') : t('store.profile_selection.avatar.toast.selected'));
+        }
+      } catch (error) {
+        if (storeAvatarQueuedIntent?.itemId) {
+          applyStoreAvatarOptimistic(storeAvatarQueuedIntent.itemId);
+          continue;
+        }
+        restoreStoreAvatarConfirmed();
+        haptic('error');
+        toast(error?.message || (intent.removed ? t('store.profile_selection.avatar.errors.remove') : t('store.profile_selection.avatar.errors.select')));
+      }
+    }
   } finally {
     storeAvatarSaving = false;
+    storeAvatarConfirmedItemId = '';
   }
 }
 
