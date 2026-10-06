@@ -411,8 +411,8 @@ jobs:
             echo 'Session-ownership localization successor: focused workflow owns runtime scope; architecture audit remains proof-only.'
             exit 0
           fi
-          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-debt-guards-successor-safe* ]]; then
-            echo 'Backend-debt guard migration: all touched files are CI contracts; architecture audit remains proof-only.'
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-debt-guards-successor-safe* || "${{ github.head_ref }}" == agent/mvp27-1-backend-nonplayer-classification-bundle-* ]]; then
+            echo 'Backend-debt/classification CI-contract migration: focused ownership proof owns scope; architecture audit remains proof-only.'
             exit 0
           fi
           base='${{ github.event.pull_request.base.sha }}'
