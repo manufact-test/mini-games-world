@@ -21,6 +21,7 @@ $manifest = $read('app/runtime/client/version-manifest.php');
 $manifestData = require $root . '/app/runtime/client/version-manifest.php';
 $bridge = $read('bot/tournaments/TournamentParticipantNotificationBridge.php');
 $locale = json_decode($read('app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
+$runtimeTournamentNotifications = $locale['server']['tournament_runtime']['notifications'] ?? [];
 
 $assert(
     str_contains($tournaments, "t('arena.card.start_local')")
@@ -33,9 +34,10 @@ $assert(str_contains($admin, 'по времени этого устройств�
         && !str_contains($admin, "timeZoneName:'short'"),
     'Admin schedule copy must show local device time without GMT suffix.');
 
-$assert(str_contains($bridge, 'ваше местное время')
+$assert(str_contains($bridge, "ServerLocalization::copy('server.tournament_runtime.notifications.scheduled_text'")
+        && (($runtimeTournamentNotifications['scheduled_text'] ?? null) === '«{title}»: дата и время турнира назначены. Откройте раздел турниров — там показаны ваше местное время и точный обратный отсчёт.')
         && !str_contains($bridge, '$start->format(\'d.m.Y H:i\') . \' UTC\''),
-    'New schedule-assigned bell copy must not expose canonical UTC as the participant clock.');
+    'New schedule-assigned bell copy must stay locale-owned and must not expose canonical UTC as the participant clock.');
 
 $assert(str_contains($notifications, 'localizeLegacyTournamentAssignedMessage')
         && str_contains($notifications, "t('notifications.tournament_local_time'")
