@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
 require_once __DIR__ . '/../runtime/UnifiedGameZonePolicy.php';
 
@@ -124,7 +126,7 @@ final class GameService
             return null;
         }
 
-        // Боты подключаются только в Match-комнате. В Gold-комнате — только живые игроки.
+        // Bots join only Match rooms. Gold rooms remain human-only.
         if (($queueItem['room'] ?? 'match') !== 'match') {
             return null;
         }
@@ -138,7 +140,7 @@ final class GameService
         $bet = (int)($queueItem['bet'] ?? ($this->config['match_bet'] ?? 10));
         $boardSize = (int)($queueItem['board_size'] ?? 3);
 
-        // Перед ботом ещё раз пытаемся найти живого соперника с такими же условиями.
+        // Before falling back to a bot, try once more to find a human opponent with the same terms.
         $opponentIndex = $this->findHumanOpponentIndex($db, $userId, $room, $bet, $boardSize);
         if ($opponentIndex !== null) {
             $opponentItem = $db['queue'][$opponentIndex];
@@ -171,7 +173,7 @@ final class GameService
 
         $balanceKey = UnifiedBalanceRuntimeState::FIELD;
         if ((int)($user[$balanceKey] ?? 0) < $bet) {
-            throw new RuntimeException('Недостаточно коинов для участия.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.insufficient_entry', 'Not enough coins to enter.'));
         }
 
         if (($user['status'] ?? 'idle') === 'playing' && !empty($user['current_game_id'])) {
@@ -183,7 +185,7 @@ final class GameService
 
         $userId = (string)$user['id'];
 
-        // Один пользователь — одна запись в очереди.
+        // One user may own only one queue entry.
         $db['queue'] = array_values(array_filter(
             $db['queue'] ?? [],
             fn($item) => (string)($item['user_id'] ?? '') !== $userId
@@ -243,14 +245,14 @@ final class GameService
     public function surrenderGame(array &$db, array &$user, string $gameId): array
     {
         if (!isset($db['games'][$gameId])) {
-            throw new RuntimeException('Игра не найдена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
         }
 
         $game =& $db['games'][$gameId];
         $userId = (string)$user['id'];
 
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
-            throw new RuntimeException('Вы не участник этой игры.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participant', 'You are not a participant in this game.'));
         }
 
         if (($game['status'] ?? '') === 'finished') {
@@ -258,7 +260,7 @@ final class GameService
         }
 
         if (($game['status'] ?? '') !== 'active') {
-            throw new RuntimeException('Игра уже не активна.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_active', 'The game is no longer active.'));
         }
 
         $winnerId = $this->otherPlayerId($game, $userId);
@@ -280,7 +282,7 @@ final class GameService
     public function makeMove(array &$db, array &$user, string $gameId, int $cell): array
     {
         if (!isset($db['games'][$gameId])) {
-            throw new RuntimeException('Игра не найдена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
         }
 
         $game =& $db['games'][$gameId];
@@ -298,7 +300,7 @@ final class GameService
 
         $userId = (string)$user['id'];
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
-            throw new RuntimeException('Вы не участник этой игры.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participant', 'You are not a participant in this game.'));
         }
 
         if ($this->isBotId((string)($game['turn'] ?? ''))) {
@@ -306,17 +308,17 @@ final class GameService
         }
 
         if ((string)($game['turn'] ?? '') !== $userId) {
-            throw new RuntimeException('Сейчас не ваш ход.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_your_turn', 'It is not your turn.'));
         }
 
         $board = (string)$game['board'];
         if ($cell < 0 || $cell >= strlen($board) || $board[$cell] !== '-') {
-            throw new RuntimeException('Клетка недоступна.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.cell_unavailable', 'This cell is unavailable.'));
         }
 
         $symbol = $game['symbols'][$userId] ?? null;
         if (!$symbol) {
-            throw new RuntimeException('Вы не участник этой игры.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participant', 'You are not a participant in this game.'));
         }
 
         $board[$cell] = $symbol;
@@ -348,7 +350,7 @@ final class GameService
         foreach ($game['player_ids'] as $playerId) {
             $players[] = [
                 'id' => (string)$playerId,
-                'name' => $game['player_names'][(string)$playerId] ?? 'Игрок',
+                'name' => $game['player_names'][(string)$playerId] ?? ServerLocalization::copy('server.invites.player_fallback', 'Player'),
                 'symbol' => $game['symbols'][(string)$playerId] ?? '?',
             ];
         }
@@ -362,7 +364,7 @@ final class GameService
         return [
             'id' => $game['id'],
             'room' => $game['room'],
-            'room_name' => $game['room'] === 'gold' ? 'Gold-комната' : 'Матч-комната',
+            'room_name' => $game['room'] === 'gold' ? ServerLocalization::copy('acceptance_runtime.search.room_gold', 'Gold room') : ServerLocalization::copy('acceptance_runtime.search.room_match', 'Match room'),
             'bet' => (int)$game['bet'],
             'board_size' => (int)$game['board_size'],
             'board' => $game['board'],
@@ -461,7 +463,7 @@ final class GameService
             if ($currentGameId !== '' && $currentGameId !== $gameId) {
                 $current = $db['games'][$currentGameId] ?? null;
                 if (is_array($current) && (string)($current['status'] ?? '') === 'active') {
-                    throw new RuntimeException('Игрок уже участвует в другом активном матче.');
+                    throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.active_match_conflict', 'The player is already in another active match.'));
                 }
             }
         }
@@ -564,13 +566,13 @@ final class GameService
 
         $db['games'][$gameId] = $game;
 
-        $this->addBalanceChange($db, $a, 'game_entry', $room, -$bet, $gameId, 'Участие в матче против ' . $this->playerNameForHistory($game, $bId), [
+        $this->addBalanceChange($db, $a, 'game_entry', $room, -$bet, $gameId, ServerLocalization::copy('server.game_runtime.economy.entry_description', 'Match entry against {opponent}', ['opponent' => $this->playerNameForHistory($game, $bId)]), [
             'opponent_id' => $bId,
             'opponent_name' => $this->playerNameForHistory($game, $bId),
             'board_size' => $boardSize,
             'is_bot_game' => false,
         ]);
-        $this->addBalanceChange($db, $b, 'game_entry', $room, -$bet, $gameId, 'Участие в матче против ' . $this->playerNameForHistory($game, $aId), [
+        $this->addBalanceChange($db, $b, 'game_entry', $room, -$bet, $gameId, ServerLocalization::copy('server.game_runtime.economy.entry_description', 'Match entry against {opponent}', ['opponent' => $this->playerNameForHistory($game, $aId)]), [
             'opponent_id' => $aId,
             'opponent_name' => $this->playerNameForHistory($game, $aId),
             'board_size' => $boardSize,
@@ -596,7 +598,7 @@ final class GameService
         if ((int)($user[$balanceKey] ?? 0) < $bet) {
             $user['status'] = 'idle';
             $user['current_game_id'] = null;
-            throw new RuntimeException('Недостаточно коинов для участия.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.insufficient_entry', 'Not enough coins to enter.'));
         }
 
         $user[$balanceKey] = (int)($user[$balanceKey] ?? 0) - $bet;
@@ -642,7 +644,7 @@ final class GameService
 
         $db['games'][$gameId] = $game;
 
-        $this->addBalanceChange($db, $user, 'game_entry', 'match', -$bet, $gameId, 'Участие в матче против ' . $botProfile['name'], [
+        $this->addBalanceChange($db, $user, 'game_entry', 'match', -$bet, $gameId, ServerLocalization::copy('server.game_runtime.economy.entry_description', 'Match entry against {opponent}', ['opponent' => (string)$botProfile['name']]), [
             'opponent_id' => $botId,
             'opponent_name' => $botProfile['name'],
             'board_size' => $boardSize,
@@ -667,8 +669,8 @@ final class GameService
 
     private function finishGame(array &$db, array &$game, ?string $winnerId, ?string $reason = null, ?string $loserId = null): void
     {
-        // Железобетонная защита от повторных начислений по одному и тому же матчу.
-        // Даже если будущая правка случайно повторно вызовет finishGame(), деньги второй раз не начислятся.
+        // Hard guard against duplicate settlement for the same match.
+        // Even if a future change calls finishGame() again, the balance must not settle twice.
         if (!empty($game['payout_done'])) {
             $game['status'] = 'finished';
             $game['updated_at'] = now_iso();
@@ -710,7 +712,7 @@ final class GameService
                 $pid = (string)$playerId;
                 if (isset($db['users'][$pid])) {
                     $db['users'][$pid][$balanceKey] = (int)($db['users'][$pid][$balanceKey] ?? 0) + $bet;
-                    $this->addBalanceChange($db, $db['users'][$pid], 'game_refund', $room, $bet, (string)$game['id'], 'Возврат коинов при ничьей', [
+                    $this->addBalanceChange($db, $db['users'][$pid], 'game_refund', $room, $bet, (string)$game['id'], ServerLocalization::copy('server.game_runtime.economy.draw_refund', 'Coin refund for a draw'), [
                         'finish_reason' => 'draw',
                         'is_bot_game' => $isBotGame,
                     ]);
@@ -724,7 +726,7 @@ final class GameService
 
             if (isset($db['users'][$winnerId])) {
                 $db['users'][$winnerId][$balanceKey] = (int)($db['users'][$winnerId][$balanceKey] ?? 0) + $payout;
-                $this->addBalanceChange($db, $db['users'][$winnerId], 'game_win', $room, $payout, (string)$game['id'], 'Выигрыш за матч', [
+                $this->addBalanceChange($db, $db['users'][$winnerId], 'game_win', $room, $payout, (string)$game['id'], ServerLocalization::copy('server.game_runtime.economy.match_win', 'Match winnings'), [
                     'finish_reason' => $reason,
                     'loser_id' => $loserId,
                     'commission' => $commission,
@@ -838,7 +840,7 @@ final class GameService
 
     private function playerNameForHistory(array $game, string $playerId): string
     {
-        return (string)($game['player_names'][$playerId] ?? ($playerId !== '' ? $playerId : 'Соперник'));
+        return (string)($game['player_names'][$playerId] ?? ($playerId !== '' ? $playerId : ServerLocalization::copy('server.game_runtime.common.opponent_fallback', 'Opponent')));
     }
 
     private function updateBotStats(array &$user, ?string $winnerId, string $humanId): void
