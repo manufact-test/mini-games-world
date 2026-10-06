@@ -1,0 +1,180 @@
+name: MVP-27.1 Backend Game Runtime Localization
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/services/GameService.php'
+      - 'bot/games/battleship/BattleshipService.php'
+      - 'bot/games/domino/DominoService.php'
+      - 'bot/games/chess/ChessService.php'
+      - 'bot/services/GameActionService.php'
+      - 'bot/services/GameReactionService.php'
+      - 'bot/games/go/GoService.php'
+      - 'bot/games/checkers/CheckersService.php'
+      - 'bot/games/reversi/ReversiService.php'
+      - 'bot/services/FourInARowService.php'
+      - 'bot/game-watch.php'
+      - 'bot/game-clock.php'
+      - 'bot/services/PresenceService.php'
+      - 'bot/services/MatchPreparationClockService.php'
+      - 'bot/game-live-v108.php'
+      - 'bot/games/checkers/CheckersBotService.php'
+      - 'bot/services/GameSettlementService.php'
+      - 'bot/services/ReconnectLifecycleService.php'
+      - 'bot/services/ChessRuntimeService.php'
+      - 'bot/services/GameRuntimeService.php'
+      - 'bot/runtime/UnifiedGameZonePolicy.php'
+      - 'bot/games/chess/ChessBotService.php'
+      - 'bot/games/reversi/ReversiBotService.php'
+      - 'bot/services/BotProfilePolicy.php'
+      - 'bot/services/GameCatalogService.php'
+      - 'app/locales/ru.json'
+      - 'ops/checks/mvp27_1_backend_game_runtime_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp27-1-backend-game-runtime-localization.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-game-runtime-localization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Exact accepted staging baseline
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test '${{ github.event.pull_request.base.sha }}' = '5743abcc6b1a08ab8a62699d27918a8248d00795'
+
+      - name: Syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            bot/services/GameService.php
+            bot/games/battleship/BattleshipService.php
+            bot/games/domino/DominoService.php
+            bot/games/chess/ChessService.php
+            bot/services/GameActionService.php
+            bot/services/GameReactionService.php
+            bot/games/go/GoService.php
+            bot/games/checkers/CheckersService.php
+            bot/games/reversi/ReversiService.php
+            bot/services/FourInARowService.php
+            bot/game-watch.php
+            bot/game-clock.php
+            bot/services/PresenceService.php
+            bot/services/MatchPreparationClockService.php
+            bot/game-live-v108.php
+            bot/games/checkers/CheckersBotService.php
+            bot/services/GameSettlementService.php
+            bot/services/ReconnectLifecycleService.php
+            bot/services/ChessRuntimeService.php
+            bot/services/GameRuntimeService.php
+            bot/runtime/UnifiedGameZonePolicy.php
+            bot/games/chess/ChessBotService.php
+            bot/games/reversi/ReversiBotService.php
+            bot/services/BotProfilePolicy.php
+            bot/services/GameCatalogService.php
+          )
+          for file in "${files[@]}"; do php -l "$file"; done
+          php -l bot/localization/ServerLocalization.php
+          php -l app/runtime/localization/LocalizationCatalog.php
+          node --check ops/checks/mvp27_1_backend_game_runtime_localization_contract.mjs
+          node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
+          node -e "JSON.parse(require('fs').readFileSync('app/locales/ru.json','utf8'))"
+
+      - name: Focused game-runtime localization proof
+        run: node ops/checks/mvp27_1_backend_game_runtime_localization_contract.mjs
+
+      - name: Preserve canonical game and bot semantics
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp14r2GamesContractTest.php
+          php bot/tests/Mvp167AllGamesRegressionContractTest.php
+          php bot/tests/Mvp17_3BotOpacityIntegrationContractTest.php
+          php bot/tests/GamePublicIdentityResponseProjectionTest.php
+          php bot/tests/ProductionV102BattleshipServerActionRuntimeTest.php
+          php bot/tests/ProductionV110BattleshipReadyResetContractTest.php
+          php bot/tests/ProductionV110BattleshipRootCauseContractTest.php
+
+      - name: Preserve action, reaction and endpoint semantics
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp19_3ProfileReactionsTest.php
+          php bot/tests/PhaseBReadOnlyGameWatchContractTest.php
+          php bot/tests/PhaseBGameClockWriterDemotionContractTest.php
+          php bot/tests/ProductionV108AuthoritativeLiveRuntimeContractTest.php
+          php bot/tests/GameWatchCanonicalIdentityProjectionTest.php
+
+      - name: Preserve preparation, presence and reconnect semantics
+        run: |
+          set -euo pipefail
+          php bot/tests/GameLaunchFinalizationServiceTest.php
+          php bot/tests/PhaseBMatchPreparationClockServiceTest.php
+          php bot/tests/PhaseBPreparationTimeoutSettlementTest.php
+          php bot/tests/PresenceServiceDocumentLeaseAcceptanceTest.php
+          php bot/tests/ProductionV104PresenceRuntimeTest.php
+          php bot/tests/Mvp17_4ReconnectLifecycleTest.php
+          php bot/tests/Mvp17_4ReconnectResumeRegressionTest.php
+
+      - name: Hardcoded player text ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded scope
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-backend-game-runtime-localization-')
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head" | sort)"
+          allowed="$(cat <<'EOF'
+bot/services/GameService.php
+bot/games/battleship/BattleshipService.php
+bot/games/domino/DominoService.php
+bot/games/chess/ChessService.php
+bot/services/GameActionService.php
+bot/services/GameReactionService.php
+bot/games/go/GoService.php
+bot/games/checkers/CheckersService.php
+bot/games/reversi/ReversiService.php
+bot/services/FourInARowService.php
+bot/game-watch.php
+bot/game-clock.php
+bot/services/PresenceService.php
+bot/services/MatchPreparationClockService.php
+bot/game-live-v108.php
+bot/games/checkers/CheckersBotService.php
+bot/services/GameSettlementService.php
+bot/services/ReconnectLifecycleService.php
+bot/services/ChessRuntimeService.php
+bot/services/GameRuntimeService.php
+bot/runtime/UnifiedGameZonePolicy.php
+bot/games/chess/ChessBotService.php
+bot/games/reversi/ReversiBotService.php
+bot/services/BotProfilePolicy.php
+bot/services/GameCatalogService.php
+app/locales/ru.json
+ops/checks/mvp27_1_backend_game_runtime_localization_contract.mjs
+ops/checks/mvp27_1_hardcoded_text_baseline.json
+.github/workflows/mvp27-1-backend-game-runtime-localization.yml
+EOF
+)"
+          bad="$(comm -23 <(printf '%s\n' "$changed") <(printf '%s\n' "$allowed" | sort) || true)"
+          test -z "$bad" || { printf 'Unexpected game-runtime localization paths:\n%s\n' "$bad" >&2; exit 1; }
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
