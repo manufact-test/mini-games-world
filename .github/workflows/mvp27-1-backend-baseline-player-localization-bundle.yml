@@ -1,0 +1,97 @@
+name: MVP-27.1 Backend Baseline + Player Localization Bundle
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/locales/ru.json'
+      - 'bot/services/FeatureFlagService.php'
+      - 'bot/services/SessionService.php'
+      - 'bot/services/AuthService.php'
+      - 'bot/social/PlayerReportService.php'
+      - 'bot/tournaments/TournamentRegistrationService.php'
+      - 'bot/support/SupportTicketService.php'
+      - 'bot/services/ShopOrderHistoryService.php'
+      - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - 'ops/checks/mvp27_1_backend_nonplayer_classification_contract.mjs'
+      - 'ops/checks/mvp27_1_backend_baseline_player_localization_bundle_contract.mjs'
+      - '.github/workflows/mvp27-1-localization-audit.yml'
+      - '.github/workflows/mvp27-1-backend-baseline-player-localization-bundle.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  backend-baseline-player-localization:
+    if: startsWith(github.head_ref, 'agent/mvp27-1-backend-baseline-player-localization-bundle-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Exact accepted staging base
+        run: test '${{ github.event.pull_request.base.sha }}' = '34baadda9695b12961b53ee33f31ef7a528beba3'
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
+          node --check ops/checks/mvp27_1_backend_nonplayer_classification_contract.mjs
+          node --check ops/checks/mvp27_1_backend_baseline_player_localization_bundle_contract.mjs
+          python3 -m json.tool app/locales/ru.json >/dev/null
+          python3 -m json.tool ops/checks/mvp27_1_hardcoded_text_baseline.json >/dev/null
+          for file in             bot/services/FeatureFlagService.php             bot/services/SessionService.php             bot/services/AuthService.php             bot/social/PlayerReportService.php             bot/tournaments/TournamentRegistrationService.php             bot/support/SupportTicketService.php             bot/services/ShopOrderHistoryService.php; do
+            php -l "$file"
+          done
+
+      - name: Preserve predecessor backend classification proof
+        run: node ops/checks/mvp27_1_backend_nonplayer_classification_contract.mjs
+
+      - name: Baseline ownership and active copy proof
+        run: node ops/checks/mvp27_1_backend_baseline_player_localization_bundle_contract.mjs
+
+      - name: Player-facing hardcoded text ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Preserve deterministic baseline harness
+        run: bash ops/checks/mvp14r2-json-baseline-local.sh
+
+      - name: Focused runtime regressions
+        run: |
+          set -euo pipefail
+          php bot/tests/FeatureFlagServiceTest.php
+          php bot/tests/SessionServiceRegressionTest.php
+          php bot/tests/Mvp14R3CleanAuthSessionPresenceTest.php
+          php bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
+          php bot/tests/Mvp21_1TournamentRegistrationTest.php
+          php bot/tests/SupportTicketServiceTest.php
+          php bot/tests/ProductionMvp14D3ShopHistoryPrefetchAbortContractTest.php
+
+      - name: Bounded bundle scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head" | sort)"
+          allowed="$(printf '%s\n'             '.github/workflows/mvp27-1-backend-baseline-player-localization-bundle.yml'             '.github/workflows/mvp27-1-localization-audit.yml'             'app/locales/ru.json'             'bot/services/AuthService.php'             'bot/services/FeatureFlagService.php'             'bot/services/SessionService.php'             'bot/services/ShopOrderHistoryService.php'             'bot/social/PlayerReportService.php'             'bot/support/SupportTicketService.php'             'bot/tournaments/TournamentRegistrationService.php'             'ops/checks/mvp27_1_backend_baseline_player_localization_bundle_contract.mjs'             'ops/checks/mvp27_1_backend_nonplayer_classification_contract.mjs'             'ops/checks/mvp27_1_hardcoded_text_audit.mjs'             'ops/checks/mvp27_1_hardcoded_text_baseline.json')"
+          bad="$(comm -23 <(printf '%s\n' "$changed") <(printf '%s\n' "$allowed" | sort) || true)"
+          test -z "$bad" || { printf 'Unexpected bundle paths:\n%s\n' "$bad" >&2; exit 1; }
+          git diff --check "$base" "$head"
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
