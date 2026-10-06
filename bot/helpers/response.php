@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 // API/browser requests must never leak PHP warnings/notices into the JSON body.
 // They remain available in the server error log. Keep CLI diagnostics unchanged.
 if (PHP_SAPI !== 'cli') {
@@ -22,7 +24,12 @@ function json_response(array $data, int $status = 200): void {
     if ($json === false) {
         http_response_code(500);
         error_log('[MiniGamesWorld public response] JSON encoding failed: ' . json_last_error_msg());
-        $json = '{"ok":false,"error":"Не удалось выполнить действие. Попробуйте ещё раз."}';
+        $fallbackMessage = ServerLocalization::copy('server.response.generic_failed', 'The action could not be completed. Try again.');
+        $json = json_encode(
+            ['ok'=>false,'error'=>$fallbackMessage],
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
+        );
+        if ($json === false) $json = '{"ok":false,"error":"The action could not be completed. Try again."}';
     }
 
     echo $json;
@@ -339,12 +346,12 @@ function mgw_normalize_api_data(array $data): array {
     $data = mgw_run_api_data_filters($data);
     $data = mgw_project_canonical_game_identity($data);
 
-    if ((string)($data['message'] ?? '') === 'Заявка на пополнение создана. Баланс не изменён.') {
-        $data['message'] = 'Баланс изменится после подтверждения администратором.';
+    if ((string)($data['message'] ?? '') === ServerLocalization::copy('server.response.payment_created_balance_unchanged', 'Top-up request created. Balance unchanged.')) {
+        $data['message'] = ServerLocalization::copy('server.response.balance_after_admin', 'The balance will change after administrator confirmation.');
     }
 
     if (isset($data['payments']['message']) && is_string($data['payments']['message'])) {
-        $data['payments']['message'] = 'Баланс изменится после подтверждения администратором.';
+        $data['payments']['message'] = ServerLocalization::copy('server.response.balance_after_admin', 'The balance will change after administrator confirmation.');
     }
 
     if (isset($data['payments']['recent_payments']) && is_array($data['payments']['recent_payments'])) {
@@ -367,15 +374,15 @@ function mgw_normalize_api_data(array $data): array {
     // настоящих одинаковых заказа в одну секунду не схлопнулись в один.
     $groups = [];
     foreach ($operations as $index => $item) {
-        if (!is_array($item) || (string)($item['title'] ?? '') !== 'Заказ приза') {
+        if (!is_array($item) || (string)($item['title'] ?? '') !== ServerLocalization::copy('server.response.legacy.prize_order', 'Prize order')) {
             continue;
         }
 
         $description = (string)($item['description'] ?? '');
         $kind = null;
-        if (str_starts_with($description, 'Заказ приза:')) {
+        if (str_starts_with($description, ServerLocalization::copy('server.response.legacy.prize_order_prefix', 'Prize order:'))) {
             $kind = 'financial';
-        } elseif (str_starts_with($description, 'Магазин призов ·')) {
+        } elseif (str_starts_with($description, ServerLocalization::copy('server.response.legacy.prize_store_prefix', 'Prize Store ·'))) {
             $kind = 'technical';
         }
 
@@ -416,12 +423,12 @@ function mgw_normalize_api_data(array $data): array {
             continue;
         }
 
-        if ((string)($item['title'] ?? '') === 'Операция баланса'
-            && (string)($item['description'] ?? '') === 'Первые коины в Матч-комнате') {
-            $item['title'] = 'Стартовый бонус';
+        if ((string)($item['title'] ?? '') === ServerLocalization::copy('server.response.legacy.balance_operation', 'Balance operation')
+            && (string)($item['description'] ?? '') === ServerLocalization::copy('server.response.legacy.first_match_coins', 'First coins in the Match room')) {
+            $item['title'] = ServerLocalization::copy('server.response.legacy.starter_bonus', 'Starter bonus');
         }
 
-        if ((string)($item['title'] ?? '') !== 'Заказ приза') {
+        if ((string)($item['title'] ?? '') !== ServerLocalization::copy('server.response.legacy.prize_order', 'Prize order')) {
             continue;
         }
 
@@ -466,11 +473,11 @@ function mgw_run_api_success_hooks(): void {
 function mgw_public_api_error(string $message): string {
     $message = trim($message);
     if ($message === '') {
-        return 'Не удалось выполнить действие. Попробуйте ещё раз.';
+        return ServerLocalization::copy('server.response.generic_failed', 'The action could not be completed. Try again.');
     }
 
     $technical = preg_match(
-        '/(?:Runtime module|runtime storage|projection|parity|DB-primary|database(?:\\s+fingerprint|\\s+snapshot)?|state fingerprint|Production atomic|SQLSTATE|PDO|stack trace|internal contract|JSON snapshot|snapshot capability|transactional runtime storage|canonical(?:\\s+MGW)?\\s+account identity|канонич[^|]*account identity|request token|unexpected game|persisted|unknown_action|settlement|idempotent|backend|frontend|provider subject|Tournament\\s+(?:balance result|pair|launch|game)|\\bStaging\\b|\\bAPI\\b|\\bHTTP\\b)/i',
+        '/(?:Runtime module|runtime storage|projection|parity|DB-primary|database(?:\\s+fingerprint|\\s+snapshot)?|state fingerprint|Production atomic|SQLSTATE|PDO|stack trace|internal contract|JSON snapshot|snapshot capability|transactional runtime storage|canonical(?:\\s+MGW)?\\s+account identity|\xD0\xBA\xD0\xB0\xD0\xBD\xD0\xBE\xD0\xBD\xD0\xB8\xD1\x87[^|]*account identity|request token|unexpected game|persisted|unknown_action|settlement|idempotent|backend|frontend|provider subject|Tournament\\s+(?:balance result|pair|launch|game)|\\bStaging\\b|\\bAPI\\b|\\bHTTP\\b)/i',
         $message
     ) === 1;
 
@@ -481,7 +488,7 @@ function mgw_public_api_error(string $message): string {
     $incident = substr(hash('sha256', $message . '|' . microtime(true)), 0, 10);
     error_log('[MiniGamesWorld public error ' . $incident . '] ' . $message);
 
-    return 'Не удалось выполнить действие. Попробуйте ещё раз.';
+    return ServerLocalization::copy('server.response.generic_failed', 'The action could not be completed. Try again.');
 }
 
 function api_ok(array $data = []): void {
