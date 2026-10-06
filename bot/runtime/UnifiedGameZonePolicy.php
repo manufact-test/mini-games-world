@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class UnifiedGameZonePolicy
 {
     private const STORAGE_ROOM = 'match';
@@ -22,13 +24,13 @@ final class UnifiedGameZonePolicy
     public static function assertInviteWritable(array $invite): void
     {
         if (strtolower(trim((string)($invite['room'] ?? self::STORAGE_ROOM))) === 'gold') {
-  throw new RuntimeException('Старое Gold-приглашение доступно только в архиве. Создайте новое приглашение.');
+  throw new RuntimeException(ServerLocalization::copy('server.game_runtime.legacy_zone.archived_gold_invite', 'The legacy Gold invitation is archive-only. Create a new invitation.'));
         }
     }
 
     public static function legacyArchiveMessage(): string
     {
-        return 'Legacy Match/Gold операции доступны только для просмотра. Новые операции отключены.';
+        return ServerLocalization::copy('server.game_runtime.legacy_zone.read_only', 'Legacy Match/Gold operations are read-only. New operations are disabled.');
     }
 
     public static function rejectLegacyCommerceWrite(): never
