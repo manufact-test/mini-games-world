@@ -7,6 +7,7 @@ header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
 
 require __DIR__ . '/core/bootstrap.php';
+require_once __DIR__ . '/localization/ServerLocalization.php';
 require_once __DIR__ . '/support/SupportTicketService.php';
 require_once __DIR__ . '/support/SupportTelegramNotifier.php';
 require_once __DIR__ . '/services/UserActionRateLimiter.php';
@@ -48,20 +49,20 @@ try {
 
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) {
-        json_response(['ok' => false, 'error' => 'Некорректный запрос.'], 400);
+        json_response(['ok' => false, 'error' => ServerLocalization::copy('server.support.endpoint.invalid_request', 'Invalid request.')], 400);
     }
 
     $authenticatedUser = (new AuthService($config))->getUserFromRequest($payload);
     $mgwId = trim((string)($authenticatedUser['mgw_id'] ?? ''));
     if (!MgwIdGenerator::isValid($mgwId)) {
-        json_response(['ok' => false, 'error' => 'Профиль MGW недоступен для этой сессии.'], 401);
+        json_response(['ok' => false, 'error' => ServerLocalization::copy('server.support.endpoint.profile_unavailable', 'The MGW profile is unavailable for this session.')], 401);
     }
 
     $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
     $router = new RuntimeStorageRouter($config);
     if (!$databaseConfig->enabled()
         || ($router->enabled() && $router->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE)) {
-        json_response(['ok' => false, 'error' => 'Поддержка MGW временно недоступна.'], 503);
+        json_response(['ok' => false, 'error' => ServerLocalization::copy('server.support.endpoint.unavailable', 'MGW Support is temporarily unavailable.')], 503);
     }
 
     $database = PdoConnectionFactory::create($databaseConfig);
@@ -143,24 +144,24 @@ try {
         }
 
         if ($action !== 'snapshot') {
-            json_response(['ok' => false, 'error' => 'Некорректное действие поддержки.'], 400);
+            json_response(['ok' => false, 'error' => ServerLocalization::copy('server.support.endpoint.invalid_action', 'Invalid support action.')], 400);
         }
 
         json_response([
             'ok' => true,
             'action' => 'snapshot',
             'tickets' => $service->userSnapshot($mgwId, 50),
-            'categories' => SupportTicketService::CATEGORY_LABELS,
-            'priorities' => SupportTicketService::PRIORITY_LABELS,
-            'statuses' => SupportTicketService::STATUS_LABELS,
-            'platforms' => SupportTicketService::PLATFORM_LABELS,
+            'categories' => SupportTicketService::categoryLabels(),
+            'priorities' => SupportTicketService::priorityLabels(),
+            'statuses' => SupportTicketService::statusLabels(),
+            'platforms' => SupportTicketService::platformLabels(),
         ]);
     } catch (UserActionRateLimitException $error) {
         header('Retry-After: ' . $error->retryAfterSec);
         json_response([
             'ok'=>false,
             'code'=>'rate_limited',
-            'error'=>'Слишком много обращений. Попробуйте немного позже.',
+            'error'=>ServerLocalization::copy('server.support.endpoint.rate_limited', 'Too many support requests. Try again a little later.'),
         ], 429);
     } catch (SupportTicketException $error) {
         json_response([
@@ -171,5 +172,5 @@ try {
     }
 } catch (Throwable $error) {
     error_log('[MiniGamesWorld support] ' . $error->getMessage());
-    json_response(['ok' => false, 'error' => 'Не удалось обработать обращение в поддержку.'], 500);
+    json_response(['ok' => false, 'error' => ServerLocalization::copy('server.support.endpoint.failed', 'The support request could not be processed.')], 500);
 }
