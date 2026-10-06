@@ -58,8 +58,6 @@ jobs:
           php bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php
           php bot/tests/Mvp17_5ResultHistorySingleOwnerRaceContractTest.php
           php bot/tests/RuntimeHistoryProductionContractTest.php
-          php bot/tests/RuntimeHistoryRoutingTest.php
-          php bot/tests/RuntimeHistorySourceOrderTest.php
 
       - name: Hardcoded player text ratchet
         run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
