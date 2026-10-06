@@ -49,7 +49,18 @@ if(run.status!==0){
 }
 const auditOut=String(run.stdout||'');
 function metric(name,{required=true,missing=0}={}){
-  const m=auditOut.match(new RegExp('^'+name+'=(\\d+)
+  const m=auditOut.match(new RegExp('^'+name+'=(\\d+)$','m'));
+  if(!m){
+    assert(!required,'Missing audit metric '+name);
+    return missing;
+  }
+  return Number(m[1]);
+}
+assert(metric('MVP27_1_SCANNED_FILES')===636,'Fresh audit scan count drifted from 636.');
+assert(metric('MVP27_1_CYRILLIC_LINES_TOTAL')===385,'Fresh audit total drifted from 385.');
+assert(metric('MVP27_1_CYRILLIC_LINES_BACKEND')===385,'Fresh backend debt drifted from 385.');
+assert(metric('MVP27_1_CYRILLIC_LINES_CLIENT',{required:false})===0,'Client debt regressed.');
+assert(metric('MVP27_1_CYRILLIC_LINES_CLIENT_ENTRY',{required:false})===0,'Client-entry debt regressed.');
 
 const start=auditOut.indexOf('MVP27_1_TOP_FILES_BEGIN');
 const end=auditOut.indexOf('MVP27_1_TOP_FILES_END');
