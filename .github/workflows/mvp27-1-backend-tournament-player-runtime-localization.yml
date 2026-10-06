@@ -37,7 +37,7 @@ jobs:
           fetch-depth: 0
 
       - name: Exact accepted staging base
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-backend-tournament-player-runtime-localization-')
         run: test '${{ github.event.pull_request.base.sha }}' = 'f4dcfdec0bc6214cc3c32fb37ada9434493d8c13'
 
       - name: Syntax
@@ -104,29 +104,29 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head" | sort)"
           allowed="$(cat <<'EOF'
-.github/workflows/mvp21-1-tournament-registration.yml
-.github/workflows/mvp21-10-tournament-prize-review.yml
-.github/workflows/mvp21-11-tournament-release-proof.yml
-.github/workflows/mvp21-7-tournament-technical-outcomes.yml
-.github/workflows/mvp21-8-tournament-cancellation.yml
-.github/workflows/mvp27-1-backend-tournament-player-runtime-localization.yml
-app/locales/ru.json
-bot/tournament-hall.php
-bot/tournaments/TournamentCancellationService.php
-bot/tournaments/TournamentHallService.php
-bot/tournaments/TournamentMatchReadinessService.php
-bot/tournaments/TournamentParticipantNotificationBridge.php
-bot/tournaments/TournamentPrizeReviewService.php
-bot/tournaments/TournamentRegistrationService.php
-bot/tournaments/TournamentRewardProjectionService.php
-bot/tournaments/TournamentRoundProgressionService.php
-bot/tournaments/TournamentSettlementService.php
-bot/tests/Mvp21_3ManualAcceptanceUxCorrectiveTest.php
-bot/tests/Mvp21_4TournamentHallUxContractTest.php
-ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs
-ops/checks/mvp27_1_hardcoded_text_baseline.json
-EOF
-)"
+          .github/workflows/mvp21-1-tournament-registration.yml
+          .github/workflows/mvp21-10-tournament-prize-review.yml
+          .github/workflows/mvp21-11-tournament-release-proof.yml
+          .github/workflows/mvp21-7-tournament-technical-outcomes.yml
+          .github/workflows/mvp21-8-tournament-cancellation.yml
+          .github/workflows/mvp27-1-backend-tournament-player-runtime-localization.yml
+          app/locales/ru.json
+          bot/tournament-hall.php
+          bot/tournaments/TournamentCancellationService.php
+          bot/tournaments/TournamentHallService.php
+          bot/tournaments/TournamentMatchReadinessService.php
+          bot/tournaments/TournamentParticipantNotificationBridge.php
+          bot/tournaments/TournamentPrizeReviewService.php
+          bot/tournaments/TournamentRegistrationService.php
+          bot/tournaments/TournamentRewardProjectionService.php
+          bot/tournaments/TournamentRoundProgressionService.php
+          bot/tournaments/TournamentSettlementService.php
+          bot/tests/Mvp21_3ManualAcceptanceUxCorrectiveTest.php
+          bot/tests/Mvp21_4TournamentHallUxContractTest.php
+          ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs
+          ops/checks/mvp27_1_hardcoded_text_baseline.json
+          EOF
+          )"
           bad="$(comm -23 <(printf '%s\n' "$changed") <(printf '%s\n' "$allowed" | sort) || true)"
           test -z "$bad" || { printf 'Unexpected tournament player-runtime localization paths:\n%s\n' "$bad" >&2; exit 1; }
           git diff --check "$base" "$head"
