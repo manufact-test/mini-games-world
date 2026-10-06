@@ -17,21 +17,21 @@ try {
 
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) {
-        json_response(['ok'=>false,'error'=>'Некорректный запрос.'], 400);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.moderation.endpoint.invalid_request', 'Invalid request.')], 400);
     }
 
     $configRef = $config;
     $authenticatedUser = (new AuthService($configRef))->getUserFromRequest($payload);
     $mgwId = strtoupper(trim((string)($authenticatedUser['mgw_id'] ?? '')));
     if (!MgwIdGenerator::isValid($mgwId)) {
-        json_response(['ok'=>false,'error'=>'Профиль MGW недоступен для этой сессии.'], 401);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.moderation.endpoint.profile_unavailable', 'The MGW profile is unavailable for this session.')], 401);
     }
 
     $databaseConfig = DatabaseConfig::fromApplicationConfig($configRef);
     $router = new RuntimeStorageRouter($configRef);
     if (!$databaseConfig->enabled()
         || ($router->enabled() && $router->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE)) {
-        json_response(['ok'=>false,'error'=>'Модерация временно недоступна.'], 503);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.moderation.endpoint.unavailable', 'Moderation is temporarily unavailable.')], 503);
     }
 
     $service = new ModerationService(PdoConnectionFactory::create($databaseConfig));
@@ -51,7 +51,7 @@ try {
     }
 
     if ($action !== 'snapshot') {
-        json_response(['ok'=>false,'error'=>'Некорректное действие модерации.'], 400);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.moderation.endpoint.invalid_action', 'Invalid moderation action.')], 400);
     }
 
     json_response([
@@ -68,5 +68,5 @@ try {
     json_response(['ok'=>false,'code'=>$error->reason,'error'=>mgw_public_api_error($error->getMessage())], $status);
 } catch (Throwable $error) {
     error_log('[MiniGamesWorld moderation] ' . $error->getMessage());
-    json_response(['ok'=>false,'error'=>'Не удалось загрузить данные модерации.'], 500);
+    json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.moderation.endpoint.load_failed', 'Moderation data could not be loaded.')], 500);
 }

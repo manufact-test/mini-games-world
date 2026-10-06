@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/accounts/MgwIdGenerator.php';
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
 
 final class PlayerReportException extends RuntimeException
 {
@@ -14,23 +15,44 @@ final class PlayerReportException extends RuntimeException
 final class PlayerReportService
 {
     public const REASONS = [
-        'nickname' => 'Недопустимый никнейм',
-        'avatar' => 'Недопустимый аватар',
-        'spam' => 'Спам',
-        'cheating' => 'Нечестная игра',
-        'stalling' => 'Затягивание игры',
-        'other' => 'Другое',
+        'nickname' => 'server.moderation.report_reasons.nickname',
+        'avatar' => 'server.moderation.report_reasons.avatar',
+        'spam' => 'server.moderation.report_reasons.spam',
+        'cheating' => 'server.moderation.report_reasons.cheating',
+        'stalling' => 'server.moderation.report_reasons.stalling',
+        'other' => 'server.moderation.report_reasons.other',
     ];
 
     private const LEGACY_REASON_LABELS = [
-        'abuse' => 'Оскорбления или травля',
-        'offensive_profile' => 'Недопустимый профиль',
+        'abuse' => 'server.moderation.report_reasons.abuse',
+        'offensive_profile' => 'server.moderation.report_reasons.offensive_profile',
     ];
 
     public const STATUSES = ['open', 'reviewing', 'closed'];
     private const SUBMIT_REPLAY_WINDOW_SECONDS = 120;
 
     public function __construct(private DatabaseConnectionInterface $database) {}
+
+    private static function reasonLabel(string $reason): string
+    {
+        $key = self::REASONS[$reason] ?? self::LEGACY_REASON_LABELS[$reason] ?? null;
+        if (!is_string($key)) return $reason;
+        return ServerLocalization::copy($key, match ($reason) {
+            'nickname' => 'Invalid nickname',
+            'avatar' => 'Invalid avatar',
+            'spam' => 'Spam',
+            'cheating' => 'Cheating',
+            'stalling' => 'Stalling',
+            'abuse' => 'Abuse or harassment',
+            'offensive_profile' => 'Offensive profile',
+            default => 'Other',
+        });
+    }
+
+    private static function playerFallback(): string
+    {
+        return ServerLocalization::copy('server.moderation.player_fallback', 'Player');
+    }
 
     public function submit(
         string $reporterMgwId,
@@ -129,9 +151,9 @@ final class PlayerReportService
             return [
                 'report_id' => (string)($row['report_id'] ?? ''),
                 'target_public_mgw_id' => MgwIdGenerator::toPublic((string)($row['target_mgw_id'] ?? '')),
-                'target_nickname' => (string)($row['target_nickname'] ?? 'Игрок'),
+                'target_nickname' => (string)($row['target_nickname'] ?? self::playerFallback()),
                 'reason' => $reason,
-                'reason_label' => self::REASONS[$reason] ?? self::LEGACY_REASON_LABELS[$reason] ?? $reason,
+                'reason_label' => self::reasonLabel($reason),
                 'details' => (string)($row['details'] ?? ''),
                 'status' => (string)($row['status'] ?? 'open'),
                 'created_at' => (string)($row['created_at_utc'] ?? ''),
@@ -252,12 +274,12 @@ final class PlayerReportService
             'report_id' => (string)($row['report_id'] ?? ''),
             'reporter_mgw_id' => (string)($row['reporter_mgw_id'] ?? ''),
             'reporter_public_mgw_id' => MgwIdGenerator::toPublic((string)$row['reporter_mgw_id']),
-            'reporter_nickname' => (string)($row['reporter_nickname'] ?? 'Игрок'),
+            'reporter_nickname' => (string)($row['reporter_nickname'] ?? self::playerFallback()),
             'target_mgw_id' => (string)($row['target_mgw_id'] ?? ''),
             'target_public_mgw_id' => MgwIdGenerator::toPublic((string)$row['target_mgw_id']),
-            'target_nickname' => (string)($row['target_nickname'] ?? 'Игрок'),
+            'target_nickname' => (string)($row['target_nickname'] ?? self::playerFallback()),
             'reason' => $reason,
-            'reason_label' => self::REASONS[$reason] ?? self::LEGACY_REASON_LABELS[$reason] ?? $reason,
+            'reason_label' => self::reasonLabel($reason),
             'details' => (string)($row['details'] ?? ''),
             'related_match_id' => (string)($row['related_match_id'] ?? ''),
             'status' => (string)($row['status'] ?? 'open'),
@@ -384,7 +406,7 @@ final class PlayerReportService
             'report_id' => (string)($row['report_id'] ?? ''),
             'status' => (string)($row['status'] ?? 'open'),
             'reason' => $reason,
-            'reason_label' => self::REASONS[$reason] ?? self::LEGACY_REASON_LABELS[$reason] ?? $reason,
+            'reason_label' => self::reasonLabel($reason),
             'created_at' => (string)($row['created_at_utc'] ?? $row['created_at'] ?? ''),
         ];
     }

@@ -8,9 +8,9 @@ function get(key){ return key.split('.').reduce((v,p)=>v?.[p],locale); }
 function cyrLines(path){ return fs.readFileSync(path,'utf8').split(/\r?\n/).filter(l=>CYR.test(l)).length; }
 
 assert(locale?._meta?.locale === 'ru','RU locale identity changed.');
-assert(locale?._meta?.version === 70,'Tournament player-runtime localization must publish RU locale version 70.');
-assert(baseline?.staging_base === 'f4dcfdec0bc6214cc3c32fb37ada9434493d8c13','Ratchet must bind to exact post-#2075 staging.');
-assert(baseline?.by_scope?.backend === 976,'Backend localization debt must ratchet 1087 -> 976.');
+assert(Number.isInteger(locale?._meta?.version) && locale._meta.version >= 70,'Tournament successor must not regress RU locale below version 70.');
+assert(/^[a-f0-9]{40}$/.test(String(baseline?.staging_base ?? '')),'Localization ratchet must stay bound to an exact staging SHA.');
+assert(Number.isFinite(Number(baseline?.by_scope?.backend)) && Number(baseline.by_scope.backend) <= 976,'Tournament successor must not increase backend localization debt above 976.');
 assert(baseline?.by_scope?.client === 0 && baseline?.by_scope?.['client-entry'] === 0,'Client debt must remain zero.');
 
 const exact = {
@@ -147,5 +147,5 @@ const cancellation=fs.readFileSync('bot/tournaments/TournamentCancellationServic
 assert(cancellation.includes("throw new InvalidArgumentException('Для аварийной остановки обязательно укажите причину.');"),'Admin cancellation validation must remain outside player slice.');
 
 console.log('MVP27_1_BACKEND_TOURNAMENT_PLAYER_RUNTIME_LOCALIZATION=PASS');
-console.log('backend_debt=976');
+console.log('backend_debt='+baseline.by_scope.backend);
 console.log('moved_player_facing_cyrillic_lines=111');
