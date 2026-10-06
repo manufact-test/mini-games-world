@@ -106,7 +106,7 @@ jobs:
               bot/accounts/AndroidDeviceAuthService.php \
               bot/android-reauth.php \
               bot/android-auth.php
-          elif [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-*-localization-* || "${{ github.head_ref }}" == agent/mvp27-1-backend-nonplayer-classification-bundle-* ]]; then
+          elif [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-*-localization-* || "${{ github.head_ref }}" == agent/mvp27-1-backend-nonplayer-classification-bundle-* || "${{ github.head_ref }}" == agent/mvp27-1-backend-residual-nonplayer-classification-* ]]; then
             echo 'Backend localization successor: freeze accepted Account-chain owners relative to exact PR base.'
             git diff --exit-code "${base}" HEAD -- \
               bot/accounts/AccountDataLifecycleService.php \
@@ -184,7 +184,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ ( "${{ github.head_ref }}" == agent/mvp27-1-backend-*-localization-* && "${{ github.head_ref }}" != agent/mvp27-1-backend-account-chain-localization-* ) || "${{ github.head_ref }}" == agent/mvp27-1-backend-nonplayer-classification-bundle-* ]]; then
+          if [[ ( "${{ github.head_ref }}" == agent/mvp27-1-backend-*-localization-* && "${{ github.head_ref }}" != agent/mvp27-1-backend-account-chain-localization-* ) || "${{ github.head_ref }}" == agent/mvp27-1-backend-nonplayer-classification-bundle-* || "${{ github.head_ref }}" == agent/mvp27-1-backend-residual-nonplayer-classification-* ]]; then
             echo 'Backend localization successor: Account-chain runtime owners remain covered by focused semantic/MySQL regressions; historical slice allow-list does not apply.'
             exit 0
           fi
