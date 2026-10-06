@@ -1,0 +1,76 @@
+name: MVP-27.1 Backend Non-player Classification Bundle
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - 'ops/checks/mvp27_1_backend_nonplayer_classification_contract.mjs'
+      - '.github/workflows/mvp27-1-backend-nonplayer-classification.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  classify-nonplayer-backend:
+    if: startsWith(github.head_ref, 'agent/mvp27-1-backend-nonplayer-classification-bundle-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Exact accepted staging base
+        run: test '${{ github.event.pull_request.base.sha }}' = '1da726623102d54b078bf3fe6ce76cd47ce181a4'
+
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
+          node --check ops/checks/mvp27_1_backend_nonplayer_classification_contract.mjs
+          node -e "JSON.parse(require('fs').readFileSync('ops/checks/mvp27_1_hardcoded_text_baseline.json','utf8'))"
+
+      - name: Exact ownership classification contract
+        run: node ops/checks/mvp27_1_backend_nonplayer_classification_contract.mjs
+
+      - name: Player-facing hardcoded text ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: No runtime or product mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head" | sort)"
+          allowed="$(printf '%s\n' \
+            '.github/workflows/mvp27-1-backend-nonplayer-classification.yml' \
+            'ops/checks/mvp27_1_backend_nonplayer_classification_contract.mjs' \
+            'ops/checks/mvp27_1_hardcoded_text_audit.mjs' \
+            'ops/checks/mvp27_1_hardcoded_text_baseline.json' \
+            'ops/checks/mvp27_1_backend_invites_endpoint_localization_contract.mjs' \
+            'ops/checks/mvp27_1_backend_invite_service_chain_localization_contract.mjs' \
+            'ops/checks/mvp27_1_backend_cosmetic_store_service_localization_contract.mjs' \
+            'ops/checks/mvp27_1_active_targeted_interactions_localization_contract.mjs' \
+            'ops/checks/mvp27_1_backend_friends_endpoint_localization_contract.mjs' \
+            'ops/checks/mvp27_1_backend_account_data_endpoint_localization_contract.mjs' \
+            'ops/checks/mvp27_1_backend_tournament_status_localization_contract.mjs' \
+            'ops/checks/mvp27_1_backend_cosmetic_store_endpoint_localization_contract.mjs' \
+            'ops/checks/mvp27_1_backend_notifications_endpoint_localization_contract.mjs' \
+            'ops/checks/mvp27_1_backend_account_link_endpoint_localization_contract.mjs' \
+            'ops/checks/mvp27_1_final_active_client_localization_contract.mjs' \
+            '.github/workflows/mvp22-8-account-data.yml' \
+            '.github/workflows/mvp27-1-backend-account-chain-localization.yml' \
+            '.github/workflows/mvp27-1-localization-audit.yml')"
+          bad="$(comm -23 <(printf '%s\n' "$changed") <(printf '%s\n' "$allowed" | sort) || true)"
+          test -z "$bad" || { printf 'Unexpected classification paths:\n%s\n' "$bad" >&2; exit 1; }
+          git diff --quiet "$base" "$head" -- app bot || { echo 'Runtime/product sources changed in classification-only bundle.' >&2; exit 1; }
+          git diff --check "$base" "$head"
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs

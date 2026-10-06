@@ -110,7 +110,7 @@ jobs:
               bot/android-auth.php \
               bot/android-reauth.php \
               bot/account-data-website-hook.php
-          elif [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-*-localization-* ]]; then
+          elif [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-*-localization-* || "${{ github.head_ref }}" == agent/mvp27-1-backend-nonplayer-classification-bundle-* ]]; then
             # Later backend-localization slices inherit the accepted Account-chain
             # migration from staging. Freeze Account owners relative to the exact
             # PR base instead of replaying obsolete MVP26 byte identity.
