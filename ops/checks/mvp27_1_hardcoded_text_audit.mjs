@@ -105,6 +105,30 @@ const SKIP_FILES = new Set([
   'app/assets/js/screens/search-screen-v100.js', // historical v100/v101 search owner; imports v100-safe game screen
   'app/assets/js/screens/game-screen-v100-safe.js', // historical wrapper reachable only from v100/v101 mains
   'app/assets/js/screens/game-screen-v100.js', // reachable only through historical v100-safe wrapper
+  'bot/admin-incident.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/admin-operations.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/admin-system.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/admin-tournaments.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/admin-replay.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/admin-analytics.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/admin-support.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/admin-rating.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/admin-read.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/admin-reports.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/admin-test-coins.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/admin-compensation.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/admin-economy.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/admin-notifications.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/economy/CompensationService.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/antifraud/AntiFraudCaseService.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/system/SystemAdminService.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/system/RuntimeFeatureFlagAdminService.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/analytics/ProductEconomyAnalyticsService.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/services/StagingAdminTestCoinGrantService.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/tournaments/StagingTournamentManualAcceptanceService.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/tournaments/TournamentAdminNotificationBridge.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/notifications/AdminNotificationEventService.php', // classified non-player backend owner after post-#2085 reachability rerank
+  'bot/support/SupportTelegramNotifier.php', // classified non-player backend owner after post-#2085 reachability rerank
 ]);
 
 const ADMIN_CONTROL_PLANE_PATTERNS = [
