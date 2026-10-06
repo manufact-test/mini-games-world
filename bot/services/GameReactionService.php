@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class GameReactionException extends RuntimeException
 {
     public function __construct(public readonly int $status, string $message)
@@ -16,14 +18,14 @@ final class GameReactionService
     private const EVENT_TTL_MS = 5000;
 
     private const REACTIONS = [
-        'wave' => ['glyph' => '👋', 'label' => 'Привет'],
-        'clap' => ['glyph' => '👏', 'label' => 'Браво'],
-        'heart' => ['glyph' => '💜', 'label' => 'Сердце'],
-        'fire' => ['glyph' => '🔥', 'label' => 'Огонь'],
-        'target' => ['glyph' => '🎯', 'label' => 'Точно'],
-        'spark' => ['glyph' => '✨', 'label' => 'Вау'],
-        'crown' => ['glyph' => '👑', 'label' => 'Корона'],
-        'handshake' => ['glyph' => '🤝', 'label' => 'Хорошая игра'],
+        'wave' => ['glyph' => '👋', 'label_key' => 'profile.reactions.codes.wave'],
+        'clap' => ['glyph' => '👏', 'label_key' => 'profile.reactions.codes.clap'],
+        'heart' => ['glyph' => '💜', 'label_key' => 'profile.reactions.codes.heart'],
+        'fire' => ['glyph' => '🔥', 'label_key' => 'profile.reactions.codes.fire'],
+        'target' => ['glyph' => '🎯', 'label_key' => 'profile.reactions.codes.target'],
+        'spark' => ['glyph' => '✨', 'label_key' => 'profile.reactions.codes.spark'],
+        'crown' => ['glyph' => '👑', 'label_key' => 'profile.reactions.codes.crown'],
+        'handshake' => ['glyph' => '🤝', 'label_key' => 'profile.reactions.codes.handshake'],
     ];
 
     public function __construct(private array $config, private DatabaseConnectionInterface $database) {}
@@ -34,22 +36,22 @@ final class GameReactionService
         $providerUserId = trim($providerUserId);
         $code = strtolower(trim($code));
         if ($gameId === '' || $providerUserId === '' || !isset(self::REACTIONS[$code])) {
-            throw new GameReactionException(422, 'Некорректная реакция.');
+            throw new GameReactionException(422, ServerLocalization::copy('server.game_runtime.reactions.invalid', 'Invalid reaction.'));
         }
 
         $this->activeGameForParticipant($gameId, $providerUserId);
         $allowed = $this->allowedReactionCodes($mgwId);
         if (!in_array($code, $allowed, true)) {
-            throw new GameReactionException(403, 'Эта реакция ещё не куплена.');
+            throw new GameReactionException(403, ServerLocalization::copy('server.game_runtime.reactions.not_owned', 'This reaction has not been purchased yet.'));
         }
 
         $now = (int)floor(microtime(true) * 1000);
         $path = $this->storagePath();
         $handle = @fopen($path, 'c+b');
-        if ($handle === false) throw new GameReactionException(503, 'Реакции временно недоступны.');
+        if ($handle === false) throw new GameReactionException(503, ServerLocalization::copy('server.game_runtime.reactions.unavailable', 'Reactions are temporarily unavailable.'));
 
         try {
-            if (!flock($handle, LOCK_EX)) throw new GameReactionException(503, 'Реакции временно недоступны.');
+            if (!flock($handle, LOCK_EX)) throw new GameReactionException(503, ServerLocalization::copy('server.game_runtime.reactions.unavailable', 'Reactions are temporarily unavailable.'));
             rewind($handle);
             $raw = stream_get_contents($handle);
             $state = json_decode(is_string($raw) && trim($raw) !== '' ? $raw : '{}', true);
@@ -64,7 +66,7 @@ final class GameReactionService
             if (is_array($previous)
                 && (string)($previous['sender_id'] ?? '') === $providerUserId
                 && $now - (int)($previous['created_at_ms'] ?? 0) < self::COOLDOWN_MS) {
-                throw new GameReactionException(429, 'Подождите секунду перед следующей реакцией.');
+                throw new GameReactionException(429, ServerLocalization::copy('server.game_runtime.reactions.cooldown', 'Wait a second before sending another reaction.'));
             }
 
             $seq = max((int)($state['seq'] ?? 0) + 1, $now);
@@ -75,7 +77,7 @@ final class GameReactionService
                 'sender_id' => $providerUserId,
                 'code' => $code,
                 'glyph' => (string)$definition['glyph'],
-                'label' => (string)$definition['label'],
+                'label' => ServerLocalization::copy((string)$definition['label_key'], (string)$code),
                 'created_at_ms' => $now,
             ];
             $events[$gameId] = $event;
@@ -145,10 +147,10 @@ final class GameReactionService
             return is_array($candidate) ? $candidate : null;
         });
         if (!is_array($game) || (string)($game['status'] ?? '') !== 'active') {
-            throw new GameReactionException(409, 'Матч уже завершён.');
+            throw new GameReactionException(409, ServerLocalization::copy('server.game_runtime.reactions.match_finished', 'The match has already finished.'));
         }
         if (!in_array($providerUserId, array_map('strval', (array)($game['player_ids'] ?? [])), true)) {
-            throw new GameReactionException(403, 'Вы не участвуете в этой игре.');
+            throw new GameReactionException(403, ServerLocalization::copy('server.game_runtime.common.not_participating', 'You are not participating in this game.'));
         }
         return $game;
     }

@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class FourInARowService
 {
     private const CONNECT_LENGTH = 4;
@@ -32,7 +34,7 @@ final class FourInARowService
 
         $playerIds = array_values(array_map('strval', $game['player_ids'] ?? []));
         if (count($playerIds) < 2) {
-            throw new RuntimeException('Для игры «4 в ряд» нужны два игрока.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.four_in_a_row.two_players', 'Four in a Row requires two players.'));
         }
 
         $first = random_int(0, 1);
@@ -110,7 +112,7 @@ final class FourInARowService
     public function dropDisc(array &$db, array &$user, string $gameId, int $column): array
     {
         if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
-            throw new RuntimeException('Игра не найдена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
         }
 
         $game =& $db['games'][$gameId];
@@ -123,26 +125,26 @@ final class FourInARowService
 
         $userId = (string)($user['id'] ?? '');
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
-            throw new RuntimeException('Вы не участник этой игры.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participant', 'You are not a participant in this game.'));
         }
 
         if ((string)($game['turn'] ?? '') !== $userId) {
-            throw new RuntimeException('Сейчас не ваш ход.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_your_turn', 'It is not your turn.'));
         }
 
         if ($column < 0 || $column >= $columns) {
-            throw new RuntimeException('Выберите доступный столбец.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.four_in_a_row.select_available_column', 'Select an available column.'));
         }
 
         $symbol = (string)($game['symbols'][$userId] ?? '');
         if ($symbol !== 'Y' && $symbol !== 'R') {
-            throw new RuntimeException('Игровая фишка не определена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.four_in_a_row.piece_missing', 'The game piece is not defined.'));
         }
 
         $board = (string)$game['board'];
         $cell = $this->lowestEmptyCell($board, $columns, $rows, $column);
         if ($cell === null) {
-            throw new RuntimeException('Этот столбец уже заполнен.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.four_in_a_row.column_full', 'This column is full.'));
         }
 
         $board[$cell] = $symbol;
@@ -180,7 +182,7 @@ final class FourInARowService
     public function surrender(array &$db, array &$user, string $gameId): array
     {
         if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
-            throw new RuntimeException('Игра не найдена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
         }
 
         $game =& $db['games'][$gameId];
@@ -188,7 +190,7 @@ final class FourInARowService
         $userId = (string)($user['id'] ?? '');
 
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
-            throw new RuntimeException('Вы не участник этой игры.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participant', 'You are not a participant in this game.'));
         }
 
         if (($game['status'] ?? '') === 'finished') {
@@ -210,7 +212,7 @@ final class FourInARowService
             $pid = (string)$playerId;
             $players[] = [
                 'id' => $pid,
-                'name' => (string)($game['player_names'][$pid] ?? 'Игрок'),
+                'name' => (string)($game['player_names'][$pid] ?? ServerLocalization::copy('server.invites.player_fallback', 'Player')),
                 'symbol' => (string)($game['symbols'][$pid] ?? '?'),
             ];
         }
@@ -224,7 +226,7 @@ final class FourInARowService
         return [
             'id' => (string)($game['id'] ?? ''),
             'room' => (string)($game['room'] ?? 'match'),
-            'room_name' => ($game['room'] ?? 'match') === 'gold' ? 'Gold-комната' : 'Матч-комната',
+            'room_name' => ($game['room'] ?? 'match') === 'gold' ? ServerLocalization::copy('acceptance_runtime.search.room_gold', 'Gold room') : ServerLocalization::copy('acceptance_runtime.search.room_match', 'Match room'),
             'bet' => (int)($game['bet'] ?? 0),
             'board_size' => $columns,
             'board_columns' => $columns,

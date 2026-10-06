@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 2) . '/localization/ServerLocalization.php';
+
 final class ChessBotService
 {
     /**
@@ -11,7 +13,7 @@ final class ChessBotService
     public function chooseMove(array $moves, string $difficulty, callable $scoreMove, int $budgetMs = 40): array
     {
         if ($moves === []) {
-            throw new RuntimeException('У бота нет допустимых ходов.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.bot_no_moves', 'The bot has no legal moves.'));
         }
 
         $difficulty = in_array($difficulty, ['easy', 'medium', 'hard'], true) ? $difficulty : 'medium';

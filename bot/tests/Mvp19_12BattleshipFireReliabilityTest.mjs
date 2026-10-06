@@ -17,6 +17,7 @@ const mainCss = fs.readFileSync(path.join(root, 'app/assets/css/main.css'), 'utf
 const entry = fs.readFileSync(path.join(root, 'app/v110.php'), 'utf8');
 const launch = fs.readFileSync(path.join(root, 'bot/helpers/WebAppLaunchUrl.php'), 'utf8');
 const backend = fs.readFileSync(path.join(root, 'bot/games/battleship/BattleshipService.php'), 'utf8');
+const locale = JSON.parse(fs.readFileSync(path.join(root, 'app/locales/ru.json'), 'utf8'));
 const apiPhp = fs.readFileSync(path.join(root, 'bot/api.php'), 'utf8');
 
 const submitStart = gameScreen.indexOf('function submitAction');
@@ -61,8 +62,10 @@ assert.ok(!gameCss.includes('.battleship-cell.mgw-pending-shot i{'), 'Pending fi
 assert.ok(!gameCss.includes('background:#effcff') && !gameCss.includes('background:#5fe9ff'), 'Pending fire must never reuse white/cyan fake result dots');
 assert.ok(mainCss.includes("./games/battleship/game.css?v=60&fire=direct-result-v4"), 'Main CSS must publish direct-result Battleship presentation');
 
-assert.ok(backend.includes("if ((string)(\$game['turn'] ?? '') !== \$shooterId) throw new RuntimeException('Сейчас не ваш ход.');"), 'Backend turn ownership must stay authoritative');
-assert.ok(backend.includes("if (isset(\$shots[\$cell])) throw new RuntimeException('Вы уже стреляли в эту клетку.');"), 'Backend duplicate-shot protection must stay authoritative');
+assert.ok(backend.includes("if ((string)(\$game['turn'] ?? '') !== \$shooterId) throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_your_turn'"), 'Backend turn ownership must stay authoritative');
+assert.equal(locale?.server?.game_runtime?.common?.not_your_turn, 'Сейчас не ваш ход.', 'Backend turn copy must preserve accepted RU text');
+assert.ok(backend.includes("if (isset(\$shots[\$cell])) throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.already_shot'"), 'Backend duplicate-shot protection must stay authoritative');
+assert.equal(locale?.server?.game_runtime?.battleship?.already_shot, 'Вы уже стреляли в эту клетку.', 'Backend duplicate-shot copy must preserve accepted RU text');
 assert.ok(backend.includes("if (\$this->isTurnExpired(\$game)) {") && backend.includes("\$this->settlement->finish(\$db, \$game, \$winnerId, 'timeout', \$loserId);"), 'Battleship fire fast path must preserve timeout settlement inside the engine');
 assert.ok(apiPhp.includes('function mgw_is_battleship_fire_fast_path'), 'API must expose the narrow Battleship fire fast-path detector');
 assert.ok(apiPhp.includes("return \$actionType === 'fire'") && apiPhp.includes("=== 'battleship'") && apiPhp.includes("=== 'battle'"), 'Fast path must apply only to battle-phase Battleship fire');

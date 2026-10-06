@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 require_once dirname(__DIR__) . '/games/chess/ChessBotService.php';
 require_once dirname(__DIR__) . '/games/chess/ChessService.php';
 require_once dirname(__DIR__) . '/games/go/GoBotService.php';
@@ -199,7 +201,7 @@ final class ChessRuntimeService
         $room = UnifiedGameZonePolicy::storageRoom();
         $bet = UnifiedGameZonePolicy::entryCost($this->config);
         if (!$this->catalog->supportsRoom($gameType, $room)) {
-            throw new RuntimeException('Эта игра недоступна в выбранной комнате.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_unavailable_room', 'This game is unavailable in the selected room.'));
         }
 
         $userId = (string)($user['id'] ?? '');
@@ -645,8 +647,8 @@ final class ChessRuntimeService
 
             throw new RuntimeException(
                 $status === 'awaiting_start'
-                    ? 'Сначала запустите или отмените подтверждённое приглашение.'
-                    : 'Сначала ответьте на текущее приглашение или отмените его.'
+                    ? ServerLocalization::copy('server.game_runtime.common.resolve_confirmed_invite', 'Start or cancel the confirmed invitation first.')
+                    : ServerLocalization::copy('server.game_runtime.common.resolve_pending_invite', 'Respond to or cancel the current invitation first.')
             );
         }
     }

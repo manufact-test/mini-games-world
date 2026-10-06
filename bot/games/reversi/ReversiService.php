@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 2) . '/localization/ServerLocalization.php';
+
 final class ReversiService
 {
     private const ALLOWED_SIZES = [6, 8, 10];
@@ -39,7 +41,7 @@ final class ReversiService
 
         $playerIds = array_values(array_map('strval', $game['player_ids'] ?? []));
         if (count($playerIds) < 2) {
-            throw new RuntimeException('Для Реверси нужны два игрока.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.reversi.two_players', 'Reversi requires two players.'));
         }
 
         if (random_int(0, 1) === 1) {
@@ -110,25 +112,25 @@ final class ReversiService
     public function applyAction(array &$db, array &$user, string $gameId, array $action): array
     {
         if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
-            throw new RuntimeException('Игра не найдена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
         }
 
         $game =& $db['games'][$gameId];
         $this->initializeGame($game);
         $userId = (string)($user['id'] ?? '');
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
-            throw new RuntimeException('Вы не участник этой игры.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participant', 'You are not a participant in this game.'));
         }
         if (($game['status'] ?? '') !== 'active') return $game;
 
         $type = trim((string)($action['type'] ?? 'cell'));
         if (!in_array($type, ['cell', 'place'], true)) {
-            throw new RuntimeException('Некорректное действие для Реверси.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.reversi.invalid_action', 'Invalid Reversi action.'));
         }
 
         $cell = filter_var($action['cell'] ?? null, FILTER_VALIDATE_INT);
         if ($cell === false) {
-            throw new RuntimeException('Выберите клетку для хода.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.reversi.select_move', 'Select a cell for your move.'));
         }
 
         return $this->performMove($db, $game, $userId, (int)$cell);
@@ -137,14 +139,14 @@ final class ReversiService
     public function surrender(array &$db, array &$user, string $gameId): array
     {
         if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
-            throw new RuntimeException('Игра не найдена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
         }
 
         $game =& $db['games'][$gameId];
         $this->initializeGame($game);
         $userId = (string)($user['id'] ?? '');
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
-            throw new RuntimeException('Вы не участник этой игры.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participant', 'You are not a participant in this game.'));
         }
         if (($game['status'] ?? '') === 'finished') return $game;
 
@@ -171,7 +173,7 @@ final class ReversiService
             $side = $this->sideForPlayer($game, $playerId);
             $players[] = [
                 'id' => $playerId,
-                'name' => (string)($game['player_names'][$playerId] ?? 'Игрок'),
+                'name' => (string)($game['player_names'][$playerId] ?? ServerLocalization::copy('server.invites.player_fallback', 'Player')),
                 'side' => $side,
                 'symbol' => $side === 'black' ? 'B' : 'W',
             ];
@@ -180,7 +182,7 @@ final class ReversiService
         return [
             'id' => (string)($game['id'] ?? ''),
             'room' => (string)($game['room'] ?? 'match'),
-            'room_name' => ($game['room'] ?? 'match') === 'gold' ? 'Gold-комната' : 'Матч-комната',
+            'room_name' => ($game['room'] ?? 'match') === 'gold' ? ServerLocalization::copy('acceptance_runtime.search.room_gold', 'Gold room') : ServerLocalization::copy('acceptance_runtime.search.room_match', 'Match room'),
             'bet' => (int)($game['bet'] ?? 0),
             'board_size' => $size,
             'board_columns' => $size,
@@ -221,12 +223,12 @@ final class ReversiService
     private function performMove(array &$db, array &$game, string $playerId, int $cell): array
     {
         if ((string)($game['turn'] ?? '') !== $playerId) {
-            throw new RuntimeException('Сейчас ход соперника.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.opponent_turn', 'It is the opponent’s turn.'));
         }
 
         $size = $this->boardSizeForGame($game);
         if ($cell < 0 || $cell >= $size * $size) {
-            throw new RuntimeException('Выберите клетку на поле.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.reversi.select_cell', 'Select a cell on the board.'));
         }
 
         $side = $this->sideForPlayer($game, $playerId);
@@ -235,7 +237,7 @@ final class ReversiService
         $board = $this->normalizeBoard((string)($game['board'] ?? ''), $size);
         $flips = $this->flipsForCell($board, $size, $cell, $symbol, $opponentSymbol);
         if ($flips === []) {
-            throw new RuntimeException('Сюда нельзя поставить фишку. Выберите подсвеченную клетку.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.reversi.move_unavailable', 'You cannot place a disc here. Select a highlighted cell.'));
         }
 
         $board[$cell] = $symbol;

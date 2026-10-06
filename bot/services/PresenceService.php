@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class PresenceService
 {
     private const ONLINE_WINDOW_SEC = 75;
@@ -88,13 +90,13 @@ final class PresenceService
         if (!is_dir($accountDirectory)
             && !@mkdir($accountDirectory, 0700, true)
             && !is_dir($accountDirectory)) {
-            throw new RuntimeException('Не удалось завершить присутствие старого аккаунта.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.presence.end_old_failed', 'The previous account presence could not be ended.'));
         }
 
         $retiredMarker = $accountDirectory . DIRECTORY_SEPARATOR . self::RETIRED_MARKER_FILE;
         $payload = json_encode(['retired_at'=>time()], JSON_UNESCAPED_SLASHES);
         if (!is_string($payload) || @file_put_contents($retiredMarker, $payload, LOCK_EX) === false) {
-            throw new RuntimeException('Не удалось завершить присутствие старого аккаунта.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.presence.end_old_failed', 'The previous account presence could not be ended.'));
         }
         @chmod($retiredMarker, 0600);
 
@@ -249,7 +251,7 @@ final class PresenceService
 
         $accountDirectory = $this->accountDirectory($accountId);
         if (!is_dir($accountDirectory) && !@mkdir($accountDirectory, 0700, true) && !is_dir($accountDirectory)) {
-            throw new RuntimeException('Не удалось обновить присутствие игрока.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.presence.update_failed', 'Player presence could not be updated.'));
         }
 
         $path = $this->sessionPath($accountId, $sessionId, $presenceLeaseId);
@@ -263,12 +265,12 @@ final class PresenceService
         ], JSON_UNESCAPED_SLASHES);
         if (!is_string($payload) || @file_put_contents($temporary, $payload, LOCK_EX) === false) {
             @unlink($temporary);
-            throw new RuntimeException('Не удалось обновить присутствие игрока.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.presence.update_failed', 'Player presence could not be updated.'));
         }
         @chmod($temporary, 0600);
         if (!@rename($temporary, $path)) {
             @unlink($temporary);
-            throw new RuntimeException('Не удалось обновить присутствие игрока.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.presence.update_failed', 'Player presence could not be updated.'));
         }
 
         if ($this->isRetiredAccountDirectory($accountDirectory)) {
@@ -283,7 +285,7 @@ final class PresenceService
     private function ensureDirectory(): void
     {
         if (!is_dir($this->directory) && !@mkdir($this->directory, 0700, true) && !is_dir($this->directory)) {
-            throw new RuntimeException('Не удалось подготовить присутствие игроков.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.presence.prepare_failed', 'Player presence could not be prepared.'));
         }
     }
 

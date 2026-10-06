@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class GameCatalogService
 {
     private array $games;
@@ -129,7 +131,7 @@ final class GameCatalogService
     {
         $game = $this->games[$gameType] ?? null;
         if (!is_array($game) || empty($game['enabled'])) {
-            throw new RuntimeException('Эта игра пока недоступна.');
+            throw new RuntimeException(ServerLocalization::copy('server.invite_chain.errors.game_unavailable', 'This game is not available yet.'));
         }
         return $game;
     }

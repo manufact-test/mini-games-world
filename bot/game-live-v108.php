@@ -2,14 +2,15 @@
 declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
+require_once __DIR__ . '/localization/ServerLocalization.php';
 
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
-    if (!is_array($payload)) api_error('Некорректный запрос.');
+    if (!is_array($payload)) api_error(ServerLocalization::copy('server.invites.invalid_request', 'Invalid request.'));
 
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
     $gameId = clean_string($payload['gameId'] ?? '', 80);
-    if ($gameId === '') api_error('Игра не найдена.');
+    if ($gameId === '') api_error(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
 
     $auth = new AuthService($config);
     $tgUser = $auth->getUserFromRequest($payload);
@@ -22,14 +23,14 @@ try {
     $result = $db->transaction(function (array &$data) use ($tgUser, $users, $sessions, $games, $sessionId, $gameId): array {
         $user = $users->ensureUser($data, $tgUser);
         $userId = (string)($user['id'] ?? '');
-        if ($userId === '') throw new RuntimeException('Пользователь не найден.');
+        if ($userId === '') throw new RuntimeException(ServerLocalization::copy('server.invites.user_not_found', 'User not found.'));
         $data['users'][$userId] = $user;
         $user =& $data['users'][$userId];
         $sessions->ensureSessionShape($user);
 
         $game = $data['games'][$gameId] ?? null;
         if (!is_array($game) || !in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
-            throw new RuntimeException('Игра не найдена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
         }
 
         $isActiveTicTacToe = (string)($game['status'] ?? '') === 'active'

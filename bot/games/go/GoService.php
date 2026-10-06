@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 2) . '/localization/ServerLocalization.php';
+
 final class GoService
 {
     private const ALLOWED_SIZES = [9, 13];
@@ -36,7 +38,7 @@ final class GoService
 
         $playerIds = array_values(array_map('strval', $game['player_ids'] ?? []));
         if (count($playerIds) < 2) {
-            throw new RuntimeException('Для Го нужны два игрока.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.go.two_players', 'Go requires two players.'));
         }
 
         if (random_int(0, 1) === 1) {
@@ -100,14 +102,14 @@ final class GoService
     public function applyAction(array &$db, array &$user, string $gameId, array $action): array
     {
         if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
-            throw new RuntimeException('Игра не найдена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
         }
 
         $game =& $db['games'][$gameId];
         $this->initializeGame($game);
         $userId = (string)($user['id'] ?? '');
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
-            throw new RuntimeException('Вы не участник этой игры.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participant', 'You are not a participant in this game.'));
         }
         if (($game['status'] ?? '') !== 'active') return $game;
         if ($this->isTurnExpired($game)) {
@@ -117,7 +119,7 @@ final class GoService
             return $game;
         }
         if ((string)($game['turn'] ?? '') !== $userId) {
-            throw new RuntimeException('Сейчас ход соперника.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.opponent_turn', 'It is the opponent’s turn.'));
         }
 
         $type = trim((string)($action['type'] ?? 'cell'));
@@ -125,12 +127,12 @@ final class GoService
             return $this->performPass($db, $game, $userId);
         }
         if (!in_array($type, ['cell', 'place', 'go_action'], true)) {
-            throw new RuntimeException('Некорректное действие для Го.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.go.invalid_action', 'Invalid Go action.'));
         }
 
         $cell = filter_var($action['cell'] ?? null, FILTER_VALIDATE_INT);
         if ($cell === false) {
-            throw new RuntimeException('Выберите точку на поле.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.go.select_point', 'Select a point on the board.'));
         }
 
         return $this->performMove($db, $game, $userId, (int)$cell);
@@ -139,14 +141,14 @@ final class GoService
     public function surrender(array &$db, array &$user, string $gameId): array
     {
         if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
-            throw new RuntimeException('Игра не найдена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
         }
 
         $game =& $db['games'][$gameId];
         $this->initializeGame($game);
         $userId = (string)($user['id'] ?? '');
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
-            throw new RuntimeException('Вы не участник этой игры.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participant', 'You are not a participant in this game.'));
         }
         if (($game['status'] ?? '') === 'finished') return $game;
 
@@ -167,7 +169,7 @@ final class GoService
             $side = $this->sideForPlayer($game, $playerId);
             $players[] = [
                 'id' => $playerId,
-                'name' => (string)($game['player_names'][$playerId] ?? 'Игрок'),
+                'name' => (string)($game['player_names'][$playerId] ?? ServerLocalization::copy('server.invites.player_fallback', 'Player')),
                 'side' => $side,
                 'symbol' => $side === 'black' ? 'B' : 'W',
             ];
@@ -176,7 +178,7 @@ final class GoService
         return [
             'id' => (string)($game['id'] ?? ''),
             'room' => (string)($game['room'] ?? 'match'),
-            'room_name' => ($game['room'] ?? 'match') === 'gold' ? 'Gold-комната' : 'Матч-комната',
+            'room_name' => ($game['room'] ?? 'match') === 'gold' ? ServerLocalization::copy('acceptance_runtime.search.room_gold', 'Gold room') : ServerLocalization::copy('acceptance_runtime.search.room_match', 'Match room'),
             'bet' => (int)($game['bet'] ?? 0),
             'board_size' => $size,
             'board_columns' => $size,
@@ -209,12 +211,12 @@ final class GoService
     {
         $size = $this->boardSizeForGame($game);
         if ($cell < 0 || $cell >= $size * $size) {
-            throw new RuntimeException('Выберите точку на поле.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.go.select_point', 'Select a point on the board.'));
         }
 
         $board = $this->normalizeBoard((string)($game['board'] ?? ''), $size);
         if (($board[$cell] ?? '-') !== '-') {
-            throw new RuntimeException('Эта точка уже занята.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.go.point_occupied', 'This point is already occupied.'));
         }
 
         $side = $this->sideForPlayer($game, $playerId);
@@ -222,14 +224,14 @@ final class GoService
         $opponent = $symbol === 'B' ? 'W' : 'B';
         $simulation = $this->simulateMove($board, $size, $cell, $symbol, $opponent);
         if ($simulation === null) {
-            throw new RuntimeException('У этой группы не останется свобод.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.go.no_liberties', 'This group would have no liberties left.'));
         }
 
         $nextBoard = (string)$simulation['board'];
         $nextHash = hash('sha256', $nextBoard);
         $history = array_fill_keys(array_map('strval', $game['go_position_history'] ?? []), true);
         if (isset($history[$nextHash])) {
-            throw new RuntimeException('Сначала сделайте ход в другом месте.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.go.ko_repeat', 'Make a move somewhere else first.'));
         }
 
         $captured = array_values(array_unique(array_map('intval', $simulation['captured_cells'] ?? [])));

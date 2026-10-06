@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 2) . '/localization/ServerLocalization.php';
+
 final class ChessService
 {
     private const SIZE = 8;
@@ -40,7 +42,7 @@ final class ChessService
 
         $playerIds = array_values(array_map('strval', $game['player_ids'] ?? []));
         if (count($playerIds) < 2) {
-            throw new RuntimeException('Для шахмат нужны два игрока.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.chess.two_players', 'Chess requires two players.'));
         }
 
         if (random_int(0, 1) === 1) {
@@ -110,31 +112,31 @@ final class ChessService
     public function applyAction(array &$db, array &$user, string $gameId, array $action): array
     {
         if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
-            throw new RuntimeException('Игра не найдена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
         }
 
         $game =& $db['games'][$gameId];
         $this->initializeGame($game);
         $userId = (string)($user['id'] ?? '');
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
-            throw new RuntimeException('Вы не участник этой игры.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participant', 'You are not a participant in this game.'));
         }
         if (($game['status'] ?? '') !== 'active') return $game;
 
         $type = trim((string)($action['type'] ?? 'chess_move'));
         if ($type !== 'chess_move') {
-            throw new RuntimeException('Некорректное действие для шахмат.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.chess.invalid_action', 'Invalid Chess action.'));
         }
 
         $from = filter_var($action['from'] ?? null, FILTER_VALIDATE_INT);
         $to = filter_var($action['to'] ?? null, FILTER_VALIDATE_INT);
         if ($from === false || $to === false) {
-            throw new RuntimeException('Выберите фигуру и клетку для хода.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.chess.select_move', 'Select a piece and destination square.'));
         }
 
         $promotion = strtolower(trim((string)($action['promotion'] ?? '')));
         if ($promotion !== '' && !in_array($promotion, self::PROMOTIONS, true)) {
-            throw new RuntimeException('Выберите фигуру для превращения пешки.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.chess.select_promotion', 'Select a piece for pawn promotion.'));
         }
 
         return $this->performMove($db, $game, $userId, (int)$from, (int)$to, $promotion);
@@ -143,14 +145,14 @@ final class ChessService
     public function surrender(array &$db, array &$user, string $gameId): array
     {
         if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
-            throw new RuntimeException('Игра не найдена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
         }
 
         $game =& $db['games'][$gameId];
         $this->initializeGame($game);
         $userId = (string)($user['id'] ?? '');
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
-            throw new RuntimeException('Вы не участник этой игры.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participant', 'You are not a participant in this game.'));
         }
         if (($game['status'] ?? '') === 'finished') return $game;
 
@@ -175,7 +177,7 @@ final class ChessService
             $side = $this->sideForPlayer($game, $playerId);
             $players[] = [
                 'id' => $playerId,
-                'name' => (string)($game['player_names'][$playerId] ?? 'Игрок'),
+                'name' => (string)($game['player_names'][$playerId] ?? ServerLocalization::copy('server.invites.player_fallback', 'Player')),
                 'side' => $side,
                 'symbol' => $side === 'white' ? 'W' : 'B',
             ];
@@ -189,7 +191,7 @@ final class ChessService
         return [
             'id' => (string)($game['id'] ?? ''),
             'room' => (string)($game['room'] ?? 'match'),
-            'room_name' => ($game['room'] ?? 'match') === 'gold' ? 'Gold-комната' : 'Матч-комната',
+            'room_name' => ($game['room'] ?? 'match') === 'gold' ? ServerLocalization::copy('acceptance_runtime.search.room_gold', 'Gold room') : ServerLocalization::copy('acceptance_runtime.search.room_match', 'Match room'),
             'bet' => (int)($game['bet'] ?? 0),
             'board_size' => self::SIZE,
             'board_columns' => self::SIZE,
@@ -222,10 +224,10 @@ final class ChessService
     private function performMove(array &$db, array &$game, string $playerId, int $from, int $to, string $promotion): array
     {
         if ((string)($game['turn'] ?? '') !== $playerId) {
-            throw new RuntimeException('Сейчас ход соперника.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.opponent_turn', 'It is the opponent’s turn.'));
         }
         if ($from < 0 || $from >= 64 || $to < 0 || $to >= 64 || $from === $to) {
-            throw new RuntimeException('Выберите допустимый ход.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.chess.select_legal_move', 'Select a legal move.'));
         }
 
         $side = $this->sideForPlayer($game, $playerId);
@@ -238,14 +240,14 @@ final class ChessService
         if ($matching === []) {
             $piece = (string)($state['board'][$from] ?? '');
             if ($piece === '' || $this->pieceSide($piece) !== $side) {
-                throw new RuntimeException('Выберите свою фигуру.');
+                throw new RuntimeException(ServerLocalization::copy('server.game_runtime.chess.select_own_piece', 'Select one of your pieces.'));
             }
-            throw new RuntimeException('Этот ход недоступен. Король не должен оставаться под шахом.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.chess.king_in_check', 'This move is unavailable. Your king cannot remain in check.'));
         }
 
         $requiresPromotion = count(array_filter($matching, static fn(array $move): bool => !empty($move['promotion']))) > 0;
         if ($requiresPromotion && $promotion === '') {
-            throw new RuntimeException('Выберите фигуру для превращения пешки.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.chess.select_promotion', 'Select a piece for pawn promotion.'));
         }
 
         $move = null;
@@ -257,7 +259,7 @@ final class ChessService
             }
         }
         if (!$move) {
-            throw new RuntimeException('Выберите доступную фигуру для превращения пешки.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.chess.select_available_promotion', 'Select an available promotion piece.'));
         }
 
         $this->applyChosenMove($db, $game, $playerId, $side, $state, $move);

@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
 
 final class GameSettlementService
@@ -29,7 +31,7 @@ final class GameSettlementService
             $db,
             $game,
             'preparation_timeout',
-            'Возврат: соперник не подключился'
+            ServerLocalization::copy('server.game_runtime.economy.opponent_no_show_refund', 'Refund: opponent did not connect')
         );
     }
 
@@ -50,7 +52,7 @@ final class GameSettlementService
             $db,
             $game,
             'search_cancelled',
-            'Возврат: поиск отменён до начала матча'
+            ServerLocalization::copy('server.game_runtime.economy.cancelled_before_start_refund', 'Refund: search cancelled before match start')
         );
     }
 
@@ -114,7 +116,7 @@ final class GameSettlementService
                     $room,
                     $bet,
                     (string)($game['id'] ?? ''),
-                    'Возврат коинов при ничьей',
+                    ServerLocalization::copy('server.game_runtime.economy.draw_refund', 'Coin refund for a draw'),
                     [
                         'finish_reason' => 'draw',
                         'is_bot_game' => $isBotGame,
@@ -137,7 +139,7 @@ final class GameSettlementService
                     $room,
                     $payout,
                     (string)($game['id'] ?? ''),
-                    'Выигрыш за матч',
+                    ServerLocalization::copy('server.game_runtime.economy.match_win', 'Match winnings'),
                     [
                         'finish_reason' => $reason,
                         'loser_id' => $loserId,
