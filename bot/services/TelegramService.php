@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../helpers/WebAppLaunchUrl.php';
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
 
 final class TelegramService
 {
@@ -51,10 +52,10 @@ final class TelegramService
 
         $this->api('sendMessage', [
             'chat_id' => $chatId,
-            'text' => "Добро пожаловать в Mini Games World.\n\nОткройте приложение и сыграйте первый матч.",
+            'text' => ServerLocalization::copy('server.telegram.start_text', "Welcome to Mini Games World.\n\nOpen the app and play your first match."),
             'reply_markup' => [
                 'inline_keyboard' => [[
-                    ['text' => 'Открыть игру', 'web_app' => ['url' => $webAppUrl]],
+                    ['text' => ServerLocalization::copy('server.telegram.start_button', 'Open game'), 'web_app' => ['url' => $webAppUrl]],
                 ]],
             ],
         ]);
@@ -339,24 +340,23 @@ final class TelegramService
         $coins = (int)($payment['coins'] ?? 0);
 
         if ($decision === 'applied') {
-            return "✅ Пополнение подтверждено\n\n"
-                . "Заявка: {$shortId}\n"
-                . "Комната: {$roomLabel}\n"
-                . "Сумма: {$price} {$currency}\n"
-                . "Начислено: {$coins} коинов";
+            return ServerLocalization::copy(
+                'server.telegram.payment_applied',
+                "✅ Top-up confirmed\n\nRequest: {id}\nRoom: {room}\nAmount: {price} {currency}\nCredited: {coins} coins",
+                ['id'=>$shortId,'room'=>$roomLabel,'price'=>$price,'currency'=>$currency,'coins'=>$coins]
+            );
         }
 
         $reason = trim((string)($payment['reject_reason'] ?? ''));
         if ($reason === '') {
-            $reason = 'отклонено администратором';
+            $reason = ServerLocalization::copy('server.telegram.payment_rejected_default_reason', 'rejected by administrator');
         }
 
-        return "🚫 Заявка на пополнение отклонена\n\n"
-            . "Заявка: {$shortId}\n"
-            . "Комната: {$roomLabel}\n"
-            . "Сумма: {$price} {$currency}\n"
-            . "К зачислению было: {$coins} коинов\n"
-            . "Причина: {$reason}";
+        return ServerLocalization::copy(
+            'server.telegram.payment_rejected',
+            "🚫 Top-up request rejected\n\nRequest: {id}\nRoom: {room}\nAmount: {price} {currency}\nWould have credited: {coins} coins\nReason: {reason}",
+            ['id'=>$shortId,'room'=>$roomLabel,'price'=>$price,'currency'=>$currency,'coins'=>$coins,'reason'=>$reason]
+        );
     }
 
     private function shortPaymentId(string $id): string
