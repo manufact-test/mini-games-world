@@ -63,7 +63,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          accepted='72935e60c50124dc46098e34f82269da3d10e64d'
+          accepted='d92323e5d5cfb211015a03ebd3a26ce9ebaf0186'
           base='${{ github.event.pull_request.base.sha }}'
           git cat-file -e "${accepted}^{commit}"
           git diff --exit-code "${accepted}" "${base}" -- \
