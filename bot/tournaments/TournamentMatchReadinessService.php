@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class TournamentMatchReadinessService
 {
     public const FIRST_ROUND = 1;
@@ -51,22 +53,22 @@ final class TournamentMatchReadinessService
         $moment = $this->moment($now);
         $row = $this->ensureFirstRoundPair($participant, $moment);
         if ($row === null) {
-            throw new RuntimeException('Для этой пары подтверждение готовности не требуется.');
+            throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.ready.not_required', 'Tournament readiness request is unavailable.'));
         }
         if ((int)($row['attempt_no'] ?? 1) !== 1
             || (string)($row['wait_kind'] ?? 'initial_ready') !== 'initial_ready'
             || trim((string)($row['completed_at_utc'] ?? '')) !== '') {
-            throw new RuntimeException('Ручное подтверждение готовности для этой стадии уже завершено.');
+            throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.ready.manual_finished', 'Tournament readiness request is unavailable.'));
         }
 
         $openedAt = $this->parseUtc((string)$row['readiness_opened_at_utc']);
         $deadline = $this->parseUtc((string)$row['readiness_deadline_at_utc']);
         if ($moment < $openedAt) {
-            throw new RuntimeException('Подтверждение готовности откроется в момент старта турнира.');
+            throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.ready.opens_at_start', 'Tournament readiness request is unavailable.'));
         }
         if ($moment > $deadline && !$this->bothReady($row)) {
             $this->expireIfNeeded($row, $moment);
-            throw new RuntimeException('Двухминутное окно готовности завершено.');
+            throw new RuntimeException(ServerLocalization::copy('arena.ready.expired', 'Tournament readiness request is unavailable.'));
         }
 
         $tournamentId = (string)$row['tournament_id'];
@@ -99,7 +101,7 @@ final class TournamentMatchReadinessService
                 (string)$current['player_a_mgw_id'],
                 (string)$current['player_b_mgw_id'],
             ], true)) {
-                throw new RuntimeException('Игрок не входит в эту турнирную пару.');
+                throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.ready.not_in_pair', 'Tournament readiness request is unavailable.'));
             }
 
             $deadline = $this->parseUtc((string)$current['readiness_deadline_at_utc']);
@@ -116,7 +118,7 @@ final class TournamentMatchReadinessService
                         'pair_no'=>$pairNo,
                     ]
                 );
-                throw new RuntimeException('Двухминутное окно готовности завершено.');
+                throw new RuntimeException(ServerLocalization::copy('arena.ready.expired', 'Tournament readiness request is unavailable.'));
             }
 
             $column = $mgwId === (string)$current['player_a_mgw_id']
@@ -468,7 +470,7 @@ final class TournamentMatchReadinessService
             $id = (string)$user['mgw_id'];
             $name = trim((string)($user['nickname'] ?? ''));
             if ($name === '') $name = trim((string)($user['display_name'] ?? ''));
-            $names[$id] = $name !== '' ? $name : 'Игрок';
+            $names[$id] = $name !== '' ? $name : ServerLocalization::copy('arena.hall.player_fallback', 'Player');
         }
 
         $a = (string)$row['player_a_mgw_id'];
@@ -497,13 +499,13 @@ final class TournamentMatchReadinessService
             'players'=>[
                 [
                     'mgw_id'=>$a,
-                    'nickname'=>$names[$a] ?? 'Игрок',
+                    'nickname'=>$names[$a] ?? ServerLocalization::copy('arena.hall.player_fallback', 'Player'),
                     'ready'=>$aReady,
                     'self'=>$viewerMgwId === $a,
                 ],
                 [
                     'mgw_id'=>$b,
-                    'nickname'=>$names[$b] ?? 'Игрок',
+                    'nickname'=>$names[$b] ?? ServerLocalization::copy('arena.hall.player_fallback', 'Player'),
                     'ready'=>$bReady,
                     'self'=>$viewerMgwId === $b,
                 ],
@@ -538,10 +540,10 @@ final class TournamentMatchReadinessService
             ]
         );
         if (count($rows) !== 1 || !is_array($rows[0])) {
-            throw new RuntimeException('Готовность доступна только зарегистрированным участникам турнира.');
+            throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.ready.registered_only', 'Tournament readiness request is unavailable.'));
         }
         if ((string)$rows[0]['tournament_state'] !== TournamentRegistrationService::STATE_SCHEDULED) {
-            throw new RuntimeException('Турнир ещё не готов к старту матчей.');
+            throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.ready.tournament_not_ready', 'Tournament readiness request is unavailable.'));
         }
         return $rows[0];
     }
