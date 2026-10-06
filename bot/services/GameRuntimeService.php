@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 require_once dirname(__DIR__) . '/games/battleship/BattleshipBotService.php';
 require_once dirname(__DIR__) . '/games/battleship/BattleshipService.php';
 require_once dirname(__DIR__) . '/games/checkers/CheckersBotService.php';
@@ -143,7 +145,7 @@ final class GameRuntimeService
         $bet = UnifiedGameZonePolicy::entryCost($this->config);
 
         if (!$this->catalog->supportsRoom($gameType, $room)) {
-            throw new RuntimeException('Эта игра недоступна в выбранной комнате.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_unavailable_room', 'This game is unavailable in the selected room.'));
         }
 
         $userId = (string)($user['id'] ?? '');
@@ -160,7 +162,7 @@ final class GameRuntimeService
         $engine = (string)($definition['engine'] ?? '');
 
         if (!in_array($engine, ['tictactoe', 'four_in_a_row', 'battleship', 'checkers', 'reversi'], true)) {
-            throw new RuntimeException('Движок этой игры пока не подключён.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.engine_unavailable', 'This game engine is not connected yet.'));
         }
 
         $legacyBoardSize = $engine === 'tictactoe'
@@ -284,7 +286,7 @@ final class GameRuntimeService
         if (is_array($game)) {
             $definition = $this->catalog->get($this->gameTypeFromRecord($game));
             if ((string)($definition['engine'] ?? '') !== 'tictactoe') {
-                throw new RuntimeException('Это действие не поддерживается выбранной игрой.');
+                throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.unsupported_action', 'This action is not supported by the selected game.'));
             }
         }
 
