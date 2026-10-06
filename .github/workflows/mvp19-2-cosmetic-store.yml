@@ -85,7 +85,9 @@ jobs:
               bot/economy \
               bot/ledger
           else
-            git diff --exit-code "${baseline}" HEAD -- \
+            current_base='${{ github.event.pull_request.base.sha }}'
+            echo 'Successor PR: protect frozen Store backend identity against the current accepted PR base.'
+            git diff --exit-code "${current_base}" HEAD -- \
               bot/catalog \
               bot/cosmetic-store.php \
               bot/shop \
