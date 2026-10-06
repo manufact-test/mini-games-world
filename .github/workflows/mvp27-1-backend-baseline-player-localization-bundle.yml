@@ -56,6 +56,8 @@ jobs:
           node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
           node --check ops/checks/mvp27_1_backend_nonplayer_classification_contract.mjs
           node --check ops/checks/mvp27_1_backend_baseline_player_localization_bundle_contract.mjs
+          node --check ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs
+          node --check ops/checks/mvp27_1_backend_support_player_runtime_localization_contract.mjs
           python3 -m json.tool app/locales/ru.json >/dev/null
           python3 -m json.tool ops/checks/mvp27_1_hardcoded_text_baseline.json >/dev/null
           for file in             bot/services/FeatureFlagService.php             bot/services/SessionService.php             bot/services/AuthService.php             bot/social/PlayerReportService.php             bot/tournaments/TournamentRegistrationService.php             bot/support/SupportTicketService.php             bot/services/ShopOrderHistoryService.php; do
@@ -67,6 +69,19 @@ jobs:
 
       - name: Baseline ownership and active copy proof
         run: node ops/checks/mvp27_1_backend_baseline_player_localization_bundle_contract.mjs
+
+      - name: Successor predecessor proofs
+        shell: bash
+        run: |
+          set -euo pipefail
+          node ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs
+          node ops/checks/mvp27_1_backend_support_player_runtime_localization_contract.mjs
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          git diff --exit-code "$base" "$head" -- \
+            bot/games bot/ratings bot/tournaments \
+            ':(exclude)bot/tournaments/TournamentRegistrationService.php' \
+            bot/economy bot/ledger bot/notifications
 
       - name: Player-facing hardcoded text ratchet
         run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
