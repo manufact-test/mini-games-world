@@ -3,7 +3,9 @@ import fs from 'node:fs';
 const CYR = /[\u0400-\u04FF]/;
 const locale = JSON.parse(fs.readFileSync('app/locales/ru.json','utf8'));
 const baseline = JSON.parse(fs.readFileSync('ops/checks/mvp27_1_hardcoded_text_baseline.json','utf8'));
-const successor = String(process.env.GITHUB_HEAD_REF ?? '').startsWith('agent/mvp27-1-backend-baseline-player-localization-bundle-');
+const headRef = String(process.env.GITHUB_HEAD_REF ?? '');
+const successor = headRef.startsWith('agent/mvp27-1-backend-baseline-player-localization-bundle-')
+  || headRef.startsWith('agent/mvp27-1-backend-residual-nonplayer-classification-');
 function assert(ok,msg){ if(!ok) throw new Error(msg); }
 function get(key){ return key.split('.').reduce((v,p)=>v?.[p],locale); }
 function cyrLines(path){ return fs.readFileSync(path,'utf8').split(/\r?\n/).filter(l=>CYR.test(l)).length; }
