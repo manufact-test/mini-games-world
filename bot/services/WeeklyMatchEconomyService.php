@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
 require_once __DIR__ . '/../economy/EconomyConfigDefinition.php';
 require_once __DIR__ . '/../economy/EconomyConfigSimulator.php';
@@ -108,7 +110,7 @@ final class WeeklyMatchEconomyService
             'amount' => $amount,
             'balance_before' => $before,
             'balance_after' => $after,
-            'description' => 'Стартовый бонус Mini Games World',
+            'description' => ServerLocalization::copy('server.weekly_match.welcome_description', 'Mini Games World starter bonus'),
             'created_at' => $createdAt,
         ]);
 
@@ -203,7 +205,7 @@ final class WeeklyMatchEconomyService
                 'amount' => $amount,
                 'balance_before' => $before,
                 'balance_after' => $after,
-                'description' => 'Бонус за первую завершённую партию в игре',
+                'description' => ServerLocalization::copy('server.weekly_match.first_game_description', 'Bonus for the first completed match in a game'),
                 'created_at' => $createdAt,
             ]);
 
@@ -378,7 +380,7 @@ final class WeeklyMatchEconomyService
             'qualifying_from' => $from->format(DATE_ATOM),
             'qualifying_to' => $cycleAt->format(DATE_ATOM),
             'qualifying_games' => $games,
-            'description' => 'Еженедельный бонус за игровую активность',
+            'description' => ServerLocalization::copy('server.weekly_match.weekly_description', 'Weekly gameplay activity bonus'),
             'created_at' => $awardedAt,
         ]);
 

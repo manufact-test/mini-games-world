@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 /**
  * Latency-critical invite mutations must not run the full JSON↔DB audit on the
  * request path. This projector mirrors only invite rows that actually changed
@@ -149,13 +151,13 @@ final class RuntimeInviteDeltaProjector
             'inviter_ref' => $inviter['account_ref'],
             'inviter_mgw_id' => $inviter['mgw_id'],
             'inviter_legacy_user_id' => $inviterLegacyId,
-            'inviter_name' => trim((string)($invite['inviter_name'] ?? 'Игрок')),
+            'inviter_name' => trim((string)($invite['inviter_name'] ?? ServerLocalization::copy('server.invites.player_fallback', 'Player'))),
             'invitee_ref' => $invitee['account_ref'] ?? null,
             'invitee_mgw_id' => $invitee['mgw_id'] ?? null,
             'invitee_legacy_user_id' => $inviteeLegacyId !== '' ? $inviteeLegacyId : null,
             'invitee_name' => $this->nullableText($invite['invitee_name'] ?? null),
             'game_type' => trim((string)($invite['game_type'] ?? 'tictactoe')),
-            'game_title' => trim((string)($invite['game_title'] ?? 'Игра')),
+            'game_title' => trim((string)($invite['game_title'] ?? ServerLocalization::copy('server.invites.game_fallback', 'Game'))),
             'room' => (string)($invite['room'] ?? 'match') === 'gold' ? 'gold' : 'match',
             'bet' => max(0, (int)($invite['bet'] ?? 0)),
             'board_size' => max(1, (int)($invite['board_size'] ?? 1)),

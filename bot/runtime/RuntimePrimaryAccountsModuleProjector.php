@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class RuntimePrimaryAccountsModuleProjector implements RuntimePrimaryModuleProjectorInterface
 {
     private const LEGACY_PROVIDER = 'legacy_import';
@@ -408,9 +410,9 @@ final class RuntimePrimaryAccountsModuleProjector implements RuntimePrimaryModul
                 );
             }
             $displayName = $this->text(
-                $record['first_name'] ?? $record['username'] ?? 'Игрок',
+                $record['first_name'] ?? $record['username'] ?? ServerLocalization::copy('server.account_chain.common.player_fallback', 'Player'),
                 80,
-                'Игрок'
+                ServerLocalization::copy('server.account_chain.common.player_fallback', 'Player')
             );
             $username = $this->nullableText($record['username'] ?? null, 80);
             $avatar = $this->nullableText(
