@@ -1,0 +1,108 @@
+name: MVP-27.1 Backend Support Player Runtime Localization
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/locales/ru.json'
+      - 'bot/support.php'
+      - 'bot/support-attachment-download.php'
+      - 'bot/support/SupportTicketService.php'
+      - 'bot/support/SupportNotificationBridge.php'
+      - '.github/workflows/mvp25-5-write-replay-safety.yml'
+      - 'ops/checks/mvp27_1_backend_moderation_player_runtime_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_backend_support_player_runtime_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp27-1-backend-support-player-runtime-localization.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  support-player-localization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Exact accepted staging base
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-backend-support-player-runtime-localization-')
+        run: test '${{ github.event.pull_request.base.sha }}' = '58a5b6c15053c905f3cd333d42dde7310efc56b8'
+
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          php -l bot/support/SupportTicketService.php
+          php -l bot/support.php
+          php -l bot/support-attachment-download.php
+          php -l bot/support/SupportNotificationBridge.php
+          php -l bot/support/SupportTelegramNotifier.php
+          php -l bot/localization/ServerLocalization.php
+          php -l app/runtime/localization/LocalizationCatalog.php
+          node --check ops/checks/mvp27_1_backend_support_player_runtime_localization_contract.mjs
+          node --check ops/checks/mvp27_1_backend_moderation_player_runtime_localization_contract.mjs
+          node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
+          node -e "JSON.parse(require('fs').readFileSync('app/locales/ru.json','utf8'))"
+
+      - name: Exact Support ratchet result
+        if: startsWith(github.head_ref, 'agent/mvp27-1-backend-support-player-runtime-localization-')
+        run: |
+          node -e "const l=JSON.parse(require('fs').readFileSync('app/locales/ru.json')); const b=JSON.parse(require('fs').readFileSync('ops/checks/mvp27_1_hardcoded_text_baseline.json')); if(l._meta.version!==72||b.by_scope.backend!==885||b.staging_base!=='58a5b6c15053c905f3cd333d42dde7310efc56b8') process.exit(1)"
+
+      - name: Focused localization contract
+        run: node ops/checks/mvp27_1_backend_support_player_runtime_localization_contract.mjs
+
+      - name: Preserve Support lifecycle and replay semantics
+        run: |
+          set -euo pipefail
+          php bot/tests/SupportTicketServiceTest.php
+          php bot/tests/Mvp25_5WriteReplaySafetyTest.php
+          php bot/tests/Mvp25_5WriteReplaySafetyContractTest.php
+          php bot/tests/Mvp25_5RateLimitContractTest.php
+
+      - name: Preserve Support notification and public error semantics
+        run: |
+          set -euo pipefail
+          php bot/tests/NotificationCenterV2PolicyTest.php
+          php bot/tests/Mvp18_6NotificationPipelineContractTest.php
+          php bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php
+
+      - name: Preserve predecessor localization proofs
+        run: |
+          node ops/checks/mvp27_1_backend_moderation_player_runtime_localization_contract.mjs
+          node ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs
+
+      - name: Hardcoded player text ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded scope
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-backend-support-player-runtime-localization-')
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head" | sort)"
+          allowed="$(printf '%s\n' \
+            '.github/workflows/mvp25-5-write-replay-safety.yml' \
+            '.github/workflows/mvp27-1-backend-support-player-runtime-localization.yml' \
+            'app/locales/ru.json' \
+            'bot/support.php' \
+            'bot/support-attachment-download.php' \
+            'bot/support/SupportNotificationBridge.php' \
+            'bot/support/SupportTicketService.php' \
+            'ops/checks/mvp27_1_backend_moderation_player_runtime_localization_contract.mjs' \
+            'ops/checks/mvp27_1_backend_support_player_runtime_localization_contract.mjs' \
+            'ops/checks/mvp27_1_hardcoded_text_baseline.json')"
+          bad="$(comm -23 <(printf '%s\n' "$changed") <(printf '%s\n' "$allowed" | sort) || true)"
+          test -z "$bad" || { printf 'Unexpected Support localization paths:\n%s\n' "$bad" >&2; exit 1; }
+          git diff --check "$base" "$head"
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
