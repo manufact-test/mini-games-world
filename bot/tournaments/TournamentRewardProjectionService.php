@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 /**
  * MVP-21.9 read-only product projector.
  *
@@ -78,7 +80,7 @@ final class TournamentRewardProjectionService
             $tournamentId = (string)$row['tournament_id'];
             $history[] = [
                 'tournament_id'=>$tournamentId,
-                'title'=>(string)($row['title'] ?? 'Официальный турнир'),
+                'title'=>(string)($row['title'] ?? ServerLocalization::copy('arena.official_title', 'Official tournament')),
                 'game_type'=>(string)($row['game_type'] ?? ''),
                 'capacity'=>(int)($row['capacity'] ?? 0),
                 'scheduled_start_at_utc'=>$this->nullableText($row['scheduled_start_at_utc'] ?? null),
@@ -252,7 +254,7 @@ final class TournamentRewardProjectionService
             $podium = $podiums[$id] ?? [];
             $entries[] = [
                 'tournament_id'=>$id,
-                'title'=>(string)($row['title'] ?? 'Официальный турнир'),
+                'title'=>(string)($row['title'] ?? ServerLocalization::copy('arena.official_title', 'Official tournament')),
                 'game_type'=>(string)($row['game_type'] ?? ''),
                 'capacity'=>(int)($row['capacity'] ?? 0),
                 'scheduled_start_at_utc'=>$this->nullableText($row['scheduled_start_at_utc'] ?? null),
@@ -296,11 +298,11 @@ final class TournamentRewardProjectionService
             if (!is_array($row)) continue;
             $nickname = trim((string)($row['nickname'] ?? ''));
             if ($nickname === '') $nickname = trim((string)($row['display_name'] ?? ''));
-            if ($nickname === '') $nickname = 'Игрок';
+            if ($nickname === '') $nickname = ServerLocalization::copy('arena.hall.player_fallback', 'Player');
             $mgwId = trim((string)($row['mgw_id'] ?? ''));
             $result[] = [
                 'tournament_id'=>(string)$row['tournament_id'],
-                'title'=>(string)($row['title'] ?? 'Официальный турнир'),
+                'title'=>(string)($row['title'] ?? ServerLocalization::copy('arena.official_title', 'Official tournament')),
                 'game_type'=>(string)($row['game_type'] ?? ''),
                 'capacity'=>(int)($row['capacity'] ?? 0),
                 'scheduled_start_at_utc'=>$this->nullableText($row['scheduled_start_at_utc'] ?? null),
@@ -350,7 +352,7 @@ final class TournamentRewardProjectionService
             || ($kind === 'temporary_style' && ($validUntil === null || strcmp($validUntil, $nowUtc) > 0));
         return [
             'tournament_id'=>(string)$row['tournament_id'],
-            'tournament_title'=>(string)($row['title'] ?? 'Официальный турнир'),
+            'tournament_title'=>(string)($row['title'] ?? ServerLocalization::copy('arena.official_title', 'Official tournament')),
             'game_type'=>(string)($row['game_type'] ?? ''),
             'scheduled_start_at_utc'=>$this->nullableText($row['scheduled_start_at_utc'] ?? null),
             'reward_code'=>(string)$row['reward_code'],
@@ -366,7 +368,7 @@ final class TournamentRewardProjectionService
     {
         $nickname = trim((string)($row['nickname'] ?? ''));
         if ($nickname === '') $nickname = trim((string)($row['display_name'] ?? ''));
-        if ($nickname === '') $nickname = 'Игрок';
+        if ($nickname === '') $nickname = ServerLocalization::copy('arena.hall.player_fallback', 'Player');
         $mgwId = trim((string)($row['mgw_id'] ?? ''));
         return [
             'placement'=>(int)$row['placement'],
