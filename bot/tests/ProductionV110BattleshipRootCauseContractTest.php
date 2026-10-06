@@ -22,6 +22,9 @@ $gameCss = $read('app/assets/css/screens/game.css');
 $mainCss = $read('app/assets/css/main.css');
 $v110 = $read('app/v110.php');
 $battleship = $read('bot/games/battleship/BattleshipService.php');
+$manifest = require $root . '/app/runtime/client/version-manifest.php';
+$imports = is_array($manifest['imports'] ?? null) ? $manifest['imports'] : [];
+$assets = is_array($manifest['assets'] ?? null) ? $manifest['assets'] : [];
 
 $assert(
     str_contains($entry, 'initV102BattleshipBridge();')
@@ -39,7 +42,7 @@ $assert(
 
 $assert(
     str_contains($game, "const localBattleshipSetup = type === 'battleship' && String(base?.phase || '') === 'setup';")
-        && str_contains($game, 'if (localBattleshipSetup && !optimistic) return;')
+        && str_contains($game, "if ((localBattleshipSetup || localBattleshipFire) && !optimistic) return false;")
         && str_contains($game, 'if (item.surrenderPending) {')
         && str_contains($game, 'item.queue.length = 0;')
         && str_contains($game, "if (!window.__MGW_V110_MATCH_LIFECYCLE__?.initialized)"),
@@ -70,14 +73,13 @@ $assert(
 );
 
 $assert(
-    str_contains($v110, 'production-v100-optimistic-models.js?v=104&clock=ttt-fresh60&battleship=registered-owner')
-        && str_contains($v110, 'game-screen-v102.js?v=104&clock=phase-b-single-writer&battleship=leave-guard')
-        && str_contains($v110, 'production-clean-entry-v110.js?v=1124&clock=single-writer&release=battleship-action-quarantine')
-        && str_contains($v110, 'main.css?v=147&sk=3&icons=c1efd5af&render=23&palette=notification-semantic')
-        && str_contains($v110, 'X-MGW-Battleship-Setup: v102-registered-optimistic-owner')
-        && str_contains($v110, 'X-MGW-Battleship-Leave: v110-action-quarantine')
-        && str_contains($v110, 'X-MGW-Game-Timer-Frame: shared-80px-13px'),
-    'Canonical Telegram v110 must publish every changed Battleship owner and the shared timer frame through fresh immutable identities.'
+    str_contains((string)($imports['./assets/js/production-v100-optimistic-models.js?v=102'] ?? ''), 'battleship=registered-owner')
+        && str_contains((string)($imports['./assets/js/screens/game-screen-v102.js?v=102'] ?? ''), 'battleship=leave-guard')
+        && str_contains((string)($assets['main_css'] ?? ''), 'battleship_fire=direct-result-v4')
+        && str_contains($v110, "header('X-MGW-Battleship-Setup: v102-registered-optimistic-owner');")
+        && str_contains($v110, "header('X-MGW-Battleship-Leave: v110-action-quarantine');")
+        && str_contains($v110, "header('X-MGW-Game-Timer-Frame: shared-80px-13px');"),
+    'Canonical Telegram v110 must publish every changed Battleship owner through the canonical version manifest and preserve the shared timer-frame headers.'
 );
 
 $assert(
