@@ -68,7 +68,7 @@ $assert(
     str_contains($gameCss, 'flex:0 0 80px;width:80px;min-width:80px')
         && str_contains($gameCss, 'padding:7px 13px 7px 9px;border-radius:13px;text-align:right')
         && !str_contains($gameCss, '[data-game-type="battleship"] .timer')
-        && str_contains($mainCss, "./screens/game.css?v=61&timer=shared-frame"),
+        && str_contains($mainCss, "./screens/game.css?v=62&timer=battleship-setup-single-owner"),
     'Battleship must inherit the accepted shared 80px timer frame and 13px right anchor.'
 );
 
