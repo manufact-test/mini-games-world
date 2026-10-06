@@ -95,10 +95,20 @@ jobs:
           baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
           base='${{ github.event.pull_request.base.sha }}'
           git cat-file -e "${baseline}^{commit}"
-          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-invite-service-chain-localization-* ]]; then
-            accepted='72935e60c50124dc46098e34f82269da3d10e64d'
-            test "${base}" = "${accepted}"
-            git diff --exit-code "${accepted}" "${base}" -- \
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-account-chain-localization-* ]]; then
+            git diff --exit-code "${baseline}" "${base}" -- \
+              bot/accounts/AccountDataLifecycleService.php \
+              bot/accounts/AccountLinkService.php \
+              bot/accounts/AndroidAccountReauthService.php \
+              bot/accounts/AccountDataZipWriter.php \
+              bot/accounts/AccountReauthGuard.php \
+              bot/accounts/AccountIdentityService.php \
+              bot/accounts/AndroidDeviceAuthService.php \
+              bot/android-reauth.php \
+              bot/android-auth.php
+          elif [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-*-localization-* ]]; then
+            echo 'Backend localization successor: freeze accepted Account-chain owners relative to exact PR base.'
+            git diff --exit-code "${base}" HEAD -- \
               bot/accounts/AccountDataLifecycleService.php \
               bot/accounts/AccountLinkService.php \
               bot/accounts/AndroidAccountReauthService.php \
@@ -174,8 +184,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-invite-service-chain-localization-* ]]; then
-            echo 'Invite service-chain localization successor: Account-chain runtime owners remain covered by focused semantic regressions.'
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-*-localization-* && "${{ github.head_ref }}" != agent/mvp27-1-backend-account-chain-localization-* ]]; then
+            echo 'Backend localization successor: Account-chain runtime owners remain covered by focused semantic/MySQL regressions; historical slice allow-list does not apply.'
             exit 0
           fi
           base='${{ github.event.pull_request.base.sha }}'
