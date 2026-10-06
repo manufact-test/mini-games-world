@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class WebhookHandler
 {
     public function __construct(private TelegramService $telegram, private array $config) {}
@@ -33,7 +35,7 @@ final class WebhookHandler
 
         $this->telegram->api('sendMessage', [
             'chat_id' => $chatId,
-            'text' => 'Нажмите /start, чтобы открыть Mini Games World.',
+            'text' => ServerLocalization::copy('server.webhook.start_hint', 'Press /start to open Mini Games World.'),
         ]);
     }
 
@@ -58,7 +60,7 @@ final class WebhookHandler
             if ($callbackId !== '') {
                 $this->telegram->api('answerCallbackQuery', [
                     'callback_query_id' => $callbackId,
-                    'text' => 'Недоступно',
+                    'text' => ServerLocalization::copy('server.webhook.unavailable', 'Unavailable'),
                     'show_alert' => false,
                 ]);
             }
@@ -175,7 +177,7 @@ final class WebhookHandler
         if (!$admin->isAdmin($fromId)) {
             $this->telegram->api('sendMessage', [
                 'chat_id' => $chatId,
-                'text' => 'Нажмите /start, чтобы открыть Mini Games World.',
+                'text' => ServerLocalization::copy('server.webhook.start_hint', 'Press /start to open Mini Games World.'),
             ]);
             return;
         }

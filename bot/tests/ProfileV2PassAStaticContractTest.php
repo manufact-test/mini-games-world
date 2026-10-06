@@ -46,7 +46,8 @@ $assertContains('state.mgwProfile = optimisticProfile', $profile, 'Nickname save
 $assertContains('state.mgwProfile = previousProfile', $profile, 'Nickname save must rollback on backend failure.');
 $assertNotContains("toast(t('profile.nickname_saved'))", $profile, 'Successful nickname save must be silent.');
 $assertNotContains('save.disabled = true', $profile, 'Nickname save must not visibly stick disabled.');
-$assertContains('максимум 13 символов', $endpoint, 'Backend validation copy must match the final cap.');
+$assertSame('Ник может содержать максимум 13 символов.', $catalog['server']['profile_endpoint']['nickname_too_long'] ?? null, 'Backend validation copy must match the final cap through canonical locale ownership.');
+$assertContains("ServerLocalization::copy('server.profile_endpoint.nickname_too_long'", $endpoint, 'Backend validation must consume the canonical locale key.');
 $assertSame('Ник может содержать максимум 13 символов.', $catalog['profile']['nickname_too_long'] ?? null, 'Too-long feedback must be localized.');
 $assertContains('От 3 до 13 символов', (string)($catalog['profile']['nickname_edit_note'] ?? ''), 'Nickname editor note must show the final cap.');
 

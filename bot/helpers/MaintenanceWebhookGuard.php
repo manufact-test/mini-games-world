@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class MaintenanceWebhookGuard
 {
     public function __construct(
@@ -17,7 +19,7 @@ final class MaintenanceWebhookGuard
         if ($callbackId !== '') {
             $this->telegram->api('answerCallbackQuery', [
                 'callback_query_id' => $callbackId,
-                'text' => 'Технические работы',
+                'text' => ServerLocalization::copy('runtime_status.banner.maintenance_title', 'Maintenance'),
                 'show_alert' => true,
             ]);
         }

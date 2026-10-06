@@ -1,5 +1,7 @@
 <?php
 declare(strict_types=1);
+
+require_once __DIR__ . '/localization/ServerLocalization.php';
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/services/GameLaunchFinalizationService.php';
 require_once __DIR__ . '/services/MatchPreparationRuntimeService.php';
@@ -124,7 +126,7 @@ function mgw_emit_tournament_full_admin_event(
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) {
-        api_error('Некорректный запрос.');
+        api_error(ServerLocalization::copy('server.api.invalid_request', 'Invalid request.'));
     }
 
     $action = (string)($payload['action'] ?? '');
@@ -165,7 +167,7 @@ try {
             $moderationRouter = new RuntimeStorageRouter($config);
             if (!$moderationDatabaseConfig->enabled()
                 || ($moderationRouter->enabled() && $moderationRouter->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE)) {
-                json_response(['ok'=>false,'error'=>'Проверка ограничений временно недоступна.'], 503);
+                json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.api.restriction_check_unavailable', 'Restriction checks are temporarily unavailable.')], 503);
             }
             try {
                 (new ModerationService(PdoConnectionFactory::create($moderationDatabaseConfig)))
@@ -349,12 +351,12 @@ try {
                 $mgwId = trim((string)($user['mgw_id'] ?? ''));
                 $accountRef = trim((string)($user['mgw_account_ref'] ?? ''));
                 if ($mgwId === '' || $accountRef === '') {
-                    throw new RuntimeException('Регистрация турниров требует канонической MGW account identity.');
+                    throw new RuntimeException(ServerLocalization::copy('server.api.tournament_registration_identity_required', 'Tournament registration requires the canonical MGW account identity.'));
                 }
 
                 $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
                 if (!$databaseConfig->enabled()) {
-                    throw new RuntimeException('Турниры временно недоступны.');
+                    throw new RuntimeException(ServerLocalization::copy('server.api.tournaments_unavailable', 'Tournaments are temporarily unavailable.'));
                 }
                 $database = PdoConnectionFactory::create($databaseConfig);
                 $tournaments = new TournamentRegistrationService(
@@ -416,12 +418,12 @@ try {
                 $mgwId = trim((string)($user['mgw_id'] ?? ''));
                 $accountRef = trim((string)($user['mgw_account_ref'] ?? ''));
                 if ($mgwId === '' || $accountRef === '' || $userId === '') {
-                    throw new RuntimeException('Турнирный матч требует канонической MGW account identity.');
+                    throw new RuntimeException(ServerLocalization::copy('server.api.tournament_match_identity_required', 'Tournament matches require the canonical MGW account identity.'));
                 }
 
                 $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
                 if (!$databaseConfig->enabled()) {
-                    throw new RuntimeException('Турнирные матчи временно недоступны.');
+                    throw new RuntimeException(ServerLocalization::copy('server.api.tournament_matches_unavailable', 'Tournament matches are temporarily unavailable.'));
                 }
                 $database = PdoConnectionFactory::create($databaseConfig);
                 $readiness = new TournamentMatchReadinessService($database);
@@ -595,7 +597,7 @@ try {
                     if ($aId === '' || $bId === '' || $aId === $bId
                         || !isset($data['users'][$aId]) || !is_array($data['users'][$aId])
                         || !isset($data['users'][$bId]) || !is_array($data['users'][$bId])) {
-                        throw new RuntimeException('Один из игроков ещё не готов к запуску матча.');
+                        throw new RuntimeException(ServerLocalization::copy('server.api.tournament_player_not_ready', 'One of the players is not ready to start the match yet.'));
                     }
 
                     $gameType = $gameCatalog->normalizeGameType((string)$launch['game_type']);
@@ -981,7 +983,7 @@ try {
                 $message = clean_string($payload['message'] ?? '', 1200);
 
                 if ($message === '') {
-                    throw new RuntimeException('Сообщение пустое.');
+                    throw new RuntimeException(ServerLocalization::copy('server.api.support_message_empty', 'The message is empty.'));
                 }
 
                 $data['support'][] = [
@@ -996,7 +998,7 @@ try {
                 return ['saved' => true];
 
             default:
-                throw new RuntimeException('Неизвестное действие.');
+                throw new RuntimeException(ServerLocalization::copy('server.api.unknown_action', 'Unknown action.'));
         }
     });
 

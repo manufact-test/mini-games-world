@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/localization/ServerLocalization.php';
+
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('X-Content-Type-Options: nosniff');
@@ -33,10 +35,10 @@ function mgw_profile_v2_stats_by_game(array $data, string $userId): array
 function mgw_profile_v2_validation_error(InvalidArgumentException $error): array
 {
     return match ($error->getMessage()) {
-        MgwIdentityPolicy::NICKNAME_TOO_SHORT_ERROR => ['nickname_too_short', 'Ник должен содержать минимум 3 символа.'],
-        MgwIdentityPolicy::NICKNAME_TOO_LONG_ERROR => ['nickname_too_long', 'Ник может содержать максимум 13 символов.'],
-        MgwIdentityPolicy::NICKNAME_INVALID_CHARACTERS_ERROR => ['nickname_invalid_characters', 'В нике можно использовать буквы, цифры, пробел, дефис и подчёркивание.'],
-        default => ['profile_update_invalid', 'Не удалось сохранить профиль MGW.'],
+        MgwIdentityPolicy::NICKNAME_TOO_SHORT_ERROR => ['nickname_too_short', ServerLocalization::copy('server.profile_endpoint.nickname_too_short', 'The nickname must contain at least 3 characters.')],
+        MgwIdentityPolicy::NICKNAME_TOO_LONG_ERROR => ['nickname_too_long', ServerLocalization::copy('server.profile_endpoint.nickname_too_long', 'The nickname can contain at most 13 characters.')],
+        MgwIdentityPolicy::NICKNAME_INVALID_CHARACTERS_ERROR => ['nickname_invalid_characters', ServerLocalization::copy('server.profile_endpoint.nickname_invalid_characters', 'The nickname may contain letters, digits, spaces, hyphens and underscores.')],
+        default => ['profile_update_invalid', ServerLocalization::copy('server.profile_endpoint.update_invalid', 'The MGW profile could not be saved.')],
     };
 }
 
@@ -49,17 +51,17 @@ try {
     }
     $profileStage = 'decode_request';
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
-    if (!is_array($payload)) json_response(['ok'=>false,'error'=>'Некорректный запрос.'], 400);
+    if (!is_array($payload)) json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.profile_endpoint.invalid_request', 'Invalid request.')], 400);
     $configRef = $config;
     $profileStage = 'authenticate';
     $authenticatedUser = (new AuthService($configRef))->getUserFromRequest($payload);
     $mgwId = trim((string)($authenticatedUser['mgw_id'] ?? ''));
-    if (!MgwIdGenerator::isValid($mgwId)) json_response(['ok'=>false,'error'=>'Профиль MGW недоступен для этой сессии.'], 401);
+    if (!MgwIdGenerator::isValid($mgwId)) json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.profile_endpoint.profile_unavailable', 'The MGW profile is unavailable for this session.')], 401);
     $profileStage = 'storage_route';
     $databaseConfig = DatabaseConfig::fromApplicationConfig($configRef);
     $router = new RuntimeStorageRouter($configRef);
     if (!$databaseConfig->enabled() || ($router->enabled() && $router->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE)) {
-        json_response(['ok'=>false,'error'=>'Профиль MGW временно недоступен.'], 503);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.profile_endpoint.temporarily_unavailable', 'The MGW profile is temporarily unavailable.')], 503);
     }
 
     // One DB connection, one canonical ownership/equip owner. Profile consumes
@@ -97,7 +99,7 @@ try {
         json_response(['ok'=>false,'error'=>$message,'code'=>$code], 422);
     } catch (RuntimeException $error) {
         if ($error->getMessage() === MgwIdentityPolicy::NICKNAME_TAKEN_ERROR) {
-            json_response(['ok'=>false,'error'=>MgwIdentityPolicy::NICKNAME_TAKEN_ERROR,'code'=>'nickname_taken'], 409);
+            json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.profile_endpoint.nickname_taken', 'This nickname is already taken. Choose another one.'),'code'=>'nickname_taken'], 409);
         }
         throw $error;
     }
@@ -193,7 +195,7 @@ try {
         get_class($error),
         $error->getMessage()
     ));
-    $response = ['ok'=>false,'error'=>'Не удалось загрузить профиль MGW.'];
+    $response = ['ok'=>false,'error'=>ServerLocalization::copy('server.profile_endpoint.load_failed', 'The MGW profile could not be loaded.')];
     $environment = strtolower(trim((string)($config['environment'] ?? 'production')));
     if ($environment === 'staging') {
         $diagnosticStage = $profileStage;

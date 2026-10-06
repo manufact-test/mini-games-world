@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 require_once __DIR__ . '/WebAppLaunchUrl.php';
 
 final class InviteStartGuard
@@ -35,11 +37,11 @@ final class InviteStartGuard
 
         $response = $this->telegram->api('sendMessage', [
             'chat_id' => $chatId,
-            'text' => "🎮 Вас пригласили сыграть в Mini Games World.\n\nОткройте приглашение кнопкой ниже.",
+            'text' => ServerLocalization::copy('server.invites.start_text', "🎮 You were invited to play Mini Games World.\n\nOpen the invitation using the button below."),
             'reply_markup' => [
                 'inline_keyboard' => [[
                     [
-                        'text' => '🎮 Открыть приглашение',
+                        'text' => ServerLocalization::copy('server.invites.start_button', '🎮 Open invitation'),
                         'web_app' => ['url' => $url],
                     ],
                 ]],

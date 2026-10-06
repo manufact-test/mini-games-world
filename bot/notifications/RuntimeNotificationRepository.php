@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class RuntimeNotificationRepository
 {
     private RuntimeStorageRouter $router;
@@ -324,7 +326,7 @@ final class RuntimeNotificationRepository
         $legacy['event_key'] = (string)($row['event_key'] ?? '');
         $legacy['user_id'] = (string)($row['legacy_user_id'] ?? '');
         $legacy['type'] = (string)($row['type'] ?? '');
-        $legacy['title'] = (string)($row['title'] ?? 'Уведомление');
+        $legacy['title'] = (string)($row['title'] ?? ServerLocalization::copy('notifications.item_fallback', 'Notification'));
         $legacy['message'] = (string)($row['message'] ?? '');
         $legacy['tone'] = trim((string)($row['tone'] ?? '')) ?: 'info';
         $legacy['invite_token'] = (string)($row['invite_token'] ?? '');
@@ -357,7 +359,7 @@ final class RuntimeNotificationRepository
             'source_type' => trim((string)($notification['source_type'] ?? '')),
             'audience_type' => trim((string)($notification['audience_type'] ?? '')),
             'audience_ref' => trim((string)($notification['audience_ref'] ?? '')),
-            'title' => (string)($notification['title'] ?? 'Уведомление'),
+            'title' => (string)($notification['title'] ?? ServerLocalization::copy('notifications.item_fallback', 'Notification')),
             'message' => (string)($notification['message'] ?? ''),
             'text' => (string)($notification['text'] ?? $notification['message'] ?? ''),
             'tone' => trim((string)($notification['tone'] ?? 'info')) ?: 'info',

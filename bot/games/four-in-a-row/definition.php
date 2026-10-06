@@ -1,9 +1,11 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 2) . '/localization/ServerLocalization.php';
+
 return [
     'id' => 'four_in_a_row',
-    'title' => '4 в ряд',
+    'title' => ServerLocalization::copy('game_cards.meta.four_in_a_row.title', 'Four in a Row'),
     'enabled' => true,
     'engine' => 'four_in_a_row',
     'renderer' => 'four_in_a_row',

@@ -1,13 +1,15 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/localization/ServerLocalization.php';
+
 require __DIR__ . '/core/bootstrap.php';
 require_once __DIR__ . '/services/ShopOrderHistoryService.php';
 
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) {
-        api_error('Некорректный запрос.');
+        api_error(ServerLocalization::copy('server.shop_history.invalid_request', 'Invalid request.'));
     }
 
     $auth = new AuthService($config);
@@ -15,7 +17,7 @@ try {
     $userId = (string)($tgUser['id'] ?? '');
 
     if ($userId === '') {
-        api_error('Пользователь не найден.');
+        api_error(ServerLocalization::copy('server.shop_history.user_not_found', 'User not found.'));
     }
 
     $db = StorageFactory::createJson((string)($config['data_dir'] ?? (__DIR__ . '/data')));

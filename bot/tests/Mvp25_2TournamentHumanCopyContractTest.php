@@ -58,8 +58,9 @@ foreach ([
 }
 
 $assert(
-    str_contains($api, "throw new RuntimeException('Один из игроков ещё не готов к запуску матча.');"),
-    'Tournament launch error must use player language.'
+    str_contains($api, "ServerLocalization::copy('server.api.tournament_player_not_ready'")
+        && (($locale['server']['api']['tournament_player_not_ready'] ?? null) === 'Один из игроков ещё не готов к запуску матча.'),
+    'Tournament launch error must resolve player language through the canonical locale catalog.'
 );
 $assert(
     !str_contains($api, 'Один из игроков ещё не синхронизировал игровой клиент.'),

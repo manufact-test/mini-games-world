@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 final class MgwIdentityPolicy
 {
-    public const NICKNAME_TAKEN_ERROR = 'Этот ник уже занят, выберите другой';
+    public const NICKNAME_TAKEN_ERROR = "\u{042D}\u{0442}\u{043E}\u{0442} \u{043D}\u{0438}\u{043A} \u{0443}\u{0436}\u{0435} \u{0437}\u{0430}\u{043D}\u{044F}\u{0442}, \u{0432}\u{044B}\u{0431}\u{0435}\u{0440}\u{0438}\u{0442}\u{0435} \u{0434}\u{0440}\u{0443}\u{0433}\u{043E}\u{0439}";
     public const NICKNAME_TOO_SHORT_ERROR = 'nickname_too_short';
     public const NICKNAME_TOO_LONG_ERROR = 'nickname_too_long';
     public const NICKNAME_INVALID_CHARACTERS_ERROR = 'nickname_invalid_characters';

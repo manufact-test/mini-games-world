@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
 
 final class UserService
@@ -26,8 +28,8 @@ final class UserService
                 'id' => $id,
                 'telegram_id' => $id,
                 'is_dev_user' => $isDevUser,
-                'first_name' => clean_string($tgUser['first_name'] ?? 'Игрок', 80),
-                'username' => clean_string($tgUser['username'] ?? ($tgUser['first_name'] ?? 'Игрок'), 80),
+                'first_name' => clean_string($tgUser['first_name'] ?? ServerLocalization::copy('server.account_chain.common.player_fallback', 'Player'), 80),
+                'username' => clean_string($tgUser['username'] ?? ($tgUser['first_name'] ?? ServerLocalization::copy('server.account_chain.common.player_fallback', 'Player')), 80),
                 'photo_url' => clean_string($tgUser['photo_url'] ?? '', 2048),
                 // Real Telegram users receive their starter grant through the
                 // canonical bonus owner. Browser dev users keep the configured
@@ -58,7 +60,7 @@ final class UserService
                 ],
             ];
         } else {
-            $db['users'][$id]['first_name'] = clean_string($tgUser['first_name'] ?? $db['users'][$id]['first_name'] ?? 'Игрок', 80);
+            $db['users'][$id]['first_name'] = clean_string($tgUser['first_name'] ?? $db['users'][$id]['first_name'] ?? ServerLocalization::copy('server.account_chain.common.player_fallback', 'Player'), 80);
             $db['users'][$id]['username'] = clean_string($tgUser['username'] ?? $db['users'][$id]['username'] ?? $db['users'][$id]['first_name'], 80);
             $photoUrl = clean_string($tgUser['photo_url'] ?? '', 2048);
             if ($photoUrl !== '') {
@@ -93,8 +95,8 @@ final class UserService
     {
         return [
             'id' => $user['id'],
-            'first_name' => $user['first_name'] ?? 'Игрок',
-            'username' => $user['username'] ?? ($user['first_name'] ?? 'Игрок'),
+            'first_name' => $user['first_name'] ?? ServerLocalization::copy('server.account_chain.common.player_fallback', 'Player'),
+            'username' => $user['username'] ?? ($user['first_name'] ?? ServerLocalization::copy('server.account_chain.common.player_fallback', 'Player')),
             'photo_url' => clean_string($user['photo_url'] ?? '', 2048),
             'balance' => (int)($user[UnifiedBalanceRuntimeState::FIELD] ?? 0),
             'balance_match' => (int)($user['balance_match'] ?? 0),

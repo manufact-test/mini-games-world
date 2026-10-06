@@ -5,14 +5,16 @@ if (!defined('MINIGAMES_INTERNAL')) {
     exit;
 }
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 return [
     'version' => 1,
     'currency' => 'GOLD',
     'updated_at' => '2026-07-11',
     'countries' => [
-        ['code' => 'RU', 'name' => 'Россия', 'sort_order' => 10, 'enabled' => true],
-        ['code' => 'BY', 'name' => 'Беларусь', 'sort_order' => 20, 'enabled' => true],
-        ['code' => 'WORLD', 'name' => 'Мир', 'sort_order' => 30, 'enabled' => true],
+        ['code' => 'RU', 'name' => ServerLocalization::copy('server.prizes.countries.RU', 'Russia'), 'sort_order' => 10, 'enabled' => true],
+        ['code' => 'BY', 'name' => ServerLocalization::copy('server.prizes.countries.BY', 'Belarus'), 'sort_order' => 20, 'enabled' => true],
+        ['code' => 'WORLD', 'name' => ServerLocalization::copy('server.prizes.countries.WORLD', 'Worldwide'), 'sort_order' => 30, 'enabled' => true],
     ],
     'items' => [
         [
@@ -20,11 +22,11 @@ return [
             'country_code' => 'RU',
             'provider_code' => 'ozon',
             'provider' => 'Ozon',
-            'title' => 'Сертификат Ozon',
-            'description' => 'Электронный сертификат. Выдаётся вручную после проверки заявки.',
+            'title' => ServerLocalization::copy('server.prizes.ozon_ru.title', 'Ozon gift certificate'),
+            'description' => ServerLocalization::copy('server.prizes.ozon_ru.description', 'Electronic certificate. Issued manually after request review.'),
             'delivery_type' => 'manual_code',
             'image' => '',
-            'image_alt' => 'Сертификат Ozon',
+            'image_alt' => ServerLocalization::copy('server.prizes.ozon_ru.image_alt', 'Ozon gift certificate'),
             'sort_order' => 10,
             'enabled' => true,
             'denominations' => [
@@ -39,11 +41,11 @@ return [
             'country_code' => 'RU',
             'provider_code' => 'wildberries',
             'provider' => 'Wildberries',
-            'title' => 'Сертификат Wildberries',
-            'description' => 'Электронный сертификат. Выдаётся вручную после проверки заявки.',
+            'title' => ServerLocalization::copy('server.prizes.wildberries_ru.title', 'Wildberries gift certificate'),
+            'description' => ServerLocalization::copy('server.prizes.wildberries_ru.description', 'Electronic certificate. Issued manually after request review.'),
             'delivery_type' => 'manual_code',
             'image' => '',
-            'image_alt' => 'Сертификат Wildberries',
+            'image_alt' => ServerLocalization::copy('server.prizes.wildberries_ru.image_alt', 'Wildberries gift certificate'),
             'sort_order' => 20,
             'enabled' => true,
             'denominations' => [
@@ -58,11 +60,11 @@ return [
             'country_code' => 'BY',
             'provider_code' => 'wildberries',
             'provider' => 'Wildberries',
-            'title' => 'Сертификат Wildberries',
-            'description' => 'Электронный сертификат для Беларуси. Выдаётся вручную после проверки заявки.',
+            'title' => ServerLocalization::copy('server.prizes.wildberries_by.title', 'Wildberries gift certificate'),
+            'description' => ServerLocalization::copy('server.prizes.wildberries_by.description', 'Electronic certificate for Belarus. Issued manually after request review.'),
             'delivery_type' => 'manual_code',
             'image' => '',
-            'image_alt' => 'Сертификат Wildberries для Беларуси',
+            'image_alt' => ServerLocalization::copy('server.prizes.wildberries_by.image_alt', 'Wildberries gift certificate for Belarus'),
             'sort_order' => 30,
             'enabled' => true,
             'denominations' => [
@@ -76,11 +78,11 @@ return [
             'country_code' => 'WORLD',
             'provider_code' => 'aliexpress',
             'provider' => 'AliExpress',
-            'title' => 'Сертификат AliExpress',
-            'description' => 'Электронный приз для поддерживаемых регионов. Выдаётся вручную после проверки заявки.',
+            'title' => ServerLocalization::copy('server.prizes.aliexpress_world.title', 'AliExpress gift certificate'),
+            'description' => ServerLocalization::copy('server.prizes.aliexpress_world.description', 'Electronic prize for supported regions. Issued manually after request review.'),
             'delivery_type' => 'manual_code',
             'image' => '',
-            'image_alt' => 'Сертификат AliExpress',
+            'image_alt' => ServerLocalization::copy('server.prizes.aliexpress_world.image_alt', 'AliExpress gift certificate'),
             'sort_order' => 40,
             'enabled' => true,
             'denominations' => [

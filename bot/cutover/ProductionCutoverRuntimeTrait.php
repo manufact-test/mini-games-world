@@ -1,12 +1,14 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 trait ProductionCutoverRuntimeTrait
 {
     private function maintenanceRuntime(array $runtime): array
     {
         $runtime['maintenance_mode'] = true;
-        $runtime['maintenance_message'] = 'Идут технические работы. Mini Games World скоро вернётся.';
+        $runtime['maintenance_message'] = ServerLocalization::copy('runtime_status.maintenance_default_full', 'Maintenance is in progress. Mini Games World will be back soon.');
         $runtime['financial_read_only'] = true;
         $features = is_array($runtime['features'] ?? null) ? $runtime['features'] : [];
         foreach (['matchmaking', 'invitations', 'payments', 'shop'] as $feature) {

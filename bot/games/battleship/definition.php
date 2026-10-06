@@ -1,9 +1,11 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 2) . '/localization/ServerLocalization.php';
+
 return [
     'id' => 'battleship',
-    'title' => 'Морской бой',
+    'title' => ServerLocalization::copy('game_cards.meta.battleship.title', 'Battleship'),
     'enabled' => true,
     'engine' => 'battleship',
     'renderer' => 'battleship',

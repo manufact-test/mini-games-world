@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 require_once __DIR__ . '/WebAppLaunchUrl.php';
 require_once dirname(__DIR__) . '/services/GameInviteService.php';
 require_once dirname(__DIR__) . '/social/SocialInviteGuard.php';
@@ -58,12 +60,14 @@ final class UserWelcomeGuard
         $this->telegram->api('sendMessage', [
             'chat_id' => $chatId,
             'text' => $inviteToken !== ''
-                ? "🎮 Вам бросили вызов в Mini Games World!\n\nОткройте приглашение, проверьте условия и примите матч."
-                : "🎮 Mini Games World\n\nНажмите кнопку ниже, чтобы начать играть.",
+                ? ServerLocalization::copy('server.welcome.invite_text', "🎮 You were challenged in Mini Games World!\n\nOpen the invitation, review the terms and accept the match.")
+                : ServerLocalization::copy('server.welcome.start_text', "🎮 Mini Games World\n\nPress the button below to start playing."),
             'reply_markup' => [
                 'inline_keyboard' => [[
                     [
-                        'text' => $inviteToken !== '' ? '🎮 Открыть приглашение' : '🎮 Начать игру',
+                        'text' => $inviteToken !== ''
+                            ? ServerLocalization::copy('server.welcome.invite_button', '🎮 Open invitation')
+                            : ServerLocalization::copy('server.welcome.start_button', '🎮 Start game'),
                         'web_app' => ['url' => $buttonWebAppUrl],
                     ],
                 ]],
