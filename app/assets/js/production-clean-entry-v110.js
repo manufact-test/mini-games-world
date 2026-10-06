@@ -337,6 +337,7 @@ function selectOwnedStoreAvatar(itemId, { removed = false, closePreview = false 
     storeAvatarConfirmedItemId = String(state.selectedAvatarId || DEFAULT_AVATAR_ITEM_ID).trim() || DEFAULT_AVATAR_ITEM_ID;
   }
 
+  // The latest user intent paints immediately; the single writer below serializes server truth.
   storeAvatarQueuedIntent = { itemId, removed:Boolean(removed) };
   applyStoreAvatarOptimistic(itemId);
   if (state.user) renderUser(state.user);
