@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 require_once __DIR__ . '/../economy/UnifiedBalanceRuntimeState.php';
 require_once __DIR__ . '/../runtime/UnifiedGameZonePolicy.php';
 
@@ -62,7 +64,7 @@ final class PaymentService
                 'room' => 'match',
                 'rate' => 2,
                 'coin_name' => 'Match',
-                'label' => '1 ₽ = 2 Match-коина',
+                'label' => ServerLocalization::copy('server.payment.match_rate_label', '1 RUB = 2 Match coins'),
             ],
             'gold' => [
                 'room' => 'gold',
@@ -438,10 +440,10 @@ final class PaymentService
     private function statusLabel(string $status): string
     {
         return match ($status) {
-            'draft', 'pending' => 'ожидает решения',
-            'paid' => 'начислено',
-            'rejected' => 'отклонено',
-            'cancelled' => 'отменено',
+            'draft', 'pending' => ServerLocalization::copy('server.payment.statuses.pending', 'awaiting decision'),
+            'paid' => ServerLocalization::copy('server.payment.statuses.paid', 'credited'),
+            'rejected' => ServerLocalization::copy('server.payment.statuses.rejected', 'rejected'),
+            'cancelled' => ServerLocalization::copy('server.payment.statuses.cancelled', 'cancelled'),
             default => $status !== '' ? $status : '—',
         };
     }
