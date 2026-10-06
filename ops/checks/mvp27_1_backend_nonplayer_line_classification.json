@@ -1,0 +1,800 @@
+{
+  "schema_version": 1,
+  "scope": "backend-nonplayer-cyrillic-line-fingerprints",
+  "staging_base": "554ab8b738d1bd7ff7776558684d89d24093e597",
+  "recorded_at": "2026-10-06",
+  "files": {
+    "bot/services/PaymentService.php": {
+      "reason": "Legacy payment archive/admin copy and unreachable disabled-write validation; retain player-visible archive rate/status labels in localization debt.",
+      "classified_lines": 42,
+      "occurrences": [
+        {
+          "text": "return \"💳 Карточка платежной заявки\\n\\nФормат:\\n\"",
+          "count": 1
+        },
+        {
+          "text": ". \"/mgw_private_admin_7291_payment ID_ЗАЯВКИ\\n\\n\"",
+          "count": 1
+        },
+        {
+          "text": ". \"ID можно взять из /mgw_private_admin_7291_payments\";",
+          "count": 1
+        },
+        {
+          "text": "return \"💳 Заявка не найдена: {$query}\\n\\nИспользуйте полный ID или точный короткий ID из списка платежей.\";",
+          "count": 1
+        },
+        {
+          "text": "$lines = [\"🗂 Архив платежей\"];",
+          "count": 1
+        },
+        {
+          "text": "Только просмотр. Старые ручные пополнения больше не создаются и не обрабатываются.\";",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"Всего заявок: \" . $summary['total'];",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"Ожидают решения: \" . $summary['waiting'];",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"Начислены: \" . $summary['paid'];",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"Отклонены: \" . $summary['rejected'];",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"Отменены: \" . $summary['cancelled'];",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"⚠️ Несогласованные записи: \" . $summary['inconsistent'];",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"⚠️ Некорректные записи: \" . $summary['invalid'];",
+          "count": 1
+        },
+        {
+          "text": "⏳ Ожидают решения: (исторический статус, обработка отключена)\";",
+          "count": 1
+        },
+        {
+          "text": "Ещё ожидают решения: {$hiddenWaiting}. Обработайте показанные заявки и обновите список.\";",
+          "count": 1
+        },
+        {
+          "text": "Последние обработанные:\";",
+          "count": 1
+        },
+        {
+          "text": "Платежных заявок пока нет.\";",
+          "count": 1
+        },
+        {
+          "text": "Архив доступен только для просмотра.\";",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"/mgw_private_admin_7291_payment ID — открыть архивную заявку\";",
+          "count": 1
+        },
+        {
+          "text": "$applied = !empty($payment['balance_applied']) ? 'да' : 'нет';",
+          "count": 1
+        },
+        {
+          "text": "$lines = [\"💳 Заявка {$short}\"];",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"\\nСтатус: {$status}\";",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"Игрок: {$userLabel}\";",
+          "count": 2
+        },
+        {
+          "text": "$lines[] = \"Комната: {$roomLabel}\";",
+          "count": 2
+        },
+        {
+          "text": "$lines[] = \"Сумма: {$price} {$currency}\";",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"К зачислению: {$coins} коинов\";",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"Начислено на баланс: {$applied}\";",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"Создана: \" . (string)($payment['created_at'] ?? '—');",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"Начислена: \" . (string)$payment['applied_at'];",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"Отклонена: \" . (string)$payment['rejected_at'];",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"Причина отклонения: \" . (string)$payment['reject_reason'];",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"\\nАрхив доступен только для просмотра.\";",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"Действий с платежом нет.\";",
+          "count": 1
+        },
+        {
+          "text": "throw new RuntimeException('Введите сумму пополнения.');",
+          "count": 1
+        },
+        {
+          "text": "throw new RuntimeException('Максимальная сумма пополнения — 100 000 ₽.');",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"Сумма: {$price} {$currency} → {$coins} коинов\";",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"Создана: {$date}\";",
+          "count": 1
+        },
+        {
+          "text": "$lines[] = \"Действие: архив, только просмотр\";",
+          "count": 1
+        },
+        {
+          "text": "$parts[] = 'Без имени';",
+          "count": 1
+        },
+        {
+          "text": "return (string)($user['first_name'] ?? 'Игрок');",
+          "count": 1
+        }
+      ]
+    },
+    "bot/services/TelegramService.php": {
+      "reason": "Telegram transport/admin UX and admin payment-notification copy; retain player start and user payment-decision copy.",
+      "classified_lines": 24,
+      "occurrences": [
+        {
+          "text": "throw new RuntimeException('Не указан токен бота в config.php.');",
+          "count": 1,
+          "function": "api"
+        },
+        {
+          "text": "$replyMarkup['inline_keyboard'][$rowIndex][$buttonIndex]['text'] = '🎁 Заказы призов';",
+          "count": 1,
+          "function": "renameAdminButtons"
+        },
+        {
+          "text": "$replyMarkup['inline_keyboard'][$rowIndex][$buttonIndex]['text'] = str_contains($oldText, 'Все')",
+          "count": 1,
+          "function": "renameAdminButtons"
+        },
+        {
+          "text": "? '💳 Все пополнения'",
+          "count": 1,
+          "function": "renameAdminButtons"
+        },
+        {
+          "text": ": '💳 Пополнения';",
+          "count": 1,
+          "function": "renameAdminButtons"
+        },
+        {
+          "text": "'text' => '🌐 Открыть панель администратора',",
+          "count": 1,
+          "function": "renameAdminButtons"
+        },
+        {
+          "text": "$isShopOrders = str_contains($text, '🎁 Заявки магазина');",
+          "count": 1,
+          "function": "renameAdminSections"
+        },
+        {
+          "text": "$text = str_replace('🎁 Заявки магазина', '🎁 Заказы призов', $text);",
+          "count": 1,
+          "function": "renameAdminSections"
+        },
+        {
+          "text": "$text = str_replace('💳 Платежи', '💳 Пополнения', $text);",
+          "count": 1,
+          "function": "renameAdminSections"
+        },
+        {
+          "text": "'Заявок пока нет.',",
+          "count": 1,
+          "function": "renameAdminSections"
+        },
+        {
+          "text": "\"Заказов призов пока нет.\\n\\nЗаявки на покупку коинов находятся в разделе «💳 Пополнения».\",",
+          "count": 1,
+          "function": "renameAdminSections"
+        },
+        {
+          "text": "$text = str_replace('Нет ожидающих заявок.', 'Нет ожидающих заказов призов.', $text);",
+          "count": 1,
+          "function": "renameAdminSections"
+        },
+        {
+          "text": "$playerParts[] = 'Без имени';",
+          "count": 1,
+          "function": "paymentAdminNotificationText"
+        },
+        {
+          "text": "return \"💳 Новая заявка на пополнение\\n\\n\"",
+          "count": 1,
+          "function": "paymentAdminNotificationText"
+        },
+        {
+          "text": ". \"Игрок: \" . implode(' · ', $playerParts) . \"\\n\"",
+          "count": 1,
+          "function": "paymentAdminNotificationText"
+        },
+        {
+          "text": ". \"Комната: {$roomLabel}\\n\"",
+          "count": 1,
+          "function": "paymentAdminNotificationText"
+        },
+        {
+          "text": ". \"Сумма: {$price} {$currency}\\n\"",
+          "count": 1,
+          "function": "paymentAdminNotificationText"
+        },
+        {
+          "text": ". \"К зачислению: {$coins} коинов\\n\"",
+          "count": 1,
+          "function": "paymentAdminNotificationText"
+        },
+        {
+          "text": ". \"Заявка: {$shortId}\\n\"",
+          "count": 1,
+          "function": "paymentAdminNotificationText"
+        },
+        {
+          "text": ". \"Создана: \" . ($createdAt !== '' ? $createdAt : '—') . \"\\n\\n\"",
+          "count": 1,
+          "function": "paymentAdminNotificationText"
+        },
+        {
+          "text": ". \"Выберите действие кнопками ниже.\";",
+          "count": 1,
+          "function": "paymentAdminNotificationText"
+        },
+        {
+          "text": "['text' => '👁 Открыть заявку', 'callback_data' => 'admin:payment_open:' . $shortId],",
+          "count": 1,
+          "function": "paymentAdminNotificationKeyboard"
+        },
+        {
+          "text": "['text' => '✅ Начислить', 'callback_data' => 'admin:payment_apply:' . $shortId],",
+          "count": 1,
+          "function": "paymentAdminNotificationKeyboard"
+        },
+        {
+          "text": "['text' => '🚫 Отклонить', 'callback_data' => 'admin:payment_reject_prompt:' . $shortId],",
+          "count": 1,
+          "function": "paymentAdminNotificationKeyboard"
+        }
+      ]
+    },
+    "bot/moderation/ModerationService.php": {
+      "reason": "Residual Cyrillic is manual moderation/admin review validation copy; player moderation endpoint copy was already localized.",
+      "classified_lines": 28,
+      "occurrences": [
+        {
+          "text": "3600 => '1 час',",
+          "count": 1
+        },
+        {
+          "text": "86400 => '24 часа',",
+          "count": 1
+        },
+        {
+          "text": "604800 => '7 дней',",
+          "count": 1
+        },
+        {
+          "text": "2592000 => '30 дней',",
+          "count": 1
+        },
+        {
+          "text": "$note = $this->requiredText($note, 800, 'Укажите основание предупреждения.');",
+          "count": 1
+        },
+        {
+          "text": "$adminRef = $this->requiredText($adminRef, 191, 'Администратор не определён.');",
+          "count": 5
+        },
+        {
+          "text": "throw new ModerationException('invalid_scope', 'Выберите область ограничения.');",
+          "count": 1
+        },
+        {
+          "text": "throw new ModerationException('invalid_duration', 'Выберите срок ограничения.');",
+          "count": 1
+        },
+        {
+          "text": "$note = $this->requiredText($note, 800, 'Укажите основание ограничения.');",
+          "count": 1
+        },
+        {
+          "text": "$note = $this->requiredText($note, 800, 'Укажите основание рекомендации постоянной блокировки.');",
+          "count": 1
+        },
+        {
+          "text": "throw new ModerationException('ban_review_pending', 'Для этого игрока уже есть рекомендация постоянной блокировки на второй проверке.');",
+          "count": 1
+        },
+        {
+          "text": "throw new ModerationException('ban_review_unavailable', 'Эта рекомендация уже обработана или недоступна.');",
+          "count": 1
+        },
+        {
+          "text": "throw new ModerationException('second_admin_required', 'Постоянную блокировку должен проверить другой администратор.');",
+          "count": 1
+        },
+        {
+          "text": "throw new ModerationException('invalid_decision', 'Выберите решение второй проверки.');",
+          "count": 1
+        },
+        {
+          "text": "$note = $this->requiredText($note, 800, 'Добавьте комментарий второй проверки.');",
+          "count": 1
+        },
+        {
+          "text": "throw new ModerationException('ban_review_race', 'Рекомендация уже была обработана.');",
+          "count": 1
+        },
+        {
+          "text": "throw new ModerationException('appeal_closed', 'Апелляция уже обработана.');",
+          "count": 1
+        },
+        {
+          "text": "throw new ModerationException('invalid_decision', 'Выберите решение по апелляции.');",
+          "count": 1
+        },
+        {
+          "text": "$note = $this->requiredText($note, 800, 'Добавьте комментарий к решению по апелляции.');",
+          "count": 1
+        },
+        {
+          "text": "throw new ModerationException('appeal_review_race', 'Апелляция уже была обработана.');",
+          "count": 1
+        },
+        {
+          "text": "$reportId = $this->requiredText($reportId, 40, 'Жалоба не определена.');",
+          "count": 1
+        },
+        {
+          "text": "throw new ModerationException('report_not_found', 'Жалоба не найдена.');",
+          "count": 1
+        },
+        {
+          "text": "$appealId = $this->requiredText($appealId, 48, 'Апелляция не определена.');",
+          "count": 1
+        },
+        {
+          "text": "throw new ModerationException('appeal_not_found', 'Апелляция не найдена.');",
+          "count": 1
+        }
+      ]
+    },
+    "bot/storage/JsonDatabase.php": {
+      "reason": "Internal storage/locking/projection diagnostics, not player presentation ownership.",
+      "classified_lines": 28,
+      "occurrences": [
+        {
+          "text": "throw new RuntimeException('Не удалось открыть writer barrier-файл.');",
+          "count": 2
+        },
+        {
+          "text": "throw new RuntimeException('Не удалось открыть lock-файл.');",
+          "count": 5
+        },
+        {
+          "text": "throw new RuntimeException('Не удалось открыть writer barrier.');",
+          "count": 1
+        },
+        {
+          "text": "throw new RuntimeException('Не удалось заблокировать хранилище.');",
+          "count": 2
+        },
+        {
+          "text": "throw new RuntimeException('Хранилище временно доступно только для чтения. Повторите действие после завершения технической проверки.');",
+          "count": 1
+        },
+        {
+          "text": "throw new RuntimeException('Не удалось заморозить JSON writers для внешней проекции.');",
+          "count": 1
+        },
+        {
+          "text": "throw new RuntimeException('Не удалось открыть runtime projection lock-файл.');",
+          "count": 1
+        },
+        {
+          "text": "throw new RuntimeException('Не удалось сериализовать runtime projection.');",
+          "count": 1
+        },
+        {
+          "text": "throw new RuntimeException('Не удалось прочитать runtime projection snapshot.');",
+          "count": 1
+        },
+        {
+          "text": "throw new RuntimeException('Не удалось очистить runtime projection dirty marker.');",
+          "count": 2
+        },
+        {
+          "text": "throw new RuntimeException('Не удалось зафиксировать runtime projection generation.');",
+          "count": 1
+        },
+        {
+          "text": "throw new RuntimeException('Не удалось прочитать стабильный снимок хранилища.');",
+          "count": 1
+        },
+        {
+          "text": "throw new InvalidArgumentException('Некорректный режим блокировки JSON-хранилища.');",
+          "count": 1
+        },
+        {
+          "text": "throw new InvalidArgumentException('Неизвестная секция JSON-хранилища: ' . $section);",
+          "count": 2
+        },
+        {
+          "text": "throw new RuntimeException('Вложенное чтение запросило секцию вне активного JSON-снимка: ' . $section);",
+          "count": 1
+        },
+        {
+          "text": "throw new RuntimeException('Не удалось записать runtime projection dirty marker.');",
+          "count": 1
+        },
+        {
+          "text": "throw new RuntimeException('Не удалось прочитать runtime projection dirty marker.');",
+          "count": 1
+        },
+        {
+          "text": "throw new RuntimeException('Не удалось подготовить отсутствующий JSON-файл: хранилище временно доступно только для чтения.');",
+          "count": 1
+        },
+        {
+          "text": "throw new RuntimeException('Не удалось сериализовать JSON-хранилище.');",
+          "count": 1
+        },
+        {
+          "text": "throw new RuntimeException('Не удалось записать JSON-хранилище.');",
+          "count": 1
+        }
+      ]
+    },
+    "bot/services/ShopOrderNotificationService.php": {
+      "reason": "Admin Telegram prize-order notification/actions only.",
+      "classified_lines": 25,
+      "occurrences": [
+        {
+          "text": "return \"🎁 Новый заказ приза\\n\\n\"",
+          "count": 1
+        },
+        {
+          "text": ". \"Заявка: #{$shortId}\\n\"",
+          "count": 3
+        },
+        {
+          "text": ". \"Игрок: {$player}\\n\"",
+          "count": 1
+        },
+        {
+          "text": ". \"Страна: {$country}\\n\"",
+          "count": 1
+        },
+        {
+          "text": ". \"Приз: {$prize}\\n\"",
+          "count": 3
+        },
+        {
+          "text": ". \"Номинал: {$denomination}\\n\"",
+          "count": 3
+        },
+        {
+          "text": ". \"Списано: {$amount} Gold\\n\"",
+          "count": 1
+        },
+        {
+          "text": ". \"Создана: {$createdAt}\\n\\n\"",
+          "count": 1
+        },
+        {
+          "text": ". \"Откройте заявку или сразу выберите действие кнопками ниже.\";",
+          "count": 1
+        },
+        {
+          "text": "['text' => '🎁 Все заказы', 'callback_data' => 'admin:orders'],",
+          "count": 1
+        },
+        {
+          "text": "['text' => '👁 Открыть заявку', 'callback_data' => 'admin:order_open:' . $id],",
+          "count": 1
+        },
+        {
+          "text": "['text' => '✅ Выполнить', 'callback_data' => 'admin:order_done:' . $id],",
+          "count": 1
+        },
+        {
+          "text": "['text' => '🚫 Отклонить', 'callback_data' => 'admin:order_reject_prompt:' . $id],",
+          "count": 1
+        },
+        {
+          "text": "return \"✅ Заказ выполнен\\n\\n\"",
+          "count": 1
+        },
+        {
+          "text": ". \"Стоимость: {$amount} Gold\";",
+          "count": 1
+        },
+        {
+          "text": "$reason = 'Причина не указана.';",
+          "count": 1
+        },
+        {
+          "text": "return \"🚫 Заказ отклонён\\n\\n\"",
+          "count": 1
+        },
+        {
+          "text": ". \"Причина: {$reason}\";",
+          "count": 1
+        },
+        {
+          "text": "return trim((string)(($order['prize_title'] ?? '') ?: ($order['provider'] ?? '') ?: 'Приз'));",
+          "count": 1
+        }
+      ]
+    },
+    "bot/helpers/RuntimeAdminGuard.php": {
+      "reason": "Private admin runtime/financial guard notices only.",
+      "classified_lines": 4,
+      "occurrences": [
+        {
+          "text": "? 'Финансовые изменения временно отключены на время технических работ.'",
+          "count": 1
+        },
+        {
+          "text": ": 'Финансовые изменения временно отключены: включён режим только для чтения.';",
+          "count": 1
+        },
+        {
+          "text": "$callbackNotice = $flags->maintenanceEnabled() ? 'Технические работы' : 'Режим только для чтения';",
+          "count": 1
+        },
+        {
+          "text": "$lines = [\"⚠️ Активные runtime-ограничения\"];",
+          "count": 1
+        }
+      ]
+    },
+    "bot/runtime/ProductionPrimaryInviteResidualRecoveryService.php": {
+      "reason": "Residual-recovery/internal projection evidence copy, no player endpoint ownership.",
+      "classified_lines": 4,
+      "occurrences": [
+        {
+          "text": "$gameTitle = (string)($invite['game_title'] ?? 'Игра');",
+          "count": 1
+        },
+        {
+          "text": "$expectedMessage = 'Матч «' . $gameTitle . '» не начался.';",
+          "count": 1
+        },
+        {
+          "text": "if ((string)($notification['title'] ?? '') !== 'Срок приглашения истёк'",
+          "count": 1
+        },
+        {
+          "text": "'title' => 'Срок приглашения истёк',",
+          "count": 1
+        }
+      ]
+    },
+    "bot/migration/LegacyRealtimeNormalizedImportService.php": {
+      "reason": "Legacy cutover/import fallback data normalization, not live player presentation ownership.",
+      "classified_lines": 3,
+      "occurrences": [
+        {
+          "text": "'inviter_name' => $this->text($payload['inviter_name'] ?? 'Игрок', 80, 'inviter name'),",
+          "count": 1
+        },
+        {
+          "text": "'game_title' => $this->text($payload['game_title'] ?? ($payload['game_type'] ?? 'Игра'), 120, 'invite game title'),",
+          "count": 1
+        },
+        {
+          "text": "'title' => $this->text($payload['title'] ?? 'Уведомление', 160, 'notification title'),",
+          "count": 1
+        }
+      ]
+    },
+    "bot/staging-projection-diagnostic.php": {
+      "reason": "Staging-only diagnostic copy.",
+      "classified_lines": 3,
+      "occurrences": [
+        {
+          "text": "'title'=>(string)($notification['title'] ?? 'Уведомление'),",
+          "count": 1
+        },
+        {
+          "text": "$payload['title'] = (string)($row['title'] ?? 'Уведомление');",
+          "count": 1
+        },
+        {
+          "text": "// generic browser \"Ошибка API: 500\".",
+          "count": 1
+        }
+      ]
+    },
+    "bot/tournaments/TournamentCancellationService.php": {
+      "reason": "Administrative tournament cancellation validation copy.",
+      "classified_lines": 3,
+      "occurrences": [
+        {
+          "text": "throw new InvalidArgumentException('Для аварийной остановки обязательно укажите причину.');",
+          "count": 1
+        },
+        {
+          "text": "throw new InvalidArgumentException('Причина отмены слишком длинная.');",
+          "count": 1
+        },
+        {
+          "text": "throw new InvalidArgumentException('Отмена турнира требует второго подтверждения.');",
+          "count": 1
+        }
+      ]
+    },
+    "bot/accounts/LegacyAccountImportService.php": {
+      "reason": "Legacy account import fallback, not live player presentation ownership.",
+      "classified_lines": 1,
+      "occurrences": [
+        {
+          "text": "$displayName = $this->text($record['first_name'] ?? $record['username'] ?? 'Игрок', 80, 'Игрок');",
+          "count": 1
+        }
+      ]
+    },
+    "bot/cron/weekly-match.php": {
+      "reason": "Cron authorization error, operational/internal endpoint.",
+      "classified_lines": 1,
+      "occurrences": [
+        {
+          "text": "echo json_encode(['ok' => false, 'error' => 'Доступ запрещён.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);",
+          "count": 1
+        }
+      ]
+    },
+    "bot/handlers/WebhookHandler.php": {
+      "reason": "Admin archive/dashboard callback copy; retain player /start and unavailable copy.",
+      "classified_lines": 5,
+      "occurrences": [
+        {
+          "text": "$callbackText = 'Открываю архивную заявку';",
+          "count": 1
+        },
+        {
+          "text": "$callbackText = 'Открываю архивный платёж';",
+          "count": 1
+        },
+        {
+          "text": "$callbackText = 'Архив: только просмотр';",
+          "count": 1
+        },
+        {
+          "text": "$label = $section === 'orders' ? '🗂 Архив заявок' : '🗂 Архив платежей';",
+          "count": 1
+        },
+        {
+          "text": "['text' => '📊 Панель', 'callback_data' => 'admin:dashboard'],",
+          "count": 1
+        }
+      ]
+    },
+    "bot/helpers/response.php": {
+      "reason": "Implementation comments describing legacy shop-order reconciliation, not player copy.",
+      "classified_lines": 5,
+      "occurrences": [
+        {
+          "text": "// Старые версии магазина создавали две записи на один заказ:",
+          "count": 1
+        },
+        {
+          "text": "// 1) реальное balance_change со списанием;",
+          "count": 1
+        },
+        {
+          "text": "// 2) техническую shop_order с той же датой и суммой.",
+          "count": 1
+        },
+        {
+          "text": "// Сопоставляем их попарно, а не через простой unique-key, чтобы два",
+          "count": 1
+        },
+        {
+          "text": "// настоящих одинаковых заказа в одну секунду не схлопнулись в один.",
+          "count": 1
+        }
+      ]
+    },
+    "bot/api.php": {
+      "reason": "Implementation comments for weekly catch-up semantics, not player copy.",
+      "classified_lines": 3,
+      "occurrences": [
+        {
+          "text": "// MVP-9: если плановый cron был пропущен, первый вход игрока безопасно",
+          "count": 1
+        },
+        {
+          "text": "// догоняет только его собственное недельное начисление. Повтор невозможен",
+          "count": 1
+        },
+        {
+          "text": "// благодаря cycle key на пользователе.",
+          "count": 1
+        }
+      ]
+    },
+    "bot/services/UserService.php": {
+      "reason": "Implementation comments documenting stats/admin Gold semantics, not player copy.",
+      "classified_lines": 6,
+      "occurrences": [
+        {
+          "text": "// Не доверяем старому user.stats: в ранних MVP счётчики могли раздуться",
+          "count": 1
+        },
+        {
+          "text": "// из-за повторного завершения одного и того же матча.",
+          "count": 1
+        },
+        {
+          "text": "// Для профиля игрока считаем статистику заново по реальным finished games.",
+          "count": 1
+        },
+        {
+          "text": "// Администраторы могут проверять магазин на текущем тестовом Gold без",
+          "count": 1
+        },
+        {
+          "text": "// искусственного отыгрыша сотен матчей. Для обычных игроков правило",
+          "count": 1
+        },
+        {
+          "text": "// оборота Gold остаётся неизменным.",
+          "count": 1
+        }
+      ]
+    },
+    "bot/notifications/NotificationCenterV2Policy.php": {
+      "reason": "Implementation comment only.",
+      "classified_lines": 1,
+      "occurrences": [
+        {
+          "text": "// meaningless `Открыть` button after the v2 policy is deployed.",
+          "count": 1
+        }
+      ]
+    }
+  },
+  "classified_files": 17,
+  "classified_cyrillic_lines": 186
+}

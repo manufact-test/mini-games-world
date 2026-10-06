@@ -168,6 +168,43 @@ const baseline = fs.existsSync(baselinePath)
   ? JSON.parse(fs.readFileSync(baselinePath, 'utf8'))
   : null;
 
+const CLASSIFIED_LINE_PATH = 'ops/checks/mvp27_1_backend_nonplayer_line_classification.json';
+const classifiedLineConfig = fs.existsSync(CLASSIFIED_LINE_PATH)
+  ? JSON.parse(fs.readFileSync(CLASSIFIED_LINE_PATH, 'utf8'))
+  : { files:{} };
+const classifiedLineLimits = new Map();
+const classifiedLineSeen = new Map();
+for (const [file, entry] of Object.entries(classifiedLineConfig.files || {})) {
+  const limits = new Map();
+  for (const occurrence of entry.occurrences || []) {
+    const text = String(occurrence.text || '');
+    const count = Number(occurrence.count || 0);
+    if (text === '' || !Number.isInteger(count) || count < 1) {
+      throw new Error('Invalid classified line fingerprint for ' + file);
+    }
+    const functionName = String(occurrence.function || '');
+    const fingerprint = functionName + '\n' + text;
+    limits.set(fingerprint, count);
+  }
+  classifiedLineLimits.set(file, limits);
+}
+
+function isClassifiedCyrillicLine(file, line, functionName) {
+  const limits = classifiedLineLimits.get(file);
+  if (!limits) return false;
+  const text = line.trim();
+  const scopedFingerprint = String(functionName || '') + '\n' + text;
+  const plainFingerprint = '\n' + text;
+  const fingerprint = limits.has(scopedFingerprint) ? scopedFingerprint : plainFingerprint;
+  const limit = limits.get(fingerprint) || 0;
+  if (limit < 1) return false;
+  const key = file + '\n' + fingerprint;
+  const seen = classifiedLineSeen.get(key) || 0;
+  if (seen >= limit) return false;
+  classifiedLineSeen.set(key, seen + 1);
+  return true;
+}
+
 const findings = [];
 const scanned = new Set();
 
@@ -177,8 +214,12 @@ for (const root of ROOTS) {
     if (scanned.has(n)) continue;
     scanned.add(n);
     const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
+    let currentFunction = '';
     lines.forEach((line, index) => {
+      const functionMatch = line.match(/\bfunction\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/);
+      if (functionMatch) currentFunction = functionMatch[1];
       if (!CYRILLIC.test(line)) return;
+      if (isClassifiedCyrillicLine(n, line, currentFunction)) return;
       findings.push({ scope:root.name, file:n, line:index + 1, text:line.trim().slice(0,220) });
     });
   }
@@ -214,6 +255,23 @@ if (process.argv.includes('--sample')) {
 }
 
 if (scanned.size === 0) throw new Error('Localization audit scanned no runtime files.');
+
+let classifiedLineTotal = 0;
+for (const [file, limits] of classifiedLineLimits) {
+  for (const [fingerprint, expected] of limits) {
+    const key = file + '\n' + fingerprint;
+    const actual = classifiedLineSeen.get(key) || 0;
+    if (actual !== expected) {
+      throw new Error(`Classified line fingerprint drift for ${file}: expected ${expected}, matched ${actual}: ${fingerprint}`);
+    }
+    classifiedLineTotal += actual;
+  }
+}
+if (classifiedLineConfig.classified_cyrillic_lines !== undefined
+    && classifiedLineTotal !== Number(classifiedLineConfig.classified_cyrillic_lines)) {
+  throw new Error(`Classified backend non-player line total drift: expected ${classifiedLineConfig.classified_cyrillic_lines}, matched ${classifiedLineTotal}`);
+}
+console.log(`MVP27_1_CLASSIFIED_BACKEND_NONPLAYER_LINES=${classifiedLineTotal}`);
 
 if (baseline) {
   const limits = [

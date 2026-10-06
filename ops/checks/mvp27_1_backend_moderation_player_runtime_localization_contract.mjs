@@ -3,7 +3,8 @@ import fs from 'node:fs';
 const CYR = /[\u0400-\u04FF]/;
 const locale = JSON.parse(fs.readFileSync('app/locales/ru.json','utf8'));
 const baseline = JSON.parse(fs.readFileSync('ops/checks/mvp27_1_hardcoded_text_baseline.json','utf8'));
-const successor = String(process.env.GITHUB_HEAD_REF ?? '').startsWith('agent/mvp27-1-backend-baseline-player-localization-bundle-');
+const playerReportSource = fs.readFileSync('bot/social/PlayerReportService.php','utf8');
+const successor = playerReportSource.includes("ServerLocalization::copy('server.moderation.errors.self_report'");
 function assert(ok,msg){ if(!ok) throw new Error(msg); }
 function get(key){ return key.split('.').reduce((v,p)=>v?.[p],locale); }
 function cyrLines(path){ return fs.readFileSync(path,'utf8').split(/\r?\n/).filter(l=>CYR.test(l)).length; }
@@ -75,7 +76,7 @@ assert(moderation.includes("'Укажите основание предупре�
 assert(moderation.includes("'Выберите срок ограничения.'"),'Admin restriction decision validation must remain outside player slice.');
 assert(moderation.includes("'Апелляция уже обработана.'"),'Admin appeal-review validation must remain outside player slice.');
 
-const reports=fs.readFileSync('bot/social/PlayerReportService.php','utf8');
+const reports=playerReportSource;
 assert(reports.includes("ServerLocalization::copy('server.moderation.player_fallback'"),'Player report fallback must be locale-owned.');
 if(successor){
   for(const key of [

@@ -3,7 +3,8 @@ import fs from 'node:fs';
 const CYR = /[\u0400-\u04FF]/;
 const locale = JSON.parse(fs.readFileSync('app/locales/ru.json','utf8'));
 const baseline = JSON.parse(fs.readFileSync('ops/checks/mvp27_1_hardcoded_text_baseline.json','utf8'));
-const successor = String(process.env.GITHUB_HEAD_REF ?? '').startsWith('agent/mvp27-1-backend-baseline-player-localization-bundle-');
+const supportServiceSource = fs.readFileSync('bot/support/SupportTicketService.php','utf8');
+const successor = supportServiceSource.includes("ServerLocalization::copy('server.support.errors.invalid_queue_mode'");
 function assert(ok,msg){ if(!ok) throw new Error(msg); }
 function get(key){ return key.split('.').reduce((v,p)=>v?.[p],locale); }
 function cyrLines(path){ return fs.readFileSync(path,'utf8').split(/\r?\n/).filter(l=>CYR.test(l)).length; }
@@ -73,7 +74,7 @@ const expectedCyr={
 };
 for(const [path,n] of Object.entries(expectedCyr)) assert(cyrLines(path)===n,path+' has unexpected residual Cyrillic count.');
 
-const service=fs.readFileSync('bot/support/SupportTicketService.php','utf8');
+const service=supportServiceSource;
 if(successor){
   for(const key of [
     'server.support.errors.invalid_queue_mode',
