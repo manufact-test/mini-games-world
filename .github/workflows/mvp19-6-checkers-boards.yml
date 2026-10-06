@@ -154,7 +154,12 @@ jobs:
         run: |
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'; head='${{ github.event.pull_request.head.sha }}'
-          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-invite-service-chain-localization-* ]]; then
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-game-runtime-localization-* ]]; then
+            node ops/checks/mvp27_1_backend_game_runtime_localization_contract.mjs
+            php bot/tests/Mvp14r2GamesContractTest.php
+            php bot/tests/Mvp14r2GamesBaselineTest.php
+            php bot/tests/Mvp167AllGamesRegressionContractTest.php
+          elif [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-invite-service-chain-localization-* ]]; then
             # Localization successor: GameInviteService may move copy ownership only.
             # Keep every Checkers/game owner frozen and prove rematch semantics separately.
             git diff --exit-code "$base" "$head" -- \

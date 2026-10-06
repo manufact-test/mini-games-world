@@ -171,6 +171,11 @@ app/locales/ru.json
 ops/checks/mvp27_1_backend_game_runtime_localization_contract.mjs
 ops/checks/mvp27_1_hardcoded_text_baseline.json
 .github/workflows/mvp27-1-backend-game-runtime-localization.yml
+.github/workflows/mvp16-7-all-games-regression.yml
+.github/workflows/mvp19-6-checkers-boards.yml
+.github/workflows/mvp20-2-hidden-skill.yml
+bot/tests/Mvp14r2GamesContractTest.php
+bot/tests/Mvp19_12BattleshipFireReliabilityTest.mjs
 EOF
 )"
           bad="$(comm -23 <(printf '%s\n' "$changed") <(printf '%s\n' "$allowed" | sort) || true)"
