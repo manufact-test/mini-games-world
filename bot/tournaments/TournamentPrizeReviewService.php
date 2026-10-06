@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 /**
  * MVP-21.10 prize-path integrity owner.
  *
@@ -332,7 +334,7 @@ final class TournamentPrizeReviewService
             $top3[] = [
                 'mgw_id'=>$mgwId,
                 'public_mgw_id'=>MgwIdGenerator::toPublic($mgwId),
-                'nickname'=>$users[$mgwId] ?? 'Игрок',
+                'nickname'=>$users[$mgwId] ?? ServerLocalization::copy('arena.hall.player_fallback', 'Player'),
                 'canonical_placement'=>$placement,
                 'effective_placement'=>$decision['effective_placements'][$mgwId] ?? $placement,
                 'review_state'=>$this->reviewStateFor($decision['reviews'], $mgwId),
@@ -545,10 +547,10 @@ final class TournamentPrizeReviewService
             'SELECT nickname,display_name FROM mgw_users WHERE mgw_id=:mgw_id LIMIT 2',
             ['mgw_id'=>$mgwId]
         );
-        if ($rows === [] || !is_array($rows[0])) return 'Игрок';
+        if ($rows === [] || !is_array($rows[0])) return ServerLocalization::copy('arena.hall.player_fallback', 'Player');
         $nickname = trim((string)($rows[0]['nickname'] ?? ''));
         if ($nickname === '') $nickname = trim((string)($rows[0]['display_name'] ?? ''));
-        return $nickname !== '' ? $nickname : 'Игрок';
+        return $nickname !== '' ? $nickname : ServerLocalization::copy('arena.hall.player_fallback', 'Player');
     }
 
     private function auditRows(string $tournamentId, int $limit): array
