@@ -116,11 +116,17 @@ final class NotificationService
         } else {
             $reason = trim((string)($order['reject_reason'] ?? $order['admin_note'] ?? ''));
             $title = ServerLocalization::copy('server.notifications.service.shop_order_rejected_title', 'Order rejected');
-            $message = ServerLocalization::copy(
-                'server.notifications.service.shop_order_rejected_message',
-                'Request #{id}: {prize}.{reason}',
-                ['id'=>$shortId,'prize'=>$prize,'reason'=>$reason !== '' ? ' Reason: ' . $reason . '.' : '']
-            );
+            $message = $reason !== ''
+                ? ServerLocalization::copy(
+                    'server.notifications.service.shop_order_rejected_reason_message',
+                    'Request #{id}: {prize}. Reason: {reason}.',
+                    ['id'=>$shortId,'prize'=>$prize,'reason'=>$reason]
+                )
+                : ServerLocalization::copy(
+                    'server.notifications.service.shop_order_rejected_message',
+                    'Request #{id}: {prize}.',
+                    ['id'=>$shortId,'prize'=>$prize]
+                );
             $tone = 'danger';
         }
 
@@ -161,20 +167,32 @@ final class NotificationService
         $currency = trim((string)($payment['currency'] ?? 'RUB')) ?: 'RUB';
         if ($decision === 'applied') {
             $title = ServerLocalization::copy('server.notifications.service.payment_applied_title', 'Top-up confirmed');
-            $message = ServerLocalization::copy(
-                'server.notifications.service.payment_applied_message',
-                'Request #{id}: credited +{coins} {room} coins{price}.',
-                ['id'=>$shortId,'coins'=>$coins,'room'=>$room,'price'=>$price > 0 ? ' for ' . $price . ' ' . $currency : '']
-            );
+            $message = $price > 0
+                ? ServerLocalization::copy(
+                    'server.notifications.service.payment_applied_price_message',
+                    'Request #{id}: credited +{coins} {room} coins for {price} {currency}.',
+                    ['id'=>$shortId,'coins'=>$coins,'room'=>$room,'price'=>$price,'currency'=>$currency]
+                )
+                : ServerLocalization::copy(
+                    'server.notifications.service.payment_applied_message',
+                    'Request #{id}: credited +{coins} {room} coins.',
+                    ['id'=>$shortId,'coins'=>$coins,'room'=>$room]
+                );
             $tone = 'success';
         } else {
             $reason = trim((string)($payment['reject_reason'] ?? ''));
             $title = ServerLocalization::copy('server.notifications.service.payment_rejected_title', 'Top-up rejected');
-            $message = ServerLocalization::copy(
-                'server.notifications.service.payment_rejected_message',
-                'Request #{id} for {coins} {room} coins was rejected.{reason}',
-                ['id'=>$shortId,'coins'=>$coins,'room'=>$room,'reason'=>$reason !== '' ? ' Reason: ' . $reason . '.' : '']
-            );
+            $message = $reason !== ''
+                ? ServerLocalization::copy(
+                    'server.notifications.service.payment_rejected_reason_message',
+                    'Request #{id} for {coins} {room} coins was rejected. Reason: {reason}.',
+                    ['id'=>$shortId,'coins'=>$coins,'room'=>$room,'reason'=>$reason]
+                )
+                : ServerLocalization::copy(
+                    'server.notifications.service.payment_rejected_message',
+                    'Request #{id} for {coins} {room} coins was rejected.',
+                    ['id'=>$shortId,'coins'=>$coins,'room'=>$room]
+                );
             $tone = 'danger';
         }
 
@@ -210,11 +228,17 @@ final class NotificationService
         }
 
         $reason = trim((string)($transaction['reason'] ?? ''));
-        $message = ServerLocalization::copy(
-            'server.notifications.service.admin_gold_message',
-            'Credited +{amount} Gold.{reason}',
-            ['amount'=>$amount,'reason'=>$reason !== '' ? ' Reason: ' . $reason . '.' : '']
-        );
+        $message = $reason !== ''
+            ? ServerLocalization::copy(
+                'server.notifications.service.admin_gold_reason_message',
+                'Credited +{amount} Gold. Reason: {reason}.',
+                ['amount'=>$amount,'reason'=>$reason]
+            )
+            : ServerLocalization::copy(
+                'server.notifications.service.admin_gold_message',
+                'Credited +{amount} Gold.',
+                ['amount'=>$amount]
+            );
         $notification = [
             'id' => make_id('notification'),
             'event_key' => $eventKey,
