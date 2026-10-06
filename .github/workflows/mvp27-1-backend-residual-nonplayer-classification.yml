@@ -14,6 +14,8 @@ on:
 permissions:
   contents: read
 
+# exact-head refresh after function-scoped fingerprint repair
+
 jobs:
   classify:
     if: startsWith(github.head_ref, 'agent/mvp27-1-backend-residual-nonplayer-classification-')
