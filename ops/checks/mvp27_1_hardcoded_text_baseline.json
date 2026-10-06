@@ -2,12 +2,12 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-06",
-  "staging_base": "d92323e5d5cfb211015a03ebd3a26ce9ebaf0186",
+  "staging_base": "5743abcc6b1a08ab8a62699d27918a8248d00795",
   "scanned_files": 679,
-  "cyrillic_lines_total": 1300,
+  "cyrillic_lines_total": 1087,
   "by_scope": {
     "client": 0,
-    "backend": 1300,
+    "backend": 1087,
     "client-entry": 0
   },
   "excluded": [
@@ -69,5 +69,5 @@
     "classified residual historical/orphan client owners (stripped main.js; invite-terminal-actions-v115 only through stripped main; orphan invite-terminal-actions-v110r12; historical production-v106-timer-mobile; historical production-v98-passive-session-transport; orphan notification-bell-first-click-v116)",
     "final historical/orphan client owners (api/request-guard.js; main-v102.js; main-v103.js; main-v104.js; main-v105.js; main-v120-invite-controller-shell.js; production-v99-invite-picker-hold.js; screens/notification-bell-first-click-v115.js; screens/search-screen.js)"
   ],
-  "note": "MVP-27.1 active Cosmetic Store service-chain localization moved 48 direct backend Cyrillic lines from Store snapshot/error/transaction owners to canonical locale ownership; client and client-entry debt remain zero."
+  "note": "MVP-27.1 active game-runtime backend localization moved 213 direct backend Cyrillic lines from the canonical game/action/reaction/presence/reconnect/settlement chain to locale ownership; client and client-entry debt remain zero."
 }
