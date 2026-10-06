@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class SessionService
 {
     private const HEARTBEAT_WRITE_INTERVAL_SEC = 30;
@@ -32,7 +34,7 @@ final class SessionService
     public function assertCanPlay(array $user, string $sessionId): void
     {
         if ($sessionId === '') {
-            throw new RuntimeException('Не удалось определить сессию устройства. Закройте приложение и откройте заново из Telegram.');
+            throw new RuntimeException(ServerLocalization::copy('session.device_session_unknown', 'The device session could not be identified. Close the app and reopen it from Telegram.'));
         }
 
         if ($this->canTakeSession($user, $sessionId)) {
@@ -41,14 +43,14 @@ final class SessionService
 
         $status = $user['status'] ?? 'idle';
         if ($status === 'playing') {
-            throw new RuntimeException('У вас уже идёт активная игра на другом устройстве. Продолжайте игру там.');
+            throw new RuntimeException(ServerLocalization::copy('session.active_game_other_device', 'You already have an active game on another device. Continue the game there.'));
         }
 
         if ($status === 'searching') {
-            throw new RuntimeException('Вы уже ищете матч на другом устройстве. Завершите поиск там или подождите несколько минут.');
+            throw new RuntimeException(ServerLocalization::copy('session.search_other_device', 'You are already searching for a match on another device. Finish the search there or wait a few minutes.'));
         }
 
-        throw new RuntimeException('Игра уже открыта на другом устройстве.');
+        throw new RuntimeException(ServerLocalization::copy('session.lock_default', 'The game is already open on another device.'));
     }
 
     public function canTakeSession(array $user, string $sessionId): bool
@@ -60,7 +62,7 @@ final class SessionService
         $status = (string)($user['status'] ?? 'idle');
         $activeId = (string)($user['active_session_id'] ?? '');
 
-        // Если пользователь не ищет и не играет, новое устройство может стать активным.
+        // If the user is neither searching nor playing, a new device may become active.
         if (!in_array($status, ['searching', 'playing'], true)) {
             return true;
         }
@@ -107,9 +109,9 @@ final class SessionService
 
         $message = null;
         if ($locked && $status === 'playing') {
-            $message = 'У вас уже идёт активная игра на другом устройстве. Продолжайте игру там.';
+            $message = ServerLocalization::copy('session.active_game_other_device', 'You already have an active game on another device. Continue the game there.');
         } elseif ($locked && $status === 'searching') {
-            $message = 'Вы уже ищете матч на другом устройстве. Завершите поиск там или подождите несколько минут.';
+            $message = ServerLocalization::copy('session.search_other_device', 'You are already searching for a match on another device. Finish the search there or wait a few minutes.');
         }
 
         return [
