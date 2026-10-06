@@ -1,9 +1,11 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 2) . '/localization/ServerLocalization.php';
+
 return [
     'id' => 'domino',
-    'title' => 'Домино',
+    'title' => ServerLocalization::copy('game_cards.meta.domino.title', 'Domino'),
     'enabled' => true,
     'engine' => 'domino',
     'renderer' => 'domino',

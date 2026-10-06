@@ -1,9 +1,11 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 2) . '/localization/ServerLocalization.php';
+
 return [
     'id' => 'tictactoe',
-    'title' => 'Крестики-нолики',
+    'title' => ServerLocalization::copy('game_cards.meta.tictactoe.title', 'Tic-Tac-Toe'),
     'enabled' => true,
     'engine' => 'tictactoe',
     'renderer' => 'grid_marks',
