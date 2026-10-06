@@ -65,7 +65,10 @@ jobs:
           set -Eeuo pipefail
           baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
           git cat-file -e "${baseline}^{commit}"
-          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-notifications-endpoint-localization-* ]]; then
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-final-player-localization-* ]]; then
+            echo 'Final backend localization successor: notification behavior regressions still run; localized NotificationService/repository fallback copy is intentionally owned by this PR.'
+            git diff --check
+          elif [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-notifications-endpoint-localization-* ]]; then
             echo 'Notifications endpoint localization successor: preserve exact notification services/repositories identity; focused localization contract owns bot/notifications.php copy migration.'
             git diff --exit-code "${baseline}" HEAD -- \
               bot/notifications \
