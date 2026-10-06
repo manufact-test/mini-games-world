@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/notifications/AdminNotificationEventService.php';
 require_once dirname(__DIR__) . '/services/NotificationService.php';
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
 
 final class SupportNotificationBridge
 {
@@ -38,8 +39,12 @@ final class SupportNotificationBridge
             'audience_ref' => 'ticket:' . $ticketNumber,
             'recipient_mgw_ids' => [$requesterMgwId],
             'recipient_legacy_user_ids' => [$legacyUserId],
-            'title' => 'Ответ поддержки',
-            'text' => 'По обращению ' . $ticketNumber . ' пришёл новый ответ.',
+            'title' => ServerLocalization::copy('server.support.notifications.reply_title', 'Support reply'),
+            'text' => ServerLocalization::copy(
+                'server.support.notifications.reply_text',
+                'There is a new reply for support ticket {ticket}.',
+                ['ticket'=>$ticketNumber]
+            ),
             'deep_link' => 'support:ticket:' . $ticketNumber,
         ];
 
