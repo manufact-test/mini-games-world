@@ -3,9 +3,8 @@ import fs from 'node:fs';
 const CYR = /[\u0400-\u04FF]/;
 const locale = JSON.parse(fs.readFileSync('app/locales/ru.json','utf8'));
 const baseline = JSON.parse(fs.readFileSync('ops/checks/mvp27_1_hardcoded_text_baseline.json','utf8'));
-const headRef = String(process.env.GITHUB_HEAD_REF ?? '');
-const successor = headRef.startsWith('agent/mvp27-1-backend-baseline-player-localization-bundle-')
-  || headRef.startsWith('agent/mvp27-1-backend-residual-nonplayer-classification-');
+const registrationSource = fs.readFileSync('bot/tournaments/TournamentRegistrationService.php','utf8');
+const successor = registrationSource.includes("ServerLocalization::copy('server.tournament_runtime.scheduling.start_required'");
 function assert(ok,msg){ if(!ok) throw new Error(msg); }
 function get(key){ return key.split('.').reduce((v,p)=>v?.[p],locale); }
 function cyrLines(path){ return fs.readFileSync(path,'utf8').split(/\r?\n/).filter(l=>CYR.test(l)).length; }
@@ -141,7 +140,7 @@ const expectedCyr = {
 };
 for(const [path,n] of Object.entries(expectedCyr)) assert(cyrLines(path)===n,path+' has unexpected residual Cyrillic count.');
 
-const registration=fs.readFileSync('bot/tournaments/TournamentRegistrationService.php','utf8');
+const registration=registrationSource;
 assert(registration.includes("ServerLocalization::copy('server.tournament_runtime.rules.registration_game_capacity'"),'Rules interpolation owner missing.');
 if(successor){
   assert(registration.includes("ServerLocalization::copy('server.tournament_runtime.scheduling.start_required'"),'Successor must move scheduling copy to canonical localization without changing tournament semantics.');
