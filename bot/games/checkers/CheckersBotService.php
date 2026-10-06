@@ -1,19 +1,21 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 2) . '/localization/ServerLocalization.php';
+
 final class CheckersBotService
 {
     public function chooseMove(array $board, array $moves, string $side, string $difficulty): array
     {
         if ($moves === []) {
-            throw new RuntimeException('У бота нет допустимых ходов.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.bot_no_moves', 'The bot has no legal moves.'));
         }
 
         $difficulty = in_array($difficulty, ['easy', 'medium', 'hard'], true) ? $difficulty : 'medium';
 
-        // Лёгкий бот остаётся слабее, но больше не играет как в поддавки:
-        // совсем случайный ход возможен редко, в остальных случаях он выбирает
-        // один из нескольких разумных вариантов без глубокого расчёта.
+        // The easy bot remains weaker, but no longer deliberately gives pieces away:
+        // a fully random move is rare; otherwise it chooses
+        // one of several reasonable options without deep calculation.
         if ($difficulty === 'easy' && random_int(1, 100) <= 12) {
             return $moves[array_rand($moves)];
         }
