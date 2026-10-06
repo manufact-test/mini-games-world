@@ -22,8 +22,12 @@ $entry = $read('app/v110.php');
 $assert(
     str_contains($search, 'startPromise:null')
         && str_contains($search, 'stopPromise:null')
-        && str_contains($search, 'searchRuntime.active || searchRuntime.starting || searchRuntime.startPromise || searchRuntime.stopPromise'),
-    'Search lifecycle must reject duplicate starts while start, active search, or authoritative stop is in flight.'
+        && str_contains($search, 'searchRuntime.active || searchRuntime.starting || (searchRuntime.startPromise && !searchRuntime.stopPromise)')
+        && str_contains($search, 'const pendingStop = searchRuntime.stopPromise;')
+        && str_contains($search, 'if (pendingStop)')
+        && str_contains($search, 'try { await pendingStop; }')
+        && str_contains($search, 'const startPromise = api.startSearch(context.size, context.gameType);'),
+    'Search lifecycle must reject true duplicate starts while serializing a new visible intent behind the single authoritative pending stop before start_search.'
 );
 $assert(
     str_contains($search, 'const pendingStart = searchRuntime.startPromise;')
