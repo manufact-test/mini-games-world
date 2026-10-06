@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class ShopOrderHistoryService
 {
     public function userOrders(array $db, string $userId, int $limit = 20): array
@@ -39,7 +41,7 @@ final class ShopOrderHistoryService
         if ($status === 'rejected') {
             $rejectReason = trim((string)($order['reject_reason'] ?? $order['admin_note'] ?? ''));
             if ($rejectReason === '') {
-                $rejectReason = 'Причина не указана.';
+                $rejectReason = ServerLocalization::copy('server.shop_history.reject_reason_missing', 'Reason not provided.');
             }
         }
 
@@ -52,7 +54,7 @@ final class ShopOrderHistoryService
             'country' => (string)($order['country'] ?? ''),
             'country_code' => (string)($order['country_code'] ?? ''),
             'provider' => (string)($order['provider'] ?? ''),
-            'prize_title' => (string)($order['prize_title'] ?? $order['provider'] ?? 'Приз'),
+            'prize_title' => (string)($order['prize_title'] ?? $order['provider'] ?? ServerLocalization::copy('server.shop_history.prize_fallback', 'Prize')),
             'denomination_label' => (string)($order['denomination_label'] ?? ($amount . ' Gold')),
             'gold_cost' => $amount,
             'created_at' => (string)($order['created_at'] ?? ''),
@@ -78,12 +80,12 @@ final class ShopOrderHistoryService
     private function statusLabel(string $status): string
     {
         return match ($status) {
-            'pending' => 'Ожидает обработки',
-            'processing' => 'В обработке',
-            'done' => 'Выполнена',
-            'rejected' => 'Отклонена',
-            'cancelled' => 'Отменена',
-            default => 'Статус уточняется',
+            'pending' => ServerLocalization::copy('server.shop_history.statuses.pending', 'Pending'),
+            'processing' => ServerLocalization::copy('server.shop_history.statuses.processing', 'Processing'),
+            'done' => ServerLocalization::copy('server.shop_history.statuses.done', 'Completed'),
+            'rejected' => ServerLocalization::copy('server.shop_history.statuses.rejected', 'Rejected'),
+            'cancelled' => ServerLocalization::copy('server.shop_history.statuses.cancelled', 'Cancelled'),
+            default => ServerLocalization::copy('server.shop_history.statuses.unknown', 'Status pending clarification'),
         };
     }
 
