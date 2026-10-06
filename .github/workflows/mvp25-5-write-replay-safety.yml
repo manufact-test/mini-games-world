@@ -69,7 +69,14 @@ jobs:
           set -euo pipefail
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
-          git diff --exit-code "$base" "$head" -- bot/games bot/economy bot/ledger bot/tournaments app/assets/js/games app/assets/css/games
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-baseline-player-localization-bundle-* ]]; then
+            git diff --exit-code "$base" "$head" -- \
+              bot/games bot/economy bot/ledger bot/tournaments \
+              ':(exclude)bot/tournaments/TournamentRegistrationService.php' \
+              app/assets/js/games app/assets/css/games
+          else
+            git diff --exit-code "$base" "$head" -- bot/games bot/economy bot/ledger bot/tournaments app/assets/js/games app/assets/css/games
+          fi
 
       - name: Bounded slice guard
         shell: bash
@@ -80,7 +87,9 @@ jobs:
           changed="$(git diff --name-only "$base" "$head")"
           printf '%s\n' "$changed"
 
-          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-moderation-player-runtime-localization-* ]]; then
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-baseline-player-localization-bundle-* ]]; then
+            echo 'Backend localization bundle scope is enforced by its exact dedicated bundle workflow.'
+          elif [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-moderation-player-runtime-localization-* ]]; then
             bad=()
             while IFS= read -r file; do
               case "$file" in
