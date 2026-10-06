@@ -777,7 +777,7 @@ final class ModerationService
     {
         $mgwId = strtoupper(trim($mgwId));
         if (!class_exists('MgwIdGenerator') || !MgwIdGenerator::isValid($mgwId)) {
-            throw new ModerationException('user_unavailable', 'Игрок MGW не найден.');
+            throw new ModerationException('user_unavailable', ServerLocalization::copy('server.moderation.errors.user_unavailable', 'MGW player was not found.'));
         }
         return $mgwId;
     }
