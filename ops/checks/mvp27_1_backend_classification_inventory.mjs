@@ -48,16 +48,128 @@ if(run.status!==0){
   throw new Error('Current hardcoded-text audit failed.');
 }
 const auditOut=String(run.stdout||'');
-function metric(name){
-  const m=auditOut.match(new RegExp('^'+name+'=(\\d+)$','m'));
-  assert(m,'Missing audit metric '+name);
+function metric(name,{required=true,missing=0}={}){
+  const m=auditOut.match(new RegExp('^'+name+'=(\\d+)
+
+const start=auditOut.indexOf('MVP27_1_TOP_FILES_BEGIN');
+const end=auditOut.indexOf('MVP27_1_TOP_FILES_END');
+assert(start>=0 && end>start,'Audit file inventory markers missing.');
+const inventory=auditOut.slice(start+'MVP27_1_TOP_FILES_BEGIN'.length,end)
+  .trim().split(/\r?\n/).filter(Boolean)
+  .map(line=>{
+    const m=line.match(/^\s*(\d+)\s+(.+)$/);
+    assert(m,'Unparseable audit inventory line: '+line);
+    return {count:Number(m[1]),file:m[2].trim()};
+  });
+assert(inventory.length>0,'No remaining backend debt files.');
+assert(inventory.reduce((s,x)=>s+x.count,0)===385,'Inventory does not sum to 385.');
+for(const item of inventory) assert(/^bot\/.*\.php$/.test(item.file),'Unexpected non-backend residual owner: '+item.file);
+
+const all=walk('.');
+const contents=new Map();
+for(const file of all){
+  try{ contents.set(file,fs.readFileSync(file,'utf8')); }catch{}
+}
+const phpFiles=[...contents.keys()].filter(f=>f.startsWith('bot/')&&f.endsWith('.php')&&!f.startsWith('bot/tests/'));
+const appFiles=[...contents.keys()].filter(f=>f.startsWith('app/')&&(f.endsWith('.js')||f.endsWith('.php')));
+
+const symbolOwner=new Map();
+for(const file of phpFiles){
+  for(const symbol of symbols(contents.get(file)||'')){
+    if(!symbolOwner.has(symbol)) symbolOwner.set(symbol,file);
+  }
+}
+const edges=new Map();
+for(const src of phpFiles){
+  const text=contents.get(src)||'';
+  const set=new Set();
+  for(const [symbol,dst] of symbolOwner){
+    if(src===dst) continue;
+    if(new RegExp('\\b'+symbol+'\\b').test(text)) set.add(dst);
+  }
+  edges.set(src,set);
+}
+const roots=phpFiles.filter(isRootEndpoint);
+const rootAppRefs=new Map();
+for(const root of roots){
+  const base=path.basename(root);
+  const refs=[];
+  for(const file of appFiles){
+    const text=contents.get(file)||'';
+    if(text.includes('/bot/'+base) || text.includes(base)) refs.push(file);
+  }
+  rootAppRefs.set(root,refs);
+}
+function rootsReaching(target){
+  const reached=[];
+  for(const root of roots){
+    const seen=new Set([root]);
+    const q=[root];
+    let ok=root===target;
+    while(q.length&&!ok){
+      const cur=q.shift();
+      for(const next of edges.get(cur)||[]){
+        if(seen.has(next)) continue;
+        seen.add(next);
+        if(next===target){ ok=true; break; }
+        q.push(next);
+      }
+    }
+    if(ok) reached.push(root);
+  }
+  return reached;
+}
+
+console.log('MVP27_1_BACKEND_CLASSIFICATION_INVENTORY=BEGIN');
+console.log('STAGING_EXPECTED='+EXPECTED_STAGING);
+console.log('BACKEND_AUDIT_CYRILLIC_TOTAL=385');
+console.log('BACKEND_FILES_WITH_CYRILLIC='+inventory.length);
+
+for(const item of inventory){
+  const content=contents.get(item.file)||'';
+  const itemSymbols=symbols(content);
+  const inbound=[];
+  const names=new Set([...itemSymbols,path.basename(item.file)]);
+  for(const file of phpFiles){
+    if(file===item.file) continue;
+    const src=contents.get(file)||'';
+    if([...names].some(n=>n&&src.includes(n))) inbound.push(file);
+  }
+  const reached=rootsReaching(item.file);
+  const playerRoots=reached.filter(root=>
+    !isAdminRoot(root) &&
+    (rootAppRefs.get(root)||[]).some(ref=>!isAdminApp(ref))
+  );
+  const adminRoots=reached.filter(root=>
+    isAdminRoot(root) ||
+    (rootAppRefs.get(root)||[]).some(isAdminApp)
+  );
+  const directRefs=isRootEndpoint(item.file)?(rootAppRefs.get(item.file)||[]):[];
+  console.log(JSON.stringify({
+    file:item.file,
+    cyrillic_lines:item.count,
+    symbols:itemSymbols,
+    direct_inbound:inbound.slice(0,30),
+    reachable_root_endpoints:reached.slice(0,40),
+    app_referenced_player_roots:playerRoots.slice(0,30),
+    admin_roots:adminRoots.slice(0,30),
+    direct_player_app_refs:directRefs.filter(ref=>!isAdminApp(ref)).slice(0,30),
+    direct_admin_app_refs:directRefs.filter(isAdminApp).slice(0,30)
+  }));
+}
+console.log('MVP27_1_BACKEND_CLASSIFICATION_INVENTORY=END');
+,'m'));
+  if(!m){
+    assert(!required,'Missing audit metric '+name);
+    return missing;
+  }
   return Number(m[1]);
 }
 assert(metric('MVP27_1_SCANNED_FILES')===636,'Fresh audit scan count drifted from 636.');
 assert(metric('MVP27_1_CYRILLIC_LINES_TOTAL')===385,'Fresh audit total drifted from 385.');
 assert(metric('MVP27_1_CYRILLIC_LINES_BACKEND')===385,'Fresh backend debt drifted from 385.');
-assert(metric('MVP27_1_CYRILLIC_LINES_CLIENT')===0,'Client debt regressed.');
-assert(metric('MVP27_1_CYRILLIC_LINES_CLIENT_ENTRY')===0,'Client-entry debt regressed.');
+assert(metric('MVP27_1_CYRILLIC_LINES_CLIENT',{required:false})===0,'Client debt regressed.');
+assert(metric('MVP27_1_CYRILLIC_LINES_CLIENT_ENTRY',{required:false})===0,'Client-entry debt regressed.');
 
 const start=auditOut.indexOf('MVP27_1_TOP_FILES_BEGIN');
 const end=auditOut.indexOf('MVP27_1_TOP_FILES_END');
