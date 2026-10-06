@@ -1,0 +1,33 @@
+name: MVP-27.1 Backend Classification Rerank
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'ops/checks/mvp27_1_backend_classification_inventory.mjs'
+      - '.github/workflows/mvp27-1-backend-classification-rerank.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  classify:
+    if: startsWith(github.head_ref, 'agent/mvp27-1-backend-classification-rerank-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Exact staging
+        run: |
+          set -euo pipefail
+          test '${{ github.event.pull_request.base.sha }}' = '58a5b6c15053c905f3cd333d42dde7310efc56b8'
+      - name: Syntax
+        run: node --check ops/checks/mvp27_1_backend_classification_inventory.mjs
+      - name: Current localization ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+      - name: Fresh backend ownership inventory
+        run: node ops/checks/mvp27_1_backend_classification_inventory.mjs
