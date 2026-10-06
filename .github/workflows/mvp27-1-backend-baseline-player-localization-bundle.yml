@@ -13,6 +13,7 @@ on:
       - 'bot/tournaments/TournamentRegistrationService.php'
       - 'bot/support/SupportTicketService.php'
       - 'bot/services/ShopOrderHistoryService.php'
+      - 'bot/tests/Mvp27_1ShopOrderHistoryLocalizationContractTest.php'
       - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - 'ops/checks/mvp27_1_backend_nonplayer_classification_contract.mjs'
@@ -62,7 +63,7 @@ jobs:
           node --check ops/checks/mvp27_1_backend_support_player_runtime_localization_contract.mjs
           python3 -m json.tool app/locales/ru.json >/dev/null
           python3 -m json.tool ops/checks/mvp27_1_hardcoded_text_baseline.json >/dev/null
-          for file in             bot/services/FeatureFlagService.php             bot/services/SessionService.php             bot/services/AuthService.php             bot/social/PlayerReportService.php             bot/tournaments/TournamentRegistrationService.php             bot/support/SupportTicketService.php             bot/services/ShopOrderHistoryService.php; do
+          for file in             bot/services/FeatureFlagService.php             bot/services/SessionService.php             bot/services/AuthService.php             bot/social/PlayerReportService.php             bot/tournaments/TournamentRegistrationService.php             bot/support/SupportTicketService.php             bot/services/ShopOrderHistoryService.php             bot/tests/Mvp27_1ShopOrderHistoryLocalizationContractTest.php; do
             php -l "$file"
           done
 
@@ -101,7 +102,7 @@ jobs:
           php bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
           php bot/tests/Mvp21_1TournamentRegistrationTest.php
           php bot/tests/SupportTicketServiceTest.php
-          php bot/tests/ProductionMvp14D3ShopHistoryPrefetchAbortContractTest.php
+          php bot/tests/Mvp27_1ShopOrderHistoryLocalizationContractTest.php
 
       - name: Bounded bundle scope
         shell: bash
@@ -110,7 +111,7 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head" | sort)"
-          allowed="$(printf '%s\n'             '.github/workflows/mvp18-2-friends-ui.yml'             '.github/workflows/mvp26-2-android-device-auth.yml'             '.github/workflows/mvp27-1-backend-baseline-player-localization-bundle.yml'             '.github/workflows/mvp27-1-localization-audit.yml'             'app/locales/ru.json'             'bot/services/AuthService.php'             'bot/services/FeatureFlagService.php'             'bot/services/SessionService.php'             'bot/services/ShopOrderHistoryService.php'             'bot/social/PlayerReportService.php'             'bot/support/SupportTicketService.php'             'bot/tournaments/TournamentRegistrationService.php'             'ops/checks/mvp27_1_backend_baseline_player_localization_bundle_contract.mjs'             'ops/checks/mvp27_1_backend_nonplayer_classification_contract.mjs'             'ops/checks/mvp27_1_backend_moderation_player_runtime_localization_contract.mjs'             'ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs'             'ops/checks/mvp27_1_backend_support_player_runtime_localization_contract.mjs'             'ops/checks/mvp27_1_hardcoded_text_audit.mjs'             'ops/checks/mvp27_1_hardcoded_text_baseline.json')"
+          allowed="$(printf '%s\n'             '.github/workflows/mvp18-2-friends-ui.yml'             '.github/workflows/mvp26-2-android-device-auth.yml'             '.github/workflows/mvp27-1-backend-baseline-player-localization-bundle.yml'             '.github/workflows/mvp27-1-localization-audit.yml'             'app/locales/ru.json'             'bot/services/AuthService.php'             'bot/services/FeatureFlagService.php'             'bot/services/SessionService.php'             'bot/services/ShopOrderHistoryService.php'             'bot/tests/Mvp27_1ShopOrderHistoryLocalizationContractTest.php'             'bot/social/PlayerReportService.php'             'bot/support/SupportTicketService.php'             'bot/tournaments/TournamentRegistrationService.php'             'ops/checks/mvp27_1_backend_baseline_player_localization_bundle_contract.mjs'             'ops/checks/mvp27_1_backend_nonplayer_classification_contract.mjs'             'ops/checks/mvp27_1_backend_moderation_player_runtime_localization_contract.mjs'             'ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs'             'ops/checks/mvp27_1_backend_support_player_runtime_localization_contract.mjs'             'ops/checks/mvp27_1_hardcoded_text_audit.mjs'             'ops/checks/mvp27_1_hardcoded_text_baseline.json')"
           bad="$(comm -23 <(printf '%s\n' "$changed") <(printf '%s\n' "$allowed" | sort) || true)"
           test -z "$bad" || { printf 'Unexpected bundle paths:\n%s\n' "$bad" >&2; exit 1; }
           git diff --check "$base" "$head"
