@@ -176,99 +176,123 @@
       "occurrences": [
         {
           "text": "throw new RuntimeException('Не указан токен бота в config.php.');",
-          "count": 1
+          "count": 1,
+          "function": "api"
         },
         {
           "text": "$replyMarkup['inline_keyboard'][$rowIndex][$buttonIndex]['text'] = '🎁 Заказы призов';",
-          "count": 1
+          "count": 1,
+          "function": "renameAdminButtons"
         },
         {
           "text": "$replyMarkup['inline_keyboard'][$rowIndex][$buttonIndex]['text'] = str_contains($oldText, 'Все')",
-          "count": 1
+          "count": 1,
+          "function": "renameAdminButtons"
         },
         {
           "text": "? '💳 Все пополнения'",
-          "count": 1
+          "count": 1,
+          "function": "renameAdminButtons"
         },
         {
           "text": ": '💳 Пополнения';",
-          "count": 1
+          "count": 1,
+          "function": "renameAdminButtons"
         },
         {
           "text": "'text' => '🌐 Открыть панель администратора',",
-          "count": 1
+          "count": 1,
+          "function": "renameAdminButtons"
         },
         {
           "text": "$isShopOrders = str_contains($text, '🎁 Заявки магазина');",
-          "count": 1
+          "count": 1,
+          "function": "renameAdminSections"
         },
         {
           "text": "$text = str_replace('🎁 Заявки магазина', '🎁 Заказы призов', $text);",
-          "count": 1
+          "count": 1,
+          "function": "renameAdminSections"
         },
         {
           "text": "$text = str_replace('💳 Платежи', '💳 Пополнения', $text);",
-          "count": 1
+          "count": 1,
+          "function": "renameAdminSections"
         },
         {
           "text": "'Заявок пока нет.',",
-          "count": 1
+          "count": 1,
+          "function": "renameAdminSections"
         },
         {
           "text": "\"Заказов призов пока нет.\\n\\nЗаявки на покупку коинов находятся в разделе «💳 Пополнения».\",",
-          "count": 1
+          "count": 1,
+          "function": "renameAdminSections"
         },
         {
           "text": "$text = str_replace('Нет ожидающих заявок.', 'Нет ожидающих заказов призов.', $text);",
-          "count": 1
+          "count": 1,
+          "function": "renameAdminSections"
         },
         {
           "text": "$playerParts[] = 'Без имени';",
-          "count": 1
+          "count": 1,
+          "function": "paymentAdminNotificationText"
         },
         {
           "text": "return \"💳 Новая заявка на пополнение\\n\\n\"",
-          "count": 1
+          "count": 1,
+          "function": "paymentAdminNotificationText"
         },
         {
           "text": ". \"Игрок: \" . implode(' · ', $playerParts) . \"\\n\"",
-          "count": 1
+          "count": 1,
+          "function": "paymentAdminNotificationText"
         },
         {
           "text": ". \"Комната: {$roomLabel}\\n\"",
-          "count": 1
+          "count": 1,
+          "function": "paymentAdminNotificationText"
         },
         {
           "text": ". \"Сумма: {$price} {$currency}\\n\"",
-          "count": 1
+          "count": 1,
+          "function": "paymentAdminNotificationText"
         },
         {
           "text": ". \"К зачислению: {$coins} коинов\\n\"",
-          "count": 1
+          "count": 1,
+          "function": "paymentAdminNotificationText"
         },
         {
           "text": ". \"Заявка: {$shortId}\\n\"",
-          "count": 1
+          "count": 1,
+          "function": "paymentAdminNotificationText"
         },
         {
           "text": ". \"Создана: \" . ($createdAt !== '' ? $createdAt : '—') . \"\\n\\n\"",
-          "count": 1
+          "count": 1,
+          "function": "paymentAdminNotificationText"
         },
         {
           "text": ". \"Выберите действие кнопками ниже.\";",
-          "count": 1
+          "count": 1,
+          "function": "paymentAdminNotificationText"
         },
         {
           "text": "['text' => '👁 Открыть заявку', 'callback_data' => 'admin:payment_open:' . $shortId],",
-          "count": 1
+          "count": 1,
+          "function": "paymentAdminNotificationKeyboard"
         },
         {
           "text": "['text' => '✅ Начислить', 'callback_data' => 'admin:payment_apply:' . $shortId],",
-          "count": 1
+          "count": 1,
+          "function": "paymentAdminNotificationKeyboard"
         },
         {
           "text": "['text' => '🚫 Отклонить', 'callback_data' => 'admin:payment_reject_prompt:' . $shortId],",
-          "count": 1
+          "count": 1,
+          "function": "paymentAdminNotificationKeyboard"
         }
       ]
     },
