@@ -2,6 +2,7 @@ name: MVP-27.1 Backend Cosmetic Store Service Localization
 # Exact-head CI checkpoint after bounded predecessor-contract migrations.
 # Final checkpoint also includes repaired pre-2070 Invite/Reversi CI metadata and factual v110 publication proof.
 # Successor recovery checkpoint also removes the dead Invite test call and freezes Account owners relative to PR base.
+# Final predecessor checkpoint also makes the Account-chain workflow itself successor-safe.
 
 on:
   pull_request:
