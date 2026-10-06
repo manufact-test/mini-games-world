@@ -90,9 +90,37 @@ jobs:
                   ;;
               esac
             done <<< "$changed"
-            bad="${bad%$'\\n'}"
+            bad="${bad%
+            bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          fi
+          test -z "$bad" || { printf 'Unexpected MVP-25.5 replay-safety paths:\n%s\n' "$bad" >&2; exit 1; }
+\\n'}"
+          elif [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-support-player-runtime-localization-* ]]; then
+            bad=''
+            while IFS= read -r file; do
+              case "$file" in
+                .github/workflows/mvp25-5-write-replay-safety.yml|.github/workflows/mvp27-1-backend-support-player-runtime-localization.yml|app/locales/ru.json|bot/support.php|bot/support-attachment-download.php|bot/support/SupportNotificationBridge.php|bot/support/SupportTicketService.php|ops/checks/mvp27_1_backend_moderation_player_runtime_localization_contract.mjs|ops/checks/mvp27_1_backend_support_player_runtime_localization_contract.mjs|ops/checks/mvp27_1_hardcoded_text_baseline.json)
+                  ;;
+                *)
+                  bad="${bad}${file}"
+            bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          fi
+          test -z "$bad" || { printf 'Unexpected MVP-25.5 replay-safety paths:\n%s\n' "$bad" >&2; exit 1; }
+\\n'
+                  ;;
+              esac
+            done <<< "$changed"
+            bad="${bad%
+            bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          fi
+          test -z "$bad" || { printf 'Unexpected MVP-25.5 replay-safety paths:\n%s\n' "$bad" >&2; exit 1; }
+\\n'}"
           else
-            allowed='^(\.github/workflows/mvp25-5-write-replay-safety\.yml|bot/(support/SupportTicketService\.php|social/PlayerReportService\.php|support\.php|tests/(Mvp25_5WriteReplaySafetyTest\.php|Mvp25_5WriteReplaySafetyContractTest\.php))|docs/MVP25_5_SECURITY_RESILIENCE_AUDIT\.md)$'
+            allowed='^(\.github/workflows/mvp25-5-write-replay-safety\.yml|bot/(support/SupportTicketService\.php|social/PlayerReportService\.php|support\.php|tests/(Mvp25_5WriteReplaySafetyTest\.php|Mvp25_5WriteReplaySafetyContractTest\.php))|docs/MVP25_5_SECURITY_RESILIENCE_AUDIT\.md)
+            bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          fi
+          test -z "$bad" || { printf 'Unexpected MVP-25.5 replay-safety paths:\n%s\n' "$bad" >&2; exit 1; }
+
             bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           fi
           test -z "$bad" || { printf 'Unexpected MVP-25.5 replay-safety paths:\n%s\n' "$bad" >&2; exit 1; }
