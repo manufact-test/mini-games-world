@@ -30,6 +30,7 @@ $findImportTarget = static function (array $data, string $marker): string {
 };
 $locale = json_decode($source['locale'], true, 512, JSON_THROW_ON_ERROR);
 $hallLocale = $locale['arena']['hall'] ?? [];
+$runtimeHallLocale = $locale['server']['tournament_runtime']['hall'] ?? [];
 
 $assertions = 0;
 $assert = static function (bool $condition, string $message) use (&$assertions): void {
@@ -41,8 +42,9 @@ $assert(str_contains($source['service'], 'HALL_OPEN_BEFORE_SECONDS = 900'),
     'Hall must open exactly 15 minutes before tournament start.');
 $assert(str_contains($source['service'], 'HALL_PRESENCE_FRESHNESS_SECONDS = 8'),
     'Hall must reuse the accepted gameplay foreground freshness window.');
-$assert(str_contains($source['service'], 'Турнирный зал доступен только зарегистрированным участникам.'),
-    'Hall service must reject spectators/nonparticipants with localized copy.');
+$assert(str_contains($source['service'], "ServerLocalization::copy('server.tournament_runtime.hall.registered_only'")
+        && (($runtimeHallLocale['registered_only'] ?? null) === 'Турнирный зал доступен только зарегистрированным участникам.'),
+    'Hall service must reject spectators/nonparticipants through canonical localized copy.');
 $assert(str_contains($source['service'], 'random_int(')
         && str_contains($source['service'], 'bracket_generated_at_utc'),
     'Bracket must have a server-side random immutable generation owner.');
@@ -93,9 +95,10 @@ foreach ([
     $assert(($hallLocale[$key] ?? null) === $copy, 'Tournament Hall localized copy missing: ' . $copy);
 }
 $assert(!str_contains($source['screen'], 'Tournament Hall')
-        && !str_contains($source['endpoint'], 'Tournament Hall')
-        && !str_contains($source['service'], 'Tournament Hall'),
-    'User-facing Hall copy must be localized to Russian.');
+        && str_contains($source['endpoint'], "ServerLocalization::copy('server.tournament_runtime.hall.")
+        && str_contains($source['service'], "ServerLocalization::copy('server.tournament_runtime.hall.")
+        && (($runtimeHallLocale['load_error'] ?? null) === 'Не удалось загрузить Турнирный зал.'),
+    'User-facing Hall copy must remain locale-owned; English source text is emergency fallback only.');
 $assert(!str_contains($source['screen'], 'относятся к MVP-21.5')
         && !str_contains($source['screen'], 'Этап «Я готов»'),
     'Hall UI must not expose internal roadmap/MVP copy to players.');
