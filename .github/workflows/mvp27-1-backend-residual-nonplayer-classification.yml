@@ -1,0 +1,43 @@
+name: MVP-27.1 Backend Residual Non-player Classification
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'ops/checks/mvp27_1_backend_nonplayer_line_classification.json'
+      - 'ops/checks/mvp27_1_hardcoded_text_audit.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - 'ops/checks/mvp27_1_backend_residual_nonplayer_classification_contract.mjs'
+      - '.github/workflows/mvp27-1-backend-residual-nonplayer-classification.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  classify:
+    if: startsWith(github.head_ref, 'agent/mvp27-1-backend-residual-nonplayer-classification-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Exact post-2088 staging
+        run: |
+          set -euo pipefail
+          test '${{ github.event.pull_request.base.sha }}' = '554ab8b738d1bd7ff7776558684d89d24093e597'
+      - name: Syntax
+        run: |
+          node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
+          node --check ops/checks/mvp27_1_backend_residual_nonplayer_classification_contract.mjs
+      - name: Exact classification contract
+        run: node ops/checks/mvp27_1_backend_residual_nonplayer_classification_contract.mjs
+      - name: Current localization ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+      - name: Classification-only bounded scope
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          test -z "$(git diff --name-only "$base" HEAD -- app bot)"
