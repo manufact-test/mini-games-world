@@ -30,9 +30,13 @@ $assert(
     str_contains($opponents, 'StorageFactory::createJson(')
         && str_contains($invites, 'StorageFactory::createJson(')
         && !str_contains($opponents, 'DatabasePrimaryStateStorageAdapter')
-        && !str_contains($opponents, 'PdoConnectionFactory')
-        && !str_contains($opponents, "environment === 'staging'"),
-    'Player selection and create_direct must read the same active JSON runtime without a staging-only snapshot.'
+        && !str_contains($opponents, "environment === 'staging'")
+        && str_contains($opponents, '$isAndroidActor')
+        && str_contains($opponents, 'if ($isAndroidActor && MgwIdGenerator::isValid($actorMgwId))')
+        && str_contains($opponents, 'new FriendGraphService($database)')
+        && str_contains($opponents, 'runtimeSubjectForMgwId(')
+        && strpos($opponents, 'StorageFactory::createJson(') < strpos($opponents, 'if ($isAndroidActor && MgwIdGenerator::isValid($actorMgwId))'),
+    'Player selection and create_direct must share the active JSON runtime; Android may merge canonical friends only after that JSON snapshot, never through a staging-only primary snapshot.'
 );
 
 $assert(
