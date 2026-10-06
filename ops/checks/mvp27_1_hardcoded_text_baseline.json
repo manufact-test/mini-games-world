@@ -2,12 +2,12 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-06",
-  "staging_base": "58a5b6c15053c905f3cd333d42dde7310efc56b8",
+  "staging_base": "6f03100b326d84fe158ecae78d9133d53428153f",
   "scanned_files": 679,
-  "cyrillic_lines_total": 885,
+  "cyrillic_lines_total": 848,
   "by_scope": {
     "client": 0,
-    "backend": 885,
+    "backend": 848,
     "client-entry": 0
   },
   "excluded": [
@@ -69,5 +69,5 @@
     "classified residual historical/orphan client owners (stripped main.js; invite-terminal-actions-v115 only through stripped main; orphan invite-terminal-actions-v110r12; historical production-v106-timer-mobile; historical production-v98-passive-session-transport; orphan notification-bell-first-click-v116)",
     "final historical/orphan client owners (api/request-guard.js; main-v102.js; main-v103.js; main-v104.js; main-v105.js; main-v120-invite-controller-shell.js; production-v99-invite-picker-hold.js; screens/notification-bell-first-click-v115.js; screens/search-screen.js)"
   ],
-  "note": "MVP-27.1 active Support player-runtime localization moved 52 player-facing backend Cyrillic lines to canonical locale ownership; five Admin-only Support queue/update validation lines and 22 Admin Telegram notifier lines remain outside this slice."
+  "note": "MVP-27.1 active History player-presentation localization moved 37 direct player-facing backend Cyrillic lines from HistoryService to canonical locale ownership; history chronology, economy projection, DB routing, rematch/result ownership and profile/API response semantics remain unchanged."
 }
