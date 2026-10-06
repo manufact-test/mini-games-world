@@ -62,9 +62,12 @@ $assert(
 $assert(
     !str_contains($welcome, '/app/?v=85')
         && !str_contains($invites, '/app/?v=85')
+        && str_contains($invites, 'return WebAppLaunchUrl::invitation($config, $token);')
+        && str_contains($invites, "return $baseUrl . '/invite/' . rawurlencode($normalizedToken);")
         && str_contains($invites, "'?start=invite_'")
-        && str_contains($invites, 'return mgw_invite_webapp_url($config, $token);'),
-    'Shared links may prefer Telegram start_param, but every WebApp fallback must remain canonical v110.'
+        && str_contains($invites, "$shareUrl = mgw_invite_share_url($config, $token);")
+        && str_contains($invites, "$telegramOpenUrl = mgw_invite_telegram_open_url($config, $token);"),
+    'Invite links must keep distinct canonical owners: v110 WebApp fallback, public /invite landing, and Telegram start_param open URL.'
 );
 $assert(
     str_contains($shell, "openIncomingInviteFromTelegram } from './games/invite-link-entry-v110r12.js?v=1124&mvp24=room-copy-removed-v1'")
