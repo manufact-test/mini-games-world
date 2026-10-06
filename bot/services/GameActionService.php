@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 require_once __DIR__ . '/MatchPreparationClockService.php';
 
 final class GameActionService
@@ -18,7 +20,7 @@ final class GameActionService
     {
         $gameId = trim($gameId);
         if ($gameId === '' || !isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
-            throw new RuntimeException('Игра не найдена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
         }
 
         $game = $db['games'][$gameId];
@@ -26,7 +28,7 @@ final class GameActionService
         $playerIds = array_map('strval', $game['player_ids'] ?? []);
 
         if ($userId === '' || !in_array($userId, $playerIds, true)) {
-            throw new RuntimeException('Вы не участвуете в этой игре.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participating', 'You are not participating in this game.'));
         }
 
         if ((string)($game['status'] ?? '') === 'finished') {
@@ -37,7 +39,7 @@ final class GameActionService
         // none of the eight games can advance while an opponent owns a live
         // reconnect window.
         if (!empty($game['reconnect_v2']['paused'])) {
-            throw new RuntimeException('Соперник переподключается. Подождите.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.opponent_reconnecting', 'The opponent is reconnecting. Please wait.'));
         }
 
         $phaseManaged = array_key_exists('launch_phase', $game);
@@ -68,7 +70,7 @@ final class GameActionService
             'chess' => $this->runtime->applyChessAction($db, $user, $gameId, $action),
             'go' => $this->runtime->applyGoAction($db, $user, $gameId, $action),
             'domino' => $this->runtime->applyDominoAction($db, $user, $gameId, $action),
-            default => throw new RuntimeException('Движок этой игры пока не подключён.'),
+            default => throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.engine_unavailable', 'This game engine is not connected yet.')),
         };
 
         if (!$phaseManaged || !isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
@@ -95,19 +97,19 @@ final class GameActionService
 
         $ships = $action['ships'];
         if (!is_array($ships) || count($ships) !== 10) {
-            throw new RuntimeException('Не удалось проверить случайную расстановку флота.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.randomize_validation_failed', 'The randomized fleet could not be validated.'));
         }
 
         $normalized = [];
         $counts = [1 => 0, 2 => 0, 3 => 0, 4 => 0];
         foreach ($ships as $ship) {
-            if (!is_array($ship)) throw new RuntimeException('Некорректный корабль в случайной расстановке.');
+            if (!is_array($ship)) throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.randomize_invalid_ship', 'Invalid ship in the randomized fleet.'));
             [$size, $startCell, $orientation] = $this->normalizeBattleshipShip($ship);
             $counts[$size]++;
             $normalized[] = [$size, $startCell, $orientation];
         }
         if ($counts !== [1 => 4, 2 => 3, 3 => 2, 4 => 1]) {
-            throw new RuntimeException('Случайная расстановка содержит неправильный состав флота.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.randomize_invalid_fleet', 'The randomized fleet has an invalid composition.'));
         }
 
         $this->runtime->applyBattleshipAction($db, $user, $gameId, ['type' => 'clear_fleet']);
@@ -129,14 +131,14 @@ final class GameActionService
         $size = filter_var($ship['size'] ?? null, FILTER_VALIDATE_INT);
         $rawCells = $ship['cells'] ?? null;
         if ($size === false || !is_array($rawCells) || !in_array((int)$size, [1, 2, 3, 4], true)) {
-            throw new RuntimeException('Некорректный размер корабля в случайной расстановке.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.randomize_invalid_size', 'Invalid ship size in the randomized fleet.'));
         }
 
         $cells = [];
         foreach ($rawCells as $rawCell) {
             $cell = filter_var($rawCell, FILTER_VALIDATE_INT);
             if ($cell === false) {
-                throw new RuntimeException('Некорректная клетка корабля в случайной расстановке.');
+                throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.randomize_invalid_cell', 'Invalid ship cell in the randomized fleet.'));
             }
             $cells[] = (int)$cell;
         }
@@ -145,10 +147,10 @@ final class GameActionService
         $size = (int)$size;
 
         if (count($cells) !== $size) {
-            throw new RuntimeException('Некорректный размер корабля в случайной расстановке.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.randomize_invalid_size', 'Invalid ship size in the randomized fleet.'));
         }
         if ($cells === [] || $cells[0] < 0 || $cells[count($cells) - 1] >= 100) {
-            throw new RuntimeException('Корабль выходит за границы поля.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.randomize_out_of_bounds', 'The ship extends outside the board.'));
         }
 
         if ($size === 1) return [$size, $cells[0], 'h'];
@@ -173,7 +175,7 @@ final class GameActionService
         }
         if ($sameColumn) return [$size, $cells[0], 'v'];
 
-        throw new RuntimeException('Корабль должен идти по прямой без пропусков.');
+        throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.randomize_not_straight', 'The ship must form a straight line without gaps.'));
     }
 
     private function applyTicTacToeAction(
@@ -184,12 +186,12 @@ final class GameActionService
         array $action
     ): array {
         if ($actionType !== 'cell') {
-            throw new RuntimeException('Некорректное действие для этой игры.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.invalid_action', 'Invalid action for this game.'));
         }
 
         $cell = filter_var($action['cell'] ?? null, FILTER_VALIDATE_INT);
         if ($cell === false) {
-            throw new RuntimeException('Не выбрана клетка.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.cell_not_selected', 'No cell selected.'));
         }
 
         return $this->runtime->makeMove($db, $user, $gameId, (int)$cell);
@@ -215,7 +217,7 @@ final class GameActionService
         }
 
         if (!in_array($actionType, ['column', 'drop_disc', 'cell'], true) || $column === false) {
-            throw new RuntimeException('Выберите столбец для хода.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.four_in_a_row.select_column', 'Select a column for your move.'));
         }
 
         return $this->runtime->dropFourInARowDisc($db, $user, $gameId, (int)$column);
