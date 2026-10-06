@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 2) . '/localization/ServerLocalization.php';
+
 final class BattleshipService
 {
     private const BOARD_SIZE = 10;
@@ -22,7 +24,7 @@ final class BattleshipService
 
         $playerIds = array_values(array_map('strval', $game['player_ids'] ?? []));
         if (count($playerIds) < 2) {
-            throw new RuntimeException('Для Морского боя нужны два игрока.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.two_players', 'Battleship requires two players.'));
         }
 
         $now = now_iso();
@@ -114,14 +116,14 @@ final class BattleshipService
     public function applyAction(array &$db, array &$user, string $gameId, array $action): array
     {
         if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
-            throw new RuntimeException('Игра не найдена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
         }
 
         $game =& $db['games'][$gameId];
         $this->initializeGame($game);
         $userId = (string)($user['id'] ?? '');
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
-            throw new RuntimeException('Вы не участник этой игры.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participant', 'You are not a participant in this game.'));
         }
 
         if (($game['status'] ?? '') !== 'active') return $game;
@@ -140,21 +142,21 @@ final class BattleshipService
             'remove_ship' => $this->removeShip($game, $userId, (string)($action['ship_id'] ?? ''), $action['cell'] ?? null),
             'ready' => $this->markReady($game, $userId),
             'fire' => $this->fire($db, $game, $userId, (int)($action['cell'] ?? -1)),
-            default => throw new RuntimeException('Некорректное действие для Морского боя.'),
+            default => throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.invalid_action', 'Invalid Battleship action.')),
         };
     }
 
     public function surrender(array &$db, array &$user, string $gameId): array
     {
         if (!isset($db['games'][$gameId]) || !is_array($db['games'][$gameId])) {
-            throw new RuntimeException('Игра не найдена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
         }
 
         $game =& $db['games'][$gameId];
         $this->initializeGame($game);
         $userId = (string)($user['id'] ?? '');
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
-            throw new RuntimeException('Вы не участник этой игры.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participant', 'You are not a participant in this game.'));
         }
         if (($game['status'] ?? '') === 'finished') return $game;
 
@@ -178,7 +180,7 @@ final class BattleshipService
         foreach ($playerIds as $playerId) {
             $players[] = [
                 'id' => $playerId,
-                'name' => (string)($game['player_names'][$playerId] ?? 'Игрок'),
+                'name' => (string)($game['player_names'][$playerId] ?? ServerLocalization::copy('server.invites.player_fallback', 'Player')),
                 'symbol' => $playerId === $viewerId ? 'YOU' : 'ENEMY',
                 'ready' => !empty($game['battleship_fleets'][$playerId]['ready']),
             ];
@@ -196,7 +198,7 @@ final class BattleshipService
         return [
             'id' => (string)($game['id'] ?? ''),
             'room' => (string)($game['room'] ?? 'match'),
-            'room_name' => ($game['room'] ?? 'match') === 'gold' ? 'Gold-комната' : 'Матч-комната',
+            'room_name' => ($game['room'] ?? 'match') === 'gold' ? ServerLocalization::copy('acceptance_runtime.search.room_gold', 'Gold room') : ServerLocalization::copy('acceptance_runtime.search.room_match', 'Match room'),
             'bet' => (int)($game['bet'] ?? 0),
             'board_size' => self::BOARD_SIZE,
             'board_columns' => self::BOARD_SIZE,
@@ -252,19 +254,19 @@ final class BattleshipService
     private function placeShip(array &$game, string $userId, int $size, int $cell, string $orientation): array
     {
         $this->assertSetupEditable($game, $userId);
-        if (!isset(self::FLEET_COUNTS[$size])) throw new RuntimeException('Выберите корабль из своего флота.');
-        if ($cell < 0 || $cell >= 100) throw new RuntimeException('Выберите клетку на поле.');
+        if (!isset(self::FLEET_COUNTS[$size])) throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.select_ship', 'Select a ship from your fleet.'));
+        if ($cell < 0 || $cell >= 100) throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.select_cell', 'Select a cell on the board.'));
         $orientation = $orientation === 'v' ? 'v' : 'h';
 
         $ships = $this->sanitizeShips($game['battleship_fleets'][$userId]['ships'] ?? []);
         $counts = $this->countShipsBySize($ships);
         if (($counts[$size] ?? 0) >= self::FLEET_COUNTS[$size]) {
-            throw new RuntimeException('Все корабли этого размера уже размещены.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.size_complete', 'All ships of this size are already placed.'));
         }
 
         $cells = $this->shipCells($cell, $size, $orientation);
         if ($cells === null || !$this->canPlaceCells($cells, $ships)) {
-            throw new RuntimeException('Здесь корабль разместить нельзя.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.cannot_place', 'A ship cannot be placed here.'));
         }
 
         $ships[] = $this->newShip($size, $cells);
@@ -291,7 +293,7 @@ final class BattleshipService
             return true;
         }));
 
-        if (!$removed) throw new RuntimeException('Корабль не найден.');
+        if (!$removed) throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.ship_not_found', 'Ship not found.'));
         $game['battleship_fleets'][$userId]['ships'] = $ships;
         $this->reopenSetupAfterEdit($game, $userId);
         $game['updated_at'] = now_iso();
@@ -300,12 +302,12 @@ final class BattleshipService
 
     private function markReady(array &$game, string $userId): array
     {
-        if (($game['phase'] ?? '') !== 'setup') throw new RuntimeException('Расстановка уже завершена.');
+        if (($game['phase'] ?? '') !== 'setup') throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.setup_finished', 'Fleet setup is already finished.'));
         if (!empty($game['battleship_fleets'][$userId]['ready'])) return $game;
 
         $ships = $this->sanitizeShips($game['battleship_fleets'][$userId]['ships'] ?? []);
         if (!$this->isCompleteFleet($ships)) {
-            throw new RuntimeException('Сначала разместите все 10 кораблей.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.place_all_ships', 'Place all 10 ships first.'));
         }
 
         $game['battleship_fleets'][$userId]['ships'] = $ships;
@@ -318,8 +320,8 @@ final class BattleshipService
 
     private function fire(array &$db, array &$game, string $shooterId, int $cell): array
     {
-        if (($game['phase'] ?? '') !== 'battle') throw new RuntimeException('Сначала завершите расстановку кораблей.');
-        if ($cell < 0 || $cell >= 100) throw new RuntimeException('Выберите клетку для выстрела.');
+        if (($game['phase'] ?? '') !== 'battle') throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.finish_setup', 'Finish placing your ships first.'));
+        if ($cell < 0 || $cell >= 100) throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.select_shot', 'Select a cell to fire at.'));
 
         // Battleship fire uses a latency-sensitive action fast path and therefore
         // owns its turn-timeout check locally instead of depending on a full
@@ -331,10 +333,10 @@ final class BattleshipService
             return $game;
         }
 
-        if ((string)($game['turn'] ?? '') !== $shooterId) throw new RuntimeException('Сейчас не ваш ход.');
+        if ((string)($game['turn'] ?? '') !== $shooterId) throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_your_turn', 'It is not your turn.'));
 
         $shots = $this->normalizeShotMap($game['battleship_shots'][$shooterId] ?? []);
-        if (isset($shots[$cell])) throw new RuntimeException('Вы уже стреляли в эту клетку.');
+        if (isset($shots[$cell])) throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.already_shot', 'You already fired at this cell.'));
 
         $targetId = $this->otherPlayerId($game, $shooterId);
         return $this->resolveShot($db, $game, $shooterId, $targetId, $cell);
@@ -453,7 +455,7 @@ final class BattleshipService
 
     private function assertSetupEditable(array $game, string $userId): void
     {
-        if (($game['phase'] ?? '') !== 'setup') throw new RuntimeException('Расстановка уже завершена.');
+        if (($game['phase'] ?? '') !== 'setup') throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.setup_finished', 'Fleet setup is already finished.'));
     }
 
     private function reopenSetupAfterEdit(array &$game, string $userId): void
@@ -465,7 +467,7 @@ final class BattleshipService
     private function generateFullFleet(): array
     {
         $result = $this->fillMissingFleet([]);
-        if ($result === null) throw new RuntimeException('Не удалось автоматически расставить флот.');
+        if ($result === null) throw new RuntimeException(ServerLocalization::copy('server.game_runtime.battleship.auto_place_failed', 'The fleet could not be placed automatically.'));
         return $result;
     }
 
