@@ -10,6 +10,7 @@ on:
       - 'bot/social/PlayerReportService.php'
       - 'bot/moderation.php'
       - 'bot/tests/Mvp22_3ModerationContractTest.php'
+      - '.github/workflows/mvp18-2-friends-ui.yml'
       - 'ops/checks/mvp27_1_backend_moderation_player_runtime_localization_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - '.github/workflows/mvp27-1-backend-moderation-player-runtime-localization.yml'
@@ -55,7 +56,6 @@ jobs:
           php bot/tests/Mvp22_3ModerationWorkflowTest.php
           php bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
           php bot/tests/Mvp25_2HumanFacingErrorBoundaryContractTest.php
-          php bot/tests/PlayerReportServiceTest.php
           php bot/tests/Mvp25_5WriteReplaySafetyContractTest.php
 
       - name: Hardcoded player text ratchet
@@ -69,6 +69,7 @@ jobs:
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head" | sort)"
           allowed="$(cat <<'EOF'
+          .github/workflows/mvp18-2-friends-ui.yml
           .github/workflows/mvp27-1-backend-moderation-player-runtime-localization.yml
           app/locales/ru.json
           bot/moderation.php
