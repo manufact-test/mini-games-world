@@ -198,7 +198,7 @@ async function refreshGame(gameId){
     state.selectedGame = gameTypeOf(game);
 
     renderGame(game, viewer, false);
-    setGamePollingCadence(id, gamePollIntervalFor(game));
+    setGamePollingCadence(gameId, gamePollIntervalFor(game));
     if (String(game.status || '') === 'finished') finishGame(game, viewer);
   } catch (error) {
     // Background game-state polling is best-effort. The active read-only watcher
