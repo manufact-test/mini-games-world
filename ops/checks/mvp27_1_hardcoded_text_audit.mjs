@@ -182,18 +182,23 @@ for (const [file, entry] of Object.entries(classifiedLineConfig.files || {})) {
     if (text === '' || !Number.isInteger(count) || count < 1) {
       throw new Error('Invalid classified line fingerprint for ' + file);
     }
-    limits.set(text, count);
+    const functionName = String(occurrence.function || '');
+    const fingerprint = functionName + '\n' + text;
+    limits.set(fingerprint, count);
   }
   classifiedLineLimits.set(file, limits);
 }
 
-function isClassifiedCyrillicLine(file, line) {
+function isClassifiedCyrillicLine(file, line, functionName) {
   const limits = classifiedLineLimits.get(file);
   if (!limits) return false;
   const text = line.trim();
-  const limit = limits.get(text) || 0;
+  const scopedFingerprint = String(functionName || '') + '\n' + text;
+  const plainFingerprint = '\n' + text;
+  const fingerprint = limits.has(scopedFingerprint) ? scopedFingerprint : plainFingerprint;
+  const limit = limits.get(fingerprint) || 0;
   if (limit < 1) return false;
-  const key = file + '\n' + text;
+  const key = file + '\n' + fingerprint;
   const seen = classifiedLineSeen.get(key) || 0;
   if (seen >= limit) return false;
   classifiedLineSeen.set(key, seen + 1);
@@ -209,9 +214,12 @@ for (const root of ROOTS) {
     if (scanned.has(n)) continue;
     scanned.add(n);
     const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
+    let currentFunction = '';
     lines.forEach((line, index) => {
+      const functionMatch = line.match(/\bfunction\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/);
+      if (functionMatch) currentFunction = functionMatch[1];
       if (!CYRILLIC.test(line)) return;
-      if (isClassifiedCyrillicLine(n, line)) return;
+      if (isClassifiedCyrillicLine(n, line, currentFunction)) return;
       findings.push({ scope:root.name, file:n, line:index + 1, text:line.trim().slice(0,220) });
     });
   }
@@ -250,11 +258,11 @@ if (scanned.size === 0) throw new Error('Localization audit scanned no runtime f
 
 let classifiedLineTotal = 0;
 for (const [file, limits] of classifiedLineLimits) {
-  for (const [text, expected] of limits) {
-    const key = file + '\n' + text;
+  for (const [fingerprint, expected] of limits) {
+    const key = file + '\n' + fingerprint;
     const actual = classifiedLineSeen.get(key) || 0;
     if (actual !== expected) {
-      throw new Error(`Classified line fingerprint drift for ${file}: expected ${expected}, matched ${actual}: ${text}`);
+      throw new Error(`Classified line fingerprint drift for ${file}: expected ${expected}, matched ${actual}: ${fingerprint}`);
     }
     classifiedLineTotal += actual;
   }
