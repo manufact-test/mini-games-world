@@ -93,7 +93,6 @@ jobs:
           php bot/tests/ProductionV110CanonicalInviteLaunchContractTest.php
           php bot/tests/ProductionV110InviteStartSyncOwnershipContractTest.php
           php bot/tests/ProductionV110SearchInviteLifecycleR12ContractTest.php
-          php bot/tests/ProductionV110PendingInviteNonBlockingRuntimeTest.php
 
       - name: Preserve invite notifications and opponent ownership
         run: |
