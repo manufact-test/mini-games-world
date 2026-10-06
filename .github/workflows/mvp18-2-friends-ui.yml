@@ -99,6 +99,14 @@ jobs:
             git diff --exit-code "$current_base" HEAD -- \
               bot/social \
               ':(exclude)bot/social/PlayerReportService.php'
+          elif [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-baseline-player-localization-bundle-* ]]; then
+            echo 'Baseline/player localization successor: freeze accepted Friends owners relative to exact PR base except PlayerReportService copy ownership.'
+            current_base='${{ github.event.pull_request.base.sha }}'
+            test "$current_base" = '34baadda9695b12961b53ee33f31ef7a528beba3'
+            git diff --exit-code "$current_base" HEAD -- bot/friends.php
+            git diff --exit-code "$current_base" HEAD -- \
+              bot/social \
+              ':(exclude)bot/social/PlayerReportService.php'
           else
             git diff --exit-code "${baseline}" HEAD -- \
               bot/friends.php \
