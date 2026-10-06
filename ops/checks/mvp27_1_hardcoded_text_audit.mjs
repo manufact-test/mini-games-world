@@ -18,6 +18,7 @@ const SKIP_PREFIXES = [
   'app/runtime/server/', // staging-only rejected clean-runtime server; not reachable from factual Telegram v110 graph
   'bot/tests/',
   'bot/incident/',
+  'bot/baseline/', // deterministic behavior/latency baseline harness; not loaded by production app/bot runtime
 ];
 
 const SKIP_FILES = new Set([
