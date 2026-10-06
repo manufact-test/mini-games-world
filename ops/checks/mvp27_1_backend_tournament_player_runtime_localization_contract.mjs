@@ -5,6 +5,7 @@ const locale = JSON.parse(fs.readFileSync('app/locales/ru.json','utf8'));
 const baseline = JSON.parse(fs.readFileSync('ops/checks/mvp27_1_hardcoded_text_baseline.json','utf8'));
 const registrationSource = fs.readFileSync('bot/tournaments/TournamentRegistrationService.php','utf8');
 const successor = registrationSource.includes("ServerLocalization::copy('server.tournament_runtime.scheduling.start_required'");
+const finalBackendSuccessor = Number(baseline?.by_scope?.backend) === 0;
 function assert(ok,msg){ if(!ok) throw new Error(msg); }
 function get(key){ return key.split('.').reduce((v,p)=>v?.[p],locale); }
 function cyrLines(path){ return fs.readFileSync(path,'utf8').split(/\r?\n/).filter(l=>CYR.test(l)).length; }
@@ -128,7 +129,7 @@ for(const [key,value] of Object.entries({
 
 const expectedCyr = {
   'bot/tournaments/TournamentRegistrationService.php':successor ? 0 : 9,
-  'bot/tournaments/TournamentHallService.php':4,
+  'bot/tournaments/TournamentHallService.php':finalBackendSuccessor ? 0 : 4,
   'bot/tournaments/TournamentMatchReadinessService.php':0,
   'bot/tournament-hall.php':0,
   'bot/tournaments/TournamentParticipantNotificationBridge.php':0,
