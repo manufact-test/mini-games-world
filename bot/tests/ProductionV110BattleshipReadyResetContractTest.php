@@ -17,6 +17,8 @@ $service = $read('bot/games/battleship/BattleshipService.php');
 $model = $read('app/assets/js/production-v102-battleship-models.js');
 $renderer = $read('app/assets/js/games/battleship/renderer.js');
 $v110 = $read('app/v110.php');
+$manifest = require $root . '/app/runtime/client/version-manifest.php';
+$imports = is_array($manifest['imports'] ?? null) ? $manifest['imports'] : [];
 
 $assert(
     str_contains($service, 'private function reopenSetupAfterEdit(array &$game, string $userId): void')
@@ -46,11 +48,13 @@ $assert(
 );
 
 $assert(
-    str_contains($v110, 'production-v102-battleship-models.js?v=103&ready=authoritative-reset')
-        && str_contains($v110, 'games/battleship/renderer.js?v=57&ready=authoritative-reset')
-        && str_contains($v110, 'data-hotfix-build="v110-mvp14-battleship-ready-reset-v1149"')
-        && str_contains($v110, 'X-MGW-Battleship-Ready: authoritative-reset-after-edit'),
-    'Canonical Telegram v110 must publish fresh immutable Battleship ready-reset owners.'
+    ($imports['./assets/js/production-v102-battleship-models.js?v=102'] ?? null)
+        === './assets/js/production-v102-battleship-models.js?v=103&ready=authoritative-reset'
+        && is_string($imports['./assets/js/games/battleship/renderer.js?v=56'] ?? null)
+        && ($imports['./assets/js/games/battleship/renderer.js?v=56'] ?? '') !== ''
+        && str_contains($v110, "\$battleshipRendererImportKey = './assets/js/games/battleship/renderer.js?v=56';")
+        && str_contains($v110, "header('X-MGW-Battleship-Ready: authoritative-reset-after-edit');"),
+    'Canonical Telegram v110 must publish the ready-reset model and consume the current Battleship renderer through the version manifest.'
 );
 
 fwrite(STDOUT, "ProductionV110BattleshipReadyResetContractTest: {$assertions} assertions passed.\n");

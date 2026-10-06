@@ -56,21 +56,23 @@ try {
     file_put_contents($oldPath, json_encode([
         'touched_at' => time(),
         'leave_after' => time() - 1,
+        'mode' => 'left',
     ], JSON_UNESCAPED_SLASHES), LOCK_EX);
     $onlineAfterOldExpiry = $presence->onlineAccountIds();
-    $assert($onlineAfterOldExpiry === [$accountId] && !is_file($oldPath) && is_file($newPath),
-        'Pruning the expired old lease must preserve the still-live new lease.');
+    $assert($onlineAfterOldExpiry === [$accountId] && is_file($oldPath) && is_file($newPath),
+        'An expired old leave must stop counting as online while its bounded reconnect tombstone preserves the still-live new lease.');
 
     $presence->touch($accountId, $sessionId, $newLease);
     $presence->leave($accountId, $sessionId, $newLease);
     file_put_contents($newPath, json_encode([
         'touched_at' => time(),
         'leave_after' => time() - 1,
+        'mode' => 'left',
     ], JSON_UNESCAPED_SLASHES), LOCK_EX);
     $assert($presence->onlineAccountIds() === [],
         'Closing and expiring the final document must remove the account from online players.');
-    $assert(!is_dir($accountDirectory),
-        'The final expired lease must clean up the empty account directory.');
+    $assert(is_dir($accountDirectory) && is_file($oldPath) && is_file($newPath),
+        'Expired document leaves must remain as bounded gameplay tombstones for reconnect recovery until retention expiry.');
 
     $client = file_get_contents(dirname(__DIR__, 2) . '/app/assets/js/production-v110-presence.js');
     $endpoint = file_get_contents(dirname(__DIR__) . '/presence.php');
@@ -78,7 +80,8 @@ try {
     $statsOwner = file_get_contents(dirname(__DIR__, 2) . '/app/assets/js/stats-owner-v110.js');
     $assert(is_string($client)
         && str_contains($client, 'const presenceLeaseId = createPresenceLeaseId();')
-        && str_contains($client, '// Presence transport starts before the profile bootstrap.')
+        && str_contains($client, 'startPresence();')
+        && str_contains($client, 'export function waitForV110InitialPresence()')
         && str_contains($client, "window.addEventListener('pagehide'")
         && str_contains($client, 'if (!event.persisted) sendLeaveBeacon();'),
         'The client must create a document lease before bootstrap and leave only on a real document exit.');

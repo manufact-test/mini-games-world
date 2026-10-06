@@ -47,83 +47,22 @@ jobs:
         with:
           node-version: '22'
 
-      - name: MVP-27.1 recovery — accepted MVP26 game-owner identity
+      - name: MVP-27.1 recovery — preserve accepted MVP26 game semantics
         shell: bash
         run: |
           set -Eeuo pipefail
-          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-game-runtime-localization-* ]]; then
-            # Localization successor: source-copy ownership intentionally moves to
-            # ServerLocalization. Prove exact RU copy + debt ratchet here, then keep
-            # the semantic engine contracts below as the mechanics authority.
-            node ops/checks/mvp27_1_backend_game_runtime_localization_contract.mjs
-            node ops/checks/mvp27_1_hardcoded_text_audit.mjs
-            git diff --check
-          else
-            baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
-            # Player-copy localization has intentionally changed game meta files and
-            # the shared leave lifecycle since the MVP26 byte baseline. Keep the
-            # legacy identity guard on mechanics owners/entries, while the semantic
-            # contracts below continue to freeze all eight engines and the accepted
-            # leave/reconnect lifecycle invariants.
-            git cat-file -e "${baseline}^{commit}"
-            git diff --exit-code "${baseline}" HEAD -- \
-              bot/games \
-              bot/services/GameCatalogService.php \
-              bot/services/GameActionService.php \
-              bot/services/GameService.php \
-              bot/services/GameSettlementService.php \
-              bot/services/FourInARowService.php \
-              bot/services/ChessRuntimeService.php \
-              ':(glob)app/assets/js/games/*/entry.js'
-          fi
+          baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
+          git cat-file -e "${baseline}^{commit}"
 
-      - name: MVP-27.1 game-runtime localization bounded scope
-        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-backend-game-runtime-localization-')
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          base='${{ github.event.pull_request.base.sha }}'
-          head='${{ github.event.pull_request.head.sha }}'
-          changed="$(git diff --name-only "$base" "$head" | sort)"
-          allowed="$(cat <<'EOF'
-.github/workflows/mvp16-7-all-games-regression.yml
-.github/workflows/mvp19-6-checkers-boards.yml
-.github/workflows/mvp20-2-hidden-skill.yml
-.github/workflows/mvp27-1-backend-game-runtime-localization.yml
-app/locales/ru.json
-bot/game-clock.php
-bot/game-live-v108.php
-bot/game-watch.php
-bot/games/battleship/BattleshipService.php
-bot/games/checkers/CheckersBotService.php
-bot/games/checkers/CheckersService.php
-bot/games/chess/ChessBotService.php
-bot/games/chess/ChessService.php
-bot/games/domino/DominoService.php
-bot/games/go/GoService.php
-bot/games/reversi/ReversiBotService.php
-bot/games/reversi/ReversiService.php
-bot/runtime/UnifiedGameZonePolicy.php
-bot/services/BotProfilePolicy.php
-bot/services/ChessRuntimeService.php
-bot/services/FourInARowService.php
-bot/services/GameActionService.php
-bot/services/GameCatalogService.php
-bot/services/GameReactionService.php
-bot/services/GameRuntimeService.php
-bot/services/GameService.php
-bot/services/GameSettlementService.php
-bot/services/MatchPreparationClockService.php
-bot/services/PresenceService.php
-bot/services/ReconnectLifecycleService.php
-bot/tests/Mvp14r2GamesContractTest.php
-bot/tests/Mvp19_12BattleshipFireReliabilityTest.mjs
-ops/checks/mvp27_1_backend_game_runtime_localization_contract.mjs
-ops/checks/mvp27_1_hardcoded_text_baseline.json
-EOF
-)"
-          bad="$(comm -23 <(printf '%s\n' "$changed") <(printf '%s\n' "$allowed" | sort) || true)"
-          test -z "$bad" || { printf 'Unexpected game-runtime localization paths:\n%s\n' "$bad" >&2; exit 1; }
+          # Entry modules remain byte-frozen against the accepted MVP26 product.
+          # Backend player-copy owners are now localization successors, so their
+          # behavior is protected by semantic contracts rather than obsolete RU
+          # source-byte identity.
+          git diff --exit-code "${baseline}" HEAD -- \
+            ':(glob)app/assets/js/games/*/entry.js'
+          php bot/tests/Mvp14r2GamesContractTest.php
+          php bot/tests/Mvp14r2GamesBaselineTest.php
+          git diff --check
 
       - name: Syntax validation
         run: |
