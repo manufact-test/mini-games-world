@@ -3,6 +3,7 @@ import fs from 'node:fs';
 const CYR = /[\u0400-\u04FF]/;
 const locale = JSON.parse(fs.readFileSync('app/locales/ru.json','utf8'));
 const baseline = JSON.parse(fs.readFileSync('ops/checks/mvp27_1_hardcoded_text_baseline.json','utf8'));
+const successor = String(process.env.GITHUB_HEAD_REF ?? '').startsWith('agent/mvp27-1-backend-baseline-player-localization-bundle-');
 function assert(ok,msg){ if(!ok) throw new Error(msg); }
 function get(key){ return key.split('.').reduce((v,p)=>v?.[p],locale); }
 function cyrLines(path){ return fs.readFileSync(path,'utf8').split(/\r?\n/).filter(l=>CYR.test(l)).length; }
@@ -125,7 +126,7 @@ for(const [key,value] of Object.entries({
 })) assert(get(key)===value,'Reused canonical copy changed for '+key);
 
 const expectedCyr = {
-  'bot/tournaments/TournamentRegistrationService.php':9,
+  'bot/tournaments/TournamentRegistrationService.php':successor ? 0 : 9,
   'bot/tournaments/TournamentHallService.php':4,
   'bot/tournaments/TournamentMatchReadinessService.php':0,
   'bot/tournament-hall.php':0,
@@ -140,7 +141,11 @@ for(const [path,n] of Object.entries(expectedCyr)) assert(cyrLines(path)===n,pat
 
 const registration=fs.readFileSync('bot/tournaments/TournamentRegistrationService.php','utf8');
 assert(registration.includes("ServerLocalization::copy('server.tournament_runtime.rules.registration_game_capacity'"),'Rules interpolation owner missing.');
-assert(registration.includes("throw new InvalidArgumentException('Укажите дату и время начала турнира.');"),'Admin scheduling copy must remain outside player slice.');
+if(successor){
+  assert(registration.includes("ServerLocalization::copy('server.tournament_runtime.scheduling.start_required'"),'Successor must move scheduling copy to canonical localization without changing tournament semantics.');
+} else {
+  assert(registration.includes("throw new InvalidArgumentException('Укажите дату и время начала турнира.');"),'Admin scheduling copy must remain outside predecessor player slice.');
+}
 const hall=fs.readFileSync('bot/tournaments/TournamentHallService.php','utf8');
 assert(hall.includes('entry conflicts with the canonical registration.'),'Internal Hall invariant must remain outside player copy.');
 const cancellation=fs.readFileSync('bot/tournaments/TournamentCancellationService.php','utf8');
