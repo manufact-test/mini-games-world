@@ -66,7 +66,7 @@ $db = [
         'u1' => [
             'id' => 'u1',
             'username' => 'One',
-            'balance_match' => 90,
+            'balance' => 90,
             'status' => 'playing',
             'current_game_id' => 'game_timeout',
             'stats' => $stats,
@@ -74,7 +74,7 @@ $db = [
         'u2' => [
             'id' => 'u2',
             'username' => 'Two',
-            'balance_match' => 90,
+            'balance' => 90,
             'status' => 'playing',
             'current_game_id' => 'game_timeout',
             'stats' => $stats,
@@ -86,7 +86,7 @@ $db = [
 $game = $makeGame(['u1', 'u2']);
 $service->cancelPreparation($db, $game);
 
-$assert($db['users']['u1']['balance_match'] === 100 && $db['users']['u2']['balance_match'] === 100, 'Each human stake must be restored exactly once.');
+$assert($db['users']['u1']['balance'] === 100 && $db['users']['u2']['balance'] === 100, 'Each human stake must be restored exactly once.');
 $assert($db['users']['u1']['status'] === 'idle' && $db['users']['u2']['status'] === 'idle', 'Cancelled match must release current players.');
 $assert($db['users']['u1']['current_game_id'] === null && $db['users']['u2']['current_game_id'] === null, 'Cancelled match must clear matching current_game_id.');
 $assert($db['users']['u1']['stats'] === $stats && $db['users']['u2']['stats'] === $stats, 'Preparation cancellation must not count as a played match or alter result stats.');
@@ -107,10 +107,10 @@ foreach ($refundRows as $row) {
 }
 $assert(($finishRows[0]['finish_reason'] ?? '') === 'preparation_timeout' && ($finishRows[0]['match_started'] ?? true) === false, 'Finished row must distinguish cancellation from a draw.');
 
-$balancesBeforeRepeat = [$db['users']['u1']['balance_match'], $db['users']['u2']['balance_match']];
+$balancesBeforeRepeat = [$db['users']['u1']['balance'], $db['users']['u2']['balance']];
 $txCountBeforeRepeat = count($db['transactions']);
 $service->cancelPreparation($db, $game);
-$assert([$db['users']['u1']['balance_match'], $db['users']['u2']['balance_match']] === $balancesBeforeRepeat, 'Repeated cancellation must never refund twice.');
+$assert([$db['users']['u1']['balance'], $db['users']['u2']['balance']] === $balancesBeforeRepeat, 'Repeated cancellation must never refund twice.');
 $assert(count($db['transactions']) === $txCountBeforeRepeat, 'Repeated cancellation must never duplicate transaction rows.');
 
 $botDb = [
@@ -118,7 +118,7 @@ $botDb = [
         'u1' => [
             'id' => 'u1',
             'username' => 'One',
-            'balance_match' => 90,
+            'balance' => 90,
             'status' => 'playing',
             'current_game_id' => 'game_timeout',
             'stats' => $stats,
@@ -130,7 +130,7 @@ $botDb = [
 $botGame = $makeGame(['u1', 'bot_1'], true);
 $service->cancelPreparation($botDb, $botGame);
 $botRefundRows = array_values(array_filter($botDb['transactions'], static fn(array $tx): bool => ($tx['type'] ?? '') === 'balance_change'));
-$assert($botDb['users']['u1']['balance_match'] === 100, 'Human stake must be restored in a bot match cancellation.');
+$assert($botDb['users']['u1']['balance'] === 100, 'Human stake must be restored in a bot match cancellation.');
 $assert(count($botRefundRows) === 1 && ($botRefundRows[0]['user_id'] ?? '') === 'u1', 'Bot identity must never receive a refund row.');
 $assert(count($botDb['transactions']) === 2, 'Bot cancellation must contain one human refund and one finished row only.');
 $assert($botDb['users']['u1']['stats'] === $stats, 'Bot preparation cancellation must not alter bot/game stats.');
@@ -140,7 +140,7 @@ $mismatchDb = [
         'u1' => [
             'id' => 'u1',
             'username' => 'One',
-            'balance_match' => 90,
+            'balance' => 90,
             'status' => 'playing',
             'current_game_id' => 'newer_game',
             'stats' => $stats,
@@ -151,29 +151,29 @@ $mismatchDb = [
 ];
 $mismatchGame = $makeGame(['u1', 'bot_1'], true);
 $service->cancelPreparation($mismatchDb, $mismatchGame);
-$assert($mismatchDb['users']['u1']['balance_match'] === 100, 'Stake restoration must not depend on current session pointer.');
+$assert($mismatchDb['users']['u1']['balance'] === 100, 'Stake restoration must not depend on current session pointer.');
 $assert($mismatchDb['users']['u1']['status'] === 'playing' && $mismatchDb['users']['u1']['current_game_id'] === 'newer_game', 'Cancellation must not release a player from a newer game.');
 
 $earlyDb = [
     'users' => [
-        'u1' => ['id' => 'u1', 'balance_match' => 90, 'status' => 'playing', 'current_game_id' => 'game_timeout', 'stats' => $stats],
+        'u1' => ['id' => 'u1', 'balance' => 90, 'status' => 'playing', 'current_game_id' => 'game_timeout', 'stats' => $stats],
     ],
     'transactions' => [],
 ];
 $earlyGame = $makeGame(['u1', 'bot_1'], true);
 $earlyGame['launch_phase'] = 'preparing';
 $service->cancelPreparation($earlyDb, $earlyGame);
-$assert($earlyDb['users']['u1']['balance_match'] === 90 && count($earlyDb['transactions']) === 0, 'Preparing phase must not settle before the state machine declares timeout.');
+$assert($earlyDb['users']['u1']['balance'] === 90 && count($earlyDb['transactions']) === 0, 'Preparing phase must not settle before the state machine declares timeout.');
 
 $futureDb = [
     'users' => [
-        'u1' => ['id' => 'u1', 'balance_match' => 90, 'status' => 'playing', 'current_game_id' => 'game_timeout', 'stats' => $stats],
+        'u1' => ['id' => 'u1', 'balance' => 90, 'status' => 'playing', 'current_game_id' => 'game_timeout', 'stats' => $stats],
     ],
     'transactions' => [],
 ];
 $futureGame = $makeGame(['u1', 'bot_1'], true);
 $futureGame['preparation_deadline_at'] = gmdate('c', time() + 30);
 $service->cancelPreparation($futureDb, $futureGame);
-$assert($futureDb['users']['u1']['balance_match'] === 90 && count($futureDb['transactions']) === 0, 'Future preparation deadline must never be settled early even if phase is malformed.');
+$assert($futureDb['users']['u1']['balance'] === 90 && count($futureDb['transactions']) === 0, 'Future preparation deadline must never be settled early even if phase is malformed.');
 
 fwrite(STDOUT, "PhaseBPreparationTimeoutSettlementTest: {$assertions} assertions passed\n");
