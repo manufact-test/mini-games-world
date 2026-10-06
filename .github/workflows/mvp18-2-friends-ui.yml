@@ -91,6 +91,12 @@ jobs:
           if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-friends-endpoint-localization-* ]]; then
             echo 'Friends endpoint localization successor: preserve exact social-service identity; focused localization contract owns bot/friends.php copy migration.'
             git diff --exit-code "${baseline}" HEAD -- bot/social
+          elif [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-moderation-player-runtime-localization-* ]]; then
+            echo 'Moderation localization successor: preserve Friends endpoint and every social owner except the localized PlayerReportService presentation owner.'
+            git diff --exit-code "${baseline}" HEAD -- bot/friends.php
+            git diff --exit-code "${baseline}" HEAD -- \
+              bot/social \
+              ':(exclude)bot/social/PlayerReportService.php'
           else
             git diff --exit-code "${baseline}" HEAD -- \
               bot/friends.php \
