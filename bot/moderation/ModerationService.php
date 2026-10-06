@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/accounts/MgwIdGenerator.php';
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
 
 final class ModerationException extends RuntimeException
 {
@@ -14,24 +15,24 @@ final class ModerationException extends RuntimeException
 final class ModerationService
 {
     public const REPORT_REASONS = [
-        'nickname' => 'Недопустимый никнейм',
-        'avatar' => 'Недопустимый аватар',
-        'spam' => 'Спам',
-        'cheating' => 'Нечестная игра',
-        'stalling' => 'Затягивание игры',
-        'other' => 'Другое',
+        'nickname' => 'server.moderation.report_reasons.nickname',
+        'avatar' => 'server.moderation.report_reasons.avatar',
+        'spam' => 'server.moderation.report_reasons.spam',
+        'cheating' => 'server.moderation.report_reasons.cheating',
+        'stalling' => 'server.moderation.report_reasons.stalling',
+        'other' => 'server.moderation.report_reasons.other',
     ];
 
     public const LEGACY_REPORT_REASONS = [
-        'abuse' => 'Оскорбления или травля',
-        'offensive_profile' => 'Недопустимый профиль',
+        'abuse' => 'server.moderation.report_reasons.abuse',
+        'offensive_profile' => 'server.moderation.report_reasons.offensive_profile',
     ];
 
     public const RESTRICTION_SCOPES = [
-        'profile' => 'Изменение профиля',
-        'social' => 'Друзья и социальные действия',
-        'gameplay' => 'Новые игры и матчи',
-        'all' => 'Все игровые действия',
+        'profile' => 'server.moderation.restriction_scopes.profile',
+        'social' => 'server.moderation.restriction_scopes.social',
+        'gameplay' => 'server.moderation.restriction_scopes.gameplay',
+        'all' => 'server.moderation.restriction_scopes.all',
     ];
 
     public const RESTRICTION_DURATIONS = [
@@ -55,9 +56,58 @@ final class ModerationService
 
     public static function reportReasonLabel(string $reason): string
     {
-        return self::REPORT_REASONS[$reason]
-            ?? self::LEGACY_REPORT_REASONS[$reason]
-            ?? $reason;
+        $key = self::REPORT_REASONS[$reason] ?? self::LEGACY_REPORT_REASONS[$reason] ?? null;
+        if (!is_string($key)) return $reason;
+        return ServerLocalization::copy($key, self::reportReasonFallback($reason));
+    }
+
+    public static function reportReasonLabels(): array
+    {
+        $labels = [];
+        foreach (array_keys(self::REPORT_REASONS) as $reason) {
+            $labels[$reason] = self::reportReasonLabel($reason);
+        }
+        return $labels;
+    }
+
+    public static function restrictionScopeLabel(string $scope): ?string
+    {
+        $key = self::RESTRICTION_SCOPES[$scope] ?? null;
+        if (!is_string($key)) return null;
+        return ServerLocalization::copy($key, self::restrictionScopeFallback($scope));
+    }
+
+    public static function restrictionScopeLabels(): array
+    {
+        $labels = [];
+        foreach (array_keys(self::RESTRICTION_SCOPES) as $scope) {
+            $labels[$scope] = self::restrictionScopeLabel($scope);
+        }
+        return $labels;
+    }
+
+    private static function reportReasonFallback(string $reason): string
+    {
+        return match ($reason) {
+            'nickname' => 'Invalid nickname',
+            'avatar' => 'Invalid avatar',
+            'spam' => 'Spam',
+            'cheating' => 'Cheating',
+            'stalling' => 'Stalling',
+            'abuse' => 'Abuse or harassment',
+            'offensive_profile' => 'Offensive profile',
+            default => 'Other',
+        };
+    }
+
+    private static function restrictionScopeFallback(string $scope): string
+    {
+        return match ($scope) {
+            'profile' => 'Profile changes',
+            'social' => 'Friends and social actions',
+            'gameplay' => 'New games and matches',
+            default => 'All game actions',
+        };
     }
 
     public function warning(string $reportId, string $note, string $adminRef): array
@@ -239,17 +289,17 @@ final class ModerationService
         $mgwId = $this->validMgwId($mgwId);
         $action = $this->action($actionId);
         if ((string)$action['target_mgw_id'] !== $mgwId) {
-            throw new ModerationException('appeal_forbidden', 'Это решение недоступно для апелляции.');
+            throw new ModerationException('appeal_forbidden', ServerLocalization::copy('server.moderation.errors.appeal_forbidden', 'This moderation decision cannot be appealed.'));
         }
         if (!in_array((string)$action['status_code'], [
             self::STATUS_ACTIVE,
             self::STATUS_CONFIRMED,
             self::STATUS_PENDING_SECOND_REVIEW,
         ], true)) {
-            throw new ModerationException('appeal_unavailable', 'Это решение уже нельзя обжаловать.');
+            throw new ModerationException('appeal_unavailable', ServerLocalization::copy('server.moderation.errors.appeal_unavailable', 'This moderation decision can no longer be appealed.'));
         }
 
-        $message = $this->requiredText($message, 1200, 'Опишите причину апелляции.');
+        $message = $this->requiredText($message, 1200, ServerLocalization::copy('server.moderation.errors.appeal_message_required', 'Describe the reason for your appeal.'));
         $existing = $this->database->fetchAll(
             'SELECT * FROM mgw_moderation_appeals
              WHERE action_id=:action_id AND status_code IN (:open_status,:reviewing_status)
@@ -261,7 +311,7 @@ final class ModerationService
             ]
         );
         if ($existing !== []) {
-            throw new ModerationException('appeal_exists', 'По этому решению уже есть открытая апелляция.');
+            throw new ModerationException('appeal_exists', ServerLocalization::copy('server.moderation.errors.appeal_exists', 'There is already an open appeal for this decision.'));
         }
 
         $appealId = 'APL-' . strtoupper(bin2hex(random_bytes(10)));
@@ -387,10 +437,10 @@ final class ModerationService
             ['mgw_id'=>$mgwId]
         );
         if (count($userRows) !== 1) {
-            throw new ModerationException('user_unavailable', 'Игрок MGW не найден.');
+            throw new ModerationException('user_unavailable', ServerLocalization::copy('server.moderation.errors.user_unavailable', 'MGW player was not found.'));
         }
         if ((string)($userRows[0]['status'] ?? 'active') === 'banned') {
-            throw new ModerationException('account_banned', 'Аккаунт заблокирован после ручной проверки.');
+            throw new ModerationException('account_banned', ServerLocalization::copy('server.moderation.errors.account_banned', 'The account is blocked after manual review.'));
         }
 
         $this->expireRestrictionsForUser($mgwId);
@@ -417,8 +467,8 @@ final class ModerationService
             throw new ModerationException(
                 'restricted',
                 $until !== ''
-                    ? 'Действует ограничение до ' . $until . ' UTC.'
-                    : 'Для аккаунта действует ограничение.'
+                    ? ServerLocalization::copy('server.moderation.errors.restricted_until', 'This account is restricted until {until} UTC.', ['until'=>$until])
+                    : ServerLocalization::copy('server.moderation.errors.restricted', 'This account is restricted.')
             );
         }
     }
@@ -451,7 +501,7 @@ final class ModerationService
             'account_status'=>$status,
             'actions'=>array_map(fn(array $row): array => $this->publicAction($row), $actions),
             'appeals'=>array_map(fn(array $row): array => $this->publicAppeal($row), $appeals),
-            'scope_labels'=>self::RESTRICTION_SCOPES,
+            'scope_labels'=>self::restrictionScopeLabels(),
         ];
     }
 
@@ -494,8 +544,8 @@ final class ModerationService
     public function adminOptions(): array
     {
         return [
-            'report_reasons'=>self::REPORT_REASONS,
-            'restriction_scopes'=>self::RESTRICTION_SCOPES,
+            'report_reasons'=>self::reportReasonLabels(),
+            'restriction_scopes'=>self::restrictionScopeLabels(),
             'restriction_durations'=>array_map(
                 static fn(string $label, int $seconds): array => ['seconds'=>$seconds,'label'=>$label],
                 array_values(self::RESTRICTION_DURATIONS),
@@ -560,13 +610,13 @@ final class ModerationService
 
     private function action(string $actionId): array
     {
-        $actionId = $this->requiredText($actionId, 48, 'Решение модерации не определено.');
+        $actionId = $this->requiredText($actionId, 48, ServerLocalization::copy('server.moderation.errors.action_required', 'The moderation decision is missing.'));
         $rows = $this->database->fetchAll(
             'SELECT * FROM mgw_moderation_actions WHERE action_id=:action_id',
             ['action_id'=>$actionId]
         );
         if (count($rows) !== 1 || !is_array($rows[0])) {
-            throw new ModerationException('action_not_found', 'Решение модерации не найдено.');
+            throw new ModerationException('action_not_found', ServerLocalization::copy('server.moderation.errors.action_not_found', 'The moderation decision was not found.'));
         }
         return $rows[0];
     }
@@ -604,9 +654,7 @@ final class ModerationService
             'reason_label'=>self::reportReasonLabel((string)$row['reason_code']),
             'note'=>(string)$row['note'],
             'scope_code'=>$this->nullable((string)($row['scope_code'] ?? '')),
-            'scope_label'=>isset(self::RESTRICTION_SCOPES[(string)($row['scope_code'] ?? '')])
-                ? self::RESTRICTION_SCOPES[(string)$row['scope_code']]
-                : null,
+            'scope_label'=>self::restrictionScopeLabel((string)($row['scope_code'] ?? '')),
             'starts_at_utc'=>(string)$row['starts_at_utc'],
             'expires_at_utc'=>$this->nullable($expires),
             'status'=>$status,
