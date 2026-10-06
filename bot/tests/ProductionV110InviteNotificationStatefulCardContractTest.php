@@ -17,6 +17,7 @@ $endpoint = $read('bot/notifications.php');
 $actions = $read('app/assets/js/games/invite-terminal-actions-v110r12.js');
 $notifications = $read('app/assets/js/screens/notifications-screen-v110r12.js');
 $serviceActions = $read('bot/services/invites/GameInviteActionTrait.php');
+$locale = json_decode($read('app/locales/ru.json'), true, 512, JSON_THROW_ON_ERROR);
 
 $assert(
     str_contains($endpoint, "return in_array(\$status, ['pending', 'accepted', 'declined'], true);")
@@ -30,11 +31,13 @@ $assert(
     'Invitation visibility must remain authoritative at the notification endpoint.'
 );
 $assert(
-    str_contains($endpoint, "\$item['title'] = 'Приглашение принято';")
-        && str_contains($endpoint, "\$item['title'] = 'Приглашение отклонено';")
-        && str_contains($endpoint, 'Вы отклонили приглашение от ')
-        && !str_contains($endpoint, "\$item['title'] = 'Приглашение отменено';"),
-    'The invitee must receive a read declined-history card without creating a cancelled self-confirmation card.'
+    str_contains($endpoint, "mgw_notification_copy('server.notifications.invite_accepted_title'")
+        && str_contains($endpoint, "mgw_notification_copy('server.notifications.invite_declined_title'")
+        && str_contains($endpoint, "'server.notifications.invite_declined_message'")
+        && ($locale['server']['notifications']['invite_accepted_title'] ?? null) === 'Приглашение принято'
+        && ($locale['server']['notifications']['invite_declined_title'] ?? null) === 'Приглашение отклонено'
+        && ($locale['server']['notifications']['invite_declined_message'] ?? null) === 'Вы отклонили приглашение от {name} сыграть в «{game}».',
+    'The invitee must receive the same Russian read declined-history card through canonical locale ownership.'
 );
 $assert(
     str_contains($endpoint, "mgw_notification_is_received_type(\$type) && \$status !== 'pending'")
@@ -58,8 +61,9 @@ $declineBlock = $declineStart !== false && $cancelStart !== false
     : '';
 $assert(
     str_contains($declineBlock, "'invite_declined'")
-        && str_contains($declineBlock, "'Приглашение отклонено'"),
-    'The inviter must retain the separate authoritative decline notification.'
+        && str_contains($declineBlock, "'server.notifications.invite_declined_title'")
+        && str_contains($declineBlock, "'server.invite_chain.notifications.declined_message'"),
+    'The inviter must retain the separate authoritative decline notification through canonical locale keys.'
 );
 
 fwrite(STDOUT, "ProductionV110InviteNotificationStatefulCardContractTest: {$assertions} assertions passed\n");
