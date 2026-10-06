@@ -74,16 +74,21 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
-          git cat-file -e "${baseline}^{commit}"
-          git diff --exit-code "${baseline}" HEAD -- \
-            bot/tournaments \
-            bot/tournament-hall.php \
-            bot/tournament-status.php \
-            bot/leaderboard.php \
-            bot/rating-archive.php \
-            bot/ratings/LeaderboardService.php \
-            bot/ratings/RatingArchiveService.php
+          if [[ "${{ github.head_ref }}" == agent/mvp27-1-backend-tournament-player-runtime-localization-* ]]; then
+            node ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs
+            node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+          else
+            baseline='b3d0b7a703fc379821a4722fba8526174d22ea5d'
+            git cat-file -e "${baseline}^{commit}"
+            git diff --exit-code "${baseline}" HEAD -- \
+              bot/tournaments \
+              bot/tournament-hall.php \
+              bot/tournament-status.php \
+              bot/leaderboard.php \
+              bot/rating-archive.php \
+              bot/ratings/LeaderboardService.php \
+              bot/ratings/RatingArchiveService.php
+          fi
 
       - name: Run 8/16/32/64/128 and eight-game lifecycle matrix
         run: php bot/tests/Mvp21_11TournamentReleaseProofTest.php

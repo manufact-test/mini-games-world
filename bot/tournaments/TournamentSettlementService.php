@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 /**
  * MVP-21.9 terminal tournament settlement owner.
  *
@@ -552,7 +554,7 @@ final class TournamentSettlementService
     {
         $nickname = trim((string)($row['nickname'] ?? ''));
         if ($nickname === '') $nickname = trim((string)($row['display_name'] ?? ''));
-        if ($nickname === '') $nickname = 'Игрок';
+        if ($nickname === '') $nickname = ServerLocalization::copy('arena.hall.player_fallback', 'Player');
         return [
             'placement'=>$this->nullableInt($row['placement'] ?? null),
             'result_code'=>(string)$row['result_code'],

@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 require_once __DIR__ . '/../notifications/AdminNotificationEventService.php';
 
 final class TournamentParticipantNotificationBridge
@@ -49,8 +51,8 @@ final class TournamentParticipantNotificationBridge
         $start = (new DateTimeImmutable($startRaw, $utc))->setTimezone($utc);
         $assignedAt = (new DateTimeImmutable($assignedRaw, $utc))->setTimezone($utc);
 
-        $title = trim((string)($tournament['title'] ?? 'Официальный турнир'));
-        if ($title === '') $title = 'Официальный турнир';
+        $title = trim((string)($tournament['title'] ?? ServerLocalization::copy('arena.official_title', 'Official tournament')));
+        if ($title === '') $title = ServerLocalization::copy('arena.official_title', 'Official tournament');
         $audienceRef = 'official-tournament:' . $tournamentId;
         $base = 'official-tournament.' . $tournamentId . '.schedule.';
         $events = [];
@@ -62,8 +64,8 @@ final class TournamentParticipantNotificationBridge
                 'audience_type'=>'tournament',
                 'audience_ref'=>$audienceRef,
                 'recipient_mgw_ids'=>$participants,
-                'title'=>'Дата турнира назначена',
-                'text'=>"«{$title}»: дата и время турнира назначены. Откройте раздел турниров — там показаны ваше местное время и точный обратный отсчёт.",
+                'title'=>ServerLocalization::copy('server.tournament_runtime.notifications.scheduled_title', 'Tournament date scheduled'),
+                'text'=>ServerLocalization::copy('server.tournament_runtime.notifications.scheduled_text', '{title}: tournament date and time are scheduled.', ['title'=>$title]),
                 'scheduled_at'=>$assignedAt->format(DATE_ATOM),
                 'request_id'=>$base . 'assigned',
             ],
@@ -75,20 +77,20 @@ final class TournamentParticipantNotificationBridge
             [
                 'key'=>'24h',
                 'at'=>$start->sub(new DateInterval('P1D')),
-                'title'=>'Турнир начнётся через день',
-                'text'=>"«{$title}» начнётся через 24 часа. Проверьте дату и обратный отсчёт в разделе турниров.",
+                'title'=>ServerLocalization::copy('server.tournament_runtime.notifications.day_title', 'Tournament starts in one day'),
+                'text'=>ServerLocalization::copy('server.tournament_runtime.notifications.day_text', '{title} starts in 24 hours.', ['title'=>$title]),
             ],
             [
                 'key'=>'1h',
                 'at'=>$start->sub(new DateInterval('PT1H')),
-                'title'=>'Турнир начнётся через час',
-                'text'=>"«{$title}» начнётся через 1 час. Подготовьтесь к участию.",
+                'title'=>ServerLocalization::copy('server.tournament_runtime.notifications.hour_title', 'Tournament starts in one hour'),
+                'text'=>ServerLocalization::copy('server.tournament_runtime.notifications.hour_text', '{title} starts in one hour.', ['title'=>$title]),
             ],
             [
                 'key'=>'15m',
                 'at'=>$start->sub(new DateInterval('PT15M')),
-                'title'=>'Турнир начнётся через 15 минут',
-                'text'=>"«{$title}» начнётся через 15 минут.",
+                'title'=>ServerLocalization::copy('server.tournament_runtime.notifications.minutes15_title', 'Tournament starts in 15 minutes'),
+                'text'=>ServerLocalization::copy('server.tournament_runtime.notifications.minutes15_text', '{title} starts in 15 minutes.', ['title'=>$title]),
             ],
         ];
 

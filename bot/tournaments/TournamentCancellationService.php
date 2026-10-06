@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 /**
  * MVP-21.8 canonical cancellation/emergency owner.
  *
@@ -89,7 +91,7 @@ final class TournamentCancellationService
             throw new InvalidArgumentException('Для аварийной остановки обязательно укажите причину.');
         }
         if ($reason === '') {
-            $reason = 'Отменено администратором.';
+            $reason = ServerLocalization::copy('server.tournament_runtime.cancellation.admin_reason', 'Cancelled by administrator.');
         }
         if (mb_strlen($reason) > 1200) {
             throw new InvalidArgumentException('Причина отмены слишком длинная.');
@@ -442,7 +444,7 @@ final class TournamentCancellationService
 
         return [
             'tournament_id'=>(string)$row['tournament_id'],
-            'title'=>(string)($row['title'] ?? 'Официальный турнир'),
+            'title'=>(string)($row['title'] ?? ServerLocalization::copy('arena.official_title', 'Official tournament')),
             'game_type'=>(string)($row['game_type'] ?? ''),
             'kind'=>(string)$row['cancellation_kind'],
             'reason'=>(string)$row['reason'],

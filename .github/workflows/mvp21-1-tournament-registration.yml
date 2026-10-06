@@ -135,6 +135,12 @@ jobs:
           node --check e2e/staging/tournament-registration-live.spec.mjs
           node --check e2e/playwright.config.mjs
 
+      - name: MVP-27.1 Tournament player-runtime localization successor proof
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-backend-tournament-player-runtime-localization-')
+        run: |
+          node ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs
+          node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
       - name: Run MVP-21.1 tournament registration model
         run: php bot/tests/Mvp21_1TournamentRegistrationTest.php
 

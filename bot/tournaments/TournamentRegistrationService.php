@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class TournamentRegistrationService
 {
     public const ACTIVE_SLOT = 'official';
@@ -36,7 +38,7 @@ final class TournamentRegistrationService
             throw new InvalidArgumentException('Tournament capacity must be 8, 16, 32, 64 or 128.');
         }
         $title = $this->text($title, 160);
-        if ($title === '') $title = 'Официальный турнир';
+        if ($title === '') $title = ServerLocalization::copy('arena.official_title', 'Official tournament');
         $actorRef = $this->requiredText($actorRef, 191, 'actor');
         $createdAt = $this->utc($now);
 
@@ -322,10 +324,10 @@ final class TournamentRegistrationService
                     && (string)$existing['registration_state'] === self::REGISTRATION_REGISTERED) {
                     return $this->snapshotForRow($db, $tournament, $mgwId, $accountRef);
                 }
-                throw new RuntimeException('Регистрация на официальный турнир уже закрыта. Состав набран.');
+                throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.registration.closed_full', 'Tournament request could not be completed.'));
             }
             if ((string)$tournament['tournament_state'] !== self::STATE_REGISTRATION_OPEN) {
-                throw new RuntimeException('Регистрация на официальный турнир сейчас закрыта.');
+                throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.registration.closed', 'Tournament request could not be completed.'));
             }
 
             if (is_array($existing) && (string)$existing['registration_state'] === self::REGISTRATION_REGISTERED) {
@@ -359,7 +361,7 @@ final class TournamentRegistrationService
                         ]
                     );
                     if ($updated !== 1) {
-                        throw new RuntimeException('Согласие с правилами изменилось одновременно. Повторите попытку.');
+                        throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.registration.consent_race', 'Tournament request could not be completed.'));
                     }
                     $existing['rules_version'] = $consent['version'];
                     $existing['rules_language'] = $consent['language'];
@@ -378,7 +380,7 @@ final class TournamentRegistrationService
             $registeredCount = $this->registeredCount($db, (string)$tournament['tournament_id']);
             $capacity = (int)$tournament['capacity'];
             if ($registeredCount >= $capacity) {
-                throw new RuntimeException('Все места в турнире уже заняты.');
+                throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.registration.full', 'Tournament request could not be completed.'));
             }
 
             $consent = $this->validatedRulesConsent($tournament, $rulesConsent);
@@ -474,7 +476,7 @@ final class TournamentRegistrationService
             );
             if ($rows === [] || !is_array($rows[0])
                 || (string)($rows[0]['registration_state'] ?? '') !== self::REGISTRATION_REGISTERED) {
-                throw new RuntimeException('Активная регистрация для публикации не найдена.');
+                throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.registration.publication_missing', 'Tournament request could not be completed.'));
             }
 
             $registration = $rows[0];
@@ -494,7 +496,7 @@ final class TournamentRegistrationService
                     ]
                 );
                 if ($updated !== 1) {
-                    throw new RuntimeException('Публикация регистрации изменилась одновременно. Повторите попытку.');
+                    throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.registration.publication_race', 'Tournament request could not be completed.'));
                 }
             }
 
@@ -523,7 +525,7 @@ final class TournamentRegistrationService
         ): array {
             $tournament = $this->activeTournamentRow($db, true);
             if ((string)$tournament['tournament_state'] !== self::STATE_REGISTRATION_OPEN) {
-                throw new RuntimeException('Из текущего состояния турнира выйти через регистрацию нельзя.');
+                throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.registration.leave_unavailable', 'Tournament request could not be completed.'));
             }
 
             $rows = $db->fetchAll(
@@ -534,12 +536,12 @@ final class TournamentRegistrationService
             );
             if ($rows === [] || !is_array($rows[0])
                 || (string)$rows[0]['registration_state'] !== self::REGISTRATION_REGISTERED) {
-                throw new RuntimeException('Активная регистрация не найдена.');
+                throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.registration.not_found', 'Tournament request could not be completed.'));
             }
             $registration = $rows[0];
 
             if ($this->registeredCount($db, (string)$tournament['tournament_id']) >= (int)$tournament['capacity']) {
-                throw new RuntimeException('После заполнения турнира регистрация зафиксирована и выйти через этот этап уже нельзя.');
+                throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.registration.roster_fixed', 'Tournament request could not be completed.'));
             }
 
             $attempt = (int)$registration['attempt_no'];
@@ -634,21 +636,21 @@ final class TournamentRegistrationService
     {
         $gameType = trim($gameType);
         $gameTitle = match ($gameType) {
-            'tictactoe' => 'Крестики-нолики',
-            'four_in_a_row' => 'Четыре в ряд',
-            'battleship' => 'Морской бой',
-            'checkers' => 'Русские шашки',
-            'reversi' => 'Реверси',
-            'chess' => 'Шахматы',
-            'go' => 'Го',
-            'domino' => 'Домино',
-            default => $gameType !== '' ? $gameType : 'Игра',
+            'tictactoe' => ServerLocalization::copy('games.tictactoe.name', 'Tic Tac Toe'),
+            'four_in_a_row' => ServerLocalization::copy('games.four_in_a_row.name', 'Four in a Row'),
+            'battleship' => ServerLocalization::copy('games.battleship.name', 'Battleship'),
+            'checkers' => ServerLocalization::copy('games.checkers.name', 'Checkers'),
+            'reversi' => ServerLocalization::copy('games.reversi.name', 'Reversi'),
+            'chess' => ServerLocalization::copy('games.chess.name', 'Chess'),
+            'go' => ServerLocalization::copy('games.go.name', 'Go'),
+            'domino' => ServerLocalization::copy('games.domino.name', 'Domino'),
+            default => $gameType !== '' ? $gameType : ServerLocalization::copy('games.router.game_fallback', 'Game'),
         };
 
         return [
             'version'=>self::RULES_VERSION,
             'language'=>self::RULES_LANGUAGE,
-            'title'=>'Правила официального турнира',
+            'title'=>ServerLocalization::copy('server.tournament_runtime.rules.title', 'Official tournament rules'),
             'tournament'=>[
                 'game_type'=>$gameType,
                 'game_title'=>$gameTitle,
@@ -659,69 +661,69 @@ final class TournamentRegistrationService
             'sections'=>[
                 [
                     'id'=>'registration',
-                    'title'=>'Регистрация и взнос',
+                    'title'=>ServerLocalization::copy('server.tournament_runtime.rules.registration_title', 'Registration and entry fee'),
                     'items'=>[
-                        "Турнир проходит по игре «{$gameTitle}». Количество участников: {$capacity}.",
-                        'Взнос — 50 000 коинов. При регистрации сумма резервируется, а не списывается.',
-                        'До заполнения турнира участник может отменить регистрацию: место освобождается, резерв 50 000 полностью снимается.',
-                        'Когда все места заняты, регистрация закрывается автоматически, состав фиксируется и ожидает назначения даты.',
+                        ServerLocalization::copy('server.tournament_runtime.rules.registration_game_capacity', 'The tournament is played in {game}. Participants: {capacity}.', ['game'=>$gameTitle, 'capacity'=>$capacity]),
+                        ServerLocalization::copy('server.tournament_runtime.rules.registration_fee', 'The 50,000 coin entry fee is reserved at registration, not charged.'),
+                        ServerLocalization::copy('server.tournament_runtime.rules.registration_cancel', 'Before the tournament fills, registration can be cancelled and the reserve is released in full.'),
+                        ServerLocalization::copy('server.tournament_runtime.rules.registration_close', 'When all places are filled, registration closes automatically and the roster is fixed pending scheduling.'),
                     ],
                 ],
                 [
                     'id'=>'schedule',
-                    'title'=>'Дата и участие',
+                    'title'=>ServerLocalization::copy('server.tournament_runtime.rules.date_title', 'Date and participation'),
                     'items'=>[
-                        'После набора состава назначается дата и время турнира.',
-                        'Участникам предусмотрены напоминания за день, за час и за 15 минут до начала.',
-                        'Турнирный зал открывается за 15 минут до старта. Сетка формируется случайно точно в момент начала.',
-                        'Отсутствующий участник остаётся в сетке и получает техническое поражение по турнирным правилам.',
+                        ServerLocalization::copy('server.tournament_runtime.rules.date_schedule', 'The tournament date and time are scheduled after the roster is filled.'),
+                        ServerLocalization::copy('server.tournament_runtime.rules.date_reminders', 'Participants receive reminders one day, one hour, and 15 minutes before the start.'),
+                        ServerLocalization::copy('server.tournament_runtime.rules.date_hall', 'The Tournament Hall opens 15 minutes before the start. The bracket is randomized exactly at start time.'),
+                        ServerLocalization::copy('server.tournament_runtime.rules.date_absent', 'An absent participant remains in the bracket and receives a technical loss under tournament rules.'),
                     ],
                 ],
                 [
                     'id'=>'start',
-                    'title'=>'Готовность и старт матча',
+                    'title'=>ServerLocalization::copy('server.tournament_runtime.rules.ready_title', 'Readiness and match start'),
                     'items'=>[
-                        'Перед первым матчем даётся 2 минуты на подтверждение «Я готов».',
-                        'После готовности обоих игроков поле блокируется до общего 10-секундного визуального, звукового и вибрационного отсчёта.',
-                        'Игровой таймер начинается только после окончания этого отсчёта.',
+                        ServerLocalization::copy('server.tournament_runtime.rules.ready_window', 'There are 2 minutes before the first match to confirm readiness.'),
+                        ServerLocalization::copy('server.tournament_runtime.rules.ready_countdown', 'After both players are ready, the field remains locked through the shared 10-second visual, sound, and vibration countdown.'),
+                        ServerLocalization::copy('server.tournament_runtime.rules.ready_timer', 'The game timer starts only after this countdown ends.'),
                     ],
                 ],
                 [
                     'id'=>'rounds',
-                    'title'=>'Раунды и ничьи',
+                    'title'=>ServerLocalization::copy('server.tournament_runtime.rules.rounds_title', 'Rounds and draws'),
                     'items'=>[
-                        'Следующий раунд начинается после завершения всех матчей текущего раунда.',
-                        'Между раундами предусмотрен перерыв 3 минуты.',
-                        'При ничьей повторный матч начинается через 1 минуту, стороны меняются, повторный взнос не резервируется.',
-                        'Турнир включает финал и отдельный матч за третье место.',
+                        ServerLocalization::copy('server.tournament_runtime.rules.rounds_next', 'The next round begins after all matches in the current round are complete.'),
+                        ServerLocalization::copy('server.tournament_runtime.rules.rounds_break', 'There is a 3-minute break between rounds.'),
+                        ServerLocalization::copy('server.tournament_runtime.rules.rounds_draw', 'After a draw, a replay starts in 1 minute, sides switch, and no additional entry fee is reserved.'),
+                        ServerLocalization::copy('server.tournament_runtime.rules.rounds_final_third', 'The tournament includes a final and a separate third-place match.'),
                     ],
                 ],
                 [
                     'id'=>'technical',
-                    'title'=>'Отключения и технические исходы',
+                    'title'=>ServerLocalization::copy('server.tournament_runtime.rules.technical_title', 'Disconnects and technical outcomes'),
                     'items'=>[
-                        'Если один игрок отключился, у него есть 60 секунд, чтобы вернуться в игру.',
-                        'Если отключились оба игрока, им даётся до 3 минут, чтобы вернуться в игру.',
-                        'Если игрок выходит сам, оба игрока не появляются или возникает техническая ошибка, результат определяется по правилам турнира.',
-                        'Если турнир отменён или остановлен из-за технической проблемы, взнос участникам возвращается полностью, а результаты аннулируются.',
+                        ServerLocalization::copy('server.tournament_runtime.rules.technical_single_disconnect', 'If one player disconnects, they have 60 seconds to return.'),
+                        ServerLocalization::copy('server.tournament_runtime.rules.technical_both_disconnect', 'If both players disconnect, they have up to 3 minutes to return.'),
+                        ServerLocalization::copy('server.tournament_runtime.rules.technical_outcome', 'If a player leaves, both players are absent, or a technical error occurs, the result is determined by tournament rules.'),
+                        ServerLocalization::copy('server.tournament_runtime.rules.technical_cancel_refund', 'If the tournament is cancelled or stopped for a technical problem, entry fees are fully refunded and results are annulled.'),
                     ],
                 ],
                 [
                     'id'=>'rewards',
-                    'title'=>'Награды',
+                    'title'=>ServerLocalization::copy('server.tournament_runtime.rules.rewards_title', 'Rewards'),
                     'items'=>[
-                        '1 место: 200 000 коинов; Golden Ticket; корона чемпиона на 30 дней; постоянный значок победителя; эксклюзивный чемпионский набор оформления игр; Зал славы; золотой кубок.',
-                        '2 место: 80 000 коинов; серебряная рамка на 30 дней; постоянная отметка финалиста; серебряный кубок.',
-                        '3 место: 50 000 коинов; бронзовая отметка на 30 дней; постоянная отметка за третье место; бронзовый кубок.',
-                        'Для остальных участников денежная награда не предусмотрена.',
-                        'Golden Ticket нельзя продать или передать другому игроку. Он даёт право участия в будущем Большом турнире и действует до его проведения. Дата и число участников Большого турнира будут определены позже.',
+                        ServerLocalization::copy('server.tournament_runtime.rules.rewards_first', 'First place rewards'),
+                        ServerLocalization::copy('server.tournament_runtime.rules.rewards_second', 'Second place rewards'),
+                        ServerLocalization::copy('server.tournament_runtime.rules.rewards_third', 'Third place rewards'),
+                        ServerLocalization::copy('server.tournament_runtime.rules.rewards_others', 'No cash reward is provided for other participants.'),
+                        ServerLocalization::copy('server.tournament_runtime.rules.rewards_golden_ticket', 'Golden Ticket terms'),
                     ],
                 ],
                 [
                     'id'=>'rule_changes',
-                    'title'=>'Изменение правил',
+                    'title'=>ServerLocalization::copy('server.tournament_runtime.rules.change_title', 'Rule changes'),
                     'items'=>[
-                        'После открытия регистрации условия этого турнира не меняются незаметно для участников. Если правила потребуется существенно изменить, текущий турнир будет отменён и создан новый.',
+                        ServerLocalization::copy('server.tournament_runtime.rules.change_notice', 'After registration opens, material rule changes require cancelling this tournament and creating a new one.'),
                     ],
                 ],
             ],
@@ -869,15 +871,15 @@ final class TournamentRegistrationService
         $json = trim((string)($tournament['rules_snapshot_json'] ?? ''));
         $sha256 = trim((string)($tournament['rules_sha256'] ?? ''));
         if ($version === '' || $language === '' || $json === '' || $sha256 === '') {
-            throw new RuntimeException('Правила турнира ещё не подготовлены.');
+            throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.rules.not_prepared', 'Tournament request could not be completed.'));
         }
         if (!hash_equals(self::rulesSha256FromJson($json), $sha256)) {
-            throw new RuntimeException('Снимок правил турнира повреждён.');
+            throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.rules.snapshot_damaged', 'Tournament request could not be completed.'));
         }
         $snapshot = $this->decodeJson($json);
         if ((string)($snapshot['version'] ?? '') !== $version
             || (string)($snapshot['language'] ?? '') !== $language) {
-            throw new RuntimeException('Версия правил турнира не совпадает со снимком.');
+            throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.rules.version_mismatch', 'Tournament request could not be completed.'));
         }
     }
 
@@ -885,7 +887,7 @@ final class TournamentRegistrationService
     {
         $this->assertTournamentRules($tournament);
         if (!is_array($consent) || empty($consent['accepted'])) {
-            throw new RuntimeException('Перед регистрацией подтвердите согласие с правилами турнира.');
+            throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.rules.consent_required', 'Tournament request could not be completed.'));
         }
 
         $expected = [
@@ -900,7 +902,7 @@ final class TournamentRegistrationService
         ];
         foreach ($expected as $key=>$value) {
             if ($actual[$key] === '' || !hash_equals($value, $actual[$key])) {
-                throw new RuntimeException('Правила турнира обновились. Откройте их заново и подтвердите актуальную версию.');
+                throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.rules.updated', 'Tournament request could not be completed.'));
             }
         }
         return $expected;
@@ -950,7 +952,7 @@ final class TournamentRegistrationService
             ]
         );
         if ($updated !== 1) {
-            throw new RuntimeException('Состояние регистрации изменилось одновременно.');
+            throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.registration.state_race', 'Tournament request could not be completed.'));
         }
         return [$this->tournamentRow($db, $tournamentId, false), true];
     }
@@ -962,7 +964,7 @@ final class TournamentRegistrationService
              WHERE active_slot=:active_slot' . ($lock ? $this->forUpdate($db) : ''),
             ['active_slot'=>self::ACTIVE_SLOT]
         );
-        if ($rows === []) throw new RuntimeException('Официальный турнир пока не создан.');
+        if ($rows === []) throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.registration.tournament_missing', 'Tournament request could not be completed.'));
         if (count($rows) !== 1 || !is_array($rows[0])) {
             throw new RuntimeException('Official tournament state is invalid.');
         }
