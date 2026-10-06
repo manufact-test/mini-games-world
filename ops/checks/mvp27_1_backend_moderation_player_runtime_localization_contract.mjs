@@ -3,6 +3,7 @@ import fs from 'node:fs';
 const CYR = /[\u0400-\u04FF]/;
 const locale = JSON.parse(fs.readFileSync('app/locales/ru.json','utf8'));
 const baseline = JSON.parse(fs.readFileSync('ops/checks/mvp27_1_hardcoded_text_baseline.json','utf8'));
+const successor = String(process.env.GITHUB_HEAD_REF ?? '').startsWith('agent/mvp27-1-backend-baseline-player-localization-bundle-');
 function assert(ok,msg){ if(!ok) throw new Error(msg); }
 function get(key){ return key.split('.').reduce((v,p)=>v?.[p],locale); }
 function cyrLines(path){ return fs.readFileSync(path,'utf8').split(/\r?\n/).filter(l=>CYR.test(l)).length; }
@@ -62,7 +63,7 @@ walk(exact);
 
 const expectedCyr = {
   'bot/moderation/ModerationService.php':28,
-  'bot/social/PlayerReportService.php':9,
+  'bot/social/PlayerReportService.php':successor ? 0 : 9,
   'bot/moderation.php':0
 };
 for(const [path,n] of Object.entries(expectedCyr)) assert(cyrLines(path)===n,path+' has unexpected residual Cyrillic count.');
@@ -76,7 +77,18 @@ assert(moderation.includes("'Апелляция уже обработана.'"),
 
 const reports=fs.readFileSync('bot/social/PlayerReportService.php','utf8');
 assert(reports.includes("ServerLocalization::copy('server.moderation.player_fallback'"),'Player report fallback must be locale-owned.');
-assert(reports.includes("throw new PlayerReportException('self_report', 'Нельзя отправить жалобу на свой профиль.');"),'Reason-coded internal report exception may remain because the player endpoint maps it through server.friends.*.');
+if(successor){
+  for(const key of [
+    'server.moderation.errors.self_report',
+    'server.moderation.errors.invalid_reason',
+    'server.moderation.errors.invalid_match',
+    'server.moderation.errors.invalid_status',
+    'server.moderation.errors.report_not_found',
+    'server.moderation.errors.user_unavailable'
+  ]) assert(reports.includes(`ServerLocalization::copy('${key}'`),'Successor must keep PlayerReportService copy locale-owned: '+key);
+} else {
+  assert(reports.includes("throw new PlayerReportException('self_report', 'Нельзя отправить жалобу на свой профиль.');"),'Reason-coded internal report exception may remain in predecessor slice because the player endpoint maps it through server.friends.*.');
+}
 
 const friends=fs.readFileSync('bot/friends.php','utf8');
 assert(friends.includes("'self_report' => mgw_friends_copy('server.friends.self_report'"),'Player report exception must remain reason-mapped at the HTTP boundary.');
