@@ -7,29 +7,30 @@ header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
 
 require __DIR__ . '/core/bootstrap.php';
+require_once __DIR__ . '/localization/ServerLocalization.php';
 require_once __DIR__ . '/support/SupportTicketService.php';
 
 try {
     if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'GET') {
-        json_response(['ok'=>false,'error'=>'Метод запроса не поддерживается.'], 405);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.support.attachment.method_not_allowed', 'Method not allowed.')], 405);
     }
 
     $attachmentId = trim((string)($_GET['attachment_id'] ?? ''));
     if (preg_match('/^ticketatt_[a-f0-9]{32}$/', $attachmentId) !== 1) {
-        json_response(['ok'=>false,'error'=>'Некорректное вложение.'], 400);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.support.attachment.invalid_attachment', 'Invalid attachment.')], 400);
     }
 
     $authenticatedUser = (new AuthService($config))->getUserFromRequest([]);
     $mgwId = trim((string)($authenticatedUser['mgw_id'] ?? ''));
     if (!MgwIdGenerator::isValid($mgwId)) {
-        json_response(['ok'=>false,'error'=>'Профиль MGW недоступен для этой сессии.'], 401);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.support.attachment.profile_unavailable', 'The MGW profile is unavailable for this session.')], 401);
     }
 
     $databaseConfig = DatabaseConfig::fromApplicationConfig($config);
     $router = new RuntimeStorageRouter($config);
     if (!$databaseConfig->enabled()
         || ($router->enabled() && $router->routeFor('accounts') !== RuntimeStorageRouter::DRIVER_DATABASE)) {
-        json_response(['ok'=>false,'error'=>'Поддержка MGW временно недоступна.'], 503);
+        json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.support.attachment.unavailable', 'MGW Support is temporarily unavailable.')], 503);
     }
 
     $database = PdoConnectionFactory::create($databaseConfig);
@@ -64,5 +65,5 @@ try {
     ], $status);
 } catch (Throwable $error) {
     error_log('[MiniGamesWorld support attachment download] ' . $error->getMessage());
-    json_response(['ok'=>false,'error'=>'Не удалось скачать вложение.'], 500);
+    json_response(['ok'=>false,'error'=>ServerLocalization::copy('server.support.attachment.failed', 'The attachment could not be downloaded.')], 500);
 }

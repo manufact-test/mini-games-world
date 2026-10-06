@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 final class SupportTicketException extends RuntimeException
 {
     public function __construct(public readonly string $reason, string $message)
@@ -12,35 +14,35 @@ final class SupportTicketException extends RuntimeException
 final class SupportTicketService
 {
     public const PLATFORM_LABELS = [
-        'telegram' => 'Приложение в Telegram',
-        'google_play' => 'Приложение из Google Play',
+        'telegram' => 'server.support.platforms.telegram',
+        'google_play' => 'server.support.platforms.google_play',
     ];
 
     public const CATEGORY_LABELS = [
-        'feedback' => 'Обратная связь',
-        'idea' => 'Предложение',
-        'complaint' => 'Жалоба',
-        'technical' => 'Техническая проблема',
-        'payment' => 'Платёж / коины',
-        'game' => 'Игра / матч',
-        'tournament' => 'Турнир',
-        'account' => 'Аккаунт',
-        'other' => 'Другое',
+        'feedback' => 'server.support.categories.feedback',
+        'idea' => 'server.support.categories.idea',
+        'complaint' => 'server.support.categories.complaint',
+        'technical' => 'server.support.categories.technical',
+        'payment' => 'server.support.categories.payment',
+        'game' => 'server.support.categories.game',
+        'tournament' => 'server.support.categories.tournament',
+        'account' => 'server.support.categories.account',
+        'other' => 'server.support.categories.other',
     ];
 
     public const STATUS_LABELS = [
-        'open' => 'Открыт',
-        'in_progress' => 'В работе',
-        'waiting_user' => 'Ждём пользователя',
-        'resolved' => 'Решён',
-        'closed' => 'Закрыт',
+        'open' => 'server.support.statuses.open',
+        'in_progress' => 'server.support.statuses.in_progress',
+        'waiting_user' => 'server.support.statuses.waiting_user',
+        'resolved' => 'server.support.statuses.resolved',
+        'closed' => 'server.support.statuses.closed',
     ];
 
     public const PRIORITY_LABELS = [
-        'low' => 'Низкий',
-        'normal' => 'Обычный',
-        'high' => 'Высокий',
-        'critical' => 'Критический',
+        'low' => 'server.support.priorities.low',
+        'normal' => 'server.support.priorities.normal',
+        'high' => 'server.support.priorities.high',
+        'critical' => 'server.support.priorities.critical',
     ];
 
     private const MAX_MESSAGE_LENGTH = 4000;
@@ -59,6 +61,79 @@ final class SupportTicketService
 
     public function __construct(private DatabaseConnectionInterface $database) {}
 
+    public static function platformLabels(): array
+    {
+        return self::localizedLabels(self::PLATFORM_LABELS, [
+            'telegram' => 'Telegram app',
+            'google_play' => 'Google Play app',
+        ]);
+    }
+
+    public static function categoryLabels(): array
+    {
+        return self::localizedLabels(self::CATEGORY_LABELS, [
+            'feedback' => 'Feedback',
+            'idea' => 'Suggestion',
+            'complaint' => 'Complaint',
+            'technical' => 'Technical issue',
+            'payment' => 'Payment / coins',
+            'game' => 'Game / match',
+            'tournament' => 'Tournament',
+            'account' => 'Account',
+            'other' => 'Other',
+        ]);
+    }
+
+    public static function statusLabels(): array
+    {
+        return self::localizedLabels(self::STATUS_LABELS, [
+            'open' => 'Open',
+            'in_progress' => 'In progress',
+            'waiting_user' => 'Waiting for user',
+            'resolved' => 'Resolved',
+            'closed' => 'Closed',
+        ]);
+    }
+
+    public static function priorityLabels(): array
+    {
+        return self::localizedLabels(self::PRIORITY_LABELS, [
+            'low' => 'Low',
+            'normal' => 'Normal',
+            'high' => 'High',
+            'critical' => 'Critical',
+        ]);
+    }
+
+    public static function platformLabel(string $code): string
+    {
+        return self::platformLabels()[$code] ?? $code;
+    }
+
+    public static function categoryLabel(string $code): string
+    {
+        return self::categoryLabels()[$code] ?? $code;
+    }
+
+    public static function statusLabel(string $code): string
+    {
+        return self::statusLabels()[$code] ?? $code;
+    }
+
+    public static function priorityLabel(string $code): string
+    {
+        return self::priorityLabels()[$code] ?? $code;
+    }
+
+    private static function localizedLabels(array $keys, array $fallbacks): array
+    {
+        $labels = [];
+        foreach ($keys as $code => $key) {
+            $labels[$code] = ServerLocalization::copy((string)$key, (string)($fallbacks[$code] ?? $code));
+        }
+        return $labels;
+    }
+
     public function createTicket(
         string $requesterMgwId,
         string $platformCode,
@@ -70,11 +145,11 @@ final class SupportTicketService
         array $attachments = []
     ): array {
         $requesterMgwId = $this->requireUser($requesterMgwId);
-        $platformCode = $this->enum($platformCode, self::PLATFORM_LABELS, 'invalid_platform', 'Выберите платформу.');
-        $categoryCode = $this->enum($categoryCode, self::CATEGORY_LABELS, 'invalid_category', 'Выберите категорию обращения.');
-        $priorityCode = $this->enum($priorityCode, self::PRIORITY_LABELS, 'invalid_priority', 'Выберите приоритет обращения.');
+        $platformCode = $this->enum($platformCode, self::PLATFORM_LABELS, 'invalid_platform', ServerLocalization::copy('server.support.errors.invalid_platform', 'Choose a platform.'));
+        $categoryCode = $this->enum($categoryCode, self::CATEGORY_LABELS, 'invalid_category', ServerLocalization::copy('server.support.errors.invalid_category', 'Choose a support category.'));
+        $priorityCode = $this->enum($priorityCode, self::PRIORITY_LABELS, 'invalid_priority', ServerLocalization::copy('server.support.errors.invalid_priority', 'Choose a support priority.'));
         $subject = $this->text($subject, self::MAX_SUBJECT_LENGTH);
-        if ($subject === '') $subject = self::CATEGORY_LABELS[$categoryCode];
+        if ($subject === '') $subject = self::categoryLabel($categoryCode);
         $message = $this->requiredMessage($message);
         $preparedAttachments = $this->prepareAttachments($attachments);
         $related = $this->normalizeRelated($related);
@@ -177,7 +252,7 @@ final class SupportTicketService
         $requesterMgwId = $this->requireUser($requesterMgwId);
         $ticket = $this->findTicket($ticketRef);
         if ((string)$ticket['requester_mgw_id'] !== $requesterMgwId) {
-            throw new SupportTicketException('ticket_not_found', 'Обращение не найдено.');
+            throw new SupportTicketException('ticket_not_found', ServerLocalization::copy('server.support.errors.ticket_not_found', 'Support ticket was not found.'));
         }
         return $this->hydrateTicket($ticket, false);
     }
@@ -201,10 +276,10 @@ final class SupportTicketService
             $this->lockUserWriteScope($database, $requesterMgwId);
             $ticket = $this->findTicket($ticketRef);
             if ((string)$ticket['requester_mgw_id'] !== $requesterMgwId) {
-                throw new SupportTicketException('ticket_not_found', 'Обращение не найдено.');
+                throw new SupportTicketException('ticket_not_found', ServerLocalization::copy('server.support.errors.ticket_not_found', 'Support ticket was not found.'));
             }
             if ((string)$ticket['status_code'] === 'closed') {
-                throw new SupportTicketException('ticket_closed', 'Закрытое обращение нельзя продолжить. Создайте новое.');
+                throw new SupportTicketException('ticket_closed', ServerLocalization::copy('server.support.errors.ticket_closed', 'A closed support ticket cannot be continued. Create a new one.'));
             }
 
             if ($this->isRecentReplyReplay($database, $ticket, $requesterMgwId, $message, $preparedAttachments)) {
@@ -560,7 +635,7 @@ final class SupportTicketService
             ['mgw_id' => $mgwId]
         );
         if ($rows === []) {
-            throw new SupportTicketException('user_unavailable', 'Профиль MGW недоступен.');
+            throw new SupportTicketException('user_unavailable', ServerLocalization::copy('server.support.errors.user_unavailable', 'The MGW profile is unavailable.'));
         }
     }
 
@@ -771,13 +846,13 @@ final class SupportTicketService
             'ticket_number' => (string)($row['ticket_number'] ?? ''),
             'requester_mgw_id' => (string)($row['requester_mgw_id'] ?? ''),
             'platform' => $platform,
-            'platform_label' => self::PLATFORM_LABELS[$platform] ?? $platform,
+            'platform_label' => self::platformLabel($platform),
             'category' => $category,
-            'category_label' => self::CATEGORY_LABELS[$category] ?? $category,
+            'category_label' => self::categoryLabel($category),
             'status' => $status,
-            'status_label' => self::STATUS_LABELS[$status] ?? $status,
+            'status_label' => self::statusLabel($status),
             'priority' => $priority,
-            'priority_label' => self::PRIORITY_LABELS[$priority] ?? $priority,
+            'priority_label' => self::priorityLabel($priority),
             'owner_ref' => $row['owner_ref'] !== null ? (string)$row['owner_ref'] : null,
             'subject' => (string)($row['subject'] ?? ''),
             'related' => [
@@ -801,12 +876,12 @@ final class SupportTicketService
     private function findTicket(string $ticketRef): array
     {
         $ticketRef = $this->text($ticketRef, 64);
-        if ($ticketRef === '') throw new SupportTicketException('ticket_required', 'Укажите номер обращения.');
+        if ($ticketRef === '') throw new SupportTicketException('ticket_required', ServerLocalization::copy('server.support.errors.ticket_required', 'Provide the support ticket number.'));
         $rows = $this->database->fetchAll(
             'SELECT * FROM mgw_support_tickets WHERE ticket_id = :ticket_id_ref OR ticket_number = :ticket_number_ref LIMIT 1',
             ['ticket_id_ref' => $ticketRef, 'ticket_number_ref' => $ticketRef]
         );
-        if ($rows === []) throw new SupportTicketException('ticket_not_found', 'Обращение не найдено.');
+        if ($rows === []) throw new SupportTicketException('ticket_not_found', ServerLocalization::copy('server.support.errors.ticket_not_found', 'Support ticket was not found.'));
         return $rows[0];
     }
 
@@ -821,10 +896,10 @@ final class SupportTicketService
              WHERE a.attachment_id = :attachment_id LIMIT 1',
             ['attachment_id' => $attachmentId]
         );
-        if ($rows === []) throw new SupportTicketException('attachment_not_found', 'Вложение не найдено.');
+        if ($rows === []) throw new SupportTicketException('attachment_not_found', ServerLocalization::copy('server.support.errors.attachment_not_found', 'Attachment was not found.'));
         $row = $rows[0];
         if ($requesterMgwId !== null && (string)$row['requester_mgw_id'] !== $requesterMgwId) {
-            throw new SupportTicketException('attachment_not_found', 'Вложение не найдено.');
+            throw new SupportTicketException('attachment_not_found', ServerLocalization::copy('server.support.errors.attachment_not_found', 'Attachment was not found.'));
         }
         return [
             'attachment_id' => (string)$row['attachment_id'],
@@ -911,22 +986,22 @@ final class SupportTicketService
     private function prepareAttachments(array $attachments): array
     {
         if (count($attachments) > self::MAX_ATTACHMENTS_PER_MESSAGE) {
-            throw new SupportTicketException('too_many_attachments', 'Можно приложить не более 3 файлов к одному сообщению.');
+            throw new SupportTicketException('too_many_attachments', ServerLocalization::copy('server.support.errors.too_many_attachments', 'You can attach no more than 3 files to one message.'));
         }
         $prepared = [];
         foreach ($attachments as $attachment) {
-            if (!is_array($attachment)) throw new SupportTicketException('invalid_attachment', 'Некорректное вложение.');
+            if (!is_array($attachment)) throw new SupportTicketException('invalid_attachment', ServerLocalization::copy('server.support.errors.invalid_attachment', 'Invalid attachment.'));
             $fileName = $this->text((string)($attachment['file_name'] ?? $attachment['name'] ?? ''), 180);
             $mimeType = strtolower($this->text((string)($attachment['mime_type'] ?? $attachment['type'] ?? ''), 96));
             $base64 = preg_replace('/^data:[^;]+;base64,/i', '', trim((string)($attachment['content_base64'] ?? $attachment['data'] ?? ''))) ?? '';
             if ($fileName === '' || !in_array($mimeType, self::ALLOWED_MIME_TYPES, true) || $base64 === '') {
-                throw new SupportTicketException('invalid_attachment', 'Поддерживаются изображения, PDF и TXT.');
+                throw new SupportTicketException('invalid_attachment', ServerLocalization::copy('server.support.errors.invalid_attachment_type', 'Images, PDF and TXT files are supported.'));
             }
             $binary = base64_decode($base64, true);
-            if ($binary === false) throw new SupportTicketException('invalid_attachment', 'Не удалось прочитать вложение.');
+            if ($binary === false) throw new SupportTicketException('invalid_attachment', ServerLocalization::copy('server.support.errors.invalid_attachment_read', 'The attachment could not be read.'));
             $size = strlen($binary);
             if ($size < 1 || $size > self::MAX_ATTACHMENT_BYTES) {
-                throw new SupportTicketException('attachment_too_large', 'Размер одного вложения не должен превышать 2 МБ.');
+                throw new SupportTicketException('attachment_too_large', ServerLocalization::copy('server.support.errors.attachment_too_large', 'One attachment must not exceed 2 MB.'));
             }
             $prepared[] = [
                 'file_name' => $fileName,
@@ -958,11 +1033,11 @@ final class SupportTicketService
     {
         $mgwId = trim($mgwId);
         if (!MgwIdGenerator::isValid($mgwId)) {
-            throw new SupportTicketException('user_unavailable', 'Профиль MGW недоступен.');
+            throw new SupportTicketException('user_unavailable', ServerLocalization::copy('server.support.errors.user_unavailable', 'The MGW profile is unavailable.'));
         }
         $exists = $this->database->fetchValue('SELECT mgw_id FROM mgw_users WHERE mgw_id = :mgw_id LIMIT 1', ['mgw_id' => $mgwId]);
         if (!is_string($exists) || $exists === '') {
-            throw new SupportTicketException('user_unavailable', 'Профиль MGW недоступен.');
+            throw new SupportTicketException('user_unavailable', ServerLocalization::copy('server.support.errors.user_unavailable', 'The MGW profile is unavailable.'));
         }
         return $mgwId;
     }
@@ -977,7 +1052,7 @@ final class SupportTicketService
     private function requiredMessage(string $message): string
     {
         $message = $this->textPreserveLines($message, self::MAX_MESSAGE_LENGTH);
-        if ($message === '') throw new SupportTicketException('message_required', 'Напишите сообщение.');
+        if ($message === '') throw new SupportTicketException('message_required', ServerLocalization::copy('server.support.errors.message_required', 'Write a message.'));
         return $message;
     }
 
