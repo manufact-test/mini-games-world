@@ -2,15 +2,16 @@
 declare(strict_types=1);
 
 require __DIR__ . '/core/bootstrap.php';
+require_once __DIR__ . '/localization/ServerLocalization.php';
 
 try {
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
-    if (!is_array($payload)) api_error('Некорректный запрос.');
+    if (!is_array($payload)) api_error(ServerLocalization::copy('server.invites.invalid_request', 'Invalid request.'));
 
     $protocol = clean_string($payload['protocol'] ?? '', 40);
     $sessionId = clean_string($payload['sessionId'] ?? '', 120);
     $gameId = clean_string($payload['gameId'] ?? '', 120);
-    if ($gameId === '') api_error('Игра не найдена.');
+    if ($gameId === '') api_error(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
 
     $auth = new AuthService($config);
     $tgUser = $auth->getUserFromRequest($payload);
@@ -31,18 +32,18 @@ try {
     ): array {
         $user = $users->ensureUser($data, $tgUser);
         $userId = (string)($user['id'] ?? '');
-        if ($userId === '') throw new RuntimeException('Пользователь не найден.');
+        if ($userId === '') throw new RuntimeException(ServerLocalization::copy('server.invites.user_not_found', 'User not found.'));
         $data['users'][$userId] = $user;
         $user =& $data['users'][$userId];
         $sessions->ensureSessionShape($user);
         $sessions->assertCanPlay($user, $sessionId);
 
         if (!isset($data['games'][$gameId]) || !is_array($data['games'][$gameId])) {
-            throw new RuntimeException('Игра не найдена.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.game_not_found', 'Game not found.'));
         }
         $game =& $data['games'][$gameId];
         if (!in_array($userId, array_map('strval', $game['player_ids'] ?? []), true)) {
-            throw new RuntimeException('Вы не участвуете в этой игре.');
+            throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.not_participating', 'You are not participating in this game.'));
         }
 
         // Phase B lifecycle writes belong exclusively to the primary api.php
@@ -50,7 +51,7 @@ try {
         // game state so it can never become a second readiness/clock owner.
         if ($protocol === 'mvp14r2') {
             if ($sessionId === '') {
-                throw new RuntimeException('Сессия устройства не найдена.');
+                throw new RuntimeException(ServerLocalization::copy('server.game_runtime.common.device_session_not_found', 'Device session not found.'));
             }
 
             $sessions->touch($user, $sessionId);
