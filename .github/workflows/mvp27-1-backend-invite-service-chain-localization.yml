@@ -16,6 +16,7 @@ on:
       - 'bot/invite-watch.php'
       - 'bot/tests/ProductionV110CanonicalInviteLaunchContractTest.php'
       - 'bot/tests/ProductionV110SearchInviteLifecycleR12ContractTest.php'
+      - 'bot/tests/ProductionV110InviteNotificationStatefulCardContractTest.php'
       - 'ops/checks/mvp27_1_backend_invite_service_chain_localization_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - '.github/workflows/mvp27-1-backend-invite-service-chain-localization.yml'
@@ -57,6 +58,7 @@ jobs:
           php -l bot/invite-watch.php
           php -l bot/tests/ProductionV110CanonicalInviteLaunchContractTest.php
           php -l bot/tests/ProductionV110SearchInviteLifecycleR12ContractTest.php
+          php -l bot/tests/ProductionV110InviteNotificationStatefulCardContractTest.php
           php -l bot/localization/ServerLocalization.php
           php -l app/runtime/localization/LocalizationCatalog.php
           node --check ops/checks/mvp27_1_backend_invite_service_chain_localization_contract.mjs
