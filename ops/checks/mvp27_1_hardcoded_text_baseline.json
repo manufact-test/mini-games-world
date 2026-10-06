@@ -2,12 +2,12 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-06",
-  "staging_base": "f4dcfdec0bc6214cc3c32fb37ada9434493d8c13",
+  "staging_base": "212fc1a5844fcb320c367c783bf4f834881503cb",
   "scanned_files": 679,
-  "cyrillic_lines_total": 976,
+  "cyrillic_lines_total": 937,
   "by_scope": {
     "client": 0,
-    "backend": 976,
+    "backend": 937,
     "client-entry": 0
   },
   "excluded": [
@@ -69,5 +69,5 @@
     "classified residual historical/orphan client owners (stripped main.js; invite-terminal-actions-v115 only through stripped main; orphan invite-terminal-actions-v110r12; historical production-v106-timer-mobile; historical production-v98-passive-session-transport; orphan notification-bell-first-click-v116)",
     "final historical/orphan client owners (api/request-guard.js; main-v102.js; main-v103.js; main-v104.js; main-v105.js; main-v120-invite-controller-shell.js; production-v99-invite-picker-hold.js; screens/notification-bell-first-click-v115.js; screens/search-screen.js)"
   ],
-  "note": "MVP-27.1 active Tournament player-runtime localization moved 111 direct backend Cyrillic lines from player-reachable registration/rules/Hall/readiness/participant-notification/projection owners to canonical locale ownership; mixed Admin/staging/internal tournament copy remains classified outside this slice."
+  "note": "MVP-27.1 active Moderation/player-report runtime localization moved 39 direct player-facing backend Cyrillic lines to canonical locale ownership; Admin-only moderation review/decision copy and endpoint-mapped internal report exceptions remain classified outside this slice."
 }
