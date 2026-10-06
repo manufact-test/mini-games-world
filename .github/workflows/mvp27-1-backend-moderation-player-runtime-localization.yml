@@ -11,6 +11,7 @@ on:
       - 'bot/moderation.php'
       - 'bot/tests/Mvp22_3ModerationContractTest.php'
       - '.github/workflows/mvp18-2-friends-ui.yml'
+      - '.github/workflows/mvp25-5-write-replay-safety.yml'
       - 'ops/checks/mvp27_1_backend_moderation_player_runtime_localization_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
       - '.github/workflows/mvp27-1-backend-moderation-player-runtime-localization.yml'
@@ -70,6 +71,7 @@ jobs:
           changed="$(git diff --name-only "$base" "$head" | sort)"
           allowed="$(cat <<'EOF'
           .github/workflows/mvp18-2-friends-ui.yml
+          .github/workflows/mvp25-5-write-replay-safety.yml
           .github/workflows/mvp27-1-backend-moderation-player-runtime-localization.yml
           app/locales/ru.json
           bot/moderation.php
