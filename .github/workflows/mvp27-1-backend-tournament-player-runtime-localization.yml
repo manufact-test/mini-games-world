@@ -1,0 +1,128 @@
+name: MVP-27.1 Backend Tournament Player Runtime Localization
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'bot/tournaments/TournamentRegistrationService.php'
+      - 'bot/tournaments/TournamentHallService.php'
+      - 'bot/tournaments/TournamentMatchReadinessService.php'
+      - 'bot/tournament-hall.php'
+      - 'bot/tournaments/TournamentParticipantNotificationBridge.php'
+      - 'bot/tournaments/TournamentRewardProjectionService.php'
+      - 'bot/tournaments/TournamentPrizeReviewService.php'
+      - 'bot/tournaments/TournamentRoundProgressionService.php'
+      - 'bot/tournaments/TournamentSettlementService.php'
+      - 'bot/tournaments/TournamentCancellationService.php'
+      - 'app/locales/ru.json'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - 'ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs'
+      - '.github/workflows/mvp27-1-backend-tournament-player-runtime-localization.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tournament-player-runtime-localization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Exact accepted staging base
+        if: github.event_name == 'pull_request'
+        run: test '${{ github.event.pull_request.base.sha }}' = 'f4dcfdec0bc6214cc3c32fb37ada9434493d8c13'
+
+      - name: Syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l bot/tournaments/TournamentRegistrationService.php
+          php -l bot/tournaments/TournamentHallService.php
+          php -l bot/tournaments/TournamentMatchReadinessService.php
+          php -l bot/tournament-hall.php
+          php -l bot/tournaments/TournamentParticipantNotificationBridge.php
+          php -l bot/tournaments/TournamentRewardProjectionService.php
+          php -l bot/tournaments/TournamentPrizeReviewService.php
+          php -l bot/tournaments/TournamentRoundProgressionService.php
+          php -l bot/tournaments/TournamentSettlementService.php
+          php -l bot/tournaments/TournamentCancellationService.php
+          php -l bot/localization/ServerLocalization.php
+          php -l app/runtime/localization/LocalizationCatalog.php
+          node --check ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs
+          node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
+          node -e "JSON.parse(require('fs').readFileSync('app/locales/ru.json','utf8'))"
+
+      - name: Focused localization contract
+        run: node ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs
+
+      - name: Preserve tournament registration and rules semantics
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp21_1TournamentRegistrationTest.php
+          php bot/tests/Mvp21_1TournamentRegistrationIntegrationContractTest.php
+          php bot/tests/Mvp21_2TournamentRulesTest.php
+          php bot/tests/Mvp21_2TournamentRulesCopyRevisionTest.php
+          php bot/tests/Mvp21_3TournamentScheduleTest.php
+
+      - name: Preserve Hall readiness and progression semantics
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp21_4TournamentHallBracketTest.php
+          php bot/tests/Mvp21_4TournamentHallUxContractTest.php
+          php bot/tests/Mvp21_5TournamentMatchReadinessTest.php
+          php bot/tests/Mvp21_5TournamentReadyUxContractTest.php
+          php bot/tests/Mvp21_6TournamentRoundProgressionTest.php
+          php bot/tests/Mvp21_6TournamentRuntimeContractTest.php
+          php bot/tests/Mvp21_7TournamentTechnicalOutcomesTest.php
+
+      - name: Preserve cancellation settlement reward and notification semantics
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp21_8TournamentCancellationTest.php
+          php bot/tests/Mvp21_9TournamentSettlementTest.php
+          php bot/tests/Mvp21_10TournamentPrizeReviewTest.php
+          php bot/tests/Mvp21_11TournamentReleaseProofTest.php
+          php bot/tests/Mvp18_6NotificationPipelineContractTest.php
+
+      - name: Hardcoded player text ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded scope
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/mvp27-1-backend-tournament-player-runtime-localization-')
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head" | sort)"
+          allowed="$(cat <<'EOF'
+.github/workflows/mvp27-1-backend-tournament-player-runtime-localization.yml
+app/locales/ru.json
+bot/tournament-hall.php
+bot/tournaments/TournamentCancellationService.php
+bot/tournaments/TournamentHallService.php
+bot/tournaments/TournamentMatchReadinessService.php
+bot/tournaments/TournamentParticipantNotificationBridge.php
+bot/tournaments/TournamentPrizeReviewService.php
+bot/tournaments/TournamentRegistrationService.php
+bot/tournaments/TournamentRewardProjectionService.php
+bot/tournaments/TournamentRoundProgressionService.php
+bot/tournaments/TournamentSettlementService.php
+ops/checks/mvp27_1_backend_tournament_player_runtime_localization_contract.mjs
+ops/checks/mvp27_1_hardcoded_text_baseline.json
+EOF
+)"
+          bad="$(comm -23 <(printf '%s\n' "$changed") <(printf '%s\n' "$allowed" | sort) || true)"
+          test -z "$bad" || { printf 'Unexpected tournament player-runtime localization paths:\n%s\n' "$bad" >&2; exit 1; }
+          git diff --check "$base" "$head"
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
