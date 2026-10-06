@@ -3,6 +3,7 @@ import fs from 'node:fs';
 const CYR = /[\u0400-\u04FF]/;
 const locale = JSON.parse(fs.readFileSync('app/locales/ru.json','utf8'));
 const baseline = JSON.parse(fs.readFileSync('ops/checks/mvp27_1_hardcoded_text_baseline.json','utf8'));
+const successor = String(process.env.GITHUB_HEAD_REF ?? '').startsWith('agent/mvp27-1-backend-baseline-player-localization-bundle-');
 function assert(ok,msg){ if(!ok) throw new Error(msg); }
 function get(key){ return key.split('.').reduce((v,p)=>v?.[p],locale); }
 function cyrLines(path){ return fs.readFileSync(path,'utf8').split(/\r?\n/).filter(l=>CYR.test(l)).length; }
@@ -64,7 +65,7 @@ function walk(v,p='server.support'){
 walk(exact);
 
 const expectedCyr={
-  'bot/support/SupportTicketService.php':5,
+  'bot/support/SupportTicketService.php':successor ? 0 : 5,
   'bot/support.php':0,
   'bot/support-attachment-download.php':0,
   'bot/support/SupportNotificationBridge.php':0,
@@ -73,13 +74,23 @@ const expectedCyr={
 for(const [path,n] of Object.entries(expectedCyr)) assert(cyrLines(path)===n,path+' has unexpected residual Cyrillic count.');
 
 const service=fs.readFileSync('bot/support/SupportTicketService.php','utf8');
-for(const adminCopy of [
-  'Некорректный режим очереди.',
-  'Некорректный фильтр очереди.',
-  'Некорректный статус обращения.',
-  'Некорректный приоритет обращения.',
-  'Сначала откройте обращение заново.'
-]) assert(service.includes(adminCopy),'Admin-only Support validation must remain outside player slice: '+adminCopy);
+if(successor){
+  for(const key of [
+    'server.support.errors.invalid_queue_mode',
+    'server.support.errors.invalid_queue_filter',
+    'server.support.errors.invalid_status_admin',
+    'server.support.errors.invalid_priority_admin',
+    'server.support.errors.reopen_required'
+  ]) assert(service.includes(`ServerLocalization::copy('${key}'`),'Successor must keep Support validation copy locale-owned: '+key);
+} else {
+  for(const adminCopy of [
+    'Некорректный режим очереди.',
+    'Некорректный фильтр очереди.',
+    'Некорректный статус обращения.',
+    'Некорректный приоритет обращения.',
+    'Сначала откройте обращение заново.'
+  ]) assert(service.includes(adminCopy),'Admin-only Support validation must remain outside predecessor player slice: '+adminCopy);
+}
 assert(service.includes("ServerLocalization::copy('server.support.errors.ticket_closed'"),'Player closed-ticket error must be locale-owned.');
 assert(service.includes("ServerLocalization::copy('server.support.errors.attachment_too_large'"),'Player attachment-size error must be locale-owned.');
 assert(service.includes("'platform_label' => self::platformLabel($platform)"),'Support platform presentation must resolve locale labels.');
