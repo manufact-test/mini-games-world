@@ -74,7 +74,7 @@ jobs:
         run: |
           set -euo pipefail
           php bot/tests/FeatureFlagServiceTest.php
-          php bot/tests/SessionServiceRegressionTest.php
+          php bot/tests/SessionReleaseActiveLifecycleGuardTest.php
           php bot/tests/Mvp14R3CleanAuthSessionPresenceTest.php
           php bot/tests/Mvp18_5ReportsBlockedUsersContractTest.php
           php bot/tests/Mvp21_1TournamentRegistrationTest.php
