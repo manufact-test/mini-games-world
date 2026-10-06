@@ -16,6 +16,7 @@ on:
       - 'bot/tests/ProductionV110CanonicalInviteLaunchContractTest.php'
       - 'bot/tests/ProductionV110SearchInviteLifecycleR12ContractTest.php'
       - 'bot/tests/ProductionV110InviteNotificationStatefulCardContractTest.php'
+      - 'bot/tests/ProductionV110InviteOpponentSourceR12ContractTest.php'
       - 'app/locales/ru.json'
       - 'ops/checks/mvp27_1_backend_cosmetic_store_service_localization_contract.mjs'
       - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
@@ -51,6 +52,7 @@ jobs:
           php -l bot/tests/ProductionV110CanonicalInviteLaunchContractTest.php
           php -l bot/tests/ProductionV110SearchInviteLifecycleR12ContractTest.php
           php -l bot/tests/ProductionV110InviteNotificationStatefulCardContractTest.php
+          php -l bot/tests/ProductionV110InviteOpponentSourceR12ContractTest.php
           node --check ops/checks/mvp27_1_backend_cosmetic_store_service_localization_contract.mjs
           node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
 
@@ -75,6 +77,7 @@ jobs:
           php bot/tests/ProductionV110CanonicalInviteLaunchContractTest.php
           php bot/tests/ProductionV110SearchInviteLifecycleR12ContractTest.php
           php bot/tests/ProductionV110InviteNotificationStatefulCardContractTest.php
+          php bot/tests/ProductionV110InviteOpponentSourceR12ContractTest.php
 
       - name: Hardcoded player text ratchet
         run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
@@ -87,7 +90,7 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           head='${{ github.event.pull_request.head.sha }}'
           changed="$(git diff --name-only "$base" "$head")"
-          allowed='^(bot/catalog/CosmeticStoreService\.php|bot/catalog/CosmeticStoreRuntimePurchaseService\.php|bot/tests/(Mvp19_5ChessCosmeticsTest|ProductionV110CanonicalInviteLaunchContractTest|ProductionV110SearchInviteLifecycleR12ContractTest|ProductionV110InviteNotificationStatefulCardContractTest)\.php|app/locales/ru\.json|ops/checks/mvp27_1_backend_cosmetic_store_service_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/(mvp19-2-cosmetic-store|mvp19-7-reversi-live-cosmetics|mvp22-8-account-data|mvp25-6-monetization-disabled-store|mvp27-1-backend-account-chain-localization|mvp27-1-backend-cosmetic-store-service-localization|mvp27-1-backend-invite-service-chain-localization)\.yml)$'
+          allowed='^(bot/catalog/CosmeticStoreService\.php|bot/catalog/CosmeticStoreRuntimePurchaseService\.php|bot/tests/(Mvp19_5ChessCosmeticsTest|ProductionV110CanonicalInviteLaunchContractTest|ProductionV110SearchInviteLifecycleR12ContractTest|ProductionV110InviteNotificationStatefulCardContractTest|ProductionV110InviteOpponentSourceR12ContractTest)\.php|app/locales/ru\.json|ops/checks/mvp27_1_backend_cosmetic_store_service_localization_contract\.mjs|ops/checks/mvp27_1_hardcoded_text_baseline\.json|\.github/workflows/(mvp19-2-cosmetic-store|mvp19-7-reversi-live-cosmetics|mvp22-8-account-data|mvp25-6-monetization-disabled-store|mvp27-1-backend-account-chain-localization|mvp27-1-backend-cosmetic-store-service-localization|mvp27-1-backend-invite-service-chain-localization)\.yml)$'
           bad="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           test -z "$bad" || { printf 'Unexpected Cosmetic Store service localization paths:\n%s\n' "$bad" >&2; exit 1; }
 
