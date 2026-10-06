@@ -1,0 +1,87 @@
+name: MVP-27.1 Backend History Player Runtime Localization
+
+on:
+  pull_request:
+    branches:
+      - agent/mvp-13-2-staging
+    paths:
+      - 'app/locales/ru.json'
+      - 'bot/services/HistoryService.php'
+      - 'ops/checks/mvp27_1_backend_history_player_runtime_localization_contract.mjs'
+      - 'ops/checks/mvp27_1_hardcoded_text_baseline.json'
+      - '.github/workflows/mvp27-1-backend-history-player-runtime-localization.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  history-player-localization:
+    if: startsWith(github.head_ref, 'agent/mvp27-1-backend-history-player-runtime-localization-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Exact accepted staging base
+        run: test '${{ github.event.pull_request.base.sha }}' = '6f03100b326d84fe158ecae78d9133d53428153f'
+
+      - name: Syntax
+        run: |
+          set -euo pipefail
+          php -l bot/services/HistoryService.php
+          php -l bot/localization/ServerLocalization.php
+          php -l bot/tests/Mvp17_5HistoryChronologyRegressionTest.php
+          php -l bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
+          php -l bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php
+          php -l bot/tests/PhaseBPreparationTimeoutHistoryTest.php
+          node --check ops/checks/mvp27_1_backend_history_player_runtime_localization_contract.mjs
+          node --check ops/checks/mvp27_1_hardcoded_text_audit.mjs
+          node -e "JSON.parse(require('fs').readFileSync('app/locales/ru.json','utf8'))"
+
+      - name: Focused localization contract
+        run: node ops/checks/mvp27_1_backend_history_player_runtime_localization_contract.mjs
+
+      - name: Preserve History chronology and economy presentation
+        run: |
+          set -euo pipefail
+          php bot/tests/Mvp17_5HistoryChronologyRegressionTest.php
+          php bot/tests/Mvp17_5ResultHistoryEconomyPresentationTest.php
+          php bot/tests/Mvp17_5ResultHistoryFix2ContractTest.php
+          php bot/tests/Mvp17_5ResultHistorySingleOwnerRaceContractTest.php
+          php bot/tests/PhaseBPreparationTimeoutHistoryTest.php
+          php bot/tests/RuntimeHistoryProductionContractTest.php
+          php bot/tests/RuntimeHistoryRoutingTest.php
+          php bot/tests/RuntimeHistorySourceOrderTest.php
+
+      - name: Hardcoded player text ratchet
+        run: node ops/checks/mvp27_1_hardcoded_text_audit.mjs
+
+      - name: Bounded scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          changed="$(git diff --name-only "$base" "$head" | sort)"
+          allowed="$(printf '%s\n' \
+            '.github/workflows/mvp27-1-backend-history-player-runtime-localization.yml' \
+            'app/locales/ru.json' \
+            'bot/services/HistoryService.php' \
+            'ops/checks/mvp27_1_backend_history_player_runtime_localization_contract.mjs' \
+            'ops/checks/mvp27_1_hardcoded_text_baseline.json')"
+          bad="$(comm -23 <(printf '%s\n' "$changed") <(printf '%s\n' "$allowed" | sort) || true)"
+          test -z "$bad" || { printf 'Unexpected History localization paths:\n%s\n' "$bad" >&2; exit 1; }
+          git diff --check "$base" "$head"
+
+      - name: Tracked secret scan
+        run: node scripts/ci/check-secrets.mjs
