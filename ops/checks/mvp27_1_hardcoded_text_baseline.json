@@ -2,12 +2,12 @@
   "schema_version": 1,
   "scope": "player-facing-runtime-source",
   "recorded_at": "2026-10-06",
-  "staging_base": "6f03100b326d84fe158ecae78d9133d53428153f",
-  "scanned_files": 679,
-  "cyrillic_lines_total": 848,
+  "staging_base": "1da726623102d54b078bf3fe6ce76cd47ce181a4",
+  "scanned_files": 655,
+  "cyrillic_lines_total": 589,
   "by_scope": {
     "client": 0,
-    "backend": 848,
+    "backend": 589,
     "client-entry": 0
   },
   "excluded": [
@@ -67,7 +67,8 @@
     "shadowed abandoned v108 live-game owner (production-v108-live-game.js; sole owner is ownerless production-clean-entry-v108.js; historical app/v108.php remains on production-clean-entry-v105-fast-notifications.js rollback and factual v110 does not load it)",
     "shadowed historical game-screen-v98 (screens/game-screen-v98.js; sole direct owner is production-v98-ui-owner.js, itself confined to production-regression-fix-entry-v98.js on historical app/v98.php; factual v110 does not load it)",
     "classified residual historical/orphan client owners (stripped main.js; invite-terminal-actions-v115 only through stripped main; orphan invite-terminal-actions-v110r12; historical production-v106-timer-mobile; historical production-v98-passive-session-transport; orphan notification-bell-first-click-v116)",
-    "final historical/orphan client owners (api/request-guard.js; main-v102.js; main-v103.js; main-v104.js; main-v105.js; main-v120-invite-controller-shell.js; production-v99-invite-picker-hold.js; screens/notification-bell-first-click-v115.js; screens/search-screen.js)"
+    "final historical/orphan client owners (api/request-guard.js; main-v102.js; main-v103.js; main-v104.js; main-v105.js; main-v120-invite-controller-shell.js; production-v99-invite-picker-hold.js; screens/notification-bell-first-click-v115.js; screens/search-screen.js)",
+    "post-#2085 backend non-player classification bundle: direct Web Admin endpoints; Compensation; AntiFraud; System Admin/feature-flag administration; operational analytics; staging-only test-coin and tournament manual-acceptance owners; Admin notification bridges; Support admin Telegram notifier (259 lines total)"
   ],
-  "note": "MVP-27.1 active History player-presentation localization moved 37 direct player-facing backend Cyrillic lines from HistoryService to canonical locale ownership; history chronology, economy projection, DB routing, rematch/result ownership and profile/API response semantics remain unchanged."
+  "note": "MVP-27.1 post-#2085 ownership classification removed 259 proven Admin/control-plane/staging/operator-only backend Cyrillic lines from the player-facing localization ratchet. No runtime/product/localized visible copy changed; active player-facing backend debt continues from 589."
 }
