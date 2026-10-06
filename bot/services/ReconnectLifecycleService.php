@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/localization/ServerLocalization.php';
+
 require_once __DIR__ . '/GameSettlementService.php';
 require_once __DIR__ . '/GameNoContestSettlementService.php';
 require_once __DIR__ . '/PresenceService.php';
@@ -293,7 +295,7 @@ final class ReconnectLifecycleService
                 $db,
                 $game,
                 'server_failure',
-                'Возврат: матч отменён из-за сбоя сервера',
+                ServerLocalization::copy('server.game_runtime.economy.server_failure_refund', 'Refund: match cancelled because of a server failure'),
                 $metadata
             );
             $cancelled++;
@@ -387,7 +389,7 @@ final class ReconnectLifecycleService
                     $db,
                     $game,
                     'both_disconnected',
-                    'Возврат: оба игрока отключились'
+                    ServerLocalization::copy('server.game_runtime.economy.both_disconnected_refund', 'Refund: both players disconnected')
                 );
             }
         }
@@ -483,7 +485,7 @@ final class ReconnectLifecycleService
                     $db,
                     $game,
                     'tournament_both_absent_timeout',
-                    'Турнирный матч: оба игрока не вернулись за 3 минуты',
+                    ServerLocalization::copy('server.game_runtime.economy.tournament_both_disconnected', 'Tournament match: both players failed to return within 3 minutes'),
                     [
                         'tournament_technical_outcome'=>'both_absent',
                         'both_disconnect_window_sec'=>self::TOURNAMENT_BOTH_RECONNECT_WINDOW_SEC,
@@ -496,7 +498,7 @@ final class ReconnectLifecycleService
                 $db,
                 $game,
                 'both_disconnected',
-                'Возврат: оба игрока отключились'
+                ServerLocalization::copy('server.game_runtime.economy.both_disconnected_refund', 'Refund: both players disconnected')
             );
             return;
         }
