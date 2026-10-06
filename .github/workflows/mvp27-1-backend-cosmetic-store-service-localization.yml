@@ -1,4 +1,5 @@
 name: MVP-27.1 Backend Cosmetic Store Service Localization
+# Exact-head CI checkpoint after bounded predecessor-contract migrations.
 
 on:
   pull_request:
