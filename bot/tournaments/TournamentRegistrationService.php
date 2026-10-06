@@ -55,7 +55,7 @@ final class TournamentRegistrationService
                 ['active_slot'=>self::ACTIVE_SLOT]
             );
             if ($existing !== []) {
-                throw new RuntimeException('Одновременно может существовать только один официальный турнир.');
+                throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.scheduling.single_official_only', 'Only one official tournament may exist at a time.'));
             }
 
             $tournamentId = $this->newTournamentId($actorRef, $createdAt);
@@ -162,7 +162,7 @@ final class TournamentRegistrationService
         $actorRef = $this->requiredText($actorRef, 191, 'actor');
         $startAtUtc = trim($startAtUtc);
         if ($startAtUtc === '') {
-            throw new InvalidArgumentException('Укажите дату и время начала турнира.');
+            throw new InvalidArgumentException(ServerLocalization::copy('server.tournament_runtime.scheduling.start_required', 'Specify the tournament start date and time.'));
         }
 
         $utc = new DateTimeZone('UTC');
@@ -170,10 +170,10 @@ final class TournamentRegistrationService
         try {
             $startMoment = (new DateTimeImmutable($startAtUtc, $utc))->setTimezone($utc);
         } catch (Throwable) {
-            throw new InvalidArgumentException('Некорректная дата или время начала турнира.');
+            throw new InvalidArgumentException(ServerLocalization::copy('server.tournament_runtime.scheduling.start_invalid', 'Invalid tournament start date or time.'));
         }
         if ($startMoment <= $assignedMoment) {
-            throw new InvalidArgumentException('Дата начала турнира должна быть в будущем.');
+            throw new InvalidArgumentException(ServerLocalization::copy('server.tournament_runtime.scheduling.start_future', 'The tournament start date must be in the future.'));
         }
 
         $assignedAt = $assignedMoment->format('Y-m-d H:i:s.u');
@@ -198,15 +198,15 @@ final class TournamentRegistrationService
                     && hash_equals($existingStart, $scheduledStartAt)) {
                     return $this->snapshotForRow($db, $row, null, null);
                 }
-                throw new RuntimeException('Дата турнира уже назначена. Перенос или задержка не входят в MVP-21.3.');
+                throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.scheduling.already_scheduled', 'The tournament date has already been assigned. Rescheduling is outside MVP-21.3.'));
             }
             if ($state !== self::STATE_WAITING_FOR_DATE) {
-                throw new RuntimeException('Назначить дату можно только после полного набора состава.');
+                throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.scheduling.roster_required', 'A date can be assigned only after the roster is full.'));
             }
 
             $registeredCount = $this->registeredCount($db, $tournamentId);
             if ($registeredCount !== (int)$row['capacity']) {
-                throw new RuntimeException('Дата турнира назначается только для полностью набранного состава.');
+                throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.scheduling.capacity_required', 'The tournament date can be assigned only for a full roster.'));
             }
             $acceptedCount = (int)$db->fetchValue(
                 'SELECT COUNT(*) FROM mgw_tournament_registrations
@@ -216,7 +216,7 @@ final class TournamentRegistrationService
                 ['tournament_id'=>$tournamentId,'state'=>self::REGISTRATION_REGISTERED]
             );
             if ($acceptedCount !== $registeredCount) {
-                throw new RuntimeException('Не у всех участников зафиксировано согласие с правилами турнира.');
+                throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.scheduling.consent_required', 'Not all participants have accepted the tournament rules.'));
             }
 
             $updated = $db->execute(
@@ -240,7 +240,7 @@ final class TournamentRegistrationService
                 ]
             );
             if ($updated !== 1) {
-                throw new RuntimeException('Дата турнира изменилась одновременно с запросом.');
+                throw new RuntimeException(ServerLocalization::copy('server.tournament_runtime.scheduling.schedule_race', 'The tournament date changed concurrently with this request.'));
             }
 
             return $this->snapshotForRow(
